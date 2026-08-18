@@ -128,6 +128,11 @@
       .sl-add:hover,.sl-add.on{background:#2f6bff;color:#fff}
       .sl-link{font-size:10px;font-weight:800;color:#5aa7ff;cursor:pointer;letter-spacing:.04em}
       .sl-link:hover{color:#8fc2ff}
+      .sl-fold{display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 8px;margin:0 -8px;border-radius:8px;font-size:12.5px;font-weight:800;letter-spacing:.03em;user-select:none}
+      .sl-fold:hover{background:rgba(255,255,255,.07)}
+      .sl-fold .sl-chev{display:inline-flex;color:#66748c;flex:none}
+      .sl-fold .sl-chev svg{transition:transform .15s ease}
+      .sl-fold.open .sl-chev svg{transform:rotate(90deg)}
       .sl-step{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:7px 8px;margin-bottom:6px}
       .sl-stepn{width:16px;height:16px;border-radius:5px;background:rgba(47,107,255,.3);display:grid;place-items:center;font-size:9px;font-weight:900;color:#8fc2ff;flex:none}
       .sl-bare{background:none;border:none;outline:none;color:#eef3fb;font:800 12px Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;text-align:right;padding:0}
@@ -170,7 +175,15 @@
       </div>
       <div class="sl-sect">
         <div class="sl-inp"><input id="lab-name" type="text" placeholder="Scenario Name"></div>
-        <div class="sl-grid2" style="margin-top:8px">
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
+          <button id="lab-saveas" class="sl-btn">SAVE AS&hellip;</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button id="lab-new" class="sl-btn">NEW</button>
+          <button id="lab-open" class="sl-btn">OPEN&hellip;</button>
+        </div>
+        <div class="sl-grid2" style="margin-top:10px">
           <div>
             <div class="sl-lab">Duration</div>
             <div class="sl-inp"><input id="lab-dur" type="text" inputmode="decimal" value="10"><span class="sl-unit">s</span></div>
@@ -180,14 +193,14 @@
             <div class="sl-inp"><input id="lab-wind" type="text" inputmode="decimal" value="12"><span class="sl-unit">kt</span></div>
           </div>
         </div>
-        <div style="margin-top:8px">
-          <div id="lab-seedhead" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:2px 0" title="a scenario runs on EVERY seed in its set — click to expand">
-            <span class="sl-lab" style="margin:0">Seeds</span>
-            <span id="lab-seedcount" class="sl-hint" style="font-variant-numeric:tabular-nums"></span>
+        <div style="margin-top:6px">
+          <div id="lab-seedhead" class="sl-fold" title="a scenario runs on EVERY seed in its set — click to expand">
+            <span class="sl-chev"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 2.2 L8.6 6 L4.2 9.8"/></svg></span>
+            <span>Seeds</span>
+            <span class="sl-count" id="lab-seedcount"></span>
             <span id="lab-seeddots" style="display:inline-flex;gap:5px;font-size:10px;margin-left:auto"></span>
-            <span id="lab-seedchev" style="color:#66748c;font-size:9px">&#9656;</span>
           </div>
-          <div id="lab-seedbody" style="display:none;margin-top:6px">
+          <div id="lab-seedbody" style="display:none;margin-top:4px">
           <div id="lab-seedwrap" style="position:relative">
             <button id="lab-seedbtn" class="sl-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;font-variant-numeric:tabular-nums;letter-spacing:.02em"></button>
           </div>
@@ -204,20 +217,16 @@
           </div>
           </div>
         </div>
-        <div style="margin-top:12px">
-          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
-            <span class="sl-sectlabel" style="margin:0" title="expectations checked against every run">ASSERTIONS</span>
-            <span id="lab-assertadd" class="sl-link">+ ADD</span>
+        <div>
+          <div id="lab-asserthead" class="sl-fold" title="expectations checked against every run — click to expand">
+            <span class="sl-chev"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 2.2 L8.6 6 L4.2 9.8"/></svg></span>
+            <span>Assertions</span>
+            <span class="sl-count" id="lab-assertcount"></span>
+            <span id="lab-assertadd" class="sl-link" style="margin-left:auto">+ ADD</span>
           </div>
-          <div id="lab-asserts"></div>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:10px">
-          <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
-          <button id="lab-saveas" class="sl-btn">SAVE AS&hellip;</button>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button id="lab-new" class="sl-btn">NEW</button>
-          <button id="lab-open" class="sl-btn">OPEN&hellip;</button>
+          <div id="lab-assertbody" style="display:none;margin-top:4px">
+            <div id="lab-asserts"></div>
+          </div>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px">
           <span class="sl-hint" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums">library: <span id="lab-libname">not attached</span> &middot; <span id="lab-libopen" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="attach assets/scenarios.js so saves write to it">change</span></span>
@@ -1129,6 +1138,8 @@
     }
     const hintSpan = (txt) => { const s = document.createElement('span'); s.className = 'sl-hint'; s.textContent = txt; return s; };
     function renderAsserts() {
+        const cnt = ui.querySelector('#lab-assertcount');
+        if (cnt) cnt.textContent = LAB.asserts.length || '';
         assertsDiv.innerHTML = '';
         LAB.asserts.forEach((a, k) => {
             const row = document.createElement('div');
@@ -1228,8 +1239,15 @@
             assertsDiv.appendChild(p);
         }
     }
-    ui.querySelector('#lab-assertadd').onclick = () => {
+    ui.querySelector('#lab-assertadd').onclick = (e) => {
+        e.stopPropagation();   // it lives in the fold header — don't toggle
         if (!LAB.boats.length) return;
+        // adding wants to SHOW the new row: expand the section first
+        const aBody = ui.querySelector('#lab-assertbody');
+        if (aBody.style.display === 'none') {
+            aBody.style.display = 'block';
+            ui.querySelector('#lab-asserthead').classList.add('open');
+        }
         const body = document.createElement('div');
         body.style.cssText = 'display:flex;flex-direction:column;gap:6px';
         const KINDS = [
@@ -1451,12 +1469,19 @@
     }
     ui.querySelector('#lab-seedbtn').onclick = () => openSeedDialog();
     bar.querySelector('#pb-seed').onclick = () => openSeedDialog();
-    // the seed section folds away (owner ruling): collapsed = just the count
-    ui.querySelector('#lab-seedhead').onclick = () => {
-        LAB.seedsOpen = !LAB.seedsOpen;
-        ui.querySelector('#lab-seedbody').style.display = LAB.seedsOpen ? 'block' : 'none';
-        ui.querySelector('#lab-seedchev').innerHTML = LAB.seedsOpen ? '&#9662;' : '&#9656;';
-    };
+    // the seed + assertion sections fold away (owner ruling): collapsed =
+    // a real disclosure row (hover, rotating chevron) with just the count
+    function wireFold(headSel, bodySel) {
+        const head = ui.querySelector(headSel);
+        head.onclick = () => {
+            const body = ui.querySelector(bodySel);
+            const open = body.style.display === 'none';
+            body.style.display = open ? 'block' : 'none';
+            head.classList.toggle('open', open);
+        };
+    }
+    wireFold('#lab-seedhead', '#lab-seedbody');
+    wireFold('#lab-asserthead', '#lab-assertbody');
     // seed edits change the DOC (dirty + draft) and drop only what they must:
     // removed seeds lose their cache; survivors keep theirs
     function seedsChanged() {
@@ -2041,7 +2066,16 @@
         let local = {};
         try { local = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { }
         const shipped = (window.SCENARIO_DOC && typeof window.SCENARIO_DOC === 'object') ? window.SCENARIO_DOC : {};
-        const merged = { ...shipped, ...local };
+        // per-name merge by SAVE TIME, not blanket local-wins: the old rule
+        // let a stale localStorage mirror silently mask — and on the next
+        // save, clobber — newer copies committed into the shipped file
+        // (measured: the tack scenarios' asserts vanished from the file that
+        // way). Undated ties keep the old local-wins behavior.
+        const merged = { ...shipped };
+        for (const k of Object.keys(local)) {
+            const l = local[k], s2 = shipped[k];
+            if (!s2 || (l && (l.savedAt || 0) >= (s2.savedAt || 0))) merged[k] = l;
+        }
         for (const t of loadTombs()) delete merged[t];
         return merged;
     }
@@ -2244,6 +2278,7 @@
             const c = { ...o };
             if (c.seeds == null) c.seeds = [c.seed != null ? c.seed >>> 0 : 0x9e3779b9];
             delete c.seed;
+            delete c.savedAt;   // storage metadata, not scenario content
             const out = {};
             for (const k of Object.keys(c).sort()) {
                 if (c[k] === undefined) continue;
@@ -2315,7 +2350,7 @@
             const t = loadTombs();
             if (t.has(name)) { t.delete(name); saveTombs(t); }   // saving revives the name
             const lib = store();
-            lib[name] = sceneObj();
+            lib[name] = { ...sceneObj(), savedAt: Date.now() };
             persistLib(lib);
             nameIn.value = name;
             markSaved();
