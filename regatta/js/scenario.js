@@ -372,6 +372,7 @@
     const SVG_PLAY = '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M2.8 1.4 L10.6 6 L2.8 10.6 Z"/></svg>';
     const SVG_PAUSE = '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><rect x="2" y="1.6" width="3" height="8.8" rx="1"/><rect x="7" y="1.6" width="3" height="8.8" rx="1"/></svg>';
     const SVG_BACK = '<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true"><path d="M7.4 1.6 L2.6 6 L7.4 10.4 Z"/><path d="M12.6 1.6 L7.8 6 L12.6 10.4 Z"/></svg>';
+    const SVG_START = '<svg width="13" height="12" viewBox="0 0 13 12" fill="currentColor" aria-hidden="true"><rect x="1.2" y="1.6" width="2" height="8.8" rx="0.8"/><path d="M12 1.6 L5 6 L12 10.4 Z"/></svg>';
     const SVG_FWD = '<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true"><path d="M1.4 1.6 L6.2 6 L1.4 10.4 Z"/><path d="M6.6 1.6 L11.4 6 L6.6 10.4 Z"/></svg>';
     const bar = document.createElement('div');
     bar.className = 'sl-panel';
@@ -380,6 +381,7 @@
       <button id="pb-sim" class="sl-btn sl-btn-pri" style="flex:1;padding:10px 0;letter-spacing:.12em" title="run every seed in the set (SPACE)">SIMULATE</button>
       <span id="pb-controls" style="display:none;flex:1;align-items:center;gap:14px">
       <div style="display:flex;gap:6px">
+        <button id="pb-start" class="sl-tbtn" title="to the start (t=0) — where editing lives">${SVG_START}</button>
         <button id="pb-back" class="sl-tbtn" title="step back 0.5s">${SVG_BACK}</button>
         <button id="pb-play" class="sl-tbtn sl-tbtn-pri">${SVG_PLAY}</button>
         <button id="pb-fwd" class="sl-tbtn" title="step forward 0.5s">${SVG_FWD}</button>
@@ -1788,22 +1790,11 @@
     // if no recording exists. Any EDIT (drag, field change, add, delete)
     // invalidates the recording and drops back to initial conditions; the
     // transport just rewinds. Objects stay selectable while scrubbing.
-    function play() {
-        const missing = LAB.seeds.map(s => s >>> 0).filter(s => !LAB.recs[s]);
-        const begin = () => {
-            if (!LAB.rec) setActiveSeed(LAB.seedIx);
-            if (!LAB.rec) return;
-            if (LAB.frame >= LAB.rec.nF) LAB.frame = 0;
-            LAB.mode = 'play'; LAB.playing = true;
-            pbPlay.innerHTML = SVG_PAUSE;
-            // a NEW run shows Rights & Umpire; resuming keeps the selection
-            if (missing.length) select(null);
-        };
-        if (!missing.length) { begin(); return; }
-        // the burst blocks the main thread — the SIMULATING card goes up and
-        // gets a painted frame before each seed runs
+    // the async batch: SIMULATING card up, one painted frame per seed burst
+    function runBatch(after) {
         simCover.style.display = 'flex';
         const prog = simCover.querySelector('#sim-prog');
+        const total = LAB.seeds.map(s => s >>> 0).filter(s => !LAB.recs[s]).length;
         let done = 0;
         const step = () => {
             const s = LAB.seeds.map(x => x >>> 0).find(x => !LAB.recs[x]);
@@ -1811,17 +1802,40 @@
                 simCover.style.display = 'none';
                 setActiveSeed(LAB.seedIx);
                 evaluateAsserts();
-                begin();
+                if (after) after();
                 return;
             }
-            prog.textContent = missing.length > 1 ? `seed ${++done} / ${missing.length}` : '';
+            prog.textContent = total > 1 ? `seed ${++done} / ${total}` : '';
             requestAnimationFrame(() => setTimeout(() => { LAB.recs[s] = simulateSeed(s); step(); }, 15));
         };
         step();
     }
+    // SIMULATE runs the set and STOPS at the start (owner ruling): the stage
+    // lands paused at t=0 — which is the setup view — with the umpire panel
+    // reading the fresh run. Playback is the ▶ button's job.
+    function simulateOnly() {
+        const missing = LAB.seeds.map(s => s >>> 0).filter(s => !LAB.recs[s]);
+        if (!missing.length) return;
+        runBatch(() => {
+            LAB.mode = 'play';
+            LAB.frame = 0;
+            pause();
+            select(null);   // a fresh run fronts Rights & Umpire
+        });
+    }
+    function play() {
+        const missing = LAB.seeds.map(s => s >>> 0).filter(s => !LAB.recs[s]);
+        if (missing.length) { simulateOnly(); return; }   // SPACE parity with the visible button
+        if (!LAB.rec) setActiveSeed(LAB.seedIx);
+        if (!LAB.rec) return;
+        if (LAB.frame >= LAB.rec.nF) LAB.frame = 0;
+        LAB.mode = 'play'; LAB.playing = true;
+        pbPlay.innerHTML = SVG_PAUSE;
+    }
     function pause() { LAB.playing = false; pbPlay.innerHTML = SVG_PLAY; }
     pbPlay.onclick = () => { if (LAB.playing) pause(); else play(); };
-    bar.querySelector('#pb-sim').onclick = () => play();
+    bar.querySelector('#pb-sim').onclick = () => simulateOnly();
+    bar.querySelector('#pb-start').onclick = () => { if (!LAB.rec) return; pause(); setFrame(0); };
     bar.querySelector('#pb-back').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame - 30); };
     bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
     pbSlider.addEventListener('input', () => { if (!LAB.rec) { pbSlider.value = 0; return; } pause(); setFrame(+pbSlider.value); });
