@@ -576,6 +576,19 @@
                 // restore the dirty association: if the draft was saved state,
                 // SAVE comes back disabled; if it had edits, it stays lit
                 LAB.savedJSON = d._saved || null;
+                // pre-_saved drafts (and any missed association): if the
+                // restored scene matches its own library entry, it IS saved
+                if (LAB.savedJSON == null) {
+                    const nm = (d.name || '').trim();
+                    const lib = store();
+                    if (nm && lib[nm]) {
+                        const cur = JSON.parse(JSON.stringify({ name: nm, ...sceneObj() }));
+                        const sav = { name: nm, ...lib[nm] };
+                        if (JSON.stringify(canonDoc(cur)) === JSON.stringify(canonDoc(sav))) {
+                            LAB.savedJSON = JSON.stringify({ name: nm, ...sceneObj() });
+                        }
+                    }
+                }
                 LAB._loading = false;
                 select(null);
             }
@@ -2096,7 +2109,43 @@
         const b = ui.querySelector('#lab-save');
         if (b) b.disabled = !isDirty();
     }
-    function markSaved() { LAB.savedJSON = currentDoc(); refreshSaveBtn(); }
+    function markSaved() {
+        LAB.savedJSON = currentDoc();
+        refreshSaveBtn();
+        // the draft must learn about the save too — without this, a save
+        // landing >400ms after the last edit left the draft carrying a STALE
+        // _saved, and the next page open showed unsaved changes
+        saveDraft();
+    }
+    // semantic doc equality for the boot fallback: sorted keys, legacy seed
+    // fields normalized — so a pre-_saved draft that matches its library
+    // entry still opens clean
+    function canonDoc(o) {
+        if (Array.isArray(o)) return o.map(canonDoc);
+        if (o && typeof o === 'object') {
+            const c = { ...o };
+            if (c.seeds == null) c.seeds = [c.seed != null ? c.seed >>> 0 : 0x9e3779b9];
+            delete c.seed;
+            const out = {};
+            for (const k of Object.keys(c).sort()) {
+                if (c[k] === undefined) continue;
+                out[k] = Array.isArray(c[k]) || (c[k] && typeof c[k] === 'object')
+                    ? (Array.isArray(c[k]) ? c[k].map(x => (x && typeof x === 'object') ? sortKeys(x) : x) : sortKeys(c[k]))
+                    : c[k];
+            }
+            return out;
+        }
+        return o;
+    }
+    function sortKeys(o) {
+        if (Array.isArray(o)) return o.map(sortKeys);
+        if (o && typeof o === 'object') {
+            const out = {};
+            for (const k of Object.keys(o).sort()) if (o[k] !== undefined) out[k] = sortKeys(o[k]);
+            return out;
+        }
+        return o;
+    }
     function isDirty() {
         const empty = !LAB.boats.length && !LAB.marks.length && !LAB.sands.length && !LAB.lines.length;
         if (LAB.savedJSON == null) return !empty;
