@@ -113,6 +113,8 @@
       .sl-btn-pri:hover{background:#4a80ff}
       .sl-btn-danger{appearance:none;flex:none;background:none;border:1px solid rgba(236,48,19,.4);color:#ff8a75;padding:7px 14px;border-radius:8px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}
       .sl-btn-danger:hover{background:rgba(236,48,19,.15)}
+      .sl-btn-red{background:#c9392a;border-color:#c9392a;color:#fff;font-weight:900}
+      .sl-btn-red:hover{background:#e0503f}
       .sl-mode{appearance:none;flex:1;text-align:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:8px 0;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.1em;color:#8fa3bd;cursor:pointer}
       .sl-mode:hover{background:rgba(255,255,255,.12)}
       .sl-mode.on{background:#2f6bff;border-color:#2f6bff;color:#fff;font-weight:900}
@@ -2155,7 +2157,7 @@
         for (const b of buttons) {
             const btn = document.createElement('button');
             btn.textContent = b.label.toUpperCase();
-            btn.className = 'sl-btn' + (b.primary ? ' sl-btn-pri' : '');
+            btn.className = 'sl-btn' + (b.danger ? ' sl-btn-red' : b.primary ? ' sl-btn-pri' : '');
             btn.style.cssText = 'flex:none;padding:8px 16px';
             btn.onclick = () => { close(); if (b.onClick) b.onClick(); };
             row.appendChild(btn);
@@ -2170,7 +2172,9 @@
     function confirmDialog(title, text, onYes, yesLabel) {
         const p = document.createElement('div');
         p.textContent = text;
-        dialog(title, p, [{ label: 'Cancel' }, { label: yesLabel || 'OK', primary: true, onClick: onYes }]);
+        // every confirmDialog guards a PERMANENT effect (delete / clear /
+        // discard), so the committing button is RED, never the primary blue
+        dialog(title, p, [{ label: 'Cancel' }, { label: yesLabel || 'OK', danger: true, onClick: onYes }]);
     }
 
     // ── dirty tracking + New / Open / Save / Save As ───────────────────
