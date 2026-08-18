@@ -182,7 +182,6 @@
           <div class="sl-lab" title="a scenario runs on EVERY seed in its set">Seeds</div>
           <div id="lab-seedwrap" style="position:relative">
             <button id="lab-seedbtn" class="sl-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;font-variant-numeric:tabular-nums;letter-spacing:.02em"></button>
-            <div id="lab-seedmenu" style="display:none;position:absolute;top:calc(100% + 4px);left:0;right:0;max-height:280px;overflow-y:auto;background:rgba(7,19,34,.97);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:10px;box-shadow:0 10px 34px rgba(4,16,28,.5);padding:6px;z-index:90"></div>
           </div>
           <div style="display:flex;gap:6px;margin-top:6px">
             <div class="sl-inp" style="flex:1"><input id="lab-seedadd" type="text" inputmode="numeric" placeholder="type a seed, or just roll"></div>
@@ -388,7 +387,6 @@
       </div>
       <span id="pb-seedwrap" style="position:relative;display:none">
         <button id="pb-seed" class="sl-tbtn" style="display:inline-flex;align-items:center;width:auto;padding:0 10px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.03em;font-variant-numeric:tabular-nums;white-space:nowrap" title="which seed's run the transport shows"></button>
-        <div id="pb-seedmenu" style="display:none;position:absolute;bottom:42px;left:50%;transform:translateX(-50%);min-width:150px;background:rgba(7,19,34,.96);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:10px;box-shadow:0 10px 34px rgba(4,16,28,.5);padding:6px;z-index:80"></div>
       </span>
       <span style="flex:1;position:relative;display:block">
         <input id="pb-slider" type="range" min="0" max="600" value="0">
@@ -1293,37 +1291,101 @@
         else if (LAB.seedIx > i) LAB.seedIx--;
         seedsChanged();
     }
-    // the SEED MENU, shared by the panel (manage: switch + delete) and the
-    // transport (switch): numeric order, outcome colours, active row blue
-    function buildSeedMenu(menu, withDelete) {
-        menu.innerHTML = '';
-        LAB.seeds.map((s, i) => [s >>> 0, i]).sort((a, b) => a[0] - b[0]).forEach(([s, i]) => {
-            const row = document.createElement('div');
-            const on = i === LAB.seedIx;
-            const st = seedStatus(s);
-            row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:7px;cursor:pointer;'
-                + 'font:800 11px Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;'
-                + (on ? 'background:rgba(47,107,255,.25)' : '');
-            const num = document.createElement('span');
-            num.textContent = s;
-            num.style.cssText = 'flex:1;text-align:center;color:' + SEED_COLORS[st];
-            row.title = SEED_TITLES[st];
-            row.appendChild(num);
-            if (withDelete) {
+    // THE SEEDS DIALOG — replaces the dropdowns (owner: works at 100 or
+    // 1000). Same scalable pattern as the Open box: rows built per filter
+    // pass, capped at 400 rendered, filter + count line — plus outcome-TIER
+    // chips (fail/collision/penalty/clean) so "show me the red ones" is one
+    // click at any size. Enter switches to the first match.
+    function openSeedDialog() {
+        const MAXROWS = 400;
+        let tier = 'all';
+        const body = document.createElement('div');
+        body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:340px';
+        const filterWrap = document.createElement('div');
+        filterWrap.className = 'sl-inp';
+        const filterIn = document.createElement('input');
+        filterIn.type = 'text';
+        filterIn.inputMode = 'numeric';
+        filterIn.placeholder = 'Filter seeds';
+        filterWrap.appendChild(filterIn);
+        body.appendChild(filterWrap);
+        const chips = document.createElement('div');
+        chips.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px';
+        body.appendChild(chips);
+        const countEl = document.createElement('div');
+        countEl.className = 'sl-hint';
+        countEl.style.padding = '0 2px';
+        body.appendChild(countEl);
+        const list = document.createElement('div');
+        list.style.cssText = 'overflow-y:auto;max-height:46vh;min-height:40px';
+        body.appendChild(list);
+        let firstMatch = null;
+        let dlg = null;
+        const pick = (i) => { dlg.close(); setActiveSeed(i); };
+        const TIERS = [['all', 'ALL'], ['fail', 'FAIL'], ['collision', 'COLLISION'], ['penalty', 'PENALTY'], ['ok', 'CLEAN'], ['unrun', 'UNRUN']];
+        const rebuild = () => {
+            // tier chips with live counts (zero tiers hidden, ALL always)
+            const counts = { all: LAB.seeds.length, fail: 0, collision: 0, penalty: 0, ok: 0, unrun: 0 };
+            for (const s of LAB.seeds) counts[seedStatus(s)]++;
+            chips.innerHTML = '';
+            for (const [key, lbl] of TIERS) {
+                if (key !== 'all' && !counts[key]) { if (tier === key) tier = 'all'; continue; }
+                const c = document.createElement('span');
+                c.className = 'sl-schip';
+                c.style.cssText = 'cursor:pointer;font-variant-numeric:tabular-nums;'
+                    + `color:${key === 'all' ? '#8fa3bd' : SEED_COLORS[key]};`
+                    + (tier === key ? 'background:rgba(47,107,255,.28)' : 'background:rgba(255,255,255,.06)');
+                c.textContent = `${lbl} ${counts[key]}`;
+                c.onclick = () => { tier = key; rebuild(); };
+                chips.appendChild(c);
+            }
+            // rows: tier + substring filter, numeric order, capped
+            const q = filterIn.value.trim();
+            const matches = LAB.seeds.map((s, i) => [s >>> 0, i])
+                .filter(([s]) => (tier === 'all' || seedStatus(s) === tier) && (!q || String(s).includes(q)))
+                .sort((a, b) => a[0] - b[0]);
+            firstMatch = matches.length ? matches[0][1] : null;
+            list.innerHTML = '';
+            matches.slice(0, MAXROWS).forEach(([s, i]) => {
+                const st = seedStatus(s);
+                const on = i === LAB.seedIx;
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:7px;cursor:pointer;'
+                    + 'font:800 12px Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;'
+                    + (on ? 'background:rgba(47,107,255,.25)' : '');
+                row.onmouseenter = () => { if (!on) row.style.background = 'rgba(255,255,255,.07)'; };
+                row.onmouseleave = () => { if (!on) row.style.background = ''; };
+                const num = document.createElement('span');
+                num.textContent = s;
+                num.style.cssText = 'flex:1;color:' + SEED_COLORS[st];
+                num.title = SEED_TITLES[st];
+                row.appendChild(num);
+                if (on) {
+                    const a = document.createElement('span');
+                    a.className = 'sl-schip sl-schip-blue';
+                    a.textContent = 'WATCHING';
+                    row.appendChild(a);
+                }
                 const x = document.createElement('span');
                 x.innerHTML = '&#10005;';
-                x.style.cssText = 'font-size:9px;color:#66748c;cursor:pointer;padding:0 2px';
+                x.style.cssText = 'font-size:10px;color:#66748c;cursor:pointer;padding:0 2px';
                 x.title = 'remove this seed from the set';
                 x.onmouseenter = () => x.style.color = '#ff8a75';
                 x.onmouseleave = () => x.style.color = '#66748c';
-                x.onclick = (e) => { e.stopPropagation(); removeSeed(i); };
+                x.onclick = (e) => { e.stopPropagation(); removeSeed(i); rebuild(); };
                 row.appendChild(x);
-            }
-            row.onmouseenter = () => { if (!on) row.style.background = 'rgba(255,255,255,.07)'; };
-            row.onmouseleave = () => { if (!on) row.style.background = ''; };
-            row.onclick = () => { menu.style.display = 'none'; setActiveSeed(i); };
-            menu.appendChild(row);
-        });
+                row.onclick = () => pick(i);
+                list.appendChild(row);
+            });
+            countEl.textContent = !matches.length ? 'nothing matches'
+                : matches.length > MAXROWS ? `showing ${MAXROWS} of ${matches.length} \u00b7 refine the filter`
+                : `${matches.length} of ${LAB.seeds.length} \u00b7 Enter watches the first`;
+        };
+        filterIn.addEventListener('input', rebuild);
+        filterIn.addEventListener('keydown', (e) => { if (e.key === 'Enter' && firstMatch != null) pick(firstMatch); });
+        rebuild();
+        dlg = dialog('Seeds', body, [{ label: 'Close' }]);
+        setTimeout(() => filterIn.focus(), 50);
     }
     // count dots: how many seeds sit in each outcome tier, at a glance
     function seedSummaryHTML() {
@@ -1344,25 +1406,19 @@
     }
     function renderSeeds() {
         refreshTransport();   // renderSeeds runs at every rec/seed chokepoint
-        // panel: summary button + manage menu
-        const pBtn = ui.querySelector('#lab-seedbtn');
-        const pMenu = ui.querySelector('#lab-seedmenu');
         const act = activeSeed();
+        const pBtn = ui.querySelector('#lab-seedbtn');
         pBtn.innerHTML = `<span style="color:${SEED_COLORS[seedStatus(act)]}">${act}</span>`
             + '<span style="color:#66748c;font-size:9px">&#9662;</span>'
             + `<span style="margin-left:auto;display:inline-flex;gap:5px;font-size:10px">${seedSummaryHTML()}</span>`
             + `<span style="color:#66748c;font-size:10px">${LAB.seeds.length}</span>`;
-        pBtn.title = SEED_TITLES[seedStatus(act)] + ' — the set, numerically; \u2715 removes a seed';
-        buildSeedMenu(pMenu, true);
-        // transport: switch-only mirror; hidden for a single seed
+        pBtn.title = SEED_TITLES[seedStatus(act)] + ' \u2014 open the seed list';
         const wrap = bar.querySelector('#pb-seedwrap');
         const tBtn = bar.querySelector('#pb-seed');
-        const tMenu = bar.querySelector('#pb-seedmenu');
         wrap.style.display = LAB.seeds.length > 1 ? 'inline-block' : 'none';
         tBtn.innerHTML = `<span style="color:${SEED_COLORS[seedStatus(act)]}">${act}</span>` +
             '<span style="color:#66748c;font-size:9px;margin-left:6px">&#9662;</span>';
-        tBtn.title = SEED_TITLES[seedStatus(act)] + ' — which seed the transport shows';
-        buildSeedMenu(tMenu, false);
+        tBtn.title = SEED_TITLES[seedStatus(act)] + ' \u2014 open the seed list';
     }
     // switching seeds swaps CACHED recordings — no resim; the playhead time
     // carries across so the same moment can be compared between seeds
@@ -1378,22 +1434,8 @@
         }
         renderSeeds();
     }
-    // both dropdowns toggle on their button; a press anywhere else closes
-    for (const [btnSel, menuSel, root] of [['#lab-seedbtn', '#lab-seedmenu', () => ui.querySelector('#lab-seedwrap')],
-                                           ['#pb-seed', '#pb-seedmenu', () => bar.querySelector('#pb-seedwrap')]]) {
-        const btn = ui.querySelector(btnSel) || bar.querySelector(btnSel);
-        btn.onclick = () => {
-            const m = ui.querySelector(menuSel) || bar.querySelector(menuSel);
-            m.style.display = m.style.display === 'none' ? 'block' : 'none';
-        };
-        void root;
-    }
-    document.addEventListener('mousedown', (e) => {
-        for (const [wrapEl, menuEl] of [[ui.querySelector('#lab-seedwrap'), ui.querySelector('#lab-seedmenu')],
-                                        [bar.querySelector('#pb-seedwrap'), bar.querySelector('#pb-seedmenu')]]) {
-            if (menuEl && menuEl.style.display !== 'none' && !wrapEl.contains(e.target)) menuEl.style.display = 'none';
-        }
-    }, true);
+    ui.querySelector('#lab-seedbtn').onclick = () => openSeedDialog();
+    bar.querySelector('#pb-seed').onclick = () => openSeedDialog();
     // seed edits change the DOC (dirty + draft) and drop only what they must:
     // removed seeds lose their cache; survivors keep theirs
     function seedsChanged() {
