@@ -136,9 +136,15 @@
       #pb-slider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:none;box-shadow:0 2px 8px rgba(0,0,0,.4);cursor:pointer}`;
     document.head.appendChild(style);
 
+    // ONE LEFT COLUMN (owner ruling 2026-08-17): the scenario details live at
+    // the top of the lab panel, the selected object's details in a second
+    // panel stacked just below it, and the transport is ALWAYS on the bottom
+    // — pressing its play button is how a run starts. No mode buttons.
+    const col = document.createElement('div');
+    col.style.cssText = 'position:fixed;left:20px;top:20px;z-index:70;display:flex;flex-direction:column;gap:12px;max-height:calc(100vh - 40px);width:270px';
     const left = document.createElement('div');
     left.className = 'sl-panel';
-    left.style.cssText = 'left:20px;width:250px';
+    left.style.cssText = 'position:static;width:100%;max-height:none;flex:0 1 auto;min-height:0';
     left.innerHTML = `
       <div class="sl-head" style="justify-content:space-between">
         <div style="display:flex;align-items:center;gap:8px">
@@ -147,59 +153,59 @@
         </div>
         <span class="sl-chip sl-chip-teal">DEV</span>
       </div>
-      <div style="display:flex;padding:10px 12px;gap:6px;border-bottom:1px solid rgba(255,255,255,.08)">
-        <button id="lab-reset" class="sl-mode">EDIT</button>
-        <button id="lab-run" class="sl-mode">&#9654; PLAY</button>
+      <div class="sl-sect">
+        <div class="sl-inp"><input id="lab-name" type="text" placeholder="Scenario Name"></div>
+        <div class="sl-grid2" style="margin-top:8px">
+          <div>
+            <div class="sl-lab">Duration</div>
+            <div class="sl-inp"><input id="lab-dur" type="text" inputmode="decimal" value="10"><span class="sl-unit">s</span></div>
+          </div>
+          <div>
+            <div class="sl-lab">Wind</div>
+            <div class="sl-inp"><input id="lab-wind" type="text" inputmode="decimal" value="12"><span class="sl-unit">kt</span></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px">
+          <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
+          <button id="lab-saveas" class="sl-btn">SAVE AS&hellip;</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button id="lab-new" class="sl-btn">NEW</button>
+          <button id="lab-open" class="sl-btn">OPEN&hellip;</button>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px">
+          <span class="sl-hint" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums">library: <span id="lab-libname">not attached</span> &middot; <span id="lab-libopen" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="attach assets/scenarios.js so saves write to it">change</span></span>
+          <span id="lab-clear" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer;white-space:nowrap">CLEAR SCENE</span>
+        </div>
       </div>
       <div style="padding:8px 8px 10px">
         <div class="sl-sectlabel" style="padding:4px 8px 6px;margin:0">LAYERS</div>
         <div id="lab-layers"></div>
       </div>`;
-    document.body.appendChild(left);
+
+    // RIGHTS & UMPIRE stays on the RIGHT (owner ruling), its own always-on
+    // panel: live rights at initial conditions while editing, the recording
+    // while scrubbing.
+    const ump = document.createElement('div');
+    ump.className = 'sl-panel';
+    ump.style.cssText = 'right:20px;top:20px;width:300px;max-height:calc(100vh - 120px)';
+    ump.innerHTML = `
+      <div class="sl-head">
+        <span class="sl-title">RIGHTS &amp; UMPIRE</span>
+        <span id="lab-time" style="font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>
+      </div>
+      <div id="lab-rights" style="padding:12px 16px 8px"></div>
+      <div class="sl-hint" style="padding:0 18px 12px">Scrub or step the transport &middot; SPACE plays and pauses</div>`;
+    document.body.appendChild(ump);
 
     const right = document.createElement('div');
     right.className = 'sl-panel';
-    right.style.cssText = 'right:20px;width:300px';
+    right.style.cssText = 'position:static;width:100%;max-height:none;flex:0 1 auto;min-height:0;display:none';
     right.innerHTML = `
       <div class="sl-head">
         <span id="lab-seldot" style="width:12px;height:12px;border-radius:50%;flex:none;display:none"></span>
         <span id="lab-selname" class="sl-title"></span>
         <span id="lab-kindchip" class="sl-chip"></span>
-        <span id="lab-time" style="display:none;font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>
-      </div>
-      <div id="det-scenario" style="display:none">
-        <div class="sl-sect">
-          <div class="sl-lab">Name</div>
-          <div class="sl-inp"><input id="lab-name" type="text" placeholder="Scenario Name"></div>
-          <div class="sl-grid2" style="margin-top:10px">
-            <div>
-              <div class="sl-lab">Duration</div>
-              <div class="sl-inp"><input id="lab-dur" type="text" inputmode="decimal" value="10"><span class="sl-unit">s</span></div>
-            </div>
-            <div>
-              <div class="sl-lab">Wind</div>
-              <div class="sl-inp"><input id="lab-wind" type="text" inputmode="decimal" value="12"><span class="sl-unit">kt</span></div>
-            </div>
-          </div>
-        </div>
-        <div class="sl-sect" style="padding:12px 16px">
-          <div style="display:flex;gap:6px">
-            <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
-            <button id="lab-saveas" class="sl-btn">SAVE AS&hellip;</button>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <button id="lab-new" class="sl-btn">NEW</button>
-            <button id="lab-open" class="sl-btn">OPEN&hellip;</button>
-          </div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:11px 16px">
-          <span class="sl-hint" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums">library: <span id="lab-libname">not attached</span> &middot; <span id="lab-libopen" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="attach assets/scenarios.js so saves write to it">change</span></span>
-          <span id="lab-clear" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer;white-space:nowrap">CLEAR SCENE</span>
-        </div>
-      </div>
-      <div id="det-play" style="display:none">
-        <div id="lab-rights" style="padding:12px 16px 8px"></div>
-        <div class="sl-hint" style="padding:0 18px 12px">Scrub or step the transport &middot; SPACE pauses</div>
       </div>
       <div id="det-boat" style="display:none">
         <div class="sl-sect">
@@ -254,14 +260,15 @@
       <div id="lab-delrow" style="display:none;justify-content:flex-end;padding:12px 16px">
         <button id="lab-del" class="sl-btn-danger">DELETE</button>
       </div>`;
-    document.body.appendChild(right);
-    const ui = { querySelector: (s) => left.querySelector(s) || right.querySelector(s),
-                 querySelectorAll: (s) => [...left.querySelectorAll(s), ...right.querySelectorAll(s)] };
+    col.append(left, right);
+    document.body.appendChild(col);
+    const ui = { querySelector: (s) => left.querySelector(s) || right.querySelector(s) || ump.querySelector(s),
+                 querySelectorAll: (s) => [...left.querySelectorAll(s), ...right.querySelectorAll(s), ...ump.querySelectorAll(s)] };
 
-    // the layer list: Scenario, then the object layers with “＋” adders.
+    // the layer list — the object layers with “＋” adders (the Scenario row
+    // is gone: its details are pinned at the top of the panel now).
     // An armed “＋” means the next click on open water places that kind.
     const LAYERS = [
-        ['scenario', 'Scenario', null],
         ['boat', 'Boats', () => LAB.boats.map((lb) => ({ label: lb.bot.name, sel: { kind: 'boat', ref: lb } }))],
         ['sand', 'Objects', () => LAB.sands.map((s, i) => ({ label: 'sand ' + (i + 1), sel: { kind: 'sand', ref: s } }))],
         ['mark', 'Marks', () => LAB.marks.map((m, i) => ({ label: 'mark ' + (i + 1), sel: { kind: 'mark', ref: m } }))],
@@ -278,10 +285,10 @@
         for (const [kind, label, items] of LAYERS) {
             const list = items ? items() : null;
             const head = document.createElement('div');
-            head.className = 'sl-lrow' + (LAB.sel && LAB.sel.kind === 'scenario' && kind === 'scenario' ? ' on' : '');
+            head.className = 'sl-lrow';
             const dot = document.createElement('span');
             dot.className = 'sl-dot';
-            dot.style.background = kind === 'scenario' ? KIND_DOT.scenario : '#66748c';
+            dot.style.background = '#66748c';
             const name = document.createElement('span');
             name.textContent = label;
             name.style.cssText = 'flex:1;font-weight:800';
@@ -298,7 +305,6 @@
                 add.onclick = (e) => { e.stopPropagation(); setArmed(kind); };
                 head.appendChild(add);
             }
-            head.onclick = () => { if (kind === 'scenario') select({ kind: 'scenario' }); };
             layersDiv.appendChild(head);
             if (list) for (const it of list) {
                 const row = document.createElement('div');
@@ -328,7 +334,7 @@
     const SVG_FWD = '<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true"><path d="M1.4 1.6 L6.2 6 L1.4 10.4 Z"/><path d="M6.6 1.6 L11.4 6 L6.6 10.4 Z"/></svg>';
     const bar = document.createElement('div');
     bar.className = 'sl-panel';
-    bar.style.cssText = 'top:auto;left:50%;transform:translateX(-50%);bottom:20px;display:none;align-items:center;gap:14px;padding:12px 18px;width:min(620px,calc(100vw - 80px));overflow:visible';
+    bar.style.cssText = 'top:auto;left:50%;transform:translateX(-50%);bottom:20px;display:flex;align-items:center;gap:14px;padding:12px 18px;width:min(620px,calc(100vw - 80px));overflow:visible';
     bar.innerHTML = `
       <div style="display:flex;gap:6px">
         <button id="pb-back" class="sl-tbtn" title="step back 0.5s">${SVG_BACK}</button>
@@ -481,7 +487,7 @@
             ctx.fillText(boat.name, 0, 10);
             ctx.restore();
         };
-        select({ kind: 'scenario' });
+        select(null);
         LAB.ready = true;
         // restore the working draft, if one survived a reload
         try {
@@ -492,7 +498,7 @@
                 loadScene(d);
                 if (d.name) ui.querySelector('#lab-name').value = d.name;
                 LAB._loading = false;
-                select({ kind: 'scenario' });
+                select(null);
             }
         } catch (e) { LAB._loading = false; }
         restoreLibHandle();
@@ -503,9 +509,10 @@
     function invalidate() {
         LAB.rec = null; LAB.playing = false; LAB.frame = 0;
         if (LAB.mode !== 'edit') LAB.mode = 'edit';
-        bar.style.display = 'none';
+        // the transport stays put — it just rewinds and disarms
         pbPlay.innerHTML = SVG_PLAY;
-        if (typeof refreshModeBtns === 'function') refreshModeBtns();
+        pbSlider.value = 0;
+        pbTicks.innerHTML = '';
         saveDraft();
     }
     // the working scene survives a reload: every edit stores a draft, boot
@@ -664,7 +671,7 @@
     }
     function deleteSel() {
         const s = LAB.sel;
-        if (!s || s.kind === 'scenario' || s.kind === 'play') return;
+        if (!s || s.kind === 'play') return;
         confirmDialog('Delete ' + (s.kind === 'sand' ? 'object' : s.kind),
             `Delete ${selDesc(s)}?`, deleteSelNow, 'Delete');
     }
@@ -730,30 +737,26 @@
 
     const selName = ui.querySelector('#lab-selname');
     const hdgIn = ui.querySelector('#lab-hdg'), spdIn = ui.querySelector('#lab-spd');
-    const detSections = { scenario: '#det-scenario', boat: '#det-boat', mark: '#det-mark', sand: '#det-sand', line: '#det-line', play: '#det-play' };
+    const detSections = { boat: '#det-boat', mark: '#det-mark', sand: '#det-sand', line: '#det-line' };
     function select(s) {
-        // no selection = the Scenario layer (the editor convention: the
-        // inspector shows the layer itself when nothing is selected).
-        // During PLAY nothing else is selectable: the inspector is the
-        // rights & umpire readout, full stop.
-        if (LAB.mode === 'play') s = { kind: 'play' };
-        if (!s) s = { kind: 'scenario' };
+        // no selection ('play' kind): the details panel hides — the umpire
+        // panel on the right is always on and covers the "nothing selected"
+        // reading. Selecting an object opens its inspector below the lab bar.
+        if (!s) s = { kind: 'play' };
         LAB.sel = s;
+        right.style.display = s.kind === 'play' ? 'none' : 'block';
         for (const k of Object.keys(detSections)) {
             right.querySelector(detSections[k]).style.display = k === s.kind ? 'block' : 'none';
         }
         const delRow = right.querySelector('#lab-delrow');
-        const showDel = !(s.kind === 'scenario' || s.kind === 'play');
+        const showDel = s.kind !== 'play';
         delRow.style.display = showDel ? 'flex' : 'none';
         if (showDel) right.querySelector('#lab-del').textContent = 'DELETE ' + (s.kind === 'sand' ? 'OBJECT' : s.kind.toUpperCase());
-        // the inspector header: dot + title + kind chip (t = clock in play)
+        // the inspector header: dot + title + kind chip
         const selDot = right.querySelector('#lab-seldot');
         const kindChip = right.querySelector('#lab-kindchip');
-        const timeChip = right.querySelector('#lab-time');
         const header = { dot: null, title: '', chip: '' };
-        if (s.kind === 'scenario') { header.title = 'SCENARIO'; header.chip = 'ROOT'; }
-        else if (s.kind === 'play') { header.title = 'RIGHTS & UMPIRE'; }
-        else if (s.kind === 'boat') {
+        if (s.kind === 'boat') {
             header.title = s.ref.bot.name.toUpperCase(); header.chip = 'BOAT';
             header.dot = (s.ref.bot.colors && s.ref.bot.colors.hull) || '#8fd0ff';
         }
@@ -765,7 +768,6 @@
         if (header.dot) { selDot.style.background = header.dot; selDot.style.border = '1px solid rgba(255,255,255,.3)'; }
         kindChip.style.display = header.chip ? 'inline-block' : 'none';
         kindChip.textContent = header.chip;
-        timeChip.style.display = s.kind === 'play' ? 'inline-block' : 'none';
         setGoalArm(false);   // goal placement never survives a selection change
         if (s.kind === 'boat') {
             hdgIn.value = Math.round(((s.ref.heading * DEG) % 360 + 360) % 360);
@@ -1171,46 +1173,31 @@
         pbSlider.max = nF;
         pbTicks.innerHTML = ticks.map(f =>
             `<span style="position:absolute;left:${(100 * f / nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px" title="penalty">&#9660;</span>`).join('');
-        bar.style.display = 'flex';
     }
     function setFrame(f) {
         if (!LAB.rec) return;
         LAB.frame = Math.max(0, Math.min(LAB.rec.nF, Math.round(f)));
+        LAB.mode = 'play';   // scrubbing a recording IS playback
     }
-    // Edit and Play are MUTUALLY EXCLUSIVE MODES (owner ruling): the page
-    // starts in Edit; Play enters playback (simulating if needed) and the
-    // transport appears; Edit returns to initial conditions and hides it.
-    // Pause lives on the transport, not on the mode buttons.
-    const runBtn = ui.querySelector('#lab-run');
-    const editBtn = ui.querySelector('#lab-reset');
-    function refreshModeBtns() {
-        runBtn.classList.toggle('on', LAB.mode === 'play');
-        editBtn.classList.toggle('on', LAB.mode === 'edit');
-    }
+    // NO MODE BUTTONS (owner ruling 2026-08-17): the transport is always on
+    // the bottom and its play button is how a run starts — simulating first
+    // if no recording exists. Any EDIT (drag, field change, add, delete)
+    // invalidates the recording and drops back to initial conditions; the
+    // transport just rewinds. Objects stay selectable while scrubbing.
     function play() {
-        if (!LAB.rec) simulate();
+        const fresh = !LAB.rec;
+        if (fresh) simulate();
         if (LAB.frame >= LAB.rec.nF) LAB.frame = 0;
         LAB.mode = 'play'; LAB.playing = true;
         pbPlay.innerHTML = SVG_PAUSE;
-        bar.style.display = 'flex';
-        refreshModeBtns();
-        select(null);   // play mode: the inspector is Rights & Umpire, nothing else
+        // a NEW run shows Rights & Umpire; resuming keeps the selection
+        if (fresh) select(null);
     }
     function pause() { LAB.playing = false; pbPlay.innerHTML = SVG_PLAY; }
-    function enterEdit() {
-        pause();
-        LAB.mode = 'edit'; LAB.frame = 0;
-        bar.style.display = 'none';
-        refreshModeBtns();
-        select({ kind: 'scenario' });
-    }
-    runBtn.onclick = () => { if (LAB.mode !== 'play') play(); };
-    pbPlay.onclick = () => { if (LAB.playing) pause(); else { if (LAB.frame >= LAB.rec.nF) LAB.frame = 0; LAB.playing = true; pbPlay.innerHTML = SVG_PAUSE; } };
-    bar.querySelector('#pb-back').onclick = () => { pause(); setFrame(LAB.frame - 30); };
-    bar.querySelector('#pb-fwd').onclick = () => { pause(); setFrame(LAB.frame + 30); };
-    pbSlider.addEventListener('input', () => { pause(); setFrame(+pbSlider.value); });
-    editBtn.onclick = enterEdit;
-    refreshModeBtns();
+    pbPlay.onclick = () => { if (LAB.playing) pause(); else play(); };
+    bar.querySelector('#pb-back').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame - 30); };
+    bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
+    pbSlider.addEventListener('input', () => { if (!LAB.rec) { pbSlider.value = 0; return; } pause(); setFrame(+pbSlider.value); });
     ui.querySelector('#lab-clear').onclick = () => {
         if (!LAB.boats.length && !LAB.marks.length && !LAB.sands.length && !LAB.lines.length) return;
         confirmDialog('Clear scene', 'Remove every boat, object, mark and line from the scene?', clearScene, 'Clear');
@@ -1244,10 +1231,10 @@
                 else if (e.key === '-' || e.key === '_') setZoom(LAB.zoom / 1.25);
                 else if (e.key === '0') setZoom(1);
                 else if (e.key === 'f' || e.key === 'F') zoomFit();
-                else if (LAB.rec && LAB.mode === 'play') {
+                else if (e.key === ' ') pbPlay.onclick();   // starts a run too, like the button
+                else if (LAB.rec) {
                     if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); }
                     else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); }
-                    else if (e.key === ' ') pbPlay.onclick();
                 }
                 e.preventDefault();   // no space-scroll, no browser shortcuts on the stage
             }
@@ -1506,7 +1493,7 @@
             LAB.durationS = 10; ui.querySelector('#lab-dur').value = 10;
             LAB.windKt = 12; ui.querySelector('#lab-wind').value = 12;
             markSaved();
-            select({ kind: 'scenario' });
+            select(null);
         });
     }
     function saveScenario(asNew) {
@@ -1560,7 +1547,7 @@
                     nameIn.value = n;
                     LAB._loading = false;
                     markSaved();
-                    select({ kind: 'scenario' });
+                    select(null);
                 });
             };
             const del = document.createElement('span');
@@ -1770,7 +1757,11 @@
             // name colour previews the opening helm: white = scripted, green = AI
             for (const lb of LAB.boats) lb._dispMode = (lb.plan && lb.plan.length && lb.aiAtS !== 0) ? 'S' : 'AI';
             renderRights(pairRights(), null);
-            timeEl.textContent = '';
+            timeEl.textContent = 't = 0.0s';
+            // the always-on transport reads true while editing: rewound, armed
+            pbSlider.value = 0;
+            pbFill();
+            pbTime.textContent = `0.0 / ${LAB.durationS.toFixed(1)}s`;
         } else if (LAB.rec) {
             if (LAB.playing) {
                 LAB.frame++;
@@ -1908,7 +1899,7 @@
                 octx.fillText(String(k + 1), sx, sy);
             });
         }
-        if (LAB.sel && LAB.sel.kind !== 'scenario' && LAB.mode === 'edit') {
+        if (LAB.sel && LAB.sel.kind !== 'play' && LAB.mode === 'edit') {
             let cx, cy, r = 40;
             const s = LAB.sel;
             if (s.kind === 'boat') { cx = s.ref.bot.x; cy = s.ref.bot.y; r = 48; }
