@@ -212,7 +212,10 @@
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px">
           <span class="sl-hint" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums">library: <span id="lab-libname">not attached</span> &middot; <span id="lab-libopen" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="attach assets/scenarios.js so saves write to it">change</span></span>
-          <span id="lab-clear" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer;white-space:nowrap">CLEAR SCENE</span>
+          <span style="display:flex;gap:10px;white-space:nowrap">
+            <span id="lab-discard" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer" title="throw away unsaved changes and restore the saved scenario">DISCARD</span>
+            <span id="lab-clear" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer">CLEAR SCENE</span>
+          </span>
         </div>
       </div>
       <div style="padding:8px 8px 10px">
@@ -1881,6 +1884,7 @@
     bar.querySelector('#pb-back').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame - 30); };
     bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
     pbSlider.addEventListener('input', () => { if (!LAB.rec) { pbSlider.value = 0; return; } pause(); setFrame(+pbSlider.value); });
+    ui.querySelector('#lab-discard').onclick = () => discardChanges();
     ui.querySelector('#lab-clear').onclick = () => {
         if (!LAB.boats.length && !LAB.marks.length && !LAB.sands.length && !LAB.lines.length) return;
         confirmDialog('Clear scene', 'Remove every boat, object, mark and line from the scene?', clearScene, 'Clear');
@@ -2175,8 +2179,15 @@
     // dirty-tracking already exists, the button just reads it. Refreshed at
     // every doc-changing chokepoint (saveDraft) and every save/load/new.
     function refreshSaveBtn() {
+        const dirty = isDirty();
         const b = ui.querySelector('#lab-save');
-        if (b) b.disabled = !isDirty();
+        if (b) b.disabled = !dirty;
+        // DISCARD mirrors SAVE: only offered when there is something to lose
+        const d = ui.querySelector('#lab-discard');
+        if (d) {
+            d.style.opacity = dirty ? '1' : '.35';
+            d.style.pointerEvents = dirty ? 'auto' : 'none';
+        }
     }
     function markSaved() {
         LAB.savedJSON = currentDoc();
@@ -2224,19 +2235,42 @@
         if (!isDirty()) return then();
         confirmDialog(action, 'There are unsaved changes. Discard them?', then, 'Discard');
     }
+    function freshScenario() {
+        clearScene();
+        nameIn.value = '';
+        LAB.durationS = 10; ui.querySelector('#lab-dur').value = 10;
+        LAB.windKt = 12; ui.querySelector('#lab-wind').value = 12;
+        LAB.seeds = [0x9e3779b9]; LAB.seedIx = 0; LAB.recs = {};
+        renderSeeds();
+        LAB.asserts = []; LAB.assertResults = null;
+        renderAsserts();
+        markSaved();
+        select(null);
+    }
     function newScenario() {
-        ifClean('New scenario', () => {
-            clearScene();
-            nameIn.value = '';
-            LAB.durationS = 10; ui.querySelector('#lab-dur').value = 10;
-            LAB.windKt = 12; ui.querySelector('#lab-wind').value = 12;
-            LAB.seeds = [0x9e3779b9]; LAB.seedIx = 0; LAB.recs = {};
-            renderSeeds();
-            LAB.asserts = []; LAB.assertResults = null;
-            renderAsserts();
-            markSaved();
-            select(null);
-        });
+        ifClean('New scenario', freshScenario);
+    }
+    // DISCARD: the other exit from a dirty doc — restore the saved version
+    // (or empty, for a never-saved scene). Confirmed, and only offered when
+    // there is something to throw away.
+    function discardChanges() {
+        if (!isDirty()) return;
+        const nm = (nameIn.value || '').trim();
+        const lib = store();
+        const hasSaved = !!(nm && lib[nm]);
+        confirmDialog('Discard changes',
+            hasSaved ? `Throw away your changes and restore “${nm}” as last saved?`
+                     : 'Throw away this unsaved scenario and start empty?',
+            () => {
+                if (hasSaved) {
+                    LAB._loading = true;
+                    loadScene(lib[nm]);
+                    nameIn.value = nm;
+                    LAB._loading = false;
+                    markSaved();
+                    select(null);
+                } else freshScenario();
+            }, 'Discard');
     }
     function saveScenario(asNew) {
         const doIt = (name) => {
