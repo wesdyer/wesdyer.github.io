@@ -2198,12 +2198,36 @@
         const lib = store();
         const names = Object.keys(lib).sort((a, b) => a.localeCompare(b));
         const body = document.createElement('div');
-        if (!names.length) {
-            const p = document.createElement('div');
-            p.style.opacity = '0.7';
-            p.textContent = 'No saved scenarios yet.';
-            body.appendChild(p);
-        }
+        body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:280px';
+        // filter-as-you-type over the list (case-insensitive substring)
+        const filterWrap = document.createElement('div');
+        filterWrap.className = 'sl-inp';
+        const filterIn = document.createElement('input');
+        filterIn.type = 'text';
+        filterIn.placeholder = 'Filter scenarios';
+        filterIn.style.fontVariantNumeric = 'normal';
+        filterWrap.appendChild(filterIn);
+        body.appendChild(filterWrap);
+        const list = document.createElement('div');
+        list.style.cssText = 'overflow-y:auto;max-height:46vh';
+        body.appendChild(list);
+        const empty = document.createElement('div');
+        empty.className = 'sl-hint';
+        empty.style.padding = '4px 2px';
+        empty.textContent = names.length ? 'nothing matches' : 'No saved scenarios yet.';
+        empty.style.display = names.length ? 'none' : 'block';
+        body.appendChild(empty);
+        const rows = [];
+        filterIn.addEventListener('input', () => {
+            const q = filterIn.value.trim().toLowerCase();
+            let shown = 0;
+            for (const { el, name } of rows) {
+                const hit = !q || name.toLowerCase().includes(q);
+                el.style.display = hit ? 'flex' : 'none';
+                if (hit) shown++;
+            }
+            empty.style.display = shown ? 'none' : 'block';
+        });
         for (const n of names) {
             const row = document.createElement('div');
             row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;font-weight:700';
@@ -2242,9 +2266,11 @@
                 }, 'Delete');
             };
             row.append(label, del);
-            body.appendChild(row);
+            list.appendChild(row);
+            rows.push({ el: row, name: n });
         }
         const dlg = dialog('Open scenario', body, [{ label: 'Close' }]);
+        setTimeout(() => filterIn.focus(), 50);
     }
     ui.querySelector('#lab-new').onclick = newScenario;
     ui.querySelector('#lab-open').onclick = openScenario;
