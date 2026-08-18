@@ -284,6 +284,14 @@
               <div class="sl-lab">Speed</div>
               <div class="sl-inp"><input id="lab-spd" type="text" inputmode="decimal"><span class="sl-unit">kt</span></div>
             </div>
+            <div>
+              <div class="sl-lab" title="east of the scenario origin">X</div>
+              <div class="sl-inp"><input id="lab-x" type="text" inputmode="decimal"><span class="sl-unit">m</span></div>
+            </div>
+            <div>
+              <div class="sl-lab" title="south of the scenario origin">Y</div>
+              <div class="sl-inp"><input id="lab-y" type="text" inputmode="decimal"><span class="sl-unit">m</span></div>
+            </div>
           </div>
         </div>
         <div class="sl-sect">
@@ -950,6 +958,15 @@
 
     const selName = ui.querySelector('#lab-selname');
     const hdgIn = ui.querySelector('#lab-hdg'), spdIn = ui.querySelector('#lab-spd');
+    const xIn = ui.querySelector('#lab-x'), yIn = ui.querySelector('#lab-y');
+    // metres: the seatrials document states its 4000u beat as "800 m",
+    // so 5 world units = 1 m (hull 55u = an 11 m boat — consistent)
+    const UPM = 5;
+    function refreshBoatXY(lb) {
+        const S = LAB.stage || { x: 0, y: 0 };
+        xIn.value = ((lb.x - S.x) / UPM).toFixed(1);
+        yIn.value = ((lb.y - S.y) / UPM).toFixed(1);
+    }
     const detSections = { boat: '#det-boat', mark: '#det-mark', sand: '#det-sand', line: '#det-line' };
     function select(s) {
         // no selection ('play' kind): the details panel hides — the umpire
@@ -985,6 +1002,7 @@
         if (s.kind === 'boat') {
             hdgIn.value = Math.round(((s.ref.heading * DEG) % 360 + 360) % 360);
             spdIn.value = s.ref.speedKt;
+            refreshBoatXY(s.ref);
             refreshPathRow(s.ref);
             renderPlan(s.ref);
             renderGoals(s.ref);
@@ -1340,6 +1358,20 @@
     });
     hdgIn.addEventListener('input', () => { if (LAB.sel && LAB.sel.kind === 'boat') { LAB.sel.ref.heading = (parseFloat(hdgIn.value) || 0) / DEG; invalidate(); } });
     spdIn.addEventListener('input', () => { if (LAB.sel && LAB.sel.kind === 'boat') { LAB.sel.ref.speedKt = Math.max(0, parseFloat(spdIn.value) || 0); invalidate(); } });
+    xIn.addEventListener('input', () => {
+        if (LAB.sel && LAB.sel.kind === 'boat') {
+            const S = LAB.stage || { x: 0, y: 0 };
+            LAB.sel.ref.x = S.x + (parseFloat(xIn.value) || 0) * UPM;
+            invalidate();
+        }
+    });
+    yIn.addEventListener('input', () => {
+        if (LAB.sel && LAB.sel.kind === 'boat') {
+            const S = LAB.stage || { x: 0, y: 0 };
+            LAB.sel.ref.y = S.y + (parseFloat(yIn.value) || 0) * UPM;
+            invalidate();
+        }
+    });
     ui.querySelector('#lab-del').onclick = deleteSel;
     ui.querySelector('#lab-wind').addEventListener('input', e => { LAB.windKt = Math.max(2, parseFloat(e.target.value) || 12); invalidate(); });
     ui.querySelector('#lab-dur').addEventListener('input', e => { LAB.durationS = Math.max(2, Math.min(120, parseFloat(e.target.value) || 10)); invalidate(); });
@@ -2620,6 +2652,7 @@
             }
         }
         moveObj(s, wx, wy);
+        if (s.kind === 'boat' && LAB.sel && LAB.sel.ref === s.ref) refreshBoatXY(s.ref);
         invalidate();
     });
     window.addEventListener('mouseup', () => {
@@ -2879,6 +2912,33 @@
                 octx.textAlign = 'center'; octx.textBaseline = 'middle';
                 octx.fillText(String(k + 1), sx, sy);
             });
+        }
+        // dragging a waypoint: a live readout of the leg INTO it — the course
+        // to sail (HDG), its true wind angle (wind is always from the top),
+        // and the turn from the previous leg (Δ). Reads whether the leg is
+        // even sailable (a TWA inside the close-hauled cone is a beat).
+        if (LAB.drag && LAB.drag.sel && LAB.drag.sel.kind === 'goalpt') {
+            const g = LAB.drag.sel.ref, lb = LAB.drag.sel.lb;
+            const idx = lb.goals.indexOf(g);
+            const normD = (a) => { while (a > 180) a -= 360; while (a < -180) a += 360; return a; };
+            const brgDeg = (x0, y0, x1, y1) => ((Math.atan2(x1 - x0, -(y1 - y0)) * DEG) % 360 + 360) % 360;
+            const prev = idx > 0 ? goalPoint(lb.goals[idx - 1]) : [lb.x, lb.y];
+            const hdg = brgDeg(prev[0], prev[1], g.x, g.y);
+            const twa = normD(hdg);   // wind from 000
+            const prevHdg = idx > 1 ? brgDeg(...goalPoint(lb.goals[idx - 2]), prev[0], prev[1])
+                : idx === 1 ? brgDeg(lb.x, lb.y, prev[0], prev[1])
+                : ((lb.heading * DEG) % 360 + 360) % 360;
+            const dlt = normD(hdg - prevHdg);
+            const [sx, sy] = w2s(g.x, g.y);
+            const txt = `HDG ${String(Math.round(hdg)).padStart(3, '0')}° · TWA ${Math.round(Math.abs(twa))}°${twa < 0 ? ' STBD' : twa > 0 ? ' PORT' : ''} · Δ${dlt >= 0 ? '+' : ''}${Math.round(dlt)}°`;
+            octx.font = '800 11px Archivo,system-ui';
+            const w = octx.measureText(txt).width + 18;
+            octx.fillStyle = 'rgba(7,19,34,0.92)';
+            octx.beginPath(); octx.roundRect(sx + 16, sy - 34, w, 22, 7); octx.fill();
+            octx.strokeStyle = 'rgba(255,255,255,0.14)'; octx.lineWidth = 1; octx.stroke();
+            octx.fillStyle = '#8fd8d0';
+            octx.textAlign = 'left'; octx.textBaseline = 'middle';
+            octx.fillText(txt, sx + 25, sy - 23);
         }
         // the selection ring shows in playback too (inspection is allowed
         // there); for boats it rides the recorded pose
