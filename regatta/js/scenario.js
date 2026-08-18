@@ -488,9 +488,12 @@
         window.getWindAt = () => ({ speed: LAB.windKt, direction: 0 });
         st.showNavAids = false;
         // no wakes in the lab (owner ruling): pinned boats "sail in place"
-        // during edit, so their trails just smear the stage — and in playback
-        // the hull-colour track lines already tell the story better
-        window.drawWakes = () => { };
+        // during edit, so their trails just smear the stage. The wake SLOT is
+        // exactly the right layer for the hull-colour track lines instead —
+        // after the swell, below every water effect and below the fleet
+        // (owner ruling: paths under boats and water effects) — and drawing
+        // them in world space makes their width scale with zoom
+        window.drawWakes = (ctx) => drawLabTracks(ctx);
         // disturbed air: not visualized, still COMPUTED (owner ruling) — the
         // wind-shadow physics (badAirIntensity, the AI's dirty-air escape)
         // lives elsewhere and keeps running. ⚠️ render-only on purpose:
@@ -2310,6 +2313,30 @@
             bt.raceState.penaltyTurnsOwed = 0; bt.raceState.ocs = false;
         }
     }
+    // the sailed line in the hull colour, drawn in WORLD space from the
+    // game's wake slot: under the fleet, under the water effects, 2.5× the
+    // old overlay weight (7.5u), width scaling with zoom like the world does
+    function drawLabTracks(ctx) {
+        if (LAB.mode !== 'play' || !LAB.rec || LAB.frame <= 1) return;
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        ctx.lineWidth = 7.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        for (let i = 0; i < LAB.boats.length; i++) {
+            const lb = LAB.boats[i];
+            ctx.beginPath();
+            let started = false;
+            for (let f = 0; f <= LAB.frame; f += 4) {
+                const fb = LAB.rec.frames[f].boats[i];
+                if (!fb) break;
+                if (!started) { ctx.moveTo(fb.x, fb.y); started = true; } else ctx.lineTo(fb.x, fb.y);
+            }
+            ctx.strokeStyle = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
     function drawOverlay() {
         octx.clearRect(0, 0, ov.width, ov.height);
         for (const s of LAB.sands) {
@@ -2354,23 +2381,9 @@
             octx.strokeStyle = 'rgba(255,255,255,0.85)'; octx.lineWidth = 3; octx.setLineDash([10, 8]); octx.stroke(); octx.setLineDash([]);
             for (const [px, py] of [[x1, y1], [x2, y2]]) { octx.beginPath(); octx.arc(px, py, 6, 0, 7); octx.fillStyle = '#fff'; octx.fill(); }
         }
-        // realized tracks during playback — the sailed line in the hull colour
-        for (let i = 0; i < LAB.boats.length; i++) {
-            const lb = LAB.boats[i];
-            const col = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
-            if (LAB.mode === 'play' && LAB.rec && LAB.frame > 1) {
-                octx.beginPath();
-                let started = false;
-                for (let f = 0; f <= LAB.frame; f += 4) {
-                    const fb = LAB.rec.frames[f].boats[i];
-                    if (!fb) break;
-                    const [px, py] = w2s(fb.x, fb.y);
-                    if (!started) { octx.moveTo(px, py); started = true; } else octx.lineTo(px, py);
-                }
-                octx.strokeStyle = col; octx.globalAlpha = 0.5; octx.lineWidth = 3;
-                octx.stroke(); octx.globalAlpha = 1;
-            }
-        }
+        // (the realized playback tracks moved off this overlay — they draw
+        // in the game's wake slot now, in world space, UNDER the fleet and
+        // the water effects; see drawLabTracks)
         // the goal route: boat → 1 → 2 → … dotted in the hull colour, with
         // numbered pips matching the inspector's step badges (edit mode,
         // selected boat only — the water stays quiet otherwise)
