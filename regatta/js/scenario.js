@@ -193,7 +193,7 @@
           <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
           <span id="lab-morewrap" style="position:relative;flex:none">
             <button id="lab-more" class="sl-btn" style="width:44px;padding:9px 0;font-weight:900;letter-spacing:.1em" title="more scenario actions">&#8943;</button>
-            <div id="lab-moremenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:232px;background:rgba(7,19,34,.97);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:12px;box-shadow:0 10px 34px rgba(4,16,28,.5);padding:8px;z-index:92">
+            <div id="lab-moremenu" style="display:none;position:fixed;min-width:232px;background:rgba(7,19,34,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 10px 34px rgba(4,16,28,.4);padding:8px;z-index:92">
               <div class="sl-mitem" id="lab-saveas">Save as&hellip;</div>
               <div class="sl-mitem" id="lab-new">New scenario</div>
               <div class="sl-mitem" id="lab-open">Open&hellip;</div>
@@ -346,8 +346,12 @@
       </div>`;
     col.append(left, right);
     document.body.appendChild(col);
-    const ui = { querySelector: (s) => left.querySelector(s) || right.querySelector(s) || ump.querySelector(s),
+    const ui = { querySelector: (s) => left.querySelector(s) || right.querySelector(s) || ump.querySelector(s) || document.querySelector(s),
                  querySelectorAll: (s) => [...left.querySelectorAll(s), ...right.querySelectorAll(s), ...ump.querySelectorAll(s)] };
+    // the … menu portals to <body>: the panel's backdrop-filter makes it the
+    // containing block for fixed descendants, so a child flyout would be
+    // clipped by the panel's own overflow
+    document.body.appendChild(left.querySelector('#lab-moremenu'));
 
     // the layer list — the object layers with “＋” adders (the Scenario row
     // is gone: its details are pinned at the top of the panel now).
@@ -2142,7 +2146,15 @@
     // the … menu: toggles on its button, closes on any item or outside press
     ui.querySelector('#lab-more').onclick = () => {
         const m = ui.querySelector('#lab-moremenu');
-        m.style.display = m.style.display === 'none' ? 'block' : 'none';
+        if (m.style.display === 'none') {
+            // fly out to the RIGHT of the left bar, level with the button
+            // (fixed positioning: the panel's overflow would clip a child)
+            const panel = left.getBoundingClientRect();
+            const btn = ui.querySelector('#lab-more').getBoundingClientRect();
+            m.style.left = (panel.right + 10) + 'px';
+            m.style.top = Math.round(btn.top) + 'px';
+            m.style.display = 'block';
+        } else m.style.display = 'none';
     };
     ui.querySelector('#lab-moremenu').addEventListener('click', (e) => {
         if (e.target.closest('.sl-mitem') || e.target.id === 'lab-libopen') {
@@ -2151,7 +2163,9 @@
     });
     document.addEventListener('mousedown', (e) => {
         const m = ui.querySelector('#lab-moremenu');
-        if (m && m.style.display !== 'none' && !ui.querySelector('#lab-morewrap').contains(e.target)) {
+        if (m && m.style.display !== 'none'
+            && !ui.querySelector('#lab-morewrap').contains(e.target)
+            && !m.contains(e.target)) {
             m.style.display = 'none';
         }
     }, true);
