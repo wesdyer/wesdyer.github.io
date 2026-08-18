@@ -2200,16 +2200,27 @@
     function swallowKeys(e) {
         const t = e.target;
         const typing = t && (t.tagName === 'INPUT' || t.tagName === 'SELECT' || t.tagName === 'TEXTAREA');
+        // ESCAPE DISMISSES, wherever focus is (owner ruling): an open
+        // dialog closes even while its filter input has focus, and the
+        // … popout closes before anything else fires
+        const moreMenu = document.getElementById('lab-moremenu');
+        const moreOpen = moreMenu && moreMenu.style.display !== 'none';
         if (e.type === 'keydown') {
             if (typing) {
-                if (e.key === 'Escape') { t.blur(); e.preventDefault(); }
+                if (e.key === 'Escape') {
+                    t.blur();
+                    if (LAB.modal) LAB.modal.close();
+                    else if (moreOpen) moreMenu.style.display = 'none';
+                    e.preventDefault();
+                }
             } else if (LAB.modal) {
                 if (e.key === 'Escape') { LAB.modal.close(); e.preventDefault(); }
                 // any other key while a dialog is up: dead air
             } else {
                 if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
                 else if (e.key === 'Escape') {
-                    if (LAB.goalArm) setGoalArm(false);
+                    if (moreOpen) moreMenu.style.display = 'none';
+                    else if (LAB.goalArm) setGoalArm(false);
                     else if (LAB.armed) setArmed(LAB.armed);
                     else select(null);
                 }
