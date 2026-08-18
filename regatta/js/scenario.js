@@ -59,6 +59,10 @@
         sel: null,
         windKt: 12,
         durationS: 10,
+        seed: 0x9e3779b9,    // the burst's PRNG seed — part of the scenario,
+                             // like duration: same seed = same run, always.
+                             // (0x9e3779b9 is the pre-seed-field constant, so
+                             // older saved scenarios replay bit-identically.)
         cam: { x: 0, y: 0 },
         drag: null,
         pool: [],
@@ -164,6 +168,13 @@
             <div class="sl-lab">Wind</div>
             <div class="sl-inp"><input id="lab-wind" type="text" inputmode="decimal" value="12"><span class="sl-unit">kt</span></div>
           </div>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end">
+          <div style="flex:1">
+            <div class="sl-lab" title="the run's PRNG seed — same seed, same run">Seed</div>
+            <div class="sl-inp"><input id="lab-seed" type="text" inputmode="numeric"></div>
+          </div>
+          <button id="lab-seed-rnd" class="sl-btn" style="flex:none;padding:9px 12px" title="roll a new seed">RANDOM</button>
         </div>
         <div style="display:flex;gap:6px;margin-top:10px">
           <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
@@ -917,6 +928,18 @@
     ui.querySelector('#lab-del').onclick = deleteSel;
     ui.querySelector('#lab-wind').addEventListener('input', e => { LAB.windKt = Math.max(2, parseFloat(e.target.value) || 12); invalidate(); });
     ui.querySelector('#lab-dur').addEventListener('input', e => { LAB.durationS = Math.max(2, Math.min(120, parseFloat(e.target.value) || 10)); invalidate(); });
+    const seedIn = ui.querySelector('#lab-seed');
+    seedIn.value = LAB.seed >>> 0;
+    seedIn.addEventListener('input', () => {
+        const v = parseInt(seedIn.value, 10);
+        LAB.seed = (Number.isFinite(v) ? v : 0x9e3779b9) >>> 0;
+        invalidate();
+    });
+    ui.querySelector('#lab-seed-rnd').onclick = () => {
+        LAB.seed = (Math.random() * 4294967296) >>> 0;   // real RNG: rolling dice is edit-time
+        seedIn.value = LAB.seed;
+        invalidate();
+    };
 
     // ── initial conditions / simulate / playback ───────────────────────
     function applyInitial() {
@@ -947,6 +970,11 @@
         // the burst can never reach the venue's time limit)
         window.state.race.timer = 100;
         window.state.race.status = 'racing';
+        // state.time too: the rules ledger anchors windows to it (a fresh
+        // pair's rowChangeTime starts at 0, so `now - 0` compares the ABSOLUTE
+        // session clock against the rule-15 window) — unpinned, the verdict
+        // depended on how soon after boot you pressed play
+        window.state.time = 100;
         window.Rules.interactions = {};
     }
     function pairRights() {
@@ -1128,7 +1156,7 @@
         //    survives from run to run — measured: the same scenario gave
         //    penalty/no-penalty depending on what was played before it.
         const realRandom = Math.random;
-        let rngState = 0x9e3779b9;
+        let rngState = LAB.seed | 0;
         Math.random = function () {
             rngState |= 0; rngState = (rngState + 0x6D2B79F5) | 0;
             let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
@@ -1281,7 +1309,7 @@
     function sceneObj() {
         const S = LAB.stage;
         return {
-            v: 1, durationS: LAB.durationS, windKt: LAB.windKt,
+            v: 1, durationS: LAB.durationS, windKt: LAB.windKt, seed: LAB.seed >>> 0,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS,
@@ -1299,6 +1327,9 @@
         const S = LAB.stage;
         LAB.durationS = sc.durationS || 10; ui.querySelector('#lab-dur').value = LAB.durationS;
         LAB.windKt = sc.windKt || 12; ui.querySelector('#lab-wind').value = LAB.windKt;
+        // docs saved before the seed field replay on the old constant
+        LAB.seed = (sc.seed != null ? sc.seed : 0x9e3779b9) >>> 0;
+        ui.querySelector('#lab-seed').value = LAB.seed;
         const pendingGoals = [];   // goals reference marks/lines added below
         for (const bs of (sc.boats || [])) {
             const lb = addBoat(S.x + bs.x, S.y + bs.y);
@@ -1523,6 +1554,7 @@
             nameIn.value = '';
             LAB.durationS = 10; ui.querySelector('#lab-dur').value = 10;
             LAB.windKt = 12; ui.querySelector('#lab-wind').value = 12;
+            LAB.seed = 0x9e3779b9; ui.querySelector('#lab-seed').value = LAB.seed >>> 0;
             markSaved();
             select(null);
         });
