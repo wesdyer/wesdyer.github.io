@@ -129,6 +129,9 @@
       .sl-add:hover,.sl-add.on{background:#2f6bff;color:#fff}
       .sl-link{font-size:10px;font-weight:800;color:#5aa7ff;cursor:pointer;letter-spacing:.04em}
       .sl-link:hover{color:#8fc2ff}
+      .sl-mitem{padding:9px 10px;border-radius:8px;font-size:13.5px;font-weight:800;cursor:pointer;letter-spacing:.01em}
+      .sl-mitem:hover{background:rgba(255,255,255,.07)}
+      .sl-mitem-red{color:#ff8a75}
       .sl-fold{display:flex;align-items:center;gap:8px;cursor:pointer;padding:7px 8px;margin:0 -8px;border-radius:8px;font-size:12.5px;font-weight:800;letter-spacing:.03em;user-select:none}
       .sl-fold:hover{background:rgba(255,255,255,.07)}
       .sl-fold .sl-chev{display:inline-flex;color:#66748c;flex:none}
@@ -188,18 +191,21 @@
         </div>
         <div style="display:flex;gap:6px;margin-top:8px">
           <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
-          <button id="lab-saveas" class="sl-btn">SAVE AS&hellip;</button>
+          <span id="lab-morewrap" style="position:relative;flex:none">
+            <button id="lab-more" class="sl-btn" style="width:44px;padding:9px 0;font-weight:900;letter-spacing:.1em" title="more scenario actions">&#8943;</button>
+            <div id="lab-moremenu" style="display:none;position:absolute;top:calc(100% + 6px);right:0;min-width:232px;background:rgba(7,19,34,.97);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:12px;box-shadow:0 10px 34px rgba(4,16,28,.5);padding:8px;z-index:92">
+              <div class="sl-mitem" id="lab-saveas">Save as&hellip;</div>
+              <div class="sl-mitem" id="lab-new">New scenario</div>
+              <div class="sl-mitem" id="lab-open">Open&hellip;</div>
+              <div style="border-top:1px solid rgba(255,255,255,.1);margin:6px 2px"></div>
+              <div class="sl-hint" style="padding:7px 10px;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">library: <span id="lab-libname">not attached</span> &middot; <span id="lab-libopen" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="attach assets/scenarios.js so saves write to it">change</span></div>
+              <div style="border-top:1px solid rgba(255,255,255,.1);margin:6px 2px"></div>
+              <div class="sl-mitem sl-mitem-red" id="lab-discard" title="throw away unsaved changes and restore the saved scenario">Discard changes&hellip;</div>
+              <div class="sl-mitem sl-mitem-red" id="lab-clear">Clear scene&hellip;</div>
+              <div class="sl-mitem sl-mitem-red" id="lab-delete" title="delete this scenario from the library">Delete scenario&hellip;</div>
+            </div>
+          </span>
         </div>
-        <div style="display:flex;gap:6px;margin-top:6px">
-          <button id="lab-new" class="sl-btn">NEW</button>
-          <button id="lab-open" class="sl-btn">OPEN&hellip;</button>
-        </div>
-        <div style="display:flex;gap:12px;margin-top:9px">
-          <span id="lab-discard" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer" title="throw away unsaved changes and restore the saved scenario">DISCARD</span>
-          <span id="lab-clear" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer">CLEAR SCENE</span>
-          <span id="lab-delete" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer;margin-left:auto" title="delete this scenario from the library">DELETE</span>
-        </div>
-        <div class="sl-hint" style="margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums">library: <span id="lab-libname">not attached</span> &middot; <span id="lab-libopen" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="attach assets/scenarios.js so saves write to it">change</span></div>
         <div style="border-top:1px solid rgba(255,255,255,.08);margin:12px -16px 12px"></div>
         <div class="sl-grid2">
           <div>
@@ -2133,6 +2139,22 @@
     bar.querySelector('#pb-back').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame - 30); };
     bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
     pbSlider.addEventListener('input', () => { if (!LAB.rec) { pbSlider.value = 0; return; } pause(); setFrame(+pbSlider.value); });
+    // the … menu: toggles on its button, closes on any item or outside press
+    ui.querySelector('#lab-more').onclick = () => {
+        const m = ui.querySelector('#lab-moremenu');
+        m.style.display = m.style.display === 'none' ? 'block' : 'none';
+    };
+    ui.querySelector('#lab-moremenu').addEventListener('click', (e) => {
+        if (e.target.closest('.sl-mitem') || e.target.id === 'lab-libopen') {
+            ui.querySelector('#lab-moremenu').style.display = 'none';
+        }
+    });
+    document.addEventListener('mousedown', (e) => {
+        const m = ui.querySelector('#lab-moremenu');
+        if (m && m.style.display !== 'none' && !ui.querySelector('#lab-morewrap').contains(e.target)) {
+            m.style.display = 'none';
+        }
+    }, true);
     ui.querySelector('#lab-discard').onclick = () => discardChanges();
     // DELETE removes the CURRENT scenario from the library (confirmed). The
     // scene stays on stage as an unsaved doc — SAVE would re-add it.
