@@ -108,6 +108,7 @@
       .sl-unit{font-size:11px;color:#66748c;font-weight:700;margin-left:6px}
       .sl-btn{appearance:none;flex:1;text-align:center;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:9px 0;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.08em;color:#c4d2e6;cursor:pointer}
       .sl-btn:hover{background:rgba(255,255,255,.12)}
+      .sl-btn:disabled{opacity:.35;cursor:default;pointer-events:none}
       .sl-btn-pri{background:#2f6bff;border-color:#2f6bff;color:#fff;font-weight:900}
       .sl-btn-pri:hover{background:#4a80ff}
       .sl-btn-danger{appearance:none;flex:none;background:none;border:1px solid rgba(236,48,19,.4);color:#ff8a75;padding:7px 14px;border-radius:8px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.08em;cursor:pointer}
@@ -577,6 +578,7 @@
             }
         } catch (e) { LAB._loading = false; }
         restoreLibHandle();
+        refreshSaveBtn();
         dismissCover();
     }
 
@@ -597,6 +599,7 @@
     let _draftT = null;
     function saveDraft() {
         if (!LAB.ready || LAB._loading) return;
+        refreshSaveBtn();   // immediate — only the storage write is debounced
         clearTimeout(_draftT);
         _draftT = setTimeout(() => {
             try {
@@ -2077,7 +2080,14 @@
 
     // ── dirty tracking + New / Open / Save / Save As ───────────────────
     function currentDoc() { return JSON.stringify({ name: (nameIn.value || '').trim(), ...sceneObj() }); }
-    function markSaved() { LAB.savedJSON = currentDoc(); }
+    // SAVE is only offered when there is something to save (owner ruling):
+    // dirty-tracking already exists, the button just reads it. Refreshed at
+    // every doc-changing chokepoint (saveDraft) and every save/load/new.
+    function refreshSaveBtn() {
+        const b = ui.querySelector('#lab-save');
+        if (b) b.disabled = !isDirty();
+    }
+    function markSaved() { LAB.savedJSON = currentDoc(); refreshSaveBtn(); }
     function isDirty() {
         const empty = !LAB.boats.length && !LAB.marks.length && !LAB.sands.length && !LAB.lines.length;
         if (LAB.savedJSON == null) return !empty;
