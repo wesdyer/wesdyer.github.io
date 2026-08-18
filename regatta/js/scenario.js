@@ -171,7 +171,7 @@
           <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" style="width:22px;height:auto">
           <span style="font-size:13px;font-weight:900;font-style:italic;letter-spacing:.04em">SCENARIO LAB</span>
         </div>
-        <span title="Scenario Lab" style="display:inline-flex;color:#eef3fb">
+        <span title="Scenario Lab" style="display:inline-flex;color:#8fd8d0">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <path d="M5.6 1.8 h4.8"/>
             <path d="M6.6 1.8 v4.1 L3.1 12.3 a1.25 1.25 0 0 0 1.15 1.9 h7.5 a1.25 1.25 0 0 0 1.15 -1.9 L9.4 5.9 V1.8"/>
