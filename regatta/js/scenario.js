@@ -1562,14 +1562,25 @@
         dlg = dialog('Seeds', body, [{ label: 'Close' }]);
         setTimeout(() => filterIn.focus(), 50);
     }
-    // count dots: how many seeds sit in each outcome tier, at a glance
+    // the seed-set verdict PILL (owner mockup): "8/10 PASS" — green when
+    // every seed passes, red when any fails, muted "x/N RUN" while some are
+    // unsimulated. The per-tier breakdown lives in the tooltip.
     function seedSummaryHTML() {
         const counts = { fail: 0, collision: 0, penalty: 0, ok: 0, unrun: 0 };
         for (const s of LAB.seeds) counts[seedStatus(s)]++;
-        return ['fail', 'collision', 'penalty', 'ok', 'unrun']
-            .filter(k => counts[k])
-            .map(k => `<span style="color:${SEED_COLORS[k]}" title="${counts[k]} ${k === 'ok' ? 'clean' : k}">&#9679;<span style="margin-left:2px">${counts[k]}</span></span>`)
-            .join('<span style="width:4px"></span>');
+        const n = LAB.seeds.length;
+        const pill = (c, txt, title) =>
+            `<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;`
+            + `border:1.5px solid ${c};color:${c};background:rgba(0,0,0,.28);`
+            + `font-weight:800;font-size:10px;letter-spacing:.06em;font-variant-numeric:tabular-nums" title="${title}">${txt}</span>`;
+        if (counts.unrun) return pill('#66748c', `${n - counts.unrun}/${n} RUN`,
+            `${counts.unrun} seed(s) not simulated yet`);
+        const pass = n - counts.fail;
+        const detail = [`${pass} pass`, counts.fail && `${counts.fail} fail`,
+            counts.collision && `${counts.collision} with a collision`,
+            counts.penalty && `${counts.penalty} with a penalty (no collision)`]
+            .filter(Boolean).join(' · ');
+        return pill(pass === n ? '#7ed491' : '#ff8a75', `${pass}/${n} PASS`, detail);
     }
     // the transport wears ONE face at a time (owner ruling): a single
     // SIMULATE button until every seed in the set has a recording, the full
@@ -1592,8 +1603,7 @@
         const pBtn = ui.querySelector('#lab-seedbtn');
         pBtn.innerHTML = `<span style="color:${actColor}">${actLabel}</span>`
             + '<span style="color:#66748c;font-size:9px">&#9662;</span>'
-            + `<span style="margin-left:auto;display:inline-flex;gap:5px;font-size:10px">${seedSummaryHTML()}</span>`
-            + `<span style="color:#66748c;font-size:10px">${LAB.seeds.length}</span>`;
+            + `<span style="margin-left:auto;display:inline-flex">${seedSummaryHTML()}</span>`;
         pBtn.title = actTitle + ' \u2014 open the seed list';
         const wrap = bar.querySelector('#pb-seedwrap');
         const tBtn = bar.querySelector('#pb-seed');
