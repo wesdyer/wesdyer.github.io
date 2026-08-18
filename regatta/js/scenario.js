@@ -900,7 +900,7 @@
             // deleted boat, slide the rest down (who === -1 "nobody" is safe:
             // this only runs for a found index, i >= 0)
             if (i >= 0) {
-                const BK = { penalty: ['who'], row: ['of', 'over'], clear: ['a', 'b'], tack: ['who'], goals: ['who'] };
+                const BK = { penalty: ['who'], row: ['of', 'over'], clear: ['a', 'b'], tack: ['who'], goals: ['who'], proper: ['who'] };
                 LAB.asserts = LAB.asserts.filter(a => !(BK[a.kind] || []).some(kf => a[kf] === i));
                 for (const a of LAB.asserts) for (const kf of (BK[a.kind] || [])) if (a[kf] > i) a[kf]--;
             }
@@ -1178,7 +1178,7 @@
             aggChip.style.display = 'none';
             return;
         }
-        const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s]));
+        const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s], { proper: LAB.recs.proper }));
         // which seeds does anything fail on — the transport dropdown reads red
         LAB.seedFail = {};
         seeds.forEach((s, si) => {
@@ -1261,6 +1261,11 @@
             } else if (a.kind === 'goals') {
                 row.appendChild(boatSel(a.who, v => a.who = v));
                 row.appendChild(hintSpan('completes goals'));
+            } else if (a.kind === 'proper') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('holds proper \u00b1'));
+                row.appendChild(bareIn(a.tol != null ? a.tol : 10, 26, 'max deviation from her proper course (m)', v => a.tol = Math.max(0, parseFloat(v) || 10)));
+                row.appendChild(hintSpan('m'));
             }
             // status chip: judged across the whole seed set. One seed shows
             // the plain verdict; several show k/N. Clicking a failure
@@ -1339,6 +1344,7 @@
             ['clear', 'NEVER TOUCH', 'two boats stay at least a distance apart, the whole run'],
             ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
             ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
+            ['proper', 'HOLDS PROPER COURSE', 'a boat never strays from her proper-course line beyond a tolerance'],
         ];
         let dlg;
         for (const [kind, lbl, desc] of KINDS) {
@@ -1355,6 +1361,7 @@
                     clear: { kind: 'clear', a: 0, b: second, min: 55 },
                     tack: { kind: 'tack', who: 0, tack: 'stbd', t: Math.round(LAB.durationS / 2) },
                     goals: { kind: 'goals', who: 0 },
+                    proper: { kind: 'proper', who: 0, tol: 10 },
                 }[kind];
                 LAB.asserts.push(def);
                 assertsChanged();

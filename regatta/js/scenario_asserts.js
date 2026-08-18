@@ -10,6 +10,7 @@
 //   { kind:'clear',   a: 0, b: 1, min: 55, xfail? }
 //   { kind:'tack',    who: 0, tack: 'port'|'stbd', t: 7.0, xfail? }
 //   { kind:'goals',   who: 0, xfail? }
+//   { kind:'proper',  who: 0, tol?: 10 (metres), xfail? }   needs ctx.proper
 //
 // The recording (rec) is the lab's: frames[] of per-boat snapshots + pairs,
 // plus names[], goalCounts[], pens[] ({t, boat, rule, kind} from the
@@ -31,8 +32,9 @@
     }
     const fmtBoat = (names, i) => (names && names[i]) || ('boat ' + i);
 
-    // one row against one recording — returns raw {pass, why, atS}
-    function evalOne(a, rec) {
+    // one row against one recording — returns raw {pass, why, atS}.
+    // ctx.proper (the PROPER COURSE composite) feeds the 'proper' kind.
+    function evalOne(a, rec, ctx) {
         const frames = rec.frames || [];
         const nF = rec.nF != null ? rec.nF : frames.length - 1;
         const names = rec.names || [];
@@ -88,6 +90,27 @@
                 ? { pass: true, why: `${fmtBoat(names, a.who)} on ${a.tack} at ${a.t.toFixed(1)}s` }
                 : { pass: false, why: `on ${b.ta === 1 ? 'stbd' : b.ta === -1 ? 'port' : '?'} at ${a.t.toFixed(1)}s`, atS: a.t };
         }
+        if (a.kind === 'proper') {
+            // holds her proper course: per-frame deviation between this run's
+            // track and the PROPER COURSE composite stays within tolerance.
+            // Tolerance is authored in METRES (5 world units = 1 m).
+            const pr = ctx && ctx.proper;
+            if (!pr) return { pass: false, why: 'no proper-course recording to compare against' };
+            const tolM = a.tol != null ? a.tol : 10;
+            const tolU = tolM * 5;
+            let worst = 0, at = 0;
+            const n = Math.min(nF, pr.nF != null ? pr.nF : pr.frames.length - 1);
+            for (let f = 0; f <= n; f++) {
+                const b = frames[f].boats[a.who], p = pr.frames[f].boats[a.who];
+                if (!b || !p) return { pass: false, why: 'boat missing from a recording' };
+                const d = Math.hypot(b.x - p.x, b.y - p.y);
+                if (d > worst) { worst = d; at = f / 60; }
+            }
+            const worstM = (worst / 5).toFixed(1);
+            return worst <= tolU
+                ? { pass: true, why: `held proper course (max ${worstM} m off at ${at.toFixed(1)}s)` }
+                : { pass: false, why: `${worstM} m off proper course at ${at.toFixed(1)}s (> ${tolM} m)`, atS: at };
+        }
         if (a.kind === 'goals') {
             const n = (rec.goalCounts || [])[a.who] || 0;
             if (!n) return { pass: false, why: `${fmtBoat(names, a.who)} has no goals` };
@@ -100,9 +123,9 @@
         return { pass: false, why: 'unknown assertion kind ' + a.kind };
     }
 
-    function evaluate(asserts, rec) {
+    function evaluate(asserts, rec, ctx) {
         return (asserts || []).map(a => {
-            const r = evalOne(a, rec);
+            const r = evalOne(a, rec, ctx);
             const status = a.xfail ? (r.pass ? 'fixed' : 'gap') : (r.pass ? 'pass' : 'fail');
             return { status, why: r.why, atS: r.atS };
         });
@@ -117,6 +140,7 @@
         if (a.kind === 'clear') return `${nm(a.a)}·${nm(a.b)} clear ≥ ${a.min != null ? a.min : 55}u`;
         if (a.kind === 'tack') return `${a.t.toFixed(1)}s ${nm(a.who)} on ${a.tack}`;
         if (a.kind === 'goals') return `${nm(a.who)} completes goals`;
+        if (a.kind === 'proper') return `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 10}m`;
         return a.kind;
     }
 
