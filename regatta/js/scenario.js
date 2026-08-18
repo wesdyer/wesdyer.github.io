@@ -59,10 +59,14 @@
         sel: null,
         windKt: 12,
         durationS: 10,
-        seed: 0x9e3779b9,    // the burst's PRNG seed — part of the scenario,
-                             // like duration: same seed = same run, always.
-                             // (0x9e3779b9 is the pre-seed-field constant, so
-                             // older saved scenarios replay bit-identically.)
+        // A SCENARIO IS A SET OF SEEDS (owner ruling): one or more, fixed,
+        // saved with the doc. Running simulates EVERY seed; the transport
+        // shows the ACTIVE one and switching swaps cached recordings.
+        // Assertions must hold on all of them. (0x9e3779b9 is the
+        // pre-seed-field constant, so older docs replay bit-identically.)
+        seeds: [0x9e3779b9],
+        seedIx: 0,           // which seed the transport is showing
+        recs: {},            // seed -> recording cache (cleared on any edit)
         cam: { x: 0, y: 0 },
         drag: null,
         pool: [],
@@ -73,7 +77,6 @@
         zoom: 1,             // 1 = 100%; the game canvas renders at viewport/zoom
         asserts: [],         // structured expectations, saved with the doc
         assertResults: null, // last run's verdicts (ScenarioAsserts.evaluate)
-        assertMulti: null,   // multi-seed aggregate {n, rows:[{ok,failSeed,why,atS}]}
     };
     // debug/test seam: lets the console (and the Playwright checks) see the
     // lab's state without threading it through the page
@@ -174,20 +177,20 @@
             <div class="sl-inp"><input id="lab-wind" type="text" inputmode="decimal" value="12"><span class="sl-unit">kt</span></div>
           </div>
         </div>
-        <div style="display:flex;gap:6px;margin-top:8px;align-items:flex-end">
-          <div style="flex:1">
-            <div class="sl-lab" title="the run's PRNG seed — same seed, same run">Seed</div>
-            <div class="sl-inp"><input id="lab-seed" type="text" inputmode="numeric"></div>
+        <div style="margin-top:8px">
+          <div class="sl-lab" title="a scenario runs on EVERY seed in its set; click a pill to watch that run">Seeds</div>
+          <div id="lab-seedpills" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:6px"></div>
+          <div style="display:flex;gap:6px">
+            <div class="sl-inp" style="flex:1"><input id="lab-seedadd" type="text" inputmode="numeric" placeholder="type a seed, or just roll"></div>
+            <button id="lab-seed-rnd" class="sl-tbtn" title="add it — blank rolls a random seed">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="14" height="14" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5" cy="5" r="1.4"/><circle cx="11" cy="5" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="5" cy="11" r="1.4"/><circle cx="11" cy="11" r="1.4"/></svg>
+            </button>
           </div>
-          <button id="lab-seed-rnd" class="sl-btn" style="flex:none;padding:9px 12px" title="roll a new seed">RANDOM</button>
         </div>
         <div style="margin-top:12px">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
             <span class="sl-sectlabel" style="margin:0" title="expectations checked against every run">ASSERTIONS</span>
-            <span style="display:flex;gap:10px;align-items:baseline">
-              <span id="lab-check5" class="sl-link" title="run 5 seeds (this one + 4 successors); every assertion must hold on all of them">CHECK &times;5</span>
-              <span id="lab-assertadd" class="sl-link">+ ADD</span>
-            </span>
+            <span id="lab-assertadd" class="sl-link">+ ADD</span>
           </div>
           <div id="lab-asserts"></div>
         </div>
@@ -370,12 +373,21 @@
         <button id="pb-play" class="sl-tbtn sl-tbtn-pri">${SVG_PLAY}</button>
         <button id="pb-fwd" class="sl-tbtn" title="step forward 0.5s">${SVG_FWD}</button>
       </div>
+      <select id="pb-seed" class="sl-msel" style="display:none;max-width:118px;padding:6px 6px;font-variant-numeric:tabular-nums" title="which seed's run the transport shows"></select>
       <span style="flex:1;position:relative;display:block">
         <input id="pb-slider" type="range" min="0" max="600" value="0">
         <span id="pb-ticks" style="position:absolute;left:0;right:0;top:-11px;height:8px;pointer-events:none"></span>
       </span>
       <span id="pb-time" style="font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#c4d2e6;min-width:84px;text-align:right">0.0 / 10.0s</span>`;
     document.body.appendChild(bar);
+    // SIMULATING…: the burst blocks the main thread, so this goes up and
+    // PAINTS before the batch starts (play() yields a frame first)
+    const simCover = document.createElement('div');
+    simCover.className = 'sl-panel';
+    simCover.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%);display:none;align-items:center;gap:10px;padding:14px 22px;z-index:96;overflow:visible';
+    simCover.innerHTML = '<span style="font-size:13px;font-weight:900;font-style:italic;letter-spacing:.06em">SIMULATING</span>' +
+        '<span id="sim-prog" style="font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>';
+    document.body.appendChild(simCover);
     const pbSlider = bar.querySelector('#pb-slider');
     // the filled-track look: blue up to the playhead, glass beyond it
     function pbFill() {
@@ -536,8 +548,8 @@
 
     // ── objects ────────────────────────────────────────────────────────
     function invalidate() {
-        LAB.rec = null; LAB.playing = false; LAB.frame = 0;
-        LAB.assertResults = null; LAB.assertMulti = null;
+        LAB.rec = null; LAB.recs = {}; LAB.playing = false; LAB.frame = 0;
+        LAB.assertResults = null;
         if (typeof renderAsserts === 'function' && LAB.ready) evaluateAsserts();
         if (LAB.mode !== 'edit') LAB.mode = 'edit';
         // the transport stays put — it just rewinds and disarms
@@ -611,6 +623,36 @@
         const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, plan: [], aiAtS: null, goals: [] };
         LAB.boats.push(lb);
         applyLabIdentity(lb, LAB.boats.length - 1);
+        // pristine-physics snapshot: every scalar on the boat (heel, sail
+        // angles, trim, leeway, …). applyInitial restores these before each
+        // burst — measured: a first-ever run diverged from every later run by
+        // 1.4e-4u on frame ONE because eased sail physics survived the burst.
+        // The recruit's own values are NOT canonical either (they reflect the
+        // parked bot's analog state at recruit time, which varies per boot —
+        // measured 1-in-6 fresh boots diverging), so scalars that exist on a
+        // freshly CONSTRUCTED Boat are overlaid with those constructor
+        // constants — identical on every boot, on every machine.
+        lb._phys0 = {}; lb._rs0 = {};
+        const scal = (o) => {
+            const out = {};
+            for (const k of Object.keys(o)) {
+                const t = typeof o[k];
+                if (t === 'number' || t === 'boolean' || o[k] === null) out[k] = o[k];
+            }
+            return out;
+        };
+        lb._phys0 = scal(bot); lb._rs0 = scal(bot.raceState);
+        if (!LAB._canon && typeof Boat !== 'undefined') {
+            try {
+                const cb = new Boat(-1, false, 0, 0, 'canon', null);
+                LAB._canon = { phys: scal(cb), rs: scal(cb.raceState) };
+                delete LAB._canon.phys.id;
+            } catch (e) { LAB._canon = null; }
+        }
+        if (LAB._canon) {
+            Object.assign(lb._phys0, LAB._canon.phys);
+            Object.assign(lb._rs0, LAB._canon.rs);
+        }
         select({ kind: 'boat', ref: lb });
         invalidate();
         return lb;
@@ -953,21 +995,37 @@
     const aggChip = ui.querySelector('#lab-agg');
     function boatNames() { return LAB.boats.map(lb => lb.bot.name); }
     function assertsChanged() {
-        LAB.assertMulti = null;
         saveDraft();
         evaluateAsserts();
     }
+    // assertions are judged across the WHOLE seed set: a row is green only
+    // if it holds on every seed. Incomplete cache (a seed not yet run) =
+    // not judged; play fills it.
     function evaluateAsserts() {
-        LAB.assertResults = (LAB.rec && window.ScenarioAsserts)
-            ? window.ScenarioAsserts.evaluate(LAB.asserts, LAB.rec) : null;
+        const seeds = LAB.seeds.map(s => s >>> 0);
+        const complete = seeds.length && seeds.every(s => LAB.recs[s]);
+        if (!complete || !window.ScenarioAsserts || !LAB.asserts.length) {
+            LAB.assertResults = null;
+            renderAsserts();
+            aggChip.style.display = 'none';
+            return;
+        }
+        const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s]));
+        LAB.assertResults = LAB.asserts.map((a, k) => {
+            let ok = 0, fail = null;
+            seeds.forEach((s, si) => {
+                const r = per[si][k];
+                if (r.status === 'pass' || r.status === 'gap') ok++;
+                else if (!fail) fail = { seed: s, ix: si, why: r.why, atS: r.atS };
+            });
+            return { n: seeds.length, ok, fail, single: per[0][k] };
+        });
         renderAsserts();
         const rs = LAB.assertResults;
-        if (rs && rs.length) {
-            const ok = rs.filter(r => r.status === 'pass' || r.status === 'gap').length;
-            aggChip.textContent = 'ASSERTS ' + ok + '/' + rs.length;
-            aggChip.className = 'sl-schip ' + (ok === rs.length ? 'sl-schip-teal' : 'sl-schip-red');
-            aggChip.style.display = 'inline-block';
-        } else aggChip.style.display = 'none';
+        const okRows = rs.filter(r => r.ok === r.n).length;
+        aggChip.textContent = 'ASSERTS ' + okRows + '/' + rs.length + (seeds.length > 1 ? ' · ' + seeds.length + ' SEEDS' : '');
+        aggChip.className = 'sl-schip ' + (okRows === rs.length ? 'sl-schip-teal' : 'sl-schip-red');
+        aggChip.style.display = 'inline-block';
     }
     function boatSel(val, onPick, allowNobody) {
         const s = document.createElement('select');
@@ -1028,42 +1086,40 @@
                 row.appendChild(boatSel(a.who, v => a.who = v));
                 row.appendChild(hintSpan('completes goals'));
             }
-            // status chip: last run's verdict (or the multi-seed aggregate).
-            // Clicking a failure scrubs to the moment; a multi-seed failure
-            // loads its failing seed so you can watch that run.
-            const multi = LAB.assertMulti && LAB.assertMulti.rows[k];
+            // status chip: judged across the whole seed set. One seed shows
+            // the plain verdict; several show k/N. Clicking a failure
+            // switches the transport to the failing seed and scrubs there.
             const res = LAB.assertResults && LAB.assertResults[k];
             const chip = document.createElement('span');
             chip.style.marginLeft = 'auto';
-            if (multi) {
-                chip.className = 'sl-schip ' + (multi.ok === LAB.assertMulti.n ? 'sl-schip-teal' : 'sl-schip-red');
-                chip.textContent = multi.ok + '/' + LAB.assertMulti.n;
-                chip.title = multi.ok === LAB.assertMulti.n ? 'held on every seed'
-                    : `fails on seed ${multi.failSeed} — ${multi.why || ''} (click to load that run)`;
-                if (multi.ok < LAB.assertMulti.n) {
-                    chip.style.cursor = 'pointer';
-                    chip.onclick = () => {
-                        LAB.seed = multi.failSeed >>> 0;
-                        seedIn.value = LAB.seed;
-                        simulate();
-                        if (multi.atS != null) { pause(); setFrame(Math.round(multi.atS * 60)); }
-                    };
-                }
-            } else if (res) {
-                const cls = { pass: 'sl-schip-teal', fail: 'sl-schip-red', gap: 'sl-schip-amber', fixed: 'sl-schip-blue' }[res.status];
+            if (res && res.n === 1) {
+                const st = res.single.status;
+                const cls = { pass: 'sl-schip-teal', fail: 'sl-schip-red', gap: 'sl-schip-amber', fixed: 'sl-schip-blue' }[st];
                 chip.className = 'sl-schip ' + cls;
-                chip.textContent = res.status.toUpperCase();
-                chip.title = res.why + (res.status === 'gap' ? ' (expected — documented gap)'
-                    : res.status === 'fixed' ? ' (expected to fail but PASSED — the gap closed?)' : '');
-                if (res.atS != null) {
+                chip.textContent = st.toUpperCase();
+                chip.title = res.single.why + (st === 'gap' ? ' (expected — documented gap)'
+                    : st === 'fixed' ? ' (expected to fail but PASSED — the gap closed?)' : '');
+                if (res.single.atS != null) {
                     chip.style.cursor = 'pointer';
                     chip.title += ' · click to scrub there';
-                    chip.onclick = () => { pause(); setFrame(Math.round(res.atS * 60)); };
+                    chip.onclick = () => { pause(); setFrame(Math.round(res.single.atS * 60)); };
+                }
+            } else if (res) {
+                chip.className = 'sl-schip ' + (res.ok === res.n ? 'sl-schip-teal' : 'sl-schip-red');
+                chip.textContent = res.ok + '/' + res.n;
+                chip.title = res.ok === res.n ? 'held on every seed'
+                    : `fails on seed ${res.fail.seed} — ${res.fail.why || ''} (click to watch that run)`;
+                if (res.fail) {
+                    chip.style.cursor = 'pointer';
+                    chip.onclick = () => {
+                        setActiveSeed(res.fail.ix);
+                        if (res.fail.atS != null) { pause(); LAB.mode = 'play'; setFrame(Math.round(res.fail.atS * 60)); }
+                    };
                 }
             } else {
                 chip.className = 'sl-schip sl-schip-mute';
                 chip.textContent = '·';
-                chip.title = 'run the scenario to judge';
+                chip.title = 'run the scenario to judge (every seed in the set)';
             }
             row.appendChild(chip);
             // XF: expected-to-fail (the battery's knownGap in lab clothes)
@@ -1124,33 +1180,6 @@
         }
         dlg = dialog('Add assertion', body, [{ label: 'Cancel' }]);
     };
-    // CHECK ×5: this seed plus four successors; an assertion earns its chip
-    // by holding on every one. Runs back-to-back with a paint between.
-    ui.querySelector('#lab-check5').onclick = async () => {
-        if (!LAB.asserts.length || !LAB.boats.length) return;
-        const link = ui.querySelector('#lab-check5');
-        const base = LAB.seed >>> 0;
-        const N = 5;
-        const rows = LAB.asserts.map(() => ({ ok: 0, failSeed: null, why: null, atS: null }));
-        for (let i = 0; i < N; i++) {
-            const s = (base + i) >>> 0;
-            link.textContent = `CHECKING ${i + 1}/${N}…`;
-            await new Promise(r => setTimeout(r, 20));
-            LAB.seed = s;
-            simulate();
-            const ev = window.ScenarioAsserts.evaluate(LAB.asserts, LAB.rec);
-            ev.forEach((r, k) => {
-                if (r.status === 'pass' || r.status === 'gap') rows[k].ok++;
-                else if (rows[k].failSeed == null) { rows[k].failSeed = s; rows[k].why = r.why; rows[k].atS = r.atS; }
-            });
-        }
-        link.innerHTML = 'CHECK &times;5';
-        LAB.seed = base;
-        seedIn.value = base;
-        simulate();                    // the transport shows the base run again
-        LAB.assertMulti = { n: N, rows };
-        renderAsserts();
-    };
     aiAtIn.addEventListener('input', () => {
         if (LAB.sel && LAB.sel.kind === 'boat') {
             const v = aiAtIn.value.trim();
@@ -1163,23 +1192,92 @@
     ui.querySelector('#lab-del').onclick = deleteSel;
     ui.querySelector('#lab-wind').addEventListener('input', e => { LAB.windKt = Math.max(2, parseFloat(e.target.value) || 12); invalidate(); });
     ui.querySelector('#lab-dur').addEventListener('input', e => { LAB.durationS = Math.max(2, Math.min(120, parseFloat(e.target.value) || 10)); invalidate(); });
-    const seedIn = ui.querySelector('#lab-seed');
-    seedIn.value = LAB.seed >>> 0;
-    seedIn.addEventListener('input', () => {
-        const v = parseInt(seedIn.value, 10);
-        LAB.seed = (Number.isFinite(v) ? v : 0x9e3779b9) >>> 0;
-        invalidate();
-    });
+    // ── the SEED SET: pills in the panel (manage + switch), a dropdown on
+    // the transport (switch mid-playback), one add control (typed seed, or
+    // the dice roll one when blank). Deleting keeps at least one. ────────
+    const seedAddIn = ui.querySelector('#lab-seedadd');
+    const seedPills = ui.querySelector('#lab-seedpills');
+    const pbSeedSel = bar.querySelector('#pb-seed');
+    function activeSeed() { return LAB.seeds[Math.min(LAB.seedIx, LAB.seeds.length - 1)] >>> 0; }
+    function renderSeeds() {
+        seedPills.innerHTML = '';
+        LAB.seeds.forEach((s, i) => {
+            const pill = document.createElement('span');
+            pill.className = 'sl-schip ' + (i === LAB.seedIx ? 'sl-schip-blue' : 'sl-schip-mute');
+            pill.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums';
+            pill.title = i === LAB.seedIx ? 'the transport shows this seed' : 'switch the transport to this seed';
+            const num = document.createElement('span');
+            num.textContent = s >>> 0;
+            const x = document.createElement('span');
+            x.innerHTML = '&#10005;';
+            x.style.cssText = 'font-size:9px;color:#66748c;cursor:pointer';
+            x.title = 'remove this seed from the set';
+            x.onclick = (e) => {
+                e.stopPropagation();
+                if (LAB.seeds.length <= 1) return;   // a scenario is at least one seed
+                LAB.seeds.splice(i, 1);
+                delete LAB.recs[s >>> 0];
+                if (LAB.seedIx >= LAB.seeds.length) LAB.seedIx = LAB.seeds.length - 1;
+                seedsChanged();
+            };
+            pill.append(num, x);
+            pill.onclick = () => setActiveSeed(i);
+            seedPills.appendChild(pill);
+        });
+        // the transport dropdown mirrors the set; hidden for a single seed
+        pbSeedSel.innerHTML = '';
+        LAB.seeds.forEach((s, i) => {
+            const o = document.createElement('option');
+            o.value = String(i); o.textContent = s >>> 0;
+            pbSeedSel.appendChild(o);
+        });
+        pbSeedSel.value = String(LAB.seedIx);
+        pbSeedSel.style.display = LAB.seeds.length > 1 ? 'inline-block' : 'none';
+    }
+    // switching seeds swaps CACHED recordings — no resim; the playhead time
+    // carries across so the same moment can be compared between seeds
+    function setActiveSeed(i) {
+        LAB.seedIx = Math.max(0, Math.min(LAB.seeds.length - 1, i));
+        const rec = LAB.recs[activeSeed()];
+        if (rec) {
+            LAB.rec = rec;
+            pbSlider.max = rec.nF;
+            LAB.frame = Math.min(LAB.frame, rec.nF);
+            pbTicks.innerHTML = rec.ticks.map(f =>
+                `<span style="position:absolute;left:${(100 * f / rec.nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px" title="penalty">&#9660;</span>`).join('');
+        }
+        renderSeeds();
+    }
+    pbSeedSel.addEventListener('change', () => setActiveSeed(parseInt(pbSeedSel.value, 10)));
+    // seed edits change the DOC (dirty + draft) and drop only what they must:
+    // removed seeds lose their cache; survivors keep theirs
+    function seedsChanged() {
+        LAB.assertResults = null;
+        setActiveSeed(LAB.seedIx);
+        saveDraft();
+        if (Object.keys(LAB.recs).length) evaluateAsserts();
+        else { LAB.rec = null; evaluateAsserts(); }
+    }
     ui.querySelector('#lab-seed-rnd').onclick = () => {
-        LAB.seed = (Math.random() * 4294967296) >>> 0;   // real RNG: rolling dice is edit-time
-        seedIn.value = LAB.seed;
-        invalidate();
+        const typed = parseInt(seedAddIn.value.trim(), 10);
+        const s = (Number.isFinite(typed) ? typed : Math.random() * 4294967296) >>> 0;
+        seedAddIn.value = '';
+        if (LAB.seeds.some(x => (x >>> 0) === s)) return;   // a set, not a list
+        LAB.seeds.push(s);
+        LAB.seedIx = LAB.seeds.length - 1;
+        seedsChanged();
     };
+    seedAddIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') ui.querySelector('#lab-seed-rnd').onclick(); });
+    renderSeeds();
 
     // ── initial conditions / simulate / playback ───────────────────────
     function applyInitial() {
         for (const lb of LAB.boats) {
             const bt = lb.bot;
+            // pristine scalars first (see the snapshot note in addBoat);
+            // the explicit initial conditions below override on top
+            if (lb._phys0) for (const k of Object.keys(lb._phys0)) bt[k] = lb._phys0[k];
+            if (lb._rs0) for (const k of Object.keys(lb._rs0)) bt.raceState[k] = lb._rs0[k];
             bt.x = lb.x; bt.y = lb.y; bt.heading = lb.heading;
             bt.speed = lb.speedKt / 4;   // boat.speed*4 = knots
             bt.velocity = { x: Math.sin(bt.heading) * bt.speed, y: -Math.cos(bt.heading) * bt.speed };
@@ -1198,6 +1296,10 @@
             // no rules residue from a previous run
             delete bt._r19Since;
             bt.raceState.roundArmed = false; bt.raceState.roundSweep = 0;
+            // turbulence spawns draw Math.random per frame in update() — an
+            // edit-time population would consume the burst's seeded stream
+            // differently run to run (see the gusts note below)
+            bt.turbulence = []; bt.turbulenceTimer = 0;
             const c = bt.controller;
             if (c) { c.lowSpeedTimer = 0; c.wiggleActive = false; c.escActive = false; c.iceEscapeTimer = 0; }
         }
@@ -1210,6 +1312,22 @@
         // session clock against the rule-15 window) — unpinned, the verdict
         // depended on how soon after boot you pressed play
         window.state.time = 100;
+        // the gust field spawns cells with Math.random INSIDE update(): a
+        // pre-burst population (grown during edit time with the real RNG)
+        // would consume the seeded stream differently every run, shifting
+        // every downstream AI tie-break — measured as a knife-edge contact
+        // flipping once in ~15 otherwise identical runs. Cleared, the cells
+        // respawn deterministically from the seeded stream.
+        window.state.gusts = [];
+        // Sayings chatter draws Math.random too (a random boat quote fires
+        // after 10 quiet seconds, and quote picks roll for length): its
+        // module timers/queue persist across runs, so whether a draw lands
+        // inside the burst depended on carried-in state — one stream shift =
+        // one tail-frame divergence (caught by the runner's tripwire)
+        if (typeof Sayings !== 'undefined') {
+            Sayings.queue = []; Sayings.current = null;
+            Sayings.timer = 0; Sayings.silenceTimer = 0;
+        }
         window.Rules.interactions = {};
     }
     function pairRights() {
@@ -1378,7 +1496,9 @@
         aiNavFor(lb, bt.heading);
         lb._mode = 'AI';
     }
-    function simulate() {
+    // one seed → one recording (returned, not applied — runAll owns the
+    // cache and the transport)
+    function simulateSeed(SEED) {
         applyInitial();
         // DETERMINISM: a testing tool must give the same verdict for the same
         // scenario. Two layers:
@@ -1391,7 +1511,7 @@
         //    survives from run to run — measured: the same scenario gave
         //    penalty/no-penalty depending on what was played before it.
         const realRandom = Math.random;
-        let rngState = LAB.seed | 0;
+        let rngState = SEED | 0;
         Math.random = function () {
             rngState |= 0; rngState = (rngState + 0x6D2B79F5) | 0;
             let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
@@ -1477,14 +1597,19 @@
                 if (frames[f].boats[bi].penN > frames[f - 1].boats[bi].penN) { ticks.push(f); break; }
             }
         }
-        LAB.rec = { frames, ticks, nF, pens,
+        return { frames, ticks, nF, pens,
             names: LAB.boats.map(lb => lb.bot.name),
             goalCounts: LAB.boats.map(lb => (lb.goals || []).length),
-            seed: LAB.seed >>> 0 };
-        LAB.frame = 0;
-        pbSlider.max = nF;
-        pbTicks.innerHTML = ticks.map(f =>
-            `<span style="position:absolute;left:${(100 * f / nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px" title="penalty">&#9660;</span>`).join('');
+            seed: SEED >>> 0 };
+    }
+    // fill the cache for every seed missing a recording, then point the
+    // transport at the active one and judge the assertions across the set
+    function runAllSync() {
+        for (const s of LAB.seeds.map(x => x >>> 0)) {
+            if (!LAB.recs[s]) LAB.recs[s] = simulateSeed(s);
+        }
+        LAB.frame = Math.min(LAB.frame, Math.round(LAB.durationS * 60));
+        setActiveSeed(LAB.seedIx);
         evaluateAsserts();
     }
     function setFrame(f) {
@@ -1498,13 +1623,35 @@
     // invalidates the recording and drops back to initial conditions; the
     // transport just rewinds. Objects stay selectable while scrubbing.
     function play() {
-        const fresh = !LAB.rec;
-        if (fresh) simulate();
-        if (LAB.frame >= LAB.rec.nF) LAB.frame = 0;
-        LAB.mode = 'play'; LAB.playing = true;
-        pbPlay.innerHTML = SVG_PAUSE;
-        // a NEW run shows Rights & Umpire; resuming keeps the selection
-        if (fresh) select(null);
+        const missing = LAB.seeds.map(s => s >>> 0).filter(s => !LAB.recs[s]);
+        const begin = () => {
+            if (!LAB.rec) setActiveSeed(LAB.seedIx);
+            if (!LAB.rec) return;
+            if (LAB.frame >= LAB.rec.nF) LAB.frame = 0;
+            LAB.mode = 'play'; LAB.playing = true;
+            pbPlay.innerHTML = SVG_PAUSE;
+            // a NEW run shows Rights & Umpire; resuming keeps the selection
+            if (missing.length) select(null);
+        };
+        if (!missing.length) { begin(); return; }
+        // the burst blocks the main thread — the SIMULATING card goes up and
+        // gets a painted frame before each seed runs
+        simCover.style.display = 'flex';
+        const prog = simCover.querySelector('#sim-prog');
+        let done = 0;
+        const step = () => {
+            const s = LAB.seeds.map(x => x >>> 0).find(x => !LAB.recs[x]);
+            if (s == null) {
+                simCover.style.display = 'none';
+                setActiveSeed(LAB.seedIx);
+                evaluateAsserts();
+                begin();
+                return;
+            }
+            prog.textContent = missing.length > 1 ? `seed ${++done} / ${missing.length}` : '';
+            requestAnimationFrame(() => setTimeout(() => { LAB.recs[s] = simulateSeed(s); step(); }, 15));
+        };
+        step();
     }
     function pause() { LAB.playing = false; pbPlay.innerHTML = SVG_PLAY; }
     pbPlay.onclick = () => { if (LAB.playing) pause(); else play(); };
@@ -1563,7 +1710,8 @@
     function sceneObj() {
         const S = LAB.stage;
         return {
-            v: 1, durationS: LAB.durationS, windKt: LAB.windKt, seed: LAB.seed >>> 0,
+            v: 1, durationS: LAB.durationS, windKt: LAB.windKt,
+            seeds: LAB.seeds.map(s => s >>> 0),
             asserts: LAB.asserts.length ? LAB.asserts.map(a => ({ ...a })) : undefined,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
@@ -1582,11 +1730,15 @@
         const S = LAB.stage;
         LAB.durationS = sc.durationS || 10; ui.querySelector('#lab-dur').value = LAB.durationS;
         LAB.windKt = sc.windKt || 12; ui.querySelector('#lab-wind').value = LAB.windKt;
-        // docs saved before the seed field replay on the old constant
-        LAB.seed = (sc.seed != null ? sc.seed : 0x9e3779b9) >>> 0;
-        ui.querySelector('#lab-seed').value = LAB.seed;
+        // migration: scalar-seed docs become one-seed sets; pre-seed docs
+        // replay on the old constant
+        LAB.seeds = (sc.seeds && sc.seeds.length) ? sc.seeds.map(s => s >>> 0)
+            : [(sc.seed != null ? sc.seed : 0x9e3779b9) >>> 0];
+        LAB.seedIx = 0;
+        LAB.recs = {};
+        renderSeeds();
         LAB.asserts = (sc.asserts || []).map(a => ({ ...a }));
-        LAB.assertResults = null; LAB.assertMulti = null;
+        LAB.assertResults = null;
         renderAsserts();
         const pendingGoals = [];   // goals reference marks/lines added below
         for (const bs of (sc.boats || [])) {
@@ -1812,8 +1964,9 @@
             nameIn.value = '';
             LAB.durationS = 10; ui.querySelector('#lab-dur').value = 10;
             LAB.windKt = 12; ui.querySelector('#lab-wind').value = 12;
-            LAB.seed = 0x9e3779b9; ui.querySelector('#lab-seed').value = LAB.seed >>> 0;
-            LAB.asserts = []; LAB.assertResults = null; LAB.assertMulti = null;
+            LAB.seeds = [0x9e3779b9]; LAB.seedIx = 0; LAB.recs = {};
+            renderSeeds();
+            LAB.asserts = []; LAB.assertResults = null;
             renderAsserts();
             markSaved();
             select(null);
@@ -2250,16 +2403,21 @@
             LAB._loading = false;
             markSaved();
         },
-        run(seed) {
-            if (seed != null) { LAB.seed = seed >>> 0; seedIn.value = LAB.seed; }
-            simulate();
-            const names = LAB.rec.names;
+        run() {
+            runAllSync();   // every seed in the set
+            const names = LAB.rec ? LAB.rec.names : [];
             return {
-                seed: LAB.rec.seed,
-                ticks: LAB.rec.ticks.map(f => +(f / 60).toFixed(2)),
-                pens: LAB.rec.pens,
-                asserts: (LAB.assertResults || []).map((r, k) => Object.assign(
-                    { label: window.ScenarioAsserts.label(LAB.asserts[k], names) }, r)),
+                seeds: LAB.seeds.map(s => s >>> 0),
+                runs: LAB.seeds.map(s => {
+                    const r = LAB.recs[s >>> 0];
+                    return { seed: s >>> 0, ticks: r.ticks.map(f => +(f / 60).toFixed(2)), pens: r.pens };
+                }),
+                asserts: (LAB.assertResults || []).map((r, k) => ({
+                    label: window.ScenarioAsserts.label(LAB.asserts[k], names),
+                    n: r.n, ok: r.ok,
+                    status: r.n === 1 ? r.single.status : (r.ok === r.n ? 'pass' : 'fail'),
+                    why: r.n === 1 ? r.single.why : (r.fail ? `seed ${r.fail.seed}: ${r.fail.why}` : 'held on every seed'),
+                })),
             };
         },
     };
