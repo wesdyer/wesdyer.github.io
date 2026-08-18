@@ -184,6 +184,11 @@
         </span>
       </div>
       <div class="sl-sect">
+        <div style="display:flex;gap:8px">
+          <button id="lab-mode-edit" class="sl-btn sl-btn-pri" style="flex:1;padding:9px 0;letter-spacing:.1em" title="author the scenario — transport hidden, everything at t=0">EDIT</button>
+          <button id="lab-mode-sim" class="sl-btn" style="flex:1;padding:9px 0;letter-spacing:.1em;display:inline-flex;align-items:center;justify-content:center;gap:7px" title="run every seed and scrub the recordings (SPACE)"><svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M2.5 1.2 L10.5 6 L2.5 10.8 Z"/></svg>SIMULATE</button>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.08);margin:12px -16px 12px"></div>
         <div class="sl-inp"><input id="lab-name" type="text" placeholder="Scenario Name"></div>
         <div id="lab-tagbox" class="sl-inp" style="margin-top:6px;flex-wrap:wrap;gap:4px;padding:5px 8px;cursor:text" title="tags — Enter or comma adds; searchable in Open">
           <span id="lab-tagchips" style="display:contents"></span>
@@ -663,10 +668,12 @@
         LAB.assertResults = null;
         if (typeof renderAsserts === 'function' && LAB.ready) evaluateAsserts();
         if (LAB.mode !== 'edit') LAB.mode = 'edit';
-        // the transport stays put — it just rewinds and disarms
         pbPlay.innerHTML = SVG_PLAY;
         pbSlider.value = 0;
         pbTicks.innerHTML = '';
+        // an invalidating edit IS editing: the mode pair follows suit and
+        // the transport leaves until SIMULATE is chosen again
+        if (LAB.ready && LAB.uiMode === 'sim') setUIMode('edit');
         saveDraft();
     }
     // the working scene survives a reload: every edit stores a draft, boot
@@ -1295,7 +1302,7 @@
                 if (res.single.atS != null) {
                     chip.style.cursor = 'pointer';
                     chip.title += ' · click to scrub there';
-                    chip.onclick = () => { pause(); setFrame(Math.round(res.single.atS * 60)); };
+                    chip.onclick = () => { setUIMode('sim'); pause(); setFrame(Math.round(res.single.atS * 60)); };
                 }
             } else if (res) {
                 chip.className = 'sl-schip ' + (res.ok === res.n ? 'sl-schip-teal' : 'sl-schip-red');
@@ -1305,6 +1312,7 @@
                 if (res.fail) {
                     chip.style.cursor = 'pointer';
                     chip.onclick = () => {
+                        setUIMode('sim');
                         setActiveSeed(res.fail.ix);
                         if (res.fail.atS != null) { pause(); LAB.mode = 'play'; setFrame(Math.round(res.fail.atS * 60)); }
                     };
@@ -2149,6 +2157,26 @@
     function pause() { LAB.playing = false; pbPlay.innerHTML = SVG_PLAY; }
     pbPlay.onclick = () => { if (LAB.playing) pause(); else play(); };
     bar.querySelector('#pb-sim').onclick = () => simulateOnly();
+    // EDIT / SIMULATE — the top-of-panel mode pair (owner mockup, back by
+    // request). SIMULATE = sim anything stale, then the transport; EDIT =
+    // transport away, stage back to the t=0 setup. Frame-0-is-authoring
+    // semantics underneath are unchanged — this is a view switch.
+    function setUIMode(m) {
+        LAB.uiMode = m;
+        ui.querySelector('#lab-mode-edit').classList.toggle('sl-btn-pri', m === 'edit');
+        ui.querySelector('#lab-mode-sim').classList.toggle('sl-btn-pri', m === 'sim');
+        if (m === 'sim') {
+            bar.style.display = 'flex';
+            simulateOnly();   // no-op when the whole set is already simulated
+        } else {
+            pause();
+            if (LAB.rec) setFrame(0);   // recordings are KEPT — just rewound
+            bar.style.display = 'none';
+        }
+    }
+    ui.querySelector('#lab-mode-edit').onclick = () => setUIMode('edit');
+    ui.querySelector('#lab-mode-sim').onclick = () => setUIMode('sim');
+    setUIMode('edit');
     bar.querySelector('#pb-start').onclick = () => { if (!LAB.rec) return; pause(); setFrame(0); };
     bar.querySelector('#pb-back').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame - 30); };
     bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
@@ -2240,7 +2268,10 @@
                 else if (e.key === '-' || e.key === '_') setZoom(LAB.zoom / 1.25);
                 else if (e.key === '0') setZoom(1);
                 else if (e.key === 'f' || e.key === 'F') zoomFit();
-                else if (e.key === ' ') pbPlay.onclick();   // starts a run too, like the button
+                else if (e.key === ' ') {
+                    // SPACE in EDIT enters SIMULATE mode; in SIMULATE it is play/pause
+                    if (LAB.uiMode !== 'sim') setUIMode('sim'); else pbPlay.onclick();
+                }
                 else if (LAB.rec) {
                     if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); }
                     else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); }
