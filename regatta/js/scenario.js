@@ -1026,6 +1026,12 @@
     const aiAtIn = ui.querySelector('#lab-aiat');
     function refreshPathRow(lb) {
         aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
+        // hand-to-AI only means something for a boat WITH a plan — a
+        // plan-less boat is AI from the start (nothing to hand over)
+        const scripted = lb.plan && lb.plan.length > 0;
+        aiAtIn.disabled = !scripted;
+        aiAtIn.parentElement.style.opacity = scripted ? '1' : '.35';
+        aiAtIn.title = scripted ? 'blank = scripted to the end' : 'no plan — she is AI already';
     }
 
     // ── THE PLAN: helm orders on a clock. The initial condition is the
@@ -1074,9 +1080,10 @@
         if (!plan.length) {
             const p = document.createElement('div');
             p.className = 'sl-hint';
-            p.textContent = 'initial heading + speed, then steps';
+            p.textContent = 'no plan — the AI helms from the start (sails the set heading as her course; avoidance and rules live). + ADD STEP to script her instead';
             planDiv.appendChild(p);
         }
+        refreshPathRow(lb);   // hand-to-AI enablement tracks the plan
     }
     ui.querySelector('#lab-planadd').onclick = () => {
         if (!LAB.sel || LAB.sel.kind !== 'boat') return;
