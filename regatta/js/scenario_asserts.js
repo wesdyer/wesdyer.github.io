@@ -11,6 +11,7 @@
 //   { kind:'tack',    who: 0, tack: 'port'|'stbd', t: 7.0, xfail? }
 //   { kind:'goals',   who: 0, xfail? }
 //   { kind:'proper',  who: 0, tol?: 10 (metres), xfail? }   needs ctx.proper
+//   { kind:'nocollide', xfail? }   scenario-wide: no hull contact at all
 //
 // The recording (rec) is the lab's: frames[] of per-boat snapshots + pairs,
 // plus names[], goalCounts[], pens[] ({t, boat, rule, kind} from the
@@ -111,6 +112,15 @@
                 ? { pass: true, why: `held proper course (max ${worstM} m off at ${at.toFixed(1)}s)` }
                 : { pass: false, why: `${worstM} m off proper course at ${at.toFixed(1)}s (> ${tolM} m)`, atS: at };
         }
+        if (a.kind === 'nocollide') {
+            // EXACT collision test: the engine's own hull-polygon contact
+            // events (captured before the penalty debounce), orientation-
+            // aware with zero tolerance — not a centre-distance proxy.
+            const hit = (rec.pens || []).find(p => p.kind === 'contact');
+            return hit
+                ? { pass: false, why: `hull contact at ${hit.t.toFixed(1)}s (${fmtBoat(names, hit.boat)} penalized)`, atS: hit.t }
+                : { pass: true, why: 'no hull contact' };
+        }
         if (a.kind === 'goals') {
             const n = (rec.goalCounts || [])[a.who] || 0;
             if (!n) return { pass: false, why: `${fmtBoat(names, a.who)} has no goals` };
@@ -141,6 +151,7 @@
         if (a.kind === 'tack') return `${a.t.toFixed(1)}s ${nm(a.who)} on ${a.tack}`;
         if (a.kind === 'goals') return `${nm(a.who)} completes goals`;
         if (a.kind === 'proper') return `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 10}m`;
+        if (a.kind === 'nocollide') return 'no collisions';
         return a.kind;
     }
 

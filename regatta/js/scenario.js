@@ -1266,6 +1266,8 @@
                 row.appendChild(hintSpan('holds proper \u00b1'));
                 row.appendChild(bareIn(a.tol != null ? a.tol : 10, 26, 'max deviation from her proper course (m)', v => a.tol = Math.max(0, parseFloat(v) || 10)));
                 row.appendChild(hintSpan('m'));
+            } else if (a.kind === 'nocollide') {
+                row.appendChild(hintSpan('no collisions \u2014 hulls never touch'));
             }
             // status chip: judged across the whole seed set. One seed shows
             // the plain verdict; several show k/N. Clicking a failure
@@ -1345,6 +1347,7 @@
             ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
             ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
             ['proper', 'HOLDS PROPER COURSE', 'a boat never strays from her proper-course line beyond a tolerance'],
+            ['nocollide', 'NO COLLISION', "the hulls never actually touch \u2014 the engine's own contact test, not a distance"],
         ];
         let dlg;
         for (const [kind, lbl, desc] of KINDS) {
@@ -1362,6 +1365,7 @@
                     tack: { kind: 'tack', who: 0, tack: 'stbd', t: Math.round(LAB.durationS / 2) },
                     goals: { kind: 'goals', who: 0 },
                     proper: { kind: 'proper', who: 0, tol: 10 },
+                    nocollide: { kind: 'nocollide' },
                 }[kind];
                 LAB.asserts.push(def);
                 assertsChanged();
