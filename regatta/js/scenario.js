@@ -76,6 +76,7 @@
         goalArm: false,      // "+ ADD GOAL" armed: next click appends a goal
         zoom: 1,             // 1 = 100%; the game canvas renders at viewport/zoom
         asserts: [],         // structured expectations, saved with the doc
+        tags: [],            // free organization labels, searchable in Open
         assertResults: null, // last run's verdicts (ScenarioAsserts.evaluate)
     };
     // debug/test seam: lets the console (and the Playwright checks) see the
@@ -181,6 +182,10 @@
       </div>
       <div class="sl-sect">
         <div class="sl-inp"><input id="lab-name" type="text" placeholder="Scenario Name"></div>
+        <div id="lab-tagbox" class="sl-inp" style="margin-top:6px;flex-wrap:wrap;gap:4px;padding:5px 8px;cursor:text" title="tags — Enter or comma adds; searchable in Open">
+          <span id="lab-tagchips" style="display:contents"></span>
+          <input id="lab-tagin" type="text" placeholder="add tag" style="flex:1;min-width:64px;padding:3px 0;font-weight:700">
+        </div>
         <div style="display:flex;gap:6px;margin-top:8px">
           <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
           <button id="lab-saveas" class="sl-btn">SAVE AS&hellip;</button>
@@ -2067,6 +2072,7 @@
         return {
             v: 1, durationS: LAB.durationS, windKt: LAB.windKt,
             seeds: LAB.seeds.map(s => s >>> 0),
+            tags: LAB.tags.length ? [...LAB.tags] : undefined,
             asserts: LAB.asserts.length ? LAB.asserts.map(a => ({ ...a })) : undefined,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
@@ -2095,6 +2101,8 @@
         LAB.asserts = (sc.asserts || []).map(a => ({ ...a }));
         LAB.assertResults = null;
         renderAsserts();
+        LAB.tags = (sc.tags || []).slice();
+        renderTags();
         const pendingGoals = [];   // goals reference marks/lines added below
         for (const bs of (sc.boats || [])) {
             const lb = addBoat(S.x + bs.x, S.y + bs.y);
@@ -2126,6 +2134,54 @@
     }
     const nameIn = ui.querySelector('#lab-name');
     nameIn.addEventListener('input', () => saveDraft());
+
+    // ── TAGS: chips in the box, an inline input to add (Enter/comma;
+    // Backspace on empty removes the last). Tags ride the doc — save,
+    // draft, dirty, undo — but never touch the sim, so no invalidate.
+    const tagIn = ui.querySelector('#lab-tagin');
+    function renderTags() {
+        const box = ui.querySelector('#lab-tagchips');
+        box.innerHTML = '';
+        LAB.tags.forEach((t, i) => {
+            const chip = document.createElement('span');
+            chip.className = 'sl-schip sl-schip-mute';
+            chip.style.cssText = 'display:inline-flex;align-items:center;gap:4px';
+            const txt = document.createElement('span');
+            txt.textContent = t;
+            const x = document.createElement('span');
+            x.innerHTML = '&#10005;';
+            x.style.cssText = 'font-size:8px;color:#66748c;cursor:pointer';
+            x.onmouseenter = () => x.style.color = '#ff8a75';
+            x.onmouseleave = () => x.style.color = '#66748c';
+            x.onclick = () => { LAB.tags.splice(i, 1); renderTags(); saveDraft(); };
+            chip.append(txt, x);
+            box.appendChild(chip);
+        });
+    }
+    function addTag(raw) {
+        const t = raw.trim().replace(/^#/, '').replace(/,+$/, '').trim();
+        if (!t) return;
+        if (!LAB.tags.some(x => x.toLowerCase() === t.toLowerCase())) {
+            LAB.tags.push(t);
+            renderTags();
+            saveDraft();
+        }
+    }
+    tagIn.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addTag(tagIn.value);
+            tagIn.value = '';
+        } else if (e.key === 'Backspace' && !tagIn.value && LAB.tags.length) {
+            LAB.tags.pop();
+            renderTags();
+            saveDraft();
+        }
+    });
+    tagIn.addEventListener('blur', () => { addTag(tagIn.value); tagIn.value = ''; });
+    ui.querySelector('#lab-tagbox').addEventListener('mousedown', (e) => {
+        if (e.target.id === 'lab-tagbox') { e.preventDefault(); tagIn.focus(); }
+    });
 
     // ── THE LIBRARY: one file for every scenario (owner ruling — unlike the
     // editor's file-per-venue, a scenario is small; the whole collection is
@@ -2402,6 +2458,8 @@
         renderSeeds();
         LAB.asserts = []; LAB.assertResults = null;
         renderAsserts();
+        LAB.tags = [];
+        renderTags();
         markSaved();
         select(null);
     }
@@ -2469,7 +2527,7 @@
         filterWrap.className = 'sl-inp';
         const filterIn = document.createElement('input');
         filterIn.type = 'text';
-        filterIn.placeholder = 'Filter scenarios';
+        filterIn.placeholder = 'Filter by name or tag';
         filterIn.style.fontVariantNumeric = 'normal';
         filterIn.value = typeof initialFilter === 'string' ? initialFilter : '';
         filterWrap.appendChild(filterIn);
@@ -2502,8 +2560,19 @@
             row.onmouseleave = () => { if (!highlight) row.style.background = ''; };
             const label = document.createElement('span');
             label.textContent = n;
-            label.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
+            label.style.cssText = 'overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
             label.onclick = () => openByName(n);
+            const tagWrap = document.createElement('span');
+            tagWrap.style.cssText = 'flex:1;display:inline-flex;gap:4px;overflow:hidden;margin-left:2px';
+            for (const t of (lib[n].tags || [])) {
+                const tc = document.createElement('span');
+                tc.className = 'sl-schip sl-schip-mute';
+                tc.style.cssText = 'font-size:9px;padding:2px 6px;cursor:pointer;flex:none';
+                tc.textContent = t;
+                tc.title = `filter by “${t}”`;
+                tc.onclick = (e) => { e.stopPropagation(); filterIn.value = t; applyFilter(); };
+                tagWrap.appendChild(tc);
+            }
             const del = document.createElement('span');
             del.innerHTML = '&#10005;';
             del.title = 'delete';
@@ -2523,12 +2592,18 @@
                     openScenario(keepFilter);
                 }, 'Delete');
             };
-            row.append(label, del);
+            row.append(label, tagWrap, del);
             return row;
         };
         const applyFilter = () => {
-            const q = filterIn.value.trim().toLowerCase();
-            const matches = q ? names.filter(n => n.toLowerCase().includes(q)) : names;
+            // every space-separated term must match the NAME or a TAG
+            const terms = filterIn.value.trim().toLowerCase().split(/\s+/).filter(Boolean);
+            const q = terms.length > 0;
+            const matches = !q ? names : names.filter(n => {
+                const nl = n.toLowerCase();
+                const tags = (lib[n].tags || []).map(t => t.toLowerCase());
+                return terms.every(t => nl.includes(t) || tags.some(tag => tag.includes(t)));
+            });
             list.innerHTML = '';
             firstVisible = matches[0] || null;
             matches.slice(0, MAXROWS).forEach((n, i) => list.appendChild(buildRow(n, i === 0 && !!q)));
