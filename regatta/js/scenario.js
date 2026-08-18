@@ -2339,6 +2339,28 @@
             LAB.drag = { sel: LAB.sel };
             return;
         }
+        // PLAYHEAD AS MODE: t=0 is authoring, t>0 is observation. A touch on
+        // an object mid-playback INSPECTS it and returns the stage to the
+        // start — where the recorded pose IS the setup pose — so the next
+        // drag edits exactly what the eye sees. Nothing mutates on the first
+        // touch: the recording survives mere inspection. (Dragging at t>0
+        // used to rewrite the SETUP position from cursor coordinates in the
+        // RECORDED frame — the boat teleported.)
+        if (hit && LAB.mode === 'play' && LAB.rec && LAB.frame > 0) {
+            pause();
+            setFrame(0);
+            select(hit);
+            // a boat's setup pose can be far from its recorded pose — if the
+            // rewind would put the target off-screen, bring the camera to it
+            if (hit.kind === 'boat') {
+                const [tx, ty] = w2s(hit.ref.x, hit.ref.y);
+                const M = 80;
+                if (tx < M || tx > ov.width - M || ty < M || ty > ov.height - M) {
+                    LAB.cam.x = hit.ref.x; LAB.cam.y = hit.ref.y;
+                }
+            }
+            return;   // no drag from this gesture — the target just moved to its setup pose
+        }
         if (hit) { select(hit); LAB.drag = { sel: hit }; }
         else { select(null); LAB.drag = { pan: true, sx: e.clientX, sy: e.clientY, cx: LAB.cam.x, cy: LAB.cam.y }; }
     });
@@ -2634,7 +2656,9 @@
                 octx.fillText(String(k + 1), sx, sy);
             });
         }
-        if (LAB.sel && LAB.sel.kind !== 'play' && LAB.mode === 'edit') {
+        // the selection ring shows in playback too (inspection is allowed
+        // there); for boats it rides the recorded pose
+        if (LAB.sel && LAB.sel.kind !== 'play') {
             let cx, cy, r = 40;
             const s = LAB.sel;
             if (s.kind === 'boat') { cx = s.ref.bot.x; cy = s.ref.bot.y; r = 48; }
