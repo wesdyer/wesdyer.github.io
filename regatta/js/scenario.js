@@ -962,6 +962,10 @@
             boats: LAB.boats.map(lb => {
                 const bt = lb.bot, c = bt.controller;
                 return { x: bt.x, y: bt.y, h: bt.heading, s: bt.speed,
+                    // the RULES definition of tack (boom-aware by the lee),
+                    // recorded live in the burst — playback can't re-derive it
+                    // because boomSide animates off live physics, not the pin
+                    ta: (window.Rules && window.Rules.getTack) ? window.Rules.getTack(bt) : 0,
                     tk: bt.raceState.isTacking, pen: bt.raceState.penalty,
                     sp: !!bt.spinnaker, spp: +(bt.spinnakerDeployProgress || 0).toFixed(3),
                     penN: bt.raceState.totalPenalties || 0,
@@ -1694,10 +1698,18 @@
                     <span style="font-size:11px;font-weight:700;color:#9fb2cc">${esc(p.a)} · ${esc(p.b)} — no right of way determined</span></div>`);
             }
         }
-        // one status card per boat: helm + what the AI is doing about it
+        // one status card per boat: heading · speed · tack, the helm, and
+        // what the AI is doing about it
         for (let i = 0; i < LAB.boats.length; i++) {
             const nm = LAB.boats[i].bot.name;
             const bi = boats ? boats[i] : null;
+            let stats = '';
+            if (bi) {
+                const hdg = String(Math.round(((bi.h * DEG) % 360 + 360) % 360) % 360).padStart(3, '0');
+                const kt = (bi.s * 4).toFixed(1);
+                const tack = bi.ta === 1 ? 'STBD' : bi.ta === -1 ? 'PORT' : null;
+                stats = `${hdg}&deg; &middot; ${kt} kt${tack ? ' &middot; ' + tack : ''}`;
+            }
             const chips = [];
             if (bi) {
                 if (bi.mode === 'S') {
@@ -1717,9 +1729,10 @@
             } else if (LAB.boats[i].bot.raceState.penalty) {
                 chips.push(['red', 'PENALTY']);
             }
-            if (!chips.length) continue;
+            if (!chips.length && !stats) continue;
             html.push(`<div class="sl-card" style="margin-bottom:6px;flex-wrap:wrap">
-                ${dot(nm)}<span class="sl-bname" style="min-width:64px">${esc(nm.toUpperCase())}</span>
+                ${dot(nm)}<span class="sl-bname" style="min-width:20px">${esc(nm.toUpperCase())}</span>
+                ${stats ? `<span style="font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;color:#9fb2cc;white-space:nowrap">${stats}</span>` : ''}
                 ${chips.map(([c, t]) => `<span class="sl-schip sl-schip-${c}">${t}</span>`).join('')}</div>`);
         }
         rightsEl.innerHTML = html.length ? html.join('')
