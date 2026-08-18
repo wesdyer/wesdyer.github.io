@@ -428,20 +428,22 @@
     const SVG_BACK = '<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true"><path d="M7.4 1.6 L2.6 6 L7.4 10.4 Z"/><path d="M12.6 1.6 L7.8 6 L12.6 10.4 Z"/></svg>';
     const SVG_START = '<svg width="13" height="12" viewBox="0 0 13 12" fill="currentColor" aria-hidden="true"><rect x="1.2" y="1.6" width="2" height="8.8" rx="0.8"/><path d="M12 1.6 L5 6 L12 10.4 Z"/></svg>';
     const SVG_FWD = '<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true"><path d="M1.4 1.6 L6.2 6 L1.4 10.4 Z"/><path d="M6.6 1.6 L11.4 6 L6.6 10.4 Z"/></svg>';
+    const SVG_END = '<svg width="13" height="12" viewBox="0 0 13 12" fill="currentColor" aria-hidden="true"><path d="M1 1.6 L8 6 L1 10.4 Z"/><rect x="9.8" y="1.6" width="2" height="8.8" rx="0.8"/></svg>';
     const bar = document.createElement('div');
     bar.className = 'sl-panel';
-    bar.style.cssText = 'top:auto;left:50%;transform:translateX(-50%);bottom:20px;display:flex;align-items:center;gap:14px;padding:12px 18px;width:min(620px,calc(100vw - 80px));overflow:visible';
+    bar.style.cssText = 'top:auto;left:50%;transform:translateX(-50%);bottom:20px;display:flex;align-items:center;gap:14px;padding:12px 18px;width:min(900px,calc(100vw - 440px));overflow:visible';
     bar.innerHTML = `
       <span id="pb-controls" style="display:flex;flex:1;align-items:center;gap:14px">
+      <span id="pb-seedwrap" style="position:relative;display:none">
+        <button id="pb-seed" class="sl-tbtn" style="display:inline-flex;align-items:center;width:auto;padding:0 10px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.03em;font-variant-numeric:tabular-nums;white-space:nowrap" title="which seed's run the transport shows"></button>
+      </span>
       <div style="display:flex;gap:6px">
         <button id="pb-start" class="sl-tbtn" title="to the start (t=0) — where editing lives">${SVG_START}</button>
         <button id="pb-back" class="sl-tbtn" title="step back 0.5s">${SVG_BACK}</button>
         <button id="pb-play" class="sl-tbtn sl-tbtn-pri">${SVG_PLAY}</button>
         <button id="pb-fwd" class="sl-tbtn" title="step forward 0.5s">${SVG_FWD}</button>
+        <button id="pb-end" class="sl-tbtn" title="to the end">${SVG_END}</button>
       </div>
-      <span id="pb-seedwrap" style="position:relative;display:none">
-        <button id="pb-seed" class="sl-tbtn" style="display:inline-flex;align-items:center;width:auto;padding:0 10px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.03em;font-variant-numeric:tabular-nums;white-space:nowrap" title="which seed's run the transport shows"></button>
-      </span>
       <span style="flex:1;position:relative;display:block">
         <input id="pb-slider" type="range" min="0" max="600" value="0">
         <span id="pb-ticks" style="position:absolute;left:0;right:0;top:-11px;height:8px;pointer-events:none"></span>
@@ -2176,6 +2178,7 @@
     bar.querySelector('#pb-start').onclick = () => { if (!LAB.rec) return; pause(); setFrame(0); };
     bar.querySelector('#pb-back').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame - 30); };
     bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
+    bar.querySelector('#pb-end').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.rec.nF); };
     pbSlider.addEventListener('input', () => { if (!LAB.rec) { pbSlider.value = 0; return; } pause(); setFrame(+pbSlider.value); });
     // the … menu: toggles on its button, closes on any item or outside press
     ui.querySelector('#lab-more').onclick = () => {
