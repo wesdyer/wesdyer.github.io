@@ -377,6 +377,8 @@
     bar.className = 'sl-panel';
     bar.style.cssText = 'top:auto;left:50%;transform:translateX(-50%);bottom:20px;display:flex;align-items:center;gap:14px;padding:12px 18px;width:min(620px,calc(100vw - 80px));overflow:visible';
     bar.innerHTML = `
+      <button id="pb-sim" class="sl-btn sl-btn-pri" style="flex:1;padding:10px 0;letter-spacing:.12em" title="run every seed in the set (SPACE)">SIMULATE</button>
+      <span id="pb-controls" style="display:none;flex:1;align-items:center;gap:14px">
       <div style="display:flex;gap:6px">
         <button id="pb-back" class="sl-tbtn" title="step back 0.5s">${SVG_BACK}</button>
         <button id="pb-play" class="sl-tbtn sl-tbtn-pri">${SVG_PLAY}</button>
@@ -390,7 +392,8 @@
         <input id="pb-slider" type="range" min="0" max="600" value="0">
         <span id="pb-ticks" style="position:absolute;left:0;right:0;top:-11px;height:8px;pointer-events:none"></span>
       </span>
-      <span id="pb-time" style="font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#c4d2e6;min-width:84px;text-align:right">0.0 / 10.0s</span>`;
+      <span id="pb-time" style="font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#c4d2e6;min-width:84px;text-align:right">0.0 / 10.0s</span>
+      </span>`;
     document.body.appendChild(bar);
     // SIMULATING…: the burst blocks the main thread, so this goes up and
     // PAINTS before the batch starts (play() yields a frame first)
@@ -1329,7 +1332,16 @@
             .map(k => `<span style="color:${SEED_COLORS[k]}" title="${counts[k]} ${k === 'ok' ? 'clean' : k}">&#9679;<span style="margin-left:2px">${counts[k]}</span></span>`)
             .join('<span style="width:4px"></span>');
     }
+    // the transport wears ONE face at a time (owner ruling): a single
+    // SIMULATE button until every seed in the set has a recording, the full
+    // scrub controls after — and any invalidating edit flips it back
+    function refreshTransport() {
+        const complete = LAB.seeds.length && LAB.seeds.every(s => LAB.recs[s >>> 0]);
+        bar.querySelector('#pb-sim').style.display = complete ? 'none' : 'block';
+        bar.querySelector('#pb-controls').style.display = complete ? 'flex' : 'none';
+    }
     function renderSeeds() {
+        refreshTransport();   // renderSeeds runs at every rec/seed chokepoint
         // panel: summary button + manage menu
         const pBtn = ui.querySelector('#lab-seedbtn');
         const pMenu = ui.querySelector('#lab-seedmenu');
@@ -1809,6 +1821,7 @@
     }
     function pause() { LAB.playing = false; pbPlay.innerHTML = SVG_PLAY; }
     pbPlay.onclick = () => { if (LAB.playing) pause(); else play(); };
+    bar.querySelector('#pb-sim').onclick = () => play();
     bar.querySelector('#pb-back').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame - 30); };
     bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
     pbSlider.addEventListener('input', () => { if (!LAB.rec) { pbSlider.value = 0; return; } pause(); setFrame(+pbSlider.value); });
