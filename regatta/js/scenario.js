@@ -573,6 +573,9 @@
                 LAB._loading = true;
                 loadScene(d);
                 if (d.name) ui.querySelector('#lab-name').value = d.name;
+                // restore the dirty association: if the draft was saved state,
+                // SAVE comes back disabled; if it had edits, it stays lit
+                LAB.savedJSON = d._saved || null;
                 LAB._loading = false;
                 select(null);
             }
@@ -604,7 +607,13 @@
         _draftT = setTimeout(() => {
             try {
                 localStorage.setItem(STORE_KEY + '_draft', JSON.stringify({
-                    name: (ui.querySelector('#lab-name').value || '').trim(), ...sceneObj() }));
+                    name: (ui.querySelector('#lab-name').value || '').trim(),
+                    // the dirty state must survive a reload too: without this,
+                    // a freshly-saved scene came back as "unsaved changes"
+                    // (SAVE lit on open) because the restore lost the
+                    // association with what saved looks like
+                    _saved: LAB.savedJSON || undefined,
+                    ...sceneObj() }));
             } catch (e) { }
         }, 400);
     }
