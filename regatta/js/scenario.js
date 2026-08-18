@@ -173,9 +173,9 @@
         </div>
         <span title="Scenario Lab" style="display:inline-flex;color:#8fd8d0">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path fill="currentColor" stroke="none" d="M4.55 10 H11.45 L12.9 12.55 a1.1 1.1 0 0 1 -1.02 1.65 H4.12 a1.1 1.1 0 0 1 -1.02 -1.65 Z"/>
             <path d="M5.6 1.8 h4.8"/>
             <path d="M6.6 1.8 v4.1 L3.1 12.3 a1.25 1.25 0 0 0 1.15 1.9 h7.5 a1.25 1.25 0 0 0 1.15 -1.9 L9.4 5.9 V1.8"/>
-            <path d="M4.7 10 h6.6"/>
           </svg>
         </span>
       </div>
