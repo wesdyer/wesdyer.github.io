@@ -1393,7 +1393,11 @@
     // the transport (switch mid-playback), one add control (typed seed, or
     // the dice roll one when blank). Deleting keeps at least one. ────────
     const seedAddIn = ui.querySelector('#lab-seedadd');
-    function activeSeed() { return LAB.seeds[Math.min(LAB.seedIx, LAB.seeds.length - 1)] >>> 0; }
+    // seedIx -1 = the PROPER COURSE pseudo seed (always present)
+    function activeSeed() {
+        if (LAB.seedIx < 0) return 'proper';
+        return LAB.seeds[Math.min(LAB.seedIx, LAB.seeds.length - 1)] >>> 0;
+    }
     // one colour rule everywhere a seed's run shows (owner ruling, in
     // priority order): assertion FAIL red > COLLISION orange > PENALTY
     // yellow > clean white. Unrun = muted (no data yet).
@@ -1473,6 +1477,29 @@
                 .sort((a, b) => a[0] - b[0]);
             firstMatch = matches.length ? matches[0][1] : null;
             list.innerHTML = '';
+            // PROPER COURSE is always first: each boat alone, no interactions
+            {
+                const on = LAB.seedIx === -1;
+                const row = document.createElement('div');
+                row.style.cssText = 'display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:7px;cursor:pointer;'
+                    + 'font:800 11px Archivo,system-ui,sans-serif;'
+                    + (on ? 'background:rgba(47,107,255,.25)' : '');
+                const lab = document.createElement('span');
+                lab.innerHTML = '<span style="font-style:italic;color:#8fd8d0">PROPER COURSE</span>';
+                lab.style.cssText = 'flex:1;text-align:center';
+                lab.title = 'each boat alone \u2014 no other boats, no fouls (RRS proper course)';
+                row.appendChild(lab);
+                if (on) {
+                    const a = document.createElement('span');
+                    a.className = 'sl-schip sl-schip-blue';
+                    a.textContent = 'WATCHING';
+                    row.appendChild(a);
+                }
+                row.onmouseenter = () => { if (!on) row.style.background = 'rgba(255,255,255,.07)'; };
+                row.onmouseleave = () => { if (!on) row.style.background = ''; };
+                row.onclick = () => { dlg.close(); setActiveSeed(-1); };
+                list.appendChild(row);
+            }
             matches.slice(0, MAXROWS).forEach(([s, i]) => {
                 const st = seedStatus(s);
                 const on = i === LAB.seedIx;
@@ -1527,7 +1554,7 @@
     // SIMULATE button until every seed in the set has a recording, the full
     // scrub controls after — and any invalidating edit flips it back
     function refreshTransport() {
-        const complete = LAB.seeds.length && LAB.seeds.every(s => LAB.recs[s >>> 0]);
+        const complete = LAB.seeds.length && LAB.seeds.every(s => LAB.recs[s >>> 0]) && !!LAB.recs.proper;
         bar.querySelector('#pb-sim').style.display = complete ? 'none' : 'block';
         bar.querySelector('#pb-controls').style.display = complete ? 'flex' : 'none';
     }
@@ -1537,23 +1564,27 @@
         ui.querySelector('#lab-seedcount').textContent = LAB.seeds.length;
         ui.querySelector('#lab-seeddots').innerHTML = seedSummaryHTML();
         const act = activeSeed();
+        const proper = act === 'proper';
+        const actLabel = proper ? '<span style="font-style:italic">PROPER COURSE</span>' : String(act);
+        const actColor = proper ? '#8fd8d0' : SEED_COLORS[seedStatus(act)];
+        const actTitle = proper ? 'each boat alone \u2014 no other boats, no fouls (RRS proper course)' : SEED_TITLES[seedStatus(act)];
         const pBtn = ui.querySelector('#lab-seedbtn');
-        pBtn.innerHTML = `<span style="color:${SEED_COLORS[seedStatus(act)]}">${act}</span>`
+        pBtn.innerHTML = `<span style="color:${actColor}">${actLabel}</span>`
             + '<span style="color:#66748c;font-size:9px">&#9662;</span>'
             + `<span style="margin-left:auto;display:inline-flex;gap:5px;font-size:10px">${seedSummaryHTML()}</span>`
             + `<span style="color:#66748c;font-size:10px">${LAB.seeds.length}</span>`;
-        pBtn.title = SEED_TITLES[seedStatus(act)] + ' \u2014 open the seed list';
+        pBtn.title = actTitle + ' \u2014 open the seed list';
         const wrap = bar.querySelector('#pb-seedwrap');
         const tBtn = bar.querySelector('#pb-seed');
-        wrap.style.display = LAB.seeds.length > 1 ? 'inline-block' : 'none';
-        tBtn.innerHTML = `<span style="color:${SEED_COLORS[seedStatus(act)]}">${act}</span>` +
+        wrap.style.display = 'inline-block';   // proper course means there is always a choice
+        tBtn.innerHTML = `<span style="color:${actColor}">${actLabel}</span>` +
             '<span style="color:#66748c;font-size:9px;margin-left:6px">&#9662;</span>';
-        tBtn.title = SEED_TITLES[seedStatus(act)] + ' \u2014 open the seed list';
+        tBtn.title = actTitle + ' \u2014 open the seed list';
     }
     // switching seeds swaps CACHED recordings — no resim; the playhead time
     // carries across so the same moment can be compared between seeds
     function setActiveSeed(i) {
-        LAB.seedIx = Math.max(0, Math.min(LAB.seeds.length - 1, i));
+        LAB.seedIx = i < 0 ? -1 : Math.min(LAB.seeds.length - 1, i);
         const rec = LAB.recs[activeSeed()];
         if (rec) {
             LAB.rec = rec;
@@ -1851,7 +1882,7 @@
     }
     // one seed → one recording (returned, not applied — runAll owns the
     // cache and the transport)
-    function simulateSeed(SEED) {
+    function simulateSeed(SEED, soloLb) {
         applyInitial();
         // DETERMINISM: a testing tool must give the same verdict for the same
         // scenario. Two layers:
@@ -1876,6 +1907,14 @@
         try {
         for (const lb of LAB.boats) {
             const bt = lb.bot;
+            // PROPER COURSE runs are SOLO: every other boat leaves the water
+            // for this burst, so nothing can interact with her
+            if (soloLb && lb !== soloLb) {
+                bt.raceState.finished = true;
+                bt.x = -1e6; bt.y = -1e6; bt.speed = 0;
+                bt.velocity = { x: 0, y: 0 };
+                continue;
+            }
             // fresh, neutral persona + helm (all randoms drawn seeded)
             bt.archetype = null;
             if (typeof DEFAULT_TRAITS !== 'undefined') bt.traits = Object.assign({}, DEFAULT_TRAITS);
@@ -1942,6 +1981,12 @@
         }
         } finally {
             Math.random = realRandom;
+            // solo burst over: the parked rivals rejoin the stage
+            if (soloLb) for (const lb of LAB.boats) {
+                if (lb === soloLb) continue;
+                lb.bot.raceState.finished = false;
+                lb.bot.fadeTimer = 999; lb.bot.opacity = 1;
+            }
         }
         LAB.recording = false;
         // leave no scripted overrides behind
@@ -1962,10 +2007,36 @@
     }
     // fill the cache for every seed missing a recording, then point the
     // transport at the active one and judge the assertions across the set
+    // PROPER COURSE (RRS definition: "the course a boat would sail ... in
+    // the absence of the other boats"): every scenario's ever-present pseudo
+    // seed. Each boat simulates ALONE on a fixed canonical seed, and the
+    // solo recordings composite into one playback — by construction there
+    // are no interactions, no collisions, no penalties: just each helm's
+    // default line (scripted plan, or AI with her goals).
+    function simulateProper() {
+        const solos = LAB.boats.map(lb => simulateSeed(0x9e3779b9, lb));
+        const nF = solos.length ? solos[0].nF : Math.round(LAB.durationS * 60);
+        const frames = [];
+        for (let f = 0; f <= nF; f++) {
+            frames.push({
+                boats: LAB.boats.map((lb, i) => {
+                    const b = { ...solos[i].frames[f].boats[i] };
+                    b.pen = false; b.penN = 0;   // a proper course carries no fouls
+                    return b;
+                }),
+                pairs: [],
+            });
+        }
+        return { frames, ticks: [], nF, pens: [],
+            names: LAB.boats.map(lb => lb.bot.name),
+            goalCounts: LAB.boats.map(lb => (lb.goals || []).length),
+            seed: 'proper' };
+    }
     function runAllSync() {
         for (const s of LAB.seeds.map(x => x >>> 0)) {
             if (!LAB.recs[s]) LAB.recs[s] = simulateSeed(s);
         }
+        if (!LAB.recs.proper) LAB.recs.proper = simulateProper();
         LAB.frame = Math.min(LAB.frame, Math.round(LAB.durationS * 60));
         setActiveSeed(LAB.seedIx);
         evaluateAsserts();
@@ -1987,7 +2058,8 @@
         const total = LAB.seeds.map(s => s >>> 0).filter(s => !LAB.recs[s]).length;
         let done = 0;
         const step = () => {
-            const s = LAB.seeds.map(x => x >>> 0).find(x => !LAB.recs[x]);
+            let s = LAB.seeds.map(x => x >>> 0).find(x => !LAB.recs[x]);
+            if (s == null && !LAB.recs.proper) s = 'proper';
             if (s == null) {
                 simCover.style.display = 'none';
                 setActiveSeed(LAB.seedIx);
@@ -1996,7 +2068,10 @@
                 return;
             }
             prog.textContent = total > 1 ? `seed ${++done} / ${total}` : '';
-            requestAnimationFrame(() => setTimeout(() => { LAB.recs[s] = simulateSeed(s); step(); }, 15));
+            requestAnimationFrame(() => setTimeout(() => {
+                LAB.recs[s] = s === 'proper' ? simulateProper() : simulateSeed(s);
+                step();
+            }, 15));
         };
         step();
     }
@@ -2005,6 +2080,7 @@
     // reading the fresh run. Playback is the ▶ button's job.
     function simulateOnly() {
         const missing = LAB.seeds.map(s => s >>> 0).filter(s => !LAB.recs[s]);
+        if (!LAB.recs.proper) missing.push('proper');
         if (!missing.length) return;
         runBatch(() => {
             LAB.mode = 'play';
@@ -2015,6 +2091,7 @@
     }
     function play() {
         const missing = LAB.seeds.map(s => s >>> 0).filter(s => !LAB.recs[s]);
+        if (!LAB.recs.proper) missing.push('proper');
         if (missing.length) { simulateOnly(); return; }   // SPACE parity with the visible button
         if (!LAB.rec) setActiveSeed(LAB.seedIx);
         if (!LAB.rec) return;
