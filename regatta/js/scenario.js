@@ -194,7 +194,14 @@
           <button id="lab-new" class="sl-btn">NEW</button>
           <button id="lab-open" class="sl-btn">OPEN&hellip;</button>
         </div>
-        <div class="sl-grid2" style="margin-top:10px">
+        <div style="display:flex;gap:12px;margin-top:9px">
+          <span id="lab-discard" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer" title="throw away unsaved changes and restore the saved scenario">DISCARD</span>
+          <span id="lab-clear" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer">CLEAR SCENE</span>
+          <span id="lab-delete" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer;margin-left:auto" title="delete this scenario from the library">DELETE</span>
+        </div>
+        <div class="sl-hint" style="margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums">library: <span id="lab-libname">not attached</span> &middot; <span id="lab-libopen" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="attach assets/scenarios.js so saves write to it">change</span></div>
+        <div style="border-top:1px solid rgba(255,255,255,.08);margin:12px -16px 12px"></div>
+        <div class="sl-grid2">
           <div>
             <div class="sl-lab">Duration</div>
             <div class="sl-inp"><input id="lab-dur" type="text" inputmode="decimal" value="10"><span class="sl-unit">s</span></div>
@@ -238,13 +245,6 @@
           <div id="lab-assertbody" style="display:none;margin-top:4px">
             <div id="lab-asserts"></div>
           </div>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px">
-          <span class="sl-hint" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums">library: <span id="lab-libname">not attached</span> &middot; <span id="lab-libopen" style="cursor:pointer;text-decoration:underline;text-underline-offset:2px" title="attach assets/scenarios.js so saves write to it">change</span></span>
-          <span style="display:flex;gap:10px;white-space:nowrap">
-            <span id="lab-discard" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer" title="throw away unsaved changes and restore the saved scenario">DISCARD</span>
-            <span id="lab-clear" style="font-size:10px;font-weight:800;letter-spacing:.06em;color:#ff8a75;cursor:pointer">CLEAR SCENE</span>
-          </span>
         </div>
       </div>
       <div style="padding:8px 8px 10px">
@@ -2016,6 +2016,20 @@
     bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
     pbSlider.addEventListener('input', () => { if (!LAB.rec) { pbSlider.value = 0; return; } pause(); setFrame(+pbSlider.value); });
     ui.querySelector('#lab-discard').onclick = () => discardChanges();
+    // DELETE removes the CURRENT scenario from the library (confirmed). The
+    // scene stays on stage as an unsaved doc — SAVE would re-add it.
+    ui.querySelector('#lab-delete').onclick = () => {
+        const nm = (nameIn.value || '').trim();
+        if (!nm || !store()[nm]) return;
+        confirmDialog('Delete scenario', `Delete “${nm}” from the library? This cannot be undone.`, () => {
+            const l2 = store(); delete l2[nm];
+            const t = loadTombs(); t.add(nm); saveTombs(t);
+            if (window.SCENARIO_DOC) delete window.SCENARIO_DOC[nm];
+            persistLib(l2);
+            LAB.savedJSON = null;   // the doc on stage is now UNSAVED — SAVE re-adds it
+            refreshSaveBtn();
+        }, 'Delete');
+    };
     ui.querySelector('#lab-clear').onclick = () => {
         if (!LAB.boats.length && !LAB.marks.length && !LAB.sands.length && !LAB.lines.length) return;
         confirmDialog('Clear scene', 'Remove every boat, object, mark and line from the scene?', clearScene, 'Clear');
@@ -2400,6 +2414,15 @@
             d.style.opacity = dirty ? '1' : '.35';
             d.style.pointerEvents = dirty ? 'auto' : 'none';
             d.title = dirty ? `${why} — restore the saved version` : 'no unsaved changes';
+        }
+        // DELETE only offers when the current name exists in the library
+        const del = ui.querySelector('#lab-delete');
+        if (del) {
+            const nm = (ui.querySelector('#lab-name').value || '').trim();
+            const inLib = !!(nm && store()[nm]);
+            del.style.opacity = inLib ? '1' : '.35';
+            del.style.pointerEvents = inLib ? 'auto' : 'none';
+            del.title = inLib ? `delete “${nm}” from the library` : 'not in the library';
         }
     }
     function markSaved() {
