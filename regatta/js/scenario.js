@@ -373,7 +373,10 @@
         <button id="pb-play" class="sl-tbtn sl-tbtn-pri">${SVG_PLAY}</button>
         <button id="pb-fwd" class="sl-tbtn" title="step forward 0.5s">${SVG_FWD}</button>
       </div>
-      <select id="pb-seed" class="sl-msel" style="display:none;max-width:118px;padding:6px 6px;font-variant-numeric:tabular-nums" title="which seed's run the transport shows"></select>
+      <span id="pb-seedwrap" style="position:relative;display:none">
+        <button id="pb-seed" class="sl-tbtn" style="display:inline-flex;align-items:center;width:auto;padding:0 10px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.03em;font-variant-numeric:tabular-nums;white-space:nowrap" title="which seed's run the transport shows"></button>
+        <div id="pb-seedmenu" style="display:none;position:absolute;bottom:42px;left:50%;transform:translateX(-50%);min-width:150px;background:rgba(7,19,34,.96);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:10px;box-shadow:0 10px 34px rgba(4,16,28,.5);padding:6px;z-index:80"></div>
+      </span>
       <span style="flex:1;position:relative;display:block">
         <input id="pb-slider" type="range" min="0" max="600" value="0">
         <span id="pb-ticks" style="position:absolute;left:0;right:0;top:-11px;height:8px;pointer-events:none"></span>
@@ -1029,11 +1032,18 @@
         const complete = seeds.length && seeds.every(s => LAB.recs[s]);
         if (!complete || !window.ScenarioAsserts || !LAB.asserts.length) {
             LAB.assertResults = null;
+            LAB.seedFail = {};
             renderAsserts();
+            renderSeeds();
             aggChip.style.display = 'none';
             return;
         }
         const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s]));
+        // which seeds does anything fail on — the transport dropdown reads red
+        LAB.seedFail = {};
+        seeds.forEach((s, si) => {
+            if (per[si].some(r => r.status !== 'pass' && r.status !== 'gap')) LAB.seedFail[s] = true;
+        });
         LAB.assertResults = LAB.asserts.map((a, k) => {
             let ok = 0, fail = null;
             seeds.forEach((s, si) => {
@@ -1044,6 +1054,7 @@
             return { n: seeds.length, ok, fail, single: per[0][k] };
         });
         renderAsserts();
+        renderSeeds();
         const rs = LAB.assertResults;
         const okRows = rs.filter(r => r.ok === r.n).length;
         aggChip.textContent = 'ASSERTS ' + okRows + '/' + rs.length + (seeds.length > 1 ? ' · ' + seeds.length + ' SEEDS' : '');
@@ -1247,15 +1258,32 @@
             pill.onclick = () => setActiveSeed(i);
             seedPills.appendChild(pill);
         });
-        // the transport dropdown mirrors the set; hidden for a single seed
-        pbSeedSel.innerHTML = '';
-        LAB.seeds.forEach((s, i) => {
-            const o = document.createElement('option');
-            o.value = String(i); o.textContent = s >>> 0;
-            pbSeedSel.appendChild(o);
+        // the transport dropdown mirrors the set (lab-styled, since native
+        // <option>s can't wear the design or a red failure tint); listed in
+        // NUMERIC order, failing seeds in red. Hidden for a single seed.
+        const wrap = bar.querySelector('#pb-seedwrap');
+        const btn = bar.querySelector('#pb-seed');
+        const menu = bar.querySelector('#pb-seedmenu');
+        wrap.style.display = LAB.seeds.length > 1 ? 'inline-block' : 'none';
+        const failing = LAB.seedFail || {};
+        const act = activeSeed();
+        btn.innerHTML = `<span style="color:${failing[act] ? '#ff8a75' : '#eef3fb'}">${act}</span>` +
+            '<span style="color:#66748c;font-size:9px;margin-left:6px">&#9662;</span>';
+        menu.innerHTML = '';
+        LAB.seeds.map((s, i) => [s >>> 0, i]).sort((a, b) => a[0] - b[0]).forEach(([s, i]) => {
+            const row = document.createElement('div');
+            const on = i === LAB.seedIx;
+            row.style.cssText = 'display:flex;justify-content:center;padding:7px 12px;border-radius:7px;cursor:pointer;'
+                + 'font:800 11px Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;'
+                + `color:${failing[s] ? '#ff8a75' : '#eef3fb'};`
+                + (on ? 'background:rgba(47,107,255,.25)' : '');
+            row.textContent = s;
+            row.title = failing[s] ? 'an assertion fails on this seed' : '';
+            row.onmouseenter = () => { if (!on) row.style.background = 'rgba(255,255,255,.07)'; };
+            row.onmouseleave = () => { if (!on) row.style.background = ''; };
+            row.onclick = () => { menu.style.display = 'none'; setActiveSeed(i); };
+            menu.appendChild(row);
         });
-        pbSeedSel.value = String(LAB.seedIx);
-        pbSeedSel.style.display = LAB.seeds.length > 1 ? 'inline-block' : 'none';
     }
     // switching seeds swaps CACHED recordings — no resim; the playhead time
     // carries across so the same moment can be compared between seeds
@@ -1271,7 +1299,16 @@
         }
         renderSeeds();
     }
-    pbSeedSel.addEventListener('change', () => setActiveSeed(parseInt(pbSeedSel.value, 10)));
+    pbSeedSel.onclick = () => {
+        const menu = bar.querySelector('#pb-seedmenu');
+        menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+    };
+    // any press outside the dropdown closes it
+    document.addEventListener('mousedown', (e) => {
+        const wrap = bar.querySelector('#pb-seedwrap');
+        const menu = bar.querySelector('#pb-seedmenu');
+        if (menu.style.display !== 'none' && !wrap.contains(e.target)) menu.style.display = 'none';
+    }, true);
     // seed edits change the DOC (dirty + draft) and drop only what they must:
     // removed seeds lose their cache; survivors keep theirs
     function seedsChanged() {
