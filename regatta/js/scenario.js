@@ -2178,15 +2178,33 @@
     // SAVE is only offered when there is something to save (owner ruling):
     // dirty-tracking already exists, the button just reads it. Refreshed at
     // every doc-changing chokepoint (saveDraft) and every save/load/new.
+    // WHY is the doc dirty — named sections, not a boolean. Surfaced as the
+    // SAVE/DISCARD tooltips (owner: "why is Save enabled?" must be
+    // answerable from the page, not the console)
+    function dirtyWhy() {
+        const nm = (ui.querySelector('#lab-name').value || '').trim();
+        if (!nm) return 'unsaved scenario (no name yet)';
+        const lib = store();
+        if (!lib[nm]) return `“${nm}” is not in the library yet`;
+        const cur = canonDoc(JSON.parse(JSON.stringify({ name: nm, ...sceneObj() })));
+        const sav = canonDoc({ name: nm, ...lib[nm] });
+        const diffs = [];
+        for (const k of new Set([...Object.keys(cur), ...Object.keys(sav)])) {
+            if (JSON.stringify(cur[k]) !== JSON.stringify(sav[k])) diffs.push(k);
+        }
+        return diffs.length ? `differs from saved: ${diffs.join(', ')}` : 'differs from saved';
+    }
     function refreshSaveBtn() {
         const dirty = isDirty();
+        const why = dirty ? dirtyWhy() : 'no unsaved changes';
         const b = ui.querySelector('#lab-save');
-        if (b) b.disabled = !dirty;
+        if (b) { b.disabled = !dirty; b.title = why; }
         // DISCARD mirrors SAVE: only offered when there is something to lose
         const d = ui.querySelector('#lab-discard');
         if (d) {
             d.style.opacity = dirty ? '1' : '.35';
             d.style.pointerEvents = dirty ? 'auto' : 'none';
+            d.title = dirty ? `${why} — restore the saved version` : 'no unsaved changes';
         }
     }
     function markSaved() {
