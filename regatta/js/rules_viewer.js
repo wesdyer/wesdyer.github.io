@@ -2,8 +2,12 @@
 // the real game. One scenario loops at a time: the boats are PINNED to the
 // scenario's scripted geometry every frame while the live engine (rules oracle,
 // contact/mark/island umpires) runs underneath, so what the overlay reports is
-// what the shipping game would actually rule. Rule text underneath, prev/next
-// to move through the battery. The same data file drives eval/test_scenarios.js.
+// what the shipping game would actually rule. Rule text underneath, a
+// DETERMINATION line per phase (expected vs what the engine says, with a
+// verdict), prev/next to move through the battery. Only the boats under
+// consideration are on the water — they are renamed A and B, the camera is a
+// fixed north-up view centred on them, and the player boat is parked offshore.
+// The same data file drives eval/test_scenarios.js.
 (function () {
     'use strict';
     const SCN = (window.RuleScenarios && window.RuleScenarios.scenarios) || [];
@@ -23,15 +27,15 @@
 
     const V = {
         i: idx0, s: SCN[idx0],
-        frame: null,        // resolved anchor frame
-        t: 0,               // seconds into the loop
-        program: null,      // [{dur, poseAt(tFrac)->{A:{x,y,heading},B:...}, phase}]
+        frame: null,
+        t: 0,
+        program: null,      // [{pose, label, oracle, behavior}]
         boats: null,
         ready: false,
     };
 
-    const PHASE_HOLD = 2.5;   // seconds a phase's final pose is held
-    const PHASE_MOVE = 1.2;   // seconds animating into a phase's pose
+    const PHASE_HOLD = 3.0;   // seconds a phase's pose is held
+    const PHASE_MOVE = 1.2;   // seconds animating into the next pose
 
     function el(tag, cls, html) {
         const e = document.createElement(tag);
@@ -42,7 +46,7 @@
 
     // ── overlay ────────────────────────────────────────────────────────
     const box = el('div');
-    box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(10,18,28,0.88);color:#dbe7f3;font:14px/1.45 system-ui,sans-serif;padding:14px 18px 12px;border-top:1px solid rgba(120,180,220,0.35)';
+    box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:60;background:rgba(10,18,28,0.90);color:#dbe7f3;font:14px/1.45 system-ui,sans-serif;padding:14px 18px 12px;border-top:1px solid rgba(120,180,220,0.35)';
     const head = el('div'); head.style.cssText = 'display:flex;gap:12px;align-items:baseline;flex-wrap:wrap';
     const ruleEl = el('span'); ruleEl.style.cssText = 'font-weight:700;font-size:16px;color:#8fd0ff';
     const titleEl = el('span'); titleEl.style.cssText = 'font-weight:600';
@@ -53,8 +57,8 @@
     navEl.append(prevB, countEl, nextB);
     head.append(ruleEl, titleEl, navEl);
     const textEl = el('div'); textEl.style.cssText = 'margin-top:6px;max-width:1100px;opacity:0.9;font-style:italic';
-    const liveEl = el('div'); liveEl.style.cssText = 'margin-top:8px;font:13px/1.4 ui-monospace,monospace;color:#bfe3c0';
-    box.append(head, textEl, liveEl);
+    const detEl = el('div'); detEl.style.cssText = 'margin-top:9px;font:13px/1.5 ui-monospace,monospace';
+    box.append(head, textEl, detEl);
     document.body.appendChild(box);
 
     function go(i) {
@@ -87,8 +91,6 @@
         }
         const g = st.course.botGrid;
         if (g) {
-            // first clean bank spot (land upwind of a sailable heading, 8 open
-            // cells to leeward); openWater = the same spot 150u to leeward
             for (let j = 2; j < g.n - 2; j++) for (let i = 2; i < g.n - 2; i++) {
                 if (g.at(i, j)) continue;
                 const w0 = g.world(i, j);
@@ -112,8 +114,6 @@
                     }
                 }
             }
-            // no usable bank spot: an openWater scenario can still run on the
-            // open-water frame below; a bankSpot scenario genuinely needs one
             if (s.anchor === 'bankSpot') return null;
         }
         const b = st.course.boundary || { x: 0, y: 0 };
@@ -143,36 +143,39 @@
                  y: F.origin.y + F.uy * (p.dl || 0) + F.hy * (p.dh || 0) };
     }
 
-    // Build the playback program: a list of poses (per boat) with durations.
+    // Playback program: one segment per PHASE (pose after its move, plus that
+    // phase's oracle/behavior asserts, so the determination tracks the phase).
     function buildProgram(s, F) {
         const wd = getWindAt(F.origin.x, F.origin.y).direction;
-        const poses = [];    // each: {A:{x,y,heading}, B:{...}}
+        const segs = [];
         const base = {};
         for (const bs of s.boats) {
             base[bs.name] = { ...posOf(F, s, bs), heading: hdgOf(F, wd, bs.heading), isTacking: !!bs.isTacking };
         }
-        poses.push({ pose: JSON.parse(JSON.stringify(base)), label: 'setup' });
+        segs.push({ pose: JSON.parse(JSON.stringify(base)), label: 'setup', oracle: null, behavior: null });
         let cur = base;
         for (let k = 0; k < s.phases.length; k++) {
             const ph = s.phases[k];
+            let pose = cur;
             if (ph.move || ph.marchToLand) {
-                const next = JSON.parse(JSON.stringify(cur));
+                pose = JSON.parse(JSON.stringify(cur));
                 if (ph.move) for (const n of Object.keys(ph.move)) {
                     const mv = ph.move[n];
                     const P = posOf(F, s, mv);
-                    next[n] = { ...next[n], x: P.x, y: P.y };
-                    if (mv.heading != null) next[n].heading = hdgOf(F, wd, mv.heading);
+                    pose[n] = { ...pose[n], x: P.x, y: P.y };
+                    if (mv.heading != null) pose[n].heading = hdgOf(F, wd, mv.heading);
                 }
                 if (ph.marchToLand) {
                     const mb = ph.marchToLand;
-                    next[mb.boat] = { ...next[mb.boat], x: F.origin.x + F.ux * 110, y: F.origin.y + F.uy * 110 };
-                    next[mb.follower] = { ...next[mb.follower], x: F.origin.x + F.ux * 50, y: F.origin.y + F.uy * 50 };
+                    pose[mb.boat] = { ...pose[mb.boat], x: F.origin.x + F.ux * 110, y: F.origin.y + F.uy * 110 };
+                    pose[mb.follower] = { ...pose[mb.follower], x: F.origin.x + F.ux * 50, y: F.origin.y + F.uy * 50 };
                 }
-                poses.push({ pose: next, label: 'phase ' + (k + 1) });
-                cur = next;
+                cur = pose;
             }
+            segs.push({ pose, label: 'phase ' + (k + 1) + '/' + s.phases.length,
+                        oracle: ph.oracle || null, behavior: ph.behavior || null });
         }
-        return poses;
+        return segs;
     }
 
     // ── boot ───────────────────────────────────────────────────────────
@@ -187,12 +190,19 @@
         } catch (e) { console.error('rules_viewer boot', e); return; }
         const bots = st.boats.filter(b => !b.isPlayer);
         V.boats = { A: bots[0], B: bots[1] };
+        // ONLY the boats under consideration exist on this page: they carry the
+        // scenario's own names, everything else is parked far offshore — the
+        // player included (the camera is decoupled below, and the player must
+        // stay un-finished or the results overlay fires).
+        V.boats.A.name = 'A';
+        V.boats.B.name = 'B';
         for (const o of st.boats) {
-            if (o === bots[0] || o === bots[1] || o.isPlayer) continue;
-            o.x = -1e6; o.y = -1e6; o.raceState.finished = true; o.fadeTimer = 0;
+            if (o === bots[0] || o === bots[1]) continue;
+            o.x = -1e6; o.y = -1e6; o.speed = 0;
+            if (!o.isPlayer) { o.raceState.finished = true; o.fadeTimer = 0; }
         }
         V.frame = resolveFrame(V.s);
-        if (!V.frame) { liveEl.textContent = 'No anchor found on this venue for ' + V.s.id; return; }
+        if (!V.frame) { detEl.textContent = 'No anchor found on this venue for ' + V.s.id; return; }
         V.program = buildProgram(V.s, V.frame);
         ruleEl.textContent = V.s.rule;
         titleEl.textContent = V.s.title;
@@ -203,42 +213,86 @@
         V.t = 0; V.ready = true;
     }
 
-    // The whole loop duration
-    function loopDur() { return V.program.length * PHASE_HOLD + (V.program.length - 1) * PHASE_MOVE; }
-
-    // pose at time t (with interpolation between poses)
-    function poseAt(t) {
+    function segAt(t) {
         const P = V.program;
-        let seg = 0, acc = 0;
+        let acc = 0;
         for (let i = 0; i < P.length; i++) {
-            const hold = PHASE_HOLD;
-            if (t < acc + hold) return { a: P[i].pose, b: P[i].pose, f: 0, label: P[i].label };
-            acc += hold;
+            if (t < acc + PHASE_HOLD) return { a: P[i].pose, b: P[i].pose, f: 0, seg: P[i] };
+            acc += PHASE_HOLD;
             if (i < P.length - 1) {
                 if (t < acc + PHASE_MOVE) {
                     const f = (t - acc) / PHASE_MOVE;
-                    return { a: P[i].pose, b: P[i + 1].pose, f, label: P[i + 1].label };
+                    return { a: P[i].pose, b: P[i + 1].pose, f, seg: P[i + 1] };
                 }
                 acc += PHASE_MOVE;
             }
         }
-        return null; // loop over
+        return null;
+    }
+
+    // live observation, same vocabulary as the runner
+    function observe() {
+        const A = V.boats.A, B = V.boats.B;
+        const res = window.Rules.getRightOfWay(A, B);
+        return {
+            row: res.boat ? (res.boat === A ? 'A' : 'B') : null,
+            rule: res.rule || null,
+            markRoom: res.markRoom === A.id ? 'A' : res.markRoom === B.id ? 'B' : null,
+            overlapped: window.Rules.isOverlapped(A, B),
+            constraintR15: !!(res.constraints && res.constraints.indexOf('Rule 15') !== -1),
+            penA: !!A.raceState.penalty, penB: !!B.raceState.penalty,
+            isTackingA: !!A.raceState.isTacking, isTackingB: !!B.raceState.isTacking,
+            contact: Math.hypot(A.x - B.x, A.y - B.y) < 60,
+        };
+    }
+
+    const LABELS = {
+        row: 'right of way', rule: 'rule applied', markRoom: 'mark-room',
+        overlapped: 'overlapped', constraintR15: 'rule-15 window',
+        penA: 'penalty on A', penB: 'penalty on B',
+        isTackingA: 'A tacking flag', isTackingB: 'B tacking flag',
+        contact: 'hulls in contact', grounded: 'aground',
+    };
+    const show = (v) => v === null ? 'none' : v === true ? 'yes' : v === false ? 'no' : String(v);
+
+    function determination(seg, obs) {
+        const parts = [];
+        let allOk = true, any = false;
+        for (const [spec, tag] of [[seg.oracle, ''], [seg.behavior, '']]) {
+            if (!spec) continue;
+            for (const key of Object.keys(spec)) {
+                if (!(key in LABELS)) continue;
+                any = true;
+                const want = spec[key];
+                if (key === 'grounded') { parts.push(`${LABELS[key]}: expected ${show(want)}`); continue; }
+                const got = obs[key];
+                const ok = got === want;
+                if (!ok) allOk = false;
+                parts.push(`${LABELS[key]} → expected <b>${show(want)}</b>, engine says <b>${show(got)}</b> ` +
+                    (ok ? '<span style="color:#8fe38f">✓</span>' : '<span style="color:#ff9b8f">✗</span>'));
+            }
+        }
+        if (!any) return `<span style="opacity:0.65">${seg.label}: setting up — no determination asserted in this phase</span>`;
+        let verdict;
+        if (allOk) verdict = '<b style="color:#8fe38f">ENGINE MATCHES THE RULE</b>';
+        else if (V.s.knownGap) verdict = '<b style="color:#ffc46b">ENGINE DIFFERS — KNOWN GAP (not yet encoded)</b>';
+        else verdict = '<b style="color:#ff9b8f">ENGINE DIFFERS FROM THE RULE</b>';
+        return `<span style="opacity:0.75">${seg.label}</span> · ${parts.join(' · ')}<br>DETERMINATION: ${verdict}`;
     }
 
     function pin() {
         if (!V.ready) return;
         const st = window.state;
         V.t += 1 / 60;
-        let pp = poseAt(V.t);
+        let pp = segAt(V.t);
         if (!pp) {
-            // loop: clear penalties + interactions, restart
             for (const n of Object.keys(V.boats)) {
                 V.boats[n].raceState.penalty = false;
                 V.boats[n].raceState.totalPenalties = 0;
                 V.boats[n].raceState.penaltyTurnsOwed = 0;
             }
             window.Rules.interactions = {};
-            V.t = 0; pp = poseAt(0);
+            V.t = 0; pp = segAt(0);
         }
         for (const n of Object.keys(V.boats)) {
             const bt = V.boats[n];
@@ -246,34 +300,25 @@
             bt.x = a.x + (b.x - a.x) * pp.f;
             bt.y = a.y + (b.y - a.y) * pp.f;
             bt.heading = a.heading + normalizeAngle(b.heading - a.heading) * pp.f;
-            bt.speed = 1.5; // way on, for rendering
+            bt.speed = 1.5;
             bt.velocity = { x: Math.sin(bt.heading) * 1.5, y: -Math.cos(bt.heading) * 1.5 };
             bt.raceState.finished = false; bt.raceState.ocs = false;
             bt.raceState.isTacking = !!a.isTacking;
             if (V.s.anchor === 'roundMark' && V.frame.leg != null) bt.raceState.leg = V.frame.leg;
         }
-        // camera platform: park the player behind the action, looking at it
+        // the player stays parked offshore, un-finished (a finished player
+        // fires the results overlay), and the camera is OURS: a fixed
+        // north-up view centred between the two boats. pin() runs after
+        // update()'s camera block, so these writes win the frame.
         const pl = st.boats.find(b => b.isPlayer);
-        if (pl) {
-            const F = V.frame;
-            const back = 420;
-            const dirX = F.ux != null ? F.ux : 0, dirY = F.uy != null ? F.uy : -1;
-            pl.x = F.origin.x - dirX * back; pl.y = F.origin.y - dirY * back;
-            pl.heading = Math.atan2(F.origin.x - pl.x, -(F.origin.y - pl.y));
-            pl.speed = 0; pl.velocity = { x: 0, y: 0 };
-            pl.raceState.finished = false;
-        }
-        // live readout
+        if (pl) { pl.x = -1e6; pl.y = -1e6; pl.speed = 0; pl.velocity = { x: 0, y: 0 }; pl.raceState.finished = false; }
         const A = V.boats.A, B = V.boats.B;
-        const res = window.Rules.getRightOfWay(A, B);
-        const row = res.boat ? (res.boat === A ? 'A' : 'B') : '—';
-        const mr = res.markRoom === A.id ? 'A' : res.markRoom === B.id ? 'B' : '—';
-        liveEl.innerHTML =
-            `oracle: right-of-way <b>${row}</b> (${res.rule || '—'})  ·  mark-room <b>${mr}</b>` +
-            (res.constraints && res.constraints.length ? `  ·  limits: ${res.constraints.join(', ')}` : '') +
-            `<br>umpire: A ${A.raceState.penalty ? '<span style="color:#ff9b8f">PENALTY</span>' : 'clear'}` +
-            `  ·  B ${B.raceState.penalty ? '<span style="color:#ff9b8f">PENALTY</span>' : 'clear'}` +
-            `   <span style="opacity:0.6">(${pp.label}, boat A = ${A.name}, B = ${B.name})</span>`;
+        const cx = (A.x + B.x) / 2, cy = (A.y + B.y) / 2;
+        st.camera.rotation = 0;
+        st.camera.fx = cx; st.camera.fy = cy;
+        st.camera.x = cx; st.camera.y = cy;
+        st.camera.target = 'boat';
+        detEl.innerHTML = determination(pp.seg, observe());
     }
 
     // wrap the game's update so the pin runs after physics, before draw
@@ -282,11 +327,11 @@
 
     // the racing HUD is noise here — this page is about two boats and a rule
     function hideHud() {
-        for (const sel of ['#leaderboard', '#raceInfo', '#quoteBar', '#minimapPanel', '#minimap']) {
+        for (const sel of ['#leaderboard', '#raceInfo', '#quoteBar', '#minimapPanel', '#minimap',
+                           '#pre-race-overlay', '#results-overlay', '#ai-saying-overlay']) {
             const e = document.querySelector(sel);
             if (e) { let p = e; if (sel === '#minimap' && e.parentElement) p = e.parentElement; p.style.display = 'none'; }
         }
-        // any fixed panels that carry a leaderboard-like list
         for (const e of document.querySelectorAll('[id*="eaderboard"],[id*="uote"]')) e.style.display = 'none';
     }
 
