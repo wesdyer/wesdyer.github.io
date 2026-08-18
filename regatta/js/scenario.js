@@ -320,14 +320,20 @@
     }
 
     // ── playback bar ───────────────────────────────────────────────────
+    // transport icons: inline SVGs on currentColor, one visual family — the
+    // emoji glyphs (⏪/⏩) rendered as full-colour emoji next to a text ▶
+    const SVG_PLAY = '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M2.8 1.4 L10.6 6 L2.8 10.6 Z"/></svg>';
+    const SVG_PAUSE = '<svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><rect x="2" y="1.6" width="3" height="8.8" rx="1"/><rect x="7" y="1.6" width="3" height="8.8" rx="1"/></svg>';
+    const SVG_BACK = '<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true"><path d="M7.4 1.6 L2.6 6 L7.4 10.4 Z"/><path d="M12.6 1.6 L7.8 6 L12.6 10.4 Z"/></svg>';
+    const SVG_FWD = '<svg width="14" height="12" viewBox="0 0 14 12" fill="currentColor" aria-hidden="true"><path d="M1.4 1.6 L6.2 6 L1.4 10.4 Z"/><path d="M6.6 1.6 L11.4 6 L6.6 10.4 Z"/></svg>';
     const bar = document.createElement('div');
     bar.className = 'sl-panel';
     bar.style.cssText = 'top:auto;left:50%;transform:translateX(-50%);bottom:20px;display:none;align-items:center;gap:14px;padding:12px 18px;width:min(620px,calc(100vw - 80px));overflow:visible';
     bar.innerHTML = `
       <div style="display:flex;gap:6px">
-        <button id="pb-back" class="sl-tbtn" title="step back 0.5s">&#9194;</button>
-        <button id="pb-play" class="sl-tbtn sl-tbtn-pri">&#9654;</button>
-        <button id="pb-fwd" class="sl-tbtn" title="step forward 0.5s">&#9193;</button>
+        <button id="pb-back" class="sl-tbtn" title="step back 0.5s">${SVG_BACK}</button>
+        <button id="pb-play" class="sl-tbtn sl-tbtn-pri">${SVG_PLAY}</button>
+        <button id="pb-fwd" class="sl-tbtn" title="step forward 0.5s">${SVG_FWD}</button>
       </div>
       <span style="flex:1;position:relative;display:block">
         <input id="pb-slider" type="range" min="0" max="600" value="0">
@@ -498,7 +504,7 @@
         LAB.rec = null; LAB.playing = false; LAB.frame = 0;
         if (LAB.mode !== 'edit') LAB.mode = 'edit';
         bar.style.display = 'none';
-        pbPlay.innerHTML = '&#9654;';
+        pbPlay.innerHTML = SVG_PLAY;
         if (typeof refreshModeBtns === 'function') refreshModeBtns();
         saveDraft();
     }
@@ -1181,12 +1187,12 @@
         if (!LAB.rec) simulate();
         if (LAB.frame >= LAB.rec.nF) LAB.frame = 0;
         LAB.mode = 'play'; LAB.playing = true;
-        pbPlay.innerHTML = '&#10074;&#10074;';
+        pbPlay.innerHTML = SVG_PAUSE;
         bar.style.display = 'flex';
         refreshModeBtns();
         select(null);   // play mode: the inspector is Rights & Umpire, nothing else
     }
-    function pause() { LAB.playing = false; pbPlay.innerHTML = '&#9654;'; }
+    function pause() { LAB.playing = false; pbPlay.innerHTML = SVG_PLAY; }
     function enterEdit() {
         pause();
         LAB.mode = 'edit'; LAB.frame = 0;
@@ -1195,7 +1201,7 @@
         select({ kind: 'scenario' });
     }
     runBtn.onclick = () => { if (LAB.mode !== 'play') play(); };
-    pbPlay.onclick = () => { if (LAB.playing) pause(); else { if (LAB.frame >= LAB.rec.nF) LAB.frame = 0; LAB.playing = true; pbPlay.innerHTML = '&#10074;&#10074;'; } };
+    pbPlay.onclick = () => { if (LAB.playing) pause(); else { if (LAB.frame >= LAB.rec.nF) LAB.frame = 0; LAB.playing = true; pbPlay.innerHTML = SVG_PAUSE; } };
     bar.querySelector('#pb-back').onclick = () => { pause(); setFrame(LAB.frame - 30); };
     bar.querySelector('#pb-fwd').onclick = () => { pause(); setFrame(LAB.frame + 30); };
     pbSlider.addEventListener('input', () => { pause(); setFrame(+pbSlider.value); });
@@ -1249,7 +1255,7 @@
     document.addEventListener('keypress', swallowKeys, false);
 
     // ── save / load ────────────────────────────────────────────────────
-    function store() { try { return JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { return {}; } }
+    // (store() lives with the library machinery below)
     function sceneObj() {
         const S = LAB.stage;
         return {
@@ -1314,11 +1320,22 @@
     // file seeds the library and local saves win on name conflicts, so work
     // saved before the file was attached never vanishes. Attaching the file
     // via File… makes every save/delete write assets/scenarios.js itself.
+    // DELETION TOMBSTONES. The shipped file re-seeds the library on every
+    // store() call and every page load, so "delete" must be a recorded fact,
+    // not just a removal — without the tombstone a shipped scenario popped
+    // straight back into the Open list (the delete-in-Open bug). Saving a
+    // scenario under a tombstoned name clears its tombstone.
+    function loadTombs() {
+        try { return new Set(JSON.parse(localStorage.getItem(STORE_KEY + '_tombs') || '[]')); } catch (e) { return new Set(); }
+    }
+    function saveTombs(t) { localStorage.setItem(STORE_KEY + '_tombs', JSON.stringify([...t])); }
     function store() {
         let local = {};
         try { local = JSON.parse(localStorage.getItem(STORE_KEY) || '{}'); } catch (e) { }
         const shipped = (window.SCENARIO_DOC && typeof window.SCENARIO_DOC === 'object') ? window.SCENARIO_DOC : {};
-        return { ...shipped, ...local };
+        const merged = { ...shipped, ...local };
+        for (const t of loadTombs()) delete merged[t];
+        return merged;
     }
     function persistLib(lib) {
         localStorage.setItem(STORE_KEY, JSON.stringify(lib));
@@ -1490,6 +1507,8 @@
     }
     function saveScenario(asNew) {
         const doIt = (name) => {
+            const t = loadTombs();
+            if (t.has(name)) { t.delete(name); saveTombs(t); }   // saving revives the name
             const lib = store();
             lib[name] = sceneObj();
             persistLib(lib);
@@ -1550,7 +1569,11 @@
                 e.stopPropagation();
                 dlg.close();
                 confirmDialog('Delete scenario', `Delete “${n}”? This cannot be undone.`, () => {
-                    const l2 = store(); delete l2[n]; persistLib(l2);
+                    const l2 = store(); delete l2[n];
+                    const t = loadTombs(); t.add(n); saveTombs(t);
+                    // the in-memory shipped copy too, or store() resurrects it
+                    if (window.SCENARIO_DOC) delete window.SCENARIO_DOC[n];
+                    persistLib(l2);
                     openScenario();
                 }, 'Delete');
             };
