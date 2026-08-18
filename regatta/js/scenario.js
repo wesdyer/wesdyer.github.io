@@ -1233,13 +1233,31 @@
     const seedPills = ui.querySelector('#lab-seedpills');
     const pbSeedSel = bar.querySelector('#pb-seed');
     function activeSeed() { return LAB.seeds[Math.min(LAB.seedIx, LAB.seeds.length - 1)] >>> 0; }
+    // one colour rule everywhere a seed's run shows (owner ruling, in
+    // priority order): assertion FAIL red > COLLISION orange > PENALTY
+    // yellow > clean white. Unrun = muted (no data yet).
+    function seedStatus(s) {
+        s = s >>> 0;
+        if (LAB.seedFail && LAB.seedFail[s]) return 'fail';
+        const rec = LAB.recs[s];
+        if (!rec) return 'unrun';
+        if (rec.pens.some(p => p.kind === 'contact')) return 'collision';
+        if (rec.pens.length) return 'penalty';
+        return 'ok';
+    }
+    const SEED_COLORS = { fail: '#ff8a75', collision: '#ffa14f', penalty: '#f2c14e', ok: '#eef3fb', unrun: '#66748c' };
+    const SEED_TITLES = { fail: 'an assertion fails on this run', collision: 'boats collide on this run',
+                          penalty: 'a penalty on this run (no collision)', ok: 'clean run', unrun: 'not run yet' };
     function renderSeeds() {
         seedPills.innerHTML = '';
         LAB.seeds.forEach((s, i) => {
+            const st = seedStatus(s);
             const pill = document.createElement('span');
-            pill.className = 'sl-schip ' + (i === LAB.seedIx ? 'sl-schip-blue' : 'sl-schip-mute');
-            pill.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums';
-            pill.title = i === LAB.seedIx ? 'the transport shows this seed' : 'switch the transport to this seed';
+            pill.className = 'sl-schip';
+            pill.style.cssText = 'cursor:pointer;display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums;'
+                + `color:${SEED_COLORS[st]};`
+                + (i === LAB.seedIx ? 'background:rgba(47,107,255,.25)' : 'background:rgba(255,255,255,.07)');
+            pill.title = SEED_TITLES[st] + (i === LAB.seedIx ? ' · the transport shows this seed' : ' · click to switch');
             const num = document.createElement('span');
             num.textContent = s >>> 0;
             const x = document.createElement('span');
@@ -1265,20 +1283,21 @@
         const btn = bar.querySelector('#pb-seed');
         const menu = bar.querySelector('#pb-seedmenu');
         wrap.style.display = LAB.seeds.length > 1 ? 'inline-block' : 'none';
-        const failing = LAB.seedFail || {};
         const act = activeSeed();
-        btn.innerHTML = `<span style="color:${failing[act] ? '#ff8a75' : '#eef3fb'}">${act}</span>` +
+        btn.innerHTML = `<span style="color:${SEED_COLORS[seedStatus(act)]}">${act}</span>` +
             '<span style="color:#66748c;font-size:9px;margin-left:6px">&#9662;</span>';
+        btn.title = SEED_TITLES[seedStatus(act)] + ' — which seed the transport shows';
         menu.innerHTML = '';
         LAB.seeds.map((s, i) => [s >>> 0, i]).sort((a, b) => a[0] - b[0]).forEach(([s, i]) => {
             const row = document.createElement('div');
             const on = i === LAB.seedIx;
+            const st = seedStatus(s);
             row.style.cssText = 'display:flex;justify-content:center;padding:7px 12px;border-radius:7px;cursor:pointer;'
                 + 'font:800 11px Archivo,system-ui,sans-serif;font-variant-numeric:tabular-nums;'
-                + `color:${failing[s] ? '#ff8a75' : '#eef3fb'};`
+                + `color:${SEED_COLORS[st]};`
                 + (on ? 'background:rgba(47,107,255,.25)' : '');
             row.textContent = s;
-            row.title = failing[s] ? 'an assertion fails on this seed' : '';
+            row.title = SEED_TITLES[st];
             row.onmouseenter = () => { if (!on) row.style.background = 'rgba(255,255,255,.07)'; };
             row.onmouseleave = () => { if (!on) row.style.background = ''; };
             row.onclick = () => { menu.style.display = 'none'; setActiveSeed(i); };
