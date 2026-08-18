@@ -1691,6 +1691,15 @@
             // no rules residue from a previous run
             delete bt._r19Since;
             bt.raceState.roundArmed = false; bt.raceState.roundSweep = 0;
+            // ⚠️ re-assert the LAB INVARIANT after the canonical-scalar
+            // restore above: the canon Boat's raceState carries leg 0, and
+            // leg 0 turns the whole START machinery on (the strategic
+            // leg-0 close-hauled drive is wd ± 0.75 rad — measured: every
+            // AI boat settled at exactly TWA 43° instead of sailing her
+            // fetchable course). Leg 2 is also what lets rule 18's zone
+            // latch arm at lab marks.
+            bt.raceState.leg = 2;
+            bt.raceState.finished = false;
             // turbulence spawns draw Math.random per frame in update() — an
             // edit-time population would consume the burst's seeded stream
             // differently run to run (see the gusts note below)
@@ -1937,6 +1946,13 @@
                 congestionTimer: Math.random() * 2.0,
             };
             if (typeof BotController !== 'undefined') bt.controller = new BotController(bt);
+            // start IN HER GROOVE: the fresh helm's constructor aims NORTH
+            // (targetHeading 0) and holds it for a randomized 0-0.2s first-
+            // decision delay — measured as every boat pinching toward the
+            // wind for the opening 0.2s. Aim her at the authored heading and
+            // let the first real decision land on frame one.
+            bt.controller.targetHeading = lb.heading;
+            bt.controller.updateTimer = 0;
             // the rules module's per-boat clocks (tack-flip times feed the
             // rule-15 acquisition test) must not leak between runs either
             if (window.Rules) {
