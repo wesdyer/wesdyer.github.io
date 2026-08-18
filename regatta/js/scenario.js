@@ -432,8 +432,7 @@
     bar.className = 'sl-panel';
     bar.style.cssText = 'top:auto;left:50%;transform:translateX(-50%);bottom:20px;display:flex;align-items:center;gap:14px;padding:12px 18px;width:min(620px,calc(100vw - 80px));overflow:visible';
     bar.innerHTML = `
-      <button id="pb-sim" class="sl-btn sl-btn-pri" style="flex:1;padding:10px 0;letter-spacing:.12em" title="run every seed in the set (SPACE)">SIMULATE</button>
-      <span id="pb-controls" style="display:none;flex:1;align-items:center;gap:14px">
+      <span id="pb-controls" style="display:flex;flex:1;align-items:center;gap:14px">
       <div style="display:flex;gap:6px">
         <button id="pb-start" class="sl-tbtn" title="to the start (t=0) — where editing lives">${SVG_START}</button>
         <button id="pb-back" class="sl-tbtn" title="step back 0.5s">${SVG_BACK}</button>
@@ -1590,13 +1589,12 @@
             .filter(Boolean).join(' · ');
         return pill(pass === n ? '#7ed491' : '#ff8a75', `${pass}/${n} PASS`, detail);
     }
-    // the transport wears ONE face at a time (owner ruling): a single
-    // SIMULATE button until every seed in the set has a recording, the full
-    // scrub controls after — and any invalidating edit flips it back
+    // the transport appears only in SIMULATE mode once every seed (and the
+    // proper course) has a recording (owner ruling) — while simulating, and
+    // in EDIT mode, there is no bar at all
     function refreshTransport() {
         const complete = LAB.seeds.length && LAB.seeds.every(s => LAB.recs[s >>> 0]) && !!LAB.recs.proper;
-        bar.querySelector('#pb-sim').style.display = complete ? 'none' : 'block';
-        bar.querySelector('#pb-controls').style.display = complete ? 'flex' : 'none';
+        bar.style.display = (LAB.uiMode === 'sim' && complete) ? 'flex' : 'none';
     }
     function renderSeeds() {
         refreshTransport();   // renderSeeds runs at every rec/seed chokepoint
@@ -2156,7 +2154,6 @@
     }
     function pause() { LAB.playing = false; pbPlay.innerHTML = SVG_PLAY; }
     pbPlay.onclick = () => { if (LAB.playing) pause(); else play(); };
-    bar.querySelector('#pb-sim').onclick = () => simulateOnly();
     // EDIT / SIMULATE — the top-of-panel mode pair (owner mockup, back by
     // request). SIMULATE = sim anything stale, then the transport; EDIT =
     // transport away, stage back to the t=0 setup. Frame-0-is-authoring
@@ -2166,13 +2163,12 @@
         ui.querySelector('#lab-mode-edit').classList.toggle('sl-btn-pri', m === 'edit');
         ui.querySelector('#lab-mode-sim').classList.toggle('sl-btn-pri', m === 'sim');
         if (m === 'sim') {
-            bar.style.display = 'flex';
             simulateOnly();   // no-op when the whole set is already simulated
         } else {
             pause();
             if (LAB.rec) setFrame(0);   // recordings are KEPT — just rewound
-            bar.style.display = 'none';
         }
+        refreshTransport();   // the bar shows only when sim mode has a full set
     }
     ui.querySelector('#lab-mode-edit').onclick = () => setUIMode('edit');
     ui.querySelector('#lab-mode-sim').onclick = () => setUIMode('sim');
