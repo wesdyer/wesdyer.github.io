@@ -559,14 +559,12 @@
         };
         if (typeof applyBoatIdentity === 'function') applyBoatIdentity(lb.bot, cfg, false);
         else { lb.bot.name = cfg.name; lb.bot.colors = { hull: cfg.hull, sail: cfg.sail, cockpit: cfg.cockpit, spinnaker: cfg.spinnaker }; }
-        // neutral HELM too: the controller was constructed at boot with a
-        // roster character's archetype + traits, and applyBoatIdentity never
-        // resets those — clear them or every lab boat sails a hidden persona
-        const c = lb.bot.controller;
-        if (c) {
-            c.archetype = null;
-            if (typeof DEFAULT_TRAITS !== 'undefined') c.traits = Object.assign({}, DEFAULT_TRAITS);
-        }
+        // neutral PERSONA too. ⚠️ archetype + traits live on the BOAT (the
+        // Boat constructor sets them from the dealt character config), not on
+        // the controller — the first cut of this neutralization wrote to the
+        // controller and every lab boat kept sailing its boot-dealt persona.
+        lb.bot.archetype = null;
+        if (typeof DEFAULT_TRAITS !== 'undefined') lb.bot.traits = Object.assign({}, DEFAULT_TRAITS);
     }
     function addBoat(wx, wy) {
         const bot = LAB.pool.shift();
@@ -933,6 +931,15 @@
             // kite starts stowed — a pool recruit otherwise carries whatever
             // hoist state its parked racing life left behind
             bt.spinnaker = false; bt.spinnakerDeployProgress = 0;
+            // boom settled for the starting tack (the engine's own sail rule:
+            // relWind > 0 → boom to starboard) — physical state must be
+            // identical every run or getTack's by-the-lee case can differ
+            const relW = (() => { let a = -bt.heading; while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; })();
+            bt.targetBoomSide = Math.abs(relW) > 0.1 ? (relW > 0 ? 1 : -1) : 1;
+            bt.boomSide = bt.targetBoomSide;
+            // no rules residue from a previous run
+            delete bt._r19Since;
+            bt.raceState.roundArmed = false; bt.raceState.roundSweep = 0;
             const c = bt.controller;
             if (c) { c.lowSpeedTimer = 0; c.wiggleActive = false; c.escActive = false; c.iceEscapeTimer = 0; }
         }
@@ -1110,8 +1117,47 @@
     }
     function simulate() {
         applyInitial();
+        // DETERMINISM: a testing tool must give the same verdict for the same
+        // scenario. Two layers:
+        // 1. the burst runs under a seeded PRNG (mulberry32) — the AI rolls
+        //    Math.random for wiggle sides and tie-breaks;
+        // 2. every lab boat's HELM is rebuilt from scratch INSIDE the seeded
+        //    scope. A controller carries timers, EMAs and boot-time randoms
+        //    (prestart side, congestion phase), it keeps mutating while you
+        //    sit in EDIT (updateAI runs on pinned boats every frame), and it
+        //    survives from run to run — measured: the same scenario gave
+        //    penalty/no-penalty depending on what was played before it.
+        const realRandom = Math.random;
+        let rngState = 0x9e3779b9;
+        Math.random = function () {
+            rngState |= 0; rngState = (rngState + 0x6D2B79F5) | 0;
+            let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
+            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+        };
+        const nF = Math.round(LAB.durationS * 60);
+        let frames;
+        try {
         for (const lb of LAB.boats) {
-            const c = lb.bot.controller;
+            const bt = lb.bot;
+            // fresh, neutral persona + helm (all randoms drawn seeded)
+            bt.archetype = null;
+            if (typeof DEFAULT_TRAITS !== 'undefined') bt.traits = Object.assign({}, DEFAULT_TRAITS);
+            bt.ai = {
+                targetHeading: 0, state: 'start', tackCooldown: 0, stuckTimer: 0,
+                recoveryMode: false, recoveryTarget: 0,
+                prestartSide: (Math.random() > 0.5) ? 1 : -1,
+                trimTimer: 0, currentTrimTarget: 0,
+                congestionTimer: Math.random() * 2.0,
+            };
+            if (typeof BotController !== 'undefined') bt.controller = new BotController(bt);
+            // the rules module's per-boat clocks (tack-flip times feed the
+            // rule-15 acquisition test) must not leak between runs either
+            if (window.Rules) {
+                if (window.Rules._tackFlipT) delete window.Rules._tackFlipT[bt.id];
+                if (window.Rules._lastTack) delete window.Rules._lastTack[bt.id];
+            }
+            const c = bt.controller;
             // per-run goal state: fresh queue every simulation
             lb._goalIdx = 0; lb._sweep = null; lb._gSide = null; lb._goalOut = null;
             const scripted = lb.plan && lb.plan.length > 0 && lb.aiAtS !== 0;
@@ -1126,23 +1172,8 @@
                 aiNavFor(lb, lb.heading);
             }
         }
-        const nF = Math.round(LAB.durationS * 60);
-        const frames = [snapshot()];
+        frames = [snapshot()];
         LAB.recording = true;
-        // DETERMINISM: a testing tool must give the same verdict for the same
-        // scenario. The AI rolls Math.random (wiggle sides, tie-breaks), so the
-        // burst runs under a seeded PRNG (mulberry32) and the real one comes
-        // back afterwards — playback is scrubbing a recording, so nothing
-        // visual depends on this.
-        const realRandom = Math.random;
-        let rngState = 0x9e3779b9;
-        Math.random = function () {
-            rngState |= 0; rngState = (rngState + 0x6D2B79F5) | 0;
-            let t = Math.imul(rngState ^ (rngState >>> 15), 1 | rngState);
-            t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-            return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-        };
-        try {
             for (let f = 1; f <= nF; f++) {
                 LAB.simT = f / 60;   // the plan's clock
                 for (const lb of LAB.boats) {
