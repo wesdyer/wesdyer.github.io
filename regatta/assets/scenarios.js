@@ -27,7 +27,12 @@ window.SCENARIO_DOC = {
     ],
     "marks": [],
     "sands": [],
-    "lines": []
+    "lines": [],
+    "asserts": [
+      { "kind": "row", "of": 1, "over": 0, "rule": "13", "t": 5.9 },
+      { "kind": "row", "of": 0, "over": 1, "rule": "10", "t": 6.3 },
+      { "kind": "penalty", "who": 0, "rule": "15" }
+    ]
   },
   "Tack onto STBD 2": {
     "v": 1,
@@ -55,6 +60,11 @@ window.SCENARIO_DOC = {
     ],
     "marks": [],
     "sands": [],
-    "lines": []
+    "lines": [],
+    "asserts": [
+      { "kind": "row", "of": 1, "over": 0, "rule": "13", "t": 5.9 },
+      { "kind": "row", "of": 0, "over": 1, "rule": "10", "t": 6.3 },
+      { "kind": "penalty", "who": 0, "rule": "15" }
+    ]
   }
 };

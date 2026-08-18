@@ -71,6 +71,9 @@
         recording: false,
         goalArm: false,      // "+ ADD GOAL" armed: next click appends a goal
         zoom: 1,             // 1 = 100%; the game canvas renders at viewport/zoom
+        asserts: [],         // structured expectations, saved with the doc
+        assertResults: null, // last run's verdicts (ScenarioAsserts.evaluate)
+        assertMulti: null,   // multi-seed aggregate {n, rows:[{ok,failSeed,why,atS}]}
     };
     // debug/test seam: lets the console (and the Playwright checks) see the
     // lab's state without threading it through the page
@@ -131,6 +134,8 @@
       .sl-schip-amber{color:#f2c14e;background:rgba(242,193,78,.1)}
       .sl-schip-red{color:#ff8a75;background:rgba(236,48,19,.14)}
       .sl-schip-mute{color:#8fa3bd;background:rgba(255,255,255,.07)}
+      .sl-schip-blue{color:#8fc2ff;background:rgba(47,107,255,.18)}
+      .sl-msel{appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.08);color:#eef3fb;border:none;border-radius:5px;font:800 10px Archivo,system-ui,sans-serif;letter-spacing:.04em;padding:3px 5px;cursor:pointer;text-align:center}
       .sl-tbtn{appearance:none;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.07);border:none;display:grid;place-items:center;font-size:12px;color:#eef3fb;cursor:pointer;padding:0}
       .sl-tbtn:hover{background:rgba(255,255,255,.15)}
       .sl-tbtn-pri{background:#2f6bff}
@@ -176,6 +181,16 @@
           </div>
           <button id="lab-seed-rnd" class="sl-btn" style="flex:none;padding:9px 12px" title="roll a new seed">RANDOM</button>
         </div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+            <span class="sl-sectlabel" style="margin:0" title="expectations checked against every run">ASSERTIONS</span>
+            <span style="display:flex;gap:10px;align-items:baseline">
+              <span id="lab-check5" class="sl-link" title="run 5 seeds (this one + 4 successors); every assertion must hold on all of them">CHECK &times;5</span>
+              <span id="lab-assertadd" class="sl-link">+ ADD</span>
+            </span>
+          </div>
+          <div id="lab-asserts"></div>
+        </div>
         <div style="display:flex;gap:6px;margin-top:10px">
           <button id="lab-save" class="sl-btn sl-btn-pri">SAVE</button>
           <button id="lab-saveas" class="sl-btn">SAVE AS&hellip;</button>
@@ -203,6 +218,7 @@
     ump.innerHTML = `
       <div class="sl-head">
         <span class="sl-title">RIGHTS &amp; UMPIRE</span>
+        <span id="lab-agg" class="sl-schip" style="display:none" title="assertions passing on the last run"></span>
         <span id="lab-time" style="font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>
       </div>
       <div id="lab-rights" style="padding:12px 16px 8px"></div>
@@ -334,6 +350,8 @@
                 layersDiv.appendChild(row);
             }
         }
+        // assertion rows carry boat pickers — rebuild them when the fleet changes
+        if (typeof renderAsserts === 'function' && LAB.ready !== undefined) renderAsserts();
     }
 
     // ── playback bar ───────────────────────────────────────────────────
@@ -519,6 +537,8 @@
     // ── objects ────────────────────────────────────────────────────────
     function invalidate() {
         LAB.rec = null; LAB.playing = false; LAB.frame = 0;
+        LAB.assertResults = null; LAB.assertMulti = null;
+        if (typeof renderAsserts === 'function' && LAB.ready) evaluateAsserts();
         if (LAB.mode !== 'edit') LAB.mode = 'edit';
         // the transport stays put — it just rewinds and disarms
         pbPlay.innerHTML = SVG_PLAY;
@@ -701,6 +721,14 @@
             LAB.pool.unshift(s.ref.bot);
             // keep the alphabet contiguous: later boats take over the freed identities
             LAB.boats.forEach((lb, k) => applyLabIdentity(lb, k));
+            // assertions address boats by index: drop rows that named the
+            // deleted boat, slide the rest down (who === -1 "nobody" is safe:
+            // this only runs for a found index, i >= 0)
+            if (i >= 0) {
+                const BK = { penalty: ['who'], row: ['of', 'over'], clear: ['a', 'b'], tack: ['who'], goals: ['who'] };
+                LAB.asserts = LAB.asserts.filter(a => !(BK[a.kind] || []).some(kf => a[kf] === i));
+                for (const a of LAB.asserts) for (const kf of (BK[a.kind] || [])) if (a[kf] > i) a[kf]--;
+            }
         } else if (s.kind === 'mark') {
             const ms = window.state.course.marks;
             const i = ms.indexOf(s.ref); if (i >= 0) ms.splice(i, 1);
@@ -915,6 +943,213 @@
     goalAddLink.onclick = () => {
         if (!LAB.sel || LAB.sel.kind !== 'boat') return;
         setGoalArm(!LAB.goalArm);
+    };
+
+    // ── ASSERTIONS: the scenario as a TEST. Structured rows saved with the
+    // doc; ScenarioAsserts (shared with eval/run_scenario.js) judges them
+    // against the recording after every run. Editing an assertion never
+    // invalidates the recording — expectations don't change the sailing.
+    const assertsDiv = ui.querySelector('#lab-asserts');
+    const aggChip = ui.querySelector('#lab-agg');
+    function boatNames() { return LAB.boats.map(lb => lb.bot.name); }
+    function assertsChanged() {
+        LAB.assertMulti = null;
+        saveDraft();
+        evaluateAsserts();
+    }
+    function evaluateAsserts() {
+        LAB.assertResults = (LAB.rec && window.ScenarioAsserts)
+            ? window.ScenarioAsserts.evaluate(LAB.asserts, LAB.rec) : null;
+        renderAsserts();
+        const rs = LAB.assertResults;
+        if (rs && rs.length) {
+            const ok = rs.filter(r => r.status === 'pass' || r.status === 'gap').length;
+            aggChip.textContent = 'ASSERTS ' + ok + '/' + rs.length;
+            aggChip.className = 'sl-schip ' + (ok === rs.length ? 'sl-schip-teal' : 'sl-schip-red');
+            aggChip.style.display = 'inline-block';
+        } else aggChip.style.display = 'none';
+    }
+    function boatSel(val, onPick, allowNobody) {
+        const s = document.createElement('select');
+        s.className = 'sl-msel';
+        if (allowNobody) { const o = document.createElement('option'); o.value = '-1'; o.textContent = 'NOBODY'; s.appendChild(o); }
+        LAB.boats.forEach((lb, i) => {
+            const o = document.createElement('option'); o.value = String(i); o.textContent = lb.bot.name; s.appendChild(o);
+        });
+        s.value = String(val);
+        s.addEventListener('change', () => { onPick(parseInt(s.value, 10)); assertsChanged(); });
+        return s;
+    }
+    function bareIn(val, w, title, onSet) {
+        const i = document.createElement('input');
+        i.type = 'text'; i.inputMode = 'decimal'; i.className = 'sl-bare';
+        i.style.width = w + 'px'; i.title = title; i.value = val;
+        i.addEventListener('change', () => { onSet(i.value.trim()); assertsChanged(); });
+        return i;
+    }
+    const hintSpan = (txt) => { const s = document.createElement('span'); s.className = 'sl-hint'; s.textContent = txt; return s; };
+    function renderAsserts() {
+        assertsDiv.innerHTML = '';
+        LAB.asserts.forEach((a, k) => {
+            const row = document.createElement('div');
+            row.className = 'sl-step';
+            row.style.flexWrap = 'wrap';
+            const nB = document.createElement('span');
+            nB.className = 'sl-stepn'; nB.textContent = k + 1;
+            row.appendChild(nB);
+            if (a.kind === 'penalty') {
+                row.appendChild(boatSel(a.who, v => a.who = v, true));
+                row.appendChild(hintSpan(a.who === -1 ? 'penalized' : 'penalized · rule'));
+                if (a.who !== -1) row.appendChild(bareIn(a.rule || '', 26, 'rule number (blank = any)', v => a.rule = v || undefined));
+            } else if (a.kind === 'row') {
+                row.appendChild(bareIn(a.t, 26, 'time (s)', v => a.t = Math.max(0, parseFloat(v) || 0)));
+                row.appendChild(hintSpan('s'));
+                row.appendChild(boatSel(a.of, v => a.of = v));
+                row.appendChild(hintSpan('rights over'));
+                row.appendChild(boatSel(a.over, v => a.over = v));
+                row.appendChild(bareIn(a.rule || '', 26, 'rule number (blank = any)', v => a.rule = v || undefined));
+            } else if (a.kind === 'clear') {
+                row.appendChild(boatSel(a.a, v => a.a = v));
+                row.appendChild(boatSel(a.b, v => a.b = v));
+                row.appendChild(hintSpan('clear ≥'));
+                row.appendChild(bareIn(a.min != null ? a.min : 55, 30, 'minimum distance (u)', v => a.min = Math.max(0, parseFloat(v) || 55)));
+                row.appendChild(hintSpan('u'));
+            } else if (a.kind === 'tack') {
+                row.appendChild(bareIn(a.t, 26, 'time (s)', v => a.t = Math.max(0, parseFloat(v) || 0)));
+                row.appendChild(hintSpan('s'));
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                const tSel = document.createElement('select');
+                tSel.className = 'sl-msel';
+                for (const v of ['port', 'stbd']) { const o = document.createElement('option'); o.value = v; o.textContent = v.toUpperCase(); tSel.appendChild(o); }
+                tSel.value = a.tack || 'stbd';
+                tSel.addEventListener('change', () => { a.tack = tSel.value; assertsChanged(); });
+                row.appendChild(tSel);
+            } else if (a.kind === 'goals') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('completes goals'));
+            }
+            // status chip: last run's verdict (or the multi-seed aggregate).
+            // Clicking a failure scrubs to the moment; a multi-seed failure
+            // loads its failing seed so you can watch that run.
+            const multi = LAB.assertMulti && LAB.assertMulti.rows[k];
+            const res = LAB.assertResults && LAB.assertResults[k];
+            const chip = document.createElement('span');
+            chip.style.marginLeft = 'auto';
+            if (multi) {
+                chip.className = 'sl-schip ' + (multi.ok === LAB.assertMulti.n ? 'sl-schip-teal' : 'sl-schip-red');
+                chip.textContent = multi.ok + '/' + LAB.assertMulti.n;
+                chip.title = multi.ok === LAB.assertMulti.n ? 'held on every seed'
+                    : `fails on seed ${multi.failSeed} — ${multi.why || ''} (click to load that run)`;
+                if (multi.ok < LAB.assertMulti.n) {
+                    chip.style.cursor = 'pointer';
+                    chip.onclick = () => {
+                        LAB.seed = multi.failSeed >>> 0;
+                        seedIn.value = LAB.seed;
+                        simulate();
+                        if (multi.atS != null) { pause(); setFrame(Math.round(multi.atS * 60)); }
+                    };
+                }
+            } else if (res) {
+                const cls = { pass: 'sl-schip-teal', fail: 'sl-schip-red', gap: 'sl-schip-amber', fixed: 'sl-schip-blue' }[res.status];
+                chip.className = 'sl-schip ' + cls;
+                chip.textContent = res.status.toUpperCase();
+                chip.title = res.why + (res.status === 'gap' ? ' (expected — documented gap)'
+                    : res.status === 'fixed' ? ' (expected to fail but PASSED — the gap closed?)' : '');
+                if (res.atS != null) {
+                    chip.style.cursor = 'pointer';
+                    chip.title += ' · click to scrub there';
+                    chip.onclick = () => { pause(); setFrame(Math.round(res.atS * 60)); };
+                }
+            } else {
+                chip.className = 'sl-schip sl-schip-mute';
+                chip.textContent = '·';
+                chip.title = 'run the scenario to judge';
+            }
+            row.appendChild(chip);
+            // XF: expected-to-fail (the battery's knownGap in lab clothes)
+            const xf = document.createElement('span');
+            xf.className = 'sl-schip ' + (a.xfail ? 'sl-schip-amber' : 'sl-schip-mute');
+            xf.textContent = 'XF';
+            xf.style.cursor = 'pointer';
+            xf.title = 'expected to fail — a documented engine gap (amber = on)';
+            xf.onclick = () => { a.xfail = !a.xfail || undefined; assertsChanged(); };
+            row.appendChild(xf);
+            const del = document.createElement('span');
+            del.innerHTML = '&#10005;';
+            del.style.cssText = 'cursor:pointer;color:#66748c;font-size:11px;padding:0 2px';
+            del.onmouseenter = () => del.style.color = '#ff8a75';
+            del.onmouseleave = () => del.style.color = '#66748c';
+            del.onclick = () => { LAB.asserts.splice(k, 1); assertsChanged(); };
+            row.appendChild(del);
+            assertsDiv.appendChild(row);
+        });
+        if (!LAB.asserts.length) {
+            const p = document.createElement('div');
+            p.className = 'sl-hint';
+            p.textContent = 'expectations judged after every run · + ADD';
+            assertsDiv.appendChild(p);
+        }
+    }
+    ui.querySelector('#lab-assertadd').onclick = () => {
+        if (!LAB.boats.length) return;
+        const body = document.createElement('div');
+        body.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+        const KINDS = [
+            ['penalty', 'PENALTY', 'a boat is (or nobody is) penalized, optionally under a rule'],
+            ['row', 'RIGHTS', 'at a time, one boat holds right of way over another'],
+            ['clear', 'NEVER TOUCH', 'two boats stay at least a distance apart, the whole run'],
+            ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
+            ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
+        ];
+        let dlg;
+        for (const [kind, lbl, desc] of KINDS) {
+            const b = document.createElement('button');
+            b.className = 'sl-btn';
+            b.style.cssText = 'flex:none;padding:9px 12px;text-align:left';
+            b.innerHTML = `${lbl} <span class="sl-hint" style="letter-spacing:0;font-weight:700"> — ${desc}</span>`;
+            b.onclick = () => {
+                dlg.close();
+                const second = LAB.boats.length > 1 ? 1 : 0;
+                const def = {
+                    penalty: { kind: 'penalty', who: 0 },
+                    row: { kind: 'row', of: 0, over: second, t: Math.round(LAB.durationS / 2) },
+                    clear: { kind: 'clear', a: 0, b: second, min: 55 },
+                    tack: { kind: 'tack', who: 0, tack: 'stbd', t: Math.round(LAB.durationS / 2) },
+                    goals: { kind: 'goals', who: 0 },
+                }[kind];
+                LAB.asserts.push(def);
+                assertsChanged();
+            };
+            body.appendChild(b);
+        }
+        dlg = dialog('Add assertion', body, [{ label: 'Cancel' }]);
+    };
+    // CHECK ×5: this seed plus four successors; an assertion earns its chip
+    // by holding on every one. Runs back-to-back with a paint between.
+    ui.querySelector('#lab-check5').onclick = async () => {
+        if (!LAB.asserts.length || !LAB.boats.length) return;
+        const link = ui.querySelector('#lab-check5');
+        const base = LAB.seed >>> 0;
+        const N = 5;
+        const rows = LAB.asserts.map(() => ({ ok: 0, failSeed: null, why: null, atS: null }));
+        for (let i = 0; i < N; i++) {
+            const s = (base + i) >>> 0;
+            link.textContent = `CHECKING ${i + 1}/${N}…`;
+            await new Promise(r => setTimeout(r, 20));
+            LAB.seed = s;
+            simulate();
+            const ev = window.ScenarioAsserts.evaluate(LAB.asserts, LAB.rec);
+            ev.forEach((r, k) => {
+                if (r.status === 'pass' || r.status === 'gap') rows[k].ok++;
+                else if (rows[k].failSeed == null) { rows[k].failSeed = s; rows[k].why = r.why; rows[k].atS = r.atS; }
+            });
+        }
+        link.innerHTML = 'CHECK &times;5';
+        LAB.seed = base;
+        seedIn.value = base;
+        simulate();                    // the transport shows the base run again
+        LAB.assertMulti = { n: N, rows };
+        renderAsserts();
     };
     aiAtIn.addEventListener('input', () => {
         if (LAB.sel && LAB.sel.kind === 'boat') {
@@ -1202,6 +1437,18 @@
         }
         frames = [snapshot()];
         LAB.recording = true;
+        // penalty EVENTS with the umpire's cited rule, via the engine's own
+        // onRaceEvent hook — the recording carries the citation, not a guess
+        var pens = [];
+        var prevORE = window.onRaceEvent;
+        window.onRaceEvent = function (type, data) {
+            if (type === 'penalty' && data && data.boat) {
+                const bi = LAB.boats.findIndex(lb => lb.bot === data.boat);
+                if (bi >= 0) pens.push({ t: +LAB.simT.toFixed(2), boat: bi, rule: data.rule || null, kind: data.kind || null });
+            }
+            if (prevORE) prevORE(type, data);
+        };
+        try {
             for (let f = 1; f <= nF; f++) {
                 LAB.simT = f / 60;   // the plan's clock
                 for (const lb of LAB.boats) {
@@ -1212,6 +1459,9 @@
                 _update(1 / 60);
                 frames.push(snapshot());
             }
+        } finally {
+            window.onRaceEvent = prevORE;
+        }
         } finally {
             Math.random = realRandom;
         }
@@ -1227,11 +1477,15 @@
                 if (frames[f].boats[bi].penN > frames[f - 1].boats[bi].penN) { ticks.push(f); break; }
             }
         }
-        LAB.rec = { frames, ticks, nF };
+        LAB.rec = { frames, ticks, nF, pens,
+            names: LAB.boats.map(lb => lb.bot.name),
+            goalCounts: LAB.boats.map(lb => (lb.goals || []).length),
+            seed: LAB.seed >>> 0 };
         LAB.frame = 0;
         pbSlider.max = nF;
         pbTicks.innerHTML = ticks.map(f =>
             `<span style="position:absolute;left:${(100 * f / nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px" title="penalty">&#9660;</span>`).join('');
+        evaluateAsserts();
     }
     function setFrame(f) {
         if (!LAB.rec) return;
@@ -1310,6 +1564,7 @@
         const S = LAB.stage;
         return {
             v: 1, durationS: LAB.durationS, windKt: LAB.windKt, seed: LAB.seed >>> 0,
+            asserts: LAB.asserts.length ? LAB.asserts.map(a => ({ ...a })) : undefined,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS,
@@ -1330,6 +1585,9 @@
         // docs saved before the seed field replay on the old constant
         LAB.seed = (sc.seed != null ? sc.seed : 0x9e3779b9) >>> 0;
         ui.querySelector('#lab-seed').value = LAB.seed;
+        LAB.asserts = (sc.asserts || []).map(a => ({ ...a }));
+        LAB.assertResults = null; LAB.assertMulti = null;
+        renderAsserts();
         const pendingGoals = [];   // goals reference marks/lines added below
         for (const bs of (sc.boats || [])) {
             const lb = addBoat(S.x + bs.x, S.y + bs.y);
@@ -1555,6 +1813,8 @@
             LAB.durationS = 10; ui.querySelector('#lab-dur').value = 10;
             LAB.windKt = 12; ui.querySelector('#lab-wind').value = 12;
             LAB.seed = 0x9e3779b9; ui.querySelector('#lab-seed').value = LAB.seed >>> 0;
+            LAB.asserts = []; LAB.assertResults = null; LAB.assertMulti = null;
+            renderAsserts();
             markSaved();
             select(null);
         });
@@ -1976,6 +2236,33 @@
         // (no wind arrow: the wind comets on the water already show direction
         // and strength, and the knots value is editable in the panel)
     }
+
+    // ── TEST API: the headless runner's seam (eval/run_scenario.js drives
+    // this page — the page IS the fixture, so page and runner can never
+    // disagree about what a scenario does) ─────────────────────────────
+    LAB.testAPI = {
+        load(name) {
+            const lib = store();
+            if (!lib[name]) throw new Error('no scenario named "' + name + '"');
+            LAB._loading = true;
+            loadScene(lib[name]);
+            nameIn.value = name;
+            LAB._loading = false;
+            markSaved();
+        },
+        run(seed) {
+            if (seed != null) { LAB.seed = seed >>> 0; seedIn.value = LAB.seed; }
+            simulate();
+            const names = LAB.rec.names;
+            return {
+                seed: LAB.rec.seed,
+                ticks: LAB.rec.ticks.map(f => +(f / 60).toFixed(2)),
+                pens: LAB.rec.pens,
+                asserts: (LAB.assertResults || []).map((r, k) => Object.assign(
+                    { label: window.ScenarioAsserts.label(LAB.asserts[k], names) }, r)),
+            };
+        },
+    };
 
     _update = window.update;
     window.update = function (dt) { _update(dt); try { frame(); } catch (e) { } };
