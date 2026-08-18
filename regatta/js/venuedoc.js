@@ -1224,6 +1224,116 @@ const PROP_KINDS = {
     // for the cracks in a [[lake-gneiss]] shelf, which is where lowbush blueberry really grows.
     'lake-fern-bracken':     { label: 'Bracken fern',       world:  34, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lake-blueberry-lowbush':{ label: 'Lowbush blueberry',  world:  22, plane: 'canopy', contact: 'none', motion: 'fixed' },
+
+    // ── STILLWATER'S BUILT AND NATURAL PROPS ────────────────────────────────
+    // The eighteen non-vegetation kinds, registered together now the art has landed. Until
+    // this block existed the sprites were on disk and in the manifest and PLACEABLE NOWHERE:
+    // the editor lists kinds from here, so a finished asset that is not in this table simply
+    // does not exist to the venue. art-pipeline 6 defers registration on purpose — slots and
+    // boxes first, art second — but deferred is not skipped, and this is the step that was
+    // still owed.
+    //
+    // PLANES. `surface` for everything on land, which is most of it: the fleet cannot reach a
+    // fire ring. `float` for the five that sit ON the water — canoe, skiff, swim raft, mooring
+    // buoy and the swim line — because that plane draws AFTER the water's own marks, so no
+    // wake or cat's-paw ripples across a hull lying on top of one, and BEFORE the land, so a
+    // beach simply covers the part of a drawn-up boat that lies on it. Nothing here is
+    // `canopy`; the trees own that plane and nothing in this batch is sailed under.
+    //
+    // COLLIDERS, AND WHY MOST OF THEM ARE `none`. A contact prop compiles to a hidden circle
+    // that also enters the router's grid, and script.js records the river's 82 hidden banks
+    // causing multi-hundred-millisecond replan spikes — so a collider is spent only where a
+    // boat can actually meet the thing. Six earn one. The radii are measured off the BAKE, not
+    // guessed from `world`: fillTo 0.86 means a prop draws at 86% of its declared size, so a
+    // 44u boulder is a 38px stone and its radius is 19, not 22.
+    //
+    // ⚠️ THE BOULDERS ARE THE ONE CASE WHERE A CIRCLE IS EXACTLY RIGHT rather than a
+    // compromise — a boulder IS a circle in plan — which is why they take a full-coverage
+    // radius where every long prop deliberately under-covers. `lake-dock` takes its BEAM (10)
+    // and not its length, following swamp-dock's 9: an object 2:1 or longer cannot be covered
+    // by one circle, and a pass-through is a missed collision where an oversized circle is an
+    // invisible wall standing off in open water. `lake-swim-line` gets NO collider at all: a
+    // rope does not stop a racing hull, and pretending it does is the unfairness the shoal
+    // note argues against.
+    //
+    // `srcBox` IS MEASURED, NOT ESTIMATED — [x, y, w, h] of the frame the art actually
+    // occupies, off each shipped bake with a 1% margin for the antialiased rim, and carried
+    // only where the ink is thin enough to be worth skipping. Its extreme here is the swim
+    // line at 5% ink: a 296px quad to composite a 26px-wide rope. Round props that fill their
+    // frame (both boulders, the raft, the fire ring) get none, exactly as a canopy does not.
+    // RE-MEASURE ON ANY RE-INGEST — a box too small clips the sprite, which is a visible bug.
+    'lake-camp-lodge':        { label: 'Camp lodge',        world: 166, plane: 'surface', contact: 'none', srcBox: [0.276, 0.059, 0.448, 0.881], motion: 'fixed' },
+    'lake-cabin':             { label: 'Log cabin',         world:  88, plane: 'surface', contact: 'none', srcBox: [0.234, 0.058, 0.531, 0.884], motion: 'fixed' },
+    'lake-log-fallen':        { label: 'Fallen log',        world:  74, plane: 'surface', contact: 'none', srcBox: [0.355, 0.058, 0.29, 0.885], motion: 'fixed' },
+    // ⚠️ THE SWIM LINE COLLIDES, AND A CIRCLE CANNOT HONESTLY COVER IT. The segment is 74u
+    // long and 6.5u wide — 11:1 — so this is the cargo-ship case at its most extreme, and
+    // propTraits has no oblong collider (see the note above at the oblong-hazard entry). Both
+    // ends of the usual rule fail here: the BEAM rule gives radius 3, under the floor of 4, and
+    // segments laid end to end would leave 70u gaps a boat sails clean through; the LENGTH rule
+    // gives 37 and stands an invisible 74u-wide wall in open water.
+    // SO IT IS `soft`, AT 12. Soft is what makes the compromise affordable — the failure mode
+    // of an oversized SOFT collider is arriving in the drag slightly early, not being stopped
+    // by nothing, which is the unfairness the shoal note actually argues against. 12 is about
+    // twice the beam and a sixth of the length, so segments butted end to end put drag over
+    // roughly a third of the rope: fouling the swim line slows you, as it should, without
+    // walling off the water beside it.
+    // ⚠️ TO MAKE IT A REAL BARRIER, OVERLAP THE PLACEMENTS — spacing them ~24u instead of 74u
+    // chains the circles into a continuous line. That costs three times the sprites, so it is a
+    // per-course decision and not a default. The proper fix is an oblong collider in
+    // propTraits, and this entry is the second asset asking for one.
+    'lake-swim-line':         { label: 'Swim line',         world:  74, plane: 'float',   contact: 'soft', contactR: 12, srcBox: [0.456, 0, 0.088, 1], motion: 'fixed' },
+    'lake-cabin-b':           { label: 'Tin-roof cabin',    world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-camp-cabin':        { label: 'Camp bunkhouse',    world:  51, plane: 'surface', contact: 'none', srcBox: [0.314, 0.059, 0.373, 0.883], motion: 'fixed' },
+    'lake-canoe-rack':        { label: 'Canoe rack',        world:  51, plane: 'surface', contact: 'none', srcBox: [0.181, 0.059, 0.633, 0.883], motion: 'fixed' },
+    'lake-canoe':             { label: 'Canoe',             world:  46, plane: 'float',   contact: 'soft', contactR:  6, srcBox: [0.376, 0.055, 0.248, 0.884], motion: 'fixed' },
+    'lake-boulder-large':     { label: 'Glacial boulder',   world:  44, plane: 'surface', contact: 'hard', contactR: 19, motion: 'fixed' },
+    'lake-dock':              { label: 'Crib dock',         world:  42, plane: 'surface', contact: 'hard', contactR: 10, srcBox: [0.252, 0.055, 0.496, 0.889], motion: 'fixed' },
+    'lake-boat-aluminum':     { label: 'Aluminium skiff',   world:  40, plane: 'float',   contact: 'soft', contactR:  6, srcBox: [0.302, 0.059, 0.395, 0.883], motion: 'fixed' },
+    'lake-raft-swim':         { label: 'Swim raft',         world:  33, plane: 'float',   contact: 'hard', contactR: 14, motion: 'fixed' },
+    'lake-bulrush':           { label: 'Bulrush',           world:  32, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-mooring-buoy':      { label: 'Mooring buoy',      world:  20, plane: 'float',   contact: 'soft', contactR:  8, motion: 'fixed' },
+    'lake-boulder-small':     { label: 'Granite cobble',    world:  18, plane: 'surface', contact: 'hard', contactR:  8, motion: 'fixed' },
+    'lake-picnic-table':      { label: 'Picnic table',      world:  17, plane: 'surface', contact: 'none', srcBox: [0.049, 0.196, 0.902, 0.608], motion: 'fixed' },
+    'lake-firering':          { label: 'Fire ring',         world:  14, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-adirondack-chair':  { label: 'Adirondack chair',  world:   8, plane: 'surface', contact: 'none', motion: 'fixed' },
+
+    // ── SOCKEYE RUN'S PLANTS ────────────────────────────────────────────────
+    // All seven, registered together now the art has landed. Three trees, two shrubs, one accent
+    // and one overlay mat — the whole vegetated character of a Southeast Alaska river.
+    //
+    // PLANE `canopy` for everything that grows UP, following Stillwater's eight plants exactly.
+    // ⚠️ NOTE THE COMMENT ABOVE THAT BLOCK IS STALE AND SAYS `surface`; the entries there are
+    // canopy and always have been. The consequence is worth stating once rather than rediscovering:
+    // canopy props draw OVER the fleet, and the bayou's split-canopy note couples that to an
+    // openings requirement, because a painted gap hides a boat as well as a leaf does. No asset in
+    // the manifest carries `minHoles` any more, so the whole canopy family currently occludes like
+    // a solid disc. For THIS venue that is a deliberate decision rather than an oversight — the
+    // owner asked for full canopies with no punched holes, and all three river tree subjects were
+    // rewritten to say so. Anyone reinstating see-through starts by reading those.
+    //
+    // `river-moss-mat` is the exception at `surface`: it lies ON the ground and nothing passes
+    // under a moss mat, so putting it on canopy would draw it over hulls for no reason.
+    //
+    // CONTACT none on all seven, and that is not laziness. Every contact prop compiles to a hidden
+    // circle that also enters the router's grid, and script.js records the river's own 82 hidden
+    // banks causing multi-hundred-millisecond replan spikes — in THIS venue. Vegetation is land
+    // scenery the fleet cannot reach, so a collider here would never be tested and would cost the
+    // one venue that has already paid that bill.
+    //
+    // PROP-SPIN ON for all seven. None of them has a front: a shrub, a moss mat and a crown seen
+    // from above are all rotationally free, and spinning them is what stops a planted stand reading
+    // as stamped copies. The trees are the same case as Stillwater's, not the dock's.
+    //
+    // srcBox ONLY ON THE MAT. The six plants all fill 74-87% of their frames after fillTo, so
+    // there is nothing worth skipping; the mat is 0.63 tall because it is honestly oblong, and its
+    // box is measured off the shipped bake with a 1% margin. Re-measure it on any re-ingest.
+    'river-cottonwood-black': { label: 'Black cottonwood',  world: 128, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-spruce-sitka':     { label: 'Sitka spruce',      world: 104, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-hemlock-western':  { label: 'Western hemlock',   world:  84, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-alder-red':        { label: 'Red alder',         world:  56, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-willow':           { label: 'River willow',      world:  30, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-moss-mat':         { label: 'Moss mat',          world:  26, plane: 'surface', contact: 'none', srcBox: [0.057, 0.173, 0.885, 0.655], motion: 'fixed' },
+    'river-fireweed':         { label: 'Fireweed',          world:  18, plane: 'canopy',  contact: 'none', motion: 'fixed' },
     'ocean-naupaka':         { label: 'Beach naupaka',     world: 40, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-morning-glory':   { label: 'Beach morning glory', world: 30, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-grass-coastal':   { label: 'Coastal grass',     world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },
@@ -1801,6 +1911,36 @@ const SHAPE_KINDS = {
     // HARD, with granite and karst: the card's hazards line already promises islands and
     // shoals, and a rocky point that only slowed you would not price a mistake.
     gneiss:      { motion: 'fixed', hard: true,  look: 'gneiss',      hidden: false, nav: true, height: 0 },   // ~6 m of worn slab
+
+    // ── SOCKEYE RUN'S FOUR GROUNDS ──────────────────────────────────────────
+    // A mountain salmon river needs its own ground vocabulary; until now the venue drew its
+    // land with the shared `isle` sand, which is what made it read as generic. All four are
+    // `hard` and `nav` like every other land shape — they are banks and bars, and a boat goes
+    // around them — and all four sit at height 0, which is the convention for ground the
+    // camera looks straight down at.
+    //
+    // ⚠️ `outcrop` IS THE HAZARD OF THE FOUR. It is the rock standing out of the rapids, so it
+    // is the one that will be drawn INSIDE the racing water rather than beside it; the other
+    // three are bank and terrace. That is a placement fact rather than a trait difference —
+    // the shape system has no softer land — but it is why its art is specced as chunky faceted
+    // planes that read at a glance, where `cobble` is allowed to be quiet.
+    cobble:      { motion: 'fixed', hard: true,  look: 'cobble',      hidden: false, nav: true, height: 0 },   // dry bar, ankle-high
+    meadow:      { motion: 'fixed', hard: true,  look: 'meadow',      hidden: false, nav: true, height: 0 },   // river terrace
+    outcrop:     { motion: 'fixed', hard: true,  look: 'outcrop',     hidden: false, nav: true, height: 0 },   // ~4 m of scoured shelf
+    humus:       { motion: 'fixed', hard: true,  look: 'humus',       hidden: false, nav: true, height: 0 },   // ~30 m with its spruce
+    // The wet moss carpet of the deeper rainforest — a SECOND forest floor, not a replacement for
+    // `humus`. Humus is the dry needle litter under close spruce; this is the unbroken living moss
+    // that covers everything in a Southeast Alaska rain forest, and at dE 52 apart a designer can
+    // use both in one wood. It is a ground rather than a scatter of mats because the owner's own
+    // reference photographs measure 73-74% moss coverage of the floor: a surface, not scenery.
+    mossfloor:   { motion: 'fixed', hard: true,  look: 'mossfloor',   hidden: false, nav: true, height: 0 },   // ~30 m with its spruce
+    // The bar version of [[cobble]], and the shape a mountain river actually needs: a riffle
+    // is a cobble bar the water is still running over. Identical behaviour to `shoal` and
+    // `tropicshoal` — awash, the same 0.8 drag floor, priced by the router rather than walled
+    // — differing only in material, which is the whole reason those two are separate kinds.
+    // A bar with a dry heart is still two shapes: draw a `cobble` inside this one.
+    cobbleshoal: { motion: 'fixed', hard: false, look: 'cobbleshoal', hidden: false, nav: true, height: 0,
+               awash: true, drag: 0.8 },
     // Canyon spires and walls. The tallest thing here, and the reason Redrock's card
     // promises wind shadows.
     redrock: { motion: 'fixed', hard: false, look: 'redrock',  hidden: false, nav: true, height: 0 },   // ~70 m of canyon wall

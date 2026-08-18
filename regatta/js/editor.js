@@ -334,6 +334,25 @@ const LAND_TYPES = [
     { kind: 'forestfloor', label: 'Forest Floor',    swatch: '#7C633D' },
     { kind: 'lakesand',    label: 'Lake Sand',       swatch: '#B7A487' },
     { kind: 'gneiss',      label: 'Glacial Granite', swatch: '#807A7F' },
+    // ── SOCKEYE RUN'S FOUR GROUNDS ──────────────────────────────────────────
+    // Swatches track ISLAND_STYLES.<kind>.body and these four are already the DELIVERED tile
+    // means, not spec means — the art landed before the labels did.
+    //
+    // ⚠️ THESE ARE THE FIRST LABELS ON THE [VENUE] [TERRAIN] CONVENTION, and the reason is
+    // two rows above: "Glacial Granite" already had to be told apart from "Granite" by label
+    // alone, and this venue adds a THIRD granite. Unprefixed names stopped scaling at two.
+    // Because the sort below is BY LABEL, a venue prefix also groups every one of a venue's
+    // grounds together in the picker for free — no grouping code, just the name. The KIND
+    // stays bare (`outcrop`, not `river-outcrop`) because every venue doc on disk names kinds
+    // and renaming them would need a document migration; this is the `isle` -> "Coastal Sand"
+    // move again, label-only.
+    { kind: 'cobble',      label: 'River Cobble',   swatch: '#6E6B65' },
+    { kind: 'meadow',      label: 'River Meadow',   swatch: '#929738' },
+    { kind: 'outcrop',     label: 'River Granite',  swatch: '#999C9E' },
+    { kind: 'humus',       label: 'River Humus',    swatch: '#352B19' },
+    // Sorts directly under River Cobble, which is what it is — the same bar under water.
+    { kind: 'cobbleshoal', label: 'River Cobble Shoal', swatch: '#6E6B65' },
+    { kind: 'mossfloor',   label: 'River Moss',      swatch: '#618414' },
     // LABEL ONLY — the kind stays `isle`, which every venue doc on disk already names.
     // Renamed from plain "Sand" because the cove's other two grounds are Coastal Rock and
     // Coastal Scrub, and the sort below is by LABEL, so this now files with them instead of
@@ -1828,6 +1847,13 @@ const KIND_FILL = {
     // would look. Both grounds are dry land, so both are solid, per this table's rule that
     // only what you may sail over is translucent.
     coastalrock: '#a19481', coastalscrub: '#a3a745', lane: '#cac2ad',
+    // Sockeye Run's four. All dry land, so all solid per this table's rule that only what you
+    // may sail over is translucent. Values are the delivered tile means, same as the chips.
+    cobble: '#6E6B65', meadow: '#929738', outcrop: '#999C9E', humus: '#352B19',
+    // Translucent, per this table's rule that only what you may sail over is — the cobble
+    // bar's own stone at the same 0.38 the two sand bars use.
+    cobbleshoal: 'rgba(110,107,101,0.38)',
+    mossfloor: '#618414',
     // Submerged Rock — underwater, so translucent by this table's rule, but the MOST opaque
     // of the translucent kinds on purpose. It is the one shape here that is both under the
     // water and a wall, and the schematic's job is to keep those two facts from cancelling:
@@ -1847,6 +1873,13 @@ const KIND_EDGE = {
     // Each is its own ISLAND_STYLES stroke, so the schematic outline is the colour the game
     // draws that coastline in — the coastalrock/coastalscrub rule.
     coralrock: '#757268', tropicscrub: '#838621',
+    // Sockeye Run. Each is its own ISLAND_STYLES stroke by the coastalrock/coastalscrub rule
+    // above. ⚠️ THESE WERE MISSING and the lookup is `KIND_EDGE[kind] || KIND_EDGE.isle`, so
+    // all four had been outlining themselves in beach sand — the same silent fallback the
+    // KIND_FILL note warns about, one table over.
+    cobble: '#4E4C48', meadow: '#5E6C38', outcrop: '#5E656D', humus: '#221C10',
+    cobbleshoal: 'rgba(110,107,101,0.75)',
+    mossfloor: '#3E5A0E',
     forestfloor: '#543F21', lakesand: '#958469', gneiss: '#4E4B54',
     mud: '#3d3421', marsh: '#4d4324',
     mudflat: 'rgba(110,100,73,0.8)',

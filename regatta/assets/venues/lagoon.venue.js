@@ -2460,7 +2460,7 @@ window.VENUE_DOC["lagoon"] = {
     },
     {
       "id": "shape-21",
-      "kind": "reed",
+      "kind": "tropicscrub",
       "outer": [
         [
           1359.439512962547,
@@ -2568,7 +2568,7 @@ window.VENUE_DOC["lagoon"] = {
     },
     {
       "id": "shape-22",
-      "kind": "reed",
+      "kind": "tropicscrub",
       "outer": [
         [
           1304.3552232353034,
@@ -2644,7 +2644,7 @@ window.VENUE_DOC["lagoon"] = {
     },
     {
       "id": "shape-23",
-      "kind": "reed",
+      "kind": "tropicscrub",
       "outer": [
         [
           1062.2138663092953,
@@ -2728,7 +2728,7 @@ window.VENUE_DOC["lagoon"] = {
     },
     {
       "id": "shape-24",
-      "kind": "reed",
+      "kind": "tropicscrub",
       "outer": [
         [
           -1774.5919265533103,
@@ -4146,56 +4146,32 @@ window.VENUE_DOC["lagoon"] = {
     "_note": "Water split for the shallows work: baseColor is the OPEN OCEAN outside the reef (deep Caribbean azure, deepColor its vignette partner), and shallowColor is what a `shallows` zone lays over it at alpha 0.72 — picked so the blend lands on bright lagoon turquoise (~#3bd5e4), not to be used straight. heroColor IS that blend result, stated literally: the picker's detail panel shows it instead of baseColor, because this venue's signature water is the lagoon inside, not the approaches — keep it equal to 0.72*shallowColor + 0.28*baseColor if either of those moves. Gusts deliberately un-authored: the old block was derived from the retired teal base, and absent here they re-derive from this water automatically (applyVenuePalette).",
     "baseColor": "#0d84c4",
     "deepColor": "#085e93",
-    "shallowColor": "#4df5f0",
-    "heroColor": "#3cd4e0",
+    "shallowColor": "#4dd9f5",
+    "heroColor": "#3bc1e7",
     "shorelineColor": "#fde68a"
   },
   "props": [
     {
-      "id": "prop-7",
-      "kind": "lagoon-palm-dense",
-      "x": -318.56729095718225,
-      "y": -785.9753501804516,
-      "heading": 1.3962634015954638,
-      "scale": 1.2837308021390355
-    },
-    {
-      "id": "prop-1",
-      "kind": "lagoon-palm",
-      "x": -281.87225642771966,
-      "y": -795.1365118780878,
-      "heading": 1.7761420440734064,
-      "scale": 1.2146452168524569
-    },
-    {
       "id": "prop-2",
       "kind": "lagoon-palm",
-      "x": -330.329246369981,
-      "y": -843.4739767326843,
+      "x": -303.54685473558993,
+      "y": -840.1945002060241,
       "heading": 1.6010075394436347,
       "scale": 2.1628440894924776
     },
     {
-      "id": "prop-6",
-      "kind": "lagoon-palm-dense",
-      "x": -262.58513206083217,
-      "y": -974.183009736247,
-      "heading": 1.3962634015954638,
-      "scale": 1.2887226055923182
-    },
-    {
       "id": "prop-3",
       "kind": "lagoon-palm-dense",
-      "x": -274.7643557473565,
-      "y": -1064.151441901219,
+      "x": -271.48487922069637,
+      "y": -1052.6732740579087,
       "heading": 2.091001677792164,
       "scale": 1.377051480893061
     },
     {
       "id": "prop-4",
       "kind": "lagoon-palm",
-      "x": -288.36468210909584,
-      "y": -1011.3478663315329,
+      "x": -292.190738056866,
+      "y": -992.7641660137922,
       "heading": 1.3962634015954638,
       "scale": 1.7306337596729684
     },
@@ -4386,14 +4362,6 @@ window.VENUE_DOC["lagoon"] = {
       "y": -1704.2094091340634,
       "heading": 1.3962634015954638,
       "scale": 2.236067977499785
-    },
-    {
-      "id": "prop-5",
-      "kind": "lagoon-palm-dense",
-      "x": -273.78584149077096,
-      "y": -845.4564643834071,
-      "heading": 1.3962634015954638,
-      "scale": 1.7310363572062268
     },
     {
       "id": "prop-31",
@@ -4826,8 +4794,8 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "prop-87",
       "kind": "lagoon-palm",
-      "x": -1179.8918898620034,
-      "y": -621.9160444389258,
+      "x": -1198.3651213127448,
+      "y": -627.5383322717602,
       "heading": 1.3962634015954638,
       "scale": 2.5298221281346502
     },

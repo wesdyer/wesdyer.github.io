@@ -80,7 +80,7 @@ window.VENUE_DOC["river"] = {
   "shapes": [
     {
       "id": "shape-11",
-      "kind": "shoal",
+      "kind": "cobbleshoal",
       "outer": [
         [
           3253.9632422152736,
@@ -168,7 +168,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-21",
-      "kind": "shoal",
+      "kind": "cobbleshoal",
       "outer": [
         [
           5238.124585767174,
@@ -212,7 +212,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-20",
-      "kind": "shoal",
+      "kind": "cobbleshoal",
       "outer": [
         [
           4197.536614037218,
@@ -244,7 +244,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-12",
-      "kind": "shoal",
+      "kind": "cobbleshoal",
       "outer": [
         [
           2881.8071342069575,
@@ -280,7 +280,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-4",
-      "kind": "shoal",
+      "kind": "cobbleshoal",
       "outer": [
         [
           -8.822765189811946,
@@ -344,7 +344,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-3",
-      "kind": "shoal",
+      "kind": "cobbleshoal",
       "outer": [
         [
           -1375.5749012216306,
@@ -392,7 +392,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-1",
-      "kind": "isle",
+      "kind": "cobble",
       "outer": [
         [
           6167.710421600277,
@@ -540,7 +540,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-2",
-      "kind": "isle",
+      "kind": "cobble",
       "outer": [
         [
           4074.487210414034,
@@ -692,7 +692,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-5",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1752.374940806535,
@@ -720,7 +720,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-6",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1676.2862870230622,
@@ -748,7 +748,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-7",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1497.254160473715,
@@ -780,7 +780,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-8",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1470.3993414913132,
@@ -808,7 +808,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-9",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1680.762090186796,
@@ -836,7 +836,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-10",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1057.0367556475194,
@@ -868,7 +868,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-13",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           3115.372594055676,
@@ -904,7 +904,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-14",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           3398.428701521573,
@@ -932,7 +932,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-15",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           4452.24897132917,
@@ -960,7 +960,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-16",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           4450.642502280635,
@@ -988,7 +988,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-17",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           4694.8257976578725,
@@ -1016,7 +1016,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-18",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           4306.0602879125345,
@@ -1052,7 +1052,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-19",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           4434.5778117952905,
@@ -1084,7 +1084,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-23",
-      "kind": "shoal",
+      "kind": "cobbleshoal",
       "outer": [
         [
           5294.170616560528,
@@ -1144,7 +1144,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-24",
-      "kind": "shoal",
+      "kind": "cobbleshoal",
       "outer": [
         [
           744.050752776606,
@@ -1188,7 +1188,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-25",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1306.4844892361966,
@@ -1220,7 +1220,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-26",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1600.0019308894766,
@@ -1264,7 +1264,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-27",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1271.0043589264592,
@@ -1296,7 +1296,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-28",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1050.5974888205162,
@@ -1332,7 +1332,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-29",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1295.7329345968813,
@@ -1364,7 +1364,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-30",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1071.0254426352128,
@@ -1396,7 +1396,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-31",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           4565.417528595685,
@@ -1432,7 +1432,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-32",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           4305.244324177419,
@@ -1468,7 +1468,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-33",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           4199.548959882499,
@@ -1504,7 +1504,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-34",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           3641.802652910841,
@@ -1536,7 +1536,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-35",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           2973.4827340614197,
@@ -1568,7 +1568,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-36",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           2158.1730317510082,
@@ -1604,7 +1604,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-37",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1630.8538833456653,
@@ -1640,7 +1640,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-38",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           2233.1981138411993,
@@ -1676,7 +1676,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-39",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1480.2683839336507,
@@ -1712,7 +1712,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-40",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1274.5764902859487,
@@ -1744,7 +1744,7 @@ window.VENUE_DOC["river"] = {
     },
     {
       "id": "shape-41",
-      "kind": "isle",
+      "kind": "outcrop",
       "outer": [
         [
           1652.6439849482754,

@@ -6723,6 +6723,41 @@ const LAND_TEXTURES = {
     // scoured outcrop actually measures. 512 would halve the repetition and give 56 m lobes,
     // which is no longer granite, it is scenery.
     gneiss:       { src: 'assets/images/terrain/lake/gneiss.png',      tile: 256, alpha: 0.55 },
+
+    // ── SOCKEYE RUN, delivered 2026-08-17 ───────────────────────────────────
+    // Every alpha here is a PURE CONTRAST KNOB, because each ISLAND_STYLES.body above was
+    // reset to its own tile's delivered mean first. They were not picked by eye: each tile's
+    // luma sd was measured, and the alpha is what lands it in the on-screen band the shipped
+    // grounds already occupy (1.57 for sandstone up to 8.87 for lake forestfloor). These four
+    // sit at 6.6, 7.6, 7.9 and 4.6 — the busy end of the band, which is right for a venue
+    // whose identity IS its ground.
+    //
+    // ⚠️ THE ALPHAS WERE CHOSEN AGAINST A TILED FIELD, NOT AGAINST THE MASTER, and that is the
+    // whole reason these four shipped. Measured on the raw 1254px masters, all four carry a
+    // wrap seam 1.5x to 3.3x an interior pixel boundary — by that number none of them tile.
+    // Composited at these alphas over the flat body and drawn at the tile size the camera
+    // actually sees, the seam is INVISIBLE across 4.7 to 9.4 repeats: the same alpha that tames
+    // the contrast suppresses the discontinuity, because the seam error is multiplied by alpha
+    // exactly as the texture is. Two earlier deliveries were rejected on the master-scale number
+    // alone; that was the wrong test. Judge a texture tiled, composited and at size.
+    // ⚠️ RAISING AN ALPHA RE-EXPOSES ITS SEAM. These are not free to tune upward.
+    cobble:       { src: 'assets/images/terrain/river/cobble.png',   tile: 256, alpha: 0.42 },
+    meadow:       { src: 'assets/images/terrain/river/meadow.png',   tile: 128, alpha: 0.50 },
+    // Highest alpha of the four because its jointed facets ARE the read, and the one to watch
+    // for repeats: it carries about twice the mid-scale structure of the other three, so a rock
+    // mass more than three or four tiles across (110 m+) starts showing its pattern. Keep
+    // outcrop shapes small, which is what a rock in a rapid is anyway.
+    outcrop:      { src: 'assets/images/terrain/river/outcrop.png',  tile: 256, alpha: 0.65 },
+    humus:        { src: 'assets/images/terrain/river/humus.png',    tile: 128, alpha: 0.70 },
+    // ⚠️ THE BUSIEST TILE IN THE GAME, so this is the LOWEST alpha in the game and both facts are
+    // the same fact. Tile-scale luma sd is 28.3 against a shipped range of 3.3-17.4, because a moss
+    // carpet is thousands of tiny cushions and that is exactly what it should look like. 0.31 lands
+    // it at on-screen sd 8.78, which matches lake forestfloor's 8.87 — the top of the band and the
+    // right precedent, since both are forest floors. It reads as moss at this alpha; if it ever
+    // looks flat in the venue, 0.55 doubles the cushion texture (on-screen sd 15.6) at the cost of
+    // leaving the band, and a floor the fleet can never sail on is the one place that trade is
+    // arguable.
+    mossfloor:    { src: 'assets/images/terrain/river/mossfloor.png', tile: 128, alpha: 0.31 },
     // ── BLUEWATER BONANZA'S TWO GROUNDS ─────────────────────────────────────
     // Both delivered 2026-08-14. Both bodies in ISLAND_STYLES are their delivered tile's own
     // mean, so both alphas below are pure contrast knobs, and BOTH ARE MEASURED — these are
@@ -22341,6 +22376,43 @@ const ISLAND_STYLES = {
     // stroke carries coastalrock's own offsets onto this body (an 18.7 L* drop against its
     // 18.6), so the coastline holds the same weight. No trees: bare rock.
     gneiss:      { body: '#847F81', stroke: '#4E4B54', veg: '#938F95', rock: '#605D64', trees: false },  // body = lake-gneiss DELIVERED tile mean (2nd slab, 2026-08-15; was #807A7F)
+
+    // ── SOCKEYE RUN, 2026-08-16 ─────────────────────────────────────────────
+    // Declared with the art still at `slot`, on purpose: a style with no LAND_TEXTURES entry
+    // draws as its flat `body` colour, which is exactly art-pipeline 6's placeholder stage —
+    // the venue becomes drawable and playable now, and the tiles land on top later. Four
+    // existing styles (karst, mudflat, coralshoal, shoal) already run textureless, so this is
+    // the supported path and not a gap.
+    //
+    // ⚠️ EVERY `body` BELOW IS PROVISIONAL AND MUST BE RESET TO ITS TILE'S DELIVERED MEAN on
+    // ingest, the same step the three lake grounds went through. The LAND_TEXTURES alpha is a
+    // pure CONTRAST knob only while body equals the tile's own mean; if they disagree, raising
+    // alpha shifts the colour instead of the spread, and that is how the two arctic textures
+    // ended up carrying a mean-luma-shift warning.
+    //
+    // SEPARATION IS MEASURED, not eyeballed, and the four were re-picked once because of it: a
+    // first pass put cobble at #85868A, which measured dE 9.8 from outcrop — far too close for
+    // two grounds that share a race, and 3.5 from the lake's gneiss. The set below has a worst
+    // in-venue pair of dE 23.8 (cobble vs outcrop, cobble vs meadow) against the 30.6 the lake
+    // ships forestfloor-to-sand at, and every one clears dE 23 from the river's own water so
+    // land never smears into it. Cross-venue neighbours are accepted and named in each
+    // manifest note: cobble sits 9.7 from `gneiss` and humus 5.7 from `mud`, both picker-only.
+    cobble:      { body: '#6E6B65', stroke: '#4E4C48', veg: '#7C8C46', rock: '#8A8580', trees: false },  // body = river-cobble DELIVERED tile mean
+    meadow:      { body: '#929738', stroke: '#5E6C38', veg: '#A8B04E', rock: '#8A8580', trees: false },  // body = river-meadow DELIVERED tile mean
+    outcrop:     { body: '#999C9E', stroke: '#5E656D', veg: '#8D9689', rock: '#7C838B', trees: false },  // body = river-outcrop DELIVERED tile mean
+    humus:       { body: '#352B19', stroke: '#221C10', veg: '#4E5A34', rock: '#6B665E', trees: true  },  // body = river-humus DELIVERED tile mean
+    // ⚠️ THE COLOUR IS THE SHADED REFERENCE, NOT THE LIT ONE, and that is a separation decision.
+    // The owner's two photographs measure #487618 in shaded forest and #819E31 in a lit clearing;
+    // the bright value sits dE 11.8 from `meadow`, which would make a moss floor and an open
+    // terrace the same colour on the map. The shaded one clears it at 23.3 and is the honest value
+    // for a floor under a closed canopy.
+    mossfloor:   { body: '#618414', stroke: '#3E5A0E', veg: '#7EA02A', rock: '#6B665E', trees: true  },  // body = river-mossfloor DELIVERED tile mean
+    // THE SAME STONE as `cobble`, exactly as `coralshoal` is the same sand as `coralsand`: a
+    // bar is the ground continuing under the water, so each ground look has its bar look and
+    // the two are kept equal on purpose. shoalTintFor derives what the water does to it per
+    // shape. No stroke worth the name and no trees — a crisp shoreline is the cue that says
+    // "this is land", and a bar must not have one; its edge is a gradient.
+    cobbleshoal: { body: '#6E6B65', stroke: '#4E4C48', veg: '#6E6B65', rock: '#4E4C48', trees: false },  // = cobble, kept equal
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
     redrock:  { body: '#cc6533', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },   // body = sandstone tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the

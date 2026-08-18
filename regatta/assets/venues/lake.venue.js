@@ -1849,20 +1849,28 @@ window.VENUE_DOC["lake"] = {
             2057.560214179707
           ],
           [
-            -314.75669610495845,
-            2217.382608063158
+            -322.5804999417709,
+            2218.8051178516694
           ],
           [
-            -234.68152619016223,
-            2362.586927086206
+            -303.74315931843205,
+            2243.969369298044
           ],
           [
-            -127.75664494465974,
-            2454.9037101533604
+            -246.06160449825302,
+            2386.769593490899
           ],
           [
-            60.463360207197184,
-            2617.409061406518
+            -144.11550751254023,
+            2500.4240233857236
+          ],
+          [
+            32.013164436970186,
+            2624.5216103490748
+          ],
+          [
+            104.32954798109712,
+            2724.9868820149936
           ],
           [
             170.72233695801657,
@@ -2293,28 +2301,32 @@ window.VENUE_DOC["lake"] = {
             -1867.4620009027444
           ],
           [
-            -1002.6389116255334,
-            -1773.012892352852
+            -858.1860913086591,
+            -1837.7284535857546
           ],
           [
-            -1088.7710769826872,
-            -1660.2465232472568
+            -1014.0329104306691,
+            -1804.0298891001657
           ],
           [
-            -1237.9952824997686,
-            -1495.6272571375146
+            -1117.8890739291448,
+            -1679.2365212558161
           ],
           [
-            -1260.6359856633594,
-            -1428.9282616853482
+            -1263.948279778133,
+            -1579.1832483751757
           ],
           [
-            -1348.7495195176532,
-            -1425.023317410498
+            -1281.5249834727747,
+            -1502.3562539851112
           ],
           [
-            -1423.2006671581905,
-            -1491.2943724559284
+            -1327.2275217746194,
+            -1514.9093079843456
+          ],
+          [
+            -1363.698673398038,
+            -1554.5943658177928
           ],
           [
             -1431.3671176816392,
@@ -3198,54 +3210,6 @@ window.VENUE_DOC["lake"] = {
       "r": 273.0432923424058
     },
     {
-      "id": "shape-26",
-      "kind": "gneiss",
-      "outer": [
-        [
-          -1479.4934540658326,
-          -1912.8220087575787
-        ],
-        [
-          -1472.2021701939389,
-          -1814.3896764870115
-        ],
-        [
-          -1472.2021701939389,
-          -1759.7050474478074
-        ],
-        [
-          -1428.4544669625755,
-          -1683.1465667929217
-        ],
-        [
-          -1359.1872701795837,
-          -1694.0834926007624
-        ],
-        [
-          -1337.313418563902,
-          -1763.3506893837543
-        ],
-        [
-          -1337.313418563902,
-          -1876.3655893981095
-        ],
-        [
-          -1370.1241959874246,
-          -1927.4045765013666
-        ],
-        [
-          -1417.5175411547348,
-          -1931.0502184373136
-        ]
-      ],
-      "holes": [],
-      "c": [
-        -1408.2009006517594,
-        -1818.0353184229582
-      ],
-      "r": 136.4008147505589
-    },
-    {
       "id": "shape-27",
       "kind": "gneiss",
       "outer": [
@@ -3796,6 +3760,290 @@ window.VENUE_DOC["lake"] = {
         1088.5985058343263
       ],
       "r": 376.13812086400384
+    },
+    {
+      "id": "shape-41",
+      "kind": "reed",
+      "outer": [
+        [
+          -499.2550643070118,
+          2433.84451124318
+        ],
+        [
+          -298.68118412691155,
+          2255.319532785006
+        ],
+        [
+          -246.04832195199162,
+          2360.5852571348455
+        ],
+        [
+          44.14367490432363,
+          2612.3694897013543
+        ],
+        [
+          97.48779197349924,
+          2714.7901944741716
+        ],
+        [
+          -58.9882847627492,
+          2862.7312124793516
+        ]
+      ],
+      "holes": [],
+      "c": [
+        -160.2235647118069,
+        2539.9400329696514
+      ],
+      "r": 355.2444474558126
+    },
+    {
+      "id": "shape-42",
+      "kind": "reed",
+      "outer": [
+        [
+          -862.3486698881171,
+          -1843.5950037078255
+        ],
+        [
+          -1022.6887488820274,
+          -1986.2976740124057
+        ],
+        [
+          -1321.7229962056701,
+          -2006.3401838866444
+        ],
+        [
+          -1423.5389463668032,
+          -1886.8868250361813
+        ],
+        [
+          -1431.5559503164986,
+          -1672.832819579311
+        ],
+        [
+          -1427.547448341651,
+          -1487.6400283413445
+        ],
+        [
+          -1349.7825100296045,
+          -1421.9005959538413
+        ],
+        [
+          -1297.5794961233555,
+          -1415.5517610963154
+        ],
+        [
+          -1256.7852642131365,
+          -1425.909097928689
+        ],
+        [
+          -1240.7497787494146,
+          -1462.3166484335884
+        ],
+        [
+          -1235.9410539439282,
+          -1497.2604330809793
+        ],
+        [
+          -1000.24113782288,
+          -1769.8385673706268
+        ],
+        [
+          -856.7367671233302,
+          -1835.5779997581299
+        ]
+      ],
+      "holes": [],
+      "c": [
+        -1209.7860590774167,
+        -1670.1498183219908
+      ],
+      "r": 389.8849647813441
+    },
+    {
+      "id": "shape-26",
+      "kind": "gneiss",
+      "outer": [
+        [
+          -1479.4934540658326,
+          -1912.8220087575787
+        ],
+        [
+          -1472.2021701939389,
+          -1814.3896764870115
+        ],
+        [
+          -1472.2021701939389,
+          -1759.7050474478074
+        ],
+        [
+          -1428.4544669625755,
+          -1683.1465667929217
+        ],
+        [
+          -1359.1872701795837,
+          -1694.0834926007624
+        ],
+        [
+          -1337.313418563902,
+          -1763.3506893837543
+        ],
+        [
+          -1337.313418563902,
+          -1876.3655893981095
+        ],
+        [
+          -1370.1241959874246,
+          -1927.4045765013666
+        ],
+        [
+          -1417.5175411547348,
+          -1931.0502184373136
+        ]
+      ],
+      "holes": [],
+      "c": [
+        -1408.2009006517594,
+        -1818.0353184229582
+      ],
+      "r": 136.4008147505589
+    },
+    {
+      "id": "shape-43",
+      "kind": "lilybed",
+      "outer": [
+        [
+          2423.5596279986034,
+          -1189.8002966053923
+        ],
+        [
+          2509.7433936003536,
+          -1072.9986142767045
+        ],
+        [
+          2628.813069760666,
+          -1017.4327654018919
+        ],
+        [
+          2660.5649834034166,
+          -1023.1027499809544
+        ],
+        [
+          2708.1928538675415,
+          -1150.1104045519546
+        ],
+        [
+          2761.490708910729,
+          -1378.0437846302675
+        ],
+        [
+          2798.912607132542,
+          -1463.0935533162053
+        ],
+        [
+          2761.490708910729,
+          -1506.1854361170804
+        ],
+        [
+          2694.5848908777916,
+          -1566.2872726551432
+        ],
+        [
+          2651.4930080769163,
+          -1465.3615471478304
+        ],
+        [
+          2604.999134528604,
+          -1389.3837537883926
+        ],
+        [
+          2590.2571746230415,
+          -1212.4802349216422
+        ],
+        [
+          2507.4753997687285,
+          -1210.2122410900172
+        ],
+        [
+          2487.0634552841034,
+          -1231.7581824904548
+        ],
+        [
+          2449.6415570622908,
+          -1222.6862071639548
+        ]
+      ],
+      "holes": [],
+      "c": [
+        2615.885504920404,
+        -1273.2624696091923
+      ],
+      "r": 303.4091767731955
+    },
+    {
+      "id": "shape-44",
+      "kind": "lilybed",
+      "outer": [
+        [
+          702.3623970610364,
+          -1183.4538804035158
+        ],
+        [
+          652.9871049348803,
+          -1244.350074025775
+        ],
+        [
+          639.8203603679054,
+          -1300.3087384354185
+        ],
+        [
+          705.6540832027802,
+          -1323.3505414276246
+        ],
+        [
+          868.5925472190952,
+          -1326.6422275693685
+        ],
+        [
+          973.9265037548948,
+          -1288.7878369393154
+        ],
+        [
+          1023.3017958810508,
+          -1231.1833294588
+        ],
+        [
+          1026.5934820227944,
+          -1171.9329789074127
+        ],
+        [
+          952.5305438335605,
+          -1139.0161174899754
+        ],
+        [
+          921.259525486995,
+          -1084.7032961512036
+        ],
+        [
+          881.7592917860701,
+          -1066.599022371613
+        ],
+        [
+          810.9880397385798,
+          -1125.8493729230004
+        ],
+        [
+          750.0918461163207,
+          -1152.1828620569504
+        ]
+      ],
+      "holes": [],
+      "c": [
+        839.2205785696895,
+        -1202.9507906276901
+      ],
+      "r": 221.8986638541373
     }
   ],
   "course": {
@@ -3821,8 +4069,8 @@ window.VENUE_DOC["lake"] = {
       },
       {
         "id": "mark-3",
-        "x": -2152.0264636234892,
-        "y": -1340.149036942932,
+        "x": -2291.049334269869,
+        "y": -1251.980721571223,
         "kind": "inflatable"
       }
     ],
@@ -4158,8 +4406,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8",
       "kind": "lake-blueberry-lowbush",
-      "x": 333.1,
-      "y": 389.6,
+      "x": 262.9225004437792,
+      "y": 402.3595453738583,
       "heading": 6.047,
       "scale": 1.511
     },
@@ -4273,14 +4521,6 @@ window.VENUE_DOC["lake"] = {
       "x": 1408.4,
       "y": -3197.6,
       "heading": 5.762,
-      "scale": 1.523
-    },
-    {
-      "id": "veg-23",
-      "kind": "lake-blueberry-lowbush",
-      "x": -90.7,
-      "y": 2584.3,
-      "heading": 0.785,
       "scale": 1.523
     },
     {
@@ -4492,14 +4732,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.533
     },
     {
-      "id": "veg-50",
-      "kind": "lake-blueberry-lowbush",
-      "x": -281.6,
-      "y": 2344.4,
-      "heading": 6.169,
-      "scale": 1.534
-    },
-    {
       "id": "veg-51",
       "kind": "lake-blueberry-lowbush",
       "x": -3867.1,
@@ -4537,14 +4769,6 @@ window.VENUE_DOC["lake"] = {
       "x": -1660.4,
       "y": -2931.1,
       "heading": 1.496,
-      "scale": 1.538
-    },
-    {
-      "id": "veg-56",
-      "kind": "lake-blueberry-lowbush",
-      "x": -277.1,
-      "y": 2446,
-      "heading": 0.755,
       "scale": 1.538
     },
     {
@@ -4948,14 +5172,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.567
     },
     {
-      "id": "veg-107",
-      "kind": "lake-blueberry-lowbush",
-      "x": 31.8,
-      "y": 2695,
-      "heading": 0.017,
-      "scale": 1.567
-    },
-    {
       "id": "veg-108",
       "kind": "lake-blueberry-lowbush",
       "x": 1170.2,
@@ -4982,8 +5198,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-111",
       "kind": "lake-blueberry-lowbush",
-      "x": 361,
-      "y": 445.1,
+      "x": 401.83054519634663,
+      "y": 274.12209199029854,
       "heading": 0.018,
       "scale": 1.569
     },
@@ -5052,14 +5268,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.574
     },
     {
-      "id": "veg-120",
-      "kind": "lake-blueberry-lowbush",
-      "x": -320.4,
-      "y": 2563.2,
-      "heading": 5.611,
-      "scale": 1.575
-    },
-    {
       "id": "veg-121",
       "kind": "lake-blueberry-lowbush",
       "x": 3405.3,
@@ -5105,14 +5313,6 @@ window.VENUE_DOC["lake"] = {
       "x": -2059.4,
       "y": -91,
       "heading": 3.572,
-      "scale": 1.58
-    },
-    {
-      "id": "veg-127",
-      "kind": "lake-blueberry-lowbush",
-      "x": -234,
-      "y": 2718.1,
-      "heading": 3.725,
       "scale": 1.58
     },
     {
@@ -5228,14 +5428,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.589
     },
     {
-      "id": "veg-142",
-      "kind": "lake-blueberry-lowbush",
-      "x": -252.1,
-      "y": 2365.8,
-      "heading": 0.371,
-      "scale": 1.589
-    },
-    {
       "id": "veg-143",
       "kind": "lake-blueberry-lowbush",
       "x": -382.7,
@@ -5249,14 +5441,6 @@ window.VENUE_DOC["lake"] = {
       "x": -3130.9,
       "y": 544.1,
       "heading": 5.984,
-      "scale": 1.59
-    },
-    {
-      "id": "veg-145",
-      "kind": "lake-blueberry-lowbush",
-      "x": -49.2,
-      "y": 2713.7,
-      "heading": 3.386,
       "scale": 1.59
     },
     {
@@ -5844,14 +6028,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.634
     },
     {
-      "id": "veg-219",
-      "kind": "lake-blueberry-lowbush",
-      "x": -308.3,
-      "y": 2515.4,
-      "heading": 3.946,
-      "scale": 1.634
-    },
-    {
       "id": "veg-220",
       "kind": "lake-blueberry-lowbush",
       "x": -2987.9,
@@ -5913,14 +6089,6 @@ window.VENUE_DOC["lake"] = {
       "x": -520,
       "y": 2057.8,
       "heading": 3.748,
-      "scale": 1.637
-    },
-    {
-      "id": "veg-228",
-      "kind": "lake-blueberry-lowbush",
-      "x": -298.2,
-      "y": 2303.7,
-      "heading": 5.604,
       "scale": 1.637
     },
     {
@@ -6058,14 +6226,6 @@ window.VENUE_DOC["lake"] = {
       "y": 2135.9,
       "heading": 4.152,
       "scale": 1.647
-    },
-    {
-      "id": "veg-246",
-      "kind": "lake-blueberry-lowbush",
-      "x": -24.4,
-      "y": 2781,
-      "heading": 0.722,
-      "scale": 1.648
     },
     {
       "id": "veg-247",
@@ -6364,14 +6524,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.666
     },
     {
-      "id": "veg-284",
-      "kind": "lake-blueberry-lowbush",
-      "x": -196.4,
-      "y": 2595.5,
-      "heading": 0.879,
-      "scale": 1.667
-    },
-    {
       "id": "veg-285",
       "kind": "lake-blueberry-lowbush",
       "x": -1235.5,
@@ -6588,14 +6740,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.684
     },
     {
-      "id": "veg-312",
-      "kind": "lake-blueberry-lowbush",
-      "x": -291.4,
-      "y": 2557.4,
-      "heading": 1.257,
-      "scale": 1.684
-    },
-    {
       "id": "veg-313",
       "kind": "lake-blueberry-lowbush",
       "x": 2523.1,
@@ -6721,14 +6865,6 @@ window.VENUE_DOC["lake"] = {
       "x": 2175.5,
       "y": -1097.9,
       "heading": 0.81,
-      "scale": 1.694
-    },
-    {
-      "id": "veg-329",
-      "kind": "lake-blueberry-lowbush",
-      "x": 4.6,
-      "y": 2622.1,
-      "heading": 5.087,
       "scale": 1.694
     },
     {
@@ -6946,14 +7082,6 @@ window.VENUE_DOC["lake"] = {
       "y": -3206.1,
       "heading": 1.195,
       "scale": 1.705
-    },
-    {
-      "id": "veg-357",
-      "kind": "lake-blueberry-lowbush",
-      "x": -11.7,
-      "y": 2655.1,
-      "heading": 3.447,
-      "scale": 1.706
     },
     {
       "id": "veg-358",
@@ -7226,14 +7354,6 @@ window.VENUE_DOC["lake"] = {
       "y": -787.8,
       "heading": 5.706,
       "scale": 1.729
-    },
-    {
-      "id": "veg-392",
-      "kind": "lake-blueberry-lowbush",
-      "x": -211.7,
-      "y": 2552.4,
-      "heading": 1.123,
-      "scale": 1.731
     },
     {
       "id": "veg-393",
@@ -7537,14 +7657,6 @@ window.VENUE_DOC["lake"] = {
       "x": -2941.7,
       "y": -1182.9,
       "heading": 5.66,
-      "scale": 1.752
-    },
-    {
-      "id": "veg-431",
-      "kind": "lake-blueberry-lowbush",
-      "x": -18.8,
-      "y": 2729.9,
-      "heading": 5.873,
       "scale": 1.752
     },
     {
@@ -8356,14 +8468,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.807
     },
     {
-      "id": "veg-533",
-      "kind": "lake-blueberry-lowbush",
-      "x": -210.6,
-      "y": 2562.2,
-      "heading": 0.192,
-      "scale": 1.808
-    },
-    {
       "id": "veg-534",
       "kind": "lake-blueberry-lowbush",
       "x": 890.4,
@@ -8924,14 +9028,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.853
     },
     {
-      "id": "veg-604",
-      "kind": "lake-blueberry-lowbush",
-      "x": -142.6,
-      "y": 2656.4,
-      "heading": 5.495,
-      "scale": 1.853
-    },
-    {
       "id": "veg-605",
       "kind": "lake-blueberry-lowbush",
       "x": 265.9,
@@ -9353,14 +9449,6 @@ window.VENUE_DOC["lake"] = {
       "x": -150.3,
       "y": 3474.2,
       "heading": 0.82,
-      "scale": 1.885
-    },
-    {
-      "id": "veg-658",
-      "kind": "lake-blueberry-lowbush",
-      "x": -216.5,
-      "y": 2619.6,
-      "heading": 1.763,
       "scale": 1.885
     },
     {
@@ -9996,14 +10084,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.941
     },
     {
-      "id": "veg-738",
-      "kind": "lake-blueberry-lowbush",
-      "x": -315.8,
-      "y": 2355.1,
-      "heading": 5.449,
-      "scale": 1.941
-    },
-    {
       "id": "veg-739",
       "kind": "lake-blueberry-lowbush",
       "x": 1535.6,
@@ -10321,14 +10401,6 @@ window.VENUE_DOC["lake"] = {
       "x": 3070.6,
       "y": 2056.3,
       "heading": 2.911,
-      "scale": 1.971
-    },
-    {
-      "id": "veg-779",
-      "kind": "lake-blueberry-lowbush",
-      "x": -214.1,
-      "y": 2539.7,
-      "heading": 1.811,
       "scale": 1.971
     },
     {
@@ -10892,14 +10964,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.017
     },
     {
-      "id": "veg-850",
-      "kind": "lake-blueberry-lowbush",
-      "x": -16.9,
-      "y": 2730.6,
-      "heading": 5.865,
-      "scale": 2.017
-    },
-    {
       "id": "veg-851",
       "kind": "lake-blueberry-lowbush",
       "x": -1697.2,
@@ -11276,14 +11340,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.051
     },
     {
-      "id": "veg-898",
-      "kind": "lake-blueberry-lowbush",
-      "x": -256.3,
-      "y": 2331,
-      "heading": 0.125,
-      "scale": 2.051
-    },
-    {
       "id": "veg-899",
       "kind": "lake-blueberry-lowbush",
       "x": -151.3,
@@ -11468,14 +11524,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.065
     },
     {
-      "id": "veg-922",
-      "kind": "lake-blueberry-lowbush",
-      "x": -266.5,
-      "y": 2466.3,
-      "heading": 4.473,
-      "scale": 2.065
-    },
-    {
       "id": "veg-923",
       "kind": "lake-blueberry-lowbush",
       "x": 1486.7,
@@ -11642,14 +11690,6 @@ window.VENUE_DOC["lake"] = {
       "y": 2214.4,
       "heading": 0.111,
       "scale": 2.08
-    },
-    {
-      "id": "veg-944",
-      "kind": "lake-blueberry-lowbush",
-      "x": 8.6,
-      "y": 2811.1,
-      "heading": 2.472,
-      "scale": 2.081
     },
     {
       "id": "veg-945",
@@ -12380,14 +12420,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.151
     },
     {
-      "id": "veg-1036",
-      "kind": "lake-blueberry-lowbush",
-      "x": -48.9,
-      "y": 2659.4,
-      "heading": 1.716,
-      "scale": 2.152
-    },
-    {
       "id": "veg-1037",
       "kind": "lake-blueberry-lowbush",
       "x": 313.4,
@@ -12564,14 +12596,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.166
     },
     {
-      "id": "veg-1059",
-      "kind": "lake-blueberry-lowbush",
-      "x": -16.6,
-      "y": 2762.9,
-      "heading": 0.684,
-      "scale": 2.166
-    },
-    {
       "id": "veg-1060",
       "kind": "lake-blueberry-lowbush",
       "x": -1415.4,
@@ -12601,14 +12625,6 @@ window.VENUE_DOC["lake"] = {
       "x": -3447.4,
       "y": 100.8,
       "heading": 0.236,
-      "scale": 2.172
-    },
-    {
-      "id": "veg-1064",
-      "kind": "lake-blueberry-lowbush",
-      "x": -284.8,
-      "y": 2438.3,
-      "heading": 2.855,
       "scale": 2.172
     },
     {
@@ -13220,14 +13236,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.226
     },
     {
-      "id": "veg-1141",
-      "kind": "lake-blueberry-lowbush",
-      "x": -293,
-      "y": 2568.7,
-      "heading": 1.503,
-      "scale": 2.227
-    },
-    {
       "id": "veg-1142",
       "kind": "lake-blueberry-lowbush",
       "x": -3512.5,
@@ -13372,14 +13380,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.239
     },
     {
-      "id": "veg-1160",
-      "kind": "lake-blueberry-lowbush",
-      "x": -233.3,
-      "y": 2440.4,
-      "heading": 5.736,
-      "scale": 2.241
-    },
-    {
       "id": "veg-1161",
       "kind": "lake-blueberry-lowbush",
       "x": -3608.4,
@@ -13393,14 +13393,6 @@ window.VENUE_DOC["lake"] = {
       "x": 740.9,
       "y": 3914.1,
       "heading": 5.917,
-      "scale": 2.242
-    },
-    {
-      "id": "veg-1163",
-      "kind": "lake-blueberry-lowbush",
-      "x": -55.3,
-      "y": 2520.7,
-      "heading": 4.409,
       "scale": 2.242
     },
     {
@@ -13546,14 +13538,6 @@ window.VENUE_DOC["lake"] = {
       "y": -3009.7,
       "heading": 1.874,
       "scale": 2.25
-    },
-    {
-      "id": "veg-1182",
-      "kind": "lake-blueberry-lowbush",
-      "x": -229.1,
-      "y": 2476.5,
-      "heading": 4.61,
-      "scale": 2.251
     },
     {
       "id": "veg-1183",
@@ -13900,14 +13884,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.271
     },
     {
-      "id": "veg-1226",
-      "kind": "lake-blueberry-lowbush",
-      "x": -314.6,
-      "y": 2308.5,
-      "heading": 4.864,
-      "scale": 2.271
-    },
-    {
       "id": "veg-1227",
       "kind": "lake-blueberry-lowbush",
       "x": 3156,
@@ -13945,14 +13921,6 @@ window.VENUE_DOC["lake"] = {
       "x": 2030.1,
       "y": 3023,
       "heading": 3.507,
-      "scale": 2.277
-    },
-    {
-      "id": "veg-1232",
-      "kind": "lake-blueberry-lowbush",
-      "x": -13.5,
-      "y": 2707.5,
-      "heading": 6.162,
       "scale": 2.277
     },
     {
@@ -14276,14 +14244,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.305
     },
     {
-      "id": "veg-1273",
-      "kind": "lake-blueberry-lowbush",
-      "x": 74.9,
-      "y": 2640.3,
-      "heading": 3.918,
-      "scale": 2.305
-    },
-    {
       "id": "veg-1274",
       "kind": "lake-blueberry-lowbush",
       "x": -2900.4,
@@ -14548,14 +14508,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.328
     },
     {
-      "id": "veg-1307",
-      "kind": "lake-blueberry-lowbush",
-      "x": -27.4,
-      "y": 2709.5,
-      "heading": 6.036,
-      "scale": 2.328
-    },
-    {
       "id": "veg-1308",
       "kind": "lake-blueberry-lowbush",
       "x": 3004,
@@ -14761,14 +14713,6 @@ window.VENUE_DOC["lake"] = {
       "x": 4159.4,
       "y": -2369.1,
       "heading": 1.083,
-      "scale": 2.346
-    },
-    {
-      "id": "veg-1334",
-      "kind": "lake-blueberry-lowbush",
-      "x": 5.5,
-      "y": 2586.9,
-      "heading": 0.205,
       "scale": 2.346
     },
     {
@@ -15140,14 +15084,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.38
     },
     {
-      "id": "veg-1381",
-      "kind": "lake-blueberry-lowbush",
-      "x": -91.8,
-      "y": 2642.5,
-      "heading": 1.932,
-      "scale": 2.38
-    },
-    {
       "id": "veg-1382",
       "kind": "lake-blueberry-lowbush",
       "x": 602.4,
@@ -15484,14 +15420,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.403
     },
     {
-      "id": "veg-1424",
-      "kind": "lake-blueberry-lowbush",
-      "x": -296,
-      "y": 2442.5,
-      "heading": 2.526,
-      "scale": 2.403
-    },
-    {
       "id": "veg-1425",
       "kind": "lake-blueberry-lowbush",
       "x": -4355.3,
@@ -15636,14 +15564,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.418
     },
     {
-      "id": "veg-1443",
-      "kind": "lake-blueberry-lowbush",
-      "x": -258.7,
-      "y": 2611.3,
-      "heading": 3.763,
-      "scale": 2.418
-    },
-    {
       "id": "veg-1444",
       "kind": "lake-blueberry-lowbush",
       "x": -2409,
@@ -15706,14 +15626,6 @@ window.VENUE_DOC["lake"] = {
       "y": 628.2,
       "heading": 0.143,
       "scale": 2.432
-    },
-    {
-      "id": "veg-1452",
-      "kind": "lake-blueberry-lowbush",
-      "x": -161.6,
-      "y": 2428.3,
-      "heading": 1.523,
-      "scale": 2.434
     },
     {
       "id": "veg-1453",
@@ -15825,14 +15737,6 @@ window.VENUE_DOC["lake"] = {
       "x": 785.2,
       "y": -988.7,
       "heading": 4.068,
-      "scale": 2.456
-    },
-    {
-      "id": "veg-1467",
-      "kind": "lake-blueberry-lowbush",
-      "x": -23,
-      "y": 2726.5,
-      "heading": 5.469,
       "scale": 2.456
     },
     {
@@ -16046,17 +15950,9 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-1494",
       "kind": "lake-blueberry-lowbush",
-      "x": 307.5,
-      "y": 441.8,
+      "x": 294.0744698373621,
+      "y": 439.8820671196232,
       "heading": 2.472,
-      "scale": 2.497
-    },
-    {
-      "id": "veg-1495",
-      "kind": "lake-blueberry-lowbush",
-      "x": 42.2,
-      "y": 2700.4,
-      "heading": 1.781,
       "scale": 2.497
     },
     {
@@ -16500,14 +16396,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.59
     },
     {
-      "id": "veg-1551",
-      "kind": "lake-blueberry-lowbush",
-      "x": -43.5,
-      "y": 2639.6,
-      "heading": 0.317,
-      "scale": 2.591
-    },
-    {
       "id": "veg-1552",
       "kind": "lake-blueberry-lowbush",
       "x": 652,
@@ -16585,14 +16473,6 @@ window.VENUE_DOC["lake"] = {
       "x": -845.5,
       "y": 2211.4,
       "heading": 3.642,
-      "scale": 2.61
-    },
-    {
-      "id": "veg-1562",
-      "kind": "lake-blueberry-lowbush",
-      "x": -80.4,
-      "y": 2717.2,
-      "heading": 1.427,
       "scale": 2.61
     },
     {
@@ -17356,14 +17236,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.805
     },
     {
-      "id": "veg-1658",
-      "kind": "lake-blueberry-lowbush",
-      "x": -287.7,
-      "y": 2460.8,
-      "heading": 3.461,
-      "scale": 2.807
-    },
-    {
       "id": "veg-1659",
       "kind": "lake-blueberry-lowbush",
       "x": 4323.1,
@@ -17582,8 +17454,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-1686",
       "kind": "lake-blueberry-lowbush",
-      "x": 300.4,
-      "y": 478.6,
+      "x": 317.0220849632659,
+      "y": 477.9606890398744,
       "heading": 6.268,
       "scale": 2.85
     },
@@ -17924,14 +17796,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.908
     },
     {
-      "id": "veg-1729",
-      "kind": "lake-blueberry-lowbush",
-      "x": -29.1,
-      "y": 2540.2,
-      "heading": 0.652,
-      "scale": 2.909
-    },
-    {
       "id": "veg-1730",
       "kind": "lake-blueberry-lowbush",
       "x": 1291.9,
@@ -18204,14 +18068,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.993
     },
     {
-      "id": "veg-1764",
-      "kind": "lake-blueberry-lowbush",
-      "x": 16.1,
-      "y": 2776.8,
-      "heading": 0.248,
-      "scale": 2.998
-    },
-    {
       "id": "veg-1765",
       "kind": "lake-blueberry-lowbush",
       "x": 1620.2,
@@ -18234,14 +18090,6 @@ window.VENUE_DOC["lake"] = {
       "y": -133.6,
       "heading": 0.406,
       "scale": 2.999
-    },
-    {
-      "id": "veg-1768",
-      "kind": "lake-blueberry-lowbush",
-      "x": 51.5,
-      "y": 2643.2,
-      "heading": 4.311,
-      "scale": 3
     },
     {
       "id": "veg-1769",
@@ -25300,14 +25148,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.838
     },
     {
-      "id": "veg-2651",
-      "kind": "lake-fern-bracken",
-      "x": -319.5,
-      "y": 2554.9,
-      "heading": 0.427,
-      "scale": 1.839
-    },
-    {
       "id": "veg-2652",
       "kind": "lake-fern-bracken",
       "x": -3934.9,
@@ -30788,14 +30628,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.157
     },
     {
-      "id": "veg-3337",
-      "kind": "lake-fern-bracken",
-      "x": -352.2,
-      "y": 2514.2,
-      "heading": 3.031,
-      "scale": 2.157
-    },
-    {
       "id": "veg-3338",
       "kind": "lake-fern-bracken",
       "x": 1955.7,
@@ -34196,14 +34028,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.527
     },
     {
-      "id": "veg-3763",
-      "kind": "lake-alder-speckled",
-      "x": -2027.7,
-      "y": -2186.2,
-      "heading": 4.655,
-      "scale": 1.528
-    },
-    {
       "id": "veg-3764",
       "kind": "lake-alder-speckled",
       "x": 2316.3,
@@ -34420,14 +34244,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.563
     },
     {
-      "id": "veg-3791",
-      "kind": "lake-alder-speckled",
-      "x": -277.5,
-      "y": 2735.9,
-      "heading": 3.525,
-      "scale": 1.563
-    },
-    {
       "id": "veg-3792",
       "kind": "lake-alder-speckled",
       "x": 3000.9,
@@ -34550,8 +34366,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-3807",
       "kind": "lake-alder-speckled",
-      "x": -2531.5,
-      "y": -2075.6,
+      "x": -2815.652164464978,
+      "y": -2177.697963855382,
       "heading": 3.272,
       "scale": 1.586
     },
@@ -35132,14 +34948,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.673
     },
     {
-      "id": "veg-3880",
-      "kind": "lake-alder-speckled",
-      "x": -1964.4,
-      "y": -1994.1,
-      "heading": 5.515,
-      "scale": 1.674
-    },
-    {
       "id": "veg-3881",
       "kind": "lake-alder-speckled",
       "x": -304.2,
@@ -35158,8 +34966,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-3883",
       "kind": "lake-alder-speckled",
-      "x": -2549.7,
-      "y": -2027.4,
+      "x": -2833.8521644649777,
+      "y": -2129.4979638553823,
       "heading": 5.281,
       "scale": 1.675
     },
@@ -35350,8 +35158,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-3907",
       "kind": "lake-alder-speckled",
-      "x": -2698.2,
-      "y": -2016.2,
+      "x": -2982.3521644649777,
+      "y": -2118.297963855382,
       "heading": 0.85,
       "scale": 1.7
     },
@@ -35398,8 +35206,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-3913",
       "kind": "lake-alder-speckled",
-      "x": -2945.1,
-      "y": -1779.7,
+      "x": -3095.4587933614234,
+      "y": -1701.4645302834872,
       "heading": 5.032,
       "scale": 1.703
     },
@@ -35420,14 +35228,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.706
     },
     {
-      "id": "veg-3916",
-      "kind": "lake-alder-speckled",
-      "x": -116,
-      "y": 2809.3,
-      "heading": 2.944,
-      "scale": 1.706
-    },
-    {
       "id": "veg-3917",
       "kind": "lake-alder-speckled",
       "x": -2587.4,
@@ -35442,14 +35242,6 @@ window.VENUE_DOC["lake"] = {
       "y": -2162.9,
       "heading": 4,
       "scale": 1.711
-    },
-    {
-      "id": "veg-3919",
-      "kind": "lake-alder-speckled",
-      "x": -1624.3,
-      "y": -1939.6,
-      "heading": 4.253,
-      "scale": 1.712
     },
     {
       "id": "veg-3920",
@@ -36750,9 +36542,9 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4082",
       "kind": "lake-alder-speckled",
-      "x": -1781.7,
-      "y": -2166.2,
-      "heading": 5.19,
+      "x": -1751.736599530317,
+      "y": -2172.026216757994,
+      "heading": 4.356536275843235,
       "scale": 1.898
     },
     {
@@ -36926,8 +36718,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4104",
       "kind": "lake-alder-speckled",
-      "x": -2646.9,
-      "y": -2096.7,
+      "x": -2931.052164464978,
+      "y": -2198.7979638553816,
       "heading": 3.955,
       "scale": 1.916
     },
@@ -37230,8 +37022,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4142",
       "kind": "lake-alder-speckled",
-      "x": -2521.6,
-      "y": -2122,
+      "x": -2805.752164464978,
+      "y": -2224.0979638553817,
       "heading": 6.121,
       "scale": 1.965
     },
@@ -37278,8 +37070,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4148",
       "kind": "lake-alder-speckled",
-      "x": -2094.8,
-      "y": -2087.2,
+      "x": -2118.104867031976,
+      "y": -2085.535366640573,
       "heading": 3.799,
       "scale": 1.971
     },
@@ -37798,8 +37590,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4213",
       "kind": "lake-alder-speckled",
-      "x": -2526.5,
-      "y": -2092.3,
+      "x": -2810.652164464978,
+      "y": -2194.397963855382,
       "heading": 0.703,
       "scale": 2.048
     },
@@ -38086,8 +37878,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4249",
       "kind": "lake-alder-speckled",
-      "x": -2765,
-      "y": -1780.1,
+      "x": -2643.2205009435806,
+      "y": -1689.0728996952018,
       "heading": 3.305,
       "scale": 2.108
     },
@@ -38102,8 +37894,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4251",
       "kind": "lake-alder-speckled",
-      "x": -2543.1,
-      "y": -2030.2,
+      "x": -2827.252164464978,
+      "y": -2132.297963855382,
       "heading": 1.831,
       "scale": 2.11
     },
@@ -38518,8 +38310,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4303",
       "kind": "lake-alder-speckled",
-      "x": -1993.7,
-      "y": -2053.7,
+      "x": -1822.2427639790376,
+      "y": -2054.5323166797134,
       "heading": 2.814,
       "scale": 2.197
     },
@@ -39354,14 +39146,6 @@ window.VENUE_DOC["lake"] = {
       "y": -1423.5,
       "heading": 5.748,
       "scale": 2.423
-    },
-    {
-      "id": "veg-4408",
-      "kind": "lake-alder-speckled",
-      "x": -174.9,
-      "y": 2653.9,
-      "heading": 0.359,
-      "scale": 2.424
     },
     {
       "id": "veg-4409",
@@ -40862,8 +40646,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4596",
       "kind": "lake-birch-paper",
-      "x": -2576.8,
-      "y": -2105.2,
+      "x": -2860.952164464978,
+      "y": -2207.2979638553816,
       "heading": 3.653,
       "scale": 1.454
     },
@@ -41142,8 +40926,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-4631",
       "kind": "lake-fir-balsam",
-      "x": -2865.6,
-      "y": -1774.8,
+      "x": -3085.7871750616064,
+      "y": -1784.6407676005188,
       "heading": 3.389,
       "scale": 1.667
     },
@@ -44036,14 +43820,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.647
     },
     {
-      "id": "veg-4993",
-      "kind": "lake-fir-balsam",
-      "x": -138,
-      "y": 2882.1,
-      "heading": 1.485,
-      "scale": 1.867
-    },
-    {
       "id": "veg-4994",
       "kind": "lake-birch-paper",
       "x": -765.9,
@@ -45038,8 +44814,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-5118",
       "kind": "lake-aspen-quaking",
-      "x": -2515.1,
-      "y": -2188.9,
+      "x": -2799.252164464978,
+      "y": -2290.9979638553823,
       "heading": 4.507,
       "scale": 1.507
     },
@@ -45177,14 +44953,6 @@ window.VENUE_DOC["lake"] = {
       "x": -3678,
       "y": -1300,
       "heading": 3.792,
-      "scale": 1.69
-    },
-    {
-      "id": "veg-5136",
-      "kind": "lake-birch-paper",
-      "x": -1821.2,
-      "y": -2211.7,
-      "heading": 1.111,
       "scale": 1.69
     },
     {
@@ -45470,8 +45238,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-5172",
       "kind": "lake-aspen-quaking",
-      "x": -2737.3,
-      "y": -2205.5,
+      "x": -3021.452164464978,
+      "y": -2307.5979638553817,
       "heading": 3.023,
       "scale": 1.521
     },
@@ -46086,8 +45854,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-5249",
       "kind": "lake-aspen-quaking",
-      "x": -2549.7,
-      "y": -2171.7,
+      "x": -2833.8521644649777,
+      "y": -2273.7979638553816,
       "heading": 5.836,
       "scale": 1.537
     },
@@ -46625,14 +46393,6 @@ window.VENUE_DOC["lake"] = {
       "x": 1973.1,
       "y": 4256.7,
       "heading": 0.268,
-      "scale": 1.552
-    },
-    {
-      "id": "veg-5317",
-      "kind": "lake-aspen-quaking",
-      "x": -140.5,
-      "y": 2927.3,
-      "heading": 1.678,
       "scale": 1.552
     },
     {
@@ -48036,14 +47796,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.588
     },
     {
-      "id": "veg-5493",
-      "kind": "lake-birch-paper",
-      "x": -74,
-      "y": 2526.7,
-      "heading": 5.771,
-      "scale": 1.775
-    },
-    {
       "id": "veg-5494",
       "kind": "lake-aspen-quaking",
       "x": 2744.6,
@@ -49292,14 +49044,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.63
     },
     {
-      "id": "veg-5650",
-      "kind": "lake-aspen-quaking",
-      "x": -160.5,
-      "y": 2761.1,
-      "heading": 4.2,
-      "scale": 1.63
-    },
-    {
       "id": "veg-5651",
       "kind": "lake-aspen-quaking",
       "x": 2463.2,
@@ -49318,8 +49062,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-5653",
       "kind": "lake-fir-balsam",
-      "x": -2946.5,
-      "y": -1769.1,
+      "x": -3066.9096207122684,
+      "y": -1649.6614246160566,
       "heading": 0.925,
       "scale": 2.065
     },
@@ -50516,14 +50260,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.866
     },
     {
-      "id": "veg-5803",
-      "kind": "lake-birch-paper",
-      "x": -1533.2,
-      "y": -1860.4,
-      "heading": 2.042,
-      "scale": 1.866
-    },
-    {
       "id": "veg-5804",
       "kind": "lake-aspen-quaking",
       "x": -4082.4,
@@ -50538,14 +50274,6 @@ window.VENUE_DOC["lake"] = {
       "y": 43,
       "heading": 5.754,
       "scale": 1.67
-    },
-    {
-      "id": "veg-5806",
-      "kind": "lake-birch-paper",
-      "x": -1906.2,
-      "y": -1976.9,
-      "heading": 3.911,
-      "scale": 1.867
     },
     {
       "id": "veg-5807",
@@ -52694,8 +52422,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-6075",
       "kind": "lake-fir-balsam",
-      "x": -1940.5,
-      "y": -2288.7,
+      "x": -1831.4665149575435,
+      "y": -2388.5780015656087,
       "heading": 4.063,
       "scale": 2.201
     },
@@ -53681,14 +53409,6 @@ window.VENUE_DOC["lake"] = {
       "x": -4665,
       "y": -600.8,
       "heading": 5.921,
-      "scale": 1.973
-    },
-    {
-      "id": "veg-6199",
-      "kind": "lake-birch-paper",
-      "x": -1645.9,
-      "y": -1860.8,
-      "heading": 5.623,
       "scale": 1.973
     },
     {
@@ -54974,8 +54694,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-6360",
       "kind": "lake-birch-paper",
-      "x": -1932.8,
-      "y": -2298.8,
+      "x": -1782.1506809718728,
+      "y": -2321.2725503522624,
       "heading": 6.09,
       "scale": 2.019
     },
@@ -55796,14 +55516,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.838
     },
     {
-      "id": "veg-6463",
-      "kind": "lake-fir-balsam",
-      "x": -1874.9,
-      "y": -2225.4,
-      "heading": 3.302,
-      "scale": 2.329
-    },
-    {
       "id": "veg-6464",
       "kind": "lake-aspen-quaking",
       "x": 2805.4,
@@ -56273,14 +55985,6 @@ window.VENUE_DOC["lake"] = {
       "x": 2686.1,
       "y": 3594.9,
       "heading": 2.294,
-      "scale": 1.856
-    },
-    {
-      "id": "veg-6523",
-      "kind": "lake-aspen-quaking",
-      "x": -209.9,
-      "y": 2730.3,
-      "heading": 5.662,
       "scale": 1.856
     },
     {
@@ -57404,14 +57108,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.116
     },
     {
-      "id": "veg-6664",
-      "kind": "lake-birch-paper",
-      "x": -1855.1,
-      "y": -2217.7,
-      "heading": 0.222,
-      "scale": 2.117
-    },
-    {
       "id": "veg-6665",
       "kind": "lake-aspen-quaking",
       "x": 1800.8,
@@ -57566,8 +57262,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-6684",
       "kind": "lake-birch-paper",
-      "x": 343.6,
-      "y": 409.2,
+      "x": 236.4464926882441,
+      "y": 328.8322021333176,
       "heading": 1.182,
       "scale": 2.123
     },
@@ -58052,14 +57748,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.917
     },
     {
-      "id": "veg-6745",
-      "kind": "lake-birch-paper",
-      "x": 6,
-      "y": 2749.5,
-      "heading": 3.307,
-      "scale": 2.143
-    },
-    {
       "id": "veg-6746",
       "kind": "lake-birch-paper",
       "x": 1410.3,
@@ -58538,14 +58226,6 @@ window.VENUE_DOC["lake"] = {
       "y": 854.8,
       "heading": 3.588,
       "scale": 1.936
-    },
-    {
-      "id": "veg-6806",
-      "kind": "lake-birch-paper",
-      "x": -352.8,
-      "y": 2490.8,
-      "heading": 4.131,
-      "scale": 2.164
     },
     {
       "id": "veg-6807",
@@ -59684,14 +59364,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.979
     },
     {
-      "id": "veg-6949",
-      "kind": "lake-aspen-quaking",
-      "x": -147.3,
-      "y": 2824.8,
-      "heading": 4.946,
-      "scale": 1.98
-    },
-    {
       "id": "veg-6950",
       "kind": "lake-birch-paper",
       "x": 1254.3,
@@ -59758,8 +59430,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-6958",
       "kind": "lake-birch-paper",
-      "x": -1478.4,
-      "y": -2010.4,
+      "x": -990.3705767681565,
+      "y": -1867.4625120241462,
       "heading": 0.571,
       "scale": 2.216
     },
@@ -62126,8 +61798,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7254",
       "kind": "lake-aspen-quaking",
-      "x": -2578.5,
-      "y": -2077.1,
+      "x": -2862.652164464978,
+      "y": -2179.197963855382,
       "heading": 0.396,
       "scale": 2.113
     },
@@ -62286,8 +61958,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7274",
       "kind": "lake-aspen-quaking",
-      "x": -2776.4,
-      "y": -2070.7,
+      "x": -3060.552164464978,
+      "y": -2172.7979638553816,
       "heading": 3.951,
       "scale": 2.123
     },
@@ -62489,14 +62161,6 @@ window.VENUE_DOC["lake"] = {
       "x": 1382.2,
       "y": -1216,
       "heading": 0.197,
-      "scale": 1.506
-    },
-    {
-      "id": "veg-7300",
-      "kind": "lake-pine-red",
-      "x": -371.7,
-      "y": 2377.6,
-      "heading": 4.815,
       "scale": 1.506
     },
     {
@@ -63220,14 +62884,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.193
     },
     {
-      "id": "veg-7391",
-      "kind": "lake-aspen-quaking",
-      "x": -129.9,
-      "y": 2745.1,
-      "heading": 4.252,
-      "scale": 2.193
-    },
-    {
       "id": "veg-7392",
       "kind": "lake-aspen-quaking",
       "x": -940.9,
@@ -63286,8 +62942,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7399",
       "kind": "lake-pine-red",
-      "x": -1788.6,
-      "y": -2194.2,
+      "x": -1713.6914988257931,
+      "y": -2234.1512006262433,
       "heading": 5.656,
       "scale": 1.546
     },
@@ -63860,14 +63516,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.566
     },
     {
-      "id": "veg-7471",
-      "kind": "lake-pine-red",
-      "x": -1925.1,
-      "y": -1940.2,
-      "heading": 5.747,
-      "scale": 1.566
-    },
-    {
       "id": "veg-7472",
       "kind": "lake-aspen-quaking",
       "x": 3301.7,
@@ -64430,8 +64078,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7542",
       "kind": "lake-pine-red",
-      "x": -2521.4,
-      "y": -2213.8,
+      "x": -2805.552164464978,
+      "y": -2315.897963855382,
       "heading": 0.15,
       "scale": 1.594
     },
@@ -65140,14 +64788,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.62
     },
     {
-      "id": "veg-7631",
-      "kind": "lake-pine-red",
-      "x": -1952.2,
-      "y": -2185.3,
-      "heading": 5.462,
-      "scale": 1.62
-    },
-    {
       "id": "veg-7632",
       "kind": "lake-pine-red",
       "x": -4526.4,
@@ -65774,8 +65414,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7710",
       "kind": "lake-pine-red",
-      "x": -2892.1,
-      "y": -1746.7,
+      "x": -3005.268827405965,
+      "y": -1711.0272174481197,
       "heading": 4.118,
       "scale": 1.637
     },
@@ -65910,8 +65550,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7727",
       "kind": "lake-pine-red",
-      "x": -2964.7,
-      "y": -2015.7,
+      "x": -3248.8521644649777,
+      "y": -2117.797963855382,
       "heading": 3.368,
       "scale": 1.642
     },
@@ -66078,8 +65718,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7748",
       "kind": "lake-pine-red",
-      "x": -2565.2,
-      "y": -2130.5,
+      "x": -2849.3521644649777,
+      "y": -2232.5979638553817,
       "heading": 3.669,
       "scale": 1.647
     },
@@ -66678,8 +66318,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7823",
       "kind": "lake-pine-red",
-      "x": -2115.6,
-      "y": -2055.2,
+      "x": -2175.5268009393653,
+      "y": -2030.2304996085973,
       "heading": 4.792,
       "scale": 1.671
     },
@@ -67012,14 +66652,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.681
     },
     {
-      "id": "veg-7865",
-      "kind": "lake-pine-red",
-      "x": -1886.7,
-      "y": -2179.5,
-      "heading": 2.336,
-      "scale": 1.681
-    },
-    {
       "id": "veg-7866",
       "kind": "lake-aspen-quaking",
       "x": 1808.5,
@@ -67198,8 +66830,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7888",
       "kind": "lake-aspen-quaking",
-      "x": -161.3,
-      "y": 2747.5,
+      "x": -70.14347686183598,
+      "y": 2835.0392007914115,
       "heading": 1.5,
       "scale": 2.399
     },
@@ -67297,14 +66929,6 @@ window.VENUE_DOC["lake"] = {
       "x": 3272.3,
       "y": 3469.6,
       "heading": 1.182,
-      "scale": 1.694
-    },
-    {
-      "id": "veg-7901",
-      "kind": "lake-pine-red",
-      "x": -1959.5,
-      "y": -1916.9,
-      "heading": 1.698,
       "scale": 1.694
     },
     {
@@ -67409,14 +67033,6 @@ window.VENUE_DOC["lake"] = {
       "x": -3268.5,
       "y": -344.2,
       "heading": 1.419,
-      "scale": 1.432
-    },
-    {
-      "id": "veg-7915",
-      "kind": "lake-pine-white",
-      "x": -1672.9,
-      "y": -1888.7,
-      "heading": 4.896,
       "scale": 1.432
     },
     {
@@ -67686,8 +67302,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-7949",
       "kind": "lake-pine-red",
-      "x": -2938.3,
-      "y": -2047.7,
+      "x": -3222.452164464978,
+      "y": -2149.7979638553816,
       "heading": 2.393,
       "scale": 1.707
     },
@@ -67892,14 +67508,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.435
     },
     {
-      "id": "veg-7975",
-      "kind": "lake-pine-white",
-      "x": -218.3,
-      "y": 2745.5,
-      "heading": 3.375,
-      "scale": 1.446
-    },
-    {
       "id": "veg-7976",
       "kind": "lake-pine-white",
       "x": -2389.7,
@@ -68009,14 +67617,6 @@ window.VENUE_DOC["lake"] = {
       "x": 1826.6,
       "y": 2674.5,
       "heading": 4.151,
-      "scale": 1.723
-    },
-    {
-      "id": "veg-7990",
-      "kind": "lake-pine-red",
-      "x": -386.3,
-      "y": 2527.7,
-      "heading": 2.104,
       "scale": 1.723
     },
     {
@@ -68190,8 +67790,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8012",
       "kind": "lake-pine-red",
-      "x": -2697.2,
-      "y": -2082.4,
+      "x": -2981.3521644649777,
+      "y": -2184.4979638553823,
       "heading": 1.257,
       "scale": 1.734
     },
@@ -68284,14 +67884,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.47
     },
     {
-      "id": "veg-8024",
-      "kind": "lake-pine-red",
-      "x": -1.2,
-      "y": 2874.9,
-      "heading": 3.686,
-      "scale": 1.743
-    },
-    {
       "id": "veg-8025",
       "kind": "lake-pine-red",
       "x": 1101.6,
@@ -68377,14 +67969,6 @@ window.VENUE_DOC["lake"] = {
       "x": -2004.5,
       "y": -2781.3,
       "heading": 5.947,
-      "scale": 1.479
-    },
-    {
-      "id": "veg-8036",
-      "kind": "lake-pine-white",
-      "x": -314.6,
-      "y": 2636.5,
-      "heading": 4.931,
       "scale": 1.479
     },
     {
@@ -69078,8 +68662,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8123",
       "kind": "lake-pine-red",
-      "x": -2661.9,
-      "y": -2010.9,
+      "x": -2946.052164464978,
+      "y": -2112.9979638553823,
       "heading": 2.107,
       "scale": 1.803
     },
@@ -69178,14 +68762,6 @@ window.VENUE_DOC["lake"] = {
       "y": 3801.3,
       "heading": 4.049,
       "scale": 1.525
-    },
-    {
-      "id": "veg-8136",
-      "kind": "lake-pine-red",
-      "x": -1882.9,
-      "y": -2220.7,
-      "heading": 4.989,
-      "scale": 1.808
     },
     {
       "id": "veg-8137",
@@ -69406,8 +68982,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8164",
       "kind": "lake-pine-red",
-      "x": -2765.5,
-      "y": -2057.4,
+      "x": -3049.652164464978,
+      "y": -2159.4979638553823,
       "heading": 1.392,
       "scale": 1.818
     },
@@ -69628,14 +69204,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.828
     },
     {
-      "id": "veg-8192",
-      "kind": "lake-pine-red",
-      "x": 26.2,
-      "y": 2914.2,
-      "heading": 5.017,
-      "scale": 1.829
-    },
-    {
       "id": "veg-8193",
       "kind": "lake-pine-red",
       "x": 1912.4,
@@ -69686,8 +69254,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8199",
       "kind": "lake-pine-red",
-      "x": -2675.6,
-      "y": -2113.9,
+      "x": -2959.752164464978,
+      "y": -2215.9979638553823,
       "heading": 2.921,
       "scale": 1.832
     },
@@ -70054,8 +69622,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8245",
       "kind": "lake-pine-red",
-      "x": -2766.3,
-      "y": -2166.1,
+      "x": -3050.452164464978,
+      "y": -2268.197963855382,
       "heading": 3.137,
       "scale": 1.847
     },
@@ -70110,8 +69678,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8252",
       "kind": "lake-pine-red",
-      "x": -2848,
-      "y": -1913.7,
+      "x": -3151.162445151487,
+      "y": -1958.9298809298589,
       "heading": 3.479,
       "scale": 1.848
     },
@@ -70142,8 +69710,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8256",
       "kind": "lake-pine-white",
-      "x": -2963.4,
-      "y": -1801.1,
+      "x": -2833.8225032820255,
+      "y": -1517.4964222776407,
       "heading": 2.301,
       "scale": 1.56
     },
@@ -70273,14 +69841,6 @@ window.VENUE_DOC["lake"] = {
       "x": -1795.1,
       "y": 2723.5,
       "heading": 0.586,
-      "scale": 1.566
-    },
-    {
-      "id": "veg-8273",
-      "kind": "lake-pine-white",
-      "x": -232.9,
-      "y": 2590.7,
-      "heading": 1.914,
       "scale": 1.566
     },
     {
@@ -70607,7 +70167,7 @@ window.VENUE_DOC["lake"] = {
       "id": "veg-8314",
       "kind": "lake-pine-red",
       "x": -2023.2,
-      "y": -2032.4,
+      "y": -1982.4609992171956,
       "heading": 3.276,
       "scale": 1.87
     },
@@ -71036,14 +70596,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.89
     },
     {
-      "id": "veg-8368",
-      "kind": "lake-pine-red",
-      "x": -66.2,
-      "y": 2845.2,
-      "heading": 5.82,
-      "scale": 1.89
-    },
-    {
       "id": "veg-8369",
       "kind": "lake-pine-red",
       "x": 3204.9,
@@ -71118,8 +70670,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8378",
       "kind": "lake-pine-white",
-      "x": -2658.3,
-      "y": -2227.6,
+      "x": -2942.452164464978,
+      "y": -2329.697963855382,
       "heading": 3.165,
       "scale": 1.598
     },
@@ -71142,8 +70694,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8381",
       "kind": "lake-pine-red",
-      "x": -2540.4,
-      "y": -2205.2,
+      "x": -2824.552164464978,
+      "y": -2307.2979638553816,
       "heading": 6.189,
       "scale": 1.894
     },
@@ -71356,14 +70908,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.908
     },
     {
-      "id": "veg-8408",
-      "kind": "lake-pine-red",
-      "x": -1909,
-      "y": -2193,
-      "heading": 2.078,
-      "scale": 1.908
-    },
-    {
       "id": "veg-8409",
       "kind": "lake-pine-white",
       "x": 2922.1,
@@ -71566,8 +71110,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8434",
       "kind": "lake-pine-red",
-      "x": -1710,
-      "y": -2190.6,
+      "x": -1652.5701490997749,
+      "y": -2176.450616444872,
       "heading": 2.006,
       "scale": 1.92
     },
@@ -71980,14 +71524,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.943
     },
     {
-      "id": "veg-8486",
-      "kind": "lake-pine-white",
-      "x": -302.3,
-      "y": 2712.5,
-      "heading": 3.728,
-      "scale": 1.64
-    },
-    {
       "id": "veg-8487",
       "kind": "lake-pine-white",
       "x": -4397.7,
@@ -72010,14 +71546,6 @@ window.VENUE_DOC["lake"] = {
       "y": -3146.7,
       "heading": 2.815,
       "scale": 1.641
-    },
-    {
-      "id": "veg-8490",
-      "kind": "lake-pine-red",
-      "x": -254,
-      "y": 2925,
-      "heading": 1.402,
-      "scale": 1.945
     },
     {
       "id": "veg-8491",
@@ -72436,14 +71964,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.964
     },
     {
-      "id": "veg-8543",
-      "kind": "lake-pine-red",
-      "x": -1838.7,
-      "y": -1874.9,
-      "heading": 1.509,
-      "scale": 1.965
-    },
-    {
       "id": "veg-8544",
       "kind": "lake-pine-red",
       "x": 1883.4,
@@ -72462,8 +71982,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8546",
       "kind": "lake-pine-white",
-      "x": -2153.6,
-      "y": -2222.1,
+      "x": -2239.328618010481,
+      "y": -2186.3103827723235,
       "heading": 5.003,
       "scale": 1.658
     },
@@ -73100,14 +72620,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.675
     },
     {
-      "id": "veg-8626",
-      "kind": "lake-pine-white",
-      "x": -47.3,
-      "y": 2662.4,
-      "heading": 5.498,
-      "scale": 1.675
-    },
-    {
       "id": "veg-8627",
       "kind": "lake-pine-white",
       "x": -3441.6,
@@ -73390,8 +72902,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8662",
       "kind": "lake-pine-white",
-      "x": -2739.1,
-      "y": -2049.1,
+      "x": -3023.252164464978,
+      "y": -2151.197963855382,
       "heading": 2.999,
       "scale": 1.687
     },
@@ -73606,10 +73118,10 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8689",
       "kind": "lake-pine-red",
-      "x": -1846,
-      "y": -2091.3,
+      "x": -1771.8521942727439,
+      "y": -2032.0029624490592,
       "heading": 1.572,
-      "scale": 2.01
+      "scale": 1.9159346951452398
     },
     {
       "id": "veg-8690",
@@ -73662,8 +73174,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8696",
       "kind": "lake-pine-white",
-      "x": -2702.9,
-      "y": -2169.1,
+      "x": -2987.052164464978,
+      "y": -2271.197963855382,
       "heading": 2.29,
       "scale": 1.698
     },
@@ -73726,8 +73238,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8704",
       "kind": "lake-pine-red",
-      "x": -2074,
-      "y": -2291.5,
+      "x": -2163.890201409048,
+      "y": -2303.1524335159875,
       "heading": 3.586,
       "scale": 2.015
     },
@@ -73766,16 +73278,16 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8709",
       "kind": "lake-pine-red",
-      "x": -2846,
-      "y": -1996.4,
+      "x": -3130.152164464978,
+      "y": -2098.4979638553823,
       "heading": 2.933,
       "scale": 2.017
     },
     {
       "id": "veg-8710",
       "kind": "lake-pine-red",
-      "x": -2780.3,
-      "y": -2058.9,
+      "x": -3064.452164464978,
+      "y": -2160.9979638553823,
       "heading": 6.197,
       "scale": 2.017
     },
@@ -73938,14 +73450,6 @@ window.VENUE_DOC["lake"] = {
       "y": 781.3,
       "heading": 3.333,
       "scale": 2.022
-    },
-    {
-      "id": "veg-8731",
-      "kind": "lake-pine-red",
-      "x": -94.4,
-      "y": 2715.9,
-      "heading": 4.593,
-      "scale": 2.023
     },
     {
       "id": "veg-8732",
@@ -74206,8 +73710,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8764",
       "kind": "lake-pine-red",
-      "x": -2864.6,
-      "y": -2089.3,
+      "x": -3148.752164464978,
+      "y": -2191.397963855382,
       "heading": 5.287,
       "scale": 2.032
     },
@@ -74273,14 +73777,6 @@ window.VENUE_DOC["lake"] = {
       "x": 2435.2,
       "y": -2693.8,
       "heading": 3.603,
-      "scale": 2.034
-    },
-    {
-      "id": "veg-8773",
-      "kind": "lake-pine-red",
-      "x": -1903.7,
-      "y": -2252.6,
-      "heading": 4.126,
       "scale": 2.034
     },
     {
@@ -74366,8 +73862,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8784",
       "kind": "lake-pine-white",
-      "x": -2004.9,
-      "y": -2294.7,
+      "x": -2060.6652175407985,
+      "y": -2326.3280338291097,
       "heading": 0.92,
       "scale": 1.719
     },
@@ -74550,8 +74046,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8807",
       "kind": "lake-pine-red",
-      "x": -2695.4,
-      "y": -2137.1,
+      "x": -2979.552164464978,
+      "y": -2239.197963855382,
       "heading": 2.438,
       "scale": 2.044
     },
@@ -74641,14 +74137,6 @@ window.VENUE_DOC["lake"] = {
       "x": -2363.5,
       "y": -1965.8,
       "heading": 6.144,
-      "scale": 2.048
-    },
-    {
-      "id": "veg-8819",
-      "kind": "lake-pine-red",
-      "x": -153.9,
-      "y": 2689.5,
-      "heading": 4.348,
       "scale": 2.048
     },
     {
@@ -74950,8 +74438,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8857",
       "kind": "lake-pine-red",
-      "x": -2793.3,
-      "y": -1987.7,
+      "x": -3077.452164464978,
+      "y": -2089.797963855382,
       "heading": 0.741,
       "scale": 2.063
     },
@@ -76006,8 +75494,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-8989",
       "kind": "lake-pine-red",
-      "x": -2731,
-      "y": -2074.8,
+      "x": -3015.152164464978,
+      "y": -2176.897963855382,
       "heading": 5.227,
       "scale": 2.112
     },
@@ -76566,8 +76054,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9059",
       "kind": "lake-pine-white",
-      "x": -2638.9,
-      "y": -2160,
+      "x": -2923.052164464978,
+      "y": -2262.0979638553817,
       "heading": 3.943,
       "scale": 1.809
     },
@@ -76772,14 +76260,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.155
     },
     {
-      "id": "veg-9085",
-      "kind": "lake-pine-white",
-      "x": -60.7,
-      "y": 2747.7,
-      "heading": 1.257,
-      "scale": 1.819
-    },
-    {
       "id": "veg-9086",
       "kind": "lake-pine-white",
       "x": -2822.5,
@@ -76950,8 +76430,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9107",
       "kind": "lake-pine-white",
-      "x": -2220.9,
-      "y": -2214.4,
+      "x": -2261.683517305957,
+      "y": -2289.308501174207,
       "heading": 5.419,
       "scale": 1.827
     },
@@ -77292,14 +76772,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.19
     },
     {
-      "id": "veg-9150",
-      "kind": "lake-pine-white",
-      "x": 47.5,
-      "y": 2733.3,
-      "heading": 3.914,
-      "scale": 1.848
-    },
-    {
       "id": "veg-9151",
       "kind": "lake-pine-white",
       "x": -4219.1,
@@ -77334,8 +76806,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9155",
       "kind": "lake-pine-red",
-      "x": -2490,
-      "y": -2202.2,
+      "x": -2774.152164464978,
+      "y": -2304.2979638553816,
       "heading": 6.216,
       "scale": 2.192
     },
@@ -77420,14 +76892,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.853
     },
     {
-      "id": "veg-9166",
-      "kind": "lake-pine-red",
-      "x": -1623.3,
-      "y": -1938,
-      "heading": 4.957,
-      "scale": 2.197
-    },
-    {
       "id": "veg-9167",
       "kind": "lake-pine-white",
       "x": 1706.8,
@@ -77457,14 +76921,6 @@ window.VENUE_DOC["lake"] = {
       "x": 4406.8,
       "y": -1866.3,
       "heading": 5.772,
-      "scale": 2.198
-    },
-    {
-      "id": "veg-9171",
-      "kind": "lake-pine-red",
-      "x": -165.6,
-      "y": 2913.3,
-      "heading": 2.676,
       "scale": 2.198
     },
     {
@@ -77556,14 +77012,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.862
     },
     {
-      "id": "veg-9183",
-      "kind": "lake-pine-white",
-      "x": 28.9,
-      "y": 2677.1,
-      "heading": 2.507,
-      "scale": 1.862
-    },
-    {
       "id": "veg-9184",
       "kind": "lake-pine-red",
       "x": -2822.3,
@@ -77574,8 +77022,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9185",
       "kind": "lake-pine-white",
-      "x": -2529.3,
-      "y": -2203.3,
+      "x": -2813.452164464978,
+      "y": -2305.397963855382,
       "heading": 0.202,
       "scale": 1.863
     },
@@ -77873,14 +77321,6 @@ window.VENUE_DOC["lake"] = {
       "x": -899.6,
       "y": 2286.6,
       "heading": 0.138,
-      "scale": 1.877
-    },
-    {
-      "id": "veg-9223",
-      "kind": "lake-pine-white",
-      "x": -459.2,
-      "y": 2698.9,
-      "heading": 0.251,
       "scale": 1.877
     },
     {
@@ -78214,8 +77654,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9265",
       "kind": "lake-pine-white",
-      "x": -2641.7,
-      "y": -2075.3,
+      "x": -2925.8521644649777,
+      "y": -2177.397963855382,
       "heading": 0.428,
       "scale": 1.894
     },
@@ -78262,8 +77702,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9271",
       "kind": "lake-pine-red",
-      "x": -2733.1,
-      "y": -2006.4,
+      "x": -3017.252164464978,
+      "y": -2108.497963855382,
       "heading": 0.879,
       "scale": 2.247
     },
@@ -78386,14 +77826,6 @@ window.VENUE_DOC["lake"] = {
       "y": -2871.7,
       "heading": 4.412,
       "scale": 1.901
-    },
-    {
-      "id": "veg-9287",
-      "kind": "lake-pine-red",
-      "x": -268.5,
-      "y": 2804.5,
-      "heading": 4.509,
-      "scale": 2.254
     },
     {
       "id": "veg-9288",
@@ -78958,8 +78390,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9358",
       "kind": "lake-pine-red",
-      "x": -2891.1,
-      "y": -1993,
+      "x": -3175.252164464978,
+      "y": -2095.097963855382,
       "heading": 0.527,
       "scale": 2.287
     },
@@ -79070,8 +78502,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9372",
       "kind": "lake-pine-red",
-      "x": -2367.5,
-      "y": -2187.1,
+      "x": -2322.7002075060373,
+      "y": -2170.1487271644464,
       "heading": 1.078,
       "scale": 2.295
     },
@@ -79206,8 +78638,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9389",
       "kind": "lake-pine-white",
-      "x": -2124.8,
-      "y": -2073.2,
+      "x": -2119.7344786889566,
+      "y": -1995.4932361491606,
       "heading": 2.272,
       "scale": 1.944
     },
@@ -79230,8 +78662,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9392",
       "kind": "lake-pine-white",
-      "x": -2544.5,
-      "y": -2130.1,
+      "x": -2828.652164464978,
+      "y": -2232.197963855382,
       "heading": 2.263,
       "scale": 1.947
     },
@@ -79292,28 +78724,12 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.949
     },
     {
-      "id": "veg-9400",
-      "kind": "lake-pine-red",
-      "x": -1570.8,
-      "y": -2019.1,
-      "heading": 3.453,
-      "scale": 2.311
-    },
-    {
       "id": "veg-9401",
       "kind": "lake-pine-white",
       "x": 2828,
       "y": -2571.6,
       "heading": 5.621,
       "scale": 1.95
-    },
-    {
-      "id": "veg-9402",
-      "kind": "lake-pine-red",
-      "x": -246.8,
-      "y": 2639,
-      "heading": 2.2,
-      "scale": 2.313
     },
     {
       "id": "veg-9403",
@@ -79428,14 +78844,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.957
     },
     {
-      "id": "veg-9417",
-      "kind": "lake-pine-white",
-      "x": -92.8,
-      "y": 2654.5,
-      "heading": 4.488,
-      "scale": 1.957
-    },
-    {
       "id": "veg-9418",
       "kind": "lake-pine-white",
       "x": 587.7,
@@ -79530,14 +78938,6 @@ window.VENUE_DOC["lake"] = {
       "y": -596,
       "heading": 1.677,
       "scale": 1.963
-    },
-    {
-      "id": "veg-9430",
-      "kind": "lake-pine-red",
-      "x": -1882.4,
-      "y": -2254.8,
-      "heading": 4.248,
-      "scale": 2.327
     },
     {
       "id": "veg-9431",
@@ -79772,14 +79172,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.353
     },
     {
-      "id": "veg-9460",
-      "kind": "lake-pine-white",
-      "x": -2135.1,
-      "y": -2214.8,
-      "heading": 5.032,
-      "scale": 1.986
-    },
-    {
       "id": "veg-9461",
       "kind": "lake-pine-red",
       "x": 1243.1,
@@ -79830,8 +79222,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9467",
       "kind": "lake-pine-red",
-      "x": -2499.2,
-      "y": -2003.7,
+      "x": -2783.3521644649777,
+      "y": -2105.797963855382,
       "heading": 4.213,
       "scale": 2.357
     },
@@ -79886,8 +79278,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9474",
       "kind": "lake-pine-red",
-      "x": -1699.1,
-      "y": -2154.6,
+      "x": -1656.6518493346161,
+      "y": -2122.9719661708905,
       "heading": 5.494,
       "scale": 2.361
     },
@@ -79926,8 +79318,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9479",
       "kind": "lake-pine-red",
-      "x": -2734.9,
-      "y": -2166.2,
+      "x": -3019.052164464978,
+      "y": -2268.2979638553816,
       "heading": 4.217,
       "scale": 2.365
     },
@@ -80222,8 +79614,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9516",
       "kind": "lake-pine-white",
-      "x": -2787.5,
-      "y": -1992.5,
+      "x": -3071.652164464978,
+      "y": -2094.5979638553817,
       "heading": 5.069,
       "scale": 2.017
     },
@@ -80372,14 +79764,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.404
     },
     {
-      "id": "veg-9535",
-      "kind": "lake-pine-red",
-      "x": -207.2,
-      "y": 2715,
-      "heading": 1.201,
-      "scale": 2.404
-    },
-    {
       "id": "veg-9536",
       "kind": "lake-pine-red",
       "x": 891.6,
@@ -80492,14 +79876,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.413
     },
     {
-      "id": "veg-9550",
-      "kind": "lake-pine-white",
-      "x": -276.7,
-      "y": 2882.9,
-      "heading": 0.442,
-      "scale": 2.036
-    },
-    {
       "id": "veg-9551",
       "kind": "lake-pine-red",
       "x": -677.3,
@@ -80606,8 +79982,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9564",
       "kind": "lake-pine-red",
-      "x": -3002.3,
-      "y": -1897.1,
+      "x": -3118.430775360449,
+      "y": -2333.5072295124232,
       "heading": 0.087,
       "scale": 2.427
     },
@@ -80642,14 +80018,6 @@ window.VENUE_DOC["lake"] = {
       "y": 2511.5,
       "heading": 2.005,
       "scale": 2.431
-    },
-    {
-      "id": "veg-9569",
-      "kind": "lake-pine-red",
-      "x": -157,
-      "y": 2884.1,
-      "heading": 1.769,
-      "scale": 2.433
     },
     {
       "id": "veg-9570",
@@ -80690,14 +80058,6 @@ window.VENUE_DOC["lake"] = {
       "y": -2689.9,
       "heading": 4.485,
       "scale": 2.057
-    },
-    {
-      "id": "veg-9575",
-      "kind": "lake-pine-red",
-      "x": -2047.6,
-      "y": -2100.2,
-      "heading": 5.865,
-      "scale": 2.438
     },
     {
       "id": "veg-9576",
@@ -80774,8 +80134,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9585",
       "kind": "lake-pine-white",
-      "x": -2500.2,
-      "y": -2011.6,
+      "x": -2784.3521644649777,
+      "y": -2113.697963855382,
       "heading": 2.716,
       "scale": 2.067
     },
@@ -80793,14 +80153,6 @@ window.VENUE_DOC["lake"] = {
       "x": -934.4,
       "y": 2132.4,
       "heading": 4.337,
-      "scale": 2.072
-    },
-    {
-      "id": "veg-9588",
-      "kind": "lake-pine-white",
-      "x": 23.4,
-      "y": 2758.1,
-      "heading": 3.363,
       "scale": 2.072
     },
     {
@@ -80934,8 +80286,8 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "veg-9605",
       "kind": "lake-pine-white",
-      "x": -2761.3,
-      "y": -1721.9,
+      "x": -2724.3971214980547,
+      "y": -1587.8195414429326,
       "heading": 1.056,
       "scale": 2.097
     },
@@ -81756,14 +81108,6 @@ window.VENUE_DOC["lake"] = {
       "scale": 2.283
     },
     {
-      "id": "veg-9708",
-      "kind": "lake-pine-white",
-      "x": -156.1,
-      "y": 2795.3,
-      "heading": 6.242,
-      "scale": 2.285
-    },
-    {
       "id": "veg-9709",
       "kind": "lake-pine-white",
       "x": 1619.9,
@@ -81866,14 +81210,6 @@ window.VENUE_DOC["lake"] = {
       "y": 2463.3,
       "heading": 0.551,
       "scale": 2.301
-    },
-    {
-      "id": "veg-9722",
-      "kind": "lake-pine-white",
-      "x": -154.6,
-      "y": 2829.2,
-      "heading": 1.506,
-      "scale": 2.302
     },
     {
       "id": "veg-9723",
@@ -82402,6 +81738,1060 @@ window.VENUE_DOC["lake"] = {
       "y": -2466.1,
       "heading": 5.903,
       "scale": 2.407
+    },
+    {
+      "id": "prop-2",
+      "kind": "lake-dock",
+      "x": -105.27107746433228,
+      "y": 2390.1907478506396,
+      "heading": 0.7816948389296954,
+      "scale": 4
+    },
+    {
+      "id": "prop-3",
+      "kind": "lake-boat-aluminum",
+      "x": -127.33213294547295,
+      "y": 2336.540255358602,
+      "heading": 0.7520771675191433,
+      "scale": 1.6551064370840023,
+      "contact": "hard"
+    },
+    {
+      "id": "prop-4",
+      "kind": "lake-mooring-buoy",
+      "x": -125.90877037996451,
+      "y": 2198.4767588224763,
+      "heading": 0,
+      "scale": 1.075
+    },
+    {
+      "id": "prop-5",
+      "kind": "lake-mooring-buoy",
+      "x": 18.54397237529473,
+      "y": 2215.842662323109,
+      "heading": 0,
+      "scale": 1.01
+    },
+    {
+      "id": "prop-6",
+      "kind": "lake-mooring-buoy",
+      "x": -54.86643787737799,
+      "y": 2095.070697068712,
+      "heading": 0,
+      "scale": 1.129
+    },
+    {
+      "id": "prop-1",
+      "kind": "lake-cabin",
+      "x": -217.69920466156748,
+      "y": 2632.218200989007,
+      "heading": 5.4888835298721474,
+      "scale": 4
+    },
+    {
+      "id": "prop-7",
+      "kind": "lake-adirondack-chair",
+      "x": -119.20164577140054,
+      "y": 2526.703747113102,
+      "heading": 4.26488173287745,
+      "scale": 1.5
+    },
+    {
+      "id": "prop-8",
+      "kind": "lake-adirondack-chair",
+      "x": -86.45164577140054,
+      "y": 2552.953747113102,
+      "heading": 3.0623662445799393,
+      "scale": 1.5
+    },
+    {
+      "id": "prop-9",
+      "kind": "lake-adirondack-chair",
+      "x": -112.20164577140054,
+      "y": 2540.453747113102,
+      "heading": 3.791000150233682,
+      "scale": 1.5
+    },
+    {
+      "id": "prop-10",
+      "kind": "lake-adirondack-chair",
+      "x": -101.95164577140054,
+      "y": 2547.453747113102,
+      "heading": 3.804991510763232,
+      "scale": 1.5
+    },
+    {
+      "id": "prop-11",
+      "kind": "lake-firering",
+      "x": -91.25900284924626,
+      "y": 2525.347800662619,
+      "heading": 3.3447766087928246,
+      "scale": 2
+    },
+    {
+      "id": "veg-23",
+      "kind": "lake-aspen-quaking",
+      "x": 6.644542888157975,
+      "y": 2695.1354045736102,
+      "heading": 1.5,
+      "scale": 2.399
+    },
+    {
+      "id": "veg-50",
+      "kind": "lake-aspen-quaking",
+      "x": -282.43518995100277,
+      "y": 2429.801506931952,
+      "heading": 1.5,
+      "scale": 2.399
+    },
+    {
+      "id": "prop-12",
+      "kind": "lake-raft-swim",
+      "x": 91.33181489006364,
+      "y": 2423.5931679035148,
+      "heading": 4.547944823430697,
+      "scale": 2.31618289733009
+    },
+    {
+      "id": "prop-13",
+      "kind": "lake-swim-line",
+      "x": 1157.4562843055933,
+      "y": 1718.6553097314218,
+      "heading": 5.319511618660556,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-14",
+      "kind": "lake-swim-line",
+      "x": 1236.2111634884016,
+      "y": 1765.5905543335753,
+      "heading": 5.18631332394736,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-15",
+      "kind": "lake-swim-line",
+      "x": 1318.9373538213888,
+      "y": 1806.747862956952,
+      "heading": 5.162758042650424,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-16",
+      "kind": "lake-swim-line",
+      "x": 1398.3709594645065,
+      "y": 1853.255621701368,
+      "heading": 5.319511618660556,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-17",
+      "kind": "lake-swim-line",
+      "x": 1474.5119804177536,
+      "y": 1905.9369767392905,
+      "heading": 5.319511618660556,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-18",
+      "kind": "lake-swim-line",
+      "x": 1549.4182821122997,
+      "y": 1959.4414779496803,
+      "heading": 5.349805378579333,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-19",
+      "kind": "lake-swim-line",
+      "x": 1619.3857067720403,
+      "y": 2019.1195754535765,
+      "heading": 5.497556802160096,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-20",
+      "kind": "lake-swim-line",
+      "x": 1685.9381200917019,
+      "y": 2083.8019933647593,
+      "heading": 5.480097641057979,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-21",
+      "kind": "lake-picnic-table",
+      "x": 1865.609224520821,
+      "y": 1753.2598232261212,
+      "heading": 1.082941475184013,
+      "scale": 2.6832815729999138
+    },
+    {
+      "id": "prop-22",
+      "kind": "lake-picnic-table",
+      "x": 1864.2115911305395,
+      "y": 1824.5391261304724,
+      "heading": 1.469817192915034,
+      "scale": 2.6832815729999138
+    },
+    {
+      "id": "prop-23",
+      "kind": "lake-bulrush",
+      "x": -1210.0544482724467,
+      "y": 2206.964678215366,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-24",
+      "kind": "lake-bulrush",
+      "x": -1184.2251546548016,
+      "y": 2254.8889097469005,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-25",
+      "kind": "lake-bulrush",
+      "x": -1241.9282626494385,
+      "y": 2311.8590625343245,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-26",
+      "kind": "lake-bulrush",
+      "x": -1234.6389566555065,
+      "y": 2255.511302364193,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-27",
+      "kind": "lake-bulrush",
+      "x": -1254.5555204088714,
+      "y": 2230.304401363841,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-28",
+      "kind": "lake-bulrush",
+      "x": -1269.492943223895,
+      "y": 2281.029399673192,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-29",
+      "kind": "lake-bulrush",
+      "x": -1199.7630049379402,
+      "y": 2288.208879921235,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-30",
+      "kind": "lake-bulrush",
+      "x": -1205.6976999513981,
+      "y": 2234.9723459935353,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-31",
+      "kind": "lake-bulrush",
+      "x": -1160.2630388890345,
+      "y": 2211.9438191537074,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-32",
+      "kind": "lake-bulrush",
+      "x": -1146.3038721423366,
+      "y": 2256.6447881648264,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-33",
+      "kind": "lake-bulrush",
+      "x": -1170.2213207657169,
+      "y": 2171.7994953383313,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-34",
+      "kind": "lake-bulrush",
+      "x": -1351.7062333299345,
+      "y": 2282.767662779936,
+      "heading": 6.079930381903505,
+      "scale": 2
+    },
+    {
+      "id": "prop-35",
+      "kind": "lake-bulrush",
+      "x": -1325.8769397122894,
+      "y": 2330.6918943114706,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-36",
+      "kind": "lake-bulrush",
+      "x": -1374.1343327016477,
+      "y": 2375.949360492349,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-37",
+      "kind": "lake-bulrush",
+      "x": -1376.2907417129943,
+      "y": 2331.314286928763,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-38",
+      "kind": "lake-bulrush",
+      "x": -1396.2073054663592,
+      "y": 2306.107385928411,
+      "heading": 5.84972944429378,
+      "scale": 2
+    },
+    {
+      "id": "prop-39",
+      "kind": "lake-bulrush",
+      "x": -1411.1447282813829,
+      "y": 2356.832384237762,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-40",
+      "kind": "lake-bulrush",
+      "x": -1334.9917037918383,
+      "y": 2356.077463881371,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-41",
+      "kind": "lake-bulrush",
+      "x": -1347.349485008886,
+      "y": 2310.7753305581055,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-42",
+      "kind": "lake-bulrush",
+      "x": -1301.9148239465223,
+      "y": 2287.7468037182775,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-43",
+      "kind": "lake-bulrush",
+      "x": -1289.466971600669,
+      "y": 2331.314286928763,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-44",
+      "kind": "lake-bulrush",
+      "x": -1301.6717336175036,
+      "y": 2254.0255661064903,
+      "heading": 5.894196015327225,
+      "scale": 2
+    },
+    {
+      "id": "prop-45",
+      "kind": "lake-bulrush",
+      "x": -1436.3990565561526,
+      "y": 2325.3107807271267,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-46",
+      "kind": "lake-bulrush",
+      "x": -1439.044027056101,
+      "y": 2377.548948101103,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-47",
+      "kind": "lake-bulrush",
+      "x": -1479.3798271803105,
+      "y": 2354.4054562265565,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-48",
+      "kind": "lake-bulrush",
+      "x": -1491.2821944300772,
+      "y": 2384.8226169759605,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-49",
+      "kind": "lake-bulrush",
+      "x": -1533.6017224292477,
+      "y": 2386.1451022259344,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-50",
+      "kind": "lake-bulrush",
+      "x": -1563.3576405536644,
+      "y": 2383.500131725986,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-51",
+      "kind": "lake-bulrush",
+      "x": -1159.2727791986574,
+      "y": 2280.92215173626,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-52",
+      "kind": "lake-bulrush",
+      "x": -1261.5227791986574,
+      "y": 2329.42215173626,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-53",
+      "kind": "lake-bulrush",
+      "x": -1200.2727791986574,
+      "y": 2181.42215173626,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-54",
+      "kind": "lake-bulrush",
+      "x": -1231.7727791986574,
+      "y": 2205.92215173626,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-55",
+      "kind": "lake-bulrush",
+      "x": -1214.108434860605,
+      "y": 2299.0731843807216,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-56",
+      "kind": "lake-bulrush",
+      "x": -1307.074035807037,
+      "y": 2345.8765558916843,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-57",
+      "kind": "lake-boulder-large",
+      "x": -1184.9162348046552,
+      "y": 2122.672455227123,
+      "heading": 0,
+      "scale": 2
+    },
+    {
+      "id": "prop-58",
+      "kind": "lake-boulder-large",
+      "x": 1614.8869180128154,
+      "y": 2445.2013154117035,
+      "heading": 1.5195007760684407,
+      "scale": 1.687
+    },
+    {
+      "id": "prop-59",
+      "kind": "lake-boulder-large",
+      "x": 1783.6328842997266,
+      "y": 2004.3501729330903,
+      "heading": 3.361980513885993,
+      "scale": 0.5876386644869169
+    },
+    {
+      "id": "prop-60",
+      "kind": "lake-camp-lodge",
+      "x": -1944.362248105263,
+      "y": -2172.3624432201136,
+      "heading": 1.5492242729144223,
+      "scale": 2.28
+    },
+    {
+      "id": "prop-61",
+      "kind": "lake-dock",
+      "x": -1431.0234334184743,
+      "y": -1430.9052042713574,
+      "heading": 3.8004002571266557,
+      "scale": 3
+    },
+    {
+      "id": "prop-62",
+      "kind": "lake-swim-line",
+      "x": -2417.556995589918,
+      "y": -1683.5480067489898,
+      "heading": 5.319511618660556,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-63",
+      "kind": "lake-swim-line",
+      "x": -2335.0379767970653,
+      "y": -1642.7294890131568,
+      "heading": 5.019621061653176,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-64",
+      "kind": "lake-swim-line",
+      "x": -2244.783507243993,
+      "y": -1623.686500598785,
+      "heading": 4.824332467485458,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-65",
+      "kind": "lake-swim-line",
+      "x": -2153.1164478682335,
+      "y": -1612.4675506985263,
+      "heading": 4.847775903502733,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-66",
+      "kind": "lake-swim-line",
+      "x": -2061.70553537641,
+      "y": -1598.8073454735165,
+      "heading": 4.8728894277213595,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-67",
+      "kind": "lake-swim-line",
+      "x": -1969.2049714548984,
+      "y": -1583.570992804151,
+      "heading": 4.8728894277213595,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-68",
+      "kind": "lake-swim-line",
+      "x": -1877.5224026860094,
+      "y": -1591.407109792945,
+      "heading": 4.362917368019939,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-69",
+      "kind": "lake-swim-line",
+      "x": -1792.0315916272493,
+      "y": -1623.9690144598235,
+      "heading": 4.3310123116194745,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-70",
+      "kind": "lake-swim-line",
+      "x": -1707.5116242565805,
+      "y": -1658.8170427449825,
+      "heading": 4.309238511373568,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-71",
+      "kind": "lake-camp-cabin",
+      "x": -3055.362113465856,
+      "y": -1913.3772391431014,
+      "heading": 3.3210316745184407,
+      "scale": 3
+    },
+    {
+      "id": "prop-72",
+      "kind": "lake-camp-cabin",
+      "x": -2932.1885714661466,
+      "y": -2014.4647093750445,
+      "heading": 4.475873220910042,
+      "scale": 3
+    },
+    {
+      "id": "prop-73",
+      "kind": "lake-camp-cabin",
+      "x": -2856.4470358568165,
+      "y": -1742.5720174441162,
+      "heading": 2.6916212626632348,
+      "scale": 3
+    },
+    {
+      "id": "prop-74",
+      "kind": "lake-camp-cabin",
+      "x": -2632.1355650138007,
+      "y": -2110.5981968791943,
+      "heading": 4.475873220910042,
+      "scale": 3
+    },
+    {
+      "id": "prop-75",
+      "kind": "lake-boulder-small",
+      "x": -1380.188316765067,
+      "y": -1636.5112765240733,
+      "heading": 3.1699196624405097,
+      "scale": 2.465
+    },
+    {
+      "id": "prop-76",
+      "kind": "lake-boulder-small",
+      "x": -872.7381754805839,
+      "y": -1842.2433010217462,
+      "heading": 4.447554093286304,
+      "scale": 1.595
+    },
+    {
+      "id": "prop-77",
+      "kind": "lake-boulder-small",
+      "x": -1411.4602939475112,
+      "y": -1635.690741197881,
+      "heading": 1.4658681283663297,
+      "scale": 1.34
+    },
+    {
+      "id": "prop-78",
+      "kind": "lake-boulder-small",
+      "x": -854.2630126510088,
+      "y": -1858.904465108197,
+      "heading": 5.038397086271636,
+      "scale": 1.669
+    },
+    {
+      "id": "prop-79",
+      "kind": "lake-boulder-small",
+      "x": -1422.5261870210104,
+      "y": -1659.7073479301737,
+      "heading": 3.772234142112965,
+      "scale": 1.715
+    },
+    {
+      "id": "prop-80",
+      "kind": "lake-boulder-small",
+      "x": -1003.3904419966361,
+      "y": -1974.0290175959321,
+      "heading": 2.9767826459969005,
+      "scale": 1.681
+    },
+    {
+      "id": "prop-81",
+      "kind": "lake-boulder-small",
+      "x": -874.4729140704063,
+      "y": -1875.6555727152734,
+      "heading": 0.8629174454447991,
+      "scale": 1.336
+    },
+    {
+      "id": "prop-82",
+      "kind": "lake-boulder-small",
+      "x": -1084.4332983685906,
+      "y": -1875.5867023021974,
+      "heading": 0.7640791088784049,
+      "scale": 1.392
+    },
+    {
+      "id": "prop-83",
+      "kind": "lake-boulder-small",
+      "x": -1173.597877227934,
+      "y": -1923.2666606106989,
+      "heading": 6.118181433420165,
+      "scale": 2.274
+    },
+    {
+      "id": "prop-84",
+      "kind": "lake-boulder-small",
+      "x": -1041.0451836519092,
+      "y": -1781.2341620051557,
+      "heading": 0.6221410229588281,
+      "scale": 2.359
+    },
+    {
+      "id": "prop-85",
+      "kind": "lake-boulder-small",
+      "x": -2319.889272987676,
+      "y": -1801.0067694181691,
+      "heading": 4.678608668244674,
+      "scale": 1.414
+    },
+    {
+      "id": "prop-86",
+      "kind": "lake-boulder-small",
+      "x": -2312.5292718086357,
+      "y": -1774.7125083365086,
+      "heading": 6.043167356965768,
+      "scale": 1.537
+    },
+    {
+      "id": "prop-87",
+      "kind": "lake-boulder-small",
+      "x": -2807.4702514515384,
+      "y": -258.2221185423147,
+      "heading": 0.5619436443142939,
+      "scale": 2.258
+    },
+    {
+      "id": "prop-88",
+      "kind": "lake-boulder-small",
+      "x": -2730.043661979902,
+      "y": -244.4206988269855,
+      "heading": 3.6263760902530318,
+      "scale": 1.956
+    },
+    {
+      "id": "prop-89",
+      "kind": "lake-boulder-small",
+      "x": -2695.1863055590998,
+      "y": -197.7766518625956,
+      "heading": 5.479938371838203,
+      "scale": 1.954
+    },
+    {
+      "id": "prop-90",
+      "kind": "lake-boulder-small",
+      "x": 272.63281958028085,
+      "y": 242.74476052452798,
+      "heading": 1.6025687517811436,
+      "scale": 1.541
+    },
+    {
+      "id": "prop-91",
+      "kind": "lake-boulder-small",
+      "x": 366.1904754062151,
+      "y": 272.4297852857315,
+      "heading": 4.934212613159045,
+      "scale": 2.285
+    },
+    {
+      "id": "prop-92",
+      "kind": "lake-boulder-small",
+      "x": 334.4086415946623,
+      "y": 282.996266992324,
+      "heading": 0.2825308529645302,
+      "scale": 1.263
+    },
+    {
+      "id": "prop-93",
+      "kind": "lake-boulder-small",
+      "x": 417.0987737785104,
+      "y": 305.7772802662515,
+      "heading": 0.43088181684745436,
+      "scale": 1.815
+    },
+    {
+      "id": "prop-94",
+      "kind": "lake-boulder-small",
+      "x": 191.60245829273555,
+      "y": -136.33292311474273,
+      "heading": 0.09330263410792602,
+      "scale": 2.283
+    },
+    {
+      "id": "prop-95",
+      "kind": "lake-boulder-small",
+      "x": 13.168409261640363,
+      "y": -270.9145363670094,
+      "heading": 4.431346111681022,
+      "scale": 2.136
+    },
+    {
+      "id": "prop-96",
+      "kind": "lake-boulder-small",
+      "x": 239.99135294523595,
+      "y": -169.60028818833672,
+      "heading": 3.4768251810920403,
+      "scale": 1.971
+    },
+    {
+      "id": "prop-97",
+      "kind": "lake-canoe-rack",
+      "x": -1526.0127385318217,
+      "y": -1817.9998595318307,
+      "heading": 0.275822639165594,
+      "scale": 2
+    },
+    {
+      "id": "prop-98",
+      "kind": "lake-canoe-rack",
+      "x": -1596.460500462778,
+      "y": -1840.4614647851793,
+      "heading": 0.275822639165594,
+      "scale": 2
+    },
+    {
+      "id": "prop-99",
+      "kind": "lake-canoe",
+      "x": -1493.4452036383154,
+      "y": -1642.8263373212135,
+      "heading": 3.0270814085540163,
+      "scale": 2,
+      "plane": "surface"
+    },
+    {
+      "id": "prop-100",
+      "kind": "lake-canoe",
+      "x": -1399.410963467494,
+      "y": -1403.4811444018546,
+      "heading": 0.6097983609635023,
+      "scale": 2,
+      "contact": "hard"
+    },
+    {
+      "id": "prop-101",
+      "kind": "lake-raft-swim",
+      "x": -1934.858367900608,
+      "y": -1626.2446932709524,
+      "heading": 0.14190817092289443,
+      "scale": 1.974
+    },
+    {
+      "id": "prop-102",
+      "kind": "lake-raft-swim",
+      "x": -1695.5471684662434,
+      "y": -1511.159688507728,
+      "heading": 0.06886326926955899,
+      "scale": 2
+    },
+    {
+      "id": "prop-103",
+      "kind": "lake-mooring-buoy",
+      "x": -1967.2831721248479,
+      "y": -1485.0541767138377,
+      "heading": 0.241010825559297,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-104",
+      "kind": "lake-mooring-buoy",
+      "x": -1913.1893354064132,
+      "y": -1383.5027308315096,
+      "heading": 2.8084306079872734,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-105",
+      "kind": "lake-mooring-buoy",
+      "x": -1663.6936976377076,
+      "y": -1355.1597536056345,
+      "heading": 4.015766871579407,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-107",
+      "kind": "lake-canoe",
+      "x": -1607.3900388632353,
+      "y": -1664.8818710714206,
+      "heading": 0.6097983609635023,
+      "scale": 2,
+      "plane": "surface"
+    },
+    {
+      "id": "prop-108",
+      "kind": "lake-firering",
+      "x": -1308.6639360216548,
+      "y": -1492.4444299566833,
+      "heading": 3.1762335946221176,
+      "scale": 4
+    },
+    {
+      "id": "prop-109",
+      "kind": "lake-firering",
+      "x": -1145.0658584216937,
+      "y": -1830.660144787691,
+      "heading": 3.1762335946221176,
+      "scale": 4
+    },
+    {
+      "id": "prop-110",
+      "kind": "lake-firering",
+      "x": -1934.2358596940455,
+      "y": -1894.2345272747227,
+      "heading": 1.440288590412579,
+      "scale": 4
+    },
+    {
+      "id": "prop-111",
+      "kind": "lake-picnic-table",
+      "x": -1208.1772802106907,
+      "y": -1685.26835909288,
+      "heading": 2.4630440355767274,
+      "scale": 2
+    },
+    {
+      "id": "prop-112",
+      "kind": "lake-picnic-table",
+      "x": -1267.3221632036455,
+      "y": -1632.29072103073,
+      "heading": 2.9495346984354107,
+      "scale": 2
+    },
+    {
+      "id": "prop-113",
+      "kind": "lake-picnic-table",
+      "x": -1209.2661035770534,
+      "y": -1755.950128035371,
+      "heading": 1.5663781434449033,
+      "scale": 2
+    },
+    {
+      "id": "prop-114",
+      "kind": "lake-picnic-table",
+      "x": -1329.442147004099,
+      "y": -1641.579690570985,
+      "heading": 0.3711990541009067,
+      "scale": 2
+    },
+    {
+      "id": "prop-115",
+      "kind": "lake-cabin-b",
+      "x": 362.6980661686962,
+      "y": 373.11766592373476,
+      "heading": 2.5512345255803046,
+      "scale": 2
+    },
+    {
+      "id": "prop-116",
+      "kind": "lake-dock",
+      "x": 406.571716356061,
+      "y": 189.60007998981573,
+      "heading": 3.525216103481908,
+      "scale": 2.5
+    },
+    {
+      "id": "prop-117",
+      "kind": "lake-boat-aluminum",
+      "x": 442.0461016530028,
+      "y": 207.55097375453332,
+      "heading": 3.5020152237746665,
+      "scale": 2,
+      "contact": "hard"
+    },
+    {
+      "id": "prop-118",
+      "kind": "lake-mooring-buoy",
+      "x": -1776.3358784718212,
+      "y": -1411.251126864529,
+      "heading": 2.6634754092951,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-106",
+      "kind": "lake-boulder-large",
+      "x": 1172.890652230174,
+      "y": -1386.3805666799774,
+      "heading": 4.76850991633985,
+      "scale": 1.25
+    },
+    {
+      "id": "prop-119",
+      "kind": "lake-boulder-large",
+      "x": 2382.2462664208592,
+      "y": 392.1372960892633,
+      "heading": 2.3068142600081654,
+      "scale": 1.297
+    },
+    {
+      "id": "prop-120",
+      "kind": "lake-boulder-large",
+      "x": 2450.5378400527416,
+      "y": -165.05986149813896,
+      "heading": 3.572954384708707,
+      "scale": 1.257
+    },
+    {
+      "id": "prop-121",
+      "kind": "lake-boulder-large",
+      "x": 1440.1329665446667,
+      "y": 1205.4278547962238,
+      "heading": 4.629630306825443,
+      "scale": 1.526
+    },
+    {
+      "id": "prop-122",
+      "kind": "lake-boulder-large",
+      "x": 1343.903930972469,
+      "y": 1205.4278547962238,
+      "heading": 5.72136771026172,
+      "scale": 1.809
+    },
+    {
+      "id": "prop-123",
+      "kind": "lake-boulder-large",
+      "x": 1354.768499504814,
+      "y": 1132.4800375076222,
+      "heading": 2.558385873911224,
+      "scale": 1.493
+    },
+    {
+      "id": "prop-124",
+      "kind": "lake-boulder-large",
+      "x": -2756.496774481551,
+      "y": -189.15606897919812,
+      "heading": 4.473407289204353,
+      "scale": 1.969
+    },
+    {
+      "id": "prop-125",
+      "kind": "lake-log-fallen",
+      "x": -1767.630132146471,
+      "y": -1831.5485562779468,
+      "heading": 4.9330545372487435,
+      "scale": 1.456
+    },
+    {
+      "id": "prop-126",
+      "kind": "lake-log-fallen",
+      "x": 2582.8272458633487,
+      "y": 144.02533488101832,
+      "heading": 6.026240611156226,
+      "scale": 1.808
+    },
+    {
+      "id": "prop-127",
+      "kind": "lake-log-fallen",
+      "x": 1097.0017947321905,
+      "y": 2827.797555986673,
+      "heading": 0.9567252093205578,
+      "scale": 2.421
+    },
+    {
+      "id": "prop-128",
+      "kind": "lake-cabin",
+      "x": 1988.1768200642157,
+      "y": -1565.1911206823609,
+      "heading": 1.5619205635146143,
+      "scale": 4
+    },
+    {
+      "id": "prop-129",
+      "kind": "lake-canoe",
+      "x": 98.76957047875769,
+      "y": -102.17592133680253,
+      "heading": 0.7033648740547198,
+      "scale": 1.827,
+      "plane": "surface"
     }
   ]
 };
