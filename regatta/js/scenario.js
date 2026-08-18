@@ -491,6 +491,13 @@
         // during edit, so their trails just smear the stage — and in playback
         // the hull-colour track lines already tell the story better
         window.drawWakes = () => { };
+        // disturbed air: not visualized, still COMPUTED (owner ruling) — the
+        // wind-shadow physics (badAirIntensity, the AI's dirty-air escape)
+        // lives elsewhere and keeps running. ⚠️ render-only on purpose:
+        // updateTurbulence also keeps running because its seeded
+        // Math.random draws are part of the pinned stream — silencing it
+        // would shift every recorded verdict
+        window.drawDisturbedAir = () => { };
         const b = st.course.boundary || { x: 0, y: 0 };
         LAB.cam.x = b.x; LAB.cam.y = b.y;
         LAB.stage = { x: b.x, y: b.y };
