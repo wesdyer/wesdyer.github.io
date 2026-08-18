@@ -181,7 +181,13 @@
           </div>
         </div>
         <div style="margin-top:8px">
-          <div class="sl-lab" title="a scenario runs on EVERY seed in its set">Seeds</div>
+          <div id="lab-seedhead" style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:2px 0" title="a scenario runs on EVERY seed in its set — click to expand">
+            <span class="sl-lab" style="margin:0">Seeds</span>
+            <span id="lab-seedcount" class="sl-hint" style="font-variant-numeric:tabular-nums"></span>
+            <span id="lab-seeddots" style="display:inline-flex;gap:5px;font-size:10px;margin-left:auto"></span>
+            <span id="lab-seedchev" style="color:#66748c;font-size:9px">&#9656;</span>
+          </div>
+          <div id="lab-seedbody" style="display:none;margin-top:6px">
           <div id="lab-seedwrap" style="position:relative">
             <button id="lab-seedbtn" class="sl-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;font-variant-numeric:tabular-nums;letter-spacing:.02em"></button>
           </div>
@@ -195,6 +201,7 @@
             <div class="sl-inp" style="width:52px;flex:none"><input id="lab-seedn" type="text" inputmode="numeric" value="10" title="how many random seeds ADD rolls"></div>
             <button id="lab-seedaddn" class="sl-btn" title="add N random seeds to the set">ADD &times;N</button>
             <button id="lab-seedclear" class="sl-btn" style="flex:none;padding:9px 12px;color:#ff8a75" title="reset the set to the single default seed">CLEAR</button>
+          </div>
           </div>
         </div>
         <div style="margin-top:12px">
@@ -1411,6 +1418,9 @@
     }
     function renderSeeds() {
         refreshTransport();   // renderSeeds runs at every rec/seed chokepoint
+        // collapsed header: just the count (+ outcome dots), chevron to expand
+        ui.querySelector('#lab-seedcount').textContent = LAB.seeds.length;
+        ui.querySelector('#lab-seeddots').innerHTML = seedSummaryHTML();
         const act = activeSeed();
         const pBtn = ui.querySelector('#lab-seedbtn');
         pBtn.innerHTML = `<span style="color:${SEED_COLORS[seedStatus(act)]}">${act}</span>`
@@ -1441,6 +1451,12 @@
     }
     ui.querySelector('#lab-seedbtn').onclick = () => openSeedDialog();
     bar.querySelector('#pb-seed').onclick = () => openSeedDialog();
+    // the seed section folds away (owner ruling): collapsed = just the count
+    ui.querySelector('#lab-seedhead').onclick = () => {
+        LAB.seedsOpen = !LAB.seedsOpen;
+        ui.querySelector('#lab-seedbody').style.display = LAB.seedsOpen ? 'block' : 'none';
+        ui.querySelector('#lab-seedchev').innerHTML = LAB.seedsOpen ? '&#9662;' : '&#9656;';
+    };
     // seed edits change the DOC (dirty + draft) and drop only what they must:
     // removed seeds lose their cache; survivors keep theirs
     function seedsChanged() {
