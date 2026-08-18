@@ -188,7 +188,14 @@
           <button id="lab-mode-edit" class="sl-btn sl-btn-pri" style="flex:1;padding:9px 0;letter-spacing:.1em" title="author the scenario — transport hidden, everything at t=0">EDIT</button>
           <button id="lab-mode-sim" class="sl-btn" style="flex:1;padding:9px 0;letter-spacing:.1em;display:inline-flex;align-items:center;justify-content:center;gap:7px" title="run every seed and scrub the recordings (SPACE)"><svg width="10" height="10" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true"><path d="M2.5 1.2 L10.5 6 L2.5 10.8 Z"/></svg>SIMULATE</button>
         </div>
-        <div style="border-top:1px solid rgba(255,255,255,.08);margin:12px -16px 12px"></div>
+      </div>
+      <div id="lab-summary" style="display:none;padding:14px 16px 16px">
+        <div id="lab-sum-name" style="font-size:15px;font-weight:900;font-style:italic;letter-spacing:.02em"></div>
+        <div id="lab-sum-line" style="margin-top:4px;font-size:12px;font-weight:800;color:#8fa3bd"></div>
+        <div class="sl-hint" style="margin-top:8px">Editing is paused &mdash; EDIT re-arms the scene.</div>
+      </div>
+      <div id="lab-editbody">
+      <div class="sl-sect">
         <div class="sl-inp"><input id="lab-name" type="text" placeholder="Scenario Name"></div>
         <div id="lab-tagbox" class="sl-inp" style="margin-top:6px;flex-wrap:wrap;gap:4px;padding:5px 8px;cursor:text" title="tags — Enter or comma adds; searchable in Open">
           <span id="lab-tagchips" style="display:contents"></span>
@@ -261,6 +268,7 @@
       <div style="padding:8px 8px 10px">
         <div class="sl-sectlabel" style="padding:4px 8px 6px;margin:0">LAYERS</div>
         <div id="lab-layers"></div>
+      </div>
       </div>`;
 
     // RIGHTS & UMPIRE stays on the RIGHT (owner ruling), its own always-on
@@ -2164,6 +2172,19 @@
         LAB.uiMode = m;
         ui.querySelector('#lab-mode-edit').classList.toggle('sl-btn-pri', m === 'edit');
         ui.querySelector('#lab-mode-sim').classList.toggle('sl-btn-pri', m === 'sim');
+        // in SIMULATE mode the left bar shrinks to a one-card summary (owner
+        // mockup) — the full authoring stack comes back with EDIT
+        ui.querySelector('#lab-editbody').style.display = m === 'sim' ? 'none' : 'block';
+        ui.querySelector('#lab-summary').style.display = m === 'sim' ? 'block' : 'none';
+        if (m === 'sim') {
+            ui.querySelector('#lab-sum-name').textContent =
+                (ui.querySelector('#lab-name').value || '').trim() || 'Untitled scenario';
+            const n = LAB.seeds.length;
+            ui.querySelector('#lab-sum-line').textContent =
+                `${+ui.querySelector('#lab-dur').value || 10} s · wind ${+ui.querySelector('#lab-wind').value || 12} kt`
+                + ` · ${LAB.boats.length} boat${LAB.boats.length === 1 ? '' : 's'}`
+                + (n === 1 ? ` · seed ${LAB.seeds[0] >>> 0}` : ` · ${n} seeds`);
+        }
         if (m === 'sim') {
             simulateOnly();   // no-op when the whole set is already simulated
         } else {
