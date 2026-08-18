@@ -498,6 +498,15 @@
         // Math.random draws are part of the pinned stream — silencing it
         // would shift every recorded verdict
         window.drawDisturbedAir = () => { };
+        // …and the wake's foam bubbles (the 'wake' particle family). Spawned
+        // off fxRand — the ISOLATED fx stream, not the pinned seeded one —
+        // so filtering them cannot shift a verdict. Wind streaks and current
+        // particles stay: those are pressure/flow cues, not wake.
+        const _cp = window.createParticle;
+        window.createParticle = function (x, y, type, props) {
+            if (type === 'wake' || type === 'wake-wave' || type === 'mark-wake') return;
+            return _cp(x, y, type, props);
+        };
         const b = st.course.boundary || { x: 0, y: 0 };
         LAB.cam.x = b.x; LAB.cam.y = b.y;
         LAB.stage = { x: b.x, y: b.y };
