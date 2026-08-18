@@ -2618,6 +2618,18 @@
             const t = loadTombs();
             if (t.has(name)) { t.delete(name); saveTombs(t); }   // saving revives the name
             const lib = store();
+            // plain SAVE after a name edit is a RENAME (owner ruling): the
+            // old entry moves, it doesn't stay behind as a copy. SAVE AS…
+            // is the copy-under-a-new-name path.
+            if (!asNew && LAB.savedJSON) {
+                let prev = '';
+                try { prev = (JSON.parse(LAB.savedJSON).name || '').trim(); } catch (e) { }
+                if (prev && prev !== name && lib[prev]) {
+                    delete lib[prev];
+                    const t2 = loadTombs(); t2.add(prev); saveTombs(t2);
+                    if (window.SCENARIO_DOC) delete window.SCENARIO_DOC[prev];
+                }
+            }
             lib[name] = { ...sceneObj(), savedAt: Date.now() };
             persistLib(lib);
             nameIn.value = name;
