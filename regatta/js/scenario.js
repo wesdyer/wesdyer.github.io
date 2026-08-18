@@ -191,8 +191,8 @@
       </div>
       <div id="lab-summary" style="display:none;padding:14px 16px 16px">
         <div id="lab-sum-name" style="font-size:15px;font-weight:900;font-style:italic;letter-spacing:.02em"></div>
-        <div id="lab-sum-line" style="margin-top:4px;font-size:12px;font-weight:800;color:#8fa3bd"></div>
-        <div class="sl-hint" style="margin-top:8px">Editing is paused &mdash; EDIT re-arms the scene.</div>
+        <div id="lab-sum-pass" style="margin-top:8px;display:flex"></div>
+        <button id="lab-sum-seed" class="sl-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;margin-top:8px;font-variant-numeric:tabular-nums;letter-spacing:.02em"></button>
       </div>
       <div id="lab-editbody">
       <div class="sl-sect">
@@ -442,9 +442,6 @@
     bar.style.cssText = 'top:auto;left:50%;transform:translateX(-50%);bottom:20px;display:flex;align-items:center;gap:14px;padding:12px 18px;width:min(900px,calc(100vw - 440px));overflow:visible';
     bar.innerHTML = `
       <span id="pb-controls" style="display:flex;flex:1;align-items:center;gap:14px">
-      <span id="pb-seedwrap" style="position:relative;display:none">
-        <button id="pb-seed" class="sl-tbtn" style="display:inline-flex;align-items:center;width:auto;padding:0 10px;font:800 11px Archivo,system-ui,sans-serif;letter-spacing:.03em;font-variant-numeric:tabular-nums;white-space:nowrap" title="which seed's run the transport shows"></button>
-      </span>
       <div style="display:flex;gap:6px">
         <button id="pb-start" class="sl-tbtn" title="to the start (t=0) — where editing lives">${SVG_START}</button>
         <button id="pb-back" class="sl-tbtn" title="step back 0.5s">${SVG_BACK}</button>
@@ -1621,12 +1618,13 @@
             + '<span style="color:#66748c;font-size:9px">&#9662;</span>'
             + `<span style="margin-left:auto;display:inline-flex">${seedSummaryHTML()}</span>`;
         pBtn.title = actTitle + ' \u2014 open the seed list';
-        const wrap = bar.querySelector('#pb-seedwrap');
-        const tBtn = bar.querySelector('#pb-seed');
-        wrap.style.display = 'inline-block';   // proper course means there is always a choice
-        tBtn.innerHTML = `<span style="color:${actColor}">${actLabel}</span>` +
-            '<span style="color:#66748c;font-size:9px;margin-left:6px">&#9662;</span>';
-        tBtn.title = actTitle + ' \u2014 open the seed list';
+        // the SIMULATE summary card: verdict pill + the seed selector (the
+        // play bar carries no seed control \u2014 this is its home)
+        ui.querySelector('#lab-sum-pass').innerHTML = seedSummaryHTML();
+        const sBtn = ui.querySelector('#lab-sum-seed');
+        sBtn.innerHTML = `<span style="color:${actColor}">${actLabel}</span>`
+            + '<span style="color:#66748c;font-size:9px">&#9662;</span>';
+        sBtn.title = actTitle + ' \u2014 open the seed list';
     }
     // switching seeds swaps CACHED recordings — no resim; the playhead time
     // carries across so the same moment can be compared between seeds
@@ -1643,7 +1641,7 @@
         renderSeeds();
     }
     ui.querySelector('#lab-seedbtn').onclick = () => openSeedDialog();
-    bar.querySelector('#pb-seed').onclick = () => openSeedDialog();
+    ui.querySelector('#lab-sum-seed').onclick = () => openSeedDialog();
     // the seed + assertion sections fold away (owner ruling): collapsed =
     // a real disclosure row (hover, rotating chevron) with just the count
     function wireFold(headSel, bodySel) {
@@ -2179,11 +2177,6 @@
         if (m === 'sim') {
             ui.querySelector('#lab-sum-name').textContent =
                 (ui.querySelector('#lab-name').value || '').trim() || 'Untitled scenario';
-            const n = LAB.seeds.length;
-            ui.querySelector('#lab-sum-line').textContent =
-                `${+ui.querySelector('#lab-dur').value || 10} s · wind ${+ui.querySelector('#lab-wind').value || 12} kt`
-                + ` · ${LAB.boats.length} boat${LAB.boats.length === 1 ? '' : 's'}`
-                + (n === 1 ? ` · seed ${LAB.seeds[0] >>> 0}` : ` · ${n} seeds`);
         }
         if (m === 'sim') {
             simulateOnly();   // no-op when the whole set is already simulated
