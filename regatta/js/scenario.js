@@ -800,7 +800,8 @@
         s.isl.vertices = sandVerts(s.x, s.y, s.r);
     }
     function moveObj(sel, wx, wy) {
-        if (sel.kind === 'boat') { sel.ref.x = wx; sel.ref.y = wy; }
+        if (sel.kind === 'goalpt') { sel.ref.x = wx; sel.ref.y = wy; }
+        else if (sel.kind === 'boat') { sel.ref.x = wx; sel.ref.y = wy; }
         else if (sel.kind === 'mark') {
             const m = sel.ref;
             if (m.body) { const dx = wx - m.x, dy = wy - m.y; for (const c of m.body) { c.x += dx; c.y += dy; } }
@@ -889,6 +890,20 @@
     }
 
     function pick(wx, wy) {
+        // the selected boat's WAYPOINT pips are draggable (owner ruling) —
+        // they render on top, so they pick first. Only where they're visible:
+        // authoring (edit mode, or paused at the start of a recording).
+        // Mark/gate goal pips need nothing here: they sit ON their objects,
+        // whose own picks (and drags) already move the goal with them.
+        const authoring = LAB.mode === 'edit' || LAB.frame === 0;
+        if (authoring && LAB.sel && LAB.sel.kind === 'boat' && LAB.sel.ref.goals) {
+            const lb = LAB.sel.ref;
+            const r = 14 / LAB.zoom;
+            for (const g of lb.goals) {
+                if (g.type !== 'point') continue;
+                if (Math.hypot(wx - g.x, wy - g.y) < r) return { kind: 'goalpt', ref: g, lb };
+            }
+        }
         for (const ln of LAB.lines) {
             if (Math.hypot(wx - ln.x1, wy - ln.y1) < 30) return { kind: 'line', ref: ln, part: 1 };
             if (Math.hypot(wx - ln.x2, wy - ln.y2) < 30) return { kind: 'line', ref: ln, part: 2 };
@@ -2515,6 +2530,12 @@
         // touch: the recording survives mere inspection. (Dragging at t>0
         // used to rewrite the SETUP position from cursor coordinates in the
         // RECORDED frame — the boat teleported.)
+        // a waypoint pip drags without touching the selection (the boat that
+        // owns it stays selected; its inspector rows update on release)
+        if (hit && hit.kind === 'goalpt') {
+            LAB.drag = { sel: hit };
+            return;
+        }
         if (hit && LAB.mode === 'play' && LAB.rec && LAB.frame > 0) {
             pause();
             setFrame(0);
@@ -2570,6 +2591,8 @@
         invalidate();
     });
     window.addEventListener('mouseup', () => {
+        // a finished waypoint drag refreshes its inspector row (coords label)
+        if (LAB.drag && LAB.drag.sel && LAB.drag.sel.kind === 'goalpt') renderGoals(LAB.drag.sel.lb);
         LAB.drag = null;
     });
 
@@ -2804,7 +2827,7 @@
         // the goal route: boat → 1 → 2 → … dotted in the hull colour, with
         // numbered pips matching the inspector's step badges (edit mode,
         // selected boat only — the water stays quiet otherwise)
-        if (LAB.mode === 'edit' && LAB.sel && LAB.sel.kind === 'boat'
+        if ((LAB.mode === 'edit' || LAB.frame === 0) && LAB.sel && LAB.sel.kind === 'boat'
             && LAB.sel.ref.goals && LAB.sel.ref.goals.length) {
             const lb = LAB.sel.ref;
             const col = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
