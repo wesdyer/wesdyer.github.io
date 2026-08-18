@@ -230,27 +230,10 @@
           </div>
         </div>
         <div style="margin-top:6px">
-          <div id="lab-seedhead" class="sl-fold" title="a scenario runs on EVERY seed in its set — click to expand">
-            <span class="sl-chev"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 2.2 L8.6 6 L4.2 9.8"/></svg></span>
+          <div id="lab-seedrow" class="sl-fold" title="the seed set — status, switch, add, remove — click to open">
             <span>Seeds</span>
             <span class="sl-count" id="lab-seedcount"></span>
-            <span id="lab-seeddots" style="display:inline-flex;gap:5px;font-size:10px;margin-left:auto"></span>
-          </div>
-          <div id="lab-seedbody" style="display:none;margin-top:4px">
-          <div id="lab-seedwrap" style="position:relative">
-            <button id="lab-seedbtn" class="sl-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;font-variant-numeric:tabular-nums;letter-spacing:.02em"></button>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <div class="sl-inp" style="flex:1"><input id="lab-seedadd" type="text" inputmode="numeric" placeholder="type a seed, or just roll"></div>
-            <button id="lab-seed-rnd" class="sl-tbtn" title="add it — blank rolls a random seed">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="14" height="14" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5" cy="5" r="1.4"/><circle cx="11" cy="5" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="5" cy="11" r="1.4"/><circle cx="11" cy="11" r="1.4"/></svg>
-            </button>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <div class="sl-inp" style="width:52px;flex:none"><input id="lab-seedn" type="text" inputmode="numeric" value="10" title="how many random seeds ADD rolls"></div>
-            <button id="lab-seedaddn" class="sl-btn" title="add N random seeds to the set">ADD &times;N</button>
-            <button id="lab-seedclear" class="sl-btn" style="flex:none;padding:9px 12px;color:#ff8a75" title="reset the set to the single default seed">CLEAR</button>
-          </div>
+            <span id="lab-seeddots" style="display:inline-flex;margin-left:auto"></span>
           </div>
         </div>
         <div>
@@ -1424,10 +1407,9 @@
     ui.querySelector('#lab-del').onclick = deleteSel;
     ui.querySelector('#lab-wind').addEventListener('input', e => { LAB.windKt = Math.max(2, parseFloat(e.target.value) || 12); invalidate(); });
     ui.querySelector('#lab-dur').addEventListener('input', e => { LAB.durationS = Math.max(2, Math.min(120, parseFloat(e.target.value) || 10)); invalidate(); });
-    // ── the SEED SET: pills in the panel (manage + switch), a dropdown on
-    // the transport (switch mid-playback), one add control (typed seed, or
-    // the dice roll one when blank). Deleting keeps at least one. ────────
-    const seedAddIn = ui.querySelector('#lab-seedadd');
+    // ── the SEED SET: one summary row in the panel (count + verdict pill);
+    // EVERYTHING else — status list, switching, add/roll, ADD ×N, CLEAR —
+    // lives in the seeds dialog (owner: one place). ──────────────────────
     // seedIx -1 = the PROPER COURSE pseudo seed (always present)
     function activeSeed() {
         if (LAB.seedIx < 0) return 'proper';
@@ -1572,6 +1554,72 @@
         };
         filterIn.addEventListener('input', rebuild);
         filterIn.addEventListener('keydown', (e) => { if (e.key === 'Enter' && firstMatch != null) pick(firstMatch); });
+        // the set's TOOLS live here too (owner: one place): typed-or-rolled
+        // add, ADD ×N randoms, and CLEAR with an in-button confirm (a nested
+        // confirm dialog would fight the single-modal system)
+        const tools = document.createElement('div');
+        tools.style.cssText = 'display:flex;gap:6px;flex:none';
+        tools.innerHTML = `
+          <div class="sl-inp" style="flex:1"><input id="sd-add" type="text" inputmode="numeric" placeholder="type a seed, or just roll"></div>
+          <button id="sd-roll" class="sl-tbtn" title="add it — blank rolls a random seed">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="14" height="14" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5" cy="5" r="1.4"/><circle cx="11" cy="5" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="5" cy="11" r="1.4"/><circle cx="11" cy="11" r="1.4"/></svg>
+          </button>`;
+        body.appendChild(tools);
+        const tools2 = document.createElement('div');
+        tools2.style.cssText = 'display:flex;gap:6px;flex:none';
+        tools2.innerHTML = `
+          <div class="sl-inp" style="width:52px;flex:none"><input id="sd-n" type="text" inputmode="numeric" value="10" title="how many random seeds ADD rolls"></div>
+          <button id="sd-addn" class="sl-btn" title="add N random seeds to the set">ADD &times;N</button>
+          <button id="sd-clear" class="sl-btn" style="flex:none;padding:9px 12px;color:#ff8a75" title="reset the set to the single default seed">CLEAR</button>`;
+        body.appendChild(tools2);
+        const addIn = tools.querySelector('#sd-add');
+        tools.querySelector('#sd-roll').onclick = () => {
+            const typed = parseInt(addIn.value.trim(), 10);
+            const s = (Number.isFinite(typed) ? typed : rollSeed()) >>> 0;
+            addIn.value = '';
+            if (LAB.seeds.some(x => (x >>> 0) === s)) return;   // a set, not a list
+            LAB.seeds.push(s);
+            LAB.seedIx = LAB.seeds.length - 1;
+            seedsChanged();
+            rebuild();
+        };
+        addIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') tools.querySelector('#sd-roll').onclick(); });
+        tools2.querySelector('#sd-addn').onclick = () => {
+            const nIn = tools2.querySelector('#sd-n');
+            const n = Math.max(1, Math.min(200, parseInt(nIn.value, 10) || 10));
+            nIn.value = n;
+            const have = new Set(LAB.seeds.map(x => x >>> 0));
+            for (let k = 0; k < n; k++) {
+                let s = rollSeed();
+                while (have.has(s)) s = rollSeed();
+                have.add(s);
+                LAB.seeds.push(s);
+            }
+            seedsChanged();
+            rebuild();
+        };
+        const clearBtn = tools2.querySelector('#sd-clear');
+        let clearArmT = null;
+        const disarmClear = () => {
+            clearTimeout(clearArmT);
+            delete clearBtn.dataset.armed;
+            clearBtn.classList.remove('sl-btn-red');
+            clearBtn.textContent = 'CLEAR';
+        };
+        clearBtn.onclick = () => {
+            if (LAB.seeds.length <= 1) return;
+            if (clearBtn.dataset.armed) {
+                LAB.seeds = [0x9e3779b9]; LAB.seedIx = 0; LAB.recs = {};
+                seedsChanged();
+                disarmClear();
+                rebuild();
+            } else {
+                clearBtn.dataset.armed = '1';
+                clearBtn.classList.add('sl-btn-red');
+                clearBtn.textContent = 'SURE?';
+                clearArmT = setTimeout(disarmClear, 2500);
+            }
+        };
         rebuild();
         dlg = dialog('Seeds', body, [{ label: 'Close' }]);
         setTimeout(() => filterIn.focus(), 50);
@@ -1613,11 +1661,6 @@
         const actLabel = proper ? '<span style="font-style:italic">PROPER COURSE</span>' : String(act);
         const actColor = proper ? '#8fd8d0' : SEED_COLORS[seedStatus(act)];
         const actTitle = proper ? 'each boat alone \u2014 no other boats, no fouls (RRS proper course)' : SEED_TITLES[seedStatus(act)];
-        const pBtn = ui.querySelector('#lab-seedbtn');
-        pBtn.innerHTML = `<span style="color:${actColor}">${actLabel}</span>`
-            + '<span style="color:#66748c;font-size:9px">&#9662;</span>'
-            + `<span style="margin-left:auto;display:inline-flex">${seedSummaryHTML()}</span>`;
-        pBtn.title = actTitle + ' \u2014 open the seed list';
         // the SIMULATE summary card: verdict pill + the seed selector (the
         // play bar carries no seed control \u2014 this is its home)
         ui.querySelector('#lab-sum-pass').innerHTML = seedSummaryHTML();
@@ -1640,9 +1683,11 @@
         }
         renderSeeds();
     }
-    ui.querySelector('#lab-seedbtn').onclick = () => openSeedDialog();
+    // ONE way in: the summary row (and the SIMULATE card's selector) open
+    // the seeds dialog, which holds the list AND the tools
+    ui.querySelector('#lab-seedrow').onclick = () => openSeedDialog();
     ui.querySelector('#lab-sum-seed').onclick = () => openSeedDialog();
-    // the seed + assertion sections fold away (owner ruling): collapsed =
+    // the assertion section still folds away (owner ruling): collapsed =
     // a real disclosure row (hover, rotating chevron) with just the count
     function wireFold(headSel, bodySel) {
         const head = ui.querySelector(headSel);
@@ -1653,7 +1698,6 @@
             head.classList.toggle('open', open);
         };
     }
-    wireFold('#lab-seedhead', '#lab-seedbody');
     wireFold('#lab-asserthead', '#lab-assertbody');
     // seed edits change the DOC (dirty + draft) and drop only what they must:
     // removed seeds lose their cache; survivors keep theirs
@@ -1665,38 +1709,6 @@
         else { LAB.rec = null; evaluateAsserts(); }
     }
     function rollSeed() { return (Math.random() * 4294967296) >>> 0; }
-    ui.querySelector('#lab-seed-rnd').onclick = () => {
-        const typed = parseInt(seedAddIn.value.trim(), 10);
-        const s = (Number.isFinite(typed) ? typed : rollSeed()) >>> 0;
-        seedAddIn.value = '';
-        if (LAB.seeds.some(x => (x >>> 0) === s)) return;   // a set, not a list
-        LAB.seeds.push(s);
-        LAB.seedIx = LAB.seeds.length - 1;
-        seedsChanged();
-    };
-    seedAddIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') ui.querySelector('#lab-seed-rnd').onclick(); });
-    // ADD ×N: roll N fresh random seeds into the set (the active seed keeps
-    // the transport). CLEAR resets to the single default, with a confirm.
-    ui.querySelector('#lab-seedaddn').onclick = () => {
-        const nIn = ui.querySelector('#lab-seedn');
-        const n = Math.max(1, Math.min(200, parseInt(nIn.value, 10) || 10));
-        nIn.value = n;
-        const have = new Set(LAB.seeds.map(x => x >>> 0));
-        for (let k = 0; k < n; k++) {
-            let s = rollSeed();
-            while (have.has(s)) s = rollSeed();
-            have.add(s);
-            LAB.seeds.push(s);
-        }
-        seedsChanged();
-    };
-    ui.querySelector('#lab-seedclear').onclick = () => {
-        if (LAB.seeds.length <= 1) return;
-        confirmDialog('Clear seeds', `Drop all ${LAB.seeds.length} seeds and reset to the single default?`, () => {
-            LAB.seeds = [0x9e3779b9]; LAB.seedIx = 0; LAB.recs = {};
-            seedsChanged();
-        }, 'Clear');
-    };
     renderSeeds();
 
     // ── initial conditions / simulate / playback ───────────────────────
