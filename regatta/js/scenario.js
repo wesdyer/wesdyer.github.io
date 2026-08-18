@@ -151,6 +151,12 @@
       .sl-schip-mute{color:#8fa3bd;background:rgba(255,255,255,.07)}
       .sl-schip-blue{color:#8fc2ff;background:rgba(47,107,255,.18)}
       .sl-msel{appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.08);color:#eef3fb;border:none;border-radius:5px;font:800 10px Archivo,system-ui,sans-serif;letter-spacing:.04em;padding:3px 5px;cursor:pointer;text-align:center}
+      .sl-adlg .sl-step{font-size:13px;gap:8px;padding:10px 12px;margin-bottom:8px}
+      .sl-adlg .sl-stepn{width:20px;height:20px;font-size:11px}
+      .sl-adlg .sl-bare{font-size:14px}
+      .sl-adlg .sl-msel{font-size:12px;padding:5px 8px}
+      .sl-adlg .sl-hint{font-size:12px}
+      .sl-adlg .sl-schip{font-size:11px;padding:4px 9px}
       .sl-tbtn{appearance:none;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.07);border:none;display:grid;place-items:center;font-size:12px;color:#eef3fb;cursor:pointer;padding:0}
       .sl-tbtn:hover{background:rgba(255,255,255,.15)}
       .sl-tbtn-pri{background:#2f6bff}
@@ -237,14 +243,10 @@
           </div>
         </div>
         <div>
-          <div id="lab-asserthead" class="sl-fold" title="expectations checked against every run — click to expand">
-            <span class="sl-chev"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 2.2 L8.6 6 L4.2 9.8"/></svg></span>
+          <div id="lab-assertrow" class="sl-fold" title="expectations judged against every run — click to open">
             <span>Assertions</span>
             <span class="sl-count" id="lab-assertcount"></span>
-            <span id="lab-assertadd" class="sl-link" style="margin-left:auto">+ ADD</span>
-          </div>
-          <div id="lab-assertbody" style="display:none;margin-top:4px">
-            <div id="lab-asserts"></div>
+            <span id="lab-assertpill" style="display:inline-flex;margin-left:auto"></span>
           </div>
         </div>
       </div>
@@ -1163,7 +1165,7 @@
     // doc; ScenarioAsserts (shared with eval/run_scenario.js) judges them
     // against the recording after every run. Editing an assertion never
     // invalidates the recording — expectations don't change the sailing.
-    const assertsDiv = ui.querySelector('#lab-asserts');
+    let assertsDiv = null;   // the assertions dialog's list while it is open
     const aggChip = ui.querySelector('#lab-agg');
     function boatNames() { return LAB.boats.map(lb => lb.bot.name); }
     function assertsChanged() {
@@ -1221,7 +1223,8 @@
     function bareIn(val, w, title, onSet) {
         const i = document.createElement('input');
         i.type = 'text'; i.inputMode = 'decimal'; i.className = 'sl-bare';
-        i.style.width = w + 'px'; i.title = title; i.value = val;
+        // rows render only in the roomier dialog — widths scale with it
+        i.style.width = Math.round(w * 1.5) + 'px'; i.title = title; i.value = val;
         i.addEventListener('change', () => { onSet(i.value.trim()); assertsChanged(); });
         return i;
     }
@@ -1229,6 +1232,10 @@
     function renderAsserts() {
         const cnt = ui.querySelector('#lab-assertcount');
         if (cnt) cnt.textContent = LAB.asserts.length || '';
+        ui.querySelector('#lab-assertpill').innerHTML = assertSummaryHTML();
+        // the rows themselves live in the assertions dialog (owner: one
+        // place) — nothing more to draw unless it is open
+        if (!assertsDiv || !assertsDiv.isConnected) return;
         assertsDiv.innerHTML = '';
         LAB.asserts.forEach((a, k) => {
             const row = document.createElement('div');
@@ -1291,7 +1298,7 @@
                 if (res.single.atS != null) {
                     chip.style.cursor = 'pointer';
                     chip.title += ' · click to scrub there';
-                    chip.onclick = () => { setUIMode('sim'); pause(); setFrame(Math.round(res.single.atS * 60)); };
+                    chip.onclick = () => { if (LAB.modal) LAB.modal.close(); setUIMode('sim'); pause(); setFrame(Math.round(res.single.atS * 60)); };
                 }
             } else if (res) {
                 chip.className = 'sl-schip ' + (res.ok === res.n ? 'sl-schip-teal' : 'sl-schip-red');
@@ -1301,6 +1308,7 @@
                 if (res.fail) {
                     chip.style.cursor = 'pointer';
                     chip.onclick = () => {
+                        if (LAB.modal) LAB.modal.close();
                         setUIMode('sim');
                         setActiveSeed(res.fail.ix);
                         if (res.fail.atS != null) { pause(); LAB.mode = 'play'; setFrame(Math.round(res.fail.atS * 60)); }
@@ -1336,17 +1344,16 @@
             assertsDiv.appendChild(p);
         }
     }
-    ui.querySelector('#lab-assertadd').onclick = (e) => {
-        e.stopPropagation();   // it lives in the fold header — don't toggle
-        if (!LAB.boats.length) return;
-        // adding wants to SHOW the new row: expand the section first
-        const aBody = ui.querySelector('#lab-assertbody');
-        if (aBody.style.display === 'none') {
-            aBody.style.display = 'block';
-            ui.querySelector('#lab-asserthead').classList.add('open');
-        }
+    // THE ASSERTIONS DIALOG (owner: one place, roomier type): the rows with
+    // their verdict chips, plus adding — the + ADD kind picker folds out
+    // INSIDE the dialog because the modal system is single-slot
+    function openAssertDialog() {
         const body = document.createElement('div');
-        body.style.cssText = 'display:flex;flex-direction:column;gap:6px';
+        body.className = 'sl-adlg';
+        body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:520px';
+        const list = document.createElement('div');
+        list.style.cssText = 'overflow-y:auto;max-height:52vh;min-height:40px';
+        body.appendChild(list);
         const KINDS = [
             ['penalty', 'PENALTY', 'a boat is (or nobody is) penalized, optionally under a rule'],
             ['row', 'RIGHTS', 'at a time, one boat holds right of way over another'],
@@ -1356,14 +1363,24 @@
             ['proper', 'HOLDS PROPER COURSE', 'a boat never strays from her proper-course line beyond a tolerance'],
             ['nocollide', 'NO COLLISION', "the hulls never actually touch \u2014 the engine's own contact test, not a distance"],
         ];
-        let dlg;
+        const addBox = document.createElement('div');
+        addBox.style.cssText = 'display:none;flex-direction:column;gap:6px';
+        const addBtn = document.createElement('button');
+        addBtn.className = 'sl-btn';
+        addBtn.style.cssText = 'flex:none;padding:10px 0';
+        addBtn.textContent = '+ ADD ASSERTION';
+        addBtn.onclick = () => {
+            if (!LAB.boats.length) return;
+            const open = addBox.style.display === 'none';
+            addBox.style.display = open ? 'flex' : 'none';
+            addBtn.textContent = open ? 'CANCEL' : '+ ADD ASSERTION';
+        };
         for (const [kind, lbl, desc] of KINDS) {
             const b = document.createElement('button');
             b.className = 'sl-btn';
-            b.style.cssText = 'flex:none;padding:9px 12px;text-align:left';
+            b.style.cssText = 'flex:none;padding:10px 12px;text-align:left';
             b.innerHTML = `${lbl} <span class="sl-hint" style="letter-spacing:0;font-weight:700"> — ${desc}</span>`;
             b.onclick = () => {
-                dlg.close();
                 const second = LAB.boats.length > 1 ? 1 : 0;
                 const def = {
                     penalty: { kind: 'penalty', who: 0 },
@@ -1375,12 +1392,20 @@
                     nocollide: { kind: 'nocollide' },
                 }[kind];
                 LAB.asserts.push(def);
-                assertsChanged();
+                addBox.style.display = 'none';
+                addBtn.textContent = '+ ADD ASSERTION';
+                assertsChanged();   // re-renders the rows in place
             };
-            body.appendChild(b);
+            addBox.appendChild(b);
         }
-        dlg = dialog('Add assertion', body, [{ label: 'Cancel' }]);
-    };
+        body.appendChild(addBtn);
+        body.appendChild(addBox);
+        assertsDiv = list;
+        // attach FIRST — renderAsserts skips containers not in the DOM
+        dialog('Assertions', body, [{ label: 'Close' }], { width: 600 });
+        renderAsserts();
+    }
+    ui.querySelector('#lab-assertrow').onclick = () => openAssertDialog();
     aiAtIn.addEventListener('input', () => {
         if (LAB.sel && LAB.sel.kind === 'boat') {
             const v = aiAtIn.value.trim();
@@ -1624,25 +1649,37 @@
         dlg = dialog('Seeds', body, [{ label: 'Close' }]);
         setTimeout(() => filterIn.focus(), 50);
     }
-    // the seed-set verdict PILL (owner mockup): "8/10 PASS" — green when
-    // every seed passes, red when any fails, muted "x/N RUN" while some are
-    // unsimulated. The per-tier breakdown lives in the tooltip.
+    // the verdict PILL (owner mockup): "8/10 PASS" — green when everything
+    // passes, red when anything fails, muted while unrun
+    const verdictPill = (c, txt, title) =>
+        `<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;`
+        + `border:1.5px solid ${c};color:${c};background:rgba(0,0,0,.28);`
+        + `font-weight:800;font-size:10px;letter-spacing:.06em;font-variant-numeric:tabular-nums" title="${title}">${txt}</span>`;
+    // seeds: per-tier breakdown lives in the tooltip
     function seedSummaryHTML() {
         const counts = { fail: 0, collision: 0, penalty: 0, ok: 0, unrun: 0 };
         for (const s of LAB.seeds) counts[seedStatus(s)]++;
         const n = LAB.seeds.length;
-        const pill = (c, txt, title) =>
-            `<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;`
-            + `border:1.5px solid ${c};color:${c};background:rgba(0,0,0,.28);`
-            + `font-weight:800;font-size:10px;letter-spacing:.06em;font-variant-numeric:tabular-nums" title="${title}">${txt}</span>`;
-        if (counts.unrun) return pill('#66748c', `${n - counts.unrun}/${n} RUN`,
+        if (counts.unrun) return verdictPill('#66748c', `${n - counts.unrun}/${n} RUN`,
             `${counts.unrun} seed(s) not simulated yet`);
         const pass = n - counts.fail;
         const detail = [`${pass} pass`, counts.fail && `${counts.fail} fail`,
             counts.collision && `${counts.collision} with a collision`,
             counts.penalty && `${counts.penalty} with a penalty (no collision)`]
             .filter(Boolean).join(' · ');
-        return pill(pass === n ? '#7ed491' : '#ff8a75', `${pass}/${n} PASS`, detail);
+        return verdictPill(pass === n ? '#7ed491' : '#ff8a75', `${pass}/${n} PASS`, detail);
+    }
+    // assertions: a row counts as passing only when it holds on EVERY seed
+    function assertSummaryHTML() {
+        const n = LAB.asserts.length;
+        if (!n) return '';
+        const rs = LAB.assertResults;
+        if (!rs) return verdictPill('#66748c', `–/${n} PASS`,
+            'run the scenario to judge (every seed in the set)');
+        const ok = rs.filter(r => r.ok === r.n).length;
+        return verdictPill(ok === n ? '#7ed491' : '#ff8a75', `${ok}/${n} PASS`,
+            ok === n ? 'every assertion holds on every seed'
+                     : `${n - ok} assertion(s) failing somewhere in the seed set`);
     }
     // the transport appears only in SIMULATE mode once every seed (and the
     // proper course) has a recording (owner ruling) — while simulating, and
@@ -1687,18 +1724,6 @@
     // the seeds dialog, which holds the list AND the tools
     ui.querySelector('#lab-seedrow').onclick = () => openSeedDialog();
     ui.querySelector('#lab-sum-seed').onclick = () => openSeedDialog();
-    // the assertion section still folds away (owner ruling): collapsed =
-    // a real disclosure row (hover, rotating chevron) with just the count
-    function wireFold(headSel, bodySel) {
-        const head = ui.querySelector(headSel);
-        head.onclick = () => {
-            const body = ui.querySelector(bodySel);
-            const open = body.style.display === 'none';
-            body.style.display = open ? 'block' : 'none';
-            head.classList.toggle('open', open);
-        };
-    }
-    wireFold('#lab-asserthead', '#lab-assertbody');
     // seed edits change the DOC (dirty + draft) and drop only what they must:
     // removed seeds lose their cache; survivors keep theirs
     function seedsChanged() {
@@ -2577,11 +2602,12 @@
     }
 
     // ── in-window dialogs (no browser confirm/prompt on this page) ─────
-    function dialog(title, bodyEl, buttons) {
+    function dialog(title, bodyEl, buttons, opts) {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'position:fixed;inset:0;z-index:95;background:rgba(4,8,14,0.55);display:flex;align-items:center;justify-content:center';
         const box = document.createElement('div');
         box.style.cssText = 'min-width:300px;max-width:420px;max-height:70vh;display:flex;flex-direction:column;background:rgba(7,19,34,.96);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 10px 34px rgba(4,16,28,.5);padding:16px 18px;color:#eef3fb;font:13px/1.4 Archivo,system-ui,sans-serif';
+        if (opts && opts.width) box.style.maxWidth = `min(${opts.width}px, 92vw)`;
         const h = document.createElement('div');
         h.textContent = title.toUpperCase();
         h.style.cssText = 'font-size:13px;font-weight:900;font-style:italic;letter-spacing:.04em;margin-bottom:10px';
