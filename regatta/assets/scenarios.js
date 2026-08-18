@@ -1,102 +1,157 @@
 // The SCYC scenario library — one file, every scenario.
 // Written by scenario.html; JS not JSON so it loads over file://.
 window.SCENARIO_DOC = {
-  "Tack onto STBD 1": {
+  "Rule 10": {
     "v": 1,
     "durationS": 10,
     "windKt": 12,
-    "boats": [
-      {
-        "x": -425,
-        "y": 479,
-        "headingDeg": 40,
-        "speedKt": 6,
-        "plan": [
-          {
-            "t": 5,
-            "headingDeg": 320
-          }
-        ]
-      },
-      {
-        "x": -637,
-        "y": 460,
-        "headingDeg": 40,
-        "speedKt": 6
-      }
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
     ],
-    "marks": [],
-    "sands": [],
-    "lines": [],
+    "tags": [
+      "rule-10"
+    ],
     "asserts": [
       {
-        "kind": "row",
-        "of": 1,
-        "over": 0,
-        "rule": "13",
-        "t": 5.9
-      },
-      {
-        "kind": "row",
-        "of": 0,
-        "over": 1,
-        "rule": "10",
-        "t": 6.1
-      },
-      {
         "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "proper",
         "who": 0,
-        "rule": "15"
+        "tol": 1
+      },
+      {
+        "kind": "nocollide"
       }
-    ]
-  },
-  "Tack onto STBD 2": {
-    "v": 1,
-    "durationS": 10,
-    "windKt": 12,
+    ],
     "boats": [
       {
-        "x": -425,
-        "y": 479,
-        "headingDeg": 40,
-        "speedKt": 6,
-        "plan": [
-          {
-            "t": 5,
-            "headingDeg": 320
-          }
-        ]
+        "x": 167,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5,
+        "aiAtS": 0
       },
       {
         "x": -548,
-        "y": 468,
+        "y": 485,
         "headingDeg": 40,
-        "speedKt": 6
+        "speedKt": 7.5,
+        "aiAtS": 0
       }
     ],
     "marks": [],
     "sands": [],
     "lines": [],
+    "savedAt": 1787043958885
+  },
+  "Rule 11": {
+    "v": 1,
+    "durationS": 10,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      1832409043,
+      843002054,
+      800078553,
+      2637715775,
+      547193122,
+      638942517,
+      1920682214,
+      3747048161,
+      1966458350
+    ],
+    "tags": [
+      "rule-11"
+    ],
     "asserts": [
       {
-        "kind": "row",
-        "of": 1,
-        "over": 0,
-        "rule": "13",
-        "t": 5.9
-      },
-      {
-        "kind": "row",
-        "of": 0,
-        "over": 1,
-        "rule": "10",
-        "t": 6.1
+        "kind": "nocollide"
       },
       {
         "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "proper",
         "who": 0,
-        "rule": "15"
+        "tol": 1
       }
-    ]
+    ],
+    "boats": [
+      {
+        "x": -223,
+        "y": 571,
+        "headingDeg": 40,
+        "speedKt": 7,
+        "aiAtS": 0
+      },
+      {
+        "x": -305,
+        "y": 514,
+        "headingDeg": 45,
+        "speedKt": 7,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787045704310
+  },
+  "Rule 12": {
+    "v": 1,
+    "durationS": 10,
+    "windKt": 12,
+    "seeds": [
+      2654435769
+    ],
+    "tags": [
+      "rule-12"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "proper",
+        "who": 0,
+        "tol": 1
+      }
+    ],
+    "boats": [
+      {
+        "x": 0,
+        "y": 200,
+        "headingDeg": 90,
+        "speedKt": 2,
+        "aiAtS": 0
+      },
+      {
+        "x": -250,
+        "y": 201,
+        "headingDeg": 90,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787045900158
   }
 };
