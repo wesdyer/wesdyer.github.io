@@ -630,6 +630,7 @@
         } catch (e) { LAB._loading = false; }
         restoreLibHandle();
         refreshSaveBtn();
+        pushHistIfChanged();   // the undo baseline: where the page opened
         dismissCover();
     }
 
@@ -658,8 +659,37 @@
                     name: (ui.querySelector('#lab-name').value || '').trim(),
                     ...sceneObj() }));
             } catch (e) { }
+            pushHistIfChanged();   // history coalesces on the same quiet beat
         }, 400);
     }
+
+    // ── UNDO / REDO: snapshot history over the DOCUMENT (everything that
+    // saves — scene, plans, goals, seeds, asserts, name, duration, wind).
+    // Snapshots are captured on saveDraft's 400ms quiet beat, so a drag
+    // storm coalesces into one entry; restoring is just loadScene, and the
+    // recording/selection reset like any other edit. ⌘Z / ⌘⇧Z / ⌘Y.
+    const hist = [];
+    let histIx = -1;
+    function pushHistIfChanged() {
+        const s = currentDoc();
+        if (hist[histIx] === s) return;
+        hist.length = histIx + 1;
+        hist.push(s);
+        if (hist.length > 100) hist.shift();
+        histIx = hist.length - 1;
+    }
+    function applyHist(s) {
+        const d = JSON.parse(s);
+        LAB._loading = true;
+        loadScene(d);
+        ui.querySelector('#lab-name').value = d.name || '';
+        LAB._loading = false;
+        select(null);
+        refreshSaveBtn();
+        saveDraft();   // draft follows; the capture no-ops (state == hist[histIx])
+    }
+    function undo() { if (histIx > 0) { histIx--; applyHist(hist[histIx]); } }
+    function redo() { if (histIx < hist.length - 1) { histIx++; applyHist(hist[histIx]); } }
     // NEUTRAL BOATS, NOT CHARACTERS (owner ruling 2026-08-17): a scenario is a
     // statement about the ENGINE — who has rights and will they duck — and a
     // named character carries per-character stats and a controller persona
@@ -1978,6 +2008,8 @@
                     else if (LAB.armed) setArmed(LAB.armed);
                     else select(null);
                 }
+                else if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) { if (e.shiftKey) redo(); else undo(); }
+                else if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || e.key === 'Y')) redo();
                 else if (e.key === '+' || e.key === '=') setZoom(LAB.zoom * 1.25);
                 else if (e.key === '-' || e.key === '_') setZoom(LAB.zoom / 1.25);
                 else if (e.key === '0') setZoom(1);
