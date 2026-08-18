@@ -2194,59 +2194,55 @@
             setTimeout(() => inp.focus(), 50);
         } else doIt(name);
     }
-    function openScenario() {
+    // the Open box is built for a LARGE library: rows are created per
+    // filter pass (capped at 400 rendered matches — refine past that), the
+    // count line says what the filter is doing, Enter opens the first
+    // (highlighted) match, and a delete re-opens with the filter intact.
+    function openScenario(initialFilter) {
         const lib = store();
         const names = Object.keys(lib).sort((a, b) => a.localeCompare(b));
+        const MAXROWS = 400;
         const body = document.createElement('div');
-        body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:280px';
-        // filter-as-you-type over the list (case-insensitive substring)
+        body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:320px';
         const filterWrap = document.createElement('div');
         filterWrap.className = 'sl-inp';
         const filterIn = document.createElement('input');
         filterIn.type = 'text';
         filterIn.placeholder = 'Filter scenarios';
         filterIn.style.fontVariantNumeric = 'normal';
+        filterIn.value = typeof initialFilter === 'string' ? initialFilter : '';
         filterWrap.appendChild(filterIn);
         body.appendChild(filterWrap);
+        const countEl = document.createElement('div');
+        countEl.className = 'sl-hint';
+        countEl.style.padding = '0 2px';
+        body.appendChild(countEl);
         const list = document.createElement('div');
-        list.style.cssText = 'overflow-y:auto;max-height:46vh';
+        list.style.cssText = 'overflow-y:auto;max-height:50vh;min-height:40px';
         body.appendChild(list);
-        const empty = document.createElement('div');
-        empty.className = 'sl-hint';
-        empty.style.padding = '4px 2px';
-        empty.textContent = names.length ? 'nothing matches' : 'No saved scenarios yet.';
-        empty.style.display = names.length ? 'none' : 'block';
-        body.appendChild(empty);
-        const rows = [];
-        filterIn.addEventListener('input', () => {
-            const q = filterIn.value.trim().toLowerCase();
-            let shown = 0;
-            for (const { el, name } of rows) {
-                const hit = !q || name.toLowerCase().includes(q);
-                el.style.display = hit ? 'flex' : 'none';
-                if (hit) shown++;
-            }
-            empty.style.display = shown ? 'none' : 'block';
-        });
-        for (const n of names) {
+        let dlg = null;
+        let firstVisible = null;
+        const openByName = (n) => {
+            dlg.close();
+            ifClean('Open scenario', () => {
+                LAB._loading = true;
+                loadScene(lib[n]);
+                nameIn.value = n;
+                LAB._loading = false;
+                markSaved();
+                select(null);
+            });
+        };
+        const buildRow = (n, highlight) => {
             const row = document.createElement('div');
-            row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;font-weight:700';
-            row.onmouseenter = () => row.style.background = 'rgba(255,255,255,.07)';
-            row.onmouseleave = () => row.style.background = '';
+            row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:8px;cursor:pointer;font-weight:700'
+                + (highlight ? ';background:rgba(47,107,255,.18)' : '');
+            row.onmouseenter = () => { if (!highlight) row.style.background = 'rgba(255,255,255,.07)'; };
+            row.onmouseleave = () => { if (!highlight) row.style.background = ''; };
             const label = document.createElement('span');
             label.textContent = n;
             label.style.cssText = 'flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
-            label.onclick = () => {
-                dlg.close();
-                ifClean('Open scenario', () => {
-                    LAB._loading = true;
-                    loadScene(lib[n]);
-                    nameIn.value = n;
-                    LAB._loading = false;
-                    markSaved();
-                    select(null);
-                });
-            };
+            label.onclick = () => openByName(n);
             const del = document.createElement('span');
             del.innerHTML = '&#10005;';
             del.title = 'delete';
@@ -2255,25 +2251,42 @@
             del.onmouseleave = () => del.style.color = '#66748c';
             del.onclick = (e) => {
                 e.stopPropagation();
+                const keepFilter = filterIn.value;
                 dlg.close();
-                confirmDialog('Delete scenario', `Delete “${n}”? This cannot be undone.`, () => {
+                confirmDialog('Delete scenario', `Delete \u201c${n}\u201d? This cannot be undone.`, () => {
                     const l2 = store(); delete l2[n];
                     const t = loadTombs(); t.add(n); saveTombs(t);
                     // the in-memory shipped copy too, or store() resurrects it
                     if (window.SCENARIO_DOC) delete window.SCENARIO_DOC[n];
                     persistLib(l2);
-                    openScenario();
+                    openScenario(keepFilter);
                 }, 'Delete');
             };
             row.append(label, del);
-            list.appendChild(row);
-            rows.push({ el: row, name: n });
-        }
-        const dlg = dialog('Open scenario', body, [{ label: 'Close' }]);
+            return row;
+        };
+        const applyFilter = () => {
+            const q = filterIn.value.trim().toLowerCase();
+            const matches = q ? names.filter(n => n.toLowerCase().includes(q)) : names;
+            list.innerHTML = '';
+            firstVisible = matches[0] || null;
+            matches.slice(0, MAXROWS).forEach((n, i) => list.appendChild(buildRow(n, i === 0 && !!q)));
+            if (!names.length) countEl.textContent = 'No saved scenarios yet.';
+            else if (!matches.length) countEl.textContent = 'nothing matches';
+            else if (matches.length > MAXROWS) countEl.textContent = `showing ${MAXROWS} of ${matches.length} matches \u00b7 refine the filter`;
+            else if (q) countEl.textContent = `${matches.length} of ${names.length} \u00b7 Enter opens the first`;
+            else countEl.textContent = `${names.length} scenario${names.length === 1 ? '' : 's'}`;
+        };
+        filterIn.addEventListener('input', applyFilter);
+        filterIn.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && firstVisible) openByName(firstVisible);
+        });
+        applyFilter();
+        dlg = dialog('Open scenario', body, [{ label: 'Close' }]);
         setTimeout(() => filterIn.focus(), 50);
     }
     ui.querySelector('#lab-new').onclick = newScenario;
-    ui.querySelector('#lab-open').onclick = openScenario;
+    ui.querySelector('#lab-open').onclick = () => openScenario();
     ui.querySelector('#lab-save').onclick = () => saveScenario(false);
     ui.querySelector('#lab-saveas').onclick = () => saveScenario(true);
     ui.querySelector('#lab-libopen').onclick = chooseLibFile;
