@@ -256,7 +256,7 @@
       </div>
       </div>`;
 
-    // RIGHTS & UMPIRE stays on the RIGHT (owner ruling), its own always-on
+    // the UMPIRE panel stays on the RIGHT (owner ruling), its own always-on
     // panel: live rights at initial conditions while editing, the recording
     // while scrubbing.
     const ump = document.createElement('div');
@@ -264,7 +264,7 @@
     ump.style.cssText = 'right:20px;top:20px;width:300px;max-height:calc(100vh - 120px)';
     ump.innerHTML = `
       <div class="sl-head">
-        <span class="sl-title">RIGHTS &amp; UMPIRE</span>
+        <span class="sl-title">UMPIRE</span>
         <span id="lab-time" style="font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>
       </div>
       <div id="lab-umpasserts" style="display:none;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08)"></div>
