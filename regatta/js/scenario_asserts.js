@@ -122,6 +122,46 @@
                     : `held proper course (max ${worstM} m off at ${at.toFixed(1)}s)` }
                 : { pass: false, why: `strayed past ${tolM} m at ${firstBad.toFixed(1)}s (max ${worstM} m at ${at.toFixed(1)}s)`, atS: firstBad };
         }
+        if (a.kind === 'near') {
+            // rounding TIGHTNESS: closest approach to a mark stays within a
+            // budget (metres). ctx.marks = [{x,y}] in world units.
+            const mk = ctx && ctx.marks && ctx.marks[a.mark];
+            if (!mk) return { pass: false, why: 'mark ' + ((a.mark || 0) + 1) + ' missing' };
+            const maxU = (a.max != null ? a.max : 15) * 5;
+            let best = Infinity, at = 0;
+            for (let f = 0; f <= nF; f++) {
+                const b = frames[f].boats[a.who];
+                if (!b) return { pass: false, why: 'boat missing from recording' };
+                const d = Math.hypot(b.x - mk.x, b.y - mk.y);
+                if (d < best) { best = d; at = f / 60; }
+            }
+            const bestM = (best / 5).toFixed(1);
+            return best <= maxU
+                ? { pass: true, why: `rounded ${bestM} m off at ${at.toFixed(1)}s` }
+                : { pass: false, why: `never closer than ${bestM} m (> ${a.max != null ? a.max : 15} m)`, atS: at };
+        }
+        if (a.kind === 'turn') {
+            // turn BUDGET: total integrated heading change over the run —
+            // catches orbit overshoot and post-rounding unwinds that a
+            // position assert can't see
+            let tot = 0, prev = null;
+            for (let f = 0; f <= nF; f++) {
+                const b = frames[f].boats[a.who];
+                if (!b) return { pass: false, why: 'boat missing from recording' };
+                if (prev !== null) {
+                    let d = (b.h - prev) % (Math.PI * 2);
+                    if (d > Math.PI) d -= Math.PI * 2;
+                    if (d < -Math.PI) d += Math.PI * 2;
+                    tot += Math.abs(d);
+                }
+                prev = b.h;
+            }
+            const totDeg = Math.round(tot * 180 / Math.PI);
+            const max = a.max != null ? a.max : 360;
+            return totDeg <= max
+                ? { pass: true, why: `turned ${totDeg}° total` }
+                : { pass: false, why: `turned ${totDeg}° total (> ${max}°)`, atS: nF / 60 };
+        }
         if (a.kind === 'nocollide') {
             // EXACT collision test: the engine's own hull-polygon contact
             // events (captured before the penalty debounce), orientation-
@@ -163,6 +203,8 @@
         if (a.kind === 'proper') return a.tol === 0 ? `${nm(a.who)} matches proper course exactly`
             : `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 10}m`;
         if (a.kind === 'nocollide') return 'no collisions';
+        if (a.kind === 'near') return `${nm(a.who)} rounds within ${a.max != null ? a.max : 15}m of mark ${(a.mark || 0) + 1}`;
+        if (a.kind === 'turn') return `${nm(a.who)} turns ≤ ${a.max != null ? a.max : 360}° total`;
         return a.kind;
     }
 

@@ -956,7 +956,7 @@
             // deleted boat, slide the rest down (who === -1 "nobody" is safe:
             // this only runs for a found index, i >= 0)
             if (i >= 0) {
-                const BK = { penalty: ['who'], row: ['of', 'over'], clear: ['a', 'b'], tack: ['who'], goals: ['who'], proper: ['who'] };
+                const BK = { penalty: ['who'], row: ['of', 'over'], clear: ['a', 'b'], tack: ['who'], goals: ['who'], proper: ['who'], near: ['who'], turn: ['who'] };
                 LAB.asserts = LAB.asserts.filter(a => !(BK[a.kind] || []).some(kf => a[kf] === i));
                 for (const a of LAB.asserts) for (const kf of (BK[a.kind] || [])) if (a[kf] > i) a[kf]--;
             }
@@ -965,6 +965,11 @@
             const i = ms.indexOf(s.ref); if (i >= 0) ms.splice(i, 1);
             const j = LAB.marks.indexOf(s.ref); if (j >= 0) LAB.marks.splice(j, 1);
             for (const lb of LAB.boats) lb.goals = lb.goals.filter(g => g.ref !== s.ref);
+            // 'near' asserts address marks by index, like goals
+            if (j >= 0) {
+                LAB.asserts = LAB.asserts.filter(a => !(a.kind === 'near' && (a.mark || 0) === j));
+                for (const a of LAB.asserts) if (a.kind === 'near' && a.mark > j) a.mark--;
+            }
         } else if (s.kind === 'sand') {
             const is = window.state.course.islands;
             const i = is.indexOf(s.ref.isl); if (i >= 0) is.splice(i, 1);
@@ -1287,7 +1292,8 @@
             if (typeof refreshTicks === 'function') refreshTicks();
             return;
         }
-        const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s], { proper: LAB.recs.proper }));
+        const actx = { proper: LAB.recs.proper, marks: LAB.marks.map(m => ({ x: m.x, y: m.y })) };
+        const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s], actx));
         // per-seed rows, kept: the transport's tick strip marks WHERE each
         // assert failed on the watched trace
         LAB.assertPer = {};
@@ -1383,6 +1389,24 @@
                 row.appendChild(hintSpan('m'));
             } else if (a.kind === 'nocollide') {
                 row.appendChild(hintSpan('no collisions \u2014 hulls never touch'));
+            } else if (a.kind === 'near') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('rounds within'));
+                row.appendChild(bareIn(a.max != null ? a.max : 15, 26, 'closest approach budget (m)',
+                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p > 0 ? p : 15; }));
+                row.appendChild(hintSpan('m of'));
+                const mSel = document.createElement('select');
+                mSel.className = 'sl-msel';
+                LAB.marks.forEach((m, mi) => { const o = document.createElement('option'); o.value = String(mi); o.textContent = markName(m).toUpperCase(); mSel.appendChild(o); });
+                mSel.value = String(a.mark || 0);
+                mSel.addEventListener('change', () => { a.mark = parseInt(mSel.value, 10); assertsChanged(); });
+                row.appendChild(mSel);
+            } else if (a.kind === 'turn') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('turns \u2264'));
+                row.appendChild(bareIn(a.max != null ? a.max : 360, 30, 'total integrated heading change over the run (\u00b0)',
+                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p > 0 ? p : 360; }));
+                row.appendChild(hintSpan('\u00b0 total'));
             }
             // status chip: judged across the whole seed set. One seed shows
             // the plain verdict; several show k/N. Clicking a failure
@@ -1464,6 +1488,8 @@
             ['clear', 'NEVER CLOSE', 'two boats never get closer than a distance, the whole run'],
             ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
             ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
+            ['near', 'ROUNDS WITHIN', 'closest approach to a mark stays inside a budget — rounding tightness'],
+            ['turn', 'TURN BUDGET', 'total heading change over the run stays under a cap — catches orbit overshoot'],
         ];
         const addBox = document.createElement('div');
         addBox.style.cssText = 'display:none;flex-direction:column;gap:6px';
@@ -1492,6 +1518,8 @@
                     goals: { kind: 'goals', who: 0 },
                     proper: { kind: 'proper', who: 0, tol: 10 },
                     nocollide: { kind: 'nocollide' },
+                    near: { kind: 'near', who: 0, mark: 0, max: 15 },
+                    turn: { kind: 'turn', who: 0, max: 360 },
                 }[kind];
                 LAB.asserts.push(def);
                 addBox.style.display = 'none';
