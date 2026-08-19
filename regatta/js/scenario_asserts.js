@@ -71,16 +71,20 @@
         }
         if (a.kind === 'clear') {
             const min = a.min != null ? a.min : 55;
-            let worst = Infinity, at = 0;
+            // atS = the FIRST frame the gap goes under min (when the assert
+            // actually fails), not the closest approach — the worst moment
+            // still reads out in the message
+            let worst = Infinity, at = 0, firstBad = null;
             for (let f = 0; f <= nF; f++) {
                 const A = frames[f].boats[a.a], B = frames[f].boats[a.b];
                 if (!A || !B) return { pass: false, why: 'boat missing from recording' };
                 const d = Math.hypot(A.x - B.x, A.y - B.y);
                 if (d < worst) { worst = d; at = f / 60; }
+                if (d < min && firstBad === null) firstBad = f / 60;
             }
             return worst >= min
                 ? { pass: true, why: `closest ${Math.round(worst)}u at ${at.toFixed(1)}s` }
-                : { pass: false, why: `${Math.round(worst)}u at ${at.toFixed(1)}s (< ${min}u)`, atS: at };
+                : { pass: false, why: `under ${min}u from ${firstBad.toFixed(1)}s (closest ${Math.round(worst)}u at ${at.toFixed(1)}s)`, atS: firstBad };
         }
         if (a.kind === 'tack') {
             const fr = F(a.t);
@@ -99,20 +103,24 @@
             if (!pr) return { pass: false, why: 'no proper-course recording to compare against' };
             const tolM = a.tol != null ? a.tol : 10;
             const tolU = tolM * 5;
-            let worst = 0, at = 0;
+            // atS = the FIRST frame she strays beyond tolerance (when the
+            // assert actually fails) — the max deviation, which typically
+            // grows to the end of the run, reads out in the message
+            let worst = 0, at = 0, firstBad = null;
             const n = Math.min(nF, pr.nF != null ? pr.nF : pr.frames.length - 1);
             for (let f = 0; f <= n; f++) {
                 const b = frames[f].boats[a.who], p = pr.frames[f].boats[a.who];
                 if (!b || !p) return { pass: false, why: 'boat missing from a recording' };
                 const d = Math.hypot(b.x - p.x, b.y - p.y);
                 if (d > worst) { worst = d; at = f / 60; }
+                if (d > tolU && firstBad === null) firstBad = f / 60;
             }
             const worstM = (worst / 5).toFixed(1);
             // tol 0 = EXACT match to the proper-course composite
             return worst <= tolU
                 ? { pass: true, why: tolM === 0 ? 'matched proper course exactly'
                     : `held proper course (max ${worstM} m off at ${at.toFixed(1)}s)` }
-                : { pass: false, why: `${worstM} m off proper course at ${at.toFixed(1)}s (> ${tolM} m)`, atS: at };
+                : { pass: false, why: `strayed past ${tolM} m at ${firstBad.toFixed(1)}s (max ${worstM} m at ${at.toFixed(1)}s)`, atS: firstBad };
         }
         if (a.kind === 'nocollide') {
             // EXACT collision test: the engine's own hull-polygon contact
