@@ -446,7 +446,7 @@
         <input id="pb-slider" type="range" min="0" max="600" value="0">
         <span id="pb-ticks" style="position:absolute;left:0;right:0;top:-11px;height:8px;pointer-events:none"></span>
       </span>
-      <span id="pb-time" style="font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#c4d2e6;min-width:84px;text-align:right">0.0 / 10.0s</span>
+      <span id="pb-time" style="font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#c4d2e6;min-width:96px;text-align:right">0.00 / 10.0s</span>
       </span>`;
     document.body.appendChild(bar);
     // SIMULATING…: the burst blocks the main thread, so this goes up and
@@ -3450,11 +3450,11 @@
             // name colour previews the opening helm: white = scripted, green = AI
             for (const lb of LAB.boats) lb._dispMode = lb.aiAtS !== 0 ? 'S' : 'AI';
             renderRights(pairRights(), null);
-            timeEl.textContent = 't = 0.0s';
+            timeEl.textContent = 't = 0.00s';
             // the always-on transport reads true while editing: rewound, armed
             pbSlider.value = 0;
             pbFill();
-            pbTime.textContent = `0.0 / ${LAB.durationS.toFixed(1)}s`;
+            pbTime.textContent = `0.00 / ${LAB.durationS.toFixed(1)}s`;
         } else if (LAB.rec) {
             if (LAB.playing) {
                 LAB.frame++;
@@ -3474,9 +3474,11 @@
             }
             pbSlider.value = LAB.frame;
             pbFill();
+            // two decimals: a single-frame step (1/60 s ≈ 0.017) must MOVE
+            // the readout — at 0.1s resolution arrow-stepping looked stuck
             const t = LAB.frame / 60;
-            pbTime.textContent = `${t.toFixed(1)} / ${LAB.durationS.toFixed(1)}s`;
-            timeEl.textContent = `t = ${t.toFixed(1)}s`;
+            pbTime.textContent = `${t.toFixed(2)} / ${LAB.durationS.toFixed(1)}s`;
+            timeEl.textContent = `t = ${t.toFixed(2)}s`;
             renderRights(fr.pairs, fr.boats);
         }
         // camera: ours, north-up
