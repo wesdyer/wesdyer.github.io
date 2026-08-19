@@ -518,10 +518,20 @@
         }
         const x0 = Math.min(...xs), x1 = Math.max(...xs);
         const y0 = Math.min(...ys), y1 = Math.max(...ys);
-        LAB.cam.x = (x0 + x1) / 2; LAB.cam.y = (y0 + y1) / 2;
-        const z = Math.min(ov.width / Math.max(200, (x1 - x0) * 1.15),
-                           ov.height / Math.max(200, (y1 - y0) * 1.15));
-        setZoom(Math.min(1.5, z));   // fit frames the scene, never magnifies past 150%
+        // fit into the USABLE viewport, not the raw one — the left bar (and
+        // a right panel, when up) occlude the stage, and a "fitted" boat
+        // under a panel is not in view (owner: Rule 10 opened with B hidden)
+        const insL = 310;
+        const insR = (right.style.display !== 'none' || ump.style.display !== 'none') ? 340 : 20;
+        const insT = 20, insB = 90;   // transport / zoom cluster strip
+        const uw = Math.max(200, ov.width - insL - insR);
+        const uh = Math.max(200, ov.height - insT - insB);
+        const z = Math.min(1.5, Math.min(uw / Math.max(200, (x1 - x0) * 1.15),
+                                         uh / Math.max(200, (y1 - y0) * 1.15)));
+        // place the content centre at the usable area's centre
+        LAB.cam.x = (x0 + x1) / 2 - ((insL + uw / 2) - ov.width / 2) / z;
+        LAB.cam.y = (y0 + y1) / 2 - ((insT + uh / 2) - ov.height / 2) / z;
+        setZoom(z);   // fit frames the scene, never magnifies past 150%
     }
     zbar.querySelector('#zm-in').onclick = () => setZoom(LAB.zoom * 1.25);
     zbar.querySelector('#zm-out').onclick = () => setZoom(LAB.zoom / 1.25);
@@ -2517,6 +2527,9 @@
         }
         select(null);
         invalidate();
+        // open ON the action: every load (Open, boot restore, discard) frames
+        // the scene — boats off-screen at 100% was the Rule 10 first look
+        zoomFit();
     }
     const nameIn = ui.querySelector('#lab-name');
     nameIn.addEventListener('input', () => saveDraft());
