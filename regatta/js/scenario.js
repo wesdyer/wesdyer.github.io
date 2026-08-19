@@ -1472,6 +1472,10 @@
     // click at any size. Enter switches to the first match.
     function openSeedDialog() {
         const MAXROWS = 400;
+        // SIMULATE mode = READ-ONLY (owner ruling): the set is what was
+        // simulated — switch what you watch, but no add/remove/clear (an
+        // edit would silently desync the recordings and the verdict pill)
+        const readOnly = LAB.uiMode === 'sim';
         let tier = 'all';
         const body = document.createElement('div');
         body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:340px';
@@ -1563,14 +1567,16 @@
                     a.textContent = 'WATCHING';
                     row.appendChild(a);
                 }
-                const x = document.createElement('span');
-                x.innerHTML = '&#10005;';
-                x.style.cssText = 'font-size:10px;color:#66748c;cursor:pointer;padding:0 2px';
-                x.title = 'remove this seed from the set';
-                x.onmouseenter = () => x.style.color = '#ff8a75';
-                x.onmouseleave = () => x.style.color = '#66748c';
-                x.onclick = (e) => { e.stopPropagation(); removeSeed(i); rebuild(); };
-                row.appendChild(x);
+                if (!readOnly) {
+                    const x = document.createElement('span');
+                    x.innerHTML = '&#10005;';
+                    x.style.cssText = 'font-size:10px;color:#66748c;cursor:pointer;padding:0 2px';
+                    x.title = 'remove this seed from the set';
+                    x.onmouseenter = () => x.style.color = '#ff8a75';
+                    x.onmouseleave = () => x.style.color = '#66748c';
+                    x.onclick = (e) => { e.stopPropagation(); removeSeed(i); rebuild(); };
+                    row.appendChild(x);
+                }
                 row.onclick = () => pick(i);
                 list.appendChild(row);
             });
@@ -1582,9 +1588,18 @@
         filterIn.addEventListener('keydown', (e) => { if (e.key === 'Enter' && firstMatch != null) pick(firstMatch); });
         // the set's TOOLS live here too (owner: one place): typed-or-rolled
         // add, ADD ×N randoms, and CLEAR with an in-button confirm (a nested
-        // confirm dialog would fight the single-modal system)
+        // confirm dialog would fight the single-modal system). Read-only
+        // (SIMULATE mode) shows none of them — just a hint.
+        if (readOnly) {
+            const ro = document.createElement('div');
+            ro.className = 'sl-hint';
+            ro.style.cssText = 'flex:none;padding:2px 2px 0';
+            ro.textContent = 'viewing only — EDIT mode to change the set';
+            body.appendChild(ro);
+        }
         const tools = document.createElement('div');
         tools.style.cssText = 'display:flex;gap:6px;flex:none';
+        if (readOnly) tools.style.display = 'none';
         tools.innerHTML = `
           <div class="sl-inp" style="flex:1"><input id="sd-add" type="text" inputmode="numeric" placeholder="type a seed, or just roll"></div>
           <button id="sd-roll" class="sl-tbtn" title="add it — blank rolls a random seed">
@@ -1593,6 +1608,7 @@
         body.appendChild(tools);
         const tools2 = document.createElement('div');
         tools2.style.cssText = 'display:flex;gap:6px;flex:none';
+        if (readOnly) tools2.style.display = 'none';
         tools2.innerHTML = `
           <div class="sl-inp" style="width:52px;flex:none"><input id="sd-n" type="text" inputmode="numeric" value="10" title="how many random seeds ADD rolls"></div>
           <button id="sd-addn" class="sl-btn" title="add N random seeds to the set">ADD &times;N</button>
