@@ -341,7 +341,7 @@
         </div>
       </div>
       <div id="det-sand" style="display:none">
-        <div class="sl-sect"><div class="sl-hint">solid sand &middot; drag a vertex to reshape &middot; &#8997;-drag scales &middot; boats ground on it</div></div>
+        <div class="sl-sect"><div class="sl-hint">solid sand &middot; drag a vertex to reshape &middot; &#8984;-drag rotates &middot; &#8997;-drag scales &middot; boats ground on it</div></div>
       </div>
       <div id="det-line" style="display:none">
         <div class="sl-sect"><div class="sl-hint">a line on the water &middot; drag the end handles &middot; &#8997;-drag stretches</div></div>
@@ -874,11 +874,18 @@
         invalidate();
         return ln;
     }
-    function resizeSand(s, R) {
-        // ⌥-drag scales the polygon about its centroid (shape preserved)
-        const k = Math.max(30, Math.min(800, R)) / (s.r || 1);
-        for (const v of s.isl.vertices) { v.x = s.x + (v.x - s.x) * k; v.y = s.y + (v.y - s.y) * k; }
-        recomputeSand(s);
+    // drag anchor for a sand body grab: everything relative to the GRAB
+    // POINT and the shape at mousedown, so translate doesn't snap the
+    // centroid to the cursor and rotate/scale are smooth from the first
+    // pixel (owner: "kind of works but needs improvement")
+    function sandGrab(s, wx, wy) {
+        return {
+            verts: s.isl.vertices.map(v => ({ x: v.x, y: v.y })),
+            cx: s.x, cy: s.y, r0: s.r,
+            gx: wx, gy: wy,
+            a0: Math.atan2(wy - s.y, wx - s.x),
+            d0: Math.max(20, Math.hypot(wx - s.x, wy - s.y)),
+        };
     }
     function closeSandDraft() {
         const draft = LAB.sandDraft;
@@ -3188,7 +3195,11 @@
             }
             return;   // no drag from this gesture — the target just moved to its setup pose
         }
-        if (hit) { select(hit); LAB.drag = { sel: hit }; }
+        if (hit) {
+            select(hit);
+            LAB.drag = { sel: hit };
+            if (hit.kind === 'sand') LAB.drag.grab = sandGrab(hit.ref, wx, wy);
+        }
         else { select(null); LAB.drag = { pan: true, sx: e.clientX, sy: e.clientY, cx: LAB.cam.x, cy: LAB.cam.y }; }
     });
     ov.addEventListener('mousemove', e => {
@@ -3201,6 +3212,34 @@
         }
         const [wx, wy] = s2w(e.clientX, e.clientY);
         const s = LAB.drag.sel;
+        // sand body drag, all three gestures relative to the GRAB anchor:
+        // plain = translate by cursor delta (no centroid snap), ⌘ = rotate
+        // about the centroid, ⌥ = scale about the centroid
+        if (s.kind === 'sand' && LAB.drag.grab) {
+            const g = LAB.drag.grab, vs = s.ref.isl.vertices;
+            if (e.metaKey) {
+                const da = Math.atan2(wy - g.cy, wx - g.cx) - g.a0;
+                const cos = Math.cos(da), sin = Math.sin(da);
+                for (let k = 0; k < vs.length; k++) {
+                    const ox = g.verts[k].x - g.cx, oy = g.verts[k].y - g.cy;
+                    vs[k].x = g.cx + ox * cos - oy * sin;
+                    vs[k].y = g.cy + ox * sin + oy * cos;
+                }
+            } else if (e.altKey) {
+                let k = Math.hypot(wx - g.cx, wy - g.cy) / g.d0;
+                k = Math.max(30 / g.r0, Math.min(1200 / g.r0, k));   // radius stays sane
+                for (let i = 0; i < vs.length; i++) {
+                    vs[i].x = g.cx + (g.verts[i].x - g.cx) * k;
+                    vs[i].y = g.cy + (g.verts[i].y - g.cy) * k;
+                }
+            } else {
+                const dx = wx - g.gx, dy = wy - g.gy;
+                for (let i = 0; i < vs.length; i++) { vs[i].x = g.verts[i].x + dx; vs[i].y = g.verts[i].y + dy; }
+            }
+            recomputeSand(s.ref);
+            invalidate();
+            return;
+        }
         if (e.metaKey && s.kind === 'boat') {
             // ⌘-drag: rotate — point the bow at the cursor
             s.ref.heading = Math.atan2(wx - s.ref.x, -(wy - s.ref.y));
@@ -3209,8 +3248,7 @@
             return;
         }
         if (e.altKey) {
-            // ⌥-drag: resize
-            if (s.kind === 'sand') { resizeSand(s.ref, Math.hypot(wx - s.ref.x, wy - s.ref.y)); invalidate(); return; }
+            // ⌥-drag: resize (sand handles its own scale above, grab-relative)
             if (s.kind === 'mark') {
                 s.ref.zone = Math.max(60, Math.min(400, Math.hypot(wx - s.ref.x, wy - s.ref.y)));
                 invalidate(); return;
