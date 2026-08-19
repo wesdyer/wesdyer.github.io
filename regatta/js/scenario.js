@@ -1555,30 +1555,24 @@
         return 'ok';
     }
     const SEED_COLORS = { fail: '#ff8a75', collision: '#ffa14f', penalty: '#f2c14e', ok: '#eef3fb', unrun: '#66748c' };
-    // OUTCOME clustering (owner: "show me the distinct behaviors"): seeds
-    // whose runs END the same way group together. The signature is
-    // behavioral, not positional — penalties (who/rule/when), each boat's
-    // final tack + goals done + penalty count, and whether an assertion
-    // failed — so metre-level trajectory jitter stays one cluster and a
-    // different STORY (a duck vs a foul) splits.
-    function outcomeSig(s) {
-        const rec = LAB.recs[s >>> 0];
-        if (!rec) return null;
-        const last = rec.frames[rec.nF].boats;
-        return JSON.stringify({
-            pens: rec.pens.map(p => [p.boat, p.rule || p.kind || '?', Math.round(p.t)]),
-            boats: last.map(b => [b.ta, b.gi || 0, b.penN || 0]),
-            fail: !!(LAB.seedFail && LAB.seedFail[s >>> 0]),
-        });
-    }
-    function outcomeSummary(sig, names) {
-        const o = JSON.parse(sig);
-        const bits = [];
-        bits.push(o.pens.length
-            ? o.pens.map(p => `${names[p[0]] || 'boat ' + p[0]} ${p[1]}@${p[2]}s`).join(', ')
-            : 'no penalties');
-        if (o.fail) bits.push('assert FAIL');
-        return bits.join(' · ');
+    // RESULT TAGS (owner: "filter by failing A1, or A1 & A2, or passing"):
+    // every seed carries a tag set — PASS (judged, no assert fails),
+    // A1..An (fails that assert row), COLLISION, PENALTY, UNRUN. The seeds
+    // dialog filters by any combination (AND).
+    function seedTags(s) {
+        s = s >>> 0;
+        const t = new Set();
+        const rec = LAB.recs[s];
+        if (!rec) { t.add('UNRUN'); return t; }
+        if (rec.pens.some(p => p.kind === 'contact')) t.add('COLLISION');
+        else if (rec.pens.length) t.add('PENALTY');
+        const per = LAB.assertPer && LAB.assertPer[s];
+        if (per) {
+            let anyFail = false;
+            per.forEach((r, k) => { if (r.status === 'fail') { t.add('A' + (k + 1)); anyFail = true; } });
+            if (!anyFail) t.add('PASS');
+        }
+        return t;
     }
     const SEED_TITLES = { fail: 'an assertion fails on this run', collision: 'boats collide on this run',
                           penalty: 'a penalty on this run (no collision)', ok: 'clean run', unrun: 'not run yet' };
@@ -1593,16 +1587,17 @@
     }
     // THE SEEDS DIALOG — replaces the dropdowns (owner: works at 100 or
     // 1000). Same scalable pattern as the Open box: rows built per filter
-    // pass, capped at 400 rendered, filter + count line — plus outcome-TIER
-    // chips (fail/collision/penalty/clean) so "show me the red ones" is one
-    // click at any size. Enter switches to the first match.
+    // pass, capped at 400 rendered, filter + count line — plus RESULT-TAG
+    // chips (PASS / A1..An / COLLISION / PENALTY / UNRUN) that AND together,
+    // so "failing A1 & A2" is two clicks at any size. Enter watches the
+    // first match.
     function openSeedDialog() {
         const MAXROWS = 400;
         // SIMULATE mode = READ-ONLY (owner ruling): the set is what was
         // simulated — switch what you watch, but no add/remove/clear (an
         // edit would silently desync the recordings and the verdict pill)
         const readOnly = LAB.uiMode === 'sim';
-        let tier = 'all';
+        const tagSel = new Set();   // active result-tag filters, ANDed
         const body = document.createElement('div');
         body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:340px';
         const filterWrap = document.createElement('div');
@@ -1626,27 +1621,44 @@
         let firstMatch = null;
         let dlg = null;
         const pick = (i) => { dlg.close(); setActiveSeed(i); };
-        const TIERS = [['all', 'ALL'], ['fail', 'FAIL'], ['collision', 'COLLISION'], ['penalty', 'PENALTY'], ['ok', 'CLEAN'], ['unrun', 'UNRUN']];
         const rebuild = () => {
-            // tier chips with live counts (zero tiers hidden, ALL always)
-            const counts = { all: LAB.seeds.length, fail: 0, collision: 0, penalty: 0, ok: 0, unrun: 0 };
-            for (const s of LAB.seeds) counts[seedStatus(s)]++;
+            // result-tag chips with live counts: ALL clears; the rest toggle
+            // and AND together ("failing A1 & A2" = both chips on). Zero-
+            // count tags hide, dead selections drop.
+            const tagsOf = new Map(LAB.seeds.map(s => [s >>> 0, seedTags(s)]));
+            const counts = new Map();
+            for (const t of tagsOf.values()) for (const k of t) counts.set(k, (counts.get(k) || 0) + 1);
+            const names = LAB.boats.map(lb => lb.bot.name);
+            const TAGS = ['PASS', ...LAB.asserts.map((a, k) => 'A' + (k + 1)), 'COLLISION', 'PENALTY', 'UNRUN'];
+            for (const k of [...tagSel]) if (!counts.get(k)) tagSel.delete(k);
             chips.innerHTML = '';
-            for (const [key, lbl] of TIERS) {
-                if (key !== 'all' && !counts[key]) { if (tier === key) tier = 'all'; continue; }
+            const mk = (lbl, on, title, click, color) => {
                 const c = document.createElement('span');
                 c.className = 'sl-schip';
                 c.style.cssText = 'cursor:pointer;font-variant-numeric:tabular-nums;'
-                    + `color:${key === 'all' ? '#8fa3bd' : SEED_COLORS[key]};`
-                    + (tier === key ? 'background:rgba(47,107,255,.28)' : 'background:rgba(255,255,255,.06)');
-                c.textContent = `${lbl} ${counts[key]}`;
-                c.onclick = () => { tier = key; rebuild(); };
+                    + `color:${color};`
+                    + (on ? 'background:rgba(47,107,255,.28)' : 'background:rgba(255,255,255,.06)');
+                c.textContent = lbl;
+                c.title = title;
+                c.onclick = click;
                 chips.appendChild(c);
+            };
+            mk('ALL ' + LAB.seeds.length, !tagSel.size, 'no filter', () => { tagSel.clear(); rebuild(); }, '#8fa3bd');
+            const TAG_COLORS = { PASS: '#7ed491', COLLISION: '#ffa14f', PENALTY: '#f2c14e', UNRUN: '#66748c' };
+            for (const k of TAGS) {
+                const n = counts.get(k) || 0;
+                if (!n) continue;
+                const title = k.startsWith('A') && LAB.asserts[+k.slice(1) - 1]
+                    ? 'failing ' + (window.ScenarioAsserts ? window.ScenarioAsserts.label(LAB.asserts[+k.slice(1) - 1], names) : k)
+                    : { PASS: 'every assertion holds', COLLISION: 'hull contact', PENALTY: 'penalized (no collision)', UNRUN: 'not simulated yet' }[k];
+                mk(`${k} ${n}`, tagSel.has(k), title,
+                    () => { tagSel.has(k) ? tagSel.delete(k) : tagSel.add(k); rebuild(); },
+                    TAG_COLORS[k] || '#ff8a75');
             }
-            // rows: tier + substring filter, numeric order, capped
+            // rows: tag filter (AND) + substring filter, numeric order, capped
             const q = filterIn.value.trim();
             const matches = LAB.seeds.map((s, i) => [s >>> 0, i])
-                .filter(([s]) => (tier === 'all' || seedStatus(s) === tier) && (!q || String(s).includes(q)))
+                .filter(([s]) => [...tagSel].every(k => tagsOf.get(s).has(k)) && (!q || String(s).includes(q)))
                 .sort((a, b) => a[0] - b[0]);
             firstMatch = matches.length ? matches[0][1] : null;
             list.innerHTML = '';
@@ -1673,29 +1685,7 @@
                 row.onclick = () => { dlg.close(); setActiveSeed(-1); };
                 list.appendChild(row);
             }
-            // group by OUTCOME: one header per distinct behavior, biggest
-            // first; unrun seeds gather at the bottom unclustered
-            const names = LAB.boats.map(lb => lb.bot.name);
-            const clusters = new Map();
-            for (const [s, i] of matches.slice(0, MAXROWS)) {
-                const sig = outcomeSig(s) || 'unrun';
-                if (!clusters.has(sig)) clusters.set(sig, []);
-                clusters.get(sig).push([s, i]);
-            }
-            const ordered = [...clusters.entries()].sort((a, b) =>
-                (a[0] === 'unrun') - (b[0] === 'unrun') || b[1].length - a[1].length);
-            const manyClusters = ordered.length > 1 || (ordered[0] && ordered[0][0] !== 'unrun');
-            let cn = 0;
-            const emitHeader = (sig, group) => {
-                if (!manyClusters) return;
-                const h = document.createElement('div');
-                h.className = 'sl-hint';
-                h.style.cssText = 'padding:8px 12px 3px;letter-spacing:.08em';
-                h.textContent = sig === 'unrun' ? `NOT RUN · ${group.length}`
-                    : `OUTCOME ${++cn} · ${group.length} seed${group.length === 1 ? '' : 's'} · ${outcomeSummary(sig, names).toUpperCase()}`;
-                list.appendChild(h);
-            };
-            const emitRow = ([s, i]) => {
+            matches.slice(0, MAXROWS).forEach(([s, i]) => {
                 const st = seedStatus(s);
                 const on = i === LAB.seedIx;
                 const row = document.createElement('div');
@@ -1709,6 +1699,15 @@
                 num.style.cssText = 'flex:1;color:' + SEED_COLORS[st];
                 num.title = SEED_TITLES[st];
                 row.appendChild(num);
+                // the seed's own result tags ride the row (A-fails red,
+                // PASS green) — the breakdown is visible without filtering
+                for (const k of [...tagsOf.get(s)].filter(k => k !== 'UNRUN')) {
+                    const tchip = document.createElement('span');
+                    tchip.textContent = k;
+                    tchip.style.cssText = 'flex:none;font:800 9px Archivo,system-ui,sans-serif;letter-spacing:.04em;'
+                        + `color:${{ PASS: '#7ed491', COLLISION: '#ffa14f', PENALTY: '#f2c14e' }[k] || '#ff8a75'}`;
+                    row.appendChild(tchip);
+                }
                 if (on) {
                     const a = document.createElement('span');
                     a.className = 'sl-schip sl-schip-blue';
@@ -1727,16 +1726,11 @@
                 }
                 row.onclick = () => pick(i);
                 list.appendChild(row);
-            };
-            for (const [sig, group] of ordered) {
-                emitHeader(sig, group);
-                group.forEach(emitRow);
-            }
-            const nOut = ordered.filter(([sig]) => sig !== 'unrun').length;
+            });
             countEl.textContent = !matches.length ? 'nothing matches'
                 : matches.length > MAXROWS ? `showing ${MAXROWS} of ${matches.length} \u00b7 refine the filter`
                 : `${matches.length} of ${LAB.seeds.length}`
-                  + (nOut ? ` \u00b7 ${nOut} distinct outcome${nOut === 1 ? '' : 's'}` : '')
+                  + (tagSel.size ? ` \u00b7 ${[...tagSel].join(' & ')}` : '')
                   + ' \u00b7 Enter watches the first';
         };
         filterIn.addEventListener('input', rebuild);
