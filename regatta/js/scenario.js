@@ -3671,27 +3671,25 @@
                 octx.fillText(String(k + 1), sx, sy);
             });
         }
-        // during PLAYBACK: every boat's goal pips stay visible (owner) — no
-        // route lines, just the numbered circles in the hull colour; goals
-        // already completed at the playhead dim out
+        // during PLAYBACK: each boat shows only its ACTIVE goal (owner) —
+        // the numbered circle in the hull colour for the goal it is sailing
+        // to at the playhead; done and not-yet goals stay hidden
         if (LAB.mode === 'play' && LAB.rec && LAB.frame > 0) {
             const fr = LAB.rec.frames[LAB.frame];
             LAB.boats.forEach((lb, bi) => {
                 if (!lb.goals || !lb.goals.length) return;
-                const col = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
                 const gi = (fr && fr.boats[bi] && fr.boats[bi].gi) || 0;
-                lb.goals.forEach((g, k) => {
-                    const [gx, gy] = goalPoint(g);
-                    const [sx, sy] = w2s(gx, gy);
-                    octx.globalAlpha = k < gi ? 0.3 : 1;   // done = dimmed
-                    octx.beginPath(); octx.arc(sx, sy, 11, 0, 7);
-                    octx.fillStyle = 'rgba(7,19,34,0.85)'; octx.fill();
-                    octx.strokeStyle = col; octx.lineWidth = 2; octx.stroke();
-                    octx.fillStyle = '#eef3fb'; octx.font = '800 11px Archivo,system-ui';
-                    octx.textAlign = 'center'; octx.textBaseline = 'middle';
-                    octx.fillText(String(k + 1), sx, sy);
-                });
-                octx.globalAlpha = 1;
+                const g = lb.goals[gi];
+                if (!g) return;   // all goals done
+                const col = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
+                const [gx, gy] = goalPoint(g);
+                const [sx, sy] = w2s(gx, gy);
+                octx.beginPath(); octx.arc(sx, sy, 11, 0, 7);
+                octx.fillStyle = 'rgba(7,19,34,0.85)'; octx.fill();
+                octx.strokeStyle = col; octx.lineWidth = 2; octx.stroke();
+                octx.fillStyle = '#eef3fb'; octx.font = '800 11px Archivo,system-ui';
+                octx.textAlign = 'center'; octx.textBaseline = 'middle';
+                octx.fillText(String(gi + 1), sx, sy);
             });
         }
         // dragging a waypoint: a live readout of the leg INTO it — the course
