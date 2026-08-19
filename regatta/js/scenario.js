@@ -83,10 +83,10 @@
     // lab's state without threading it through the page
     window.__LAB = LAB;
 
-    // ── UI: the editor convention — LAYERS on the left (the list is the
-    // mode switch; “＋” on a layer arms placement), DETAILS on the right
-    // (the selected object, or the Scenario layer itself). The play
-    // transport stays on the bottom when in use. ───────────────────────
+    // ── UI: the editor convention — the SCENE list on the left (boats,
+    // marks, lines, terrain; “＋” on a group arms placement), DETAILS on
+    // the right (the selected object). The play transport stays on the
+    // bottom when in use. ──────────────────────────────────────────────
     // one type system, one panel material — the design-doc glass language
     // (t11): Archivo, dark glass panels, blue primary, teal "scripted" accents,
     // amber for right-of-way, red only for penalties and deletion.
@@ -251,7 +251,7 @@
         </div>
       </div>
       <div style="padding:8px 8px 10px">
-        <div class="sl-sectlabel" style="padding:4px 8px 6px;margin:0">LAYERS</div>
+        <div class="sl-sectlabel" style="padding:4px 8px 6px;margin:0">SCENE</div>
         <div id="lab-layers"></div>
       </div>
       </div>`;
