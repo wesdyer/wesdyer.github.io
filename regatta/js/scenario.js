@@ -267,6 +267,7 @@
         <span class="sl-title">RIGHTS &amp; UMPIRE</span>
         <span id="lab-time" style="font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>
       </div>
+      <div id="lab-umpasserts" style="display:none;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08)"></div>
       <div id="lab-rights" style="padding:12px 16px 8px"></div>`;
     document.body.appendChild(ump);
 
@@ -1877,10 +1878,54 @@
             + '<span style="color:#66748c;font-size:9px">&#9662;</span>';
         sBtn.title = actTitle + ' \u2014 open the seed list';
     }
+    // the umpire panel's ASSERTS section: this trace's verdict per row —
+    // the assertion's own text, PASS/FAIL, and the failure time. A failed
+    // row is a jump to its moment.
+    function renderUmpAsserts() {
+        const box = document.querySelector('#lab-umpasserts');
+        if (!box) return;
+        const act = activeSeed();
+        const per = act !== 'proper' && LAB.assertPer && LAB.assertPer[act];
+        if (!per || !LAB.asserts.length) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        box.innerHTML = '';
+        const names = LAB.boats.map(lb => lb.bot.name);
+        const COL = { pass: '#8fd8d0', fail: '#ff8a75', gap: '#f2c14e', fixed: '#8fc2ff' };
+        per.forEach((r, k) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:baseline;gap:7px;padding:3px 0;'
+                + 'font:700 11px Archivo,system-ui,sans-serif;color:#c4d2e6';
+            const tag = document.createElement('span');
+            tag.textContent = 'A' + (k + 1);
+            tag.style.cssText = `flex:none;font-weight:900;color:${COL[r.status] || '#c4d2e6'}`;
+            row.appendChild(tag);
+            const lbl = document.createElement('span');
+            lbl.textContent = window.ScenarioAsserts ? window.ScenarioAsserts.label(LAB.asserts[k], names) : '';
+            lbl.style.cssText = 'flex:1;min-width:0';
+            row.appendChild(lbl);
+            const st = document.createElement('span');
+            st.style.cssText = `flex:none;font-weight:900;font-variant-numeric:tabular-nums;color:${COL[r.status] || '#c4d2e6'}`;
+            st.textContent = r.status === 'fail' && r.atS != null
+                ? `FAIL @ ${r.atS.toFixed(1)}s`
+                : { pass: 'PASS', fail: 'FAIL', gap: 'GAP', fixed: 'FIXD' }[r.status] || '';
+            row.appendChild(st);
+            row.title = r.why || '';
+            if (r.status === 'fail' && r.atS != null) {
+                const f = Math.min(LAB.rec ? LAB.rec.nF : 1e9, Math.round(r.atS * 60));
+                row.style.cursor = 'pointer';
+                row.title += ' — click to jump there';
+                row.onmouseenter = () => row.style.color = '#eef3fb';
+                row.onmouseleave = () => row.style.color = '#c4d2e6';
+                row.onclick = () => { pause(); setFrame(f); };
+            }
+            box.appendChild(row);
+        });
+    }
     // the slider's tick strip for the WATCHED trace: penalty ▼ marks, plus a
     // red A<n> wherever assertion row n FAILS on this seed (owner) — the
     // marker sits at the failure's own timestamp
     function refreshTicks() {
+        renderUmpAsserts();   // same triggers: seed switch + re-judge
         const act = activeSeed();
         const rec = LAB.recs[act];
         if (!rec) { pbTicks.innerHTML = ''; return; }
