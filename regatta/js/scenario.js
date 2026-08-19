@@ -1283,12 +1283,18 @@
         if (!complete || !window.ScenarioAsserts || !LAB.asserts.length) {
             LAB.assertResults = null;
             LAB.seedFail = {};
+            LAB.assertPer = null;
             renderAsserts();
             renderSeeds();
+            if (typeof refreshTicks === 'function') refreshTicks();
             aggChip.style.display = 'none';
             return;
         }
         const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s], { proper: LAB.recs.proper }));
+        // per-seed rows, kept: the transport's tick strip marks WHERE each
+        // assert failed on the watched trace
+        LAB.assertPer = {};
+        seeds.forEach((s, si) => { LAB.assertPer[s] = per[si]; });
         // which seeds does anything fail on — the transport dropdown reads red
         LAB.seedFail = {};
         seeds.forEach((s, si) => {
@@ -1310,6 +1316,7 @@
         aggChip.textContent = 'ASSERTS ' + okRows + '/' + rs.length + (seeds.length > 1 ? ' · ' + seeds.length + ' SEEDS' : '');
         aggChip.className = 'sl-schip ' + (okRows === rs.length ? 'sl-schip-teal' : 'sl-schip-red');
         aggChip.style.display = 'inline-block';
+        if (typeof refreshTicks === 'function') refreshTicks();
     }
     function boatSel(val, onPick, allowNobody) {
         const s = document.createElement('select');
@@ -1879,6 +1886,28 @@
             + '<span style="color:#66748c;font-size:9px">&#9662;</span>';
         sBtn.title = actTitle + ' \u2014 open the seed list';
     }
+    // the slider's tick strip for the WATCHED trace: penalty ▼ marks, plus a
+    // red A<n> wherever assertion row n FAILS on this seed (owner) — the
+    // marker sits at the failure's own timestamp
+    function refreshTicks() {
+        const act = activeSeed();
+        const rec = LAB.recs[act];
+        if (!rec) { pbTicks.innerHTML = ''; return; }
+        let html = rec.ticks.map(f =>
+            `<span style="position:absolute;left:${(100 * f / rec.nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px" title="penalty">&#9660;</span>`).join('');
+        const per = act !== 'proper' && LAB.assertPer && LAB.assertPer[act];
+        if (per) {
+            const names = LAB.boats.map(lb => lb.bot.name);
+            per.forEach((r, k) => {
+                if (r.status !== 'fail' || r.atS == null) return;
+                const label = window.ScenarioAsserts ? window.ScenarioAsserts.label(LAB.asserts[k], names) : '';
+                html += `<span style="position:absolute;left:${(100 * Math.min(rec.nF, Math.round(r.atS * 60)) / rec.nF).toFixed(1)}%;`
+                    + 'top:-10px;transform:translateX(-50%);color:#ff8a75;font:800 9px Archivo,system-ui,sans-serif;'
+                    + `letter-spacing:.02em;pointer-events:auto;cursor:default" title="FAIL ${label} — ${r.why || ''}">A${k + 1}</span>`;
+            });
+        }
+        pbTicks.innerHTML = html;
+    }
     // switching seeds swaps CACHED recordings — no resim; the playhead time
     // carries across so the same moment can be compared between seeds
     function setActiveSeed(i) {
@@ -1888,9 +1917,8 @@
             LAB.rec = rec;
             pbSlider.max = rec.nF;
             LAB.frame = Math.min(LAB.frame, rec.nF);
-            pbTicks.innerHTML = rec.ticks.map(f =>
-                `<span style="position:absolute;left:${(100 * f / rec.nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px" title="penalty">&#9660;</span>`).join('');
         }
+        refreshTicks();
         renderSeeds();
     }
     // ONE way in: the summary row (and the SIMULATE card's selector) open
