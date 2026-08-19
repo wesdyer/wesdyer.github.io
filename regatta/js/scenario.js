@@ -272,9 +272,12 @@
       <div class="sl-hint" style="padding:0 18px 12px">Scrub or step the transport &middot; SPACE plays and pauses</div>`;
     document.body.appendChild(ump);
 
+    // the object inspector lives on the RIGHT and only in EDIT mode; RIGHTS
+    // & UMPIRE owns the same spot in SIMULATE mode (owner: one bar on the
+    // left, at most one on the right)
     const right = document.createElement('div');
     right.className = 'sl-panel';
-    right.style.cssText = 'position:static;width:100%;max-height:none;flex:0 1 auto;min-height:0;display:none';
+    right.style.cssText = 'right:20px;top:20px;width:300px;max-height:calc(100vh - 120px);display:none';
     right.innerHTML = `
       <div class="sl-head">
         <span id="lab-seldot" style="width:12px;height:12px;border-radius:50%;flex:none;display:none"></span>
@@ -342,8 +345,9 @@
       <div id="lab-delrow" style="display:none;justify-content:flex-end;padding:12px 16px">
         <button id="lab-del" class="sl-btn-danger">DELETE</button>
       </div>`;
-    col.append(left, right);
+    col.append(left);
     document.body.appendChild(col);
+    document.body.appendChild(right);
     const ui = { querySelector: (s) => left.querySelector(s) || right.querySelector(s) || ump.querySelector(s) || document.querySelector(s),
                  querySelectorAll: (s) => [...left.querySelectorAll(s), ...right.querySelectorAll(s), ...ump.querySelectorAll(s)] };
     // the … menu portals to <body>: the panel's backdrop-filter makes it the
@@ -982,12 +986,11 @@
     }
     const detSections = { boat: '#det-boat', mark: '#det-mark', sand: '#det-sand', line: '#det-line' };
     function select(s) {
-        // no selection ('play' kind): the details panel hides — the umpire
-        // panel on the right is always on and covers the "nothing selected"
-        // reading. Selecting an object opens its inspector below the lab bar.
+        // no selection ('play' kind): the inspector hides. It only shows in
+        // EDIT mode — SIMULATE gives the right side to Rights & Umpire.
         if (!s) s = { kind: 'play' };
         LAB.sel = s;
-        right.style.display = s.kind === 'play' ? 'none' : 'block';
+        right.style.display = (s.kind === 'play' || LAB.uiMode === 'sim') ? 'none' : 'block';
         for (const k of Object.keys(detSections)) {
             right.querySelector(detSections[k]).style.display = k === s.kind ? 'block' : 'none';
         }
@@ -2228,6 +2231,10 @@
         // mockup) — the full authoring stack comes back with EDIT
         ui.querySelector('#lab-editbody').style.display = m === 'sim' ? 'none' : 'block';
         ui.querySelector('#lab-summary').style.display = m === 'sim' ? 'block' : 'none';
+        // the RIGHT side holds at most one bar: Rights & Umpire in SIMULATE,
+        // the object inspector (when something is selected) in EDIT
+        ump.style.display = m === 'sim' ? 'block' : 'none';
+        right.style.display = (m === 'edit' && LAB.sel && LAB.sel.kind !== 'play') ? 'block' : 'none';
         if (m === 'sim') {
             ui.querySelector('#lab-sum-name').textContent =
                 (ui.querySelector('#lab-name').value || '').trim() || 'Untitled scenario';
