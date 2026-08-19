@@ -108,8 +108,10 @@
                 if (d > worst) { worst = d; at = f / 60; }
             }
             const worstM = (worst / 5).toFixed(1);
+            // tol 0 = EXACT match to the proper-course composite
             return worst <= tolU
-                ? { pass: true, why: `held proper course (max ${worstM} m off at ${at.toFixed(1)}s)` }
+                ? { pass: true, why: tolM === 0 ? 'matched proper course exactly'
+                    : `held proper course (max ${worstM} m off at ${at.toFixed(1)}s)` }
                 : { pass: false, why: `${worstM} m off proper course at ${at.toFixed(1)}s (> ${tolM} m)`, atS: at };
         }
         if (a.kind === 'nocollide') {
@@ -150,7 +152,8 @@
         if (a.kind === 'clear') return `${nm(a.a)}·${nm(a.b)} clear ≥ ${a.min != null ? a.min : 55}u`;
         if (a.kind === 'tack') return `${a.t.toFixed(1)}s ${nm(a.who)} on ${a.tack}`;
         if (a.kind === 'goals') return `${nm(a.who)} completes goals`;
-        if (a.kind === 'proper') return `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 10}m`;
+        if (a.kind === 'proper') return a.tol === 0 ? `${nm(a.who)} matches proper course exactly`
+            : `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 10}m`;
         if (a.kind === 'nocollide') return 'no collisions';
         return a.kind;
     }

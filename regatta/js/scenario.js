@@ -83,10 +83,10 @@
     // lab's state without threading it through the page
     window.__LAB = LAB;
 
-    // ── UI: the editor convention — LAYERS on the left (the list is the
-    // mode switch; “＋” on a layer arms placement), DETAILS on the right
-    // (the selected object, or the Scenario layer itself). The play
-    // transport stays on the bottom when in use. ───────────────────────
+    // ── UI: the editor convention — the SCENE list on the left (boats,
+    // marks, lines, terrain; “＋” on a group arms placement), DETAILS on
+    // the right (the selected object). The play transport stays on the
+    // bottom when in use. ──────────────────────────────────────────────
     // one type system, one panel material — the design-doc glass language
     // (t11): Archivo, dark glass panels, blue primary, teal "scripted" accents,
     // amber for right-of-way, red only for penalties and deletion.
@@ -151,6 +151,12 @@
       .sl-schip-mute{color:#8fa3bd;background:rgba(255,255,255,.07)}
       .sl-schip-blue{color:#8fc2ff;background:rgba(47,107,255,.18)}
       .sl-msel{appearance:none;-webkit-appearance:none;background:rgba(255,255,255,.08);color:#eef3fb;border:none;border-radius:5px;font:800 10px Archivo,system-ui,sans-serif;letter-spacing:.04em;padding:3px 5px;cursor:pointer;text-align:center}
+      .sl-adlg .sl-step{font-size:13px;gap:8px;padding:10px 12px;margin-bottom:8px}
+      .sl-adlg .sl-stepn{width:20px;height:20px;font-size:11px}
+      .sl-adlg .sl-bare{font-size:14px}
+      .sl-adlg .sl-msel{font-size:12px;padding:5px 8px}
+      .sl-adlg .sl-hint{font-size:12px}
+      .sl-adlg .sl-schip{font-size:11px;padding:4px 9px}
       .sl-tbtn{appearance:none;width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.07);border:none;display:grid;place-items:center;font-size:12px;color:#eef3fb;cursor:pointer;padding:0}
       .sl-tbtn:hover{background:rgba(255,255,255,.15)}
       .sl-tbtn-pri{background:#2f6bff}
@@ -230,43 +236,22 @@
           </div>
         </div>
         <div style="margin-top:6px">
-          <div id="lab-seedhead" class="sl-fold" title="a scenario runs on EVERY seed in its set — click to expand">
-            <span class="sl-chev"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 2.2 L8.6 6 L4.2 9.8"/></svg></span>
+          <div id="lab-seedrow" class="sl-fold" title="the seed set — status, switch, add, remove — click to open">
             <span>Seeds</span>
             <span class="sl-count" id="lab-seedcount"></span>
-            <span id="lab-seeddots" style="display:inline-flex;gap:5px;font-size:10px;margin-left:auto"></span>
-          </div>
-          <div id="lab-seedbody" style="display:none;margin-top:4px">
-          <div id="lab-seedwrap" style="position:relative">
-            <button id="lab-seedbtn" class="sl-btn" style="width:100%;display:flex;align-items:center;gap:8px;padding:8px 10px;font-variant-numeric:tabular-nums;letter-spacing:.02em"></button>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <div class="sl-inp" style="flex:1"><input id="lab-seedadd" type="text" inputmode="numeric" placeholder="type a seed, or just roll"></div>
-            <button id="lab-seed-rnd" class="sl-tbtn" title="add it — blank rolls a random seed">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="14" height="14" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5" cy="5" r="1.4"/><circle cx="11" cy="5" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="5" cy="11" r="1.4"/><circle cx="11" cy="11" r="1.4"/></svg>
-            </button>
-          </div>
-          <div style="display:flex;gap:6px;margin-top:6px">
-            <div class="sl-inp" style="width:52px;flex:none"><input id="lab-seedn" type="text" inputmode="numeric" value="10" title="how many random seeds ADD rolls"></div>
-            <button id="lab-seedaddn" class="sl-btn" title="add N random seeds to the set">ADD &times;N</button>
-            <button id="lab-seedclear" class="sl-btn" style="flex:none;padding:9px 12px;color:#ff8a75" title="reset the set to the single default seed">CLEAR</button>
-          </div>
+            <span id="lab-seeddots" style="display:inline-flex;margin-left:auto"></span>
           </div>
         </div>
         <div>
-          <div id="lab-asserthead" class="sl-fold" title="expectations checked against every run — click to expand">
-            <span class="sl-chev"><svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.2 2.2 L8.6 6 L4.2 9.8"/></svg></span>
+          <div id="lab-assertrow" class="sl-fold" title="expectations judged against every run — click to open">
             <span>Assertions</span>
             <span class="sl-count" id="lab-assertcount"></span>
-            <span id="lab-assertadd" class="sl-link" style="margin-left:auto">+ ADD</span>
-          </div>
-          <div id="lab-assertbody" style="display:none;margin-top:4px">
-            <div id="lab-asserts"></div>
+            <span id="lab-assertpill" style="display:inline-flex;margin-left:auto"></span>
           </div>
         </div>
       </div>
       <div style="padding:8px 8px 10px">
-        <div class="sl-sectlabel" style="padding:4px 8px 6px;margin:0">LAYERS</div>
+        <div class="sl-sectlabel" style="padding:4px 8px 6px;margin:0">SCENE</div>
         <div id="lab-layers"></div>
       </div>
       </div>`;
@@ -287,14 +272,21 @@
       <div class="sl-hint" style="padding:0 18px 12px">Scrub or step the transport &middot; SPACE plays and pauses</div>`;
     document.body.appendChild(ump);
 
+    // the object inspector lives on the RIGHT and only in EDIT mode; RIGHTS
+    // & UMPIRE owns the same spot in SIMULATE mode (owner: one bar on the
+    // left, at most one on the right)
     const right = document.createElement('div');
     right.className = 'sl-panel';
-    right.style.cssText = 'position:static;width:100%;max-height:none;flex:0 1 auto;min-height:0;display:none';
+    right.style.cssText = 'right:20px;top:20px;width:300px;max-height:calc(100vh - 120px);display:none';
     right.innerHTML = `
       <div class="sl-head">
         <span id="lab-seldot" style="width:12px;height:12px;border-radius:50%;flex:none;display:none"></span>
         <span id="lab-selname" class="sl-title"></span>
         <span id="lab-kindchip" class="sl-chip"></span>
+      </div>
+      <div class="sl-sect">
+        <div class="sl-lab">Name</div>
+        <div class="sl-inp"><input id="lab-objname" type="text" title="blank = the default name"></div>
       </div>
       <div id="det-boat" style="display:none">
         <div class="sl-sect">
@@ -357,8 +349,9 @@
       <div id="lab-delrow" style="display:none;justify-content:flex-end;padding:12px 16px">
         <button id="lab-del" class="sl-btn-danger">DELETE</button>
       </div>`;
-    col.append(left, right);
+    col.append(left);
     document.body.appendChild(col);
+    document.body.appendChild(right);
     const ui = { querySelector: (s) => left.querySelector(s) || right.querySelector(s) || ump.querySelector(s) || document.querySelector(s),
                  querySelectorAll: (s) => [...left.querySelectorAll(s), ...right.querySelectorAll(s), ...ump.querySelectorAll(s)] };
     // the … menu portals to <body>: the panel's backdrop-filter makes it the
@@ -371,9 +364,9 @@
     // An armed “＋” means the next click on open water places that kind.
     const LAYERS = [
         ['boat', 'Boats', () => LAB.boats.map((lb) => ({ label: lb.bot.name, sel: { kind: 'boat', ref: lb } }))],
-        ['sand', 'Objects', () => LAB.sands.map((s, i) => ({ label: 'sand ' + (i + 1), sel: { kind: 'sand', ref: s } }))],
-        ['mark', 'Marks', () => LAB.marks.map((m, i) => ({ label: 'mark ' + (i + 1), sel: { kind: 'mark', ref: m } }))],
-        ['line', 'Lines', () => LAB.lines.map((l, i) => ({ label: 'line ' + (i + 1), sel: { kind: 'line', ref: l, part: 0 } }))],
+        ['sand', 'Objects', () => LAB.sands.map((s) => ({ label: sandName(s), sel: { kind: 'sand', ref: s } }))],
+        ['mark', 'Marks', () => LAB.marks.map((m) => ({ label: markName(m), sel: { kind: 'mark', ref: m } }))],
+        ['line', 'Lines', () => LAB.lines.map((l) => ({ label: lineName(l), sel: { kind: 'line', ref: l, part: 0 } }))],
     ];
     const layersDiv = left.querySelector('#lab-layers');
     function setArmed(kind) {
@@ -525,10 +518,20 @@
         }
         const x0 = Math.min(...xs), x1 = Math.max(...xs);
         const y0 = Math.min(...ys), y1 = Math.max(...ys);
-        LAB.cam.x = (x0 + x1) / 2; LAB.cam.y = (y0 + y1) / 2;
-        const z = Math.min(ov.width / Math.max(200, (x1 - x0) * 1.15),
-                           ov.height / Math.max(200, (y1 - y0) * 1.15));
-        setZoom(Math.min(1.5, z));   // fit frames the scene, never magnifies past 150%
+        // fit into the USABLE viewport, not the raw one — the left bar (and
+        // a right panel, when up) occlude the stage, and a "fitted" boat
+        // under a panel is not in view (owner: Rule 10 opened with B hidden)
+        const insL = 310;
+        const insR = (right.style.display !== 'none' || ump.style.display !== 'none') ? 340 : 20;
+        const insT = 20, insB = 90;   // transport / zoom cluster strip
+        const uw = Math.max(200, ov.width - insL - insR);
+        const uh = Math.max(200, ov.height - insT - insB);
+        const z = Math.min(1.5, Math.min(uw / Math.max(200, (x1 - x0) * 1.15),
+                                         uh / Math.max(200, (y1 - y0) * 1.15)));
+        // place the content centre at the usable area's centre
+        LAB.cam.x = (x0 + x1) / 2 - ((insL + uw / 2) - ov.width / 2) / z;
+        LAB.cam.y = (y0 + y1) / 2 - ((insT + uh / 2) - ov.height / 2) / z;
+        setZoom(z);   // fit frames the scene, never magnifies past 150%
     }
     zbar.querySelector('#zm-in').onclick = () => setZoom(LAB.zoom * 1.25);
     zbar.querySelector('#zm-out').onclick = () => setZoom(LAB.zoom / 1.25);
@@ -605,28 +608,11 @@
             if (o.isPlayer) { o.raceState.finished = false; }
             else { o.raceState.finished = true; o.fadeTimer = 0; LAB.pool.push(o); }
         }
-        // boats carry NO race places on this page — just the letter
-        window.drawBoatIndicator = function (ctx, boat) {
-            if (boat.isPlayer) return;
-            if (boat.opacity !== undefined && boat.opacity <= 0) return;
-            const lb = LAB.boats.find(l => l.bot === boat);
-            if (!lb) return;
-            ctx.save();
-            ctx.translate(boat.x, boat.y);
-            // counter-scale: the pill keeps its SCREEN size at any zoom
-            ctx.scale(1 / LAB.zoom, 1 / LAB.zoom);
-            ctx.translate(0, 36);
-            ctx.font = '800 13px Archivo,system-ui';
-            const w = ctx.measureText(boat.name).width + 16;
-            ctx.fillStyle = 'rgba(15,23,42,0.6)';
-            ctx.beginPath(); ctx.roundRect(-w / 2, 0, w, 20, 6); ctx.fill();
-            // WHITE name = scripted helm, GREEN name = the AI's — and a boat
-            // that hands off mid-scenario changes colour at that frame
-            ctx.fillStyle = lb._dispMode === 'S' ? '#ffffff' : '#7de28f';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(boat.name, 0, 10);
-            ctx.restore();
-        };
+        // boats carry NO race places on this page — and the name pills draw
+        // on the full-res OVERLAY, not here: zoomed in, the game canvas is a
+        // low-res backing store stretched up by CSS, so canvas text goes
+        // blurry exactly when the user leans in (owner bug report)
+        window.drawBoatIndicator = function () { };
         select(null);
         LAB.ready = true;
         // restore the working draft, if one survived a reload
@@ -745,12 +731,20 @@
         '#7a4a26',   // Brown
     ];
     function applyLabIdentity(lb, i) {
+        // default = the first unused letter (deleting A then adding must not
+        // mint a second B); the hull color rides the letter so A is always
+        // Blue, B always Red, … regardless of add/delete history
+        const used = new Set(LAB.boats.filter(b => b !== lb).map(b => b.bot._defLetter || b.bot.name));
+        let li = 0;
+        while (li < 25 && used.has(String.fromCharCode(65 + li))) li++;
+        lb._defName = String.fromCharCode(65 + li);
+        lb.bot._defLetter = lb._defName;
         const cfg = {
-            name: String.fromCharCode(65 + i),
-            hull: LAB_HULLS[i % LAB_HULLS.length],
+            name: lb._defName,
+            hull: LAB_HULLS[li % LAB_HULLS.length],
             sail: '#ffffff',
             cockpit: '#c9cdd2',
-            spinnaker: LAB_HULLS[i % LAB_HULLS.length],
+            spinnaker: LAB_HULLS[li % LAB_HULLS.length],
             spinPattern: 'solid',
             // no `stats` key: applyBoatIdentity falls back to STAT_DEFAULTS
             // (+ the flat difficulty bonus, identical for every lab boat)
@@ -892,9 +886,9 @@
     // remover that clearScene's sweep and the confirm itself go through
     function selDesc(s) {
         if (s.kind === 'boat') return 'boat ' + s.ref.bot.name;
-        if (s.kind === 'mark') return 'mark ' + (LAB.marks.indexOf(s.ref) + 1);
-        if (s.kind === 'sand') return 'object ' + (LAB.sands.indexOf(s.ref) + 1);
-        return 'line ' + (LAB.lines.indexOf(s.ref) + 1);
+        if (s.kind === 'mark') return markName(s.ref);
+        if (s.kind === 'sand') return sandName(s.ref);
+        return lineName(s.ref);
     }
     function deleteSel() {
         const s = LAB.sel;
@@ -917,8 +911,8 @@
                 if (Object.prototype.hasOwnProperty.call(c, 'getNavigationTarget')) delete c.getNavigationTarget;
             }
             LAB.pool.unshift(s.ref.bot);
-            // keep the alphabet contiguous: later boats take over the freed identities
-            LAB.boats.forEach((lb, k) => applyLabIdentity(lb, k));
+            // identities are STABLE on delete (custom names must survive);
+            // the freed letter is simply available to the next added boat
             // assertions address boats by index: drop rows that named the
             // deleted boat, slide the rest down (who === -1 "nobody" is safe:
             // this only runs for a found index, i >= 0)
@@ -985,6 +979,24 @@
     }
 
     const selName = ui.querySelector('#lab-selname');
+    const objNameIn = ui.querySelector('#lab-objname');
+    // renaming: boats change the RECORDING's name column (umpire, asserts),
+    // so a boat rename invalidates; mark/sand/line names are cosmetic and
+    // just ride the doc. Blank reverts to the default.
+    objNameIn.addEventListener('input', () => {
+        const s = LAB.sel;
+        if (!s || s.kind === 'play') return;
+        const v = objNameIn.value.trim();
+        if (s.kind === 'boat') {
+            s.ref.bot.name = v || s.ref._defName;
+            invalidate();
+        } else {
+            s.ref.labName = v || undefined;
+            saveDraft();
+        }
+        selName.textContent = (v || objNameIn.placeholder).toUpperCase();
+        renderLayers();
+    });
     const hdgIn = ui.querySelector('#lab-hdg'), spdIn = ui.querySelector('#lab-spd');
     const xIn = ui.querySelector('#lab-x'), yIn = ui.querySelector('#lab-y');
     // metres: the seatrials document states its 4000u beat as "800 m",
@@ -995,14 +1007,20 @@
         xIn.value = ((lb.x - S.x) / UPM).toFixed(1);
         yIn.value = ((lb.y - S.y) / UPM).toFixed(1);
     }
+    // display names: everything can carry a custom name (owner); the
+    // positional default stays the fallback and the input's placeholder.
+    // Stored as labName: lab marks are CLONES of an engine course mark and
+    // already carry its .name (e.g. 'Pin') — that field is not ours.
+    function markName(m) { return m.labName || 'Mark ' + (LAB.marks.indexOf(m) + 1); }
+    function sandName(s) { return s.labName || 'Sand ' + (LAB.sands.indexOf(s) + 1); }
+    function lineName(l) { return l.labName || 'Line ' + (LAB.lines.indexOf(l) + 1); }
     const detSections = { boat: '#det-boat', mark: '#det-mark', sand: '#det-sand', line: '#det-line' };
     function select(s) {
-        // no selection ('play' kind): the details panel hides — the umpire
-        // panel on the right is always on and covers the "nothing selected"
-        // reading. Selecting an object opens its inspector below the lab bar.
+        // no selection ('play' kind): the inspector hides. It only shows in
+        // EDIT mode — SIMULATE gives the right side to Rights & Umpire.
         if (!s) s = { kind: 'play' };
         LAB.sel = s;
-        right.style.display = s.kind === 'play' ? 'none' : 'block';
+        right.style.display = (s.kind === 'play' || LAB.uiMode === 'sim') ? 'none' : 'block';
         for (const k of Object.keys(detSections)) {
             right.querySelector(detSections[k]).style.display = k === s.kind ? 'block' : 'none';
         }
@@ -1018,10 +1036,22 @@
             header.title = s.ref.bot.name.toUpperCase(); header.chip = 'BOAT';
             header.dot = (s.ref.bot.colors && s.ref.bot.colors.hull) || '#8fd0ff';
         }
-        else if (s.kind === 'mark') { header.title = 'MARK ' + (LAB.marks.indexOf(s.ref) + 1); header.chip = 'MARK'; header.dot = KIND_DOT.mark; }
-        else if (s.kind === 'sand') { header.title = 'SAND ' + (LAB.sands.indexOf(s.ref) + 1); header.chip = 'OBJECT'; header.dot = KIND_DOT.sand; }
-        else if (s.kind === 'line') { header.title = 'LINE ' + (LAB.lines.indexOf(s.ref) + 1); header.chip = 'LINE'; header.dot = KIND_DOT.line; }
+        else if (s.kind === 'mark') { header.title = markName(s.ref).toUpperCase(); header.chip = 'MARK'; header.dot = KIND_DOT.mark; }
+        else if (s.kind === 'sand') { header.title = sandName(s.ref).toUpperCase(); header.chip = 'OBJECT'; header.dot = KIND_DOT.sand; }
+        else if (s.kind === 'line') { header.title = lineName(s.ref).toUpperCase(); header.chip = 'LINE'; header.dot = KIND_DOT.line; }
         selName.textContent = header.title;
+        // the shared NAME field: value = the custom name (blank when on the
+        // default), placeholder = what blank falls back to
+        if (s.kind !== 'play') {
+            const def = s.kind === 'boat' ? (s.ref._defName || s.ref.bot.name)
+                : s.kind === 'mark' ? 'Mark ' + (LAB.marks.indexOf(s.ref) + 1)
+                : s.kind === 'sand' ? 'Sand ' + (LAB.sands.indexOf(s.ref) + 1)
+                : 'Line ' + (LAB.lines.indexOf(s.ref) + 1);
+            objNameIn.placeholder = def;
+            objNameIn.value = s.kind === 'boat'
+                ? (s.ref.bot.name === s.ref._defName ? '' : s.ref.bot.name)
+                : (s.ref.labName || '');
+        }
         selDot.style.display = header.dot ? 'inline-block' : 'none';
         if (header.dot) { selDot.style.background = header.dot; selDot.style.border = '1px solid rgba(255,255,255,.3)'; }
         kindChip.style.display = header.chip ? 'inline-block' : 'none';
@@ -1126,8 +1156,8 @@
         return [(g.ref.x1 + g.ref.x2) / 2, (g.ref.y1 + g.ref.y2) / 2];
     }
     function goalLabel(g) {
-        if (g.type === 'mark') return 'Mark ' + (LAB.marks.indexOf(g.ref) + 1) + ' · ' + (g.ref.side === 'starboard' ? 'stbd' : 'port');
-        if (g.type === 'gate') return 'Line ' + (LAB.lines.indexOf(g.ref) + 1) + ' · through';
+        if (g.type === 'mark') return markName(g.ref) + ' · ' + (g.ref.side === 'starboard' ? 'stbd' : 'port');
+        if (g.type === 'gate') return lineName(g.ref) + ' · through';
         const S = LAB.stage || { x: 0, y: 0 };
         return 'waypoint ' + Math.round(g.x - S.x) + ', ' + Math.round(g.y - S.y);
     }
@@ -1180,7 +1210,7 @@
     // doc; ScenarioAsserts (shared with eval/run_scenario.js) judges them
     // against the recording after every run. Editing an assertion never
     // invalidates the recording — expectations don't change the sailing.
-    const assertsDiv = ui.querySelector('#lab-asserts');
+    let assertsDiv = null;   // the assertions dialog's list while it is open
     const aggChip = ui.querySelector('#lab-agg');
     function boatNames() { return LAB.boats.map(lb => lb.bot.name); }
     function assertsChanged() {
@@ -1238,7 +1268,8 @@
     function bareIn(val, w, title, onSet) {
         const i = document.createElement('input');
         i.type = 'text'; i.inputMode = 'decimal'; i.className = 'sl-bare';
-        i.style.width = w + 'px'; i.title = title; i.value = val;
+        // rows render only in the roomier dialog — widths scale with it
+        i.style.width = Math.round(w * 1.5) + 'px'; i.title = title; i.value = val;
         i.addEventListener('change', () => { onSet(i.value.trim()); assertsChanged(); });
         return i;
     }
@@ -1246,6 +1277,10 @@
     function renderAsserts() {
         const cnt = ui.querySelector('#lab-assertcount');
         if (cnt) cnt.textContent = LAB.asserts.length || '';
+        ui.querySelector('#lab-assertpill').innerHTML = assertSummaryHTML();
+        // the rows themselves live in the assertions dialog (owner: one
+        // place) — nothing more to draw unless it is open
+        if (!assertsDiv || !assertsDiv.isConnected) return;
         assertsDiv.innerHTML = '';
         LAB.asserts.forEach((a, k) => {
             const row = document.createElement('div');
@@ -1287,7 +1322,8 @@
             } else if (a.kind === 'proper') {
                 row.appendChild(boatSel(a.who, v => a.who = v));
                 row.appendChild(hintSpan('holds proper \u00b1'));
-                row.appendChild(bareIn(a.tol != null ? a.tol : 10, 26, 'max deviation from her proper course (m)', v => a.tol = Math.max(0, parseFloat(v) || 10)));
+                row.appendChild(bareIn(a.tol != null ? a.tol : 10, 26, 'max deviation from her proper course (m) — 0 = exact match',
+                    v => { const p = parseFloat(v); a.tol = Number.isFinite(p) && p >= 0 ? p : 10; }));
                 row.appendChild(hintSpan('m'));
             } else if (a.kind === 'nocollide') {
                 row.appendChild(hintSpan('no collisions \u2014 hulls never touch'));
@@ -1308,7 +1344,7 @@
                 if (res.single.atS != null) {
                     chip.style.cursor = 'pointer';
                     chip.title += ' · click to scrub there';
-                    chip.onclick = () => { setUIMode('sim'); pause(); setFrame(Math.round(res.single.atS * 60)); };
+                    chip.onclick = () => { if (LAB.modal) LAB.modal.close(); setUIMode('sim'); pause(); setFrame(Math.round(res.single.atS * 60)); };
                 }
             } else if (res) {
                 chip.className = 'sl-schip ' + (res.ok === res.n ? 'sl-schip-teal' : 'sl-schip-red');
@@ -1318,6 +1354,7 @@
                 if (res.fail) {
                     chip.style.cursor = 'pointer';
                     chip.onclick = () => {
+                        if (LAB.modal) LAB.modal.close();
                         setUIMode('sim');
                         setActiveSeed(res.fail.ix);
                         if (res.fail.atS != null) { pause(); LAB.mode = 'play'; setFrame(Math.round(res.fail.atS * 60)); }
@@ -1353,34 +1390,43 @@
             assertsDiv.appendChild(p);
         }
     }
-    ui.querySelector('#lab-assertadd').onclick = (e) => {
-        e.stopPropagation();   // it lives in the fold header — don't toggle
-        if (!LAB.boats.length) return;
-        // adding wants to SHOW the new row: expand the section first
-        const aBody = ui.querySelector('#lab-assertbody');
-        if (aBody.style.display === 'none') {
-            aBody.style.display = 'block';
-            ui.querySelector('#lab-asserthead').classList.add('open');
-        }
+    // THE ASSERTIONS DIALOG (owner: one place, roomier type): the rows with
+    // their verdict chips, plus adding — the + ADD kind picker folds out
+    // INSIDE the dialog because the modal system is single-slot
+    function openAssertDialog() {
         const body = document.createElement('div');
-        body.style.cssText = 'display:flex;flex-direction:column;gap:6px';
-        const KINDS = [
-            ['penalty', 'PENALTY', 'a boat is (or nobody is) penalized, optionally under a rule'],
-            ['row', 'RIGHTS', 'at a time, one boat holds right of way over another'],
-            ['clear', 'NEVER TOUCH', 'two boats stay at least a distance apart, the whole run'],
-            ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
-            ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
-            ['proper', 'HOLDS PROPER COURSE', 'a boat never strays from her proper-course line beyond a tolerance'],
+        body.className = 'sl-adlg';
+        body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:520px';
+        const list = document.createElement('div');
+        list.style.cssText = 'overflow-y:auto;max-height:52vh;min-height:40px';
+        body.appendChild(list);
+        const KINDS = [   // owner's order
             ['nocollide', 'NO COLLISION', "the hulls never actually touch \u2014 the engine's own contact test, not a distance"],
+            ['penalty', 'PENALTY', 'a boat is (or nobody is) penalized, optionally under a rule'],
+            ['proper', 'HOLDS PROPER COURSE', 'a boat never strays from her proper-course line beyond a tolerance \u2014 0 m = exact match'],
+            ['row', 'RIGHTS', 'at a time, one boat holds right of way over another'],
+            ['clear', 'NEVER CLOSE', 'two boats never get closer than a distance, the whole run'],
+            ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
+            ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
         ];
-        let dlg;
+        const addBox = document.createElement('div');
+        addBox.style.cssText = 'display:none;flex-direction:column;gap:6px';
+        const addBtn = document.createElement('button');
+        addBtn.className = 'sl-btn';
+        addBtn.style.cssText = 'flex:none;padding:10px 0';
+        addBtn.textContent = '+ ADD ASSERTION';
+        addBtn.onclick = () => {
+            if (!LAB.boats.length) return;
+            const open = addBox.style.display === 'none';
+            addBox.style.display = open ? 'flex' : 'none';
+            addBtn.textContent = open ? 'CANCEL' : '+ ADD ASSERTION';
+        };
         for (const [kind, lbl, desc] of KINDS) {
             const b = document.createElement('button');
             b.className = 'sl-btn';
-            b.style.cssText = 'flex:none;padding:9px 12px;text-align:left';
+            b.style.cssText = 'flex:none;padding:10px 12px;text-align:left';
             b.innerHTML = `${lbl} <span class="sl-hint" style="letter-spacing:0;font-weight:700"> — ${desc}</span>`;
             b.onclick = () => {
-                dlg.close();
                 const second = LAB.boats.length > 1 ? 1 : 0;
                 const def = {
                     penalty: { kind: 'penalty', who: 0 },
@@ -1392,12 +1438,20 @@
                     nocollide: { kind: 'nocollide' },
                 }[kind];
                 LAB.asserts.push(def);
-                assertsChanged();
+                addBox.style.display = 'none';
+                addBtn.textContent = '+ ADD ASSERTION';
+                assertsChanged();   // re-renders the rows in place
             };
-            body.appendChild(b);
+            addBox.appendChild(b);
         }
-        dlg = dialog('Add assertion', body, [{ label: 'Cancel' }]);
-    };
+        body.appendChild(addBtn);
+        body.appendChild(addBox);
+        assertsDiv = list;
+        // attach FIRST — renderAsserts skips containers not in the DOM
+        dialog('Assertions', body, [{ label: 'Close' }], { width: 600 });
+        renderAsserts();
+    }
+    ui.querySelector('#lab-assertrow').onclick = () => openAssertDialog();
     aiAtIn.addEventListener('input', () => {
         if (LAB.sel && LAB.sel.kind === 'boat') {
             const v = aiAtIn.value.trim();
@@ -1424,10 +1478,9 @@
     ui.querySelector('#lab-del').onclick = deleteSel;
     ui.querySelector('#lab-wind').addEventListener('input', e => { LAB.windKt = Math.max(2, parseFloat(e.target.value) || 12); invalidate(); });
     ui.querySelector('#lab-dur').addEventListener('input', e => { LAB.durationS = Math.max(2, Math.min(120, parseFloat(e.target.value) || 10)); invalidate(); });
-    // ── the SEED SET: pills in the panel (manage + switch), a dropdown on
-    // the transport (switch mid-playback), one add control (typed seed, or
-    // the dice roll one when blank). Deleting keeps at least one. ────────
-    const seedAddIn = ui.querySelector('#lab-seedadd');
+    // ── the SEED SET: one summary row in the panel (count + verdict pill);
+    // EVERYTHING else — status list, switching, add/roll, ADD ×N, CLEAR —
+    // lives in the seeds dialog (owner: one place). ──────────────────────
     // seedIx -1 = the PROPER COURSE pseudo seed (always present)
     function activeSeed() {
         if (LAB.seedIx < 0) return 'proper';
@@ -1446,6 +1499,31 @@
         return 'ok';
     }
     const SEED_COLORS = { fail: '#ff8a75', collision: '#ffa14f', penalty: '#f2c14e', ok: '#eef3fb', unrun: '#66748c' };
+    // OUTCOME clustering (owner: "show me the distinct behaviors"): seeds
+    // whose runs END the same way group together. The signature is
+    // behavioral, not positional — penalties (who/rule/when), each boat's
+    // final tack + goals done + penalty count, and whether an assertion
+    // failed — so metre-level trajectory jitter stays one cluster and a
+    // different STORY (a duck vs a foul) splits.
+    function outcomeSig(s) {
+        const rec = LAB.recs[s >>> 0];
+        if (!rec) return null;
+        const last = rec.frames[rec.nF].boats;
+        return JSON.stringify({
+            pens: rec.pens.map(p => [p.boat, p.rule || p.kind || '?', Math.round(p.t)]),
+            boats: last.map(b => [b.ta, b.gi || 0, b.penN || 0]),
+            fail: !!(LAB.seedFail && LAB.seedFail[s >>> 0]),
+        });
+    }
+    function outcomeSummary(sig, names) {
+        const o = JSON.parse(sig);
+        const bits = [];
+        bits.push(o.pens.length
+            ? o.pens.map(p => `${names[p[0]] || 'boat ' + p[0]} ${p[1]}@${p[2]}s`).join(', ')
+            : 'no penalties');
+        if (o.fail) bits.push('assert FAIL');
+        return bits.join(' · ');
+    }
     const SEED_TITLES = { fail: 'an assertion fails on this run', collision: 'boats collide on this run',
                           penalty: 'a penalty on this run (no collision)', ok: 'clean run', unrun: 'not run yet' };
     function removeSeed(i) {
@@ -1464,6 +1542,10 @@
     // click at any size. Enter switches to the first match.
     function openSeedDialog() {
         const MAXROWS = 400;
+        // SIMULATE mode = READ-ONLY (owner ruling): the set is what was
+        // simulated — switch what you watch, but no add/remove/clear (an
+        // edit would silently desync the recordings and the verdict pill)
+        const readOnly = LAB.uiMode === 'sim';
         let tier = 'all';
         const body = document.createElement('div');
         body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:340px';
@@ -1535,7 +1617,29 @@
                 row.onclick = () => { dlg.close(); setActiveSeed(-1); };
                 list.appendChild(row);
             }
-            matches.slice(0, MAXROWS).forEach(([s, i]) => {
+            // group by OUTCOME: one header per distinct behavior, biggest
+            // first; unrun seeds gather at the bottom unclustered
+            const names = LAB.boats.map(lb => lb.bot.name);
+            const clusters = new Map();
+            for (const [s, i] of matches.slice(0, MAXROWS)) {
+                const sig = outcomeSig(s) || 'unrun';
+                if (!clusters.has(sig)) clusters.set(sig, []);
+                clusters.get(sig).push([s, i]);
+            }
+            const ordered = [...clusters.entries()].sort((a, b) =>
+                (a[0] === 'unrun') - (b[0] === 'unrun') || b[1].length - a[1].length);
+            const manyClusters = ordered.length > 1 || (ordered[0] && ordered[0][0] !== 'unrun');
+            let cn = 0;
+            const emitHeader = (sig, group) => {
+                if (!manyClusters) return;
+                const h = document.createElement('div');
+                h.className = 'sl-hint';
+                h.style.cssText = 'padding:8px 12px 3px;letter-spacing:.08em';
+                h.textContent = sig === 'unrun' ? `NOT RUN · ${group.length}`
+                    : `OUTCOME ${++cn} · ${group.length} seed${group.length === 1 ? '' : 's'} · ${outcomeSummary(sig, names).toUpperCase()}`;
+                list.appendChild(h);
+            };
+            const emitRow = ([s, i]) => {
                 const st = seedStatus(s);
                 const on = i === LAB.seedIx;
                 const row = document.createElement('div');
@@ -1555,46 +1659,143 @@
                     a.textContent = 'WATCHING';
                     row.appendChild(a);
                 }
-                const x = document.createElement('span');
-                x.innerHTML = '&#10005;';
-                x.style.cssText = 'font-size:10px;color:#66748c;cursor:pointer;padding:0 2px';
-                x.title = 'remove this seed from the set';
-                x.onmouseenter = () => x.style.color = '#ff8a75';
-                x.onmouseleave = () => x.style.color = '#66748c';
-                x.onclick = (e) => { e.stopPropagation(); removeSeed(i); rebuild(); };
-                row.appendChild(x);
+                if (!readOnly) {
+                    const x = document.createElement('span');
+                    x.innerHTML = '&#10005;';
+                    x.style.cssText = 'font-size:10px;color:#66748c;cursor:pointer;padding:0 2px';
+                    x.title = 'remove this seed from the set';
+                    x.onmouseenter = () => x.style.color = '#ff8a75';
+                    x.onmouseleave = () => x.style.color = '#66748c';
+                    x.onclick = (e) => { e.stopPropagation(); removeSeed(i); rebuild(); };
+                    row.appendChild(x);
+                }
                 row.onclick = () => pick(i);
                 list.appendChild(row);
-            });
+            };
+            for (const [sig, group] of ordered) {
+                emitHeader(sig, group);
+                group.forEach(emitRow);
+            }
+            const nOut = ordered.filter(([sig]) => sig !== 'unrun').length;
             countEl.textContent = !matches.length ? 'nothing matches'
                 : matches.length > MAXROWS ? `showing ${MAXROWS} of ${matches.length} \u00b7 refine the filter`
-                : `${matches.length} of ${LAB.seeds.length} \u00b7 Enter watches the first`;
+                : `${matches.length} of ${LAB.seeds.length}`
+                  + (nOut ? ` \u00b7 ${nOut} distinct outcome${nOut === 1 ? '' : 's'}` : '')
+                  + ' \u00b7 Enter watches the first';
         };
         filterIn.addEventListener('input', rebuild);
         filterIn.addEventListener('keydown', (e) => { if (e.key === 'Enter' && firstMatch != null) pick(firstMatch); });
+        // the set's TOOLS live here too (owner: one place): typed-or-rolled
+        // add, ADD ×N randoms, and CLEAR with an in-button confirm (a nested
+        // confirm dialog would fight the single-modal system). Read-only
+        // (SIMULATE mode) shows none of them — just a hint.
+        if (readOnly) {
+            const ro = document.createElement('div');
+            ro.className = 'sl-hint';
+            ro.style.cssText = 'flex:none;padding:2px 2px 0';
+            ro.textContent = 'viewing only — EDIT mode to change the set';
+            body.appendChild(ro);
+        }
+        const tools = document.createElement('div');
+        tools.style.cssText = 'display:flex;gap:6px;flex:none';
+        if (readOnly) tools.style.display = 'none';
+        tools.innerHTML = `
+          <div class="sl-inp" style="flex:1"><input id="sd-add" type="text" inputmode="numeric" placeholder="type a seed, or just roll"></div>
+          <button id="sd-roll" class="sl-tbtn" title="add it — blank rolls a random seed">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><rect x="1" y="1" width="14" height="14" rx="3.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="5" cy="5" r="1.4"/><circle cx="11" cy="5" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="5" cy="11" r="1.4"/><circle cx="11" cy="11" r="1.4"/></svg>
+          </button>`;
+        body.appendChild(tools);
+        const tools2 = document.createElement('div');
+        tools2.style.cssText = 'display:flex;gap:6px;flex:none';
+        if (readOnly) tools2.style.display = 'none';
+        tools2.innerHTML = `
+          <div class="sl-inp" style="width:52px;flex:none"><input id="sd-n" type="text" inputmode="numeric" value="10" title="how many random seeds ADD rolls"></div>
+          <button id="sd-addn" class="sl-btn" title="add N random seeds to the set">ADD &times;N</button>
+          <button id="sd-clear" class="sl-btn" style="flex:none;padding:9px 12px;color:#ff8a75" title="reset the set to the single default seed">CLEAR</button>`;
+        body.appendChild(tools2);
+        const addIn = tools.querySelector('#sd-add');
+        tools.querySelector('#sd-roll').onclick = () => {
+            const typed = parseInt(addIn.value.trim(), 10);
+            const s = (Number.isFinite(typed) ? typed : rollSeed()) >>> 0;
+            addIn.value = '';
+            if (LAB.seeds.some(x => (x >>> 0) === s)) return;   // a set, not a list
+            LAB.seeds.push(s);
+            LAB.seedIx = LAB.seeds.length - 1;
+            seedsChanged();
+            rebuild();
+        };
+        addIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') tools.querySelector('#sd-roll').onclick(); });
+        tools2.querySelector('#sd-addn').onclick = () => {
+            const nIn = tools2.querySelector('#sd-n');
+            const n = Math.max(1, Math.min(200, parseInt(nIn.value, 10) || 10));
+            nIn.value = n;
+            const have = new Set(LAB.seeds.map(x => x >>> 0));
+            for (let k = 0; k < n; k++) {
+                let s = rollSeed();
+                while (have.has(s)) s = rollSeed();
+                have.add(s);
+                LAB.seeds.push(s);
+            }
+            seedsChanged();
+            rebuild();
+        };
+        const clearBtn = tools2.querySelector('#sd-clear');
+        let clearArmT = null;
+        const disarmClear = () => {
+            clearTimeout(clearArmT);
+            delete clearBtn.dataset.armed;
+            clearBtn.classList.remove('sl-btn-red');
+            clearBtn.textContent = 'CLEAR';
+        };
+        clearBtn.onclick = () => {
+            if (LAB.seeds.length <= 1) return;
+            if (clearBtn.dataset.armed) {
+                LAB.seeds = [0x9e3779b9]; LAB.seedIx = 0; LAB.recs = {};
+                seedsChanged();
+                disarmClear();
+                rebuild();
+            } else {
+                clearBtn.dataset.armed = '1';
+                clearBtn.classList.add('sl-btn-red');
+                clearBtn.textContent = 'SURE?';
+                clearArmT = setTimeout(disarmClear, 2500);
+            }
+        };
         rebuild();
         dlg = dialog('Seeds', body, [{ label: 'Close' }]);
         setTimeout(() => filterIn.focus(), 50);
     }
-    // the seed-set verdict PILL (owner mockup): "8/10 PASS" — green when
-    // every seed passes, red when any fails, muted "x/N RUN" while some are
-    // unsimulated. The per-tier breakdown lives in the tooltip.
+    // the verdict PILL (owner mockup): "8/10 PASS" — green when everything
+    // passes, red when anything fails, muted while unrun
+    const verdictPill = (c, txt, title) =>
+        `<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;`
+        + `border:1.5px solid ${c};color:${c};background:rgba(0,0,0,.28);`
+        + `font-weight:800;font-size:10px;letter-spacing:.06em;font-variant-numeric:tabular-nums" title="${title}">${txt}</span>`;
+    // seeds: per-tier breakdown lives in the tooltip
     function seedSummaryHTML() {
         const counts = { fail: 0, collision: 0, penalty: 0, ok: 0, unrun: 0 };
         for (const s of LAB.seeds) counts[seedStatus(s)]++;
         const n = LAB.seeds.length;
-        const pill = (c, txt, title) =>
-            `<span style="display:inline-flex;align-items:center;padding:2px 9px;border-radius:999px;`
-            + `border:1.5px solid ${c};color:${c};background:rgba(0,0,0,.28);`
-            + `font-weight:800;font-size:10px;letter-spacing:.06em;font-variant-numeric:tabular-nums" title="${title}">${txt}</span>`;
-        if (counts.unrun) return pill('#66748c', `${n - counts.unrun}/${n} RUN`,
+        if (counts.unrun) return verdictPill('#66748c', `${n - counts.unrun}/${n} RUN`,
             `${counts.unrun} seed(s) not simulated yet`);
         const pass = n - counts.fail;
         const detail = [`${pass} pass`, counts.fail && `${counts.fail} fail`,
             counts.collision && `${counts.collision} with a collision`,
             counts.penalty && `${counts.penalty} with a penalty (no collision)`]
             .filter(Boolean).join(' · ');
-        return pill(pass === n ? '#7ed491' : '#ff8a75', `${pass}/${n} PASS`, detail);
+        return verdictPill(pass === n ? '#7ed491' : '#ff8a75', `${pass}/${n} PASS`, detail);
+    }
+    // assertions: a row counts as passing only when it holds on EVERY seed
+    function assertSummaryHTML() {
+        const n = LAB.asserts.length;
+        if (!n) return '';
+        const rs = LAB.assertResults;
+        if (!rs) return verdictPill('#66748c', `–/${n} PASS`,
+            'run the scenario to judge (every seed in the set)');
+        const ok = rs.filter(r => r.ok === r.n).length;
+        return verdictPill(ok === n ? '#7ed491' : '#ff8a75', `${ok}/${n} PASS`,
+            ok === n ? 'every assertion holds on every seed'
+                     : `${n - ok} assertion(s) failing somewhere in the seed set`);
     }
     // the transport appears only in SIMULATE mode once every seed (and the
     // proper course) has a recording (owner ruling) — while simulating, and
@@ -1613,11 +1814,6 @@
         const actLabel = proper ? '<span style="font-style:italic">PROPER COURSE</span>' : String(act);
         const actColor = proper ? '#8fd8d0' : SEED_COLORS[seedStatus(act)];
         const actTitle = proper ? 'each boat alone \u2014 no other boats, no fouls (RRS proper course)' : SEED_TITLES[seedStatus(act)];
-        const pBtn = ui.querySelector('#lab-seedbtn');
-        pBtn.innerHTML = `<span style="color:${actColor}">${actLabel}</span>`
-            + '<span style="color:#66748c;font-size:9px">&#9662;</span>'
-            + `<span style="margin-left:auto;display:inline-flex">${seedSummaryHTML()}</span>`;
-        pBtn.title = actTitle + ' \u2014 open the seed list';
         // the SIMULATE summary card: verdict pill + the seed selector (the
         // play bar carries no seed control \u2014 this is its home)
         ui.querySelector('#lab-sum-pass').innerHTML = seedSummaryHTML();
@@ -1640,21 +1836,10 @@
         }
         renderSeeds();
     }
-    ui.querySelector('#lab-seedbtn').onclick = () => openSeedDialog();
+    // ONE way in: the summary row (and the SIMULATE card's selector) open
+    // the seeds dialog, which holds the list AND the tools
+    ui.querySelector('#lab-seedrow').onclick = () => openSeedDialog();
     ui.querySelector('#lab-sum-seed').onclick = () => openSeedDialog();
-    // the seed + assertion sections fold away (owner ruling): collapsed =
-    // a real disclosure row (hover, rotating chevron) with just the count
-    function wireFold(headSel, bodySel) {
-        const head = ui.querySelector(headSel);
-        head.onclick = () => {
-            const body = ui.querySelector(bodySel);
-            const open = body.style.display === 'none';
-            body.style.display = open ? 'block' : 'none';
-            head.classList.toggle('open', open);
-        };
-    }
-    wireFold('#lab-seedhead', '#lab-seedbody');
-    wireFold('#lab-asserthead', '#lab-assertbody');
     // seed edits change the DOC (dirty + draft) and drop only what they must:
     // removed seeds lose their cache; survivors keep theirs
     function seedsChanged() {
@@ -1665,38 +1850,6 @@
         else { LAB.rec = null; evaluateAsserts(); }
     }
     function rollSeed() { return (Math.random() * 4294967296) >>> 0; }
-    ui.querySelector('#lab-seed-rnd').onclick = () => {
-        const typed = parseInt(seedAddIn.value.trim(), 10);
-        const s = (Number.isFinite(typed) ? typed : rollSeed()) >>> 0;
-        seedAddIn.value = '';
-        if (LAB.seeds.some(x => (x >>> 0) === s)) return;   // a set, not a list
-        LAB.seeds.push(s);
-        LAB.seedIx = LAB.seeds.length - 1;
-        seedsChanged();
-    };
-    seedAddIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') ui.querySelector('#lab-seed-rnd').onclick(); });
-    // ADD ×N: roll N fresh random seeds into the set (the active seed keeps
-    // the transport). CLEAR resets to the single default, with a confirm.
-    ui.querySelector('#lab-seedaddn').onclick = () => {
-        const nIn = ui.querySelector('#lab-seedn');
-        const n = Math.max(1, Math.min(200, parseInt(nIn.value, 10) || 10));
-        nIn.value = n;
-        const have = new Set(LAB.seeds.map(x => x >>> 0));
-        for (let k = 0; k < n; k++) {
-            let s = rollSeed();
-            while (have.has(s)) s = rollSeed();
-            have.add(s);
-            LAB.seeds.push(s);
-        }
-        seedsChanged();
-    };
-    ui.querySelector('#lab-seedclear').onclick = () => {
-        if (LAB.seeds.length <= 1) return;
-        confirmDialog('Clear seeds', `Drop all ${LAB.seeds.length} seeds and reset to the single default?`, () => {
-            LAB.seeds = [0x9e3779b9]; LAB.seedIx = 0; LAB.recs = {};
-            seedsChanged();
-        }, 'Clear');
-    };
     renderSeeds();
 
     // ── initial conditions / simulate / playback ───────────────────────
@@ -1981,12 +2134,15 @@
             };
             if (typeof BotController !== 'undefined') bt.controller = new BotController(bt);
             // start IN HER GROOVE: the fresh helm's constructor aims NORTH
-            // (targetHeading 0) and holds it for a randomized 0-0.2s first-
-            // decision delay — measured as every boat pinching toward the
-            // wind for the opening 0.2s. Aim her at the authored heading and
-            // let the first real decision land on frame one.
+            // (targetHeading 0) — measured as every boat pinching toward the
+            // wind for the opening 0.2s. Aim her at the authored heading so
+            // the pre-decision hold sails HER course…
             bt.controller.targetHeading = lb.heading;
-            bt.controller.updateTimer = 0;
+            // …but keep the SEEDED 0-0.2s decision-clock phase: it is the
+            // seed set's main behavioral variation (zeroing it here made all
+            // ten seeds bit-identical — owner caught it). Harmless now that
+            // the hold aims at the authored heading, deterministic per seed.
+            bt.controller.updateTimer = Math.random() * 0.2;
             // the rules module's per-boat clocks (tack-flip times feed the
             // rule-15 acquisition test) must not leak between runs either
             if (window.Rules) {
@@ -2174,6 +2330,10 @@
         // mockup) — the full authoring stack comes back with EDIT
         ui.querySelector('#lab-editbody').style.display = m === 'sim' ? 'none' : 'block';
         ui.querySelector('#lab-summary').style.display = m === 'sim' ? 'block' : 'none';
+        // the RIGHT side holds at most one bar: Rights & Umpire in SIMULATE,
+        // the object inspector (when something is selected) in EDIT
+        ump.style.display = m === 'sim' ? 'block' : 'none';
+        right.style.display = (m === 'edit' && LAB.sel && LAB.sel.kind !== 'play') ? 'block' : 'none';
         if (m === 'sim') {
             ui.querySelector('#lab-sum-name').textContent =
                 (ui.querySelector('#lab-name').value || '').trim() || 'Untitled scenario';
@@ -2308,15 +2468,16 @@
             tags: LAB.tags.length ? [...LAB.tags] : undefined,
             asserts: LAB.asserts.length ? LAB.asserts.map(a => ({ ...a })) : undefined,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
+                name: lb.bot.name !== lb._defName ? lb.bot.name : undefined,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS,
                 goals: (lb.goals && lb.goals.length) ? lb.goals.map(g =>
                     g.type === 'point' ? { k: 'p', x: Math.round(g.x - S.x), y: Math.round(g.y - S.y) }
                     : g.type === 'mark' ? { k: 'm', i: LAB.marks.indexOf(g.ref) }
                     : { k: 'g', i: LAB.lines.indexOf(g.ref) }).filter(g => g.k === 'p' || g.i >= 0) : undefined })),
-            marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165) })),
-            sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r })),
-            lines: LAB.lines.map(l => ({ x1: Math.round(l.x1 - S.x), y1: Math.round(l.y1 - S.y), x2: Math.round(l.x2 - S.x), y2: Math.round(l.y2 - S.y) })),
+            marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165), name: m.labName || undefined })),
+            sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r, name: s.labName || undefined })),
+            lines: LAB.lines.map(l => ({ x1: Math.round(l.x1 - S.x), y1: Math.round(l.y1 - S.y), x2: Math.round(l.x2 - S.x), y2: Math.round(l.y2 - S.y), name: l.labName || undefined })),
         };
     }
     function loadScene(sc) {
@@ -2346,6 +2507,7 @@
                 // the kite is auto-only now)
                 lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })).sort((a, b) => a.t - b.t) : [];
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
+                if (bs.name) lb.bot.name = bs.name;
                 if (bs.goals && bs.goals.length) pendingGoals.push([lb, bs.goals]);
             }
         }
@@ -2353,9 +2515,10 @@
             const m = addMark(S.x + ms.x, S.y + ms.y);
             if (ms.side) m.side = ms.side;
             if (ms.zone) m.zone = ms.zone;
+            if (ms.name) m.labName = ms.name;
         }
-        for (const ss of (sc.sands || [])) addSand(S.x + ss.x, S.y + ss.y, ss.r);
-        for (const ls of (sc.lines || [])) { const ln = addLine(S.x + (ls.x1 + ls.x2) / 2, S.y + (ls.y1 + ls.y2) / 2); ln.x1 = S.x + ls.x1; ln.y1 = S.y + ls.y1; ln.x2 = S.x + ls.x2; ln.y2 = S.y + ls.y2; }
+        for (const ss of (sc.sands || [])) { const sd = addSand(S.x + ss.x, S.y + ss.y, ss.r); if (ss.name) sd.labName = ss.name; }
+        for (const ls of (sc.lines || [])) { const ln = addLine(S.x + (ls.x1 + ls.x2) / 2, S.y + (ls.y1 + ls.y2) / 2); ln.x1 = S.x + ls.x1; ln.y1 = S.y + ls.y1; ln.x2 = S.x + ls.x2; ln.y2 = S.y + ls.y2; if (ls.name) ln.labName = ls.name; }
         for (const [lb, gs] of pendingGoals) {
             lb.goals = gs.map(g =>
                 g.k === 'p' ? { type: 'point', x: S.x + g.x, y: S.y + g.y }
@@ -2364,6 +2527,9 @@
         }
         select(null);
         invalidate();
+        // open ON the action: every load (Open, boot restore, discard) frames
+        // the scene — boats off-screen at 100% was the Rule 10 first look
+        zoomFit();
     }
     const nameIn = ui.querySelector('#lab-name');
     nameIn.addEventListener('input', () => saveDraft());
@@ -2565,11 +2731,12 @@
     }
 
     // ── in-window dialogs (no browser confirm/prompt on this page) ─────
-    function dialog(title, bodyEl, buttons) {
+    function dialog(title, bodyEl, buttons, opts) {
         const wrap = document.createElement('div');
         wrap.style.cssText = 'position:fixed;inset:0;z-index:95;background:rgba(4,8,14,0.55);display:flex;align-items:center;justify-content:center';
         const box = document.createElement('div');
         box.style.cssText = 'min-width:300px;max-width:420px;max-height:70vh;display:flex;flex-direction:column;background:rgba(7,19,34,.96);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.14);border-radius:14px;box-shadow:0 10px 34px rgba(4,16,28,.5);padding:16px 18px;color:#eef3fb;font:13px/1.4 Archivo,system-ui,sans-serif';
+        if (opts && opts.width) box.style.maxWidth = `min(${opts.width}px, 92vw)`;
         const h = document.createElement('div');
         h.textContent = title.toUpperCase();
         h.style.cssText = 'font-size:13px;font-weight:900;font-style:italic;letter-spacing:.04em;margin-bottom:10px';
@@ -3214,6 +3381,23 @@
             octx.beginPath(); octx.moveTo(x1, y1); octx.lineTo(x2, y2);
             octx.strokeStyle = 'rgba(255,255,255,0.85)'; octx.lineWidth = 3; octx.setLineDash([10, 8]); octx.stroke(); octx.setLineDash([]);
             for (const [px, py] of [[x1, y1], [x2, y2]]) { octx.beginPath(); octx.arc(px, py, 6, 0, 7); octx.fillStyle = '#fff'; octx.fill(); }
+        }
+        // name pills: constant screen size, drawn HERE (full-res canvas)
+        // so the letters stay crisp at any zoom — the game canvas's backing
+        // store is viewport/zoom and blurs its text when zoomed in
+        for (const lb of LAB.boats) {
+            const bot = lb.bot;
+            if (bot.opacity !== undefined && bot.opacity <= 0) continue;
+            const [px, py] = w2s(bot.x, bot.y);
+            octx.font = '800 13px Archivo,system-ui';
+            const w = octx.measureText(bot.name).width + 16;
+            octx.fillStyle = 'rgba(15,23,42,0.6)';
+            octx.beginPath(); octx.roundRect(px - w / 2, py + 36, w, 20, 6); octx.fill();
+            // WHITE name = scripted helm, GREEN name = the AI's — and a boat
+            // that hands off mid-scenario changes colour at that frame
+            octx.fillStyle = lb._dispMode === 'S' ? '#ffffff' : '#7de28f';
+            octx.textAlign = 'center'; octx.textBaseline = 'middle';
+            octx.fillText(bot.name, px, py + 46);
         }
         // (the realized playback tracks moved off this overlay — they draw
         // in the game's wake slot now, in world space, UNDER the fleet and
