@@ -1489,6 +1489,31 @@
         return 'ok';
     }
     const SEED_COLORS = { fail: '#ff8a75', collision: '#ffa14f', penalty: '#f2c14e', ok: '#eef3fb', unrun: '#66748c' };
+    // OUTCOME clustering (owner: "show me the distinct behaviors"): seeds
+    // whose runs END the same way group together. The signature is
+    // behavioral, not positional — penalties (who/rule/when), each boat's
+    // final tack + goals done + penalty count, and whether an assertion
+    // failed — so metre-level trajectory jitter stays one cluster and a
+    // different STORY (a duck vs a foul) splits.
+    function outcomeSig(s) {
+        const rec = LAB.recs[s >>> 0];
+        if (!rec) return null;
+        const last = rec.frames[rec.nF].boats;
+        return JSON.stringify({
+            pens: rec.pens.map(p => [p.boat, p.rule || p.kind || '?', Math.round(p.t)]),
+            boats: last.map(b => [b.ta, b.gi || 0, b.penN || 0]),
+            fail: !!(LAB.seedFail && LAB.seedFail[s >>> 0]),
+        });
+    }
+    function outcomeSummary(sig, names) {
+        const o = JSON.parse(sig);
+        const bits = [];
+        bits.push(o.pens.length
+            ? o.pens.map(p => `${names[p[0]] || 'boat ' + p[0]} ${p[1]}@${p[2]}s`).join(', ')
+            : 'no penalties');
+        if (o.fail) bits.push('assert FAIL');
+        return bits.join(' · ');
+    }
     const SEED_TITLES = { fail: 'an assertion fails on this run', collision: 'boats collide on this run',
                           penalty: 'a penalty on this run (no collision)', ok: 'clean run', unrun: 'not run yet' };
     function removeSeed(i) {
@@ -1582,7 +1607,29 @@
                 row.onclick = () => { dlg.close(); setActiveSeed(-1); };
                 list.appendChild(row);
             }
-            matches.slice(0, MAXROWS).forEach(([s, i]) => {
+            // group by OUTCOME: one header per distinct behavior, biggest
+            // first; unrun seeds gather at the bottom unclustered
+            const names = LAB.boats.map(lb => lb.bot.name);
+            const clusters = new Map();
+            for (const [s, i] of matches.slice(0, MAXROWS)) {
+                const sig = outcomeSig(s) || 'unrun';
+                if (!clusters.has(sig)) clusters.set(sig, []);
+                clusters.get(sig).push([s, i]);
+            }
+            const ordered = [...clusters.entries()].sort((a, b) =>
+                (a[0] === 'unrun') - (b[0] === 'unrun') || b[1].length - a[1].length);
+            const manyClusters = ordered.length > 1 || (ordered[0] && ordered[0][0] !== 'unrun');
+            let cn = 0;
+            const emitHeader = (sig, group) => {
+                if (!manyClusters) return;
+                const h = document.createElement('div');
+                h.className = 'sl-hint';
+                h.style.cssText = 'padding:8px 12px 3px;letter-spacing:.08em';
+                h.textContent = sig === 'unrun' ? `NOT RUN · ${group.length}`
+                    : `OUTCOME ${++cn} · ${group.length} seed${group.length === 1 ? '' : 's'} · ${outcomeSummary(sig, names).toUpperCase()}`;
+                list.appendChild(h);
+            };
+            const emitRow = ([s, i]) => {
                 const st = seedStatus(s);
                 const on = i === LAB.seedIx;
                 const row = document.createElement('div');
@@ -1614,10 +1661,17 @@
                 }
                 row.onclick = () => pick(i);
                 list.appendChild(row);
-            });
+            };
+            for (const [sig, group] of ordered) {
+                emitHeader(sig, group);
+                group.forEach(emitRow);
+            }
+            const nOut = ordered.filter(([sig]) => sig !== 'unrun').length;
             countEl.textContent = !matches.length ? 'nothing matches'
                 : matches.length > MAXROWS ? `showing ${MAXROWS} of ${matches.length} \u00b7 refine the filter`
-                : `${matches.length} of ${LAB.seeds.length} \u00b7 Enter watches the first`;
+                : `${matches.length} of ${LAB.seeds.length}`
+                  + (nOut ? ` \u00b7 ${nOut} distinct outcome${nOut === 1 ? '' : 's'}` : '')
+                  + ' \u00b7 Enter watches the first';
         };
         filterIn.addEventListener('input', rebuild);
         filterIn.addEventListener('keydown', (e) => { if (e.key === 'Enter' && firstMatch != null) pick(firstMatch); });
@@ -2070,12 +2124,15 @@
             };
             if (typeof BotController !== 'undefined') bt.controller = new BotController(bt);
             // start IN HER GROOVE: the fresh helm's constructor aims NORTH
-            // (targetHeading 0) and holds it for a randomized 0-0.2s first-
-            // decision delay — measured as every boat pinching toward the
-            // wind for the opening 0.2s. Aim her at the authored heading and
-            // let the first real decision land on frame one.
+            // (targetHeading 0) — measured as every boat pinching toward the
+            // wind for the opening 0.2s. Aim her at the authored heading so
+            // the pre-decision hold sails HER course…
             bt.controller.targetHeading = lb.heading;
-            bt.controller.updateTimer = 0;
+            // …but keep the SEEDED 0-0.2s decision-clock phase: it is the
+            // seed set's main behavioral variation (zeroing it here made all
+            // ten seeds bit-identical — owner caught it). Harmless now that
+            // the hold aims at the authored heading, deterministic per seed.
+            bt.controller.updateTimer = Math.random() * 0.2;
             // the rules module's per-boat clocks (tack-flip times feed the
             // rule-15 acquisition test) must not leak between runs either
             if (window.Rules) {
