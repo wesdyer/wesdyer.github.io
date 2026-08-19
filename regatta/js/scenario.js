@@ -341,7 +341,7 @@
         </div>
       </div>
       <div id="det-sand" style="display:none">
-        <div class="sl-sect"><div class="sl-hint">solid sand &middot; &#8997;-drag resizes &middot; boats ground on it</div></div>
+        <div class="sl-sect"><div class="sl-hint">solid sand &middot; drag a vertex to reshape &middot; &#8997;-drag scales &middot; boats ground on it</div></div>
       </div>
       <div id="det-line" style="display:none">
         <div class="sl-sect"><div class="sl-hint">a line on the water &middot; drag the end handles &middot; &#8997;-drag stretches</div></div>
@@ -371,6 +371,7 @@
     const layersDiv = left.querySelector('#lab-layers');
     function setArmed(kind) {
         LAB.armed = LAB.armed === kind ? null : kind;
+        LAB.sandDraft = null;   // arming/disarming abandons a polygon draft
         renderLayers();
     }
     const KIND_DOT = { scenario: '#8fd8d0', boat: null, sand: '#e0c99b', mark: '#f0a02a', line: '#ffffff' };
@@ -834,17 +835,36 @@
         return verts;
     }
     function addSand(wx, wy, R) {
+        // legacy circle-ish sand: still the loader for old {x,y,r} docs
         R = R || 90;
-        // hidden: the engine island renderer needs baked art this synthetic shape
-        // doesn't have; the overlay draws the sand. Collisions/rule 19/avoidance
-        // still see it — they don't check `hidden`.
-        const isl = { x: wx, y: wy, radius: R, vertices: sandVerts(wx, wy, R), isFloe: false, awash: false, hidden: true, labSand: true };
+        return addSandPoly(sandVerts(wx, wy, R));
+    }
+    // objects are POLYGONS (owner): authored point by point. The engine
+    // island carries the vertices; x/y/radius are its broad-phase circle,
+    // kept in sync as vertices move.
+    // hidden: the engine island renderer needs baked art this synthetic shape
+    // doesn't have; the overlay draws the sand. Collisions/rule 19/avoidance
+    // still see it — they don't check `hidden`.
+    function addSandPoly(pts) {
+        const isl = { x: 0, y: 0, radius: 1, vertices: pts.map(p => ({ x: p.x, y: p.y })),
+                      isFloe: false, awash: false, hidden: true, labSand: true };
         (window.state.course.islands = window.state.course.islands || []).push(isl);
-        const s = { isl, x: wx, y: wy, r: R };
+        const s = { isl, x: 0, y: 0, r: 1 };
+        recomputeSand(s);
         LAB.sands.push(s);
         select({ kind: 'sand', ref: s });
         invalidate();
         return s;
+    }
+    function recomputeSand(s) {
+        const vs = s.isl.vertices;
+        let cx = 0, cy = 0;
+        for (const v of vs) { cx += v.x; cy += v.y; }
+        cx /= vs.length; cy /= vs.length;
+        let r = 30;
+        for (const v of vs) r = Math.max(r, Math.hypot(v.x - cx, v.y - cy));
+        s.x = s.isl.x = cx; s.y = s.isl.y = cy;
+        s.r = s.isl.radius = r;
     }
     function addLine(wx, wy, half) {
         half = half || 150;
@@ -855,12 +875,25 @@
         return ln;
     }
     function resizeSand(s, R) {
-        s.r = Math.max(30, Math.min(500, R));
-        s.isl.radius = s.r;
-        s.isl.vertices = sandVerts(s.x, s.y, s.r);
+        // ⌥-drag scales the polygon about its centroid (shape preserved)
+        const k = Math.max(30, Math.min(800, R)) / (s.r || 1);
+        for (const v of s.isl.vertices) { v.x = s.x + (v.x - s.x) * k; v.y = s.y + (v.y - s.y) * k; }
+        recomputeSand(s);
+    }
+    function closeSandDraft() {
+        const draft = LAB.sandDraft;
+        LAB.sandDraft = null;
+        if (draft && draft.length >= 3) addSandPoly(draft);
+        // fewer than 3 points closes to nothing — a degenerate polygon is
+        // not an island
     }
     function moveObj(sel, wx, wy) {
         if (sel.kind === 'goalpt') { sel.ref.x = wx; sel.ref.y = wy; }
+        else if (sel.kind === 'sandvert') {
+            const v = sel.ref.isl.vertices[sel.vi];
+            v.x = wx; v.y = wy;
+            recomputeSand(sel.ref);
+        }
         else if (sel.kind === 'boat') { sel.ref.x = wx; sel.ref.y = wy; }
         else if (sel.kind === 'mark') {
             const m = sel.ref;
@@ -949,6 +982,14 @@
         invalidate();
     }
 
+    function pointInPoly(x, y, vs) {
+        let inside = false;
+        for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+            if ((vs[i].y > y) !== (vs[j].y > y)
+                && x < (vs[j].x - vs[i].x) * (y - vs[i].y) / (vs[j].y - vs[i].y) + vs[i].x) inside = !inside;
+        }
+        return inside;
+    }
     function pick(wx, wy) {
         // the selected boat's WAYPOINT pips are draggable (owner ruling) —
         // they render on top, so they pick first. Only where they're visible:
@@ -956,6 +997,15 @@
         // Mark/gate goal pips need nothing here: they sit ON their objects,
         // whose own picks (and drags) already move the goal with them.
         const authoring = LAB.mode === 'edit' || LAB.frame === 0;
+        // the selected sand's VERTEX handles pick first (they render on top);
+        // dragging one reshapes the polygon without touching the selection
+        if (authoring && LAB.sel && LAB.sel.kind === 'sand') {
+            const s = LAB.sel.ref, r = 12 / LAB.zoom;
+            for (let vi = 0; vi < s.isl.vertices.length; vi++) {
+                const v = s.isl.vertices[vi];
+                if (Math.hypot(wx - v.x, wy - v.y) < r) return { kind: 'sandvert', ref: s, vi };
+            }
+        }
         if (authoring && LAB.sel && LAB.sel.kind === 'boat' && LAB.sel.ref.goals) {
             const lb = LAB.sel.ref;
             const r = 14 / LAB.zoom;
@@ -970,7 +1020,7 @@
         }
         for (const lb of LAB.boats) if (Math.hypot(wx - lb.bot.x, wy - lb.bot.y) < 45) return { kind: 'boat', ref: lb };
         for (const m of LAB.marks) if (Math.hypot(wx - m.x, wy - m.y) < 30) return { kind: 'mark', ref: m };
-        for (const s of LAB.sands) if (Math.hypot(wx - s.x, wy - s.y) < s.r) return { kind: 'sand', ref: s };
+        for (const s of LAB.sands) if (pointInPoly(wx, wy, s.isl.vertices)) return { kind: 'sand', ref: s };
         for (const ln of LAB.lines) {
             const cx = (ln.x1 + ln.x2) / 2, cy = (ln.y1 + ln.y2) / 2;
             if (Math.hypot(wx - cx, wy - cy) < 40) return { kind: 'line', ref: ln, part: 0 };
@@ -2429,8 +2479,13 @@
                 // any other key while a dialog is up: dead air
             } else {
                 if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
+                else if (e.key === 'Enter') {
+                    // RETURN closes an in-progress polygon draft
+                    if (LAB.armed === 'sand' && LAB.sandDraft && LAB.sandDraft.length) closeSandDraft();
+                }
                 else if (e.key === 'Escape') {
                     if (moreOpen) moreMenu.style.display = 'none';
+                    else if (LAB.sandDraft && LAB.sandDraft.length) LAB.sandDraft = null;   // drop the draft, stay armed
                     else if (LAB.goalArm) setGoalArm(false);
                     else if (LAB.armed) setArmed(LAB.armed);
                     else select(null);
@@ -2476,7 +2531,7 @@
                     : g.type === 'mark' ? { k: 'm', i: LAB.marks.indexOf(g.ref) }
                     : { k: 'g', i: LAB.lines.indexOf(g.ref) }).filter(g => g.k === 'p' || g.i >= 0) : undefined })),
             marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165), name: m.labName || undefined })),
-            sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r, name: s.labName || undefined })),
+            sands: LAB.sands.map(s => ({ pts: s.isl.vertices.map(v => [Math.round(v.x - S.x), Math.round(v.y - S.y)]), name: s.labName || undefined })),
             lines: LAB.lines.map(l => ({ x1: Math.round(l.x1 - S.x), y1: Math.round(l.y1 - S.y), x2: Math.round(l.x2 - S.x), y2: Math.round(l.y2 - S.y), name: l.labName || undefined })),
         };
     }
@@ -2517,7 +2572,12 @@
             if (ms.zone) m.zone = ms.zone;
             if (ms.name) m.labName = ms.name;
         }
-        for (const ss of (sc.sands || [])) { const sd = addSand(S.x + ss.x, S.y + ss.y, ss.r); if (ss.name) sd.labName = ss.name; }
+        for (const ss of (sc.sands || [])) {
+            // pts = authored polygon; {x,y,r} = legacy circle doc
+            const sd = ss.pts ? addSandPoly(ss.pts.map(p => ({ x: S.x + p[0], y: S.y + p[1] })))
+                              : addSand(S.x + ss.x, S.y + ss.y, ss.r);
+            if (ss.name) sd.labName = ss.name;
+        }
         for (const ls of (sc.lines || [])) { const ln = addLine(S.x + (ls.x1 + ls.x2) / 2, S.y + (ls.y1 + ls.y2) / 2); ln.x1 = S.x + ls.x1; ln.y1 = S.y + ls.y1; ln.x2 = S.x + ls.x2; ln.y2 = S.y + ls.y2; if (ls.name) ln.labName = ls.name; }
         for (const [lb, gs] of pendingGoals) {
             lb.goals = gs.map(g =>
@@ -3074,11 +3134,22 @@
             invalidate();
             return;
         }
+        // armed OBJECT tool = polygon drafting (owner): every click drops a
+        // vertex; clicking the first point again (≥3 points) or RETURN
+        // closes; ESC cancels the draft
+        if (LAB.armed === 'sand') {
+            const draft = LAB.sandDraft || (LAB.sandDraft = []);
+            if (draft.length >= 3) {
+                const p0 = draft[0];
+                if (Math.hypot(wx - p0.x, wy - p0.y) < 14 / LAB.zoom) { closeSandDraft(); return; }
+            }
+            draft.push({ x: wx, y: wy });
+            return;
+        }
         if (!hit && LAB.armed) {
             // an armed layer "+": place that kind here, stay armed for more
             if (LAB.armed === 'boat') addBoat(wx, wy);
             else if (LAB.armed === 'mark') addMark(wx, wy);
-            else if (LAB.armed === 'sand') addSand(wx, wy);
             else if (LAB.armed === 'line') addLine(wx, wy);
             LAB.drag = { sel: LAB.sel };
             return;
@@ -3093,6 +3164,12 @@
         // a waypoint pip drags without touching the selection (the boat that
         // owns it stays selected; its inspector rows update on release)
         if (hit && hit.kind === 'goalpt') {
+            LAB.drag = { sel: hit };
+            return;
+        }
+        // a sand VERTEX drags without touching the selection (the sand that
+        // owns it stays selected; the polygon reshapes live)
+        if (hit && hit.kind === 'sandvert') {
             LAB.drag = { sel: hit };
             return;
         }
@@ -3115,6 +3192,7 @@
         else { select(null); LAB.drag = { pan: true, sx: e.clientX, sy: e.clientY, cx: LAB.cam.x, cy: LAB.cam.y }; }
     });
     ov.addEventListener('mousemove', e => {
+        LAB.mouse = s2w(e.clientX, e.clientY);   // the draft's rubber band reads this
         if (!LAB.drag) return;
         if (LAB.drag.pan) {
             LAB.cam.x = LAB.drag.cx - (e.clientX - LAB.drag.sx) / LAB.zoom;
@@ -3381,6 +3459,34 @@
             octx.beginPath(); octx.moveTo(x1, y1); octx.lineTo(x2, y2);
             octx.strokeStyle = 'rgba(255,255,255,0.85)'; octx.lineWidth = 3; octx.setLineDash([10, 8]); octx.stroke(); octx.setLineDash([]);
             for (const [px, py] of [[x1, y1], [x2, y2]]) { octx.beginPath(); octx.arc(px, py, 6, 0, 7); octx.fillStyle = '#fff'; octx.fill(); }
+        }
+        // polygon DRAFT: the points so far, a rubber band to the cursor, and
+        // a highlighted first point once it can close the shape
+        if (LAB.armed === 'sand' && LAB.sandDraft && LAB.sandDraft.length) {
+            const d = LAB.sandDraft;
+            octx.beginPath();
+            const [dx0, dy0] = w2s(d[0].x, d[0].y);
+            octx.moveTo(dx0, dy0);
+            for (let k = 1; k < d.length; k++) { const [px, py] = w2s(d[k].x, d[k].y); octx.lineTo(px, py); }
+            if (LAB.mouse) { const [mx, my] = w2s(LAB.mouse[0], LAB.mouse[1]); octx.lineTo(mx, my); }
+            octx.strokeStyle = 'rgba(224,201,155,0.95)'; octx.lineWidth = 2.5; octx.setLineDash([6, 6]);
+            octx.stroke(); octx.setLineDash([]);
+            d.forEach((p, k) => {
+                const [px, py] = w2s(p.x, p.y);
+                const closable = k === 0 && d.length >= 3;
+                octx.beginPath(); octx.arc(px, py, closable ? 8 : 5, 0, 7);
+                octx.fillStyle = closable ? '#f0a02a' : 'rgba(224,201,155,0.95)'; octx.fill();
+                octx.strokeStyle = '#fff'; octx.lineWidth = 1.5; octx.stroke();
+            });
+        }
+        // the selected sand's VERTEX handles (authoring only): drag to reshape
+        if ((LAB.mode === 'edit' || LAB.frame === 0) && LAB.sel && LAB.sel.kind === 'sand') {
+            for (const v of LAB.sel.ref.isl.vertices) {
+                const [px, py] = w2s(v.x, v.y);
+                octx.beginPath(); octx.arc(px, py, 6, 0, 7);
+                octx.fillStyle = '#e0c99b'; octx.fill();
+                octx.strokeStyle = 'rgba(7,19,34,0.9)'; octx.lineWidth = 2; octx.stroke();
+            }
         }
         // name pills: constant screen size, drawn HERE (full-res canvas)
         // so the letters stay crisp at any zoom — the game canvas's backing
