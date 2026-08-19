@@ -284,6 +284,10 @@
         <span id="lab-selname" class="sl-title"></span>
         <span id="lab-kindchip" class="sl-chip"></span>
       </div>
+      <div class="sl-sect">
+        <div class="sl-lab">Name</div>
+        <div class="sl-inp"><input id="lab-objname" type="text" title="blank = the default name"></div>
+      </div>
       <div id="det-boat" style="display:none">
         <div class="sl-sect">
           <div class="sl-sectlabel">START STATE</div>
@@ -360,9 +364,9 @@
     // An armed “＋” means the next click on open water places that kind.
     const LAYERS = [
         ['boat', 'Boats', () => LAB.boats.map((lb) => ({ label: lb.bot.name, sel: { kind: 'boat', ref: lb } }))],
-        ['sand', 'Objects', () => LAB.sands.map((s, i) => ({ label: 'sand ' + (i + 1), sel: { kind: 'sand', ref: s } }))],
-        ['mark', 'Marks', () => LAB.marks.map((m, i) => ({ label: 'mark ' + (i + 1), sel: { kind: 'mark', ref: m } }))],
-        ['line', 'Lines', () => LAB.lines.map((l, i) => ({ label: 'line ' + (i + 1), sel: { kind: 'line', ref: l, part: 0 } }))],
+        ['sand', 'Objects', () => LAB.sands.map((s) => ({ label: sandName(s), sel: { kind: 'sand', ref: s } }))],
+        ['mark', 'Marks', () => LAB.marks.map((m) => ({ label: markName(m), sel: { kind: 'mark', ref: m } }))],
+        ['line', 'Lines', () => LAB.lines.map((l) => ({ label: lineName(l), sel: { kind: 'line', ref: l, part: 0 } }))],
     ];
     const layersDiv = left.querySelector('#lab-layers');
     function setArmed(kind) {
@@ -734,12 +738,20 @@
         '#7a4a26',   // Brown
     ];
     function applyLabIdentity(lb, i) {
+        // default = the first unused letter (deleting A then adding must not
+        // mint a second B); the hull color rides the letter so A is always
+        // Blue, B always Red, … regardless of add/delete history
+        const used = new Set(LAB.boats.filter(b => b !== lb).map(b => b.bot._defLetter || b.bot.name));
+        let li = 0;
+        while (li < 25 && used.has(String.fromCharCode(65 + li))) li++;
+        lb._defName = String.fromCharCode(65 + li);
+        lb.bot._defLetter = lb._defName;
         const cfg = {
-            name: String.fromCharCode(65 + i),
-            hull: LAB_HULLS[i % LAB_HULLS.length],
+            name: lb._defName,
+            hull: LAB_HULLS[li % LAB_HULLS.length],
             sail: '#ffffff',
             cockpit: '#c9cdd2',
-            spinnaker: LAB_HULLS[i % LAB_HULLS.length],
+            spinnaker: LAB_HULLS[li % LAB_HULLS.length],
             spinPattern: 'solid',
             // no `stats` key: applyBoatIdentity falls back to STAT_DEFAULTS
             // (+ the flat difficulty bonus, identical for every lab boat)
@@ -881,9 +893,9 @@
     // remover that clearScene's sweep and the confirm itself go through
     function selDesc(s) {
         if (s.kind === 'boat') return 'boat ' + s.ref.bot.name;
-        if (s.kind === 'mark') return 'mark ' + (LAB.marks.indexOf(s.ref) + 1);
-        if (s.kind === 'sand') return 'object ' + (LAB.sands.indexOf(s.ref) + 1);
-        return 'line ' + (LAB.lines.indexOf(s.ref) + 1);
+        if (s.kind === 'mark') return markName(s.ref);
+        if (s.kind === 'sand') return sandName(s.ref);
+        return lineName(s.ref);
     }
     function deleteSel() {
         const s = LAB.sel;
@@ -906,8 +918,8 @@
                 if (Object.prototype.hasOwnProperty.call(c, 'getNavigationTarget')) delete c.getNavigationTarget;
             }
             LAB.pool.unshift(s.ref.bot);
-            // keep the alphabet contiguous: later boats take over the freed identities
-            LAB.boats.forEach((lb, k) => applyLabIdentity(lb, k));
+            // identities are STABLE on delete (custom names must survive);
+            // the freed letter is simply available to the next added boat
             // assertions address boats by index: drop rows that named the
             // deleted boat, slide the rest down (who === -1 "nobody" is safe:
             // this only runs for a found index, i >= 0)
@@ -974,6 +986,24 @@
     }
 
     const selName = ui.querySelector('#lab-selname');
+    const objNameIn = ui.querySelector('#lab-objname');
+    // renaming: boats change the RECORDING's name column (umpire, asserts),
+    // so a boat rename invalidates; mark/sand/line names are cosmetic and
+    // just ride the doc. Blank reverts to the default.
+    objNameIn.addEventListener('input', () => {
+        const s = LAB.sel;
+        if (!s || s.kind === 'play') return;
+        const v = objNameIn.value.trim();
+        if (s.kind === 'boat') {
+            s.ref.bot.name = v || s.ref._defName;
+            invalidate();
+        } else {
+            s.ref.labName = v || undefined;
+            saveDraft();
+        }
+        selName.textContent = (v || objNameIn.placeholder).toUpperCase();
+        renderLayers();
+    });
     const hdgIn = ui.querySelector('#lab-hdg'), spdIn = ui.querySelector('#lab-spd');
     const xIn = ui.querySelector('#lab-x'), yIn = ui.querySelector('#lab-y');
     // metres: the seatrials document states its 4000u beat as "800 m",
@@ -984,6 +1014,13 @@
         xIn.value = ((lb.x - S.x) / UPM).toFixed(1);
         yIn.value = ((lb.y - S.y) / UPM).toFixed(1);
     }
+    // display names: everything can carry a custom name (owner); the
+    // positional default stays the fallback and the input's placeholder.
+    // Stored as labName: lab marks are CLONES of an engine course mark and
+    // already carry its .name (e.g. 'Pin') — that field is not ours.
+    function markName(m) { return m.labName || 'Mark ' + (LAB.marks.indexOf(m) + 1); }
+    function sandName(s) { return s.labName || 'Sand ' + (LAB.sands.indexOf(s) + 1); }
+    function lineName(l) { return l.labName || 'Line ' + (LAB.lines.indexOf(l) + 1); }
     const detSections = { boat: '#det-boat', mark: '#det-mark', sand: '#det-sand', line: '#det-line' };
     function select(s) {
         // no selection ('play' kind): the inspector hides. It only shows in
@@ -1006,10 +1043,22 @@
             header.title = s.ref.bot.name.toUpperCase(); header.chip = 'BOAT';
             header.dot = (s.ref.bot.colors && s.ref.bot.colors.hull) || '#8fd0ff';
         }
-        else if (s.kind === 'mark') { header.title = 'MARK ' + (LAB.marks.indexOf(s.ref) + 1); header.chip = 'MARK'; header.dot = KIND_DOT.mark; }
-        else if (s.kind === 'sand') { header.title = 'SAND ' + (LAB.sands.indexOf(s.ref) + 1); header.chip = 'OBJECT'; header.dot = KIND_DOT.sand; }
-        else if (s.kind === 'line') { header.title = 'LINE ' + (LAB.lines.indexOf(s.ref) + 1); header.chip = 'LINE'; header.dot = KIND_DOT.line; }
+        else if (s.kind === 'mark') { header.title = markName(s.ref).toUpperCase(); header.chip = 'MARK'; header.dot = KIND_DOT.mark; }
+        else if (s.kind === 'sand') { header.title = sandName(s.ref).toUpperCase(); header.chip = 'OBJECT'; header.dot = KIND_DOT.sand; }
+        else if (s.kind === 'line') { header.title = lineName(s.ref).toUpperCase(); header.chip = 'LINE'; header.dot = KIND_DOT.line; }
         selName.textContent = header.title;
+        // the shared NAME field: value = the custom name (blank when on the
+        // default), placeholder = what blank falls back to
+        if (s.kind !== 'play') {
+            const def = s.kind === 'boat' ? (s.ref._defName || s.ref.bot.name)
+                : s.kind === 'mark' ? 'Mark ' + (LAB.marks.indexOf(s.ref) + 1)
+                : s.kind === 'sand' ? 'Sand ' + (LAB.sands.indexOf(s.ref) + 1)
+                : 'Line ' + (LAB.lines.indexOf(s.ref) + 1);
+            objNameIn.placeholder = def;
+            objNameIn.value = s.kind === 'boat'
+                ? (s.ref.bot.name === s.ref._defName ? '' : s.ref.bot.name)
+                : (s.ref.labName || '');
+        }
         selDot.style.display = header.dot ? 'inline-block' : 'none';
         if (header.dot) { selDot.style.background = header.dot; selDot.style.border = '1px solid rgba(255,255,255,.3)'; }
         kindChip.style.display = header.chip ? 'inline-block' : 'none';
@@ -1114,8 +1163,8 @@
         return [(g.ref.x1 + g.ref.x2) / 2, (g.ref.y1 + g.ref.y2) / 2];
     }
     function goalLabel(g) {
-        if (g.type === 'mark') return 'Mark ' + (LAB.marks.indexOf(g.ref) + 1) + ' · ' + (g.ref.side === 'starboard' ? 'stbd' : 'port');
-        if (g.type === 'gate') return 'Line ' + (LAB.lines.indexOf(g.ref) + 1) + ' · through';
+        if (g.type === 'mark') return markName(g.ref) + ' · ' + (g.ref.side === 'starboard' ? 'stbd' : 'port');
+        if (g.type === 'gate') return lineName(g.ref) + ' · through';
         const S = LAB.stage || { x: 0, y: 0 };
         return 'waypoint ' + Math.round(g.x - S.x) + ', ' + Math.round(g.y - S.y);
     }
@@ -2369,15 +2418,16 @@
             tags: LAB.tags.length ? [...LAB.tags] : undefined,
             asserts: LAB.asserts.length ? LAB.asserts.map(a => ({ ...a })) : undefined,
             boats: LAB.boats.map(lb => ({ x: Math.round(lb.x - S.x), y: Math.round(lb.y - S.y), headingDeg: Math.round(lb.heading * DEG), speedKt: lb.speedKt,
+                name: lb.bot.name !== lb._defName ? lb.bot.name : undefined,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS,
                 goals: (lb.goals && lb.goals.length) ? lb.goals.map(g =>
                     g.type === 'point' ? { k: 'p', x: Math.round(g.x - S.x), y: Math.round(g.y - S.y) }
                     : g.type === 'mark' ? { k: 'm', i: LAB.marks.indexOf(g.ref) }
                     : { k: 'g', i: LAB.lines.indexOf(g.ref) }).filter(g => g.k === 'p' || g.i >= 0) : undefined })),
-            marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165) })),
-            sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r })),
-            lines: LAB.lines.map(l => ({ x1: Math.round(l.x1 - S.x), y1: Math.round(l.y1 - S.y), x2: Math.round(l.x2 - S.x), y2: Math.round(l.y2 - S.y) })),
+            marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165), name: m.labName || undefined })),
+            sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r, name: s.labName || undefined })),
+            lines: LAB.lines.map(l => ({ x1: Math.round(l.x1 - S.x), y1: Math.round(l.y1 - S.y), x2: Math.round(l.x2 - S.x), y2: Math.round(l.y2 - S.y), name: l.labName || undefined })),
         };
     }
     function loadScene(sc) {
@@ -2407,6 +2457,7 @@
                 // the kite is auto-only now)
                 lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })).sort((a, b) => a.t - b.t) : [];
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
+                if (bs.name) lb.bot.name = bs.name;
                 if (bs.goals && bs.goals.length) pendingGoals.push([lb, bs.goals]);
             }
         }
@@ -2414,9 +2465,10 @@
             const m = addMark(S.x + ms.x, S.y + ms.y);
             if (ms.side) m.side = ms.side;
             if (ms.zone) m.zone = ms.zone;
+            if (ms.name) m.labName = ms.name;
         }
-        for (const ss of (sc.sands || [])) addSand(S.x + ss.x, S.y + ss.y, ss.r);
-        for (const ls of (sc.lines || [])) { const ln = addLine(S.x + (ls.x1 + ls.x2) / 2, S.y + (ls.y1 + ls.y2) / 2); ln.x1 = S.x + ls.x1; ln.y1 = S.y + ls.y1; ln.x2 = S.x + ls.x2; ln.y2 = S.y + ls.y2; }
+        for (const ss of (sc.sands || [])) { const sd = addSand(S.x + ss.x, S.y + ss.y, ss.r); if (ss.name) sd.labName = ss.name; }
+        for (const ls of (sc.lines || [])) { const ln = addLine(S.x + (ls.x1 + ls.x2) / 2, S.y + (ls.y1 + ls.y2) / 2); ln.x1 = S.x + ls.x1; ln.y1 = S.y + ls.y1; ln.x2 = S.x + ls.x2; ln.y2 = S.y + ls.y2; if (ls.name) ln.labName = ls.name; }
         for (const [lb, gs] of pendingGoals) {
             lb.goals = gs.map(g =>
                 g.k === 'p' ? { type: 'point', x: S.x + g.x, y: S.y + g.y }
