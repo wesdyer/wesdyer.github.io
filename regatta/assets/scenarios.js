@@ -316,5 +316,47 @@ window.SCENARIO_DOC = {
     "sands": [],
     "lines": [],
     "savedAt": 1787119232636
+  },
+  "Around Mark": {
+    "v": 1,
+    "durationS": 10,
+    "windKt": 12,
+    "seeds": [
+      2654435769
+    ],
+    "tags": [
+      "mark-rounding"
+    ],
+    "boats": [
+      {
+        "x": -607,
+        "y": 541,
+        "headingDeg": 39,
+        "speedKt": 7.5,
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "m",
+            "i": 0
+          },
+          {
+            "k": "p",
+            "x": 173,
+            "y": 843
+          }
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "x": -185,
+        "y": 298,
+        "side": "starboard",
+        "zone": 165
+      }
+    ],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787121861285
   }
 };
