@@ -265,11 +265,9 @@
     ump.innerHTML = `
       <div class="sl-head">
         <span class="sl-title">RIGHTS &amp; UMPIRE</span>
-        <span id="lab-agg" class="sl-schip" style="display:none" title="assertions passing on the last run"></span>
         <span id="lab-time" style="font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>
       </div>
-      <div id="lab-rights" style="padding:12px 16px 8px"></div>
-      <div class="sl-hint" style="padding:0 18px 12px">Scrub or step the transport &middot; SPACE plays and pauses</div>`;
+      <div id="lab-rights" style="padding:12px 16px 8px"></div>`;
     document.body.appendChild(ump);
 
     // the object inspector lives on the RIGHT and only in EDIT mode; RIGHTS
@@ -1268,7 +1266,6 @@
     // against the recording after every run. Editing an assertion never
     // invalidates the recording — expectations don't change the sailing.
     let assertsDiv = null;   // the assertions dialog's list while it is open
-    const aggChip = ui.querySelector('#lab-agg');
     function boatNames() { return LAB.boats.map(lb => lb.bot.name); }
     function assertsChanged() {
         saveDraft();
@@ -1287,7 +1284,6 @@
             renderAsserts();
             renderSeeds();
             if (typeof refreshTicks === 'function') refreshTicks();
-            aggChip.style.display = 'none';
             return;
         }
         const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s], { proper: LAB.recs.proper }));
@@ -1311,11 +1307,6 @@
         });
         renderAsserts();
         renderSeeds();
-        const rs = LAB.assertResults;
-        const okRows = rs.filter(r => r.ok === r.n).length;
-        aggChip.textContent = 'ASSERTS ' + okRows + '/' + rs.length + (seeds.length > 1 ? ' · ' + seeds.length + ' SEEDS' : '');
-        aggChip.className = 'sl-schip ' + (okRows === rs.length ? 'sl-schip-teal' : 'sl-schip-red');
-        aggChip.style.display = 'inline-block';
         if (typeof refreshTicks === 'function') refreshTicks();
     }
     function boatSel(val, onPick, allowNobody) {
