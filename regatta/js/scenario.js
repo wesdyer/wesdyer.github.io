@@ -2607,8 +2607,11 @@
                     if (LAB.uiMode !== 'sim') setUIMode('sim'); else pbPlay.onclick();
                 }
                 else if (LAB.rec) {
-                    if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); }
-                    else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); }
+                    // arrows scrub 0.5s (the transport buttons' gross step);
+                    // SHIFT+arrow is the fine step — one frame (1/60 s)
+                    const step = e.shiftKey ? 1 : 30;
+                    if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - step); }
+                    else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + step); }
                 }
                 e.preventDefault();   // no space-scroll, no browser shortcuts on the stage
             }

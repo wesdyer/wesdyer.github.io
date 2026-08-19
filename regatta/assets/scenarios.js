@@ -155,13 +155,20 @@ window.SCENARIO_DOC = {
         "y": 201,
         "headingDeg": 90,
         "speedKt": 7.5,
-        "aiAtS": 0
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "p",
+            "x": 1401,
+            "y": 205
+          }
+        ]
       }
     ],
     "marks": [],
     "sands": [],
     "lines": [],
-    "savedAt": 1787046627663
+    "savedAt": 1787125176625
   },
   "Rule 13": {
     "v": 1,
@@ -243,15 +250,16 @@ window.SCENARIO_DOC = {
     "windKt": 12,
     "seeds": [
       2654435769,
-      3477523577,
-      3961374258,
-      3911852695,
-      2852591194,
-      1400071019,
-      2747798493,
-      4156243761,
-      1934674241,
-      4038481126
+      1035792683,
+      3878011198,
+      2649169398,
+      3439120348,
+      262623818,
+      289216165,
+      2932602586,
+      3720287616,
+      457909176,
+      3504384310
     ],
     "tags": [
       "rule-13"
@@ -315,17 +323,37 @@ window.SCENARIO_DOC = {
     "marks": [],
     "sands": [],
     "lines": [],
-    "savedAt": 1787119232636
+    "savedAt": 1787125058548
   },
   "Around Mark": {
     "v": 1,
-    "durationS": 10,
+    "durationS": 12,
     "windKt": 12,
     "seeds": [
       2654435769
     ],
     "tags": [
       "mark-rounding"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "goals",
+        "who": 0
+      },
+      {
+        "kind": "near",
+        "who": 0,
+        "mark": 0,
+        "max": 15
+      },
+      {
+        "kind": "turn",
+        "who": 0,
+        "max": 200
+      }
     ],
     "boats": [
       {
@@ -357,6 +385,6 @@ window.SCENARIO_DOC = {
     ],
     "sands": [],
     "lines": [],
-    "savedAt": 1787121861285
+    "savedAt": 1787126236561
   }
 };
