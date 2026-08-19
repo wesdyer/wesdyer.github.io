@@ -1884,17 +1884,20 @@
         const act = activeSeed();
         const rec = LAB.recs[act];
         if (!rec) { pbTicks.innerHTML = ''; return; }
+        // every marker is a JUMP: click scrubs to its moment (delegated
+        // handler below reads data-f)
         let html = rec.ticks.map(f =>
-            `<span style="position:absolute;left:${(100 * f / rec.nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px" title="penalty">&#9660;</span>`).join('');
+            `<span data-f="${f}" style="position:absolute;left:${(100 * f / rec.nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px;pointer-events:auto;cursor:pointer" title="penalty — click to jump there">&#9660;</span>`).join('');
         const per = act !== 'proper' && LAB.assertPer && LAB.assertPer[act];
         if (per) {
             const names = LAB.boats.map(lb => lb.bot.name);
             per.forEach((r, k) => {
                 if (r.status !== 'fail' || r.atS == null) return;
+                const f = Math.min(rec.nF, Math.round(r.atS * 60));
                 const label = window.ScenarioAsserts ? window.ScenarioAsserts.label(LAB.asserts[k], names) : '';
-                html += `<span style="position:absolute;left:${(100 * Math.min(rec.nF, Math.round(r.atS * 60)) / rec.nF).toFixed(1)}%;`
+                html += `<span data-f="${f}" style="position:absolute;left:${(100 * f / rec.nF).toFixed(1)}%;`
                     + 'top:-10px;transform:translateX(-50%);color:#ff8a75;font:800 9px Archivo,system-ui,sans-serif;'
-                    + `letter-spacing:.02em;pointer-events:auto;cursor:default" title="FAIL ${label} — ${r.why || ''}">A${k + 1}</span>`;
+                    + `letter-spacing:.02em;pointer-events:auto;cursor:pointer" title="FAIL ${label} — ${r.why || ''} — click to jump there">A${k + 1}</span>`;
             });
         }
         pbTicks.innerHTML = html;
@@ -2430,6 +2433,13 @@
     bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
     bar.querySelector('#pb-end').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.rec.nF); };
     pbSlider.addEventListener('input', () => { if (!LAB.rec) { pbSlider.value = 0; return; } pause(); setFrame(+pbSlider.value); });
+    // tick markers (penalty arrows, A-fail labels) jump to their moment
+    pbTicks.addEventListener('click', (e) => {
+        const t = e.target.closest('[data-f]');
+        if (!t || !LAB.rec) return;
+        pause();
+        setFrame(+t.dataset.f);
+    });
     // the … menu: toggles on its button, closes on any item or outside press
     ui.querySelector('#lab-more').onclick = () => {
         const m = ui.querySelector('#lab-moremenu');
