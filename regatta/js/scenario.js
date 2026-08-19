@@ -598,28 +598,11 @@
             if (o.isPlayer) { o.raceState.finished = false; }
             else { o.raceState.finished = true; o.fadeTimer = 0; LAB.pool.push(o); }
         }
-        // boats carry NO race places on this page — just the letter
-        window.drawBoatIndicator = function (ctx, boat) {
-            if (boat.isPlayer) return;
-            if (boat.opacity !== undefined && boat.opacity <= 0) return;
-            const lb = LAB.boats.find(l => l.bot === boat);
-            if (!lb) return;
-            ctx.save();
-            ctx.translate(boat.x, boat.y);
-            // counter-scale: the pill keeps its SCREEN size at any zoom
-            ctx.scale(1 / LAB.zoom, 1 / LAB.zoom);
-            ctx.translate(0, 36);
-            ctx.font = '800 13px Archivo,system-ui';
-            const w = ctx.measureText(boat.name).width + 16;
-            ctx.fillStyle = 'rgba(15,23,42,0.6)';
-            ctx.beginPath(); ctx.roundRect(-w / 2, 0, w, 20, 6); ctx.fill();
-            // WHITE name = scripted helm, GREEN name = the AI's — and a boat
-            // that hands off mid-scenario changes colour at that frame
-            ctx.fillStyle = lb._dispMode === 'S' ? '#ffffff' : '#7de28f';
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillText(boat.name, 0, 10);
-            ctx.restore();
-        };
+        // boats carry NO race places on this page — and the name pills draw
+        // on the full-res OVERLAY, not here: zoomed in, the game canvas is a
+        // low-res backing store stretched up by CSS, so canvas text goes
+        // blurry exactly when the user leans in (owner bug report)
+        window.drawBoatIndicator = function () { };
         select(null);
         LAB.ready = true;
         // restore the working draft, if one survived a reload
@@ -3328,6 +3311,23 @@
             octx.beginPath(); octx.moveTo(x1, y1); octx.lineTo(x2, y2);
             octx.strokeStyle = 'rgba(255,255,255,0.85)'; octx.lineWidth = 3; octx.setLineDash([10, 8]); octx.stroke(); octx.setLineDash([]);
             for (const [px, py] of [[x1, y1], [x2, y2]]) { octx.beginPath(); octx.arc(px, py, 6, 0, 7); octx.fillStyle = '#fff'; octx.fill(); }
+        }
+        // name pills: constant screen size, drawn HERE (full-res canvas)
+        // so the letters stay crisp at any zoom — the game canvas's backing
+        // store is viewport/zoom and blurs its text when zoomed in
+        for (const lb of LAB.boats) {
+            const bot = lb.bot;
+            if (bot.opacity !== undefined && bot.opacity <= 0) continue;
+            const [px, py] = w2s(bot.x, bot.y);
+            octx.font = '800 13px Archivo,system-ui';
+            const w = octx.measureText(bot.name).width + 16;
+            octx.fillStyle = 'rgba(15,23,42,0.6)';
+            octx.beginPath(); octx.roundRect(px - w / 2, py + 36, w, 20, 6); octx.fill();
+            // WHITE name = scripted helm, GREEN name = the AI's — and a boat
+            // that hands off mid-scenario changes colour at that frame
+            octx.fillStyle = lb._dispMode === 'S' ? '#ffffff' : '#7de28f';
+            octx.textAlign = 'center'; octx.textBaseline = 'middle';
+            octx.fillText(bot.name, px, py + 46);
         }
         // (the realized playback tracks moved off this overlay — they draw
         // in the game's wake slot now, in world space, UNDER the fleet and
