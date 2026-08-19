@@ -143,8 +143,12 @@
         if (a.kind === 'turn') {
             // turn BUDGET: total integrated heading change over the run —
             // catches orbit overshoot and post-rounding unwinds that a
-            // position assert can't see
-            let tot = 0, prev = null;
+            // position assert can't see. atS = the FIRST frame the running
+            // total crosses the cap (the moment the budget is spent), not
+            // the end of the run.
+            const max = a.max != null ? a.max : 360;
+            const maxRad = max * Math.PI / 180;
+            let tot = 0, prev = null, overAt = null;
             for (let f = 0; f <= nF; f++) {
                 const b = frames[f].boats[a.who];
                 if (!b) return { pass: false, why: 'boat missing from recording' };
@@ -153,14 +157,14 @@
                     if (d > Math.PI) d -= Math.PI * 2;
                     if (d < -Math.PI) d += Math.PI * 2;
                     tot += Math.abs(d);
+                    if (tot > maxRad && overAt === null) overAt = f / 60;
                 }
                 prev = b.h;
             }
             const totDeg = Math.round(tot * 180 / Math.PI);
-            const max = a.max != null ? a.max : 360;
             return totDeg <= max
                 ? { pass: true, why: `turned ${totDeg}° total` }
-                : { pass: false, why: `turned ${totDeg}° total (> ${max}°)`, atS: nF / 60 };
+                : { pass: false, why: `passed ${max}° at ${overAt.toFixed(1)}s (${totDeg}° total by the end)`, atS: overAt };
         }
         if (a.kind === 'nocollide') {
             // EXACT collision test: the engine's own hull-polygon contact
