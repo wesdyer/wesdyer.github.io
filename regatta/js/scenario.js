@@ -1930,9 +1930,12 @@
         const rec = LAB.recs[act];
         if (!rec) { pbTicks.innerHTML = ''; return; }
         // every marker is a JUMP: click scrubs to its moment (delegated
-        // handler below reads data-f)
+        // handler below reads data-f). Markers centre on where the THUMB
+        // sits at that frame — the thumb's 14px width insets its travel, so
+        // a raw percent drifts off-target toward the ends.
+        const at = (f) => `left:calc(7px + (100% - 14px) * ${(f / rec.nF).toFixed(4)});transform:translateX(-50%)`;
         let html = rec.ticks.map(f =>
-            `<span data-f="${f}" style="position:absolute;left:${(100 * f / rec.nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px;pointer-events:auto;cursor:pointer" title="penalty — click to jump there">&#9660;</span>`).join('');
+            `<span data-f="${f}" style="position:absolute;${at(f)};top:0;color:#ff8a75;font-size:8px;pointer-events:auto;cursor:pointer" title="penalty — click to jump there">&#9660;</span>`).join('');
         const per = act !== 'proper' && LAB.assertPer && LAB.assertPer[act];
         if (per) {
             const names = LAB.boats.map(lb => lb.bot.name);
@@ -1940,8 +1943,8 @@
                 if (r.status !== 'fail' || r.atS == null) return;
                 const f = Math.min(rec.nF, Math.round(r.atS * 60));
                 const label = window.ScenarioAsserts ? window.ScenarioAsserts.label(LAB.asserts[k], names) : '';
-                html += `<span data-f="${f}" style="position:absolute;left:${(100 * f / rec.nF).toFixed(1)}%;`
-                    + 'top:-10px;transform:translateX(-50%);color:#ff8a75;font:800 9px Archivo,system-ui,sans-serif;'
+                html += `<span data-f="${f}" style="position:absolute;${at(f)};`
+                    + 'top:-10px;color:#ff8a75;font:800 9px Archivo,system-ui,sans-serif;'
                     + `letter-spacing:.02em;pointer-events:auto;cursor:pointer" title="FAIL ${label} — ${r.why || ''} — click to jump there">A${k + 1}</span>`;
             });
         }
