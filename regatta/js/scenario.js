@@ -2465,9 +2465,11 @@
         } finally {
             Math.random = realRandom;
             if (cbs.length) removeGoalCourse();
-            // solo burst over: the parked rivals rejoin the stage
-            if (soloLb) for (const lb of LAB.boats) {
-                if (lb === soloLb) continue;
+            // no boat leaves the stage: a course-backed boat that completed
+            // her last leg is FINISHED in the engine's eyes, and finished
+            // boats fade out (opacity is live, not recorded — the fade would
+            // bleed into playback). Parked solo-burst rivals rejoin too.
+            for (const lb of LAB.boats) {
                 lb.bot.raceState.finished = false;
                 lb.bot.fadeTimer = 999; lb.bot.opacity = 1;
             }
