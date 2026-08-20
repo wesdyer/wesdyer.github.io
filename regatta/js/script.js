@@ -3279,6 +3279,12 @@ class BotController {
         if (this.escActive) return desiredHeading;
 
         const boat = this.boat;
+        // PROBE HOOK (deflection push, 2026-08-19): per-candidate cost ledger
+        // behind `window.__AVDBG` — same pattern as __AV/__CHAR, byte-inert
+        // when unset. Consumers: eval/rl/_deflect_why.js, _role_vs_rules.js.
+        const dbgOn = typeof window !== 'undefined' && window.__AVDBG
+            && (!window.__AVDBG.name || window.__AVDBG.name === boat.name);
+        const dbgRows = dbgOn ? [] : null;
         const lookaheadFrames = 240; // 4 seconds lookahead
         const speed = Math.max(2.0, boat.speed * 60); // Minimum speed for projection
         // DOES ANYTHING HERE DRIFT? Both of this function's 2026-08-06 changes assume the
@@ -3747,6 +3753,97 @@ class BotController {
             }
         }
 
+        // A RIGHT-OF-WAY BOAT SAILS HER PROPER COURSE — ASK THE RULES, NOT THE
+        // RISK LATCH (2026-08-19, the deflection push). Measured in the Scenario
+        // Lab (RRS 10, 10 seeds, `eval/rl/_deflect_why.js`): the stand-on boat's
+        // deviation arms at 656-710u with role still NONE — the risk ladder does
+        // not look past 600u, but rights are not a function of range and the
+        // rules module answers at any distance. The onset driver is the soft
+        // proximity gradient below (worth under 1 point at that range against a
+        // pow3 base cost of 0.2 for the first 6-degree nudge), and after the
+        // latch she keeps dodging on the hard collision term: the 4s straight-
+        // line projection of a give-way boat that has not ducked YET reads as
+        // certain collision and buries the 3000*|off| hold bonus. Net: 8-15m off
+        // proper on every seed while the give-way boat also ducks 121-180 deg.
+        //
+        // RRS 14(a): the right-of-way boat "need not act to avoid contact until
+        // it is clear that the other boat is not keeping clear." So against a
+        // rival the RULES say must keep clear of us, both discretionary terms
+        // hold — the spacing gradient and the projected-collision veto — unless:
+        //   (a) we JUST acquired the rights and owe room (Rule 15 constraint),
+        //   (b) she is owed mark-room in this pair,
+        //   (c) she is mid-penalty-spiral (she CANNOT keep clear while she
+        //       rotates — the same physical fact as threatSpiral above), or
+        //   (d) the pair is at the risk ladder's own IMMINENT thresholds —
+        //       from there Rule 14 applies in full, whole fan, old arithmetic.
+        // Racing legs only: start-line rights games are the start regime's
+        // (the fan's leg guard exists for the same reason — OCS tuning is
+        // sacred). 1200u bound = the farthest a 4s projection of two 7.5kt
+        // boats can close to gradient range.
+        if (!this._rowHold) this._rowHold = new Set(); else this._rowHold.clear();
+        if (racingLegF) {
+            for (const obR of state.boats) {
+                if (obR === boat || obR.raceState.finished) continue;
+                const ddR = Math.hypot(obR.x - boat.x, obR.y - boat.y);
+                if (ddR > 1200) continue;
+                // (A 130u no-hold floor was tried for bay's rub doubling and
+                // REVERTED: Rule 11's overlapped pair sits at 100u, and leeward
+                // holding her course there IS the doctrine — the floor reverted
+                // Rule 11 to its full 15m baseline drift.)
+                if (obR.raceState.penalty && obR.controller && obR.controller.penaltySpin) continue;
+                let rowR = null;
+                try { rowR = getRightOfWay(boat, obR); } catch (e) { }
+                if (!rowR || rowR.boat !== boat) continue;
+                if (rowR.constraints && rowR.constraints.indexOf('Rule 15') >= 0) continue;
+                if (rowR.markRoom != null && rowR.markRoom !== boat.id) continue;
+                // A boat MID-TACK OR FRESH FROM ONE cannot be projected linearly
+                // — her velocity sweeps through the turn and then rebuilds from
+                // half speed, so distCPA/tCPA are noise on her (the Rule-21
+                // spiral lesson, same fact). Measured three ways in the lab:
+                // holding through the tack on the linear test put A through B's
+                // hull at 5.1s (Rule 13 seed 3477523577); a 150u mid-tack berth
+                // moved the contact to 2.5s on seed 3961374258 — the kill shot
+                // was POST-tack, A still turning at h29→67 while B's linear test
+                // read her as clearing. So: no hold at all on a rival inside her
+                // tack or its settle window (0.75 on the 0.24x state clock ≈ 3
+                // real seconds past the flip the rules module already stamps) —
+                // exactly the baseline behavior that never made contact.
+                if (obR.raceState.isTacking) continue;
+                const flipR = (window.Rules && window.Rules._tackFlipT)
+                    ? window.Rules._tackFlipT[obR.id] : undefined;
+                if (flipR !== undefined && state.time - flipR < 0.75) continue;
+                const mR = getRiskMetrics(boat, obR);
+                // RELEASE = "clear she is not keeping clear" — CAPABILITY-SCALED
+                // (the swamp lesson, 2026-08-20). A fixed tCPA<2 bar assumes she
+                // can duck in ~2s; in Gatorgrass's 0.9-4.8kt air a duck takes
+                // many seconds and the fixed bar released too late: swamp meds
+                // +32/+56 on two of three sets, boat contacts +60%. Ask instead
+                // whether she could still open the gap if she acted NOW: the
+                // lateral she owes over her achievable lateral rate (~half her
+                // speed, floored so a near-stationary boat reads as unable).
+                // At 12kt this reproduces the ~2s bar; at 2kt it releases
+                // seconds earlier. 60u range floor is unconditional.
+                const needU = Math.max(0, 70 - (mR.tCPA > 0 ? mR.distCPA : mR.distCurrent));
+                const latRate = Math.max(15, (obR.speed || 0) * 60 * 0.5);
+                const tNeed = needU / latRate + 0.5;
+                if (mR.distCurrent < 60 || (needU > 0 && mR.tCPA > 0 && mR.tCPA < tNeed)) {
+                    // ...AND THE RELEASE LATCHES. A per-tick release flaps: the
+                    // first dodge opens the projected CPA, the pair re-holds,
+                    // she straightens, it is imminent again — measured on Rule
+                    // 13 Both seed 1035792683 as alternating 92°/0°/69°/40°
+                    // swings ending in contact at 4.8s. Once Rule 14 obliges
+                    // her to act, she sails ONE consistent evasion: released
+                    // for ~3 real seconds (0.75 on the 0.24x state clock),
+                    // refreshed while the pair stays hot.
+                    if (!this._rhDropT) this._rhDropT = {};
+                    this._rhDropT[obR.id] = state.time + 0.75;
+                    continue;
+                }
+                if (this._rhDropT && (this._rhDropT[obR.id] || -1e9) > state.time) continue;
+                this._rowHold.add(obR);
+            }
+        }
+
         // THE FAR FIELD BELONGS TO THE ROUTER. Post-cap dodge decomposition
         // (_rr_dodge2, redrock/river): with no hard blocker on the small
         // candidates, 62%/47% of wide dodges are bought by the far-blockage
@@ -4144,8 +4241,11 @@ class BotController {
                     };
 
                     const distSq = (myPx - otherP.x)**2 + (myPy - otherP.y)**2;
-                    
-                    if (distSq < pairSafe * pairSafe) {
+
+                    // _rowHold: she must keep clear and nothing is imminent —
+                    // her straight-line projection is not a fact about the
+                    // future, and dodging it is what the 8-15m drift was.
+                    if (distSq < pairSafe * pairSafe && !this._rowHold.has(other)) {
                         boatCollision = true;
                         // Weight collision by distance (avoid closer/harder collisions more)
                         cost += 500000 / (distSq + 10);
@@ -4175,6 +4275,7 @@ class BotController {
                         // so a boat that is genuinely not keeping clear is still
                         // avoided; only the standing-on nudge goes away.
                         if (!(this.avoidanceRole === 'STAND_ON' && other === this.threatBoat)
+                            && !this._rowHold.has(other)
                             && (!this._voActive || this._voIn.has(other)))
                             proximityCost += 5000 / (distSq + 10);
                     }
@@ -4832,6 +4933,8 @@ class BotController {
                 }
                 if (tanC < 0) retroSet = true;
             }
+            if (dbgOn) dbgRows.push({ off: offset, cost, prox: proximityCost,
+                bc: boatCollision ? 1 : 0, sc: staticCollision ? 1 : 0, rv: ruleViolation ? 1 : 0 });
             if (cost < minCost) {
                 minCost = cost;
                 bestHeading = h;
@@ -4847,6 +4950,32 @@ class BotController {
         // Expose how far avoidance pushed us off our intended course — the
         // no-contact foul detector reads this as "avoiding action taken".
         this.lastAvoidDeviation = Math.abs(normalizeAngle(bestHeading - desiredHeading));
+        if (dbgOn) {
+            let bestR = dbgRows[0];
+            for (const r of dbgRows) if (r.cost < bestR.cost) bestR = r;
+            let rng = Infinity, nearB = null;
+            for (const ob of state.boats) {
+                if (ob === boat || ob.raceState.finished) continue;
+                const dN = Math.hypot(ob.x - boat.x, ob.y - boat.y);
+                if (dN < rng) { rng = dN; nearB = ob; }
+            }
+            let rowDbg = null;
+            if (nearB && rng < 1200) {
+                try {
+                    const rr = getRightOfWay(boat, nearB);
+                    rowDbg = { row: rr.boat ? rr.boat.name : null, rule: rr.rule || null,
+                               cons: (rr.constraints || []).join(','),
+                               held: this._rowHold.has(nearB) ? 1 : 0 };
+                } catch (e) { rowDbg = { err: String(e).slice(0, 60) }; }
+            }
+            (window.__AVLOG = window.__AVLOG || []).push({
+                t: +state.time.toFixed(2), n: boat.name,
+                role: this.avoidanceRole, risk: this.riskState,
+                vo: this._voActive ? 1 : 0, voin: this._voIn ? this._voIn.size : 0,
+                rng: rng === Infinity ? null : Math.round(rng), rowDbg,
+                dev: +this.lastAvoidDeviation.toFixed(3),
+                zero: dbgRows.find(r => r.off === 0), best: bestR });
+        }
         return bestHeading;
     }
 }

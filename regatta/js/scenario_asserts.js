@@ -11,6 +11,10 @@
 //   { kind:'tack',    who: 0, tack: 'port'|'stbd', t: 7.0, xfail? }
 //   { kind:'goals',   who: 0, xfail? }
 //   { kind:'proper',  who: 0, tol?: 10 (metres), xfail? }   needs ctx.proper
+//   { kind:'deflect', who: 0, max?: 23 (degrees), t0?, t1?, xfail? }
+//                     max recorded avoidance deviation over the window
+//   { kind:'role',    who: 0, role: 'STAND_ON'|'GIVE_WAY'|'NONE', t: 1.0, t1?, xfail? }
+//                     boat holds that avoidance role on every frame of [t, t1]
 //   { kind:'nocollide', xfail? }   scenario-wide: no hull contact at all
 //
 // The recording (rec) is the lab's: frames[] of per-boat snapshots + pairs,
@@ -122,6 +126,45 @@
                     : `held proper course (max ${worstM} m off at ${at.toFixed(1)}s)` }
                 : { pass: false, why: `strayed past ${tolM} m at ${firstBad.toFixed(1)}s (max ${worstM} m at ${at.toFixed(1)}s)`, atS: firstBad };
         }
+        if (a.kind === 'deflect') {
+            // avoidance DEFLECTION budget: the controller's own recorded
+            // avoidance deviation (frames[].boats[].dev, radians) never
+            // exceeds a cap in degrees over the window. This is the helm's
+            // commanded deflection, not a track comparison — it reads zero
+            // for a boat whose avoidance never fires. atS = the FIRST frame
+            // over the cap; the worst deflection reads out in the message.
+            const maxDeg = a.max != null ? a.max : 23;
+            const f0 = a.t0 != null ? Math.max(0, Math.round(a.t0 * 60)) : 0;
+            const f1 = a.t1 != null ? Math.min(nF, Math.round(a.t1 * 60)) : nF;
+            let worst = 0, at = 0, firstBad = null;
+            for (let f = f0; f <= f1; f++) {
+                const b = frames[f] && frames[f].boats[a.who];
+                if (!b) return { pass: false, why: 'boat missing from recording' };
+                const d = Math.abs(b.dev || 0) * 180 / Math.PI;
+                if (d > worst) { worst = d; at = f / 60; }
+                if (d > maxDeg && firstBad === null) firstBad = f / 60;
+            }
+            const worstS = Math.round(worst);
+            return worst <= maxDeg
+                ? { pass: true, why: worst === 0 ? 'no avoidance deflection'
+                    : `deflected ≤ ${worstS}° (worst at ${at.toFixed(1)}s)` }
+                : { pass: false, why: `deflected past ${maxDeg}° at ${firstBad.toFixed(1)}s (worst ${worstS}° at ${at.toFixed(1)}s)`, atS: firstBad };
+        }
+        if (a.kind === 'role') {
+            // role WINDOW: the controller holds one avoidance role on every
+            // frame of [t, t1] (t1 defaults to t). Catches the bimodal
+            // STAND_ON latch — a seed that never latches fails here.
+            const want = a.role || 'STAND_ON';
+            const f0 = Math.max(0, Math.round((a.t || 0) * 60));
+            const f1 = Math.min(nF, Math.round((a.t1 != null ? a.t1 : (a.t || 0)) * 60));
+            for (let f = f0; f <= f1; f++) {
+                const b = frames[f] && frames[f].boats[a.who];
+                if (!b) return { pass: false, why: 'boat missing from recording' };
+                if ((b.role || 'NONE') !== want)
+                    return { pass: false, why: `${fmtBoat(names, a.who)} was ${b.role || 'NONE'} at ${(f / 60).toFixed(1)}s, not ${want}`, atS: f / 60 };
+            }
+            return { pass: true, why: `${fmtBoat(names, a.who)} held ${want} through ${(f0 / 60).toFixed(1)}–${(f1 / 60).toFixed(1)}s` };
+        }
         if (a.kind === 'near') {
             // rounding TIGHTNESS: closest approach to a mark stays within a
             // budget (metres). ctx.marks = [{x,y}] in world units.
@@ -207,6 +250,12 @@
         if (a.kind === 'proper') return a.tol === 0 ? `${nm(a.who)} matches proper course exactly`
             : `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 10}m`;
         if (a.kind === 'nocollide') return 'no collisions';
+        if (a.kind === 'deflect') {
+            const win = a.t0 != null || a.t1 != null
+                ? ` ${(a.t0 != null ? a.t0.toFixed(1) : '0')}–${a.t1 != null ? a.t1.toFixed(1) + 's' : 'end'}` : '';
+            return `${nm(a.who)} deflects ≤ ${a.max != null ? a.max : 23}°${win}`;
+        }
+        if (a.kind === 'role') return `${(a.t || 0).toFixed(1)}${a.t1 != null ? '–' + a.t1.toFixed(1) : ''}s ${nm(a.who)} is ${a.role || 'STAND_ON'}`;
         if (a.kind === 'near') return `${nm(a.who)} rounds within ${a.max != null ? a.max : 15}m of mark ${(a.mark || 0) + 1}`;
         if (a.kind === 'turn') return `${nm(a.who)} turns ≤ ${a.max != null ? a.max : 360}° total`;
         return a.kind;

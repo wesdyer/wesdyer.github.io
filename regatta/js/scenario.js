@@ -1409,6 +1409,26 @@
                 row.appendChild(bareIn(a.max != null ? a.max : 360, 30, 'total integrated heading change over the run (\u00b0)',
                     v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p > 0 ? p : 360; }));
                 row.appendChild(hintSpan('\u00b0 total'));
+            } else if (a.kind === 'deflect') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('deflects \u2264'));
+                row.appendChild(bareIn(a.max != null ? a.max : 23, 26, 'max avoidance deflection the helm may command (\u00b0)',
+                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p >= 0 ? p : 23; }));
+                row.appendChild(hintSpan('\u00b0'));
+            } else if (a.kind === 'role') {
+                row.appendChild(bareIn(a.t != null ? a.t : 0, 26, 'window start (s)', v => a.t = Math.max(0, parseFloat(v) || 0)));
+                row.appendChild(hintSpan('\u2013'));
+                row.appendChild(bareIn(a.t1 != null ? a.t1 : '', 26, 'window end (s, blank = start only)',
+                    v => { const p = parseFloat(v); a.t1 = Number.isFinite(p) ? Math.max(0, p) : undefined; }));
+                row.appendChild(hintSpan('s'));
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('is'));
+                const rSel = document.createElement('select');
+                rSel.className = 'sl-msel';
+                for (const v of ['STAND_ON', 'GIVE_WAY', 'NONE']) { const o = document.createElement('option'); o.value = v; o.textContent = v.replace('_', '-'); rSel.appendChild(o); }
+                rSel.value = a.role || 'STAND_ON';
+                rSel.addEventListener('change', () => { a.role = rSel.value; assertsChanged(); });
+                row.appendChild(rSel);
             }
             // status chip: judged across the whole seed set. One seed shows
             // the plain verdict; several show k/N. Clicking a failure
@@ -1492,6 +1512,8 @@
             ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
             ['near', 'ROUNDS WITHIN', 'closest approach to a mark stays inside a budget — rounding tightness'],
             ['turn', 'TURN BUDGET', 'total heading change over the run stays under a cap — catches orbit overshoot'],
+            ['deflect', 'DEFLECTION BUDGET', 'the helm never commands avoidance deflection past a cap — stand-on holds her course'],
+            ['role', 'HOLDS ROLE', 'a boat holds one avoidance role (stand-on / give-way / none) over a time window'],
         ];
         const addBox = document.createElement('div');
         addBox.style.cssText = 'display:none;flex-direction:column;gap:6px';
@@ -1522,6 +1544,8 @@
                     nocollide: { kind: 'nocollide' },
                     near: { kind: 'near', who: 0, mark: 0, max: 15 },
                     turn: { kind: 'turn', who: 0, max: 360 },
+                    deflect: { kind: 'deflect', who: 0, max: 23 },
+                    role: { kind: 'role', who: 0, role: 'STAND_ON', t: Math.round(LAB.durationS / 2) },
                 }[kind];
                 LAB.asserts.push(def);
                 addBox.style.display = 'none';
