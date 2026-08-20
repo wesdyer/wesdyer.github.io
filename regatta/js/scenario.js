@@ -657,6 +657,7 @@
     // ── objects ────────────────────────────────────────────────────────
     function invalidate() {
         LAB.rec = null; LAB.recs = {}; LAB.playing = false; LAB.frame = 0;
+        LAB._gcCache = null;   // goal-course compile follows the scene
         LAB.assertResults = null;
         if (typeof renderAsserts === 'function' && LAB.ready) evaluateAsserts();
         if (LAB.mode !== 'edit') LAB.mode = 'edit';
@@ -2099,7 +2100,9 @@
                     tk: bt.raceState.isTacking, pen: bt.raceState.penalty,
                     sp: !!bt.spinnaker, spp: +(bt.spinnakerDeployProgress || 0).toFixed(3),
                     penN: bt.raceState.totalPenalties || 0,
-                    gi: lb._goalIdx || 0,
+                    gi: lb._courseBacked
+                        ? Math.min((lb.goals || []).length, Math.max(0, bt.raceState.leg - 1))
+                        : (lb._goalIdx || 0),
                     mode: lb._mode || 'AI',
                     role: c ? (c.avoidanceRole || '-') : '-',
                     risk: c ? (c.riskState || '-') : '-',
@@ -2233,13 +2236,126 @@
     function handoffToAI(lb) {
         const bt = lb.bot, c = bt.controller;
         if (c && Object.prototype.hasOwnProperty.call(c, 'update')) delete c.update;
-        aiNavFor(lb, bt.heading);
+        // course-backed boats need NO navigation override — the engine's own
+        // route machinery is already steering their goals
+        if (!lb._courseBacked) aiNavFor(lb, bt.heading);
         lb._mode = 'AI';
+    }
+    // ── COURSE-BACKED GOALS (owner ruling): the lab must exercise the SAME
+    // machinery the game races — rounding carrots, sweep accounting and leg
+    // advancement included — so a rounding fixed here is fixed on venues.
+    // When every goal-carrying boat shares ONE goal list, the lab compiles
+    // it into a real state.course ROUTE (the generic walker races lines,
+    // gates and roundings in any order) and installs no goalNav at all.
+    // Boats with differing goal lists still get the lab navigator: the
+    // course is a global, one per world.
+    function goalCourseBoats() {
+        const withGoals = LAB.boats.filter(lb => lb.goals && lb.goals.length);
+        if (!withGoals.length) return [];
+        const sig = (lb) => JSON.stringify(lb.goals.map(g =>
+            g.type === 'point' ? ['p', Math.round(g.x), Math.round(g.y)]
+            : g.type === 'mark' ? ['m', LAB.marks.indexOf(g.ref)]
+            : ['g', LAB.lines.indexOf(g.ref)]));
+        const s0 = sig(withGoals[0]);
+        if (!withGoals.every(lb => sig(lb) === s0)) return [];
+        return withGoals;
+    }
+    function installGoalCourse(cbs) {
+        const C = window.state.course, R = window.state.race;
+        LAB._gc = { marks: C.marks, route: C.route, type: C.type,
+                    roundMark: C.roundMark, dmc: C.dmc, totalLegs: R.totalLegs };
+        const lead = cbs[0];
+        if (!LAB._gcCache) {
+            const marks = C.marks.slice();
+            const route = [];
+            // a line leg whose crossing NORMAL points along the approach —
+            // the walker counts hull crossings with dir vs (gDy, -gDx)
+            const lineLeg = (cx, cy, dx, dy, w, role, finish) => {
+                const gx = -dy * (w / 2), gy = dx * (w / 2);
+                const i1 = marks.push({ x: cx - gx, y: cy - gy, type: 'mark', labGoal: true, zone: 1 }) - 1;
+                const i2 = marks.push({ x: cx + gx, y: cy + gy, type: 'mark', labGoal: true, zone: 1 }) - 1;
+                route.push({ kind: 'line', marks: [i1, i2], dir: +1, role, finish: !!finish });
+            };
+            // synthetic start line 150u astern of the lead boat: it is never
+            // raced (boats begin on leg 1) but it anchors the first leg's
+            // approach geometry for CoursePath.requiredSweep
+            const fx = Math.sin(lead.heading), fy = -Math.cos(lead.heading);
+            let prev = { x: lead.x - fx * 150, y: lead.y - fy * 150 };
+            lineLeg(prev.x, prev.y, fx, fy, 400, 'start', false);
+            lead.goals.forEach((g, k) => {
+                const last = k === lead.goals.length - 1;
+                if (g.type === 'mark') {
+                    route.push({ kind: 'round', side: g.ref.side === 'starboard' ? 'starboard' : 'port',
+                                 role: 'rounding', mark: g.ref });
+                    prev = { x: g.ref.x, y: g.ref.y };
+                } else if (g.type === 'gate') {
+                    // the lab line's own endpoints, ordered so the approach
+                    // side crosses as dir +1 (lab gates accept either way —
+                    // the compile orients to the path's own direction)
+                    const cx = (g.ref.x1 + g.ref.x2) / 2, cy = (g.ref.y1 + g.ref.y2) / 2;
+                    let dx = cx - prev.x, dy = cy - prev.y;
+                    const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+                    const nvx = (g.ref.y2 - g.ref.y1), nvy = -(g.ref.x2 - g.ref.x1);
+                    const flip = (nvx * dx + nvy * dy) < 0;
+                    const i1 = marks.push({ x: flip ? g.ref.x2 : g.ref.x1, y: flip ? g.ref.y2 : g.ref.y1, type: 'mark', labGoal: true, zone: 1 }) - 1;
+                    const i2 = marks.push({ x: flip ? g.ref.x1 : g.ref.x2, y: flip ? g.ref.y1 : g.ref.y2, type: 'mark', labGoal: true, zone: 1 }) - 1;
+                    route.push({ kind: 'line', marks: [i1, i2], dir: +1, role: 'goal', finish: last });
+                    prev = { x: cx, y: cy };
+                } else {
+                    // waypoint = a 220u line square to the approach (the lab's
+                    // old pass-within-110u semantic, as a real crossing)
+                    let dx = g.x - prev.x, dy = g.y - prev.y;
+                    const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+                    lineLeg(g.x, g.y, dx, dy, 220, 'goal', last);
+                    prev = { x: g.x, y: g.y };
+                }
+            });
+            LAB._gcCache = { marks, route, totalLegs: lead.goals.length };
+        }
+        const gc = LAB._gcCache;
+        C.marks = gc.marks;
+        C.route = gc.route;
+        C.roundMark = (gc.route.find(e => e.kind === 'round') || {}).mark || null;
+        C.type = C.roundMark ? 'islandRound' : 'wl';
+        R.totalLegs = gc.totalLegs;
+        // reqSweep + the DMC ruler, built by the game's own compiler; cached
+        // with the course so eleven bursts pay for one build
+        if (!gc.dmcBuilt) {
+            if (typeof buildCoursePaths === 'function') buildCoursePaths();
+            gc.dmc = C.dmc;
+            gc.dmcBuilt = true;
+        } else {
+            C.dmc = gc.dmc;
+        }
+        for (const lb of cbs) {
+            const rs = lb.bot.raceState;
+            rs.leg = 1;
+            rs.isRounding = false; rs.roundSweep = 0; rs.roundWrong = 0;
+            rs.roundArmed = false; rs.roundBanked = false; rs.roundRebased = false;
+            rs.roundEntryB = null; rs.roundWrapped = false;
+            rs.roundFrom = { x: lb.x, y: lb.y };
+            rs.legStartTime = window.state.race.timer;
+            lb._courseBacked = true;
+        }
+    }
+    function removeGoalCourse() {
+        const gc = LAB._gc;
+        if (!gc) return;
+        const C = window.state.course, R = window.state.race;
+        C.marks = gc.marks; C.route = gc.route; C.type = gc.type;
+        C.roundMark = gc.roundMark; C.dmc = gc.dmc;
+        R.totalLegs = gc.totalLegs;
+        LAB._gc = null;
+        for (const lb of LAB.boats) lb._courseBacked = false;
     }
     // one seed → one recording (returned, not applied — runAll owns the
     // cache and the transport)
     function simulateSeed(SEED, soloLb) {
         applyInitial();
+        // shared-goal boats race a COMPILED course (the game's own rounding
+        // and leg machinery); installed per burst, restored in the finally
+        const cbs = goalCourseBoats();
+        if (cbs.length) installGoalCourse(cbs);
         // DETERMINISM: a testing tool must give the same verdict for the same
         // scenario. Two layers:
         // 1. the burst runs under a seeded PRNG (mulberry32) — the AI rolls
@@ -2313,9 +2429,10 @@
             } else {
                 // AI from the start: sail the goals in order (or the SET
                 // heading if there are none) — strategy, avoidance, rules
-                // and the umpire all live
+                // and the umpire all live. Course-backed boats get NO
+                // override: the engine's route machinery steers them.
                 lb._mode = 'AI';
-                aiNavFor(lb, lb.heading);
+                if (!lb._courseBacked) aiNavFor(lb, lb.heading);
             }
         }
         frames = [snapshot()];
@@ -2347,6 +2464,7 @@
         }
         } finally {
             Math.random = realRandom;
+            if (cbs.length) removeGoalCourse();
             // solo burst over: the parked rivals rejoin the stage
             if (soloLb) for (const lb of LAB.boats) {
                 if (lb === soloLb) continue;
