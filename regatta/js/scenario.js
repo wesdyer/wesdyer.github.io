@@ -268,6 +268,7 @@
         <span id="lab-time" style="font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>
       </div>
       <div id="lab-umpasserts" style="display:none;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08)"></div>
+      <div id="lab-umpmetrics" style="display:none;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08)"></div>
       <div id="lab-rights" style="padding:12px 16px 8px"></div>`;
     document.body.appendChild(ump);
 
@@ -1901,6 +1902,115 @@
             + '<span style="color:#66748c;font-size:9px">&#9662;</span>';
         sBtn.title = actTitle + ' \u2014 open the seed list';
     }
+    // ── MEASUREMENTS: the numbers the recording already carries, computed
+    // once per rec and cached — deviation from proper (max + when),
+    // total turn, when avoidance deviation first fired and at what range,
+    // role occupancy, per-pair closest approach and when rights were first
+    // determined (and under which rule). Consumed by the umpire panel, the
+    // testAPI and the runners — no more bespoke probes for these.
+    function metricsFor(key) {
+        const rec = LAB.recs[key];
+        if (!rec) return null;
+        if (rec._metrics) return rec._metrics;
+        const pr = key !== 'proper' ? LAB.recs.proper : null;
+        const nB = rec.frames[0].boats.length;
+        const boats = [];
+        for (let i = 0; i < nB; i++) {
+            let maxDev = 0, maxDevAt = 0, turn = 0, prevH = null, devFrom = null, devRange = null;
+            const roles = {};
+            for (let f = 0; f <= rec.nF; f++) {
+                const b = rec.frames[f].boats[i];
+                if (pr && pr.frames[f] && pr.frames[f].boats[i]) {
+                    const p = pr.frames[f].boats[i];
+                    const d = Math.hypot(b.x - p.x, b.y - p.y);
+                    if (d > maxDev) { maxDev = d; maxDevAt = f / 60; }
+                }
+                if (prevH !== null) {
+                    let dh = (b.h - prevH) % (Math.PI * 2);
+                    if (dh > Math.PI) dh -= Math.PI * 2;
+                    if (dh < -Math.PI) dh += Math.PI * 2;
+                    turn += Math.abs(dh);
+                }
+                prevH = b.h;
+                if (b.dev && devFrom === null) {
+                    devFrom = +(f / 60).toFixed(2);
+                    let best = Infinity;
+                    for (let j = 0; j < nB; j++) {
+                        if (j === i) continue;
+                        const o = rec.frames[f].boats[j];
+                        best = Math.min(best, Math.hypot(b.x - o.x, b.y - o.y));
+                    }
+                    devRange = best === Infinity ? null : Math.round(best);
+                }
+                roles[b.role] = (roles[b.role] || 0) + 1;
+            }
+            const rolePct = {};
+            for (const rk of Object.keys(roles)) {
+                const p = Math.round(100 * roles[rk] / (rec.nF + 1));
+                if (p >= 1 && rk !== '-') rolePct[rk] = p;
+            }
+            boats.push({
+                name: rec.names[i],
+                maxDevM: pr ? +(maxDev / 5).toFixed(1) : null,
+                maxDevAtS: pr ? +maxDevAt.toFixed(1) : null,
+                turnDeg: Math.round(turn * 180 / Math.PI),
+                devFromS: devFrom, devFromRangeU: devRange,
+                roles: rolePct,
+            });
+        }
+        const pairs = [];
+        for (let i = 0; i < nB; i++) for (let j = i + 1; j < nB; j++) {
+            const ni = rec.names[i], nj = rec.names[j];
+            let minD = Infinity, minAt = 0, detAt = null, detRule = null;
+            for (let f = 0; f <= rec.nF; f++) {
+                const A = rec.frames[f].boats[i], B = rec.frames[f].boats[j];
+                const d = Math.hypot(A.x - B.x, A.y - B.y);
+                if (d < minD) { minD = d; minAt = f / 60; }
+                if (detAt === null) {
+                    const q = (rec.frames[f].pairs || []).find(p =>
+                        (p.a === ni && p.b === nj) || (p.a === nj && p.b === ni));
+                    if (q && q.row) { detAt = +(f / 60).toFixed(2); detRule = q.rule || null; }
+                }
+            }
+            pairs.push({ a: ni, b: nj, minDistU: Math.round(minD), minDistAtS: +minAt.toFixed(1),
+                         rightsAtS: detAt, rule: detRule });
+        }
+        rec._metrics = { boats, pairs };
+        return rec._metrics;
+    }
+    function renderUmpMetrics() {
+        const box = document.querySelector('#lab-umpmetrics');
+        if (!box) return;
+        const act = activeSeed();
+        const m = act !== 'proper' && metricsFor(act);
+        if (!m) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        box.innerHTML = '<div class="sl-sectlabel" style="margin-bottom:6px">MEASUREMENTS</div>';
+        const line = (txt, title) => {
+            const d = document.createElement('div');
+            d.style.cssText = 'padding:2px 0;font:700 11px Archivo,system-ui,sans-serif;'
+                + 'color:#c4d2e6;font-variant-numeric:tabular-nums';
+            d.textContent = txt;
+            if (title) d.title = title;
+            box.appendChild(d);
+        };
+        for (const b of m.boats) {
+            const bits = [b.name];
+            if (b.maxDevM != null) bits.push(`${b.maxDevM}m off proper @${b.maxDevAtS}s`);
+            bits.push(`turned ${b.turnDeg}°`);
+            bits.push(b.devFromS != null
+                ? `dev ${b.devFromS}s${b.devFromRangeU != null ? ' @' + b.devFromRangeU + 'u' : ''}`
+                : 'no deviation');
+            const topRole = Object.entries(b.roles).sort((x, y) => y[1] - x[1])[0];
+            if (topRole && topRole[0] !== 'NONE') bits.push(`${topRole[0]} ${topRole[1]}%`);
+            line(bits.join(' · '), 'max off-proper deviation · total turn · when avoidance deviation first fired (and range to nearest boat) · dominant role');
+        }
+        for (const p of m.pairs) {
+            line(`${p.a}·${p.b} min ${p.minDistU}u @${p.minDistAtS}s`
+                + (p.rightsAtS != null ? ` · rights ${p.rightsAtS}s${p.rule ? ' ' + p.rule : ''}` : ' · no determination'),
+                'closest approach · when a rights determination first existed');
+        }
+    }
     // the umpire panel's ASSERTS section: this trace's verdict per row —
     // the assertion's own text, PASS/FAIL, and the failure time. A failed
     // row is a jump to its moment.
@@ -1949,6 +2059,7 @@
     // marker sits at the failure's own timestamp
     function refreshTicks() {
         renderUmpAsserts();   // same triggers: seed switch + re-judge
+        renderUmpMetrics();
         const act = activeSeed();
         const rec = LAB.recs[act];
         if (!rec) { pbTicks.innerHTML = ''; return; }
@@ -3879,7 +3990,8 @@
                 seeds: LAB.seeds.map(s => s >>> 0),
                 runs: LAB.seeds.map(s => {
                     const r = LAB.recs[s >>> 0];
-                    return { seed: s >>> 0, ticks: r.ticks.map(f => +(f / 60).toFixed(2)), pens: r.pens };
+                    return { seed: s >>> 0, ticks: r.ticks.map(f => +(f / 60).toFixed(2)), pens: r.pens,
+                             metrics: metricsFor(s >>> 0) };
                 }),
                 asserts: (LAB.assertResults || []).map((r, k) => ({
                     label: window.ScenarioAsserts.label(LAB.asserts[k], names),
