@@ -13737,3 +13737,20 @@ deg, keeps 134u. Windward Rammer (R11 overlapped, NEW): holds to
 KNIFE-THIN (the capability-release is closure-rate-based and lateral
 closure is slow). Both pin the dormant no-contact foul (gap rows, 10/10
 each): a rammer forcing a 100+ deg dodge is never penalized.
+
+
+## LAGOON ESCAPE LEAD: CLOSED (fixed by intervening landings) + DUCK HUNTER
+
+`_esc_current.js` re-run on the current base: 0.0% unsailable escape
+headings, 0.0% tracks into rock, commanded outward track 107 u/s vs best
+achievable 118 — the 2026-08-09 "lagoon 29.8% unsailable" lead is DEAD,
+fixed by the ground-frame/snap-turn/true-speed escape landings. Residue:
+ALL 163 land contacts of 4 seeds sit in ONE race — lagoon's land dirt is
+the same knife-edge wedge-grind lottery as swamp's tail (anatomy probe
+running).
+
+DUCK HUNTER (new scenario, rule 16.2): a scripted starboard boat bears
+away ONTO the ducking port boat mid-duck. B absorbs the hunt (min 89u,
+nocollide 10/10) — the give-way endgame is robust to a manoeuvring
+stand-on in this geometry — and A is never penalized: rule 16.2 unwired,
+pinned as a gap row. Library = 18 scenarios.
