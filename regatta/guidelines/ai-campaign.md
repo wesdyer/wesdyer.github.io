@@ -13653,3 +13653,60 @@ gap, pinned behaviorally.
   and becomes a stall-zone question — `_stall_field.js` (running) samples
   wind + drag at each stall vs the fleet median to test the dead-air-lane
   hypothesis (routing, not avoidance).
+
+
+## THE ROUTER PUSH OPENS: ARCTIC LEG 1 PAIRED DECOMPOSITION (ground vs ground)
+
+Leg matrix on the gwe anchors (fp=19b566b3:82810 human laps): **leg 1 =
+72% of arctic's gap (1.73x mean), leg 2 = 27% (1.40x), start ~1%.**
+
+Leg 1, `_beat_decomp.js` (54 boat-legs) vs `_glow_odo.js` (his 6 laps):
+| | odo (ground) | tacks | secs | ground u/s | vs DMC plan 12,467u |
+|---|---|---|---|---|---|
+| HIM | 14,514 | 7 | 117.2 | 117.7 | 1.16x |
+| BOTS | 20,572 | 37 | 198.1 | 103.8 | 1.65x |
+
+The 81s delta is ~63% DISTANCE, ~30% speed-while-sailing — same root:
+**30 extra tacks** (TACKWIN waste 1,717u med) **plus role-NONE avoidance
+zigzag** (AVOID_NONE 3,464u med, 44s — floes, not rivals: the flips census
+already showed 37% of arctic manoeuvres have no rival within 300u). Bot
+time is only 33% CLEAN on the leg. His 7-board ladder nearly IS the DMC
+plan; the push's design target is fewer, longer boards through the floe
+field — corridor-aware tack placement. (Wind-agnostic router = the owner's
+named push; this is its quantified opening.)
+
+
+## SWAMP SOLVED TO MECHANISM (same night, three probes deep)
+
+Chain: wedge census (all leg 1, nav/traffic, small devs) -> line
+discriminator (79% bothClear, drift 3 deg — NOT bank-hits) -> stall-field:
+wind at stall == fleet median (dead-air lanes FALSIFIED), dead polar angle
+only 8%, but the speed-MULTIPLIER field (⚠️ shoalFieldAt returns a
+MULTIPLIER, 1.0 = clean — the probe's first read was inverted, rule 18)
+says stalls sit in HEAVY WEED: p50 mul 0.1, p75 0.28. The PLANNED route
+samples mul 1.0 at all 205 points — the router's drag pricing is fine.
+Stall-to-route distance: p25 47u, med 155u; **48% within 150u of the
+planned line, only 6% >400u.** THE MACHINE: the clean planned line THREADS
+a weed corridor; ordinary route-following scatter (±50-300u, plus traffic
+nudges) drops boats into 0.1-multiplier weed that 4kt of wind cannot
+restart. Fix shapes for the push (owner's design call): corridor-width-
+aware drag pricing (price the weed within expected execution scatter), or
+tightened route-following in weed corridors. NOT admission, NOT avoidance.
+
+## ARCTIC LEG 2 (completes the router pair)
+
+HIM: 10,900u, 7 manoeuvres, 76.4s at 138.8 u/s (0.97x the 11,274u plan).
+BOTS: 15,750u, 21, 108.1s at 145.7 u/s (1.40x plan) — bots are FASTER
+through the water; the whole leg-2 gap is DISTANCE (TACKWIN 3,882u +
+AVOID_NONE 2,344u ≈ the excess). Both legs, one mechanism: board
+selection, not boatspeed.
+
+
+## RIVER TACK TIMING: HEALTHY IN GENERAL — THE WEDGE TAIL IS BLOCKED TACKS
+
+`_tack_trigger.js` (834 tacks, grid-walked water ahead on the pre-tack
+course): median tack taken with 640u / 7.3s of water left; only 9% late
+(<1.5s). The fleet's tack timing is fine — so river's ~49% command-into-
+bank WEDGE entries are not a habit but a TAIL: normally-timed tacks that
+get BLOCKED or fail at the moment (traffic/jam/light patch). River's
+wedge lever = the blocked-tack endgame, not tack scheduling.

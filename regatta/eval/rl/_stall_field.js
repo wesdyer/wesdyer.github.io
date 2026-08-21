@@ -32,7 +32,8 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeGWE');
             const out = [];
             const dragAt = (x, y) => {
                 try {
-                    if (typeof shoalFieldAt === 'function') return +(shoalFieldAt(x, y) || 0).toFixed(2);
+                    if (window.VenueDoc && window.VenueDoc.shoalField)
+                        return +(window.VenueDoc.shoalField(state.course.islands, x, y) || 0).toFixed(2);
                 } catch (e) {}
                 return null;
             };
@@ -56,10 +57,20 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeGWE');
                             ws.push(getWindAt(ob.x, ob.y).speed);
                         }
                         ws.sort((a, b) => a - b);
+                        // point of sail: is the POLAR target itself dead at
+                        // this angle/wind, or is she under target?
+                        let twaDeg = null, targetKt = null;
+                        try {
+                            const twa = Math.abs(normalizeAngle(bt.heading - w.direction));
+                            twaDeg = Math.round(twa * 57.3);
+                            if (typeof getTargetSpeed === 'function')
+                                targetKt = +getTargetSpeed(twa, bt.spinnaker, w.speed).toFixed(2);
+                        } catch (e) {}
                         out.push({ t: +state.race.timer.toFixed(1), n: bt.name, leg: bt.raceState.leg,
                                    x: Math.round(bt.x), y: Math.round(bt.y),
                                    wind: +w.speed.toFixed(2),
                                    fleetWindMed: +ws[Math.floor(ws.length / 2)].toFixed(2),
+                                   twaDeg, targetKt,
                                    drag: dragAt(bt.x, bt.y) });
                     }
                     slow.set(bt.id, s);
@@ -82,9 +93,16 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeGWE');
     const drags = all.map(r => r.drag).filter(x => x != null);
     if (drags.length) {
         drags.sort((a, b) => a - b);
-        console.log(`drag field at stall p50/p75/p90: ${q(drags,.5)}/${q(drags,.75)}/${q(drags,.9)} (n=${drags.length})`);
-        console.log(`stalls in drag>0 cells: ${drags.filter(d => d > 0).length}/${drags.length}`);
+        console.log(`speed MULTIPLIER at stall p50/p75/p90: ${q(drags,.5)}/${q(drags,.75)}/${q(drags,.9)} (n=${drags.length}) — 1.0 = clean water, LOW = heavy weed`);
+        console.log(`stalls in weed (mul < 0.9): ${drags.filter(d => d < 0.9).length}/${drags.length}`);
     } else console.log('no drag field readable');
+    const tk = all.filter(r => r.targetKt != null);
+    if (tk.length) {
+        const deadAngle = tk.filter(r => r.targetKt < 1.0).length;
+        const twas = tk.map(r => r.twaDeg).sort((a, b) => a - b);
+        console.log(`polar TARGET at stall < 1kt (dead angle): ${deadAngle}/${tk.length} (${(100 * deadAngle / tk.length).toFixed(0)}%)`);
+        console.log(`TWA at stall p25/med/p75: ${q(twas,.25)}/${q(twas,.5)}/${q(twas,.75)} deg`);
+    }
     fs.writeFileSync(path.join(__dirname, `_stall_${VENUE}.json`), JSON.stringify(all));
     console.log('rows → _stall_' + VENUE + '.json');
 })();
