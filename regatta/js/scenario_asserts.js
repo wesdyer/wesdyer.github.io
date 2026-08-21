@@ -15,6 +15,11 @@
 //                     max recorded avoidance deviation over the window
 //   { kind:'role',    who: 0, role: 'STAND_ON'|'GIVE_WAY'|'NONE', t: 1.0, t1?, xfail? }
 //                     boat holds that avoidance role on every frame of [t, t1]
+//   { kind:'steady',  who: 0, max?: 2, t0?, t1?, xfail? }
+//                     avoidance deviation reverses at most max times over the
+//                     window — a reversal is a SIGN FLIP of the recorded dev,
+//                     or a quick re-arm (dev drops to zero and fires again
+//                     within 0.5s). Catches the memoryless-argmin flap.
 //   { kind:'nocollide', xfail? }   scenario-wide: no hull contact at all
 //
 // The recording (rec) is the lab's: frames[] of per-boat snapshots + pairs,
@@ -36,6 +41,52 @@
         return g === w || g.startsWith(w + ' ') || g.startsWith(w + '(');
     }
     const fmtBoat = (names, i) => (names && names[i]) || ('boat ' + i);
+
+    // FLAP COUNT — one implementation for the 'steady' assert AND the lab's
+    // metrics panel (the battery's lesson: page and runner must judge with
+    // the same code). A flap (reversal) is either
+    //   · a QUICK RE-ARM: the recorded avoidance deviation (dev, radians,
+    //     signed) collapses to zero and fires again within 0.5s, or
+    //   · a TURNING POINT of the signed dev series with prominence ≥ 0.35
+    //     rad (~20°): the helm swings out, back, out again — the 92/0/69/40°
+    //     tick-to-tick anatomy. A monotone escalation (34° → 50° → 70° as
+    //     range closes) has no turning point and counts nothing; a single
+    //     decisive side switch, held, counts nothing either.
+    // Sub-1.7° dev is jitter, not a side.
+    // Returns null when the boat is missing from any frame of the window.
+    function countFlaps(rec, who, t0, t1) {
+        const frames = rec.frames || [];
+        const nF = rec.nF != null ? rec.nF : frames.length - 1;
+        const f0 = t0 != null ? Math.max(0, Math.round(t0 * 60)) : 0;
+        const f1 = t1 != null ? Math.min(nF, Math.round(t1 * 60)) : nF;
+        const EPS = 0.03;           // rad, ~1.7°
+        const REARM_MAX = 30;       // frames of zero that still read as a flap
+        const PROM = 0.35;          // rad, turning-point prominence (~20°)
+        let flaps = 0, zeros = 0, armed = false;
+        let lastVal = null, dir = 0, extremum = null;
+        for (let f = f0; f <= f1; f++) {
+            const b = frames[f] && frames[f].boats[who];
+            if (!b) return null;
+            const d = b.dev || 0;
+            if (Math.abs(d) < EPS) { if (armed) zeros++; continue; }
+            if (armed && zeros >= 1 && zeros <= REARM_MAX) flaps++;
+            if (armed && zeros > REARM_MAX) { lastVal = null; dir = 0; extremum = null; }
+            zeros = 0; armed = true;
+            if (lastVal !== null) {
+                const delta = d - lastVal;
+                if (Math.abs(delta) >= 0.02) {
+                    const newDir = delta > 0 ? 1 : -1;
+                    if (dir !== 0 && newDir !== dir) {
+                        if (extremum === null || Math.abs(lastVal - extremum) >= PROM) flaps++;
+                        extremum = lastVal;
+                    }
+                    dir = newDir;
+                }
+            } else { extremum = d; }
+            lastVal = d;
+        }
+        return flaps;
+    }
 
     // one row against one recording — returns raw {pass, why, atS}.
     // ctx.proper (the PROPER COURSE composite) feeds the 'proper' kind.
@@ -209,6 +260,16 @@
                 ? { pass: true, why: `turned ${totDeg}° total` }
                 : { pass: false, why: `passed ${max}° at ${overAt.toFixed(1)}s (${totDeg}° total by the end)`, atS: overAt };
         }
+        if (a.kind === 'steady') {
+            // STEADY HELM: avoidance deviation reverses at most `max` times
+            // over the window (see countFlaps above for what a reversal is).
+            const max = a.max != null ? a.max : 2;
+            const n = countFlaps(rec, a.who, a.t0, a.t1);
+            if (n == null) return { pass: false, why: 'boat missing from recording' };
+            return n <= max
+                ? { pass: true, why: n === 0 ? 'no reversals' : `${n} reversal${n === 1 ? '' : 's'}` }
+                : { pass: false, why: `${n} avoidance reversals (max ${max}) — the flap` };
+        }
         if (a.kind === 'nocollide') {
             // EXACT collision test: the engine's own hull-polygon contact
             // events (captured before the penalty debounce), orientation-
@@ -256,12 +317,17 @@
             return `${nm(a.who)} deflects ≤ ${a.max != null ? a.max : 23}°${win}`;
         }
         if (a.kind === 'role') return `${(a.t || 0).toFixed(1)}${a.t1 != null ? '–' + a.t1.toFixed(1) : ''}s ${nm(a.who)} is ${a.role || 'STAND_ON'}`;
+        if (a.kind === 'steady') {
+            const win = a.t0 != null || a.t1 != null
+                ? ` ${(a.t0 != null ? a.t0.toFixed(1) : '0')}–${a.t1 != null ? a.t1.toFixed(1) + 's' : 'end'}` : '';
+            return `${nm(a.who)} steady helm ≤ ${a.max != null ? a.max : 2} reversals${win}`;
+        }
         if (a.kind === 'near') return `${nm(a.who)} rounds within ${a.max != null ? a.max : 15}m of mark ${(a.mark || 0) + 1}`;
         if (a.kind === 'turn') return `${nm(a.who)} turns ≤ ${a.max != null ? a.max : 360}° total`;
         return a.kind;
     }
 
-    const api = { evaluate, label, ruleMatches };
+    const api = { evaluate, label, ruleMatches, countFlaps };
     if (typeof window !== 'undefined') window.ScenarioAsserts = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();

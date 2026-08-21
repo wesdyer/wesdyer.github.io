@@ -3273,6 +3273,7 @@ class BotController {
     applyAvoidance(desiredHeading, speedRequest) {
         // If stuck (Wiggle Mode), ignore avoidance to force breakout
         this.lastAvoidDeviation = 0;
+        this.lastAvoidDeviationSigned = 0;
         if (this.wiggleActive) return desiredHeading;
         // ESCAPE retraces the boat's own wake (sailable by construction); the
         // 150u-entry / 120u-abort rival guards replace avoidance while it runs.
@@ -4057,6 +4058,13 @@ class BotController {
             let vy = -Math.cos(h) * speed + curAvVy;
             let futureX = boat.x + vx * (lookaheadFrames / 60);
             let futureY = boat.y + vy * (lookaheadFrames / 60);
+            // The rolled substep positions are KEPT now (give-way endgame
+            // push, 2026-08-20): the rival test below walks this same arc,
+            // so rivals stop being graded on "a straight line from a heading
+            // she is not yet on" — the half-a-function asymmetry the v2
+            // comment above names is closed.
+            let arcPts = null;
+            const arcDt = (lookaheadFrames / 60) / 8;
             if (openWaterAv) {
                 const snapP = (this.iceEscapeTimer > 0 && !this.penaltySpin);
                 const omP = getTurnSpeed() * 60 * (1.0 + boat.stats.handling * 0.03)
@@ -4064,11 +4072,13 @@ class BotController {
                 const TP = lookaheadFrames / 60;
                 const NP = 8, dtP = TP / NP;
                 let hp = boat.heading, xp = boat.x, yp = boat.y;
+                arcPts = [[boat.x, boat.y]];
                 for (let iP = 0; iP < NP; iP++) {
                     const dhP = normalizeAngle(h - hp);
                     hp = normalizeAngle(hp + Math.sign(dhP) * Math.min(Math.abs(dhP), omP * dtP));
                     xp += (Math.sin(hp) * speed + curAvVx) * dtP;
                     yp += (-Math.cos(hp) * speed + curAvVy) * dtP;
+                    arcPts.push([xp, yp]);
                 }
                 futureX = xp; futureY = yp;
                 vx = (futureX - boat.x) / TP; vy = (futureY - boat.y) / TP;
@@ -4228,7 +4238,96 @@ class BotController {
                     }
                 }
 
-                // Check along the path (5 points)
+                // THE HARD RULE-14 TEST — TRUE CPA ON THE ARC (give-way
+                // endgame push, 2026-08-20). The old test walked 5 point
+                // samples (t = 0.8..4.0s) along a straight CHORD at the
+                // arc-averaged velocity, and its ledger names three failure
+                // modes measured in the lab and on bay rubs:
+                //   · sub-0.8s contacts fell between the samples — at the
+                //     last ticks before contact even straight-ahead read
+                //     clear, which is the venue's "dev 0-6° at IMMINENT";
+                //   · a turning candidate's chord claimed lateral clearance
+                //     the hull hasn't reached yet, so near-range escapes
+                //     read as colliding and the argmin fell into the
+                //     all-candidates-collide 500000/d² lottery — the
+                //     92/0/69/40° flap, reproduced against a rival HOLDING
+                //     course (so it is not rival projection);
+                //   · the give-way MEDIUM/HIGH bubble (150u) exceeds the
+                //     ~100u standing distance of an overlapped pair, so a
+                //     converging windward boat lived in permanent-collision
+                //     state and bought 34-69° where a small early luff was
+                //     owed.
+                // Fix: in open water the candidate's own ROLLED arc (the
+                // same 8 substeps the land probe sails, computed above) is
+                // tested against the rival's line with continuous per-
+                // segment CPA — no sampling floor, no chord fiction — and
+                // the hard term vetoes at the TRUTH CORE (80u, the normal
+                // bubble), not the comfort bubble: the landed keep-clear
+                // (a)/(b) term above already prices the rules gap (80u owed
+                // crossing / lateral room overlapped), so grading misses by
+                // achievable geometry lets the argmin pick the SMALLEST
+                // candidate that truly keeps clear — early, small, decisive.
+                // Spinner berth (130u) and the start/liveness cores are
+                // unchanged; ice venues keep the legacy sampler byte-for-
+                // byte (openWaterAv false ⇒ arcPts null), and so does the
+                // START (racingLegF, same gate as the candidate fan — start
+                // tuning is sacred, d55eb97's 4.4 OCS points say so).
+                const arcTest = arcPts && racingLegF;
+                const hardCore = otherSpinC ? pairSafe : Math.min(pairSafe, 80);
+                if (arcTest) {
+                    let minApproachSq = Infinity;
+                    for (let iSeg = 0; iSeg < 8; iSeg++) {
+                        const tA = iSeg * arcDt, tB = (iSeg + 1) * arcDt;
+                        // relative segment (own arc point minus rival's line)
+                        const rax = arcPts[iSeg][0] - (other.x + ovx * tA);
+                        const ray = arcPts[iSeg][1] - (other.y + ovy * tA);
+                        const rbx = arcPts[iSeg + 1][0] - (other.x + ovx * tB);
+                        const rby = arcPts[iSeg + 1][1] - (other.y + ovy * tB);
+                        const dxs = rbx - rax, dys = rby - ray;
+                        const l2 = dxs * dxs + dys * dys;
+                        let tt = l2 > 1e-9 ? -(rax * dxs + ray * dys) / l2 : 0;
+                        // an already-inside pair must grade candidates by how
+                        // they LEAVE, not auto-veto them all on the shared
+                        // t=0 range (the legacy sampler's 0.8s floor never
+                        // charged t=0 either) — so the first segment starts
+                        // judging a quarter-second out
+                        const lo = iSeg === 0 ? 0.5 : 0;
+                        if (tt < lo) tt = lo; else if (tt > 1) tt = 1;
+                        const cx = rax + dxs * tt, cy = ray + dys * tt;
+                        const dSq = cx * cx + cy * cy;
+                        if (dSq < minApproachSq) minApproachSq = dSq;
+                    }
+                    if (minApproachSq < hardCore * hardCore && !this._rowHold.has(other)) {
+                        boatCollision = true;
+                        // ⚠️ SCALE: the legacy sampler summed 500000/d² over
+                        // several violating samples with d collapsing toward
+                        // contact — thousands of points. A single true-CPA
+                        // evaluation never sees a tiny d for a candidate that
+                        // dodges at all, so 500000/d² alone is 30-300 points
+                        // here: SOFTER than the fan's own deviation cost
+                        // (0.8³·200 ≈ 102), and the argmin would prefer the
+                        // shave to the turn (measured: the spinner-control
+                        // contact at 37u). The shortfall term keeps the
+                        // ordering veto-class: candidates are ranked by how
+                        // much of the core they still violate, strongly
+                        // enough that no deviation is too expensive to buy
+                        // a genuinely bigger miss.
+                        const short = 1 - Math.sqrt(minApproachSq) / hardCore;
+                        cost += 30000 * short * short + 500000 / (minApproachSq + 10);
+                        if (this.riskState === 'IMMINENT') {
+                            cost += 20000;
+                        } else {
+                            try {
+                                const res = getRightOfWay(boat, other);
+                                if (res.boat === other) ruleViolation = true; // We are Give-Way
+                            } catch (e) {}
+                        }
+                    }
+                }
+                // Check along the path (5 points). With the arc test above
+                // this loop carries only the soft proximity gradient (its
+                // else-branch), byte-identical predicate; on ice venues it
+                // is still the whole test, unchanged.
                 for (let i = 1; i <= boatSamples; i++) {
                     const t = i * (1.0/boatSamples) * (lookaheadFrames / 60);
 
@@ -4246,19 +4345,21 @@ class BotController {
                     // her straight-line projection is not a fact about the
                     // future, and dodging it is what the 8-15m drift was.
                     if (distSq < pairSafe * pairSafe && !this._rowHold.has(other)) {
-                        boatCollision = true;
-                        // Weight collision by distance (avoid closer/harder collisions more)
-                        cost += 500000 / (distSq + 10);
+                        if (!arcTest) {
+                            boatCollision = true;
+                            // Weight collision by distance (avoid closer/harder collisions more)
+                            cost += 500000 / (distSq + 10);
 
-                        // Strict Rule 14 Override for IMMINENT
-                        if (this.riskState === 'IMMINENT') {
-                             cost += 20000;
-                        } else {
-                            // Check Rules
-                            try {
-                                const res = getRightOfWay(boat, other);
-                                if (res.boat === other) ruleViolation = true; // We are Give-Way
-                            } catch(e) {}
+                            // Strict Rule 14 Override for IMMINENT
+                            if (this.riskState === 'IMMINENT') {
+                                 cost += 20000;
+                            } else {
+                                // Check Rules
+                                try {
+                                    const res = getRightOfWay(boat, other);
+                                    if (res.boat === other) ruleViolation = true; // We are Give-Way
+                                } catch(e) {}
+                            }
                         }
                     } else if (distSq < 250 * 250 && this.livenessState === 'normal') {
                         // A RIGHT-OF-WAY BOAT SAILS HER PROPER COURSE (2026-08-04b).
@@ -4949,7 +5050,11 @@ class BotController {
 
         // Expose how far avoidance pushed us off our intended course — the
         // no-contact foul detector reads this as "avoiding action taken".
-        this.lastAvoidDeviation = Math.abs(normalizeAngle(bestHeading - desiredHeading));
+        // The SIGNED sibling is instrumentation (Scenario Lab flap metric):
+        // the abs() hides which side the helm committed to, so side flips
+        // are invisible to any consumer of the unsigned value.
+        this.lastAvoidDeviationSigned = normalizeAngle(bestHeading - desiredHeading);
+        this.lastAvoidDeviation = Math.abs(this.lastAvoidDeviationSigned);
         if (dbgOn) {
             let bestR = dbgRows[0];
             for (const r of dbgRows) if (r.cost < bestR.cost) bestR = r;

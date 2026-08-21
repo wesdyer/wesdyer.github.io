@@ -321,6 +321,10 @@
             <div class="sl-inp" style="flex:1"><input id="lab-aiat" type="text" inputmode="decimal" placeholder="never"></div>
             <span class="sl-hint">s</span>
           </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+            <span class="sl-lab" style="margin:0" title="she starts the run flagged, owing one 360 — Rule 21 applies, the AI takes the spin when clear">Penalized at start</span>
+            <button id="lab-penstart" class="sl-btn" style="flex:none;padding:6px 12px">OFF</button>
+          </div>
         </div>
         <div class="sl-sect">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
@@ -958,7 +962,7 @@
             // deleted boat, slide the rest down (who === -1 "nobody" is safe:
             // this only runs for a found index, i >= 0)
             if (i >= 0) {
-                const BK = { penalty: ['who'], row: ['of', 'over'], clear: ['a', 'b'], tack: ['who'], goals: ['who'], proper: ['who'], near: ['who'], turn: ['who'] };
+                const BK = { penalty: ['who'], row: ['of', 'over'], clear: ['a', 'b'], tack: ['who'], goals: ['who'], proper: ['who'], near: ['who'], turn: ['who'], deflect: ['who'], role: ['who'], steady: ['who'] };
                 LAB.asserts = LAB.asserts.filter(a => !(BK[a.kind] || []).some(kf => a[kf] === i));
                 for (const a of LAB.asserts) for (const kf of (BK[a.kind] || [])) if (a[kf] > i) a[kf]--;
             }
@@ -1140,10 +1144,20 @@
     sidePortB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'port'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     sideStbdB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'starboard'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     const aiAtIn = ui.querySelector('#lab-aiat');
+    const penStartB = ui.querySelector('#lab-penstart');
     function refreshPathRow(lb) {
         aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
         aiAtIn.title = 'blank = scripted to the end · 0 = AI from the start';
+        penStartB.textContent = lb.penalized ? 'ON' : 'OFF';
+        penStartB.classList.toggle('sl-btn-pri', !!lb.penalized);
     }
+    penStartB.onclick = () => {
+        if (LAB.sel && LAB.sel.kind === 'boat') {
+            LAB.sel.ref.penalized = !LAB.sel.ref.penalized || undefined;
+            refreshPathRow(LAB.sel.ref);
+            invalidate();
+        }
+    };
 
     // ── THE PLAN: helm orders on a clock. The initial condition is the
     // boat's heading + speed; each step says "at t seconds, steer to this
@@ -1303,16 +1317,18 @@
         // which seeds does anything fail on — the transport dropdown reads red
         LAB.seedFail = {};
         seeds.forEach((s, si) => {
-            if (per[si].some(r => r.status !== 'pass' && r.status !== 'gap')) LAB.seedFail[s] = true;
+            // 'fixed' is an xfail row that PASSED — a gap closing is not a
+            // failing seed (it used to read as one and paint the seed red)
+            if (per[si].some(r => r.status !== 'pass' && r.status !== 'gap' && r.status !== 'fixed')) LAB.seedFail[s] = true;
         });
         LAB.assertResults = LAB.asserts.map((a, k) => {
-            let ok = 0, fail = null;
+            let ok = 0, fixed = 0, fail = null;
             seeds.forEach((s, si) => {
                 const r = per[si][k];
-                if (r.status === 'pass' || r.status === 'gap') ok++;
+                if (r.status === 'pass' || r.status === 'gap' || r.status === 'fixed') { ok++; if (r.status === 'fixed') fixed++; }
                 else if (!fail) fail = { seed: s, ix: si, why: r.why, atS: r.atS };
             });
-            return { n: seeds.length, ok, fail, single: per[0][k] };
+            return { n: seeds.length, ok, fixed, fail, single: per[0][k] };
         });
         renderAsserts();
         renderSeeds();
@@ -1429,6 +1445,18 @@
                 rSel.value = a.role || 'STAND_ON';
                 rSel.addEventListener('change', () => { a.role = rSel.value; assertsChanged(); });
                 row.appendChild(rSel);
+            } else if (a.kind === 'steady') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('steady ≤'));
+                row.appendChild(bareIn(a.max != null ? a.max : 2, 26, 'max avoidance reversals over the window (sign flips + quick re-arms)',
+                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p >= 0 ? Math.round(p) : 2; }));
+                row.appendChild(hintSpan('reversals'));
+                row.appendChild(bareIn(a.t0 != null ? a.t0 : '', 26, 'window start (s, blank = whole run)',
+                    v => { const p = parseFloat(v); a.t0 = Number.isFinite(p) ? Math.max(0, p) : undefined; }));
+                row.appendChild(hintSpan('–'));
+                row.appendChild(bareIn(a.t1 != null ? a.t1 : '', 26, 'window end (s, blank = end)',
+                    v => { const p = parseFloat(v); a.t1 = Number.isFinite(p) ? Math.max(0, p) : undefined; }));
+                row.appendChild(hintSpan('s'));
             }
             // status chip: judged across the whole seed set. One seed shows
             // the plain verdict; several show k/N. Clicking a failure
@@ -1514,6 +1542,7 @@
             ['turn', 'TURN BUDGET', 'total heading change over the run stays under a cap — catches orbit overshoot'],
             ['deflect', 'DEFLECTION BUDGET', 'the helm never commands avoidance deflection past a cap — stand-on holds her course'],
             ['role', 'HOLDS ROLE', 'a boat holds one avoidance role (stand-on / give-way / none) over a time window'],
+            ['steady', 'STEADY HELM', 'avoidance deviation reverses at most N times over a window — catches the flap'],
         ];
         const addBox = document.createElement('div');
         addBox.style.cssText = 'display:none;flex-direction:column;gap:6px';
@@ -1546,6 +1575,7 @@
                     turn: { kind: 'turn', who: 0, max: 360 },
                     deflect: { kind: 'deflect', who: 0, max: 23 },
                     role: { kind: 'role', who: 0, role: 'STAND_ON', t: Math.round(LAB.durationS / 2) },
+                    steady: { kind: 'steady', who: 0, max: 2 },
                 }[kind];
                 LAB.asserts.push(def);
                 addBox.style.display = 'none';
@@ -1979,6 +2009,10 @@
                 maxDevAtS: pr ? +maxDevAt.toFixed(1) : null,
                 turnDeg: Math.round(turn * 180 / Math.PI),
                 devFromS: devFrom, devFromRangeU: devRange,
+                // avoidance reversals (sign flips + quick re-arms) — the
+                // flap count, computed by the shared evaluator so the
+                // 'steady' assert and this panel can never disagree
+                flaps: window.ScenarioAsserts.countFlaps(rec, i),
                 roles: rolePct,
             });
         }
@@ -2025,9 +2059,10 @@
             bits.push(b.devFromS != null
                 ? `dev ${b.devFromS}s${b.devFromRangeU != null ? ' @' + b.devFromRangeU + 'u' : ''}`
                 : 'no deviation');
+            if (b.flaps) bits.push(`flapped ${b.flaps}×`);
             const topRole = Object.entries(b.roles).sort((x, y) => y[1] - x[1])[0];
             if (topRole && topRole[0] !== 'NONE') bits.push(`${topRole[0]} ${topRole[1]}%`);
-            line(bits.join(' · '), 'max off-proper deviation · total turn · when avoidance deviation first fired (and range to nearest boat) · dominant role');
+            line(bits.join(' · '), 'max off-proper deviation · total turn · when avoidance deviation first fired (and range to nearest boat) · avoidance reversals · dominant role');
         }
         for (const p of m.pairs) {
             line(`${p.a}·${p.b} min ${p.minDistU}u @${p.minDistAtS}s`
@@ -2151,6 +2186,19 @@
             bt.raceState.isTacking = false; bt.raceState.ocs = false;
             bt.raceState.penalty = false; bt.raceState.totalPenalties = 0;
             bt.raceState.penaltyTurnsOwed = 0;
+            // PENALIZED AT START (chain scenarios): she begins the run
+            // flagged and owing one turn — Rule 21 applies to her from t=0
+            // and the AI's own spin machinery decides when to take the 360.
+            // Not a penalty EVENT: rec.pens stays empty for it, so a
+            // `penalty who:-1` row still means "no NEW foul in the run".
+            if (lb.penalized) {
+                bt.raceState.penalty = true;
+                bt.raceState.totalPenalties = 1;
+                bt.raceState.penaltyTurnsOwed = 1;
+                bt.raceState.penaltyFlagTime = 0;
+                bt.raceState.penaltyRot = 0;
+                bt.raceState.penaltyLastHeading = null;
+            }
             // kite starts stowed — a pool recruit otherwise carries whatever
             // hoist state its parked racing life left behind
             bt.spinnaker = false; bt.spinnakerDeployProgress = 0;
@@ -2241,7 +2289,10 @@
                     mode: lb._mode || 'AI',
                     role: c ? (c.avoidanceRole || '-') : '-',
                     risk: c ? (c.riskState || '-') : '-',
-                    dev: c ? +((c.lastAvoidDeviation || 0)).toFixed(2) : 0 };
+                    // SIGNED when the engine provides it (flap metric needs
+                    // the side); older engines fall back to the abs value
+                    dev: c ? +((c.lastAvoidDeviationSigned != null
+                        ? c.lastAvoidDeviationSigned : c.lastAvoidDeviation) || 0).toFixed(2) : 0 };
             }),
             pairs: pairRights(),
         };
@@ -2890,6 +2941,7 @@
                 name: lb.bot.name !== lb._defName ? lb.bot.name : undefined,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS,
+                penalized: lb.penalized ? true : undefined,
                 goals: (lb.goals && lb.goals.length) ? lb.goals.map(g =>
                     g.type === 'point' ? { k: 'p', x: Math.round(g.x - S.x), y: Math.round(g.y - S.y) }
                     : g.type === 'mark' ? { k: 'm', i: LAB.marks.indexOf(g.ref) }
@@ -2926,6 +2978,7 @@
                 // the kite is auto-only now)
                 lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })).sort((a, b) => a.t - b.t) : [];
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
+                lb.penalized = bs.penalized ? true : undefined;
                 if (bs.name) lb.bot.name = bs.name;
                 if (bs.goals && bs.goals.length) pendingGoals.push([lb, bs.goals]);
             }
@@ -4020,8 +4073,14 @@
                 asserts: (LAB.assertResults || []).map((r, k) => ({
                     label: window.ScenarioAsserts.label(LAB.asserts[k], names),
                     n: r.n, ok: r.ok,
-                    status: r.n === 1 ? r.single.status : (r.ok === r.n ? 'pass' : 'fail'),
-                    why: r.n === 1 ? r.single.why : (r.fail ? `seed ${r.fail.seed}: ${r.fail.why}` : 'held on every seed'),
+                    // multi-seed xfail rows keep their gap/fixed semantics:
+                    // all-ok on an xfail row is a GAP unless a seed actually
+                    // PASSED, which is the promote-me signal (FIXED)
+                    status: r.n === 1 ? r.single.status
+                        : r.ok !== r.n ? 'fail'
+                        : LAB.asserts[k].xfail ? (r.fixed ? 'fixed' : 'gap') : 'pass',
+                    why: r.n === 1 ? r.single.why : (r.fail ? `seed ${r.fail.seed}: ${r.fail.why}`
+                        : r.fixed ? `passed on ${r.fixed}/${r.n} seed(s) of an expected-fail row` : 'held on every seed'),
                 })),
             };
         },

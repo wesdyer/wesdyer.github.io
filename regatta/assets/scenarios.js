@@ -386,5 +386,324 @@ window.SCENARIO_DOC = {
     "sands": [],
     "lines": [],
     "savedAt": 1787126236561
+  },
+  "Late Crossing": {
+    "v": 1,
+    "durationS": 8,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      1746259648,
+      903177562,
+      3312895027,
+      244501819,
+      3980791941,
+      1523687810,
+      2811735294,
+      671003452,
+      3141592653
+    ],
+    "tags": [
+      "give-way",
+      "endgame"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "clear",
+        "a": 0,
+        "b": 1,
+        "min": 65
+      },
+      {
+        "kind": "deflect",
+        "who": 0,
+        "max": 5
+      }
+    ],
+    "boats": [
+      {
+        "x": 145,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      },
+      {
+        "x": -145,
+        "y": 485,
+        "headingDeg": 40,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787366100001
+  },
+  "Scripted Duck": {
+    "v": 1,
+    "durationS": 10,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      2003174962,
+      3665910071,
+      148291354,
+      2760198341,
+      866217412,
+      3402941876,
+      1101397815,
+      1929477230,
+      512884639
+    ],
+    "tags": [
+      "give-way",
+      "endgame"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "clear",
+        "a": 0,
+        "b": 1,
+        "min": 65
+      },
+      {
+        "kind": "deflect",
+        "who": 1,
+        "max": 45
+      }
+    ],
+    "boats": [
+      {
+        "x": 167,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5
+      },
+      {
+        "x": -548,
+        "y": 485,
+        "headingDeg": 40,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787366100002
+  },
+  "Overlapped Converge": {
+    "v": 1,
+    "durationS": 12,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      1414213562,
+      2718281828,
+      577215664,
+      1732050807,
+      2236067977,
+      3316624790,
+      141421356,
+      2449489742,
+      645751311
+    ],
+    "tags": [
+      "give-way",
+      "endgame",
+      "rule-11"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "proper",
+        "who": 0,
+        "tol": 1
+      },
+      {
+        "kind": "clear",
+        "a": 0,
+        "b": 1,
+        "min": 55
+      },
+      {
+        "kind": "deflect",
+        "who": 1,
+        "max": 15
+      },
+      {
+        "kind": "steady",
+        "who": 1,
+        "max": 2
+      }
+    ],
+    "boats": [
+      {
+        "x": -200,
+        "y": 575,
+        "headingDeg": 40,
+        "speedKt": 7,
+        "aiAtS": 0
+      },
+      {
+        "x": -290,
+        "y": 505,
+        "headingDeg": 48,
+        "speedKt": 7,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787366100003
+  },
+  "Wedged Pass": {
+    "v": 1,
+    "durationS": 14,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      823917465,
+      3552791804,
+      1683902158,
+      271828182,
+      3819660112,
+      1220703125,
+      2591570291,
+      458962134,
+      3736402689
+    ],
+    "tags": [
+      "give-way",
+      "trap-control"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "goals",
+        "who": 1
+      },
+      {
+        "kind": "clear",
+        "a": 0,
+        "b": 1,
+        "min": 40
+      }
+    ],
+    "boats": [
+      {
+        "x": 0,
+        "y": 500,
+        "headingDeg": 0,
+        "speedKt": 0
+      },
+      {
+        "x": -150,
+        "y": 700,
+        "headingDeg": 37,
+        "speedKt": 7,
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "p",
+            "x": 300,
+            "y": 100
+          }
+        ]
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787366100004
+  },
+  "Spinner Neighbor": {
+    "v": 1,
+    "durationS": 10,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      1092837465,
+      2965714038,
+      387162594,
+      3247863901,
+      750194283,
+      1846529370,
+      2087651934,
+      3908162745,
+      129384756
+    ],
+    "tags": [
+      "give-way",
+      "chain-control"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "clear",
+        "a": 0,
+        "b": 1,
+        "min": 55
+      }
+    ],
+    "boats": [
+      {
+        "x": 0,
+        "y": 400,
+        "headingDeg": 40,
+        "speedKt": 5,
+        "aiAtS": 0,
+        "penalized": true
+      },
+      {
+        "x": -250,
+        "y": 800,
+        "headingDeg": 44,
+        "speedKt": 7,
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "p",
+            "x": 300,
+            "y": 240
+          }
+        ]
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787366100005
   }
 };
