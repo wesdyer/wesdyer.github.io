@@ -2132,32 +2132,10 @@ window.VENUE_DOC["river"] = {
     ]
   },
   "palette": {
-    "baseColor": "#3f6f5f",
-    "deepColor": "#2c5248",
-    "shallowColor": "#5c8f7a",
-    "shorelineColor": "#a3b18a",
-    "gusts": {
-      "gustDark": [
-        18,
-        52,
-        42
-      ],
-      "gustMid": [
-        27,
-        68,
-        56
-      ],
-      "lullBright": [
-        156,
-        204,
-        184
-      ],
-      "lullMid": [
-        134,
-        190,
-        168
-      ]
-    }
+    "baseColor": "#376d64",
+    "deepColor": "#224843",
+    "shallowColor": "#519584",
+    "shorelineColor": "#a3b18a"
   },
   "current": {
     "regions": [
