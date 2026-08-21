@@ -3370,7 +3370,16 @@ class BotController {
             0.6, -0.6,
             0.7, -0.7,
             0.8, -0.8,
+            // EMERGENCY BAND DENSIFIED (2026-08-21, owner-directed): the
+            // 0.8→1.2→1.6 gaps are the same quantization the 0.2-0.8
+            // densification landed against — a boat needing ~57° was
+            // offered 46° and 69° and bought 69°. Measured upstream of the
+            // owner's rounding scenario: the stand-on's one-step-too-much
+            // first-pass dodge displaced her entry onto the mark. Racing
+            // fan only, same as every rung; order stays the tie-break.
+            1.0, -1.0,
             1.2, -1.2,
+            1.4, -1.4,
             1.6, -1.6 // Wider options for emergency bailouts
         ] : [
             0,
@@ -3827,7 +3836,47 @@ class BotController {
                 const needU = Math.max(0, 70 - (mR.tCPA > 0 ? mR.distCPA : mR.distCurrent));
                 const latRate = Math.max(15, (obR.speed || 0) * 60 * 0.5);
                 const tNeed = needU / latRate + 0.5;
-                if (mR.distCurrent < 60 || (needU > 0 && mR.tCPA > 0 && mR.tCPA < tNeed)) {
+                const yieldSafe = () => {
+                    // true = her EVIDENT turn (half-second advanced) already
+                    // defuses the danger — she is acting, keep/restore the hold
+                    if (obR.prevHeading == null) return false;
+                    const omR = normalizeAngle(obR.heading - obR.prevHeading) * 60;
+                    if (Math.abs(omR) <= 0.2) return false;
+                    const hAdv = obR.heading + omR * 0.5;
+                    const sp2 = (obR.speed || 0) * 60;
+                    const rvx2 = Math.sin(hAdv) * sp2 - Math.sin(boat.heading) * boat.speed * 60;
+                    const rvy2 = -Math.cos(hAdv) * sp2 + Math.cos(boat.heading) * boat.speed * 60;
+                    const dx2 = obR.x - boat.x, dy2 = obR.y - boat.y;
+                    const vSq2 = rvx2 * rvx2 + rvy2 * rvy2;
+                    let t2 = 0, d2 = mR.distCurrent;
+                    if (vSq2 > 0.001) {
+                        t2 = -(dx2 * rvx2 + dy2 * rvy2) / vSq2;
+                        if (t2 > 0) d2 = Math.hypot(dx2 + rvx2 * t2, dy2 + rvy2 * t2);
+                    }
+                    const need2 = Math.max(0, 70 - (t2 > 0 ? d2 : mR.distCurrent));
+                    const relAdv = mR.distCurrent < 45 || (need2 > 0 && t2 > 0 && t2 < need2 / latRate + 0.5);
+                    return !relAdv;
+                };
+                // ⚠️ the unconditional floor is HULL-IMMINENT scale (45u ≈
+                // contact ~36u + a boat-width of buffer), not a comfort zone:
+                // at 60u it out-ranked every capability/yield judgment in
+                // exactly the close-quarters regime the owner's doctrine
+                // targets — the whole rights-pressing endgame lives at
+                // 55-70u ("they approach fairly closely as sailboats do").
+                let relNow = mR.distCurrent < 45 || (needU > 0 && mR.tCPA > 0 && mR.tCPA < tNeed);
+                // A RIVAL VISIBLY ACTING IS NOT RELEASE-WORTHY (owner doctrine
+                // 2026-08-21: estimate the other boat's response). The metrics
+                // are heading-based ON PURPOSE, and a give-way boat's hard
+                // yield-swing makes her CPA flicker CONVERGING mid-turn — the
+                // release fired on exactly the boats doing the right thing,
+                // and the stand-on's phantom dodge displaced her rounding
+                // entry (measured: 34-57° at t=3, wrong-side mark pass, lost
+                // lap). Second opinion: advance HER heading by a half second
+                // of her evident turn; if the danger does not survive her
+                // turn, she is acting — keep the hold. A rival turning INTO
+                // us fails the second opinion too and still releases.
+                if (relNow && yieldSafe()) relNow = false;
+                if (relNow) {
                     // ...AND THE RELEASE LATCHES. A per-tick release flaps: the
                     // first dodge opens the projected CPA, the pair re-holds,
                     // she straightens, it is imminent again — measured on Rule
@@ -3840,7 +3889,15 @@ class BotController {
                     this._rhDropT[obR.id] = state.time + 0.75;
                     continue;
                 }
-                if (this._rhDropT && (this._rhDropT[obR.id] || -1e9) > state.time) continue;
+                if (this._rhDropT && (this._rhDropT[obR.id] || -1e9) > state.time) {
+                    // the anti-flap latch holds the release ~3 real seconds —
+                    // but a rival whose EVIDENT turn has already defused the
+                    // danger is not a flap risk: her yield is real and the
+                    // CPA truly opens. Re-hold early (owner doctrine: the
+                    // stand-on reads the other boat's response).
+                    if (!yieldSafe()) continue;
+                    delete this._rhDropT[obR.id];
+                }
                 this._rowHold.add(obR);
             }
         }
@@ -12983,8 +13040,18 @@ function updateAI(boat, dt) {
     // FREEZES for the whole spin. Unscoped, this would hand 5x turn rate to the
     // spiral — ~2s per 360 deg against a base spiral of ~10s — on the arbitrary
     // subset of boats that happened to touch land in the previous 2s.
+    // ...AND THE MARK LATCH GETS THE SAME AUTHORITY (2026-08-21, the owner's
+    // rounding scenario): a boat pinned ON A MARK at ~0.1kt has a correct,
+    // sailable markEscapeHeading and no steerage to turn to it — the contact
+    // speed-kill keeps her at jam speed, jam speed keeps her from turning,
+    // and she parked on the buoy for 4+ seconds (Rule 31 grinding the whole
+    // way) while land-pinned boats snap out at 5x one latch over. Scoped off
+    // the penalty spiral for the same rule-29 reason as iceEscapeTimer: the
+    // mark block sits below penaltySpin's early return, so the latch FREEZES
+    // during a spin and would otherwise hand the spiral 5x authority.
     if (boat.controller && (boat.controller.wiggleActive || boat.controller.escActive
-        || (boat.controller.iceEscapeTimer > 0 && !boat.controller.penaltySpin))) {
+        || ((boat.controller.iceEscapeTimer > 0 || boat.controller.markContactTimer > 0)
+            && !boat.controller.penaltySpin))) {
         aiTurnRate = getTurnSpeed() * timeScale * (1.0 + boat.stats.handling * 0.03) * 5.0; // Snap turn
     }
 

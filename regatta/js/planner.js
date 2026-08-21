@@ -578,7 +578,17 @@ const CoursePath = {
                     // A grid path stair-steps, so it overstates a clear run. Take the detour
                     // only when it is real, and end on the true target rather than a cell
                     // centre.
-                    if (L > straight * 1.08) {
+                    // ⚠️ SHORT IS NOT CLEAR (2026-08-21, the owner's Narrow
+                    // Passage): a path kinked through a slot can be under 8%
+                    // longer than the chord — the old gate threw it away and
+                    // returned a straight line that CLIPS the corner, and the
+                    // helm then (rightly) refused the unsailable plan and
+                    // improvised a full circumnavigation. The straight
+                    // fallback must pass the grid's own line-of-sight; a leg
+                    // whose chord is clear is byte-identical to before.
+                    const chordClear = window.SailCheck.losClear
+                        && window.SailCheck.losClear(grid, from.x, from.y, to.x, to.y);
+                    if (L > straight * 1.08 || !chordClear) {
                         const out = seg.map(q => ({ x: q[0], y: q[1] }));
                         out[0] = { x: from.x, y: from.y };
                         out[out.length - 1] = { x: to.x, y: to.y };

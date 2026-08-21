@@ -665,8 +665,46 @@
     }
 
     // ── objects ────────────────────────────────────────────────────────
+    // ── SAND → WORLD MODEL SYNC (owner report 2026-08-21, "Narrow
+    // Passage routes around a very sailable slot"): the routing grid was
+    // 100% BLIND to lab sands (_gridFixed stayed empty) — the planner
+    // routed straight THROUGH authored polygons and raw geometric
+    // avoidance improvised the detour. The model-accuracy ruling applies:
+    // the router, the grid terms and physics must meet the same walls. So
+    // every sand edit injects the polygons into the lab venue doc as
+    // fixed hidden isles and rebuilds the static nav grid exactly as the
+    // venue compile does. Hash-guarded (cheap when clean), debounced from
+    // invalidate, and FORCED before any run so a burst never races a
+    // stale map.
+    function syncSandsToWorld(force) {
+        if (!LAB.ready || !window.VenueDoc || !window.SailCheck || !window.state || !state.course) return;
+        let h = LAB.sands.length + ':';
+        for (const sd of LAB.sands) for (const v of sd.isl.vertices) h += (Math.round(v.x) + ',' + Math.round(v.y) + ';');
+        if (!force && LAB._sandHash === h) return;
+        LAB._sandHash = h;
+        const doc = window.VenueDoc.get(window.settings ? window.settings.venue : 'lab');
+        if (!doc) return;
+        const keep = (doc.shapes || []).filter(sh => !String(sh.id || '').startsWith('labsand'));
+        const mine = LAB.sands.map((sd, i) => ({ id: 'labsand' + i, kind: 'isle',
+            outer: sd.isl.vertices.map(v => [v.x, v.y]), holes: [], hidden: true }));
+        doc.shapes = keep.concat(mine);
+        try {
+            const fixed = doc.shapes.filter(sh => {
+                const t = window.VenueDoc.traits(sh);
+                return t.motion === 'fixed' && !t.awash;
+            });
+            const g = window.SailCheck.buildGrid(fixed, state.course.boundary, null, null);
+            state.course._botGridStatic = g;
+            state.course.botGrid = g;
+            state.course._gridFixed = fixed;
+            state.course._botGridT = null;
+        } catch (e) {}
+        LAB._gcCache = null;   // compiled routes re-path on the new map
+    }
+    let _sandSyncT = null;
     function invalidate() {
         LAB.rec = null; LAB.recs = {}; LAB.playing = false; LAB.frame = 0;
+        clearTimeout(_sandSyncT); _sandSyncT = setTimeout(() => syncSandsToWorld(false), 250);
         LAB._gcCache = null;   // goal-course compile follows the scene
         LAB.assertResults = null;
         if (typeof renderAsserts === 'function' && LAB.ready) evaluateAsserts();
@@ -2492,16 +2530,24 @@
                         } else {
                             lb._sweep += sgn * normA(brg - lb._prevBrg);
                             lb._prevBrg = brg;
-                            if (lb._sweep >= lb._need) done = true;
+                            // a ROUNDING requires actually visiting the mark:
+                            // sweep alone credited a give-way boat arcing past
+                            // at 218u (owner). Inside the ZONE once — the
+                            // mark-room distance — during the sweep is the
+                            // proximity a rounding means; a boat forced wide
+                            // keeps her sweep and collects credit when her
+                            // carrot brings her in.
+                            if (d < Z) lb._markNear = true;
+                            if (lb._sweep >= lb._need && lb._markNear) done = true;
                         }
                     } else if (lb._sweep != null) {
                         lb._prevBrg = brg;                    // no credit while outside
-                        if (d > Z * 3.5) lb._sweep = null;    // blown out: restart
+                        if (d > Z * 3.5) { lb._sweep = null; lb._markNear = false; }   // blown out: restart
                     }
                 }
                 if (!done) break;
                 lb._goalIdx++;
-                lb._sweep = null; lb._gSide = null;
+                lb._sweep = null; lb._gSide = null; lb._markNear = false;
                 g = goals[lb._goalIdx];
             }
             if (!g) {
@@ -2774,6 +2820,11 @@
                 }
                 return out;
             };
+            // the compiled route (restored away in the burst's finally) —
+            // snapshot it here so probes can see what the router planned
+            if (state.course.dmc && state.course.dmc.legs)
+                window.__ROUTEDBG = Object.fromEntries(Object.entries(state.course.dmc.legs)
+                    .filter(([k, l]) => l && l.pts).map(([k, l]) => [k, l.pts.map(pt => [Math.round(pt.x), Math.round(pt.y)])]));
             (window.__DETSNAPS = window.__DETSNAPS || []).push(LAB.boats.map(lb => ({
                 n: lb.bot.name,
                 boat: scalOf(lb.bot),
@@ -2879,6 +2930,7 @@
             seed: 'proper' };
     }
     function runAllSync() {
+        syncSandsToWorld(false);   // a burst never races a stale map
         for (const s of LAB.seeds.map(x => x >>> 0)) {
             if (!LAB.recs[s]) LAB.recs[s] = simulateSeed(s);
         }
