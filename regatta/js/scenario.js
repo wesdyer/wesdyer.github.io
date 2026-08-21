@@ -800,13 +800,36 @@
         if (!LAB._canon && typeof Boat !== 'undefined') {
             try {
                 const cb = new Boat(-1, false, 0, 0, 'canon', null);
-                LAB._canon = { phys: scal(cb), rs: scal(cb.raceState) };
+                LAB._canon = { phys: scal(cb), rs: scal(cb.raceState),
+                               keys: Object.keys(cb), rsKeys: Object.keys(cb.raceState) };
                 delete LAB._canon.phys.id;
             } catch (e) { LAB._canon = null; }
         }
+        // THE KEY-SET HOLE (found 2026-08-21, the Wall Tack hunt): fields
+        // NOT set by the Boat constructor are runtime-derived — some are
+        // born during EDIT frames (rs._dmcLeg/_dmcS, wake/trend state) and
+        // some exist at recruit time with per-boot values the canon overlay
+        // never canonizes (trimEfficiency, optimalSailAngle — PHYSICS
+        // inputs). Both classes survive the burst reset and evolve with
+        // wall-clock edit time: measured as scenario verdicts flipping with
+        // the number of edit frames between load and run (Wall Tack,
+        // 2-of-3 fresh pages). The CANONICAL key set is the constructor's:
+        // applyInitial deletes everything outside it (controller/ai are
+        // lab-managed and exempt — both are rebuilt per burst anyway), and
+        // _phys0/_rs0 are pruned to it so the scalar restore cannot
+        // resurrect what the delete pass removed. The engine re-derives
+        // runtime state inside the seeded burst.
         if (LAB._canon) {
             Object.assign(lb._phys0, LAB._canon.phys);
             Object.assign(lb._rs0, LAB._canon.rs);
+            lb._keys0 = [...LAB._canon.keys, 'controller', 'ai'];
+            lb._rsKeys0 = [...LAB._canon.rsKeys];
+            const K = new Set(lb._keys0), R = new Set(lb._rsKeys0);
+            for (const k of Object.keys(lb._phys0)) if (!K.has(k)) delete lb._phys0[k];
+            for (const k of Object.keys(lb._rs0)) if (!R.has(k)) delete lb._rs0[k];
+        } else {
+            lb._keys0 = Object.keys(bot);
+            lb._rsKeys0 = Object.keys(bot.raceState);
         }
         select({ kind: 'boat', ref: lb });
         invalidate();
@@ -2176,6 +2199,21 @@
     function applyInitial() {
         for (const lb of LAB.boats) {
             const bt = lb.bot;
+            // KEY-SET RESET first (the Wall Tack hunt, 2026-08-21): delete
+            // any field born after addBoat — edit-time updateAI creates
+            // physics inputs (trimEfficiency, optimalSailAngle) and nav
+            // cursors (rs._dmcLeg/_dmcS) that no snapshot below covers, and
+            // they evolve with wall-clock edit time. Deleting them returns
+            // the boat to her addBoat state; the engine re-derives them
+            // deterministically inside the seeded burst.
+            if (lb._keys0) {
+                const K = new Set(lb._keys0);
+                for (const k of Object.keys(bt)) if (!K.has(k)) delete bt[k];
+            }
+            if (lb._rsKeys0) {
+                const K = new Set(lb._rsKeys0);
+                for (const k of Object.keys(bt.raceState)) if (!K.has(k)) delete bt.raceState[k];
+            }
             // pristine scalars first (see the snapshot note in addBoat);
             // the explicit initial conditions below override on top
             if (lb._phys0) for (const k of Object.keys(lb._phys0)) bt[k] = lb._phys0[k];
@@ -2620,6 +2658,28 @@
                 lb._mode = 'AI';
                 if (!lb._courseBacked) aiNavFor(lb, lb.heading);
             }
+        }
+        // DETERMINISM HUNT HOOK (byte-inert unset, __AVDBG pattern): snapshot
+        // every own-enumerable scalar on each lab boat + controller +
+        // raceState at burst start. Two pages with different edit-time waits
+        // diff these to name an edit-time survivor the canon overlay misses.
+        if (typeof window !== 'undefined' && window.__DETDBG) {
+            const scalOf = (o) => {
+                const out = {};
+                for (const k of Object.keys(o || {})) {
+                    const v = o[k];
+                    if (v == null || typeof v === 'number' || typeof v === 'boolean' || typeof v === 'string') out[k] = v;
+                    else if (Array.isArray(v)) out[k + '#len'] = v.length;
+                }
+                return out;
+            };
+            (window.__DETSNAPS = window.__DETSNAPS || []).push(LAB.boats.map(lb => ({
+                n: lb.bot.name,
+                boat: scalOf(lb.bot),
+                rs: scalOf(lb.bot.raceState),
+                ctl: scalOf(lb.bot.controller),
+                ai: scalOf(lb.bot.ai),
+            })));
         }
         frames = [snapshot()];
         LAB.recording = true;
