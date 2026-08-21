@@ -969,6 +969,23 @@
         confirmDialog('Delete ' + (s.kind === 'sand' ? 'object' : s.kind),
             `Delete ${selDesc(s)}?`, deleteSelNow, 'Delete');
     }
+    // goals rows can now NAME a goal by index — deleting a goal must keep
+    // them honest, exactly as 'near' rows track mark deletion: rows naming
+    // the deleted goal are dropped, later indices slide down (rows with no
+    // goal — the ALL form — are untouched).
+    function dropGoalFromAsserts(bi, gi) {
+        if (bi < 0) return;
+        LAB.asserts = LAB.asserts.filter(a => !(a.kind === 'goals' && a.who === bi && a.goal === gi));
+        for (const a of LAB.asserts)
+            if (a.kind === 'goals' && a.who === bi && a.goal != null && a.goal > gi) a.goal--;
+    }
+    // filter a boat's goals by predicate WITH assert remapping (mark/line
+    // deletion removes every goal that referenced the object)
+    function filterGoalsRemap(lb, keep) {
+        const bi = LAB.boats.indexOf(lb);
+        for (let k = lb.goals.length - 1; k >= 0; k--)
+            if (!keep(lb.goals[k])) { lb.goals.splice(k, 1); dropGoalFromAsserts(bi, k); }
+    }
     function deleteSelNow() {
         const s = LAB.sel;
         if (!s) return;
@@ -998,7 +1015,7 @@
             const ms = window.state.course.marks;
             const i = ms.indexOf(s.ref); if (i >= 0) ms.splice(i, 1);
             const j = LAB.marks.indexOf(s.ref); if (j >= 0) LAB.marks.splice(j, 1);
-            for (const lb of LAB.boats) lb.goals = lb.goals.filter(g => g.ref !== s.ref);
+            for (const lb of LAB.boats) filterGoalsRemap(lb, g => g.ref !== s.ref);
             // 'near' asserts address marks by index, like goals
             if (j >= 0) {
                 LAB.asserts = LAB.asserts.filter(a => !(a.kind === 'near' && (a.mark || 0) === j));
@@ -1010,7 +1027,7 @@
             const j = LAB.sands.indexOf(s.ref); if (j >= 0) LAB.sands.splice(j, 1);
         } else if (s.kind === 'line') {
             const i = LAB.lines.indexOf(s.ref); if (i >= 0) LAB.lines.splice(i, 1);
-            for (const lb of LAB.boats) lb.goals = lb.goals.filter(g => g.ref !== s.ref);
+            for (const lb of LAB.boats) filterGoalsRemap(lb, g => g.ref !== s.ref);
         }
         select(null);
         invalidate();
@@ -1306,7 +1323,11 @@
             del.style.cssText = 'cursor:pointer;color:#66748c;font-size:11px;padding:0 2px';
             del.onmouseenter = () => del.style.color = '#ff8a75';
             del.onmouseleave = () => del.style.color = '#66748c';
-            del.onclick = () => { goals.splice(k, 1); renderGoals(lb); invalidate(); };
+            del.onclick = () => {
+                goals.splice(k, 1);
+                dropGoalFromAsserts(LAB.boats.indexOf(lb), k);
+                renderGoals(lb); renderAsserts(); invalidate();
+            };
             row.append(nB, lab, del);
             goalsDiv.appendChild(row);
         });
@@ -1444,10 +1465,34 @@
                 row.appendChild(tSel);
             } else if (a.kind === 'goals') {
                 row.appendChild(boatSel(a.who, v => a.who = v));
-                row.appendChild(hintSpan('completes goal'));
-                row.appendChild(bareIn(a.goal != null ? a.goal + 1 : '', 26,
-                    'goal number (blank = ALL goals)',
-                    v => { const p = parseFloat(v); a.goal = Number.isFinite(p) && p >= 1 ? Math.round(p) - 1 : undefined; }));
+                row.appendChild(hintSpan('completes'));
+                const gSel = document.createElement('select');
+                gSel.className = 'sl-msel';
+                const optAll = document.createElement('option');
+                optAll.value = ''; optAll.textContent = 'ALL';
+                gSel.appendChild(optAll);
+                const glist = (LAB.boats[a.who] && LAB.boats[a.who].goals) || [];
+                glist.forEach((g, gi) => {
+                    const o = document.createElement('option');
+                    o.value = String(gi);
+                    o.textContent = (gi + 1) + ' \u00b7 ' + goalLabel(g);
+                    gSel.appendChild(o);
+                });
+                // a row can outlive its goal (or point at another boat's
+                // shorter list): keep the doc intact and SHOW the problem —
+                // the evaluator already fails it as out of range
+                if (a.goal != null && a.goal >= glist.length) {
+                    const o = document.createElement('option');
+                    o.value = String(a.goal);
+                    o.textContent = (a.goal + 1) + ' \u00b7 (missing)';
+                    gSel.appendChild(o);
+                }
+                gSel.value = a.goal != null ? String(a.goal) : '';
+                gSel.addEventListener('change', () => {
+                    a.goal = gSel.value === '' ? undefined : parseInt(gSel.value, 10);
+                    assertsChanged();
+                });
+                row.appendChild(gSel);
                 row.appendChild(hintSpan('by'));
                 row.appendChild(bareIn(a.t1 != null ? a.t1 : '', 26,
                     'deadline (s, blank = end of run)',
