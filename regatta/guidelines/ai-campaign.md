@@ -13521,3 +13521,35 @@ Same session, Scenario Lab expansion (owner-directed):
   wiggle/escape active, dev 0) — NOT mid-dodge groundings; candidate tree
   has FEWER episodes (194) with higher raw contact counts = longer grinds.
   The 9500 set (where land went 3.50 -> 8.51) under probe now.
+
+
+## FALSIFICATIONS + CLOSURES (same night, continued)
+
+· **WRONG-SIDE ORBIT TRANSFER: FALSIFIED ON VENUES.** `_orbit_census.js` v2
+  separates true orbits (net bearing-winding about the mark > 540 deg) from
+  tack-chains: bay AND arctic both read **0.0% true orbits** (3 seeds each).
+  The 22-32% ">450 deg turn" mark visits are THRASH-IN-PLACE (net winding
+  ~0, dwell 15-17s median). Zone Entry recalibrated at 30s: the wrong-side
+  inside boat COMPLETES 10/10 at ~930 deg — the defect costs ~2.5 extra
+  orbits (~15-20s), it is not permanent. Kept as a pinned corner-case
+  scenario (goals plain, turn<=500 XF); deprioritized as a push target.
+· **SWAMP CLAW-BACK: CLOSED AS TRAP-CLASS.** Land-contact anatomy on both
+  trees, both seed sets (base 252/220 episodes, cand 194/242): every episode
+  is the leg-1 stuck/grind class (median 0.5-0.6kt at contact, wiggle/escape
+  active, dev 0) — composition identical base vs candidate; the bench's +56%
+  land is TAIL GRINDS (22 slots >60s carry +381 of +393 land delta on the
+  9500 set; one slot — Saffron seed 9505 — is +546s with +210 contacts).
+  Per-seed episode counts swing both directions (48->27 on 9500, 40->65 on
+  9505): a knife-edge wedge lottery with longer tails under the candidate.
+  Fix belongs to the WEDGE/OBSTRUCTION push; candidate to test there =
+  stalled-rival berth (<1kt non-spinner rival -> 130 core, the spinner
+  pattern), guarded on bay/river.
+· Port Rammer ledger (bucketed): the stand-on holds under _rowHold through
+  the approach, then the release window buys a median 92 deg under
+  hardCollision — one fan step past the ~50 the geometry needs; her ROLE
+  flaps through GIVE_WAY/HIGH against a boat she holds rights over (the
+  commit-freeze latch surfacing in the lab; still report-only).
+· FLAG: the character re-rating campaign's BASELINE.json stamps codeHash
+  30c4272fa461bec1 — a pre-deflection/pre-gwe AI. Future shards from the
+  current tree will refuse to pool with the campaign's existing shards.
+  Finish on a pinned tree or restart against the new AI (owner call).

@@ -704,7 +704,7 @@ window.SCENARIO_DOC = {
   },
   "Zone Entry": {
     "v": 1,
-    "durationS": 16,
+    "durationS": 30,
     "windKt": 12,
     "seeds": [
       2654435769,
@@ -732,12 +732,17 @@ window.SCENARIO_DOC = {
       },
       {
         "kind": "goals",
-        "who": 0,
-        "xfail": true
+        "who": 0
       },
       {
         "kind": "goals",
         "who": 1
+      },
+      {
+        "kind": "turn",
+        "who": 0,
+        "max": 500,
+        "xfail": true
       }
     ],
     "boats": [

@@ -50,15 +50,17 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeGWE');
                     if (bt.isPlayer || bt.raceState.finished || bt.raceState.leg < 1) continue;
                     let s = acc.get(bt.id);
                     if (!s || s.leg !== bt.raceState.leg) {
-                        if (s && s.dwell > 0.5) out.push({ n: bt.name, leg: s.leg, turn: Math.round(s.turn * 57.3), dwell: +s.dwell.toFixed(1), advanced: 1 });
-                        s = { leg: bt.raceState.leg, turn: 0, dwell: 0, prevH: bt.heading };
+                        if (s && s.dwell > 0.5) out.push({ n: bt.name, leg: s.leg, turn: Math.round(s.turn * 57.3), wind: Math.round(s.windMax * 57.3), dwell: +s.dwell.toFixed(1), advanced: 1 });
+                        s = { leg: bt.raceState.leg, turn: 0, dwell: 0, prevH: bt.heading, wind: 0, windMax: 0, prevBrg: null, mk: null };
                         acc.set(bt.id, s);
                     }
                     // nearest course mark within RADIUS (venue-agnostic: any mark)
-                    let near = false;
+                    let near = null;
                     if (state.course.marks) {
+                        let best = RADIUS * RADIUS;
                         for (const m of state.course.marks) {
-                            if ((m.x - bt.x) ** 2 + (m.y - bt.y) ** 2 < RADIUS * RADIUS) { near = true; break; }
+                            const d2 = (m.x - bt.x) ** 2 + (m.y - bt.y) ** 2;
+                            if (d2 < best) { best = d2; near = m; }
                         }
                     }
                     if (near) {
@@ -67,6 +69,18 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeGWE');
                         if (dh < -Math.PI) dh += Math.PI * 2;
                         s.turn += Math.abs(dh);
                         s.dwell += 3 / 60;
+                        // NET WINDING of the boat's bearing about the mark —
+                        // a tack-chain oscillates (net ~0 per pass); a true
+                        // orbit accumulates. Reset when the tracked mark
+                        // changes; keep the max |winding| seen this leg.
+                        const brg = Math.atan2(bt.x - near.x, -(bt.y - near.y));
+                        if (s.mk !== near) { s.mk = near; s.prevBrg = brg; s.wind = 0; }
+                        let db = (brg - s.prevBrg) % (Math.PI * 2);
+                        if (db > Math.PI) db -= Math.PI * 2;
+                        if (db < -Math.PI) db += Math.PI * 2;
+                        s.wind += db;
+                        s.prevBrg = brg;
+                        if (Math.abs(s.wind) > Math.abs(s.windMax)) s.windMax = s.wind;
                     }
                     s.prevH = bt.heading;
                 }
@@ -75,7 +89,7 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeGWE');
             for (const [id, s] of acc) {
                 if (s.dwell > 0.5) {
                     const bt = state.boats.find(b => b.id === id);
-                    out.push({ n: bt ? bt.name : '?', leg: s.leg, turn: Math.round(s.turn * 57.3), dwell: +s.dwell.toFixed(1), advanced: bt && bt.raceState.finished ? 1 : 0 });
+                    out.push({ n: bt ? bt.name : '?', leg: s.leg, turn: Math.round(s.turn * 57.3), wind: Math.round(s.windMax * 57.3), dwell: +s.dwell.toFixed(1), advanced: bt && bt.raceState.finished ? 1 : 0 });
                 }
             }
             return out;
@@ -89,9 +103,13 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeGWE');
     const turns = all.map(r => r.turn).sort((a, b) => a - b);
     console.log(`\n${all.length} mark-leg visits over ${TRIALS} seeds — turn-near-mark p50/p75/p90/p99: `
         + `${turns[Math.floor(turns.length * .5)]}/${turns[Math.floor(turns.length * .75)]}/${turns[Math.floor(turns.length * .9)]}/${turns[Math.floor(turns.length * .99)]}°`);
-    console.log(`ORBIT EVENTS (>450°): ${orb.length} (${(100 * orb.length / all.length).toFixed(1)}% of visits), dwell p50 ${orb.length ? orb.map(r => r.dwell).sort((a, b) => a - b)[Math.floor(orb.length / 2)] : '-'}s`);
+    console.log(`HIGH-TURN VISITS (>450° heading change): ${orb.length} (${(100 * orb.length / all.length).toFixed(1)}% of visits), dwell p50 ${orb.length ? orb.map(r => r.dwell).sort((a, b) => a - b)[Math.floor(orb.length / 2)] : '-'}s`);
+    // TRUE ORBITS: net bearing-winding about one mark past 540° — a tack
+    // chain oscillates and nets ~0, so this cleanly separates the two.
+    const tru = all.filter(r => Math.abs(r.wind) > 540);
+    console.log(`TRUE ORBITS (|net winding| > 540°): ${tru.length} (${(100 * tru.length / all.length).toFixed(1)}% of visits), dwell p50 ${tru.length ? tru.map(r => r.dwell).sort((a, b) => a - b)[Math.floor(tru.length / 2)] : '-'}s`);
     const byLeg = {};
-    for (const r of orb) byLeg[r.leg] = (byLeg[r.leg] || 0) + 1;
-    console.log('orbits by leg:', JSON.stringify(byLeg), ' unadvanced:', orb.filter(r => !r.advanced).length);
-    for (const r of orb.slice(0, 12)) console.log(' ', JSON.stringify(r));
+    for (const r of tru) byLeg[r.leg] = (byLeg[r.leg] || 0) + 1;
+    console.log('true orbits by leg:', JSON.stringify(byLeg), ' unadvanced:', tru.filter(r => !r.advanced).length);
+    for (const r of tru.slice(0, 12)) console.log(' ', JSON.stringify(r));
 })();

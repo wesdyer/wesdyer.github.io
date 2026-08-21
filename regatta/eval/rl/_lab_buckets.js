@@ -38,7 +38,9 @@ function driver(r) {
         const mine = b0.filter(r => r.n === b);
         const buckets = {};
         for (const r of mine) {
-            const s = Math.floor(r.t - 100);
+            // ⚠️ __AVLOG t is state.time — a 0.24x world clock pinned to 100
+            // per burst. Convert to REAL seconds for the bucket axis.
+            const s = Math.floor((r.t - 100) / 0.24);
             (buckets[s] = buckets[s] || []).push(r);
         }
         for (const s of Object.keys(buckets).map(Number).sort((a, b2) => a - b2)) {
