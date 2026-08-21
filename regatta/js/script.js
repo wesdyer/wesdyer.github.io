@@ -3370,16 +3370,7 @@ class BotController {
             0.6, -0.6,
             0.7, -0.7,
             0.8, -0.8,
-            // EMERGENCY BAND DENSIFIED (2026-08-21, owner-directed): the
-            // 0.8→1.2→1.6 gaps are the same quantization the 0.2-0.8
-            // densification landed against — a boat needing ~57° was
-            // offered 46° and 69° and bought 69°. Measured upstream of the
-            // owner's rounding scenario: the stand-on's one-step-too-much
-            // first-pass dodge displaced her entry onto the mark. Racing
-            // fan only, same as every rung; order stays the tie-break.
-            1.0, -1.0,
             1.2, -1.2,
-            1.4, -1.4,
             1.6, -1.6 // Wider options for emergency bailouts
         ] : [
             0,

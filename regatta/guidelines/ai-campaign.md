@@ -13772,3 +13772,52 @@ Stale diagnoses retired this block: bay L1 distance tax (now +2% vs him),
 lagoon 29.8%-unsailable escapes (now 0.0%). Both venues' residues named:
 bay = speed-while-near-others; lagoon = leg-4 pocket grinds (6 episodes
 carry 163 contacts, chain-entangled).
+
+
+# THE DOCTRINE STACK — SHIPPED (2026-08-21 day session, owner co-piloting live)
+
+Owner rulings in sequence: 13m handover on his rounding scenario; "fix the
+real issue"; "accuracy first — ship it"; Rule 12 re-tolled to 2m; the
+no-contact foul NOTED-NOT-ARMED ("AI still too conservative to reliably
+use this"); NEXT PUSH = narrow-passage capability.
+
+**Shipped composition** (this commit + the owner's `d020966` which swept
+the working tree): (1) MARK SNAP-TURN — a boat pinned on a mark gets the
+same 5x escape authority land-pinned boats have (she used to park on the
+buoy for 4+s grinding Rule 31 at steerage-limited turn rate); (2)
+YIELD-AWARE RELEASE + RE-HOLDABLE LATCH — the stand-on reads the give-way
+boat's evident turn (half-second-advanced projection); a rival whose
+action already defuses the danger neither releases nor stays released;
+(3) 45u HULL-IMMINENT FLOOR — the unconditional release floor was 60u and
+out-ranked every capability judgment in exactly the close-quarters regime
+the doctrine targets. REMOVED from the ship after attribution: the
+emergency fan rungs 1.0/1.4 — they carried ~the whole loser tail (arctic
++8 -> +0.6 mean, lagoon +5.6 -> +0.4, glow +2.5 -> -6.1 without them) and
+their lab value (wall-pinned/corridor-pair corners) belongs to the
+narrow-passage push. Also REVERTED from `d020966`: the cell-level
+losClear route gate (inert — subsampled cells read a corner-clipping
+chord as clear; the geometric version is narrow-passage push material).
+
+**Ship gate (gwi* vs the gwe* anchors, all pooled):** clock med 0 on
+eight venues, glowtide -2 med/-6.1 mean (boat -27%, land -11%); mean
+tails riv +2.7 / sw +3.5 / st +3.1 (st pens 0.10->0.17, small absolute —
+watch). **MARK CONTACTS COLLAPSE EVERYWHERE**: rr 1.26->0.46, bay
+0.18->0.08, lag 0.38->0.11, lake 0.29->0.14, arc 0.23->0.09, glow
+1.42->1.11 — the snap-turn dividend. fins stable. Goldens re-recorded,
+verify 30/30. Battery 17/17.
+
+**Lab surface:** the owner's Round Mark with Boat to Windward (13m
+handover) 11/11 on nocollide + A-goal + no-penalties; Rule 12 GREEN at
+2m; Rule 13 improved to 4.2m; Rule 13 Both's rogue tack-window penalty
+GONE; Pocket Pair Solo's compiled-corridor spin FIXED (row promoted-able).
+Wall Tack + Pocket Pair corner rows returned to XF (they were propped by
+the dropped fan rungs — they are narrow-passage push material and now
+document it). Library: 23 scenarios, failing only R13/R13B/AroundMark +
+the one B-side seed of the owner's scenario.
+
+**Also this session:** lab sands now enter the WORLD MODEL
+(`syncSandsToWorld` — the routing grid was 100% blind to authored sand;
+the planner routed through polygons while physics stopped boats on them);
+the router's passability floor measured (2x(HULL_R+14) = 88u) and the
+chord-clips-corner defect isolated — both are the named levers of the
+NARROW-PASSAGE PUSH (owner: "a key skill... redrock, arctic, glowtide").
