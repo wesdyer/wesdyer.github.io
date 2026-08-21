@@ -1049,6 +1049,71 @@ window.SCENARIO_DOC = {
     "lines": [],
     "savedAt": 1787378100005
   },
+  "Windward Rammer": {
+    "v": 1,
+    "durationS": 12,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      4022250974,
+      144117387,
+      2289495861,
+      3411519485,
+      668766190,
+      1887039260,
+      2917999983,
+      478856396,
+      3990502441
+    ],
+    "tags": [
+      "rule-11",
+      "rule-14",
+      "stand-on"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "row",
+        "of": 0,
+        "over": 1,
+        "rule": "11",
+        "t": 2
+      },
+      {
+        "kind": "penalty",
+        "who": 1,
+        "rule": "11",
+        "xfail": true
+      }
+    ],
+    "boats": [
+      {
+        "x": -200,
+        "y": 575,
+        "headingDeg": 40,
+        "speedKt": 7,
+        "aiAtS": 0
+      },
+      {
+        "x": -290,
+        "y": 505,
+        "headingDeg": 40,
+        "speedKt": 7,
+        "plan": [
+          {
+            "t": 0,
+            "headingDeg": 48
+          }
+        ]
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787378100006
+  },
   "Spinner Neighbor": {
     "v": 1,
     "durationS": 10,
