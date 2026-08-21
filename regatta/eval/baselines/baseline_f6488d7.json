@@ -1,0 +1,2470 @@
+{
+ "scenarios": [
+  {
+   "name": "Rule 10",
+   "ms": 1178,
+   "deterministic": true,
+   "seeds": [
+    541267420,
+    3541459374,
+    3612285626,
+    1376908003,
+    552101227,
+    1226319115,
+    1003982263,
+    1167025257,
+    1560206834,
+    2476808982
+   ],
+   "runs": [
+    {
+     "seed": 541267420,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 11,
+        "maxDevAtS": 10,
+        "turnDeg": 36,
+        "devFromS": 0.08,
+        "devFromRangeU": 703,
+        "roles": {
+         "NONE": 95,
+         "STAND_ON": 5
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 35.4,
+        "maxDevAtS": 4.3,
+        "turnDeg": 143,
+        "devFromS": 0.4,
+        "devFromRangeU": 659,
+        "roles": {
+         "NONE": 10,
+         "GIVE_WAY": 90
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 133,
+        "minDistAtS": 4.5,
+        "rightsAtS": 0.88,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3541459374,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 7.9,
+        "maxDevAtS": 10,
+        "turnDeg": 23,
+        "devFromS": 0.43,
+        "devFromRangeU": 655,
+        "roles": {
+         "NONE": 9,
+         "STAND_ON": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 34.1,
+        "maxDevAtS": 4.2,
+        "turnDeg": 145,
+        "devFromS": 0.08,
+        "devFromRangeU": 703,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 133,
+        "minDistAtS": 4.5,
+        "rightsAtS": 0.87,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3612285626,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 7.7,
+        "maxDevAtS": 10,
+        "turnDeg": 34,
+        "devFromS": 0.38,
+        "devFromRangeU": 662,
+        "roles": {
+         "NONE": 10,
+         "STAND_ON": 90
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 33.4,
+        "maxDevAtS": 4.3,
+        "turnDeg": 143,
+        "devFromS": 0.05,
+        "devFromRangeU": 708,
+        "roles": {
+         "NONE": 10,
+         "GIVE_WAY": 90
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 132,
+        "minDistAtS": 4.5,
+        "rightsAtS": 0.87,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1376908003,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 7.9,
+        "maxDevAtS": 10,
+        "turnDeg": 23,
+        "devFromS": 0.43,
+        "devFromRangeU": 655,
+        "roles": {
+         "NONE": 9,
+         "STAND_ON": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 34.1,
+        "maxDevAtS": 4.2,
+        "turnDeg": 145,
+        "devFromS": 0.1,
+        "devFromRangeU": 700,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 133,
+        "minDistAtS": 4.5,
+        "rightsAtS": 0.87,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 552101227,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 9,
+        "maxDevAtS": 10,
+        "turnDeg": 36,
+        "devFromS": 0.43,
+        "devFromRangeU": 655,
+        "roles": {
+         "NONE": 97,
+         "STAND_ON": 3
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 33.6,
+        "maxDevAtS": 4.3,
+        "turnDeg": 168,
+        "devFromS": 0.05,
+        "devFromRangeU": 708,
+        "roles": {
+         "NONE": 10,
+         "GIVE_WAY": 90
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 130,
+        "minDistAtS": 4.5,
+        "rightsAtS": 0.87,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1226319115,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 8.2,
+        "maxDevAtS": 10,
+        "turnDeg": 46,
+        "devFromS": 0.13,
+        "devFromRangeU": 696,
+        "roles": {
+         "NONE": 9,
+         "STAND_ON": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 33.7,
+        "maxDevAtS": 4.3,
+        "turnDeg": 143,
+        "devFromS": 0.15,
+        "devFromRangeU": 693,
+        "roles": {
+         "NONE": 10,
+         "GIVE_WAY": 90
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 131,
+        "minDistAtS": 4.5,
+        "rightsAtS": 0.87,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1003982263,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 8.2,
+        "maxDevAtS": 10,
+        "turnDeg": 46,
+        "devFromS": 0.15,
+        "devFromRangeU": 693,
+        "roles": {
+         "NONE": 10,
+         "STAND_ON": 90
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 34.2,
+        "maxDevAtS": 4.3,
+        "turnDeg": 155,
+        "devFromS": 0.15,
+        "devFromRangeU": 693,
+        "roles": {
+         "NONE": 10,
+         "GIVE_WAY": 90
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 132,
+        "minDistAtS": 4.5,
+        "rightsAtS": 0.87,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1167025257,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 9.1,
+        "maxDevAtS": 10,
+        "turnDeg": 35,
+        "devFromS": 0.05,
+        "devFromRangeU": 708,
+        "roles": {
+         "NONE": 10,
+         "STAND_ON": 90
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 35.8,
+        "maxDevAtS": 4.3,
+        "turnDeg": 121,
+        "devFromS": 0.42,
+        "devFromRangeU": 657,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 134,
+        "minDistAtS": 4.4,
+        "rightsAtS": 0.87,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1560206834,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 9.8,
+        "maxDevAtS": 10,
+        "turnDeg": 23,
+        "devFromS": 0.12,
+        "devFromRangeU": 698,
+        "roles": {
+         "NONE": 9,
+         "STAND_ON": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 35.9,
+        "maxDevAtS": 4.3,
+        "turnDeg": 121,
+        "devFromS": 0.43,
+        "devFromRangeU": 655,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 134,
+        "minDistAtS": 4.4,
+        "rightsAtS": 0.87,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 2476808982,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 10.3,
+        "maxDevAtS": 10,
+        "turnDeg": 35,
+        "devFromS": 0.15,
+        "devFromRangeU": 693,
+        "roles": {
+         "NONE": 93,
+         "STAND_ON": 7
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 35.5,
+        "maxDevAtS": 4.3,
+        "turnDeg": 180,
+        "devFromS": 0.12,
+        "devFromRangeU": 698,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 133,
+        "minDistAtS": 4.5,
+        "rightsAtS": 0.88,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    }
+   ],
+   "asserts": [
+    {
+     "label": "nobody is penalized",
+     "n": 10,
+     "ok": 10,
+     "status": "pass",
+     "why": "held on every seed"
+    },
+    {
+     "label": "A holds proper course ±1m",
+     "n": 10,
+     "ok": 0,
+     "status": "fail",
+     "why": "seed 541267420: strayed past 1 m at 0.6s (max 11.0 m at 10.0s)"
+    },
+    {
+     "label": "no collisions",
+     "n": 10,
+     "ok": 10,
+     "status": "pass",
+     "why": "held on every seed"
+    }
+   ]
+  },
+  {
+   "name": "Rule 11",
+   "ms": 1140,
+   "deterministic": true,
+   "seeds": [
+    2654435769,
+    1832409043,
+    843002054,
+    800078553,
+    2637715775,
+    547193122,
+    638942517,
+    1920682214,
+    3747048161,
+    1966458350
+   ],
+   "runs": [
+    {
+     "seed": 2654435769,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 15,
+        "maxDevAtS": 10,
+        "turnDeg": 224,
+        "devFromS": 0.03,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 11,
+        "maxDevAtS": 9.8,
+        "turnDeg": 230,
+        "devFromS": 0.12,
+        "devFromRangeU": 99,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 99,
+        "minDistAtS": 0.1,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1832409043,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 14.5,
+        "maxDevAtS": 10,
+        "turnDeg": 247,
+        "devFromS": 0.02,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 11.5,
+        "maxDevAtS": 9.9,
+        "turnDeg": 252,
+        "devFromS": 0.02,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 100,
+        "minDistAtS": 0,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 843002054,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 14.7,
+        "maxDevAtS": 9.9,
+        "turnDeg": 230,
+        "devFromS": 0.03,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 11.3,
+        "maxDevAtS": 9.9,
+        "turnDeg": 230,
+        "devFromS": 0.03,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 100,
+        "minDistAtS": 0.1,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 800078553,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 15,
+        "maxDevAtS": 10,
+        "turnDeg": 234,
+        "devFromS": 0.15,
+        "devFromRangeU": 99,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 10.8,
+        "maxDevAtS": 10,
+        "turnDeg": 232,
+        "devFromS": 0.17,
+        "devFromRangeU": 98,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 98,
+        "minDistAtS": 0.2,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 2637715775,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 13.9,
+        "maxDevAtS": 10,
+        "turnDeg": 258,
+        "devFromS": 0.03,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 12.1,
+        "maxDevAtS": 10,
+        "turnDeg": 258,
+        "devFromS": 0.02,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 100,
+        "minDistAtS": 0.1,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 547193122,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 13.5,
+        "maxDevAtS": 10,
+        "turnDeg": 224,
+        "devFromS": 0.1,
+        "devFromRangeU": 99,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 12.4,
+        "maxDevAtS": 10,
+        "turnDeg": 222,
+        "devFromS": 0.15,
+        "devFromRangeU": 99,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 99,
+        "minDistAtS": 0.1,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 638942517,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 14.7,
+        "maxDevAtS": 10,
+        "turnDeg": 235,
+        "devFromS": 0.03,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 11.2,
+        "maxDevAtS": 10,
+        "turnDeg": 235,
+        "devFromS": 0.2,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 99,
+        "minDistAtS": 0.1,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1920682214,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 15.5,
+        "maxDevAtS": 10,
+        "turnDeg": 190,
+        "devFromS": 0.18,
+        "devFromRangeU": 99,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 10.6,
+        "maxDevAtS": 8.9,
+        "turnDeg": 195,
+        "devFromS": 0.08,
+        "devFromRangeU": 99,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 99,
+        "minDistAtS": 0.1,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3747048161,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 15,
+        "maxDevAtS": 10,
+        "turnDeg": 224,
+        "devFromS": 0.03,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 11,
+        "maxDevAtS": 9.8,
+        "turnDeg": 230,
+        "devFromS": 0.18,
+        "devFromRangeU": 100,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 99,
+        "minDistAtS": 0.1,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1966458350,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 14.9,
+        "maxDevAtS": 10,
+        "turnDeg": 228,
+        "devFromS": 0.15,
+        "devFromRangeU": 99,
+        "roles": {
+         "NONE": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 11,
+        "maxDevAtS": 9.9,
+        "turnDeg": 230,
+        "devFromS": 0.18,
+        "devFromRangeU": 98,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 98,
+        "minDistAtS": 0.2,
+        "rightsAtS": 0,
+        "rule": "Rule 11"
+       }
+      ]
+     }
+    }
+   ],
+   "asserts": [
+    {
+     "label": "no collisions",
+     "n": 10,
+     "ok": 10,
+     "status": "pass",
+     "why": "held on every seed"
+    },
+    {
+     "label": "nobody is penalized",
+     "n": 10,
+     "ok": 10,
+     "status": "pass",
+     "why": "held on every seed"
+    },
+    {
+     "label": "A holds proper course ±1m",
+     "n": 10,
+     "ok": 0,
+     "status": "fail",
+     "why": "seed 2654435769: strayed past 1 m at 0.6s (max 15.0 m at 10.0s)"
+    }
+   ]
+  },
+  {
+   "name": "Rule 12",
+   "ms": 2441,
+   "deterministic": true,
+   "seeds": [
+    2654435769,
+    2503965664,
+    1148205893,
+    2090525083,
+    2731891493,
+    293900821,
+    1192392577,
+    633061919,
+    3238600644,
+    3658407038
+   ],
+   "runs": [
+    {
+     "seed": 2654435769,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 5.6,
+        "maxDevAtS": 10,
+        "turnDeg": 22,
+        "devFromS": 0.03,
+        "devFromRangeU": 247,
+        "roles": {
+         "STAND_ON": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 32,
+        "maxDevAtS": 5.3,
+        "turnDeg": 92,
+        "devFromS": 0.12,
+        "devFromRangeU": 240,
+        "roles": {
+         "NONE": 1,
+         "GIVE_WAY": 99
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 150,
+        "minDistAtS": 3.4,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 2503965664,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 1.1,
+        "maxDevAtS": 10,
+        "turnDeg": 22,
+        "devFromS": 0.27,
+        "devFromRangeU": 228,
+        "roles": {
+         "NONE": 1,
+         "STAND_ON": 99
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 39.1,
+        "maxDevAtS": 10,
+        "turnDeg": 87,
+        "devFromS": 0.18,
+        "devFromRangeU": 235,
+        "roles": {
+         "NONE": 2,
+         "GIVE_WAY": 98
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 150,
+        "minDistAtS": 3.4,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1148205893,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 1.3,
+        "maxDevAtS": 10,
+        "turnDeg": 22,
+        "devFromS": 0.18,
+        "devFromRangeU": 235,
+        "roles": {
+         "NONE": 2,
+         "STAND_ON": 98
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 39.5,
+        "maxDevAtS": 10,
+        "turnDeg": 76,
+        "devFromS": 0.08,
+        "devFromRangeU": 243,
+        "roles": {
+         "NONE": 1,
+         "GIVE_WAY": 99
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 151,
+        "minDistAtS": 3.4,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 2090525083,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 1.2,
+        "maxDevAtS": 10,
+        "turnDeg": 22,
+        "devFromS": 0.1,
+        "devFromRangeU": 242,
+        "roles": {
+         "NONE": 98,
+         "STAND_ON": 2
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 39.3,
+        "maxDevAtS": 10,
+        "turnDeg": 76,
+        "devFromS": 0.03,
+        "devFromRangeU": 247,
+        "roles": {
+         "GIVE_WAY": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 151,
+        "minDistAtS": 4.6,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 2731891493,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 1.3,
+        "maxDevAtS": 10,
+        "turnDeg": 22,
+        "devFromS": 0.13,
+        "devFromRangeU": 239,
+        "roles": {
+         "NONE": 1,
+         "STAND_ON": 99
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 39.5,
+        "maxDevAtS": 10,
+        "turnDeg": 75,
+        "devFromS": 0.05,
+        "devFromRangeU": 246,
+        "roles": {
+         "GIVE_WAY": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 151,
+        "minDistAtS": 4.6,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 293900821,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 0.6,
+        "maxDevAtS": 10,
+        "turnDeg": 11,
+        "devFromS": 0.13,
+        "devFromRangeU": 239,
+        "roles": {
+         "NONE": 1,
+         "STAND_ON": 99
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 39.5,
+        "maxDevAtS": 10,
+        "turnDeg": 86,
+        "devFromS": 0.02,
+        "devFromRangeU": 249,
+        "roles": {
+         "GIVE_WAY": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 151,
+        "minDistAtS": 4.6,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1192392577,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 0.7,
+        "maxDevAtS": 10,
+        "turnDeg": 11,
+        "devFromS": 0.2,
+        "devFromRangeU": 234,
+        "roles": {
+         "NONE": 2,
+         "STAND_ON": 98
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 39.8,
+        "maxDevAtS": 10,
+        "turnDeg": 77,
+        "devFromS": 0.08,
+        "devFromRangeU": 243,
+        "roles": {
+         "NONE": 1,
+         "GIVE_WAY": 99
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 151,
+        "minDistAtS": 3.4,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 633061919,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 7.3,
+        "maxDevAtS": 10,
+        "turnDeg": 33,
+        "devFromS": 0.02,
+        "devFromRangeU": 249,
+        "roles": {
+         "STAND_ON": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 31.5,
+        "maxDevAtS": 5,
+        "turnDeg": 117,
+        "devFromS": 0.05,
+        "devFromRangeU": 246,
+        "roles": {
+         "GIVE_WAY": 100
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 150,
+        "minDistAtS": 3.3,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3238600644,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 7.8,
+        "maxDevAtS": 10,
+        "turnDeg": 33,
+        "devFromS": 0.12,
+        "devFromRangeU": 240,
+        "roles": {
+         "NONE": 97,
+         "STAND_ON": 3
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 31.6,
+        "maxDevAtS": 5,
+        "turnDeg": 92,
+        "devFromS": 0.17,
+        "devFromRangeU": 236,
+        "roles": {
+         "NONE": 2,
+         "GIVE_WAY": 98
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 150,
+        "minDistAtS": 3.3,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3658407038,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 6.6,
+        "maxDevAtS": 10,
+        "turnDeg": 33,
+        "devFromS": 0.05,
+        "devFromRangeU": 246,
+        "roles": {
+         "STAND_ON": 100
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 31.9,
+        "maxDevAtS": 5.2,
+        "turnDeg": 92,
+        "devFromS": 0.17,
+        "devFromRangeU": 236,
+        "roles": {
+         "NONE": 2,
+         "GIVE_WAY": 98
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 150,
+        "minDistAtS": 2.8,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    }
+   ],
+   "asserts": [
+    {
+     "label": "no collisions",
+     "n": 10,
+     "ok": 10,
+     "status": "pass",
+     "why": "held on every seed"
+    },
+    {
+     "label": "nobody is penalized",
+     "n": 10,
+     "ok": 10,
+     "status": "pass",
+     "why": "held on every seed"
+    },
+    {
+     "label": "A holds proper course ±1m",
+     "n": 10,
+     "ok": 2,
+     "status": "fail",
+     "why": "seed 2654435769: strayed past 1 m at 5.5s (max 5.6 m at 10.0s)"
+    }
+   ]
+  },
+  {
+   "name": "Rule 13",
+   "ms": 1744,
+   "deterministic": true,
+   "seeds": [
+    2654435769,
+    3477523577,
+    3961374258,
+    3911852695,
+    2852591194,
+    1400071019,
+    2747798493,
+    4156243761,
+    1934674241,
+    4038481126
+   ],
+   "runs": [
+    {
+     "seed": 2654435769,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 138.8,
+        "maxDevAtS": 7,
+        "turnDeg": 359,
+        "devFromS": 0.72,
+        "devFromRangeU": 180,
+        "roles": {
+         "NONE": 7,
+         "GIVE_WAY": 93
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 11.9,
+        "maxDevAtS": 10,
+        "turnDeg": 61,
+        "devFromS": 0.23,
+        "devFromRangeU": 200,
+        "roles": {
+         "NONE": 93,
+         "GIVE_WAY": 5,
+         "STAND_ON": 2
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 165,
+        "minDistAtS": 2.4,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3477523577,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 138.3,
+        "maxDevAtS": 8.8,
+        "turnDeg": 378,
+        "devFromS": 0.82,
+        "devFromRangeU": 183,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 23.3,
+        "maxDevAtS": 10,
+        "turnDeg": 83,
+        "devFromS": 0.28,
+        "devFromRangeU": 199,
+        "roles": {
+         "NONE": 93,
+         "GIVE_WAY": 5,
+         "STAND_ON": 2
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 159,
+        "minDistAtS": 2.5,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3961374258,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 139.4,
+        "maxDevAtS": 8.4,
+        "turnDeg": 381,
+        "devFromS": 0.87,
+        "devFromRangeU": 168,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 16.8,
+        "maxDevAtS": 10,
+        "turnDeg": 72,
+        "devFromS": 0.3,
+        "devFromRangeU": 198,
+        "roles": {
+         "NONE": 3,
+         "GIVE_WAY": 5,
+         "STAND_ON": 92
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 152,
+        "minDistAtS": 1.9,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3911852695,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 139.9,
+        "maxDevAtS": 8.1,
+        "turnDeg": 364,
+        "devFromS": 0.82,
+        "devFromRangeU": 175,
+        "roles": {
+         "NONE": 8,
+         "GIVE_WAY": 92
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 16.9,
+        "maxDevAtS": 10,
+        "turnDeg": 72,
+        "devFromS": 0.23,
+        "devFromRangeU": 200,
+        "roles": {
+         "NONE": 2,
+         "GIVE_WAY": 5,
+         "STAND_ON": 93
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 162,
+        "minDistAtS": 2.1,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 2852591194,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 139.7,
+        "maxDevAtS": 8.1,
+        "turnDeg": 364,
+        "devFromS": 0.82,
+        "devFromRangeU": 174,
+        "roles": {
+         "NONE": 8,
+         "GIVE_WAY": 92
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 16.8,
+        "maxDevAtS": 10,
+        "turnDeg": 70,
+        "devFromS": 0.27,
+        "devFromRangeU": 199,
+        "roles": {
+         "NONE": 3,
+         "GIVE_WAY": 5,
+         "STAND_ON": 93
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 160,
+        "minDistAtS": 2.1,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1400071019,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 145.6,
+        "maxDevAtS": 8.2,
+        "turnDeg": 367,
+        "devFromS": 0.77,
+        "devFromRangeU": 184,
+        "roles": {
+         "NONE": 8,
+         "GIVE_WAY": 92
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 18,
+        "maxDevAtS": 10,
+        "turnDeg": 71,
+        "devFromS": 0.28,
+        "devFromRangeU": 199,
+        "roles": {
+         "NONE": 94,
+         "GIVE_WAY": 5,
+         "STAND_ON": 1
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 171,
+        "minDistAtS": 2.5,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 2747798493,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 138.9,
+        "maxDevAtS": 8.5,
+        "turnDeg": 372,
+        "devFromS": 0.88,
+        "devFromRangeU": 167,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 18.7,
+        "maxDevAtS": 10,
+        "turnDeg": 73,
+        "devFromS": 0.3,
+        "devFromRangeU": 198,
+        "roles": {
+         "NONE": 3,
+         "GIVE_WAY": 5,
+         "STAND_ON": 92
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 152,
+        "minDistAtS": 2.3,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 4156243761,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 48.6,
+        "maxDevAtS": 10,
+        "turnDeg": 274,
+        "devFromS": 0.73,
+        "devFromRangeU": 180,
+        "roles": {
+         "NONE": 53,
+         "GIVE_WAY": 46,
+         "STAND_ON": 1
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 80.2,
+        "maxDevAtS": 10,
+        "turnDeg": 250,
+        "devFromS": 0.22,
+        "devFromRangeU": 201,
+        "roles": {
+         "NONE": 43,
+         "GIVE_WAY": 51,
+         "STAND_ON": 6
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 66,
+        "minDistAtS": 6.2,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1934674241,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 148.3,
+        "maxDevAtS": 9.4,
+        "turnDeg": 399,
+        "devFromS": 0.88,
+        "devFromRangeU": 181,
+        "roles": {
+         "NONE": 10,
+         "GIVE_WAY": 90
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 28.5,
+        "maxDevAtS": 10,
+        "turnDeg": 95,
+        "devFromS": 0.28,
+        "devFromRangeU": 199,
+        "roles": {
+         "NONE": 4,
+         "GIVE_WAY": 5,
+         "STAND_ON": 91
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 161,
+        "minDistAtS": 2.6,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 4038481126,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 139.3,
+        "maxDevAtS": 8.3,
+        "turnDeg": 368,
+        "devFromS": 0.85,
+        "devFromRangeU": 174,
+        "roles": {
+         "NONE": 8,
+         "GIVE_WAY": 92
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 19,
+        "maxDevAtS": 10,
+        "turnDeg": 72,
+        "devFromS": 0.23,
+        "devFromRangeU": 200,
+        "roles": {
+         "NONE": 2,
+         "GIVE_WAY": 5,
+         "STAND_ON": 93
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 161,
+        "minDistAtS": 2.2,
+        "rightsAtS": 0,
+        "rule": "Rule 12"
+       }
+      ]
+     }
+    }
+   ],
+   "asserts": [
+    {
+     "label": "no collisions",
+     "n": 10,
+     "ok": 10,
+     "status": "pass",
+     "why": "held on every seed"
+    },
+    {
+     "label": "nobody is penalized",
+     "n": 10,
+     "ok": 10,
+     "status": "pass",
+     "why": "held on every seed"
+    },
+    {
+     "label": "B holds proper course ±1m",
+     "n": 10,
+     "ok": 0,
+     "status": "fail",
+     "why": "seed 2654435769: strayed past 1 m at 0.7s (max 11.9 m at 10.0s)"
+    }
+   ]
+  },
+  {
+   "name": "Rule 13 Both",
+   "ms": 1873,
+   "deterministic": true,
+   "seeds": [
+    2654435769,
+    1035792683,
+    3878011198,
+    2649169398,
+    3439120348,
+    262623818,
+    289216165,
+    2932602586,
+    3720287616,
+    457909176,
+    3504384310
+   ],
+   "runs": [
+    {
+     "seed": 2654435769,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 1.8,
+        "maxDevAtS": 10,
+        "turnDeg": 161,
+        "devFromS": 0.83,
+        "devFromRangeU": 242,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 202.1,
+        "maxDevAtS": 9.7,
+        "turnDeg": 406,
+        "devFromS": 0.8,
+        "devFromRangeU": 243,
+        "roles": {
+         "NONE": 9,
+         "STAND_ON": 2,
+         "GIVE_WAY": 89
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 195,
+        "minDistAtS": 0,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 1035792683,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 5.2,
+        "maxDevAtS": 10,
+        "turnDeg": 141,
+        "devFromS": 0.8,
+        "devFromRangeU": 243,
+        "roles": {
+         "NONE": 77,
+         "GIVE_WAY": 21,
+         "STAND_ON": 2
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 187.9,
+        "maxDevAtS": 9.4,
+        "turnDeg": 409,
+        "devFromS": 0.72,
+        "devFromRangeU": 244,
+        "roles": {
+         "NONE": 11,
+         "STAND_ON": 2,
+         "GIVE_WAY": 87
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 189,
+        "minDistAtS": 2.3,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3878011198,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 2.3,
+        "maxDevAtS": 10,
+        "turnDeg": 138,
+        "devFromS": 0.85,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 10,
+         "GIVE_WAY": 90
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 201.6,
+        "maxDevAtS": 9.8,
+        "turnDeg": 407,
+        "devFromS": 0.87,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 9,
+         "STAND_ON": 2,
+         "GIVE_WAY": 89
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 195,
+        "minDistAtS": 0,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 2649169398,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 0.7,
+        "maxDevAtS": 10,
+        "turnDeg": 141,
+        "devFromS": 0.85,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 94,
+         "GIVE_WAY": 2,
+         "STAND_ON": 3
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 187.9,
+        "maxDevAtS": 9.4,
+        "turnDeg": 407,
+        "devFromS": 0.82,
+        "devFromRangeU": 242,
+        "roles": {
+         "NONE": 10,
+         "STAND_ON": 2,
+         "GIVE_WAY": 87
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 191,
+        "minDistAtS": 2.2,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3439120348,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 0.7,
+        "maxDevAtS": 8.2,
+        "turnDeg": 155,
+        "devFromS": 0.87,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 93,
+         "GIVE_WAY": 3,
+         "STAND_ON": 3
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 188,
+        "maxDevAtS": 9.4,
+        "turnDeg": 411,
+        "devFromS": 0.85,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 11,
+         "STAND_ON": 2,
+         "GIVE_WAY": 87
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 188,
+        "minDistAtS": 2.3,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 262623818,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 0.8,
+        "maxDevAtS": 8.1,
+        "turnDeg": 155,
+        "devFromS": 0.88,
+        "devFromRangeU": 240,
+        "roles": {
+         "NONE": 93,
+         "GIVE_WAY": 2,
+         "STAND_ON": 5
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 186,
+        "maxDevAtS": 9.3,
+        "turnDeg": 410,
+        "devFromS": 0.85,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 11,
+         "STAND_ON": 2,
+         "GIVE_WAY": 87
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 187,
+        "minDistAtS": 2.3,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 289216165,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 4.8,
+        "maxDevAtS": 10,
+        "turnDeg": 139,
+        "devFromS": 0.87,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 74,
+         "GIVE_WAY": 23,
+         "STAND_ON": 3
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 187.9,
+        "maxDevAtS": 9.4,
+        "turnDeg": 407,
+        "devFromS": 0.7,
+        "devFromRangeU": 244,
+        "roles": {
+         "NONE": 10,
+         "STAND_ON": 2,
+         "GIVE_WAY": 87
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 191,
+        "minDistAtS": 2.2,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 2932602586,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 0.9,
+        "maxDevAtS": 10,
+        "turnDeg": 139,
+        "devFromS": 0.87,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 201.6,
+        "maxDevAtS": 9.8,
+        "turnDeg": 407,
+        "devFromS": 0.75,
+        "devFromRangeU": 244,
+        "roles": {
+         "NONE": 9,
+         "STAND_ON": 2,
+         "GIVE_WAY": 89
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 195,
+        "minDistAtS": 0,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3720287616,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 0.9,
+        "maxDevAtS": 10,
+        "turnDeg": 139,
+        "devFromS": 0.87,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 9,
+         "GIVE_WAY": 91
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 201.6,
+        "maxDevAtS": 9.8,
+        "turnDeg": 407,
+        "devFromS": 0.88,
+        "devFromRangeU": 240,
+        "roles": {
+         "NONE": 9,
+         "STAND_ON": 2,
+         "GIVE_WAY": 89
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 195,
+        "minDistAtS": 0,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 457909176,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 0.8,
+        "maxDevAtS": 8.1,
+        "turnDeg": 155,
+        "devFromS": 0.88,
+        "devFromRangeU": 240,
+        "roles": {
+         "NONE": 93,
+         "GIVE_WAY": 2,
+         "STAND_ON": 5
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 186,
+        "maxDevAtS": 9.3,
+        "turnDeg": 410,
+        "devFromS": 0.85,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 11,
+         "STAND_ON": 2,
+         "GIVE_WAY": 87
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 187,
+        "minDistAtS": 2.3,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    },
+    {
+     "seed": 3504384310,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 2.3,
+        "maxDevAtS": 10,
+        "turnDeg": 138,
+        "devFromS": 0.85,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 10,
+         "GIVE_WAY": 90
+        }
+       },
+       {
+        "name": "B",
+        "maxDevM": 201.6,
+        "maxDevAtS": 9.8,
+        "turnDeg": 407,
+        "devFromS": 0.87,
+        "devFromRangeU": 241,
+        "roles": {
+         "NONE": 9,
+         "STAND_ON": 2,
+         "GIVE_WAY": 89
+        }
+       }
+      ],
+      "pairs": [
+       {
+        "a": "A",
+        "b": "B",
+        "minDistU": 195,
+        "minDistAtS": 0,
+        "rightsAtS": 0,
+        "rule": "Rule 10"
+       }
+      ]
+     }
+    }
+   ],
+   "asserts": [
+    {
+     "label": "no collisions",
+     "n": 11,
+     "ok": 11,
+     "status": "pass",
+     "why": "held on every seed"
+    },
+    {
+     "label": "nobody is penalized",
+     "n": 11,
+     "ok": 11,
+     "status": "pass",
+     "why": "held on every seed"
+    },
+    {
+     "label": "B holds proper course ±10m",
+     "n": 11,
+     "ok": 0,
+     "status": "fail",
+     "why": "seed 2654435769: strayed past 10 m at 1.8s (max 202.1 m at 9.7s)"
+    }
+   ]
+  },
+  {
+   "name": "Around Mark",
+   "ms": 451,
+   "deterministic": true,
+   "seeds": [
+    2654435769
+   ],
+   "runs": [
+    {
+     "seed": 2654435769,
+     "ticks": [],
+     "pens": [],
+     "metrics": {
+      "boats": [
+       {
+        "name": "A",
+        "maxDevM": 0,
+        "maxDevAtS": 0,
+        "turnDeg": 228,
+        "devFromS": 0.03,
+        "devFromRangeU": null,
+        "roles": {
+         "NONE": 100
+        }
+       }
+      ],
+      "pairs": []
+     }
+    }
+   ],
+   "asserts": [
+    {
+     "label": "no collisions",
+     "n": 1,
+     "ok": 1,
+     "status": "pass",
+     "why": "no hull contact"
+    },
+    {
+     "label": "A completes goals",
+     "n": 1,
+     "ok": 1,
+     "status": "pass",
+     "why": "all 2 goals done"
+    },
+    {
+     "label": "A rounds within 15m of mark 1",
+     "n": 1,
+     "ok": 1,
+     "status": "pass",
+     "why": "rounded 13.4 m off at 4.6s"
+    },
+    {
+     "label": "A turns ≤ 200° total",
+     "n": 1,
+     "ok": 0,
+     "status": "fail",
+     "why": "passed 200° at 6.5s (228° total by the end)"
+    }
+   ]
+  }
+ ]
+}

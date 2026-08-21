@@ -1,0 +1,6 @@
+4 9400 treeDFC bay
+4 9400 treeDFB bay
+6 9400 treeDFC glowtide
+6 9400 treeDFB glowtide
+4 6100 treeDFC lake
+4 6100 treeDFB lake

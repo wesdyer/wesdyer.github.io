@@ -256,7 +256,7 @@
       </div>
       </div>`;
 
-    // RIGHTS & UMPIRE stays on the RIGHT (owner ruling), its own always-on
+    // the UMPIRE panel stays on the RIGHT (owner ruling), its own always-on
     // panel: live rights at initial conditions while editing, the recording
     // while scrubbing.
     const ump = document.createElement('div');
@@ -264,12 +264,12 @@
     ump.style.cssText = 'right:20px;top:20px;width:300px;max-height:calc(100vh - 120px)';
     ump.innerHTML = `
       <div class="sl-head">
-        <span class="sl-title">RIGHTS &amp; UMPIRE</span>
-        <span id="lab-agg" class="sl-schip" style="display:none" title="assertions passing on the last run"></span>
+        <span class="sl-title">UMPIRE</span>
         <span id="lab-time" style="font-size:11px;font-weight:800;color:#8fd8d0;font-variant-numeric:tabular-nums"></span>
       </div>
-      <div id="lab-rights" style="padding:12px 16px 8px"></div>
-      <div class="sl-hint" style="padding:0 18px 12px">Scrub or step the transport &middot; SPACE plays and pauses</div>`;
+      <div id="lab-umpasserts" style="display:none;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08)"></div>
+      <div id="lab-umpmetrics" style="display:none;padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.08)"></div>
+      <div id="lab-rights" style="padding:12px 16px 8px"></div>`;
     document.body.appendChild(ump);
 
     // the object inspector lives on the RIGHT and only in EDIT mode; RIGHTS
@@ -321,6 +321,10 @@
             <div class="sl-inp" style="flex:1"><input id="lab-aiat" type="text" inputmode="decimal" placeholder="never"></div>
             <span class="sl-hint">s</span>
           </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+            <span class="sl-lab" style="margin:0" title="she starts the run flagged, owing one 360 — Rule 21 applies, the AI takes the spin when clear">Penalized at start</span>
+            <button id="lab-penstart" class="sl-btn" style="flex:none;padding:6px 12px">OFF</button>
+          </div>
         </div>
         <div class="sl-sect">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
@@ -341,7 +345,7 @@
         </div>
       </div>
       <div id="det-sand" style="display:none">
-        <div class="sl-sect"><div class="sl-hint">solid sand &middot; &#8997;-drag resizes &middot; boats ground on it</div></div>
+        <div class="sl-sect"><div class="sl-hint">solid sand &middot; drag a vertex to reshape &middot; &#8984;-drag rotates &middot; &#8997;-drag scales &middot; boats ground on it</div></div>
       </div>
       <div id="det-line" style="display:none">
         <div class="sl-sect"><div class="sl-hint">a line on the water &middot; drag the end handles &middot; &#8997;-drag stretches</div></div>
@@ -371,6 +375,7 @@
     const layersDiv = left.querySelector('#lab-layers');
     function setArmed(kind) {
         LAB.armed = LAB.armed === kind ? null : kind;
+        LAB.sandDraft = null;   // arming/disarming abandons a polygon draft
         renderLayers();
     }
     const KIND_DOT = { scenario: '#8fd8d0', boat: null, sand: '#e0c99b', mark: '#f0a02a', line: '#ffffff' };
@@ -446,7 +451,7 @@
         <input id="pb-slider" type="range" min="0" max="600" value="0">
         <span id="pb-ticks" style="position:absolute;left:0;right:0;top:-11px;height:8px;pointer-events:none"></span>
       </span>
-      <span id="pb-time" style="font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#c4d2e6;min-width:84px;text-align:right">0.0 / 10.0s</span>
+      <span id="pb-time" style="font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;color:#c4d2e6;min-width:96px;text-align:right">0.00 / 10.0s</span>
       </span>`;
     document.body.appendChild(bar);
     // SIMULATING…: the burst blocks the main thread, so this goes up and
@@ -657,6 +662,7 @@
     // ── objects ────────────────────────────────────────────────────────
     function invalidate() {
         LAB.rec = null; LAB.recs = {}; LAB.playing = false; LAB.frame = 0;
+        LAB._gcCache = null;   // goal-course compile follows the scene
         LAB.assertResults = null;
         if (typeof renderAsserts === 'function' && LAB.ready) evaluateAsserts();
         if (LAB.mode !== 'edit') LAB.mode = 'edit';
@@ -834,17 +840,36 @@
         return verts;
     }
     function addSand(wx, wy, R) {
+        // legacy circle-ish sand: still the loader for old {x,y,r} docs
         R = R || 90;
-        // hidden: the engine island renderer needs baked art this synthetic shape
-        // doesn't have; the overlay draws the sand. Collisions/rule 19/avoidance
-        // still see it — they don't check `hidden`.
-        const isl = { x: wx, y: wy, radius: R, vertices: sandVerts(wx, wy, R), isFloe: false, awash: false, hidden: true, labSand: true };
+        return addSandPoly(sandVerts(wx, wy, R));
+    }
+    // objects are POLYGONS (owner): authored point by point. The engine
+    // island carries the vertices; x/y/radius are its broad-phase circle,
+    // kept in sync as vertices move.
+    // hidden: the engine island renderer needs baked art this synthetic shape
+    // doesn't have; the overlay draws the sand. Collisions/rule 19/avoidance
+    // still see it — they don't check `hidden`.
+    function addSandPoly(pts) {
+        const isl = { x: 0, y: 0, radius: 1, vertices: pts.map(p => ({ x: p.x, y: p.y })),
+                      isFloe: false, awash: false, hidden: true, labSand: true };
         (window.state.course.islands = window.state.course.islands || []).push(isl);
-        const s = { isl, x: wx, y: wy, r: R };
+        const s = { isl, x: 0, y: 0, r: 1 };
+        recomputeSand(s);
         LAB.sands.push(s);
         select({ kind: 'sand', ref: s });
         invalidate();
         return s;
+    }
+    function recomputeSand(s) {
+        const vs = s.isl.vertices;
+        let cx = 0, cy = 0;
+        for (const v of vs) { cx += v.x; cy += v.y; }
+        cx /= vs.length; cy /= vs.length;
+        let r = 30;
+        for (const v of vs) r = Math.max(r, Math.hypot(v.x - cx, v.y - cy));
+        s.x = s.isl.x = cx; s.y = s.isl.y = cy;
+        s.r = s.isl.radius = r;
     }
     function addLine(wx, wy, half) {
         half = half || 150;
@@ -854,13 +879,33 @@
         invalidate();
         return ln;
     }
-    function resizeSand(s, R) {
-        s.r = Math.max(30, Math.min(500, R));
-        s.isl.radius = s.r;
-        s.isl.vertices = sandVerts(s.x, s.y, s.r);
+    // drag anchor for a sand body grab: everything relative to the GRAB
+    // POINT and the shape at mousedown, so translate doesn't snap the
+    // centroid to the cursor and rotate/scale are smooth from the first
+    // pixel (owner: "kind of works but needs improvement")
+    function sandGrab(s, wx, wy) {
+        return {
+            verts: s.isl.vertices.map(v => ({ x: v.x, y: v.y })),
+            cx: s.x, cy: s.y, r0: s.r,
+            gx: wx, gy: wy,
+            a0: Math.atan2(wy - s.y, wx - s.x),
+            d0: Math.max(20, Math.hypot(wx - s.x, wy - s.y)),
+        };
+    }
+    function closeSandDraft() {
+        const draft = LAB.sandDraft;
+        LAB.sandDraft = null;
+        if (draft && draft.length >= 3) addSandPoly(draft);
+        // fewer than 3 points closes to nothing — a degenerate polygon is
+        // not an island
     }
     function moveObj(sel, wx, wy) {
         if (sel.kind === 'goalpt') { sel.ref.x = wx; sel.ref.y = wy; }
+        else if (sel.kind === 'sandvert') {
+            const v = sel.ref.isl.vertices[sel.vi];
+            v.x = wx; v.y = wy;
+            recomputeSand(sel.ref);
+        }
         else if (sel.kind === 'boat') { sel.ref.x = wx; sel.ref.y = wy; }
         else if (sel.kind === 'mark') {
             const m = sel.ref;
@@ -917,7 +962,7 @@
             // deleted boat, slide the rest down (who === -1 "nobody" is safe:
             // this only runs for a found index, i >= 0)
             if (i >= 0) {
-                const BK = { penalty: ['who'], row: ['of', 'over'], clear: ['a', 'b'], tack: ['who'], goals: ['who'], proper: ['who'] };
+                const BK = { penalty: ['who'], row: ['of', 'over'], clear: ['a', 'b'], tack: ['who'], goals: ['who'], proper: ['who'], near: ['who'], turn: ['who'], deflect: ['who'], role: ['who'], steady: ['who'] };
                 LAB.asserts = LAB.asserts.filter(a => !(BK[a.kind] || []).some(kf => a[kf] === i));
                 for (const a of LAB.asserts) for (const kf of (BK[a.kind] || [])) if (a[kf] > i) a[kf]--;
             }
@@ -926,6 +971,11 @@
             const i = ms.indexOf(s.ref); if (i >= 0) ms.splice(i, 1);
             const j = LAB.marks.indexOf(s.ref); if (j >= 0) LAB.marks.splice(j, 1);
             for (const lb of LAB.boats) lb.goals = lb.goals.filter(g => g.ref !== s.ref);
+            // 'near' asserts address marks by index, like goals
+            if (j >= 0) {
+                LAB.asserts = LAB.asserts.filter(a => !(a.kind === 'near' && (a.mark || 0) === j));
+                for (const a of LAB.asserts) if (a.kind === 'near' && a.mark > j) a.mark--;
+            }
         } else if (s.kind === 'sand') {
             const is = window.state.course.islands;
             const i = is.indexOf(s.ref.isl); if (i >= 0) is.splice(i, 1);
@@ -949,6 +999,14 @@
         invalidate();
     }
 
+    function pointInPoly(x, y, vs) {
+        let inside = false;
+        for (let i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+            if ((vs[i].y > y) !== (vs[j].y > y)
+                && x < (vs[j].x - vs[i].x) * (y - vs[i].y) / (vs[j].y - vs[i].y) + vs[i].x) inside = !inside;
+        }
+        return inside;
+    }
     function pick(wx, wy) {
         // the selected boat's WAYPOINT pips are draggable (owner ruling) —
         // they render on top, so they pick first. Only where they're visible:
@@ -956,6 +1014,15 @@
         // Mark/gate goal pips need nothing here: they sit ON their objects,
         // whose own picks (and drags) already move the goal with them.
         const authoring = LAB.mode === 'edit' || LAB.frame === 0;
+        // the selected sand's VERTEX handles pick first (they render on top);
+        // dragging one reshapes the polygon without touching the selection
+        if (authoring && LAB.sel && LAB.sel.kind === 'sand') {
+            const s = LAB.sel.ref, r = 12 / LAB.zoom;
+            for (let vi = 0; vi < s.isl.vertices.length; vi++) {
+                const v = s.isl.vertices[vi];
+                if (Math.hypot(wx - v.x, wy - v.y) < r) return { kind: 'sandvert', ref: s, vi };
+            }
+        }
         if (authoring && LAB.sel && LAB.sel.kind === 'boat' && LAB.sel.ref.goals) {
             const lb = LAB.sel.ref;
             const r = 14 / LAB.zoom;
@@ -970,7 +1037,7 @@
         }
         for (const lb of LAB.boats) if (Math.hypot(wx - lb.bot.x, wy - lb.bot.y) < 45) return { kind: 'boat', ref: lb };
         for (const m of LAB.marks) if (Math.hypot(wx - m.x, wy - m.y) < 30) return { kind: 'mark', ref: m };
-        for (const s of LAB.sands) if (Math.hypot(wx - s.x, wy - s.y) < s.r) return { kind: 'sand', ref: s };
+        for (const s of LAB.sands) if (pointInPoly(wx, wy, s.isl.vertices)) return { kind: 'sand', ref: s };
         for (const ln of LAB.lines) {
             const cx = (ln.x1 + ln.x2) / 2, cy = (ln.y1 + ln.y2) / 2;
             if (Math.hypot(wx - cx, wy - cy) < 40) return { kind: 'line', ref: ln, part: 0 };
@@ -1077,10 +1144,20 @@
     sidePortB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'port'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     sideStbdB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'starboard'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     const aiAtIn = ui.querySelector('#lab-aiat');
+    const penStartB = ui.querySelector('#lab-penstart');
     function refreshPathRow(lb) {
         aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
         aiAtIn.title = 'blank = scripted to the end · 0 = AI from the start';
+        penStartB.textContent = lb.penalized ? 'ON' : 'OFF';
+        penStartB.classList.toggle('sl-btn-pri', !!lb.penalized);
     }
+    penStartB.onclick = () => {
+        if (LAB.sel && LAB.sel.kind === 'boat') {
+            LAB.sel.ref.penalized = !LAB.sel.ref.penalized || undefined;
+            refreshPathRow(LAB.sel.ref);
+            invalidate();
+        }
+    };
 
     // ── THE PLAN: helm orders on a clock. The initial condition is the
     // boat's heading + speed; each step says "at t seconds, steer to this
@@ -1211,7 +1288,6 @@
     // against the recording after every run. Editing an assertion never
     // invalidates the recording — expectations don't change the sailing.
     let assertsDiv = null;   // the assertions dialog's list while it is open
-    const aggChip = ui.querySelector('#lab-agg');
     function boatNames() { return LAB.boats.map(lb => lb.bot.name); }
     function assertsChanged() {
         saveDraft();
@@ -1226,33 +1302,37 @@
         if (!complete || !window.ScenarioAsserts || !LAB.asserts.length) {
             LAB.assertResults = null;
             LAB.seedFail = {};
+            LAB.assertPer = null;
             renderAsserts();
             renderSeeds();
-            aggChip.style.display = 'none';
+            if (typeof refreshTicks === 'function') refreshTicks();
             return;
         }
-        const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s], { proper: LAB.recs.proper }));
+        const actx = { proper: LAB.recs.proper, marks: LAB.marks.map(m => ({ x: m.x, y: m.y })) };
+        const per = seeds.map(s => window.ScenarioAsserts.evaluate(LAB.asserts, LAB.recs[s], actx));
+        // per-seed rows, kept: the transport's tick strip marks WHERE each
+        // assert failed on the watched trace
+        LAB.assertPer = {};
+        seeds.forEach((s, si) => { LAB.assertPer[s] = per[si]; });
         // which seeds does anything fail on — the transport dropdown reads red
         LAB.seedFail = {};
         seeds.forEach((s, si) => {
-            if (per[si].some(r => r.status !== 'pass' && r.status !== 'gap')) LAB.seedFail[s] = true;
+            // 'fixed' is an xfail row that PASSED — a gap closing is not a
+            // failing seed (it used to read as one and paint the seed red)
+            if (per[si].some(r => r.status !== 'pass' && r.status !== 'gap' && r.status !== 'fixed')) LAB.seedFail[s] = true;
         });
         LAB.assertResults = LAB.asserts.map((a, k) => {
-            let ok = 0, fail = null;
+            let ok = 0, fixed = 0, fail = null;
             seeds.forEach((s, si) => {
                 const r = per[si][k];
-                if (r.status === 'pass' || r.status === 'gap') ok++;
+                if (r.status === 'pass' || r.status === 'gap' || r.status === 'fixed') { ok++; if (r.status === 'fixed') fixed++; }
                 else if (!fail) fail = { seed: s, ix: si, why: r.why, atS: r.atS };
             });
-            return { n: seeds.length, ok, fail, single: per[0][k] };
+            return { n: seeds.length, ok, fixed, fail, single: per[0][k] };
         });
         renderAsserts();
         renderSeeds();
-        const rs = LAB.assertResults;
-        const okRows = rs.filter(r => r.ok === r.n).length;
-        aggChip.textContent = 'ASSERTS ' + okRows + '/' + rs.length + (seeds.length > 1 ? ' · ' + seeds.length + ' SEEDS' : '');
-        aggChip.className = 'sl-schip ' + (okRows === rs.length ? 'sl-schip-teal' : 'sl-schip-red');
-        aggChip.style.display = 'inline-block';
+        if (typeof refreshTicks === 'function') refreshTicks();
     }
     function boatSel(val, onPick, allowNobody) {
         const s = document.createElement('select');
@@ -1327,6 +1407,56 @@
                 row.appendChild(hintSpan('m'));
             } else if (a.kind === 'nocollide') {
                 row.appendChild(hintSpan('no collisions \u2014 hulls never touch'));
+            } else if (a.kind === 'near') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('rounds within'));
+                row.appendChild(bareIn(a.max != null ? a.max : 15, 26, 'closest approach budget (m)',
+                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p > 0 ? p : 15; }));
+                row.appendChild(hintSpan('m of'));
+                const mSel = document.createElement('select');
+                mSel.className = 'sl-msel';
+                LAB.marks.forEach((m, mi) => { const o = document.createElement('option'); o.value = String(mi); o.textContent = markName(m).toUpperCase(); mSel.appendChild(o); });
+                mSel.value = String(a.mark || 0);
+                mSel.addEventListener('change', () => { a.mark = parseInt(mSel.value, 10); assertsChanged(); });
+                row.appendChild(mSel);
+            } else if (a.kind === 'turn') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('turns \u2264'));
+                row.appendChild(bareIn(a.max != null ? a.max : 360, 30, 'total integrated heading change over the run (\u00b0)',
+                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p > 0 ? p : 360; }));
+                row.appendChild(hintSpan('\u00b0 total'));
+            } else if (a.kind === 'deflect') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('deflects \u2264'));
+                row.appendChild(bareIn(a.max != null ? a.max : 23, 26, 'max avoidance deflection the helm may command (\u00b0)',
+                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p >= 0 ? p : 23; }));
+                row.appendChild(hintSpan('\u00b0'));
+            } else if (a.kind === 'role') {
+                row.appendChild(bareIn(a.t != null ? a.t : 0, 26, 'window start (s)', v => a.t = Math.max(0, parseFloat(v) || 0)));
+                row.appendChild(hintSpan('\u2013'));
+                row.appendChild(bareIn(a.t1 != null ? a.t1 : '', 26, 'window end (s, blank = start only)',
+                    v => { const p = parseFloat(v); a.t1 = Number.isFinite(p) ? Math.max(0, p) : undefined; }));
+                row.appendChild(hintSpan('s'));
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('is'));
+                const rSel = document.createElement('select');
+                rSel.className = 'sl-msel';
+                for (const v of ['STAND_ON', 'GIVE_WAY', 'NONE']) { const o = document.createElement('option'); o.value = v; o.textContent = v.replace('_', '-'); rSel.appendChild(o); }
+                rSel.value = a.role || 'STAND_ON';
+                rSel.addEventListener('change', () => { a.role = rSel.value; assertsChanged(); });
+                row.appendChild(rSel);
+            } else if (a.kind === 'steady') {
+                row.appendChild(boatSel(a.who, v => a.who = v));
+                row.appendChild(hintSpan('steady ≤'));
+                row.appendChild(bareIn(a.max != null ? a.max : 2, 26, 'max avoidance reversals over the window (sign flips + quick re-arms)',
+                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p >= 0 ? Math.round(p) : 2; }));
+                row.appendChild(hintSpan('reversals'));
+                row.appendChild(bareIn(a.t0 != null ? a.t0 : '', 26, 'window start (s, blank = whole run)',
+                    v => { const p = parseFloat(v); a.t0 = Number.isFinite(p) ? Math.max(0, p) : undefined; }));
+                row.appendChild(hintSpan('–'));
+                row.appendChild(bareIn(a.t1 != null ? a.t1 : '', 26, 'window end (s, blank = end)',
+                    v => { const p = parseFloat(v); a.t1 = Number.isFinite(p) ? Math.max(0, p) : undefined; }));
+                row.appendChild(hintSpan('s'));
             }
             // status chip: judged across the whole seed set. One seed shows
             // the plain verdict; several show k/N. Clicking a failure
@@ -1408,6 +1538,11 @@
             ['clear', 'NEVER CLOSE', 'two boats never get closer than a distance, the whole run'],
             ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
             ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
+            ['near', 'ROUNDS WITHIN', 'closest approach to a mark stays inside a budget — rounding tightness'],
+            ['turn', 'TURN BUDGET', 'total heading change over the run stays under a cap — catches orbit overshoot'],
+            ['deflect', 'DEFLECTION BUDGET', 'the helm never commands avoidance deflection past a cap — stand-on holds her course'],
+            ['role', 'HOLDS ROLE', 'a boat holds one avoidance role (stand-on / give-way / none) over a time window'],
+            ['steady', 'STEADY HELM', 'avoidance deviation reverses at most N times over a window — catches the flap'],
         ];
         const addBox = document.createElement('div');
         addBox.style.cssText = 'display:none;flex-direction:column;gap:6px';
@@ -1436,6 +1571,11 @@
                     goals: { kind: 'goals', who: 0 },
                     proper: { kind: 'proper', who: 0, tol: 10 },
                     nocollide: { kind: 'nocollide' },
+                    near: { kind: 'near', who: 0, mark: 0, max: 15 },
+                    turn: { kind: 'turn', who: 0, max: 360 },
+                    deflect: { kind: 'deflect', who: 0, max: 23 },
+                    role: { kind: 'role', who: 0, role: 'STAND_ON', t: Math.round(LAB.durationS / 2) },
+                    steady: { kind: 'steady', who: 0, max: 2 },
                 }[kind];
                 LAB.asserts.push(def);
                 addBox.style.display = 'none';
@@ -1499,30 +1639,24 @@
         return 'ok';
     }
     const SEED_COLORS = { fail: '#ff8a75', collision: '#ffa14f', penalty: '#f2c14e', ok: '#eef3fb', unrun: '#66748c' };
-    // OUTCOME clustering (owner: "show me the distinct behaviors"): seeds
-    // whose runs END the same way group together. The signature is
-    // behavioral, not positional — penalties (who/rule/when), each boat's
-    // final tack + goals done + penalty count, and whether an assertion
-    // failed — so metre-level trajectory jitter stays one cluster and a
-    // different STORY (a duck vs a foul) splits.
-    function outcomeSig(s) {
-        const rec = LAB.recs[s >>> 0];
-        if (!rec) return null;
-        const last = rec.frames[rec.nF].boats;
-        return JSON.stringify({
-            pens: rec.pens.map(p => [p.boat, p.rule || p.kind || '?', Math.round(p.t)]),
-            boats: last.map(b => [b.ta, b.gi || 0, b.penN || 0]),
-            fail: !!(LAB.seedFail && LAB.seedFail[s >>> 0]),
-        });
-    }
-    function outcomeSummary(sig, names) {
-        const o = JSON.parse(sig);
-        const bits = [];
-        bits.push(o.pens.length
-            ? o.pens.map(p => `${names[p[0]] || 'boat ' + p[0]} ${p[1]}@${p[2]}s`).join(', ')
-            : 'no penalties');
-        if (o.fail) bits.push('assert FAIL');
-        return bits.join(' · ');
+    // RESULT TAGS (owner: "filter by failing A1, or A1 & A2, or passing"):
+    // every seed carries a tag set — PASS (judged, no assert fails),
+    // A1..An (fails that assert row), COLLISION, PENALTY, UNRUN. The seeds
+    // dialog filters by any combination (AND).
+    function seedTags(s) {
+        s = s >>> 0;
+        const t = new Set();
+        const rec = LAB.recs[s];
+        if (!rec) { t.add('UNRUN'); return t; }
+        if (rec.pens.some(p => p.kind === 'contact')) t.add('COLLISION');
+        else if (rec.pens.length) t.add('PENALTY');
+        const per = LAB.assertPer && LAB.assertPer[s];
+        if (per) {
+            let anyFail = false;
+            per.forEach((r, k) => { if (r.status === 'fail') { t.add('A' + (k + 1)); anyFail = true; } });
+            if (!anyFail) t.add('PASS');
+        }
+        return t;
     }
     const SEED_TITLES = { fail: 'an assertion fails on this run', collision: 'boats collide on this run',
                           penalty: 'a penalty on this run (no collision)', ok: 'clean run', unrun: 'not run yet' };
@@ -1537,16 +1671,17 @@
     }
     // THE SEEDS DIALOG — replaces the dropdowns (owner: works at 100 or
     // 1000). Same scalable pattern as the Open box: rows built per filter
-    // pass, capped at 400 rendered, filter + count line — plus outcome-TIER
-    // chips (fail/collision/penalty/clean) so "show me the red ones" is one
-    // click at any size. Enter switches to the first match.
+    // pass, capped at 400 rendered, filter + count line — plus RESULT-TAG
+    // chips (PASS / A1..An / COLLISION / PENALTY / UNRUN) that AND together,
+    // so "failing A1 & A2" is two clicks at any size. Enter watches the
+    // first match.
     function openSeedDialog() {
         const MAXROWS = 400;
         // SIMULATE mode = READ-ONLY (owner ruling): the set is what was
         // simulated — switch what you watch, but no add/remove/clear (an
         // edit would silently desync the recordings and the verdict pill)
         const readOnly = LAB.uiMode === 'sim';
-        let tier = 'all';
+        const tagSel = new Set();   // active result-tag filters, ANDed
         const body = document.createElement('div');
         body.style.cssText = 'display:flex;flex-direction:column;gap:8px;min-width:340px';
         const filterWrap = document.createElement('div');
@@ -1570,27 +1705,44 @@
         let firstMatch = null;
         let dlg = null;
         const pick = (i) => { dlg.close(); setActiveSeed(i); };
-        const TIERS = [['all', 'ALL'], ['fail', 'FAIL'], ['collision', 'COLLISION'], ['penalty', 'PENALTY'], ['ok', 'CLEAN'], ['unrun', 'UNRUN']];
         const rebuild = () => {
-            // tier chips with live counts (zero tiers hidden, ALL always)
-            const counts = { all: LAB.seeds.length, fail: 0, collision: 0, penalty: 0, ok: 0, unrun: 0 };
-            for (const s of LAB.seeds) counts[seedStatus(s)]++;
+            // result-tag chips with live counts: ALL clears; the rest toggle
+            // and AND together ("failing A1 & A2" = both chips on). Zero-
+            // count tags hide, dead selections drop.
+            const tagsOf = new Map(LAB.seeds.map(s => [s >>> 0, seedTags(s)]));
+            const counts = new Map();
+            for (const t of tagsOf.values()) for (const k of t) counts.set(k, (counts.get(k) || 0) + 1);
+            const names = LAB.boats.map(lb => lb.bot.name);
+            const TAGS = ['PASS', ...LAB.asserts.map((a, k) => 'A' + (k + 1)), 'COLLISION', 'PENALTY', 'UNRUN'];
+            for (const k of [...tagSel]) if (!counts.get(k)) tagSel.delete(k);
             chips.innerHTML = '';
-            for (const [key, lbl] of TIERS) {
-                if (key !== 'all' && !counts[key]) { if (tier === key) tier = 'all'; continue; }
+            const mk = (lbl, on, title, click, color) => {
                 const c = document.createElement('span');
                 c.className = 'sl-schip';
                 c.style.cssText = 'cursor:pointer;font-variant-numeric:tabular-nums;'
-                    + `color:${key === 'all' ? '#8fa3bd' : SEED_COLORS[key]};`
-                    + (tier === key ? 'background:rgba(47,107,255,.28)' : 'background:rgba(255,255,255,.06)');
-                c.textContent = `${lbl} ${counts[key]}`;
-                c.onclick = () => { tier = key; rebuild(); };
+                    + `color:${color};`
+                    + (on ? 'background:rgba(47,107,255,.28)' : 'background:rgba(255,255,255,.06)');
+                c.textContent = lbl;
+                c.title = title;
+                c.onclick = click;
                 chips.appendChild(c);
+            };
+            mk('ALL ' + LAB.seeds.length, !tagSel.size, 'no filter', () => { tagSel.clear(); rebuild(); }, '#8fa3bd');
+            const TAG_COLORS = { PASS: '#7ed491', COLLISION: '#ffa14f', PENALTY: '#f2c14e', UNRUN: '#66748c' };
+            for (const k of TAGS) {
+                const n = counts.get(k) || 0;
+                if (!n) continue;
+                const title = k.startsWith('A') && LAB.asserts[+k.slice(1) - 1]
+                    ? 'failing ' + (window.ScenarioAsserts ? window.ScenarioAsserts.label(LAB.asserts[+k.slice(1) - 1], names) : k)
+                    : { PASS: 'every assertion holds', COLLISION: 'hull contact', PENALTY: 'penalized (no collision)', UNRUN: 'not simulated yet' }[k];
+                mk(`${k} ${n}`, tagSel.has(k), title,
+                    () => { tagSel.has(k) ? tagSel.delete(k) : tagSel.add(k); rebuild(); },
+                    TAG_COLORS[k] || '#ff8a75');
             }
-            // rows: tier + substring filter, numeric order, capped
+            // rows: tag filter (AND) + substring filter, numeric order, capped
             const q = filterIn.value.trim();
             const matches = LAB.seeds.map((s, i) => [s >>> 0, i])
-                .filter(([s]) => (tier === 'all' || seedStatus(s) === tier) && (!q || String(s).includes(q)))
+                .filter(([s]) => [...tagSel].every(k => tagsOf.get(s).has(k)) && (!q || String(s).includes(q)))
                 .sort((a, b) => a[0] - b[0]);
             firstMatch = matches.length ? matches[0][1] : null;
             list.innerHTML = '';
@@ -1617,29 +1769,7 @@
                 row.onclick = () => { dlg.close(); setActiveSeed(-1); };
                 list.appendChild(row);
             }
-            // group by OUTCOME: one header per distinct behavior, biggest
-            // first; unrun seeds gather at the bottom unclustered
-            const names = LAB.boats.map(lb => lb.bot.name);
-            const clusters = new Map();
-            for (const [s, i] of matches.slice(0, MAXROWS)) {
-                const sig = outcomeSig(s) || 'unrun';
-                if (!clusters.has(sig)) clusters.set(sig, []);
-                clusters.get(sig).push([s, i]);
-            }
-            const ordered = [...clusters.entries()].sort((a, b) =>
-                (a[0] === 'unrun') - (b[0] === 'unrun') || b[1].length - a[1].length);
-            const manyClusters = ordered.length > 1 || (ordered[0] && ordered[0][0] !== 'unrun');
-            let cn = 0;
-            const emitHeader = (sig, group) => {
-                if (!manyClusters) return;
-                const h = document.createElement('div');
-                h.className = 'sl-hint';
-                h.style.cssText = 'padding:8px 12px 3px;letter-spacing:.08em';
-                h.textContent = sig === 'unrun' ? `NOT RUN · ${group.length}`
-                    : `OUTCOME ${++cn} · ${group.length} seed${group.length === 1 ? '' : 's'} · ${outcomeSummary(sig, names).toUpperCase()}`;
-                list.appendChild(h);
-            };
-            const emitRow = ([s, i]) => {
+            matches.slice(0, MAXROWS).forEach(([s, i]) => {
                 const st = seedStatus(s);
                 const on = i === LAB.seedIx;
                 const row = document.createElement('div');
@@ -1653,6 +1783,15 @@
                 num.style.cssText = 'flex:1;color:' + SEED_COLORS[st];
                 num.title = SEED_TITLES[st];
                 row.appendChild(num);
+                // the seed's own result tags ride the row (A-fails red,
+                // PASS green) — the breakdown is visible without filtering
+                for (const k of [...tagsOf.get(s)].filter(k => k !== 'UNRUN')) {
+                    const tchip = document.createElement('span');
+                    tchip.textContent = k;
+                    tchip.style.cssText = 'flex:none;font:800 9px Archivo,system-ui,sans-serif;letter-spacing:.04em;'
+                        + `color:${{ PASS: '#7ed491', COLLISION: '#ffa14f', PENALTY: '#f2c14e' }[k] || '#ff8a75'}`;
+                    row.appendChild(tchip);
+                }
                 if (on) {
                     const a = document.createElement('span');
                     a.className = 'sl-schip sl-schip-blue';
@@ -1671,16 +1810,11 @@
                 }
                 row.onclick = () => pick(i);
                 list.appendChild(row);
-            };
-            for (const [sig, group] of ordered) {
-                emitHeader(sig, group);
-                group.forEach(emitRow);
-            }
-            const nOut = ordered.filter(([sig]) => sig !== 'unrun').length;
+            });
             countEl.textContent = !matches.length ? 'nothing matches'
                 : matches.length > MAXROWS ? `showing ${MAXROWS} of ${matches.length} \u00b7 refine the filter`
                 : `${matches.length} of ${LAB.seeds.length}`
-                  + (nOut ? ` \u00b7 ${nOut} distinct outcome${nOut === 1 ? '' : 's'}` : '')
+                  + (tagSel.size ? ` \u00b7 ${[...tagSel].join(' & ')}` : '')
                   + ' \u00b7 Enter watches the first';
         };
         filterIn.addEventListener('input', rebuild);
@@ -1822,6 +1956,193 @@
             + '<span style="color:#66748c;font-size:9px">&#9662;</span>';
         sBtn.title = actTitle + ' \u2014 open the seed list';
     }
+    // ── MEASUREMENTS: the numbers the recording already carries, computed
+    // once per rec and cached — deviation from proper (max + when),
+    // total turn, when avoidance deviation first fired and at what range,
+    // role occupancy, per-pair closest approach and when rights were first
+    // determined (and under which rule). Consumed by the umpire panel, the
+    // testAPI and the runners — no more bespoke probes for these.
+    function metricsFor(key) {
+        const rec = LAB.recs[key];
+        if (!rec) return null;
+        if (rec._metrics) return rec._metrics;
+        const pr = key !== 'proper' ? LAB.recs.proper : null;
+        const nB = rec.frames[0].boats.length;
+        const boats = [];
+        for (let i = 0; i < nB; i++) {
+            let maxDev = 0, maxDevAt = 0, turn = 0, prevH = null, devFrom = null, devRange = null;
+            const roles = {};
+            for (let f = 0; f <= rec.nF; f++) {
+                const b = rec.frames[f].boats[i];
+                if (pr && pr.frames[f] && pr.frames[f].boats[i]) {
+                    const p = pr.frames[f].boats[i];
+                    const d = Math.hypot(b.x - p.x, b.y - p.y);
+                    if (d > maxDev) { maxDev = d; maxDevAt = f / 60; }
+                }
+                if (prevH !== null) {
+                    let dh = (b.h - prevH) % (Math.PI * 2);
+                    if (dh > Math.PI) dh -= Math.PI * 2;
+                    if (dh < -Math.PI) dh += Math.PI * 2;
+                    turn += Math.abs(dh);
+                }
+                prevH = b.h;
+                if (b.dev && devFrom === null) {
+                    devFrom = +(f / 60).toFixed(2);
+                    let best = Infinity;
+                    for (let j = 0; j < nB; j++) {
+                        if (j === i) continue;
+                        const o = rec.frames[f].boats[j];
+                        best = Math.min(best, Math.hypot(b.x - o.x, b.y - o.y));
+                    }
+                    devRange = best === Infinity ? null : Math.round(best);
+                }
+                roles[b.role] = (roles[b.role] || 0) + 1;
+            }
+            const rolePct = {};
+            for (const rk of Object.keys(roles)) {
+                const p = Math.round(100 * roles[rk] / (rec.nF + 1));
+                if (p >= 1 && rk !== '-') rolePct[rk] = p;
+            }
+            boats.push({
+                name: rec.names[i],
+                maxDevM: pr ? +(maxDev / 5).toFixed(1) : null,
+                maxDevAtS: pr ? +maxDevAt.toFixed(1) : null,
+                turnDeg: Math.round(turn * 180 / Math.PI),
+                devFromS: devFrom, devFromRangeU: devRange,
+                // avoidance reversals (sign flips + quick re-arms) — the
+                // flap count, computed by the shared evaluator so the
+                // 'steady' assert and this panel can never disagree
+                flaps: window.ScenarioAsserts.countFlaps(rec, i),
+                roles: rolePct,
+            });
+        }
+        const pairs = [];
+        for (let i = 0; i < nB; i++) for (let j = i + 1; j < nB; j++) {
+            const ni = rec.names[i], nj = rec.names[j];
+            let minD = Infinity, minAt = 0, detAt = null, detRule = null;
+            for (let f = 0; f <= rec.nF; f++) {
+                const A = rec.frames[f].boats[i], B = rec.frames[f].boats[j];
+                const d = Math.hypot(A.x - B.x, A.y - B.y);
+                if (d < minD) { minD = d; minAt = f / 60; }
+                if (detAt === null) {
+                    const q = (rec.frames[f].pairs || []).find(p =>
+                        (p.a === ni && p.b === nj) || (p.a === nj && p.b === ni));
+                    if (q && q.row) { detAt = +(f / 60).toFixed(2); detRule = q.rule || null; }
+                }
+            }
+            pairs.push({ a: ni, b: nj, minDistU: Math.round(minD), minDistAtS: +minAt.toFixed(1),
+                         rightsAtS: detAt, rule: detRule });
+        }
+        rec._metrics = { boats, pairs };
+        return rec._metrics;
+    }
+    function renderUmpMetrics() {
+        const box = document.querySelector('#lab-umpmetrics');
+        if (!box) return;
+        const act = activeSeed();
+        const m = act !== 'proper' && metricsFor(act);
+        if (!m) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        box.innerHTML = '<div class="sl-sectlabel" style="margin-bottom:6px">MEASUREMENTS</div>';
+        const line = (txt, title) => {
+            const d = document.createElement('div');
+            d.style.cssText = 'padding:2px 0;font:700 11px Archivo,system-ui,sans-serif;'
+                + 'color:#c4d2e6;font-variant-numeric:tabular-nums';
+            d.textContent = txt;
+            if (title) d.title = title;
+            box.appendChild(d);
+        };
+        for (const b of m.boats) {
+            const bits = [b.name];
+            if (b.maxDevM != null) bits.push(`${b.maxDevM}m off proper @${b.maxDevAtS}s`);
+            bits.push(`turned ${b.turnDeg}°`);
+            bits.push(b.devFromS != null
+                ? `dev ${b.devFromS}s${b.devFromRangeU != null ? ' @' + b.devFromRangeU + 'u' : ''}`
+                : 'no deviation');
+            if (b.flaps) bits.push(`flapped ${b.flaps}×`);
+            const topRole = Object.entries(b.roles).sort((x, y) => y[1] - x[1])[0];
+            if (topRole && topRole[0] !== 'NONE') bits.push(`${topRole[0]} ${topRole[1]}%`);
+            line(bits.join(' · '), 'max off-proper deviation · total turn · when avoidance deviation first fired (and range to nearest boat) · avoidance reversals · dominant role');
+        }
+        for (const p of m.pairs) {
+            line(`${p.a}·${p.b} min ${p.minDistU}u @${p.minDistAtS}s`
+                + (p.rightsAtS != null ? ` · rights ${p.rightsAtS}s${p.rule ? ' ' + p.rule : ''}` : ' · no determination'),
+                'closest approach · when a rights determination first existed');
+        }
+    }
+    // the umpire panel's ASSERTS section: this trace's verdict per row —
+    // the assertion's own text, PASS/FAIL, and the failure time. A failed
+    // row is a jump to its moment.
+    function renderUmpAsserts() {
+        const box = document.querySelector('#lab-umpasserts');
+        if (!box) return;
+        const act = activeSeed();
+        const per = act !== 'proper' && LAB.assertPer && LAB.assertPer[act];
+        if (!per || !LAB.asserts.length) { box.style.display = 'none'; return; }
+        box.style.display = 'block';
+        box.innerHTML = '';
+        const names = LAB.boats.map(lb => lb.bot.name);
+        const COL = { pass: '#8fd8d0', fail: '#ff8a75', gap: '#f2c14e', fixed: '#8fc2ff' };
+        per.forEach((r, k) => {
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex;align-items:baseline;gap:7px;padding:3px 0;'
+                + 'font:700 11px Archivo,system-ui,sans-serif;color:#c4d2e6';
+            const tag = document.createElement('span');
+            tag.textContent = 'A' + (k + 1);
+            tag.style.cssText = `flex:none;font-weight:900;color:${COL[r.status] || '#c4d2e6'}`;
+            row.appendChild(tag);
+            const lbl = document.createElement('span');
+            lbl.textContent = window.ScenarioAsserts ? window.ScenarioAsserts.label(LAB.asserts[k], names) : '';
+            lbl.style.cssText = 'flex:1;min-width:0';
+            row.appendChild(lbl);
+            const st = document.createElement('span');
+            st.style.cssText = `flex:none;font-weight:900;font-variant-numeric:tabular-nums;color:${COL[r.status] || '#c4d2e6'}`;
+            st.textContent = r.status === 'fail' && r.atS != null
+                ? `FAIL @ ${r.atS.toFixed(1)}s`
+                : { pass: 'PASS', fail: 'FAIL', gap: 'GAP', fixed: 'FIXD' }[r.status] || '';
+            row.appendChild(st);
+            row.title = r.why || '';
+            if (r.status === 'fail' && r.atS != null) {
+                const f = Math.min(LAB.rec ? LAB.rec.nF : 1e9, Math.round(r.atS * 60));
+                row.style.cursor = 'pointer';
+                row.title += ' — click to jump there';
+                row.onmouseenter = () => row.style.color = '#eef3fb';
+                row.onmouseleave = () => row.style.color = '#c4d2e6';
+                row.onclick = () => { pause(); setFrame(f); };
+            }
+            box.appendChild(row);
+        });
+    }
+    // the slider's tick strip for the WATCHED trace: penalty ▼ marks, plus a
+    // red A<n> wherever assertion row n FAILS on this seed (owner) — the
+    // marker sits at the failure's own timestamp
+    function refreshTicks() {
+        renderUmpAsserts();   // same triggers: seed switch + re-judge
+        renderUmpMetrics();
+        const act = activeSeed();
+        const rec = LAB.recs[act];
+        if (!rec) { pbTicks.innerHTML = ''; return; }
+        // every marker is a JUMP: click scrubs to its moment (delegated
+        // handler below reads data-f). Markers centre on where the THUMB
+        // sits at that frame — the thumb's 14px width insets its travel, so
+        // a raw percent drifts off-target toward the ends.
+        const at = (f) => `left:calc(7px + (100% - 14px) * ${(f / rec.nF).toFixed(4)});transform:translateX(-50%)`;
+        let html = rec.ticks.map(f =>
+            `<span data-f="${f}" style="position:absolute;${at(f)};top:0;color:#ff8a75;font-size:8px;pointer-events:auto;cursor:pointer" title="penalty — click to jump there">&#9660;</span>`).join('');
+        const per = act !== 'proper' && LAB.assertPer && LAB.assertPer[act];
+        if (per) {
+            const names = LAB.boats.map(lb => lb.bot.name);
+            per.forEach((r, k) => {
+                if (r.status !== 'fail' || r.atS == null) return;
+                const f = Math.min(rec.nF, Math.round(r.atS * 60));
+                const label = window.ScenarioAsserts ? window.ScenarioAsserts.label(LAB.asserts[k], names) : '';
+                html += `<span data-f="${f}" style="position:absolute;${at(f)};`
+                    + 'top:-10px;color:#ff8a75;font:800 9px Archivo,system-ui,sans-serif;'
+                    + `letter-spacing:.02em;pointer-events:auto;cursor:pointer" title="FAIL ${label} — ${r.why || ''} — click to jump there">A${k + 1}</span>`;
+            });
+        }
+        pbTicks.innerHTML = html;
+    }
     // switching seeds swaps CACHED recordings — no resim; the playhead time
     // carries across so the same moment can be compared between seeds
     function setActiveSeed(i) {
@@ -1831,9 +2152,8 @@
             LAB.rec = rec;
             pbSlider.max = rec.nF;
             LAB.frame = Math.min(LAB.frame, rec.nF);
-            pbTicks.innerHTML = rec.ticks.map(f =>
-                `<span style="position:absolute;left:${(100 * f / rec.nF).toFixed(1)}%;top:0;transform:translateX(-50%);color:#ff8a75;font-size:8px" title="penalty">&#9660;</span>`).join('');
         }
+        refreshTicks();
         renderSeeds();
     }
     // ONE way in: the summary row (and the SIMULATE card's selector) open
@@ -1866,6 +2186,19 @@
             bt.raceState.isTacking = false; bt.raceState.ocs = false;
             bt.raceState.penalty = false; bt.raceState.totalPenalties = 0;
             bt.raceState.penaltyTurnsOwed = 0;
+            // PENALIZED AT START (chain scenarios): she begins the run
+            // flagged and owing one turn — Rule 21 applies to her from t=0
+            // and the AI's own spin machinery decides when to take the 360.
+            // Not a penalty EVENT: rec.pens stays empty for it, so a
+            // `penalty who:-1` row still means "no NEW foul in the run".
+            if (lb.penalized) {
+                bt.raceState.penalty = true;
+                bt.raceState.totalPenalties = 1;
+                bt.raceState.penaltyTurnsOwed = 1;
+                bt.raceState.penaltyFlagTime = 0;
+                bt.raceState.penaltyRot = 0;
+                bt.raceState.penaltyLastHeading = null;
+            }
             // kite starts stowed — a pool recruit otherwise carries whatever
             // hoist state its parked racing life left behind
             bt.spinnaker = false; bt.spinnakerDeployProgress = 0;
@@ -1950,11 +2283,16 @@
                     tk: bt.raceState.isTacking, pen: bt.raceState.penalty,
                     sp: !!bt.spinnaker, spp: +(bt.spinnakerDeployProgress || 0).toFixed(3),
                     penN: bt.raceState.totalPenalties || 0,
-                    gi: lb._goalIdx || 0,
+                    gi: lb._courseBacked
+                        ? Math.min((lb.goals || []).length, Math.max(0, bt.raceState.leg - 1))
+                        : (lb._goalIdx || 0),
                     mode: lb._mode || 'AI',
                     role: c ? (c.avoidanceRole || '-') : '-',
                     risk: c ? (c.riskState || '-') : '-',
-                    dev: c ? +((c.lastAvoidDeviation || 0)).toFixed(2) : 0 };
+                    // SIGNED when the engine provides it (flap metric needs
+                    // the side); older engines fall back to the abs value
+                    dev: c ? +((c.lastAvoidDeviationSigned != null
+                        ? c.lastAvoidDeviationSigned : c.lastAvoidDeviation) || 0).toFixed(2) : 0 };
             }),
             pairs: pairRights(),
         };
@@ -2084,13 +2422,126 @@
     function handoffToAI(lb) {
         const bt = lb.bot, c = bt.controller;
         if (c && Object.prototype.hasOwnProperty.call(c, 'update')) delete c.update;
-        aiNavFor(lb, bt.heading);
+        // course-backed boats need NO navigation override — the engine's own
+        // route machinery is already steering their goals
+        if (!lb._courseBacked) aiNavFor(lb, bt.heading);
         lb._mode = 'AI';
+    }
+    // ── COURSE-BACKED GOALS (owner ruling): the lab must exercise the SAME
+    // machinery the game races — rounding carrots, sweep accounting and leg
+    // advancement included — so a rounding fixed here is fixed on venues.
+    // When every goal-carrying boat shares ONE goal list, the lab compiles
+    // it into a real state.course ROUTE (the generic walker races lines,
+    // gates and roundings in any order) and installs no goalNav at all.
+    // Boats with differing goal lists still get the lab navigator: the
+    // course is a global, one per world.
+    function goalCourseBoats() {
+        const withGoals = LAB.boats.filter(lb => lb.goals && lb.goals.length);
+        if (!withGoals.length) return [];
+        const sig = (lb) => JSON.stringify(lb.goals.map(g =>
+            g.type === 'point' ? ['p', Math.round(g.x), Math.round(g.y)]
+            : g.type === 'mark' ? ['m', LAB.marks.indexOf(g.ref)]
+            : ['g', LAB.lines.indexOf(g.ref)]));
+        const s0 = sig(withGoals[0]);
+        if (!withGoals.every(lb => sig(lb) === s0)) return [];
+        return withGoals;
+    }
+    function installGoalCourse(cbs) {
+        const C = window.state.course, R = window.state.race;
+        LAB._gc = { marks: C.marks, route: C.route, type: C.type,
+                    roundMark: C.roundMark, dmc: C.dmc, totalLegs: R.totalLegs };
+        const lead = cbs[0];
+        if (!LAB._gcCache) {
+            const marks = C.marks.slice();
+            const route = [];
+            // a line leg whose crossing NORMAL points along the approach —
+            // the walker counts hull crossings with dir vs (gDy, -gDx)
+            const lineLeg = (cx, cy, dx, dy, w, role, finish) => {
+                const gx = -dy * (w / 2), gy = dx * (w / 2);
+                const i1 = marks.push({ x: cx - gx, y: cy - gy, type: 'mark', labGoal: true, zone: 1 }) - 1;
+                const i2 = marks.push({ x: cx + gx, y: cy + gy, type: 'mark', labGoal: true, zone: 1 }) - 1;
+                route.push({ kind: 'line', marks: [i1, i2], dir: +1, role, finish: !!finish });
+            };
+            // synthetic start line 150u astern of the lead boat: it is never
+            // raced (boats begin on leg 1) but it anchors the first leg's
+            // approach geometry for CoursePath.requiredSweep
+            const fx = Math.sin(lead.heading), fy = -Math.cos(lead.heading);
+            let prev = { x: lead.x - fx * 150, y: lead.y - fy * 150 };
+            lineLeg(prev.x, prev.y, fx, fy, 400, 'start', false);
+            lead.goals.forEach((g, k) => {
+                const last = k === lead.goals.length - 1;
+                if (g.type === 'mark') {
+                    route.push({ kind: 'round', side: g.ref.side === 'starboard' ? 'starboard' : 'port',
+                                 role: 'rounding', mark: g.ref });
+                    prev = { x: g.ref.x, y: g.ref.y };
+                } else if (g.type === 'gate') {
+                    // the lab line's own endpoints, ordered so the approach
+                    // side crosses as dir +1 (lab gates accept either way —
+                    // the compile orients to the path's own direction)
+                    const cx = (g.ref.x1 + g.ref.x2) / 2, cy = (g.ref.y1 + g.ref.y2) / 2;
+                    let dx = cx - prev.x, dy = cy - prev.y;
+                    const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+                    const nvx = (g.ref.y2 - g.ref.y1), nvy = -(g.ref.x2 - g.ref.x1);
+                    const flip = (nvx * dx + nvy * dy) < 0;
+                    const i1 = marks.push({ x: flip ? g.ref.x2 : g.ref.x1, y: flip ? g.ref.y2 : g.ref.y1, type: 'mark', labGoal: true, zone: 1 }) - 1;
+                    const i2 = marks.push({ x: flip ? g.ref.x1 : g.ref.x2, y: flip ? g.ref.y1 : g.ref.y2, type: 'mark', labGoal: true, zone: 1 }) - 1;
+                    route.push({ kind: 'line', marks: [i1, i2], dir: +1, role: 'goal', finish: last });
+                    prev = { x: cx, y: cy };
+                } else {
+                    // waypoint = a 220u line square to the approach (the lab's
+                    // old pass-within-110u semantic, as a real crossing)
+                    let dx = g.x - prev.x, dy = g.y - prev.y;
+                    const L = Math.hypot(dx, dy) || 1; dx /= L; dy /= L;
+                    lineLeg(g.x, g.y, dx, dy, 220, 'goal', last);
+                    prev = { x: g.x, y: g.y };
+                }
+            });
+            LAB._gcCache = { marks, route, totalLegs: lead.goals.length };
+        }
+        const gc = LAB._gcCache;
+        C.marks = gc.marks;
+        C.route = gc.route;
+        C.roundMark = (gc.route.find(e => e.kind === 'round') || {}).mark || null;
+        C.type = C.roundMark ? 'islandRound' : 'wl';
+        R.totalLegs = gc.totalLegs;
+        // reqSweep + the DMC ruler, built by the game's own compiler; cached
+        // with the course so eleven bursts pay for one build
+        if (!gc.dmcBuilt) {
+            if (typeof buildCoursePaths === 'function') buildCoursePaths();
+            gc.dmc = C.dmc;
+            gc.dmcBuilt = true;
+        } else {
+            C.dmc = gc.dmc;
+        }
+        for (const lb of cbs) {
+            const rs = lb.bot.raceState;
+            rs.leg = 1;
+            rs.isRounding = false; rs.roundSweep = 0; rs.roundWrong = 0;
+            rs.roundArmed = false; rs.roundBanked = false; rs.roundRebased = false;
+            rs.roundEntryB = null; rs.roundWrapped = false;
+            rs.roundFrom = { x: lb.x, y: lb.y };
+            rs.legStartTime = window.state.race.timer;
+            lb._courseBacked = true;
+        }
+    }
+    function removeGoalCourse() {
+        const gc = LAB._gc;
+        if (!gc) return;
+        const C = window.state.course, R = window.state.race;
+        C.marks = gc.marks; C.route = gc.route; C.type = gc.type;
+        C.roundMark = gc.roundMark; C.dmc = gc.dmc;
+        R.totalLegs = gc.totalLegs;
+        LAB._gc = null;
+        for (const lb of LAB.boats) lb._courseBacked = false;
     }
     // one seed → one recording (returned, not applied — runAll owns the
     // cache and the transport)
     function simulateSeed(SEED, soloLb) {
         applyInitial();
+        // shared-goal boats race a COMPILED course (the game's own rounding
+        // and leg machinery); installed per burst, restored in the finally
+        const cbs = goalCourseBoats();
+        if (cbs.length) installGoalCourse(cbs);
         // DETERMINISM: a testing tool must give the same verdict for the same
         // scenario. Two layers:
         // 1. the burst runs under a seeded PRNG (mulberry32) — the AI rolls
@@ -2164,9 +2615,10 @@
             } else {
                 // AI from the start: sail the goals in order (or the SET
                 // heading if there are none) — strategy, avoidance, rules
-                // and the umpire all live
+                // and the umpire all live. Course-backed boats get NO
+                // override: the engine's route machinery steers them.
                 lb._mode = 'AI';
-                aiNavFor(lb, lb.heading);
+                if (!lb._courseBacked) aiNavFor(lb, lb.heading);
             }
         }
         frames = [snapshot()];
@@ -2198,9 +2650,12 @@
         }
         } finally {
             Math.random = realRandom;
-            // solo burst over: the parked rivals rejoin the stage
-            if (soloLb) for (const lb of LAB.boats) {
-                if (lb === soloLb) continue;
+            if (cbs.length) removeGoalCourse();
+            // no boat leaves the stage: a course-backed boat that completed
+            // her last leg is FINISHED in the engine's eyes, and finished
+            // boats fade out (opacity is live, not recorded — the fade would
+            // bleed into playback). Parked solo-burst rivals rejoin too.
+            for (const lb of LAB.boats) {
                 lb.bot.raceState.finished = false;
                 lb.bot.fadeTimer = 999; lb.bot.opacity = 1;
             }
@@ -2354,6 +2809,13 @@
     bar.querySelector('#pb-fwd').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.frame + 30); };
     bar.querySelector('#pb-end').onclick = () => { if (!LAB.rec) return; pause(); setFrame(LAB.rec.nF); };
     pbSlider.addEventListener('input', () => { if (!LAB.rec) { pbSlider.value = 0; return; } pause(); setFrame(+pbSlider.value); });
+    // tick markers (penalty arrows, A-fail labels) jump to their moment
+    pbTicks.addEventListener('click', (e) => {
+        const t = e.target.closest('[data-f]');
+        if (!t || !LAB.rec) return;
+        pause();
+        setFrame(+t.dataset.f);
+    });
     // the … menu: toggles on its button, closes on any item or outside press
     ui.querySelector('#lab-more').onclick = () => {
         const m = ui.querySelector('#lab-moremenu');
@@ -2429,8 +2891,13 @@
                 // any other key while a dialog is up: dead air
             } else {
                 if (e.key === 'Delete' || e.key === 'Backspace') deleteSel();
+                else if (e.key === 'Enter') {
+                    // RETURN closes an in-progress polygon draft
+                    if (LAB.armed === 'sand' && LAB.sandDraft && LAB.sandDraft.length) closeSandDraft();
+                }
                 else if (e.key === 'Escape') {
                     if (moreOpen) moreMenu.style.display = 'none';
+                    else if (LAB.sandDraft && LAB.sandDraft.length) LAB.sandDraft = null;   // drop the draft, stay armed
                     else if (LAB.goalArm) setGoalArm(false);
                     else if (LAB.armed) setArmed(LAB.armed);
                     else select(null);
@@ -2446,8 +2913,11 @@
                     if (LAB.uiMode !== 'sim') setUIMode('sim'); else pbPlay.onclick();
                 }
                 else if (LAB.rec) {
-                    if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - 1); }
-                    else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + 1); }
+                    // arrows scrub 0.5s (the transport buttons' gross step);
+                    // SHIFT+arrow is the fine step — one frame (1/60 s)
+                    const step = e.shiftKey ? 1 : 30;
+                    if (e.key === 'ArrowLeft') { pause(); setFrame(LAB.frame - step); }
+                    else if (e.key === 'ArrowRight') { pause(); setFrame(LAB.frame + step); }
                 }
                 e.preventDefault();   // no space-scroll, no browser shortcuts on the stage
             }
@@ -2471,12 +2941,13 @@
                 name: lb.bot.name !== lb._defName ? lb.bot.name : undefined,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS,
+                penalized: lb.penalized ? true : undefined,
                 goals: (lb.goals && lb.goals.length) ? lb.goals.map(g =>
                     g.type === 'point' ? { k: 'p', x: Math.round(g.x - S.x), y: Math.round(g.y - S.y) }
                     : g.type === 'mark' ? { k: 'm', i: LAB.marks.indexOf(g.ref) }
                     : { k: 'g', i: LAB.lines.indexOf(g.ref) }).filter(g => g.k === 'p' || g.i >= 0) : undefined })),
             marks: LAB.marks.map(m => ({ x: Math.round(m.x - S.x), y: Math.round(m.y - S.y), side: m.side || 'port', zone: Math.round(m.zone || 165), name: m.labName || undefined })),
-            sands: LAB.sands.map(s => ({ x: Math.round(s.x - S.x), y: Math.round(s.y - S.y), r: s.r, name: s.labName || undefined })),
+            sands: LAB.sands.map(s => ({ pts: s.isl.vertices.map(v => [Math.round(v.x - S.x), Math.round(v.y - S.y)]), name: s.labName || undefined })),
             lines: LAB.lines.map(l => ({ x1: Math.round(l.x1 - S.x), y1: Math.round(l.y1 - S.y), x2: Math.round(l.x2 - S.x), y2: Math.round(l.y2 - S.y), name: l.labName || undefined })),
         };
     }
@@ -2507,6 +2978,7 @@
                 // the kite is auto-only now)
                 lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })).sort((a, b) => a.t - b.t) : [];
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
+                lb.penalized = bs.penalized ? true : undefined;
                 if (bs.name) lb.bot.name = bs.name;
                 if (bs.goals && bs.goals.length) pendingGoals.push([lb, bs.goals]);
             }
@@ -2517,7 +2989,12 @@
             if (ms.zone) m.zone = ms.zone;
             if (ms.name) m.labName = ms.name;
         }
-        for (const ss of (sc.sands || [])) { const sd = addSand(S.x + ss.x, S.y + ss.y, ss.r); if (ss.name) sd.labName = ss.name; }
+        for (const ss of (sc.sands || [])) {
+            // pts = authored polygon; {x,y,r} = legacy circle doc
+            const sd = ss.pts ? addSandPoly(ss.pts.map(p => ({ x: S.x + p[0], y: S.y + p[1] })))
+                              : addSand(S.x + ss.x, S.y + ss.y, ss.r);
+            if (ss.name) sd.labName = ss.name;
+        }
         for (const ls of (sc.lines || [])) { const ln = addLine(S.x + (ls.x1 + ls.x2) / 2, S.y + (ls.y1 + ls.y2) / 2); ln.x1 = S.x + ls.x1; ln.y1 = S.y + ls.y1; ln.x2 = S.x + ls.x2; ln.y2 = S.y + ls.y2; if (ls.name) ln.labName = ls.name; }
         for (const [lb, gs] of pendingGoals) {
             lb.goals = gs.map(g =>
@@ -3074,11 +3551,22 @@
             invalidate();
             return;
         }
+        // armed OBJECT tool = polygon drafting (owner): every click drops a
+        // vertex; clicking the first point again (≥3 points) or RETURN
+        // closes; ESC cancels the draft
+        if (LAB.armed === 'sand') {
+            const draft = LAB.sandDraft || (LAB.sandDraft = []);
+            if (draft.length >= 3) {
+                const p0 = draft[0];
+                if (Math.hypot(wx - p0.x, wy - p0.y) < 14 / LAB.zoom) { closeSandDraft(); return; }
+            }
+            draft.push({ x: wx, y: wy });
+            return;
+        }
         if (!hit && LAB.armed) {
             // an armed layer "+": place that kind here, stay armed for more
             if (LAB.armed === 'boat') addBoat(wx, wy);
             else if (LAB.armed === 'mark') addMark(wx, wy);
-            else if (LAB.armed === 'sand') addSand(wx, wy);
             else if (LAB.armed === 'line') addLine(wx, wy);
             LAB.drag = { sel: LAB.sel };
             return;
@@ -3093,6 +3581,12 @@
         // a waypoint pip drags without touching the selection (the boat that
         // owns it stays selected; its inspector rows update on release)
         if (hit && hit.kind === 'goalpt') {
+            LAB.drag = { sel: hit };
+            return;
+        }
+        // a sand VERTEX drags without touching the selection (the sand that
+        // owns it stays selected; the polygon reshapes live)
+        if (hit && hit.kind === 'sandvert') {
             LAB.drag = { sel: hit };
             return;
         }
@@ -3111,10 +3605,15 @@
             }
             return;   // no drag from this gesture — the target just moved to its setup pose
         }
-        if (hit) { select(hit); LAB.drag = { sel: hit }; }
+        if (hit) {
+            select(hit);
+            LAB.drag = { sel: hit };
+            if (hit.kind === 'sand') LAB.drag.grab = sandGrab(hit.ref, wx, wy);
+        }
         else { select(null); LAB.drag = { pan: true, sx: e.clientX, sy: e.clientY, cx: LAB.cam.x, cy: LAB.cam.y }; }
     });
     ov.addEventListener('mousemove', e => {
+        LAB.mouse = s2w(e.clientX, e.clientY);   // the draft's rubber band reads this
         if (!LAB.drag) return;
         if (LAB.drag.pan) {
             LAB.cam.x = LAB.drag.cx - (e.clientX - LAB.drag.sx) / LAB.zoom;
@@ -3123,6 +3622,34 @@
         }
         const [wx, wy] = s2w(e.clientX, e.clientY);
         const s = LAB.drag.sel;
+        // sand body drag, all three gestures relative to the GRAB anchor:
+        // plain = translate by cursor delta (no centroid snap), ⌘ = rotate
+        // about the centroid, ⌥ = scale about the centroid
+        if (s.kind === 'sand' && LAB.drag.grab) {
+            const g = LAB.drag.grab, vs = s.ref.isl.vertices;
+            if (e.metaKey) {
+                const da = Math.atan2(wy - g.cy, wx - g.cx) - g.a0;
+                const cos = Math.cos(da), sin = Math.sin(da);
+                for (let k = 0; k < vs.length; k++) {
+                    const ox = g.verts[k].x - g.cx, oy = g.verts[k].y - g.cy;
+                    vs[k].x = g.cx + ox * cos - oy * sin;
+                    vs[k].y = g.cy + ox * sin + oy * cos;
+                }
+            } else if (e.altKey) {
+                let k = Math.hypot(wx - g.cx, wy - g.cy) / g.d0;
+                k = Math.max(30 / g.r0, Math.min(1200 / g.r0, k));   // radius stays sane
+                for (let i = 0; i < vs.length; i++) {
+                    vs[i].x = g.cx + (g.verts[i].x - g.cx) * k;
+                    vs[i].y = g.cy + (g.verts[i].y - g.cy) * k;
+                }
+            } else {
+                const dx = wx - g.gx, dy = wy - g.gy;
+                for (let i = 0; i < vs.length; i++) { vs[i].x = g.verts[i].x + dx; vs[i].y = g.verts[i].y + dy; }
+            }
+            recomputeSand(s.ref);
+            invalidate();
+            return;
+        }
         if (e.metaKey && s.kind === 'boat') {
             // ⌘-drag: rotate — point the bow at the cursor
             s.ref.heading = Math.atan2(wx - s.ref.x, -(wy - s.ref.y));
@@ -3131,8 +3658,7 @@
             return;
         }
         if (e.altKey) {
-            // ⌥-drag: resize
-            if (s.kind === 'sand') { resizeSand(s.ref, Math.hypot(wx - s.ref.x, wy - s.ref.y)); invalidate(); return; }
+            // ⌥-drag: resize (sand handles its own scale above, grab-relative)
             if (s.kind === 'mark') {
                 s.ref.zone = Math.max(60, Math.min(400, Math.hypot(wx - s.ref.x, wy - s.ref.y)));
                 invalidate(); return;
@@ -3257,11 +3783,11 @@
             // name colour previews the opening helm: white = scripted, green = AI
             for (const lb of LAB.boats) lb._dispMode = lb.aiAtS !== 0 ? 'S' : 'AI';
             renderRights(pairRights(), null);
-            timeEl.textContent = 't = 0.0s';
+            timeEl.textContent = 't = 0.00s';
             // the always-on transport reads true while editing: rewound, armed
             pbSlider.value = 0;
             pbFill();
-            pbTime.textContent = `0.0 / ${LAB.durationS.toFixed(1)}s`;
+            pbTime.textContent = `0.00 / ${LAB.durationS.toFixed(1)}s`;
         } else if (LAB.rec) {
             if (LAB.playing) {
                 LAB.frame++;
@@ -3281,9 +3807,11 @@
             }
             pbSlider.value = LAB.frame;
             pbFill();
+            // two decimals: a single-frame step (1/60 s ≈ 0.017) must MOVE
+            // the readout — at 0.1s resolution arrow-stepping looked stuck
             const t = LAB.frame / 60;
-            pbTime.textContent = `${t.toFixed(1)} / ${LAB.durationS.toFixed(1)}s`;
-            timeEl.textContent = `t = ${t.toFixed(1)}s`;
+            pbTime.textContent = `${t.toFixed(2)} / ${LAB.durationS.toFixed(1)}s`;
+            timeEl.textContent = `t = ${t.toFixed(2)}s`;
             renderRights(fr.pairs, fr.boats);
         }
         // camera: ours, north-up
@@ -3382,6 +3910,34 @@
             octx.strokeStyle = 'rgba(255,255,255,0.85)'; octx.lineWidth = 3; octx.setLineDash([10, 8]); octx.stroke(); octx.setLineDash([]);
             for (const [px, py] of [[x1, y1], [x2, y2]]) { octx.beginPath(); octx.arc(px, py, 6, 0, 7); octx.fillStyle = '#fff'; octx.fill(); }
         }
+        // polygon DRAFT: the points so far, a rubber band to the cursor, and
+        // a highlighted first point once it can close the shape
+        if (LAB.armed === 'sand' && LAB.sandDraft && LAB.sandDraft.length) {
+            const d = LAB.sandDraft;
+            octx.beginPath();
+            const [dx0, dy0] = w2s(d[0].x, d[0].y);
+            octx.moveTo(dx0, dy0);
+            for (let k = 1; k < d.length; k++) { const [px, py] = w2s(d[k].x, d[k].y); octx.lineTo(px, py); }
+            if (LAB.mouse) { const [mx, my] = w2s(LAB.mouse[0], LAB.mouse[1]); octx.lineTo(mx, my); }
+            octx.strokeStyle = 'rgba(224,201,155,0.95)'; octx.lineWidth = 2.5; octx.setLineDash([6, 6]);
+            octx.stroke(); octx.setLineDash([]);
+            d.forEach((p, k) => {
+                const [px, py] = w2s(p.x, p.y);
+                const closable = k === 0 && d.length >= 3;
+                octx.beginPath(); octx.arc(px, py, closable ? 8 : 5, 0, 7);
+                octx.fillStyle = closable ? '#f0a02a' : 'rgba(224,201,155,0.95)'; octx.fill();
+                octx.strokeStyle = '#fff'; octx.lineWidth = 1.5; octx.stroke();
+            });
+        }
+        // the selected sand's VERTEX handles (authoring only): drag to reshape
+        if ((LAB.mode === 'edit' || LAB.frame === 0) && LAB.sel && LAB.sel.kind === 'sand') {
+            for (const v of LAB.sel.ref.isl.vertices) {
+                const [px, py] = w2s(v.x, v.y);
+                octx.beginPath(); octx.arc(px, py, 6, 0, 7);
+                octx.fillStyle = '#e0c99b'; octx.fill();
+                octx.strokeStyle = 'rgba(7,19,34,0.9)'; octx.lineWidth = 2; octx.stroke();
+            }
+        }
         // name pills: constant screen size, drawn HERE (full-res canvas)
         // so the letters stay crisp at any zoom — the game canvas's backing
         // store is viewport/zoom and blurs its text when zoomed in
@@ -3424,6 +3980,27 @@
                 octx.fillStyle = '#eef3fb'; octx.font = '800 11px Archivo,system-ui';
                 octx.textAlign = 'center'; octx.textBaseline = 'middle';
                 octx.fillText(String(k + 1), sx, sy);
+            });
+        }
+        // during PLAYBACK: each boat shows only its ACTIVE goal (owner) —
+        // the numbered circle in the hull colour for the goal it is sailing
+        // to at the playhead; done and not-yet goals stay hidden
+        if (LAB.mode === 'play' && LAB.rec && LAB.frame > 0) {
+            const fr = LAB.rec.frames[LAB.frame];
+            LAB.boats.forEach((lb, bi) => {
+                if (!lb.goals || !lb.goals.length) return;
+                const gi = (fr && fr.boats[bi] && fr.boats[bi].gi) || 0;
+                const g = lb.goals[gi];
+                if (!g) return;   // all goals done
+                const col = (lb.bot.colors && lb.bot.colors.hull) || '#8fd0ff';
+                const [gx, gy] = goalPoint(g);
+                const [sx, sy] = w2s(gx, gy);
+                octx.beginPath(); octx.arc(sx, sy, 11, 0, 7);
+                octx.fillStyle = 'rgba(7,19,34,0.85)'; octx.fill();
+                octx.strokeStyle = col; octx.lineWidth = 2; octx.stroke();
+                octx.fillStyle = '#eef3fb'; octx.font = '800 11px Archivo,system-ui';
+                octx.textAlign = 'center'; octx.textBaseline = 'middle';
+                octx.fillText(String(gi + 1), sx, sy);
             });
         }
         // dragging a waypoint: a live readout of the leg INTO it — the course
@@ -3490,13 +4067,23 @@
                 seeds: LAB.seeds.map(s => s >>> 0),
                 runs: LAB.seeds.map(s => {
                     const r = LAB.recs[s >>> 0];
-                    return { seed: s >>> 0, ticks: r.ticks.map(f => +(f / 60).toFixed(2)), pens: r.pens };
+                    return { seed: s >>> 0, ticks: r.ticks.map(f => +(f / 60).toFixed(2)), pens: r.pens,
+                             metrics: metricsFor(s >>> 0) };
                 }),
                 asserts: (LAB.assertResults || []).map((r, k) => ({
                     label: window.ScenarioAsserts.label(LAB.asserts[k], names),
                     n: r.n, ok: r.ok,
-                    status: r.n === 1 ? r.single.status : (r.ok === r.n ? 'pass' : 'fail'),
-                    why: r.n === 1 ? r.single.why : (r.fail ? `seed ${r.fail.seed}: ${r.fail.why}` : 'held on every seed'),
+                    // multi-seed xfail rows keep their gap/fixed semantics.
+                    // FIXED (the promote-me signal) requires EVERY seed to
+                    // pass — a partial pass is still a GAP (this line once
+                    // fired FIXD on 1-of-10 and a row got wrongly promoted;
+                    // the why string carries the k/n so partial progress is
+                    // visible without lying about it)
+                    status: r.n === 1 ? r.single.status
+                        : r.ok !== r.n ? 'fail'
+                        : LAB.asserts[k].xfail ? (r.fixed === r.n ? 'fixed' : 'gap') : 'pass',
+                    why: r.n === 1 ? r.single.why : (r.fail ? `seed ${r.fail.seed}: ${r.fail.why}`
+                        : r.fixed && r.fixed < r.n ? `passed on ${r.fixed}/${r.n} seed(s) of an expected-fail row` : 'held on every seed'),
                 })),
             };
         },
