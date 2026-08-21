@@ -13633,3 +13633,23 @@ no contact, no foul, but the wall-pinned pair fumbles goal completion
 (A 2/10, B 8/10, failing on DIFFERENT seeds — one boat gets pinned at the
 wall and misses the window). Both goals rows XF: the rule-20/room-to-tack
 gap, pinned behaviorally.
+
+
+## WEDGE DISCRIMINATORS, WAVE 2 (same night — the family decomposes further)
+
+· **RIVER** (`_wedge_line.js` v2, distance-binned): at wedge entries, ~34%
+  are cmd-clear/track-into-bank (EXECUTION/SET — the ground-frame class),
+  ~15% both-clear stalls (pure jam), ~49% command-into-bank-imminent —
+  which in a winding channel reads as LATE-OR-BLOCKED TACKS under traffic.
+  River's wedge lever = tack timing/execution under jam in channels;
+  admission stays dead (consistent with the closed clearance-bar family).
+· **GLOWTIDE** (`_wedge_glowtide.json` spatial): **48% of all wedge entries
+  land in ONE ~600u pocket** at (-300..0, -1200..-1800) — the rock box as a
+  single place. With 94% steered, glow's fix has one-place leverage.
+· **SWAMP** (`_wedge_line.js` v1): **79% bothClear, track-vs-command drift
+  p50 = 3 deg** — swamp boats collapse to sub-1kt IN CLEAR WATER ON THEIR
+  COMMANDED LINE. Not bank-hits: LIGHT-AIR STALLS; the land contact comes
+  after, drifting near grass while stuck. Swamp leaves the wedge family
+  and becomes a stall-zone question — `_stall_field.js` (running) samples
+  wind + drag at each stall vs the fleet median to test the dead-air-lane
+  hypothesis (routing, not avoidance).

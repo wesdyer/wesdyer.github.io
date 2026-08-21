@@ -94,4 +94,8 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeGWE');
     for (const r of all) byLeg[r.leg] = (byLeg[r.leg] || 0) + 1;
     console.log('entries by leg:', JSON.stringify(byLeg), '| entries/boat-race:', (all.length / (TRIALS * 9)).toFixed(1));
     for (const r of all.slice(0, 10)) console.log(' ', JSON.stringify(r));
+    // full rows for spatial/tail analysis — the 10-row sample above elides
+    const outPath = path.join(__dirname, `_wedge_${VENUE}.json`);
+    fs.writeFileSync(outPath, JSON.stringify(all));
+    console.log('rows → ' + outPath);
 })();
