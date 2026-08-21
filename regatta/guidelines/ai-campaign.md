@@ -13581,3 +13581,23 @@ irrelevant. Scenario REMOVED from the library (a flaky scenario poisons
 the gate), doc preserved in eval/rl/_walltack_parked.json.txt. The other
 15 scenarios are tripwire-clean. Hunt it the way the swell-clock class was
 hunted.
+
+
+## THE FOUR-VENUE WEDGE-ENTRY TABLE (completes the opening dataset)
+
+| venue | entries/boat-race | where | steered% | nav% | traffic-only% |
+|---|---|---|---|---|---|
+| glowtide | 1.3 | legs 1-4 | 94 | 6 | 0 |
+| redrock | 1.3 | legs 3+5 | 92 | 6 | 2 |
+| river | 4.8 | leg 3 (98%) | 46 | 52 | 2 |
+| swamp | 7.8 | leg 1 (100%) | 33 | 31 | 36 |
+
+Two machines and a gradient: ROCK venues (glow/redrock) wedge by
+avoidance-steering into obstacles (the obstruction-model lever; redrock
+25% steered with NO rival inside 150u — non-rival dodges near rock);
+CHANNEL venues (river/swamp) wedge by line-and-crowding on ONE leg each.
+River's 52% nav-entry sits in tension with the closed clearance-bar
+verdict ("execution not admission") — the discriminator the push needs is
+commanded-line vs sailed-line at entry (the ground-frame probes exist).
+Redrock's parked arrival-side-grounding TODO now has its mechanism:
+arrival happens mid-dodge, half the time penalty-chained.
