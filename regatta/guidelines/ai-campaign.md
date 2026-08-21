@@ -13821,3 +13821,71 @@ the planner routed through polygons while physics stopped boats on them);
 the router's passability floor measured (2x(HULL_R+14) = 88u) and the
 chord-clips-corner defect isolated — both are the named levers of the
 NARROW-PASSAGE PUSH (owner: "a key skill... redrock, arctic, glowtide").
+
+
+## ⏭ CARRY-FORWARD PROMPT FOR THE NEXT INSTANCE (verbatim, 2026-08-21 close)
+
+AI PUSH: narrow-passage capability ("a key skill for the AI" — owner;
+redrock, arctic, glowtide especially).
+
+Read first: memory regatta-narrow-passage-push-plan (the plan + post-ship
+addendum — boots everything), regatta-gwe-push-session (what landed and
+why), regatta-scenario-lab (before touching that page),
+regatta-standing-rules (benching law), and the tail of
+regatta/guidelines/ai-campaign.md (append per accepted round). Check
+date; freeze_venues --check from repo root (a lake shipping diff is my
+pending edit — expected).
+
+Base: b54ee57 (the doctrine-stack ship). gwi* bench JSONs are the
+anchors; treeGWI is the shipped tree. Lab inner loop:
+node regatta/eval/run_scenarios.js — 23 scenarios; the push's DONE
+criteria are three XF pins flipping FIXED: Narrow Passage goals (68u
+slot — very feasible, I'd take it as a human), Wall Tack
+nocollide/penalty (wall-pinned pair), Pocket Pair goals (corridor pair).
+Author the width ladder (NP mirrors at 70/80/90/100u) to measure the
+frontier directly.
+
+Known facts, build on not re-derive: lab sands now enter the world model
+(syncSandsToWorld); the router's passability floor is 2x(HULL_R 30 + 14)
+= 88u — the admit bar, not rasterization (subsampling relaxes only the
+sampling); chord-clips-corner lives in CoursePath._route's 1.08
+detour-reality gate, the cell-level losClear guard is measured INERT
+(subsampled cells read the chord clear — the hunk is in d020966
+planner.js, reverted in b54ee57) so the honest fix is GEOMETRIC chord LOS
+(segDist vs _gridFixed shapes, the admit machinery's own test); the fan
+rungs 1.0/1.4 fix the tight lab corners but as a GLOBAL fan carried the
+whole venue tail (arctic +8 mean; hunks in d020966 script.js) — only
+slot-scoped/emergency-scoped variants are candidates.
+
+Order of work: (1) world model first — tight-thread tier (cells passable
+at reduced clearance ~beam/2+margin, TAXED so A* takes them only when
+worth it) + geometric chord LOS; the avoidance hard-zone must honor the
+tier or the helm refuses the router's thread (the divergence trap,
+measured both directions). (2) Execution second — scoped rung variants
+inside threads. (3) Width-ladder frontier + the three pins. (4) Full
+venue gate vs gwi* anchors (rr pooled 6-set, arctic 2x16 POOLED 32, riv
+3x8, glow 16 + the rest), name losers, non-universal wins to me; goldens
+npm run trace:update + verify --seeds 3 READ THE COUNT (30); battery.
+
+Process + reporting (STANDARD — non-negotiable): follow the campaign
+process — measure, isolate (venue, leg, sub-leg, individual shared
+behavior on trajectories), research, hypothesize, experiment, evaluate,
+iterate. Every status update to me carries THE TABLE (memory
+regatta-session-report): one row per implemented venue SORTED BY RATIO —
+venue | human med/best | pre-push bot med/best | post bot med/best |
+ratio | fins n/total (pct%). Pre = fresh Phase-0 baselines on the
+starting HEAD (= the gwi* anchors); post = fresh benches on FINAL HEAD,
+ALL venues including untouched (an unchanged venue's number is a
+verification); human med/best from fingerprint-verified traj only
+(_traj_fp.js; seatrials med/best are means-of-boats — flag it). Append a
+dated snapshot per ACCEPTED round to this file, protocol + commit stated,
+never overwrite rows. Close the session with the table on final HEAD.
+
+Guardrails: the clearance bar ⛔ was ADMISSION PRICING and is closed —
+the tier is CAPABILITY (which actions exist), bring the distinction to
+me before building if in doubt; arctic leads are DRIFTING walls (rule 5:
+drifting ice does not keep clear — a closing lead is a trap; consider
+fixed-land threads only there); start tuning is sacred; do not reopen
+closed families (MEMORY.md list). Out of scope: no-contact foul
+(noted-not-armed), wind-agnostic router, the wedge stalled-rival berth
+(unless it falls out), rating campaign.
