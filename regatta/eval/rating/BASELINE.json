@@ -1,10 +1,13 @@
 {
-  "codeHash": "4f6bd728bd731167",
+  "codeHash": "30c4272fa461bec1",
+  "codeHashLF": "4f6bd728bd731167",
   "note": "Post-merge AI. Campaign raced against this. rating-preAI/ holds the pre-merge run (bfa5aae9efa2bdcd) on the SAME SEEDS for seatrials — a 6,667-race paired measurement of what the 63-line merge did.",
+  "codeHashNote": "TWO HASHES, ONE TREE, NO AI CHANGE. codeHash is what shards stamp on this machine; codeHashLF is what the same tree hashes to with LF line endings, and is the value this file recorded before 2026-08-14. They differ ONLY by line endings: git core.autocrlf=true and there is no .gitattributes, so a Windows checkout materialises all seven sailing files with CRLF while the original campaign box had LF. Verified two ways: (1) the working tree is clean at 5833191, so the bytes match git exactly; (2) normalising CRLF->LF before hashing reproduces 4f6bd728bd731167 exactly. Also corroborated independently — rate_legtypes.js regenerated legtypes.json byte-identical to the committed copy after newline normalisation, i.e. the game classifies every leg on every venue identically. CRLF is whitespace to a JS parser, so the AI is byte-equivalent and race-equivalent; only the hash moves. CONSEQUENCE: loadVenue compares shards against EACH OTHER, never against this file, so pooling is unaffected — every shard from this box stamps 30c4272fa461bec1 consistently. But shards from an LF checkout and a CRLF checkout will refuse to pool with each other even though they measure the same AI. RATING.md's 'restarting on another machine reproduces the same numbers' holds for the numbers and fails for the hash gate. To move the campaign to an LF box, re-race rather than mixing; to make the hash portable, the fix is a .gitattributes marking these files as LF — but that rewrites the working tree, so it is NOT being done mid-campaign.",
   "cutoffPolicy": {
     "default": 2,
-    "river": 1
+    "river": 1.25
   },
+  "cutoffPolicyNote": "river was recorded here as 1 but rate_campaign.js CUTOFF_MUL has always read 1.25, which is also what RATING.md and the owner's 2026-08-13 decision say (450s, covering 106s beyond anything observed, for +25% instead of +100%). The code is authoritative and the campaign is running at 1.25; this file was simply wrong and is corrected.",
   "order": [
     "seatrials",
     "ocean",
@@ -26,5 +29,6 @@
     "js/swell.js",
     "js/water.js"
   ],
-  "when": "2026-08-13"
+  "when": "2026-08-13",
+  "raced": "2026-08-14, Windows, node v24.19.0, playwright 1.57.0 (locked), chromium 143.0.7499.4 / playwright build v1200"
 }

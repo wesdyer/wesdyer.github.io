@@ -168,3 +168,134 @@ is noise**. Report tiers and confidence, never bare adjacency.
 - **A known regression, not caused here.** The merge left `test_apparent.js` failing at
   99.99% of 19,790 boat-frames — roughly two frames violate "apparent is always forward
   of true". Pre-merge it passed. Unrelated to the ratings; worth someone's time.
+
+---
+
+# RESULTS — the campaign completed 2026-08-20
+
+**66,670 races. All ten venues at 600/char. 670/670 shards, none tainted, none lost.**
+148.9 h on 10 workers. Everything below supersedes the sections above where they differ.
+
+## The four open questions, answered
+
+**Does one total order hold? Partly — mean Kendall τ = 0.435 over all 45 venue pairs.**
+Not high enough to call the total order a complete summary, not low enough to throw it
+away. Report it as a headline over the venue×character matrix, which is what the
+`spread` column is for: Lure swings **12.2%** of a race between its best venue and its
+worst, wider than the gap from rank 1 to rank 60. The endpoints of the order are
+unambiguous; the middle is a band, not a sequence.
+
+**The predicted outlier was wrong.** The section above expects arctic to be where
+disagreement shows, because arctic "has no upwind leg". It does have one (below), and
+arctic turns out to be the *second most representative* venue in the set (mean τ 0.520).
+Ranked by how much each venue resembles the other nine:
+
+| least like the rest | | | | | | | | | most |
+|---|---|---|---|---|---|---|---|---|---|
+| seatrials | swamp | redrock | ocean | lake | river | bay | glowtide | arctic | lagoon |
+| 0.289 | 0.356 | 0.381 | 0.393 | 0.445 | 0.475 | 0.480 | 0.487 | 0.520 | 0.523 |
+
+**seatrials is the least representative course in the venue set** — and it is the venue
+every historical measurement, including `stat_prices.json`, was fitted on. See the
+leg-composition finding below for why.
+
+**River's stuck boats are a BIAS, not noise.** 21.1% of 60,003 boat-slots DNF (the 17%
+above was measured on 54 slots), and **12,030 of 12,657 die on leg 3**. Per-character DNF
+runs 15.2%–27.6%, sd 2.69 against a binomial 1.67 if it were a lottery — **1.62×, so
+there is real structure**. It tracks a stat: DNF% vs `downwind` **r = +0.462** (reach
++0.308, pressure +0.239, upwind +0.218). Strong-downwind characters get stuck more, so
+river's points ranking encodes good downwind as a penalty. The time ranking is
+conditioned on finishing and DNF% vs mean finish time is **r = −0.388** — the boats that
+vanish are the *faster* ones, so river deletes strong characters from a quarter of its
+races. Not fixed: the AI is frozen.
+
+**The paired preAI experiment returns a strong null, by construction.** Differencing
+`rating-preAI/` seatrials against the new seatrials at identical seeds — pairing verified
+clean, 0 wind / 0 held-out / 0 fleet mismatches — gives **exactly zero difference across
+6,667 races and 60,003 boat-slots**, DNFs included (66 vs 66). That is correct and not a
+bug: the 63-line merge is wrapped entirely in `if (state.traffic && state.traffic.length)`
+and **bay is the only venue with authored traffic**. Confirmed against git: `ff2f78a`
+hashes to `bfa5aae9efa2bdcd` and HEAD to `4f6bd728bd731167`, 63 pure insertions to
+`script.js`, the other six sailing files byte-identical.
+
+So the claim above — that this "measures exactly what the 63-line merge did" — is not
+right. It measures the merge **at a venue where the changed code cannot execute**. What
+it genuinely establishes is that nine of ten venues are unaffected, which rules out the
+campaign's own nightmare (an AI change masquerading as venue disagreement). To actually
+measure the merge, race `ff2f78a` at **bay** and difference that. No pre-merge bay data
+exists; `rating-preAI/` holds only seatrials and a partial ocean, both traffic-free.
+
+## A sixth thing that was wrong: leg types are not single-valued
+
+Finding 4 above fixed *which* marks a leg runs between. It did not fix the assumption
+underneath: `rate_legtypes.js:80` classifies a whole leg by **one straight-line bearing**
+from its start point to its end point. That chord is only the point of sail if the leg is
+sailed straight. Measured at 10 Hz over real races (sampling every AI boat's TWA and
+binning by progress through the leg), **legs are mixed almost everywhere**:
+
+- **arctic** — chord says "reach, reach". Measured: leg 1 is 23% beat / 31% reach / 45%
+  run; leg 2 is **39% beat** / 30% reach / 31% run. *Arctic has substantial upwind
+  sailing*, which is why the prediction built on "no upwind leg" failed.
+- **redrock** — every leg mixed. Leg 3 is chord-labelled `beat (twa 38)` and is
+  **46% reach**.
+- **swamp** — its single leg is chord-labelled `beat (twa 48)`, right against the 51.4°
+  threshold, and is actually **59% reach** / 32% beat.
+- **seatrials** — the *only* venue whose legs are genuinely pure (87/84/88/99%).
+
+That last point is the important one. The chord classifier was never obviously broken
+because it was only ever asked about the one course that cannot expose it — and that
+course is also the least representative venue in the set.
+
+Two consequences. **Stat pricing is unaffected** — it regresses a character's whole-race
+delta on their stats and never touches a leg label. **The beat-line audit was affected**,
+and has been rebuilt: each leg's delta is now split across beat/reach/run in the measured
+proportions, relative to the fleet's mean time on that leg in that race, pooled over
+253,336 race-legs. That changed the findings — it dropped `Zing/beat` and `Bramble/beat`
+(chord artifacts) and added `Talon/run`, `Puff/run`, `Snag/reach`.
+
+## What the ten stats are actually worth
+
+`upwind` is the only stat that prices significantly at **all ten** venues (−0.80 to
+−3.00 s/pt). `reach` prices at **nine of ten** — it is emphatically not decorative, and
+finding 5 above is upheld in direction even though its −0.631 figure does not reproduce
+(seatrials measures **−0.383 ±0.065** at 6,667 races). Its framing is wrong, though:
+seatrials is not "a course with no reaching leg at all" — the start sequence alone is
+36% reach and every leg carries 9–13% reach in approaches and roundings.
+
+The three stats `stat_prices.json` never priced, resolved:
+
+| stat | verdict |
+|---|---|
+| `heavyAir` | **real, conditional** — ocean −0.838, arctic −0.707, zero at the other eight |
+| `lightAir` | **real, single-venue** — swamp **−4.107**, the largest price in the campaign; zero at the other nine |
+| `memory` | **buys nothing** — not distinguishable from zero at all ten venues |
+
+And the headline for balance work: **a single-venue stat price is not a price.** `handling`
+reads −0.112 ⌀ at seatrials and **−2.415 at redrock**; `pressure` reads −0.011 ⌀ at
+seatrials and **−2.010 at lake**, **−3.516 at swamp**. Both were called weak by the old
+fit because the old fit only ever saw seatrials.
+
+Against the stored `stat_prices.json` (same specification — stats plus archetype dummies,
+bully as reference), `downwind` was the big miss: **−1.724 stored vs −1.105 measured, 36%
+overpriced**. `upwind` held (−1.001 → −1.123).
+
+## Archetypes are a one-sided lever
+
+Only two of the seven non-reference archetypes have a measurable effect, and both are the
+slow ones — `corner` (+0.475 intended, **+2.642** measured) and `freight` (+1.558 →
+**+2.877**). All four intended-*fast* archetypes (`gambler`, `metronome`, `rocket`,
+`shift`) are statistically indistinguishable from `bully`. Metronomes do finish fast, but
+entirely through their stats, with nothing left over for the archetype. Rank agreement
+with intent is τ 0.571. Note the ~0.7 s SEs come from having only 12–13 characters per
+archetype, not from race count — more races will not sharpen them.
+
+The stat budget itself is honest: correlation between total stat points and pooled finish
+is **−0.818**, and ten extra points buys about **1.9% of a race**.
+
+## Reproducing this on another machine
+
+`loadVenue` compares shards against **each other**, never against `BASELINE.json`, so
+pooling is safe — but a CRLF checkout and an LF checkout stamp different `codeHash` values
+for the identical tree (`30c4272fa461bec1` vs `4f6bd728bd731167`) and will refuse to pool
+with each other. `core.autocrlf=true` with no `.gitattributes` is the cause. The numbers
+reproduce; the hash gate does not. See `rating/BASELINE.json` for the full argument.
