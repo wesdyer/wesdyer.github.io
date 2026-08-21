@@ -2471,8 +2471,22 @@
                             let need = Math.PI;
                             if (nxt) {
                                 const [ex, ey] = goalPoint(nxt);
-                                need = sgn * normA(Math.atan2(ey - m.y, ex - m.x) - brg);
-                                if (need <= 0) need += Math.PI * 2;
+                                // the ENGINE's law, by construction (owner
+                                // report 2026-08-21 "rounds further than
+                                // necessary"): requiredSweep is tangent-to-
+                                // tangent, not raw bearing difference — the
+                                // old formula over-demanded by up to pi (a
+                                // 240 deg ask on a 60 deg rounding measured)
+                                if (typeof CoursePath !== 'undefined' && CoursePath._tangent) {
+                                    const a0 = CoursePath._tangent(m, { x: boat.x, y: boat.y }, sgn, true).a;
+                                    const a1 = CoursePath._tangent(m, { x: ex, y: ey }, sgn, false).a;
+                                    need = sgn * (a1 - a0);
+                                    while (need < 0) need += Math.PI * 2;
+                                    while (need > Math.PI * 2) need -= Math.PI * 2;
+                                } else {
+                                    need = sgn * normA(Math.atan2(ey - m.y, ex - m.x) - brg);
+                                    if (need <= 0) need += Math.PI * 2;
+                                }
                             }
                             lb._need = Math.max(Math.PI / 3, Math.min(Math.PI * 1.9, need));
                         } else {
@@ -2513,12 +2527,23 @@
                 const side = Math.sign((boat.x - ln.x1) * dy - (boat.y - ln.y1) * dx) || 1;
                 return { x: px - (dy / L) * side * 90, y: py + (dx / L) * side * 90 };
             }
-            // mark: the armed-orbit carrot — lead the bearing the required way
-            // round; the radius formula closes from any distance to the ring
+            // mark: FAR OUT, aim at the ENTRY TANGENT of the rounding —
+            // the engine's own construction — which is nearly straight at
+            // the mark with a correct-side bias that grows as she closes.
+            // (The old fully-led carrot applied its 0.85 rad lead from ANY
+            // distance: measured as a 24 deg climb from 660u out, straight
+            // through the windward boat's lane — the owner's "climbs too
+            // high too sharply", which also manufactured the stand-on
+            // dodge.) Inside ~1.6 zone the armed-orbit carrot takes over,
+            // unchanged.
             const m = g.ref, Z = m.zone || 165;
             const sgn = m.side === 'port' ? -1 : 1;
             const d = Math.hypot(boat.x - m.x, boat.y - m.y);
             const brg = Math.atan2(boat.y - m.y, boat.x - m.x);
+            if (d > Z * 1.6 && typeof CoursePath !== 'undefined' && CoursePath._tangent) {
+                const t = CoursePath._tangent(m, { x: boat.x, y: boat.y }, sgn, true);
+                return { x: t.x, y: t.y };
+            }
             const a = brg + sgn * 0.85;
             const R = Math.min(Z * 1.6, Math.max(Z * 0.85, d - 80));
             return { x: m.x + Math.cos(a) * R, y: m.y + Math.sin(a) * R };
