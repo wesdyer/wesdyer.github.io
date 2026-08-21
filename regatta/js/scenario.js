@@ -322,6 +322,11 @@
             <span class="sl-hint">s</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
+            <span class="sl-lab" style="margin:0" title="hands to the AI when another boat comes within this range — whichever trigger fires first wins; blank = no distance trigger">&hellip;or within</span>
+            <div class="sl-inp" style="flex:1"><input id="lab-ainear" type="text" inputmode="decimal" placeholder="never"></div>
+            <span class="sl-hint">u of a boat</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
             <span class="sl-lab" style="margin:0" title="she starts the run flagged, owing one 360 — Rule 21 applies, the AI takes the spin when clear">Penalized at start</span>
             <button id="lab-penstart" class="sl-btn" style="flex:none;padding:6px 12px">OFF</button>
           </div>
@@ -775,7 +780,7 @@
         // targets nothing, so zone snapshots latch on plain geometry.
         bot.raceState.isTacking = false; bot.raceState.leg = 2;
         bot.fadeTimer = 999; bot.opacity = 1;
-        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, plan: [], aiAtS: null, goals: [] };
+        const lb = { bot, x: wx, y: wy, heading: Math.PI / 2, speedKt: 6, plan: [], aiAtS: null, aiNearU: null, goals: [] };
         LAB.boats.push(lb);
         applyLabIdentity(lb, LAB.boats.length - 1);
         // pristine-physics snapshot: every scalar on the boat (heel, sail
@@ -1167,13 +1172,22 @@
     sidePortB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'port'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     sideStbdB.onclick = () => { if (LAB.sel && LAB.sel.kind === 'mark') { LAB.sel.ref.side = 'starboard'; refreshSideBtns(LAB.sel.ref); invalidate(); } };
     const aiAtIn = ui.querySelector('#lab-aiat');
+    const aiNearIn = ui.querySelector('#lab-ainear');
     const penStartB = ui.querySelector('#lab-penstart');
     function refreshPathRow(lb) {
         aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
         aiAtIn.title = 'blank = scripted to the end · 0 = AI from the start';
+        aiNearIn.value = lb.aiNearU == null ? '' : lb.aiNearU;
         penStartB.textContent = lb.penalized ? 'ON' : 'OFF';
         penStartB.classList.toggle('sl-btn-pri', !!lb.penalized);
     }
+    aiNearIn.addEventListener('input', () => {
+        if (LAB.sel && LAB.sel.kind === 'boat') {
+            const v = aiNearIn.value.trim();
+            LAB.sel.ref.aiNearU = v === '' ? null : Math.max(0, parseFloat(v) || 0);
+            invalidate();
+        }
+    });
     penStartB.onclick = () => {
         if (LAB.sel && LAB.sel.kind === 'boat') {
             LAB.sel.ref.penalized = !LAB.sel.ref.penalized || undefined;
@@ -1300,7 +1314,7 @@
             p.className = 'sl-hint';
             p.textContent = 'the AI sails these in order · click water, a mark, or a line';
             goalsDiv.appendChild(p);
-        } else if (lb.aiAtS == null) {
+        } else if (lb.aiAtS == null && lb.aiNearU == null) {
             // goals are the AI's — a boat never handed over won't sail them
             const w = document.createElement('div');
             w.className = 'sl-hint';
@@ -2707,7 +2721,20 @@
                 LAB.simT = f / 60;   // the plan's clock
                 for (const lb of LAB.boats) {
                     if (lb._mode !== 'S') continue;
-                    const due = lb.aiAtS != null && f >= Math.round(lb.aiAtS * 60);
+                    let due = lb.aiAtS != null && f >= Math.round(lb.aiAtS * 60);
+                    // DISTANCE trigger (owner, 2026-08-21): hand to the AI
+                    // when another ACTIVE lab boat is within aiNearU —
+                    // "sail her close on script, then let the AI cope".
+                    // Whichever of the two triggers fires first wins; in a
+                    // PROPER solo burst every other boat is parked/finished,
+                    // so a distance-triggered boat stays scripted there and
+                    // her proper course IS her scripted line.
+                    if (!due && lb.aiNearU != null) {
+                        for (const ob of LAB.boats) {
+                            if (ob === lb || ob.bot.raceState.finished) continue;
+                            if (Math.hypot(ob.bot.x - lb.bot.x, ob.bot.y - lb.bot.y) <= lb.aiNearU) { due = true; break; }
+                        }
+                    }
                     if (due) handoffToAI(lb);
                 }
                 _update(1 / 60);
@@ -3009,6 +3036,7 @@
                 name: lb.bot.name !== lb._defName ? lb.bot.name : undefined,
                 plan: (lb.plan && lb.plan.length) ? lb.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })) : undefined,
                 aiAtS: lb.aiAtS == null ? undefined : lb.aiAtS,
+                aiNearU: lb.aiNearU == null ? undefined : lb.aiNearU,
                 penalized: lb.penalized ? true : undefined,
                 goals: (lb.goals && lb.goals.length) ? lb.goals.map(g =>
                     g.type === 'point' ? { k: 'p', x: Math.round(g.x - S.x), y: Math.round(g.y - S.y) }
@@ -3046,6 +3074,7 @@
                 // the kite is auto-only now)
                 lb.plan = bs.plan ? bs.plan.map(en => ({ t: en.t, headingDeg: en.headingDeg })).sort((a, b) => a.t - b.t) : [];
                 lb.aiAtS = bs.aiAtS == null ? null : bs.aiAtS;
+                lb.aiNearU = bs.aiNearU == null ? null : bs.aiNearU;
                 lb.penalized = bs.penalized ? true : undefined;
                 if (bs.name) lb.bot.name = bs.name;
                 if (bs.goals && bs.goals.length) pendingGoals.push([lb, bs.goals]);
