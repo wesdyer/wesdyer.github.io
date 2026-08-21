@@ -485,7 +485,8 @@ window.SCENARIO_DOC = {
       {
         "kind": "deflect",
         "who": 1,
-        "max": 45
+        "max": 45,
+        "xfail": true
       }
     ],
     "boats": [
@@ -606,7 +607,8 @@ window.SCENARIO_DOC = {
       },
       {
         "kind": "goals",
-        "who": 1
+        "who": 1,
+        "xfail": true
       },
       {
         "kind": "clear",

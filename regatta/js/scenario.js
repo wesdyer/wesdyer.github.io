@@ -4073,14 +4073,17 @@
                 asserts: (LAB.assertResults || []).map((r, k) => ({
                     label: window.ScenarioAsserts.label(LAB.asserts[k], names),
                     n: r.n, ok: r.ok,
-                    // multi-seed xfail rows keep their gap/fixed semantics:
-                    // all-ok on an xfail row is a GAP unless a seed actually
-                    // PASSED, which is the promote-me signal (FIXED)
+                    // multi-seed xfail rows keep their gap/fixed semantics.
+                    // FIXED (the promote-me signal) requires EVERY seed to
+                    // pass — a partial pass is still a GAP (this line once
+                    // fired FIXD on 1-of-10 and a row got wrongly promoted;
+                    // the why string carries the k/n so partial progress is
+                    // visible without lying about it)
                     status: r.n === 1 ? r.single.status
                         : r.ok !== r.n ? 'fail'
-                        : LAB.asserts[k].xfail ? (r.fixed ? 'fixed' : 'gap') : 'pass',
+                        : LAB.asserts[k].xfail ? (r.fixed === r.n ? 'fixed' : 'gap') : 'pass',
                     why: r.n === 1 ? r.single.why : (r.fail ? `seed ${r.fail.seed}: ${r.fail.why}`
-                        : r.fixed ? `passed on ${r.fixed}/${r.n} seed(s) of an expected-fail row` : 'held on every seed'),
+                        : r.fixed && r.fixed < r.n ? `passed on ${r.fixed}/${r.n} seed(s) of an expected-fail row` : 'held on every seed'),
                 })),
             };
         },
