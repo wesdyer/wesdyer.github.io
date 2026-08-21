@@ -1444,7 +1444,15 @@
                 row.appendChild(tSel);
             } else if (a.kind === 'goals') {
                 row.appendChild(boatSel(a.who, v => a.who = v));
-                row.appendChild(hintSpan('completes goals'));
+                row.appendChild(hintSpan('completes goal'));
+                row.appendChild(bareIn(a.goal != null ? a.goal + 1 : '', 26,
+                    'goal number (blank = ALL goals)',
+                    v => { const p = parseFloat(v); a.goal = Number.isFinite(p) && p >= 1 ? Math.round(p) - 1 : undefined; }));
+                row.appendChild(hintSpan('by'));
+                row.appendChild(bareIn(a.t1 != null ? a.t1 : '', 26,
+                    'deadline (s, blank = end of run)',
+                    v => { const p = parseFloat(v); a.t1 = Number.isFinite(p) ? Math.max(0, p) : undefined; }));
+                row.appendChild(hintSpan('s'));
             } else if (a.kind === 'proper') {
                 row.appendChild(boatSel(a.who, v => a.who = v));
                 row.appendChild(hintSpan('holds proper \u00b1'));
@@ -1582,7 +1590,7 @@
             ['proper', 'HOLDS PROPER COURSE', 'a boat never strays from her proper-course line beyond a tolerance \u2014 0 m = exact match'],
             ['row', 'RIGHTS', 'at a time, one boat holds right of way over another'],
             ['clear', 'NEVER CLOSE', 'two boats never get closer than a distance, the whole run'],
-            ['goals', 'GOALS DONE', 'a boat completes its goal list by the end'],
+            ['goals', 'GOALS DONE', 'a boat completes a specific goal (or ALL of them) — optionally by a deadline'],
             ['tack', 'TACK', 'at a time, a boat is on port or starboard'],
             ['near', 'ROUNDS WITHIN', 'closest approach to a mark stays inside a budget — rounding tightness'],
             ['turn', 'TURN BUDGET', 'total heading change over the run stays under a cap — catches orbit overshoot'],

@@ -9,7 +9,8 @@
 //   { kind:'row',     of: 0, over: 1, rule?: '13', t: 6.0, t1?, xfail? }
 //   { kind:'clear',   a: 0, b: 1, min: 55, xfail? }
 //   { kind:'tack',    who: 0, tack: 'port'|'stbd', t: 7.0, xfail? }
-//   { kind:'goals',   who: 0, xfail? }
+//   { kind:'goals',   who: 0, goal?: 1 (0-based; absent = ALL), t1?: 12.0
+//                     (deadline s; absent = end of run), xfail? }
 //   { kind:'proper',  who: 0, tol?: 10 (metres), xfail? }   needs ctx.proper
 //   { kind:'deflect', who: 0, max?: 23 (degrees), t0?, t1?, xfail? }
 //                     max recorded avoidance deviation over the window
@@ -280,13 +281,31 @@
                 : { pass: true, why: 'no hull contact' };
         }
         if (a.kind === 'goals') {
+            // GOAL COMPLETION, general form (owner, 2026-08-21): `goal`
+            // names ONE goal (0-based in the doc, 1-based in labels);
+            // absent = ALL — the old row is the default case of this one.
+            // `t1` is an optional deadline in seconds; absent = end of run.
+            // The recording carries gi per frame, so the completion MOMENT
+            // is known — it reads out in the message and drives atS.
             const n = (rec.goalCounts || [])[a.who] || 0;
             if (!n) return { pass: false, why: `${fmtBoat(names, a.who)} has no goals` };
-            const last = frames[nF] && frames[nF].boats[a.who];
-            const gi = last ? (last.gi || 0) : 0;
-            return gi >= n
-                ? { pass: true, why: `all ${n} goals done` }
-                : { pass: false, why: `${gi}/${n} goals by the end`, atS: nF / 60 };
+            if (a.goal != null && a.goal >= n)
+                return { pass: false, why: `${fmtBoat(names, a.who)} has only ${n} goal${n === 1 ? '' : 's'}` };
+            const target = a.goal != null ? a.goal + 1 : n;
+            const what = a.goal != null ? `goal ${a.goal + 1}` : `all ${n} goals`;
+            let doneAt = null;
+            for (let f = 0; f <= nF; f++) {
+                const b = frames[f] && frames[f].boats[a.who];
+                if (!b) return { pass: false, why: 'boat missing from recording' };
+                if ((b.gi || 0) >= target) { doneAt = f / 60; break; }
+            }
+            if (doneAt === null) {
+                const last = frames[nF].boats[a.who];
+                return { pass: false, why: `${what} not done — ${last.gi || 0}/${n} by the end`, atS: nF / 60 };
+            }
+            if (a.t1 != null && doneAt > a.t1)
+                return { pass: false, why: `${what} done at ${doneAt.toFixed(1)}s — after the ${a.t1.toFixed(1)}s deadline`, atS: doneAt };
+            return { pass: true, why: `${what} done at ${doneAt.toFixed(1)}s` };
         }
         return { pass: false, why: 'unknown assertion kind ' + a.kind };
     }
@@ -307,7 +326,7 @@
         if (a.kind === 'row') return `${a.t.toFixed(1)}${a.t1 != null ? '–' + a.t1.toFixed(1) : ''}s ${nm(a.of)} rights over ${nm(a.over)}${a.rule ? ' · R' + String(a.rule).replace(/rule\s*/i, '') : ''}`;
         if (a.kind === 'clear') return `${nm(a.a)}·${nm(a.b)} clear ≥ ${a.min != null ? a.min : 55}u`;
         if (a.kind === 'tack') return `${a.t.toFixed(1)}s ${nm(a.who)} on ${a.tack}`;
-        if (a.kind === 'goals') return `${nm(a.who)} completes goals`;
+        if (a.kind === 'goals') return `${nm(a.who)} completes ${a.goal != null ? 'goal ' + (a.goal + 1) : 'goals'}${a.t1 != null ? ' by ' + a.t1.toFixed(1) + 's' : ''}`;
         if (a.kind === 'proper') return a.tol === 0 ? `${nm(a.who)} matches proper course exactly`
             : `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 10}m`;
         if (a.kind === 'nocollide') return 'no collisions';
