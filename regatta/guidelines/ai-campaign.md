@@ -13553,3 +13553,31 @@ Same session, Scenario Lab expansion (owner-directed):
   30c4272fa461bec1 — a pre-deflection/pre-gwe AI. Future shards from the
   current tree will refuse to pool with the campaign's existing shards.
   Finish on a pinned tree or restart against the new AI (owner call).
+
+
+## THE WEDGE PUSH OPENS WITH DATA (2026-08-21 night, `_wedge_entry.js`)
+
+What precedes each sub-1kt collapse (5s lookback, 4 seeds each on the
+shipped tree):
+· GLOWTIDE — 48 entries, 1.3/boat-race, legs 1-4: **93.8% follow avoidance
+  steering >20 deg** (sample devs 69-172), 75% with a rival inside 150u,
+  only 6% pure nav, 29% penalty-involved. Glow wedging IS rival-dodge-
+  steered into rock — the missing obstruction model, quantified at entry.
+· SWAMP — 281 entries, 7.8/boat-race, ALL leg 1: nav 31%, traffic-without-
+  big-dodges 36%, both 24%, steered-only 9% (devs small, 23-29). The leg-1
+  channel wedges boats by LINE AND CROWDING, not panic turns. A different
+  machine from glowtide's — the push must treat them separately.
+
+## ⚠️ LAB NONDETERMINISM INSTANCE FOUND AND PARKED (rule-24 class)
+
+"Wall Tack" (a rule-20 probe scenario: two close-hauled boats pinned
+against a sand wall) trips the per-scenario determinism tripwire 2-of-3 on
+fresh pages. Clues banked for the hunt session: diverges at FRAME 2 via
+boat A's first nav decision (heading +-0.017 rad opposite ways); an extra
+read-only evaluate between load and run changes the outcome (i.e. the
+survivor EVOLVES PER FRAME during edit time and the canon overlay misses
+it); course/grid fingerprints identical across runs; _gcCache drop
+irrelevant. Scenario REMOVED from the library (a flaky scenario poisons
+the gate), doc preserved in eval/rl/_walltack_parked.json.txt. The other
+15 scenarios are tripwire-clean. Hunt it the way the swell-clock class was
+hunted.
