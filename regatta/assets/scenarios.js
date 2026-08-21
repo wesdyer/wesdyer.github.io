@@ -1114,6 +1114,75 @@ window.SCENARIO_DOC = {
     "lines": [],
     "savedAt": 1787378100006
   },
+  "Duck Hunter": {
+    "v": 1,
+    "durationS": 10,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      3626149102,
+      987654321,
+      2468013579,
+      1122334455,
+      3344556677,
+      556677889,
+      2233445566,
+      4102030405,
+      1029384756
+    ],
+    "tags": [
+      "rule-16",
+      "give-way",
+      "endgame"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "row",
+        "of": 0,
+        "over": 1,
+        "rule": "10",
+        "t": 1
+      },
+      {
+        "kind": "penalty",
+        "who": 0,
+        "rule": "16.2",
+        "xfail": true
+      }
+    ],
+    "boats": [
+      {
+        "x": 167,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5,
+        "plan": [
+          {
+            "t": 0,
+            "headingDeg": 320
+          },
+          {
+            "t": 2.5,
+            "headingDeg": 280
+          }
+        ]
+      },
+      {
+        "x": -548,
+        "y": 485,
+        "headingDeg": 40,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787378100007
+  },
   "Spinner Neighbor": {
     "v": 1,
     "durationS": 10,
