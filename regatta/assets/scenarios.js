@@ -954,6 +954,101 @@ window.SCENARIO_DOC = {
     "lines": [],
     "savedAt": 1787378100004
   },
+  "Wall Tack": {
+    "v": 1,
+    "durationS": 12,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      1160843350,
+      2921485912,
+      398462107,
+      3703462813,
+      844512309,
+      2075648131,
+      3517294860,
+      655360091,
+      1997488482
+    ],
+    "tags": [
+      "rule-20",
+      "obstruction"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "goals",
+        "who": 0,
+        "xfail": true
+      },
+      {
+        "kind": "goals",
+        "who": 1,
+        "xfail": true
+      }
+    ],
+    "boats": [
+      {
+        "x": -160,
+        "y": 600,
+        "headingDeg": 40,
+        "speedKt": 7,
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "p",
+            "x": -400,
+            "y": 0
+          }
+        ]
+      },
+      {
+        "x": -80,
+        "y": 530,
+        "headingDeg": 40,
+        "speedKt": 7,
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "p",
+            "x": -400,
+            "y": 0
+          }
+        ]
+      }
+    ],
+    "marks": [],
+    "sands": [
+      {
+        "pts": [
+          [
+            -50,
+            150
+          ],
+          [
+            700,
+            150
+          ],
+          [
+            700,
+            350
+          ],
+          [
+            -50,
+            350
+          ]
+        ]
+      }
+    ],
+    "lines": [],
+    "savedAt": 1787378100005
+  },
   "Spinner Neighbor": {
     "v": 1,
     "durationS": 10,

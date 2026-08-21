@@ -13601,3 +13601,35 @@ verdict ("execution not admission") — the discriminator the push needs is
 commanded-line vs sailed-line at entry (the ground-frame probes exist).
 Redrock's parked arrival-side-grounding TODO now has its mechanism:
 arrival happens mid-dodge, half the time penalty-chained.
+
+
+# ⭐⭐ THE WALL TACK NONDET: HUNTED AND FIXED SAME NIGHT (scenario.js key-set reset)
+
+The swell-clock method, one experiment: a __DETDBG hook snapshots every
+own-enumerable scalar on each lab boat/controller/raceState/ai at burst
+start; two pages differing only in a WAIT between load and run diff the
+snapshots (`_det_hunt.js`). EIGHT survivors named in one shot. Mechanism:
+**the KEY-SET HOLE** — the lab's parked fleet never races, so pooled
+recruits lack the engine's late-created fields at addBoat; _phys0 cannot
+capture what does not exist yet, and the canon overlay canonizes only
+CONSTRUCTOR scalars. Two leak classes: fields born during edit frames
+(rs._dmcLeg/_dmcS nav cursor, wake/trend) and recruit-time fields with
+per-boot values the overlay never canonizes (**trimEfficiency,
+optimalSailAngle — physics inputs**). Both evolve with wall-clock edit
+time; knife-edge geometries flip verdicts.
+
+FIX: the canonical key set is the CONSTRUCTOR's (controller/ai exempt,
+rebuilt per burst anyway). applyInitial deletes every key outside it;
+_phys0/_rs0 are pruned to it so the restore cannot resurrect what the
+delete removed. The engine re-derives runtime state inside the seeded
+burst. VERIFIED: Wall Tack deterministic on 4 fresh pages at 4 edit-wait
+timings AND cross-page outcome-identical (the owner's original "same
+scenario, different penalty" class closed for this vector); the whole
+15-scenario library reproduces its exact pre-fix verdicts and numbers —
+the fix removes only the timing variance.
+
+Wall Tack RESTORED to the library (16 scenarios): deterministic behavior =
+no contact, no foul, but the wall-pinned pair fumbles goal completion
+(A 2/10, B 8/10, failing on DIFFERENT seeds — one boat gets pinned at the
+wall and misses the window). Both goals rows XF: the rule-20/room-to-tack
+gap, pinned behaviorally.
