@@ -13710,3 +13710,30 @@ course): median tack taken with 640u / 7.3s of water left; only 9% late
 bank WEDGE entries are not a habit but a TAIL: normally-timed tacks that
 get BLOCKED or fail at the moment (traffic/jam/light patch). River's
 wedge lever = the blocked-tack endgame, not tack scheduling.
+
+
+## BAY: THE FLEET-AVOIDANCE DISTANCE TAX IS GONE (stale diagnosis retired)
+
+Paired leg-1 decomposition post-gwe (`_beat_decomp` 54 boat-legs vs his 3
+laps, ground frame): HIM 3,716u / 3 tacks / 40.5s @ 94.3 u/s; BOTS
+3,798u / 4 tacks / 45s @ 84.4 u/s. Distance +2%, tacks equal — the
+pre-landing "bay L1 = 57% of beat waste" figure is RETIRED; bay's whole
+leg-1 residual is SPEED-while-near-others (-10.5%), a micro-speed
+question. Bay is near-done as a venue thread (1.182).
+
+## GLOW POCKET ENTRY GEOMETRY (brief 1c closed)
+
+`_pocket_entry.js`, 89 entries over 4 seeds: pocket transits are ROUTINE
+(2.5/boat-race, 73% pass through in 7.5s); **27% wedge (dwell 21.9s) and
+a rival inside 200u at entry doubles the odds (67% of wedgers vs 37% of
+passers)**. The lever is the dodge-in-company INSIDE the box (~10-14
+s/boat-race of glow's gap) — obstruction-aware dodging, not entry bans.
+
+## THE RAMMER BRACKET (release-valve coverage, 2 scenarios)
+
+Port Rammer (R10 crossing): stand-on releases at ~240u, dodges 102-119
+deg, keeps 134u. Windward Rammer (R11 overlapped, NEW): holds to
+3.6s/58u, dodges 127 deg, keeps 57u — the overlapped release runs
+KNIFE-THIN (the capability-release is closure-rate-based and lateral
+closure is slow). Both pin the dormant no-contact foul (gap rows, 10/10
+each): a rammer forcing a 100+ deg dodge is never penalized.
