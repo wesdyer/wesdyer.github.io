@@ -13369,3 +13369,155 @@ Run `_cur_rank.js` at once too: if it carries a stream it slots against river
 contact frames); Phase D latch jitter (command is stable at 0.0°/frame); escape
 HEADING selection on redrock (already 1.5% from optimal — but lagoon is 29.8%
 unsailable, which is a live and separate candidate).
+
+
+---
+
+# CATCH-UP DIGEST — 2026-08-10 → 2026-08-21 (appended 2026-08-21 by the give-way push session)
+
+The log paused at the 2026-08-09 grounding push; eleven days of landings were
+recorded in session memory only. This digest restores the trail — hashes
+verbatim, headline numbers from each push's close. Full anatomy lives in the
+memory files named per entry.
+
+· **Swamp + river pushes** (2026-08-10..13): stuck-detector regime (absolute
+  knot thresholds in a relative world) took swamp 2.09x -> 1.51x; ground-frame
+  fan + escape true-speed took river 1.68x -> 1.57x. Glowtide intake: venue is
+  DISTANCE-dominated 65/35; cScale ladder closed both directions; 1.58x -> 1.39x.
+  Bay ships landing `8763ecc` (12.9 s/boat, contacts -59%), 1.15x -> 1.14x.
+· **Rule 30 resolved `91003e9`** (2026-08-14): late venue write is the default;
+  river/lagoon/swamp ocean_bench baselines before 2026-08-14 RETIRED.
+· **The tail push** (2026-08-14 night), THREE landings: R19 guards `5b00a62`;
+  re-hit gradient escape `7b599d4` (redrock pooled 6-set med -8/mean -16.3);
+  pin trigger `4159383` (river fins 202 -> 211/216). Redrock 1.54x, river 1.46x.
+· **The intake push** (2026-08-15): ocean v0.2 intake closed AT GOAL 1.075x with
+  no AI change; CROSSING CRACK landed `32fa7ae` (RRS-28 one-frame miss ->
+  river 98.1% / swamp 97.2% fins; redrock/glowtide named losers, owner accepted).
+· **The rules push** (2026-08-15/16): RRS-vs-engine map `2a10c95` + owner
+  doctrine "Accuracy > raw AI performance". Landed: rule-13 exit 45->23 deg
+  `62dfb25`; rule 15 wired `6bd9707`; RRS 43 `3f6e86d` + the 16-scenario
+  3-layer battery + rules.html viewer.
+· **The notch push** (2026-08-16): time-based hard zone `36bdce0` (river fins
+  210 -> 214, redrock +3); eight escape-side variants measured NET ZERO —
+  entry was the lever.
+· **The Scenario Lab** (2026-08-16..19): scenario.html constructor — hermetic
+  seeded record-then-scrub bursts (`50d966d`), assertions as test authoring
+  (`09f825f`), compiled real courses for goals (`c2cdc80`), t11 design
+  (`2e1cbb4`). The lab is now the inner loop for behavior work.
+· **The deflection push** (2026-08-19/20) SHIPPED `949daf8` + `01fc7bb`:
+  rules-based stand-on hold (_rowHold) + capability-scaled release. Lab
+  R10/R11 +-1m green; clock neutral, fins +3; DIRT COST accepted as give-way
+  debt (bay rubs 1.32 -> 1.88) with the ruling that the fix is give-way
+  execution. Scoreboard at that close: rr 1.555, arc 1.589, riv 1.466,
+  sw 1.398, glow 1.303, lag 1.295, bay 1.204, lake 1.140, oc 1.075 OK,
+  st 1.045 OK.
+
+# THE GIVE-WAY ENDGAME PUSH — SHIPPED `c64690a` + `25d7193` (2026-08-20/21)
+
+Protocol: ocean_bench per venue vs the dfd* anchors (rr 6x8 pooled, riv 3x8,
+bay 2x20, arc 2x16, glow 16, sw 3x8, oc/st 16, lag 8, lake 2x20 frozen doc).
+Owner ruling: "very significant improvement" — shipped, swamp accepted.
+
+**Mechanisms named (ledgers, lab + venue)**: (1) the all-candidates-collide
+argmin lottery — give-way 150u bubble + 0.8s-floor chord samples put every
+candidate in boatCollision inside ~200u; 71% of bay rub episodes, 84% of
+glowtide's, mostly Rule-21 spinner chains; the 92/0/69/40-degree flap is this,
+reproduced vs a rival HOLDING course. (2) The sampling floor: first boat
+sample at t=0.8s — "dev 0-6 at IMMINENT". (3) The 150u bubble exceeds the
+~100u overlapped standing distance — permanent collision state, 34-69 degree
+panic responses.
+
+**The fix** (applyAvoidance): the candidate's own rolled arc (the land probe's
+8 substeps, now kept) grades rivals by continuous per-segment CPA at the 80u
+truth core; 30000*short^2 keeps the ordering veto-class (single true-CPA
+500000/d^2 alone came out SOFTER than the fan's own deviation cost — measured
+as a 37u spinner-control contact before the term was added). Spinner berth
+130, ice venues and the start byte-for-byte legacy.
+
+| venue | ratio before -> after | boat contacts | pens |
+|---|---|---|---|
+| redrock | 1.555 -> 1.477 (pooled med -20.0, ALL 6 sets neg) | 9.74 -> 5.34 | 1.40 -> 0.90 |
+| river | 1.466 -> 1.412 | 12.37 -> 9.90 | down |
+| swamp | 1.398 -> 1.407 (NAMED LOSER: med 0, mean +10.2, fins 212->207, land +56%) | +14% | flat |
+| glowtide | 1.303 -> 1.283 | 7.36 -> 4.35 | 1.42 -> 1.08 |
+| lagoon | 1.295 -> 1.254 | 2.94 -> 0.56 | halved |
+| bay | 1.204 -> 1.182 | 1.88 -> 0.43 | 0.44 -> 0.18 |
+| lake | 1.140 -> 1.115 | 3.03 -> 1.63 | 0.52 -> 0.34 |
+| ocean | 1.075 -> 1.047 OK | 1.06 -> 0.46 | halved |
+| seatrials | 1.045 -> 1.018 OK | 0.93 -> 0.19 | 0.31 -> 0.10 |
+| arctic | 1.589 flat (byte-identical BY CONSTRUCTION) | identical | identical |
+
+The deflection push's accepted dirt debt is repaid with interest: bay pens
+0.31 (pre-stand-on) -> 0.44 -> 0.18. Mechanism census on the candidate tree,
+same probe/seeds: bay rub episodes 59 -> 2; glow 221 -> 122 (residue = the
+rock-jammed wedge class + chains). OCS identical on every venue. Goldens
+verify 30/30; RRS battery 17/17.
+
+**Lab harness shipped with it**: five give-way scenarios (Late Crossing,
+Scripted Duck, Overlapped Converge, Wedged Pass, Spinner Neighbor), flap
+metric + steady assert, signed avoidance deviation, penalized-at-start boat
+authoring. Wedged Pass trap completes on 5/10 seeds post-landing (was 0/10)
+— row stays XF; `25d7193` fixed multi-seed XF aggregation (FIXED now
+requires every seed).
+
+Turning-rival projection was built, measured (moved neither lab target) and
+REVERTED the same session: Rule 12's residual 1.4m is a truthful 6-degree
+Rule-14 precaution at a 78u pass, not projection fiction.
+
+
+# THE ARCTIC BOAT-ARC UNSCOPE — BUILT, GATED, KILLED (2026-08-21 night, autonomous run)
+
+Hypothesis: arctic's armed-approach crawl = the same rival-side argmin
+lottery the gwe landing killed on open water; the ice gate kept the legacy
+chord sampler for rivals, whose drift rationale never applied to BOATS.
+Build: arc roll always computed; boat-vs-boat test consumes it on ice
+(continuous CPA + veto-scale shortfall); ice cores/bubbles and all
+land/floe/static terms byte-for-byte legacy; start gated; bay 4-race
+byte-inert verified.
+
+Gate (2x16 pooled = 32 seeds vs dfdarc anchors, hand-pooled):
+  paired med 0  mean +6.1 (clipped +5.9)  neg 143/288 | fins 288/288 both
+  boat 6.50 -> 4.20 (-35%)  pen 0.90 -> 0.61 (-32%)   <- mechanism TRANSFERS
+  land 3.23 -> 3.69 (+14%)  floe+bounds 16.74 -> 19.18 (+15%)  <- the price
+  OCS identical (start untouched). Sets DISAGREE alone (-2/-1.4 vs +6/+13.6)
+  — the 16-seed resolution trap again; only the pool is quotable.
+
+Kill evidence (the manoeuvre-rate discriminator, `_flips.js` NEW — a
+position-based side-change census that runs on any tree, replacing the
+treeEX-only __exLog instrumentation): arctic flips/boat-race 27.0 -> 25.3
+(-6%), and 37% of ALL side-changes happen with no rival within 300u (+15%
+rounding-armed). The crawl is NOT rival-side; the manoeuvre burden is
+nav/floe-owned. Per the pre-registered kill criteria: REVERTED.
+
+What the kill bought: (1) rival honesty on ice cuts rubs -35% / pens -32%
+but the boat's ICE grading stays chord-fiction (deliberately — floe drift,
+rule 5's line), so decisive rival-dodges carry into ice: +15% obstacle
+contacts, clock net zero. Re-attempt only WITH the obstruction model.
+(2) The arctic thread now points cleanly at ROUTING/tack-count (the
+wind-agnostic router push) — confirmed post-landing with a clean probe.
+
+Same session, Scenario Lab expansion (owner-directed):
+· PORT RAMMER (scripted give-way that never ducks): stand-on release valve
+  WORKS (nocollide 10/10) but the last-ditch is over-insurance (holds to
+  3.2s, then 102-119 deg, 185m off proper, 134u margin kept). The
+  NO-CONTACT FOUL IS DORMANT: the rammer forces all that and is never
+  penalized — gap row pins it (properCourseCPA detector needs arming).
+· ZONE ENTRY (overlapped pair, port rounding): NEW DEFECT FAMILY —
+  WRONG-SIDE MARK ARRIVAL IS UNRECOVERABLE. Parallel-neighbor avoidance
+  flicker displaces the inside boat ~40-70u before the zone; she arrives on
+  the wrong side, credit is (correctly) refused, and she ORBITS 600+ deg
+  without ever re-approaching on the correct side (second orbit too wide to
+  arm). Solo control from the identical line rounds clean 5/5 (350 deg,
+  1.5m). No contact, no foul, DNF-scale loss. Venue incidence being
+  measured (`_orbit_census.js`).
+· ISLAND SQUEEZE (R19 continuing obstruction): GREEN 10/10 — room given,
+  both complete, min 81u; turn budget pinned.
+· Glowtide non-threat tacks re-measured post-landing (`_flips.js`, paired
+  trees): flips 28.1 -> 26.0/boat-race, non-threat-far flips 239 -> 190
+  (-20%) — the family SHRANK but persists at ~27%; the untouched 700u
+  proximity gradient remains the suspect. Glow residual = rock box + this.
+· Swamp claw-back attribution: the 9400-set land contacts are the leg-1
+  stuck/grind class (ALL 252 episodes leg 1, median 0.5kt at contact,
+  wiggle/escape active, dev 0) — NOT mid-dodge groundings; candidate tree
+  has FEWER episodes (194) with higher raw contact counts = longer grinds.
+  The 9500 set (where land went 3.50 -> 8.51) under probe now.

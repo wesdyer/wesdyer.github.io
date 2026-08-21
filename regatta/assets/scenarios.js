@@ -644,6 +644,311 @@ window.SCENARIO_DOC = {
     "lines": [],
     "savedAt": 1787366100004
   },
+  "Port Rammer": {
+    "v": 1,
+    "durationS": 10,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      1779033703,
+      3144134277,
+      1013904242,
+      2773480762,
+      1359893119,
+      2600822924,
+      528734635,
+      1541459225,
+      1898319191
+    ],
+    "tags": [
+      "rule-14",
+      "stand-on"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "row",
+        "of": 0,
+        "over": 1,
+        "rule": "10",
+        "t": 2
+      },
+      {
+        "kind": "penalty",
+        "who": 1,
+        "rule": "10",
+        "xfail": true
+      }
+    ],
+    "boats": [
+      {
+        "x": 167,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      },
+      {
+        "x": -548,
+        "y": 485,
+        "headingDeg": 40,
+        "speedKt": 7.5
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787378100001
+  },
+  "Zone Entry": {
+    "v": 1,
+    "durationS": 16,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      2246822519,
+      3266489917,
+      668265263,
+      374761393,
+      3550635116,
+      904732032,
+      2820302411,
+      1426881987,
+      3929346869
+    ],
+    "tags": [
+      "rule-18",
+      "mark-room"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "goals",
+        "who": 0,
+        "xfail": true
+      },
+      {
+        "kind": "goals",
+        "who": 1
+      }
+    ],
+    "boats": [
+      {
+        "x": -250,
+        "y": 360,
+        "headingDeg": 90,
+        "speedKt": 7,
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "m",
+            "i": 0
+          },
+          {
+            "k": "p",
+            "x": -100,
+            "y": 100
+          }
+        ]
+      },
+      {
+        "x": -250,
+        "y": 450,
+        "headingDeg": 90,
+        "speedKt": 7,
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "m",
+            "i": 0
+          },
+          {
+            "k": "p",
+            "x": -100,
+            "y": 100
+          }
+        ]
+      }
+    ],
+    "marks": [
+      {
+        "x": 400,
+        "y": 300,
+        "side": "port",
+        "zone": 165
+      }
+    ],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1787378100002
+  },
+  "Zone Entry Solo": {
+      "v": 1,
+      "durationS": 16,
+      "windKt": 12,
+      "seeds": [
+          2654435769,
+          2246822519,
+          3266489917,
+          668265263,
+          374761393
+      ],
+      "tags": [
+          "rule-18",
+          "control"
+      ],
+      "asserts": [
+          {
+              "kind": "nocollide"
+          },
+          {
+              "kind": "goals",
+              "who": 0
+          },
+          {
+              "kind": "turn",
+              "who": 0,
+              "max": 360
+          }
+      ],
+      "boats": [
+          {
+              "x": -250,
+              "y": 360,
+              "headingDeg": 90,
+              "speedKt": 7,
+              "aiAtS": 0,
+              "goals": [
+                  {
+                      "k": "m",
+                      "i": 0
+                  },
+                  {
+                      "k": "p",
+                      "x": -100,
+                      "y": 100
+                  }
+              ]
+          }
+      ],
+      "marks": [
+          {
+              "x": 400,
+              "y": 300,
+              "side": "port",
+              "zone": 165
+          }
+      ],
+      "sands": [],
+      "lines": [],
+      "savedAt": 1787378100003
+  },
+  "Island Squeeze": {
+    "v": 1,
+    "durationS": 14,
+    "windKt": 12,
+    "seeds": [
+      2654435769,
+      3811509712,
+      1094795585,
+      2576980377,
+      858993459,
+      3435973836,
+      1717986918,
+      4008636142,
+      286331153,
+      2863311530
+    ],
+    "tags": [
+      "rule-19",
+      "obstruction"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      },
+      {
+        "kind": "goals",
+        "who": 0
+      },
+      {
+        "kind": "goals",
+        "who": 1
+      },
+      {
+        "kind": "turn",
+        "who": 0,
+        "max": 360
+      }
+    ],
+    "boats": [
+      {
+        "x": -350,
+        "y": 380,
+        "headingDeg": 90,
+        "speedKt": 7,
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "p",
+            "x": 700,
+            "y": 380
+          }
+        ]
+      },
+      {
+        "x": -350,
+        "y": 470,
+        "headingDeg": 90,
+        "speedKt": 7,
+        "aiAtS": 0,
+        "goals": [
+          {
+            "k": "p",
+            "x": 700,
+            "y": 400
+          }
+        ]
+      }
+    ],
+    "marks": [],
+    "sands": [
+      {
+        "pts": [
+          [
+            0,
+            150
+          ],
+          [
+            500,
+            150
+          ],
+          [
+            500,
+            300
+          ],
+          [
+            0,
+            300
+          ]
+        ]
+      }
+    ],
+    "lines": [],
+    "savedAt": 1787378100004
+  },
   "Spinner Neighbor": {
     "v": 1,
     "durationS": 10,
