@@ -322,9 +322,9 @@
             <span class="sl-hint">s</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
-            <span class="sl-lab" style="margin:0" title="hands to the AI when another boat comes within this range — whichever trigger fires first wins; blank = no distance trigger">&hellip;or within</span>
+            <span class="sl-lab" style="margin:0" title="hands to the AI when another boat comes within this range (metres) — whichever trigger fires first wins; blank = no distance trigger">&hellip;or within</span>
             <div class="sl-inp" style="flex:1"><input id="lab-ainear" type="text" inputmode="decimal" placeholder="never"></div>
-            <span class="sl-hint">u of a boat</span>
+            <span class="sl-hint">m of a boat</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:10px">
             <span class="sl-lab" style="margin:0" title="she starts the run flagged, owing one 360 — Rule 21 applies, the AI takes the spin when clear">Penalized at start</span>
@@ -1177,14 +1177,15 @@
     function refreshPathRow(lb) {
         aiAtIn.value = lb.aiAtS == null ? '' : lb.aiAtS;
         aiAtIn.title = 'blank = scripted to the end · 0 = AI from the start';
-        aiNearIn.value = lb.aiNearU == null ? '' : lb.aiNearU;
+        // displayed in METRES like X/Y; stored in world units (UPM = u/m)
+        aiNearIn.value = lb.aiNearU == null ? '' : +(lb.aiNearU / UPM).toFixed(1);
         penStartB.textContent = lb.penalized ? 'ON' : 'OFF';
         penStartB.classList.toggle('sl-btn-pri', !!lb.penalized);
     }
     aiNearIn.addEventListener('input', () => {
         if (LAB.sel && LAB.sel.kind === 'boat') {
             const v = aiNearIn.value.trim();
-            LAB.sel.ref.aiNearU = v === '' ? null : Math.max(0, parseFloat(v) || 0);
+            LAB.sel.ref.aiNearU = v === '' ? null : Math.max(0, (parseFloat(v) || 0) * UPM);
             invalidate();
         }
     });
