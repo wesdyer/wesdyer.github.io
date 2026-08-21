@@ -111,7 +111,7 @@ window.SCENARIO_DOC = {
   },
   "Rule 12": {
     "v": 1,
-    "durationS": 10,
+    "durationS": 4,
     "windKt": 12,
     "seeds": [
       2654435769,
@@ -168,7 +168,7 @@ window.SCENARIO_DOC = {
     "marks": [],
     "sands": [],
     "lines": [],
-    "savedAt": 1787125176625
+    "savedAt": 1787279097395
   },
   "Rule 13": {
     "v": 1,
