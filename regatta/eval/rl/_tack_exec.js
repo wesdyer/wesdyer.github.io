@@ -58,9 +58,37 @@ const ROOT = path.join(__dirname, process.argv[5] || 'treeTW');
     }
     await br.close();
 
-    // columns: 0 name 1 t 2 stratSide 3 stratKind 4 finalSide 5 hullSide 6 twa 7 spd 8 cd 9 owner 10 seed
+    // columns: 0 name 1 t 2 stratSide 3 stratKind 4 finalSide 5 hullSide 6 twa 7 spd 8 cd
+    //          9 owner 10 armed 11 navSrc/leg — and the SEED is appended LAST by the loop.
+    // ⚠️ FIXED 2026-08-14. This read `r[10]` as the seed, per the stale comment above.
+    // The emitter pushes TWELVE fields (0..11), so the seed lands at index 12 and index
+    // 10 is `roundArmed ? 1 : 0`. The grouping key was therefore `armed:name`: every
+    // boat's rows from EVERY seed collapsed into (at most) two groups, sorted by `t`,
+    // interleaving three separate races into one timeline — and hull side-changes were
+    // then counted across that interleaving, which manufactures crossings at each
+    // seed-to-seed jump. The 2026-08-11 arctic ownership table (20.0% nav / 47.2%
+    // avoidance) came out of this and is RETIRED; see [[regatta-tack-ownership]].
+    // Group by the last element, which is the seed regardless of emitter width.
     const byBoat = {};
-    for (const r of ROWS) (byBoat[r[10] + ':' + r[0]] = byBoat[r[10] + ':' + r[0]] || []).push(r);
+    for (const r of ROWS) { const k = r[r.length - 1] + ':' + r[0]; (byBoat[k] = byBoat[k] || []).push(r); }
+    // Rule 33: assert, do not assume. A wrong key is silent — the code runs and the
+    // totals look plausible. Group count must be seeds x boats, and each group's time
+    // must be monotone and inside ONE race.
+    // ⚠️ The two checks that DON'T work, so nobody re-adds them:
+    //   * `groups === boats x seeds` — arctic's roster differs per seed (25 distinct
+    //     names over 3 races of ~9), so the product over-counts and fires on good data.
+    //   * monotone `t` — the sort above orders by `t`, so interleaving is monotone BY
+    //     CONSTRUCTION. The sort destroys the evidence.
+    // What does discriminate: a group holding N races has each timestamp N times.
+    // On the arctic rows: 0 duplicates under the correct key, 2745 under the buggy one.
+    {
+        let dupT = 0;
+        for (const k in byBoat) { const H = byBoat[k]; for (let i = 1; i < H.length; i++) if (H[i][1] === H[i - 1][1]) dupT++; }
+        const seeds = new Set(ROWS.map(r => r[r.length - 1])).size;
+        console.log(`grouping check: ${Object.keys(byBoat).length} groups over ${seeds} seed(s), duplicate timestamps within a group: ${dupT}`);
+        if (dupT) console.log(`  ⚠️⚠️ RACES ARE INTERLEAVED — the grouping key is wrong. DO NOT READ THE SIDE-CHANGE TABLE.`);
+        else console.log(`  ✓ no duplicate timestamps — one race per group`);
+    }
     for (const k in byBoat) byBoat[k].sort((a, b) => a[1] - b[1]);
 
     const own = {}, ownTacks = {};

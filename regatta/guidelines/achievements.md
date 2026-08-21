@@ -22,18 +22,18 @@ weak, duplicated another, or was mathematically unreachable at its own venue.
 Unchanged. Chosen in `roster-ranking.md` for personality coverage, ten distinct
 hull colors, species variety, and all eight AI archetypes in the opposing fleet.
 
-| # | Name | Species | Hull | Archetype | The slot they fill |
-|---|------|---------|------|-----------|--------------------|
-| 1 | **Bixby** | Sea Otter | royal blue | shift | I'm chill |
-| 2 | **Bruce** | Great White Shark | black | bully | I'm here to win |
-| 3 | **Cheer** | Pom Pom Crab | pink | metronome | I'm happy |
-| 4 | **Pinch** | American Lobster | red | bully | I'm scrappy |
-| 5 | **Glide** | Wandering Albatross | white | metronome | I'm a sailor |
-| 6 | **Wobble** | Platypus | orange | gambler | I'm weird |
-| 7 | **Sunshine** | Mahi-Mahi | yellow | rocket | I like bright colors |
-| 8 | **Tangle** | Common Octopus | purple | leech | I'm clever |
-| 9 | **Whiskers** | Walrus | tan | freight | I'm an old salt |
-| 10 | **Rift** | Moray Eel | chartreuse | corner | I'm sly |
+| #   | Name         | Species             | Hull       | Archetype | The slot they fill   |
+| --- | ------------ | ------------------- | ---------- | --------- | -------------------- |
+| 1   | **Bixby**    | Sea Otter           | royal blue | shift     | I'm chill            |
+| 2   | **Bruce**    | Great White Shark   | black      | bully     | I'm here to win      |
+| 3   | **Cheer**    | Pom Pom Crab        | pink       | metronome | I'm happy            |
+| 4   | **Pinch**    | American Lobster    | red        | bully     | I'm scrappy          |
+| 5   | **Glide**    | Wandering Albatross | white      | metronome | I'm a sailor         |
+| 6   | **Wobble**   | Platypus            | orange     | gambler   | I'm weird            |
+| 7   | **Sunshine** | Mahi-Mahi           | yellow     | rocket    | I like bright colors |
+| 8   | **Tangle**   | Common Octopus      | purple     | leech     | I'm clever           |
+| 9   | **Whiskers** | Walrus              | tan        | freight   | I'm an old salt      |
+| 10  | **Rift**     | Moray Eel           | chartreuse | corner    | I'm sly              |
 
 Two starters seed chains: **Bruce** anchors the shark ladder and **Whiskers** is
 the elder you out-sail to earn Snap.

@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCYC - Scenario Lab</title>
+    <link rel="icon" type="image/png" href="assets/images/misc/salty-crew-yacht-club-burgee.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,400..900;1,400..900&family=IBM+Plex+Mono:wght@400;600&family=Saira:ital,wdth,wght@0,50..125,100..900;1,50..125,100..900&display=swap" rel="stylesheet">
+    <style>
+        /* ── Typography system ─────────────────────────────────────────
+           Display   = Saira 900 (800 small), stretch ~81%, italic on hero
+           UI + body = Archivo (page font)
+           Instrument= IBM Plex Mono 600, tabular numerals, readouts only
+           Exception = the wordmark keeps its original font stack        */
+        body { font-family: 'Archivo', ui-sans-serif, system-ui, sans-serif; }
+        .t-wordmark { font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; }
+        .t-display { font-family: 'Saira', 'Archivo', sans-serif; font-stretch: 81%; font-weight: 900; }
+        .t-display-8 { font-weight: 800; }
+        .t-label { font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; color: #7f8ea9; }
+        .t-label-sm { font-size: 10.5px; letter-spacing: 1.6px; }
+        .t-label-xs { font-size: 8px; letter-spacing: 1.4px; }
+        /* HUD labels sit over water, so they run brighter than menu labels. */
+        .t-label-bright { color: #cbd5e1; }
+        .t-mono { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+        /* ── In-race overlay kit (pause / settings / controls / abandon) ─────
+           One dark-glass card language for everything that interrupts the race:
+           near-opaque navy so it reads over bright water, ONE primary action per
+           screen (blue, with its key on the button), quiet rows for the rest.
+           Red is reserved for the one destructive act — abandoning the race. */
+        .ov-card { background: rgba(7,19,34,.92); border: 1px solid rgba(255,255,255,.14); border-radius: 16px; box-shadow: 0 16px 50px rgba(4,16,28,.55); color: #eef3fb; }
+        /* Overlay titles and primary labels are ARCHIVO Black Italic — the design's
+           "one typeface" — not the clubhouse's Saira display face (t-display). */
+        .ov-title { font-family: 'Archivo', sans-serif; font-weight: 900; font-style: italic; text-transform: uppercase; letter-spacing: .02em; }
+        .ov-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 13px 18px; cursor: pointer; color: #eef3fb; transition: background .15s, border-color .15s; }
+        .ov-row:hover { background: rgba(255,255,255,.12); }
+        .ov-row-danger:hover { background: rgba(236,48,19,.15); border-color: rgba(236,48,19,.4); }
+        .ov-primary { background: #2f6bff; border-color: transparent; box-shadow: 0 6px 24px rgba(47,107,255,.4); }
+        .ov-primary:hover { background: #4a80ff; }
+        .ov-danger-fill { background: rgba(236,48,19,.14); border-color: rgba(236,48,19,.45); color: #ff8a75; }
+        .ov-danger-fill:hover { background: rgba(236,48,19,.28); border-color: rgba(236,48,19,.6); }
+        /* Key chip ON a button: "this button has a key". Dim variant for quiet rows. */
+        .ov-kbd { font-size: 10px; font-weight: 800; letter-spacing: .1em; color: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.35); border-radius: 5px; padding: 2px 7px; white-space: nowrap; }
+        .ov-kbd-dim { color: #66748c; border-color: rgba(255,255,255,.18); }
+        /* Keycap in the controls table: drawn as a key, scannable at a glance. */
+        .ov-key { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: #eef3fb; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); border-bottom-width: 2px; border-bottom-color: rgba(255,255,255,.3); border-radius: 6px; padding: 3px 9px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+        .ov-sec { font-size: 10px; letter-spacing: .2em; font-weight: 800; color: #8fd8d0; text-transform: uppercase; }
+        .ov-setting { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+        .ov-setting-label { font-size: 13.5px; font-weight: 700; color: #dce6f2; }
+        /* Toggle: teal = on, matching the game's "live instrument" teal. */
+        .ov-toggle { position: relative; display: inline-block; width: 38px; height: 21px; flex: none; cursor: pointer; }
+        .ov-toggle input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+        .ov-toggle .ov-track { position: absolute; inset: 0; border-radius: 11px; background: rgba(255,255,255,.14); transition: background .15s; pointer-events: none; }
+        .ov-toggle .ov-track::after { content: ''; position: absolute; top: 2.5px; left: 2.5px; width: 16px; height: 16px; border-radius: 50%; background: #dce6f2; transition: transform .15s, background .15s; }
+        .ov-toggle input:checked + .ov-track { background: #2dd4bf; }
+        .ov-toggle input:checked + .ov-track::after { transform: translateX(17px); background: #06302a; }
+        /* Segmented control (camera mode) */
+        .ov-segs { display: flex; border: 1px solid rgba(255,255,255,.16); border-radius: 8px; overflow: hidden; }
+        .ov-seg { padding: 6px 9px; font-size: 10.5px; font-weight: 800; letter-spacing: .02em; color: #8fa3bd; background: transparent; border: none; cursor: pointer; }
+        .ov-seg:hover { background: rgba(255,255,255,.08); }
+        .ov-seg.active { background: #2dd4bf; color: #06302a; }
+        /* Curated swatches (telltale color); the ring marks the live choice. */
+        .ov-swatch { width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); cursor: pointer; padding: 0; flex: none; }
+        /* Dark gap then gold ring, so the ring reads on every swatch color —
+           a plain gold border vanishes on the gold (default) swatch. */
+        .ov-swatch.active { border: 2px solid #0b1626; box-shadow: 0 0 0 2px #f2c14e; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .burgee-flutter { animation: none; }
+            .lb-row { transition: none; }
+            .row-highlight { animation-duration: 0.01ms; }
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #3b82f6; /* Tailwind blue-500 */
+        }
+
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Hide scrollbar for IE, Edge and Firefox */
+        * {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        canvas {
+            display: block;
+        }
+        #ui-layer {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+        }
+
+        @keyframes flutter {
+            0%, 100% { transform: skewY(0deg) scaleX(1); }
+            25% { transform: skewY(4deg) scaleX(0.98); }
+            50% { transform: skewY(0deg) scaleX(1); }
+            75% { transform: skewY(-4deg) scaleX(0.98); }
+        }
+        .burgee-flutter {
+            transform-origin: left center;
+            animation: flutter 1.0s infinite linear;
+        }
+        .lb-row {
+            position: absolute;
+            left: 6px;
+            right: 6px;
+            height: 44px;
+            border-radius: 10px;
+            padding: 0 10px;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* The player's row is ringed rather than filled: a fill would fight the portraits,
+           and the ring reads at a glance without changing the row's weight. The ring's
+           COLOUR is the player's own and is painted from JS — see updateLeaderboard. */
+        /* "This row is you", on the results page, in YOUR colour — the border, the wash and
+           the glow are all painted from the boat's own hue in JS (see renderResultsRows),
+           because gold is the colour of first place and cannot also be the colour of you.
+           It goes on the row's SURFACE (.res-bar) rather than the row wrapper, so the row
+           can carry spacing without the marker inheriting it, and every row already
+           reserves a transparent border so lighting one up moves nothing. */
+
+        /* ── Results screen ("Finish Line") ─────────────────────────────────
+           ONE definition of the column track. The header row and every result row
+           read from it, so a column cannot drift out of alignment with its label —
+           which is exactly what happens when the template is pasted in two places.
+
+           The flexible column is now GAP TO WINNER, not the name: the name needs a fixed
+           150px and no more, and the dead space in the middle of the row is exactly where
+           a picture of the finish belongs. */
+        .res-grid {
+            display: grid;
+            grid-template-columns: 52px 40px 150px minmax(140px, 1fr) 80px 84px 70px 84px 70px 84px 70px 56px;
+            gap: 10px;
+            align-items: center;
+        }
+        .res-r { text-align: right; }
+        /* The gap ruler: a datum hairline at the winner's time, one marker per boat, and the
+           far end is the last boat home (see fleetGapScale). Nothing ever pins, because the
+           scale is the fleet's own spread — the header states it, since it differs race to
+           race. */
+        .res-gap { position: relative; height: 24px; min-width: 0; }
+        .res-gap-axis { position: absolute; top: 0; bottom: 0; left: 8px; width: 1px; background: rgba(255,255,255,0.12); }
+        .res-gap-mark { position: absolute; top: 2px; margin-left: 8px; display: flex; align-items: center; gap: 4px; }
+        .res-gap-tri {
+            width: 0; height: 0;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 16px solid currentColor;
+            filter: drop-shadow(0 2px 5px rgba(0,0,0,0.4));
+        }
+        /* A split tile. In CSS rather than inline because it has to be able to give ground:
+           a tile's min-content is its TIME plus its padding, and five of them have to sit
+           beside a 288px record card in a 470px column at 1280 (with a scrollbar taking its
+           cut). At the full size that needs 522px, so the fifth leg wrapped onto a row of
+           its own. Tighter padding and a hair off the time buys the 5-across everywhere;
+           above 1400 nothing is given up at all. */
+        .res-split {
+            background: #141d31;
+            border: 1px solid rgba(255,255,255,0.09);
+            border-radius: 12px;
+            padding: 11px 12px;
+            min-width: 0;
+        }
+        .res-split-time { font-size: 19px; font-weight: 600; margin-top: 4px; }
+        /* THE FLOOR IS WHAT PICKS THE COLUMN COUNT, not the tile's own min-content: auto-fit
+           divides by (floor + gap), so a floor 1px above what fits drops a whole column and
+           strands the fifth leg on a row of its own. Both numbers move together at the
+           breakpoint — the floor must never sit below the tile it is sizing, or the time
+           spills out of the box. */
+        #res-splits { display: grid; grid-template-columns: repeat(auto-fit, minmax(98px, 1fr)); gap: 8px; }
+        @media (max-width: 1400px) {
+            .res-split { padding: 11px 8px; }
+            .res-split-time { font-size: 17.5px; }
+            #res-splits { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
+        }
+        /* NO HOVER STATE AND NO TRANSITION. The rows are a printed result, not a menu:
+           nothing here is clickable, so a hover fill was a promise the row could not keep —
+           and while boats are still finishing the table re-renders six times a second, so
+           any animated background flashed the whole list on every tick. */
+        .res-row .res-bar {
+            border-radius: 10px;
+            padding: 8px 14px;
+            background: rgba(255,255,255,0.02);
+            border: 1px solid transparent;
+        }
+        .res-me .res-bar { background: rgba(242,193,78,0.07); }
+        .res-btn {
+            border: 1px solid rgba(255,255,255,0.18);
+            border-radius: 12px;
+            padding: 15px 28px;
+            font-size: 15px;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #c4d2e6;
+            cursor: pointer;
+            background: transparent;
+            transition: background-color 0.15s, color 0.15s;
+        }
+        .res-btn:hover { background: rgba(255,255,255,0.06); color: #eef3fb; }
+        .res-btn-primary {
+            background: #2f6bff;
+            border-color: transparent;
+            color: #fff;
+            font-weight: 900;
+            font-style: italic;
+            font-size: 16px;
+            padding: 15px 36px;
+            box-shadow: 0 6px 24px rgba(47,107,255,0.4);
+        }
+        .res-btn-primary:hover { background: #4a80ff; color: #fff; }
+
+        /* ── Race-day board (pre-race) ──────────────────────────────────────
+           Two grids of square art: the venue strip and the fleet. Both say
+           "selected" the same way the rest of the game does — a ring, not a
+           fill, so the artwork keeps its own colour. */
+        .pr-venue-tile { opacity: 0.78; transition: opacity 0.15s; }
+        .pr-venue-tile:hover { opacity: 1; }
+        .pr-venue-shot {
+            position: relative;
+            aspect-ratio: 1;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.08);
+        }
+        .pr-venue-shot img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        /* THE NAME ON THE ART, over a scrim that starts transparent — the picture is what
+           you are choosing between, so the label must not take a bite out of it. Two lines
+           are allowed ("Gatorgrass Bayou" does not fit one at this size) and the scrim is
+           tall enough to carry both. */
+        .pr-venue-name {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            padding: 22px 9px 7px;
+            font-size: 12.5px;
+            letter-spacing: 0.03em;
+            line-height: 1.15;
+            color: #e8eefb;
+            text-align: left;
+            text-shadow: 0 1px 5px rgba(0,0,0,0.9);
+            background: linear-gradient(to top, rgba(4,10,20,0.94), rgba(4,10,20,0.6) 46%, rgba(4,10,20,0));
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+        }
+        .pr-venue-tile.sel { opacity: 1; }
+        .pr-venue-tile.sel .pr-venue-shot { box-shadow: 0 0 0 2px #5aa7ff, 0 6px 18px rgba(90,167,255,0.35); }
+        .pr-venue-tile.sel .pr-venue-name { color: #ffffff; }
+
+        /* The hero briefing. Sized here rather than inline because a short window has to
+           restyle it — and the alternative, measuring the hero in JS, reads a height flex
+           has not settled on the first paint. */
+        .pr-venue-title { margin-top: 16px; font-size: 48px; line-height: 0.98; }
+        .pr-venue-title.long { font-size: 38px; }
+        .pr-blurb {
+            margin-top: 10px; font-size: 14px; line-height: 1.5; color: #d5ecf5; max-width: 460px;
+            flex: 0 1 auto; min-height: 0;
+            display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+        }
+        .pr-row { border-radius: 8px; padding: 7px 12px; }
+        /* The chart+facts row's top padding lives here (not inline) so the
+           short-window steps below can compress it. */
+        .pr-bottom { padding-top: 16px; }
+        /* The record block (design 9a): the header's record chip given a home in the
+           hero's empty middle, as the challenge. Gold frame = a time YOU set here;
+           the neutral frame carries the course's provisional target ("time to
+           beat"), which stands until somebody beats it. */
+        .pr-record { margin-top: 18px; padding: 13px 18px 15px; }
+        .pr-record .t-label { white-space: nowrap; }
+        /* Narrow desktop (≤1180px viewport): the fleet column gives some width, and
+           the HERO caps its height — the square art is as wide as the hero is
+           tall, so an uncapped hero starves the briefing beside it. The facts
+           column narrows too (long values wrap to a second line instead).
+           !important where the value being beaten is inline on the element. */
+        @media (max-width: 1180px) {
+            #pr-columns { grid-template-columns: minmax(0,1fr) 400px !important; }
+            /* The art stops driving the layout: instead of a square as wide as the
+               hero is tall (which starves the briefing), it takes 40% of the hero
+               and scales its square image inside — smaller, never cropped. */
+            #venue-art { aspect-ratio: auto !important; width: 40%; min-width: 180px; }
+            .pr-facts { min-width: 200px !important; }
+            .pr-record { gap: 8px; flex-wrap: wrap; }
+        }
+        .pr-record-time { font-size: 32px; font-weight: 900; line-height: 1; margin-top: 7px; }
+        /* ⚠️ A 800px-tall window gives the hero about 300px, and the briefing wants 365 —
+           at which point the blurb, being the only thing allowed to shrink, vanished
+           entirely. Step the type down instead: a smaller name and two lines of prose
+           beat a full-size name and none. */
+        /* ── Height steps. Every fixed thing on this screen (picker tiles, the
+           record block, the readouts) gives ground in stages so the hero keeps
+           ALL its facts at every desktop height. Tested at 947 / 830 / 789 / 754
+           / 645 / 609 viewports.
+           ≤1120px: the record block folds to ONE LINE (label · link · time
+           across), the picker tiles step down, type compresses a notch. */
+        @media (max-height: 1120px) {
+            .pr-venue-title { margin-top: 10px; font-size: 34px; }
+            .pr-venue-title.long { font-size: 29px; }
+            .pr-blurb { margin-top: 8px; font-size: 13px; -webkit-line-clamp: 2; }
+            .pr-row { padding: 5px 12px; }
+            .pr-record { display: flex; align-items: center; gap: 14px; margin-top: 10px; padding: 7px 14px; }
+            .pr-record > div:first-child { flex: 1 1 auto; }
+            .pr-record-time { font-size: 17px; margin-top: 0; }
+            #venue-picker { grid-template-columns: repeat(5, minmax(0, 132px)) !important; }
+        }
+        /* ≤780px — a 1366×768 laptop leaves ~650px of viewport. */
+        @media (max-height: 780px) {
+            .pr-venue-title { margin-top: 6px; font-size: 27px; }
+            .pr-venue-title.long { font-size: 24px; }
+            .pr-blurb { margin-top: 6px; font-size: 12.5px; }
+            .pr-row { padding: 4px 10px; }
+            #venue-picker { grid-template-columns: repeat(5, minmax(0, 112px)) !important; }
+        }
+        /* Shortest (720p laptops: ~610px of viewport). The venue chips and the
+           blurb give way — the name carries the identity, and the essentials are
+           the record line and the readouts. !important: the Tailwind CDN sheet is
+           injected after this one, so its .flex ties on specificity and wins
+           without it. */
+        @media (max-height: 680px) {
+            .pr-chips { display: none !important; }
+            .pr-venue-title { margin-top: 0; font-size: 24px; }
+            .pr-venue-title.long { font-size: 21px; }
+            .pr-blurb { display: none; }
+            .pr-record { margin-top: 6px; padding: 5px 12px; }
+            .pr-row { padding: 3px 10px; }
+            .pr-bottom { padding-top: 8px; }
+            /* !important: the padding is inline on the element */
+            #venue-detail { padding: 14px 24px 16px !important; }
+        }
+        /* The fleet list. The badge brings its own border and gradient, so an item adds only
+           the ring: gold for you, white when its scouting notes are open. */
+        .pr-fleet-item { border-radius: 12px; transition: box-shadow 0.15s; }
+        .pr-fleet-item:hover { box-shadow: 0 0 0 2px rgba(255,255,255,0.22); }
+        .pr-fleet-item.me { box-shadow: 0 0 0 2px #f2c14e; }
+        .pr-fleet-item.sel { box-shadow: 0 0 0 2px #eef3fb; }
+        .pr-fleet-item.me.sel { box-shadow: 0 0 0 2px #f2c14e; }
+        .pr-fleet-notes { padding: 12px 14px 14px; background: #141d31; border-radius: 0 0 12px 12px; }
+        /* The badge inside an item squares off its bottom corners when notes are open, so
+           the two read as one card rather than a card with a tray under it. */
+        .pr-fleet-item.sel > button > div { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+        /* ⚠️ The chip carries the CHARACTER'S GRADIENT now, so hover must not repaint the
+           background — that would wipe the identity it exists to show. Ring it instead. */
+        /* ⚠️ CHANGING CHARACTER LIVES ON YOUR OWN BADGE. The header chip that used to carry
+           it is gone, so the badge at the top of the fleet is the only way in — this pill
+           is what says so. It is deliberately unlike the name beside it: small,
+           letterspaced and blue, so the identity and the action do not read alike. */
+        .pr-change-pill {
+            font-size: 10.5px;
+            letter-spacing: 0.18em;
+            color: #a8cbff;
+            border: 1px solid rgba(168,203,255,0.45);
+            border-radius: 999px;
+            padding: 3px 10px;
+            margin-left: 10px;
+            background: rgba(6,14,26,0.35);
+            white-space: nowrap;
+            transition: background-color 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .pr-fleet-item.me:hover .pr-change-pill { background: #2f6bff; border-color: #2f6bff; color: #fff; }
+        @keyframes highlight-flash {
+            0% { background-color: rgba(234, 179, 8, 0.45); }
+            100% { background-color: transparent; }
+        }
+        .row-highlight {
+            animation: highlight-flash 1s ease-out;
+        }
+    </style>
+    <style>#pre-race-overlay,#results-overlay,#ai-saying-overlay,#leaderboard,#raceInfo,#minimap,#hud-timer,#hud-start-time,#hud-message,#hud-ocs,#hud-instruments,#hud-leg-info,#hud-leg-times{display:none !important;}
+           /* no club branding on the constructor - this page is a tool, not a race */
+           img[alt="SCYC Burgee"]{display:none !important;}
+           .absolute.top-4.left-4.z-20{display:none !important;}</style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        <!-- Game Logo -->
+        <div class="absolute top-4 left-4 z-20 pointer-events-none select-none flex items-center gap-3">
+            <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl filter burgee-flutter" alt="SCYC Burgee">
+            <div class="flex flex-col">
+                <span class="text-2xl font-black text-white uppercase tracking-tighter drop-shadow-lg leading-none italic">Salty Critter</span>
+                <span class="text-sm font-bold text-blue-100 uppercase tracking-[0.2em] drop-shadow-md text-right">Yacht Club</span>
+            </div>
+        </div>
+
+        <!-- Leaderboard. Inset from the left edge (left-16, not left-4) on purpose:
+             the off-screen edge indicators ride a band 40px in from the screen edge,
+             and this panel is near-opaque — the inset leaves that lane visible
+             instead of swallowing the indicators. -->
+        <div id="leaderboard" class="absolute top-24 left-16 z-10 flex flex-col gap-0 pointer-events-none transition-opacity duration-300 w-72 hidden">
+           <!-- Header: which leg, and how many are left. The pips say the second thing
+                without arithmetic — four dashes, two lit. -->
+           <div id="lb-header" class="px-4 py-2.5 rounded-t-xl flex justify-between items-center"
+                style="background:#263747; border:1px solid #38415240; border-bottom:none;">
+               <span id="lb-leg" class="t-display" style="font-size:15px; letter-spacing:3px; color:#5eead4;">LEG 1/4</span>
+               <span id="lb-pips" class="flex items-center gap-1"></span>
+           </div>
+           <!-- Rows. No dividers: the rows are separated by their own spacing, and a grid of
+                hairlines under ten portraits reads as noise. Deep navy, near-opaque: the panel
+                has to stay dark over BRIGHT water too, and the portraits and the gold "you"
+                ring only read against a surface darker than any of them. -->
+           <div id="lb-rows" class="relative rounded-b-xl px-1.5 py-1.5 backdrop-blur-md shadow-2xl"
+                style="background:#132537F2; border:1px solid #38415240; border-top:none;">
+               <!-- Items injected via JS -->
+           </div>
+        </div>
+
+        <!-- Pause is Esc only — the on-screen button is gone. Settings (F2) and
+             Help (?) also have their own keys, so the pause menu is not the sole
+             route to them. -->
+
+        <!-- Course records (design 10a): ONE comparison table instead of two stacks —
+             AUTO and MANUAL as columns, because the comparison is the point. The two
+             track records headline it; a column with no record is an invitation, not
+             a blank. Opened from the race-day board. -->
+        <div id="records-overlay" class="hidden absolute inset-0 bg-slate-900/85 backdrop-blur-md z-[60] flex items-center justify-center p-6 pointer-events-auto">
+            <div class="ov-card w-full flex flex-col" style="max-width:760px; max-height:86vh;">
+                <div class="flex items-center justify-between shrink-0" style="padding:20px 28px; border-bottom:1px solid rgba(255,255,255,0.08);">
+                    <div class="flex items-center gap-3">
+                        <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-8 h-auto">
+                        <div>
+                            <h2 id="records-title" class="ov-title text-white" style="font-size:21px; line-height:1.1;">Course records</h2>
+                            <div id="records-subtitle" class="t-label" style="font-size:10px; letter-spacing:2.4px; color:#7787a0; margin-top:4px;"></div>
+                        </div>
+                    </div>
+                    <button id="records-close" style="font-size:15px; color:#66748c;" class="hover:text-white transition-colors">✕</button>
+                </div>
+                <div id="records-content" class="overflow-y-auto" style="padding:18px 28px 0; min-height:0;"></div>
+                <div class="flex justify-end shrink-0" style="padding:14px 28px 22px;">
+                    <button onclick="closeRecordsOverlay()" class="ov-row ov-primary" style="width:auto; padding:12px 26px; gap:10px;">
+                        <span class="ov-title" style="font-size:13px; letter-spacing:.04em;">Close</span>
+                        <span class="ov-kbd">ESC</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Character picker: the whole fleet, A to Z, each one on its fleet-display band. -->
+        <div id="character-picker" class="hidden absolute inset-0 bg-slate-900/85 backdrop-blur-md z-[60] flex flex-col items-center justify-center p-6 pointer-events-auto">
+            <div class="bg-slate-800/95 border border-white/10 rounded-2xl shadow-2xl w-full flex flex-col" style="max-width:1560px; max-height:88vh;">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-white/10 shrink-0">
+                    <div>
+                        <h2 class="t-display italic text-white uppercase" style="font-size:26px;">Pick your character</h2>
+                    </div>
+                    <button id="character-picker-close" class="text-slate-400 hover:text-white transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <!-- `min-height:0` is load-bearing: a grid that is also a flex child defaults
+                     to shrinking to fit its container, and with auto rows that squashed every
+                     cell to 55px and clipped the boat and the name away under overflow-hidden.
+                     With it, the grid keeps its natural row height and SCROLLS instead.
+                     `align-content:start` stops a short last row stretching.
+
+                     480px is the fleet-display band's own minimum (see the roster sheet):
+                     narrower than that and a long name runs under the boat at the right end.
+                     Three columns on a wide screen, two at 1152px, one on a laptop — fewer
+                     across than the old 210px tiles, which is the trade the band is worth. -->
+                <div id="character-grid" class="grid gap-3 p-5 overflow-y-auto"
+                     style="grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+                            grid-auto-rows: min-content; align-content: start;
+                            flex: 1 1 auto; min-height: 0;"></div>
+            </div>
+        </div>
+
+        <!-- Controls ("Help") Screen — keys drawn as keycaps so the table scans
+             at a glance; the developer rows are a footnote, not a section. -->
+        <div id="help-screen" class="hidden absolute inset-0 bg-slate-900/55 backdrop-blur-sm z-50 flex flex-col items-center justify-center p-4 pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 660px; padding: 24px 30px 20px;">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-7 h-auto">
+                        <span class="ov-title" style="font-size: 24px;">Controls</span>
+                    </div>
+                    <button id="close-help" style="font-size: 15px; color: #66748c;" class="hover:text-white transition-colors">✕</button>
+                </div>
+
+                <div class="grid grid-cols-2 mt-4" style="gap: 0 36px;">
+                    <div>
+                        <div class="ov-sec" style="padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.12);">Steering &amp; sails</div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Steer</span><span><span class="ov-key">◀ ▶</span> <span class="ov-key">A / D</span></span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Fine steering</span><span style="font-size: 12px; color: #8fa3bd;"><span class="ov-key">SHIFT</span> + steer</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Sheet in / out</span><span><span class="ov-key">▼ ▲</span> <span class="ov-key">S / W</span></span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Spinnaker</span><span class="ov-key">SPACE</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Trim mode</span><span class="ov-key">TAB</span></div>
+                    </div>
+                    <div>
+                        <div class="ov-sec" style="padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.12);">View &amp; system</div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Camera mode</span><span class="ov-key">C</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Nav aids</span><span class="ov-key">N</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Sailing rules</span><span class="ov-key">P</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Mute / music</span><span><span class="ov-key">M</span> <span class="ov-key">SHIFT+M</span></span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Screenshot</span><span class="ov-key">F12</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Settings</span><span class="ov-key">F2</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Controls</span><span class="ov-key">?</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Pause</span><span class="ov-key">ESC</span></div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between mt-4">
+                    <span style="font-size: 11px; font-weight: 700; color: #66748c;">Developer: Debug info <span style="color: #8fa3bd;">F8</span> · Game speed <span style="color: #8fa3bd;">[ / ]</span></span>
+                    <button id="resume-help" class="ov-row ov-primary" style="width: auto; padding: 12px 24px; gap: 10px;">
+                        <span class="ov-title" style="font-size: 14px; letter-spacing: .04em;">RESUME RACE</span>
+                        <span class="ov-kbd">ESC</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pause Screen — a held breath, not a different app: the race context
+             (venue, leg, standing) stays on the card, the world stays visible
+             behind light glass, and the one bright thing is the way back in. -->
+        <div id="pause-screen" class="hidden absolute inset-0 bg-slate-900/55 backdrop-blur-sm z-50 flex flex-col items-center justify-center pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 340px; padding: 26px 26px 22px;">
+                <div class="flex items-center gap-2.5">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-8 h-auto burgee-flutter">
+                    <span class="ov-title" style="font-size: 26px;">Paused</span>
+                </div>
+                <div id="pause-context" class="t-label" style="margin-top: 6px; color: #8fd8d0; letter-spacing: 1.6px;"></div>
+                <div class="flex flex-col gap-2 mt-5">
+                    <button id="resume-button" class="ov-row ov-primary">
+                        <span class="ov-title" style="font-size: 15px; letter-spacing: .04em;">RESUME RACE</span>
+                        <span class="ov-kbd">ESC</span>
+                    </button>
+                    <button id="restart-button" class="ov-row">
+                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">RESTART RACE</span>
+                        <span style="font-size: 12px; color: #66748c;">↻</span>
+                    </button>
+                    <button id="settings-button" class="ov-row">
+                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">SETTINGS</span>
+                        <span class="ov-kbd ov-kbd-dim">F2</span>
+                    </button>
+                    <button id="help-button" class="ov-row">
+                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">CONTROLS</span>
+                        <span class="ov-kbd ov-kbd-dim">?</span>
+                    </button>
+                    <button id="abandon-button" class="ov-row ov-row-danger">
+                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">ABANDON RACE</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Abandon confirm — over the pause menu, staying in the race is the default. -->
+        <div id="abandon-screen" class="hidden absolute inset-0 bg-slate-900/70 backdrop-blur z-[55] flex flex-col items-center justify-center pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 330px; padding: 26px; border-color: rgba(236,48,19,.45);">
+                <div class="flex items-center gap-2.5">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-7 h-auto">
+                    <span class="ov-title" style="font-size: 22px;">Abandon race?</span>
+                </div>
+                <div id="abandon-context" style="margin-top: 12px; font-size: 13px; line-height: 1.5; color: #9fb2cc; text-wrap: pretty;"></div>
+                <div class="flex flex-col gap-2 mt-5">
+                    <button id="abandon-keep" class="ov-row ov-primary">
+                        <span class="ov-title" style="font-size: 14px; letter-spacing: .04em;">KEEP RACING</span>
+                        <span class="ov-kbd">ESC</span>
+                    </button>
+                    <button id="abandon-confirm" class="ov-row ov-danger-fill">
+                        <span style="font-size: 13px; font-weight: 800; letter-spacing: .04em;">ABANDON — BACK TO CLUBHOUSE</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Screen — grouped SOUND / SAILING AIDS / CAMERA & INSTRUMENTS
+             so six identical toggles stop reading as a wall. The telltales stay
+             here because they are an INSTRUMENT, not a livery; your boat is your
+             CHARACTER's — pick who you sail as on the pre-race screen. -->
+        <!-- z-[70]: settings is reachable from the clubhouse too, and the pre-race
+             overlay is an OPAQUE later sibling at z-50 — same z would bury this. -->
+        <div id="settings-screen" class="hidden absolute inset-0 bg-slate-900/55 backdrop-blur-sm z-[70] flex flex-col items-center justify-center p-4 pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 380px; padding: 24px 26px 20px;">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2.5">
+                        <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-7 h-auto">
+                        <span class="ov-title" style="font-size: 24px;">Settings</span>
+                    </div>
+                    <button id="close-settings" style="font-size: 15px; color: #66748c;" class="hover:text-white transition-colors">✕</button>
+                </div>
+
+                <div class="ov-sec" style="margin-top: 16px;">Sound</div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Music</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-music"><span class="ov-track"></span></label>
+                </div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Sound effects</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-sound"><span class="ov-track"></span></label>
+                </div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Background effects</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-bg-sound"><span class="ov-track"></span></label>
+                </div>
+
+                <div class="ov-sec" style="margin-top: 16px;">Sailing aids</div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Sailing rules</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-penalties"><span class="ov-track"></span></label>
+                </div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Navigational aids</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-navaids"><span class="ov-track"></span></label>
+                </div>
+                <div class="ov-setting">
+                    <span class="ov-setting-label">Auto trim</span>
+                    <label class="ov-toggle"><input type="checkbox" id="setting-trim"><span class="ov-track"></span></label>
+                </div>
+
+                <div class="ov-sec" style="margin-top: 16px;">Camera &amp; instruments</div>
+                <div class="ov-setting" style="padding: 10px 0;">
+                    <span class="ov-setting-label">Camera mode</span>
+                    <!-- The select stays the source of truth (script.js reads and writes
+                         .value); the segments are its face. -->
+                    <select id="setting-camera-mode" class="hidden">
+                        <option value="heading">Heading</option>
+                        <option value="north">North</option>
+                    </select>
+                    <div id="camera-segs" class="ov-segs">
+                        <button class="ov-seg" data-mode="heading">HEADING</button>
+                        <button class="ov-seg" data-mode="north">NORTH UP</button>
+                    </div>
+                </div>
+                <div class="ov-setting" style="padding: 10px 0;">
+                    <span class="ov-setting-label">Instruments</span>
+                    <!-- Same idiom as Camera mode: the select is the source of truth and the
+                         segments are its face. BOAT is the default — just TWA, unlabelled,
+                         under your own hull, read with the same glance as the boat. ROSE is
+                         the corner dial with the full set (SOG, TWS, VMG, the heading pip,
+                         the waypoint arrow).
+                         BOTH runs them together: the panel is what you sail by, the rose is
+                         what you consult. OFF is water and nothing else. -->
+                    <select id="setting-hud-mode" class="hidden">
+                        <option value="boat">Boat</option>
+                        <option value="rose">Rose</option>
+                        <option value="both">Both</option>
+                        <option value="off">Off</option>
+                    </select>
+                    <div id="hud-mode-segs" class="ov-segs">
+                        <button class="ov-seg" data-hud="boat">BOAT</button>
+                        <button class="ov-seg" data-hud="rose">ROSE</button>
+                        <button class="ov-seg" data-hud="both">BOTH</button>
+                        <button class="ov-seg" data-hud="off">OFF</button>
+                    </div>
+                </div>
+                <div class="ov-setting" style="padding: 10px 0; border-bottom: none;">
+                    <span class="ov-setting-label">Telltale color</span>
+                    <div class="flex items-center gap-2">
+                        <button class="ov-swatch" data-color="#fbbf24" style="background: #fbbf24;" title="Gold"></button>
+                        <button class="ov-swatch" data-color="#ec3013" style="background: #ec3013;" title="Red"></button>
+                        <button class="ov-swatch" data-color="#f97316" style="background: #f97316;" title="Orange"></button>
+                        <button class="ov-swatch" data-color="#f3f2f2" style="background: #f3f2f2;" title="White"></button>
+                        <button class="ov-swatch" id="telltale-custom" style="background: conic-gradient(#ec3013, #f2c14e, #34d399, #2f6bff, #a78bfa, #ec3013);" title="Custom"></button>
+                        <input type="color" id="setting-color-telltale" class="sr-only" value="#fbbf24">
+                    </div>
+                </div>
+
+                <button id="save-settings" class="ov-row ov-primary" style="margin-top: 14px;">
+                    <span class="ov-title" style="font-size: 14px; letter-spacing: .04em;">DONE</span>
+                    <span class="ov-kbd">ESC</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Pre-Race Overlay -->
+        <!-- Fully opaque: this is a home screen, not a scrim. At /95 the race view
+             bled through — 5% of a bright Arctic ice field is very visible behind
+             dark chrome. backdrop-blur dropped with it: it does nothing behind an
+             opaque layer and was blurring the whole viewport every frame. -->
+        <!-- Pre-Race Overlay — "Race Day" (design 2a).
+             THE VENUE ART IS SQUARE (1254x1254) and is shown 1:1, never cropped: the art
+             panel takes the hero's full height and matches its width to it, and the
+             briefing fills whatever the wide side leaves. That is the whole idea of 2a —
+             one square master per venue, no second crop to maintain.
+
+             ⚠️ NOTHING ON THIS SCREEN SCROLLS. It is a race-day board, not a document: the
+             header, the hero, the venue strip, the fleet and the start bar are all sized
+             from the viewport, and the hero is the piece that gives (min 220, max 520) so
+             the rest keeps its shape. The one exception is picking a character, which is
+             100 bands and has its own scrolling sheet.
+
+             Palette is the results screen's (#0c1322 page, #141d31 panels, #101a2e bar), so
+             the two ends of a race now look like the same game. -->
+        <div id="pre-race-overlay" class="absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-hidden"
+             style="background:#0c1322; color:#eef3fb;">
+
+            <!-- The club on the left, the one action on the right. Start Race lives in the
+                 header now — the start bar it used to anchor is gone, its readouts folded
+                 into the venue hero. -->
+            <div class="flex items-center justify-between gap-6 shrink-0"
+                 style="padding:14px 32px; border-bottom:1px solid rgba(255,255,255,0.07);">
+                <div class="flex items-center gap-4">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
+                    <div>
+                        <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:31px; letter-spacing:-0.02em;">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
+                        <div class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;">FAIR WINDS &middot; SALTY RIVALS</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <button id="start-race-btn" class="res-btn res-btn-primary" style="font-size:18px; padding:14px 38px;">Start Race &rarr;</button>
+                    <button id="prerace-settings-btn" class="res-btn" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <div id="pr-columns" class="flex-1 grid gap-6" style="grid-template-columns:minmax(0,1fr) 470px; padding:18px 32px 20px; min-height:0;">
+
+                <div class="flex flex-col gap-3" style="min-width:0; min-height:0;">
+                    <!-- Hero: the briefing on the wide side, the square art on the short one -->
+                    <div id="venue-hero" class="flex overflow-hidden shrink-0"
+                         style="border-radius:16px; flex:1 1 auto; min-height:220px;">
+                        <div id="venue-detail" class="flex flex-col" style="flex:1 1 auto; min-width:0; padding:24px 28px;"></div>
+                        <div id="venue-art" class="relative shrink-0" style="height:100%; aspect-ratio:1;"></div>
+                    </div>
+                    <!-- Same square art again, downscaled. No second crop to maintain.
+                         Two rows of five rather than one row of ten: at this size the tile
+                         is a picture of somewhere rather than a swatch, and the name sits
+                         ON TOP where it reads as a heading for the picture under it. -->
+                    <div id="venue-picker" class="grid shrink-0" style="grid-template-columns:repeat(5,minmax(0,150px)); gap:10px; justify-content:space-between;"></div>
+                </div>
+
+                <div class="flex flex-col gap-3" style="min-height:0;">
+                    <div class="flex items-baseline justify-between shrink-0">
+                        <div class="t-display italic uppercase" style="font-size:23px; letter-spacing:0.04em;"><span style="color:#f2c14e; font-size:14px; vertical-align:middle;">&#9679;</span> The Fleet</div>
+                        <!-- Set in the same face as "4 legs" in the start bar, so the two
+                             counts on this screen match each other rather than one being an
+                             instrument readout and the other a label. -->
+                        <div id="pr-fleet-count" style="font-size:15px; font-weight:800; color:#9fb2cc; letter-spacing:0.02em;"></div>
+                    </div>
+                    <!-- THE FLEET AS A LIST OF BADGES — the same identity band the character
+                         picker and the results screen use, boat preview and all. Ten of them
+                         do not fit a column, and that is fine: this one panel scrolls, and
+                         clicking a badge opens that boat's scouting notes underneath it. -->
+                    <div id="pr-competitors-grid" class="flex flex-col" style="gap:8px; flex:1 1 auto; min-height:0; overflow-y:auto;"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Results Overlay — "Finish Line" (design 3a).
+             YOUR finish is the headline and the fleet is one restrained table underneath
+             it. Colour appears only where it carries a fact: gold is you, the medal dot is
+             the podium, red is a penalty, everything else is grey so the numbers read
+             across a row.
+
+             ⚠️ NO POINTS COLUMN, NO STANDINGS, NO "NEXT RACE". Every one of those is a
+             SERIES fact and there is no series yet — points in a one-off race are the
+             position column doing arithmetic. They come back when a season does.
+
+             Same reasoning as the pre-race overlay: a full-screen results page is
+             not a scrim, and /95 let the ice through behind it. -->
+        <div id="results-overlay" class="hidden absolute inset-0 z-50 pointer-events-auto overflow-y-auto"
+             style="background:#0c1322; color:#eef3fb;">
+          <div class="mx-auto w-full flex flex-col" style="max-width:1440px;">
+
+            <div class="flex items-center justify-between gap-4" style="padding:22px 36px; border-bottom:1px solid rgba(255,255,255,0.07);">
+                <div class="flex items-center gap-4">
+                    <!-- The club's own burgee, flying — the same mark that flies over the race
+                         on the HUD. The red pennant was a shape that appeared nowhere else. -->
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt=""
+                         class="h-11 w-auto burgee-flutter" draggable="false">
+                    <div>
+                        <div class="t-display uppercase" style="font-size:27px; line-height:1;">Race Results</div>
+                        <div id="res-subtitle" class="t-label" style="font-size:10px; letter-spacing:0.28em; color:#7787a0; margin-top:6px;"></div>
+                    </div>
+                </div>
+                <!-- A STATE, NOT A CONTROL. Boxed and bordered it read as a button, and the one
+                     thing it must never invite is a click. Dot plus text, no chrome. -->
+                <div id="res-status" class="t-mono flex items-center gap-2" style="font-size:12.5px; color:#9fb2cc; white-space:nowrap;"></div>
+            </div>
+
+            <!-- You, then your own race: the splits are the only place a single race can
+                 tell you HOW it went rather than just where it ended. -->
+            <div class="flex items-center gap-7" style="padding:26px 36px; border-bottom:1px solid rgba(255,255,255,0.07); background:radial-gradient(700px 200px at 30% 0%, rgba(242,193,78,0.09), transparent);">
+                <div id="res-hero" class="flex items-center gap-5" style="flex:none;"></div>
+                <div style="width:1px; align-self:stretch; background:rgba(255,255,255,0.08);"></div>
+                <div style="flex:1; min-width:0;">
+                    <div id="res-splits-label" class="t-label" style="font-size:10px; letter-spacing:0.16em; color:#66748c; margin-bottom:8px;">Your Splits</div>
+                    <!-- Grid sizing lives in the stylesheet (see #res-splits) — it has to
+                         change at the breakpoint, and an inline style cannot. -->
+                    <div id="res-splits"></div>
+                </div>
+            </div>
+
+            <div style="padding:20px 36px 8px;">
+                <div class="res-grid t-label" style="padding:0 14px 10px; font-size:10px; letter-spacing:0.14em; color:#66748c;">
+                    <div>Pos</div><div></div><div>Skipper</div>
+                    <!-- The ruler states its own scale (filled in by renderResultsHeader from
+                         the fleet's spread), or the markers are a picture with no units. -->
+                    <div id="res-gap-head" style="padding-left:8px;">Gap to winner</div>
+                    <div class="res-r">Time</div><div class="res-r">Delta</div>
+                    <div class="res-r">Start</div><div class="res-r">Top Spd</div>
+                    <div class="res-r">Avg</div><div class="res-r">Dist km</div><div class="res-r">Pen</div>
+                    <div class="res-r">Pts</div>
+                </div>
+                <div id="results-list"></div>
+            </div>
+
+            <div class="flex items-center justify-between gap-6" style="margin:18px 36px 32px; background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px 16px 16px 24px;">
+                <div id="res-footnote" style="font-size:13px; font-weight:700; color:#9fb2cc;"></div>
+                <div class="flex gap-2.5 shrink-0">
+                    <button id="results-restart-button" class="res-btn">Back to Clubhouse</button>
+                    <button id="results-rematch-button" class="res-btn res-btn-primary">Rematch &#8635;</button>
+                </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Top Center Timer -->
+        <div class="absolute top-8 left-1/2 -translate-x-1/2 flex flex-col items-center">
+             <div id="hud-timer" class="t-mono text-5xl text-white drop-shadow-xl tracking-widest">01:00</div>
+             <div id="hud-start-time" class="t-mono text-xl text-green-300 drop-shadow-md mt-1 hidden"></div>
+             <div id="hud-message" class="mt-2 text-lg font-bold text-yellow-300 bg-slate-900/80 px-4 py-1 rounded-full border border-yellow-500/50 shadow-lg hidden"></div>
+             <!-- OCS state is easy to mistake for a missed line crossing: the boat
+                  holds its own return course while the player wonders why nothing
+                  registered. Persistent + pulsing while the flag is up; the arrow
+                  points at the nearest point of the start line (screen space). -->
+             <div id="hud-ocs" class="hidden mt-2 flex items-center gap-3 bg-red-950/90 px-5 py-2 rounded-xl border-2 border-red-500 shadow-2xl animate-pulse">
+                 <div id="hud-ocs-arrow" class="text-red-300 text-2xl will-change-transform" style="line-height:1;">&#9650;</div>
+                 <div class="font-black text-red-300 text-xl tracking-wide">OCS &mdash; RETURN BEHIND THE LINE</div>
+             </div>
+        </div>
+
+        <!-- Top Right Container. Translucent by design: the off-screen edge
+             indicators pass under it and stay readable through it. -->
+        <div id="hud-instruments" class="absolute top-4 right-4 flex flex-col items-center pointer-events-none">
+
+            <!-- ── INSTRUMENT MODE: ROSE ──────────────────────────────────────────
+                 One of three faces for the same numbers, chosen in Settings and applied by
+                 applyHudMode() in script.js. This dial is the original: complete, but about
+                 900 px from the boat it describes, so reading it means looking away from the
+                 water. "Boat" puts SOG/TWS/TWA under the hull instead (drawBoatInstruments)
+                 and "Off" shows neither. Only the container is toggled; everything inside is
+                 untouched, and it keeps the heading pip and the waypoint arrow that the boat
+                 panel has no room for.
+
+                 Its readouts come from boatInstrumentData() — the SAME source the boat panel
+                 uses — so the two faces can never disagree. That is also how the speed here
+                 became SOG: one definition, both modes. -->
+            <div id="hud-rose" class="relative w-40 h-40">
+                <!-- Main Background -->
+                <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm rounded-full border-2 border-slate-400/30 shadow-2xl"></div>
+
+                <!-- Compass Rose Container (Rotates) -->
+                <div id="hud-compass-rose" class="absolute inset-0 w-full h-full transition-transform duration-75 ease-linear will-change-transform">
+                    <!-- Markings -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-full h-full p-2 relative">
+                            <!-- N E S W -->
+                            <div class="absolute top-3 left-1/2 -translate-x-1/2 font-bold text-white text-xs">N</div>
+                            <div class="absolute bottom-3 left-1/2 -translate-x-1/2 font-bold text-white text-xs">S</div>
+                            <div class="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-white text-xs">W</div>
+                            <div class="absolute right-3 top-1/2 -translate-y-1/2 font-bold text-white text-xs">E</div>
+
+                            <!-- Ticks (SVG) -->
+                            <svg class="w-full h-full absolute inset-0 opacity-50" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="white" stroke-width="1" stroke-dasharray="2,2"/>
+                                <!-- 45 deg ticks -->
+                                <line x1="18" y1="18" x2="25" y2="25" stroke="white" stroke-width="1" />
+                                <line x1="82" y1="18" x2="75" y2="25" stroke="white" stroke-width="1" />
+                                <line x1="18" y1="82" x2="25" y2="75" stroke="white" stroke-width="1" />
+                                <line x1="82" y1="82" x2="75" y2="75" stroke="white" stroke-width="1" />
+                            </svg>
+
+                            <!-- Wind Arrow (Rotates with wind direction) -->
+                            <div id="hud-wind-arrow" class="absolute top-0 left-0 w-full h-full transition-transform duration-500 ease-out will-change-transform">
+                                 <!-- Arrow icon positioned at the top (0 degrees) -->
+                                 <div class="absolute top-2 left-1/2 -translate-x-1/2 w-4 h-4">
+                                     <!-- Simple Triangle Arrow Pointing Down (Inward) or Up (Outward)? -->
+                                     <!-- Convention: Wind Arrow points in direction of wind flow. -->
+                                     <!-- If placed at 'North' of compass, and wind is North (0), it is at top. -->
+                                     <!-- If Arrow points UP, it points away from center. -->
+                                     <!-- Let's use an inward pointing arrow (triangle pointing down) to show 'Coming from'? No, 'Blowing To' is the logic. -->
+                                     <!-- Previous UI had arrow pointing in wind direction. -->
+                                     <!-- If Wind is North (0), it blows North. Arrow points Up. -->
+                                     <!-- So I place an Up-pointing arrow at the Top (North) of the container. -->
+                                     <svg viewBox="0 0 24 24" fill="#3b82f6" stroke="#3b82f6" stroke-width="2" stroke-linejoin="round">
+                                         <polygon points="12 2 22 22 12 18 2 22 12 2" />
+                                     </svg>
+                                 </div>
+                            </div>
+
+                            <!-- Waypoint Arrow (Rotates to point to next gate) -->
+                            <div id="hud-waypoint-arrow" class="absolute top-0 left-0 w-full h-full will-change-transform">
+                                <div class="absolute top-2 left-1/2 -translate-x-1/2 w-4 h-4">
+                                    <svg viewBox="0 0 24 24" fill="#22c55e" stroke="#22c55e" stroke-width="2" stroke-linejoin="round">
+                                        <polygon points="12 2 22 22 12 18 2 22 12 2" />
+                                    </svg>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Heading Arrow Container (Rotates with boat heading relative to camera) -->
+                <div id="hud-heading-arrow" class="absolute inset-0 transition-transform duration-75 ease-linear will-change-transform z-10 pointer-events-none">
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-2 h-3 bg-red-500 clip-path-triangle" style="clip-path: polygon(50% 100%, 0 0, 100% 0);"></div>
+                </div>
+
+                <!-- Center Display (Static) -->
+                <div class="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
+                    <div class="flex items-baseline gap-2">
+                        <div class="flex flex-col items-center">
+                            <div class="t-mono text-xl text-white leading-none drop-shadow-md">
+                                <span id="hud-speed">0.0</span>
+                            </div>
+                            <!-- SOG, not KTS. KTS names the unit; the question is WHICH speed,
+                                 and this one is over the ground — it carries the tide. -->
+                            <div class="t-label t-label-xs t-label-bright">SOG</div>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <div class="t-mono text-xl text-green-400 leading-none drop-shadow-md">
+                                <span id="hud-vmg">0.0</span>
+                            </div>
+                            <div class="t-label t-label-xs" style="color:#4ade80;">VMG</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-1 flex gap-1">
+                        <div class="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-600/50">
+                            <svg class="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.59 4.59A2 2 0 1111 8H2m10.59 11.41A2 2 0 1014 16H2m15.73-8.27A2.5 2.5 0 1119.5 12H2" />
+                            </svg>
+                            <span id="hud-wind-speed" class="t-mono text-xs text-blue-200">10</span>
+                        </div>
+                        <div class="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-600/50">
+                            <span class="t-label t-label-xs">TWA</span>
+                            <span id="hud-wind-angle" class="t-mono text-xs text-blue-200">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Minimap -->
+            <div id="hud-minimap-wrap" class="relative w-40 h-40 bg-slate-900/60 backdrop-blur-sm rounded-lg border-2 border-slate-400/30 shadow-2xl overflow-hidden">
+                <canvas id="minimap" width="160" height="160" class="w-full h-full"></canvas>
+            </div>
+
+            <!-- Trim mode and sailing rules are configuration, not status, so they
+                 live in Settings only (§4.3). A permanently-lit pill for state that
+                 never changes mid-race is clutter; the Tab toast covers the one case
+                 that does change. OVERPOWERED stays — it is the real alert here. -->
+            <div id="hud-overpowered" class="hidden mt-2 t-label t-label-xs bg-slate-900/80 px-2 py-0.5 rounded-full border border-amber-500/50" style="color:#fcd34d;">
+                ⚠ OVERPOWERED
+            </div>
+
+        </div>
+
+        <!-- Bottom Left: venue name. A persistent place label, not a readout — it
+             never changes mid-race, so it is sized and dimmed to sit under the
+             live HUD rather than compete with it. -->
+        <div class="absolute bottom-4 left-4 pointer-events-none z-10">
+             <div id="hud-leg-info" class="t-display text-xl text-white/70 uppercase tracking-[0.18em] drop-shadow-[0_1px_3px_rgba(0,0,0,0.35)]">
+             </div>
+        </div>
+
+        <!-- Bottom Right: leg splits. Right-aligned, so the chip accent moves to
+             the right edge (border-r) to keep a clean line against the margin as
+             the stack grows through the race. -->
+        <div id="hud-leg-times" class="absolute bottom-4 right-4 flex flex-col gap-1 items-end pointer-events-none z-10">
+             <!-- Times will be injected here -->
+        </div>
+
+        <!-- AI Sayings Overlay -->
+        <!-- AI Sayings: flavor, and last in the race hierarchy (§6.9). Docked
+             bottom-centre-left so it never sits over the racing water, sized well
+             under the leaderboard, circular portrait to match every other portrait
+             frame in the product (§6.2). -->
+        <div id="ai-saying-overlay" class="absolute bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 pointer-events-none hidden transition-all duration-500 ease-out transform translate-y-4 opacity-0">
+             <div class="relative w-14 h-14 shrink-0">
+                  <img id="ai-saying-img" src="" class="w-full h-full object-cover rounded-full border-2 bg-slate-900 shadow-lg">
+             </div>
+             <div class="bg-slate-900/80 backdrop-blur-md text-white px-4 py-2.5 rounded-xl border border-white/10 shadow-lg max-w-sm">
+                  <div id="ai-saying-name" class="t-label t-label-sm mb-0.5"></div>
+                  <div id="ai-saying-text" class="text-sm font-semibold italic leading-snug"></div>
+             </div>
+        </div>
+
+        <!-- Water Debug Panel -->
+        <div id="water-debug" class="hidden absolute top-20 right-4 z-50 bg-slate-900/90 backdrop-blur text-xs text-white p-4 rounded-lg border border-slate-700 shadow-2xl pointer-events-auto max-h-[80vh] overflow-y-auto w-72">
+            <h3 class="font-bold text-sm mb-3 text-cyan-400 uppercase tracking-widest border-b border-slate-700 pb-2 flex justify-between">
+                Water Tuner
+                <span class="text-[10px] text-slate-500 normal-case pt-1">F8 to Toggle</span>
+            </h3>
+
+            <div id="water-debug-controls" class="space-y-4">
+                <!-- Generated by script.js -->
+            </div>
+
+            <div class="mt-4 pt-3 border-t border-slate-700 flex gap-2">
+                 <button id="water-reset" class="flex-1 bg-slate-700 hover:bg-slate-600 py-1.5 rounded text-white font-bold transition-colors">Defaults</button>
+                 <button id="water-close" class="flex-1 bg-slate-800 hover:bg-slate-700 py-1.5 rounded text-slate-400 transition-colors">Close</button>
+            </div>
+        </div>
+        <!-- Toast Notification -->
+        <div id="toast-notification" class="absolute bottom-24 left-1/2 -translate-x-1/2 z-50 pointer-events-none transition-all duration-300 opacity-0 translate-y-4">
+            <div id="toast-message" class="bg-slate-900/90 text-white font-bold px-6 py-2 rounded-full border border-slate-600/50 shadow-xl backdrop-blur-md text-sm tracking-wide">
+                Notification
+            </div>
+        </div>
+    </div>
+
+    <!-- Baked venue geography (art/bake_mask.py). JS not JSON so it loads over
+         file:// for the eval harness, where fetch() is blocked. -->
+    <script src="js/arena.js"></script>
+<script src="js/venuedoc.js"></script>
+    <!-- Every venue is a DOCUMENT. One tag each, in journey order; there is no
+         directory listing over file://, so the set is stated here. -->
+    <script src="assets/venues/bay.venue.js"></script>
+    <script src="assets/venues/lake.venue.js"></script>
+    <script src="assets/venues/lagoon.venue.js"></script>
+    <script src="assets/venues/swamp.venue.js"></script>
+    <script src="assets/venues/river.venue.js"></script>
+    <script src="assets/venues/ocean.venue.js"></script>
+    <script src="assets/venues/redrock.venue.js"></script>
+    <script src="assets/venues/glowtide.venue.js"></script>
+    <script src="assets/venues/arctic.venue.js"></script>
+    <script src="assets/venues/seatrials.venue.js"></script>
+    <script src="assets/venues/lab.venue.js"></script>
+    <script src="js/ai-quotes.js"></script>
+    <script src="js/water.js"></script>
+    <!-- Ocean swell: the sea state mechanic. Inert on every venue whose document
+         authors no `swell` block, which is all of them but Bluewater Bonanza. -->
+    <script src="js/swell.js"></script>
+    <script src="js/seafx.js"></script>
+    <script src="js/traffic.js"></script>
+    <script src="js/planner.js"></script>
+    <!-- Grid pathing: the course-path ruler needs it for keyholed land (see CoursePath). -->
+    <script src="js/sailcheck.js"></script>
+    <script src="js/rules.js"></script>
+    <script src="js/script.js"></script>
+    <!-- THE SCENARIO CONSTRUCTOR (scenario.html): open-water builder for umpire and
+         AI scenarios. This file is index.html plus this tag and the css below -
+         regenerate from index.html when the game shell changes. -->
+    <!-- the well-known scenario library: one committed file, loaded before the page script -->
+    <script src="assets/scenarios.js"></script>
+    <script src="js/scenario_asserts.js"></script>
+    <script src="js/scenario.js"></script>
+</body>
+</html>

@@ -121,6 +121,7 @@ const BEAT_DEG = 42, FOOT_SPAN_DEG = 26;
 const REF_POWER = 0.055;
 
 let TRAINS = [];
+let SEA = null;                // the shortest train — see windSea()
 let CFG = null;
 let POWER = 0;                 // Σ A·k over the trains, normalised by REF_POWER
 let AMP_TOTAL = 0;             // Σ A, units — the crest-to-mean height of the whole sea
@@ -154,7 +155,7 @@ function configure(doc, windFrom) {
     // never moved TIME and stayed byte-reproducible). A race's sea starts at
     // its own phase zero.
     TIME = 0;
-    TRAINS = []; CFG = null; POWER = 0; AMP_TOTAL = 0;
+    TRAINS = []; SEA = null; CFG = null; POWER = 0; AMP_TOTAL = 0;
     const S = doc && doc.swell;
     if (!S || !Array.isArray(S.trains) || !S.trains.length) return;
 
@@ -195,6 +196,8 @@ function configure(doc, windFrom) {
         AMP_TOTAL += A;
     });
     POWER = (acc / REF_POWER) * CFG.strength;
+    // Picked once, here, rather than searched for per frame. See windSea().
+    SEA = TRAINS.reduce((a, b) => (a && a.L <= b.L ? a : b), null);
 }
 
 const active = () => TRAINS.length > 0;
@@ -228,6 +231,24 @@ function sampleAt(x, y) {
 // field above and in the picture, but "which way are the waves running" has to have one
 // answer or there is nothing to learn.
 function primary() { return TRAINS.length ? TRAINS[0] : null; }
+
+// THE TRAIN THAT BREAKS, which is a different question and has a different answer.
+//
+// A swell does not break — it heaves, and the render note down at GLINTS is emphatic that
+// the moment this layer draws breaking water on a swell crest it stops reading as a swell
+// and starts reading as surf. Whitecaps are real all the same, and they are not a
+// contradiction: what breaks in a fresh breeze is the short WIND SEA riding on the swell.
+// That is why whitecaps RIDE the swell's crests instead of making them, and it is why the
+// effects layer has to ask for the short train by name rather than taking TRAINS[0].
+//
+// Shortest wavelength wins. That is what "wind sea" means beside a swell — younger, steeper,
+// shorter — and on a one-train venue it correctly returns that train.
+function windSea() { return SEA; }
+
+// Where a point sits in a train's cycle right now, in radians: 0 on the crest, ±π in the
+// trough. The same expression sampleAt() uses; exported so the picture can find the crest
+// lines without a second copy of the phase drifting out of step with the physics.
+function phaseAt(t, x, y) { return t.k * (x * t.sx + y * t.sy) - t.w * TIME + t.phase0; }
 
 // ── WHAT THE SEA DOES TO ONE BOAT ──────────────────────────────────────────
 // Called once per boat per frame. Writes `boat.swell`; script.js reads four numbers off it
@@ -336,7 +357,13 @@ function trim(boat, windFrom) {
         surf01,                                   // 0..1, for the HUD and the render
         elev: f.elev,
         // Are we running with them or punching into them? Read by the HUD cue only.
-        withWave: cosPsi > 0.3
+        withWave: cosPsi > 0.3,
+        // ...and the raw number behind that flag. The HUD only ever wanted a boolean, but
+        // the spray in seafx.js needs the whole range: 0 is beam-on, +1 is dead downwind on
+        // the wave, -1 is straight into it, and which of the three effects fires is a
+        // function of where in that range you are. Derived, not a new physical term —
+        // nothing above reads it and no boat moves differently for it existing.
+        cosPsi
     };
     boat.swell = out;
     return out;
@@ -511,6 +538,9 @@ function hud(boat) {
 
 window.Swell = {
     configure, active, update, trim, draw, hud, sampleAt, lift,
+    // Read by the effects layer (seafx.js) so whitecaps sit on the crest lines the physics
+    // actually has, and so a bow knows where in the wave it is. All read-only.
+    primary, windSea, phaseAt, now: () => TIME,
     // Read by the tuning harness in eval/, so the numbers in a report are the numbers the
     // game uses rather than a second copy of the formulas.
     debug: () => ({ trains: TRAINS.map(t => ({

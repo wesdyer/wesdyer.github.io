@@ -50,6 +50,22 @@ Reference: `references/topdown-world-reference.png`.
 ## 1. Camera and projection — **Rule**
 
 - **Top-down orthographic.**
+- **In heading mode the boat sits three quarters of the way down the frame**
+  (`CAM_LOOK_AHEAD`), not centred: what a sailor reads is ahead of the bow — the next mark,
+  the pressure coming down, the crest about to lift the stern — and a centred camera spends
+  half the frame on water already sailed. The trade is that a boat on your transom is more
+  often off screen; the edge indicators cover it.
+  - ⚠️ **Heading mode only.** The offset works because that mode guarantees the bow points up
+    the frame. In `north` the same offset would put the boat at a different edge every time
+    you changed course.
+  - ⚠️ **Applied after the follow smoothing, not chased by it.** Lerping the view centre
+    toward `boat + offset` makes the boat ROCK through every turn: rotating the camera swings
+    that target through an arc a quarter of the screen in radius and a 10%-per-frame follow
+    cannot keep up. `camera.fx/fy` is the soft follow point; the look-ahead is rigid on top,
+    so turning pivots the world about the hull. Measured on one trajectory with both rules
+    running: excursion 13 px → 5 px on a 1000 px frame (`eval/_camturn.js`).
+- Anything projecting world→screen must go through `camera.x/y` and `camera.rotation`
+  (`drawBoatInstruments`, the edge indicators) — never assume the player is at frame centre.
 - Boat heading unambiguous at a glance.
 - No perspective distortion that conflicts with navigation.
 - Decorative objects may carry slight stylized dimensionality; their footprint and
@@ -179,9 +195,12 @@ reaches the bottom, which is the same light that makes the water its colour — 
 as flat sand it was right on Lighthouse Cove and read as a spotlight on the seabed on
 Glowtide's night water. **Test any change to it on both.**
 
-It gets **no surf.** `updateSurf` spawns *shore* foam that runs up a beach and dies at
-a waterline; a submerged bar has none, so the breakers would draw in the coastline the
-kind exists not to have. Breaking water over a shoal is a separate effect, unbuilt.
+It gets **no shore surf** — `updateSurf` spawns foam that runs up a beach and dies at a
+waterline, and a submerged bar has none, so those breakers would draw in the coastline the
+kind exists not to have. It does get the separate effect that belongs to it: on a venue with
+a swell, a bar **trips the sea** and breaks along its own seaward contour (§9.3). No run-in,
+no run-up, no outline — a line of white water offshore that appears, sweeps across the bar
+and is gone.
 
 A new island style supplies all four colors plus a trees flag. Body and vegetation
 belong to the venue's hue family; rock stays neutral so it reads as rock everywhere.
@@ -414,6 +433,149 @@ a dark gradient across the frame.
 
 **Reduced motion** does not apply here — weather and water are the simulation, not
 decoration (visual-style.md §7.4).
+
+### 9.1 Surf — **Observed** (`surfSeaAt`, `drawSurf` / `updateSurf`)
+
+Only the coast facing into the waves; the lee stays glassy. What "the waves" means is the
+one thing that changed: **on a venue with a `swell` block the breakers are the swell, and
+everywhere else they are the local breeze exactly as before.** `surfSeaAt` is the single
+call both passes make, so they cannot disagree about which way the water is running or when
+it breaks — foam thrown a beat off the crest that threw it is the failure that split is
+there to prevent.
+
+| | wind venues (nine) | swell venue |
+|---|---|---|
+| direction | `regionWindAt` — waves run with the wind | the primary train's own travel |
+| timing | `state.time` × a per-stretch rate, decorrelated by a position hash | **the train's phase at that stretch of coast** |
+| crests at once | 2, half a cycle apart | 1 — the cycle is a real wavelength |
+| lee shore | hard cutoff at `face ≤ 0.02` | refraction floor (`SURF_REFRACT_FLOOR`) |
+| shape of the coast | not consulted | headland/bay focus (`surfFocus`) |
+| stand-off, crest length | fixed | scale with swell height |
+
+**The phase lock is the whole effect.** Every shore on the venue breaks in step with the
+wave that is under your boat, and because phase varies along a coast the break *runs along
+it* wherever the crests arrive at an angle. A per-stretch random offset — right for chop —
+destroys it, so only `SURF_PHASE_JITTER` of scatter survives.
+
+**Refraction** wraps energy round headlands, so a shore square to the swell still gets some.
+§9's rule against an identical white ribbon round every shoreline is about a ribbon that says
+*nothing*; a graded one that still points at the weather is the picture, not the failure.
+
+**`surfFocus` measures signed curvature against a fixed feature size** (`SURF_FOCUS_R`), and
+two more obvious measures were tried and are wrong. "Turns more than half a right angle over
+a window" floors every shape at the bay end, because a small island's whole ring turns 360° —
+and a rock in a swell is all headland, not one continuous cove. "Turns faster than this shape
+does on average" is scale-free and makes a circle correctly neutral, but makes a *straight*
+coast read as sheltered. Neutral at zero curvature is the only one that holds. The sign is
+`turn * sgn`, worked through on a unit square both windings; backwards, it inverts every
+island.
+
+**A swell carries its own crest weight** (`gap`, `skip`, `weight`, `maxAlpha`, `build`,
+`foam`). The drawing was tuned for chop, which is thin, sparse and broken, and is right for
+that; a 3.9 m swell on a beach is a band of white water along the whole exposed shore. One
+parameterisation covering both would have meant retuning nine venues to fix one.
+
+⚠️ Two things that scale with the sea and two that must not. Stand-off and crest **length**
+grow with swell height; the crest's **bow and jitter** are fractions of the base constant on
+every venue. Scaling those with the reach gave a 40-unit crest 30 units of arc — a hairpin,
+not a wave. Same trap in `drawShoalBreaks`.
+
+Guarded by `eval/_surf_identity.js`: it wraps the 2D context and compares the draw calls
+`drawSurf` issues from the pre-change tree and the current one, across four points of the
+wave cycle, on all ten venues. Nine identical. ⚠️ It compares **calls, not pixels**, and that
+is forced: `fxRand` is deliberately not reseeded, so the foam blobs on screen differ between
+two runs of the *same* tree and a canvas hash can never be stable.
+
+### 9.2 Sea effects — **Observed** (`SeaFX.draw`, `js/seafx.js`)
+
+Three marks that only exist where there is a sea state, which today is Bluewater Bonanza
+alone. Drawn after `drawWindWaves` — a whitecap *is* one of those crests breaking, and foam
+floats on whatever colour the water underneath is — and before the fleet, so §7's "the boat
+silhouette stays clear" holds.
+
+**Gated on the mechanic, never on the venue.** Each effect keys off something only a swell
+produces: a wind-sea crest line, `boat.swell.surf01`, a bow crossing a trough. There is no
+venue-name test in the file and there must not be one — a second ocean venue then gets all
+three for free, and Clubhouse Point cannot inherit them by accident. Guarded by
+`eval/_seafx_venues.js` (zero marks on the other nine).
+
+**It cannot reach the simulation.** Own PRNG, own particle arrays, per-boat state in a
+`WeakMap` rather than fields on the boats. `eval/_seafx_isolation.js` asserts three ways:
+same seed twice, layer on vs. off, and layer on *with the camera moved* — the last is the
+one that would catch the `fxRand` class of bug, since spawn tests are camera-relative.
+
+| Mark | What it is | What drives it |
+|---|---|---|
+| **Whitecaps** | broken runs of torn white patches on the **wind sea's** crest lines, biased to the swell crests, that run with the crest for a second and are then left behind as streaky foam | local wind **cubed** (`CAP_EXP`), from the aerial coverage surveys — so a puff carries visibly more, and the layer doubles as a pressure cue |
+| **Surf sheet** | a churning wedge off each bow, opening aft and easing back over its last quarter, plus torn-off droplets | `surf01` while running with the waves, smoothed so it cannot strobe at the wave frequency |
+| **Bow impacts** | a burst at the trough, then a sheet laid to leeward as the stem drives into the next face | the **encounter rate** alone — no point-of-sail test, so footing upwind visibly gets you wetter and running with the waves switches it off |
+
+Three shapes were tried and rejected for whitecaps, all for the same reason — they had an
+axis of symmetry and water does not. A single quad between a leading and trailing edge read
+as a paper scrap; a chain of pinched shards read as a spindle, and with the foam tail behind
+it the whole sea became darts pointing downwind; trapezoids with parallel ends read as
+tiles. **Every corner has to move, along the crest as well as across it.** The surf sheet
+failed the same way once: bulged amidships and closed at the quarter, it was a fur collar.
+What makes a sheet say *fast* is that it leaves.
+
+Diagnostics: `eval/_seafx_bench.html` + `_seafx_look.js` (isolated contact sheets, seconds
+per iteration), `_seafx_probe.js` (in the real race view, with a burst capture — a slam is
+one event per wave and 1 Hz sampling misses it), `_seafx_cost.js` (0.16 ms/frame at ~200
+caps, beside the swell's 0.21 and the water's 4.1).
+
+### 9.3 Breaking over a bar — **Observed** (`drawShoalBreaks`, `js/seafx.js`)
+
+The effect §5 used to record as missing. A bar has no waterline for shore foam to die at, so
+what it gets instead is the wave TRIPPING: a line of white water along its seaward contour
+that appears, carries forward across the bar in the swell's own direction, and is gone.
+
+**The contour moves with the swell.** A wave breaks where the water shoals to about 1.3× its
+height; there is no bathymetry here, but `shoalMulAt`'s profile is exactly a smoothstep of
+the distance in from the ring, so the contour at a given shallowness is a *fixed offset*
+solved once (`invSmoothstep`) instead of searched for per frame. A bigger swell trips in less
+shallow water and so breaks further out on the bar. ⚠️ Shallowness is a **drag field read as
+a depth** — defensible because it is the same number the speed model and the router use, but
+`SHOAL_BREAK_REF` is a tuned constant with metres on one side and a drag fraction on the
+other, and should not be dressed up as γ = 0.78.
+
+Sites are solved once per race. The outward normal is **measured by asking the depth field
+which side is deep**, not derived from winding — the same trap `surfOutwardSign` records
+getting wrong twice — and every candidate site is re-checked against the field, which rejects
+thin necks and holes where an inward offset would otherwise hang a breaker over open water.
+
+Attribution is by A/B (`eval/_barcheck.js`): the same frame with the layer silenced. On a
+busy frame a bar break and the shore surf's stand-off are easy to mistake for each other, and
+reasoning about distances from one screenshot is how you talk yourself into the wrong answer.
+
+### 9.4 What a frame costs — **Observed** (`eval/_frame_attrib.js`)
+
+A 2D-canvas frame is priced in **draw calls and the state changes between them**, not in the
+wall time a rasteriser takes. Measured per frame, mid-race, and it is the same on every venue:
+
+| | before | after |
+|---|---|---|
+| total canvas ops | ~5,020 | **~3,320** |
+| `drawDisturbedAir` | 1,560 (arc+fill per particle) | 1,560, now culled to the view |
+| `drawWindWaves` | 1,897 strokes | **441** |
+| `SeaFX.draw` | ~450 fills | ~230–460 |
+| `drawWakes` / `drawParticles` / `Swell.draw` | ~700 combined | ~700 |
+
+Two fixes got the 34%: `drawWindWaves` stroked **every segment separately** and now batches a
+crest's segments into one path (§3), and `drawDisturbedAir` had **no viewport cull at all** and
+paid for all ten boats' plumes however far off screen they were.
+
+⚠️ **`_perf.js`'s baseline figure is not a frame time.** It reports a MEAN over repeated
+draws, and headless is a software rasteriser that stalls ~250 ms on about one paint in twelve
+— on a *frozen, paused* world, so it is the rasteriser and not the game. That tail is most of
+the 22–27 ms/frame it prints. Measured in a real browser over 650 frames, `draw()` is p50
+**1.9 ms**, max **5.2 ms**, with zero frames over 8 ms. Use op counts for cost, `_perf.js` for
+relative ablation deltas, and `_live_profile.js` in a real browser for anything absolute.
+
+**Next lever, unclaimed:** `drawDisturbedAir` is now ~47% of the frame — one `arc` + `fill`
+per turbulence particle, ~780 of them, each with its own alpha. It cannot be batched without
+quantising that alpha (visible banding along the plume's fade) or moving to a baked dot
+sprite (halves the ops, slightly different antialiasing). Both change how dirty air looks, so
+neither was taken unilaterally.
 
 ---
 
