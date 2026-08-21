@@ -1263,6 +1263,14 @@
     }
     function setGoalArm(on) {
         LAB.goalArm = on;
+        // Arming IS an authoring intent: with a recording on the stage the
+        // lab lives in sim/play mode, where only frame 0 authors — so
+        // rewind there, exactly as touching an object mid-playback does.
+        // (The old behavior left the playhead where it was, the placement
+        // branch required mode === 'edit', and every armed click fell
+        // through to SELECTION — the owner's "clicking the water selects
+        // instead of adding a goal".)
+        if (on && LAB.mode !== 'edit' && LAB.rec) { pause(); setFrame(0); }
         goalAddLink.textContent = on ? 'CLICK THE WATER · ESC ENDS' : '+ ADD GOAL';
         goalAddLink.style.color = on ? '#8fd8d0' : '';
     }
@@ -3600,8 +3608,12 @@
         const hit = pick(wx, wy);
         // goal placement: a click while armed APPENDS a goal for the selected
         // boat and never disturbs the selection — a mark means round it, a
-        // line means go through it, open water means a waypoint
-        if (LAB.goalArm && LAB.sel && LAB.sel.kind === 'boat' && LAB.mode === 'edit') {
+        // line means go through it, open water means a waypoint. Authoring
+        // is legal in EDIT mode or at frame 0 of a recording (the same
+        // predicate pick()'s drag handles use) — requiring mode === 'edit'
+        // alone made every armed click select once a rec existed.
+        if (LAB.goalArm && LAB.sel && LAB.sel.kind === 'boat'
+            && (LAB.mode === 'edit' || LAB.frame === 0)) {
             const lb = LAB.sel.ref;
             if (hit && hit.kind === 'mark') lb.goals.push({ type: 'mark', ref: hit.ref });
             else if (hit && hit.kind === 'line') lb.goals.push({ type: 'gate', ref: hit.ref });
