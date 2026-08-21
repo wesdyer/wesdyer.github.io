@@ -13754,3 +13754,21 @@ away ONTO the ducking port boat mid-duck. B absorbs the hunt (min 89u,
 nocollide 10/10) — the give-way endgame is robust to a manoeuvring
 stand-on in this geometry — and A is never penalized: rule 16.2 unwired,
 pinned as a gap row. Library = 18 scenarios.
+
+
+## EXTENSION BLOCK CLOSE (2026-08-21, ~16h autonomous total)
+
+Library at close: **20 scenarios, fully deterministic** (the key-set fix),
+failing only the four owner-pending rows (R12 1.4m, R13, R13Both, Around
+Mark). New tonight: Port/Windward Rammer (release-valve bracket + dormant
+no-contact foul ×2), Duck Hunter (rule 16.2 pinned; endgame robust to a
+hunting stand-on), Zone Entry pair+solo (wrong-side cost), Island Squeeze
+(R19 green), Wall Tack (rule 20 gap; the nondet hunt's trigger), Pocket
+Pair + solo (fair corridor transits clean in company; the SOLO compiled-
+course corridor DNFs at 405 deg where goalNav sails the same water —
+machinery wart XF-pinned, matters for lab-based routing work).
+
+Stale diagnoses retired this block: bay L1 distance tax (now +2% vs him),
+lagoon 29.8%-unsailable escapes (now 0.0%). Both venues' residues named:
+bay = speed-while-near-others; lagoon = leg-4 pocket grinds (6 episodes
+carry 163 contacts, chain-entangled).
