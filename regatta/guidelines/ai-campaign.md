@@ -13889,3 +13889,78 @@ fixed-land threads only there); start tuning is sacred; do not reopen
 closed families (MEMORY.md list). Out of scope: no-contact foul
 (noted-not-armed), wind-agnostic router, the wedge stalled-rival berth
 (unless it falls out), rating campaign.
+
+
+# THE NARROW-PASSAGE PUSH — LANDED (2026-08-21 night, autonomous run)
+
+Owner directive: narrow-passage capability, "a key skill for the AI —
+redrock, arctic, glowtide especially." Boots from the b54ee57 doctrine
+ship; gwi* anchors = base; landed in this commit.
+
+**Shipped composition (world model first, per the plan):**
+1. TIGHT-THREAD TIER (sailcheck): cells failing the 88u admit bar but
+   clear at TIGHT_CLEAR=35 are PASSABLE-TIGHT (`grid._tight`); the router
+   (pathSailable) takes them at TIGHT_TAX 2.5 on top of the clearance-band
+   extras; drifting ice blocks the tier at the FULL bar (a floe never
+   narrows a passage into the tier, it removes it — rule 5); tier only
+   where exceptional (density knee: tight > 8% of nav clears the layer —
+   swamp's grass archipelago is 10.6% vs <= 5.1% everywhere else, any
+   threshold in the gap gives the same partition).
+2. GEOMETRIC CHORD LOS (segClearGeom): exact segment-vs-shape clearance at
+   the admit bar, wired into CoursePath._route's 1.08 detour-reality gate
+   AND the string-puller's _lineClear (a cell-level guard is provably
+   inert — subsampled cells read a clipping chord as clear).
+3. THREAD-SCOPED TRUST (applyAvoidance): the tight cells of the boat's own
+   plan (+1 cell of scatter) probe FREE for the plan-aligned candidate,
+   15000-graded for other headings, WALL for everything else; plan-validity
+   scan treats plan tight cells as chosen-on-purpose. Endpoint snap prefers
+   open water within two rings before accepting a tight cell.
+4. Lab-sand fromMask (scenario.js): lab sands now carry fromMask like every
+   compiled venue shape — the avoidance polygon path had been double-seeing
+   them (an inflated-polygon tax closed the very slot the grid offered).
+
+**THE BAR IS THE MEASURED EXECUTION FRONTIER.** The width ladder (new lab
+scenarios, NP 70u/90u/100u/110u; base pin measured 80.6u, not the noted
+68): 80.6u transits 11/11, 68.6u 5/11 — a coin flip is not a capability.
+The first bar tried (21u = half-beam+scatter) admitted a ~69u redrock
+canyon thread the whole fleet bought in company: legs 4-5 +18-23 s/boat,
+land +58% pooled, systemic on 15/16 seeds. Five ablation trees + a
+thread census traced it; the frontier bar (35u ⇒ slots >= ~70u) recovered
+redrock fully with the capability intact.
+
+**Gate (n4*/n5* vs gwi*, all anchors' protocols, fresh on final HEAD):**
+- redrock pooled 6-set: med 318->315, mean -0.4, 432/432, dirt flat —
+  clock-neutral WITH the capability in.
+- river: fins 214->215/216, land 67.5->57.4/boat (-15%); med flat.
+- lake -1 med (boat contacts -19%), bay flat, ocean + seatrials
+  BYTE-IDENTICAL (no tight water on their lines — verification).
+- swamp BYTE-IDENTICAL by the density knee (tier@35 unscoped had been
+  med +42, land +500% — the census showed plans threading 43% of samples).
+- WATCH (named, per the non-universal-wins ruling): arctic +4 med pooled
+  32 (inside its noise floor; floe +5%), lagoon +5 med single 8-set (land
+  0.22->0.64 small absolute), glowtide 9400-set med +7/land +30% but the
+  disjoint 9600 set flips to mean -4/boat -16% (16-seed cross-tree noise;
+  census: threads used 0.9% of samples; pooled clock ~flat, land +17%
+  one-set-driven). No mechanism, no lever — owner's eyes requested.
+- Goldens re-recorded + verify 30/30 on final HEAD; library 27 scenarios
+  green except the 4 owner-pending rows; venue checks PASS.
+
+**Lab pins:** Narrow Passage goals FIXD 11/11 (promoted); Pocket Pair
+goals FIXD (promoted); Pocket Pair Solo goals+turn FIXD (promoted); NP
+ladder authored 70/90/100/110u (70u = the next frontier, XF). Wall Tack
+stays XF, DECOMPOSED: the contacts are boats grinding the compiled
+goal-line's SYNTHETIC ENDPOINT MARK (Rule 31, the PP-Solo machinery-wart
+family — owner call), plus a wall-beat flap (28 flaps/570deg turns, land-tax
+asymmetry — wedge-push blocked-tack material). The d020966 rungs were
+re-tried scoped (planTight / nosedIn+rival) and measured INERT at every
+Wall Tack contact — dropped again. Island Squeeze turn<=360 now XF: the
+fromMask honesty exposed engine-truth thrash the old budget was pinned
+against (100% fromMask by ablation; goals/nocollide green, min dist 90u
+vs 82 before).
+
+**Owner thread (his note, this session): alignment.** Physics already
+rewards it (tapered disc hull: aligned ~30u, crabbed 30deg ~50u) but the
+helm aligns only implicitly — COG through the 80.6u pin slot crabs ~23deg.
+Aim-through-the-slot targeting (carrot at the thread's far end) is the
+named lever for the sub-80u frontier; ⚠️ adjacent to the closed
+"oriented-hull planning" family — his ruling before building.

@@ -918,7 +918,13 @@
     // still see it — they don't check `hidden`.
     function addSandPoly(pts) {
         const isl = { x: 0, y: 0, radius: 1, vertices: pts.map(p => ({ x: p.x, y: p.y })),
-                      isFloe: false, awash: false, hidden: true, labSand: true };
+                      // fromMask: these polygons ARE in the routing grid
+                      // (syncSandsToWorld rebuilds it from the same vertices), so
+                      // avoidance must treat them as the grid's job exactly like
+                      // compiled venue land — without it the polygon-obstacle path
+                      // double-sees the sand and taxes water the grid deliberately
+                      // offers (the tight tier read as a wall of inflated polygon).
+                      isFloe: false, awash: false, hidden: true, labSand: true, fromMask: true };
         (window.state.course.islands = window.state.course.islands || []).push(isl);
         const s = { isl, x: 0, y: 0, r: 1 };
         recomputeSand(s);

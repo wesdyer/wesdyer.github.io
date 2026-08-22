@@ -16,6 +16,25 @@
 
 const HULL_R = 30;                     // matches script.js
 const CLEARANCE = HULL_R + 14;         // half a hull plus a margin to pass at all
+// TIGHT-THREAD TIER. The CLEARANCE bar treats worst-case rotation — a hull
+// spinning in place — so any slot under 2×CLEARANCE = 88u reads as a wall to
+// the grid. A hull threading bow-first can take genuinely narrower water.
+// Cells that fail the full bar but pass this one are PASSABLE-TIGHT: a second
+// capability tier, marked in `_tight`, that the router may take at a stiff tax
+// (pathSailable) and the helm may follow when its plan deliberately threads it.
+// They are NOT navigable to anything that doesn't ask — `nav` is unchanged.
+//
+// ⚠️ THE BAR IS THE MEASURED EXECUTION FRONTIER, NOT HULL GEOMETRY. The lab
+// width ladder (Narrow Passage 70u…110u): an 80.6u slot transits 11/11 seeds,
+// a 68.6u slot 5/11 — a coin flip is not a capability. And the first bar
+// tried here (21u = half a beam + scatter) admitted a ~69u canyon thread on
+// redrock that the whole fleet then bought in company: legs 4-5 +18-23 s/boat,
+// land contacts +58% pooled — the router promising water the helm can't
+// reliably sail is the model-accuracy defect in the other direction. 35u
+// admits slots from ~70u up: everything the ladder shows the boat actually
+// completes, nothing it measurably can't.
+const TIGHT_CLEAR = 35;                // slot >= ~70u — the ladder's frontier
+const TIGHT_TAX = 2.5;                 // per-step router tax on tight cells
 const RES = 50;                        // grid cell, world units
 
 function pointInRing(x, y, ring) {
@@ -32,6 +51,51 @@ function segDist(px, py, a, b) {
     let t = l2 ? ((px - a[0]) * dx + (py - a[1]) * dy) / l2 : 0;
     t = t < 0 ? 0 : t > 1 ? 1 : t;
     return Math.hypot(px - (a[0] + t * dx), py - (a[1] + t * dy));
+}
+// Exact distance between segment AB and segment PQ (0 when they cross).
+function segSegDist(ax, ay, bx, by, p, q) {
+    const d1x = bx - ax, d1y = by - ay, d2x = q[0] - p[0], d2y = q[1] - p[1];
+    const denom = d1x * d2y - d1y * d2x;
+    if (denom !== 0) {
+        const t = ((p[0] - ax) * d2y - (p[1] - ay) * d2x) / denom;
+        const u = ((p[0] - ax) * d1y - (p[1] - ay) * d1x) / denom;
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1) return 0;
+    }
+    return Math.min(
+        segDist(ax, ay, p, q), segDist(bx, by, p, q),
+        segDist(p[0], p[1], [ax, ay], [bx, by]), segDist(q[0], q[1], [ax, ay], [bx, by]));
+}
+
+// ── GEOMETRIC LINE-OF-SIGHT, the admit machinery's own test on a segment ────
+// The cell-level LOS walks (`losClear`, planner's `_lineClear`) ask the GRID,
+// and the grid's navigable verdict is subsampled: a cell any quarter-offset of
+// which clears the bar reads open, so a segment can pass within a few units of
+// a corner while every cell under it reads clear — the measured
+// chord-clips-corner defect (a genuinely-kinked routed path thrown away for a
+// chord that shaves the headland). This asks the SHAPES the grid was built
+// from, with the same CLEARANCE bar and exact segment-segment distance, so a
+// chord is only "clear" when the admit test itself would admit every point of
+// it. Drifting shapes (centerOnly) are excluded — they are not walls to a
+// ruler and their motion is priced elsewhere.
+function segClearGeom(grid, ax, ay, bx, by, clr) {
+    const shapes = grid && grid._shapes;
+    if (!shapes) return true;
+    const m = (clr == null) ? CLEARANCE : clr;
+    const xlo = Math.min(ax, bx), xhi = Math.max(ax, bx);
+    const ylo = Math.min(ay, by), yhi = Math.max(ay, by);
+    for (const sh of shapes) {
+        if (sh.centerOnly) continue;
+        const bb = sh.bb;
+        if (xhi < bb.a - m || xlo > bb.c + m || yhi < bb.b - m || ylo > bb.d + m) continue;
+        if (pointInRing(ax, ay, sh.outer) && !sh.holes.some(h => pointInRing(ax, ay, h))) return false;
+        if (pointInRing(bx, by, sh.outer) && !sh.holes.some(h => pointInRing(bx, by, h))) return false;
+        for (const ring of sh.rings) {
+            for (let e = 0; e < ring.length; e++) {
+                if (segSegDist(ax, ay, bx, by, ring[e], ring[(e + 1) % ring.length]) < m) return false;
+            }
+        }
+    }
+    return true;
 }
 
 // ── Navigable grid, at hull width ───────────────────────────────────────────
@@ -79,6 +143,7 @@ function buildGridRaw(land, arena, obstacles, opts) {
     const n = Math.ceil(Math.max(ex.maxX - ex.minX, ex.maxY - ex.minY) / RES) + 1;
     const x0 = ex.minX, y0 = ex.minY;
     const nav = new Uint8Array(n * n);
+    const tight = new Uint8Array(n * n);   // passable-tight tier, see TIGHT_CLEAR
 
     const shapes = [];
     for (const l of (land || [])) {
@@ -98,23 +163,23 @@ function buildGridRaw(land, arena, obstacles, opts) {
     // Drifting ice counts: a berg in a channel closes it just as land does.
     const circles = (obstacles || []).map(o => ({ x: o.x, y: o.y, r: o.radius || 0 }));
 
-    const admitShape = (sh, wx, wy) => {
+    const admitShape = (sh, wx, wy, clr) => {
         const bb = sh.bb;
-        if (wx < bb.a - CLEARANCE || wx > bb.c + CLEARANCE
-            || wy < bb.b - CLEARANCE || wy > bb.d + CLEARANCE) return true;
+        if (wx < bb.a - clr || wx > bb.c + clr
+            || wy < bb.b - clr || wy > bb.d + clr) return true;
         if (pointInRing(wx, wy, sh.outer) && !sh.holes.some(h => pointInRing(wx, wy, h))) return false;
         for (const ring of sh.rings) {
             for (let e = 0; e < ring.length; e++) {
-                if (segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) < CLEARANCE) return false;
+                if (segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) < clr) return false;
             }
         }
         return true;
     };
-    const admit = (wx, wy) => {
+    const admit = (wx, wy, clr) => {
         if (!window.Arena.contains(arena, wx, wy)) return false;
         for (let k = 0; k < shapes.length; k++) {
             if (shapes[k].centerOnly) continue;
-            if (!admitShape(shapes[k], wx, wy)) return false;
+            if (!admitShape(shapes[k], wx, wy, clr)) return false;
         }
         return true;
     };
@@ -136,23 +201,65 @@ function buildGridRaw(land, arena, obstacles, opts) {
             // floe drift eats exactly the margin the thread lacks — and every
             // arctic horizon/margin constant was priced on centre-sampled land
             // (measured here: arctic land contacts +42%, floe +19% unscoped).
-            let ok = admit(wx, wy);
+            let ok = admit(wx, wy, CLEARANCE);
             if (!ok && !(opts && opts.noSubsample)) {
                 const Q = RES / 4;
                 for (const [ox, oy] of [[-Q, -Q], [Q, -Q], [-Q, Q], [Q, Q]]) {
-                    if (admit(wx + ox, wy + oy)) { ok = true; break; }
+                    if (admit(wx + ox, wy + oy, CLEARANCE)) { ok = true; break; }
                 }
             }
             if (ok) for (let k = 0; k < shapes.length; k++) {
-                if (shapes[k].centerOnly && !admitShape(shapes[k], wx, wy)) { ok = false; break; }
+                if (shapes[k].centerOnly && !admitShape(shapes[k], wx, wy, CLEARANCE)) { ok = false; break; }
             }
             if (ok) for (const c of circles) {
                 if ((wx - c.x) ** 2 + (wy - c.y) ** 2 < (c.r + CLEARANCE) ** 2) { ok = false; break; }
             }
             if (ok) nav[j * n + i] = 1;
+            else {
+                // TIGHT TIER: the identical admit machinery at the reduced bar,
+                // under the same sampling policy (icy venues stay centre-only —
+                // sub-cell shore threads under floe drift are the trap the
+                // noSubsample gate exists for, and a tight thread is that trap
+                // squared, so it inherits the gate rather than relitigating it).
+                let tk = admit(wx, wy, TIGHT_CLEAR);
+                if (!tk && !(opts && opts.noSubsample)) {
+                    const Q = RES / 4;
+                    for (const [ox, oy] of [[-Q, -Q], [Q, -Q], [-Q, Q], [Q, Q]]) {
+                        if (admit(wx + ox, wy + oy, TIGHT_CLEAR)) { tk = true; break; }
+                    }
+                }
+                // Drifting shapes (centerOnly) and obstacle circles below block the
+                // tight tier at the FULL bar: ice never narrows a passage into the
+                // tier, it removes it — and this keeps stampFloes and the rebuild
+                // in cell-for-cell agreement (_grid_stamp_check.js).
+                if (tk) for (let k = 0; k < shapes.length; k++) {
+                    if (shapes[k].centerOnly && !admitShape(shapes[k], wx, wy, CLEARANCE)) { tk = false; break; }
+                }
+                if (tk) for (const c of circles) {
+                    if ((wx - c.x) ** 2 + (wy - c.y) ** 2 < (c.r + CLEARANCE) ** 2) { tk = false; break; }
+                }
+                if (tk) tight[j * n + i] = 1;
+            }
         }
     }
-    return { n, x0, y0, res: RES, nav,
+    // ⚠️ THE TIER ONLY EXISTS WHERE IT IS EXCEPTIONAL. A tight thread is a
+    // deliberate, occasional shortcut; where reduced-clearance water is a
+    // sizable fraction of the venue it is not slots, it is the FABRIC — an
+    // archipelago — and admitting it rewrites the whole map with water the
+    // helm cannot reliably execute. Measured (Gatorgrass, in-game grid with
+    // prop colliders): 1565 tight cells against 14813 navigable (10.6%),
+    // plans threading 43% of samples, 58% of blocked-cell frames while
+    // threading — med +42 s, land contacts +500%. Every other venue sits at
+    // 0.0-5.1%, so ANY threshold in (5.1, 10.6) gives the same partition —
+    // this is a venue-class knee on a measured grid property (the curP90 /
+    // noSubsample scoping shape), not a tuned knob. Pure geometry, so the
+    // grid stays a pure function of its cache key.
+    {
+        let nT = 0, nN = 0;
+        for (let k = 0; k < n * n; k++) { nT += tight[k]; nN += nav[k]; }
+        if (nT > nN * 0.08) tight.fill(0);
+    }
+    return { n, x0, y0, res: RES, nav, _tight: tight, _shapes: shapes,
              cell: (wx, wy) => [Math.floor((wx - x0) / RES), Math.floor((wy - y0) / RES)],
              world: (i, j) => [x0 + (i + 0.5) * RES, y0 + (j + 0.5) * RES],
              at: (i, j) => (i < 0 || j < 0 || i >= n || j >= n) ? 0 : nav[j * n + i] };
@@ -180,6 +287,12 @@ function stampFloes(base, polys, circles) {
     if (!(polys && polys.length) && !(circles && circles.length)) return base;
     const n = base.n, x0 = base.x0, y0 = base.y0, res = base.res;
     const nav = base.nav.slice();
+    // The tight tier is FIXED-LAND capability only: a tight cell under (or
+    // within full CLEARANCE of) drifting ice is stamped closed exactly like a
+    // navigable cell — drifting walls do not keep clear and a thread they
+    // pinch is a trap, so ice never narrows a passage into the tight tier,
+    // it removes it.
+    const tight = base._tight ? base._tight.slice() : null;
     const lo = (v) => Math.max(0, Math.floor((v - x0) / res));
     const loY = (v) => Math.max(0, Math.floor((v - y0) / res));
     const hi = (v) => Math.min(n - 1, Math.ceil((v - x0) / res));
@@ -198,12 +311,13 @@ function stampFloes(base, polys, circles) {
             const wy = y0 + (j + 0.5) * res;
             for (let i = i0; i <= i1; i++) {
                 const id = j * n + i;
-                if (!nav[id]) continue;
+                if (!nav[id] && !(tight && tight[id])) continue;
                 const wx = x0 + (i + 0.5) * res;
-                if (pointInRing(wx, wy, ring)) { nav[id] = 0; continue; }
-                for (let e = 0; e < ring.length; e++) {
-                    if (segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) < CLEARANCE) { nav[id] = 0; break; }
+                let blk = pointInRing(wx, wy, ring);
+                if (!blk) for (let e = 0; e < ring.length; e++) {
+                    if (segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) < CLEARANCE) { blk = true; break; }
                 }
+                if (blk) { nav[id] = 0; if (tight) tight[id] = 0; }
             }
         }
     }
@@ -215,13 +329,13 @@ function stampFloes(base, polys, circles) {
             const wy = y0 + (j + 0.5) * res;
             for (let i = i0; i <= i1; i++) {
                 const id = j * n + i;
-                if (!nav[id]) continue;
+                if (!nav[id] && !(tight && tight[id])) continue;
                 const wx = x0 + (i + 0.5) * res;
-                if ((wx - o.x) ** 2 + (wy - o.y) ** 2 < R2) nav[id] = 0;
+                if ((wx - o.x) ** 2 + (wy - o.y) ** 2 < R2) { nav[id] = 0; if (tight) tight[id] = 0; }
             }
         }
     }
-    return { n, x0, y0, res, nav,
+    return { n, x0, y0, res, nav, _tight: tight, _shapes: base._shapes,
              cell: (wx, wy) => [Math.floor((wx - x0) / res), Math.floor((wy - y0) / res)],
              world: (i, j) => [x0 + (i + 0.5) * res, y0 + (j + 0.5) * res],
              at: (i, j) => (i < 0 || j < 0 || i >= n || j >= n) ? 0 : nav[j * n + i] };
@@ -717,19 +831,31 @@ function pathSailable(grid, from, to) {
     // ever be aimed at, let alone armed.
     const okCell = (i, j) => {
         if (grid.at(i, j)) return true;
-        if (!grid._soft || i < 0 || j < 0 || i >= grid.n || j >= grid.n) return false;
-        return grid._soft[j * grid.n + i] > 0;
+        if (i < 0 || j < 0 || i >= grid.n || j >= grid.n) return false;
+        return !!(grid._soft && grid._soft[j * grid.n + i] > 0);
     };
+    // Tight cells are TRAVERSABLE but not snap targets of equal rank: a goal
+    // near a shore must snap to open water when any exists — snapping into the
+    // ribbon parks carrots against shorelines venue-wide. Tight is the snap of
+    // last resort (a goal genuinely inside a slot still resolves).
+    const tightCell = (i, j) => !!(grid._tight && i >= 0 && j >= 0
+        && i < grid.n && j < grid.n && grid._tight[j * grid.n + i]);
     const snap = (wx, wy) => {
         const [ci, cj] = grid.cell(wx, wy);
         if (okCell(ci, cj)) return [ci, cj];
+        let tightHit = tightCell(ci, cj) ? { c: [ci, cj], r: 0 } : null;
         for (let r = 1; r <= 18; r++) {
+            // A tight hit stands once open water hasn't appeared within two
+            // further rings: a goal deep in a slot stays in the slot, a goal a
+            // hull off a shoreline still snaps to the open water beside it.
+            if (tightHit && r > tightHit.r + 2) return tightHit.c;
             for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
                 if (Math.max(Math.abs(di), Math.abs(dj)) !== r) continue;
                 if (okCell(ci + di, cj + dj)) return [ci + di, cj + dj];
+                if (!tightHit && tightCell(ci + di, cj + dj)) tightHit = { c: [ci + di, cj + dj], r };
             }
         }
-        return null;
+        return tightHit ? tightHit.c : null;
     };
     const s = snap(from[0], from[1]);
     const g = snap(to[0], to[1]);
@@ -793,12 +919,29 @@ function pathSailable(grid, from, to) {
             // multiplier — grinding through a drifted plug beats waiting minutes
             // for it to open, and this venue is designed around that trade.
             const soft = grid._soft ? (id2) => grid._soft[id2] === 1 : null;
-            const passable = (ai, bi) => grid.at(ai, bi) ||
+            const passStock = (ai, bi) => grid.at(ai, bi) ||
                 (soft && ai >= 0 && bi >= 0 && ai < N && bi < N && soft(bi * N + ai));
+            const passable = (ai, bi) => passStock(ai, bi) ||
+                (ai >= 0 && bi >= 0 && ai < N && bi < N &&
+                    grid._tight && grid._tight[bi * N + ai]);
             if (!passable(a, b)) continue;
-            if (di && dj && (!passable(ci + di, cj) || !passable(ci, cj + dj))) continue;
             const nid = b * N + a;
-            const isSoft = !grid.at(a, b);
+            const nonNav = !grid.at(a, b);
+            const isSoft = nonNav && !!(grid._soft && grid._soft[nid] > 0);
+            const isTight = nonNav && !isSoft;
+            // ⚠️ THE CORNER RULE MUST NOT RELAX FOR FREE. Counting tight cells
+            // as "passable" in the diagonal corner test let every route cut
+            // diagonals past corners whose orthogonal neighbour is a 21-44u
+            // shore ribbon — an UNTAXED shave (both step endpoints navigable)
+            // on every corner of every venue. Measured on redrock 6-set: land
+            // contacts +58% with only 3.6% of plans actually threading.
+            // A tight-corner diagonal is legal ONLY when the step itself ends
+            // in a tight cell — a deliberate thread, priced by TIGHT_TAX;
+            // every other diagonal keeps the stock hull-width rule.
+            if (di && dj) {
+                if (isTight) { if (!passable(ci + di, cj) || !passable(ci, cj + dj)) continue; }
+                else if (!passStock(ci + di, cj) || !passStock(ci, cj + dj)) continue;
+            }
             const c = clear[nid];
             // BASE COST IS SAILING TIME when the wind table exists: the polar's best
             // speed toward this step's bearing, in this cell's wind. Beating prices
@@ -866,6 +1009,11 @@ function pathSailable(grid, from, to) {
             // 1 = opening lead (arrive as it clears), 2 = staying plugged (a grind
             // that is nearly a wall — only worth it against a huge detour).
             if (isSoft) w *= (grid._soft[nid] === 1 ? 2.5 : 6);
+            // TIGHT TIER: sailable bow-first, but with real execution risk — the
+            // tax (on top of the clearance-band extras this cell already pays,
+            // its _clear is 0) makes A* buy a thread only against a substantial
+            // detour, never to shave a corner.
+            if (isTight) w *= TIGHT_TAX;
             // TRAFFIC JAM: water under a parked raft prices like plugged water —
             // the queue delay behind a parked rival is real sailing time (see the
             // stamp site in script.js). Bounded like _soft's multipliers so the
@@ -890,8 +1038,8 @@ function pathSailable(grid, from, to) {
 }
 
 window.SailCheck = {
-    HULL_R, CLEARANCE, RES,
+    HULL_R, CLEARANCE, TIGHT_CLEAR, RES,
     buildGrid, stampFloes, pathBetween, smoothPath, losClear, nearestNav, roundingArc, routeWaypoints,
-    legVMG, routeEstimate, pathSailable, clearanceField
+    legVMG, routeEstimate, pathSailable, clearanceField, segClearGeom
 };
 })();

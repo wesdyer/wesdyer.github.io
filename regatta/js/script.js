@@ -2140,8 +2140,13 @@ class BotController {
                     if (!botGrid.at(pc[0], pc[1])) {
                         // A soft (floe-plugged) cell on the thread is a grind the
                         // route may have chosen on purpose — not a reason to replan.
+                        // A TIGHT-tier cell likewise: the router paid its tax for
+                        // that thread deliberately (drift that closes a tight cell
+                        // clears its _tight bit in the stamp, so this still replans
+                        // when ice actually shuts the passage).
                         const idT = pc[1] * botGrid.n + pc[0];
                         if (botGrid._soft && botGrid._soft[idT]) continue;
+                        if (botGrid._tight && botGrid._tight[idT]) continue;
                         needFull = true; break;
                     }
                 }
@@ -3337,6 +3342,47 @@ class BotController {
         // penalties 0.57 -> 0.46. Glacier Sound is untouched by construction — floes make
         // `openWaterAv` false, so the ice list below is selected either way.
         const racingLegF = this.boat.raceState.leg >= 1;
+
+        // TIGHT-THREAD FOLLOWING. The router may deliberately buy a tight-tier
+        // thread (sub-88u water, passable bow-first — see SailCheck.TIGHT_CLEAR
+        // and its tax in pathSailable). The land probe below treats non-navigable
+        // cells as walls, so without this flag the helm VETOES the router's own
+        // thread and improvises a circumnavigation — the divergence trap, measured
+        // in both directions. Leniency is scoped to the thread: it arms only when
+        // the boat's own current plan runs through tight cells within ~600u, so a
+        // venue whose routes never thread tight water behaves identically by
+        // construction.
+        // The leniency is CELL-SCOPED: `planTightCells` holds exactly the tight
+        // cells the plan crosses (plus their 8 neighbours, one cell of execution
+        // scatter). Any OTHER tight cell keeps the stock wall verdict even while
+        // a thread is armed — the first redrock gate on a flag-scoped version
+        // read land contacts +65-74% on two disjoint sets, every seed paying:
+        // with the flag armed anywhere near a canyon thread, every shore ribbon
+        // on the venue went semi-permeable (15000 tax where a 500000 veto
+        // stood), and the fleet shaved shores it used to refuse.
+        let planTightAv = false;
+        let planTightCells = null;
+        {
+            const gPT = this._trajFloe
+                ? (state.course._botGridStatic || state.course.botGrid)
+                : state.course.botGrid;
+            if (gPT && gPT._tight && this.gridPath && this.gridPath.length) {
+                for (let pi = 0; pi < Math.min(12, this.gridPath.length); pi++) {
+                    const pp = this.gridPath[pi];
+                    const pc = gPT.cell(pp.x, pp.y);
+                    if (pc[0] >= 0 && pc[1] >= 0 && pc[0] < gPT.n && pc[1] < gPT.n
+                        && gPT._tight[pc[1] * gPT.n + pc[0]]) {
+                        planTightAv = true;
+                        if (!planTightCells) planTightCells = new Set();
+                        for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) {
+                            const ni = pc[0] + di, nj = pc[1] + dj;
+                            if (ni >= 0 && nj >= 0 && ni < gPT.n && nj < gPT.n
+                                && gPT._tight[nj * gPT.n + ni]) planTightCells.add(nj * gPT.n + ni);
+                        }
+                    }
+                }
+            }
+        }
         // FAN UNGATE (2026-08-09, the re-verdict): the `openWaterAv` half of this gate
         // was never a mechanism — the comment above says so in its own words ("the gate
         // is a conservatism"). BOTH of its premises have since expired. (1) The venue is
@@ -3420,6 +3466,13 @@ class BotController {
                 }
             }
             if (nosedIn || this.boat.raceState.leg < 1) candidates.push(2.2, -2.2, 3.0, -3.0);
+            // (The d020966 1.0/1.4 emergency-band rungs were re-tried here
+            // scoped to planTightAv/nosedIn+rival for the narrow-passage push
+            // and measured INERT on every lab pin (never the argmin's answer
+            // at a single Wall Tack contact) and inside redrock noise — so
+            // they stay dropped. The wall-corner contact class they were
+            // meant for is a BLOCKED-TACK problem, not an escape-quantization
+            // one; see the wedge/obstruction brief.)
         }
 
         // A BOAT MID-ROUNDING SAILS AN ARC, and its straight land-probe ray
@@ -3955,6 +4008,9 @@ class BotController {
             const sideRef = normalizeAngle(boat.heading - wdAv) >= 0 ? 1 : -1;
             hPlanRef = normalizeAngle(wdAv + sideRef * 0.62);
         }
+
+        // (planTightAv — tight-thread following — is computed above, before the
+        // candidate fan, because the scoped narrow-passage rungs read it too.)
 
         // THE FAN GRADES TRACKS, NOT HEADINGS, WHEREVER THE WATER MOVES.
         // Every candidate below is projected as heading x speed and then judged
@@ -4816,6 +4872,29 @@ class BotController {
                             proximityCost += (gAv._soft[idS] === 1 ? 6000 : 12000) * (1 - frac * 0.5);
                             continue;
                         }
+                        // TIGHT-tier water while the plan threads it (planTightAv):
+                        // sailable bow-first, priced as caution not wall. The
+                        // plan-aligned candidate pays NOTHING — the router already
+                        // taxed this thread and chose it; any helm-side surcharge
+                        // re-litigates that choice in a currency (pow³ deviation
+                        // ~10²) the surcharge dwarfs, and the argmin buys a
+                        // circumnavigation instead (measured here: 3000 on the
+                        // aligned rung sent the lab boat 2000u around the block —
+                        // HZ3B's lesson, only the router's line earns the trust).
+                        // Other headings pay a stiff caution but keep probing — the
+                        // REAL land behind the tier still vetoes inside the hard
+                        // zone, so the slot's walls remain walls and only near-axis
+                        // headings read sailable, which is the physical truth of a
+                        // slot. Off-thread boats keep the wall verdict untouched.
+                        if (planTightCells && planTightCells.has(idS)) {
+                            const alignedT = hPlanFF != null && !arcK
+                                && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3;
+                            if (dbgOn) (window.__TDBG = window.__TDBG || []).push(
+                                { t: +state.time.toFixed(2), off: offset, frac: +frac.toFixed(2),
+                                  al: alignedT ? 1 : 0, h: +h.toFixed(3) });
+                            if (!alignedT) proximityCost += 15000 * (1 - frac * 0.5);
+                            continue;
+                        }
                         // NEAR-TERM blockage is a wall; FAR blockage along a straight
                         // 4-second probe is not — a probe that overshoots a gap into
                         // the ice behind it must not veto the gap the router chose.
@@ -4827,6 +4906,9 @@ class BotController {
                             || Math.abs(normalizeAngle(h - hPlanRef)) > 0.3
                             || Math.abs(normalizeAngle(h - wdAv)) < 0.62)) {
                             proximityCost += 30000 * (1 - frac);
+                            if (dbgOn) (window.__TDBG2 = window.__TDBG2 || []).push(
+                                { t: +state.time.toFixed(2), off: offset, site: 'far',
+                                  add: Math.round(30000 * (1 - frac)) });
                         }
                         break;
                     }
@@ -4860,6 +4942,9 @@ class BotController {
                         && Math.abs(normalizeAngle(h - hPlanRef)) <= 0.3
                         && Math.abs(normalizeAngle(h - wdAv)) >= 0.62
                         && (state.course._avCurP90 === undefined || state.course._avCurP90 < 2.0);
+                    if (dbgOn && clr >= 0 && clr < 3) (window.__TDBG2 = window.__TDBG2 || []).push(
+                        { t: +state.time.toFixed(2), off: offset, site: 'band',
+                          clr, bt: bandTrusted ? 1 : 0 });
                     if (!bandTrusted && clr > 0 && clr < 3) {
                         // FLOE-caused narrowness is grindable; LAND-caused is not.
                         // When the static (land-only) grid says this water is clear,
@@ -5127,7 +5212,12 @@ class BotController {
                 vo: this._voActive ? 1 : 0, voin: this._voIn ? this._voIn.size : 0,
                 rng: rng === Infinity ? null : Math.round(rng), rowDbg,
                 dev: +this.lastAvoidDeviation.toFixed(3),
-                zero: dbgRows.find(r => r.off === 0), best: bestR });
+                zero: dbgRows.find(r => r.off === 0), best: bestR,
+                hp: hPlanFF == null ? null : +hPlanFF.toFixed(3),
+                hpr: hPlanRef == null ? null : +hPlanRef.toFixed(3),
+                pt: planTightAv ? 1 : 0,
+                h0: +desiredHeading.toFixed(3),
+                full: window.__AVDBG.full ? dbgRows : undefined });
         }
         return bestHeading;
     }
