@@ -14093,3 +14093,68 @@ walks straight into the C4 pairing.
 accepted WITH the named floe watch (fleet floe +7-13%, noise-dominated) —
 the watch stands as a carry-forward column, to be re-measured by the next
 session's benches and resolved with the C4 pairing work.
+
+
+## ⏭ CARRY-FORWARD PROMPT — THE C4 AVOIDANCE PUSH (verbatim, 2026-08-22 night)
+
+AI PUSH: arctic avoidance honesty (C4, the phantom-deviation push) — the
+ONE big thread (owner-approved 2026-08-22 night, big autonomous run).
+Arctic 1.580x = worst; the measured mass is AVOID_NONE deviation (44+20
+s/boat-leg with no role/threat/rival) + the armed crawl (69.3 s/boat,
+89% armed, 60% role-NONE) + the rubs-for-ice trade seen twice (treeGWF,
+C2-v1's fleet refusal). The bar THIS TIME is a real arctic clock win,
+and the accepted floe watch gets resolved here by construction.
+
+Read first: memory regatta-c4-avoidance-push-plan (THE PLAN — phases,
+D1/D2/D3 ranked, pre-registered kill criteria, graveyard),
+regatta-arctic-router-session (what just shipped: the C2 gate is
+load-bearing, do not weaken it), regatta-obstruction-model (19.2(c) is
+the landed rules half; D1 is the candidate-grading half),
+regatta-gwe-push-session, regatta-standing-rules (benching law; the two
+poolers' sign AND arg-order traps; _pool_ob.js = cand−base NEGATIVE
+faster), regatta-session-report (THE TABLE with every status update),
+tail of regatta/guidelines/ai-campaign.md. Check date;
+node regatta/eval/freeze_venues.js --check from repo root (lake diff =
+my pending edit, expected).
+
+Base: db603c9 (C2 gate ship 3e5e5a8 + my ruling). Arctic anchors =
+c2v3arc9400/9600 (+9100/9200 for pooled 64); all other venues = ar1*
+bench JSONs; treeC2 js == shipped HEAD. Phase 0 re-baselines on THIS
+HEAD; human refs via _traj_fp.js only (arctic med 207.0 / best 190.7).
+
+Order of work: (0) re-baseline + THE TABLE. (1) Measurement, ≥4 probes
+in flight: deviation census (episodes, trigger object, range at onset,
+counterfactual vs his 78-179u margins), his floe-CPA profile from the
+corpus vs the bot's, the ice-in-the-endgame probe (SIZES D1 BEFORE
+BUILDING — the _carrot_pin_cf lesson), treeGWF ported onto HEAD and
+re-measured (its −35%/+15% is pre-NP), armed-crawl attribution
+(MEASUREMENT ONLY — radius/arrival/laning are closed). (2) Candidates
+in rank order, one mechanism per landing, own tree, criteria
+pre-registered BEFORE benching: D1 ice-hard threat resolution (floe
+cells are WALLS to the give-way endgame's escape candidates —
+actions-not-prices), D2 = treeGWF rival honesty RE-LANDED ON TOP of D1
+(the named pairing, benched together — scoped pairs compose), D3 only
+if the census says standoff-not-endgame (adjacent to closed
+clearance-extension ×2 — distinction in the record, bring it to me if
+in doubt). (3) Gate: arctic pooled 32 with a REAL clock win (pooled 64
+if close) + floe watch re-read and RESOLVED in the log + redrock pooled
+6-set co-gate + bay 2x20 (rub economics) + river 3x8 + full battery vs
+ar1*/c2v3arc* on final HEAD, name losers, goldens trace:update + verify
+READ THE COUNT (30), suite (4 owner-pending fails = known),
+campaign-log snapshot per accepted round, memory checkpoint per phase,
+THE TABLE with every status update and at close; reserve the last ~90
+minutes for the close regardless.
+
+Guardrails: the C2 gate is SHIPPED and load-bearing — never weaken it
+to buy avoidance wins; graveyard closed as-was (AC1, TK1-3, LANE1x2,
+LANE2, treeAGE, C1 measurement-killed, C3 solo-refused, commitment
+0-for-7, clearance-extension x2, boat-arc unscope AS-WAS — D1+D2 is its
+named resurrection path, radius selection, arrival/laning x2,
+oscillation tax, SIPP, laylines, station-keeping 0-for-8); drifting ice
+does not keep clear (rule 5), stopping legitimate only vs ice; 12s
+rebuild load-bearing; start tuning sacred; actions-not-prices;
+episodes-not-frames; benches via nohup zsh from repo root (Bash 10-min
+cap), never pkill chrome while anything runs. Out of scope: alignment/
+oriented-hull (ASK ME for the ruling at close), wedge push, swamp
+corridor (next-after), lake, rating campaign. Commits local — push
+needs my credentials.
