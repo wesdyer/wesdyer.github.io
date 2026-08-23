@@ -14230,3 +14230,47 @@ non-floe venues re-benched at full anchor protocol and BYTE-IDENTICAL
 Next named arctic lever: the ROUTER's wide-water PAD knee (solo odo 36k vs
 his 25.4k — route length is the remaining solo mass; research-aug8 sizing
 stands, distinct-from-closed-families note already recorded).
+
+## THE THREE-THREADS PUSH (2026-08-23 daytime, owner: "Let's do all three") — D1v2 + T1 SHIPPED `ea0d228`+`e82dd54`
+
+Owner approved all three carry-forwards from the C4 close: (1) the
+alignment/sub-80u frontier, (2) D1 re-litigation, (3) the router PAD knee.
+Base = C4 ship HEAD `f6a0c04`, arctic anchors d3barc*.
+
+**✅ D1v2 SHIPPED `ea0d228` — clean-preferred escapes (pure ordering).**
+The wall form died (+10 med, land +55%); the ordering form: an escape
+whose probe crosses ice loses to any fully-clean escape, ONLY when one
+exists — no price changes, boxed boats keep stock ordering. Arctic pooled
+64 (hand-checked): clock med 0.0/mean −0.6, **floe 19.17→16.81 (−12%) —
+fleet floe now BELOW the pre-C2-gate 17.00, the accepted watch's
+elevation fully erased** — boat −12%, pen −13%.
+
+**✅ T1 SHIPPED `e82dd54` — the sub-80u frontier, two halves of one
+capability.** The NP-70u pin's mechanism was measured, not guessed: the
+boat NEVER reached the slot — the router detoured 2.5x because the
+corridor waist cell failed tier admission. Admission is a SUP-over-the-
+cell question: an exactly-70u slot has bar-35 clearance only ON its
+centerline, so the old 5-point stencil admitted only ~80u+ — the ladder's
+80.6-pass/68.6-half-fail gap IS the sample-miss geometry. Fix 1: 5x5
+tier subsample at RES/5 (bar untouched; icy venues keep centre-only).
+With admission alone 5/11 — the rest bailed at the mouth 18-19° off-axis
+= exactly the 0.3-rad trust boundary. Fix 2: SLOT-scoped axis-line
+pursuit carrot (fires only when no open water lies abeam of the run's
+midpoint — a ribbon guard that took river's land from +15% to a
+sign-mixed +4.7%; aim-at-exit variants scored 0-1/11, axis pursuit
+**11/11, turn 640°→155-195°, off-proper 286→1.1m; row PROMOTED from
+xfail**). Redrock pooled 6-set (the bar-21 canary): med 0.0/mean −0.6,
+all dirt flat. Composite arctic pooled 64: med +1.0/mean +0.2, floe −11%.
+Suite 4/27 = the known set; goldens verify PASS 30.
+WATCH COLUMNS (named): river land +4.7% (sign-mixed), glow boat
++0.72/boat abs, lagoon boat +0.61/boat abs, lake boat +0.24/boat abs —
+all clock-flat paired; his call whether any warrants a follow-up.
+
+**⛔ T3 CLOSED — the router PAD knee is DEAD 0-for-2** (PAD 4: solo
++67/−1/+40/+115 catastrophic; PAD 6: +4/+9/+16/+66 all positive, floe
+up). The 2026-08 softening had already cut wall-adjacent extras to
+≤2.2x; the remaining router standoff is LOAD-BEARING — the route-length
+mass (solo odo 36k vs his 25.4k) is EXECUTION-bound near ice, not
+demand-bound. Any future route-length work needs ice-side execution
+capability first. research-aug8's PAD sizing is superseded by this
+measurement.
