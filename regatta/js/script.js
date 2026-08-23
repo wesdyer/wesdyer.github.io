@@ -5076,13 +5076,43 @@ class BotController {
                         // (Inert without floes: static and stamped clearance agree.)
                         let cScale = 10000;
                         const gStat = state.course._botGridStatic;
+                        let floeCausedD3 = false;
                         if (gStat && gStat !== gAv && window.SailCheck) {
                             // static _clear is lazy (only pathSailable builds it) and
                             // routing runs on the stamped grid — build it once here.
                             if (!gStat._clear) gStat._clear = window.SailCheck.clearanceField(gStat);
-                            if (gStat._clear[idAv] >= 3) cScale = 4000;
+                            if (gStat._clear[idAv] >= 3) { cScale = 4000; floeCausedD3 = true; }
                         }
-                        proximityCost += cScale * (1 - clr / 3);
+                        if (floeCausedD3) {
+                            // D3 — FL1c, THE CLEARANCE BAND'S FLOE HALF SEES THE
+                            // TRUE HULL (C4 push, 2026-08-22). The band was the
+                            // last consumer of fat stamps: it demanded 3 CELLS of
+                            // stamped clearance (stamps = hull+clearance+
+                            // prediction) where the recorded human's revealed
+                            // demand is a 46u median / 32u p25 pass-by CPA to the
+                            // true hull. Measured (_phantom_why): 48% of solo
+                            // AVOID_NONE deviation onsets were priced by this
+                            // band's floe half; 55-62% of the deviated time
+                            // counterfactually cleared at his margins. Same fix
+                            // class as FL1/FL1b (change what is MEASURED, keep
+                            // the price scale): clearance at the probe endpoint
+                            // to the predicted true hull, demand 78u (his p25
+                            // clearance-at-tack; solo A/B paid mean −14.7 s/boat
+                            // with floe episodes 18→12).
+                            let tcD3 = Infinity;
+                            const tED3 = lookaheadFrames / 60;
+                            for (const fD3 of (state.course._floeObjs || [])) {
+                                const dxD3 = fD3.x - landFX, dyD3 = fD3.y - landFY;
+                                if (dxD3 * dxD3 + dyD3 * dyD3 > (fD3.radius + 260) * (fD3.radius + 260)) continue;
+                                const cD3 = floeHullClear(fD3,
+                                    landFX - (fD3.driftVx || 0) * tED3,
+                                    landFY - (fD3.driftVy || 0) * tED3, tED3);
+                                if (cD3 < tcD3) tcD3 = cD3;
+                            }
+                            if (tcD3 < 78) proximityCost += 4000 * (1 - Math.max(0, tcD3) / 78);
+                        } else {
+                            proximityCost += cScale * (1 - clr / 3);
+                        }
                     }
                 }
             }
