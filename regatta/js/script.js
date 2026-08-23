@@ -5944,7 +5944,7 @@ function rapidsTiles(color) {
             const parts = [];
             for (let k = 0; k < 3; k++)
                 parts.push([(rnd() - 0.5) * r * 1.7, (rnd() - 0.5) * r * 1.7, r * (0.45 + rnd() * 0.55)]);
-            g.globalAlpha = 0.28 + rnd() * 0.6;
+            g.globalAlpha = 0.40 + rnd() * 0.55;
             for (let ox = -T; ox <= T; ox += T) for (let oy = -T; oy <= T; oy += T) {
                 g.beginPath();
                 for (const [dx, dy, rr] of parts) {
@@ -5962,9 +5962,28 @@ function rapidsTiles(color) {
     // is a sheet with dark lanes worn through it.
     // Wash blobs stay SMALL: at the wash pass's large draw scale a big clump magnifies
     // into a readable angular plate, and the wash must be mottling, never geometry.
+    // ⚠️ FOUR TIERS, AND THEY ARE MUCH DENSER THAN THE FIRST CUT'S THREE. Modelled by
+    // replicating this generator's own arithmetic offline and measuring the mean alpha it
+    // produces: 60/130/320 blobs at per-blob alpha 0.28-0.88 gave the top tier a mean of
+    // 0.234, which composited to 24% of the water going white at turbulence 1.0 and 17% at
+    // 0.5. An aerial photograph of real whitewater is 50-80% white and a riffle 20-30%, so
+    // the whole scale was living inside "riffle" — the owner's report was that 100% did not
+    // read as whitewater and 50% was barely discernible, and the numbers say exactly that:
+    // the entire 0.3-to-1.0 range spanned 14% to 24%.
+    //
+    // 200/420/700/1000 at 0.40-0.95 measures 0.182/0.331/0.491/0.621 mean alpha, which
+    // composites to 13% / 26% / 45% / 65%. That is a scale with a top and a bottom.
+    //
+    // ⚠️ BUILD COST GOES UP AND IT IS PAID ONCE. The four tiles are ~2,320 clumps against
+    // the old three's 640, and each clump stamps 3x3 for the wrap at 3 discs a stamp — call
+    // it 63,000 arcs on first sight of a rapid, per colour. It is lazy and cached in
+    // _rapidsTiles, so the cost is one frame the first time whitewater comes into view and
+    // never again; if that hitch is ever felt, cut the top tier's count and buy the mean
+    // alpha back with larger rMax rather than by raising the pass alpha, which is what
+    // flattens the ramp.
     t = _rapidsTiles[color] = {
         wash: make(130, 4, 11),
-        foam: [make(60, 2, 6.5), make(130, 2, 7), make(320, 2, 7.5)]
+        foam: [make(200, 2, 7), make(420, 2, 7.5), make(700, 2, 7.5), make(1000, 2, 7.5)]
     };
     return t;
 }
@@ -6035,11 +6054,11 @@ function drawRapidsFoam(ctx) {
         // turbulence — coverage is the cue, alpha only polishes it. Both stretched
         // hard along the flow for the streaky grain; the wash slides a little across
         // the flow so the two layers never lock together.
-        const foamTile = tiles.foam[turb < 0.4 ? 0 : turb < 0.7 ? 1 : 2];
+        const foamTile = tiles.foam[turb < 0.35 ? 0 : turb < 0.6 ? 1 : turb < 0.85 ? 2 : 3];
         const churn = Math.sin(t * 3.1) * 7;
         const passes = [
-            { tile: tiles.wash, a: 0.04 + 0.14 * turb, scale: 2.1, speed: 0.45, across: churn },
-            { tile: foamTile, a: 0.38 + 0.48 * turb, scale: 0.7, speed: 1.0, across: -churn * 0.5 }
+            { tile: tiles.wash, a: 0.06 + 0.20 * turb, scale: 2.1, speed: 0.45, across: churn },
+            { tile: foamTile, a: 0.34 + 0.66 * turb, scale: 0.7, speed: 1.0, across: -churn * 0.5 }
         ];
         for (const p of passes) {
             const pat = g.createPattern(p.tile, 'repeat');
@@ -6090,14 +6109,105 @@ function drawRapidsFoam(ctx) {
         // smoothstep, no blur. The stroke is centred on the outline, so the outer half
         // erases nothing (the clip painted nothing there) and the inner half fades the
         // texture out toward the edge instead of cutting blobs on a ruled line.
-        const fall = Math.max(40, r.falloff || 0);
+        // ⚠️ CLAMPED TO THE REGION'S OWN SIZE, AND THIS WAS THE BIGGER OF THE TWO REASONS
+        // THE RAPIDS DID NOT READ. The widest erase stroke is `fall * 1.5` centred on the
+        // outline, so it reaches `fall * 0.75` INWARD. Measured against Sockeye Run's nine
+        // authored regions, FIVE were entirely inside their own erase band — including
+        // rapids-3, the only turbulence-1.00 region on the map, whose inradius is 157u
+        // against a 225u reach. The strongest whitewater in the venue was being rubbed out
+        // completely, and rapids-6 kept 4% of its core.
+        //
+        // A falloff is a statement about how the turbulence FIELD fades — it belongs to the
+        // physics, and rapidsTurbAt still reads r.falloff untouched. What it cannot also be
+        // is a licence to erase more foam than the region contains. So the rim gets its own
+        // number, capped at 0.8 of the region's inradius (area/perimeter x 2, cheap and
+        // computed once), which leaves every region a core at full density however generous
+        // its authored falloff. See the jitter note below for why the factor is 0.62.
+        if (r._rimInr === undefined) {
+            let A2 = 0, L2 = 0;
+            const q = r.poly;
+            for (let i = 0; i < q.length; i++) {
+                const u = q[i], v = q[(i + 1) % q.length];
+                A2 += u[0] * v[1] - v[0] * u[1];
+                L2 += Math.hypot(v[0] - u[0], v[1] - u[1]);
+            }
+            r._rimInr = L2 > 0 ? Math.abs(A2) / L2 : 0;
+        }
+        // ⚠️ 0.62, NOT 0.8, AND THE JITTER IS WHY. The widest stroke reaches fall*0.75 inward
+        // and the rim wobble adds up to fall*0.34 more at its deepest excursion (the three
+        // harmonics sum to 1.0 at worst), so the true worst-case bite is 1.09*fall. At the
+        // old 0.8 cap that ate 87% of the inradius where the wobble ran deepest, leaving a
+        // thread. 0.62 keeps the guarantee the clamp exists for: ~32% of the core survives
+        // even at the deepest point of the wobble, and ~46% typically.
+        const fall = Math.max(40, Math.min(r.falloff || 0, r._rimInr * 0.62));
+
+        // ⚠️ AND THE RIM IS RAGGED, NOT PARALLEL. Three fixed-width strokes on the region's
+        // OWN outline gave a fade that was regular in both ways a fade can be: BANDED,
+        // because three steps is three visible steps, and GEOMETRIC, because every contour
+        // was an exact parallel of the polygon — so the authored shape's straight edges and
+        // corners read straight through the foam and the water ended on a drawn line.
+        //
+        // Fixed with a jittered rim path, cached per region. The outline is resampled at a
+        // fixed spacing and each sample slid along the edge normal by a wobble that is the
+        // sum of three harmonics at 3, 7 and 13 cycles per perimeter. Integer cycle counts
+        // are the whole trick: the noise is periodic over the closed loop, so it wraps with
+        // no seam, and it is smooth rather than spiky because neighbouring samples share the
+        // same low harmonics. The sign of the offset does not matter — the wobble is
+        // zero-mean, so it fingers in and out of the true outline, which is what a rapid's
+        // edge actually does. Phases come from a hash of the region's own first vertex, so
+        // every region wobbles differently and none of them moves between sessions.
+        //
+        // Steps go 3 -> 16 on a solved alpha ramp, which is the banding half of the fix.
+        if (!r._rimPath) {
+            const q = r.poly, pts = [];
+            let L3 = 0;
+            for (let i = 0; i < q.length; i++) L3 += Math.hypot(q[(i + 1) % q.length][0] - q[i][0],
+                                                                q[(i + 1) % q.length][1] - q[i][1]);
+            let hh = ((q[0][0] * 374761393 + q[0][1] * 668265263) | 0);
+            hh = Math.imul(hh ^ (hh >>> 13), 1274126177); hh = (hh ^ (hh >>> 16)) >>> 0;
+            const ph = [hh / 4294967296, (Math.imul(hh, 48271) >>> 0) / 4294967296,
+                        (Math.imul(hh, 69621) >>> 0) / 4294967296].map(v => v * Math.PI * 2);
+            const amp = fall * 0.34;
+            const step = Math.max(10, L3 / 220);
+            let s = 0;
+            for (let i = 0; i < q.length; i++) {
+                const a0 = q[i], b0 = q[(i + 1) % q.length];
+                const ex = b0[0] - a0[0], ey = b0[1] - a0[1];
+                const el = Math.hypot(ex, ey) || 1;
+                const nx = ey / el, ny = -ex / el;          // edge normal; sign is irrelevant
+                for (let d = 0; d < el; d += step) {
+                    const u = s + d, k = u / L3 * Math.PI * 2;
+                    const n = 0.52 * Math.sin(3 * k + ph[0])
+                            + 0.30 * Math.sin(7 * k + ph[1])
+                            + 0.18 * Math.sin(13 * k + ph[2]);
+                    pts.push([a0[0] + ex * (d / el) + nx * n * amp,
+                              a0[1] + ey * (d / el) + ny * n * amp]);
+                }
+                s += el;
+            }
+            r._rimPath = pts;
+        }
+        const rimPath = () => {
+            const pts = r._rimPath;
+            g.beginPath();
+            g.moveTo(pts[0][0], pts[0][1]);
+            for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+            g.closePath();
+        };
         g.save();
         g.globalCompositeOperation = 'destination-out';
         g.strokeStyle = '#000';
-        for (const [w, a] of [[fall * 1.5, 0.45], [fall * 0.9, 0.5], [fall * 0.45, 0.6]]) {
-            g.globalAlpha = a;
-            g.lineWidth = w;
-            path();
+        // Sixteen steps on a (1-f)^2.6 ramp. Solved rather than guessed: the numbers are the
+        // pair that minimises the LARGEST single jump in the cumulative erase while still
+        // reaching ~92% at the outline. It profiles 92/88/78/71/58/45/39/28/22/12/0 with no
+        // step over 6.7%, against the old three strokes' 89/75/55/0 whose smallest jump was
+        // 20 points — and a 20-point jump in a fade IS a band.
+        const RIM_STEPS = 16;
+        for (let i = 0; i < RIM_STEPS; i++) {
+            const f = (i + 1) / RIM_STEPS;                 // 1 = widest, reaches furthest in
+            g.globalAlpha = 0.06 + 0.34 * Math.pow(1 - f, 2.6);
+            g.lineWidth = fall * 1.5 * f;
+            rimPath();
             g.stroke();
         }
         g.restore();
