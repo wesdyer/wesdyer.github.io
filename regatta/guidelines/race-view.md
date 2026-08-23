@@ -50,11 +50,14 @@ Reference: `references/topdown-world-reference.png`.
 ## 1. Camera and projection — **Rule**
 
 - **Top-down orthographic.**
-- **In heading mode the boat sits three quarters of the way down the frame**
-  (`CAM_LOOK_AHEAD`), not centred: what a sailor reads is ahead of the bow — the next mark,
-  the pressure coming down, the crest about to lift the stern — and a centred camera spends
-  half the frame on water already sailed. The trade is that a boat on your transom is more
-  often off screen; the edge indicators cover it.
+- **In heading mode the boat sits two thirds of the way down the frame** (`CAM_LOOK_AHEAD`,
+  and the boat lands at `0.5 +` it), not centred: what a sailor reads is ahead of the bow —
+  the next mark, the pressure coming down, the crest about to lift the stern — and a centred
+  camera spends half the frame on water already sailed.
+  - ⚠️ **It is a trade, and that is what sets the number.** Everything the offset buys ahead
+    it takes from astern, where the boat on your transom is. 1/4 (three quarters down) went
+    too far — 1/6 keeps more of the rearward view and still splits the frame two-to-one
+    forward. The edge indicators cover whatever falls off the back.
   - ⚠️ **Heading mode only.** The offset works because that mode guarantees the bow points up
     the frame. In `north` the same offset would put the boat at a different edge every time
     you changed course.
@@ -64,6 +67,8 @@ Reference: `references/topdown-world-reference.png`.
     cannot keep up. `camera.fx/fy` is the soft follow point; the look-ahead is rigid on top,
     so turning pivots the world about the hull. Measured on one trajectory with both rules
     running: excursion 13 px → 5 px on a 1000 px frame (`eval/_camturn.js`).
+  - `eval/_camoffset.js` reads `CAM_LOOK_AHEAD` out of the code rather than restating the
+    framing, so retuning the camera cannot leave a test asserting the old one.
 - Anything projecting world→screen must go through `camera.x/y` and `camera.rotation`
   (`drawBoatInstruments`, the edge indicators) — never assume the player is at frame centre.
 - Boat heading unambiguous at a glance.
@@ -299,8 +304,10 @@ buys the ratio on every venue at once. [debt.md](debt.md) item 1.
 - Vary spacing and length to avoid wallpaper repetition.
 - Keep particles below the contrast of boats and labels.
 - Fewer, larger marks beat dense micro-particles.
-- Gust and lull tints come from the venue's `palette.gusts` (§4), never a generic
-  blue — a cat's-paw is *this* water moving, not a patch laid on top.
+- Gust and lull tints take their HUE from the venue's `palette.gusts` (§4), never a generic
+  blue — a cat's-paw is *this* water moving, not a patch laid on top. Their LIGHTNESS and
+  alpha are calibrated rather than authored, so the step is the same on every venue and
+  always in the right direction — see §8.2.
 
 ### 8.1 Wind comets — **Observed** (`drawParticles(ctx, 'air')`)
 
@@ -404,9 +411,89 @@ Rules this layer must keep:
   whole made the tip jump ~16× the head's step on 6.5% of frames — a visible twitch on
   every streak, ten times a second. `streakSpine` keeps one spare sample and interpolates.
 
+- **A flat venue is allowed to look flat.** Clubhouse Point authors `speedVar: 0` with no
+  cells and no squalls, deliberately — it is the eval anchor. `pressureAt` would divide by a
+  zero span there; `PRESSURE_MIN_SPAN` forces a ±18% ramp about the median so every comet
+  lands at exactly mid-ramp and the layer draws a uniform field for a uniform wind. Verified
+  clean, no NaN in any channel, by `eval/_anchor_flat.js`.
+- **Venues carry pressure in different SHAPES, and the layer that reads them differs.**
+  Stillwater is a broad regional gradient (five regions, 2–10 kt) — the comet-density
+  gradient across the course is the cue. Pearl Lagoon is a steady trade wind flat to a tenth
+  of a knot, and its whole 7.7–24.3 kt range comes from **squalls** — so the squall's own
+  shadow and rain are the primary cue there, with comets 1.46× denser inside one. A single
+  "spread" number cannot tell those apart; `eval/_wind_decomp.js` silences one source at a
+  time and says which.
+- **There has to be a POPULATION to read a gradient off.** The ceiling, not the ramp, was
+  the binding constraint: `STREAK_MAX_SPAWN` at 0.20 capped the layer near 38 comets on
+  screen at maximum pressure, and the measured reality was **5 on Stillwater and 16 on
+  Redrock** — the two venues whose whole point is a patchy breeze. Nobody reads pressure off
+  five marks. Raised with the ramp; on-screen population is now 16–83 across the ten venues.
+- **The light end had all three size channels collapsing at once.** Density, length and width
+  each key off absolute wind, and on Stillwater — where **72% of the water sits under 8
+  knots** — they bottomed out together. Measured per band (`eval/_comet_lowend.js`):
+
+  | Stillwater | on screen | length | half-width |
+  |---|---|---|---|
+  | 0–6 kt | 4 → **12** | 32 → **43 u** | 0.40 → **0.66** |
+  | 6–8 kt | 9 → **18** | 44 → **58 u** | 0.59 → **0.87** |
+  | 8–11 kt | 18 → **46** | 63 → **84 u** | 1.10 → **1.36** |
+
+  Three levers, each chosen because it **cannot reach the top of the ramp**: `wLight` (the
+  width multiplier cancels out entirely once `abs` hits 1), `STREAK_REF_WIND` (the window
+  stretch is `max(1, ref/median)`, so a course at or above it gets exactly 1), and
+  `STREAK_FLOOR_FRAC` (the floor is `min(STREAK_MIN_WIND, med × frac)`, so above ~13 knots
+  median the absolute cap decides it). Verified: Redrock's 15–20 and 20+ bands come out
+  byte-identical in length and width.
+- **The ramp is white → mint → green → yellow-green → gold → amber → red → crimson**
+  (`STREAK_PALETTES.wind`). The literal white→green→yellow→orange→red proposal is kept
+  alongside it as `heat` and switches live with `window.__streakPalette('heat')`. Two things
+  keep it from being the shipping ramp, both visible in `eval/_comet_ramp.js`'s strip: its
+  saturated green at 7–14 kt loses contrast on Gatorgrass's olive water, and its orange at
+  ~26 kt lands on the fleet's mark orange.
+
 Diagnostics: `eval/_comet_probe.js` (drawn vs `getWindAt`), `_comet_flicker.js` (tip
 smoothness), `_comet_venues.js` (all ten), `_comet_cost.js`, `_comet_look.js` (variant
-sheets), `_dir_check.js` (which way a comet points). Tunables live on `window.__COMET`.
+sheets), `_dir_check.js` (which way a comet points), `_comet_lowend.js` (all four channels
+per wind band), `_spawnbias.js` (spawn chance in a puff vs clear), `_windspread.js` (is there
+any pressure to show?), `_comet_ramp.js` (ramp candidates over venue water). Tunables live on
+`window.__COMET`.
+
+### 8.2 Puffs on the water — **Observed** (`drawGusts`, `puffToneCal`)
+
+A cat's-paw is dark rough water; a hole is pale glassy water. Capillary ripple tilts the
+surface so it reflects away from the eye — *"the darker it is, the windier it is"* — and what
+a sailor looks for is the **edge**, because that is what says when it arrives.
+
+**Two flat tonal bands on the cell's own intensity contours, with torn edges** — not a
+gradient. The old baked radial sprite failed three ways, all measured (`eval/_puff_tone.js`):
+it ran to **13–18% of full scale** where 1–2% is just perceptible and 5% already reads as an
+overlay; it gave **4.4% on Bluewater, 0.0% on Redrock and 17.7% on Stillwater** for the same
+code, because the delta was an authored colour at a fixed alpha over ten different waters;
+and a smooth falloff has no edge at all. It was also the last gradient in a style guide whose
+third pillar is that this game never blurs.
+
+**Calibrated, not authored — magnitude *and* direction.** The alpha is solved per venue so
+the core lands on a fixed perceptual step, and the tint keeps the venue's hue and saturation
+while its *lightness* is pushed away from the water in the guaranteed direction. Both halves
+were needed: calibrating magnitude alone left Glacier Sound's gust tint within a luma step of
+its own water (**0.0%, invisible at any alpha**) and Pearl Lagoon's authored `lullBright`
+*darker* than its water, so holes read like gusts — worse than showing nothing, because it
+says the opposite of the truth. Every venue now lands on **−5.6 / +5.6 luma (2.2%)**, gust
+dark and lull bright (`eval/_puff_cal.js`).
+
+⚠️ **The tone is the supporting cue; the comet density is the primary one.** Cells are
+routinely larger than the viewport (Bluewater's run 2150×918 units against a 1400×900 frame),
+and an edge that is off screen tells you nothing — density still reads.
+
+⚠️ **Overlapping cells compound here and are clamped in the physics.** `getWindAt` limits
+stacked same-sign puffs to the strongest single cell's worth; these are independent polygon
+fills, so alphas composite. Measured on flat water with all fourteen of Stillwater's cells in
+frame: p1 −3.1%, p99 +1.6%, worst pixel 5.1%. Matching the clamp exactly needs an offscreen
+max-composited mask every frame — not worth it for that; revisit if cell counts rise.
+
+⚠️ **The minimap keeps its gradient and is a separate draw.** Different job: the chart is read
+as a weather map, where a soft blob is the right idiom and there is no water for the mark to
+be a property of.
 
 ---
 

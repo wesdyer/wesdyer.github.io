@@ -9,8 +9,18 @@
 //   { kind:'row',     of: 0, over: 1, rule?: '13', t: 6.0, t1?, xfail? }
 //   { kind:'clear',   a: 0, b: 1, min: 55, xfail? }
 //   { kind:'tack',    who: 0, tack: 'port'|'stbd', t: 7.0, xfail? }
-//   { kind:'goals',   who: 0, xfail? }
+//   { kind:'goals',   who: 0, goal?: 1 (0-based; absent = ALL), t1?: 12.0
+//                     (deadline s; absent = end of run), xfail? }
 //   { kind:'proper',  who: 0, tol?: 10 (metres), xfail? }   needs ctx.proper
+//   { kind:'deflect', who: 0, max?: 23 (degrees), t0?, t1?, xfail? }
+//                     max recorded avoidance deviation over the window
+//   { kind:'role',    who: 0, role: 'STAND_ON'|'GIVE_WAY'|'NONE', t: 1.0, t1?, xfail? }
+//                     boat holds that avoidance role on every frame of [t, t1]
+//   { kind:'steady',  who: 0, max?: 2, t0?, t1?, xfail? }
+//                     avoidance deviation reverses at most max times over the
+//                     window — a reversal is a SIGN FLIP of the recorded dev,
+//                     or a quick re-arm (dev drops to zero and fires again
+//                     within 0.5s). Catches the memoryless-argmin flap.
 //   { kind:'nocollide', xfail? }   scenario-wide: no hull contact at all
 //
 // The recording (rec) is the lab's: frames[] of per-boat snapshots + pairs,
@@ -32,6 +42,52 @@
         return g === w || g.startsWith(w + ' ') || g.startsWith(w + '(');
     }
     const fmtBoat = (names, i) => (names && names[i]) || ('boat ' + i);
+
+    // FLAP COUNT — one implementation for the 'steady' assert AND the lab's
+    // metrics panel (the battery's lesson: page and runner must judge with
+    // the same code). A flap (reversal) is either
+    //   · a QUICK RE-ARM: the recorded avoidance deviation (dev, radians,
+    //     signed) collapses to zero and fires again within 0.5s, or
+    //   · a TURNING POINT of the signed dev series with prominence ≥ 0.35
+    //     rad (~20°): the helm swings out, back, out again — the 92/0/69/40°
+    //     tick-to-tick anatomy. A monotone escalation (34° → 50° → 70° as
+    //     range closes) has no turning point and counts nothing; a single
+    //     decisive side switch, held, counts nothing either.
+    // Sub-1.7° dev is jitter, not a side.
+    // Returns null when the boat is missing from any frame of the window.
+    function countFlaps(rec, who, t0, t1) {
+        const frames = rec.frames || [];
+        const nF = rec.nF != null ? rec.nF : frames.length - 1;
+        const f0 = t0 != null ? Math.max(0, Math.round(t0 * 60)) : 0;
+        const f1 = t1 != null ? Math.min(nF, Math.round(t1 * 60)) : nF;
+        const EPS = 0.03;           // rad, ~1.7°
+        const REARM_MAX = 30;       // frames of zero that still read as a flap
+        const PROM = 0.35;          // rad, turning-point prominence (~20°)
+        let flaps = 0, zeros = 0, armed = false;
+        let lastVal = null, dir = 0, extremum = null;
+        for (let f = f0; f <= f1; f++) {
+            const b = frames[f] && frames[f].boats[who];
+            if (!b) return null;
+            const d = b.dev || 0;
+            if (Math.abs(d) < EPS) { if (armed) zeros++; continue; }
+            if (armed && zeros >= 1 && zeros <= REARM_MAX) flaps++;
+            if (armed && zeros > REARM_MAX) { lastVal = null; dir = 0; extremum = null; }
+            zeros = 0; armed = true;
+            if (lastVal !== null) {
+                const delta = d - lastVal;
+                if (Math.abs(delta) >= 0.02) {
+                    const newDir = delta > 0 ? 1 : -1;
+                    if (dir !== 0 && newDir !== dir) {
+                        if (extremum === null || Math.abs(lastVal - extremum) >= PROM) flaps++;
+                        extremum = lastVal;
+                    }
+                    dir = newDir;
+                }
+            } else { extremum = d; }
+            lastVal = d;
+        }
+        return flaps;
+    }
 
     // one row against one recording — returns raw {pass, why, atS}.
     // ctx.proper (the PROPER COURSE composite) feeds the 'proper' kind.
@@ -122,6 +178,45 @@
                     : `held proper course (max ${worstM} m off at ${at.toFixed(1)}s)` }
                 : { pass: false, why: `strayed past ${tolM} m at ${firstBad.toFixed(1)}s (max ${worstM} m at ${at.toFixed(1)}s)`, atS: firstBad };
         }
+        if (a.kind === 'deflect') {
+            // avoidance DEFLECTION budget: the controller's own recorded
+            // avoidance deviation (frames[].boats[].dev, radians) never
+            // exceeds a cap in degrees over the window. This is the helm's
+            // commanded deflection, not a track comparison — it reads zero
+            // for a boat whose avoidance never fires. atS = the FIRST frame
+            // over the cap; the worst deflection reads out in the message.
+            const maxDeg = a.max != null ? a.max : 23;
+            const f0 = a.t0 != null ? Math.max(0, Math.round(a.t0 * 60)) : 0;
+            const f1 = a.t1 != null ? Math.min(nF, Math.round(a.t1 * 60)) : nF;
+            let worst = 0, at = 0, firstBad = null;
+            for (let f = f0; f <= f1; f++) {
+                const b = frames[f] && frames[f].boats[a.who];
+                if (!b) return { pass: false, why: 'boat missing from recording' };
+                const d = Math.abs(b.dev || 0) * 180 / Math.PI;
+                if (d > worst) { worst = d; at = f / 60; }
+                if (d > maxDeg && firstBad === null) firstBad = f / 60;
+            }
+            const worstS = Math.round(worst);
+            return worst <= maxDeg
+                ? { pass: true, why: worst === 0 ? 'no avoidance deflection'
+                    : `deflected ≤ ${worstS}° (worst at ${at.toFixed(1)}s)` }
+                : { pass: false, why: `deflected past ${maxDeg}° at ${firstBad.toFixed(1)}s (worst ${worstS}° at ${at.toFixed(1)}s)`, atS: firstBad };
+        }
+        if (a.kind === 'role') {
+            // role WINDOW: the controller holds one avoidance role on every
+            // frame of [t, t1] (t1 defaults to t). Catches the bimodal
+            // STAND_ON latch — a seed that never latches fails here.
+            const want = a.role || 'STAND_ON';
+            const f0 = Math.max(0, Math.round((a.t || 0) * 60));
+            const f1 = Math.min(nF, Math.round((a.t1 != null ? a.t1 : (a.t || 0)) * 60));
+            for (let f = f0; f <= f1; f++) {
+                const b = frames[f] && frames[f].boats[a.who];
+                if (!b) return { pass: false, why: 'boat missing from recording' };
+                if ((b.role || 'NONE') !== want)
+                    return { pass: false, why: `${fmtBoat(names, a.who)} was ${b.role || 'NONE'} at ${(f / 60).toFixed(1)}s, not ${want}`, atS: f / 60 };
+            }
+            return { pass: true, why: `${fmtBoat(names, a.who)} held ${want} through ${(f0 / 60).toFixed(1)}–${(f1 / 60).toFixed(1)}s` };
+        }
         if (a.kind === 'near') {
             // rounding TIGHTNESS: closest approach to a mark stays within a
             // budget (metres). ctx.marks = [{x,y}] in world units.
@@ -166,6 +261,16 @@
                 ? { pass: true, why: `turned ${totDeg}° total` }
                 : { pass: false, why: `passed ${max}° at ${overAt.toFixed(1)}s (${totDeg}° total by the end)`, atS: overAt };
         }
+        if (a.kind === 'steady') {
+            // STEADY HELM: avoidance deviation reverses at most `max` times
+            // over the window (see countFlaps above for what a reversal is).
+            const max = a.max != null ? a.max : 2;
+            const n = countFlaps(rec, a.who, a.t0, a.t1);
+            if (n == null) return { pass: false, why: 'boat missing from recording' };
+            return n <= max
+                ? { pass: true, why: n === 0 ? 'no reversals' : `${n} reversal${n === 1 ? '' : 's'}` }
+                : { pass: false, why: `${n} avoidance reversals (max ${max}) — the flap` };
+        }
         if (a.kind === 'nocollide') {
             // EXACT collision test: the engine's own hull-polygon contact
             // events (captured before the penalty debounce), orientation-
@@ -176,13 +281,31 @@
                 : { pass: true, why: 'no hull contact' };
         }
         if (a.kind === 'goals') {
+            // GOAL COMPLETION, general form (owner, 2026-08-21): `goal`
+            // names ONE goal (0-based in the doc, 1-based in labels);
+            // absent = ALL — the old row is the default case of this one.
+            // `t1` is an optional deadline in seconds; absent = end of run.
+            // The recording carries gi per frame, so the completion MOMENT
+            // is known — it reads out in the message and drives atS.
             const n = (rec.goalCounts || [])[a.who] || 0;
             if (!n) return { pass: false, why: `${fmtBoat(names, a.who)} has no goals` };
-            const last = frames[nF] && frames[nF].boats[a.who];
-            const gi = last ? (last.gi || 0) : 0;
-            return gi >= n
-                ? { pass: true, why: `all ${n} goals done` }
-                : { pass: false, why: `${gi}/${n} goals by the end`, atS: nF / 60 };
+            if (a.goal != null && a.goal >= n)
+                return { pass: false, why: `${fmtBoat(names, a.who)} has only ${n} goal${n === 1 ? '' : 's'}` };
+            const target = a.goal != null ? a.goal + 1 : n;
+            const what = a.goal != null ? `goal ${a.goal + 1}` : `all ${n} goals`;
+            let doneAt = null;
+            for (let f = 0; f <= nF; f++) {
+                const b = frames[f] && frames[f].boats[a.who];
+                if (!b) return { pass: false, why: 'boat missing from recording' };
+                if ((b.gi || 0) >= target) { doneAt = f / 60; break; }
+            }
+            if (doneAt === null) {
+                const last = frames[nF].boats[a.who];
+                return { pass: false, why: `${what} not done — ${last.gi || 0}/${n} by the end`, atS: nF / 60 };
+            }
+            if (a.t1 != null && doneAt > a.t1)
+                return { pass: false, why: `${what} done at ${doneAt.toFixed(1)}s — after the ${a.t1.toFixed(1)}s deadline`, atS: doneAt };
+            return { pass: true, why: `${what} done at ${doneAt.toFixed(1)}s` };
         }
         return { pass: false, why: 'unknown assertion kind ' + a.kind };
     }
@@ -203,16 +326,27 @@
         if (a.kind === 'row') return `${a.t.toFixed(1)}${a.t1 != null ? '–' + a.t1.toFixed(1) : ''}s ${nm(a.of)} rights over ${nm(a.over)}${a.rule ? ' · R' + String(a.rule).replace(/rule\s*/i, '') : ''}`;
         if (a.kind === 'clear') return `${nm(a.a)}·${nm(a.b)} clear ≥ ${a.min != null ? a.min : 55}u`;
         if (a.kind === 'tack') return `${a.t.toFixed(1)}s ${nm(a.who)} on ${a.tack}`;
-        if (a.kind === 'goals') return `${nm(a.who)} completes goals`;
+        if (a.kind === 'goals') return `${nm(a.who)} completes ${a.goal != null ? 'goal ' + (a.goal + 1) : 'goals'}${a.t1 != null ? ' by ' + a.t1.toFixed(1) + 's' : ''}`;
         if (a.kind === 'proper') return a.tol === 0 ? `${nm(a.who)} matches proper course exactly`
             : `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 10}m`;
         if (a.kind === 'nocollide') return 'no collisions';
+        if (a.kind === 'deflect') {
+            const win = a.t0 != null || a.t1 != null
+                ? ` ${(a.t0 != null ? a.t0.toFixed(1) : '0')}–${a.t1 != null ? a.t1.toFixed(1) + 's' : 'end'}` : '';
+            return `${nm(a.who)} deflects ≤ ${a.max != null ? a.max : 23}°${win}`;
+        }
+        if (a.kind === 'role') return `${(a.t || 0).toFixed(1)}${a.t1 != null ? '–' + a.t1.toFixed(1) : ''}s ${nm(a.who)} is ${a.role || 'STAND_ON'}`;
+        if (a.kind === 'steady') {
+            const win = a.t0 != null || a.t1 != null
+                ? ` ${(a.t0 != null ? a.t0.toFixed(1) : '0')}–${a.t1 != null ? a.t1.toFixed(1) + 's' : 'end'}` : '';
+            return `${nm(a.who)} steady helm ≤ ${a.max != null ? a.max : 2} reversals${win}`;
+        }
         if (a.kind === 'near') return `${nm(a.who)} rounds within ${a.max != null ? a.max : 15}m of mark ${(a.mark || 0) + 1}`;
         if (a.kind === 'turn') return `${nm(a.who)} turns ≤ ${a.max != null ? a.max : 360}° total`;
         return a.kind;
     }
 
-    const api = { evaluate, label, ruleMatches };
+    const api = { evaluate, label, ruleMatches, countFlaps };
     if (typeof window !== 'undefined') window.ScenarioAsserts = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();

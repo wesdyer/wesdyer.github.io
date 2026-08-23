@@ -64,6 +64,7 @@ let detail = 120;             // the scale a brush works AT — ⇧[ and ⇧]. R
 let selWind = -1;              // selected wind region
 let selCur = -1;               // selected current region
 let selGust = -1;              // selected gust region
+let selRapids = -1;            // selected rapids region
 let selLine = -1;              // selected gate / line
 // Multi-selection of vertices, shared by every mode that owns vertices: land in Vertices
 // mode, the arena in Arena mode, a region's outline in Wind mode. One implementation, so
@@ -96,7 +97,10 @@ const REGION = {
                sel: () => selCur,   setSel: (v) => { selCur = v; } },
     gust:    { list: () => (doc && doc.gusts && doc.gusts.regions) || [],
                owner: () => (doc.gusts || (doc.gusts = {})),
-               sel: () => selGust,  setSel: (v) => { selGust = v; } }
+               sel: () => selGust,  setSel: (v) => { selGust = v; } },
+    rapids:  { list: () => (doc && doc.rapids && doc.rapids.regions) || [],
+               owner: () => (doc.rapids || (doc.rapids = {})),
+               sel: () => selRapids, setSel: (v) => { selRapids = v; } }
 };
 // ⚠️ `list` and `sel` READ ONLY. `owner` is the write path and creates the container, which
 // is right for it and wrong for them: an accessor that created `regions = []` on load
@@ -203,7 +207,7 @@ let listAnchor = -1, listCursor = -1;
 const regsOf    = (k) => REGION[k].list();
 const regSel    = (k) => REGION[k].sel();
 const setRegSel = (k, v) => REGION[k].setSel(v);
-const clearRegSel = () => { selWind = -1; selCur = -1; selGust = -1; };
+const clearRegSel = () => { selWind = -1; selCur = -1; selGust = -1; selRapids = -1; };
 // The region this layer currently has selected, or null. The three modes never overlap, so
 // "the selected region" is unambiguous whenever it is asked.
 const activeReg = () => (isRegionMode(mode) && regSel(mode) >= 0) ? regsOf(mode)[regSel(mode)] : null;
@@ -326,6 +330,33 @@ const LAND_TYPES = [
     { kind: 'reed',    label: 'Grass',   swatch: '#7aaa1d' },
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
+    // Stillwater Lake's three grounds. Swatches track ISLAND_STYLES.<kind>.body and are still
+    // the tile SPEC means, so they move when the art is ingested and the bodies are reset.
+    // ⚠️ "Glacial Granite" is NOT "Granite" — one is ice-SMOOTHED northern shelf rock, the
+    // other Glacier Sound's fractured mountainside. They sort adjacent in this list, so the
+    // labels are the only thing keeping them apart for a designer.
+    { kind: 'forestfloor', label: 'Forest Floor',    swatch: '#7C633D' },
+    { kind: 'lakesand',    label: 'Lake Sand',       swatch: '#B7A487' },
+    { kind: 'gneiss',      label: 'Glacial Granite', swatch: '#807A7F' },
+    // ── SOCKEYE RUN'S FOUR GROUNDS ──────────────────────────────────────────
+    // Swatches track ISLAND_STYLES.<kind>.body and these four are already the DELIVERED tile
+    // means, not spec means — the art landed before the labels did.
+    //
+    // ⚠️ THESE ARE THE FIRST LABELS ON THE [VENUE] [TERRAIN] CONVENTION, and the reason is
+    // two rows above: "Glacial Granite" already had to be told apart from "Granite" by label
+    // alone, and this venue adds a THIRD granite. Unprefixed names stopped scaling at two.
+    // Because the sort below is BY LABEL, a venue prefix also groups every one of a venue's
+    // grounds together in the picker for free — no grouping code, just the name. The KIND
+    // stays bare (`outcrop`, not `river-outcrop`) because every venue doc on disk names kinds
+    // and renaming them would need a document migration; this is the `isle` -> "Coastal Sand"
+    // move again, label-only.
+    { kind: 'cobble',      label: 'River Cobble',   swatch: '#6E6B65' },
+    { kind: 'meadow',      label: 'River Meadow',   swatch: '#929738' },
+    { kind: 'outcrop',     label: 'River Granite',  swatch: '#999C9E' },
+    { kind: 'humus',       label: 'River Humus',    swatch: '#352B19' },
+    // Sorts directly under River Cobble, which is what it is — the same bar under water.
+    { kind: 'cobbleshoal', label: 'River Cobble Shoal', swatch: '#6E6B65' },
+    { kind: 'mossfloor',   label: 'River Moss',      swatch: '#618414' },
     // LABEL ONLY — the kind stays `isle`, which every venue doc on disk already names.
     // Renamed from plain "Sand" because the cove's other two grounds are Coastal Rock and
     // Coastal Scrub, and the sort below is by LABEL, so this now files with them instead of
@@ -1184,6 +1215,12 @@ const LAYERS = [
     // any other layer — which is exactly what it could not do while it shared Water's panel.
     { id: 'current',  mode: 'current', name: 'Current', icon: 'stream',
       count: () => cregs().length || null },
+    // Under Current, because rapids ARE that water — the current says where the stream
+    // goes, a rapid says what the surface is like on the way: turbulence only, robbing
+    // drive and shoving the bow. Flow stays the Current layer's, in whole, so the two
+    // layers can never author the same knots twice.
+    { id: 'rapids',   mode: 'rapids',  name: 'Rapids', icon: 'rapids',
+      count: () => rregs().length || null },
     { id: 'marks',    mode: 'marks',   name: 'Marks',  icon: 'mark',
       count: () => doc ? `${dmarksOf().length}+${dlines().length}` : null },
     { id: 'route',    mode: 'route',   name: 'Route',  icon: 'route',
@@ -1206,6 +1243,8 @@ const LAYER_ICON = {
     wave:  '<path d="M1 6.6c1.5-1.8 3-1.8 4.5 0s3 1.8 4.5 0 2-1.2 3 0V12H1z" fill="currentColor" opacity=".85"/>',
     // Two streamlines: water going somewhere.
     stream: '<path d="M1 11c2-2 3.5-2 5.5 0S10 13 12 11" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M1 7c2-2 3.5-2 5.5 0S10 9 12 7" stroke="currentColor" stroke-width="1.4" fill="none"/>',
+    // A jagged crest over a streamline: broken water going somewhere.
+    rapids: '<path d="M1 5.5l1.8-1.9L4.6 5.5l1.8-1.9L8.2 5.5 10 3.6l1.9 1.9" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/><path d="M1 10.5c2-2 3.5-2 5.5 0s3.5 2 5.5 0" stroke="currentColor" stroke-width="1.4" fill="none"/>',
     land:  '<path d="M1.5 11l3.5-6 3 4 2-2.5 2.5 4.5z" stroke="currentColor" stroke-width="1.3" fill="none"/>',
     frame: '<rect x="2" y="2.5" width="10" height="9" stroke="currentColor" stroke-width="1.3" fill="none"/>',
     ice:   '<path d="M7 1.5v11M2.5 4l9 6M11.5 4l-9 6" stroke="currentColor" stroke-width="1.2"/>',
@@ -1312,20 +1351,22 @@ function toolOpts() {
     // nothing while you are selecting.
     const placing = sub === 'place';
     const props = mode === 'props' && placing;
-    box.hidden = !makes && !props;
+    // `kind` picks a SHAPE kind, so it belongs only where the maker MAKES a shape. On a
+    // region layer Draw makes a region of that layer, and on Traffic a lane — a granite/floe
+    // dropdown there is answering a question nobody asked, the same reason props hide it.
+    // And with the kind gone those layers' strip would be empty, so the strip goes too.
+    const shapeMaker = mode === 'shape';
+    box.hidden = !(shapeMaker && makes) && !props;
     const po = $('place-opts');
     if (po) po.style.display = (mode === 'shape' && placing) ? 'flex' : 'none';
     const pr = $('prop-opts');
     if (pr) pr.style.display = props ? 'flex' : 'none';
-    // `kind` here picks a SHAPE kind for Draw and Place. On the props layer it would be
-    // answering a question nobody asked — the prop's own kind is the panel's picker.
-    //
     // ⚠️ `.closest('.to-f')`, NOT parentElement: enhanceSelect wraps the select in its own
     // container, so the select's parent is that wrapper and hiding it leaves the cell's
     // "KIND" caption sitting there labelling nothing. The whole cell is what has to go.
     const nk = $('new-kind');
     const cell = nk && nk.closest ? nk.closest('.to-f') : null;
-    if (cell) cell.style.display = props ? 'none' : '';
+    if (cell) cell.style.display = shapeMaker ? '' : 'none';
 }
 
 // The size and heading the next click hands a prop. READ AT THE MOMENT OF PLACEMENT and
@@ -1627,12 +1668,16 @@ function hintBar() {
     }
     key.hidden = false;
     key.textContent = t.key;
-    // A MAKER says what it will make. Both read the same picker, so the hint is where the
-    // answer to "granite or floe?" is visible without looking away from the map.
-    const kindLabel = (LAND_TYPES.find(x => x.kind === newKind()) || {}).label;
+    // A MAKER says what it will make. The kind picker's answer applies only where the
+    // maker makes a SHAPE — on a region layer Draw makes a region of that layer, and
+    // saying "Draw — Floe" there was the picker's wrong answer leaking into the hint.
+    const kindLabel = mode === 'shape' ? (LAND_TYPES.find(x => x.kind === newKind()) || {}).label : null;
     const propKind = mode === 'props' ? ($('prop-kind') || {}).value : null;
     name.textContent = (t.id === 'place' && propKind) ? `${t.name} — ${propKind}`
-        : ((t.id === 'draw' || t.id === 'place') && kindLabel ? `${t.name} — ${kindLabel}` : t.name);
+        : ((t.id === 'draw' || t.id === 'place') && kindLabel) ? `${t.name} — ${kindLabel}`
+        : (t.id === 'draw' && isRegionMode(mode)) ? `${t.name} — ${mode} region`
+        : (t.id === 'draw' && mode === 'traffic') ? `${t.name} — lane`
+        : t.name;
     const m0 = MODS[t.id];
     const mods = (typeof m0 === 'function' ? m0() : m0) || [];
     $('hint-mods').innerHTML = mods.map(m => `<span class="mod">${m}</span>`).join('')
@@ -1798,6 +1843,8 @@ const KIND_FILL = {
     // table's rule that only what you may sail over is translucent — which is also the one
     // thing that tells Coral Limestone from the translucent Coral Reef directly above it.
     coralrock: '#A7A193', tropicscrub: '#A9AF2A',
+    // Stillwater Lake. All three are dry land, so all three are solid.
+    forestfloor: '#7C633D', lakesand: '#B7A487', gneiss: '#807A7F',
     // The bayou. Its two DRY grounds are solid, like every other land kind; everything
     // that is awash is translucent, which is the schematic's one consistent rule — you
     // can see the water through anything you are allowed to sail over. The four weeds
@@ -1818,6 +1865,13 @@ const KIND_FILL = {
     // would look. Both grounds are dry land, so both are solid, per this table's rule that
     // only what you may sail over is translucent.
     coastalrock: '#a19481', coastalscrub: '#a3a745', lane: '#cac2ad',
+    // Sockeye Run's four. All dry land, so all solid per this table's rule that only what you
+    // may sail over is translucent. Values are the delivered tile means, same as the chips.
+    cobble: '#6E6B65', meadow: '#929738', outcrop: '#999C9E', humus: '#352B19',
+    // Translucent, per this table's rule that only what you may sail over is — the cobble
+    // bar's own stone at the same 0.38 the two sand bars use.
+    cobbleshoal: 'rgba(110,107,101,0.38)',
+    mossfloor: '#618414',
     // Submerged Rock — underwater, so translucent by this table's rule, but the MOST opaque
     // of the translucent kinds on purpose. It is the one shape here that is both under the
     // water and a wall, and the schematic's job is to keep those two facts from cancelling:
@@ -1837,6 +1891,14 @@ const KIND_EDGE = {
     // Each is its own ISLAND_STYLES stroke, so the schematic outline is the colour the game
     // draws that coastline in — the coastalrock/coastalscrub rule.
     coralrock: '#757268', tropicscrub: '#838621',
+    // Sockeye Run. Each is its own ISLAND_STYLES stroke by the coastalrock/coastalscrub rule
+    // above. ⚠️ THESE WERE MISSING and the lookup is `KIND_EDGE[kind] || KIND_EDGE.isle`, so
+    // all four had been outlining themselves in beach sand — the same silent fallback the
+    // KIND_FILL note warns about, one table over.
+    cobble: '#4E4C48', meadow: '#5E6C38', outcrop: '#5E656D', humus: '#221C10',
+    cobbleshoal: 'rgba(110,107,101,0.75)',
+    mossfloor: '#3E5A0E',
+    forestfloor: '#543F21', lakesand: '#958469', gneiss: '#4E4B54',
     mud: '#3d3421', marsh: '#4d4324',
     mudflat: 'rgba(110,100,73,0.8)',
     weedbed: 'rgba(74,112,74,0.85)', lilybed: 'rgba(140,176,100,0.9)',
@@ -2280,12 +2342,13 @@ const LAYER_STEPS = [
     ['props',   () => drawPlacedProps()], // the scatter circle, while the drag is live
     ['wind',    () => { if (shown('wind')) drawWindRegions(); }],
     ['gust',    () => { if (shown('gust')) drawGustRegions(); }],
-    ['current', () => { if (shown('current')) drawCurrentRegions(); }]
+    ['current', () => { if (shown('current')) drawCurrentRegions(); }],
+    ['rapids',  () => { if (shown('rapids')) drawRapidsRegions(); }]
 ];
 // Marks and Route both draw the course furniture, so either one raises it.
 const ACTIVE_LAYER = { boundary: 'arena', shape: 'land',
                        marks: 'course', route: 'course', wind: 'wind', current: 'current',
-                       gust: 'gust', props: 'props', traffic: 'traffic' };
+                       gust: 'gust', rapids: 'rapids', props: 'props', traffic: 'traffic' };
 
 // The REAL sprites, not stand-in circles: a prop layer exists to judge placement, and
 // you cannot judge a palm's overhang from a dot. Same src derivation the game uses
@@ -3390,6 +3453,7 @@ function objRefresh() {
         const summary = (r) =>
               kind === 'wind'    ? `${degOf(r.direction || 0)}°${r.speed != null ? ' ' + r.speed.toFixed(0) + 'kt' : ''}`
             : kind === 'current' ? `${(r.speed || 0).toFixed(1)}kt ${degOf(r.direction || 0)}°`
+            : kind === 'rapids'  ? `${Math.round((r.turbulence != null ? r.turbulence : 0.5) * 100)}% broken`
             : gustCount(r);
         box.innerHTML = rs.map((r, i) => row({
             i, on: inOsel({ kind, i }) || selR === i,
@@ -3397,6 +3461,7 @@ function objRefresh() {
         })).join('') || `<div class="ob-empty">${
               kind === 'wind'    ? 'No regions. Outside a wind region there is no wind at all, so a course needs its water covered.'
             : kind === 'current' ? 'No current. Water with no region over it simply does not flow.'
+            : kind === 'rapids'  ? 'No rapids. Draw a fast smooth tongue down the middle and turbulent shoulders beside it — the shoulders are what make the tongue worth finding.'
             : 'No gust sources — puffs are born evenly over the whole arena, as they are on a venue that says nothing. Draw one where the pressure should come from.'
         }</div>`;
         wire(box, (i, _shift, ev) => {
@@ -3726,6 +3791,11 @@ function inspectorRefresh() {
         k = 'Current region'; n = r.name || r.id;
         m = `${(r.speed || 0).toFixed(1)} kt toward ${degOf(r.direction || 0)}° ${compassOf(r.direction || 0)}`;
         html = inspCurrent(r);
+    } else if (mode === 'rapids' && activeReg()) {
+        const r = activeReg();
+        k = 'Rapids'; n = r.name || r.id;
+        m = `${Math.round((r.turbulence != null ? r.turbulence : 0.5) * 100)}% broken`;
+        html = inspRapids(r);
     } else if (mode === 'gust' && activeReg()) {
         const r = activeReg();
         k = 'Gust source'; n = r.name || r.id;
@@ -4642,6 +4712,23 @@ function inspCurrent(r) {
 </div>`;
 }
 
+function inspRapids(r) {
+    const turb = Math.round((r.turbulence != null ? r.turbulence : 0.5) * 100);
+    return `
+<div class="in-sect"><span class="k">Name</span>
+  <input class="in-wide" data-rename="rapids" value="${attr(r.name || '')}" placeholder="${attr(r.id)}">
+</div>
+<div class="in-sect"><span class="k">White water</span>
+  <div class="in-grid">
+    ${numF('broken', 'rr.turb', turb, '%')}
+    ${numF('falloff', 'rr.falloff', Math.round(uToM(r.falloff != null ? r.falloff : 200)), 'm')}
+  </div>
+  <div class="in-note">Broken is how turbulent the water is: it robs drive and shoves the
+    bow around, so 10 is a riffle and 100 is a stopper. A rapid says nothing about flow —
+    the stream itself, tongue included, is the Current layer's to author.</div>
+</div>`;
+}
+
 
 // One handler for every framed field: the key says what to do.
 function numEdit(el) {
@@ -4651,6 +4738,7 @@ function numEdit(el) {
     if (what === 'wr') { windEdit(key, el.value); return; }
     if (what === 'cr') { currentEdit(key, el.value); return; }
     if (what === 'gr') { gustEdit(key, el.value); return; }
+    if (what === 'rr') { rapidsEdit(key, el.value); return; }
     // The lee lengths are PROPERTIES of the shape, not geometry, so they branch out before
     // the transform code — the same shape of exception a wind region's fields make.
     if (what === 'shape' && (key === 'wsh' || key === 'csh' || key === 'hgt')) {
@@ -4811,6 +4899,21 @@ function currentEdit(key, value) {
     afterEdit(true, `current ${key}`);
 }
 
+// A rapid's numbers. Turbulence is a percent in the box — "how broken is this water" reads
+// as a share, the way drag does — and a 0-1 fraction in the file, where every other
+// fraction is.
+function rapidsEdit(key, value) {
+    const r = rregs()[selRapids]; if (!r) return;
+    const v = parseFloat(String(value).trim());
+    if (!isFinite(v)) { inspectorRefresh(); return; }
+    if (key === 'turb') {
+        if (v < 0 || v > 100) { toast('Broken is 0–100%', true); inspectorRefresh(); return; }
+        r.turbulence = v / 100;
+    } else if (key === 'falloff') r.falloff = Math.max(0, mToU(v));
+    else return;
+    afterEdit(true, `rapids ${key}`);
+}
+
 // A gust source's numbers. `bias` used to be three-state — blank meaning "the venue's own
 // split" — but there is no venue split any more, so blank is simply invalid and 0 means
 // nothing but holes.
@@ -4872,6 +4975,10 @@ function renameSel(el) {
         const r = gregs()[selGust]; if (!r) return;
         if (v) r.name = v; else delete r.name;
         afterEdit(true, 'gust region name');
+    } else if (el.dataset.rename === 'rapids') {
+        const r = rregs()[selRapids]; if (!r) return;
+        if (v) r.name = v; else delete r.name;
+        afterEdit(true, 'rapids region name');
     } else if (el.dataset.rename === 'mark') {
         const mk = dmarksOf()[sel.mark]; if (!mk) return;
         if (v) mk.name = v; else delete mk.name;
@@ -5595,28 +5702,98 @@ function drawGustStipple(r, on, rgb, total) {
 //
 // Three of them, because three is what the renderer reads: baseColor at the centre of the
 // depth gradient, deepColor at its rim, and shallowColor over every painted `shallows`
-// zone. The shallow swatch arrived WITH that renderer use — for years shallowColor was
-// copied into WATER_CONFIG and read by nothing, and the rule here is that a swatch which
-// changes nothing on screen is a lie. Still no swatch for `shorelineColor` (drives only
-// generated-island glow, which document venues never take) or for `heroColor`, which is
-// deliberately not hand-pickable: it is DERIVED — see deriveHeroColor.
+// zone.
+//
+// ⚠️ THE SHALLOW SWATCH USED TO HIDE ITSELF on a document with no `shallows` zone, on the
+// grounds that a swatch changing nothing on screen is a lie. That rule is still right about
+// `shorelineColor` and is why there is no swatch for it (it drives only generated-island
+// glow, which document venues never take), but it was wrong here, for two reasons that only
+// became visible once "Derive from surface" existed. The button WRITES shallowColor, so
+// hiding the swatch meant seeding a colour the author could neither see nor tune — the seed
+// is supposed to land in the ballpark so it can be nudged, and that one nudge was
+// impossible. And a hidden shallowColor is how a stale value survives: five venues
+// (arctic, lake, redrock, river, swamp) carry `#22d3ee`-family water inherited from the
+// tropical default in water.js, painting nothing, waiting to ambush the first shallows zone
+// anybody draws. A colour that is inert TODAY but authoritative the moment a zone appears is
+// not a dead control, it is a deferred one, and the honest thing is to show it.
+//
+// Still no swatch for `heroColor`, which is deliberately not hand-pickable: it is DERIVED —
+// see deriveHeroColor.
 const PAL_KEYS = { 'pal-base': 'baseColor', 'pal-deep': 'deepColor', 'pal-shallow': 'shallowColor' };
+
+// The puff/lull tints, which live one level down in `palette.gusts` and as [r,g,b] rather
+// than hex. They get swatches for the same reason the shallow one does — they are live,
+// seven venues author them, and they are the one part of the water's look the editor could
+// previously strand: the game prefers an AUTHORED `gusts` block over deriving from the
+// water, so recolouring a venue used to leave the old venue's cat's-paws pasted on the new
+// water. Ordered dark-to-bright so the four read as the ramp they are.
+const GUST_KEYS = {
+    'pal-gust-dark': 'gustDark', 'pal-gust-mid': 'gustMid',
+    'pal-lull-mid': 'lullMid', 'pal-lull-bright': 'lullBright'
+};
+
+// The moonlight amount to restore when the night toggle goes back on, so switching it off to
+// see the water in daylight does not cost the value you had tuned. Declared HERE rather than
+// beside its handler because paletteRefresh reads it, and paletteRefresh runs during boot —
+// a `let` further down the file would still be in its temporal dead zone at that point.
+// Starts at Glowtide's 0.62, the library's one worked night.
+let lastNight = 0.62;
+
+const palRGB = (h) => {
+    const s = String(h || '').replace('#', '');
+    return /^[0-9a-f]{6}$/i.test(s) ? [0, 2, 4].map(i => parseInt(s.substring(i, i + 2), 16)) : null;
+};
+const palHEX = (a) => Array.isArray(a) && a.length >= 3
+    ? '#' + a.slice(0, 3).map(c => Math.max(0, Math.min(255, Math.round(c))).toString(16).padStart(2, '0')).join('')
+    : null;
+
+// WHAT THE GAME WILL ACTUALLY USE for the puffs, mirroring applyVenuePalette's own
+// precedence exactly — authored block, else derived from this document's water, else the
+// bay blues. Mirrored rather than approximated because a swatch that shows a colour the
+// water is not using is the lie the shallow swatch's rule already forbids. In particular a
+// document that overrides NO water colour gets DEFAULT_GUST_COLORS and not a derivation,
+// which is why the `baseColor || deepColor` test is here too.
+function effectiveGusts() {
+    const dp = (doc && doc.palette) || {};
+    if (dp.gusts) return dp.gusts;
+    const live = window.WATER_CONFIG || {};
+    if (dp.baseColor || dp.deepColor) {
+        return gustTintFrom({
+            baseColor: dp.baseColor || live.baseColor,
+            deepColor: dp.deepColor || live.deepColor
+        });
+    }
+    return (typeof DEFAULT_GUST_COLORS !== 'undefined') ? DEFAULT_GUST_COLORS : null;
+}
 
 function paletteRefresh() {
     if (!$('pal-base')) return;
-    // The shallow swatch is CONDITIONAL: shallowColor paints `shallows` zones and nothing
-    // else, so on a document with none it is exactly the dead swatch the rule above
-    // forbids. It appears with the first zone and leaves with the last — paletteRefresh
-    // runs on every committed edit, so drawing one brings the swatch out by itself.
-    const hasShallows = !!(doc && doc.shapes && doc.shapes.some(s => s.kind === 'shallows'));
-    if ($('pal-shallow')) $('pal-shallow').hidden = !hasShallows;
-    if ($('pal-shallow-label')) $('pal-shallow-label').hidden = !hasShallows;
     const live = window.WATER_CONFIG || {};
     const dp = (doc && doc.palette) || {};
     for (const id in PAL_KEYS) {
         const k = PAL_KEYS[id];
         const v = dp[k] || live[k] || '#0e7490';
         $(id).value = /^#[0-9a-f]{6}$/i.test(v) ? v : '#0e7490';
+    }
+    // Shown whether authored or derived, so the four swatches always report the puffs the
+    // water is actually wearing. Editing one is what turns it into an override.
+    const g = effectiveGusts() || {};
+    for (const id in GUST_KEYS) {
+        if (!$(id)) continue;
+        $(id).value = palHEX(g[GUST_KEYS[id]]) || '#0e7490';
+    }
+    const night = (dp.night != null ? dp.night : (live.night || 0));
+    if (night > 0) lastNight = night;          // so the toggle can put it back
+    if ($('pal-night')) $('pal-night').value = night;
+    if ($('pal-moondir')) $('pal-moondir').value = (dp.moonDir != null ? dp.moonDir
+        : (live.moonDir != null ? live.moonDir : 25));
+    // The toggle is a VIEW of `night > 0`, not a second field. There is no boolean in the
+    // document and there should not be: the renderer reads an amount, nightAmt() treats
+    // anything <= 0 as day, and a separate flag could disagree with the number it gates.
+    if ($('pal-night-on')) $('pal-night-on').checked = night > 0;
+    for (const [inp, lab] of [['pal-night', 'pal-night-label'], ['pal-moondir', 'pal-moondir-label']]) {
+        if ($(inp)) $(inp).disabled = !(night > 0);
+        if ($(lab)) $(lab).classList.toggle('is-off', !(night > 0));
     }
     palettePreview();
 }
@@ -5767,6 +5944,47 @@ function drawCurrentField() {
             const ux = Math.sin(f.direction), uy = -Math.cos(f.direction);
             const len = 11 * Math.max(0.35, Math.min(1.8, f.speed / 1.5));
             windArrow(sx, sy, ux, uy, len, 'rgba(125,211,252,0.85)', 1.6);
+        }
+    }
+}
+
+// ── Rapids regions ──────────────────────────────────────────────────────────
+// The fourth region kind, and the only one with a single number on it: `turbulence`,
+// the broken-water fraction that robs drive and shoves the bow. No flow of its own —
+// the stream, tongue included, is the Current layer's to author.
+const rregs = () => (doc && doc.rapids && doc.rapids.regions) || [];
+
+function drawRapidsRegions() {
+    if (!doc) return;
+    const rs = rregs();
+    for (let i = 0; i < rs.length; i++) {
+        const r = rs[i];
+        if (!r.poly || r.poly.length < 3) continue;
+        const on = i === selRapids;
+        ctx.beginPath(); ringPath(r.poly);
+        // Foam white, weighted by how turbulent: a shoulder at 0.9 reads denser than a
+        // smooth tongue at 0.1 before a single number is looked at.
+        const turb = r.turbulence != null ? r.turbulence : 0.5;
+        const fa = (on ? 0.10 : 0.05) + 0.14 * turb;
+        ctx.fillStyle = `rgba(226,232,240,${fa.toFixed(3)})`;
+        ctx.fill();
+        ctx.strokeStyle = on ? '#e2e8f0' : 'rgba(226,232,240,0.5)';
+        ctx.lineWidth = on ? 2 : 1.2;
+        ctx.setLineDash([2, 3]); ctx.stroke(); ctx.setLineDash([]);
+
+        // No arrow grid: a rapid has no direction to point. The turbulence-weighted
+        // fill IS the picture, the way a gust source's cat's paws are.
+
+        if (on) {
+            r.poly.forEach((p, k) => {
+                const q = toS(p[0], p[1]);
+                const onV = hover.wvert === k;
+                const rad = onV ? 8 : 5.5;
+                ctx.beginPath(); ctx.arc(q.x, q.y, rad + 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(8,15,30,0.75)'; ctx.fill();
+                ctx.beginPath(); ctx.arc(q.x, q.y, rad, 0, Math.PI * 2);
+                ctx.fillStyle = onV ? '#f8fafc' : '#e2e8f0'; ctx.fill();
+            });
         }
     }
 }
@@ -5987,7 +6205,13 @@ function addRegion(kind, poly) {
         // seconds. Drawing one says WHERE, and nothing else, until you say otherwise — and
         // now the "nothing else" is legible, because a stated default in knots and metres
         // can be judged against the course where `1x` could only be judged against itself.
-        : { id: `gust-${n}`, poly, falloff: 300, count: 8, gustKt: 5, sizeM: 300, lifeS: 90, bias: 0.5, veer: 15 };
+        : kind === 'gust'
+        ? { id: `gust-${n}`, poly, falloff: 300, count: 8, gustKt: 5, sizeM: 300, lifeS: 90, bias: 0.5, veer: 15 }
+        // A rapid is PURE TEXTURE — turbulence and nothing else. Flow belongs to the
+        // Current layer in whole, so a rapid has no speed or direction to default. The
+        // falloff is tighter than a current's because rapids have edges you can see —
+        // the eddy line is a line.
+        : { id: `rapids-${n}`, poly, falloff: 200, turbulence: 0.5 };
     list.push(r);
     const i = list.length - 1;
     setRegSel(kind, i);
@@ -8184,7 +8408,11 @@ const WHOLE_COURSE = {
     // A gust source over everything is the uniform scatter made VISIBLE and editable: on
     // its own it reproduces what the venue already did, and it exists so a second, denser
     // source can be drawn beside it and mean something relative to it.
-    gust:    { pad: 200, msg: 'Puffs born everywhere — as before, but now you can draw a hotter source beside it' }
+    gust:    { pad: 200, msg: 'Puffs born everywhere — as before, but now you can draw a hotter source beside it' },
+    // Legal but almost never what a designer wants — rapids are the most local thing in
+    // the document — so the message says what to do with it rather than pretending
+    // whole-course whitewater is a plan.
+    rapids:  { pad: 200, msg: 'Rapids over the whole course — probably shrink this to the broken water itself' }
 };
 function addWholeCourseRegion(kind) {
     if (!doc) return;
@@ -8340,15 +8568,147 @@ function deriveHeroColor() {
     p.heroColor = '#' + sh.map((c, i) =>
         Math.round(c * a + ba[i] * (1 - a)).toString(16).padStart(2, '0')).join('');
 }
+// Were the puff tints DERIVED from the water they are sitting on, or hand-picked? The
+// difference decides whether moving the water is allowed to take them with it. Measured
+// rather than flagged, because the document records no such flag: recompute what this
+// document's CURRENT water would derive and compare. Equal means the block is a frozen
+// derivation and is stale the moment the water moves; different means somebody tuned it and
+// it is not the editor's to throw away — hit "Derive from surface" to reset those on purpose.
+function gustsAreDerived() {
+    const dp = (doc && doc.palette) || {};
+    if (!dp.gusts || !(dp.baseColor || dp.deepColor)) return false;
+    const live = window.WATER_CONFIG || {};
+    const d = gustTintFrom({
+        baseColor: dp.baseColor || live.baseColor,
+        deepColor: dp.deepColor || live.deepColor
+    });
+    if (!d) return false;
+    return Object.values(GUST_KEYS).every(k => {
+        const a = dp.gusts[k], b = d[k];
+        return Array.isArray(a) && Array.isArray(b) &&
+            a[0] === b[0] && a[1] === b[1] && a[2] === b[2];
+    });
+}
+
 for (const id in PAL_KEYS) {
     $(id).addEventListener('change', () => {
         if (!doc) return;
         if (!doc.palette) doc.palette = {};
+        // Checked BEFORE the write, against the water the tints were derived from.
+        const drop = (PAL_KEYS[id] === 'baseColor' || PAL_KEYS[id] === 'deepColor') && gustsAreDerived();
         doc.palette[PAL_KEYS[id]] = $(id).value;
+        if (drop) delete doc.palette.gusts;
         deriveHeroColor();
         afterEdit(true, 'water colour');
     });
 }
+
+for (const id in GUST_KEYS) {
+    if (!$(id)) continue;
+    $(id).addEventListener('change', () => {
+        if (!doc) return;
+        if (!doc.palette) doc.palette = {};
+        // AUTHORING ONE PINS ALL FOUR, because applyVenuePalette takes the block whole —
+        // `activeGustColors = gusts || ...` — so a partial block would leave the other three
+        // undefined rather than falling back to the derivation they are currently showing.
+        // Seeded from what is in force, so pinning changes nothing except the one swatch moved.
+        const cur = effectiveGusts() || {};
+        const g = {};
+        for (const k of Object.values(GUST_KEYS)) {
+            const v = cur[k];
+            if (Array.isArray(v)) g[k] = v.slice(0, 3);
+        }
+        const picked = palRGB($(id).value);
+        if (picked) g[GUST_KEYS[id]] = picked;
+        doc.palette.gusts = g;
+        afterEdit(true, 'puff tints');
+    });
+}
+
+// Turning night OFF DELETES the key rather than writing `night: 0`, because 0 is what the
+// merged palette already supplies and nine of ten venues author no `night` at all — a
+// document should not grow a line meaning "unchanged". The amount is remembered in
+// `lastNight` — declared up with the palette keys, because paletteRefresh reads it and runs
+// long before this line — so flicking the toggle off and back on returns the water you had.
+if ($('pal-night-on')) $('pal-night-on').addEventListener('change', () => {
+    if (!doc) return;
+    if (!doc.palette) doc.palette = {};
+    if ($('pal-night-on').checked) {
+        doc.palette.night = lastNight > 0 ? lastNight : 0.62;
+    } else {
+        const n = doc.palette.night;
+        if (n > 0) lastNight = n;
+        delete doc.palette.night;   // moonDir is left alone: it is inert without night,
+                                    // and keeping it preserves the bearing across a toggle
+    }
+    afterEdit(true, $('pal-night-on').checked ? 'night on' : 'night off');
+});
+if ($('pal-night')) $('pal-night').addEventListener('change', () => {
+    if (!doc) return;
+    if (!doc.palette) doc.palette = {};
+    const v = Math.max(0, Math.min(1, parseFloat($('pal-night').value) || 0));
+    // Typing 0 into the amount is the same statement as clearing the toggle, and has to
+    // leave the document in the same state — otherwise "off" would mean two different things
+    // depending on which control said it.
+    if (v > 0) { doc.palette.night = v; lastNight = v; } else { delete doc.palette.night; }
+    afterEdit(true, 'moonlight');
+});
+if ($('pal-moondir')) $('pal-moondir').addEventListener('change', () => {
+    if (!doc) return;
+    if (!doc.palette) doc.palette = {};
+    doc.palette.moonDir = (((parseFloat($('pal-moondir').value) || 0) % 360) + 360) % 360;
+    afterEdit(true, 'moon bearing');
+});
+
+// ── Derive from surface ────────────────────────────────────────────────────
+// A STARTING POINT, not a binding: pick the surface carefully, press this, then nudge
+// whatever does not look right. Nothing re-derives afterwards, so a hand-tuned deep stays
+// hand-tuned.
+//
+// THE RATIOS ARE THE LIBRARY'S OWN, not invented. Measured across the nine authored venue
+// waters, base -> deep runs a median of hue +1.9deg, L x0.65, S x1.08, and base -> shallow
+// hue -4.8deg, L x1.40, S x0.90 — deep water is the same hue darker and a little more
+// saturated, shallow is lighter and a little greener. Checked against every venue, the rule
+// lands within dE 8.4 of the hand-picked deep on 8 of 9 (median 3.9) and within dE 8.3 of
+// the hand-picked shallow on 6 of 9 (median 7.2), which is what "right ballpark" has to mean.
+//
+// THE TWO IT MISSES ARE THE ARGUMENT FOR THE ADJUST STEP, not against the button. Bluewater's
+// deep (#1e3a8a, dE 27.6) swings 23deg toward violet at the SAME lightness as its surface, and
+// Pearl Lagoon's shallow (#4df5f0, dE 37.4) is a bright mint nothing derives. Those are the
+// two venues whose identity IS their water, and a rule that reproduced them would be a rule
+// that had no house style to reproduce.
+const SEED_RATIO = {
+    deepColor:    { hue:  1.9 / 360, l: 0.65, s: 1.08 },
+    shallowColor: { hue: -4.8 / 360, l: 1.40, s: 0.90 }
+};
+function seedFromSurface(hex, r) {
+    const c = palRGB(hex);
+    if (!c) return null;
+    const [h, s, l] = rgbToHsl(c[0], c[1], c[2]);
+    const clamp = (v) => Math.max(0, Math.min(1, v));
+    return palHEX(hslToRgb((h + r.hue + 1) % 1, clamp(s * r.s), clamp(l * r.l)));
+}
+$('btn-pal-seed').addEventListener('click', () => {
+    if (!doc) return;
+    const live = window.WATER_CONFIG || {};
+    const base = (doc.palette && doc.palette.baseColor) || live.baseColor;
+    const deep = seedFromSurface(base, SEED_RATIO.deepColor);
+    const shallow = seedFromSurface(base, SEED_RATIO.shallowColor);
+    if (!deep || !shallow) { toast('Pick a surface colour first'); return; }
+    if (!doc.palette) doc.palette = {};
+    // The surface is PINNED even when it came from the venue rather than the document.
+    // Without it the document would carry a deep and a shallow derived from a colour it does
+    // not state, and they would silently disagree the next time the venue's own water moved.
+    doc.palette.baseColor = base;
+    doc.palette.deepColor = deep;
+    doc.palette.shallowColor = shallow;
+    // Puffs and hero go back to derived rather than being written: they already have
+    // derivations the game trusts, and an authored copy is just a value that can drift.
+    delete doc.palette.gusts;
+    deriveHeroColor();
+    afterEdit(true, 'derive water colours');
+    toast('Deep, shallow and tints derived from the surface');
+});
 // Back to the colours this course was SAVED with — not to the venue's built-in ones. Picking
 // four colours is a matter of nudging them and looking, and the thing you want on the way back
 // is where you started this session, which is what the save holds. (A course that has never

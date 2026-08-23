@@ -20,6 +20,7 @@ const path = require('path');
     for (const bt of state.boats) bt.isPlayer = false;
     for (let i = 0; i < 1800; i++) update(1 / 60);
     const out = [];
+    const wantHeading = 0.5 + CAM_LOOK_AHEAD;   // read from the code, never restated here
     // The projection draw() applies: translate(centre) -> rotate(-rot) -> translate(-cam).
     const screenOf = (wx, wy) => {
       const rot = -state.camera.rotation;
@@ -44,7 +45,7 @@ const path = require('path');
           }
           const s = screenOf(bt.x, bt.y);
           out.push({ hove, mode, hdg: hdgDeg, sx: +s.x.toFixed(3), sy: +s.y.toFixed(3),
-                     kn: +(bt.speed * 4).toFixed(1) });
+                     want: +wantHeading.toFixed(3), kn: +(bt.speed * 4).toFixed(1) });
         }
       }
     }
@@ -54,7 +55,7 @@ const path = require('path');
   console.log('  boat position as a fraction of the frame (0.5,0.5 = centre)');
   let bad = 0;
   for (const o of r) {
-    const want = o.mode === 'heading' ? 0.75 : 0.5;
+    const want = o.mode === 'heading' ? o.want : 0.5;
     // Hove-to must be exact; under way is allowed the follow lag, which is bounded by what
     // `north` mode shows in the same run.
     const tol = o.hove ? 0.01 : 0.04;
@@ -64,7 +65,7 @@ const path = require('path');
       `   x ${o.sx.toFixed(3)}  y ${o.sy.toFixed(3)}   want y=${want} ±${tol}  ${ok ? 'ok' : 'OFF'}`);
   }
   console.log('errors', errs.length ? errs.slice(0, 3) : 'none');
-  console.log(bad === 0 ? '  PASS — pinned at 3/4 down in heading mode, centred in north'
+  console.log(bad === 0 ? `  PASS — pinned at ${r[0].want} down in heading mode, centred in north`
                         : `  FAIL — ${bad} case(s) off`);
   await b.close();
   process.exit(bad === 0 ? 0 : 1);

@@ -152,6 +152,35 @@
                 <label class="k" id="pal-shallow-label">shallow</label>
                 <input id="pal-shallow" type="color" class="in-wide" style="padding:1px;height:26px">
             </div>
+            <!-- Puff and lull tints. These are CONSEQUENCES of the water above, not
+                 independent choices: a cat's-paw is this water moving, not a blue patch on
+                 it. So they normally derive, the swatches show whatever is in force, and
+                 authoring one is the exception rather than the starting point. -->
+            <div class="k" style="display:block;padding:12px 16px 6px;margin:0">Puff &amp; lull tints</div>
+            <div class="in-grid" style="align-items:center;font-size:11.5px;">
+                <label class="k">puff dark</label>
+                <input id="pal-gust-dark" type="color" class="in-wide" style="padding:1px;height:26px">
+                <label class="k">puff mid</label>
+                <input id="pal-gust-mid" type="color" class="in-wide" style="padding:1px;height:26px">
+                <label class="k">lull mid</label>
+                <input id="pal-lull-mid" type="color" class="in-wide" style="padding:1px;height:26px">
+                <label class="k">lull bright</label>
+                <input id="pal-lull-bright" type="color" class="in-wide" style="padding:1px;height:26px">
+            </div>
+            <!-- Moonlight, and the bearing its glitter path runs along. 0 is daylight, which
+                 is every venue but Glowtide — but it is live on all of them, so unlike
+                 shorelineColor these are not dead controls. -->
+            <div class="k" style="display:block;padding:12px 16px 6px;margin:0">Night</div>
+            <div class="in-grid" style="align-items:center;font-size:11.5px;">
+                <label class="k">on</label>
+                <input id="pal-night-on" type="checkbox" class="in-check"
+                       title="moonlit water — off is daylight, which is every venue but Glowtide">
+                <label class="k" id="pal-night-label">moonlight</label>
+                <input id="pal-night" type="number" min="0" max="1" step="0.02" class="in-wide">
+                <label class="k" id="pal-moondir-label">moon dir</label>
+                <input id="pal-moondir" type="number" min="0" max="359" step="1" class="in-wide">
+            </div>
+            <button id="btn-pal-seed" class="btn btn-fill">Derive from surface</button>
             <button id="btn-pal-reset" class="btn btn-fill">Restore colours</button>
         </div>
 

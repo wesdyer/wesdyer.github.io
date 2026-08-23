@@ -102,15 +102,15 @@ LANDK = {"isle": SAND, "coastalscrub": SCRUB, "coastalrock": ROCK}
 # per stand and `spread` the radius those members scatter over.
 SPECIES = {
     "oak": dict(
-        kind="bay-cove-oak-black", world=96,
+        kind="bay-cove-oak-black", world=96, height=20.0,
         bands=[((6, 8), 0.20), ((8, 10), 0.45), ((10, 14), 0.35)],
         cluster=(2, 8), spread=(90, 260), layer="tree"),
     "pine": dict(
-        kind="bay-cove-pine-pitch", world=72,
+        kind="bay-cove-pine-pitch", world=72, height=14.0,
         bands=[((5, 6), 0.25), ((6, 8), 0.45), ((8, 11), 0.30)],
         cluster=(3, 10), spread=(120, 330), layer="tree"),
     "cedar": dict(
-        kind="bay-cove-cedar-red", world=42,
+        kind="bay-cove-cedar-red", world=42, height=9.0,
         bands=[((3.5, 4.5), 0.40), ((4.5, 6), 0.42), ((6, 8), 0.18)],
         cluster=(1, 4), spread=(60, 200), layer="tree"),
     # THE SHRUB LAYER. Scrub oak's individual band stops at 5.5 m rather than the guide's
@@ -119,18 +119,23 @@ SPECIES = {
     # undifferentiated size. The guide's 6-10 m+ THICKETS are still produced — by stands
     # that overlap, which is what a thicket is, rather than by inflating one sprite.
     "scruboak": dict(
-        kind="bay-cove-oak-scrub", world=36,
+        kind="bay-cove-oak-scrub", world=36, height=4.5,
         bands=[((3, 4), 0.30), ((4, 5.5), 0.70)],
         cluster=(4, 14), spread=(70, 200), layer="shrub"),
     "bayberry": dict(
-        kind="bay-cove-bayberry-northern", world=28,
+        kind="bay-cove-bayberry-northern", world=28, height=2.5,
         bands=[((1.5, 2), 0.20), ((2, 3), 0.55), ((3, 4), 0.25)],
         cluster=(3, 12), spread=(60, 190), layer="shrub"),
     "plum": dict(
-        kind="bay-cove-plum-beach", world=22,
+        kind="bay-cove-plum-beach", world=22, height=2.0,
         bands=[((2, 2.5), 0.20), ((2.5, 4), 0.60), ((4, 5), 0.20)],
         cluster=(2, 7), spread=(50, 150), layer="shrub"),
 }
+# `height` is the plant's real HEIGHT in metres and is used for ONE thing: z-order. See the
+# sort at the end of plant(). It is deliberately NOT derived from `world` — a red cedar is a
+# narrow 9 m spire and a scrub oak a broad 4.5 m thicket, so crown width and height do not
+# rank the same way and only height decides what passes in front of what.
+KIND_SP = {v["kind"]: k for k, v in SPECIES.items()}
 
 # ── the five zones, and what each is asked to grow ──────────────────────────
 # Coverage is of LAND, and the numbers are the midpoints of the guide's bands. Zone F
@@ -875,6 +880,19 @@ def plant(doc, seed=7, maps=False, quiet=False):
             cc = ok(x, y)
             if cc is not None and comp[cc] == c:
                 place(x, y, "cedar", cc)
+
+    # ── Z-ORDER FOLLOWS HEIGHT ──────────────────────────────────────────────
+    # drawProps paints within a plane in DOCUMENT ORDER, so the order of this array IS the
+    # z-order. Sorted by REAL HEIGHT x this individual's scale, not crown width: a 20 m black
+    # oak passes over a 9 m red cedar even though their sprites are 96u and 42u, and within a
+    # species a big individual passes over a small one, which is what gives a stand depth
+    # instead of a flat pattern. Beach plum sorts to the bottom at 2 m.
+    # ⚠️ ADDED 2026-08-15, LATE. plant_lake.py and plant_ocean.py have had this from the day
+    # they were written; this file predates the rule and was the last planter still emitting
+    # in PLACEMENT order. Measured on the shipped venue before the fix: 4587 of 9171
+    # vegetation props painted out of height order — a bayberry drawn over a black oak about
+    # half the time the two overlapped.
+    props.sort(key=lambda pr: SPECIES[KIND_SP[pr["kind"]]]["height"] * pr["scale"])
 
     stats = measure(g, props, placed, cov_tree, cov_shrub, cov_sp, cell_m2)
     if not quiet:
