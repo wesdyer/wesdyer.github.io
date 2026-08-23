@@ -2125,6 +2125,7 @@ class BotController {
             if (this.gridTimer == null) this.gridTimer = 0;
             this.gridTimer -= 0.1;
             this.gridAge = (this.gridAge || 0) + 0.1;
+            if (this._c2Window > 0) this._c2Window -= 0.1;
             const goalMoved = !this.gridGoal ||
                 (destX - this.gridGoal.x) ** 2 + (destY - this.gridGoal.y) ** 2 > 300 * 300;
             // ROUTE STABILITY. Replanning every couple of seconds through a drifting
@@ -2270,6 +2271,48 @@ class BotController {
                 if (seg && seg.length > 1) {
                     const pts = seg.map(q => ({ x: q[0], y: q[1] }));
                     pts[pts.length - 1] = { x: destX, y: destY };
+                    // A rebuild that returns the SAME corridor is not new information
+                    // about the pack (measured: 50.2% of beat replans — _replan_why)
+                    // and does not open a manoeuvre re-decision. Only a changed answer
+                    // does: lateral offset of the new path from the old polyline,
+                    // sampled every 60u over the shared span, beyond 120u. Floe
+                    // venues only — the gate that reads this window is _floeObjs-
+                    // scoped, so elsewhere this is dead state.
+                    if (state.course._floeObjs && state.course._floeObjs.length) {
+                        let c2Changed = true;
+                        const c2Old = this.gridPath;
+                        if (c2Old && c2Old.length) {
+                            let oLen = 0, ox = boat.x, oy = boat.y;
+                            for (const q of c2Old) { oLen += Math.hypot(q.x - ox, q.y - oy); ox = q.x; oy = q.y; }
+                            const spanC2 = Math.min(1200, oLen);
+                            const dSegC2 = (sx, sy, ax, ay, bx, by) => {
+                                const dx = bx - ax, dy = by - ay; const L2 = dx * dx + dy * dy;
+                                let tt = L2 ? ((sx - ax) * dx + (sy - ay) * dy) / L2 : 0;
+                                tt = Math.max(0, Math.min(1, tt));
+                                return Math.hypot(sx - (ax + tt * dx), sy - (ay + tt * dy));
+                            };
+                            const dPolyC2 = (sx, sy) => {
+                                let bd = dSegC2(sx, sy, boat.x, boat.y, c2Old[0].x, c2Old[0].y);
+                                for (let ii = 0; ii + 1 < c2Old.length; ii++)
+                                    bd = Math.min(bd, dSegC2(sx, sy, c2Old[ii].x, c2Old[ii].y, c2Old[ii + 1].x, c2Old[ii + 1].y));
+                                return bd;
+                            };
+                            let mx = 0, acc = 0, nxt = 0, px2 = boat.x, py2 = boat.y;
+                            for (const q of pts) {
+                                const dq = Math.hypot(q.x - px2, q.y - py2);
+                                let guard = 0;
+                                while (acc + dq >= nxt && nxt <= spanC2 && guard++ < 40) {
+                                    const ff = dq ? (nxt - acc) / dq : 0;
+                                    mx = Math.max(mx, dPolyC2(px2 + (q.x - px2) * ff, py2 + (q.y - py2) * ff));
+                                    nxt += 60;
+                                }
+                                acc += dq; px2 = q.x; py2 = q.y;
+                                if (acc > spanC2 || mx > 120) break;
+                            }
+                            c2Changed = mx > 120;
+                        }
+                        if (c2Changed) this._c2Window = 4.0;
+                    }
                     this.gridPath = pts.slice(1);   // drop the boat's own cell
                 } else if (!seg) {
                     // No route right now (a drifting pocket closed). A stale path
@@ -2859,6 +2902,76 @@ class BotController {
         if (targetTackSign !== currentTack && this.tackCooldown > 0) {
             // Keep current if cooldown active
             return (currentTack === 1) ? hStarboard : hPort;
+        }
+
+        // THE INFORMATION GATE (arctic router push). In a floe field the
+        // pure-pursuit carrot alternates across the wind at stair frequency
+        // (16.8 side invitations/boat-race, 62% of them BETWEEN replans with
+        // the path object unchanged, converting to manoeuvres at 83% —
+        // _carrot_pin_cf), so the fleet re-decides its board at the cooldown
+        // floor while he holds a median 1335u board and 7 tacks a beat. A
+        // proposed side switch here EXISTS only on information:
+        //   (a) a replan changed the corridor answer (_c2Window, set above)
+        //   (b) the current board is blocked ahead — land or floe — the board
+        //       is genuinely over (his boards end at 78-179u floe clearance)
+        //   (c) an avoidance role or threat is live (rules interplay untouched)
+        //   (e) the plan's FAR corridor (900u, the pure-pursuit LOOK cap)
+        //       agrees with the proposed side — a real corner, not a stair.
+        // The layline return above and the cooldown are untouched; no time
+        // price is added or changed anywhere (the TK3 kill priced re-decisions
+        // in TIME; this changes WHICH re-decisions exist). Floe venues only
+        // (_floeObjs — the canyon-law scope; grid._soft is NOT a floe test),
+        // racing legs only (start tuning sacred): elsewhere stock arithmetic.
+        if (targetTackSign !== currentTack
+            && state.course._floeObjs && state.course._floeObjs.length
+            && this.boat.raceState.leg >= 1) {
+            let c2Reason = (this._c2Window || 0) > 0
+                || (this.avoidanceRole && this.avoidanceRole !== 'NONE')
+                || !!this.threatBoat;
+            // v3 (v1: solo −34 s/boat but fleet med +3/mean +6.3, floe +11%;
+            // v2's any-deviation clause dissolved the gate — floe deviation is
+            // near-continuous here and the solo wins vanished): rivals are
+            // information the plan cannot see. The gate binds only in CLEAR
+            // water — the measured phantom class (38% of fleet side-changes
+            // happen with no role, no threat and no rival inside 300u). Any
+            // unfinished rival within 300u opens the re-decision.
+            if (!c2Reason) {
+                for (const oC2 of state.boats) {
+                    if (oC2 === boat || oC2.isPlayer || oC2.raceState.finished) continue;
+                    if ((oC2.x - boat.x) ** 2 + (oC2.y - boat.y) ** 2 < 300 * 300) { c2Reason = true; break; }
+                }
+            }
+            if (!c2Reason) {
+                const gC2 = (state.course._gridFixed && state.course._gridFixed.length)
+                    ? state.course.botGrid : null;
+                if (gC2) {
+                    const hNow2 = (currentTack === 1) ? hStarboard : hPort;
+                    const reach = Math.max(160, boat.speed * 96);
+                    for (const fC of [0.34, 0.67, 1.0]) {
+                        const cc2 = gC2.cell(boat.x + Math.sin(hNow2) * reach * fC,
+                            boat.y - Math.cos(hNow2) * reach * fC);
+                        if (!gC2.at(cc2[0], cc2[1])) { c2Reason = true; break; }
+                    }
+                } else c2Reason = true;   // no grid: the gate cannot see — stock behavior
+            }
+            if (!c2Reason && this.gridPath && this.gridPath.length) {
+                let fx = null, fy = null, accF = 0, pxF = boat.x, pyF = boat.y;
+                for (const qF of this.gridPath) {
+                    const dF = Math.hypot(qF.x - pxF, qF.y - pyF);
+                    if (accF + dF >= 900) {
+                        const ffF = (900 - accF) / (dF || 1);
+                        fx = pxF + (qF.x - pxF) * ffF; fy = pyF + (qF.y - pyF) * ffF;
+                        break;
+                    }
+                    accF += dF; pxF = qF.x; pyF = qF.y;
+                }
+                if (fx === null) { fx = pxF; fy = pyF; }
+                const sideFar = normalizeAngle(Math.atan2(fx - boat.x, -(fy - boat.y)) - wd) >= 0 ? 1 : -1;
+                if (sideFar === targetTackSign) c2Reason = true;
+            } else if (!c2Reason) {
+                c2Reason = true;   // no plan to consult — the gate cannot see; stock behavior
+            }
+            if (!c2Reason) return (currentTack === 1) ? hStarboard : hPort;
         }
 
         // NO TACKING WITHOUT WAY ON IN A BLOW. Above ~16 kt a boat that tacks slow

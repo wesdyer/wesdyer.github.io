@@ -14012,3 +14012,79 @@ via nohup scripts from repo root (Bash 10-min cap), never pkill chrome
 while anything runs. Out of scope: alignment/oriented-hull (needs my
 ruling), wedge push, swamp corridor, lake, rating campaign. Commits local
 — push needs my credentials.
+
+
+## THE ARCTIC ROUTER PUSH — C2 THE INFORMATION GATE (2026-08-22 night, autonomous)
+
+Owner directive: arctic board-level routing, the ONE big thread. Base
+`17b24df`; n4*/n5sw* anchors. Arctic 1.589x worst; leg 1 = 72% of the gap
+as DISTANCE (re-verified on this HEAD: 1.74x on means, leg 2 = 27%/1.41x).
+
+**THE MEASUREMENT PROGRAM KILLED C1 BEFORE A LINE WAS BUILT** (the plan's
+pre-registered counterfactual, `_carrot_pin_cf.js`): beat replans are
+AGE 48.4% / GOAL-MOVED 51.1% (the DMC target slides with progress — unknown
+at plan time), and the C1-absorbable population (age-triggered AND
+same-corridor AND wind-side flip) measures **0.14 tack invitations per
+boat-race** — nil against ~30 manoeuvres. The same probe found the real
+budget: **16.8 carrot wind-side invitations/boat-race, 62% BETWEEN replans**
+(the pure-pursuit carrot alternating across the staircase with the path
+object unchanged — no new information by construction), converting to hull
+tacks at 83%; ~40% of beat tacks trace to an invitation within 3s.
+
+**His ladder is now measured** (`_board_ladder.js` over the 6 fp-verified
+laps): leg-1 7 tacks med (4-10), board 1335u med / 11.9s, TWA ~65deg,
+**clearance at tack med 179u, p25 78u** — he commits three times deeper
+than the 420u carrot and shaves floes the router won't. Leg-2 (decomposed
+for the first time): his 8 gybes vs fleet 19; same phantom-avoidance +
+manoeuvre-churn waste signature as the beat.
+
+**Shipped: C2, the information gate** (one mechanism, both manoeuvre
+types). In `_floeObjs` water on racing legs, a proposed tack/gybe
+side-switch in the shared scorer EXISTS only on information: (a) a replan
+CHANGED the corridor answer (>120u lateral over the shared 1200u span —
+same-corridor rebuilds, 50.2% measured, no longer invite a tack), (b) the
+current board is blocked ahead (land/floe within max(160, speed*96)u),
+(c) an avoidance role or threat is live, (d) any rival inside 300u (the
+gate binds only in CLEAR water — the 38% NOROLE-far flip class), (e) the
+plan's far corridor at 900u agrees with the switch (a real corner, not a
+stair), or the untouched layline return. Cooldown untouched; NO time price
+anywhere — ⚠️ TK3 DISTINCTION, for the record: TK3 priced re-decisions in
+time and died; this changes WHICH re-decisions exist, on information.
+Non-floe venues reduce to stock arithmetic by construction.
+
+Iterations: v1 (a,b,c,e) solo −34 s/boat mean but fleet med +3/mean +6.3,
+floe +11% — held boards in traffic trade rubs for ice; v2 (any-deviation
+opens the gate) dissolved it — floe deviation is near-continuous, solo
+wins vanished; v3 = the rival-300u clause, solo provably v1's.
+
+**Gate (all pre-registered criteria):**
+- SOLO 4 seeds neutral: med 325.8 -> 287.2, mean −34.3 (worst seed
+  405.7 -> 334.7); leg-1 tacks 19 -> 15, leg-2 13 -> 9, floe episodes
+  9 -> 5. Fixes the broken races, leaves the good ones (9100 bit-identical).
+- FLEET arctic POOLED 64 (four disjoint 16-seed sets, 576 paired boats):
+  **med 0.0, mean +1.3** (sets +2.0/−1.8/−0.4/+5.2) — clock NEUTRAL.
+  Anchor-protocol table: med 329 -> 327 (1.589 -> 1.580).
+- ⚠️ NAMED WATCH at equal prominence: fleet floe contacts 17.8 -> 19.0
+  (+7%; +13% on the 9400/9600 pair) — per-race deltas bimodal −104..+139,
+  up in only 16/32 races (race-reshuffle noise-dominated, but directionally
+  consistent). The rubs-for-ice trade points at the queued C4 pairing
+  (rival-honesty on ice WITH the obstruction model). His call.
+- Redrock pooled 6-set CO-GATE: 0.0/0.0, every dirt column identical.
+  River 3x8, swamp 3x8, glow 2x16, lagoon, bay 2x20, lake 2x20, ocean,
+  seatrials: ALL byte-identical to the n4*/n5sw* anchors (verification of
+  the _floeObjs scope). Goldens re-recorded + verify PASS 30 traces.
+  Library 4/27 failing = the known owner-pending set. freeze --check clean
+  (lake = his pending edit).
+
+**Also closed this session:** C3, the joint shape (LANE1 direction-aware
+A* rebuilt onto this stack + the C2 gate): solo med 294.1 / tacks 20 —
+DOMINATED by the C2 gate alone (287.2 / 15) on every statistic. Recorded
+as a solo refusal of the joint form; no fleet round spent; LANE1's fleet
+kill count stays at 2. The fleet crawl re-measured POST-GWE and survived
+(69.3 s/boat in the 300-1200u band, 89% armed, 60% role-NONE) — C4
+remains the queued fleet-side address, not attempted tonight.
+
+Residual: solo leg-1 tacks 15 vs his 7 — the invitation channel is only
+~40% of tacks; the rest are avoidance-owned (AVOID_NONE 44 s/boat-leg of
+phantom floe deviation). The next arctic lever is avoidance-side, and it
+walks straight into the C4 pairing.
