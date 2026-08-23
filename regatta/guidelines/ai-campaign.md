@@ -14274,3 +14274,61 @@ mass (solo odo 36k vs his 25.4k) is EXECUTION-bound near ice, not
 demand-bound. Any future route-length work needs ice-side execution
 capability first. research-aug8's PAD sizing is superseded by this
 measurement.
+
+## ⏭ CARRY-FORWARD PROMPT — THE SUB-1.5x PUSH (verbatim, 2026-08-23)
+
+AI PUSH: arctic sub-1.5x — the contact-economics push (owner-directed
+2026-08-23). Bar = arctic fleet POOLED MED <= 310 vs his 207.0 (pooled
+32 minimum, 64 if within +-5). The measured mass: ~17 floe contacts/boat
+vs his ~1 + crawl residual 39.3 s/boat grinding AT the ice (floe med
+27u, contactLatch 36%) + the never-attempted PENALTY-BLIND class (~15%
+of contacts on spinning boats that early-return past all avoidance —
+rules 27b/29) + leg 2 at 27% of the gap with 19 gybes vs his 8 + the
+conservative demand knees (78 vs his 46u pass-by, bracket [60,78]).
+
+Read first: memory regatta-sub15-push-plan (THE PLAN — phases, E1-E5
+ranked, pre-registered kill criteria), regatta-three-threads-session
+(what just shipped: D1v2 ordering + sub-80u frontier; b3* anchors;
+the four carried watches), regatta-c4-measurement (census tools +
+numbers), regatta-standing-rules (benching law, poolers' traps),
+regatta-session-report (THE TABLE with every status update), tail of
+regatta/guidelines/ai-campaign.md. Check date; freeze --check from repo
+root (lake diff = my pending edit, expected).
+
+Base: three-threads ship ea0d228+e82dd54 (tools 63fea19). ALL anchors
+b3* (arctic b3arc9100/9200/9400/9600 — pooled 64 exists); treeBOTH3 ==
+HEAD (verify byte-identity Phase 0); human refs _traj_fp.js only
+(arctic med 207.0 / best 190.7, sailed IN TRAFFIC).
+
+Order of work: (0) re-baseline + THE TABLE (_b3_close_table.js). (1)
+Measurement, >=4 probes: post-ship contact census (EPISODES, antecedent
+classes: rival-fed / PENALTY-BLIND / approach-pose / latch-thrash —
+rule 29's frozen-timer trap — / nav residue), leg-2 decomposition on
+this HEAD (gybes vs his 8, C2 reason mix, AVOID_NONE re-measure),
+penalty-blind sizing (SIZES E1 BEFORE BUILDING), crawl re-measure. (2)
+Candidates in rank order, one mechanism per landing, own tree, criteria
+pre-registered: E1 penalty-blind-near-ice (umpire semantics SACRED —
+pen count unchanged by construction; only the drift-into-floe blindness;
+bay 2x20 co-gate), E2 = the census's biggest non-penalty class (shape
+from data), E3 leg-2 gybe honesty (check TWA convention, polar hole
+150-180), E4 demand knee 78->60 staged solo-first (46 stays dead), E5
+static-land narrowness ONLY WITH MY RULING (borders lee-shore caution
+— ask first). (3) Gate: the bar on final HEAD + full battery vs b3*
+(name losers; re-read and resolve-or-carry the four watches: river
+land +4.7%, glow boat +0.72, lag +0.61, lake +0.24) + rr pooled 6-set +
+riv 3x8 + bay 2x20 + goldens trace:update + verify READ THE COUNT (30)
++ suite (4 known fails; NP-70u is now a HARD green row) + campaign-log
+snapshot per round + memory checkpoint per phase + THE TABLE at close;
+reserve the last ~90 minutes for the close regardless.
+
+Guardrails: graveyard closed as-was (+ PAD knee x2, D1 ice-walls, 46u
+buffer knee, the eight leg-1 manoeuvre shapes); C2/D2/D3/D1v2/T1 are
+shipped and load-bearing — never weaken one to buy another's win; 12s
+rebuild load-bearing; start tuning sacred; penalty semantics sacred;
+drifting ice does not keep clear (rule 5); actions-not-prices;
+episodes-not-frames; arctic 32+ seeds; _pool_ob.js cand,base
+NEGATIVE=faster, hand-check one number (21b); nohup zsh from repo root;
+never pkill chrome while benches run. Out of scope: alignment-on-ice
+(the ~95s route-length capability arc — consult me before opening it),
+wedge push, swamp corridor, lake, rating campaign, rules backlog.
+Commits local — push needs my credentials.
