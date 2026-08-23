@@ -14219,3 +14219,14 @@ the watch named is paid off, not shuffled).
 Non-floe venues byte-identical by construction and verified (redrock/bay/
 river 2-race prefixes). Full battery + goldens + suite on final HEAD in
 this session's close table.
+
+**CLOSE SNAPSHOT (2026-08-22 23:04 PDT, final HEAD):** arctic med 327->321
+(pooled-64 paired med -8.0 / mean -8.7, all four sets negative, 576/576
+fins), **ratio 1.580 -> 1.551**; boat 6.35->3.73, land 3.41->2.99, pen
+0.93->0.62 on the anchor pair. Goldens verify PASS 30 traces; suite 4/27 =
+the known owner-pending set; freeze clean (lake = his edit); ALL nine
+non-floe venues re-benched at full anchor protocol and BYTE-IDENTICAL
+(c4* labels) — no losers. New arctic anchors = d3barc9100/9200/9400/9600.
+Next named arctic lever: the ROUTER's wide-water PAD knee (solo odo 36k vs
+his 25.4k — route length is the remaining solo mass; research-aug8 sizing
+stands, distinct-from-closed-families note already recorded).
