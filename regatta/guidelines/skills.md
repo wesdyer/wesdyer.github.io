@@ -20,6 +20,15 @@ S–D. Measured over 1,200 races, agreement between designed and measured tier i
 S. The stats in `script.js` were authored independently of the sketch and correlate
 with it at +0.17.
 
+> **Update, 2026-08-23.** That sketch was never committed — only this verdict on it — so
+> there is no per-character intended tier anywhere in the repo. But the *modelled* tier
+> projection in `eval/tier_grid.json` (`future`, built from the course shapes specced in
+> venues.md) has now been scored against the completed 66,670-race campaign, and it holds
+> up: **41% exact tier and 90% within one tier**, against 35%/74% for the 1,200-race
+> measurement it was built from, and Kendall τ 0.465 vs 0.289 against the new pooled order.
+> 29 of its 40 called movers moved in the predicted direction. The hand-drawn tiers were
+> chance; the modelled ones were not. See [../eval/RATING.md](../eval/RATING.md).
+
 **A stat can be decorative for the roster's entire life without anyone noticing.**
 `reach` is worth −0.180 s/pt, last of seven, because every venue races windward-
 leeward and there are no reaching legs anywhere in the game. Sixty-six characters
@@ -556,15 +565,39 @@ gating fact, not a failed stat.
 [../eval/RATING.md](../eval/RATING.md). `tier_eval.js` had the right metric but scored
 every DNF as a finisher whose time was exactly the course cutoff, which is 33% of the
 fleet at Redrock, 39% at Glowtide and 74% at Swamp, and reported `dnfPct 0.0` throughout.
-It also never once raced Finley. Two results already overturn statements above:
+It also never once raced Finley.
 
-- **`reach` is not decorative.** −0.631 s/pt on seatrials against the −0.180 recorded in
-  §0, 3.5× larger and six standard errors from zero — measured on a course with no
-  reaching leg at all. Six of the ten venues now have real ones.
-- **The conditions stats are venue-gated exactly as §1.4 intends.** `lightAir`,
-  `heavyAir` and `pressure` all price at zero on seatrials, which runs a fixed 13 kn with
-  no variance and no gusts — inside the dead band, so they *must*. Price them where the
-  wind is: swamp ~4 kn, lake ~9, ocean ~20, arctic 15–25.
+### Final numbers — campaign completed 2026-08-20, 66,670 races
+
+- **`reach` is not decorative — confirmed, but the figure below was wrong.** It prices at
+  **−0.383 ±0.065 s/pt on seatrials** at 6,667 races, not the −0.631 quoted here from a
+  smaller sample, and it is significant at **nine of the ten venues** (strongest: swamp
+  −1.470, bay −1.361). The conclusion stands and is stronger than §0's −0.180; only the
+  magnitude was overstated. Also strike "a course with no reaching leg at all" — seatrials'
+  start sequence alone measures **36% reach**, and every one of its legs carries 9–13%
+  reach in approaches and roundings. That is where the price comes from.
+- **The conditions stats are venue-gated exactly as §1.4 intends — now confirmed with
+  numbers, and the "price them where the wind is" instruction was right.**
+  `lightAir` is indistinguishable from zero at nine venues and prices **−4.107 s/pt at
+  swamp** (~4 kn), the largest single stat price in the campaign. `heavyAir` is zero at
+  eight and prices **−0.838 at ocean** and **−0.707 at arctic**. `pressure` is zero at
+  seatrials and prices **−3.516 at swamp**, **−2.010 at lake**.
+- **`memory` prices at zero at all ten venues** (best case −0.261 ±0.243). The §4.3 gating
+  prediction holds exactly: it is waiting on a multi-region course, not failing.
+- **A single-venue stat price is not a price.** `handling` reads −0.112 ⌀ at seatrials and
+  **−2.415 at redrock**; `pressure` reads −0.011 ⌀ at seatrials and −3.516 at swamp. Both
+  were called weak by the old single-venue fit. Never price a stat on one venue — and
+  especially not on seatrials, which measures as the *least* representative course in the
+  set (mean Kendall τ 0.289 against the other nine) because it is the only venue whose legs
+  are pure points of sail.
+- **`downwind` was overpriced by 36%** against the stored `stat_prices.json` (−1.724 stored
+  vs −1.105 measured). `upwind` held (−1.001 → −1.123) and is the only stat significant at
+  all ten venues.
+- **Archetypes are a one-sided lever.** Only `corner` (+2.642) and `freight` (+2.877) have a
+  measurable effect and both are the *slow* ones; all four intended-fast archetypes are
+  indistinguishable from `bully`. Metronomes finish fast entirely through their stats, with
+  nothing left over for the archetype. Relevant to §1's "every skill is a trade-off" rule:
+  the archetype layer currently only takes away.
 
 ---
 
