@@ -14332,3 +14332,90 @@ never pkill chrome while benches run. Out of scope: alignment-on-ice
 (the ~95s route-length capability arc — consult me before opening it),
 wedge push, swamp corridor, lake, rating campaign, rules backlog.
 Commits local — push needs my credentials.
+
+## 2026-08-23 — THE SUB-1.5x PUSH, measurement + candidate rounds (session log)
+
+Base `73af486` (= three-threads ship; treeBOTH3 == HEAD byte-verified).
+Bar = arctic fleet pooled med ≤310 vs his 207.0. Pre table: arctic 320
+(1.546x).
+
+**Phase 1 re-measured the mass on THIS HEAD and re-ordered the plan.**
+New tracked probes: `_contact_census2.js` (antecedent census with
+precedence PEN-BLIND > LATCH-THRASH > RIVAL-FED > HOT-ENTRY > NAV,
+dwell40 cost), `_pen_blind.js` (spin geometry; ⚠️ its closing/floeDrift
+columns are 60x-corrupted — driftVx is u/s — and its `contacts` are raw
+frames), `_flips2.js` (per-leg tack/gybe split), `_latch_micro.js`
+(re-hit structure; v1's 20u floe-id threshold left 51% unattributed and
+inverted sameFloe — fixed to 60u).
+- Census (4×9400 fleet): 4.36 contact eps/boat, dwell40 17.2 s/boat.
+  LATCH-THRASH 46% (7.46 s/boat) >> RIVAL-FED 24% > HOT-ENTRY 14% >
+  NAV 10% > **PEN-BLIND 6% (1.49 s/boat) — the pre-C4 ~15% estimate was
+  stale; D2's penalty cuts already shrank the class.**
+- Micro: re-hits 49% of episodes; sameFloe 52%/diff 48%; escapes DO
+  clear (escPeak med 80u); **backTurn 56%** — the return, not the
+  escape, owns the loop.
+- **Leg 2: E3 DISSOLVED** — fleet 8.8 manoeuvres/boat (4.8 gybes) vs
+  his ~8; the "19 vs 8" was pre-C4. Crawl re-measure: 30.4 s/boat
+  (was 39.3), floe<60 51% of slow frames. Dev census: PHANTOM collapsed
+  post-D3; AVOID_NONE ≈7 s/boat VMG-weighted.
+
+**Candidate rounds: SEVEN pre-registered kills, no mechanism moved.**
+- ⛔ E4 demand 78→60: solo +17.8 mean, floeHits 133→675. E4B 78→70:
+  +20.2 mean. **Demand family CLOSED (46/60/70 kills; 78 = frontier).**
+- ⛔ E1 v1 (spin ice-pause, resume racing): penalized-near-ice
+  2.7→5.7 s/boat — she charged the pack while flagged. KILLED.
+- ⛔ E2 v1 (pack-ranked escape fan): census flat. E2B (arc-modeled,
+  rule-19c): flat. **Escape DIRECTION is not the lever.**
+- ⛔ E2C (D1v2 ordering + 8s post-contact window): flat — the
+  avoidance ordering doesn't own the return line.
+- ⛔ E2D (planner step-segment honesty — the roll point-samples every
+  0.75s ≈ 105u and can jump a floe, T1's sample-miss geometry): solo
+  +15.6 mean, census flat. The planner deviates for newly-seen floes
+  and pays clock without cutting contacts; HOT-ENTRY is
+  drift-surprise/frontier-shave, not sample-miss.
+- Census class stats span ±1.5 s/boat across unrelated trees at 4
+  seeds — the noise band that killed cannot confirm small wins either.
+
+**The capability finding:** the in-scope contact-economics mass is
+EXECUTION-BOUND at this frontier, mirroring the router side (PAD knee
+0-for-2, demand 0-for-3). The remaining ~10s to the bar sits in route
+length (the alignment-on-ice arc — owner consult required) and ice-side
+boat handling, not in steering policy.
+
+**E1B (spin ice-pause v2: hold-off-the-ice, eased, avoidance runs) is
+the one survivor**: PEN-BLIND eps 0.28→0.14/boat (the pre-registered
+halving), penalized time −14%, spins 22→19, other classes in-band; bay
+2-race prefix byte-equal (single _floeObjs guard). Arctic pooled 32:
+paired med 0.0 / mean +1.1, **pen 0.51→0.51 exactly unchanged (the
+umpire-safety line), floe −2%, land −7%, 288/288 fins**. Extending to
+pooled 64 (mean within ±5 of the line) — verdict below.
+
+**⛔ E1B PARKED AT POOLED 64**: paired med 0.0 but mean +2.3 with ALL
+FOUR sets positive (+4.4/+2.6/+0.9/+1.4) — a consistent ~2 s/boat clock
+tax — and floe 17.14→17.72 at 64 (the 32-seed −2% didn't hold). Pen
+0.49→0.49. A ~1 s/boat penalty-blind class does not buy a 2 s/boat tax:
+parked per the pre-registered rule (trees kept: treeE1/E1B/E2/E2B/E2C/
+E2D/E4/E4B; benches e1barc*).
+
+**SESSION CLOSE — nothing shipped; HEAD unchanged (byte-verified ==
+treeBOTH3, the b3\* benched tree), so the b3\* anchors ARE the close
+benches; goldens PASS 30 and suite 4/27 known-set stand from the same
+bytes. The four watches (river land +4.7%, glow +0.72, lag +0.61, lake
++0.24) carry unchanged — no venue was touched.**
+
+Closed this session: demand knee 60+70 (family closed, 78 = frontier);
+E1 spin-pause ×2 (v1 killed at mechanism, v2 parked at pooled 64);
+escape-direction ×2 (fan + arc-modeled); E2C post-contact ordering
+window; E2D planner step-segment honesty (solo-killed). The census
+noise band (±1.5 s/boat per class at 4 seeds) and all round data are in
+_contact_census2/_pen_blind/_flips2/_latch_micro JSONs.
+
+**THE DECISION THIS PUSH PUTS TO THE OWNER**: the sub-1.5x bar (−10s)
+is not reachable from in-scope steering policy on this HEAD — eight
+shapes across five mechanism families failed to move even their own
+census targets. The measured remaining masses: route length (solo odo
+36.9k vs his 25.4k ≈ the whole ~85s solo gap — the alignment-on-ice
+arc, explicitly out of scope without your ruling) and ice-side
+execution capability (latch-thrash 7.5 s/boat of rule-5 grinding the
+steering shapes cannot reach). E5 (static-land narrowness) remains
+unopened pending your ruling (borders lee-shore caution).
