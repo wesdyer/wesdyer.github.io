@@ -54809,7 +54809,7 @@ window.VENUE_DOC["river"] = {
       "kind": "river-willow",
       "x": 1295.7,
       "y": -1839.8,
-      "heading": 0.529,
+      "heading": 1.3090648642787652,
       "scale": 2.765
     },
     {
@@ -149623,6 +149623,14 @@ window.VENUE_DOC["river"] = {
       "scale": 4
     },
     {
+      "id": "veg-17604",
+      "kind": "river-spruce-sitka",
+      "x": 1239.5250556220026,
+      "y": -2042.9039080050068,
+      "heading": 0.45086007901573844,
+      "scale": 2.469
+    },
+    {
       "id": "veg-17577",
       "kind": "river-spruce-sitka",
       "x": 1094.865007063297,
@@ -150279,6 +150287,22 @@ window.VENUE_DOC["river"] = {
       "y": 1530.7407735662457,
       "heading": 3.028867498498436,
       "scale": 1.326
+    },
+    {
+      "id": "veg-17603",
+      "kind": "river-spruce-sitka",
+      "x": 1295.7142561682886,
+      "y": -1585.5862480032913,
+      "heading": 4.335638198348464,
+      "scale": 4
+    },
+    {
+      "id": "veg-17605",
+      "kind": "river-spruce-sitka",
+      "x": 1301.9575006734312,
+      "y": -1797.856561178149,
+      "heading": 0.4810887585578607,
+      "scale": 2.469
     }
   ]
 };
