@@ -1,0 +1,7 @@
+16 9400 gwharc9400 treeGWH arctic
+16 9600 gwharc9600 treeGWH arctic
+8 9400 gwhlag treeGWH lagoon
+16 9400 gwhglow treeGWH glowtide
+8 9400 gwhsw9400 treeGWH swamp
+8 9500 gwhsw9500 treeGWH swamp
+8 9600 gwhsw9600 treeGWH swamp

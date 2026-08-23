@@ -49,9 +49,12 @@ function driver(r) {
             const drv = {};
             for (const r of rows) { const d = driver(r); drv[d] = (drv[d] || 0) + 1; }
             const roles = [...new Set(rows.map(r => r.role + '/' + r.risk))].join(',');
+            const cons = {};
+            for (const r of rows) if (r.rowDbg && r.rowDbg.cons) cons[r.rowDbg.cons] = (cons[r.rowDbg.cons] || 0) + 1;
             const rng = Math.round(rows.reduce((p, r) => p + (r.rng || 0), 0) / rows.length);
             const held = rows.filter(r => r.rowDbg && r.rowDbg.held).length;
-            console.log(`  t=${String(s).padStart(2)}s off med ${(offs[Math.floor(offs.length / 2)] * 57.3).toFixed(0).padStart(3)}° rng ${String(rng).padStart(4)} ${roles.padEnd(22)} drivers ${JSON.stringify(drv)} held ${held}/${rows.length}`);
+            console.log(`  t=${String(s).padStart(2)}s off med ${(offs[Math.floor(offs.length / 2)] * 57.3).toFixed(0).padStart(3)}° rng ${String(rng).padStart(4)} ${roles.padEnd(22)} drivers ${JSON.stringify(drv)} held ${held}/${rows.length}`
+                + (Object.keys(cons).length ? ' cons ' + JSON.stringify(cons) : ''));
         }
     }
 })();

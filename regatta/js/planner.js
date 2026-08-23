@@ -507,7 +507,13 @@ const CoursePath = {
             const c = grid.cell(a.x + (b.x - a.x) * k / steps, a.y + (b.y - a.y) * k / steps);
             if (!grid.at(c[0], c[1])) return false;
         }
-        return true;
+        // ⚠️ The cell walk alone is not enough: navigable is a SUBSAMPLED verdict,
+        // so every cell under a segment can read clear while the segment itself
+        // passes within a few units of a corner (the measured chord-clips-corner
+        // defect — a cell-level guard here is provably inert). The geometric test
+        // asks the shapes the grid was built from, at the admit bar itself.
+        return !(typeof window !== 'undefined' && window.SailCheck)
+            || window.SailCheck.segClearGeom(grid, a.x, a.y, b.x, b.y);
     },
 
     // ── STRING-PULLING ──────────────────────────────────────────────────────
@@ -577,8 +583,14 @@ const CoursePath = {
                     for (let k = 1; k < seg.length; k++) L += Math.hypot(seg[k][0] - seg[k-1][0], seg[k][1] - seg[k-1][1]);
                     // A grid path stair-steps, so it overstates a clear run. Take the detour
                     // only when it is real, and end on the true target rather than a cell
-                    // centre.
-                    if (L > straight * 1.08) {
+                    // centre. "Real" is decided GEOMETRICALLY, not by length alone: the
+                    // 8% stair-step allowance also swallows a genuinely-kinked path
+                    // around a headland <8% longer than the chord, and the chord it
+                    // returns instead clips the corner at sub-cell depth (cells read
+                    // clear — the subsampling). A chord that fails the admit machinery's
+                    // own segment test keeps the routed detour however short it is.
+                    if (L > straight * 1.08
+                        || !window.SailCheck.segClearGeom(grid, from.x, from.y, to.x, to.y)) {
                         const out = seg.map(q => ({ x: q[0], y: q[1] }));
                         out[0] = { x: from.x, y: from.y };
                         out[out.length - 1] = { x: to.x, y: to.y };

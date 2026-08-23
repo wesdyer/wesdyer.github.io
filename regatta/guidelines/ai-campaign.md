@@ -13772,3 +13772,195 @@ Stale diagnoses retired this block: bay L1 distance tax (now +2% vs him),
 lagoon 29.8%-unsailable escapes (now 0.0%). Both venues' residues named:
 bay = speed-while-near-others; lagoon = leg-4 pocket grinds (6 episodes
 carry 163 contacts, chain-entangled).
+
+
+# THE DOCTRINE STACK — SHIPPED (2026-08-21 day session, owner co-piloting live)
+
+Owner rulings in sequence: 13m handover on his rounding scenario; "fix the
+real issue"; "accuracy first — ship it"; Rule 12 re-tolled to 2m; the
+no-contact foul NOTED-NOT-ARMED ("AI still too conservative to reliably
+use this"); NEXT PUSH = narrow-passage capability.
+
+**Shipped composition** (this commit + the owner's `d020966` which swept
+the working tree): (1) MARK SNAP-TURN — a boat pinned on a mark gets the
+same 5x escape authority land-pinned boats have (she used to park on the
+buoy for 4+s grinding Rule 31 at steerage-limited turn rate); (2)
+YIELD-AWARE RELEASE + RE-HOLDABLE LATCH — the stand-on reads the give-way
+boat's evident turn (half-second-advanced projection); a rival whose
+action already defuses the danger neither releases nor stays released;
+(3) 45u HULL-IMMINENT FLOOR — the unconditional release floor was 60u and
+out-ranked every capability judgment in exactly the close-quarters regime
+the doctrine targets. REMOVED from the ship after attribution: the
+emergency fan rungs 1.0/1.4 — they carried ~the whole loser tail (arctic
++8 -> +0.6 mean, lagoon +5.6 -> +0.4, glow +2.5 -> -6.1 without them) and
+their lab value (wall-pinned/corridor-pair corners) belongs to the
+narrow-passage push. Also REVERTED from `d020966`: the cell-level
+losClear route gate (inert — subsampled cells read a corner-clipping
+chord as clear; the geometric version is narrow-passage push material).
+
+**Ship gate (gwi* vs the gwe* anchors, all pooled):** clock med 0 on
+eight venues, glowtide -2 med/-6.1 mean (boat -27%, land -11%); mean
+tails riv +2.7 / sw +3.5 / st +3.1 (st pens 0.10->0.17, small absolute —
+watch). **MARK CONTACTS COLLAPSE EVERYWHERE**: rr 1.26->0.46, bay
+0.18->0.08, lag 0.38->0.11, lake 0.29->0.14, arc 0.23->0.09, glow
+1.42->1.11 — the snap-turn dividend. fins stable. Goldens re-recorded,
+verify 30/30. Battery 17/17.
+
+**Lab surface:** the owner's Round Mark with Boat to Windward (13m
+handover) 11/11 on nocollide + A-goal + no-penalties; Rule 12 GREEN at
+2m; Rule 13 improved to 4.2m; Rule 13 Both's rogue tack-window penalty
+GONE; Pocket Pair Solo's compiled-corridor spin FIXED (row promoted-able).
+Wall Tack + Pocket Pair corner rows returned to XF (they were propped by
+the dropped fan rungs — they are narrow-passage push material and now
+document it). Library: 23 scenarios, failing only R13/R13B/AroundMark +
+the one B-side seed of the owner's scenario.
+
+**Also this session:** lab sands now enter the WORLD MODEL
+(`syncSandsToWorld` — the routing grid was 100% blind to authored sand;
+the planner routed through polygons while physics stopped boats on them);
+the router's passability floor measured (2x(HULL_R+14) = 88u) and the
+chord-clips-corner defect isolated — both are the named levers of the
+NARROW-PASSAGE PUSH (owner: "a key skill... redrock, arctic, glowtide").
+
+
+## ⏭ CARRY-FORWARD PROMPT FOR THE NEXT INSTANCE (verbatim, 2026-08-21 close)
+
+AI PUSH: narrow-passage capability ("a key skill for the AI" — owner;
+redrock, arctic, glowtide especially).
+
+Read first: memory regatta-narrow-passage-push-plan (the plan + post-ship
+addendum — boots everything), regatta-gwe-push-session (what landed and
+why), regatta-scenario-lab (before touching that page),
+regatta-standing-rules (benching law), and the tail of
+regatta/guidelines/ai-campaign.md (append per accepted round). Check
+date; freeze_venues --check from repo root (a lake shipping diff is my
+pending edit — expected).
+
+Base: b54ee57 (the doctrine-stack ship). gwi* bench JSONs are the
+anchors; treeGWI is the shipped tree. Lab inner loop:
+node regatta/eval/run_scenarios.js — 23 scenarios; the push's DONE
+criteria are three XF pins flipping FIXED: Narrow Passage goals (68u
+slot — very feasible, I'd take it as a human), Wall Tack
+nocollide/penalty (wall-pinned pair), Pocket Pair goals (corridor pair).
+Author the width ladder (NP mirrors at 70/80/90/100u) to measure the
+frontier directly.
+
+Known facts, build on not re-derive: lab sands now enter the world model
+(syncSandsToWorld); the router's passability floor is 2x(HULL_R 30 + 14)
+= 88u — the admit bar, not rasterization (subsampling relaxes only the
+sampling); chord-clips-corner lives in CoursePath._route's 1.08
+detour-reality gate, the cell-level losClear guard is measured INERT
+(subsampled cells read the chord clear — the hunk is in d020966
+planner.js, reverted in b54ee57) so the honest fix is GEOMETRIC chord LOS
+(segDist vs _gridFixed shapes, the admit machinery's own test); the fan
+rungs 1.0/1.4 fix the tight lab corners but as a GLOBAL fan carried the
+whole venue tail (arctic +8 mean; hunks in d020966 script.js) — only
+slot-scoped/emergency-scoped variants are candidates.
+
+Order of work: (1) world model first — tight-thread tier (cells passable
+at reduced clearance ~beam/2+margin, TAXED so A* takes them only when
+worth it) + geometric chord LOS; the avoidance hard-zone must honor the
+tier or the helm refuses the router's thread (the divergence trap,
+measured both directions). (2) Execution second — scoped rung variants
+inside threads. (3) Width-ladder frontier + the three pins. (4) Full
+venue gate vs gwi* anchors (rr pooled 6-set, arctic 2x16 POOLED 32, riv
+3x8, glow 16 + the rest), name losers, non-universal wins to me; goldens
+npm run trace:update + verify --seeds 3 READ THE COUNT (30); battery.
+
+Process + reporting (STANDARD — non-negotiable): follow the campaign
+process — measure, isolate (venue, leg, sub-leg, individual shared
+behavior on trajectories), research, hypothesize, experiment, evaluate,
+iterate. Every status update to me carries THE TABLE (memory
+regatta-session-report): one row per implemented venue SORTED BY RATIO —
+venue | human med/best | pre-push bot med/best | post bot med/best |
+ratio | fins n/total (pct%). Pre = fresh Phase-0 baselines on the
+starting HEAD (= the gwi* anchors); post = fresh benches on FINAL HEAD,
+ALL venues including untouched (an unchanged venue's number is a
+verification); human med/best from fingerprint-verified traj only
+(_traj_fp.js; seatrials med/best are means-of-boats — flag it). Append a
+dated snapshot per ACCEPTED round to this file, protocol + commit stated,
+never overwrite rows. Close the session with the table on final HEAD.
+
+Guardrails: the clearance bar ⛔ was ADMISSION PRICING and is closed —
+the tier is CAPABILITY (which actions exist), bring the distinction to
+me before building if in doubt; arctic leads are DRIFTING walls (rule 5:
+drifting ice does not keep clear — a closing lead is a trap; consider
+fixed-land threads only there); start tuning is sacred; do not reopen
+closed families (MEMORY.md list). Out of scope: no-contact foul
+(noted-not-armed), wind-agnostic router, the wedge stalled-rival berth
+(unless it falls out), rating campaign.
+
+
+# THE NARROW-PASSAGE PUSH — LANDED (2026-08-21 night, autonomous run)
+
+Owner directive: narrow-passage capability, "a key skill for the AI —
+redrock, arctic, glowtide especially." Boots from the b54ee57 doctrine
+ship; gwi* anchors = base; landed in this commit.
+
+**Shipped composition (world model first, per the plan):**
+1. TIGHT-THREAD TIER (sailcheck): cells failing the 88u admit bar but
+   clear at TIGHT_CLEAR=35 are PASSABLE-TIGHT (`grid._tight`); the router
+   (pathSailable) takes them at TIGHT_TAX 2.5 on top of the clearance-band
+   extras; drifting ice blocks the tier at the FULL bar (a floe never
+   narrows a passage into the tier, it removes it — rule 5); tier only
+   where exceptional (density knee: tight > 8% of nav clears the layer —
+   swamp's grass archipelago is 10.6% vs <= 5.1% everywhere else, any
+   threshold in the gap gives the same partition).
+2. GEOMETRIC CHORD LOS (segClearGeom): exact segment-vs-shape clearance at
+   the admit bar, wired into CoursePath._route's 1.08 detour-reality gate
+   AND the string-puller's _lineClear (a cell-level guard is provably
+   inert — subsampled cells read a clipping chord as clear).
+3. THREAD-SCOPED TRUST (applyAvoidance): the tight cells of the boat's own
+   plan (+1 cell of scatter) probe FREE for the plan-aligned candidate,
+   15000-graded for other headings, WALL for everything else; plan-validity
+   scan treats plan tight cells as chosen-on-purpose. Endpoint snap prefers
+   open water within two rings before accepting a tight cell.
+4. Lab-sand fromMask (scenario.js): lab sands now carry fromMask like every
+   compiled venue shape — the avoidance polygon path had been double-seeing
+   them (an inflated-polygon tax closed the very slot the grid offered).
+
+**THE BAR IS THE MEASURED EXECUTION FRONTIER.** The width ladder (new lab
+scenarios, NP 70u/90u/100u/110u; base pin measured 80.6u, not the noted
+68): 80.6u transits 11/11, 68.6u 5/11 — a coin flip is not a capability.
+The first bar tried (21u = half-beam+scatter) admitted a ~69u redrock
+canyon thread the whole fleet bought in company: legs 4-5 +18-23 s/boat,
+land +58% pooled, systemic on 15/16 seeds. Five ablation trees + a
+thread census traced it; the frontier bar (35u ⇒ slots >= ~70u) recovered
+redrock fully with the capability intact.
+
+**Gate (n4*/n5* vs gwi*, all anchors' protocols, fresh on final HEAD):**
+- redrock pooled 6-set: med 318->315, mean -0.4, 432/432, dirt flat —
+  clock-neutral WITH the capability in.
+- river: fins 214->215/216, land 67.5->57.4/boat (-15%); med flat.
+- lake -1 med (boat contacts -19%), bay flat, ocean + seatrials
+  BYTE-IDENTICAL (no tight water on their lines — verification).
+- swamp BYTE-IDENTICAL by the density knee (tier@35 unscoped had been
+  med +42, land +500% — the census showed plans threading 43% of samples).
+- WATCH (named, per the non-universal-wins ruling): arctic +4 med pooled
+  32 (inside its noise floor; floe +5%), lagoon +5 med single 8-set (land
+  0.22->0.64 small absolute), glowtide 9400-set med +7/land +30% but the
+  disjoint 9600 set flips to mean -4/boat -16% (16-seed cross-tree noise;
+  census: threads used 0.9% of samples; pooled clock ~flat, land +17%
+  one-set-driven). No mechanism, no lever — owner's eyes requested.
+- Goldens re-recorded + verify 30/30 on final HEAD; library 27 scenarios
+  green except the 4 owner-pending rows; venue checks PASS.
+
+**Lab pins:** Narrow Passage goals FIXD 11/11 (promoted); Pocket Pair
+goals FIXD (promoted); Pocket Pair Solo goals+turn FIXD (promoted); NP
+ladder authored 70/90/100/110u (70u = the next frontier, XF). Wall Tack
+stays XF, DECOMPOSED: the contacts are boats grinding the compiled
+goal-line's SYNTHETIC ENDPOINT MARK (Rule 31, the PP-Solo machinery-wart
+family — owner call), plus a wall-beat flap (28 flaps/570deg turns, land-tax
+asymmetry — wedge-push blocked-tack material). The d020966 rungs were
+re-tried scoped (planTight / nosedIn+rival) and measured INERT at every
+Wall Tack contact — dropped again. Island Squeeze turn<=360 now XF: the
+fromMask honesty exposed engine-truth thrash the old budget was pinned
+against (100% fromMask by ablation; goals/nocollide green, min dist 90u
+vs 82 before).
+
+**Owner thread (his note, this session): alignment.** Physics already
+rewards it (tapered disc hull: aligned ~30u, crabbed 30deg ~50u) but the
+helm aligns only implicitly — COG through the 80.6u pin slot crabs ~23deg.
+Aim-through-the-slot targeting (carrot at the thread's far end) is the
+named lever for the sub-80u frontier; ⚠️ adjacent to the closed
+"oriented-hull planning" family — his ruling before building.
