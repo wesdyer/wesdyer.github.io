@@ -1936,7 +1936,108 @@ const PROP_KINDS = {
     // at 38u visible it sits between the cypress knees at 26u and the deadhead at 32u, which are
     // the venue's two dark lumps. Checked in greyscale — those two are squat, dark and blunt; the
     // heron is tall, pale, tapered and topped by a bright spike. No overlap.
-    'swamp-heron':          { label: 'Heron',          world:  44, plane: 'surface', contact: 'none', motion: 'fixed' }
+    'swamp-heron':          { label: 'Heron',          world:  44, plane: 'surface', contact: 'none', motion: 'fixed' },
+
+    // ── GLACIER SOUND'S ICE AND ROCK ────────────────────────────────────────
+    // The first six of a twelve-asset commission, and the first thing this venue has ever
+    // been able to put ON its land. Arctic ships 8 `ice` shapes, 3 `granite` shapes and 112
+    // floes, and until now the only props standing on any of that were the station and its
+    // huts — so the ice cap read as a flat white sheet with a coastline. These are its relief.
+    // Six more are undrawn (three seracs, three icy peaks); see art/manifest.json, which
+    // carries the measured rejection history for every row.
+    //
+    // EVERY ONE IS surface / none / fixed, AND THE CONTACT ANSWER IS THE INTERESTING ONE.
+    // All six stand on a landmass that ALREADY stops a boat, so a collider here would be a
+    // second hidden circle inside the first — and compile emits one hidden shape per fixed
+    // contact prop, which also enters the router's grid. That is the budget river-boulder-large
+    // is written around ("script.js records the river's 82 hidden banks causing multi-hundred-
+    // millisecond replan spikes"). Here the KIND is free and so is the placement, because none
+    // of it is in the water. If a nunatak is ever wanted as an island the fleet can hit, draw
+    // the land shape and put the prop on top of it; do not give the prop a radius.
+    //
+    // ⚠️ PROP-SPIN SPLITS THIS SET IN TWO AND IT IS NOT A PREFERENCE.
+    //   CREVASSES: spin ON. Their interior is lit by SKY, not sun — no direct light reaches the
+    //     bottom of a deep narrow slot — so the art has no lit face to rotate out of alignment,
+    //     and the only directional cue left is a whisper on the snow lip, below threshold at the
+    //     46u these are drawn across. Spinning them is the whole point: a field of eight to
+    //     fourteen, a splay fanned across 60 degrees, or one rift alone, all from three sprites.
+    //   MOUNTAINS: spin OFF, and set `heading °` per placement. All three bake an upper-left sun
+    //     into large lit and shaded flanks — that radial light split THROUGH the summit is the
+    //     thing that makes them read as plan-view peaks at all — so spinning one spins its sun.
+    //     Two nunataks lit from opposite corners on the same ice sheet is the error nobody can
+    //     name and everybody can see. Same call river-footbridge made for having an axis.
+    //
+    // `srcBox` IS MEASURED OFF EACH SHIPPED BAKE, [x, y, w, h] as fractions with a 1% margin,
+    // and carried only where the ink is thin enough to be worth skipping — the lake block's
+    // rule. ⚠️ THE CREVASSE IS NOW THE MOST EXTREME CASE IN THE GAME, past the swim line's 5%:
+    // its ink is 3.9% of a 2340px frame, a 2340px quad to composite a 271px-wide crack. The two
+    // mountains that fill their frames (crag 82%x87%, horn 89%x92%) get none, as a canopy does
+    // not. RE-MEASURE ON ANY RE-INGEST — a box too small clips the sprite, which is visible.
+    //
+    // ⚠️ THE RIFT AND THE BRIDGED CREVASSE ARE PLACEHOLDER ART and carry `rework` P1 blocks in
+    // the manifest: both ship the round-2 delivery, which came back at 3.8:1 and 1.7:1 against
+    // 8:1 and 14:1 asked, and the bridged one is THREE SEPARATE OBJECTS rather than one crack
+    // crossed by two bridges. They are placeable so the venue can be laid out now; expect the
+    // art under them to change. `arctic-crevasse` itself is finished art and measured clean.
+    //
+    // AT 900u THE MASSIF IS THE LARGEST PROP IN THE GAME BY AREA — past the 870u truss bridge
+    // and the 820u cruise ship — and the rift is the longest at 1200u. Place the massif and the
+    // horn WELL BACK ON THE ICE and away from round-1: the course rounds `granite-isle`, a 629u
+    // granite shape, and a bigger rock of the same colour standing behind the one piece of land
+    // the player must read is this batch's worst legibility risk.
+    'arctic-crevasse':         { label: 'Crevasse',           world:  780, plane: 'surface', contact: 'none', srcBox: [0.442, 0.059, 0.116, 0.882], motion: 'fixed' },
+    'arctic-crevasse-wide':    { label: 'Crevasse, rift',     world: 1200, plane: 'surface', contact: 'none', srcBox: [0.373, 0.058, 0.253, 0.883], motion: 'fixed' },
+    'arctic-crevasse-bridged': { label: 'Crevasse, bridged',  world:  900, plane: 'surface', contact: 'none', srcBox: [0.390, 0.058, 0.220, 0.883], motion: 'fixed' },
+    'arctic-nunatak-crag':     { label: 'Granite crag',       world:  400, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'arctic-nunatak-horn':     { label: 'Granite horn',       world:  680, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'arctic-nunatak-massif':   { label: 'Granite massif',     world:  900, plane: 'surface', contact: 'none', srcBox: [0.028, 0.233, 0.943, 0.533], motion: 'fixed' },
+
+    // ── AND THE VENUE'S HUMAN PRESENCE ──────────────────────────────────────
+    // Glacier Sound's only sign that anyone has ever been here, and now offered BOTH ways: the
+    // station as one drag, or the hut on its own so a designer can lay out their own camp.
+    //
+    // ⚠️ THE HUT IS AN `element` THAT ALSO SHIPS, which is the interesting half. art-pipeline 3b
+    // says an element "NEVER ships on its own" — written when the only elements were penguins,
+    // where a lone bird is 4-7px. A building is not, so the manifest flags it `ships: true` (the
+    // penguin-emperor route) and ingest writes a world-prop bake beside the element. ONE piece of
+    // art now serves compose.py AND the placement pass, so a hand-placed hut and a composed one
+    // are the same building by construction and can never drift.
+    //
+    // ⚠️ ITS `world` IS 94 AND THAT IS NOT THE HUT'S SIZE. elementFill is 0.64, so the ink is 64%
+    // of the frame along its long axis and the hut itself draws 49u x 62u — measured, not derived.
+    // That was chosen to match the art it came from: the three huts composed into `arctic-station`
+    // measure 74u, 64u and 56u on their long axis, so a lone hut at 62u sits in the middle of its
+    // own family. Reading `world` here as the building's size and "correcting" it to ~60 would
+    // shrink the hut to 38u. srcBox skips the 64% of the frame elementFill leaves empty.
+    //
+    // BOTH ARE surface / none / fixed for the block's reason above — they stand on land that
+    // already stops a boat. The station is a LANDMARK by role and never sits in the water; place
+    // it back from the shore with the hut and the zodiac around it.
+    'arctic-hut':              { label: 'Research hut',       world:   94, plane: 'surface', contact: 'none', srcBox: [0.229, 0.163, 0.541, 0.674], motion: 'fixed' },
+    'arctic-station':          { label: 'Research station',   world:  170, plane: 'surface', contact: 'none', motion: 'fixed' },
+
+    // THE STATION TENDER, AND THE ONLY VENUE-NEUTRAL PROP IN THIS FILE. Its manifest slot is
+    // deliberately venue-less "like mark/buoy-channel-*: a support RIB is race furniture at every
+    // venue — committee boat, safety boat, and Glacier Sound's station tender", and safety orange
+    // is canonical everywhere, so no palette clause may tint it. It is listed here because Glacier
+    // Sound is what asked for it; it belongs anywhere.
+    //
+    // ⚠️ IT NEEDS AN EXPLICIT `src` AND EVERY OTHER VENUE-NEUTRAL PROP WILL TOO. propSprite derives
+    // the path by splitting the kind at its FIRST hyphen, `<venue>-<name>` -> props/<venue>/<name>.png
+    // — and `zodiac` has no hyphen, so the derivation would ask for props/zodia/zodiac.png. `src`
+    // short-circuits it, the same field the sunken boulders use to point three kinds at three
+    // existing PNGs. This is the mirror of the doubled `bay-bay-` id above: both are the one path
+    // rule biting a key that does not fit `<venue>-<name>`.
+    //
+    // CONTACT none, ON THE HARBOUR FAMILY'S ARGUMENT — role is `traffic`, not `hazard`. If it ever
+    // should stop a hull, use contactR 8: measured off the art the hull is 24u x 51u, so 8 fits the
+    // beam and covers the middle of the length, and under-covering is the safer error. That is the
+    // same number cove-motorboat's note reserves for itself at a near-identical size.
+    //
+    // wake RIBBON, not kelvin: a RIB planes rather than pushing water aside, which is what that
+    // field distinguishes. It is a fact about the hull, true wherever she sails, so it belongs on
+    // the kind whether or not any given placement is moving.
+    'zodiac':                  { label: 'Zodiac',             world:   54, plane: 'surface', contact: 'none', srcBox: [0.268, 0.019, 0.464, 0.962], motion: 'fixed', src: 'assets/images/props/zodiac.png', wake: { kind: 'ribbon' } }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like

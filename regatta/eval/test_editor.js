@@ -18,7 +18,17 @@ const check = (name, cond, detail) => {
 const near = (a, b, tol) => Math.abs(a - b) <= tol;
 
 (async () => {
-    const browser = await chromium.launch();
+    // ⚠️ --allow-file-access-from-files IS LOAD-BEARING, NOT HYGIENE. This suite reads the
+    // editor canvas back with toDataURL in a dozen places, and it loads `arctic` and only
+    // arctic. That was safe for exactly as long as arctic had no props: the moment a prop
+    // sprite is drawn from a file:// URL the canvas is TAINTED and every toDataURL after it
+    // throws SecurityError, which kills the run mid-suite rather than failing a check. Glacier
+    // Sound got its first props on 2026-08-23 and the suite died the same day. The flag lets a
+    // file:// page treat file:// images as same-origin, which is true here and false nowhere
+    // that matters. venuedoc.js records the same constraint from the other side — 'the runtime
+    // cannot read the pixels back (getImageData taints the canvas under file://)' — and that is
+    // why `hull`, `srcBox` and `contactR` are measured at bake time instead.
+    const browser = await chromium.launch({ args: ['--allow-file-access-from-files'] });
     const page = await browser.newPage({ viewport: { width: 1500, height: 900 } });
     const errs = [];
     page.on('pageerror', e => errs.push(e.message));
