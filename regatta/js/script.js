@@ -4282,7 +4282,12 @@ class BotController {
             // comment above names is closed.
             let arcPts = null;
             const arcDt = (lookaheadFrames / 60) / 8;
-            if (openWaterAv) {
+            // D2 — RIVAL HONESTY ON ICE (the GWF re-land, C4 push 2026-08-22):
+            // the roll runs on floe venues too — a boat's own achievable turn
+            // is venue-independent — but ONLY the boat-vs-boat test consumes
+            // it there. On ice, futureX/vx (which feed the land/mark/floe
+            // terms) stay the straight projection byte-for-byte.
+            {
                 const snapP = (this.iceEscapeTimer > 0 && !this.penaltySpin);
                 const omP = getTurnSpeed() * 60 * (1.0 + boat.stats.handling * 0.03)
                     * (snapP ? 5.0 : steerageFactor(boat));
@@ -4297,8 +4302,10 @@ class BotController {
                     yp += (-Math.cos(hp) * speed + curAvVy) * dtP;
                     arcPts.push([xp, yp]);
                 }
-                futureX = xp; futureY = yp;
-                vx = (futureX - boat.x) / TP; vy = (futureY - boat.y) / TP;
+                if (openWaterAv) {
+                    futureX = xp; futureY = yp;
+                    vx = (futureX - boat.x) / TP; vy = (futureY - boat.y) / TP;
+                }
             }
 
             let boatCollision = false;
@@ -4490,7 +4497,10 @@ class BotController {
                 // START (racingLegF, same gate as the candidate fan — start
                 // tuning is sacred, d55eb97's 4.4 OCS points say so).
                 const arcTest = arcPts && racingLegF;
-                const hardCore = otherSpinC ? pairSafe : Math.min(pairSafe, 80);
+                // the 80u truth core is an OPEN-WATER call (the rules gap
+                // there is priced by the (a)/(b) keep-clear term). On ice
+                // the bubbles stay exactly as priced (D2 / GWF re-land).
+                const hardCore = otherSpinC ? pairSafe : (openWaterAv ? Math.min(pairSafe, 80) : pairSafe);
                 if (arcTest) {
                     let minApproachSq = Infinity;
                     for (let iSeg = 0; iSeg < 8; iSeg++) {
