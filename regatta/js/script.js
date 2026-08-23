@@ -3656,6 +3656,20 @@ class BotController {
         let bestHeading = desiredHeading;
         let minCost = Infinity;
 
+        // D1v2 — CLEAN-PREFERRED ESCAPES UNDER RIVAL RESOLUTION NEAR ICE
+        // (C4 follow-up, owner-approved re-litigation 2026-08-23). While a
+        // rival resolution is live, an escape candidate whose probe crosses
+        // ice loses to ANY fully-clean candidate — but ONLY when a clean
+        // one exists. D1's unconditional wall pushed boxed boats into land
+        // and boats (pooled 32 +10.0 med, land +55%, KILLED); this is a
+        // pure ORDERING rule: no candidate's price changes anywhere, and a
+        // boxed boat keeps today's ordering exactly. Under _trajFloe the
+        // ice test runs information-only (zero cost) on offset!=0
+        // candidates — water the planner never probed.
+        const iceHardD1 = !(state.course._floeObjs && state.course._floeObjs.length)
+            ? false : (this.avoidanceRole !== 'NONE' || !!this.threatBoat);
+        let minCleanCost = Infinity, bestCleanH = null, bestCleanRetro = false, bestIceD1 = false;
+
         // NOTE: leeway-aware candidate projection and an in-irons candidate
         // penalty were both tested here and REGRESSED (see memory: Round 10) —
         // avoidance predictions must stay heading-based and hold-friendly.
@@ -4312,6 +4326,7 @@ class BotController {
             let staticCollision = false; // Marks/Boundary
             let ruleViolation = false;
             let proximityCost = 0;
+            let iceCrossD1 = false;      // D1v2: this candidate's probe touches ice
 
             // 1. Boats - Check multiple points along the path
             const boatSamples = 5;
@@ -5128,7 +5143,21 @@ class BotController {
                     // steered this tick, floes are ITS job — double-counting them
                     // here re-vetoes the thread it chose.
                     if (isl.fromMask && gAv) continue;
-                    if (isl.isFloe && this._trajFloe) continue;
+                    if (isl.isFloe && this._trajFloe) {
+                        // D1v2: information-only ice test for escape candidates —
+                        // the planner cleared only the zero offset. NO cost here.
+                        if (iceHardD1 && offset !== 0 && !iceCrossD1) {
+                            const tMidI = (lookaheadFrames / 60) * 0.5;
+                            const shXI = (isl.driftVx || 0) * tMidI, shYI = (isl.driftVy || 0) * tMidI;
+                            const sIx = boat.x - shXI, sIy = boat.y - shYI;
+                            const eIx = futureX - shXI, eIy = futureY - shYI;
+                            const dI = Geom.distToSegment({ x: isl.x, y: isl.y },
+                                { x: sIx, y: sIy }, { x: eIx, y: eIy });
+                            if (dI < isl.radius + 30 + 21
+                                && floeSegNear(isl, sIx, sIy, eIx, eIy, tMidI, 12.6)) iceCrossD1 = true;
+                        }
+                        continue;
+                    }
                     // PREDICT the floe, don't pad it. Drift velocity is known
                     // exactly, so test the candidate segment against the floe where
                     // it WILL BE mid-lookahead (equivalently: shift the segment the
@@ -5192,6 +5221,7 @@ class BotController {
                             // ratio 1.91→1.70, min 270 — priced by 3 fins@900 churn,
                             // in-time flat 40. The knee is somewhere below; a notch3
                             // must watch the 900-cap finisher count first.)
+                            if (isl.isFloe && iceHardD1 && offset !== 0) iceCrossD1 = true; // D1v2 flag; price unchanged
                             proximityCost += isl.isFloe ? 3500 : 25000;
                         } else {
                             // Proximity penalty (Buffer zone)
@@ -5325,11 +5355,26 @@ class BotController {
             if (cost < minCost) {
                 minCost = cost;
                 bestHeading = h;
+                bestIceD1 = iceCrossD1;
                 bestRetro = retroOn
                     ? ((Math.sin(h) * (-Math.sin(brgRetro) * sgnRetro) - Math.cos(h) * (Math.cos(brgRetro) * sgnRetro)) < 0)
                     : false;
             }
+            // D1v2: track the best FULLY-CLEAN candidate (no collisions, no
+            // rule violation, probe touches no ice) in parallel.
+            if (iceHardD1 && !iceCrossD1 && !boatCollision && !staticCollision
+                && !ruleViolation && cost < minCleanCost) {
+                minCleanCost = cost;
+                bestCleanH = h;
+                bestCleanRetro = retroOn
+                    ? ((Math.sin(h) * (-Math.sin(brgRetro) * sgnRetro) - Math.cos(h) * (Math.cos(brgRetro) * sgnRetro)) < 0)
+                    : false;
+            }
         }
+        // D1v2 substitution: the winning escape crossed ice while a clean
+        // escape existed — take the clean one. A boxed boat (no clean
+        // candidate) keeps the stock ordering untouched.
+        if (bestIceD1 && bestCleanH != null) { bestHeading = bestCleanH; bestRetro = bestCleanRetro; }
         if (retroOn && bestRetro && proHeading != null) bestHeading = proHeading;
         void retroSet;
         this._lastAvoidChoice = bestHeading;
