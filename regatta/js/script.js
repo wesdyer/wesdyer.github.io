@@ -2314,6 +2314,80 @@ class BotController {
                         if (c2Changed) this._c2Window = 4.0;
                     }
                     this.gridPath = pts.slice(1);   // drop the boat's own cell
+                    // v9 — PATH FAIRING AT SHAVE SEGMENTS (ice-craft session
+                    // 2). The router threads clear CELLS but never aligns to
+                    // floe EDGES: with boats held on priced water (the v8
+                    // rejoin) the on-path shave class shows entry angle med
+                    // 39° vs his 19° and 23% hits. Clamp every path point
+                    // whose drift-predicted hull clearance (at its own ETA,
+                    // within the honest ≤5s horizon — beyond that floe drift
+                    // is fiction) is under 78u onto the 78u offset contour in
+                    // the drifted frame: consecutive clamped points share the
+                    // contour, so the faired segment runs edge-TANGENT by
+                    // construction and the boat arrives aligned. A push that
+                    // would land within 60u of another hull or in a blocked
+                    // cell is rejected. Byte-inert without _floeObjs.
+                    if ((state.course._floeObjs || []).length && this.gridPath.length) {
+                        const gp9 = this.gridPath;
+                        const v9 = Math.max(60, (this.boat.speed || 0) * 60);
+                        let acc9 = 0, px9 = this.boat.x, py9 = this.boat.y;
+                        for (let i9 = 0; i9 < gp9.length; i9++) {
+                            const p9 = gp9[i9];
+                            acc9 += Math.hypot(p9.x - px9, p9.y - py9); px9 = p9.x; py9 = p9.y;
+                            const tE9 = acc9 / v9;
+                            if (tE9 > 5) break;
+                            let f9 = null, c9 = Infinity;
+                            for (const fF of state.course._floeObjs) {
+                                const dx9 = fF.x - p9.x, dy9 = fF.y - p9.y;
+                                const rr9 = (fF.radius || 0) + 160;
+                                if (dx9 * dx9 + dy9 * dy9 > rr9 * rr9) continue;
+                                const cF = floeHullClear(fF,
+                                    p9.x - (fF.driftVx || 0) * tE9,
+                                    p9.y - (fF.driftVy || 0) * tE9, tE9);
+                                if (cF < c9) { c9 = cF; f9 = fF; }
+                            }
+                            if (!f9 || c9 >= 78 || c9 < -20) continue;
+                            // push radially in the DRIFTED frame to the 78u contour
+                            const fx9 = f9.x + (f9.driftVx || 0) * tE9;
+                            const fy9 = f9.y + (f9.driftVy || 0) * tE9;
+                            let ux9 = p9.x - fx9, uy9 = p9.y - fy9;
+                            const dU9 = Math.hypot(ux9, uy9) || 1; ux9 /= dU9; uy9 /= dU9;
+                            const qx9 = p9.x + ux9 * (78 - c9), qy9 = p9.y + uy9 * (78 - c9);
+                            // reject: other hulls or blocked cells at the new point
+                            let ok9 = true;
+                            for (const fF of state.course._floeObjs) {
+                                if (fF === f9) continue;
+                                const dx9 = fF.x - qx9, dy9 = fF.y - qy9;
+                                const rr9 = (fF.radius || 0) + 120;
+                                if (dx9 * dx9 + dy9 * dy9 > rr9 * rr9) continue;
+                                if (floeHullClear(fF,
+                                    qx9 - (fF.driftVx || 0) * tE9,
+                                    qy9 - (fF.driftVy || 0) * tE9, tE9) < 60) { ok9 = false; break; }
+                            }
+                            if (ok9 && botGrid) {
+                                const cc9 = botGrid.cell(qx9, qy9);
+                                if (!botGrid.at(cc9[0], cc9[1])) ok9 = false;
+                            }
+                            // a pushed POINT clears the hull; the SEGMENTS to
+                            // its (possibly unpushed) neighbours may now cut
+                            // the corner the point was pushed around (measured
+                            // on 9101: floeEp 2→9). Push only if both
+                            // adjoining segments clear the hull in the
+                            // drifted frame.
+                            if (ok9) {
+                                const shX9 = (f9.driftVx || 0) * tE9, shY9 = (f9.driftVy || 0) * tE9;
+                                const pv9 = i9 > 0 ? gp9[i9 - 1] : { x: this.boat.x, y: this.boat.y };
+                                if (floeSegNear(f9, pv9.x - shX9, pv9.y - shY9,
+                                    qx9 - shX9, qy9 - shY9, tE9, 25)) ok9 = false;
+                                if (ok9 && i9 < gp9.length - 1) {
+                                    const nx9 = gp9[i9 + 1];
+                                    if (floeSegNear(f9, qx9 - shX9, qy9 - shY9,
+                                        nx9.x - shX9, nx9.y - shY9, tE9, 25)) ok9 = false;
+                                }
+                            }
+                            if (ok9) { p9.x = qx9; p9.y = qy9; }
+                        }
+                    }
                 } else if (!seg) {
                     // No route right now (a drifting pocket closed). A stale path
                     // beats a straight line into the ice — keep the old one and
@@ -2388,6 +2462,67 @@ class BotController {
                     j++;
                 }
                 let w = (j >= pts.length - 1) ? { x: destX, y: destY } : pts[j];
+                // FLOE-AWARE REJOIN (v8, ice-craft session 2, 2026-08-23).
+                // The entry attribution split the sub-78u contact mass: path
+                // shaves hit 0%, but boats DISPLACED off the plan (xtrack
+                // ≥80u, 35% of onsets) hit 58% — their pure-pursuit rejoin
+                // chord crosses drifting hulls the path never priced, and
+                // cross-track control SHRINKS the lookahead, steepening the
+                // chord exactly when it most needs to clear ice (trap 17:
+                // displacement is fixed at the response, not the map). When
+                // off-path near ice, slide the rejoin carrot FORWARD along
+                // the path until the chord to it clears every drift-predicted
+                // hull — rejoin shallower, behind the ice, on priced water.
+                // No held state, no mode; byte-inert without _floeObjs.
+                if ((state.course._floeObjs || []).length && this.boat.raceState.leg >= 1
+                    && xtk > 80 && j < pts.length - 1) {
+                    const vRj = Math.max(60, (boat.speed || 0) * 60);
+                    const chordBlocked = (wx, wy) => {
+                        const dRj = Math.hypot(wx - boat.x, wy - boat.y);
+                        const tMidRj = (dRj / vRj) * 0.5;
+                        for (const fRj of state.course._floeObjs) {
+                            const dxR = fRj.x - boat.x, dyR = fRj.y - boat.y;
+                            const rrR = (fRj.radius || 0) + dRj + 60;
+                            if (dxR * dxR + dyR * dyR > rrR * rrR) continue;
+                            const shX = (fRj.driftVx || 0) * tMidRj, shY = (fRj.driftVy || 0) * tMidRj;
+                            if (floeSegNear(fRj, boat.x - shX, boat.y - shY,
+                                wx - shX, wy - shY, tMidRj, 15)) return true;
+                        }
+                        return false;
+                    };
+                    if (chordBlocked(w.x, w.y)) {
+                        // v8b: prefer a rejoin point where the PATH ITSELF is
+                        // clear of predicted hulls — v8's chord-only slide
+                        // halved the off-path hit class (58%→30%) but landed
+                        // boats ON shaving path segments from rejoin angles
+                        // (on-path shave hits 0%→23%): rejoin BEHIND the
+                        // shave, not into it. Chord-clear-only is the
+                        // fallback; nothing clear in 480u keeps the original
+                        // carrot (the avoidance stack owns it, as today).
+                        const ptClear = (px, py, tE) => {
+                            for (const fRj of state.course._floeObjs) {
+                                const dxR = fRj.x - px, dyR = fRj.y - py;
+                                const rrR = (fRj.radius || 0) + 200;
+                                if (dxR * dxR + dyR * dyR > rrR * rrR) continue;
+                                if (floeHullClear(fRj,
+                                    px - (fRj.driftVx || 0) * tE,
+                                    py - (fRj.driftVy || 0) * tE, tE) < 78) return false;
+                            }
+                            return true;
+                        };
+                        let jR = j, accR = 0, wChord = null;
+                        while (jR < pts.length - 1 && accR < 480) {
+                            accR += Math.hypot(pts[jR + 1].x - pts[jR].x, pts[jR + 1].y - pts[jR].y);
+                            jR++;
+                            if (!chordBlocked(pts[jR].x, pts[jR].y)) {
+                                if (!wChord) wChord = pts[jR];
+                                const dRj2 = Math.hypot(pts[jR].x - boat.x, pts[jR].y - boat.y);
+                                if (ptClear(pts[jR].x, pts[jR].y, dRj2 / vRj)) { w = pts[jR]; wChord = null; break; }
+                            }
+                        }
+                        if (wChord) w = wChord;
+                    }
+                }
                 // AIM THROUGH THE SLOT (T1, 2026-08-23, owner-approved). When
                 // the route inside the lookahead threads TIGHT-tier cells, the
                 // carrot moves to the tight run's exit EXTENDED along the

@@ -14593,3 +14593,82 @@ T1 slot-carrot lesson applied to drifting ice), with the session-1
 carrot owning only the terminal segment. Gates unchanged (G1 hit rate
 ≤13% + flips ≤1; G2 solo paired mean ≤+1 + floeEp not up; then fleet
 pooled 32). R1/R2 inversion tests remain locked behind passing H gates.
+
+## 2026-08-23 (late afternoon) — ice-craft session 2, continued in-conversation (owner directed)
+
+**Entry attribution (`_h1b_entry.js`, NEW): the decisive split.** Base
+sub-78u onsets: on-path path-shaves hit 0% (18% of onsets — already
+clean); **OFF-PATH displaced boats (35%) hit 58%**, entering med
+54°/102 u/s — pure-pursuit rejoin lines through water the path never
+priced, with cross-track control SHRINKING the lookahead exactly when
+the chord most needs to clear ice (trap 17: response, not map). The
+on-path+clear rest is drift-surprise.
+
+**v7 (closing-aware carrot envelope, predicted-CPA engage to 250u):
+KILLED** — all 4 seeds slower (+12..+49), engaged time 44-67s. With
+v1-v7 dose-response complete (more carrot authority = slower on every
+seed; less = neutral), **the tracked-pass carrot family is RETIRED**
+(kept behind `__H1MODE` for terminal experiments only).
+
+**v8 — FLOE-AWARE REJOIN** (no mode, no held state): when off-path
+(xtrack>80) near ice and the chord to the rejoin carrot crosses a
+drift-predicted hull, slide the carrot forward along the path (≤480u)
+until the chord clears. Attribution: off-path class halved (58%→30%
+hit, share 35%→27%, xtrack med 64→38) BUT leaked into on-path shaves
+(6→13 onsets, 0%→23% hit) — rejoined boats arrive at the PATH'S OWN
+shave segments at rejoin angles. Solo 8: mean +1.8, med +7.4 — mud.
+(v8b chord+path-clear preference: byte-identical, no-op.)
+
+**v9 — PATH FAIRING AT SHAVE SEGMENTS ⭐**: clamp path points with
+drift-predicted hull clearance <78u (ETA ≤5s, the honest horizon) onto
+the 78u offset contour in the drifted frame — consecutive clamped
+points share the contour, so faired segments run edge-TANGENT by
+construction. Attribution: path-shave share 46%→31%, path clr med
+100→164, entry angle med 39°→31°. **Solo 8 paired (rejoin+fairing):
+mean −5.8, med −9.7, floeEp 28 vs 30** — with big per-seed spread
+(−54..+54; 9101 is a real fairing-side regression, floeEp 2→9, that a
+segment-crossing guard did NOT explain — route reshuffle). Fairing
+alone (treeF): mean +3.6, med −1.7 — the rejoin+fairing composition
+reads better than fairing alone. v9b adds the (nearly-free) adjoining-
+segment guard.
+
+**Fleet gate launched**: arctic 2×16 (h1arc9400/9600 vs b3arc9400/
+9600) on the v9b composition — carrot disabled, D3 rewrite inert,
+byte-inert off floe venues (single _floeObjs guards; bay prefix check
+pending on the clean ship tree if green).
+
+**v10 (fair to 90u) KILLED at 32**: med +2.0/mean +2.1 with dirt worse
+across the board (floe +18%, boat +21%, pen +18%) — wider faired paths
+push the fleet into each other's water. No extension.
+
+**✅ SHIPPED (owner call, 2026-08-23 evening): FLOE-AWARE REJOIN +
+PATH FAIRING (the v9b composition).** Owner accepted the named
+tradeoff (floe contact time +4.3% / +0.7 s/boat) for the clock win.
+- **Arctic pooled 64 vs b3arc\*: paired med −2.0 / mean −2.1**
+  (sets −1.0/+3.0, −12.0/−7.4, 0.0/−4.9, +3.0/+1.0), fins 576/576
+  both, pen 0.51 vs 0.49 (flat), boat +3.3%, land +2.5%, floe +4.3%
+  (32-seed read was +11% — didn't hold, rule 3's shape). Hand-checked:
+  fin mean 321.4 vs 323.5. **Arctic 1.541 → 1.536 (like-for-like
+  pooled-64 basis); benches h1arc9100/9200/9400/9600 are the new
+  arctic anchors.**
+- Clean ship tree (treeSHIP = rejoin + fairing ONLY; no carrot code,
+  no D3 rewrite) verified BYTE-IDENTICAL replay of the benched treeH1
+  races (arctic 2-seed prefix) — the disabled machinery was
+  behaviorally null. HEAD script.js == treeSHIP bytes.
+- Inertness: bay + 8 remaining venues 2-race PREFIX-EQUAL to their
+  b3\* anchors; goldens re-recorded (17.7 min) — ONLY arctic changed,
+  9 venues byte-unchanged; verify **PASS 30 traces** (count read).
+- Suite: 4/27 failing = exactly the known set (Rule 13, Rule 13 Both,
+  Around Mark, Round Mark with Boat to Windward); **NP-70u HARD green
+  (2 ok / 0 fail — the old expected-fail row now passes clean).**
+- The four carried watches (river land +4.7%, glow +0.72, lag +0.61,
+  lake +0.24) carry unchanged — no non-arctic byte moved. NEW watch:
+  **arctic floe contact time 17.87 vs 17.14 s/boat (+4.3%) and boat
+  3.14 vs 3.04 (+3.3%) — re-measure next arctic bench.**
+
+Next arctic levers (session 3): R1 INVERSION TEST is now live — the
+H-stack finally has a passing capability layer (approach-shaped paths
++ clean rejoins); re-run treeE4's exact demand 78→60 on THIS HEAD,
+pre-registered flip criterion unchanged. Then R2 (PAD6), then R3 (gap
+admission). The terminal carrot stays retired unless R1 names hot
+entries as the residual again.
