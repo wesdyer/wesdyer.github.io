@@ -14419,3 +14419,68 @@ arc, explicitly out of scope without your ruling) and ice-side
 execution capability (latch-thrash 7.5 s/boat of rule-5 grinding the
 steering shapes cannot reach). E5 (static-land narrowness) remains
 unopened pending your ruling (borders lee-shore caution).
+
+## ⏭ CARRY-FORWARD PROMPT — THE ICE-CRAFT ARC (verbatim, 2026-08-23)
+
+AI PUSH: the ICE-CRAFT ARC (alignment-on-ice, owner-OPENED 2026-08-23;
+design rulings delegated to the plan's recommendations). Capability
+first, router second — mandatory order, proven by 8 steering-policy
+kills + demand knee closed at 78 (46/60/70) + PAD closed 0-for-2. His
+framing: he sails 25.4k u to the bot's 36.9k by aggressively choosing
+narrow-but-sailable paths THROUGH the ice; short routes need close-pass
+craft. His numbers: 0.17 overlap-incidents/lap (0.50 <3u) vs bot med
+4/race best 0 worst 15; moving speed 124 vs bot 138 u/s (he trades
+speed for line); shave band 28-50u vs bot floor 78u.
+
+Read first: memory regatta-icecraft-push-plan (THE PLAN — owner rulings
+recorded, phases, pre-registered inversion tests), regatta-sub15-session
+(what died and why; census noise band ±1.5 s/boat @4 seeds; bench floe
+column = quantized contact time NOT incidents), regatta-map-staleness
+(the 5s drift horizon), regatta-scenario-lab (BEFORE touching
+scenario.html), regatta-standing-rules, regatta-session-report, tail of
+this file. Check date; node regatta/eval/freeze_venues.js --check from
+repo root (lake diff = my pending edit, expected).
+
+Base: HEAD d8670d5 (engine bytes = e82dd54-era three-threads ship;
+treeBOTH3 == HEAD — verify byte-identity Phase 0). Anchors b3* (arctic
+b3arc9100/9200/9400/9600 = pooled 64). Human refs _traj_fp.js only:
+arctic 6 fp-valid schema-2 laps, med 207.0 / best 190.7, IN TRAFFIC.
+
+Order of work: (0) re-baseline + THE TABLE (_b3_close_table.js). (1)
+SPEC measurement, >=4 probes: _his_pass.js (every corpus encounter
+<78u: speed profile, edge angle, PASS SIDE VS RIM ROTATION, gap width,
+drift opening/closing, TWA — the deliverable is THE SPEC), _gap_census
+(where the 11.5k odo delta lives: few detours vs diffuse standoff;
+corridors threaded by width bin; under-78u exposure him vs bot), bot
+pass autopsy (owning layer + outcome inside 78u), gap-scale drift
+predictability at 3-5s, (opt) route-staleness-near-pack measure-only.
+(2) H1 edge-tracking pass mode (hull-frame edge-following carrot at the
+SPEC clearance, drift+rotation compensated — the moving-frame analogue
+of the NP axis-pursuit carrot; floe venues, racing legs, byte-inert
+elsewhere by construction; gates: solo paired clock AND floeEp,
+scenario-lab close-pass rows, fleet pooled 32). H2 pass-side, H3 speed
+discipline only if the SPEC shows them. (3) ONLY after H gates: R1 =
+re-run treeE4's EXACT demand 78->60 on the H-stack as a pre-registered
+INVERSION TEST (must flip +17.8 -> win, else capability didn't land;
+no census green overrides), R2 = PAD6 likewise, R3 = tight-tier gap
+admission on ice (drift-predicted open across transit, <=5s horizon;
+noSubsample gate stays until R3's own gates pass; redrock 6-set = tier
+canary). Session-1 bar = THE SPEC + H1 to a solo verdict; this is a
+MULTI-SESSION arc — do not rush the R-layer.
+
+Gate (any ship): arctic pooled 32/64 vs b3arc* + full battery vs b3*
+(name losers; carried watches: river land +4.7%, glow +0.72, lag +0.61,
+lake +0.24) + rr pooled 6-set + riv 3x8 + bay 2x20 + goldens
+trace:update + verify READ THE COUNT (30) + suite (4 known fails,
+NP-70u HARD green) + campaign-log snapshot per round + memory
+checkpoint per phase + THE TABLE at close; reserve the last ~90 min.
+
+Guardrails: graveyard closed EXCEPT R1/R2 as inversion tests (their
+entire purpose); umpire + start sacred; 12s rebuild sacred (scoped
+event-triggered replan may be PROPOSED only if measurement names route
+staleness as a mass; treeAGE stays closed); drifting ice does not keep
+clear (rule 5); actions-not-prices; episodes-not-frames; arctic 32+;
+_pool_ob.js cand,base NEGATIVE=faster, hand-check one number (21b);
+nohup zsh from repo root; never pkill chrome while benches run. Out of
+scope: E5 (needs my ruling), wedge, swamp corridor, lake, rating, rules
+backlog. Commits local — push needs my credentials.
