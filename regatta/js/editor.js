@@ -64,6 +64,7 @@ let detail = 120;             // the scale a brush works AT — ⇧[ and ⇧]. R
 let selWind = -1;              // selected wind region
 let selCur = -1;               // selected current region
 let selGust = -1;              // selected gust region
+let selRapids = -1;            // selected rapids region
 let selLine = -1;              // selected gate / line
 // Multi-selection of vertices, shared by every mode that owns vertices: land in Vertices
 // mode, the arena in Arena mode, a region's outline in Wind mode. One implementation, so
@@ -96,7 +97,10 @@ const REGION = {
                sel: () => selCur,   setSel: (v) => { selCur = v; } },
     gust:    { list: () => (doc && doc.gusts && doc.gusts.regions) || [],
                owner: () => (doc.gusts || (doc.gusts = {})),
-               sel: () => selGust,  setSel: (v) => { selGust = v; } }
+               sel: () => selGust,  setSel: (v) => { selGust = v; } },
+    rapids:  { list: () => (doc && doc.rapids && doc.rapids.regions) || [],
+               owner: () => (doc.rapids || (doc.rapids = {})),
+               sel: () => selRapids, setSel: (v) => { selRapids = v; } }
 };
 // ⚠️ `list` and `sel` READ ONLY. `owner` is the write path and creates the container, which
 // is right for it and wrong for them: an accessor that created `regions = []` on load
@@ -203,7 +207,7 @@ let listAnchor = -1, listCursor = -1;
 const regsOf    = (k) => REGION[k].list();
 const regSel    = (k) => REGION[k].sel();
 const setRegSel = (k, v) => REGION[k].setSel(v);
-const clearRegSel = () => { selWind = -1; selCur = -1; selGust = -1; };
+const clearRegSel = () => { selWind = -1; selCur = -1; selGust = -1; selRapids = -1; };
 // The region this layer currently has selected, or null. The three modes never overlap, so
 // "the selected region" is unambiguous whenever it is asked.
 const activeReg = () => (isRegionMode(mode) && regSel(mode) >= 0) ? regsOf(mode)[regSel(mode)] : null;
@@ -1211,6 +1215,12 @@ const LAYERS = [
     // any other layer — which is exactly what it could not do while it shared Water's panel.
     { id: 'current',  mode: 'current', name: 'Current', icon: 'stream',
       count: () => cregs().length || null },
+    // Under Current, because rapids ARE that water — the current says where the stream
+    // goes, a rapid says what the surface is like on the way: turbulence only, robbing
+    // drive and shoving the bow. Flow stays the Current layer's, in whole, so the two
+    // layers can never author the same knots twice.
+    { id: 'rapids',   mode: 'rapids',  name: 'Rapids', icon: 'rapids',
+      count: () => rregs().length || null },
     { id: 'marks',    mode: 'marks',   name: 'Marks',  icon: 'mark',
       count: () => doc ? `${dmarksOf().length}+${dlines().length}` : null },
     { id: 'route',    mode: 'route',   name: 'Route',  icon: 'route',
@@ -1233,6 +1243,8 @@ const LAYER_ICON = {
     wave:  '<path d="M1 6.6c1.5-1.8 3-1.8 4.5 0s3 1.8 4.5 0 2-1.2 3 0V12H1z" fill="currentColor" opacity=".85"/>',
     // Two streamlines: water going somewhere.
     stream: '<path d="M1 11c2-2 3.5-2 5.5 0S10 13 12 11" stroke="currentColor" stroke-width="1.4" fill="none"/><path d="M1 7c2-2 3.5-2 5.5 0S10 9 12 7" stroke="currentColor" stroke-width="1.4" fill="none"/>',
+    // A jagged crest over a streamline: broken water going somewhere.
+    rapids: '<path d="M1 5.5l1.8-1.9L4.6 5.5l1.8-1.9L8.2 5.5 10 3.6l1.9 1.9" stroke="currentColor" stroke-width="1.3" fill="none" stroke-linejoin="round"/><path d="M1 10.5c2-2 3.5-2 5.5 0s3.5 2 5.5 0" stroke="currentColor" stroke-width="1.4" fill="none"/>',
     land:  '<path d="M1.5 11l3.5-6 3 4 2-2.5 2.5 4.5z" stroke="currentColor" stroke-width="1.3" fill="none"/>',
     frame: '<rect x="2" y="2.5" width="10" height="9" stroke="currentColor" stroke-width="1.3" fill="none"/>',
     ice:   '<path d="M7 1.5v11M2.5 4l9 6M11.5 4l-9 6" stroke="currentColor" stroke-width="1.2"/>',
@@ -1339,20 +1351,22 @@ function toolOpts() {
     // nothing while you are selecting.
     const placing = sub === 'place';
     const props = mode === 'props' && placing;
-    box.hidden = !makes && !props;
+    // `kind` picks a SHAPE kind, so it belongs only where the maker MAKES a shape. On a
+    // region layer Draw makes a region of that layer, and on Traffic a lane — a granite/floe
+    // dropdown there is answering a question nobody asked, the same reason props hide it.
+    // And with the kind gone those layers' strip would be empty, so the strip goes too.
+    const shapeMaker = mode === 'shape';
+    box.hidden = !(shapeMaker && makes) && !props;
     const po = $('place-opts');
     if (po) po.style.display = (mode === 'shape' && placing) ? 'flex' : 'none';
     const pr = $('prop-opts');
     if (pr) pr.style.display = props ? 'flex' : 'none';
-    // `kind` here picks a SHAPE kind for Draw and Place. On the props layer it would be
-    // answering a question nobody asked — the prop's own kind is the panel's picker.
-    //
     // ⚠️ `.closest('.to-f')`, NOT parentElement: enhanceSelect wraps the select in its own
     // container, so the select's parent is that wrapper and hiding it leaves the cell's
     // "KIND" caption sitting there labelling nothing. The whole cell is what has to go.
     const nk = $('new-kind');
     const cell = nk && nk.closest ? nk.closest('.to-f') : null;
-    if (cell) cell.style.display = props ? 'none' : '';
+    if (cell) cell.style.display = shapeMaker ? '' : 'none';
 }
 
 // The size and heading the next click hands a prop. READ AT THE MOMENT OF PLACEMENT and
@@ -1654,12 +1668,16 @@ function hintBar() {
     }
     key.hidden = false;
     key.textContent = t.key;
-    // A MAKER says what it will make. Both read the same picker, so the hint is where the
-    // answer to "granite or floe?" is visible without looking away from the map.
-    const kindLabel = (LAND_TYPES.find(x => x.kind === newKind()) || {}).label;
+    // A MAKER says what it will make. The kind picker's answer applies only where the
+    // maker makes a SHAPE — on a region layer Draw makes a region of that layer, and
+    // saying "Draw — Floe" there was the picker's wrong answer leaking into the hint.
+    const kindLabel = mode === 'shape' ? (LAND_TYPES.find(x => x.kind === newKind()) || {}).label : null;
     const propKind = mode === 'props' ? ($('prop-kind') || {}).value : null;
     name.textContent = (t.id === 'place' && propKind) ? `${t.name} — ${propKind}`
-        : ((t.id === 'draw' || t.id === 'place') && kindLabel ? `${t.name} — ${kindLabel}` : t.name);
+        : ((t.id === 'draw' || t.id === 'place') && kindLabel) ? `${t.name} — ${kindLabel}`
+        : (t.id === 'draw' && isRegionMode(mode)) ? `${t.name} — ${mode} region`
+        : (t.id === 'draw' && mode === 'traffic') ? `${t.name} — lane`
+        : t.name;
     const m0 = MODS[t.id];
     const mods = (typeof m0 === 'function' ? m0() : m0) || [];
     $('hint-mods').innerHTML = mods.map(m => `<span class="mod">${m}</span>`).join('')
@@ -2324,12 +2342,13 @@ const LAYER_STEPS = [
     ['props',   () => drawPlacedProps()], // the scatter circle, while the drag is live
     ['wind',    () => { if (shown('wind')) drawWindRegions(); }],
     ['gust',    () => { if (shown('gust')) drawGustRegions(); }],
-    ['current', () => { if (shown('current')) drawCurrentRegions(); }]
+    ['current', () => { if (shown('current')) drawCurrentRegions(); }],
+    ['rapids',  () => { if (shown('rapids')) drawRapidsRegions(); }]
 ];
 // Marks and Route both draw the course furniture, so either one raises it.
 const ACTIVE_LAYER = { boundary: 'arena', shape: 'land',
                        marks: 'course', route: 'course', wind: 'wind', current: 'current',
-                       gust: 'gust', props: 'props', traffic: 'traffic' };
+                       gust: 'gust', rapids: 'rapids', props: 'props', traffic: 'traffic' };
 
 // The REAL sprites, not stand-in circles: a prop layer exists to judge placement, and
 // you cannot judge a palm's overhang from a dot. Same src derivation the game uses
@@ -3434,6 +3453,7 @@ function objRefresh() {
         const summary = (r) =>
               kind === 'wind'    ? `${degOf(r.direction || 0)}°${r.speed != null ? ' ' + r.speed.toFixed(0) + 'kt' : ''}`
             : kind === 'current' ? `${(r.speed || 0).toFixed(1)}kt ${degOf(r.direction || 0)}°`
+            : kind === 'rapids'  ? `${Math.round((r.turbulence != null ? r.turbulence : 0.5) * 100)}% broken`
             : gustCount(r);
         box.innerHTML = rs.map((r, i) => row({
             i, on: inOsel({ kind, i }) || selR === i,
@@ -3441,6 +3461,7 @@ function objRefresh() {
         })).join('') || `<div class="ob-empty">${
               kind === 'wind'    ? 'No regions. Outside a wind region there is no wind at all, so a course needs its water covered.'
             : kind === 'current' ? 'No current. Water with no region over it simply does not flow.'
+            : kind === 'rapids'  ? 'No rapids. Draw a fast smooth tongue down the middle and turbulent shoulders beside it — the shoulders are what make the tongue worth finding.'
             : 'No gust sources — puffs are born evenly over the whole arena, as they are on a venue that says nothing. Draw one where the pressure should come from.'
         }</div>`;
         wire(box, (i, _shift, ev) => {
@@ -3770,6 +3791,11 @@ function inspectorRefresh() {
         k = 'Current region'; n = r.name || r.id;
         m = `${(r.speed || 0).toFixed(1)} kt toward ${degOf(r.direction || 0)}° ${compassOf(r.direction || 0)}`;
         html = inspCurrent(r);
+    } else if (mode === 'rapids' && activeReg()) {
+        const r = activeReg();
+        k = 'Rapids'; n = r.name || r.id;
+        m = `${Math.round((r.turbulence != null ? r.turbulence : 0.5) * 100)}% broken`;
+        html = inspRapids(r);
     } else if (mode === 'gust' && activeReg()) {
         const r = activeReg();
         k = 'Gust source'; n = r.name || r.id;
@@ -4686,6 +4712,23 @@ function inspCurrent(r) {
 </div>`;
 }
 
+function inspRapids(r) {
+    const turb = Math.round((r.turbulence != null ? r.turbulence : 0.5) * 100);
+    return `
+<div class="in-sect"><span class="k">Name</span>
+  <input class="in-wide" data-rename="rapids" value="${attr(r.name || '')}" placeholder="${attr(r.id)}">
+</div>
+<div class="in-sect"><span class="k">White water</span>
+  <div class="in-grid">
+    ${numF('broken', 'rr.turb', turb, '%')}
+    ${numF('falloff', 'rr.falloff', Math.round(uToM(r.falloff != null ? r.falloff : 200)), 'm')}
+  </div>
+  <div class="in-note">Broken is how turbulent the water is: it robs drive and shoves the
+    bow around, so 10 is a riffle and 100 is a stopper. A rapid says nothing about flow —
+    the stream itself, tongue included, is the Current layer's to author.</div>
+</div>`;
+}
+
 
 // One handler for every framed field: the key says what to do.
 function numEdit(el) {
@@ -4695,6 +4738,7 @@ function numEdit(el) {
     if (what === 'wr') { windEdit(key, el.value); return; }
     if (what === 'cr') { currentEdit(key, el.value); return; }
     if (what === 'gr') { gustEdit(key, el.value); return; }
+    if (what === 'rr') { rapidsEdit(key, el.value); return; }
     // The lee lengths are PROPERTIES of the shape, not geometry, so they branch out before
     // the transform code — the same shape of exception a wind region's fields make.
     if (what === 'shape' && (key === 'wsh' || key === 'csh' || key === 'hgt')) {
@@ -4855,6 +4899,21 @@ function currentEdit(key, value) {
     afterEdit(true, `current ${key}`);
 }
 
+// A rapid's numbers. Turbulence is a percent in the box — "how broken is this water" reads
+// as a share, the way drag does — and a 0-1 fraction in the file, where every other
+// fraction is.
+function rapidsEdit(key, value) {
+    const r = rregs()[selRapids]; if (!r) return;
+    const v = parseFloat(String(value).trim());
+    if (!isFinite(v)) { inspectorRefresh(); return; }
+    if (key === 'turb') {
+        if (v < 0 || v > 100) { toast('Broken is 0–100%', true); inspectorRefresh(); return; }
+        r.turbulence = v / 100;
+    } else if (key === 'falloff') r.falloff = Math.max(0, mToU(v));
+    else return;
+    afterEdit(true, `rapids ${key}`);
+}
+
 // A gust source's numbers. `bias` used to be three-state — blank meaning "the venue's own
 // split" — but there is no venue split any more, so blank is simply invalid and 0 means
 // nothing but holes.
@@ -4916,6 +4975,10 @@ function renameSel(el) {
         const r = gregs()[selGust]; if (!r) return;
         if (v) r.name = v; else delete r.name;
         afterEdit(true, 'gust region name');
+    } else if (el.dataset.rename === 'rapids') {
+        const r = rregs()[selRapids]; if (!r) return;
+        if (v) r.name = v; else delete r.name;
+        afterEdit(true, 'rapids region name');
     } else if (el.dataset.rename === 'mark') {
         const mk = dmarksOf()[sel.mark]; if (!mk) return;
         if (v) mk.name = v; else delete mk.name;
@@ -5885,6 +5948,47 @@ function drawCurrentField() {
     }
 }
 
+// ── Rapids regions ──────────────────────────────────────────────────────────
+// The fourth region kind, and the only one with a single number on it: `turbulence`,
+// the broken-water fraction that robs drive and shoves the bow. No flow of its own —
+// the stream, tongue included, is the Current layer's to author.
+const rregs = () => (doc && doc.rapids && doc.rapids.regions) || [];
+
+function drawRapidsRegions() {
+    if (!doc) return;
+    const rs = rregs();
+    for (let i = 0; i < rs.length; i++) {
+        const r = rs[i];
+        if (!r.poly || r.poly.length < 3) continue;
+        const on = i === selRapids;
+        ctx.beginPath(); ringPath(r.poly);
+        // Foam white, weighted by how turbulent: a shoulder at 0.9 reads denser than a
+        // smooth tongue at 0.1 before a single number is looked at.
+        const turb = r.turbulence != null ? r.turbulence : 0.5;
+        const fa = (on ? 0.10 : 0.05) + 0.14 * turb;
+        ctx.fillStyle = `rgba(226,232,240,${fa.toFixed(3)})`;
+        ctx.fill();
+        ctx.strokeStyle = on ? '#e2e8f0' : 'rgba(226,232,240,0.5)';
+        ctx.lineWidth = on ? 2 : 1.2;
+        ctx.setLineDash([2, 3]); ctx.stroke(); ctx.setLineDash([]);
+
+        // No arrow grid: a rapid has no direction to point. The turbulence-weighted
+        // fill IS the picture, the way a gust source's cat's paws are.
+
+        if (on) {
+            r.poly.forEach((p, k) => {
+                const q = toS(p[0], p[1]);
+                const onV = hover.wvert === k;
+                const rad = onV ? 8 : 5.5;
+                ctx.beginPath(); ctx.arc(q.x, q.y, rad + 1.5, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(8,15,30,0.75)'; ctx.fill();
+                ctx.beginPath(); ctx.arc(q.x, q.y, rad, 0, Math.PI * 2);
+                ctx.fillStyle = onV ? '#f8fafc' : '#e2e8f0'; ctx.fill();
+            });
+        }
+    }
+}
+
 // ── Hand-placed ice ─────────────────────────────────────────────────────────
 // Authored as world-space polygons, so a floe can be reshaped vertex by vertex like any
 // other outline. What the game randomizes per race is the MOTION — drift, spin, wander —
@@ -6101,7 +6205,13 @@ function addRegion(kind, poly) {
         // seconds. Drawing one says WHERE, and nothing else, until you say otherwise — and
         // now the "nothing else" is legible, because a stated default in knots and metres
         // can be judged against the course where `1x` could only be judged against itself.
-        : { id: `gust-${n}`, poly, falloff: 300, count: 8, gustKt: 5, sizeM: 300, lifeS: 90, bias: 0.5, veer: 15 };
+        : kind === 'gust'
+        ? { id: `gust-${n}`, poly, falloff: 300, count: 8, gustKt: 5, sizeM: 300, lifeS: 90, bias: 0.5, veer: 15 }
+        // A rapid is PURE TEXTURE — turbulence and nothing else. Flow belongs to the
+        // Current layer in whole, so a rapid has no speed or direction to default. The
+        // falloff is tighter than a current's because rapids have edges you can see —
+        // the eddy line is a line.
+        : { id: `rapids-${n}`, poly, falloff: 200, turbulence: 0.5 };
     list.push(r);
     const i = list.length - 1;
     setRegSel(kind, i);
@@ -8298,7 +8408,11 @@ const WHOLE_COURSE = {
     // A gust source over everything is the uniform scatter made VISIBLE and editable: on
     // its own it reproduces what the venue already did, and it exists so a second, denser
     // source can be drawn beside it and mean something relative to it.
-    gust:    { pad: 200, msg: 'Puffs born everywhere — as before, but now you can draw a hotter source beside it' }
+    gust:    { pad: 200, msg: 'Puffs born everywhere — as before, but now you can draw a hotter source beside it' },
+    // Legal but almost never what a designer wants — rapids are the most local thing in
+    // the document — so the message says what to do with it rather than pretending
+    // whole-course whitewater is a plan.
+    rapids:  { pad: 200, msg: 'Rapids over the whole course — probably shrink this to the broken water itself' }
 };
 function addWholeCourseRegion(kind) {
     if (!doc) return;

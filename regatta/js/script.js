@@ -5742,6 +5742,237 @@ function ambientCurrentAt(x, y) {
     return state.race.conditions.current;
 }
 
+// ── Rapids ──────────────────────────────────────────────────────────────────
+// The turbulence field: how BROKEN the water is at a point, 0..1, weighted by the same
+// centered edge ramp every region uses. Deliberately a texture and not a motion — a
+// rapid carries no flow of its own, because the stream (tongue included) is the Current
+// layer's to author, and two layers stating the same knots was the thing to prevent.
+// Taken as the MAX of the weighted regions: two overlapping shoulders are broken water
+// once, not twice.
+//
+// Touches no RNG (pure in position), so rapids cannot move the eval anchor.
+const RAPIDS_DRAG = 0.6;   // share of drive that 100%-broken water takes
+const RAPIDS_YAW = 0.45;   // rad/s of bow-shove at 100%-broken, before the wobble shape
+let _rapidsPhaseN = 0;     // per-boat wobble phase, dealt in boat-update order — no RNG
+function rapidsTurbAt(x, y) {
+    const regs = state.course.rapidsRegions;
+    if (!regs || !regs.length) return 0;
+    let turb = 0;
+    for (const r of regs) {
+        const bb = r.bb, pad = (r.falloff || 0) / 2 + 1;
+        if (x < bb.minX - pad || x > bb.maxX + pad || y < bb.minY - pad || y > bb.maxY + pad) continue;
+        const sd = Arena.signedDist(r, x, y);
+        const w = VenueDoc.regionWeight(sd, r.falloff);
+        if (w <= 0) continue;
+        turb = Math.max(turb, w * (r.turbulence != null ? r.turbulence : 0.5));
+    }
+    return turb;
+}
+
+// ── Rapids whitewater ───────────────────────────────────────────────────────
+// Drawn as a FIELD, not as particles. The first cut spawned foam blobs that rode the
+// current, and however they were shaped they read as white creatures swimming — because
+// anything that TRAVELS as a discrete body reads as an object, and the eye finds objects
+// before it finds water. An aerial rapid is the opposite: a connected white sheet whose
+// texture churns while the sheet itself stays put on the river.
+//
+// So: two seamless foam TILES (built once, fixed seed — the texture is part of the art
+// and must look the same every session), pattern-filled inside each region's own clip,
+// scrolled along whatever the Current layer says runs through it and STRETCHED along
+// that axis for the streaky grain every reference photo shows. Over that, a stateless
+// hash-grid of small crests that brighten and die IN PLACE — churn with no translation.
+// Nothing here is an entity: no state, no spawning, no RNG stream, just position and
+// state.time in, pixels out.
+const RAPIDS_TILE = 256;
+const _rapidsTiles = {};            // per colour (day white / night bioluminescence)
+function rapidsTiles(color) {
+    let t = _rapidsTiles[color];
+    if (t) return t;
+    // Local PRNG, fixed seed: not fxRand, whose sequence position depends on what else
+    // has drawn — these tiles must be identical every build.
+    let s = 0x9E3779B9;
+    const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+    const T = RAPIDS_TILE;
+    const make = (blobs, rMin, rMax) => {
+        const c = document.createElement('canvas');
+        c.width = c.height = T;
+        const g = c.getContext('2d');
+        g.fillStyle = color;
+        for (let i = 0; i < blobs; i++) {
+            // An irregular CLUMP of discs, not one circle — torn foam, frozen into
+            // texture. Geometry is rolled once, then stamped 3x3 so the tile wraps.
+            const bx = rnd() * T, by = rnd() * T;
+            const r = rMin + rnd() * (rMax - rMin);
+            const parts = [];
+            for (let k = 0; k < 3; k++)
+                parts.push([(rnd() - 0.5) * r * 1.7, (rnd() - 0.5) * r * 1.7, r * (0.45 + rnd() * 0.55)]);
+            g.globalAlpha = 0.28 + rnd() * 0.6;
+            for (let ox = -T; ox <= T; ox += T) for (let oy = -T; oy <= T; oy += T) {
+                g.beginPath();
+                for (const [dx, dy, rr] of parts) {
+                    g.moveTo(bx + ox + dx + rr, by + oy + dy);
+                    g.arc(bx + ox + dx, by + oy + dy, rr, 0, Math.PI * 2);
+                }
+                g.fill();
+            }
+        }
+        return c;
+    };
+    // Wash: broad, sparse — pale aerated patches, never a veil. Foam in three DENSITY
+    // TIERS, because how much of the water is white is the strongest turbulence cue
+    // there is, and alpha alone cannot say it: a riffle is scattered scraps, a stopper
+    // is a sheet with dark lanes worn through it.
+    // Wash blobs stay SMALL: at the wash pass's large draw scale a big clump magnifies
+    // into a readable angular plate, and the wash must be mottling, never geometry.
+    t = _rapidsTiles[color] = {
+        wash: make(130, 4, 11),
+        foam: [make(60, 2, 6.5), make(130, 2, 7), make(320, 2, 7.5)]
+    };
+    return t;
+}
+
+// Composited through an OFFSCREEN canvas for one reason: the rim. The turbulence field
+// fades over the region's falloff, and the honest way to draw that without blur is to
+// paint the full texture and then EAT the rim with 'destination-out' strokes — which on
+// the main canvas would erase the river underneath. The offscreen layer holds only foam,
+// so the erase feathers the foam and nothing else.
+let _rapidsFoamCv = null;
+function drawRapidsFoam(ctx) {
+    const regs = state.course.rapidsRegions;
+    if (!regs || !regs.length) return;
+    const cam = state.camera;
+    const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6 + 150;
+    const vis = regs.filter(r => {
+        const turb = r.turbulence != null ? r.turbulence : 0.5;
+        return turb > 0.02
+            && !(r.bb.minX > cam.x + viewR || r.bb.maxX < cam.x - viewR
+              || r.bb.minY > cam.y + viewR || r.bb.maxY < cam.y - viewR);
+    });
+    if (!vis.length) return;
+
+    const nite = nightAmt();
+    const color = nite > 0 ? BIO_COLOR : '#ffffff';
+    const tiles = rapidsTiles(color);
+    const t = state.time;
+
+    if (!_rapidsFoamCv) _rapidsFoamCv = document.createElement('canvas');
+    const cv = _rapidsFoamCv;
+    if (cv.width !== ctx.canvas.width || cv.height !== ctx.canvas.height) {
+        cv.width = ctx.canvas.width; cv.height = ctx.canvas.height;
+    }
+    const g = cv.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.setTransform(ctx.getTransform());   // same camera as the scene, world coords below
+
+    for (const r of vis) {
+        const turb = r.turbulence != null ? r.turbulence : 0.5;
+        const bb = r.bb;
+
+        // The flow through this rapid is the CURRENT layer's — sampled once at the
+        // region's middle to set the grain axis and the streaming rate. A rapid with no
+        // stream through it boils in place, grainless.
+        const flow = getCurrentAt((bb.minX + bb.maxX) / 2, (bb.minY + bb.maxY) / 2);
+        const kt = flow ? flow.speed : 0;
+        const hasFlow = kt > 0.05;
+        const dir = hasFlow ? flow.direction : 0;
+        const ux = Math.sin(dir), uy = -Math.cos(dir);
+        const angDeg = Math.atan2(uy, ux) * 180 / Math.PI;
+        // state.time runs at WORLD_CLOCK (0.24/s); 62.5 * kt makes the sheet stream at
+        // the same knots-to-units rate the streak particles ride, so the two agree.
+        const adv = t * 62.5 * kt;
+
+        const path = () => {
+            g.beginPath();
+            const poly = r.poly;
+            g.moveTo(poly[0][0], poly[0][1]);
+            for (let i = 1; i < poly.length; i++) g.lineTo(poly[i][0], poly[i][1]);
+            g.closePath();
+        };
+        g.save();
+        path();
+        g.clip();
+
+        // Texture: a faint broad wash under a foam pass whose TILE DENSITY follows
+        // turbulence — coverage is the cue, alpha only polishes it. Both stretched
+        // hard along the flow for the streaky grain; the wash slides a little across
+        // the flow so the two layers never lock together.
+        const foamTile = tiles.foam[turb < 0.4 ? 0 : turb < 0.7 ? 1 : 2];
+        const churn = Math.sin(t * 3.1) * 7;
+        const passes = [
+            { tile: tiles.wash, a: 0.04 + 0.14 * turb, scale: 2.1, speed: 0.45, across: churn },
+            { tile: foamTile, a: 0.38 + 0.48 * turb, scale: 0.7, speed: 1.0, across: -churn * 0.5 }
+        ];
+        for (const p of passes) {
+            const pat = g.createPattern(p.tile, 'repeat');
+            const m = new DOMMatrix()
+                .translate(ux * adv * p.speed - uy * p.across, uy * adv * p.speed + ux * p.across)
+                .rotate(angDeg)
+                .scale((hasFlow ? 2.8 : 1) * p.scale, p.scale);
+            pat.setTransform(m);
+            g.fillStyle = pat;
+            g.globalAlpha = p.a * (nite > 0 ? 0.55 : 1);
+            g.fillRect(bb.minX, bb.minY, bb.maxX - bb.minX, bb.maxY - bb.minY);
+        }
+
+        // Bright crests: a world-anchored hash grid of small glints that brighten and
+        // die WITHOUT MOVING — the twinkle is the churn. Density and weight follow
+        // turbulence; the grid never shows because every mark is jittered by its hash.
+        const step = 30;
+        const x0 = Math.max(bb.minX, cam.x - viewR), x1 = Math.min(bb.maxX, cam.x + viewR);
+        const y0 = Math.max(bb.minY, cam.y - viewR), y1 = Math.min(bb.maxY, cam.y + viewR);
+        g.fillStyle = color;
+        for (let gy = Math.floor(y0 / step) * step; gy <= y1; gy += step) {
+            for (let gx = Math.floor(x0 / step) * step; gx <= x1; gx += step) {
+                let h = (gx * 374761393 + gy * 668265263) | 0;
+                h = Math.imul(h ^ (h >>> 13), 1274126177);
+                h = (h ^ (h >>> 16)) >>> 0;
+                const h1 = h / 4294967296;
+                const h2 = ((Math.imul(h, 48271) >>> 0)) / 4294967296;
+                if (h1 > turb * 0.9) continue;
+                const tw = Math.sin(t * (9 + h1 * 11) + h2 * Math.PI * 2);
+                if (tw <= 0.2) continue;
+                const px = gx + (h2 - 0.5) * step * 0.9;
+                const py = gy + (h1 - 0.5) * step * 0.9;
+                const rr = 2.2 + h2 * 2.8;
+                g.globalAlpha = (0.25 + 0.5 * turb) * tw * (nite > 0 ? 0.7 : 1);
+                g.beginPath();
+                g.moveTo(px + rr, py);
+                g.arc(px, py, rr, 0, Math.PI * 2);
+                // A second disc offset just under a radius along the flow, so the two
+                // FUSE into one lozenge — separated they read as paired dots.
+                g.moveTo(px + ux * rr * 0.8 + rr * 0.8, py + uy * rr * 0.8);
+                g.arc(px + ux * rr * 0.8, py + uy * rr * 0.8, rr * 0.8, 0, Math.PI * 2);
+                g.fill();
+            }
+        }
+        g.restore();
+
+        // THE RIM: eat the foam back over the falloff band, in steps — the poor man's
+        // smoothstep, no blur. The stroke is centred on the outline, so the outer half
+        // erases nothing (the clip painted nothing there) and the inner half fades the
+        // texture out toward the edge instead of cutting blobs on a ruled line.
+        const fall = Math.max(40, r.falloff || 0);
+        g.save();
+        g.globalCompositeOperation = 'destination-out';
+        g.strokeStyle = '#000';
+        for (const [w, a] of [[fall * 1.5, 0.45], [fall * 0.9, 0.5], [fall * 0.45, 0.6]]) {
+            g.globalAlpha = a;
+            g.lineWidth = w;
+            path();
+            g.stroke();
+        }
+        g.restore();
+    }
+
+    // Composite the finished foam layer over the scene in one draw.
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(cv, 0, 0);
+    ctx.restore();
+}
+
 function getCurrentAt(x, y) {
     const base = ambientCurrentAt(x, y);
     // AUTHORED CURRENT REGIONS. The same construction as wind regions — polygon,
@@ -7641,9 +7872,32 @@ function drawPropWash(ctx) {
         ctx.arc(x, y, r * 1.6, 0, Math.PI * 2);
         ctx.fill();
 
-        const w = regionWindAt(x, y);
-        // Where the water is being pushed FROM: the windward side, which is the side that laps.
-        const up = w.direction + Math.PI;
+        // ⚠️ WHICH FIELD PUSHES THE WATER — WIND FOR A PILING, CURRENT FOR A ROCK.
+        // The default is wind, and it is right for everything this was written for: a cypress
+        // trunk or a channel buoy stands in near-still water, so the side that whitens is the
+        // side the BREEZE piles water against, and `up` is therefore the direction the wind
+        // comes from.
+        //
+        // A boulder in a river is the opposite case. The water is moving fast past a fixed
+        // obstruction, so what a helmsman reads is the boil DOWNSTREAM of it, not a lap on the
+        // upstream face — and on this venue the current runs to 2.4 kn where the ambient
+        // breeze does almost nothing to the surface. A kind opts in with
+        // `washFrom: 'current'`; getCurrentAt's `direction` is where the water is going, which
+        // is where the foam goes, so it is used WITHOUT the +PI the wind case needs.
+        // `push` is 0..1: how hard whichever field is driving this is pushing. The two are
+        // on different scales — wind runs to ~8 units, this venue's current to 2.4 knots —
+        // so each is normalised against its own before the lap alpha reads it.
+        let up, push;
+        if (k.washFrom === 'current' && typeof getCurrentAt === 'function') {
+            const cur = getCurrentAt(x, y);
+            if (!cur || !cur.speed) continue;      // slack water makes no boil
+            up = cur.direction;
+            push = cur.speed / 2.4;
+        } else {
+            const w = regionWindAt(x, y);
+            up = w.direction + Math.PI;
+            push = w.speed / 8;
+        }
         const seed = hash(x, y);
         for (let i = 0; i < 3; i++) {
             // Spread the arcs round the trunk, weighted toward windward rather than pinned
@@ -7655,7 +7909,7 @@ function drawPropWash(ctx) {
             // In and out, never a hard on/off: sin gives the arc a swell and a retreat.
             const breath = Math.sin(phase * Math.PI);
             const a = WASH_ALPHA * breath * (0.35 + 0.65 * Math.max(0, lean))
-                    * Math.max(0.35, Math.min(1, w.speed / 8));
+                    * Math.max(0.35, Math.min(1, push));
             if (a <= 0.004) continue;
             const rr = r * (1.02 + 0.05 * breath);                // the lap runs up and back
             const half = 0.5 + 0.22 * breath;                     // and widens as it comes
@@ -7723,7 +7977,18 @@ const CANOPY_FADE_RANGE = 20 * BOAT_LEN;
 // costs twice: crowns flicker all race as the AI sails through them, and a dimming treetop
 // becomes a free radar pip announcing a rival you could not otherwise see. A competitor
 // disappearing under the leaves is the venue working correctly.
-function canopyAlpha(p) {
+// ⚠️ THE FLOOR IS PER-KIND, BECAUSE CANOPY_FADE_MIN's ARGUMENT DOES NOT HOLD FOR EVERYTHING.
+// It is 0.0 — a crown vanishes completely with the hull under it — and the comment above earns
+// that: "the tree does not vanish when the crown does: the stem keeps drawing on the SURFACE
+// plane at full opacity and keeps its collider, so what is left under your boat is the wood you
+// are about to hit with the leaves out of the way."
+//
+// A BRIDGE HAS NO STEM. `river-footbridge` is a single canopy sprite with nothing on any other
+// plane, so at floor 0 it does not open — it disappears, and a landmark the player sails under
+// stops existing at exactly the moment they are under it. So a kind may declare `fadeMin` in
+// PROP_KINDS and keep a floor of its own. Absent, the tree behaviour is unchanged, which is
+// every existing kind.
+function canopyAlpha(p, floor) {
     const boats = state.boats;
     if (!boats || !boats.length) return 1;
     const me = boats.find(b => b.isPlayer);
@@ -7731,7 +7996,8 @@ function canopyAlpha(p) {
     const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
     const d = Math.hypot(me.x - x, me.y - y);
     if (d >= CANOPY_FADE_RANGE) return 1;
-    return CANOPY_FADE_MIN + (1 - CANOPY_FADE_MIN) * (d / CANOPY_FADE_RANGE);
+    const lo = (typeof floor === 'number' && floor >= 0 && floor < 1) ? floor : CANOPY_FADE_MIN;
+    return lo + (1 - lo) * (d / CANOPY_FADE_RANGE);
 }
 
 // ── WHICH CROWNS ARE ALLOWED TO FADE ────────────────────────────────────────
@@ -7915,7 +8181,8 @@ function drawProps(ctx, plane) {
         // ...and only a crown that OVERHANGS WATER fades at all: one standing wholly on land
         // cannot hide a hull, so it stays a solid tree. See crownOverWater.
         const alpha = (PROP_PLANE_ALPHA[plane] || 1)
-                    * (plane === 'canopy' && crownOverWater(p, w) ? canopyAlpha(p) : 1);
+                    * (plane === 'canopy' && crownOverWater(p, w)
+                       ? canopyAlpha(p, (reg[p.kind] || {}).fadeMin) : 1);
         if (alpha <= 0.004) continue;
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -9480,6 +9747,7 @@ function computeWindPressureScaleRaw() {
     // invent a range on the nine venues whose wind is one uniform region. The forecast
     // reads these instead. See windRangeText().
     state.wind.spread = { lo: loAcc / phasesUsed, hi: hiAcc / phasesUsed, med };
+
     let lo = Math.min(loAcc / phasesUsed, med * (1 - PRESSURE_MIN_SPAN));
     let hi = Math.max(hiAcc / phasesUsed, med * (1 + PRESSURE_MIN_SPAN));
 
@@ -9497,6 +9765,47 @@ function computeWindPressureScaleRaw() {
     if (biggest > 0) { hi += biggest * 0.5; lo -= biggest * 0.5 * LULL_RATIO; }
 
     state.wind.pressure = { lo: Math.max(0, lo), hi, med };
+}
+
+// The LIGHT build's stand-in for computeWindPressureScale: a spread read straight off
+// the authored wind regions — min/max of their stated speeds, oscillation included —
+// instead of sampling the blended field over the course at eight phases. Rougher (it
+// ignores where the regions ARE), but the board's "10–15 kt" line is a forecast, not a
+// measurement, and this costs microseconds where the scan costs most of a second. The
+// pressure ramp gets the same clamp-and-headroom shape the scan builds, so the streak
+// layer behind the overlay keeps reading sensible colours; the full build at Start
+// replaces both with the measured versions.
+function lightWindSpread(c) {
+    const base = (c && c.windBaseSpeed) || state.wind.baseSpeed || 12;
+    // AREA-WEIGHTED p10/p90 across the regions, not min/max: the scan's percentiles are
+    // dominated by the big regions the course actually sits in, and a min/max let one
+    // small authored calm pocket drag the forecast to "0–7 kt" on a 4-knot bayou.
+    // Oscillation is left out for the same reason the scan mostly cancels it: it
+    // measures the MEAN field.
+    const entries = [];
+    for (const r of ((c && c.windRegions) || [])) {
+        const s = r.speed != null ? r.speed : base;
+        const a = Math.abs(window.VenueDoc.ringArea ? window.VenueDoc.ringArea(r.poly) : 1) || 1;
+        entries.push([s, a]);
+    }
+    let lo = base, hi = base;
+    if (entries.length) {
+        entries.sort((x, y) => x[0] - y[0]);
+        const total = entries.reduce((a, e) => a + e[1], 0);
+        const at = (f) => {
+            let acc = 0;
+            for (const [s, a] of entries) { acc += a; if (acc >= total * f) return s; }
+            return entries[entries.length - 1][0];
+        };
+        lo = at(0.10); hi = at(0.90);
+    }
+    state.wind.spread = { lo: Math.max(0, lo), hi, med: base };
+    let pLo = Math.min(lo, base * (1 - PRESSURE_MIN_SPAN));
+    let pHi = Math.max(hi, base * (1 + PRESSURE_MIN_SPAN));
+    let biggest = 0;
+    for (const r of ((c && c.gustRegions) || [])) if (r.count > 0 && r.gustKt > biggest) biggest = r.gustKt;
+    if (biggest > 0) { pHi += biggest * 0.5; pLo -= biggest * 0.5 * LULL_RATIO; }
+    state.wind.pressure = { lo: Math.max(0, pLo), hi: pHi, med: base };
 }
 
 // 0 at the course's light end, 1 at its heavy end. Every channel the streak layer varies
@@ -10957,6 +11266,13 @@ function renderVenueDetail(key) {
     }
 
 
+    // THE COMPUTED HALF OF THE BOARD IS PENDING until the deferred light build lands —
+    // selection paints from the document alone first, and state.course still holds the
+    // previous venue for a beat. Everything derived from state (the wind range, the
+    // course numbers, the chart) shows an ellipsis rather than the WRONG venue's
+    // numbers; everything authored (name, blurb, hazards, art) is already right.
+    const pending = !state.course || state.course.venueKey !== key;
+
     // Water = what the water itself is doing: current, swell, glass, chop.
     // THE AUTHOR'S LINE WINS. The card is written against the real course in the
     // editor now, and "Slight ebb" is a better briefing than any number derived from
@@ -10964,7 +11280,7 @@ function renderVenueDetail(key) {
     // on-course set (courseCurrentMax — a knot or more is a stream, less a drift)
     // for a venue that authors current, the player's uniform dial otherwise.
     let waterVal = c.conditions;
-    if (!waterVal) {
+    if (!waterVal && !pending) {
         const onCourse = courseCurrentMax();
         if (onCourse != null) {
             if (onCourse >= 0.15) waterVal = onCourse.toFixed(1) + (onCourse >= 0.9 ? ' kt stream' : ' kt drift');
@@ -11040,14 +11356,14 @@ function renderVenueDetail(key) {
                 <div id="venue-records-inline" style="position:absolute; bottom:0; right:0; display:none; min-width:0; overflow:hidden;"></div>
             </div>
             <div class="pr-facts flex flex-col gap-1.5" style="flex:0 1 360px; min-width:240px; align-self:flex-end;">
-                ${row('Wind', windRangeText())}
-                ${row('Water', waterVal || '&mdash;')}
+                ${row('Wind', pending ? '&hellip;' : windRangeText())}
+                ${row('Water', waterVal || (pending ? '&hellip;' : '&mdash;'))}
                 ${row('Hazards', c.hazards || '—')}
-                ${row('Course', courseSummaryText())}
-                ${row('Time Limit', timeLimitText())}
+                ${row('Course', pending ? '&hellip;' : courseSummaryText())}
+                ${row('Time Limit', pending ? '&hellip;' : timeLimitText())}
             </div>
         </div>`;
-    layoutVenueCourseMap();
+    layoutVenueCourseMap(pending);
 }
 
 // ── The course chart ────────────────────────────────────────────────────────
@@ -11064,8 +11380,13 @@ function renderVenueDetail(key) {
 function courseSummaryText() {
     let units = 0;
     const dmc = state.course && state.course.dmc;
+    const remembered = state.course && _venueStats[state.course.venueKey];
     if (dmc && dmc.total > 0) {
         units = dmc.total;
+    } else if (remembered && remembered.total > 0) {
+        // A light course has no router paths, but this venue has been fully built
+        // before — quote the real sailed distance it measured then.
+        units = remembered.total;
     } else {
         for (let leg = 1; leg <= state.race.totalLegs; leg++) {
             const a = legTargetPoint(leg - 1), b = legTargetPoint(leg);
@@ -11081,7 +11402,14 @@ function courseSummaryText() {
 // when it has one, otherwise derived from the course length. Anyone still on the
 // water at this time is scored DNF.
 function timeLimitText() {
-    const cutoff = (state.course && state.course.cutoff != null)
+    // On a light course whose document authors no cutoff, the stated limit is the
+    // straight-line estimate — prefer the one a past FULL build measured, if any.
+    const remembered = state.course && _venueStats[state.course.venueKey];
+    const cutoff = (state.course && state.course.loadState === 'light'
+                    && (!state.course.doc || state.course.doc.course.cutoff == null)
+                    && remembered && remembered.cutoff != null)
+        ? remembered.cutoff
+        : (state.course && state.course.cutoff != null)
         ? state.course.cutoff
         : (state.race.totalLegs * state.race.legLength) / 5 * 0.1875;
     if (cutoff <= 0) return '&mdash;';
@@ -11094,9 +11422,18 @@ function timeLimitText() {
 // side. Below ~400px of section width the facts column would be crushed, so the chart
 // yields — the Course row states its numbers either way. (At 1280 the whole briefing
 // is cramped — the blurb collapses there too; this is the same trade.)
-function layoutVenueCourseMap() {
+function layoutVenueCourseMap(pending) {
     const box = document.getElementById('venue-course-box');
     if (!box) return;
+    // While the selection's light build is still in flight, the chart holds off
+    // entirely — state.course is the PREVIOUS venue, and a wrong chart for a beat is
+    // worse than a blank one. The build's completion re-renders the panel.
+    if (pending) {
+        box.style.display = 'none';
+        if (_chartAnim.raf) { cancelAnimationFrame(_chartAnim.raf); _chartAnim.raf = 0; }
+        if (_chartAnim.ro) { _chartAnim.ro.disconnect(); _chartAnim.ro = null; }
+        return;
+    }
     const section = box.parentElement;
     const show = !!(state.course && state.course.route && state.course.route.length)
         && section.clientWidth >= 404;
@@ -12174,17 +12511,29 @@ function escapeHTMLText(s) {
     ));
 }
 
-function selectVenue(key) {
-    if (!(window.VenueDoc && window.VenueDoc.get(key)) || state.race.status !== 'waiting') return;
-    settings.venue = key;
-    saveSettings();
+// ── Selecting a venue is TWO beats ──────────────────────────────────────────
+// The click paints immediately from the document alone — art, name, blurb, the authored
+// card rows — and the computed half of the board (wind range, distance, the chart)
+// arrives one breath later from a LIGHT course build. It used to run the full build in
+// the click handler, and a click that spends two seconds building a nav grid before it
+// repaints reads as a click that did not work. The FULL build — validator, planner,
+// router legs, pressure scan — waits until Start Race, behind a stated loading step.
+//
+// The token retires a deferred build the moment a newer click or a Start supersedes
+// it — without it, clicking four tiles queued four stale builds behind the paint.
+let _venueLoadToken = 0;
+let _venueLoading = false;   // a full load is in flight; the UI is showing why
 
+// The world made current for settings.venue — everything selectVenue used to do besides
+// paint. One body for both builds: the board's deferred light pass and Start's full
+// pass, so the two can never disagree about what "loaded" includes.
+function loadVenueWorld(opts) {
     // No per-venue conditions here: every venue's day is stated by its document's
     // regions, and initCourse()'s compile writes them over whatever the last venue
     // left behind. (Bay once had no doc and needed a re-roll on return; it is a
     // designed venue now like everything else.)
     applyVenueConditions();
-    initCourse();
+    initCourse(opts);
     if (window.WaterRenderer) window.WaterRenderer.init();
     // Clear stale gusts and reseed at the new venue's density/strength
     state.gusts = [];
@@ -12206,7 +12555,45 @@ function selectVenue(key) {
     // Consumes no RNG, so the golden traces are untouched.
     repositionBoats();
 
+    // A FULL build just priced the course honestly — remember the numbers, so the next
+    // time this venue is merely browsed the board can quote the real sailed distance
+    // and limit instead of the light build's straight-line guess. Survives reloads:
+    // a venue you have raced once never shows the guess again.
+    if (state.course.loadState === 'full' && state.course.dmc && state.course.dmc.total > 0) {
+        _venueStats[state.course.venueKey] = {
+            total: state.course.dmc.total,
+            cutoff: state.course.cutoff != null ? state.course.cutoff : null
+        };
+        try { localStorage.setItem('regatta_venue_stats', JSON.stringify(_venueStats)); } catch (e) {}
+    }
+}
+
+// The priced numbers from past full builds, by venue — see loadVenueWorld.
+let _venueStats = {};
+try { _venueStats = JSON.parse(localStorage.getItem('regatta_venue_stats')) || {}; } catch (e) { _venueStats = {}; }
+
+function selectVenue(key) {
+    if (!(window.VenueDoc && window.VenueDoc.get(key)) || state.race.status !== 'waiting') return;
+    if (_venueLoading) return;   // mid "Preparing…" — the start already owns the world
+    settings.venue = key;
+    saveSettings();
+
+    // Beat one: paint now, from the document alone. renderVenueDetail shows the
+    // computed rows as pending while state.course still holds another venue.
+    const token = ++_venueLoadToken;
     setupPreRaceOverlay();
+
+    // Already built for this venue — a return visit after a race, or a double click —
+    // so there is nothing to defer and nothing to downgrade: a FULL course must never
+    // be rebuilt as a light one, or Start would pay for the same venue twice.
+    if (state.course && state.course.venueKey === key) return;
+
+    // Beat two: the light course, after the click has painted.
+    setTimeout(() => {
+        if (token !== _venueLoadToken || state.race.status !== 'waiting') return;
+        loadVenueWorld({ light: true });
+        renderVenuePicker();
+    }, 30);
 }
 
 function setupPreRaceOverlay() {
@@ -12314,10 +12701,68 @@ function renderCompetitorGrid() {
     UI.prCompetitorsGrid.scrollTop = scrollTop;
 }
 
+// ── Starting a race is where the FULL venue is paid for ─────────────────────
+// Browsing built a light course (no validator, no planner estimate, no router legs, no
+// pressure scan); racing needs all four. If the world is already full for this venue —
+// a rematch, or the venue the session booted into — the gun is immediate. Otherwise a
+// loading card states what is happening while the build runs, and the race is not shown
+// until it is ready. Each step yields through a short TIMEOUT so the card (and each
+// message) paints before the main thread disappears into the build — a timeout and not
+// requestAnimationFrame, because rAF never fires in a hidden tab and a player who
+// switches away mid-load must come back to a race, not to a stuck curtain.
 function startRace() {
-    if (state.race.status !== 'waiting') return;
+    if (state.race.status !== 'waiting' || _venueLoading) return;
+    if (state.course && state.course.venueKey === settings.venue && state.course.loadState === 'full') {
+        beginRace();
+        return;
+    }
+    _venueLoading = true;
+    _venueLoadToken++;           // retire any deferred light build still queued
+    showVenueLoading(settings.venue);
+    const step = (msg, fn) => new Promise((res) => {
+        setVenueLoadingMsg(msg);
+        setTimeout(() => { fn(); res(); }, 50);
+    });
+    (async () => {
+        try {
+            await step('Charting the course…', () => loadVenueWorld());
+        } finally {
+            _venueLoading = false;
+            hideVenueLoading();
+        }
+        renderVenuePicker();     // the board's numbers upgrade to the priced ones
+        beginRace();
+    })();
+}
 
+// The loading card: a dark curtain with the venue's name and one line of what is
+// happening. Built lazily — most sessions that never switch venue never make it.
+let _venueLoadingEl = null;
+function showVenueLoading(key) {
+    const c = venueCard(key);
+    if (!_venueLoadingEl) {
+        _venueLoadingEl = document.createElement('div');
+        _venueLoadingEl.id = 'venue-loading';
+        _venueLoadingEl.style.cssText = 'position:fixed; inset:0; z-index:220; display:flex;'
+            + 'flex-direction:column; align-items:center; justify-content:center; gap:10px;'
+            + 'background:rgba(5,10,20,0.94);';
+        document.body.appendChild(_venueLoadingEl);
+    }
+    _venueLoadingEl.innerHTML = `
+        <span class="t-label t-label-sm" style="color:#8fd8d0; letter-spacing:0.14em;">Preparing</span>
+        <span class="t-display uppercase" style="color:#ffffff; font-size:34px;">${c.name || c.tag || key}</span>
+        <span id="venue-loading-msg" class="t-mono" style="color:#9fd3dd; font-size:13px;"></span>`;
+    _venueLoadingEl.style.display = 'flex';
+}
+function setVenueLoadingMsg(msg) {
+    const el = document.getElementById('venue-loading-msg');
+    if (el) el.textContent = msg;
+}
+function hideVenueLoading() {
+    if (_venueLoadingEl) _venueLoadingEl.style.display = 'none';
+}
 
+function beginRace() {
     if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
     UI.leaderboard.classList.remove('hidden'); // Or hidden if prestart logic handles it
     // Prestart logic usually hides leaderboard until start? No, updateLeaderboard logic: if 'prestart' UI.leaderboard.classList.add('hidden');
@@ -13661,6 +14106,24 @@ function updateBoat(boat, dt) {
         targetKnots *= boat.shoalMul;
     } else if (boat.shoalMul !== 1) {
         boat.shoalMul = 1;
+    }
+
+    // RAPIDS. Turbulence only — a rapid authors no flow; whatever stream runs through
+    // it is the Current layer's and arrives through getCurrentAt below. Broken water
+    // robs drive the way a bar does: a multiplier on the TARGET, so the boat's own
+    // constants decide how the speed bleeds off and comes back. And it shoves the bow:
+    // a band-limited wobble on the HEADING itself — the one water effect allowed to
+    // touch it, because turbulence really does turn the boat, where a stream only
+    // carries it. Phase is dealt per boat from a counter and the shape is pure in
+    // state.time, so a fleet in the same stopper tosses independently and no RNG is
+    // drawn.
+    boat.rapidsTurb = rapidsTurbAt(boat.x, boat.y);
+    if (boat.rapidsTurb > 0.01) {
+        targetKnots *= (1 - RAPIDS_DRAG * boat.rapidsTurb);
+        if (boat._rapidsPhase == null) boat._rapidsPhase = (_rapidsPhaseN++ % 32) * 2.399963;
+        const p = boat._rapidsPhase;
+        const shove = Math.sin(state.time * 2.3 + p) * 0.62 + Math.sin(state.time * 6.1 + p * 1.7) * 0.38;
+        boat.heading = normalizeAngle(boat.heading + RAPIDS_YAW * boat.rapidsTurb * shove * dt);
     }
 
     let targetGameSpeed = targetKnots * 0.25;
@@ -15077,7 +15540,12 @@ function update(dt) {
                 wakeSource(pr.x, pr.y, kw * (pr.scale || 1) * 0.45);
             }
         }
+
     }
+
+    // Rapids whitewater is NOT a particle system any more — see drawRapidsFoam. A
+    // particle is a thing that travels, and anything that travels reads as an object;
+    // broken water is a FIELD. The foam is drawn from the regions directly, statelessly.
 
     // Drifting ice floes — authored by the venue document (`c.ice`); a no-op
     // wherever none are.
@@ -19360,6 +19828,31 @@ const MINIMAP_ISLAND = {
     // other, so marsh still reads as the lighter margin between sward and bank.
     mud:      { body: '#37301f', top: '#37301f' },
     marsh:    { body: '#4b4228', top: '#4b4228' },
+    // ── SOCKEYE RUN'S FOREST, AND WHY THE CHART DISAGREES WITH THE GROUND ───────────
+    // Same argument as mud and marsh above, arrived at from the other end. `humus` and
+    // `mossfloor` both carry `trees: true`, so the chart was taking their VEG colour — the
+    // forest floor's own green — and drawing #4E5A34 and #7EA02A. Two problems with that.
+    //
+    // Humus at #4E5A34 sat only -10 luma against the water: the venue's biggest landform,
+    // the thing the whole river runs through, was dissolving into the channel at chart size.
+    // And mossfloor at #7EA02A was +45, BRIGHTER than the water and nearly as bright as the
+    // meadow — so the wettest, darkest forest on the map was charting as its most open
+    // ground, which is backwards.
+    //
+    // What a player needs off this chart is where the WOOD is, and a Southeast Alaska wood
+    // seen from above is the colour of Sitka spruce. So humus takes the shipped
+    // river-spruce-sitka sprite's own measured mean, #26382E, and mossfloor sits a shade
+    // greener and lighter as the damper variant — 15 luma apart and dE 16.9, so a designer
+    // can still tell the two forests apart, which at #4E5A34 vs #7EA02A they could (dE 45)
+    // but for the wrong reason.
+    //
+    // Against the water they now land at -42 and -19 luma, bracketing the bayou note's own
+    // -50/-32 finding. Meadow takes the recoloured tile's mean so the chart and the ground
+    // agree, and at +58 luma it is the brightest thing on the venue — which is the read:
+    // dark forest, bright meadow, pale gravel, and the river threading between them.
+    humus:     { body: '#26382E', top: '#26382E' },
+    mossfloor: { body: '#33563B', top: '#33563B' },
+    meadow:    { body: '#8DAD32', top: '#8DAD32' },
     // Fallback only. A bar's real chart colour is DERIVED per shape (shoalTintFor), so a
     // tan bar and a coral-white bar read differently here exactly as they do on the course.
     shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }
@@ -21457,6 +21950,10 @@ function draw() {
     // the biggest, slowest structure there is — so the wakes, the cat's-paws and the
     // wind-wave crests all ride ON it. Drawing it over them would read as a decal.
     if (window.Swell) window.Swell.draw(ctx, state);
+
+    // Rapids whitewater: a texture ON the water, so over the swell shape and under the
+    // wakes — a boat's wash is disturbed water on top of whatever the river is doing.
+    drawRapidsFoam(ctx);
 
     drawWakes(ctx);
     // On the water with the fleet's wakes and under everything else, which is where a wake
@@ -24486,7 +24983,16 @@ function orientCourseMarks() {
     }
 }
 
-function initCourse() {
+// `opts.light` builds the course for the CLUBHOUSE BOARD, not for racing: it skips the
+// three genuinely slow steps — the validator, the compile's priced estimate (planner +
+// nav-grid raster) and buildCoursePaths' router legs — plus the pressure-field scan,
+// which gets a cheap regions-derived spread instead. Everything else is identical, so
+// the board, the chart and the background render all work from real course data; a
+// light course simply has no `dmc` (the chart draws straight legs) and approximate
+// distance numbers. `state.course.loadState` records which build this is, and starting
+// a race upgrades a light course to a full one first — see startRace.
+function initCourse(opts) {
+    const light = !!(opts && opts.light);
     // DESIGNED VENUE, from a venue document. Land is vector polygons in world
     // units and the course is AUTHORED — marks, route and wind direction are read,
     // not inferred.
@@ -24503,12 +25009,16 @@ function initCourse() {
     // document exists for it, and that is the whole test.
     const doc = window.VenueDoc.get(settings.venue);
     if (doc) {
-        const problems = window.VenueDoc.validate(doc);
-        const errors = problems.filter(p => p.level === 'error');
-        for (const p of problems) console[p.level === 'error' ? 'error' : 'warn'](`[venue ${settings.venue}] ${p.msg}`);
-        if (errors.length) console.error(`[venue ${settings.venue}] ${errors.length} error(s); course may be unsailable`);
+        // The validator runs on the FULL build only — its findings matter before racing,
+        // not while flicking through the board, and it costs real time on big venues.
+        if (!light) {
+            const problems = window.VenueDoc.validate(doc);
+            const errors = problems.filter(p => p.level === 'error');
+            for (const p of problems) console[p.level === 'error' ? 'error' : 'warn'](`[venue ${settings.venue}] ${p.msg}`);
+            if (errors.length) console.error(`[venue ${settings.venue}] ${errors.length} error(s); course may be unsailable`);
+        }
 
-        const c = window.VenueDoc.compile(doc);
+        const c = window.VenueDoc.compile(doc, light ? { light: true } : undefined);
         // THE DAY IS THE REGIONS. Both the mean direction and the mean speed are derived
         // from what the wind regions state over the course — there is no venue wind range
         // and no venue oscillation left to blend with.
@@ -24576,6 +25086,7 @@ function initCourse() {
         }
         state.course.windRegions = c.windRegions;
         state.course.currentRegions = c.currentRegions;
+        state.course.rapidsRegions = c.rapidsRegions;
         state.course.gustRegions = c.gustRegions;
         // Timing is authored per venue when the document says so. Absent means the
         // game's own default, so a document that says nothing races as it always did.
@@ -24682,8 +25193,10 @@ function initCourse() {
         initTraffic();
         // Same reason, and the same trap: this is the path every venue takes. It samples
         // the mean wind over sailable WATER, so it needs the boundary and every land shape
-        // — floes included — already settled.
-        computeWindPressureScale();
+        // — floes included — already settled. The LIGHT build substitutes a spread read
+        // straight off the authored regions: the board's "10–15 kt" does not need a
+        // field scan that costs most of a second on a big venue.
+        if (light) lightWindSpread(c); else computeWindPressureScale();
         // SEA STATE, and the same trap a third time — this is the path every venue takes,
         // and the tail of initCourse is never reached. After the compile has written the
         // day's mean wind, because the swell is aligned with the breeze that built it and
@@ -24692,7 +25205,14 @@ function initCourse() {
         if (window.Swell) window.Swell.configure(doc, state.wind.baseDirection);
         // Whatever the last race left in the air is not this race's weather.
         if (window.SeaFX) window.SeaFX.reset();
-        buildCoursePaths();
+        // The router's leg paths are for RACING — the AI's carrot, the ruler, the leg
+        // splits. The board's chart falls back to straight legs when `dmc` is null, so
+        // the light build states that honestly instead of paying a second for it.
+        if (light) state.course.dmc = null; else buildCoursePaths();
+        // Which build this is, and of what — startRace reads both to decide whether the
+        // world is ready to race or needs the full load first.
+        state.course.venueKey = settings.venue;
+        state.course.loadState = light ? 'light' : 'full';
         return;
     }
 

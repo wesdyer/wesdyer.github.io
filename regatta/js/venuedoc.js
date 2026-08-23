@@ -546,6 +546,19 @@ function validateVenueDoc(doc) {
     };
     checkRegions((doc.wind && doc.wind.regions) || [], 'wind');
     checkRegions((doc.current && doc.current.regions) || [], 'current');
+    const rapidsRegions = (doc.rapids && doc.rapids.regions) || [];
+    checkRegions(rapidsRegions, 'rapids');
+    for (let i = 0; i < rapidsRegions.length; i++) {
+        const r = rapidsRegions[i], at = `rapids region ${r.id || i}`;
+        if (r.turbulence != null && !(r.turbulence >= 0 && r.turbulence <= 1)) err(`${at}: turbulence must be 0–1`);
+        // A rapid IS its turbulence — an explicit zero is flat water wearing the wrong
+        // name. (Absent defaults to 0.5 at compile, so only a typed 0 is dead.)
+        if (r.turbulence === 0) warn(`${at}: turbulence 0 — this region does nothing`);
+        // Flow is the Current layer's, in whole. A rapid that authors knots is the same
+        // water stated two ways, which is exactly what the split exists to prevent.
+        if (r.speed != null || r.direction != null)
+            warn(`${at}: speed/direction are ignored — a rapid is turbulence only; author the flow as a current region`);
+    }
     // A gust region is the same polygon with a different question asked of it — not "what
     // is the wind here" but "what is BORN here" — so it takes the same shape checks and
     // then its own numbers on top. Those numbers are now in the units the thing is measured
@@ -1334,6 +1347,123 @@ const PROP_KINDS = {
     'river-willow':           { label: 'River willow',      world:  30, plane: 'canopy',  contact: 'none', motion: 'fixed' },
     'river-moss-mat':         { label: 'Moss mat',          world:  26, plane: 'surface', contact: 'none', srcBox: [0.057, 0.173, 0.885, 0.655], motion: 'fixed' },
     'river-fireweed':         { label: 'Fireweed',          world:  18, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    // THE MEADOW FLOWERS. Same four decisions as the seven above — canopy, contact none, prop-spin
+    // on, fixed — because they are the same kind of thing: land scenery with no front that the fleet
+    // cannot reach. Two of the commission's four are here; `river-arnica` and
+    // `river-paintbrush-scarlet` are accepted but not yet ingested, and get their rows then.
+    //
+    // ⚠️ BOTH ARE PROVISIONAL ART AND BOTH DRAW SHORT. Their masters came back 1.9:1 rather than
+    // square, so fillTo fits the LONG axis and the plant occupies 17x9px (lupine) and 14x7px
+    // (yarrow) inside its declared world box, not the full 20 and 16. Placement is unaffected —
+    // position is authored, not size — but a square re-roll will make both look markedly bigger at
+    // the same `world`, so judge density after that, not now. See their manifest notes.
+    //
+    // NO srcBox on either, deliberately, even though both are more oblong than `river-moss-mat`
+    // which carries one. srcBox is a draw-time sampling shortcut, not a sizing control
+    // (drawSpriteBoxed maps the sub-rect to the same normalized destination), so it buys nothing
+    // visible — and it is measured off the shipped bake, which means a stale box the moment either
+    // of these is re-rolled. Add it when the art is final, if at all.
+    'river-lupine-nootka':    { label: 'Nootka lupine',     world:  20, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-yarrow':           { label: 'Common yarrow',     world:  16, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    // ── THE FOOTBRIDGE ──────────────────────────────────────────────────────────────
+    // The venue's landmark, and the first thing here the fleet passes UNDER rather than
+    // around. `canopy` for exactly that reason — it is the plane that draws over the boats —
+    // following the cove's two bridges, whose own note sizes the cruise ship to clear them.
+    //
+    // CONTACT none. It crosses high enough for a rig, so nothing about it should stop a hull,
+    // and this is the venue that cannot afford spare colliders: script.js records its 82
+    // hidden banks causing multi-hundred-millisecond replan spikes.
+    //
+    // ⚠️ PLACE IT WITH prop-spin OFF and set `heading °` per placement. It is the only river
+    // prop with an axis: every plant, boulder and log here is rotationally free and wants spin
+    // ON, and a bridge laid at a random angle crosses nothing.
+    //
+    // ⚠️ fadeMin 0.3, AND IT IS THE FIRST KIND IN THE GAME TO CARRY ONE. Canopy props fade as
+    // the player closes, and CANOPY_FADE_MIN is 0.0 because a tree's stem keeps drawing at full
+    // opacity on `surface` — so a crown at zero opens rather than vanishes. A bridge has no
+    // stem. At 0.0 it would disappear entirely at the moment the boat is under it, which is the
+    // one moment a landmark you are sailing beneath should still be visible. 0.3 leaves it a
+    // clear ghost overhead with the hull showing through. See canopyAlpha().
+    //
+    // srcBox measured off the shipped 600px bake with a 1% margin: the bridge is a 1:7.9 ribbon
+    // in a square frame, so 82% of that frame is empty and this skips sampling it. Re-measure
+    // on any re-ingest — the number is only true for this bake.
+    'river-footbridge':       { label: 'Foot bridge',       world: 300, plane: 'canopy',  contact: 'none', motion: 'fixed', fadeMin: 0.3, srcBox: [0.407, 0.030, 0.187, 0.940] },
+    // ── THE GRANITE BOULDERS ────────────────────────────────────────────────────────
+    // The venue's first rock you can actually hit. `outcrop` is a SHAPE and means a scoured
+    // bedrock ledge; these are props and mean individual stones. The largest is 52u,
+    // deliberately just under the smallest authored outcrop polygon (54u), so the two
+    // families never compete on size.
+    //
+    // ⚠️ A BOULDER IS THE ONE CASE WHERE A CIRCLE IS EXACTLY RIGHT rather than a compromise —
+    // a boulder IS a circle in plan — so unlike every long prop in the library these take a
+    // FULL-coverage radius. Measured off the bake, not guessed from `world`: fillTo 0.86
+    // means a 52u stone draws at 45px, so its radius is 22, not 26. Same arithmetic as
+    // lake-boulder-large's note.
+    //
+    // ⚠️ AND THE COLLIDER IS THE THING TO RATION, NOT THE KIND. Every contact prop compiles
+    // to a hidden circle that also enters the router's grid, and script.js records THIS
+    // venue's 82 hidden banks causing multi-hundred-millisecond replan spikes. Budget ~40
+    // hard boulders across the whole course, in the rapids, at bar heads and on the inside
+    // of tight bends — and place the rest with `contact: none` from the prop inspector.
+    // river-boulder-small especially: at 17px on screen it is scenery, and a router collider
+    // for something a hull would barely notice is exactly the trade this venue cannot afford.
+    // Prop-spin ON for all three — a stone has no front, and spinning them is what stops a
+    // scatter reading as stamped copies.
+    'river-boulder-large':    { label: 'Granite boulder',   world:  52, plane: 'surface', contact: 'hard', contactR: 22, motion: 'fixed' },
+    'river-boulder-medium':   { label: 'Granite boulder, medium', world: 34, plane: 'surface', contact: 'hard', contactR: 15, motion: 'fixed' },
+    'river-boulder-small':    { label: 'Granite cobble',    world:  20, plane: 'surface', contact: 'none', contactR:  9, motion: 'fixed' },
+    // ── WOOD, AND THE ONE TENT ──────────────────────────────────────────────────────
+    // `river-log` is SCENERY, which is where it parts company with the bayou's driftwood:
+    // swamp-deadhead and bayou-driftlog are floating obstructions in still black water, and
+    // the owner's West Susitna reference shows river logs lying high and dry on the gravel,
+    // bleached silver, well above the waterline. So `surface`, contact none, no collider
+    // spent — and the logjam is this batch's wood hazard instead.
+    //
+    // `river-logjam` is `float`: it rides ON the water at a bar head, so it must draw after
+    // the water's own marks (no wake rippling across it) and before the land. contactR 28
+    // deliberately UNDER-covers: the delivered jam is 1.52:1, drawing 112 x 74u, so 28 covers
+    // about three quarters of the beam. venuedoc's rule everywhere else applies — 'a
+    // pass-through is a missed collision where an oversized circle is an invisible wall
+    // standing off in open water'.
+    //
+    // ⚠️ THE TENT IS 44u, NOT THE 22u ITS SLOT ORIGINALLY DECLARED, and the reason is the
+    // reduction test: at 18px the crossed poles that are its whole identity vanish and it is
+    // an anonymous orange smudge. It first reads as a tent at 44u/37px. That puts it between
+    // the willow (30) and the alder (56), so NEVER place one inside a thicket — at that size
+    // it would be taken for a shrub. Ones and twos, on open gravel bars and terraces near the
+    // water. It is the only manufactured colour in the venue and the only sign of a person.
+    //
+    // Prop-spin ON for all three. None has a front, and the tent's vestibule flap makes its
+    // outline asymmetric precisely so a spun pair does not read as two stamps of one shape.
+    'river-logjam':           { label: 'Log jam',           world: 130, plane: 'float',   contact: 'hard', contactR: 28, motion: 'fixed' },
+    'river-log':              { label: 'Drift log',         world:  76, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'river-tent':             { label: 'Camp tent',         world:  44, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ── THE SUNKEN BOULDERS — NO NEW ART, AND THAT IS THE POINT ─────────────────────
+    // These are the SAME THREE STONES, pointed at the same PNGs through `src` (the trick
+    // buoy-channel-red already uses) and moved to the `seabed` plane. The engine does the
+    // submerging: submergedSprite() blurs by 3px in the 4x bake, washes the colours toward
+    // the venue's own water at SEABED_WASH 0.52 with source-atop, and PROP_PLANE_ALPHA draws
+    // the result at 0.72 — so the muting, softening and translucency the sunken subject asks
+    // for all arrive for free, and rebake themselves if the palette ever changes.
+    //
+    // ⚠️ AND THE PAIR IS THEREFORE LITERALLY THE SAME STONE, which is what the manifest slot
+    // wanted and a separate generation could never guarantee: the only difference between
+    // 'Granite boulder' and 'Granite boulder, sunken' is the water over it, so a player reads
+    // the WATER rather than learning two rocks.
+    //
+    // `wash` gives them the boil — drawPropWash's pool and its two or three breathing laps —
+    // and `washFrom: 'current'` is new: the default biases the lap into the WIND, which is
+    // right for a piling in still water and wrong for a rock in a 2.4 kn river, where the
+    // foam belongs downstream. See the note in drawPropWash.
+    //
+    // ⚠️ CONTACT RADII UNDER-COVER BY MORE THAN THE DRY TWINS DO (18/12/7 against 22/15/9),
+    // deliberately. venuedoc's rule is that under-covering is the safer error, and it matters
+    // most here: this is a hazard the player can only half-see, so the visible boil must be
+    // WIDER than the thing that stops the boat. The small one keeps contact none.
+    'river-boulder-large-sunken':  { label: 'Granite boulder, sunken',    world: 52, plane: 'seabed', contact: 'hard', contactR: 18, wash: 0.60, washFrom: 'current', motion: 'fixed', src: 'assets/images/props/river/boulder-large.png' },
+    'river-boulder-medium-sunken': { label: 'Granite boulder, sunken, medium', world: 34, plane: 'seabed', contact: 'hard', contactR: 12, wash: 0.62, washFrom: 'current', motion: 'fixed', src: 'assets/images/props/river/boulder-medium.png' },
+    'river-boulder-small-sunken':  { label: 'Granite cobble, sunken',     world: 20, plane: 'seabed', contact: 'none', contactR:  7, wash: 0.65, washFrom: 'current', motion: 'fixed', src: 'assets/images/props/river/boulder-small.png' },
     'ocean-naupaka':         { label: 'Beach naupaka',     world: 40, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-morning-glory':   { label: 'Beach morning glory', world: 30, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-grass-coastal':   { label: 'Coastal grass',     world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },
@@ -2331,7 +2461,12 @@ function regionBB(poly) {
     return { minX, minY, maxX, maxY };
 }
 
-function compileVenueDoc(doc) {
+// `light` skips the estimate's planner run and its nav-grid raster — the one genuinely
+// expensive block — for callers that need the course's SHAPE but not its priced stats:
+// the clubhouse board while you are still browsing. A light course still carries every
+// resolved mark, route entry, region and island; its distance/limit numbers come from
+// the straight-line fallback below, and `pathMeasured: false` says so.
+function compileVenueDoc(doc, light) {
     const islands = [];
     const byId = {};
     // Where each shape lands, IN DOCUMENT ORDER. `islands` and `ice` stay separate because
@@ -2626,6 +2761,24 @@ function compileVenueDoc(doc) {
         };
     }).filter(r => r.poly.length >= 3);
 
+    // ── Rapids regions ──────────────────────────────────────────────────────
+    // The fourth use of the polygon, and the only one that says nothing about MOTION. A
+    // rapid carries exactly one number: `turbulence`, 0..1, the broken-water fraction —
+    // it robs drive, shoves the bow around, and boils white. Deliberately NO direction
+    // and NO speed: flow belongs to the Current layer, in whole, so the two layers can
+    // never author the same knots twice. A fast tongue is a current region; the broken
+    // shoulders either side of it are rapids.
+    const rapidsRegions = ((doc.rapids && doc.rapids.regions) || []).map((r, i) => {
+        const poly = (r.poly || []).map(p => [p[0], p[1]]);
+        return {
+            id: r.id || `rapids-${i}`,
+            poly,
+            bb: regionBB(poly),
+            falloff: r.falloff != null ? r.falloff : 200,
+            turbulence: r.turbulence != null ? r.turbulence : 0.5
+        };
+    }).filter(r => r.poly.length >= 3);
+
     // ── Gust regions ────────────────────────────────────────────────────────
     // The third use of the same polygon, and the only one that does not describe a state
     // of the water. A wind region says what the wind IS at a place; a gust region says
@@ -2794,7 +2947,7 @@ function compileVenueDoc(doc) {
     };
 
     let paths = null;
-    if (typeof CoursePath !== 'undefined' && typeof RoutePlanner !== 'undefined') {
+    if (!light && typeof CoursePath !== 'undefined' && typeof RoutePlanner !== 'undefined') {
         try {
             if (!compileVenueDoc._planner) compileVenueDoc._planner = new RoutePlanner();
             // The same grid the ruler uses. Without it the estimate is measured on a path
@@ -2907,6 +3060,7 @@ function compileVenueDoc(doc) {
         cutoffAuto: secs > 0 ? Math.max(60, Math.ceil(secs * 2 / 60) * 60) : null,
         windRegions,
         currentRegions,
+        rapidsRegions,
         gustRegions,
         marks,
         lines: (course.lines || []).map(l => ({ id: l.id, name: l.name || null, marks: l.marks.slice() })),
@@ -2954,7 +3108,10 @@ const getVenueDoc = (key) => {
 // walk of every number and string in the document, a few milliseconds where a compile
 // is hundreds, and any in-place edit is simply a cache miss. `invalidateCompile()`
 // stays as a belt-and-braces version bump in the key (resetGame calls it).
-let _ccKey = null, _ccOut = null;
+// TWO SLOTS, light and full, so the clubhouse's light compiles cannot evict the full
+// course the editor and the race are working from (or the reverse). A light result and a
+// full result of the same document are different objects, so they must never share a key.
+let _cc = { light: { key: null, out: null }, full: { key: null, out: null } };
 let _compileVersion = 0;
 function invalidateCompile() { _compileVersion++; }
 function docFingerprint(v) {
@@ -2974,12 +3131,13 @@ function docFingerprint(v) {
     walk(v);
     return `${n}|${h}`;
 }
-function compileCached(doc) {
+function compileCached(doc, light) {
+    const slot = _cc[light ? 'light' : 'full'];
     const key = `${_compileVersion}|${docFingerprint(doc)}`;
-    if (_ccOut && _ccKey === key) return structuredClone(_ccOut);
-    const out = compileVenueDoc(doc);
-    _ccKey = key;
-    _ccOut = structuredClone(out);
+    if (slot.out && slot.key === key) return structuredClone(slot.out);
+    const out = compileVenueDoc(doc, light);
+    slot.key = key;
+    slot.out = structuredClone(out);
     return out;
 }
 
@@ -2994,7 +3152,8 @@ window.VenueDoc = {
     get: getVenueDoc,
     migrate: migrateVenueDoc,
     validate: validateVenueDoc,
-    compile: compileCached,
+    // `opts.light` skips the estimate's planner/nav-grid block — see compileVenueDoc.
+    compile: (doc, opts) => compileCached(doc, !!(opts && opts.light)),
     invalidateCompile: invalidateCompile,
     // One definition of what a kind means, shared by the compiler, the editor's inspector
     // and the converter. A second copy anywhere is how "iceberg" comes to mean two things.
