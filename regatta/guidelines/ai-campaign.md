@@ -14484,3 +14484,112 @@ _pool_ob.js cand,base NEGATIVE=faster, hand-check one number (21b);
 nohup zsh from repo root; never pkill chrome while benches run. Out of
 scope: E5 (needs my ruling), wedge, swamp corridor, lake, rating, rules
 backlog. Commits local — push needs my credentials.
+
+## 2026-08-23 (afternoon) — THE ICE-CRAFT ARC, session 1: THE SPEC + H1 iteration
+
+**Phase 0**: HEAD `7ff9547` (engine bytes == treeBOTH3, byte-verified ×4
+files); freeze --check lake-only (his edit, expected); arctic corpus 6
+fp-valid laps med 207.0 / best 190.7; pre table = the b3\* table
+(arctic 320/326.3, 1.546x).
+
+**Phase 1 — THE SPEC** (probes `_his_pass.js`, `_gap_census.js`,
+`_bot_pass.js`, `_gap_pred.js`, all NEW + tracked):
+- HIS 84 sub-78u passes (14.0/lap): **min-clr med 41u (p25 32 / p90
+  68); NO EASING (vMin/vIn med 1.02 — passes at 129 u/s vs his 122
+  moving med); edge-parallel (track vs edge tangent med 19°);
+  side-agnostic vs rim rotation (42% receding / 48% advancing)**; gaps
+  at pass mostly one-sided (49/84 two-sided, med 230u); opening-gap
+  preference 29:17; passes at every TWA (med 82°); dur med 3s.
+  → **H2 (pass side) and H3 (speed discipline) are UNSUPPORTED — not
+  built. H1 only.**
+- BOT autopsy (solo neutral 4×9100): sub-78u encounters 8.3/race,
+  **27% END IN A HIT; maxDev med 92°, deviation sign-flips med 3/enc
+  (73% ≥2); avoidance owns 50% of encounter time** (nav 25%, latch 17%).
+  The bot slows through passes (111→97); he doesn't.
+- GAP CENSUS (him vs solo bot): odo delta **DIFFUSE** — leg 1 14.5k vs
+  19.4k (+4.9k), leg 2 11.3k vs 15.5k (+4.3k) — at SIMILAR total
+  sub-78u exposure (35.1 vs 31.1 s/lap). He is <300u of ice 72% of
+  racing time (bot 56%). No route-staleness mass named → the 12s
+  rebuild stands, no event-replan proposal.
+- DRIFT PREDICTABILITY at gap scale (`_gap_pred.js`, 124 minima):
+  **drift+spin clearance prediction |err| med 1.5u @3s / 3.8u @5s;
+  frozen snapshot 16.2 / 26.8u** — the moving frame is buildable, the
+  frozen one is fiction. Validates H1 compensation + R3's ≤5s horizon.
+
+**Phase 2 — H1 edge-tracking pass mode (treeH1, iterating)**: carrot on
+the tracked floe's offset contour (radial profile + 46u = his pass-by
+CPA med) at a 140u lead in the floe's moving frame (drift + spin
+feed-forward, recomputed per tick), engaged when the PLAN's first
+upcoming shave is <90u; scoped D3-band trust (40u for the TRACKED floe
+only, 78u for all others; deficit form arithmetic-identical when no
+floe tracked). Iteration so far, each diagnosed by `_h1_ep.js`
+(per-episode instrumentation, __H1DBG-guarded):
+- v1 KILLED: min-over-span tracking never released (12.5s episodes,
+  orbits; +93s, hits 133→243 on 9100).
+- v2: first-pass-ahead + release-by-passage; 9100 −31.7s hits −86%,
+  but engage(160)/release(150) hysteresis INVERTED → tick-rate
+  chatter with side flips; hot-angle engagements (80-88°) ground at
+  minC 16-46 (9103: 443 hits all inside engaged spans).
+- v3: real hysteresis + 4s same-floe refractory + entry-angle ≤55°:
+  chatter gone, but deep engagements (cEng 38) + 8s holds still ground
+  (9100 one 10.5s episode).
+- v4 (current): engage only from clean approach (60-120u, entry ≤40°),
+  release-to-stack at 30u, timeout 6s. Engaged-time hits ≈0 (3/0/0/3
+  across seeds); episodes now SPEC-shaped (minC 32-63, 1-3s, clean
+  releases). Solo 4-seed fins +23.4/+1.6/+2.4/+7.8 — unreadable at 4
+  seeds (rule 3); the pre-registered gates are running: `_bot_pass`
+  4×9100 (episode hit rate ≤13%, flips med ≤1) + `_c2_solo` 8×9100
+  paired vs treeBOTH3 (mean ≤+1, floe episodes not up).
+
+**H1 v5 (geometry trigger) + v5b (staleness clear) + v6 (reverted)**:
+v5 triggers on ACTUAL pass geometry (40-120u off the nearest hull,
+track within 40° of the edge tangent, velocity-based) — coverage rose
+to 15-30 episodes/race; v5b adds the cross-layer staleness clear
+(engagements latched THROUGH wiggle/escape/penalty, which skip nav:
+12.4s spans through a 6s timeout, one release at 311u). v6's
+rim-closing feed-forward was worse on 4/4 seeds and was reverted.
+
+**SESSION-1 VERDICT (pre-registered instruments, v5b): H1 FAILS its
+solo gates.** G1 `_bot_pass` 4×9100: sub-78u hit rate 30% vs base 27%
+(bar ≤13%), flips med 3 (bar ≤1); avoid 50→43%, latch 22→28%. G2
+`_c2_solo` 8×9100 paired: mean +4.2 (bar ≤+1), med −0.45, spread
+−51..+34, floeEp 36 vs 30. G3 fleet never unlocked; R1/R2 inversion
+tests correctly NOT run (they require a passing H-stack). Bay 2-race
+prefix byte-equal (inert off floe venues; the D3 deficit rewrite is
+arithmetic-identical when no floe is tracked). treeH1 PARKED (kept,
+with `_h1_ep.js` per-episode instrumentation).
+
+**THE STRUCTURAL FINDING**: engaged passes are clean in every version
+since v4 (≈0 hits while engaged) — the hit mass lives exactly in the
+geometry a safe hull-side carrot must DECLINE (hot entries >40°,
+sub-40u starts). His 19° entries are manufactured hundreds of units
+out by his LINE: arriving aligned is an APPROACH property, the same
+reason the shipped T1 slot carrot works (it aims the approach).
+**Session 2 = H1b: approach-tangent shaping at the plan/thread level**
+(bend path candidates near floe hulls to run edge-tangent at the SPEC
+clearance, drift-compensated), keeping the session-1 carrot for the
+terminal segment only once approaches arrive aligned. Also re-learned
+at cost: solo 4-8 seed arctic clocks cannot rank helm variants (±50s
+downstream-reshuffle swings) — iterate on mechanism stats, judge at
+the pre-registered instruments only.
+
+**SESSION CLOSE — nothing shipped; HEAD byte-identical to treeBOTH3;
+the b3\* anchors ARE the close benches (arctic 320/326.3 = 1.546x, the
+full table = the Phase-0 table). Goldens/suite stand from the same
+bytes. The four watches carry unchanged.** New tracked probes:
+`_his_pass.js`, `_gap_census.js`, `_bot_pass.js`, `_gap_pred.js`,
+`_h1_smoke.js`, `_h1_ep.js` (+ JSONs).
+
+## ⏭ CARRY-FORWARD PROMPT — ICE-CRAFT SESSION 2 (draft)
+
+AI PUSH: ICE-CRAFT ARC session 2 — H1b APPROACH-TANGENT SHAPING.
+Read first: memory regatta-icecraft-session (session-1 verdict + the
+interaction rules), regatta-icecraft-spec (THE SPEC), the arc plan.
+Base: treeH1 parked (carrot machinery + scoped D3 trust, geometry
+trigger); HEAD unchanged. H1b = shape the APPROACH at the plan/thread
+level so the boat arrives at floe hulls edge-parallel at the SPEC
+clearance (drift-compensated tangent path candidates near hulls — the
+T1 slot-carrot lesson applied to drifting ice), with the session-1
+carrot owning only the terminal segment. Gates unchanged (G1 hit rate
+≤13% + flips ≤1; G2 solo paired mean ≤+1 + floeEp not up; then fleet
+pooled 32). R1/R2 inversion tests remain locked behind passing H gates.
