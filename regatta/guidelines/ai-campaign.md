@@ -14158,3 +14158,64 @@ cap), never pkill chrome while anything runs. Out of scope: alignment/
 oriented-hull (ASK ME for the ruling at close), wedge push, swamp
 corridor (next-after), lake, rating campaign. Commits local — push
 needs my credentials.
+
+## THE C4 AVOIDANCE-HONESTY PUSH (2026-08-22 night, autonomous) — D2+D3 SHIPPED `83db39f`+`04abb81`
+
+Base `db603c9`/`e78e099` (C2 gate era; treeC2 == HEAD verified). Bar set by
+the owner: a REAL arctic clock win, and the accepted floe watch resolved by
+construction. Both met. Commits local, his push.
+
+**Phase 1 measurements (all tools tracked: _dev_census.js, _cpa_profile_his.js,
+_ice_endgame.js, _arm_census.js, _phantom_why.js):**
+- HIS floe-CPA profile (62 encounters, fp-verified): min-clr p25/med 32/46u,
+  76% under 78u. The BOT's: med 126-127u — **2.7x his margins**, solo and fleet.
+- Deviation census with a drift-predicted counterfactual: 62% solo / 55%
+  fleet of AVOID_NONE deviated time is DISHONEST vs his margins (PHANTOM
+  clears >=78u: ~30%; SHAVE 28-78u: ~26%). ⚠️ First census run misfiled
+  fat-stamp phantoms as "land" — the land test must use the STATIC grid
+  (rule-18 catch, probe fixed same night).
+- _phantom_why (AVDBG zero-row at onsets): 85% of solo onsets priced by the
+  CLEARANCE BAND's two scales (4000-floe / 10000) — the band demanded 3 cells
+  of FAT-STAMPED clearance; the last consumer of stamps FL1/FL1b left behind.
+- Ice-in-the-endgame (sizes D1): 52% of floe-contact episodes had a
+  rival-resolution deflection in the prior 5s; the CHOSEN heading crossed ice
+  in 44% of resolution-near-ice episodes (12.7 s/boat-race).
+- Arm census: arming is geometric (871u vs zone 851u); the crawl is thrash
+  (arm->round ground/straight 5.2x), not radius. Measurement only.
+
+**⛔ D1 (ice-hard walls in the endgame): KILLED at its pre-registered
+criteria.** Escape candidates crossing far-half ice became walls during live
+resolutions: pooled 32 +10.0 med SLOWER, floe UP 19.24->20.52, land +55%,
+boat +14% — the wall squeezes escapes into land and boats. The graveyard's
+boat-arc-unscope resurrection path "D1+D2" is half-dead: the D1 half stays
+closed (numbers on d1arc9400/9600).
+
+**✅ D2 SHIPPED `83db39f` — rival honesty on ice (the GWF re-land).** The
+plan's pre-registered Phase-1.4 port-and-re-measure found the 2026-08-21 kill
+signature (floe/land +15%) REVERSED on the NP+C2 stack — genuinely new
+evidence, exactly the graveyard's reopen standard. Arctic pooled 64: clock
+neutral (med +2.0/mean +0.1), **boat rubs -54% (6.21->2.84), pen -39%, floe
+flat, land -10%**; armed-band crawl slow time **69.3->39.3 s/boat**, residual
+slow now AT the ice (floe med 27u = rule-5 legitimate grinding).
+
+**✅ D3 SHIPPED `04abb81` — FL1c, the clearance band's floe half sees the
+true hull.** Same class as FL1/FL1b: change what is MEASURED (true-hull
+clearance at the probe endpoint, drift+spin predicted), keep the price scale;
+demand = 78u (his p25 clearance-at-tack). Solo 4-seed paired **mean -14.7
+s/boat** (floe episodes 18->12; the med-of-4 statistic hid two -31s wins —
+paired per-seed is the read). Mechanism verified: buffer-bin onsets 48%->8%.
+⛔ The 46u knee (his median pass-by) OVERSHOOTS: solo +0.8 mean with a floe
+spike — staged A/B kept 78 (the movePad 70->21->14 shape again).
+Family record: this is avoidance-PROBE measurement honesty, distinct from
+the CLOSED clearance-extension x2 (route-side) family.
+
+**THE GATE (pooled 32, d3barc9400/9600 vs c2v3arc9400/9600, hand-checked):**
+paired med **-11.0** / mean **-8.7**, BOTH sets negative, 288/288 finish,
+boat 6.35->3.73 (-41%), floe 19.24->18.32 (-5%), land -12%, pen -33%,
+bounds -55%. **The floe watch is RESOLVED DOWNWARD**: the C2 gate's +13%
+(17.00->19.24) is cut to +6.9% vs pre-gate under C4 (18.32), with the
+rubs-for-ice trade reversed (boat -41% AND floe down together — the trade
+the watch named is paid off, not shuffled).
+Non-floe venues byte-identical by construction and verified (redrock/bay/
+river 2-race prefixes). Full battery + goldens + suite on final HEAD in
+this session's close table.
