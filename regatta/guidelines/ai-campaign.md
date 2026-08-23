@@ -13964,3 +13964,51 @@ helm aligns only implicitly — COG through the 80.6u pin slot crabs ~23deg.
 Aim-through-the-slot targeting (carrot at the thread's far end) is the
 named lever for the sub-80u frontier; ⚠️ adjacent to the closed
 "oriented-hull planning" family — his ruling before building.
+
+
+## ⏭ CARRY-FORWARD PROMPT — THE ARCTIC ROUTER PUSH (verbatim, 2026-08-22)
+
+AI PUSH: arctic board-level routing — the ONE big thread (owner-directed
+2026-08-22, big autonomous run, many hours). Arctic 1.589x = worst venue;
+leg 1 carries 72% of the gap as DISTANCE (3-5.3x his manoeuvre count).
+
+Read first: memory regatta-arctic-router-push-plan (the plan — phases,
+ranked candidates C1-C4, pre-registered kill criteria, the eight-shape
+graveyard), regatta-arctic-carrot (the 12s-rebuild carrot flips + the
+selective-fix pre-registration), regatta-arctic-tackcount (the graveyard
+in full), regatta-standing-rules (benching law; poolers' sign AND
+arg-order traps), regatta-session-report (the table format), tail of
+regatta/guidelines/ai-campaign.md. Check date; freeze_venues --check from
+repo root (lake diff = my pending edit, expected).
+
+Base: 17b24df (the narrow-passage ship). n4*/n5sw* bench JSONs = the
+anchors; treeNP5 = the shipped tree. Phase 0 re-baselines the leg matrix
+and tack surplus on THIS HEAD before believing any gwe-era number.
+
+Order of work: (0) re-baseline + fingerprints; (1) the measurement
+program — carrot-flip census on HEAD, the carrot-pin counterfactual
+probe, his board ladder vs the plan, fleet-crawl re-measure post-gwe,
+downwind gybe decomposition; (2) candidates in rank order, one mechanism
+per landing, own tree, criteria pre-registered BEFORE benching: C1
+selective carrot (same-answer replans retain the steering reference), C2
+information-gated tack re-decision (distinct from TK3's price — bring the
+distinction to me if in doubt), C3 the joint router+steering shape ONLY if
+C1/C2 leave solo tacks >2x his (solo-gated first, one round, third fleet
+refusal closes the family), C4 fleet crawl only if hours remain; (3) gate:
+arctic 2x16 POOLED 32 + REDROCK POOLED 6-SET CO-GATE on any
+replan-machinery change (the treeAGE lesson) + river 3x8 + full battery
+vs n4*/n5sw* on final HEAD, name losers, goldens trace:update + verify
+--seeds 3 READ THE COUNT (30), suite (4 owner-pending fails = known),
+campaign-log snapshot per accepted round, THE TABLE with every status
+update and at close.
+
+Guardrails: the graveyard is closed as-was (AC1, TK1-3, LANE1x2, LANE2,
+treeAGE, commitment 0-for-7, oscillation tax, SIPP, laylines, radius
+selection, arrival/laning, boat-arc unscope — rival-honesty on ice only
+WITH the obstruction model); the 12s rebuild is LOAD-BEARING, fixes must
+be selective; drifting ice does not keep clear (rule 5) and stopping is
+legitimate only vs ice; start tuning sacred; actions-not-prices; benches
+via nohup scripts from repo root (Bash 10-min cap), never pkill chrome
+while anything runs. Out of scope: alignment/oriented-hull (needs my
+ruling), wedge push, swamp corridor, lake, rating campaign. Commits local
+— push needs my credentials.
