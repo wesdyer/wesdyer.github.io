@@ -223,9 +223,21 @@ function buildGridRaw(land, arena, obstacles, opts) {
                 // squared, so it inherits the gate rather than relitigating it).
                 let tk = admit(wx, wy, TIGHT_CLEAR);
                 if (!tk && !(opts && opts.noSubsample)) {
-                    const Q = RES / 4;
-                    for (const [ox, oy] of [[-Q, -Q], [Q, -Q], [-Q, Q], [Q, Q]]) {
-                        if (admit(wx + ox, wy + oy, TIGHT_CLEAR)) { tk = true; break; }
+                    // T1 (2026-08-23, owner-approved): the tier admission is a
+                    // SUP-over-the-cell question — an exactly-70u slot carries
+                    // bar clearance only ON its centerline, so the old 5-point
+                    // stencil admitted ~80u+ and the 70-80u frontier failed by
+                    // sampling geometry, not by the hull (the ladder's 80.6
+                    // pass / 68.6 half-fail brackets it). 5x5 at RES/5 puts a
+                    // sample within ~7u of every point of the cell. Bar
+                    // untouched; icy venues keep centre-only (noSubsample).
+                    const Q5 = RES / 5;
+                    outer5:
+                    for (let oy5 = -2; oy5 <= 2; oy5++) {
+                        for (let ox5 = -2; ox5 <= 2; ox5++) {
+                            if (!ox5 && !oy5) continue;
+                            if (admit(wx + ox5 * Q5, wy + oy5 * Q5, TIGHT_CLEAR)) { tk = true; break outer5; }
+                        }
                     }
                 }
                 // Drifting shapes (centerOnly) and obstacle circles below block the

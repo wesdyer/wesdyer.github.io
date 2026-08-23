@@ -2387,7 +2387,82 @@ class BotController {
                     acc += Math.hypot(pts[j + 1].x - pts[j].x, pts[j + 1].y - pts[j].y);
                     j++;
                 }
-                const w = (j >= pts.length - 1) ? { x: destX, y: destY } : pts[j];
+                let w = (j >= pts.length - 1) ? { x: destX, y: destY } : pts[j];
+                // AIM THROUGH THE SLOT (T1, 2026-08-23, owner-approved). When
+                // the route inside the lookahead threads TIGHT-tier cells, the
+                // carrot moves to the tight run's exit EXTENDED along the
+                // run's own axis: the hull approaches and transits ALIGNED
+                // (±15u beam needs ~30u aligned vs ~50u at a 23° crab), and
+                // the aligned candidate is the one the tight-tier trust
+                // (0.3 rad) protects — the lab's mouth bails happen at
+                // 18-19° off-axis, right on that boundary. The extension
+                // walks open OR tight water (v1 tested open only, collapsed
+                // the carrot inside the corridor, and lost 4 lab seeds).
+                // Byte-inert wherever the route meets no tight cells.
+                if (botGrid._tight) {
+                    const tightAt = (px2, py2) => {
+                        const c2 = botGrid.cell(px2, py2);
+                        const id2 = c2[1] * botGrid.n + c2[0];
+                        return botGrid.at(c2[0], c2[1])
+                            || (id2 >= 0 && id2 < botGrid.n * botGrid.n && botGrid._tight[id2]);
+                    };
+                    let aT = -1, bT = -1;
+                    for (let k = 0; k <= j && k < pts.length; k++) {
+                        const cc = botGrid.cell(pts[k].x, pts[k].y);
+                        const idT = cc[1] * botGrid.n + cc[0];
+                        const isT = !botGrid.at(cc[0], cc[1])
+                            && idT >= 0 && idT < botGrid.n * botGrid.n && botGrid._tight[idT];
+                        if (isT && aT < 0) aT = k;
+                        if (isT && aT >= 0) bT = k;
+                        if (!isT && aT >= 0) break; // first tight RUN only
+                    }
+                    // SLOT, NOT RIBBON (v4): the override fires only when the
+                    // run has walls on BOTH perpendicular sides at its
+                    // midpoint — a shore-parallel tight ribbon has open water
+                    // abeam, and aiming "through" it walks the boat along the
+                    // bank (river 3x8 measured land +15% without this guard).
+                    const slotTest = (mx3, my3, dxA, dyA) => {
+                        const px3 = -dyA, py3 = dxA;
+                        const off3 = botGrid.res * 1.2;
+                        // a side is a WALL unless genuinely OPEN water sits
+                        // abeam (tight cells abeam = the narrow region
+                        // continues — still a slot, not a shoreline ribbon)
+                        const open3 = (qx, qy) => {
+                            const c3 = botGrid.cell(qx, qy);
+                            return !!botGrid.at(c3[0], c3[1]);
+                        };
+                        return !open3(mx3 + px3 * off3, my3 + py3 * off3)
+                            && !open3(mx3 - px3 * off3, my3 - py3 * off3);
+                    };
+                    if (aT >= 0 && bT >= aT) {
+                        // v3: pure pursuit ON THE RUN'S AXIS LINE — v2 aimed
+                        // straight at the extended exit and the approach cut
+                        // the corner into the sand. Here the carrot is the
+                        // axis point a fixed lead ahead of the boat's own
+                        // axis-projection: the boat converges to the line,
+                        // arrives aligned, and the carrot walks out the exit.
+                        const ax0 = aT > 0 ? pts[aT - 1] : { x: boat.x, y: boat.y };
+                        let dxT = pts[bT].x - ax0.x, dyT = pts[bT].y - ax0.y;
+                        const lT = Math.hypot(dxT, dyT);
+                        if (lT > 20) {
+                            dxT /= lT; dyT /= lT;
+                            const eX = pts[aT].x, eY = pts[aT].y;
+                            const sB = (boat.x - eX) * dxT + (boat.y - eY) * dyT;
+                            const runL = (pts[bT].x - eX) * dxT + (pts[bT].y - eY) * dyT;
+                            let sMax = runL;
+                            for (let s2 = 30; s2 <= 210; s2 += 30) {
+                                if (!tightAt(eX + dxT * (runL + s2), eY + dyT * (runL + s2))) break;
+                                sMax = runL + s2;
+                            }
+                            const midX = eX + dxT * runL * 0.5, midY = eY + dyT * runL * 0.5;
+                            if (slotTest(midX, midY, dxT, dyT)) {
+                                const sC = Math.min(sB + 160, sMax);
+                                const wx2 = eX + dxT * sC, wy2 = eY + dyT * sC;
+                                if (tightAt(wx2, wy2)) w = { x: wx2, y: wy2 };
+                            }
+                        }
+                    }
+                }
                 destX = w.x; destY = w.y;
             }
         }
