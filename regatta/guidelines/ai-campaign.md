@@ -14088,3 +14088,8 @@ Residual: solo leg-1 tacks 15 vs his 7 — the invitation channel is only
 ~40% of tacks; the rest are avoidance-owned (AVOID_NONE 44 s/boat-leg of
 phantom floe deviation). The next arctic lever is avoidance-side, and it
 walks straight into the C4 pairing.
+
+**OWNER RULING (2026-08-22): "Let's ship it."** The C2 information gate is
+accepted WITH the named floe watch (fleet floe +7-13%, noise-dominated) —
+the watch stands as a carry-forward column, to be re-measured by the next
+session's benches and resolved with the C4 pairing work.
