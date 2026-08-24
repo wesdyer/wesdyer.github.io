@@ -14757,3 +14757,45 @@ across the transit at the ≤5s horizon — the _gap_pred result, 1.5u@3s,
 is the enabling measurement; noSubsample gate stays until R3's own
 gates pass; redrock 6-set = tier canary). Session-3 plan: R3 build +
 the armed-approach wedge class (unfaired rounding water).
+
+## ⏭ CARRY-FORWARD PROMPT — THE R3 PUSH (verbatim, 2026-08-23 night)
+
+AI PUSH: R3 SELECTIVE GAP ADMISSION + W1 wedge (the <1.5x arctic
+push). Bar = arctic fleet pooled med <=310 vs his 207.0 on the
+r1carc* anchors (now 318/320.7 = 1.536x; -8s). Base: HEAD 2aa2bf0-era
+(engine bytes == treeR1C — verify Phase 0). WHY THIS SHAPE: both
+global looseners are adjudicated closed (demand 60
+survivable-but-buys-nothing; PAD 6 floeEp 2.3x) — only SELECTIVE
+admission converts the 8.6k route-length gap. Enablers: _gap_pred
+(1.5u@3s), the shipped fairing/rejoin stack, NP tight-tier machinery.
+
+Read first: memory regatta-icecraft-r3-plan (THE PLAN — phases,
+pre-registered bars), regatta-icecraft-session2 (both ships + both
+inversion kills), regatta-icecraft-spec, regatta-map-staleness,
+regatta-standing-rules, tail of this file. date; freeze --check (lake
+= his edit).
+
+Order: (0) re-baseline, table on r1carc* (watches: floe 17.62, land
+3.40). (1) SIZE FIRST: _gap_admit.js refused-gap census + PRIZE in
+path-length (if <8s-scale, report before building); his-corridors
+admission gap; _wedge_census.js (mark-approach wedges; roundArmed is
+set from ~700u out); re-run _h1b_entry + _contact_census2 on this
+HEAD. (2) W1 per measurement (fair the rounding-approach line OR
+delay mark-carrot takeover); gates: solo 8 kill-only, pooled 32/64
+<= -1 with watches flat-or-down. (3) R3: floe-stamp-blocked cells
+(static land CLEAR) within <=5s path ETA admissible iff TRUE-hull gap
+predicted open across the transit with >=60u margin; rolling window
+via the 2s replan; noSubsample STAYS; redrock 6-set canary.
+PRE-REGISTERED: solo floeEp +15% = dead (the R2 signature); ship =
+pooled 64 med & mean <= -2 (must buy real time), dirt not up >10%,
+pen flat, fins held, full battery + goldens trace:update READ THE
+COUNT (30) + suite (4 known fails, NP-70u HARD green).
+
+Guardrails: graveyard FULLY closed incl demand+PAD (do not
+re-litigate); umpire/start/12s rebuild sacred; rule 5; episodes-not-
+frames; arctic 32+ (4-8 seed clocks cannot rank — twice re-learned);
+_pool_ob.js cand,base NEGATIVE=faster hand-check one number; solo
+KILLS router changes, fleet arbitrates; bg tasks start at repo root
+(cd inside); >=4 probes in flight. Out of scope: E5, wedge brief,
+swamp corridor, lake, rules backlog, terminal carrot. Commits local —
+push needs my credentials.
