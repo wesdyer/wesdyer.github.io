@@ -110,11 +110,11 @@ def compare_band(plate, cands, world, anchor, venue):
     return strip
 
 
-def build_compare(asset, plate_names, paths):
+def build_compare(asset, plate_names, cand_paths):
     """Same asset, several candidate files — one sheet, judged at race scale."""
     key = asset["key"]
     cands = []
-    for p in paths:
+    for p in cand_paths:
         lab, _, fp = p.rpartition(":") if ":" in p else ("", "", p)
         f = pathlib.Path(fp)
         if not f.exists():
