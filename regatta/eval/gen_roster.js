@@ -24,7 +24,7 @@ const ABBR  = ['acc','mom','han','upw','rea','dwn','prs','lgt','hvy','mem'];
 const TIER_SHAPE = [['S',0.12],['A',0.21],['B',0.33],['C',0.21],['D',0.13]];
 
 // ── roster ────────────────────────────────────────────────────────────────────
-const src = fs.readFileSync(path.resolve('regatta/js/script.js'),'utf8');
+const src = fs.readFileSync(path.resolve('regatta/js/ai/roster.js'),'utf8');
 const ROSTER = eval(src.match(/const AI_CONFIG = \[[\s\S]*?\n\];/)[0].replace('const AI_CONFIG =',''));
 const byName = new Map(ROSTER.map(c=>[c.name,c]));
 

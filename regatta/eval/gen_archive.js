@@ -29,7 +29,7 @@ const VENUES = ['seatrials','ocean','lake','lagoon','redrock','river','arctic','
 const STATS = ['acceleration','momentum','handling','upwind','reach','downwind',
                'pressure','lightAir','heavyAir','memory'];
 
-const src = fs.readFileSync(path.resolve('regatta/js/script.js'),'utf8');
+const src = fs.readFileSync(path.resolve('regatta/js/ai/roster.js'),'utf8');
 const ROSTER = eval(src.match(/const AI_CONFIG = \[[\s\S]*?\n\];/)[0].replace('const AI_CONFIG =',''));
 const byName = new Map(ROSTER.map(c=>[c.name,c]));
 const ARCH = [...new Set(ROSTER.map(c=>c.archetype))].sort();

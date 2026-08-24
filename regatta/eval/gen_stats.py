@@ -2,7 +2,7 @@ import re
 import random
 import json
 
-filepath = 'regatta/js/script.js'
+filepath = 'regatta/js/ai/roster.js'
 with open(filepath, 'r') as f:
     content = f.read()
 

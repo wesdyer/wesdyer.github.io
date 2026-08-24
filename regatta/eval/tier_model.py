@@ -29,7 +29,7 @@ import numpy as np
 
 STATS = ['acceleration', 'momentum', 'handling', 'upwind', 'reach', 'downwind', 'pressure']
 REPORT = 'regatta/eval/tier_report.json'
-SCRIPT = 'regatta/js/script.js'
+SCRIPT = 'regatta/js/ai/roster.js'
 
 
 def load_config():

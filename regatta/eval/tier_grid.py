@@ -69,7 +69,7 @@ SOFT = ['acceleration', 'momentum', 'handling', 'pressure']   # the judgement ca
 
 
 def load_config():
-    src = open('regatta/js/script.js').read()
+    src = open('regatta/js/ai/roster.js').read()
     blk = re.search(r'const AI_CONFIG = \[([\s\S]*?)\n\];', src).group(1)
     out = {}
     for line in blk.split('\n'):

@@ -39,7 +39,7 @@ SHIPPED = REPO / "assets" / "images" / "competitors"
 OUT = ROOT / "review"
 FEEDBACK = OUT / "feedback.md"
 MANIFEST = ROOT / "manifest.json"
-SCRIPT = REPO / "js" / "script.js"
+SCRIPT = REPO / "js" / "ai" / "roster.js"
 
 ASPECT_LO, ASPECT_HI = 0.78, 1.37     # measured across the shipped roster
 

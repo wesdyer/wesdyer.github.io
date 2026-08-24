@@ -55,7 +55,7 @@ const RECYCLE = 25;
 
     // Roster hash too: if script.js gains or loses a character mid-campaign, shards from
     // either side of that are not the same experiment and the merge must refuse them.
-    const scriptSrc = fs.readFileSync(path.resolve('regatta/js/script.js'), 'utf8');
+    const scriptSrc = fs.readFileSync(path.resolve('regatta/js/ai/roster.js'), 'utf8');
     const rosterBlock = scriptSrc.match(/const AI_CONFIG = \[[\s\S]*?\n\];/);
     const roster = eval(rosterBlock[0].replace('const AI_CONFIG =', ''));
     const rosterHash = crypto.createHash('sha256')
@@ -70,7 +70,8 @@ const RECYCLE = 25;
     // into a fleet ranking, and worse, it would show up in the venue-agreement number
     // as venue specialisation, which is the one result the campaign exists to produce.
     // Hash the files that decide how a boat sails, and refuse a mismatched merge.
-    const AI_FILES = ['js/script.js', 'js/rules.js', 'js/planner.js', 'js/traffic.js',
+    const AI_FILES = ['js/script.js', 'js/ai/roster.js', 'js/ai/bot.js', 'js/ai/navigation.js',
+                      'js/ai/avoidance.js', 'js/rules.js', 'js/planner.js', 'js/traffic.js',
                       'js/venuedoc.js', 'js/swell.js', 'js/water.js'];
     const aiHash = crypto.createHash('sha256');
     for (const f of AI_FILES) {
