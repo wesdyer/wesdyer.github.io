@@ -9633,22 +9633,6 @@ window.VENUE_DOC["arctic"] = {
       "scale": 0.5
     },
     {
-      "id": "prop-62",
-      "kind": "arctic-drift-tail",
-      "x": 993.4468476076304,
-      "y": -4031.2890295490124,
-      "heading": 1.6658716467374406,
-      "scale": 2
-    },
-    {
-      "id": "prop-63",
-      "kind": "arctic-drift-tail",
-      "x": 2328.605366365112,
-      "y": -2431.241193837027,
-      "heading": 6.266694144884208,
-      "scale": 2
-    },
-    {
       "id": "prop-64",
       "kind": "arctic-drift-tail",
       "x": 252.5395696606642,
@@ -9665,22 +9649,6 @@ window.VENUE_DOC["arctic"] = {
       "scale": 1.5
     },
     {
-      "id": "prop-66",
-      "kind": "arctic-drift-tail",
-      "x": 3740.56482365124,
-      "y": 1208.2498830032864,
-      "heading": 5.689575285768845,
-      "scale": 1.111
-    },
-    {
-      "id": "prop-67",
-      "kind": "arctic-drift-tail",
-      "x": 2801.8517233026873,
-      "y": 807.1879125733013,
-      "heading": 1.0466036469358029,
-      "scale": 0.75
-    },
-    {
       "id": "prop-68",
       "kind": "arctic-drift-tail",
       "x": 345.26509443834215,
@@ -9695,6 +9663,14 @@ window.VENUE_DOC["arctic"] = {
       "y": 391.5866686670866,
       "heading": 1.2898394552661285,
       "scale": 3
+    },
+    {
+      "id": "prop-62",
+      "kind": "arctic-drift-tail",
+      "x": 982.0888509366769,
+      "y": -591.724213871602,
+      "heading": 1.771028758467148,
+      "scale": 1.5
     }
   ]
 };
