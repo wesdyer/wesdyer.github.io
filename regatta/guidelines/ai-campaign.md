@@ -14825,3 +14825,105 @@ probes in flight; check date. Out of scope: E5 (his ruling), wedge/
 obstruction brief, swamp corridor, lake (his edit incoming), rules
 backlog, terminal carrot (__H1MODE, retired). Commits local — push
 needs my credentials.
+
+## 2026-08-23 (night) — THE R3 PUSH: selective gap admission + the wedge — CLOSED, NOTHING SHIPPED (autonomous)
+
+Bar: arctic fleet pooled med ≤310 vs his 207.0 on r1carc\* (318/320.7 =
+1.536x). Base HEAD `95939f5`, engine byte-identical to treeR1C (verified
+Phase 0); freeze --check clean (lake = his pending edit, expected); arctic
+6 fp-valid laps med 207.0. New close-table script `_r3_close_table.js`
+carries the owner's 2026-08-23 column spec (DNF%, per-boat MEDIAN
+collisions/penalty) — used below and by every future push.
+
+### Phase 1 — sized first (4 probes, all tracked)
+- `_gap_admit.js` (NEW): refused-but-predicted-open cells at ~80% of solo
+  replans, but route delta 0 at p75 — the prize is RARE + TRANSIENT (4-5%
+  of samples, 2-6s events). Per-lap upper bound over 16 solo seeds: med
+  ~1175u (~9s), mean ~2450u, strongly bimodal (half of laps ≥1.9k u, half
+  ~150u). Cleared the 8s-scale build bar at the median → built.
+- `_his_admit.js` (NEW): 34.6% of his 136 sub-120u pass minima are <44u
+  (hard-refused by today's stamp), 59.6% <69u, 70.6% <78u; 4.8% of his
+  racing SAMPLES sit in stamped-refused water. The router structurally
+  cannot plan his lines.
+- `_wedge_census.js` (NEW), 4×16 fleet on the R1C HEAD: 686 armed wedge
+  episodes (speed<20 u/s >2s at clr<60u while roundArmed), 5.9 s/boat,
+  dur med 3.9s, ALL leg-1, minClr med 21u, **79% start INSIDE the zone,
+  100% in rulerMode, 0% beyond 2.1 zones**, latch+avoid own 76% of entries
+  → the "delay the mark-carrot takeover" W1 shape is measurement-dead.
+- Re-runs on R1C: `_h1b_entry` 27 sub-78 onsets/4 seeds (was 33 pre-arc),
+  off-path hit 58%→33%, on+shave entry angle med 23° — the shipped
+  rejoin+fairing stack holds. `_contact_census2`: 5.06 eps/boat,
+  LATCH-THRASH 2.25 ep/boat (8.8 s/boat dwell), **52% of contact episodes
+  carry roundArmed**.
+
+### R3 ladder (treeR3G kept) — ⛔ CLOSED AT THE FRONTIER
+Solo 8 paired (`_c2_solo` 9100-9107) vs treeR1C; solo can only kill:
+- v1 (admit ≥60u drift-predicted margin, 5s reach, mid-thread adoption):
+  med +16.4/mean +15.9, **floeEp 26→45 (+73%)**, leg-1 tacks 19→40 — the
+  R2 signature, KILLED. (Smoke lesson: adoption without a
+  crossed-admitted-cell test is staleness arbitrage — 6 adoptions, 0
+  admitted threads.)
+- v2 (now≥60u + predicted≥78u at tE and tE+2.5s, 3.5s reach, no adoption,
+  revocation on admitted threads): med −0.8/mean +6.9, **floeEp +42%**
+  (9107 +65s) — KILLED on the pre-registered bar.
+- v4 (v2 + non-closing-gap filter): **byte-identical races to v2** — the
+  filter binds nothing.
+- v3 (now≥78u everywhere): **byte-identical to BASE on 7/8 seeds — INERT.
+  Nothing within a 3.5s reach is both refused and ≥78u clear now.**
+- ⭐⭐⭐ STRUCTURAL FINDING: the stamp refuses only sub-~78u-effective
+  water (44u bar + worst-case rotation + staleness smear) and the
+  execution stack demands 78u — **the admissible class is exactly
+  [44,78)u, the band the helm fights. Router admission cannot convert the
+  route-length mass. The LAST pre-registered router move is closed;
+  arctic's remaining ~10s is EXECUTION-bound** (third independent
+  confirmation after the sub-1.5x capability finding and the R1/R2
+  inversion kills).
+
+### W1 ladder (treeW1F kept) — fair the rounding-machinery target — ⛔ CLOSED
+- v1 (v9-style point fairing of ruler-mode targets, per-tick): 4/8 seeds
+  inert, 9100 +18 (tacks 19→31 = churn), 9107 +23, floeEp +12%.
+- v2 (1s latch + base-move test): 9100 +60, 9105 −33 — the orbit target
+  moves with the boat, a base-move latch defeats itself.
+- v3 (pure 2s time latch released <120u; engage <50u; 40u re-fair
+  hysteresis): floeEp FLAT (26→27), med 0.0/mean +2.2, bifurcation ±25s
+  (9105 −24, 9107 −22.5 vs 9100 +53, 9101 +12) — passed the solo kill
+  gate; fleet arbitrated per rule 16.
+- **FLEET 32 (w1arc9100/9400 vs r1carc9100/9400): pooled med +2.0/mean
+  +4.3 (sets +1.0/0.0, +4.0/+8.6), floe 19.23 v 17.45 (+10%), fins
+  288/288 both — KILLED** (bar was med&mean ≤ −1). Hand-checked 21b:
+  set-9400 means 319.0 v 310.4. Residue for the record: fleet boat
+  contacts 2.56 v 3.01 (−15%) at that losing clock — not park-worthy
+  against the floe dirt.
+- Family lesson: any moved/latched rounding target re-triggers tack churn
+  — the carrot family's dose-response reproduced at the nav-target level.
+
+### Session verdict
+NOTHING SHIPPED — HEAD `95939f5` unchanged, all 10 venues carry their
+existing anchors (byte-identity verified Phase 0). Both pre-registered
+candidates closed on their own bars. The sub-310 bar was NOT reached and
+cannot be reached from the router or the nav-target side: **the remaining
+arctic mass (route length AND the armed wedge class) is execution-bound at
+the sub-78u ice edge — his pass capability (THE SPEC: full speed,
+edge-parallel 19°, min-clr med 41u) is the single door.** Next move is the
+owner's call: (a) an H-layer execution push (H1b approach-tangent shaping
+under the session-1 interaction rules — the hard, real lever), (b) the
+wedge as a STUCK-ESCAPE class (wedge dur med 3.9s may sit under the stuck
+detector's horizon — unmeasured), or (c) bank 1.536x.
+
+### CLOSE TABLE (owner spec 2026-08-23; final HEAD `95939f5`, all venues, sorted by ratio; NOTHING SHIPPED — post == pre, anchors byte-verified)
+
+venue      | human  | pre med/mean/best     | post med/mean/best    | ratio | DNF%  | colMed | penMed
+arctic     |  207.0 | 318/320.7/226         | 318/320.7/226         | 1.536 |   0.0 |     18 |      0
+redrock    |  216.7 | 316/316.4/223         | 316/316.4/223         | 1.458 |   0.0 |     18 |      1
+river      |  167.8 | 238/242.5/186         | 238/242.5/186         | 1.418 |   0.9 |     46 |      1
+swamp      |  235.3 | 331/358.7/170         | 331/358.7/170         | 1.407 |   4.6 |      9 |      0
+glowtide   |  202.6 | 261/264.0/180         | 261/264.0/180         | 1.288 |   0.0 |     22 |      1
+lagoon     |  170.6 | 214/217.3/173         | 214/217.3/173         | 1.254 |   0.0 |      0 |      0
+bay        |  230.1 | 272/271.5/232         | 272/271.5/232         | 1.182 |   0.0 |      0 |      0
+lake       |  206.2 | 233/230.7/161         | 233/230.7/161         | 1.130 |   0.0 |      2 |      0
+ocean      |  213.9 | 224/225.9/194         | 224/225.9/194         | 1.047 |   0.0 |      0 |      0
+seatrials  |  185.6 | 190/194.4/172         | 190/194.4/172         | 1.024 |   0.0 |      0 |      0
+
+(Arctic watches carried, unchanged: floe 17.62, land 3.40 — both +2.8% vs
+pre-icecraft; boat 2.80 resolved. Lake ratio is on the frozen doc; his
+bigger lake edit is still incoming.)
