@@ -14974,3 +14974,72 @@ Standing: table spec = _r3_close_table.js columns on EVERY push close and
 status update; graveyard now also contains R3 (x4) and W1 (x3+fleet); check
 date; freeze --check (lake = his edit, expected); arctic 32+ pooled only;
 _pool_ob.js cand,base NEGATIVE=faster + hand-check (21b); commits local.
+
+## 2026-08-23 (late night) — THE H1B EXECUTION PUSH: fan projection honesty — CLOSED AT FLEET, NOTHING SHIPPED (owner-directed "let's do it")
+
+The owner picked (A): the execution push, with (B) folded in as sizing.
+HEAD `d674f5c` byte-identical to treeR1C throughout (verified at boot).
+
+### Phase 1 — the flip anatomy (the decision probe)
+- Course-correction BEFORE building: the recommended "side-commitment
+  constraint" is the CLOSED commitment family (0-for-7, in-code warning at
+  the stickiness discount: one second of hold = +25s transit) — NOT built.
+  The admissible class is "change what is MEASURED" (FL1/FL1b/FL1c/D2/D3).
+- `_flip_anatomy.js` (NEW, tracked; wraps applyAvoidance probe-side): of
+  190 deviation sign flips in 4 solo seeds — REFERENCE 71% (±18° argmin
+  dither around a stationary nav heading, |dDes| med 0.01), CHOICE 22%
+  (~115° command reversals 0.12s apart — physically unsailable), LAYER-GAP
+  4%, RE-TARGET 3%. Grid rebuilds NOT causal (27% ≈ the 25% base rate).
+  **83% of CHOICE flips (34/41) sit inside the 10 hitting encounters;
+  flips≥2 encounters hit 35% vs 6%.**
+- The named defect: on floe venues the floe terms grade STRAIGHT rays
+  along unreached headings — the land probe has rolled the boat's own turn
+  since the redrock landing (5.39x arc-blocked lift) and D2 rolls the
+  rival test on ice; the floe terms were the last straight-ray consumer.
+- `_wedge_stuck.js` (NEW, tracked; option B sized and CLOSED): the stuck
+  machinery is NOT blind to wedges — 92% of wedge time accrues stuck-time,
+  wiggle fires in 64%, and **92% of episodes end latch-owned**; with-wiggle
+  wedges last LONGER (4.9 v 2.8s med). No detector-gap candidate exists;
+  the wedge is downstream of the same execution fight.
+- `_bot_pass` baseline re-run (treeR1C): sub-78 hit 27%, flips med 3,
+  speed-at-min 108 v entry 111 — the spec's numbers hold on this HEAD.
+
+### The H1B ladder (treeH1B kept) — pre-registered gates in scratchpad BEFORE results
+All: floe tests consume the already-computed rolled arc (arcPts); every
+price/pad unchanged; non-floe venues byte-identical (openWaterAv).
+- v1 (floe SEGMENT tests + D3 BAND endpoint both rolled): mechanism
+  emphatic — CHOICE flips 42→16 (−62%), sub-78 hit 27%→13% (G1's own bar),
+  maxDev p90 172°→126°. Solo 8: mean +8.1 (bar +8.0), floeEp 32 (bar 30) —
+  GRAZED both bars with a NON-uniform split (4 seeds −14..−42 with floeEp
+  17→7; 4 seeds +24..+62 with 9→25) — not the R2 signature; per rule 16 +
+  session-1's "solo cannot rank helm variants", the fleet arbitrated.
+- v2 (segments only): mechanism REVERSED (CHOICE 49, hit 27%), solo mean
+  +25.3, floeEp 37 — DEAD. The band roll is load-bearing, not the segments.
+- v3 (band only): solo mean −2.4 BUT floeEp 26→44 (+69%, up on 6/8 = the
+  R2-like near-uniform signature) — DEAD. **The two halves are synergistic:
+  only the combination halves the hit rate.**
+- **v1 FLEET 32 (h1barc9100/9400 vs r1carc9100/9400): pooled med +1.0 /
+  mean +4.7 (sets −1.0/−0.2 and +6.0/+9.5) — FAILED the ≤−1 advance bar.
+  Dirt: boat −27% (2.21 v 3.01), pen −13%, floe −4% (16.75 v 17.45), but
+  LAND +31% (4.34 v 3.30)** — the closer-sailing lines trade ice fights
+  for shore groundings and the clock does not follow. FAMILY CLOSED.
+
+### Session verdict
+NOTHING SHIPPED — HEAD unchanged. FIVE families adjudicated tonight across
+two pushes (R3 ×4, W1 target-fairing ×3+fleet, W1 delay-takeover, wedge-
+as-stuck-escape sized-closed, H1B projection-honesty ×3+fleet). The
+mechanism instruments (hit rate halved, unsailable flips −62%, fleet boat
+contacts −27%) prove the fan CAN be made honest — but the clock lives in
+route length/standoff, and every closer-sailing form pays it back in land
+exposure. The execution door (his full sub-78 capability: full-speed
+edge-parallel passes) remains unconverted after the carrot family (×7),
+projection honesty (×3+fleet), target fairing (×3+fleet), and selective
+admission (×4). The honest position for the owner: arctic 1.536x is the
+frontier of the current architecture's helm; further conversion likely
+needs a different execution substrate (e.g., a trajectory-level pass
+primitive with its own physics test), which is a design decision, not a
+measurement.
+
+⛔ Closed families += H1B fan projection honesty on floe terms (v1 both /
+v2 segments / v3 band; fleet-killed at 32 with land +31%); wedge-as-stuck-
+escape (sized: no detector gap, latch owns 92% of exits).
