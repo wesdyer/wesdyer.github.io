@@ -380,10 +380,15 @@ class WaterRenderer {
                 ox = fa * l1x + fb * l2x;
                 oy = fa * l1y + fb * l2y;
             }
-            lctx.save();
-            lctx.imageSmoothingEnabled = false;
+            // ⚠️ BILINEAR, deliberately — the one place a nearest blit is NOT free. This
+            // layer CREEPS (scroll ~0.1px/frame), and nearest at a fractional offset
+            // quantizes it to whole pixels: the texture sits still and lurches a pixel
+            // at a time, which the owner immediately read as "the water jumps around"
+            // (eval/_water_motion.js makes it numeric: uniform ~0.10/frame deltas vs
+            // 4.5x spikes). Fractional bilinear is the slow sampling path, but on the
+            // half-res canvas that is ~0.9 ms — still well under the rotated fill this
+            // cache replaced, and the motion is subpixel-exact.
             lctx.drawImage(this._patCv, ox - PAT_PAD, oy - PAT_PAD);
-            lctx.restore();
         }
         }
 

@@ -322,19 +322,19 @@ function draw(ctx, state) {
     // resolution quarters the fill, and the upscale's softening is a gift here — a
     // blurrier veil is a wispier veil. Measured 6 ms/frame drawn direct.
     const w = ctx.canvas.width, h = ctx.canvas.height;
-    const IFX_RS = 0.25;   // quarter res: the layer is all soft veils and the upscale's
-                           // blur is part of the look — half-res was still fill-bound.
+    const IFX_RS = 0.5;
     const lw = Math.ceil(w * IFX_RS), lh = Math.ceil(h * IFX_RS);
     if (!LAYER) LAYER = document.createElement('canvas');
     if (LAYER.width !== lw || LAYER.height !== lh) { LAYER.width = lw; LAYER.height = lh; }
     const lg = LAYER.getContext('2d');
     lg.setTransform(1, 0, 0, 1, 0, 0);
     lg.clearRect(0, 0, lw, lh);
-    // Nearest sampling: a drawImage at a FRACTIONAL position under bilinear falls off
-    // the rasterizer's fast path (~9x; eval/_blit_matrix.js), and every puff here is a
-    // soft radial gradient whose nearest-sampled edge is invisible — doubly so through
-    // the half-res upscale below.
-    lg.imageSmoothingEnabled = false;
+    // ⚠️ Sampling stays BILINEAR and the layer stays HALF res. Both were pushed
+    // (nearest, quarter res) for the software-raster budget and REVERTED: this layer
+    // DRIFTS — nearest quantizes each puff to whole layer pixels, and at quarter res
+    // that is a 4-screen-px lurch per step, which read as the snow (and the water
+    // under it) "jumping around". The cost lives in call count anyway (~4 us/draw),
+    // so the sampling mode bought almost nothing (2.93 -> 2.93 measured).
     // ⚠️ NO camera transform on the layer. Every sprite here is a ROUND radial gradient —
     // rotation-invariant — so drawing through the rotated camera bought nothing and paid
     // the rasterizer's generic path on every puff (a rotated drawImage is ~15x an
