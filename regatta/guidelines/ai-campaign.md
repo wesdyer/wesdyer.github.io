@@ -14725,3 +14725,16 @@ the tier level; (b) the ARMED-APPROACH WEDGE class (9100 t185-195:
 latch-thrash at demand 78 with roundArmed set from 700u out — the
 rounding approach is unfaired, un-rejoined water; measured 138-frame
 grinds). Both are measured, named, and pre-registerable.
+
+**✅ R1C SHIPPED (owner overruled the park, 2026-08-23 night: "I like
+R1C with less boat contacts").** Demand 60 off the mark approach (78
+while roundArmed), fairing clamp 60. At pooled 64 vs the h1arc\*
+anchors: **clock neutral (med 0.0 / mean −0.7), boat 2.80 vs 3.14
+(−11%, below the pre-ship 3.04 — RESOLVES the boat side of the ship
+watch)**, floe 17.62 flat, pen 0.53 flat, fins 576/576. Gates: HEAD ==
+treeR1C byte-verified; 9 venues 2-race PREFIX-EQUAL to b3\* anchors;
+goldens re-recorded, arctic-only change, verify **PASS 30**; suite
+4/27 known set, NP-70u hard green. **New arctic anchors =
+r1carc9100/9200/9400/9600 (arctic 318/320.7, 1.536x).** Remaining
+watch: floe 17.62 (vs pre-icecraft 17.14, +2.8%) and land 3.40
+(+2.8% vs 3.31). R2 (PAD6 inversion) relaunching on THIS HEAD.

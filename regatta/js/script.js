@@ -2346,13 +2346,13 @@ class BotController {
                                     p9.y - (fF.driftVy || 0) * tE9, tE9);
                                 if (cF < c9) { c9 = cF; f9 = fF; }
                             }
-                            if (!f9 || c9 >= 78 || c9 < -20) continue;
+                            if (!f9 || c9 >= 60 || c9 < -20) continue;
                             // push radially in the DRIFTED frame to the 78u contour
                             const fx9 = f9.x + (f9.driftVx || 0) * tE9;
                             const fy9 = f9.y + (f9.driftVy || 0) * tE9;
                             let ux9 = p9.x - fx9, uy9 = p9.y - fy9;
                             const dU9 = Math.hypot(ux9, uy9) || 1; ux9 /= dU9; uy9 /= dU9;
-                            const qx9 = p9.x + ux9 * (78 - c9), qy9 = p9.y + uy9 * (78 - c9);
+                            const qx9 = p9.x + ux9 * (60 - c9), qy9 = p9.y + uy9 * (60 - c9);
                             // reject: other hulls or blocked cells at the new point
                             let ok9 = true;
                             for (const fF of state.course._floeObjs) {
@@ -5334,7 +5334,8 @@ class BotController {
                                     landFY - (fD3.driftVy || 0) * tED3, tED3);
                                 if (cD3 < tcD3) tcD3 = cD3;
                             }
-                            if (tcD3 < 78) proximityCost += 4000 * (1 - Math.max(0, tcD3) / 78);
+                            const dmR1 = this.boat.raceState.roundArmed ? 78 : 60;
+                            if (tcD3 < dmR1) proximityCost += 4000 * (1 - Math.max(0, tcD3) / dmR1);
                         } else {
                             proximityCost += cScale * (1 - clr / 3);
                         }
