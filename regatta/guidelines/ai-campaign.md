@@ -14672,3 +14672,56 @@ H-stack finally has a passing capability layer (approach-shaped paths
 pre-registered flip criterion unchanged. Then R2 (PAD6), then R3 (gap
 admission). The terminal carrot stays retired unless R1 names hot
 entries as the residual again.
+
+## 2026-08-23 (evening) — R1 INVERSION ROUND (post-ship, same conversation)
+
+The owner's bar restated: <1.5x arctic (pooled med ≤310; now 318) and
+every venue. R1 = re-run treeE4's demand 78→60 on the shipped HEAD.
+
+- **R1A (the EXACT E4 edit)**: solo 8 paired vs treeSHIP mean +8.6 /
+  med +1.9, floeEp 28→37. NOT flipped per pre-registration — BUT the
+  kill signature transformed: the 2026-08-23-morning kill was +17.8
+  uniform with 5x hit explosion; now 3 seeds WIN 12-25s and one +97
+  tail seed owns the mean. Odo flat (−150u): the demand constant alone
+  tolerates closer water but does not route through it.
+- **R1B (demand 60 + fairing clamp 60)**: mean +6.5 / med 0.0, floeEp
+  34, odo −521u. Same shape: wins −33/−30/−13, tails +63/+45.
+- **9100 tail NAMED**: 138-hit-frame pinned grind at t210 = the leg-1
+  mark area. **R1C = demand 78 while roundArmed, 60 elsewhere**: mean
+  +4.2 / med −1.3, **floeEp 26 (BELOW the ship's 28)**, odo −382u —
+  tails shrink but 9100 +53 persists.
+- **Diagnostic overturn**: the t185-195 wedge on 9100 runs WITH
+  roundArmed SET (armed from 700u+ out — the flag covers the whole
+  approach) i.e. AT demand 78 — the residual tail is the pre-existing
+  armed-approach latch-thrash class placed by route reshuffle, not a
+  demand-60 casualty. The catastrophe signature the R1 flip criterion
+  was written against is GONE (floeEp down, med ≈0); ±50s solo swings
+  are rule-3 noise at 8 seeds.
+- **Fleet arbitration launched**: R1C arctic 2×16 (r1carc9400/9600) vs
+  h1arc9400/9600. Ship bar if green: pooled med & mean ≤ −1 (it must
+  BUY time to justify the knee), floe/boat/pen not up materially,
+  extend to 64.
+
+**⛔ R1C PARKED AT POOLED 64**: the 32-seed −4.1 did not hold (sets
++0.9/+4.5/−2.6/−5.6 — rule 20) → pooled med 0.0 / mean −0.7, misses
+the pre-registered must-buy-time bar (≤ −1 both). Fins 576/576, floe
+17.62 flat, pen flat, **boat 2.80 vs 3.14 (−11%, below the pre-ship
+3.04 — R1C would RESOLVE the boat side of the ship watch; noted for
+the owner, one command away if he wants the dirt win at clock-neutral;
+NOT shipped on my own judgment).** Trees kept: treeR1A/R1B/R1C,
+benches r1carc*.
+
+**THE R1 ROUND'S REAL FINDING**: the demand knee is now
+NON-CATASTROPHIC (morning kill: +17.8 uniform, 5x hits; tonight: clock
+flat at 64 with dirt flat-to-better) — the capability layer landed.
+But the knee buys ~no time because the ROUTE LENGTH mass never moved:
+odo −0.4k of the 8.6k solo gap. The demand/fairing act at avoidance/
+path-postprocess level; **the router still PLANS the same lines — the
+distance mass lives in the router's stamp geometry (fat stamps =
+hull+clearance+prediction) and PAD economics.** Session 3 targets:
+(a) R2 = PAD6 as the pre-registered inversion test on this HEAD (its
+kills were pre-capability), and/or router stamp-clearance honesty at
+the tier level; (b) the ARMED-APPROACH WEDGE class (9100 t185-195:
+latch-thrash at demand 78 with roundArmed set from 700u out — the
+rounding approach is unfaired, un-rejoined water; measured 138-frame
+grinds). Both are measured, named, and pre-registerable.
