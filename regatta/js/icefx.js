@@ -322,15 +322,25 @@ function draw(ctx, state) {
     // resolution quarters the fill, and the upscale's softening is a gift here — a
     // blurrier veil is a wispier veil. Measured 6 ms/frame drawn direct.
     const w = ctx.canvas.width, h = ctx.canvas.height;
-    const lw = Math.ceil(w / 2), lh = Math.ceil(h / 2);
+    const IFX_RS = 0.25;   // quarter res: the layer is all soft veils and the upscale's
+                           // blur is part of the look — half-res was still fill-bound.
+    const lw = Math.ceil(w * IFX_RS), lh = Math.ceil(h * IFX_RS);
     if (!LAYER) LAYER = document.createElement('canvas');
     if (LAYER.width !== lw || LAYER.height !== lh) { LAYER.width = lw; LAYER.height = lh; }
     const lg = LAYER.getContext('2d');
     lg.setTransform(1, 0, 0, 1, 0, 0);
     lg.clearRect(0, 0, lw, lh);
-    lg.scale(0.5, 0.5);
+    // Nearest sampling: a drawImage at a FRACTIONAL position under bilinear falls off
+    // the rasterizer's fast path (~9x; eval/_blit_matrix.js), and every puff here is a
+    // soft radial gradient whose nearest-sampled edge is invisible — doubly so through
+    // the half-res upscale below.
+    lg.imageSmoothingEnabled = false;
+    // ⚠️ NO camera transform on the layer. Every sprite here is a ROUND radial gradient —
+    // rotation-invariant — so drawing through the rotated camera bought nothing and paid
+    // the rasterizer's generic path on every puff (a rotated drawImage is ~15x an
+    // axis-aligned one; eval/_blit_matrix.js). Centres are projected by hand instead and
+    // every drawImage below lands axis-aligned.
     const m = ctx.getTransform();
-    lg.transform(m.a, m.b, m.c, m.d, m.e, m.f);   // half-scale ∘ the scene's camera
     // Screen-space bounds of everything drawn, so the composite below copies only
     // the rectangle the plumes touched — a full-frame blit costs real milliseconds
     // under software raster and usually carries mostly transparent pixels.
@@ -365,8 +375,10 @@ function draw(ctx, state) {
         const env = Math.min(1, p.t / 0.25) * (q < 0.55 ? 1 : 1 - (q - 0.55) / 0.45);
         if (p.haze) {
             lg.globalAlpha = p.a * env;
-            const d = p.r * 2;
-            lg.drawImage(spr, p.x - p.r, p.y - p.r, d, d);
+            const sx = (m.a * p.x + m.c * p.y + m.e) * IFX_RS;
+            const sy = (m.b * p.x + m.d * p.y + m.f) * IFX_RS;
+            const hr = p.r * IFX_RS;
+            lg.drawImage(spr, sx - hr, sy - hr, hr * 2, hr * 2);
             bound(p.x, p.y, p.r);
             continue;
         }
@@ -395,7 +407,10 @@ function draw(ctx, state) {
             if (f > 0.5 && (pt.i & 1)) continue;
             const r = (13 + 22 * f) * pt.v * p.sz;
             lg.globalAlpha = p.a * env * (1 - 0.75 * f) * pt.v;
-            lg.drawImage(spr, pt.x - r, pt.y - r, r * 2, r * 2);
+            const sx = (m.a * pt.x + m.c * pt.y + m.e) * IFX_RS;
+            const sy = (m.b * pt.x + m.d * pt.y + m.f) * IFX_RS;
+            const hr = r * IFX_RS;
+            lg.drawImage(spr, sx - hr, sy - hr, hr * 2, hr * 2);
             bound(pt.x, pt.y, r);
         }
     }
@@ -406,7 +421,8 @@ function draw(ctx, state) {
         if (cx1 > cx0 && cy1 > cy0) {
             ctx.save();
             ctx.setTransform(1, 0, 0, 1, 0, 0);
-            ctx.drawImage(LAYER, cx0 / 2, cy0 / 2, (cx1 - cx0) / 2, (cy1 - cy0) / 2,
+            ctx.drawImage(LAYER, cx0 * IFX_RS, cy0 * IFX_RS,
+                          (cx1 - cx0) * IFX_RS, (cy1 - cy0) * IFX_RS,
                           cx0, cy0, cx1 - cx0, cy1 - cy0);
             ctx.restore();
         }
