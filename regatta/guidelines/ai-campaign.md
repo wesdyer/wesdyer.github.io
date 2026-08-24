@@ -14738,3 +14738,22 @@ goldens re-recorded, arctic-only change, verify **PASS 30**; suite
 r1carc9100/9200/9400/9600 (arctic 318/320.7, 1.536x).** Remaining
 watch: floe 17.62 (vs pre-icecraft 17.14, +2.8%) and land 3.40
 (+2.8% vs 3.31). R2 (PAD6 inversion) relaunching on THIS HEAD.
+
+**⛔ R2 (PAD6 inversion) KILLED at solo on the R1C HEAD**: paired mean
++19.1 / med +17.6, **floeEp 26→60 (2.3x explosion)**, odo flat
+(−124u). The PAD-knee catastrophe signature survives the capability
+stack — global stamp thinning opens corridors below what fairing/
+rejoin protect (fairing clamps at 60u point-clearance; PAD 6 admits
+narrower cell-corridors) and buys no distance. Family stays CLOSED;
+both sanctioned inversion re-opens (R1 exact, R2) are now adjudicated.
+
+**WHERE THE ROUTE MASS STANDS after both inversions**: neither global
+loosening (demand) nor global thinning (PAD) converts the 8.6k odo
+gap — the demand is not the router's constraint and the stamps guard
+real hazards indiscriminately. The remaining pre-registered router
+move is **R3 — SELECTIVE gap admission on ice** (tight-tier machinery
+extended to floe venues, gap admitted only when drift-PREDICTED open
+across the transit at the ≤5s horizon — the _gap_pred result, 1.5u@3s,
+is the enabling measurement; noSubsample gate stays until R3's own
+gates pass; redrock 6-set = tier canary). Session-3 plan: R3 build +
+the armed-approach wedge class (unfaired rounding water).
