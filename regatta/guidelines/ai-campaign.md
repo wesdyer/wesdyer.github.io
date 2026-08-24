@@ -14927,3 +14927,50 @@ seatrials  |  185.6 | 190/194.4/172         | 190/194.4/172         | 1.024 |   
 (Arctic watches carried, unchanged: floe 17.62, land 3.40 — both +2.8% vs
 pre-icecraft; boat 2.80 resolved. Lake ratio is on the frozen doc; his
 bigger lake edit is still incoming.)
+
+### Post-verdict mechanism datum (W1F wedge census, set 9100)
+W1 v3 did NOT move the class it targeted: 181 episodes (vs base's exact
+181), 7.0 s/boat (base 6.4), latch entries 86 v 74, same inside-zone
+distribution. The target fairing missed the mechanism entirely — the
+wedges are not caused by a target sitting in ice; they ARE the execution
+fight at the edge. Fourth line of evidence for the execution-bound verdict.
+
+## ⏭ CARRY-FORWARD PROMPT — NEXT ARCTIC MOVE (drafted 2026-08-23 night; DECISION TO OWNER)
+
+AI PUSH: [OWNER PICKS A/B/C]. Context: the R3 push (af554cf) closed BOTH
+remaining pre-registered arctic levers — R3 selective gap admission is dead
+at the frontier (the admissible class is exactly [44,78)u true clearance,
+the band the execution stack demands away; the honest-bar variant is
+byte-inert) and W1 target-fairing is fleet-killed (+2.0/+4.3 pooled 32,
+floe +10%; every latch schedule churns tacks; the wedge class itself did
+not move — 181 episodes v 181). FOUR independent lines now agree: arctic's
+remaining ~10s to sub-1.5x is EXECUTION-bound at the sub-78u ice edge.
+Scoreboard unchanged: arctic 318/320.7 = 1.536x on r1carc*, watches floe
+17.62/land 3.40 (+2.8%), boat 2.80.
+
+(A) H1b EXECUTION PUSH — the real lever, the hard one. Build the sub-78u
+pass capability per THE SPEC (full speed, edge-parallel 19deg, min-clr med
+41u) at the HELM layer, under session-1's interaction rules (any pass mode
+needs its own scoped demand; the cross-layer latch and reflex cliff are
+mapped in regatta-icecraft-session). The carrot family v1-v7 is retired —
+H1b means approach-tangent SHAPING of the existing avoidance response, not
+a new tracking mode. Boot: memory regatta-icecraft-session +
+regatta-icecraft-spec + regatta-r3-session; the executor fight band is
+[44,78)u; _gap_admit/_his_admit quantify the prize his lines would buy.
+
+(B) WEDGE AS STUCK-ESCAPE — unmeasured, cheap to size. The armed wedge
+class (5.9 s/boat base, dur med 3.9s, minClr med 21u, ALL leg-1, 79%
+inside the zone, latch+avoid 76%) may sit UNDER the stuck detector's
+horizon — one sizing probe (episode overlap with stuck-detector firings)
+says whether an escape-class candidate exists. ⚠️ Rule 14: station-keeping
+is 0-for-8; any candidate must be a FLOWING action. Boot: the four
+_wedge_census_treeR1C_*.json + regatta-stuck-regime.
+
+(C) BANK 1.536x — arctic parks; the next-worst venues are redrock 1.458x
+(residual named in regatta-redrock-residual) and river 1.418x (leg 3 = 90%
+of slow time in 2 subsections, regatta-river-leg3).
+
+Standing: table spec = _r3_close_table.js columns on EVERY push close and
+status update; graveyard now also contains R3 (x4) and W1 (x3+fleet); check
+date; freeze --check (lake = his edit, expected); arctic 32+ pooled only;
+_pool_ob.js cand,base NEGATIVE=faster + hand-check (21b); commits local.
