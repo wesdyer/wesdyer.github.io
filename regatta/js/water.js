@@ -308,89 +308,27 @@ class WaterRenderer {
         camMatrix.rotateSelf(0, 0, -state.camera.rotation * (180/Math.PI)); // Degrees
         camMatrix.translateSelf(-state.camera.x, -state.camera.y);
 
-        // 3. Draw Contours — THROUGH A SCREEN-ORIENTED CACHE, because a pattern fill whose
-        // transform carries the camera's ROTATION is the rasterizer's slow generic path
-        // (~15x an axis-aligned blit; measured in eval/_blit_matrix.js). The insight that
-        // makes the cache cheap: for a FIXED rotation, everything else that moves this
-        // layer — the camera pan and the downwind scroll — is a pure TRANSLATION of a
-        // periodic pattern, so it never forces a repaint: the offset is reduced modulo the
-        // pattern's (rotated) 512-unit lattice and stays inside a fixed pad. The rotated
-        // fill is paid once per rotation change; every other frame pays one axis-aligned
-        // nearest blit.
+        // 3. Draw Contours — the DIRECT pattern fill, on purpose. A screen-oriented
+        // cache (rotated fill once, translation-only blits after) was tried twice and
+        // REMOVED: this game's camera rotation NEVER settles — it exponentially tracks a
+        // heading that wobbles every frame — so any rotation-quantized cache renders the
+        // water at a slightly stale angle and then snaps it, forever, which the owner
+        // read (correctly) as "the water jumps around". A creeping layer has to be
+        // re-rendered at the live transform every frame; ~2 ms here is the honest price.
+        // eval/_water_motion.js is the gate for anyone tempted again.
         if (!this.contourPattern) {
              this.contourPattern = lctx.createPattern(this.contourCanvas, 'repeat');
-             this._patRot = null;                          // pattern changed: cache stale
         }
 
-        const PAT_PAD = 192;   // > half the two lattice vectors' combined screen length
-        const rot = state.camera.rotation;
+        lctx.globalAlpha = config.rippleOpacity || 0.9;
+        lctx.fillStyle = this.contourPattern;
+
         const contourMat = DOMMatrix.fromMatrix(camMatrix);
         contourMat.translateSelf(flowDx, flowDy); // gentle downwind drift
-        const alpha = config.rippleOpacity || 0.9;
+        this.contourPattern.setTransform(contourMat);
 
-        const pw = lw + PAT_PAD * 2, ph = lh + PAT_PAD * 2;
-        if (!this._patCv || this._patCv.width !== pw || this._patCv.height !== ph) {
-            this._patCv = document.createElement('canvas');
-            this._patCv.width = pw; this._patCv.height = ph;
-            this._patCtx = this._patCv.getContext('2d');
-            this._patRot = null;
-        }
-        const stale = this._patRot === null || Math.abs(rot - this._patRot) > 0.0015
-            || this._patAlpha !== alpha;
-        const turning = (window.__camRotDelta || 0) > 0.0004;
-        if (stale && turning) {
-            // Mid-turn the cache would re-derive every frame, which costs more than the
-            // thing it replaces — so a turning frame pays the original direct fill.
-            lctx.globalAlpha = alpha;
-            lctx.fillStyle = this.contourPattern;
-            this.contourPattern.setTransform(contourMat);
-            lctx.fillRect(0, 0, lw, lh);
-            lctx.globalAlpha = 1.0;
-        } else {
-        if (stale) {
-            // Re-derive: one rotated pattern fill over the padded rect.
-            const pg = this._patCtx;
-            pg.clearRect(0, 0, pw, ph);
-            pg.globalAlpha = alpha;
-            pg.fillStyle = this.contourPattern;
-            const shifted = new DOMMatrix().translateSelf(PAT_PAD, PAT_PAD).multiplySelf(contourMat);
-            this.contourPattern.setTransform(shifted);
-            pg.fillRect(0, 0, pw, ph);
-            pg.globalAlpha = 1;
-            this._patRot = rot;
-            this._patAlpha = alpha;
-            this._patMat = shifted;                        // pattern -> patCv px at derive
-        }
-        // Blit offset X must satisfy X ≡ (t_now − t_derive) modulo the pattern lattice
-        // (the two columns of the linear part times the 512-unit tile), and land in
-        // [-2·PAD, 0] so the padded rect still covers the low canvas. Reducing
-        // (t_now − t_derive + PAD) to its minimal lattice residual r (|r| ≤ ~181 < PAD)
-        // and drawing at r − PAD does both.
-        {
-            const d = this._patMat, n = contourMat;
-            const dx = n.e - (d.e - PAT_PAD) + PAT_PAD;
-            const dy = n.f - (d.f - PAT_PAD) + PAT_PAD;
-            const l1x = d.a * 512, l1y = d.b * 512, l2x = d.c * 512, l2y = d.d * 512;
-            const det = l1x * l2y - l2x * l1y;
-            let ox = dx, oy = dy;
-            if (det) {
-                const aa = (dx * l2y - l2x * dy) / det;
-                const bb = (l1x * dy - dx * l1y) / det;
-                const fa = aa - Math.round(aa), fb = bb - Math.round(bb);
-                ox = fa * l1x + fb * l2x;
-                oy = fa * l1y + fb * l2y;
-            }
-            // ⚠️ BILINEAR, deliberately — the one place a nearest blit is NOT free. This
-            // layer CREEPS (scroll ~0.1px/frame), and nearest at a fractional offset
-            // quantizes it to whole pixels: the texture sits still and lurches a pixel
-            // at a time, which the owner immediately read as "the water jumps around"
-            // (eval/_water_motion.js makes it numeric: uniform ~0.10/frame deltas vs
-            // 4.5x spikes). Fractional bilinear is the slow sampling path, but on the
-            // half-res canvas that is ~0.9 ms — still well under the rotated fill this
-            // cache replaced, and the motion is subpixel-exact.
-            lctx.drawImage(this._patCv, ox - PAT_PAD, oy - PAT_PAD);
-        }
-        }
+        lctx.fillRect(0, 0, lw, lh);
+        lctx.globalAlpha = 1.0;
 
         // 4. Draw Caustics — skipped below a visibility threshold: a ~6%-alpha
         // 'overlay' composite is a full extra screen pass for an effect that

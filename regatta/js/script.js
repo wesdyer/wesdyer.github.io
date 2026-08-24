@@ -22690,10 +22690,6 @@ function drawSnowOverlay(ctx) {
 function draw() {
     frameCount++;
 
-    // How fast the camera is rotating this frame — the world tiles' settled test.
-    window.__camRotDelta = Math.abs(state.camera.rotation - (window.__lastCamRot ?? state.camera.rotation));
-    window.__lastCamRot = state.camera.rotation;
-
     // Draw Water Background (Screen Space)
     drawWater(ctx);
 
@@ -24336,10 +24332,11 @@ function bakeShallowsSprite(isl) {
 // a different water"; a bar inside it is still a bar, so the shoal's sand paints over
 // the tint, and everything AT the surface paints over both.
 function drawShallows(ctx) {
-    if (!state.course || !state.course._hasShallows) return;
+    if (!state.course || !state.course._hasShallows) return 0;
     const tint = (window.WATER_CONFIG && window.WATER_CONFIG.shallowColor) || '#38bdf8';
     const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
     const camX = state.camera.x, camY = state.camera.y;
+    let drawn = 0;
     for (const isl of state.course.islands) {
         // A vegetated zone is also `paint`, but it is drawVegetation's layer — it goes
         // OVER the shoal sand (or over the finished water, if it floats), and this pass
@@ -24353,7 +24350,9 @@ function drawShallows(ctx) {
         if (!isl._shallowsSprite || isl._shallowsSprite.tint !== tint) bakeShallowsSprite(isl);
         const s = isl._shallowsSprite;
         ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+        drawn++;
     }
+    return drawn;
 }
 
 // ── VEGETATION ZONES ────────────────────────────────────────────────────────
@@ -25057,7 +25056,7 @@ function bakeReefSprite(isl) {
 // With the bottom layers: over the sand and the weed, under the seabed props (a coral
 // HEAD placed on a reef draws over it) and under everything at the surface.
 function drawReefs(ctx) {
-    if (!state.course || !state.course._hasReefs) return;
+    if (!state.course || !state.course._hasReefs) return 0;
     // ⚠️ THE KEY IS PER MATERIAL. The bake stamps the sprite with the tint of the ground it
     // used, and this test re-bakes when the water has moved under it. A stone reef bakes
     // from the sunkenrock style, so checking every shape against the coral key would find a
@@ -25067,6 +25066,7 @@ function drawReefs(ctx) {
     const stoneKey = sunkenGround().join(',');
     const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
     const camX = state.camera.x, camY = state.camera.y;
+    let drawn = 0;
     for (const isl of state.course.islands) {
         if (!isl.reef || isl.hidden) continue;
         const limit = viewRadius + isl.radius;
@@ -25079,7 +25079,9 @@ function drawReefs(ctx) {
         ctx.globalAlpha = isStone ? SUNKEN_ALPHA : REEF_ALPHA;
         ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
         ctx.restore();
+        drawn++;
     }
+    return drawn;
 }
 
 // Called twice per frame, once per plane, and the two calls sit in very different places
@@ -25180,30 +25182,27 @@ function drawZoneSprite(ctx, canvas, cx, cy, r, view) {
 // (a full-screen drawImage is not free, and most venues lack most strata).
 // ⚠️ THE COST MODEL THAT SHAPES ALL OF THIS: in the 2d rasterizer, a full-screen
 // drawImage is 0.4 ms AXIS-ALIGNED and ~6 ms under the camera's ROTATION — a 15x cliff,
-// measured (eval/_blit_matrix.js), source size nearly irrelevant, and nearest-neighbour
-// only softens it to ~3.8. Rotation is also why the live strata were expensive in the
-// first place: every big zone sprite drawn through the rotated camera pays the generic
-// path. So the tile pipeline is built to pay rotation as rarely as possible:
+// measured (eval/_blit_matrix.js), source size nearly irrelevant. Rotation is also why
+// the live strata were expensive in the first place: every big zone sprite drawn
+// through the rotated camera pays the generic path.
 //
 //   master   world-axis-aligned, view + 400u margin. Baked by the real layer functions,
 //            whose sprite blits land axis-aligned = all fast path. Rebakes on camera
 //            margin, key change, course change, or a lazily-loaded image landing.
-//   derived  screen-oriented rect, view + 128px margin, cut from the master by the ONE
-//            rotated blit — and only when the camera's rotation has actually changed
-//            (and settled) or the pan exceeded the margin.
-//   frame    a translation-only NEAREST blit of the derived rect: 0.4 ms. Nearest
-//            because a FRACTIONAL translation under bilinear falls off the fast path
-//            (3.5 ms); at 1:1 scale nearest-vs-bilinear on a pure translation is a
-//            half-pixel quantization, invisible on these strata.
-//   turning  while the camera is actively rotating the derived rect is stale, so those
-//            frames pay the rotated master blit directly — bounded, transient, and the
-//            derive is NOT re-cut per frame (that would be the same rotated cost plus a
-//            copy).
+//   frame    ONE drawImage of the master through the LIVE camera transform, bilinear.
+//            Exact rotation, exact position, every frame — pixel-equivalent to drawing
+//            the original sprites, so motion stays smooth by construction.
+//
+// ⚠️ THERE IS DELIBERATELY NO SCREEN-ORIENTED CACHE OF THE ROTATED RESULT. One was
+// built (derive once per rotation change, translation-only fast blits after) and it
+// benched beautifully on a frozen camera — and JUMPED in play, twice, because this
+// game's camera rotation NEVER settles: it exponentially tracks a heading that wobbles
+// every frame, so any rotation-quantized cache draws the world at a slightly stale
+// angle and then snaps it, forever. The owner saw it immediately ("the water jumps
+// around"). A per-frame rotated blit is the cheapest thing that is CORRECT here; where
+// even that costs more than the live layer it replaces, the adaptive chooser below
+// keeps the live path instead. eval/_water_motion.js is the smoothness gate.
 const WORLD_TILE_MARGIN = 400;
-const TILE_DERIVE_PAD = 128;      // screen-px pan margin of the derived rect
-const TILE_ROT_EPS = 0.0015;      // rad of rotation the fast path tolerates (~1px at edge)
-const TILE_ROT_SETTLED = 0.0004;  // rad/frame under which the camera counts as settled
-const TILE_DERIVE_COOLDOWN = 10;  // frames between derives during slow continuous drift
 
 function ensureWorldTile(tile, ctx, keyPart, bake) {
     const cam = state.camera;
@@ -25230,64 +25229,76 @@ function ensureWorldTile(tile, ctx, keyPart, bake) {
     tile.drawn = typeof drew === 'number' ? drew : -1;
     tile.course = state.course; tile.key = key;
     tile.cx = cam.x; tile.cy = cam.y; tile.r = r;
-    tile.dRot = null;                                 // master changed: derived is stale
-}
-
-// One rotated blit: master -> screen-oriented derived rect, centred on the camera.
-function deriveWorldTile(tile, ctx) {
-    const cam = state.camera;
-    const dw = ctx.canvas.width + TILE_DERIVE_PAD * 2;
-    const dh = ctx.canvas.height + TILE_DERIVE_PAD * 2;
-    if (!tile.dcv || tile.dcv.width !== dw || tile.dcv.height !== dh) {
-        tile.dcv = document.createElement('canvas');
-        tile.dcv.width = dw; tile.dcv.height = dh;
-        tile.dg = tile.dcv.getContext('2d');
-    }
-    const g = tile.dg;
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    g.clearRect(0, 0, dw, dh);
-    g.translate(dw / 2, dh / 2);
-    g.rotate(-cam.rotation);
-    g.translate(-cam.x, -cam.y);
-    g.drawImage(tile.cv, tile.cx - tile.r, tile.cy - tile.r);
-    tile.dRot = cam.rotation;
-    tile.dCx = cam.x; tile.dCy = cam.y;
-    tile.dCool = frameCount;
-    window.__wtDerives = (window.__wtDerives || 0) + 1;
 }
 
 // Called with ctx in WORLD space (the camera transform applied), like the live layers.
+// One bilinear drawImage at the live transform — exact and smooth every frame.
 function blitWorldTile(tile, ctx) {
     if (!tile.content) return;
-    const cam = state.camera;
-    const cs = Math.cos(cam.rotation), sn = Math.sin(cam.rotation);
-    // Is the derived rect still good for this frame's rotation and pan?
-    const usable = () => {
-        if (tile.dRot === null || Math.abs(cam.rotation - tile.dRot) > TILE_ROT_EPS) return false;
-        const wx = tile.dCx - cam.x, wy = tile.dCy - cam.y;
-        tile._sx = wx * cs + wy * sn;        // pan since derive, in screen px
-        tile._sy = -wx * sn + wy * cs;
-        return Math.abs(tile._sx) < TILE_DERIVE_PAD - 2 && Math.abs(tile._sy) < TILE_DERIVE_PAD - 2;
-    };
-    if (!usable()) {
-        const settled = (window.__camRotDelta || 0) <= TILE_ROT_SETTLED;
-        const cooled = tile.dRot === null || frameCount - (tile.dCool || 0) >= TILE_DERIVE_COOLDOWN;
-        if (settled && cooled) deriveWorldTile(tile, ctx);
-        if (!usable()) {
-            // Actively turning (or derive on cooldown): the rotated master blit,
-            // transient by design.
-            ctx.drawImage(tile.cv, tile.cx - tile.r, tile.cy - tile.r);
-            return;
-        }
+    ctx.drawImage(tile.cv, tile.cx - tile.r, tile.cy - tile.r);
+}
+
+// ── THE ADAPTIVE CHOOSER ────────────────────────────────────────────────────
+// A rotated master blit costs one screen of the rasterizer's generic path (~6-9 ms
+// software, ~free on a GPU); the live path costs one screen PER ZONE STACKED OVER THE
+// VIEW — Pearl Lagoon sails between five bars of 13-29 screens each, so its seabed
+// paints 4-5 screenfuls a frame (40 ms software), while the open ocean's one vast
+// painted zone is a single screenful however huge it is. So the decision is that
+// number, computed directly each frame: the summed screen-clamped area of the
+// stratum's zone shapes overlapping the view (~30 circle tests, free), smoothed, with
+// hysteresis. Above the threshold the stratum blits its tile; below it draws live.
+// Both modes render the identical picture, so a mid-race switch is invisible.
+//
+// ⚠️ Estimators that DID NOT survive, so nobody rebuilds them: per-call performance.now
+// (canvas commands queue — it times RECORDING, not raster; locked the wrong mode
+// everywhere); whole-frame dt A/B (rAF cadence and vsync swamp the signal whenever the
+// frame fits the budget); bake-time item counts and summed sprite areas (hollow rings,
+// margin-padded sprites and course-clustered content each mispriced some venue).
+// ⚠️ Only the SEABED and FLOAT strata are ever tiled — large, dense, mostly-static
+// content. Land, canopy and surface props always draw live: cheap on a GPU, and their
+// fades and floes are per-frame anyway.
+const STRATUM_FILL_ON = 2.6;    // smoothed screenfuls of zone fill to switch to blit
+const STRATUM_FILL_OFF = 2.0;   // ...and back to live (hysteresis)
+
+function adaptiveStratum(tile, ctx, keyPart, bakeFn, liveAllFn, liveDriftFn, fillFn) {
+    const c = state.course;
+    if (tile.calCourse !== c || tile.calKey !== keyPart) {
+        tile.calCourse = c; tile.calKey = keyPart;
+        tile.mode = 'live'; tile.fillAvg = null;
     }
-    // Fast path: translation-only nearest blit in screen space.
-    ctx.save();
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.imageSmoothingEnabled = false;
-    ctx.drawImage(tile.dcv,
-        ctx.canvas.width / 2 - tile.dcv.width / 2 + tile._sx,
-        ctx.canvas.height / 2 - tile.dcv.height / 2 + tile._sy);
-    ctx.restore();
+    const fill = fillFn(ctx);
+    tile.fillAvg = tile.fillAvg === null ? fill : tile.fillAvg * 0.95 + fill * 0.05;
+    if (tile.mode === 'live' && tile.fillAvg > STRATUM_FILL_ON) tile.mode = 'blit';
+    else if (tile.mode === 'blit' && tile.fillAvg < STRATUM_FILL_OFF) tile.mode = 'live';
+    if (tile.mode === 'live') { liveAllFn(ctx); return; }
+    ensureWorldTile(tile, ctx, keyPart, bakeFn);
+    blitWorldTile(tile, ctx);
+    if (liveDriftFn) liveDriftFn(ctx);
+}
+
+// Screen-clamped area (in screenfuls) of the given zone class overlapping the view.
+function zoneViewFill(ctx, isBottomPlane) {
+    const c = state.course;
+    if (!c || !c.islands) return 0;
+    const S = ctx.canvas.width * ctx.canvas.height;
+    const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.5;
+    const cam = state.camera;
+    let fill = 0;
+    for (const isl of c.islands) {
+        if (isl.hidden) continue;
+        let zone;
+        if (isl.veg) {
+            const spec = VEG_STYLES[isl.veg];
+            zone = spec && (spec.plane === 'bottom') === isBottomPlane;
+        } else {
+            zone = isBottomPlane && (isl.paint || isl.awash || isl.reef);
+        }
+        if (!zone) continue;
+        const lim = viewR + isl.radius;
+        if ((isl.x - cam.x) ** 2 + (isl.y - cam.y) ** 2 > lim * lim) continue;
+        fill += Math.min(Math.PI * isl.radius * isl.radius, S) / S;
+    }
+    return fill;
 }
 
 // THE SEABED UNDERLAY: shallows, shoals, bottom vegetation, reefs — in their stacking
@@ -25302,17 +25313,22 @@ function drawSeabedUnderlay(ctx) {
     const W = window.WATER_CONFIG || {};
     const key = 'seabed|' + (W.heroColor || '') + '|' + (W.shallowColor || '')
               + '|' + (W.baseColor || '');
-    ensureWorldTile(_seabedTile, ctx, key, (g, pending) => {
-        drawShallows(g);
-        drawShoals(g);
-        drawVegetation(g, 'bottom');
-        drawReefs(g);
-        // Seabed props (coral heads and their kin) are static too; they close out the
-        // bottom inside the same tile. Drifting ones draw live after the blit.
-        drawProps(g, 'seabed', p => p.motion !== 'drift', pending);
-    });
-    blitWorldTile(_seabedTile, ctx);
-    drawProps(ctx, 'seabed', p => p.motion === 'drift');
+    adaptiveStratum(_seabedTile, ctx, key,
+        (g, pending) =>
+            // Seabed props (coral heads and their kin) are static too; they close out
+            // the bottom inside the same tile. Drifters draw live after the blit.
+            drawShallows(g) + drawShoals(g)
+            + drawVegetation(g, 'bottom') + drawReefs(g)
+            + drawProps(g, 'seabed', p => p.motion !== 'drift', pending),
+        (g) => {
+            drawShallows(g);
+            drawShoals(g);
+            drawVegetation(g, 'bottom');
+            drawReefs(g);
+            drawProps(g, 'seabed');
+        },
+        (g) => drawProps(g, 'seabed', p => p.motion === 'drift'),
+        (g) => zoneViewFill(g, true));
 }
 
 // THE LAND: island sprites and mask landmasses are static; the mask fills in particular
@@ -25322,46 +25338,17 @@ function drawSeabedUnderlay(ctx) {
 // as before (the arctic). The pending images are the palm (island sprites bake treeless
 // before it lands and mark themselves unbaked) and the land texture tiles (mask fills
 // fall back to flat color until theirs arrive).
-const _landTile = {};
+// Land, canopy and surface props draw LIVE — see the chooser's header for why their
+// area estimates could not be trusted. The wrappers stay so draw() reads as strata.
 function drawIslandsCached(ctx) {
-    const c = state.course;
-    if (!c || !c.islands || !c.islands.length) return;
-    if (c._anyFloe === undefined) c._anyFloe = c.islands.some(i => i.isFloe);
-    if (c._anyFloe) { drawIslands(ctx); return; }
-    ensureWorldTile(_landTile, ctx, 'land', (g, pending) => {
-        const drew = drawIslands(g);
-        if (typeof palmImg !== 'undefined' && palmImg && !palmImg.complete) pending.push(palmImg);
-        if (typeof LAND_TEXTURES === 'object') for (const k in LAND_TEXTURES) {
-            const t = LAND_TEXTURES[k];
-            if (t && t.img && !t.img.complete) pending.push(t.img);
-        }
-        return drew;
-    });
-    blitWorldTile(_landTile, ctx);
+    drawIslands(ctx);
 }
 
-// THE CANOPY, split by what can fade. canopyAlpha is player-relative and its range
-// (20 hulls) exceeds the view radius, so ANY crown that overhangs water can be mid-fade
-// on any frame — those draw live. A crown wholly over land can never fade
-// (crownOverWater is precomputed and static), so the forest interior — most of a wooded
-// venue's canopy fill — bakes at its constant alpha. The one z-order change: every
-// cached on-land crown now draws under every live over-water one, where document order
-// used to interleave them; two overlapping crowns from the two classes may swap
-// stacking, which is invisible in foliage.
-const _canopyTile = {};
+// THE CANOPY draws live: canopyAlpha is player-relative and its range (20 hulls)
+// exceeds the view radius, so ANY crown that overhangs water can be mid-fade on any
+// frame — there is nothing static enough here to be worth a tile.
 function drawCanopyCached(ctx) {
-    const c = state.course;
-    if (!c || !c.props || !c.props.length) return;
-    ensureWorldTile(_canopyTile, ctx, 'canopy', (g, pending) =>
-        drawProps(g, 'canopy', (p, w) => p.motion !== 'drift' && !crownOverWater(p, w), pending));
-    blitWorldTile(_canopyTile, ctx);
-
-    // Over-water crowns draw LIVE: their alpha is a per-frame function of player
-    // distance. (A "bake at full alpha + one destination-in radial gradient" scheme was
-    // tried and REVERTED: a full-screen gradient fill is ~3 ms in this rasterizer plus a
-    // scratch round-trip — it benched 6.6 ms against the live path's 2.7. The fade is
-    // gameplay — the hull must show under a crown — so its live cost is honest.)
-    drawProps(ctx, 'canopy', (p, w) => p.motion === 'drift' || crownOverWater(p, w));
+    drawProps(ctx, 'canopy');
 }
 
 // THE FLOATING STRATUM: surface vegetation (a lily bed, a hyacinth mat) and float props
@@ -25369,32 +25356,29 @@ function drawCanopyCached(ctx) {
 // floats over a mat, which is where a drifting thing belongs.
 // SURFACE PROPS: a trunk, a beached log — things the ground holds up. Static, same
 // split as the canopy: non-drifters bake, drifters draw live over the tile.
-const _surfacePropsTile = {};
 function drawSurfacePropsCached(ctx) {
-    const c = state.course;
-    if (!c || !c.props || !c.props.length) return;
-    ensureWorldTile(_surfacePropsTile, ctx, 'surfprops', (g, pending) =>
-        drawProps(g, 'surface', p => p.motion !== 'drift', pending));
-    blitWorldTile(_surfacePropsTile, ctx);
-    drawProps(ctx, 'surface', p => p.motion === 'drift');
+    drawProps(ctx, 'surface');
 }
 
 const _floatTile = {};
 function drawFloatStratumCached(ctx) {
     const c = state.course;
     if (!c || (!c._hasVeg && !(c.props && c.props.length))) return;
-    ensureWorldTile(_floatTile, ctx, 'float', (g, pending) =>
-        (drawVegetation(g, 'surface') || 0)
-        + drawProps(g, 'float', p => p.motion !== 'drift', pending));
-    blitWorldTile(_floatTile, ctx);
-    drawProps(ctx, 'float', p => p.motion === 'drift');
+    adaptiveStratum(_floatTile, ctx, 'float',
+        (g, pending) =>
+            (drawVegetation(g, 'surface') || 0)
+            + drawProps(g, 'float', p => p.motion !== 'drift', pending),
+        (g) => { drawVegetation(g, 'surface'); drawProps(g, 'float'); },
+        (g) => drawProps(g, 'float', p => p.motion === 'drift'),
+        (g) => zoneViewFill(g, false));
 }
 
 function drawShoals(ctx) {
-    if (!state.course || !state.course._hasShoals) return;
+    if (!state.course || !state.course._hasShoals) return 0;
     const viewRadius = cullRadius(ctx);
     const camX = state.camera.x, camY = state.camera.y;
     const view = viewBoxWorld(ctx);
+    let drawn = 0;
     for (const isl of state.course.islands) {
         // Paint zones are drawShallows' business — a 0-drag bake here would be invisible.
         if (!isl.awash || isl.hidden || isl.paint) continue;
@@ -25405,7 +25389,9 @@ function drawShoals(ctx) {
         if (!isl._shoalSprite || isl._shoalSprite.tint !== tint) bakeShoalSprite(isl);
         const s = isl._shoalSprite;
         drawZoneSprite(ctx, s.canvas, isl.x, isl.y, s.r, view);
+        drawn++;
     }
+    return drawn;
 }
 
 // Ice is faceted, not rounded — the style guide asks for literal low-poly
@@ -25682,7 +25668,7 @@ function drawIslands(ctx) {
             ctx.lineWidth = 6;
             ctx.stroke();
             ctx.restore();
-            drawn++;
+                drawn++;
             continue;
         }
 

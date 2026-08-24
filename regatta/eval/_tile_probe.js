@@ -22,13 +22,11 @@ const VENUE = process.env.PERF_VENUE || 'lake';
     for (let i = 0; i < 300; i++) draw();
     const ms = (performance.now() - t0) / 300;
     const tiles = {};
-    for (const [n, t] of [['seabed', _seabedTile], ['land', _landTile],
-                          ['canopy', _canopyTile], ['float', _floatTile]]) {
-      tiles[n] = { content: t.content, key: (t.key || '').slice(0, 40),
-                   pend: t.pending ? t.pending.length : -1,
-                   pendComplete: t.pending ? t.pending.filter(i => i.complete).length : -1 };
+    for (const [n, t] of [['seabed', _seabedTile], ['float', _floatTile]]) {
+      tiles[n] = { mode: t.mode, fill: t.fillAvg == null ? null : +t.fillAvg.toFixed(2) };
     }
     return { bakes: window.__wtBakes, ms: ms.toFixed(2), tiles,
+             modes: window.__wtModes || {},
              anyFloe: state.course._anyFloe,
              camera: [state.camera.x | 0, state.camera.y | 0] };
   }, VENUE);

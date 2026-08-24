@@ -34,7 +34,9 @@ const ROOT = process.env.VSHOT_ROOT || '.';
   // Let lazy sprite art land, then draw a settled frame. state.time is frozen with the
   // sim, so animated layers (foam scroll, glints) paint identically across trees.
   await page.waitForTimeout(3000);
-  await page.evaluate(() => { for (let i = 0; i < 5; i++) draw(); });
+  // 25 draws: past the adaptive strata's ~14 calibration frames, so the capture
+  // exercises whichever path (live or tile blit) the chooser locked.
+  await page.evaluate(() => { for (let i = 0; i < 25; i++) draw(); });
   const canvas = await page.$('#gameCanvas') || await page.$('canvas');
   await canvas.screenshot({ path: OUT });
   console.log(OUT, 'errors:', errs.length ? errs.slice(0, 3) : 'none');

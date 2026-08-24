@@ -30,8 +30,13 @@ const fs = require('fs');
   // indicators all land in screenshots, and a panel fading on WALL-clock timing mid-
   // sequence reads as a giant spurious delta (it did — a 60 where water is ~0.1).
   const clip = { x: 60, y: 560, width: 240, height: 240 };
+  // ⚠️ Pan AND slow rotation drift. The camera exponentially tracks a wobbling heading,
+  // so its rotation NEVER settles — 0.0004 rad/frame is the sailing-straight regime.
+  // The first jitter fix passed a pan-only version of this probe and still jumped in
+  // play, because the jumping had moved to the rotation domain (stale-angle caches
+  // snapping on re-derive). Any cache that quantizes rotation fails HERE.
   for (let f = 0; f < 16; f++) {
-    await page.evaluate(() => { state.camera.x += 0.3; draw(); });
+    await page.evaluate(() => { state.camera.x += 0.3; state.camera.rotation += 0.0004; draw(); });
     await page.screenshot({ path: `${OUT}/${VENUE}_${String(f).padStart(2, '0')}.png`, clip });
   }
   console.log(OUT + '/' + VENUE + '_NN.png written; errors:', errs.length ? errs.slice(0, 3) : 'none');
