@@ -6403,6 +6403,7 @@ function rapidsTiles(color) {
 // the main canvas would erase the river underneath. The offscreen layer holds only foam,
 // so the erase feathers the foam and nothing else.
 let _rapidsFoamCv = null;
+let _rapidsScratchCv = null;   // per-region compositing rect — see the mask note below
 function drawRapidsFoam(ctx) {
     const regs = state.course.rapidsRegions;
     if (!regs || !regs.length) return;
@@ -6423,13 +6424,28 @@ function drawRapidsFoam(ctx) {
 
     if (!_rapidsFoamCv) _rapidsFoamCv = document.createElement('canvas');
     const cv = _rapidsFoamCv;
-    if (cv.width !== ctx.canvas.width || cv.height !== ctx.canvas.height) {
-        cv.width = ctx.canvas.width; cv.height = ctx.canvas.height;
-    }
+    // HALF RESOLUTION, same argument as the water's offscreen (water.js): everything in
+    // this layer is soft noise — pattern washes, foam speckle, a feathered rim — with no
+    // hard edge to alias, and the layer was 21.3 ms of Sockeye Run's 51 ms frame at full
+    // res. Quarter the pixels, one upscaled blit. Nearest-neighbour on the way up, also
+    // the water's answer: bilinear is what cost the water pass 4 ms.
+    const FOAM_RS = 0.35;
+    const fw = Math.max(1, Math.ceil(ctx.canvas.width * FOAM_RS));
+    const fh = Math.max(1, Math.ceil(ctx.canvas.height * FOAM_RS));
+    if (cv.width !== fw || cv.height !== fh) { cv.width = fw; cv.height = fh; }
     const g = cv.getContext('2d');
     g.setTransform(1, 0, 0, 1, 0, 0);
-    g.clearRect(0, 0, cv.width, cv.height);
-    g.setTransform(ctx.getTransform());   // same camera as the scene, world coords below
+    g.clearRect(0, 0, fw, fh);
+    // Same camera as the scene, scaled down: world coords below, quarter the raster.
+    const foamM = new DOMMatrix().scaleSelf(FOAM_RS, FOAM_RS).multiplySelf(ctx.getTransform());
+    g.setTransform(foamM);
+    // Each region composes in its own rect of this scratch, gets its rim mask applied
+    // with destination-in there, and is copied to the foam canvas axis-aligned — so one
+    // region's mask can never erase another's foam.
+    if (!_rapidsScratchCv) _rapidsScratchCv = document.createElement('canvas');
+    const scv = _rapidsScratchCv;
+    if (scv.width !== fw || scv.height !== fh) { scv.width = fw; scv.height = fh; }
+    const sg = scv.getContext('2d');
 
     for (const r of vis) {
         const turb = r.turbulence != null ? r.turbulence : 0.5;
@@ -6448,16 +6464,38 @@ function drawRapidsFoam(ctx) {
         // the same knots-to-units rate the streak particles ride, so the two agree.
         const adv = t * 62.5 * kt;
 
-        const path = () => {
-            g.beginPath();
-            const poly = r.poly;
-            g.moveTo(poly[0][0], poly[0][1]);
-            for (let i = 1; i < poly.length; i++) g.lineTo(poly[i][0], poly[i][1]);
-            g.closePath();
-        };
-        g.save();
-        path();
-        g.clip();
+        // The outline as a cached Path2D: the poly never changes, and rebuilding a
+        // many-vertex path every frame (plus 16 more walks for the rim below) was CPU
+        // spent re-describing static geometry.
+        if (!r._polyP2D) {
+            const pp = new Path2D(), poly = r.poly;
+            pp.moveTo(poly[0][0], poly[0][1]);
+            for (let i = 1; i < poly.length; i++) pp.lineTo(poly[i][0], poly[i][1]);
+            pp.closePath();
+            r._polyP2D = pp;
+        }
+        // The region's rect in foam-canvas pixels: where the scratch is cleared, clipped,
+        // composed and copied back from. The pad covers the rim wobble's outward reach.
+        const RPAD = 12;
+        let rx0 = Infinity, ry0 = Infinity, rx1 = -Infinity, ry1 = -Infinity;
+        for (const [wx, wy] of [[bb.minX - RPAD, bb.minY - RPAD], [bb.maxX + RPAD, bb.minY - RPAD],
+                                [bb.minX - RPAD, bb.maxY + RPAD], [bb.maxX + RPAD, bb.maxY + RPAD]]) {
+            const sx = foamM.a * wx + foamM.c * wy + foamM.e;
+            const sy = foamM.b * wx + foamM.d * wy + foamM.f;
+            if (sx < rx0) rx0 = sx; if (sx > rx1) rx1 = sx;
+            if (sy < ry0) ry0 = sy; if (sy > ry1) ry1 = sy;
+        }
+        rx0 = Math.max(0, Math.floor(rx0)); ry0 = Math.max(0, Math.floor(ry0));
+        rx1 = Math.min(fw, Math.ceil(rx1)); ry1 = Math.min(fh, Math.ceil(ry1));
+        if (rx1 <= rx0 || ry1 <= ry0) continue;
+
+        sg.save();
+        sg.setTransform(1, 0, 0, 1, 0, 0);
+        sg.clearRect(rx0, ry0, rx1 - rx0, ry1 - ry0);
+        sg.beginPath();
+        sg.rect(rx0, ry0, rx1 - rx0, ry1 - ry0);
+        sg.clip();
+        sg.setTransform(foamM);
 
         // Texture: a faint broad wash under a foam pass whose TILE DENSITY follows
         // turbulence — coverage is the cue, alpha only polishes it. Both stretched
@@ -6470,15 +6508,18 @@ function drawRapidsFoam(ctx) {
             { tile: foamTile, a: 0.34 + 0.66 * turb, scale: 0.7, speed: 1.0, across: -churn * 0.5 }
         ];
         for (const p of passes) {
-            const pat = g.createPattern(p.tile, 'repeat');
+            // The pattern is a pure function of the tile canvas, so it lives on it —
+            // createPattern per pass per region per frame was pointless CPU. setTransform
+            // below re-aims the shared object every use; fine, the fill is immediate.
+            const pat = p.tile._pat || (p.tile._pat = sg.createPattern(p.tile, 'repeat'));
             const m = new DOMMatrix()
                 .translate(ux * adv * p.speed - uy * p.across, uy * adv * p.speed + ux * p.across)
                 .rotate(angDeg)
                 .scale((hasFlow ? 2.8 : 1) * p.scale, p.scale);
             pat.setTransform(m);
-            g.fillStyle = pat;
-            g.globalAlpha = p.a * (nite > 0 ? 0.55 : 1);
-            g.fillRect(bb.minX, bb.minY, bb.maxX - bb.minX, bb.maxY - bb.minY);
+            sg.fillStyle = pat;
+            sg.globalAlpha = p.a * (nite > 0 ? 0.55 : 1);
+            sg.fillRect(bb.minX, bb.minY, bb.maxX - bb.minX, bb.maxY - bb.minY);
         }
 
         // Bright crests: a world-anchored hash grid of small glints that brighten and
@@ -6487,7 +6528,7 @@ function drawRapidsFoam(ctx) {
         const step = 30;
         const x0 = Math.max(bb.minX, cam.x - viewR), x1 = Math.min(bb.maxX, cam.x + viewR);
         const y0 = Math.max(bb.minY, cam.y - viewR), y1 = Math.min(bb.maxY, cam.y + viewR);
-        g.fillStyle = color;
+        sg.fillStyle = color;
         for (let gy = Math.floor(y0 / step) * step; gy <= y1; gy += step) {
             for (let gx = Math.floor(x0 / step) * step; gx <= x1; gx += step) {
                 let h = (gx * 374761393 + gy * 668265263) | 0;
@@ -6501,18 +6542,17 @@ function drawRapidsFoam(ctx) {
                 const px = gx + (h2 - 0.5) * step * 0.9;
                 const py = gy + (h1 - 0.5) * step * 0.9;
                 const rr = 2.2 + h2 * 2.8;
-                g.globalAlpha = (0.25 + 0.5 * turb) * tw * (nite > 0 ? 0.7 : 1);
-                g.beginPath();
-                g.moveTo(px + rr, py);
-                g.arc(px, py, rr, 0, Math.PI * 2);
+                sg.globalAlpha = (0.25 + 0.5 * turb) * tw * (nite > 0 ? 0.7 : 1);
+                sg.beginPath();
+                sg.moveTo(px + rr, py);
+                sg.arc(px, py, rr, 0, Math.PI * 2);
                 // A second disc offset just under a radius along the flow, so the two
                 // FUSE into one lozenge — separated they read as paired dots.
-                g.moveTo(px + ux * rr * 0.8 + rr * 0.8, py + uy * rr * 0.8);
-                g.arc(px + ux * rr * 0.8, py + uy * rr * 0.8, rr * 0.8, 0, Math.PI * 2);
-                g.fill();
+                sg.moveTo(px + ux * rr * 0.8 + rr * 0.8, py + uy * rr * 0.8);
+                sg.arc(px + ux * rr * 0.8, py + uy * rr * 0.8, rr * 0.8, 0, Math.PI * 2);
+                sg.fill();
             }
         }
-        g.restore();
 
         // THE RIM: eat the foam back over the falloff band, in steps — the poor man's
         // smoothstep, no blur. The stroke is centred on the outline, so the outer half
@@ -6595,38 +6635,66 @@ function drawRapidsFoam(ctx) {
                 s += el;
             }
             r._rimPath = pts;
+            // ...and as a Path2D, built once: the 16 rim strokes below used to re-walk
+            // these ~220 points each, every frame.
+            const rp = new Path2D();
+            rp.moveTo(pts[0][0], pts[0][1]);
+            for (let i = 1; i < pts.length; i++) rp.lineTo(pts[i][0], pts[i][1]);
+            rp.closePath();
+            r._rimP2D = rp;
         }
-        const rimPath = () => {
-            const pts = r._rimPath;
-            g.beginPath();
-            g.moveTo(pts[0][0], pts[0][1]);
-            for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
-            g.closePath();
-        };
+        // THE MASK: interior fill minus the sixteen erase strokes, BAKED ONCE per region.
+        // The rim is static geometry — the outline, the wobble, the solved alpha ramp all
+        // never change — yet the sixteen wide strokes were being re-rasterized every frame
+        // and were most of the foam layer's remaining cost. Baked, the whole rim (and the
+        // clip: alpha is zero outside the outline) is one destination-in drawImage.
+        //
+        // Sixteen steps on a (1-f)^2.6 ramp, solved rather than guessed: the numbers are
+        // the pair that minimises the LARGEST single jump in the cumulative erase while
+        // still reaching ~92% at the outline. It profiles 92/88/78/71/58/45/39/28/22/12/0
+        // with no step over 6.7%, against the old three strokes' 89/75/55/0 whose smallest
+        // jump was 20 points — and a 20-point jump in a fade IS a band.
+        if (!r._maskCv) {
+            const MPAD = 12;                       // covers the wobble's outward reach
+            const mw = bb.maxX - bb.minX + MPAD * 2, mh = bb.maxY - bb.minY + MPAD * 2;
+            const msc = Math.min(0.5, 2000 / Math.max(mw, mh));   // mask px per world unit
+            const mc = document.createElement('canvas');
+            mc.width = Math.max(4, Math.ceil(mw * msc));
+            mc.height = Math.max(4, Math.ceil(mh * msc));
+            const mg = mc.getContext('2d');
+            mg.setTransform(msc, 0, 0, msc, (MPAD - bb.minX) * msc, (MPAD - bb.minY) * msc);
+            mg.fillStyle = '#fff';
+            mg.fill(r._polyP2D);
+            mg.globalCompositeOperation = 'destination-out';
+            mg.strokeStyle = '#000';
+            const RIM_STEPS = 16;
+            for (let i = 0; i < RIM_STEPS; i++) {
+                const f = (i + 1) / RIM_STEPS;             // 1 = widest, reaches furthest in
+                mg.globalAlpha = 0.06 + 0.34 * Math.pow(1 - f, 2.6);
+                mg.lineWidth = fall * 1.5 * f;
+                mg.stroke(r._rimP2D);
+            }
+            r._maskCv = mc; r._maskPad = MPAD; r._maskW = mw; r._maskH = mh;
+        }
+        // Shape and rim in one composite, confined to this region's clip rect...
+        sg.globalCompositeOperation = 'destination-in';
+        sg.globalAlpha = 1;
+        sg.drawImage(r._maskCv, bb.minX - r._maskPad, bb.minY - r._maskPad, r._maskW, r._maskH);
+        sg.restore();
+        // ...then the finished region lands on the foam canvas axis-aligned.
         g.save();
-        g.globalCompositeOperation = 'destination-out';
-        g.strokeStyle = '#000';
-        // Sixteen steps on a (1-f)^2.6 ramp. Solved rather than guessed: the numbers are the
-        // pair that minimises the LARGEST single jump in the cumulative erase while still
-        // reaching ~92% at the outline. It profiles 92/88/78/71/58/45/39/28/22/12/0 with no
-        // step over 6.7%, against the old three strokes' 89/75/55/0 whose smallest jump was
-        // 20 points — and a 20-point jump in a fade IS a band.
-        const RIM_STEPS = 16;
-        for (let i = 0; i < RIM_STEPS; i++) {
-            const f = (i + 1) / RIM_STEPS;                 // 1 = widest, reaches furthest in
-            g.globalAlpha = 0.06 + 0.34 * Math.pow(1 - f, 2.6);
-            g.lineWidth = fall * 1.5 * f;
-            rimPath();
-            g.stroke();
-        }
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.drawImage(scv, rx0, ry0, rx1 - rx0, ry1 - ry0, rx0, ry0, rx1 - rx0, ry1 - ry0);
         g.restore();
     }
 
-    // Composite the finished foam layer over the scene in one draw.
+    // Composite the finished foam layer over the scene in one upscaled draw.
+    // ⚠️ smoothing off inside save/restore — it is canvas state (see water.js).
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.globalAlpha = 1;
-    ctx.drawImage(cv, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(cv, 0, 0, ctx.canvas.width, ctx.canvas.height);
     ctx.restore();
 }
 
@@ -8791,9 +8859,13 @@ function propGrid() {
     return (course._propGrid = { src: course.props, cells });
 }
 
-function drawProps(ctx, plane) {
+// `filter(p, w)`: optional predicate the world-tile caches use to split a plane into its
+// cacheable (static) and live (fading/drifting) populations — see drawCanopyCached.
+// `pending`: optional array; sprites whose image has not finished loading are pushed so a
+// tile baked too early knows to rebake when the art lands. Returns the number drawn.
+function drawProps(ctx, plane, filter, pending) {
     const props = state.course && state.course.props;
-    if (!props || !props.length) return;
+    if (!props || !props.length) return 0;
     const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
     const viewRadius = cullRadius(ctx);
     const camX = state.camera.x, camY = state.camera.y;
@@ -8820,14 +8892,24 @@ function drawProps(ctx, plane) {
         visit.sort((a, b) => a - b);
     }
     const list = grid ? visit.map(i => props[i]) : props;
+    let drawn = 0;
     for (const p of list) {
         // A `scatter` kind is a GROUP, not a sprite: one placement stands for a drift of
         // several animals that its own renderer draws and animates. Drawing the bell here
         // as well would put a motionless extra one at the placement point.
         if ((reg[p.kind] || {}).scatter) continue;
         const s = propSpriteFor(p, plane);
-        if (!s || !s.img.complete || !s.img.naturalWidth) continue;
+        if (!s) continue;
+        if (!s.img.complete || !s.img.naturalWidth) {
+            // ⚠️ Only a STILL-LOADING image goes on the tile's pending list. A failed load
+            // is complete=true/naturalWidth=0, and pending-listing one made `landed` true
+            // every frame — the tile rebaked its ~5 screens of fill per frame, and the
+            // caches benched SLOWER than the live paths they replaced.
+            if (pending && !s.img.complete) pending.push(s.img);
+            continue;
+        }
         const w = s.world * (p.scale || 1);
+        if (filter && !filter(p, w)) continue;
         const limit = viewRadius + w * 0.5;
         const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
         if ((x - camX) ** 2 + (y - camY) ** 2 > limit ** 2) continue;
@@ -8847,7 +8929,9 @@ function drawProps(ctx, plane) {
         if (p.heading) ctx.rotate(p.heading);
         drawSpriteBoxed(ctx, plane === 'seabed' ? submergedSprite(s) : s.img, s, w);
         ctx.restore();
+        drawn++;
     }
+    return drawn;
 }
 
 // Drift, for props whose motion says so: they ride the same current the boats feel,
@@ -18531,14 +18615,43 @@ function drawNightWater(ctx) {
     // of the surface and the ambient wash knocks it back with the rest of the water, so it
     // reads as sea catching the moon rather than haze lying on it. Kept faint: the glints
     // are still the effect, this only gives them water to sit on.
-    const glow = ctx.createLinearGradient(0, -band, 0, band);
-    glow.addColorStop(0, 'rgba(214,230,255,0)');
-    glow.addColorStop(0.5, `rgba(214,230,255,${(0.15 * n).toFixed(3)})`);
-    glow.addColorStop(1, 'rgba(214,230,255,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(-reach, -band, reach * 2, band * 2);
+    // BAKED: a gradient fillRect under rotation + 'lighter' over ~0.9M px was ~2 ms a
+    // frame for a strip that only changes with the night level or a resize. Rasterized
+    // once at quarter scale, blitted — the gradient is smooth, so the upscale is free.
+    if (!window._moonBand || window._moonBand.n !== n || window._moonBand.reach !== reach) {
+        const bs = 0.25;
+        const c = document.createElement('canvas');
+        c.width = Math.max(2, Math.ceil(reach * 2 * bs));
+        c.height = Math.max(2, Math.ceil(band * 2 * bs));
+        const bg = c.getContext('2d');
+        const g2 = bg.createLinearGradient(0, 0, 0, c.height);
+        g2.addColorStop(0, 'rgba(214,230,255,0)');
+        g2.addColorStop(0.5, `rgba(214,230,255,${(0.15 * n).toFixed(3)})`);
+        g2.addColorStop(1, 'rgba(214,230,255,0)');
+        bg.fillStyle = g2;
+        bg.fillRect(0, 0, c.width, c.height);
+        window._moonBand = { cv: c, n, reach };
+    }
+    ctx.drawImage(window._moonBand.cv, -reach, -band, reach * 2, band * 2);
 
-    ctx.fillStyle = MOON_COLOR;
+    // The flash, as a BAKED SPRITE. Each flash was a beginPath/ellipse/fill — path setup
+    // and rasterization for ~300 tiny shapes a frame, ~3 ms of Glowtide's budget. One
+    // baked lozenge drawn at (wide, len) is the same picture (the sprite's antialiased
+    // edge downscales into the same soft rim) for a fraction of the cost.
+    if (!window._moonLozenge) {
+        const c = document.createElement('canvas');
+        c.width = 16; c.height = 48;
+        const lg = c.getContext('2d');
+        lg.fillStyle = MOON_COLOR;
+        lg.beginPath();
+        lg.ellipse(8, 24, 8, 24, 0, 0, Math.PI * 2);
+        lg.fill();
+        window._moonLozenge = c;
+    }
+    const loz = window._moonLozenge;
+    // One matrix per flash instead of save/translate/rotate/restore — four state-stack
+    // ops on ~300 draws was a measurable slice of the loop itself.
+    const M0 = ctx.getTransform();
     // ⚠️ DASHES ACROSS THE PATH, IN A NARROW COLUMN — taken off the venue card rather than
     // invented. Two earlier cuts got this wrong in instructive ways. A soft gradient band
     // read as FOG, because a moon path has no haze in it. Then streaks elongated TOWARD the
@@ -18583,14 +18696,14 @@ function drawNightWater(ctx) {
         const wide = 1.6 + h2 * 2.4;
         const tilt = (h1 - 0.5) * 0.42;
         ctx.globalAlpha = Math.min(1, a);
-        ctx.save();
-        ctx.translate(along, across);
-        ctx.rotate(tilt);
-        ctx.beginPath();
-        ctx.ellipse(0, 0, wide * 0.5, len * 0.5, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
+        const cT = Math.cos(tilt), sT = Math.sin(tilt);
+        ctx.setTransform(
+            M0.a * cT + M0.c * sT, M0.b * cT + M0.d * sT,
+            -M0.a * sT + M0.c * cT, -M0.b * sT + M0.d * cT,
+            M0.a * along + M0.c * across + M0.e, M0.b * along + M0.d * across + M0.f);
+        ctx.drawImage(loz, -wide * 0.5, -len * 0.5, wide, len);
     }
+    ctx.setTransform(M0);
     ctx.restore();
 }
 
@@ -22577,6 +22690,10 @@ function drawSnowOverlay(ctx) {
 function draw() {
     frameCount++;
 
+    // How fast the camera is rotating this frame — the world tiles' settled test.
+    window.__camRotDelta = Math.abs(state.camera.rotation - (window.__lastCamRot ?? state.camera.rotation));
+    window.__lastCamRot = state.camera.rotation;
+
     // Draw Water Background (Screen Space)
     drawWater(ctx);
 
@@ -22598,17 +22715,12 @@ function draw() {
     updateJellyDrifts(performance.now());
     // Moonlight lies ON the water, under the waves, the wakes and the fleet.
     drawNightWater(ctx);
-    drawShallows(ctx);
-    drawShoals(ctx);
-    // Rooted bottom vegetation grows ON the bar, so it paints over the shoal sand — and
-    // still under every surface layer, like everything else down there. Floating weed is
-    // the same function on the other plane and is drawn much later; see below.
-    drawVegetation(ctx, 'bottom');
-    // The reef mass sits over sand and weed, then seabed props (coral heads and their
-    // kin) close out the bottom — a head placed on a reef draws over it, and every
-    // layer of the moving surface runs across them all.
-    drawReefs(ctx);
-    drawProps(ctx, 'seabed');
+    // Shallows, shoals, bottom vegetation, reefs and the seabed props — in that stacking
+    // order (grass grows ON the bar, the reef mass sits over sand and weed, a coral head
+    // placed on a reef draws over it) — all come out of one cached world-anchored
+    // composite: static content that was five full-screen passes a frame. See
+    // drawSeabedUnderlay. Every layer of the moving surface runs across it all.
+    drawSeabedUnderlay(ctx);
     // Jellyfish bodies ride with the seabed layer so the water draws over them — that is
     // what sells the depth they are rising and falling through. Their light comes later.
     drawJellyDrifts(ctx);
@@ -22686,8 +22798,11 @@ function draw() {
     // the coastline trims it — the same rule the float props follow, by the same mechanism,
     // costing nothing. If the hard trim ever needs softening, the fix is the mat's own edge
     // ramp (bakeVegSprite already feathers on distance-to-edge), NOT drawing it over the land.
-    drawVegetation(ctx, 'surface');
-    drawProps(ctx, 'float');
+    // Surface vegetation and float props come out of one cached world tile (they are
+    // static; only drifting flotsam draws live, over the beds) — see
+    // drawFloatStratumCached. The stacking inside the stratum is unchanged: bed first,
+    // props over it.
+    drawFloatStratumCached(ctx);
     // The lap at the foot of anything standing IN the water. Here rather than beside the
     // trunk sprite for the same reason the float props are here: it is a mark on the WATER,
     // so the land has to be able to cover it — a trunk set back on a bank gets no waterline,
@@ -22732,13 +22847,16 @@ function draw() {
     drawRoundingArrows(ctx);
 
     drawDisturbedAir(ctx);
-    drawIslands(ctx);
+    // Cached world tile on floe-free courses; the arctic (floes drift, spin, and may be
+    // authored behind headlands) draws live in document order as before.
+    drawIslandsCached(ctx);
     // Surf sits ON the shore, so it goes over the land and under the air layer.
     drawSurf(ctx);
     // Surface props: over the land they stand on, under everything that races. This is the
     // plane for a thing the GROUND holds up — a trunk, a beached log — as against `float`
     // above, which is for a thing the WATER holds up and which the land therefore covers.
-    drawProps(ctx, 'surface');
+    // Cached world tile; drifters draw live — see drawSurfacePropsCached.
+    drawSurfacePropsCached(ctx);
     drawTraffic(ctx);
     drawMarkShadows(ctx);
     drawMarkBodies(ctx);
@@ -22767,8 +22885,9 @@ function draw() {
     }
 
     // Canopy props: the crowns a hull sails beneath, so they go over the fleet — and
-    // under the air layer, because a wind comet passes over a treetop too.
-    drawProps(ctx, 'canopy');
+    // under the air layer, because a wind comet passes over a treetop too. Split by
+    // what can fade: on-land crowns from a cached world tile, over-water crowns live.
+    drawCanopyCached(ctx);
 
     // Spindrift is AIR — wind-torn snow streaming off the ice, so it passes over hulls
     // and sails like the comets do (owner's call: over the boats). Gated on
@@ -24970,10 +25089,11 @@ function drawReefs(ctx) {
 // surface, like the other seabed layers. 'surface' runs after the water is finished being
 // water: the mat is the last thing between the sea and the fleet.
 function drawVegetation(ctx, plane) {
-    if (!state.course || !state.course._hasVeg) return;
+    if (!state.course || !state.course._hasVeg) return 0;
     const viewRadius = cullRadius(ctx);
     const camX = state.camera.x, camY = state.camera.y;
     const view = viewBoxWorld(ctx);
+    let drawn = 0;
     for (const isl of state.course.islands) {
         if (!isl.veg || isl.hidden) continue;
         const spec = VEG_STYLES[isl.veg];
@@ -24991,7 +25111,9 @@ function drawVegetation(ctx, plane) {
         ctx.globalAlpha = spec.layerAlpha;
         drawZoneSprite(ctx, s.canvas, isl.x, isl.y, s.r, view);
         ctx.restore();
+        drawn++;
     }
+    return drawn;
 }
 
 // UNDER EVERYTHING ON THE WATER, and that is the whole statement the layer makes. The
@@ -25030,6 +25152,242 @@ function drawZoneSprite(ctx, canvas, cx, cy, r, view) {
     const k = canvas.width / size;
     ctx.drawImage(canvas, (ix0 - x0) * k, (iy0 - y0) * k, (ix1 - ix0) * k, (iy1 - iy0) * k,
                   ix0, iy0, ix1 - ix0, iy1 - iy0);
+}
+
+// ── WORLD-ANCHORED LAYER TILES ──────────────────────────────────────────────
+// A stratum whose content is STATIC IN WORLD SPACE — the seabed zones, the land, the
+// forest interior's canopy — does not need repainting every frame; it needs repainting
+// when the camera has moved far enough that new world enters the view. So such a stratum
+// renders ONCE into an offscreen tile a margin bigger than the view circle, and the frame
+// pays one drawImage. On Pearl Lagoon the seabed alone was four full-screen composites a
+// frame (shoals 14.5 ms, veg 13.3, reefs 13.2, shallows 7.5 of a 51 ms frame: the venue
+// was fill-rate bound on its own static bottom).
+//
+// The tile is axis-aligned in WORLD space and blitted through the camera transform, so
+// camera rotation costs nothing and never exposes an edge — the tile radius covers the
+// view circle at any heading. Rebakes happen when the camera nears the margin, when the
+// key changes (palette inputs live in the key), or when an image that was still loading
+// at bake time lands (`pending` — sprite art loads lazily, and a tile baked before the
+// palms arrived would otherwise stay treeless until the next camera rebake).
+//
+// The bake drives the REAL layer functions against the tile's own context, so there is
+// exactly one drawing of each stratum. Their culls keep working untouched: each culls
+// around state.camera — which IS the tile centre at bake time — with a radius derived
+// from ctx.canvas dims, and the tile being square makes that radius 1.41x its half-side,
+// covering the whole tile.
+//
+// `bake` may return a draw count; a tile that drew nothing skips its per-frame blit
+// (a full-screen drawImage is not free, and most venues lack most strata).
+// ⚠️ THE COST MODEL THAT SHAPES ALL OF THIS: in the 2d rasterizer, a full-screen
+// drawImage is 0.4 ms AXIS-ALIGNED and ~6 ms under the camera's ROTATION — a 15x cliff,
+// measured (eval/_blit_matrix.js), source size nearly irrelevant, and nearest-neighbour
+// only softens it to ~3.8. Rotation is also why the live strata were expensive in the
+// first place: every big zone sprite drawn through the rotated camera pays the generic
+// path. So the tile pipeline is built to pay rotation as rarely as possible:
+//
+//   master   world-axis-aligned, view + 400u margin. Baked by the real layer functions,
+//            whose sprite blits land axis-aligned = all fast path. Rebakes on camera
+//            margin, key change, course change, or a lazily-loaded image landing.
+//   derived  screen-oriented rect, view + 128px margin, cut from the master by the ONE
+//            rotated blit — and only when the camera's rotation has actually changed
+//            (and settled) or the pan exceeded the margin.
+//   frame    a translation-only NEAREST blit of the derived rect: 0.4 ms. Nearest
+//            because a FRACTIONAL translation under bilinear falls off the fast path
+//            (3.5 ms); at 1:1 scale nearest-vs-bilinear on a pure translation is a
+//            half-pixel quantization, invisible on these strata.
+//   turning  while the camera is actively rotating the derived rect is stale, so those
+//            frames pay the rotated master blit directly — bounded, transient, and the
+//            derive is NOT re-cut per frame (that would be the same rotated cost plus a
+//            copy).
+const WORLD_TILE_MARGIN = 400;
+const TILE_DERIVE_PAD = 128;      // screen-px pan margin of the derived rect
+const TILE_ROT_EPS = 0.0015;      // rad of rotation the fast path tolerates (~1px at edge)
+const TILE_ROT_SETTLED = 0.0004;  // rad/frame under which the camera counts as settled
+const TILE_DERIVE_COOLDOWN = 10;  // frames between derives during slow continuous drift
+
+function ensureWorldTile(tile, ctx, keyPart, bake) {
+    const cam = state.camera;
+    const rView = Math.ceil(Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.5);
+    const key = rView + '|' + keyPart;
+    const moved = (cam.x - tile.cx) ** 2 + (cam.y - tile.cy) ** 2
+                > (WORLD_TILE_MARGIN - 8) ** 2;
+    const landed = tile.pending && tile.pending.length && tile.pending.some(i => i.complete);
+    if (tile.course === state.course && tile.key === key && !moved && !landed) return;
+    const r = rView + WORLD_TILE_MARGIN, size = r * 2;
+    if (!tile.cv || tile.cv.width !== size) {
+        tile.cv = document.createElement('canvas');
+        tile.cv.width = tile.cv.height = size;
+        tile.g = tile.cv.getContext('2d');
+    }
+    const g = tile.g;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, size, size);
+    g.setTransform(1, 0, 0, 1, r - cam.x, r - cam.y);   // world -> tile
+    tile.pending = [];
+    window.__wtBakes = (window.__wtBakes || 0) + 1;   // probe hook: rebake thrash shows here
+    const drew = bake(g, tile.pending);
+    tile.content = drew === undefined || !!drew;
+    tile.drawn = typeof drew === 'number' ? drew : -1;
+    tile.course = state.course; tile.key = key;
+    tile.cx = cam.x; tile.cy = cam.y; tile.r = r;
+    tile.dRot = null;                                 // master changed: derived is stale
+}
+
+// One rotated blit: master -> screen-oriented derived rect, centred on the camera.
+function deriveWorldTile(tile, ctx) {
+    const cam = state.camera;
+    const dw = ctx.canvas.width + TILE_DERIVE_PAD * 2;
+    const dh = ctx.canvas.height + TILE_DERIVE_PAD * 2;
+    if (!tile.dcv || tile.dcv.width !== dw || tile.dcv.height !== dh) {
+        tile.dcv = document.createElement('canvas');
+        tile.dcv.width = dw; tile.dcv.height = dh;
+        tile.dg = tile.dcv.getContext('2d');
+    }
+    const g = tile.dg;
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, dw, dh);
+    g.translate(dw / 2, dh / 2);
+    g.rotate(-cam.rotation);
+    g.translate(-cam.x, -cam.y);
+    g.drawImage(tile.cv, tile.cx - tile.r, tile.cy - tile.r);
+    tile.dRot = cam.rotation;
+    tile.dCx = cam.x; tile.dCy = cam.y;
+    tile.dCool = frameCount;
+    window.__wtDerives = (window.__wtDerives || 0) + 1;
+}
+
+// Called with ctx in WORLD space (the camera transform applied), like the live layers.
+function blitWorldTile(tile, ctx) {
+    if (!tile.content) return;
+    const cam = state.camera;
+    const cs = Math.cos(cam.rotation), sn = Math.sin(cam.rotation);
+    // Is the derived rect still good for this frame's rotation and pan?
+    const usable = () => {
+        if (tile.dRot === null || Math.abs(cam.rotation - tile.dRot) > TILE_ROT_EPS) return false;
+        const wx = tile.dCx - cam.x, wy = tile.dCy - cam.y;
+        tile._sx = wx * cs + wy * sn;        // pan since derive, in screen px
+        tile._sy = -wx * sn + wy * cs;
+        return Math.abs(tile._sx) < TILE_DERIVE_PAD - 2 && Math.abs(tile._sy) < TILE_DERIVE_PAD - 2;
+    };
+    if (!usable()) {
+        const settled = (window.__camRotDelta || 0) <= TILE_ROT_SETTLED;
+        const cooled = tile.dRot === null || frameCount - (tile.dCool || 0) >= TILE_DERIVE_COOLDOWN;
+        if (settled && cooled) deriveWorldTile(tile, ctx);
+        if (!usable()) {
+            // Actively turning (or derive on cooldown): the rotated master blit,
+            // transient by design.
+            ctx.drawImage(tile.cv, tile.cx - tile.r, tile.cy - tile.r);
+            return;
+        }
+    }
+    // Fast path: translation-only nearest blit in screen space.
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(tile.dcv,
+        ctx.canvas.width / 2 - tile.dcv.width / 2 + tile._sx,
+        ctx.canvas.height / 2 - tile.dcv.height / 2 + tile._sy);
+    ctx.restore();
+}
+
+// THE SEABED UNDERLAY: shallows, shoals, bottom vegetation, reefs — in their stacking
+// order. Every tint in these strata derives from the WATER_CONFIG colors in the key
+// (see submergedTint), so the tile rebakes exactly when a component sprite would.
+const _seabedTile = {};
+function drawSeabedUnderlay(ctx) {
+    const c = state.course;
+    if (!c) return;
+    if (!(c._hasShallows || c._hasShoals || c._hasVeg || c._hasReefs)
+        && !(c.props && c.props.length)) return;
+    const W = window.WATER_CONFIG || {};
+    const key = 'seabed|' + (W.heroColor || '') + '|' + (W.shallowColor || '')
+              + '|' + (W.baseColor || '');
+    ensureWorldTile(_seabedTile, ctx, key, (g, pending) => {
+        drawShallows(g);
+        drawShoals(g);
+        drawVegetation(g, 'bottom');
+        drawReefs(g);
+        // Seabed props (coral heads and their kin) are static too; they close out the
+        // bottom inside the same tile. Drifting ones draw live after the blit.
+        drawProps(g, 'seabed', p => p.motion !== 'drift', pending);
+    });
+    blitWorldTile(_seabedTile, ctx);
+    drawProps(ctx, 'seabed', p => p.motion === 'drift');
+}
+
+// THE LAND: island sprites and mask landmasses are static; the mask fills in particular
+// were live many-vertex pattern-filled paths every frame (Sockeye Run's whole shoreline).
+// Floes drift and spin, and the one-pass document order deliberately lets an authored
+// venue tuck a floe behind a headland — so a course carrying ANY floe draws live, exactly
+// as before (the arctic). The pending images are the palm (island sprites bake treeless
+// before it lands and mark themselves unbaked) and the land texture tiles (mask fills
+// fall back to flat color until theirs arrive).
+const _landTile = {};
+function drawIslandsCached(ctx) {
+    const c = state.course;
+    if (!c || !c.islands || !c.islands.length) return;
+    if (c._anyFloe === undefined) c._anyFloe = c.islands.some(i => i.isFloe);
+    if (c._anyFloe) { drawIslands(ctx); return; }
+    ensureWorldTile(_landTile, ctx, 'land', (g, pending) => {
+        const drew = drawIslands(g);
+        if (typeof palmImg !== 'undefined' && palmImg && !palmImg.complete) pending.push(palmImg);
+        if (typeof LAND_TEXTURES === 'object') for (const k in LAND_TEXTURES) {
+            const t = LAND_TEXTURES[k];
+            if (t && t.img && !t.img.complete) pending.push(t.img);
+        }
+        return drew;
+    });
+    blitWorldTile(_landTile, ctx);
+}
+
+// THE CANOPY, split by what can fade. canopyAlpha is player-relative and its range
+// (20 hulls) exceeds the view radius, so ANY crown that overhangs water can be mid-fade
+// on any frame — those draw live. A crown wholly over land can never fade
+// (crownOverWater is precomputed and static), so the forest interior — most of a wooded
+// venue's canopy fill — bakes at its constant alpha. The one z-order change: every
+// cached on-land crown now draws under every live over-water one, where document order
+// used to interleave them; two overlapping crowns from the two classes may swap
+// stacking, which is invisible in foliage.
+const _canopyTile = {};
+function drawCanopyCached(ctx) {
+    const c = state.course;
+    if (!c || !c.props || !c.props.length) return;
+    ensureWorldTile(_canopyTile, ctx, 'canopy', (g, pending) =>
+        drawProps(g, 'canopy', (p, w) => p.motion !== 'drift' && !crownOverWater(p, w), pending));
+    blitWorldTile(_canopyTile, ctx);
+
+    // Over-water crowns draw LIVE: their alpha is a per-frame function of player
+    // distance. (A "bake at full alpha + one destination-in radial gradient" scheme was
+    // tried and REVERTED: a full-screen gradient fill is ~3 ms in this rasterizer plus a
+    // scratch round-trip — it benched 6.6 ms against the live path's 2.7. The fade is
+    // gameplay — the hull must show under a crown — so its live cost is honest.)
+    drawProps(ctx, 'canopy', (p, w) => p.motion === 'drift' || crownOverWater(p, w));
+}
+
+// THE FLOATING STRATUM: surface vegetation (a lily bed, a hyacinth mat) and float props
+// are static too; only a drifting prop moves, and it draws live OVER the beds — flotsam
+// floats over a mat, which is where a drifting thing belongs.
+// SURFACE PROPS: a trunk, a beached log — things the ground holds up. Static, same
+// split as the canopy: non-drifters bake, drifters draw live over the tile.
+const _surfacePropsTile = {};
+function drawSurfacePropsCached(ctx) {
+    const c = state.course;
+    if (!c || !c.props || !c.props.length) return;
+    ensureWorldTile(_surfacePropsTile, ctx, 'surfprops', (g, pending) =>
+        drawProps(g, 'surface', p => p.motion !== 'drift', pending));
+    blitWorldTile(_surfacePropsTile, ctx);
+    drawProps(ctx, 'surface', p => p.motion === 'drift');
+}
+
+const _floatTile = {};
+function drawFloatStratumCached(ctx) {
+    const c = state.course;
+    if (!c || (!c._hasVeg && !(c.props && c.props.length))) return;
+    ensureWorldTile(_floatTile, ctx, 'float', (g, pending) =>
+        (drawVegetation(g, 'surface') || 0)
+        + drawProps(g, 'float', p => p.motion !== 'drift', pending));
+    blitWorldTile(_floatTile, ctx);
+    drawProps(ctx, 'float', p => p.motion === 'drift');
 }
 
 function drawShoals(ctx) {
@@ -25272,13 +25630,14 @@ function bakeIslandSprite(isl) {
 // The two are drawn in separate passes so the nav aids can sit BETWEEN them —
 // ladder lines and laylines are paint on the water, and ice floats over paint.
 function drawIslands(ctx) {
-    if (!state.course || !state.course.islands) return;
+    if (!state.course || !state.course.islands) return 0;
 
     // Viewport Culling
     const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
     const camX = state.camera.x;
     const camY = state.camera.y;
 
+    let drawn = 0;
     for (const isl of state.course.islands) {
         // Invisible colliders: the river banks draw as one continuous mass in
         // drawRiverShore instead. Awash shapes were already painted UNDER the water by
@@ -25323,6 +25682,7 @@ function drawIslands(ctx) {
             ctx.lineWidth = 6;
             ctx.stroke();
             ctx.restore();
+            drawn++;
             continue;
         }
 
@@ -25340,7 +25700,9 @@ function drawIslands(ctx) {
         } else {
             ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
         }
+        drawn++;
     }
+    return drawn;
 }
 
 

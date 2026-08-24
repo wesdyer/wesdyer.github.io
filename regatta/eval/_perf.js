@@ -19,7 +19,15 @@ const FNS = [
   'drawActiveGateLine', 'drawLadderLines', 'drawLayLines', 'drawMarkZones',
   'drawRoundingArrows', 'drawDisturbedAir', 'drawIslands', 'drawMarkShadows',
   'drawMarkBodies', 'drawRulesOverlay', 'drawBoat', 'drawBoatIndicator',
-  'drawMinimap', 'updateLeaderboard', 'WaterRenderer.draw', 'Swell.draw', 'SeaFX.draw'
+  'drawMinimap', 'updateLeaderboard', 'WaterRenderer.draw', 'Swell.draw', 'SeaFX.draw',
+  // Layers added since the Aug 1 pass — venue-specific strata.
+  'drawNightWater', 'drawShallows', 'drawShoals', 'drawVegetation', 'drawReefs',
+  'drawProps', 'drawJellyDrifts', 'drawRapidsFoam', 'drawTrafficWakes', 'drawPropWash',
+  'drawSurf', 'drawTraffic', 'drawSquallShadows', 'drawSquallRain', 'drawNightWash',
+  'drawJellyGlow', 'drawNightGlow', 'drawSnowOverlay', 'IceFX.draw',
+  // Cached world-tile wrappers (ablating the underlying layer fns only affects tile
+  // bakes; ablate THESE to attribute the per-frame cost).
+  'drawSeabedUnderlay', 'drawIslandsCached', 'drawCanopyCached', 'drawFloatStratumCached'
 ];
 
 const VENUE = process.env.PERF_VENUE || 'seatrials';
