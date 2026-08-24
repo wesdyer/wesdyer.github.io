@@ -1,4 +1,9 @@
 
+# ⚠️ RETIRED (2026-08-24). This one-shot patcher was applied long ago; its
+# anchors (drawWater, resetGame, the water-debug block) now live in the split
+# files under js/{render,ui,sim}/ after the script.js refactor, so running it
+# again would MISS its targets and could half-apply. Kept for the historical
+# record only — do not run.
 import re
 
 FILE_PATH = 'regatta/js/script.js'

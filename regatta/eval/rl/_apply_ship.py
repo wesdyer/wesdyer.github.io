@@ -1,19 +1,28 @@
 #!/usr/bin/env python3
-"""Apply the benched candidate to regatta/js/script.js, taken VERBATIM from the tree
+"""Apply the benched candidate to the live js file, taken VERBATIM from the tree
 that was benched — so what ships is what was measured, not a retyping of it.
 
-  python3 _apply_ship.py [tree=treeSHIP] [--check]
+  python3 _apply_ship.py [tree=treeSHIP] [--check] [--file js/<path>.js]
 
 --check only reports whether the target regions match; it writes nothing.
+--file  names the js file the ship edits, relative to regatta/ (default
+        js/script.js). Since the 2026-08-24 refactor the game is split across
+        js/{ai,sim,game,render,ui}/*.js — the AI lives in js/ai/*.js, physics
+        in js/sim/physics.js, etc. — so most ships now target one of those.
+        The edits list below is rewritten per ship; keep its anchors in the
+        SAME file --file names.
 """
 import sys, os
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 TREE = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith('--') else 'treeSHIP2'
 CHECK = '--check' in sys.argv
+JSFILE = 'js/script.js'
+if '--file' in sys.argv:
+    JSFILE = sys.argv[sys.argv.index('--file') + 1]
 
-MASTER = os.path.join(ROOT, 'regatta/js/script.js')
-CAND = os.path.join(ROOT, 'regatta/eval/rl', TREE, 'regatta/js/script.js')
+MASTER = os.path.join(ROOT, 'regatta', JSFILE)
+CAND = os.path.join(ROOT, 'regatta/eval/rl', TREE, 'regatta', JSFILE)
 
 
 def block(text, start, end):
