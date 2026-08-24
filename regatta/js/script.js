@@ -22361,6 +22361,11 @@ function draw() {
     // under the air layer, because a wind comet passes over a treetop too.
     drawProps(ctx, 'canopy');
 
+    // Spindrift is AIR — wind-torn snow streaming off the ice, so it passes over hulls
+    // and sails like the comets do (owner's call: over the boats). Gated on
+    // fx.spindrift inside the layer; a no-op everywhere else. See icefx.js.
+    if (window.IceFX) window.IceFX.draw(ctx, state);
+
     // The cloud is ABOVE the world, so its shadow falls on everything under it — water,
     // sand, palms, hulls alike. Drawing it at the surface layer left islands and props
     // standing in sunlight inside a squall, which read as a hole in the weather. It is
@@ -25463,6 +25468,7 @@ function initCourse(opts) {
         if (window.Swell) window.Swell.configure(doc, state.wind.baseDirection);
         // Whatever the last race left in the air is not this race's weather.
         if (window.SeaFX) window.SeaFX.reset();
+        if (window.IceFX) window.IceFX.reset();
         // The router's leg paths are for RACING — the AI's carrot, the ruler, the leg
         // splits. The board's chart falls back to straight legs when `dmc` is null, so
         // the light build states that honestly instead of paying a second for it.
@@ -25534,6 +25540,7 @@ function initCourse(opts) {
     // generated course can never inherit the ocean's swell.
     if (window.Swell) window.Swell.configure(null, 0);
     if (window.SeaFX) window.SeaFX.reset();
+    if (window.IceFX) window.IceFX.reset();
     buildCoursePaths();
 }
 

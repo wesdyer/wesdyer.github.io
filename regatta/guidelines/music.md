@@ -415,7 +415,7 @@ Measured over the loop body. `*` = venue not built; track saved but unwired.
 | **Menu** | menu | 127.5 | 23.8% | 22.8% | 1619 | 4.3 | A minor | 0.200 | 112 |
 | **Results** | results | 120.0 | 32.0% | 29.8% | 1875 | 11.2 | F major | 0.140 | 89 |
 | Fallwater Fjord | fjord* | 133.5 | 26.2% | 21.8% | 1319 | 8.6 | A minor | 0.164 | 123 |
-| Emberfall Isle | volcanic* | 225.0 | **44.6%** | 41.2% | 2269 | 9.0 | C major | 0.129 | 66 |
+| Emberfall Isle | volcanic* | 230.0 | **41.3%** | 37.8% | 1981 | 5.7 | C major | 0.166 | 129 |
 | Flamingo Reach | wetland* | 241.0 | 16.9% | 20.0% | 1472 | 6.8 | A minor | 0.168 | 99 |
 | Spoonbill Flats | flats* | 139.5 | 24.1% | 21.0% | 1491 | 11.9 | D minor | 0.156 | 76 |
 
@@ -643,16 +643,29 @@ Sound's palette, hence `icy`. ⚠️ Its 3.98 dB seam is the worst in the projec
 tool will not fix it — see §14.*
 
 **Emberfall Isle** `volcanic` · *the gauntlet* · Weirdness 35 · SI 85 · 4–6 min
-`'racing-volcanic': { file: 'assets/audio/volcanic.mp3', loopStart: 14.5, loopEnd: 239.5, trim: 0.87 }`
+`'racing-volcanic': { file: 'assets/audio/volcanic.mp3', loopStart: 10.5, loopEnd: 240.5, trim: 0.71 }`
 ```
-C minor percussive instrumental, 132 BPM, struck metal — anvil, brake drums and tuned bells — over deep taiko drums, low prepared piano ostinato, alien and dangerous, hard edged and bright
+C minor percussive instrumental, 132 BPM, struck metal — anvil and brake drums — over deep taiko drums, low prepared piano ostinato, alien and dangerous, hard edged
 ```
-`vocals, wordless vocalise, epic choir, trailer braams, orchestral strings, dark, muffled`
-*The only percussion-led venue. ⚠️ 44.6% wind band, worst of any live track — struck
-metal lives exactly in the bed's band, a risk this brief created by asking for metal
-**and** brightness. `_probe_audio.js volcanic` is mandatory before accepting; if the
-venue turns out breezy, let the taiko carry more and the bells less. ⚠️ Its key reading
-is unmeasurable (§14).*
+`vocals, wordless vocalise, epic choir, trailer braams, orchestral strings, tuned bells, chimes, wind chimes, glockenspiel, celesta, bell tree, dark, muffled`
+*The only percussion-led venue. The Aug 2026 file in the slot is TAKE 2, accepted;
+take 1 is retired to `volcanic-take1.mp3`, unassigned. Take 1 was judged by ear: the
+taiko line and the struck metal ARE the track, the tuned bells — the "chimes" — were
+not. So `and tuned bells` left the metal clause, the bell family went into Exclude by
+name (§3.4 — negatives go in Exclude, and "chimes" is exactly the kind of word Suno
+performs), and `and bright` went with them, since the bells were most of what "bright"
+bought. Every number moved the right way: pulse 66 → 129 against the briefed 132
+(take 1 had settled into a half-time feel; the gauntlet now drives), wind band
+44.6% → 41.3%, centroid 2269 → 1981 Hz, flux 0.129 → 0.166.
+⚠️ 41.3% is STILL the highest wind band in the set — struck metal lives exactly in
+the bed's band and no bell cut changes that. `_probe_audio.js volcanic` remains
+mandatory when the venue lands and the row above gets wired (§7: no MUSIC_TRACKS row
+until then).
+⚠️ The 3.5 dB seam is the Glowtide trade: 230.0 s of body against a ~245 s
+prestart+race, so it is reached once, at the very end.
+⚠️ Key reads C major at r=0.84 and is still not to be believed (§14) — the tonic C is
+real, the mode is percussion noise. Dynamics 5.7 dB is a pass under the Sockeye rule:
+this brief is relentlessness, not contrast.*
 
 ### 12.4 Tutorial — Duckling Pond `pond` — proposed, **Intent** · *venue specced, not built*
 

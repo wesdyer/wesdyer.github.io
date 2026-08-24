@@ -1991,6 +1991,58 @@ const PROP_KINDS = {
     'arctic-nunatak-crag':     { label: 'Granite crag',       world:  400, plane: 'surface', contact: 'none', motion: 'fixed' },
     'arctic-nunatak-horn':     { label: 'Granite horn',       world:  680, plane: 'surface', contact: 'none', motion: 'fixed' },
     'arctic-nunatak-massif':   { label: 'Granite massif',     world:  900, plane: 'surface', contact: 'none', srcBox: [0.028, 0.233, 0.943, 0.533], motion: 'fixed' },
+    // The venue's one WHITE mountain, and the only one that had to be rotated on the way in:
+    // it was delivered on a 20.5-degree diagonal and the subject asks for the long axis UP
+    // the frame, which is what makes `heading °` mean what a designer expects. Lay it
+    // PARALLEL to the coastline it stands behind — one of these does more for the sound's
+    // sense of enclosure than three separate peaks, because a sound is a place with walls.
+    'arctic-peak-ridge':       { label: 'Snow ridge',        world:  700, plane: 'surface', contact: 'none', srcBox: [0.365, 0.029, 0.270, 0.942], motion: 'fixed' },
+    // The compact white one. It fills its frame, so no srcBox — the same call the crag and the
+    // horn take. ⚠️ ITS ART IS SOFT: the delivery carried only 684px of subject, so the bake
+    // upscales 1.60x. Fine at its declared size and the first of these to go soft if placed
+    // large, which is the opposite of the crevasse. Prefer the ridge for a big statement.
+    'arctic-peak-pyramid':     { label: 'Snow peak',         world:  620, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // THE FIRST OF THE THREE SNOW DRIFTS, and the family that says which way the wind blows.
+    // ⚠️ EVERY DRIFT IN A VENUE MUST POINT THE SAME WAY — lay this one ALONG the lee edge of
+    // an ice mass or against the foot of a nunatak, and make the tails and barchans, when
+    // they exist, agree with it. Scattered at random headings they stop being wind and become
+    // texture, which is what arctic-snow is already for. Prop-spin ON: these draw no sun (the
+    // venue's sky is overcast and the dark is occlusion in the trough), so rotating one costs
+    // nothing — which is exactly what lets three sprites make a whole wind field.
+    // The ice cap's own high point, and the only ROUNDED form among eleven angular ones. Read it
+    // beside the drifts rather than beside the peaks: it is a broad low snow swelling, pale with
+    // thin dark marks on it, and it is the one prop that belongs in the OPEN middle of an ice
+    // mass where everything else wants an edge or an obstacle to sit against.
+    'arctic-peak-dome':        { label: 'Ice dome',          world:  420, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'arctic-drift-bank':       { label: 'Snow drift, bank', world:  520, plane: 'surface', contact: 'none', srcBox: [0.370, 0.058, 0.259, 0.883], motion: 'fixed' },
+    // The lee tongue: place it downwind of anything that stands up — a crag, a hut, the station
+    // — wide end touching the obstacle, tongue streaming away. It is the cheapest way to make
+    // a rock look like it has stood in this wind for years. Ones, never twos off one obstacle.
+    'arctic-drift-tail':       { label: 'Snow drift, tail', world:  320, plane: 'surface', contact: 'none', srcBox: [0.417, 0.058, 0.166, 0.885], motion: 'fixed' },
+    // ── SNOW ON THE GRANITE ─────────────────────────────────────────────────
+    // The venue's three `granite` shapes were bare tiled rock until now, and `granite-isle` is the
+    // course's ROUNDING MARK — so this is the one prop family the fleet passes close aboard every
+    // lap. Scatter them in the hollows and on the shaded side; leave the crests bare, because
+    // wind-scoured rock is the whole reason a nunatak is black in a white landscape.
+    // ⚠️ ITS REAL RISK IS THE FLOE. White-on-dark is exactly a floe's value relationship and the
+    // venue has 112 of them drifting a few boat lengths away. The defence is THICKNESS — a floe is
+    // a plate with a clean rim, a patch is a skin with a torn edge and rock showing through it.
+    // Prop-spin ON: no baked sun, so four of these look like four different patches.
+    'arctic-snowpatch':        { label: 'Snow patch',        world:  140, plane: 'surface', contact: 'none', srcBox: [0.131, 0.054, 0.738, 0.890], motion: 'fixed' },
+    'arctic-snowpatch-b':      { label: 'Snow patch, lobed', world:  170, plane: 'surface', contact: 'none', srcBox: [0.056, 0.115, 0.888, 0.77], motion: 'fixed' },
+
+    // ── THE CALVING FRONT: THE FIRST TILEABLE PROP IN THE GAME ──────────────
+    // Lay these END TO END along the water side of an ice mass to turn the engine's ordinary
+    // coastline stroke into a glacier front. Spacing is exactly `world` — 800u, nose to tail, no
+    // overlap and no gap. ⚠️ EVERY SECTION IN A RUN MUST CARRY THE SAME `heading °` AND PROP-SPIN
+    // MUST BE OFF: the strip has an ice side and a water side, and a run only tiles if its
+    // sections agree exactly. This is the one prop in the venue where two neighbouring placements
+    // have to be set together.
+    // ⚠️ fillTo IS 1.0 IN THE MANIFEST AND THAT IS LOAD-BEARING. Every other prop leaves a
+    // transparent rotation margin; a margin here would stop sections touching. cove-wall-stone is
+    // the precedent. Ingest warns that content reaches the frame edge on every delivery — correct
+    // and expected.
+    'arctic-glacier-front':    { label: 'Glacier front',     world:  800, plane: 'surface', contact: 'none', srcBox: [0.226, 0, 0.547, 1], motion: 'fixed' },
 
     // ── AND THE VENUE'S HUMAN PRESENCE ──────────────────────────────────────
     // Glacier Sound's only sign that anyone has ever been here, and now offered BOTH ways: the
