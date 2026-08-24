@@ -6080,7 +6080,7 @@ function applyVenuePalette(venueKey) {
     // Derived from the MERGED palette, like the puffs — so a document that authors its own
     // water gets a stream in it without authoring a second colour that could disagree.
     activeCurrentColor = currentTintFrom(pal);
-    GUST_SPRITES = null; // rebake puff/lull sprites in the new tint
+    _puffCal = null;     // re-solve the puff tone alphas against the new water
 }
 
 // Apply a venue's condition ranges on top of resetGame's randomized defaults.
@@ -6287,6 +6287,347 @@ function courseCurrentMax() {
 // key implies.
 function ambientCurrentAt(x, y) {
     return state.race.conditions.current;
+}
+
+// ── Rapids ──────────────────────────────────────────────────────────────────
+// The turbulence field: how BROKEN the water is at a point, 0..1, weighted by the same
+// centered edge ramp every region uses. Deliberately a texture and not a motion — a
+// rapid carries no flow of its own, because the stream (tongue included) is the Current
+// layer's to author, and two layers stating the same knots was the thing to prevent.
+// Taken as the MAX of the weighted regions: two overlapping shoulders are broken water
+// once, not twice.
+//
+// Touches no RNG (pure in position), so rapids cannot move the eval anchor.
+const RAPIDS_DRAG = 0.6;   // share of drive that 100%-broken water takes
+const RAPIDS_YAW = 0.45;   // rad/s of bow-shove at 100%-broken, before the wobble shape
+let _rapidsPhaseN = 0;     // per-boat wobble phase, dealt in boat-update order — no RNG
+function rapidsTurbAt(x, y) {
+    const regs = state.course.rapidsRegions;
+    if (!regs || !regs.length) return 0;
+    let turb = 0;
+    for (const r of regs) {
+        const bb = r.bb, pad = (r.falloff || 0) / 2 + 1;
+        if (x < bb.minX - pad || x > bb.maxX + pad || y < bb.minY - pad || y > bb.maxY + pad) continue;
+        const sd = Arena.signedDist(r, x, y);
+        const w = VenueDoc.regionWeight(sd, r.falloff);
+        if (w <= 0) continue;
+        turb = Math.max(turb, w * (r.turbulence != null ? r.turbulence : 0.5));
+    }
+    return turb;
+}
+
+// ── Rapids whitewater ───────────────────────────────────────────────────────
+// Drawn as a FIELD, not as particles. The first cut spawned foam blobs that rode the
+// current, and however they were shaped they read as white creatures swimming — because
+// anything that TRAVELS as a discrete body reads as an object, and the eye finds objects
+// before it finds water. An aerial rapid is the opposite: a connected white sheet whose
+// texture churns while the sheet itself stays put on the river.
+//
+// So: two seamless foam TILES (built once, fixed seed — the texture is part of the art
+// and must look the same every session), pattern-filled inside each region's own clip,
+// scrolled along whatever the Current layer says runs through it and STRETCHED along
+// that axis for the streaky grain every reference photo shows. Over that, a stateless
+// hash-grid of small crests that brighten and die IN PLACE — churn with no translation.
+// Nothing here is an entity: no state, no spawning, no RNG stream, just position and
+// state.time in, pixels out.
+const RAPIDS_TILE = 256;
+const _rapidsTiles = {};            // per colour (day white / night bioluminescence)
+function rapidsTiles(color) {
+    let t = _rapidsTiles[color];
+    if (t) return t;
+    // Local PRNG, fixed seed: not fxRand, whose sequence position depends on what else
+    // has drawn — these tiles must be identical every build.
+    let s = 0x9E3779B9;
+    const rnd = () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; };
+    const T = RAPIDS_TILE;
+    const make = (blobs, rMin, rMax) => {
+        const c = document.createElement('canvas');
+        c.width = c.height = T;
+        const g = c.getContext('2d');
+        g.fillStyle = color;
+        for (let i = 0; i < blobs; i++) {
+            // An irregular CLUMP of discs, not one circle — torn foam, frozen into
+            // texture. Geometry is rolled once, then stamped 3x3 so the tile wraps.
+            const bx = rnd() * T, by = rnd() * T;
+            const r = rMin + rnd() * (rMax - rMin);
+            const parts = [];
+            for (let k = 0; k < 3; k++)
+                parts.push([(rnd() - 0.5) * r * 1.7, (rnd() - 0.5) * r * 1.7, r * (0.45 + rnd() * 0.55)]);
+            g.globalAlpha = 0.40 + rnd() * 0.55;
+            for (let ox = -T; ox <= T; ox += T) for (let oy = -T; oy <= T; oy += T) {
+                g.beginPath();
+                for (const [dx, dy, rr] of parts) {
+                    g.moveTo(bx + ox + dx + rr, by + oy + dy);
+                    g.arc(bx + ox + dx, by + oy + dy, rr, 0, Math.PI * 2);
+                }
+                g.fill();
+            }
+        }
+        return c;
+    };
+    // Wash: broad, sparse — pale aerated patches, never a veil. Foam in three DENSITY
+    // TIERS, because how much of the water is white is the strongest turbulence cue
+    // there is, and alpha alone cannot say it: a riffle is scattered scraps, a stopper
+    // is a sheet with dark lanes worn through it.
+    // Wash blobs stay SMALL: at the wash pass's large draw scale a big clump magnifies
+    // into a readable angular plate, and the wash must be mottling, never geometry.
+    // ⚠️ FOUR TIERS, AND THEY ARE MUCH DENSER THAN THE FIRST CUT'S THREE. Modelled by
+    // replicating this generator's own arithmetic offline and measuring the mean alpha it
+    // produces: 60/130/320 blobs at per-blob alpha 0.28-0.88 gave the top tier a mean of
+    // 0.234, which composited to 24% of the water going white at turbulence 1.0 and 17% at
+    // 0.5. An aerial photograph of real whitewater is 50-80% white and a riffle 20-30%, so
+    // the whole scale was living inside "riffle" — the owner's report was that 100% did not
+    // read as whitewater and 50% was barely discernible, and the numbers say exactly that:
+    // the entire 0.3-to-1.0 range spanned 14% to 24%.
+    //
+    // 200/420/700/1000 at 0.40-0.95 measures 0.182/0.331/0.491/0.621 mean alpha, which
+    // composites to 13% / 26% / 45% / 65%. That is a scale with a top and a bottom.
+    //
+    // ⚠️ BUILD COST GOES UP AND IT IS PAID ONCE. The four tiles are ~2,320 clumps against
+    // the old three's 640, and each clump stamps 3x3 for the wrap at 3 discs a stamp — call
+    // it 63,000 arcs on first sight of a rapid, per colour. It is lazy and cached in
+    // _rapidsTiles, so the cost is one frame the first time whitewater comes into view and
+    // never again; if that hitch is ever felt, cut the top tier's count and buy the mean
+    // alpha back with larger rMax rather than by raising the pass alpha, which is what
+    // flattens the ramp.
+    t = _rapidsTiles[color] = {
+        wash: make(130, 4, 11),
+        foam: [make(200, 2, 7), make(420, 2, 7.5), make(700, 2, 7.5), make(1000, 2, 7.5)]
+    };
+    return t;
+}
+
+// Composited through an OFFSCREEN canvas for one reason: the rim. The turbulence field
+// fades over the region's falloff, and the honest way to draw that without blur is to
+// paint the full texture and then EAT the rim with 'destination-out' strokes — which on
+// the main canvas would erase the river underneath. The offscreen layer holds only foam,
+// so the erase feathers the foam and nothing else.
+let _rapidsFoamCv = null;
+function drawRapidsFoam(ctx) {
+    const regs = state.course.rapidsRegions;
+    if (!regs || !regs.length) return;
+    const cam = state.camera;
+    const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6 + 150;
+    const vis = regs.filter(r => {
+        const turb = r.turbulence != null ? r.turbulence : 0.5;
+        return turb > 0.02
+            && !(r.bb.minX > cam.x + viewR || r.bb.maxX < cam.x - viewR
+              || r.bb.minY > cam.y + viewR || r.bb.maxY < cam.y - viewR);
+    });
+    if (!vis.length) return;
+
+    const nite = nightAmt();
+    const color = nite > 0 ? BIO_COLOR : '#ffffff';
+    const tiles = rapidsTiles(color);
+    const t = state.time;
+
+    if (!_rapidsFoamCv) _rapidsFoamCv = document.createElement('canvas');
+    const cv = _rapidsFoamCv;
+    if (cv.width !== ctx.canvas.width || cv.height !== ctx.canvas.height) {
+        cv.width = ctx.canvas.width; cv.height = ctx.canvas.height;
+    }
+    const g = cv.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.clearRect(0, 0, cv.width, cv.height);
+    g.setTransform(ctx.getTransform());   // same camera as the scene, world coords below
+
+    for (const r of vis) {
+        const turb = r.turbulence != null ? r.turbulence : 0.5;
+        const bb = r.bb;
+
+        // The flow through this rapid is the CURRENT layer's — sampled once at the
+        // region's middle to set the grain axis and the streaming rate. A rapid with no
+        // stream through it boils in place, grainless.
+        const flow = getCurrentAt((bb.minX + bb.maxX) / 2, (bb.minY + bb.maxY) / 2);
+        const kt = flow ? flow.speed : 0;
+        const hasFlow = kt > 0.05;
+        const dir = hasFlow ? flow.direction : 0;
+        const ux = Math.sin(dir), uy = -Math.cos(dir);
+        const angDeg = Math.atan2(uy, ux) * 180 / Math.PI;
+        // state.time runs at WORLD_CLOCK (0.24/s); 62.5 * kt makes the sheet stream at
+        // the same knots-to-units rate the streak particles ride, so the two agree.
+        const adv = t * 62.5 * kt;
+
+        const path = () => {
+            g.beginPath();
+            const poly = r.poly;
+            g.moveTo(poly[0][0], poly[0][1]);
+            for (let i = 1; i < poly.length; i++) g.lineTo(poly[i][0], poly[i][1]);
+            g.closePath();
+        };
+        g.save();
+        path();
+        g.clip();
+
+        // Texture: a faint broad wash under a foam pass whose TILE DENSITY follows
+        // turbulence — coverage is the cue, alpha only polishes it. Both stretched
+        // hard along the flow for the streaky grain; the wash slides a little across
+        // the flow so the two layers never lock together.
+        const foamTile = tiles.foam[turb < 0.35 ? 0 : turb < 0.6 ? 1 : turb < 0.85 ? 2 : 3];
+        const churn = Math.sin(t * 3.1) * 7;
+        const passes = [
+            { tile: tiles.wash, a: 0.06 + 0.20 * turb, scale: 2.1, speed: 0.45, across: churn },
+            { tile: foamTile, a: 0.34 + 0.66 * turb, scale: 0.7, speed: 1.0, across: -churn * 0.5 }
+        ];
+        for (const p of passes) {
+            const pat = g.createPattern(p.tile, 'repeat');
+            const m = new DOMMatrix()
+                .translate(ux * adv * p.speed - uy * p.across, uy * adv * p.speed + ux * p.across)
+                .rotate(angDeg)
+                .scale((hasFlow ? 2.8 : 1) * p.scale, p.scale);
+            pat.setTransform(m);
+            g.fillStyle = pat;
+            g.globalAlpha = p.a * (nite > 0 ? 0.55 : 1);
+            g.fillRect(bb.minX, bb.minY, bb.maxX - bb.minX, bb.maxY - bb.minY);
+        }
+
+        // Bright crests: a world-anchored hash grid of small glints that brighten and
+        // die WITHOUT MOVING — the twinkle is the churn. Density and weight follow
+        // turbulence; the grid never shows because every mark is jittered by its hash.
+        const step = 30;
+        const x0 = Math.max(bb.minX, cam.x - viewR), x1 = Math.min(bb.maxX, cam.x + viewR);
+        const y0 = Math.max(bb.minY, cam.y - viewR), y1 = Math.min(bb.maxY, cam.y + viewR);
+        g.fillStyle = color;
+        for (let gy = Math.floor(y0 / step) * step; gy <= y1; gy += step) {
+            for (let gx = Math.floor(x0 / step) * step; gx <= x1; gx += step) {
+                let h = (gx * 374761393 + gy * 668265263) | 0;
+                h = Math.imul(h ^ (h >>> 13), 1274126177);
+                h = (h ^ (h >>> 16)) >>> 0;
+                const h1 = h / 4294967296;
+                const h2 = ((Math.imul(h, 48271) >>> 0)) / 4294967296;
+                if (h1 > turb * 0.9) continue;
+                const tw = Math.sin(t * (9 + h1 * 11) + h2 * Math.PI * 2);
+                if (tw <= 0.2) continue;
+                const px = gx + (h2 - 0.5) * step * 0.9;
+                const py = gy + (h1 - 0.5) * step * 0.9;
+                const rr = 2.2 + h2 * 2.8;
+                g.globalAlpha = (0.25 + 0.5 * turb) * tw * (nite > 0 ? 0.7 : 1);
+                g.beginPath();
+                g.moveTo(px + rr, py);
+                g.arc(px, py, rr, 0, Math.PI * 2);
+                // A second disc offset just under a radius along the flow, so the two
+                // FUSE into one lozenge — separated they read as paired dots.
+                g.moveTo(px + ux * rr * 0.8 + rr * 0.8, py + uy * rr * 0.8);
+                g.arc(px + ux * rr * 0.8, py + uy * rr * 0.8, rr * 0.8, 0, Math.PI * 2);
+                g.fill();
+            }
+        }
+        g.restore();
+
+        // THE RIM: eat the foam back over the falloff band, in steps — the poor man's
+        // smoothstep, no blur. The stroke is centred on the outline, so the outer half
+        // erases nothing (the clip painted nothing there) and the inner half fades the
+        // texture out toward the edge instead of cutting blobs on a ruled line.
+        // ⚠️ CLAMPED TO THE REGION'S OWN SIZE, AND THIS WAS THE BIGGER OF THE TWO REASONS
+        // THE RAPIDS DID NOT READ. The widest erase stroke is `fall * 1.5` centred on the
+        // outline, so it reaches `fall * 0.75` INWARD. Measured against Sockeye Run's nine
+        // authored regions, FIVE were entirely inside their own erase band — including
+        // rapids-3, the only turbulence-1.00 region on the map, whose inradius is 157u
+        // against a 225u reach. The strongest whitewater in the venue was being rubbed out
+        // completely, and rapids-6 kept 4% of its core.
+        //
+        // A falloff is a statement about how the turbulence FIELD fades — it belongs to the
+        // physics, and rapidsTurbAt still reads r.falloff untouched. What it cannot also be
+        // is a licence to erase more foam than the region contains. So the rim gets its own
+        // number, capped at 0.8 of the region's inradius (area/perimeter x 2, cheap and
+        // computed once), which leaves every region a core at full density however generous
+        // its authored falloff. See the jitter note below for why the factor is 0.62.
+        if (r._rimInr === undefined) {
+            let A2 = 0, L2 = 0;
+            const q = r.poly;
+            for (let i = 0; i < q.length; i++) {
+                const u = q[i], v = q[(i + 1) % q.length];
+                A2 += u[0] * v[1] - v[0] * u[1];
+                L2 += Math.hypot(v[0] - u[0], v[1] - u[1]);
+            }
+            r._rimInr = L2 > 0 ? Math.abs(A2) / L2 : 0;
+        }
+        // ⚠️ 0.62, NOT 0.8, AND THE JITTER IS WHY. The widest stroke reaches fall*0.75 inward
+        // and the rim wobble adds up to fall*0.34 more at its deepest excursion (the three
+        // harmonics sum to 1.0 at worst), so the true worst-case bite is 1.09*fall. At the
+        // old 0.8 cap that ate 87% of the inradius where the wobble ran deepest, leaving a
+        // thread. 0.62 keeps the guarantee the clamp exists for: ~32% of the core survives
+        // even at the deepest point of the wobble, and ~46% typically.
+        const fall = Math.max(40, Math.min(r.falloff || 0, r._rimInr * 0.62));
+
+        // ⚠️ AND THE RIM IS RAGGED, NOT PARALLEL. Three fixed-width strokes on the region's
+        // OWN outline gave a fade that was regular in both ways a fade can be: BANDED,
+        // because three steps is three visible steps, and GEOMETRIC, because every contour
+        // was an exact parallel of the polygon — so the authored shape's straight edges and
+        // corners read straight through the foam and the water ended on a drawn line.
+        //
+        // Fixed with a jittered rim path, cached per region. The outline is resampled at a
+        // fixed spacing and each sample slid along the edge normal by a wobble that is the
+        // sum of three harmonics at 3, 7 and 13 cycles per perimeter. Integer cycle counts
+        // are the whole trick: the noise is periodic over the closed loop, so it wraps with
+        // no seam, and it is smooth rather than spiky because neighbouring samples share the
+        // same low harmonics. The sign of the offset does not matter — the wobble is
+        // zero-mean, so it fingers in and out of the true outline, which is what a rapid's
+        // edge actually does. Phases come from a hash of the region's own first vertex, so
+        // every region wobbles differently and none of them moves between sessions.
+        //
+        // Steps go 3 -> 16 on a solved alpha ramp, which is the banding half of the fix.
+        if (!r._rimPath) {
+            const q = r.poly, pts = [];
+            let L3 = 0;
+            for (let i = 0; i < q.length; i++) L3 += Math.hypot(q[(i + 1) % q.length][0] - q[i][0],
+                                                                q[(i + 1) % q.length][1] - q[i][1]);
+            let hh = ((q[0][0] * 374761393 + q[0][1] * 668265263) | 0);
+            hh = Math.imul(hh ^ (hh >>> 13), 1274126177); hh = (hh ^ (hh >>> 16)) >>> 0;
+            const ph = [hh / 4294967296, (Math.imul(hh, 48271) >>> 0) / 4294967296,
+                        (Math.imul(hh, 69621) >>> 0) / 4294967296].map(v => v * Math.PI * 2);
+            const amp = fall * 0.34;
+            const step = Math.max(10, L3 / 220);
+            let s = 0;
+            for (let i = 0; i < q.length; i++) {
+                const a0 = q[i], b0 = q[(i + 1) % q.length];
+                const ex = b0[0] - a0[0], ey = b0[1] - a0[1];
+                const el = Math.hypot(ex, ey) || 1;
+                const nx = ey / el, ny = -ex / el;          // edge normal; sign is irrelevant
+                for (let d = 0; d < el; d += step) {
+                    const u = s + d, k = u / L3 * Math.PI * 2;
+                    const n = 0.52 * Math.sin(3 * k + ph[0])
+                            + 0.30 * Math.sin(7 * k + ph[1])
+                            + 0.18 * Math.sin(13 * k + ph[2]);
+                    pts.push([a0[0] + ex * (d / el) + nx * n * amp,
+                              a0[1] + ey * (d / el) + ny * n * amp]);
+                }
+                s += el;
+            }
+            r._rimPath = pts;
+        }
+        const rimPath = () => {
+            const pts = r._rimPath;
+            g.beginPath();
+            g.moveTo(pts[0][0], pts[0][1]);
+            for (let i = 1; i < pts.length; i++) g.lineTo(pts[i][0], pts[i][1]);
+            g.closePath();
+        };
+        g.save();
+        g.globalCompositeOperation = 'destination-out';
+        g.strokeStyle = '#000';
+        // Sixteen steps on a (1-f)^2.6 ramp. Solved rather than guessed: the numbers are the
+        // pair that minimises the LARGEST single jump in the cumulative erase while still
+        // reaching ~92% at the outline. It profiles 92/88/78/71/58/45/39/28/22/12/0 with no
+        // step over 6.7%, against the old three strokes' 89/75/55/0 whose smallest jump was
+        // 20 points — and a 20-point jump in a fade IS a band.
+        const RIM_STEPS = 16;
+        for (let i = 0; i < RIM_STEPS; i++) {
+            const f = (i + 1) / RIM_STEPS;                 // 1 = widest, reaches furthest in
+            g.globalAlpha = 0.06 + 0.34 * Math.pow(1 - f, 2.6);
+            g.lineWidth = fall * 1.5 * f;
+            rimPath();
+            g.stroke();
+        }
+        g.restore();
+    }
+
+    // Composite the finished foam layer over the scene in one draw.
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.globalAlpha = 1;
+    ctx.drawImage(cv, 0, 0);
+    ctx.restore();
 }
 
 function getCurrentAt(x, y) {
@@ -7451,6 +7792,94 @@ const LAND_TEXTURES = {
     // rounded whaleback is metre-scale, and 256 spans 27.8 world metres, putting a hump at
     // 3-6 m across. That is a boulder, which is what it should be. Halving the rock to 128
     // would make it a cobble field.
+    // ── STILLWATER LAKE'S THREE GROUNDS ─────────────────────────────────────
+    // All three delivered 2026-08-14 and all three alphas MEASURED. Notably this is the
+    // first batch where no alpha had to come down hard: the masters arrived at luma sd 6.97,
+    // 9.32 and 6.74, against the ocean pair's 21.79 and 19.17, so there was room to spend.
+    //
+    // ⚠️ TWO RATIO METRICS FLAGGED THESE AND BOTH WERE WRONG, which is the transferable part.
+    // On the radially averaged power spectrum lake-sand scores peak/mean 21.4 and lake-gneiss
+    // 35.2 — far past the shipped range of 8.65-12.18 and enough to look like rejects. In
+    // ABSOLUTE terms, which is what a player sees, their dominant-band amplitude is 1.75 and
+    // 0.90 against grass's 3.34 and bay-scrub's 3.72: quieter than every shipped ground. The
+    // gneiss's wrap ratio told the same lie — 1.50x the interior difference, against
+    // ocean-coralrock's 1.47x which needed alpha held down to hide it — but 1.50x of a very
+    // smooth tile is 0.81 LUMA UNITS, invisible at any alpha. A RATIO IS NORMALISED BY THE
+    // BROADBAND FLOOR, so on a quiet tile it inflates without anything actually being wrong.
+    // Judge periodicity and seams on ABSOLUTE amplitude; the ratio misleads in both
+    // directions and has now done so four times on this venue pair.
+    // ⚠️ RAISED 0.45 -> 0.70 ON 2026-08-15, and the reason is worth keeping. The lake's ground
+    // was reading as flat plowed dirt beside the new forest, and the first guess was that the
+    // TILE was wrong — too orange, too saturated. It is not: at sat 0.51 it sits mid-pack among
+    // shipped grounds (grass 0.83, ocean-scrub 0.76, redrock-sandstone 0.75, bay-scrub 0.59).
+    // What was actually wrong is that NONE OF ITS LITTER REACHED THE SCREEN. getLandPattern
+    // squashes the WHOLE master into a tile x tile canvas, so a 1024px photograph of needles
+    // and pebbles becomes 128px, and 0.45 of that landed at on-screen sd 3.14 — the quietest
+    // ground on the lake, below its own sand at 4.21. At 0.70 it lands 4.89, beside bay-lane's
+    // 5.08, and the needles read as needles. The mean does not move, because body IS the tile
+    // mean; alpha here is contrast and nothing else.
+    // A REPLACEMENT TILE WAS OFFERED AND DECLINED. It measured #83633D/sat 0.53 against this
+    // one's #7B623C/sat 0.51 — the same colour — and the same on-screen sd at the same alpha,
+    // so it did not address the complaint. It also carried a horizontal wrap seam of +1.81 luma
+    // where this tile carries +0.47 at MORE texture. The alpha was the whole fix.
+    forestfloor:  { src: 'assets/images/terrain/lake/forestfloor.png', tile: 128, alpha: 0.70 },
+    // 0.45 rather than the sands' usual 0.70, because this tile carries real litter where a
+    // beach carries almost nothing: it lands on-screen sd 4.19, between bay-lane (3.63) and
+    // arctic granite (4.89). THE PEBBLES ARE WHY IT SITS THAT HIGH — they are what makes this
+    // a glacial shore rather than a tinted beach, and at 0.30 they fade to a mottle.
+    lakesand:     { src: 'assets/images/terrain/lake/sand.png',        tile: 128, alpha: 0.45 },
+    // ⚠️ SECOND SLAB, 2026-08-15, AND THIS ONE IS THE CASE WHERE ALPHA COULD NOT HAVE SAVED IT.
+    // Worth keeping next to the forest floor's note directly above, which is the opposite case.
+    // The first slab was smooth to the point of being featureless: soft lavender blobs, full-res
+    // sd 7.22, landing on-screen sd 2.70 — the quietest surface in the venue. Raising its alpha
+    // to 1.00 would have taken it to 6.80, so CONTRAST was recoverable. What was not recoverable
+    // is CONTENT: no fracture lines, no lichen, no whaleback edges. Turning the gain up on soft
+    // blobs gives you louder soft blobs. The new slab carries the rock's actual structure, so
+    // the redraw was the right call here and the alpha was the right call there — the test is
+    // whether the thing you want is IN the tile and merely faint, or absent.
+    // 0.55 measured: on-screen sd 5.55, between lake sand's 4.21 and the 6.66 ceiling. Higher
+    // reads better on a single slab and worse across several, because this tile's structure is
+    // strong enough that the 256-unit repeat becomes legible as wallpaper once it is loud.
+    // ⚠️ tile STAYS 256. It is tempting to raise it to cut the repeat over a 700-unit slab, but
+    // tile is in WORLD UNITS: 256 puts a whaleback lobe at about 28 m, which is what an ice-
+    // scoured outcrop actually measures. 512 would halve the repetition and give 56 m lobes,
+    // which is no longer granite, it is scenery.
+    gneiss:       { src: 'assets/images/terrain/lake/gneiss.png',      tile: 256, alpha: 0.55 },
+
+    // ── SOCKEYE RUN, delivered 2026-08-17 ───────────────────────────────────
+    // Every alpha here is a PURE CONTRAST KNOB, because each ISLAND_STYLES.body above was
+    // reset to its own tile's delivered mean first. They were not picked by eye: each tile's
+    // luma sd was measured, and the alpha is what lands it in the on-screen band the shipped
+    // grounds already occupy (1.57 for sandstone up to 8.87 for lake forestfloor). These four
+    // sit at 6.6, 7.6, 7.9 and 4.6 — the busy end of the band, which is right for a venue
+    // whose identity IS its ground.
+    //
+    // ⚠️ THE ALPHAS WERE CHOSEN AGAINST A TILED FIELD, NOT AGAINST THE MASTER, and that is the
+    // whole reason these four shipped. Measured on the raw 1254px masters, all four carry a
+    // wrap seam 1.5x to 3.3x an interior pixel boundary — by that number none of them tile.
+    // Composited at these alphas over the flat body and drawn at the tile size the camera
+    // actually sees, the seam is INVISIBLE across 4.7 to 9.4 repeats: the same alpha that tames
+    // the contrast suppresses the discontinuity, because the seam error is multiplied by alpha
+    // exactly as the texture is. Two earlier deliveries were rejected on the master-scale number
+    // alone; that was the wrong test. Judge a texture tiled, composited and at size.
+    // ⚠️ RAISING AN ALPHA RE-EXPOSES ITS SEAM. These are not free to tune upward.
+    cobble:       { src: 'assets/images/terrain/river/cobble.png',   tile: 256, alpha: 0.42 },
+    meadow:       { src: 'assets/images/terrain/river/meadow.png',   tile: 128, alpha: 0.50 },
+    // Highest alpha of the four because its jointed facets ARE the read, and the one to watch
+    // for repeats: it carries about twice the mid-scale structure of the other three, so a rock
+    // mass more than three or four tiles across (110 m+) starts showing its pattern. Keep
+    // outcrop shapes small, which is what a rock in a rapid is anyway.
+    outcrop:      { src: 'assets/images/terrain/river/outcrop.png',  tile: 256, alpha: 0.65 },
+    humus:        { src: 'assets/images/terrain/river/humus.png',    tile: 128, alpha: 0.70 },
+    // ⚠️ THE BUSIEST TILE IN THE GAME, so this is the LOWEST alpha in the game and both facts are
+    // the same fact. Tile-scale luma sd is 28.3 against a shipped range of 3.3-17.4, because a moss
+    // carpet is thousands of tiny cushions and that is exactly what it should look like. 0.31 lands
+    // it at on-screen sd 8.78, which matches lake forestfloor's 8.87 — the top of the band and the
+    // right precedent, since both are forest floors. It reads as moss at this alpha; if it ever
+    // looks flat in the venue, 0.55 doubles the cushion texture (on-screen sd 15.6) at the cost of
+    // leaving the band, and a floor the fleet can never sail on is the one place that trade is
+    // arguable.
+    mossfloor:    { src: 'assets/images/terrain/river/mossfloor.png', tile: 128, alpha: 0.31 },
     // ── BLUEWATER BONANZA'S TWO GROUNDS ─────────────────────────────────────
     // Both delivered 2026-08-14. Both bodies in ISLAND_STYLES are their delivered tile's own
     // mean, so both alphas below are pure contrast knobs, and BOTH ARE MEASURED — these are
@@ -8100,9 +8529,32 @@ function drawPropWash(ctx) {
         ctx.arc(x, y, r * 1.6, 0, Math.PI * 2);
         ctx.fill();
 
-        const w = regionWindAt(x, y);
-        // Where the water is being pushed FROM: the windward side, which is the side that laps.
-        const up = w.direction + Math.PI;
+        // ⚠️ WHICH FIELD PUSHES THE WATER — WIND FOR A PILING, CURRENT FOR A ROCK.
+        // The default is wind, and it is right for everything this was written for: a cypress
+        // trunk or a channel buoy stands in near-still water, so the side that whitens is the
+        // side the BREEZE piles water against, and `up` is therefore the direction the wind
+        // comes from.
+        //
+        // A boulder in a river is the opposite case. The water is moving fast past a fixed
+        // obstruction, so what a helmsman reads is the boil DOWNSTREAM of it, not a lap on the
+        // upstream face — and on this venue the current runs to 2.4 kn where the ambient
+        // breeze does almost nothing to the surface. A kind opts in with
+        // `washFrom: 'current'`; getCurrentAt's `direction` is where the water is going, which
+        // is where the foam goes, so it is used WITHOUT the +PI the wind case needs.
+        // `push` is 0..1: how hard whichever field is driving this is pushing. The two are
+        // on different scales — wind runs to ~8 units, this venue's current to 2.4 knots —
+        // so each is normalised against its own before the lap alpha reads it.
+        let up, push;
+        if (k.washFrom === 'current' && typeof getCurrentAt === 'function') {
+            const cur = getCurrentAt(x, y);
+            if (!cur || !cur.speed) continue;      // slack water makes no boil
+            up = cur.direction;
+            push = cur.speed / 2.4;
+        } else {
+            const w = regionWindAt(x, y);
+            up = w.direction + Math.PI;
+            push = w.speed / 8;
+        }
         const seed = hash(x, y);
         for (let i = 0; i < 3; i++) {
             // Spread the arcs round the trunk, weighted toward windward rather than pinned
@@ -8114,7 +8566,7 @@ function drawPropWash(ctx) {
             // In and out, never a hard on/off: sin gives the arc a swell and a retreat.
             const breath = Math.sin(phase * Math.PI);
             const a = WASH_ALPHA * breath * (0.35 + 0.65 * Math.max(0, lean))
-                    * Math.max(0.35, Math.min(1, w.speed / 8));
+                    * Math.max(0.35, Math.min(1, push));
             if (a <= 0.004) continue;
             const rr = r * (1.02 + 0.05 * breath);                // the lap runs up and back
             const half = 0.5 + 0.22 * breath;                     // and widens as it comes
@@ -8182,7 +8634,18 @@ const CANOPY_FADE_RANGE = 20 * BOAT_LEN;
 // costs twice: crowns flicker all race as the AI sails through them, and a dimming treetop
 // becomes a free radar pip announcing a rival you could not otherwise see. A competitor
 // disappearing under the leaves is the venue working correctly.
-function canopyAlpha(p) {
+// ⚠️ THE FLOOR IS PER-KIND, BECAUSE CANOPY_FADE_MIN's ARGUMENT DOES NOT HOLD FOR EVERYTHING.
+// It is 0.0 — a crown vanishes completely with the hull under it — and the comment above earns
+// that: "the tree does not vanish when the crown does: the stem keeps drawing on the SURFACE
+// plane at full opacity and keeps its collider, so what is left under your boat is the wood you
+// are about to hit with the leaves out of the way."
+//
+// A BRIDGE HAS NO STEM. `river-footbridge` is a single canopy sprite with nothing on any other
+// plane, so at floor 0 it does not open — it disappears, and a landmark the player sails under
+// stops existing at exactly the moment they are under it. So a kind may declare `fadeMin` in
+// PROP_KINDS and keep a floor of its own. Absent, the tree behaviour is unchanged, which is
+// every existing kind.
+function canopyAlpha(p, floor) {
     const boats = state.boats;
     if (!boats || !boats.length) return 1;
     const me = boats.find(b => b.isPlayer);
@@ -8190,7 +8653,81 @@ function canopyAlpha(p) {
     const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
     const d = Math.hypot(me.x - x, me.y - y);
     if (d >= CANOPY_FADE_RANGE) return 1;
-    return CANOPY_FADE_MIN + (1 - CANOPY_FADE_MIN) * (d / CANOPY_FADE_RANGE);
+    const lo = (typeof floor === 'number' && floor >= 0 && floor < 1) ? floor : CANOPY_FADE_MIN;
+    return lo + (1 - lo) * (d / CANOPY_FADE_RANGE);
+}
+
+// ── WHICH CROWNS ARE ALLOWED TO FADE ────────────────────────────────────────
+// A crown fades for exactly one reason: it can hide the player's hull. A hull is only ever
+// on WATER, so a tree whose crown lies entirely over land can never hide one — and fading it
+// costs the venue a tree for nothing. Every crown that opens is a crown that stopped being
+// scenery, so the fade is spent only where it buys something.
+//
+// That makes the test a plain boolean rather than a proportion, and the reasoning is worth
+// keeping: it is tempting to fade in proportion to how much of the crown overhangs water, so
+// neighbouring trees do not fade by different amounts. But a crown that is one tenth over
+// water can still have the boat under that tenth, and a tenth of a fade would not clear it.
+// Any overhang at all is enough to hide a hull, so any overhang at all earns the full rule.
+//
+// ⚠️ ISLAND RINGS ARE {x, y} OBJECTS, NOT [x, y] PAIRS. VenueDoc.pointInRing reads ring[i][0]
+// and is for the DOCUMENT's rings; the compiled course carries vertices the other way round.
+// Handing island vertices to pointInRing returns false for every point in silence, which
+// reads as "all water" and fades the whole wood. Hence the local test below.
+function pointInVerts(x, y, verts) {
+    let inside = false;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+        const xi = verts[i].x, yi = verts[i].y, xj = verts[j].x, yj = verts[j].y;
+        if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+}
+
+// AWASH SHAPES ARE WATER. A shoal, a lily bed, a weed bed is something you sail over, so a
+// crown reaching across one is still reaching over water and still has to get out of the way.
+function pointOnLand(x, y) {
+    const islands = (state.course && state.course.islands) || [];
+    for (const isl of islands) {
+        if (isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
+        const dx = x - isl.x, dy = y - isl.y;
+        if (dx * dx + dy * dy > isl.radius * isl.radius) continue;   // bounding circle first
+        if (!pointInVerts(x, y, isl.vertices)) continue;
+        let inHole = false;
+        for (const h of (isl.holes || [])) {
+            if (h && h.length >= 3 && pointInVerts(x, y, h)) { inHole = true; break; }
+        }
+        if (!inHole) return true;
+    }
+    return false;
+}
+
+// The stem, sixteen points round the rim, and eight at two thirds out. The rim is where the
+// answer usually lives — a tree rooted well inland whose crown still reaches past the shore is
+// exactly the case this must catch, and its stem sample says "land". The inner ring is for the
+// other shape of the same question: a crown big enough to cover a whole pond or a narrow
+// channel, where the rim is on land all the way round and the water is underneath the middle.
+//
+// ⚠️ THE SAMPLE COUNT IS CHOSEN BY WHICH WAY IT FAILS, not by cost. A false "over water" costs
+// one tree a little transparency near the player. A false "on land" leaves a SOLID crown over
+// open water, which can swallow the hull — the one thing the whole fade exists to prevent. So
+// this errs toward detecting overlap: at sixteen points a 198u white pine samples its rim every
+// 39u, finer than the 56u hull that has to stay visible under it.
+const CANOPY_RIM_SAMPLES = 16;
+const CANOPY_INNER_SAMPLES = 8;
+function crownOverWater(p, worldW) {
+    if (p._overWater !== undefined) return p._overWater;
+    const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
+    const r = worldW * 0.5;
+    let over = !pointOnLand(x, y);
+    for (let k = 0; !over && k < CANOPY_RIM_SAMPLES; k++) {
+        const a = (k / CANOPY_RIM_SAMPLES) * Math.PI * 2;
+        if (!pointOnLand(x + r * Math.cos(a), y + r * Math.sin(a))) over = true;
+    }
+    for (let k = 0; !over && k < CANOPY_INNER_SAMPLES; k++) {
+        const a = (k + 0.5) / CANOPY_INNER_SAMPLES * Math.PI * 2;   // offset off the rim spokes
+        if (!pointOnLand(x + r * 0.66 * Math.cos(a), y + r * 0.66 * Math.sin(a))) over = true;
+    }
+    if (p.motion !== 'drift') p._overWater = over;   // a drifter's answer moves with it
+    return over;
 }
 
 // WHICH SPRITE THIS PROP SHOWS IN THIS PLANE, which is not always its own.
@@ -8298,8 +8835,11 @@ function drawProps(ctx, plane) {
         // drawImage still costs the composite. Worth an explicit skip on a venue holding
         // 1500 trees: the fade reaches twenty hull lengths, so the crowns nearest the
         // camera — the big ones, the expensive ones — are exactly the ones at zero.
+        // ...and only a crown that OVERHANGS WATER fades at all: one standing wholly on land
+        // cannot hide a hull, so it stays a solid tree. See crownOverWater.
         const alpha = (PROP_PLANE_ALPHA[plane] || 1)
-                    * (plane === 'canopy' ? canopyAlpha(p) : 1);
+                    * (plane === 'canopy' && crownOverWater(p, w)
+                       ? canopyAlpha(p, (reg[p.kind] || {}).fadeMin) : 1);
         if (alpha <= 0.004) continue;
         ctx.save();
         ctx.globalAlpha = alpha;
@@ -9864,6 +10404,7 @@ function computeWindPressureScaleRaw() {
     // invent a range on the nine venues whose wind is one uniform region. The forecast
     // reads these instead. See windRangeText().
     state.wind.spread = { lo: loAcc / phasesUsed, hi: hiAcc / phasesUsed, med };
+
     let lo = Math.min(loAcc / phasesUsed, med * (1 - PRESSURE_MIN_SPAN));
     let hi = Math.max(hiAcc / phasesUsed, med * (1 + PRESSURE_MIN_SPAN));
 
@@ -9881,6 +10422,47 @@ function computeWindPressureScaleRaw() {
     if (biggest > 0) { hi += biggest * 0.5; lo -= biggest * 0.5 * LULL_RATIO; }
 
     state.wind.pressure = { lo: Math.max(0, lo), hi, med };
+}
+
+// The LIGHT build's stand-in for computeWindPressureScale: a spread read straight off
+// the authored wind regions — min/max of their stated speeds, oscillation included —
+// instead of sampling the blended field over the course at eight phases. Rougher (it
+// ignores where the regions ARE), but the board's "10–15 kt" line is a forecast, not a
+// measurement, and this costs microseconds where the scan costs most of a second. The
+// pressure ramp gets the same clamp-and-headroom shape the scan builds, so the streak
+// layer behind the overlay keeps reading sensible colours; the full build at Start
+// replaces both with the measured versions.
+function lightWindSpread(c) {
+    const base = (c && c.windBaseSpeed) || state.wind.baseSpeed || 12;
+    // AREA-WEIGHTED p10/p90 across the regions, not min/max: the scan's percentiles are
+    // dominated by the big regions the course actually sits in, and a min/max let one
+    // small authored calm pocket drag the forecast to "0–7 kt" on a 4-knot bayou.
+    // Oscillation is left out for the same reason the scan mostly cancels it: it
+    // measures the MEAN field.
+    const entries = [];
+    for (const r of ((c && c.windRegions) || [])) {
+        const s = r.speed != null ? r.speed : base;
+        const a = Math.abs(window.VenueDoc.ringArea ? window.VenueDoc.ringArea(r.poly) : 1) || 1;
+        entries.push([s, a]);
+    }
+    let lo = base, hi = base;
+    if (entries.length) {
+        entries.sort((x, y) => x[0] - y[0]);
+        const total = entries.reduce((a, e) => a + e[1], 0);
+        const at = (f) => {
+            let acc = 0;
+            for (const [s, a] of entries) { acc += a; if (acc >= total * f) return s; }
+            return entries[entries.length - 1][0];
+        };
+        lo = at(0.10); hi = at(0.90);
+    }
+    state.wind.spread = { lo: Math.max(0, lo), hi, med: base };
+    let pLo = Math.min(lo, base * (1 - PRESSURE_MIN_SPAN));
+    let pHi = Math.max(hi, base * (1 + PRESSURE_MIN_SPAN));
+    let biggest = 0;
+    for (const r of ((c && c.gustRegions) || [])) if (r.count > 0 && r.gustKt > biggest) biggest = r.gustKt;
+    if (biggest > 0) { pHi += biggest * 0.5; pLo -= biggest * 0.5 * LULL_RATIO; }
+    state.wind.pressure = { lo: Math.max(0, pLo), hi: pHi, med: base };
 }
 
 // 0 at the course's light end, 1 at its heavy end. Every channel the streak layer varies
@@ -11341,6 +11923,13 @@ function renderVenueDetail(key) {
     }
 
 
+    // THE COMPUTED HALF OF THE BOARD IS PENDING until the deferred light build lands —
+    // selection paints from the document alone first, and state.course still holds the
+    // previous venue for a beat. Everything derived from state (the wind range, the
+    // course numbers, the chart) shows an ellipsis rather than the WRONG venue's
+    // numbers; everything authored (name, blurb, hazards, art) is already right.
+    const pending = !state.course || state.course.venueKey !== key;
+
     // Water = what the water itself is doing: current, swell, glass, chop.
     // THE AUTHOR'S LINE WINS. The card is written against the real course in the
     // editor now, and "Slight ebb" is a better briefing than any number derived from
@@ -11348,7 +11937,7 @@ function renderVenueDetail(key) {
     // on-course set (courseCurrentMax — a knot or more is a stream, less a drift)
     // for a venue that authors current, the player's uniform dial otherwise.
     let waterVal = c.conditions;
-    if (!waterVal) {
+    if (!waterVal && !pending) {
         const onCourse = courseCurrentMax();
         if (onCourse != null) {
             if (onCourse >= 0.15) waterVal = onCourse.toFixed(1) + (onCourse >= 0.9 ? ' kt stream' : ' kt drift');
@@ -11424,14 +12013,14 @@ function renderVenueDetail(key) {
                 <div id="venue-records-inline" style="position:absolute; bottom:0; right:0; display:none; min-width:0; overflow:hidden;"></div>
             </div>
             <div class="pr-facts flex flex-col gap-1.5" style="flex:0 1 360px; min-width:240px; align-self:flex-end;">
-                ${row('Wind', windRangeText())}
-                ${row('Water', waterVal || '&mdash;')}
+                ${row('Wind', pending ? '&hellip;' : windRangeText())}
+                ${row('Water', waterVal || (pending ? '&hellip;' : '&mdash;'))}
                 ${row('Hazards', c.hazards || '—')}
-                ${row('Course', courseSummaryText())}
-                ${row('Time Limit', timeLimitText())}
+                ${row('Course', pending ? '&hellip;' : courseSummaryText())}
+                ${row('Time Limit', pending ? '&hellip;' : timeLimitText())}
             </div>
         </div>`;
-    layoutVenueCourseMap();
+    layoutVenueCourseMap(pending);
 }
 
 // ── The course chart ────────────────────────────────────────────────────────
@@ -11448,8 +12037,13 @@ function renderVenueDetail(key) {
 function courseSummaryText() {
     let units = 0;
     const dmc = state.course && state.course.dmc;
+    const remembered = state.course && _venueStats[state.course.venueKey];
     if (dmc && dmc.total > 0) {
         units = dmc.total;
+    } else if (remembered && remembered.total > 0) {
+        // A light course has no router paths, but this venue has been fully built
+        // before — quote the real sailed distance it measured then.
+        units = remembered.total;
     } else {
         for (let leg = 1; leg <= state.race.totalLegs; leg++) {
             const a = legTargetPoint(leg - 1), b = legTargetPoint(leg);
@@ -11465,7 +12059,14 @@ function courseSummaryText() {
 // when it has one, otherwise derived from the course length. Anyone still on the
 // water at this time is scored DNF.
 function timeLimitText() {
-    const cutoff = (state.course && state.course.cutoff != null)
+    // On a light course whose document authors no cutoff, the stated limit is the
+    // straight-line estimate — prefer the one a past FULL build measured, if any.
+    const remembered = state.course && _venueStats[state.course.venueKey];
+    const cutoff = (state.course && state.course.loadState === 'light'
+                    && (!state.course.doc || state.course.doc.course.cutoff == null)
+                    && remembered && remembered.cutoff != null)
+        ? remembered.cutoff
+        : (state.course && state.course.cutoff != null)
         ? state.course.cutoff
         : (state.race.totalLegs * state.race.legLength) / 5 * 0.1875;
     if (cutoff <= 0) return '&mdash;';
@@ -11478,9 +12079,18 @@ function timeLimitText() {
 // side. Below ~400px of section width the facts column would be crushed, so the chart
 // yields — the Course row states its numbers either way. (At 1280 the whole briefing
 // is cramped — the blurb collapses there too; this is the same trade.)
-function layoutVenueCourseMap() {
+function layoutVenueCourseMap(pending) {
     const box = document.getElementById('venue-course-box');
     if (!box) return;
+    // While the selection's light build is still in flight, the chart holds off
+    // entirely — state.course is the PREVIOUS venue, and a wrong chart for a beat is
+    // worse than a blank one. The build's completion re-renders the panel.
+    if (pending) {
+        box.style.display = 'none';
+        if (_chartAnim.raf) { cancelAnimationFrame(_chartAnim.raf); _chartAnim.raf = 0; }
+        if (_chartAnim.ro) { _chartAnim.ro.disconnect(); _chartAnim.ro = null; }
+        return;
+    }
     const section = box.parentElement;
     const show = !!(state.course && state.course.route && state.course.route.length)
         && section.clientWidth >= 404;
@@ -12558,17 +13168,29 @@ function escapeHTMLText(s) {
     ));
 }
 
-function selectVenue(key) {
-    if (!(window.VenueDoc && window.VenueDoc.get(key)) || state.race.status !== 'waiting') return;
-    settings.venue = key;
-    saveSettings();
+// ── Selecting a venue is TWO beats ──────────────────────────────────────────
+// The click paints immediately from the document alone — art, name, blurb, the authored
+// card rows — and the computed half of the board (wind range, distance, the chart)
+// arrives one breath later from a LIGHT course build. It used to run the full build in
+// the click handler, and a click that spends two seconds building a nav grid before it
+// repaints reads as a click that did not work. The FULL build — validator, planner,
+// router legs, pressure scan — waits until Start Race, behind a stated loading step.
+//
+// The token retires a deferred build the moment a newer click or a Start supersedes
+// it — without it, clicking four tiles queued four stale builds behind the paint.
+let _venueLoadToken = 0;
+let _venueLoading = false;   // a full load is in flight; the UI is showing why
 
+// The world made current for settings.venue — everything selectVenue used to do besides
+// paint. One body for both builds: the board's deferred light pass and Start's full
+// pass, so the two can never disagree about what "loaded" includes.
+function loadVenueWorld(opts) {
     // No per-venue conditions here: every venue's day is stated by its document's
     // regions, and initCourse()'s compile writes them over whatever the last venue
     // left behind. (Bay once had no doc and needed a re-roll on return; it is a
     // designed venue now like everything else.)
     applyVenueConditions();
-    initCourse();
+    initCourse(opts);
     if (window.WaterRenderer) window.WaterRenderer.init();
     // Clear stale gusts and reseed at the new venue's density/strength
     state.gusts = [];
@@ -12590,7 +13212,45 @@ function selectVenue(key) {
     // Consumes no RNG, so the golden traces are untouched.
     repositionBoats();
 
+    // A FULL build just priced the course honestly — remember the numbers, so the next
+    // time this venue is merely browsed the board can quote the real sailed distance
+    // and limit instead of the light build's straight-line guess. Survives reloads:
+    // a venue you have raced once never shows the guess again.
+    if (state.course.loadState === 'full' && state.course.dmc && state.course.dmc.total > 0) {
+        _venueStats[state.course.venueKey] = {
+            total: state.course.dmc.total,
+            cutoff: state.course.cutoff != null ? state.course.cutoff : null
+        };
+        try { localStorage.setItem('regatta_venue_stats', JSON.stringify(_venueStats)); } catch (e) {}
+    }
+}
+
+// The priced numbers from past full builds, by venue — see loadVenueWorld.
+let _venueStats = {};
+try { _venueStats = JSON.parse(localStorage.getItem('regatta_venue_stats')) || {}; } catch (e) { _venueStats = {}; }
+
+function selectVenue(key) {
+    if (!(window.VenueDoc && window.VenueDoc.get(key)) || state.race.status !== 'waiting') return;
+    if (_venueLoading) return;   // mid "Preparing…" — the start already owns the world
+    settings.venue = key;
+    saveSettings();
+
+    // Beat one: paint now, from the document alone. renderVenueDetail shows the
+    // computed rows as pending while state.course still holds another venue.
+    const token = ++_venueLoadToken;
     setupPreRaceOverlay();
+
+    // Already built for this venue — a return visit after a race, or a double click —
+    // so there is nothing to defer and nothing to downgrade: a FULL course must never
+    // be rebuilt as a light one, or Start would pay for the same venue twice.
+    if (state.course && state.course.venueKey === key) return;
+
+    // Beat two: the light course, after the click has painted.
+    setTimeout(() => {
+        if (token !== _venueLoadToken || state.race.status !== 'waiting') return;
+        loadVenueWorld({ light: true });
+        renderVenuePicker();
+    }, 30);
 }
 
 function setupPreRaceOverlay() {
@@ -12698,10 +13358,68 @@ function renderCompetitorGrid() {
     UI.prCompetitorsGrid.scrollTop = scrollTop;
 }
 
+// ── Starting a race is where the FULL venue is paid for ─────────────────────
+// Browsing built a light course (no validator, no planner estimate, no router legs, no
+// pressure scan); racing needs all four. If the world is already full for this venue —
+// a rematch, or the venue the session booted into — the gun is immediate. Otherwise a
+// loading card states what is happening while the build runs, and the race is not shown
+// until it is ready. Each step yields through a short TIMEOUT so the card (and each
+// message) paints before the main thread disappears into the build — a timeout and not
+// requestAnimationFrame, because rAF never fires in a hidden tab and a player who
+// switches away mid-load must come back to a race, not to a stuck curtain.
 function startRace() {
-    if (state.race.status !== 'waiting') return;
+    if (state.race.status !== 'waiting' || _venueLoading) return;
+    if (state.course && state.course.venueKey === settings.venue && state.course.loadState === 'full') {
+        beginRace();
+        return;
+    }
+    _venueLoading = true;
+    _venueLoadToken++;           // retire any deferred light build still queued
+    showVenueLoading(settings.venue);
+    const step = (msg, fn) => new Promise((res) => {
+        setVenueLoadingMsg(msg);
+        setTimeout(() => { fn(); res(); }, 50);
+    });
+    (async () => {
+        try {
+            await step('Charting the course…', () => loadVenueWorld());
+        } finally {
+            _venueLoading = false;
+            hideVenueLoading();
+        }
+        renderVenuePicker();     // the board's numbers upgrade to the priced ones
+        beginRace();
+    })();
+}
 
+// The loading card: a dark curtain with the venue's name and one line of what is
+// happening. Built lazily — most sessions that never switch venue never make it.
+let _venueLoadingEl = null;
+function showVenueLoading(key) {
+    const c = venueCard(key);
+    if (!_venueLoadingEl) {
+        _venueLoadingEl = document.createElement('div');
+        _venueLoadingEl.id = 'venue-loading';
+        _venueLoadingEl.style.cssText = 'position:fixed; inset:0; z-index:220; display:flex;'
+            + 'flex-direction:column; align-items:center; justify-content:center; gap:10px;'
+            + 'background:rgba(5,10,20,0.94);';
+        document.body.appendChild(_venueLoadingEl);
+    }
+    _venueLoadingEl.innerHTML = `
+        <span class="t-label t-label-sm" style="color:#8fd8d0; letter-spacing:0.14em;">Preparing</span>
+        <span class="t-display uppercase" style="color:#ffffff; font-size:34px;">${c.name || c.tag || key}</span>
+        <span id="venue-loading-msg" class="t-mono" style="color:#9fd3dd; font-size:13px;"></span>`;
+    _venueLoadingEl.style.display = 'flex';
+}
+function setVenueLoadingMsg(msg) {
+    const el = document.getElementById('venue-loading-msg');
+    if (el) el.textContent = msg;
+}
+function hideVenueLoading() {
+    if (_venueLoadingEl) _venueLoadingEl.style.display = 'none';
+}
 
+function beginRace() {
     if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
     UI.leaderboard.classList.remove('hidden'); // Or hidden if prestart logic handles it
     // Prestart logic usually hides leaderboard until start? No, updateLeaderboard logic: if 'prestart' UI.leaderboard.classList.add('hidden');
@@ -14057,6 +14775,24 @@ function updateBoat(boat, dt) {
         boat.shoalMul = 1;
     }
 
+    // RAPIDS. Turbulence only — a rapid authors no flow; whatever stream runs through
+    // it is the Current layer's and arrives through getCurrentAt below. Broken water
+    // robs drive the way a bar does: a multiplier on the TARGET, so the boat's own
+    // constants decide how the speed bleeds off and comes back. And it shoves the bow:
+    // a band-limited wobble on the HEADING itself — the one water effect allowed to
+    // touch it, because turbulence really does turn the boat, where a stream only
+    // carries it. Phase is dealt per boat from a counter and the shape is pure in
+    // state.time, so a fleet in the same stopper tosses independently and no RNG is
+    // drawn.
+    boat.rapidsTurb = rapidsTurbAt(boat.x, boat.y);
+    if (boat.rapidsTurb > 0.01) {
+        targetKnots *= (1 - RAPIDS_DRAG * boat.rapidsTurb);
+        if (boat._rapidsPhase == null) boat._rapidsPhase = (_rapidsPhaseN++ % 32) * 2.399963;
+        const p = boat._rapidsPhase;
+        const shove = Math.sin(state.time * 2.3 + p) * 0.62 + Math.sin(state.time * 6.1 + p * 1.7) * 0.38;
+        boat.heading = normalizeAngle(boat.heading + RAPIDS_YAW * boat.rapidsTurb * shove * dt);
+    }
+
     let targetGameSpeed = targetKnots * 0.25;
 
     // Penalties no longer slow the boat directly — the cost is the owed 360°
@@ -15389,15 +16125,20 @@ function checkNearMisses(dt) {
 // see refreshBotGrid for what reading it raw cost.
 const WORLD_CLOCK = 0.24;
 
-// HOW FAR THE CAMERA LOOKS PAST THE BOW, as a fraction of the frame's height. 0.25 puts the
-// boat three quarters of the way down the screen and gives the water ahead three quarters of
-// the frame instead of half. Read only in heading mode — see the note at the camera follow.
+// HOW FAR THE CAMERA LOOKS PAST THE BOW, as a fraction of the frame's height. The boat ends
+// up at `0.5 + this` down the screen, so 1/6 puts it two thirds of the way down and splits
+// the frame two-to-one in favour of the water ahead. Read only in heading mode — see the
+// note at the camera follow.
 //
-// ⚠️ THE BOAT MUST KEEP ROOM BELOW IT. drawBoatInstruments hangs its panel BI_DROP + BI_H
-// under the hull and projects it through the real transform, so it follows the boat down;
-// at 0.25 there is a quarter of the frame beneath and it clears comfortably. Push this much
-// past 0.3 and that panel starts running off the bottom edge.
-const CAM_LOOK_AHEAD = 0.25;
+// ⚠️ IT IS A TRADE, NOT A FREE WIN, and that is why it is not larger. Everything the offset
+// buys ahead of the bow it takes from ASTERN, where the boat on your transom is. At 1/4 that
+// was a third of the rearward view gone; 1/6 keeps more of it while still giving the forward
+// half of the frame most of the picture.
+//
+// ⚠️ THE BOAT MUST ALSO KEEP ROOM BELOW IT. drawBoatInstruments hangs its panel BI_DROP +
+// BI_H under the hull and projects it through the real transform, so it follows the boat
+// down. Past about 0.3 that panel starts running off the bottom edge.
+const CAM_LOOK_AHEAD = 1 / 6;
 
 function update(dt) {
     state.time += WORLD_CLOCK * dt;
@@ -15466,7 +16207,12 @@ function update(dt) {
                 wakeSource(pr.x, pr.y, kw * (pr.scale || 1) * 0.45);
             }
         }
+
     }
+
+    // Rapids whitewater is NOT a particle system any more — see drawRapidsFoam. A
+    // particle is a thing that travels, and anything that travels reads as an object;
+    // broken water is a FIELD. The foam is drawn from the regions directly, statelessly.
 
     // Drifting ice floes — authored by the venue document (`c.ice`); a no-op
     // wherever none are.
@@ -15780,7 +16526,11 @@ function update(dt) {
         // pressure cue AND the one that most easily becomes a curtain. The gradient below
         // the ceiling is what carries the reading; the ceiling is what keeps it readable.
         const _c = cometCfg();
-        const chance = Math.min(STREAK_MAX_SPAWN, _c.dens0 + _c.dens1 * windiness * (0.3 + 0.7 * t * t));
+        // ⚠️ THE PRESSURE WEIGHT IS THE CONTRAST. The constant term is density you get for
+        // being on windy water at all; the t² term is density you get for being on the WINDY
+        // SIDE of this course. Measured puff:clear was 1.5-1.7 against the 2.5 this layer's
+        // own note claims to deliver, so the constant came down and the weighted term went up.
+        const chance = Math.min(STREAK_MAX_SPAWN, _c.dens0 + _c.dens1 * windiness * (0.18 + 0.82 * t * t));
         if (fxRand() >= chance) continue;
         createParticle(sx, sy, 'wind', {
             life: 1.0,
@@ -16231,9 +16981,23 @@ const WIND_WATER_RECHECK = 0.12;  // seconds between "am I still over water" tes
 // a fast parcel still draws a longer streak than a slow one beside it. And `span` stays
 // absolute, so a 4-knot Gatorgrass streak is still finer and shorter than a 16-knot
 // Bluewater one. The layer stops being uniform-bare; it does not start lying about knots.
-const STREAK_REF_WIND = 9;        // knots the fixed tail window was tuned around
+// ⚠️ 9 -> 12. This is the wind the fixed tail window was tuned around, and a course whose
+// median sits below it gets the window stretched so a slow parcel still draws a readable
+// mark. At 9 it barely engaged on Stillwater (median 7.5 -> a 1.2x stretch, leaving 6-knot
+// streaks 31 units long — shorter than a boat). At 12 that course gets 1.6x. A course
+// already at or above 12 knots gets `max(1, ...)` = exactly 1, so every fresh-breeze venue
+// keeps the window it has.
+const STREAK_REF_WIND = 12;       // knots the fixed tail window was tuned around
 const STREAK_TAIL_MAX = 2.5;      // most the window may stretch, so a lull cannot draw a comb
-const STREAK_FLOOR_FRAC = 0.6;    // floor, as a fraction of the course's own median
+// ⚠️ 0.6 -> 0.42. The floor is what `windiness` measures up from, and on a light course it
+// was sitting so close to the median that the whole light HALF of the water came out near
+// zero: Stillwater's 6-knot water scored 0.31 and drew 5 comets on screen. Six knots of
+// breeze puts real cat's-paws on real water — that is a patch a sailor reads, not a hole.
+//
+// ⚠️ IT CANNOT AFFECT A WINDY VENUE. The floor is `min(STREAK_MIN_WIND, med * this)`, so on
+// any course whose median is above ~13 knots the absolute 5.5 cap decides it and this value
+// is never consulted. Bluewater, Glacier Sound and Redrock are untouched.
+const STREAK_FLOOR_FRAC = 0.42;   // floor, as a fraction of the course's own median
 let _streakRef = { floor: STREAK_MIN_WIND, span: 9, tailStep: WIND_TAIL_STEP, fadeIn: WIND_FADE_IN };
 function computeStreakRef() {
     const P = state.wind.pressure;
@@ -16324,7 +17088,17 @@ const CUR_HALO_A = 0.55;          // halo alpha, x the core
 // see the note in streakChannels for why they are clamps rather than coefficients.
 const STREAK_MAX_ALPHA = 0.55;      // never opaque: boats, marks and labels stay on top
 const STREAK_MAX_HALFWIDTH = 2.3;   // world units, so ~4.6 px across the head at 1:1
-const STREAK_MAX_SPAWN = 0.20;      // per attempt, 2 attempts a frame — the density ceiling
+// ⚠️ THE CEILING WAS THE BINDING CONSTRAINT, not the ramp. At 0.20 per attempt with two
+// attempts a frame the layer tops out at ~24 spawns a second, which over a 4.5 s life is
+// ~108 alive and — since the spawn box is 1.35x the screen on each axis and only about a
+// third of it lands in view — barely 38 comets on screen AT MAXIMUM PRESSURE. Measured, the
+// actual population was 5 on Stillwater and 16 on Redrock (eval/_puff_read.js): far under
+// even that ceiling, on the two venues whose whole point is reading a patchy breeze.
+//
+// A player cannot read a gradient off five marks. Raised so the windy end can reach a
+// readable population; the floor and the ramp below decide where it actually sits, and the
+// lull still goes bare because `windiness` gates it, not this.
+const STREAK_MAX_SPAWN = 0.50;      // per attempt, 2 attempts a frame — the density ceiling
 const WIND_BEACH_FADE = 0.35;     // seconds to fade out on reaching land — and the
                                   // look-ahead, so the fade finishes AT the shore
 
@@ -16442,14 +17216,24 @@ const COMET = {
     // old width the streaks were competing with the boats for the eye rather than sitting
     // under them. STREAK_MAX_HALFWIDTH came down with them so the ceiling still bites.
     w0: 0.9,  w1: 1.05,              // half-width, same
-    // ⚠️ 0.50 -> 0.40. Light air should be drawn as FINE white marks, not as pale fat ones:
-    // once the layer had a floor low enough to spawn on a 4-knot venue at all, the width it
-    // spawned at read as a fresh-breeze streak that had merely lost its colour. The lower
-    // floor is safe now for the same reason it was not before — density and length are no
-    // longer collapsing at the same time (see computeStreakRef).
-    wLight: 0.40,                    // width multiplier in the lightest air the layer draws
+    // ⚠️ 0.40 -> 0.62, and the reason the 0.40 was wrong is that the premise behind it was
+    // not true yet. It was set on the argument that density and length no longer collapse
+    // with width — but measured per wind band (eval/_comet_lowend.js), on Stillwater, where
+    // 72% of the water sits under 8 knots, all THREE still did: 31-43 units long, 0.39-0.56
+    // half-width, 5-14 comets on screen, against 100u / 1.2 / 36 in the 15-20 band. Three
+    // collapsing channels is the compounding failure computeStreakRef was written to stop,
+    // one rung further down the ramp than it was tuned for.
+    //
+    // ⚠️ THE TOP IS UNTOUCHED BY CONSTRUCTION, which is why this is the safe lever: the
+    // multiplier is `wLight + (1 - wLight) * abs`, and `abs` reaches 1 in a fresh breeze, so
+    // the value here cancels out entirely there. It moves the light end and nothing else.
+    wLight: 0.62,                    // width multiplier in the lightest air the layer draws
     taper: 0.45,                     // body profile: 1 = straight cone, lower = holds width
-    dens0: 0.035, dens1: 0.21        // spawn chance floor and pressure-weighted span
+    // ⚠️ DENSITY IS THE PRESSURE CUE, and it was too thin to be one. `dens1` carries the
+    // spread and it was set when the ceiling above clipped everything anyway. The floor
+    // stays low on purpose: it is what keeps a lull sparse rather than merely dimmer, which
+    // is both what a sailor sees and the only encoding that survives on a dark palette.
+    dens0: 0.05, dens1: 0.55         // spawn chance floor and pressure-weighted span
 };
 const cometCfg = () => (typeof window !== 'undefined' && window.__COMET) ? Object.assign({}, COMET, window.__COMET) : COMET;
 
@@ -18611,58 +19395,120 @@ function drawWater(ctx) {
     }
 }
 
-// Puff/lull sprites: the radial gradient is baked ONCE per venue palette to an
-// offscreen canvas, then each gust is a single drawImage. Building 25 fresh
-// gradients + huge ellipse fills per frame was one of the biggest paint costs.
-let GUST_SPRITES = null;
 // ── A PUFF IS A PATCH OF DIFFERENT-COLOURED WATER, AND NOTHING ELSE ─────────
 //
-// A cat's-paw is the water going dark and rough; a hole is the water going glassy and
-// pale. That is the whole visual. It does NOT get its own wind graphic — the wind it
-// carries is already in the field, so the comet layer draws it: inside a puff the streaks
-// run longer, wider, denser and warmer, because `getWindAt` says the wind there is
-// stronger. Two layers drawing "wind" is two layers to reconcile, and they never agreed.
+// A cat's-paw is the water going dark and rough; a hole is the water going glassy and pale.
+// That is the whole visual. It does NOT get its own wind graphic — the wind it carries is
+// already in the field, so the comet layer draws it: inside a puff the streaks run longer,
+// wider, denser and warmer, because `getWindAt` says the wind there is stronger. Two layers
+// drawing "wind" is two layers to reconcile, and they never agreed.
 //
-// Glacier Sound's puffs used to bake white flurry streaks along their own axis
-// (`palette.gusts.snow`). They read as a second wind direction laid over the first, at a
-// different angle from the comets, and they are gone. The field is the single source.
-function bakeGustSprites() {
+// ── WHY IT IS A FACETED PATCH AND NOT A SOFT GRADIENT ──────────────────────
+//
+// It was a baked radial-gradient sprite, and three things were wrong with it, all measured
+// (eval/_puff_tone.js, eval/_puff_read.js):
+//
+//   TOO STRONG      the core ran to 13-18% of full scale on Stillwater. The guide for a
+//                   "just perceptible" step on a flat field is 1-2%; 5% already reads as an
+//                   overlay laid on the picture rather than as the water being different.
+//   INCONSISTENT    the same code gave 4.4% on Bluewater, 0.0% on Redrock and 17.7% on
+//                   Stillwater, because the delta was an authored COLOUR at a fixed alpha
+//                   over ten different waters. Whether you could see a puff at all depended
+//                   on the venue's palette.
+//   WRONG IDIOM     a smooth radial falloff has no edge, and the edge is the thing. What a
+//                   sailor actually looks for is the boundary — "you can see the breeze on
+//                   the water AND its edges" — because that is what tells you when it
+//                   arrives. It is also the one gradient left in a style guide whose third
+//                   pillar is that this game never blurs.
+//
+// So: two flat tonal bands on the cell's own intensity contours, with torn edges, at an
+// alpha CALIBRATED per venue to land on a fixed perceptual step. The tone is now a
+// supporting cue — the comet density is the primary one, which is the honest ordering,
+// because density is what survives a cell bigger than the screen.
+//
+// ⚠️ THE MINIMAP IS A SEPARATE DRAW and keeps its gradient. Two different jobs: the chart is
+// read as a weather map, where a soft blob is the right idiom and there is no water for it
+// to be a property of. Nothing here touches it.
+//
+// ⚠️ OVERLAPPING CELLS COMPOUND HERE AND ARE CLAMPED IN THE PHYSICS, and that is a known,
+// bounded divergence rather than an oversight. getWindAt limits stacked same-sign puffs to
+// the strongest single cell's worth ("two patches of the same descended air overlapping is
+// still that air, not twice it"); these are independent polygon fills, so where cells
+// overlap their alphas composite. Measured on flat water with all fourteen of Stillwater's
+// cells in frame: p1 -3.1% of full scale, p99 +1.6%, worst pixel 5.1% against the 2.2%
+// target, and 5.4% of pixels past 2.5%. Matching the clamp exactly needs the layer rendered
+// through an offscreen max-composited mask — a full-screen clear and composite every frame
+// to correct a 5% worst case on a small fraction of pixels. Not worth the frame for that;
+// revisit if cell counts per venue go up.
+const PUFF_TONE_CORE = 0.022;   // core delta as a fraction of full scale — "just perceptible"
+const PUFF_TONE_BANDS = [       // [intensity contour, share of the core delta]
+    [0.12, 0.45],
+    [0.55, 0.55]
+];
+const PUFF_TONE_TEAR = 0.07;    // ragged edge, as a fraction of the cell radius
+const PUFF_TONE_NODES = 18;     // polygon nodes per contour
+const PUFF_TONE_MAX_A = 0.30;   // alpha ceiling, for a venue whose tint sits near its water
+const PUFF_TONE_SEP = 0.22;     // lightness the tint is pushed from the water, in HSL
+
+// t such that smoothstep(t) = v. Closed form, exact at both ends — the contour radius for a
+// given intensity is 1 - this, because intensity = smoothstep(1 - sqrt(distSq)).
+const puffInvSmooth = (v) => 0.5 - Math.sin(Math.asin(1 - 2 * Math.max(0, Math.min(1, v))) / 3);
+
+// ⚠️ CALIBRATED, NOT AUTHORED. The alpha that produces a given luma step depends on how far
+// the tint is from the water it is drawn over, and that is a different distance on every
+// venue. Solving for it here is what makes "just perceptible" a property of the code rather
+// than of ten hand-tuned palettes — and it is why Redrock stopped being invisible and
+// Stillwater stopped being a wash.
+let _puffCal = null;
+function puffToneCal() {
     const gc = activeGustColors;
-    const make = (stops) => {
-        const c = document.createElement('canvas');
-        c.width = c.height = 256;
-        const g2 = c.getContext('2d');
-        const grad = g2.createRadialGradient(128, 128, 0, 128, 128, 128);
-        for (const [pos, color] of stops) grad.addColorStop(pos, color);
-        g2.fillStyle = grad;
-        g2.fillRect(0, 0, 256, 256);
-        return c;
+    const wc = window.WATER_CONFIG || {};
+    const key = JSON.stringify([gc.gustDark, gc.lullBright, wc.baseColor]);
+    if (_puffCal && _puffCal.key === key) return _puffCal;
+    const luma = (c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    const hex = String(wc.baseColor || '#0ea5e9').replace('#', '');
+    const wRGB = [parseInt(hex.slice(0, 2), 16), parseInt(hex.slice(2, 4), 16), parseInt(hex.slice(4, 6), 16)];
+    const water = luma(wRGB);
+    const [, , lW] = rgbToHsl(wRGB[0], wRGB[1], wRGB[2]);
+
+    // ⚠️ THE DIRECTION IS FORCED, NOT INHERITED. Calibrating only the MAGNITUDE against the
+    // authored tint left two venues broken, and both failures were silent:
+    //   Glacier Sound  gust tint sat within a luma step of its own water, so no alpha could
+    //                  move it — the layer measured 0.0% and the puffs were invisible.
+    //   Pearl Lagoon   its authored `lullBright` is DARKER than its water, so holes came out
+    //                  darker than clear air — the same direction as a gust, which is worse
+    //                  than showing nothing because it says the opposite of the truth.
+    // A cat's-paw is dark rough water and a hole is pale glassy water; that is physics, not a
+    // palette choice. So the venue keeps its HUE and SATURATION — its colour identity — and
+    // the LIGHTNESS is taken away from the water in the guaranteed direction.
+    //
+    // Floored and ceilinged rather than assumed: on water authored near black (Glowtide,
+    // lightness 0.24) there is not a full step of darkness available, so the gust takes what
+    // there is and `solve` raises the alpha to still land on the target luma step.
+    const push = (rgb, dir) => {
+        const [h, sat] = rgbToHsl(rgb[0], rgb[1], rgb[2]);
+        const l = Math.max(0.04, Math.min(0.94, lW + dir * PUFF_TONE_SEP));
+        return hslToRgb(h, sat, l);
     };
-    GUST_SPRITES = {
-        // Relative alpha profile is baked in; per-gust intensity is applied
-        // via globalAlpha at draw time.
-        gust: make([
-            [0, `rgba(${gc.gustDark[0]}, ${gc.gustDark[1]}, ${gc.gustDark[2]}, 1)`],
-            [0.55, `rgba(${gc.gustMid[0]}, ${gc.gustMid[1]}, ${gc.gustMid[2]}, 0.45)`],
-            [1, `rgba(${gc.gustMid[0]}, ${gc.gustMid[1]}, ${gc.gustMid[2]}, 0)`]
-        ]),
-        lull: make([
-            [0, `rgba(${gc.lullBright[0]}, ${gc.lullBright[1]}, ${gc.lullBright[2]}, 0.9)`],
-            [0.55, `rgba(${gc.lullMid[0]}, ${gc.lullMid[1]}, ${gc.lullMid[2]}, 0.4)`],
-            [1, `rgba(${gc.lullMid[0]}, ${gc.lullMid[1]}, ${gc.lullMid[2]}, 0)`]
-        ])
-    };
+    const gustC = push(gc.gustDark, -1);
+    const lullC = push(gc.lullBright, +1);
+    // |Lt - Lw| is how much one unit of alpha moves the water. A tint left close to the water
+    // needs a lot of alpha to shift it, and the ceiling stops that running away.
+    const solve = (tint) => Math.min(PUFF_TONE_MAX_A, (PUFF_TONE_CORE * 255) / Math.max(6, Math.abs(luma(tint) - water)));
+    _puffCal = { key, gust: solve(gustC), lull: solve(lullC), gustC, lullC, water };
+    return _puffCal;
 }
 
 function drawGusts(ctx) {
-    if (!GUST_SPRITES) bakeGustSprites();
-
+    const cal = puffToneCal();
+    const gc = activeGustColors;
     // Viewport cull: gusts live across the whole arena; most are off-screen.
     const camX = state.camera.x, camY = state.camera.y;
     const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
+    const T = state.time;
 
     for (const g of state.gusts) {
-        const rmax = Math.max(g.radiusX, g.radiusY);
+        const rmax = Math.max(g.radiusX, g.radiusY) * 1.4;
         const dx = g.x - camX, dy = g.y - camY;
         if (dx * dx + dy * dy > (viewR + rmax) ** 2) continue;
 
@@ -18672,22 +19518,44 @@ function drawGusts(ctx) {
         // barely visible in a fresh breeze, so cat's-paws read strongest when it's
         // light and wash out as it builds (real water cue; matches eSail/AC sailing).
         const airCue = 1.0 + Math.max(0, (14 - state.wind.baseSpeed) / 14) * 0.9; // ~1.0 heavy -> ~1.9 light
-        const alpha = Math.min(0.85, strength * 0.6 * airCue);
-        if (alpha <= 0.01) continue;
+        const isGust = g.type === 'gust';
+        const base = (isGust ? cal.gust : cal.lull) * strength * airCue;
+        if (base <= 0.002) continue;
+        const tint = isGust ? cal.gustC : cal.lullC;
+        // The cell's own ragged-edge seed, taken from fields it already carries. ⚠️ NOT a
+        // fresh Math.random(): the spawner draws from the SIMULATION stream, so one more
+        // call there would move every seeded race.
+        const seed = Math.abs(g.dirDelta * 941 + g.moveSpeedFactor * 7717);
 
         ctx.save();
         ctx.translate(g.x, g.y);
         ctx.rotate(g.rotation);
-        ctx.globalAlpha = alpha;
-        // Shifted UPWIND by the same amount the field is skewed. After the rotate, local +x
-        // is the along-wind axis the sampler calls rx, and the skewed cell's extent is
-        // centred at -PUFF_SKEW * radiusX on it. Drawing the sprite on the nominal centre
-        // instead would put the cat's-paw off the water the puff is felt on — and a puff you
-        // can see but not feel where you see it is worse than no puff at all.
-        ctx.drawImage(GUST_SPRITES[g.type === 'gust' ? 'gust' : 'lull'],
-                      -g.radiusX - PUFF_SKEW * g.radiusX, -g.radiusY, g.radiusX * 2, g.radiusY * 2);
+        ctx.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`;
+        for (const [level, share] of PUFF_TONE_BANDS) {
+            ctx.globalAlpha = Math.min(1, base * share);
+            // The contour of constant intensity, mapped back through the nose/tail skew so
+            // the drawn edge is exactly where the FELT edge is — a puff you can see but not
+            // feel where you see it is worse than no puff at all.
+            const R = 1 - puffInvSmooth(level);
+            ctx.beginPath();
+            for (let i = 0; i <= PUFF_TONE_NODES; i++) {
+                const a = (i / PUFF_TONE_NODES) * Math.PI * 2;
+                // Torn, and slowly churning: capillary ripple has a ragged boundary that
+                // works, and a perfectly smooth ellipse is the shape nothing on water has.
+                const tear = 1 + PUFF_TONE_TEAR * (Math.sin(a * 3 + seed + T * 1.7)
+                                                 + 0.6 * Math.sin(a * 7 - seed * 1.7 + T * 2.3));
+                const rr = R * tear;
+                const rx = Math.cos(a) * rr * g.radiusX;
+                const ry = Math.sin(a) * rr * g.radiusY;
+                const px = rx >= 0 ? rx * PUFF_NOSE : rx * PUFF_TAIL;
+                if (i === 0) ctx.moveTo(px, ry); else ctx.lineTo(px, ry);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
         ctx.restore();
     }
+    ctx.globalAlpha = 1;
 }
 
 // ── SURF: the sea breaking on the shore it is running at ────────────────────
@@ -19627,6 +20495,31 @@ const MINIMAP_ISLAND = {
     // other, so marsh still reads as the lighter margin between sward and bank.
     mud:      { body: '#37301f', top: '#37301f' },
     marsh:    { body: '#4b4228', top: '#4b4228' },
+    // ── SOCKEYE RUN'S FOREST, AND WHY THE CHART DISAGREES WITH THE GROUND ───────────
+    // Same argument as mud and marsh above, arrived at from the other end. `humus` and
+    // `mossfloor` both carry `trees: true`, so the chart was taking their VEG colour — the
+    // forest floor's own green — and drawing #4E5A34 and #7EA02A. Two problems with that.
+    //
+    // Humus at #4E5A34 sat only -10 luma against the water: the venue's biggest landform,
+    // the thing the whole river runs through, was dissolving into the channel at chart size.
+    // And mossfloor at #7EA02A was +45, BRIGHTER than the water and nearly as bright as the
+    // meadow — so the wettest, darkest forest on the map was charting as its most open
+    // ground, which is backwards.
+    //
+    // What a player needs off this chart is where the WOOD is, and a Southeast Alaska wood
+    // seen from above is the colour of Sitka spruce. So humus takes the shipped
+    // river-spruce-sitka sprite's own measured mean, #26382E, and mossfloor sits a shade
+    // greener and lighter as the damper variant — 15 luma apart and dE 16.9, so a designer
+    // can still tell the two forests apart, which at #4E5A34 vs #7EA02A they could (dE 45)
+    // but for the wrong reason.
+    //
+    // Against the water they now land at -42 and -19 luma, bracketing the bayou note's own
+    // -50/-32 finding. Meadow takes the recoloured tile's mean so the chart and the ground
+    // agree, and at +58 luma it is the brightest thing on the venue — which is the read:
+    // dark forest, bright meadow, pale gravel, and the river threading between them.
+    humus:     { body: '#26382E', top: '#26382E' },
+    mossfloor: { body: '#33563B', top: '#33563B' },
+    meadow:    { body: '#8DAD32', top: '#8DAD32' },
     // Fallback only. A bar's real chart colour is DERIVED per shape (shoalTintFor), so a
     // tan bar and a coral-white bar read differently here exactly as they do on the course.
     shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }
@@ -21725,6 +22618,10 @@ function draw() {
     // wind-wave crests all ride ON it. Drawing it over them would read as a decal.
     if (window.Swell) window.Swell.draw(ctx, state);
 
+    // Rapids whitewater: a texture ON the water, so over the swell shape and under the
+    // wakes — a boat's wash is disturbed water on top of whatever the river is doing.
+    drawRapidsFoam(ctx);
+
     drawWakes(ctx);
     // On the water with the fleet's wakes and under everything else, which is where a wake
     // belongs. Separate from drawWakes because it shares none of its machinery: no trail,
@@ -22839,6 +23736,81 @@ const ISLAND_STYLES = {
     // veg and rock are drier and paler shell rather than a green — the granite/redrock/mud
     // convention for a look that has no vegetation on it. No trees on a road.
     lane:     { body: '#cac2ad', stroke: '#afa898', veg: '#e0dbcc', rock: '#a29a8d', trees: false },  // body = bay-lane DELIVERED tile mean
+    // ── STILLWATER LAKE'S THREE GROUNDS ─────────────────────────────────────
+    // ALL THREE DELIVERED 2026-08-14, so every body below is its DELIVERED tile's own mean
+    // and every LAND_TEXTURES alpha is measured. With base equal to tile mean the blend
+    // cannot move the colour, only the spread around it. The other three tones on each row
+    // are the spec's own offsets carried onto the delivered body, the bayou-mud precedent.
+    //
+    // THE IN-VENUE TRIANGLE IS WHAT THESE WERE PICKED FOR, because all three share a
+    // shoreline and the player reads them apart at speed: floor-to-sand 22.9, floor-to-rock
+    // 28.9, sand-to-rock 22.7, against the cove's accepted sand-vs-rock 23.9.
+    //
+    // ⚠️ THE FLOOR IS LIGHTER THAN A NORTHWOODS TREE AND THAT IS DELIBERATE. At L* 50.9 it
+    // sits +22 above a white pine crown and +29 above a balsam fir, inside the cove's
+    // accepted +26/+37 band, so dark conifers read against it. It also sits 13-19 L* BELOW a
+    // paper birch or aspen crown, which is the same relationship the other way — this is the
+    // first ground in the game with light trees AND dark trees on it, and a medium value is
+    // what lets both read. Do not darken it toward the swamp's browns to look richer.
+    // `mud` is dE 21 away and `marsh` 12; both are cross-venue, so picker-only.
+    // ⚠️ THE DELIVERY IS 7.5 L* DARKER THAN SPEC AND THE TREE MARGINS TIGHTENED WITH IT.
+    // Spec was #8A7752 at L* 50.9, picked so a dark conifer would read against it; delivered
+    // is #7C633D at L* 43.4, so the white pine's margin fell from +22.1 to +14.7 and the
+    // balsam fir's from +28.1 to +20.8. Accepted, and the numbers are recorded so nobody
+    // re-derives them: both still clear on dE (33.8 and 37.3), and the darker floor IMPROVED
+    // the half of the problem that was always harder — the light half. Paper birch went from
+    // -9.2 to -16.5 and bracken fern from -2.4 to -9.8, so this venue's light trees now stand
+    // out where they were marginal. A floor carrying both light and dark canopy is a
+    // compromise by construction; this delivery moved the compromise toward the weaker side.
+    forestfloor: { body: '#7C633D', stroke: '#543F21', veg: '#40571F', rock: '#7E746B', trees: true },   // body = lake-forestfloor DELIVERED tile mean
+    // Coarse glacial beach. GREYER AND COOLER THAN `isle`, the shared ocean-beach tan it
+    // replaces here — dE 13.5 apart, against the 16.8 that separates `coralsand` from the
+    // same `isle`, so this is the same size of statement the lagoon's white sand already
+    // makes. Its nearest neighbour is bay's `lane` at 7.4, which is honest: crushed shell and
+    // glacial gravel are both pale mixed aggregate, and they can never share a race.
+    lakesand:    { body: '#B7A487', stroke: '#958469', veg: '#698A23', rock: '#958C7E', trees: true },   // body = lake-sand DELIVERED tile mean
+    // Ice-worn gneiss. veg is a paler DRY STONE and rock a darker one — the
+    // granite/redrock/coastalrock convention for a look with nothing growing on it, and the
+    // stroke carries coastalrock's own offsets onto this body (an 18.7 L* drop against its
+    // 18.6), so the coastline holds the same weight. No trees: bare rock.
+    gneiss:      { body: '#847F81', stroke: '#4E4B54', veg: '#938F95', rock: '#605D64', trees: false },  // body = lake-gneiss DELIVERED tile mean (2nd slab, 2026-08-15; was #807A7F)
+
+    // ── SOCKEYE RUN, 2026-08-16 ─────────────────────────────────────────────
+    // Declared with the art still at `slot`, on purpose: a style with no LAND_TEXTURES entry
+    // draws as its flat `body` colour, which is exactly art-pipeline 6's placeholder stage —
+    // the venue becomes drawable and playable now, and the tiles land on top later. Four
+    // existing styles (karst, mudflat, coralshoal, shoal) already run textureless, so this is
+    // the supported path and not a gap.
+    //
+    // ⚠️ EVERY `body` BELOW IS PROVISIONAL AND MUST BE RESET TO ITS TILE'S DELIVERED MEAN on
+    // ingest, the same step the three lake grounds went through. The LAND_TEXTURES alpha is a
+    // pure CONTRAST knob only while body equals the tile's own mean; if they disagree, raising
+    // alpha shifts the colour instead of the spread, and that is how the two arctic textures
+    // ended up carrying a mean-luma-shift warning.
+    //
+    // SEPARATION IS MEASURED, not eyeballed, and the four were re-picked once because of it: a
+    // first pass put cobble at #85868A, which measured dE 9.8 from outcrop — far too close for
+    // two grounds that share a race, and 3.5 from the lake's gneiss. The set below has a worst
+    // in-venue pair of dE 23.8 (cobble vs outcrop, cobble vs meadow) against the 30.6 the lake
+    // ships forestfloor-to-sand at, and every one clears dE 23 from the river's own water so
+    // land never smears into it. Cross-venue neighbours are accepted and named in each
+    // manifest note: cobble sits 9.7 from `gneiss` and humus 5.7 from `mud`, both picker-only.
+    cobble:      { body: '#6E6B65', stroke: '#4E4C48', veg: '#7C8C46', rock: '#8A8580', trees: false },  // body = river-cobble DELIVERED tile mean
+    meadow:      { body: '#929738', stroke: '#5E6C38', veg: '#A8B04E', rock: '#8A8580', trees: false },  // body = river-meadow DELIVERED tile mean
+    outcrop:     { body: '#999C9E', stroke: '#5E656D', veg: '#8D9689', rock: '#7C838B', trees: false },  // body = river-outcrop DELIVERED tile mean
+    humus:       { body: '#352B19', stroke: '#221C10', veg: '#4E5A34', rock: '#6B665E', trees: true  },  // body = river-humus DELIVERED tile mean
+    // ⚠️ THE COLOUR IS THE SHADED REFERENCE, NOT THE LIT ONE, and that is a separation decision.
+    // The owner's two photographs measure #487618 in shaded forest and #819E31 in a lit clearing;
+    // the bright value sits dE 11.8 from `meadow`, which would make a moss floor and an open
+    // terrace the same colour on the map. The shaded one clears it at 23.3 and is the honest value
+    // for a floor under a closed canopy.
+    mossfloor:   { body: '#618414', stroke: '#3E5A0E', veg: '#7EA02A', rock: '#6B665E', trees: true  },  // body = river-mossfloor DELIVERED tile mean
+    // THE SAME STONE as `cobble`, exactly as `coralshoal` is the same sand as `coralsand`: a
+    // bar is the ground continuing under the water, so each ground look has its bar look and
+    // the two are kept equal on purpose. shoalTintFor derives what the water does to it per
+    // shape. No stroke worth the name and no trees — a crisp shoreline is the cue that says
+    // "this is land", and a bar must not have one; its edge is a gradient.
+    cobbleshoal: { body: '#6E6B65', stroke: '#4E4C48', veg: '#6E6B65', rock: '#4E4C48', trees: false },  // = cobble, kept equal
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
     redrock:  { body: '#cc6533', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },   // body = sandstone tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
@@ -24678,7 +25650,16 @@ function orientCourseMarks() {
     }
 }
 
-function initCourse() {
+// `opts.light` builds the course for the CLUBHOUSE BOARD, not for racing: it skips the
+// three genuinely slow steps — the validator, the compile's priced estimate (planner +
+// nav-grid raster) and buildCoursePaths' router legs — plus the pressure-field scan,
+// which gets a cheap regions-derived spread instead. Everything else is identical, so
+// the board, the chart and the background render all work from real course data; a
+// light course simply has no `dmc` (the chart draws straight legs) and approximate
+// distance numbers. `state.course.loadState` records which build this is, and starting
+// a race upgrades a light course to a full one first — see startRace.
+function initCourse(opts) {
+    const light = !!(opts && opts.light);
     // DESIGNED VENUE, from a venue document. Land is vector polygons in world
     // units and the course is AUTHORED — marks, route and wind direction are read,
     // not inferred.
@@ -24695,12 +25676,16 @@ function initCourse() {
     // document exists for it, and that is the whole test.
     const doc = window.VenueDoc.get(settings.venue);
     if (doc) {
-        const problems = window.VenueDoc.validate(doc);
-        const errors = problems.filter(p => p.level === 'error');
-        for (const p of problems) console[p.level === 'error' ? 'error' : 'warn'](`[venue ${settings.venue}] ${p.msg}`);
-        if (errors.length) console.error(`[venue ${settings.venue}] ${errors.length} error(s); course may be unsailable`);
+        // The validator runs on the FULL build only — its findings matter before racing,
+        // not while flicking through the board, and it costs real time on big venues.
+        if (!light) {
+            const problems = window.VenueDoc.validate(doc);
+            const errors = problems.filter(p => p.level === 'error');
+            for (const p of problems) console[p.level === 'error' ? 'error' : 'warn'](`[venue ${settings.venue}] ${p.msg}`);
+            if (errors.length) console.error(`[venue ${settings.venue}] ${errors.length} error(s); course may be unsailable`);
+        }
 
-        const c = window.VenueDoc.compile(doc);
+        const c = window.VenueDoc.compile(doc, light ? { light: true } : undefined);
         // THE DAY IS THE REGIONS. Both the mean direction and the mean speed are derived
         // from what the wind regions state over the course — there is no venue wind range
         // and no venue oscillation left to blend with.
@@ -24768,6 +25753,7 @@ function initCourse() {
         }
         state.course.windRegions = c.windRegions;
         state.course.currentRegions = c.currentRegions;
+        state.course.rapidsRegions = c.rapidsRegions;
         state.course.gustRegions = c.gustRegions;
         // Timing is authored per venue when the document says so. Absent means the
         // game's own default, so a document that says nothing races as it always did.
@@ -24874,8 +25860,10 @@ function initCourse() {
         initTraffic();
         // Same reason, and the same trap: this is the path every venue takes. It samples
         // the mean wind over sailable WATER, so it needs the boundary and every land shape
-        // — floes included — already settled.
-        computeWindPressureScale();
+        // — floes included — already settled. The LIGHT build substitutes a spread read
+        // straight off the authored regions: the board's "10–15 kt" does not need a
+        // field scan that costs most of a second on a big venue.
+        if (light) lightWindSpread(c); else computeWindPressureScale();
         // SEA STATE, and the same trap a third time — this is the path every venue takes,
         // and the tail of initCourse is never reached. After the compile has written the
         // day's mean wind, because the swell is aligned with the breeze that built it and
@@ -24884,7 +25872,14 @@ function initCourse() {
         if (window.Swell) window.Swell.configure(doc, state.wind.baseDirection);
         // Whatever the last race left in the air is not this race's weather.
         if (window.SeaFX) window.SeaFX.reset();
-        buildCoursePaths();
+        // The router's leg paths are for RACING — the AI's carrot, the ruler, the leg
+        // splits. The board's chart falls back to straight legs when `dmc` is null, so
+        // the light build states that honestly instead of paying a second for it.
+        if (light) state.course.dmc = null; else buildCoursePaths();
+        // Which build this is, and of what — startRace reads both to decide whether the
+        // world is ready to race or needs the full load first.
+        state.course.venueKey = settings.venue;
+        state.course.loadState = light ? 'light' : 'full';
         return;
     }
 

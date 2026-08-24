@@ -1,0 +1,494 @@
+{
+ "arctic": {
+  "totalLegs": 2,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 31.704410011918952,
+    "reachPct": 48.68891537544696,
+    "runPct": 19.606674612634087,
+    "sequence": "BBBRRRRRRB",
+    "chord": "?",
+    "mixed": true
+   },
+   {
+    "leg": 1,
+    "beatPct": 23.336315090401452,
+    "reachPct": 31.40332330378683,
+    "runPct": 45.26036160581172,
+    "sequence": "BBRDDDDDDR",
+    "chord": "reach (twa 120)",
+    "mixed": true
+   },
+   {
+    "leg": 2,
+    "beatPct": 39.108435837040915,
+    "reachPct": 29.91363517403821,
+    "runPct": 30.977928988920876,
+    "sequence": "BBBBBBRDDD",
+    "chord": "reach (twa 60)",
+    "mixed": true
+   }
+  ]
+ },
+ "redrock": {
+  "totalLegs": 6,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 56.48535564853557,
+    "reachPct": 30.96234309623431,
+    "runPct": 12.552301255230125,
+    "sequence": "BBBBBBBBBB",
+    "chord": "?",
+    "mixed": true
+   },
+   {
+    "leg": 1,
+    "beatPct": 58.939517776869636,
+    "reachPct": 29.8324478953821,
+    "runPct": 11.228034327748263,
+    "sequence": "BBBBBBBBBD",
+    "chord": "beat (twa 10)",
+    "mixed": true
+   },
+   {
+    "leg": 2,
+    "beatPct": 15.132075471698114,
+    "reachPct": 34.528301886792455,
+    "runPct": 50.339622641509436,
+    "sequence": "DRDDDDDBBR",
+    "chord": "run (twa 150)",
+    "mixed": true
+   },
+   {
+    "leg": 3,
+    "beatPct": 41.53994007575329,
+    "reachPct": 45.938153654813725,
+    "runPct": 12.52190626943298,
+    "sequence": "BBBRRRRRBR",
+    "chord": "beat (twa 38)",
+    "mixed": true
+   },
+   {
+    "leg": 4,
+    "beatPct": 4.197601370645345,
+    "reachPct": 47.40148486579098,
+    "runPct": 48.40091376356368,
+    "sequence": "RDDDDRRRRR",
+    "chord": "run (twa 172)",
+    "mixed": true
+   },
+   {
+    "leg": 5,
+    "beatPct": 43.34445680385614,
+    "reachPct": 43.68743047830923,
+    "runPct": 12.96811271783463,
+    "sequence": "BBRRRBRBRD",
+    "chord": "reach (twa 60)",
+    "mixed": true
+   },
+   {
+    "leg": 6,
+    "beatPct": 7.748635334842231,
+    "reachPct": 25.629077353215283,
+    "runPct": 66.62228731194249,
+    "sequence": "RDRDDDDDDD",
+    "chord": "run (twa 149)",
+    "mixed": true
+   }
+  ]
+ },
+ "seatrials": {
+  "totalLegs": 4,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 41.41252006420546,
+    "reachPct": 36.2760834670947,
+    "runPct": 22.31139646869984,
+    "sequence": "RBBDDRRBBB",
+    "chord": "?",
+    "mixed": true
+   },
+   {
+    "leg": 1,
+    "beatPct": 86.69234472797304,
+    "reachPct": 10.033702455464612,
+    "runPct": 3.2739528165623497,
+    "sequence": "BBBBBBBBBR",
+    "chord": "beat (twa 0)",
+    "mixed": false
+   },
+   {
+    "leg": 2,
+    "beatPct": 2.8144135657089024,
+    "reachPct": 12.8827131417805,
+    "runPct": 84.3028732925106,
+    "sequence": "DDDDDDDDDR",
+    "chord": "run (twa 180)",
+    "mixed": false
+   },
+   {
+    "leg": 3,
+    "beatPct": 87.95180722891567,
+    "reachPct": 8.703780639800582,
+    "runPct": 3.3444121312837556,
+    "sequence": "BBBBBBBBBR",
+    "chord": "beat (twa 0)",
+    "mixed": false
+   },
+   {
+    "leg": 4,
+    "beatPct": 0,
+    "reachPct": 0.5069524913093859,
+    "runPct": 99.49304750869061,
+    "sequence": "DDDDDDDDDD",
+    "chord": "run (twa 180)",
+    "mixed": false
+   }
+  ]
+ },
+ "ocean": {
+  "totalLegs": 3,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 33.81317978246961,
+    "reachPct": 46.32117722328855,
+    "runPct": 19.865642994241842,
+    "sequence": "BRRRRRRDRR",
+    "chord": "?",
+    "mixed": true
+   },
+   {
+    "leg": 1,
+    "beatPct": 72.88066403592326,
+    "reachPct": 23.322901074976187,
+    "runPct": 3.7964348891005577,
+    "sequence": "BBBBBBBBRR",
+    "chord": "beat (twa 6)",
+    "mixed": true
+   },
+   {
+    "leg": 2,
+    "beatPct": 22.013397841458875,
+    "reachPct": 73.40900632675847,
+    "runPct": 4.5775958317826575,
+    "sequence": "RRRRRRRBBR",
+    "chord": "reach (twa 74)",
+    "mixed": true
+   },
+   {
+    "leg": 3,
+    "beatPct": 0,
+    "reachPct": 0.05446293494704992,
+    "runPct": 99.94553706505295,
+    "sequence": "DDDDDDDDDD",
+    "chord": "run (twa 180)",
+    "mixed": false
+   }
+  ]
+ },
+ "lake": {
+  "totalLegs": 3,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 52.08581644815256,
+    "reachPct": 33.849821215733016,
+    "runPct": 14.064362336114423,
+    "sequence": "BBBBRBDDRR",
+    "chord": "?",
+    "mixed": true
+   },
+   {
+    "leg": 1,
+    "beatPct": 75.02997088542558,
+    "reachPct": 22.081406633555975,
+    "runPct": 2.888622481018439,
+    "sequence": "BBBBBBBBBB",
+    "chord": "beat (twa 14)",
+    "mixed": true
+   },
+   {
+    "leg": 2,
+    "beatPct": 1.0647816750178956,
+    "reachPct": 51.86113099498926,
+    "runPct": 47.07408732999284,
+    "sequence": "DDDDDRRRRR",
+    "chord": "reach (twa 122)",
+    "mixed": true
+   },
+   {
+    "leg": 3,
+    "beatPct": 0.9207275993712104,
+    "reachPct": 58.79182573545924,
+    "runPct": 40.28744666516955,
+    "sequence": "RRRRRRRDDD",
+    "chord": "reach (twa 126)",
+    "mixed": true
+   }
+  ]
+ },
+ "lagoon": {
+  "totalLegs": 6,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 84.2809364548495,
+    "reachPct": 12.207357859531772,
+    "runPct": 3.511705685618729,
+    "sequence": "BBBBBBBBBB",
+    "chord": "?",
+    "mixed": false
+   },
+   {
+    "leg": 1,
+    "beatPct": 65.69553805774278,
+    "reachPct": 29.2257217847769,
+    "runPct": 5.078740157480315,
+    "sequence": "BBBBBBBBBR",
+    "chord": "beat (twa 2)",
+    "mixed": true
+   },
+   {
+    "leg": 2,
+    "beatPct": 10.974588103881597,
+    "reachPct": 65.12147444847808,
+    "runPct": 23.903937447640324,
+    "sequence": "RRRRRRRRRD",
+    "chord": "reach (twa 109)",
+    "mixed": true
+   },
+   {
+    "leg": 3,
+    "beatPct": 5.293252736480967,
+    "reachPct": 25.35533409573599,
+    "runPct": 69.35141316778304,
+    "sequence": "DDDDRRDDDR",
+    "chord": "run (twa 143)",
+    "mixed": true
+   },
+   {
+    "leg": 4,
+    "beatPct": 76.50448748228625,
+    "reachPct": 16.71232876712329,
+    "runPct": 6.783183750590458,
+    "sequence": "BBBBBBBBBD",
+    "chord": "beat (twa 1)",
+    "mixed": true
+   },
+   {
+    "leg": 5,
+    "beatPct": 5.502950459722794,
+    "reachPct": 11.115685467270481,
+    "runPct": 83.38136407300672,
+    "sequence": "DDDDDDDDDR",
+    "chord": "run (twa 179)",
+    "mixed": false
+   },
+   {
+    "leg": 6,
+    "beatPct": 89.56566435363659,
+    "reachPct": 9.406322282189668,
+    "runPct": 1.0280133641737343,
+    "sequence": "BBBBBBBBBB",
+    "chord": "beat (twa 2)",
+    "mixed": false
+   }
+  ]
+ },
+ "river": {
+  "totalLegs": 3,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 44.955609362389026,
+    "reachPct": 38.22639225181598,
+    "runPct": 16.817998385794997,
+    "sequence": "BBBBBBBBRR",
+    "chord": "?",
+    "mixed": true
+   },
+   {
+    "leg": 1,
+    "beatPct": 43.769791006966436,
+    "reachPct": 52.311589613679544,
+    "runPct": 3.9186193793540216,
+    "sequence": "RRBBRRBBRR",
+    "chord": "beat (twa 24)",
+    "mixed": true
+   },
+   {
+    "leg": 2,
+    "beatPct": 0.3441682600382409,
+    "reachPct": 17.131931166347993,
+    "runPct": 82.52390057361377,
+    "sequence": "DDDDDDDDDD",
+    "chord": "run (twa 156)",
+    "mixed": false
+   },
+   {
+    "leg": 3,
+    "beatPct": 32.451216252338945,
+    "reachPct": 49.54112091241201,
+    "runPct": 18.007662835249043,
+    "sequence": "DRRRRRRRRD",
+    "chord": "run (twa 165)",
+    "mixed": true
+   }
+  ]
+ },
+ "bay": {
+  "totalLegs": 6,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 24.718309859154928,
+    "reachPct": 55.84507042253521,
+    "runPct": 19.43661971830986,
+    "sequence": "RRRRRRRRRR",
+    "chord": "?",
+    "mixed": true
+   },
+   {
+    "leg": 1,
+    "beatPct": 51.83322155153141,
+    "reachPct": 42.41001564945227,
+    "runPct": 5.75676279901632,
+    "sequence": "BBBBBBRRBR",
+    "chord": "beat (twa 23)",
+    "mixed": true
+   },
+   {
+    "leg": 2,
+    "beatPct": 4.968944099378882,
+    "reachPct": 59.24775707384403,
+    "runPct": 35.783298826777084,
+    "sequence": "DDDRRRRRRR",
+    "chord": "reach (twa 100)",
+    "mixed": true
+   },
+   {
+    "leg": 3,
+    "beatPct": 2.162021359729096,
+    "reachPct": 29.486845532690804,
+    "runPct": 68.3511331075801,
+    "sequence": "RRDDDDDDDR",
+    "chord": "run (twa 180)",
+    "mixed": true
+   },
+   {
+    "leg": 4,
+    "beatPct": 79.85302430751837,
+    "reachPct": 17.173544375353305,
+    "runPct": 2.973431317128321,
+    "sequence": "BBBBBBBBBR",
+    "chord": "beat (twa 0)",
+    "mixed": true
+   },
+   {
+    "leg": 5,
+    "beatPct": 2.778128551584796,
+    "reachPct": 23.336279833312286,
+    "runPct": 73.88559161510291,
+    "sequence": "RRDDDDDDDD",
+    "chord": "run (twa 180)",
+    "mixed": true
+   },
+   {
+    "leg": 6,
+    "beatPct": 0.754047460634287,
+    "reachPct": 98.24794854734975,
+    "runPct": 0.998003992015968,
+    "sequence": "RRRRRRRRRR",
+    "chord": "reach (twa 92)",
+    "mixed": false
+   }
+  ]
+ },
+ "glowtide": {
+  "totalLegs": 4,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 12.130801687763713,
+    "reachPct": 46.30801687763713,
+    "runPct": 41.561181434599156,
+    "sequence": "RRDDDDDDRR",
+    "chord": "?",
+    "mixed": true
+   },
+   {
+    "leg": 1,
+    "beatPct": 43.471698113207545,
+    "reachPct": 42.284011916583914,
+    "runPct": 14.24428997020854,
+    "sequence": "BBBBBBRRRR",
+    "chord": "beat (twa 21)",
+    "mixed": true
+   },
+   {
+    "leg": 2,
+    "beatPct": 13.818456027900838,
+    "reachPct": 45.12206617023282,
+    "runPct": 41.05947780186634,
+    "sequence": "RRRDDDRRRD",
+    "chord": "run (twa 170)",
+    "mixed": true
+   },
+   {
+    "leg": 3,
+    "beatPct": 31.52390438247012,
+    "reachPct": 38.49601593625498,
+    "runPct": 29.9800796812749,
+    "sequence": "RRRDBDBBBB",
+    "chord": "reach (twa 124)",
+    "mixed": true
+   },
+   {
+    "leg": 4,
+    "beatPct": 46.087465262542054,
+    "reachPct": 50.34371800497294,
+    "runPct": 3.568816732485008,
+    "sequence": "BBBRRRRRRR",
+    "chord": "beat (twa 43)",
+    "mixed": true
+   }
+  ]
+ },
+ "swamp": {
+  "totalLegs": 1,
+  "seeds": 2,
+  "legs": [
+   {
+    "leg": 0,
+    "beatPct": 32.14769647696477,
+    "reachPct": 43.2079945799458,
+    "runPct": 24.64430894308943,
+    "sequence": "BRRRRRRRDR",
+    "chord": "?",
+    "mixed": true
+   },
+   {
+    "leg": 1,
+    "beatPct": 31.699053313403088,
+    "reachPct": 58.52017937219731,
+    "runPct": 9.7807673143996,
+    "sequence": "BRRRRRRRRD",
+    "chord": "beat (twa 48)",
+    "mixed": true
+   }
+  ]
+ }
+}

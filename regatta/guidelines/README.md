@@ -13,6 +13,8 @@ implements it.
 | [art-pipeline.md](art-pipeline.md) | How art gets *made*: asset classes, roles, anchors, the six-step workflow, acceptance. Tooling in `../art/` | current |
 | [music.md](music.md) | The score. Guide (how to write a prompt, judge a take, install it) + reference (cue map, registry, every prompt, every measurement) | **v1.0** — current |
 | [skills.md](skills.md) | Competitor stats, archetypes, traits, character shape, venue natives, colour and pattern policy | **v0.1** — proposal |
+| [roster.md](roster.md) | All 100 characters: intended tier (hand-edited), measured tier and rating, stat lines, beat lines, and the budget arithmetic for widening the spread | generated — `node eval/gen_roster.js` |
+| [roster-ranking.md](roster-ranking.md) | Desirability order 1–100, the starting ten, unlock waves, the bench and the 48-character expansion. **Merchandising, not balance** | current |
 | [tutorial.md](tutorial.md) | Sailing School at Duckling Pond: the seven-minute onboarding, what it teaches and what it refuses to, and why the simulation's lessons differ from the sport's | **v0.1** — proposal |
 | [debt.md](debt.md) | The single register of verified visual defects, across all three | current |
 

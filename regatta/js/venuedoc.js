@@ -546,6 +546,19 @@ function validateVenueDoc(doc) {
     };
     checkRegions((doc.wind && doc.wind.regions) || [], 'wind');
     checkRegions((doc.current && doc.current.regions) || [], 'current');
+    const rapidsRegions = (doc.rapids && doc.rapids.regions) || [];
+    checkRegions(rapidsRegions, 'rapids');
+    for (let i = 0; i < rapidsRegions.length; i++) {
+        const r = rapidsRegions[i], at = `rapids region ${r.id || i}`;
+        if (r.turbulence != null && !(r.turbulence >= 0 && r.turbulence <= 1)) err(`${at}: turbulence must be 0–1`);
+        // A rapid IS its turbulence — an explicit zero is flat water wearing the wrong
+        // name. (Absent defaults to 0.5 at compile, so only a typed 0 is dead.)
+        if (r.turbulence === 0) warn(`${at}: turbulence 0 — this region does nothing`);
+        // Flow is the Current layer's, in whole. A rapid that authors knots is the same
+        // water stated two ways, which is exactly what the split exists to prevent.
+        if (r.speed != null || r.direction != null)
+            warn(`${at}: speed/direction are ignored — a rapid is turbulence only; author the flow as a current region`);
+    }
     // A gust region is the same polygon with a different question asked of it — not "what
     // is the wind here" but "what is BORN here" — so it takes the same shape checks and
     // then its own numbers on top. Those numbers are now in the units the thing is measured
@@ -1188,6 +1201,269 @@ const PROP_KINDS = {
     // display size composited over the scrub it stands on, it reads dE 27.1 from the ground,
     // against the naupaka's 27.3. It works, and it works for a different reason than
     // everything else on this list, so do not "correct" it toward green.
+    // ── STILLWATER LAKE'S NORTH WOODS ───────────────────────────────────────
+    // Delivered and registered 2026-08-15. Five of the venue's eight plants; red pine, bracken
+    // fern and lowbush blueberry are still slots. All `surface` / `contact: none` — nothing on
+    // a lake sails under a tree, so there is no canopy case to make and no see-through
+    // requirement to buy. The ocean's palm and pandanus were briefly `canopy` and had to be
+    // moved back; this venue starts where that ended up.
+    //
+    // ⚠️ THE LADDER IS FIVE DEEP AND COMPRESSED — 110 / 88 / 80 / 68 / 55 once the red pine
+    // lands, ratios 1.25 / 1.10 / 1.18 / 1.24, well under the 1.33x the cove family holds.
+    // It only works because every ADJACENT pair is separated on another axis, and two pairs
+    // carry the whole design:
+    //
+    //   pine vs fir     dE 8.7 apart in colour — near-identical teal conifers, which is
+    //                   honest, and separated 2x on size and on construction (an open crown
+    //                   of tufted rafts against a small closed rosette).
+    //   birch vs aspen  the venue's real risk: adjacent in size, both round pale-barked
+    //                   broadleaves, both in the same wood. Separated on DENSITY, inverted
+    //                   on purpose — the birch ships 44% circle fill with its white limbs
+    //                   showing through the gaps, the aspen 83% with a closed canopy and no
+    //                   bark visible anywhere. That is the one axis that survives with colour
+    //                   removed, which is what art-pipeline 2 actually asks for; colour adds
+    //                   dE 16.1 on top.
+    //
+    // Anyone adding a sixth tree checks BOTH axes against its neighbours, because size alone
+    // can no longer carry one.
+    'lake-pine-white':       { label: 'Eastern white pine', world: 110, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-pine-red':         { label: 'Red pine',           world:  88, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-birch-paper':      { label: 'Paper birch',        world:  80, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-aspen-quaking':    { label: 'Quaking aspen',      world:  68, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-fir-balsam':       { label: 'Balsam fir',         world:  55, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-alder-speckled':   { label: 'Speckled alder',     world:  48, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    // The ground layer. Bracken is what the open floor of a northern pine wood is actually
+    // made of and will be placed most; the blueberry is for thin ground between the pines and
+    // for the cracks in a [[lake-gneiss]] shelf, which is where lowbush blueberry really grows.
+    'lake-fern-bracken':     { label: 'Bracken fern',       world:  34, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-blueberry-lowbush':{ label: 'Lowbush blueberry',  world:  22, plane: 'canopy', contact: 'none', motion: 'fixed' },
+
+    // ── STILLWATER'S BUILT AND NATURAL PROPS ────────────────────────────────
+    // The eighteen non-vegetation kinds, registered together now the art has landed. Until
+    // this block existed the sprites were on disk and in the manifest and PLACEABLE NOWHERE:
+    // the editor lists kinds from here, so a finished asset that is not in this table simply
+    // does not exist to the venue. art-pipeline 6 defers registration on purpose — slots and
+    // boxes first, art second — but deferred is not skipped, and this is the step that was
+    // still owed.
+    //
+    // PLANES. `surface` for everything on land, which is most of it: the fleet cannot reach a
+    // fire ring. `float` for the five that sit ON the water — canoe, skiff, swim raft, mooring
+    // buoy and the swim line — because that plane draws AFTER the water's own marks, so no
+    // wake or cat's-paw ripples across a hull lying on top of one, and BEFORE the land, so a
+    // beach simply covers the part of a drawn-up boat that lies on it. Nothing here is
+    // `canopy`; the trees own that plane and nothing in this batch is sailed under.
+    //
+    // COLLIDERS, AND WHY MOST OF THEM ARE `none`. A contact prop compiles to a hidden circle
+    // that also enters the router's grid, and script.js records the river's 82 hidden banks
+    // causing multi-hundred-millisecond replan spikes — so a collider is spent only where a
+    // boat can actually meet the thing. Six earn one. The radii are measured off the BAKE, not
+    // guessed from `world`: fillTo 0.86 means a prop draws at 86% of its declared size, so a
+    // 44u boulder is a 38px stone and its radius is 19, not 22.
+    //
+    // ⚠️ THE BOULDERS ARE THE ONE CASE WHERE A CIRCLE IS EXACTLY RIGHT rather than a
+    // compromise — a boulder IS a circle in plan — which is why they take a full-coverage
+    // radius where every long prop deliberately under-covers. `lake-dock` takes its BEAM (10)
+    // and not its length, following swamp-dock's 9: an object 2:1 or longer cannot be covered
+    // by one circle, and a pass-through is a missed collision where an oversized circle is an
+    // invisible wall standing off in open water. `lake-swim-line` gets NO collider at all: a
+    // rope does not stop a racing hull, and pretending it does is the unfairness the shoal
+    // note argues against.
+    //
+    // `srcBox` IS MEASURED, NOT ESTIMATED — [x, y, w, h] of the frame the art actually
+    // occupies, off each shipped bake with a 1% margin for the antialiased rim, and carried
+    // only where the ink is thin enough to be worth skipping. Its extreme here is the swim
+    // line at 5% ink: a 296px quad to composite a 26px-wide rope. Round props that fill their
+    // frame (both boulders, the raft, the fire ring) get none, exactly as a canopy does not.
+    // RE-MEASURE ON ANY RE-INGEST — a box too small clips the sprite, which is a visible bug.
+    'lake-camp-lodge':        { label: 'Camp lodge',        world: 166, plane: 'surface', contact: 'none', srcBox: [0.276, 0.059, 0.448, 0.881], motion: 'fixed' },
+    'lake-cabin':             { label: 'Log cabin',         world:  88, plane: 'surface', contact: 'none', srcBox: [0.234, 0.058, 0.531, 0.884], motion: 'fixed' },
+    'lake-log-fallen':        { label: 'Fallen log',        world:  74, plane: 'surface', contact: 'none', srcBox: [0.355, 0.058, 0.29, 0.885], motion: 'fixed' },
+    // ⚠️ THE SWIM LINE COLLIDES, AND A CIRCLE CANNOT HONESTLY COVER IT. The segment is 74u
+    // long and 6.5u wide — 11:1 — so this is the cargo-ship case at its most extreme, and
+    // propTraits has no oblong collider (see the note above at the oblong-hazard entry). Both
+    // ends of the usual rule fail here: the BEAM rule gives radius 3, under the floor of 4, and
+    // segments laid end to end would leave 70u gaps a boat sails clean through; the LENGTH rule
+    // gives 37 and stands an invisible 74u-wide wall in open water.
+    // SO IT IS `soft`, AT 12. Soft is what makes the compromise affordable — the failure mode
+    // of an oversized SOFT collider is arriving in the drag slightly early, not being stopped
+    // by nothing, which is the unfairness the shoal note actually argues against. 12 is about
+    // twice the beam and a sixth of the length, so segments butted end to end put drag over
+    // roughly a third of the rope: fouling the swim line slows you, as it should, without
+    // walling off the water beside it.
+    // ⚠️ TO MAKE IT A REAL BARRIER, OVERLAP THE PLACEMENTS — spacing them ~24u instead of 74u
+    // chains the circles into a continuous line. That costs three times the sprites, so it is a
+    // per-course decision and not a default. The proper fix is an oblong collider in
+    // propTraits, and this entry is the second asset asking for one.
+    'lake-swim-line':         { label: 'Swim line',         world:  74, plane: 'float',   contact: 'soft', contactR: 12, srcBox: [0.456, 0, 0.088, 1], motion: 'fixed' },
+    'lake-cabin-b':           { label: 'Tin-roof cabin',    world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-camp-cabin':        { label: 'Camp bunkhouse',    world:  51, plane: 'surface', contact: 'none', srcBox: [0.314, 0.059, 0.373, 0.883], motion: 'fixed' },
+    'lake-canoe-rack':        { label: 'Canoe rack',        world:  51, plane: 'surface', contact: 'none', srcBox: [0.181, 0.059, 0.633, 0.883], motion: 'fixed' },
+    'lake-canoe':             { label: 'Canoe',             world:  46, plane: 'float',   contact: 'soft', contactR:  6, srcBox: [0.376, 0.055, 0.248, 0.884], motion: 'fixed' },
+    'lake-boulder-large':     { label: 'Glacial boulder',   world:  44, plane: 'surface', contact: 'hard', contactR: 19, motion: 'fixed' },
+    'lake-dock':              { label: 'Crib dock',         world:  42, plane: 'surface', contact: 'hard', contactR: 10, srcBox: [0.252, 0.055, 0.496, 0.889], motion: 'fixed' },
+    'lake-boat-aluminum':     { label: 'Aluminium skiff',   world:  40, plane: 'float',   contact: 'soft', contactR:  6, srcBox: [0.302, 0.059, 0.395, 0.883], motion: 'fixed' },
+    'lake-raft-swim':         { label: 'Swim raft',         world:  33, plane: 'float',   contact: 'hard', contactR: 14, motion: 'fixed' },
+    'lake-bulrush':           { label: 'Bulrush',           world:  32, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-mooring-buoy':      { label: 'Mooring buoy',      world:  20, plane: 'float',   contact: 'soft', contactR:  8, motion: 'fixed' },
+    'lake-boulder-small':     { label: 'Granite cobble',    world:  18, plane: 'surface', contact: 'hard', contactR:  8, motion: 'fixed' },
+    'lake-picnic-table':      { label: 'Picnic table',      world:  17, plane: 'surface', contact: 'none', srcBox: [0.049, 0.196, 0.902, 0.608], motion: 'fixed' },
+    'lake-firering':          { label: 'Fire ring',         world:  14, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'lake-adirondack-chair':  { label: 'Adirondack chair',  world:   8, plane: 'surface', contact: 'none', motion: 'fixed' },
+
+    // ── SOCKEYE RUN'S PLANTS ────────────────────────────────────────────────
+    // All seven, registered together now the art has landed. Three trees, two shrubs, one accent
+    // and one overlay mat — the whole vegetated character of a Southeast Alaska river.
+    //
+    // PLANE `canopy` for everything that grows UP, following Stillwater's eight plants exactly.
+    // ⚠️ NOTE THE COMMENT ABOVE THAT BLOCK IS STALE AND SAYS `surface`; the entries there are
+    // canopy and always have been. The consequence is worth stating once rather than rediscovering:
+    // canopy props draw OVER the fleet, and the bayou's split-canopy note couples that to an
+    // openings requirement, because a painted gap hides a boat as well as a leaf does. No asset in
+    // the manifest carries `minHoles` any more, so the whole canopy family currently occludes like
+    // a solid disc. For THIS venue that is a deliberate decision rather than an oversight — the
+    // owner asked for full canopies with no punched holes, and all three river tree subjects were
+    // rewritten to say so. Anyone reinstating see-through starts by reading those.
+    //
+    // `river-moss-mat` is the exception at `surface`: it lies ON the ground and nothing passes
+    // under a moss mat, so putting it on canopy would draw it over hulls for no reason.
+    //
+    // CONTACT none on all seven, and that is not laziness. Every contact prop compiles to a hidden
+    // circle that also enters the router's grid, and script.js records the river's own 82 hidden
+    // banks causing multi-hundred-millisecond replan spikes — in THIS venue. Vegetation is land
+    // scenery the fleet cannot reach, so a collider here would never be tested and would cost the
+    // one venue that has already paid that bill.
+    //
+    // PROP-SPIN ON for all seven. None of them has a front: a shrub, a moss mat and a crown seen
+    // from above are all rotationally free, and spinning them is what stops a planted stand reading
+    // as stamped copies. The trees are the same case as Stillwater's, not the dock's.
+    //
+    // srcBox ONLY ON THE MAT. The six plants all fill 74-87% of their frames after fillTo, so
+    // there is nothing worth skipping; the mat is 0.63 tall because it is honestly oblong, and its
+    // box is measured off the shipped bake with a 1% margin. Re-measure it on any re-ingest.
+    'river-cottonwood-black': { label: 'Black cottonwood',  world: 128, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-spruce-sitka':     { label: 'Sitka spruce',      world: 104, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-hemlock-western':  { label: 'Western hemlock',   world:  84, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-alder-red':        { label: 'Red alder',         world:  56, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-willow':           { label: 'River willow',      world:  30, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-moss-mat':         { label: 'Moss mat',          world:  26, plane: 'surface', contact: 'none', srcBox: [0.057, 0.173, 0.885, 0.655], motion: 'fixed' },
+    'river-fireweed':         { label: 'Fireweed',          world:  18, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    // THE MEADOW FLOWERS. Same four decisions as the seven above — canopy, contact none, prop-spin
+    // on, fixed — because they are the same kind of thing: land scenery with no front that the fleet
+    // cannot reach. Two of the commission's four are here; `river-arnica` and
+    // `river-paintbrush-scarlet` are accepted but not yet ingested, and get their rows then.
+    //
+    // ⚠️ BOTH ARE PROVISIONAL ART AND BOTH DRAW SHORT. Their masters came back 1.9:1 rather than
+    // square, so fillTo fits the LONG axis and the plant occupies 17x9px (lupine) and 14x7px
+    // (yarrow) inside its declared world box, not the full 20 and 16. Placement is unaffected —
+    // position is authored, not size — but a square re-roll will make both look markedly bigger at
+    // the same `world`, so judge density after that, not now. See their manifest notes.
+    //
+    // NO srcBox on either, deliberately, even though both are more oblong than `river-moss-mat`
+    // which carries one. srcBox is a draw-time sampling shortcut, not a sizing control
+    // (drawSpriteBoxed maps the sub-rect to the same normalized destination), so it buys nothing
+    // visible — and it is measured off the shipped bake, which means a stale box the moment either
+    // of these is re-rolled. Add it when the art is final, if at all.
+    'river-lupine-nootka':    { label: 'Nootka lupine',     world:  20, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-yarrow':           { label: 'Common yarrow',     world:  16, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    // ── THE FOOTBRIDGE ──────────────────────────────────────────────────────────────
+    // The venue's landmark, and the first thing here the fleet passes UNDER rather than
+    // around. `canopy` for exactly that reason — it is the plane that draws over the boats —
+    // following the cove's two bridges, whose own note sizes the cruise ship to clear them.
+    //
+    // CONTACT none. It crosses high enough for a rig, so nothing about it should stop a hull,
+    // and this is the venue that cannot afford spare colliders: script.js records its 82
+    // hidden banks causing multi-hundred-millisecond replan spikes.
+    //
+    // ⚠️ PLACE IT WITH prop-spin OFF and set `heading °` per placement. It is the only river
+    // prop with an axis: every plant, boulder and log here is rotationally free and wants spin
+    // ON, and a bridge laid at a random angle crosses nothing.
+    //
+    // ⚠️ fadeMin 0.3, AND IT IS THE FIRST KIND IN THE GAME TO CARRY ONE. Canopy props fade as
+    // the player closes, and CANOPY_FADE_MIN is 0.0 because a tree's stem keeps drawing at full
+    // opacity on `surface` — so a crown at zero opens rather than vanishes. A bridge has no
+    // stem. At 0.0 it would disappear entirely at the moment the boat is under it, which is the
+    // one moment a landmark you are sailing beneath should still be visible. 0.3 leaves it a
+    // clear ghost overhead with the hull showing through. See canopyAlpha().
+    //
+    // srcBox measured off the shipped 600px bake with a 1% margin: the bridge is a 1:7.9 ribbon
+    // in a square frame, so 82% of that frame is empty and this skips sampling it. Re-measure
+    // on any re-ingest — the number is only true for this bake.
+    'river-footbridge':       { label: 'Foot bridge',       world: 300, plane: 'canopy',  contact: 'none', motion: 'fixed', fadeMin: 0.3, srcBox: [0.407, 0.030, 0.187, 0.940] },
+    // ── THE GRANITE BOULDERS ────────────────────────────────────────────────────────
+    // The venue's first rock you can actually hit. `outcrop` is a SHAPE and means a scoured
+    // bedrock ledge; these are props and mean individual stones. The largest is 52u,
+    // deliberately just under the smallest authored outcrop polygon (54u), so the two
+    // families never compete on size.
+    //
+    // ⚠️ A BOULDER IS THE ONE CASE WHERE A CIRCLE IS EXACTLY RIGHT rather than a compromise —
+    // a boulder IS a circle in plan — so unlike every long prop in the library these take a
+    // FULL-coverage radius. Measured off the bake, not guessed from `world`: fillTo 0.86
+    // means a 52u stone draws at 45px, so its radius is 22, not 26. Same arithmetic as
+    // lake-boulder-large's note.
+    //
+    // ⚠️ AND THE COLLIDER IS THE THING TO RATION, NOT THE KIND. Every contact prop compiles
+    // to a hidden circle that also enters the router's grid, and script.js records THIS
+    // venue's 82 hidden banks causing multi-hundred-millisecond replan spikes. Budget ~40
+    // hard boulders across the whole course, in the rapids, at bar heads and on the inside
+    // of tight bends — and place the rest with `contact: none` from the prop inspector.
+    // river-boulder-small especially: at 17px on screen it is scenery, and a router collider
+    // for something a hull would barely notice is exactly the trade this venue cannot afford.
+    // Prop-spin ON for all three — a stone has no front, and spinning them is what stops a
+    // scatter reading as stamped copies.
+    'river-boulder-large':    { label: 'Granite boulder',   world:  52, plane: 'surface', contact: 'hard', contactR: 22, motion: 'fixed' },
+    'river-boulder-medium':   { label: 'Granite boulder, medium', world: 34, plane: 'surface', contact: 'hard', contactR: 15, motion: 'fixed' },
+    'river-boulder-small':    { label: 'Granite cobble',    world:  20, plane: 'surface', contact: 'none', contactR:  9, motion: 'fixed' },
+    // ── WOOD, AND THE ONE TENT ──────────────────────────────────────────────────────
+    // `river-log` is SCENERY, which is where it parts company with the bayou's driftwood:
+    // swamp-deadhead and bayou-driftlog are floating obstructions in still black water, and
+    // the owner's West Susitna reference shows river logs lying high and dry on the gravel,
+    // bleached silver, well above the waterline. So `surface`, contact none, no collider
+    // spent — and the logjam is this batch's wood hazard instead.
+    //
+    // `river-logjam` is `float`: it rides ON the water at a bar head, so it must draw after
+    // the water's own marks (no wake rippling across it) and before the land. contactR 28
+    // deliberately UNDER-covers: the delivered jam is 1.52:1, drawing 112 x 74u, so 28 covers
+    // about three quarters of the beam. venuedoc's rule everywhere else applies — 'a
+    // pass-through is a missed collision where an oversized circle is an invisible wall
+    // standing off in open water'.
+    //
+    // ⚠️ THE TENT IS 44u, NOT THE 22u ITS SLOT ORIGINALLY DECLARED, and the reason is the
+    // reduction test: at 18px the crossed poles that are its whole identity vanish and it is
+    // an anonymous orange smudge. It first reads as a tent at 44u/37px. That puts it between
+    // the willow (30) and the alder (56), so NEVER place one inside a thicket — at that size
+    // it would be taken for a shrub. Ones and twos, on open gravel bars and terraces near the
+    // water. It is the only manufactured colour in the venue and the only sign of a person.
+    //
+    // Prop-spin ON for all three. None has a front, and the tent's vestibule flap makes its
+    // outline asymmetric precisely so a spun pair does not read as two stamps of one shape.
+    'river-logjam':           { label: 'Log jam',           world: 130, plane: 'float',   contact: 'hard', contactR: 28, motion: 'fixed' },
+    'river-log':              { label: 'Drift log',         world:  76, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'river-tent':             { label: 'Camp tent',         world:  44, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ── THE SUNKEN BOULDERS — NO NEW ART, AND THAT IS THE POINT ─────────────────────
+    // These are the SAME THREE STONES, pointed at the same PNGs through `src` (the trick
+    // buoy-channel-red already uses) and moved to the `seabed` plane. The engine does the
+    // submerging: submergedSprite() blurs by 3px in the 4x bake, washes the colours toward
+    // the venue's own water at SEABED_WASH 0.52 with source-atop, and PROP_PLANE_ALPHA draws
+    // the result at 0.72 — so the muting, softening and translucency the sunken subject asks
+    // for all arrive for free, and rebake themselves if the palette ever changes.
+    //
+    // ⚠️ AND THE PAIR IS THEREFORE LITERALLY THE SAME STONE, which is what the manifest slot
+    // wanted and a separate generation could never guarantee: the only difference between
+    // 'Granite boulder' and 'Granite boulder, sunken' is the water over it, so a player reads
+    // the WATER rather than learning two rocks.
+    //
+    // `wash` gives them the boil — drawPropWash's pool and its two or three breathing laps —
+    // and `washFrom: 'current'` is new: the default biases the lap into the WIND, which is
+    // right for a piling in still water and wrong for a rock in a 2.4 kn river, where the
+    // foam belongs downstream. See the note in drawPropWash.
+    //
+    // ⚠️ CONTACT RADII UNDER-COVER BY MORE THAN THE DRY TWINS DO (18/12/7 against 22/15/9),
+    // deliberately. venuedoc's rule is that under-covering is the safer error, and it matters
+    // most here: this is a hazard the player can only half-see, so the visible boil must be
+    // WIDER than the thing that stops the boat. The small one keeps contact none.
+    'river-boulder-large-sunken':  { label: 'Granite boulder, sunken',    world: 52, plane: 'seabed', contact: 'hard', contactR: 18, wash: 0.60, washFrom: 'current', motion: 'fixed', src: 'assets/images/props/river/boulder-large.png' },
+    'river-boulder-medium-sunken': { label: 'Granite boulder, sunken, medium', world: 34, plane: 'seabed', contact: 'hard', contactR: 12, wash: 0.62, washFrom: 'current', motion: 'fixed', src: 'assets/images/props/river/boulder-medium.png' },
+    'river-boulder-small-sunken':  { label: 'Granite cobble, sunken',     world: 20, plane: 'seabed', contact: 'none', contactR:  7, wash: 0.65, washFrom: 'current', motion: 'fixed', src: 'assets/images/props/river/boulder-small.png' },
     'ocean-naupaka':         { label: 'Beach naupaka',     world: 40, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-morning-glory':   { label: 'Beach morning glory', world: 30, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-grass-coastal':   { label: 'Coastal grass',     world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },
@@ -1734,6 +2010,67 @@ const SHAPE_KINDS = {
     // exactly what cost the river multi-hundred-ms replan spikes — see `bank`. It still DRAWS
     // (hidden stays false); it is only kept out of the router.
     lane:    { motion: 'fixed', hard: false, look: 'lane',     hidden: false, nav: false, height: 0 },
+    // ── STILLWATER LAKE'S THREE GROUNDS ─────────────────────────────────────
+    // The venue authored all eight of its islands as `isle`, the shared beach sand, which is
+    // the right default and says nothing about WHERE it is. These three say Minnesota: a
+    // woodland floor under the pines, a coarse glacial beach, and the rounded grey rock that
+    // makes a northern lake look northern.
+    //
+    // Forest floor: dry soil, decomposed leaf, needle litter and moss. The default land
+    // material for most of the course — under the forest, between the cabins, around the
+    // trails. HARD, like every other real land kind: you ground on a shore.
+    // Suggested height ~18 m with its pines when a designer wants the lee; the lake's whole
+    // card is "the breeze only whispers", so a lee here is worth typing.
+    forestfloor: { motion: 'fixed', hard: true,  look: 'forestfloor', hidden: false, nav: true, height: 0 },  // ~18 m with its pines
+    // Lake sand and fine gravel — swimming beaches, canoe launches, camp waterfronts. NOT
+    // `isle`, and the distinction is the point: `isle` is a warm tan ocean beach shared by
+    // three venues, and a Minnesota lake shore is coarser, greyer and glacial, with rounded
+    // pebbles through it. Behaves exactly as `isle` does.
+    lakesand:    { motion: 'fixed', hard: true,  look: 'lakesand',    hidden: false, nav: true, height: 0 },
+    // Glacial granite / gneiss — rocky points, tiny islands, shoreline shelves, boulders in
+    // the forest.
+    //
+    // ⚠️ NOT `granite`, WHICH IS THE ONE MISTAKE THIS KIND EXISTS TO PREVENT. That is
+    // Glacier Sound's rock: dark cold blue-grey, FRACTURED, drawn with the angular tracer
+    // and a low-poly facet fan, at 55 m of mountainside. This is the opposite geology — ice
+    // did not break it, ice SMOOTHED it, so it is rounded shelves and worn slabs a couple of
+    // metres proud of the water, in a cooler medium grey with pink and rust mineral planes.
+    // It therefore stays on the ROUNDED tracer with the sandbanks, deliberately, where
+    // granite and karst are angular. Anyone adding it to that list has made it scree.
+    //
+    // HARD, with granite and karst: the card's hazards line already promises islands and
+    // shoals, and a rocky point that only slowed you would not price a mistake.
+    gneiss:      { motion: 'fixed', hard: true,  look: 'gneiss',      hidden: false, nav: true, height: 0 },   // ~6 m of worn slab
+
+    // ── SOCKEYE RUN'S FOUR GROUNDS ──────────────────────────────────────────
+    // A mountain salmon river needs its own ground vocabulary; until now the venue drew its
+    // land with the shared `isle` sand, which is what made it read as generic. All four are
+    // `hard` and `nav` like every other land shape — they are banks and bars, and a boat goes
+    // around them — and all four sit at height 0, which is the convention for ground the
+    // camera looks straight down at.
+    //
+    // ⚠️ `outcrop` IS THE HAZARD OF THE FOUR. It is the rock standing out of the rapids, so it
+    // is the one that will be drawn INSIDE the racing water rather than beside it; the other
+    // three are bank and terrace. That is a placement fact rather than a trait difference —
+    // the shape system has no softer land — but it is why its art is specced as chunky faceted
+    // planes that read at a glance, where `cobble` is allowed to be quiet.
+    cobble:      { motion: 'fixed', hard: true,  look: 'cobble',      hidden: false, nav: true, height: 0 },   // dry bar, ankle-high
+    meadow:      { motion: 'fixed', hard: true,  look: 'meadow',      hidden: false, nav: true, height: 0 },   // river terrace
+    outcrop:     { motion: 'fixed', hard: true,  look: 'outcrop',     hidden: false, nav: true, height: 0 },   // ~4 m of scoured shelf
+    humus:       { motion: 'fixed', hard: true,  look: 'humus',       hidden: false, nav: true, height: 0 },   // ~30 m with its spruce
+    // The wet moss carpet of the deeper rainforest — a SECOND forest floor, not a replacement for
+    // `humus`. Humus is the dry needle litter under close spruce; this is the unbroken living moss
+    // that covers everything in a Southeast Alaska rain forest, and at dE 52 apart a designer can
+    // use both in one wood. It is a ground rather than a scatter of mats because the owner's own
+    // reference photographs measure 73-74% moss coverage of the floor: a surface, not scenery.
+    mossfloor:   { motion: 'fixed', hard: true,  look: 'mossfloor',   hidden: false, nav: true, height: 0 },   // ~30 m with its spruce
+    // The bar version of [[cobble]], and the shape a mountain river actually needs: a riffle
+    // is a cobble bar the water is still running over. Identical behaviour to `shoal` and
+    // `tropicshoal` — awash, the same 0.8 drag floor, priced by the router rather than walled
+    // — differing only in material, which is the whole reason those two are separate kinds.
+    // A bar with a dry heart is still two shapes: draw a `cobble` inside this one.
+    cobbleshoal: { motion: 'fixed', hard: false, look: 'cobbleshoal', hidden: false, nav: true, height: 0,
+               awash: true, drag: 0.8 },
     // Canyon spires and walls. The tallest thing here, and the reason Redrock's card
     // promises wind shadows.
     redrock: { motion: 'fixed', hard: false, look: 'redrock',  hidden: false, nav: true, height: 0 },   // ~70 m of canyon wall
@@ -2124,7 +2461,12 @@ function regionBB(poly) {
     return { minX, minY, maxX, maxY };
 }
 
-function compileVenueDoc(doc) {
+// `light` skips the estimate's planner run and its nav-grid raster — the one genuinely
+// expensive block — for callers that need the course's SHAPE but not its priced stats:
+// the clubhouse board while you are still browsing. A light course still carries every
+// resolved mark, route entry, region and island; its distance/limit numbers come from
+// the straight-line fallback below, and `pathMeasured: false` says so.
+function compileVenueDoc(doc, light) {
     const islands = [];
     const byId = {};
     // Where each shape lands, IN DOCUMENT ORDER. `islands` and `ice` stay separate because
@@ -2419,6 +2761,24 @@ function compileVenueDoc(doc) {
         };
     }).filter(r => r.poly.length >= 3);
 
+    // ── Rapids regions ──────────────────────────────────────────────────────
+    // The fourth use of the polygon, and the only one that says nothing about MOTION. A
+    // rapid carries exactly one number: `turbulence`, 0..1, the broken-water fraction —
+    // it robs drive, shoves the bow around, and boils white. Deliberately NO direction
+    // and NO speed: flow belongs to the Current layer, in whole, so the two layers can
+    // never author the same knots twice. A fast tongue is a current region; the broken
+    // shoulders either side of it are rapids.
+    const rapidsRegions = ((doc.rapids && doc.rapids.regions) || []).map((r, i) => {
+        const poly = (r.poly || []).map(p => [p[0], p[1]]);
+        return {
+            id: r.id || `rapids-${i}`,
+            poly,
+            bb: regionBB(poly),
+            falloff: r.falloff != null ? r.falloff : 200,
+            turbulence: r.turbulence != null ? r.turbulence : 0.5
+        };
+    }).filter(r => r.poly.length >= 3);
+
     // ── Gust regions ────────────────────────────────────────────────────────
     // The third use of the same polygon, and the only one that does not describe a state
     // of the water. A wind region says what the wind IS at a place; a gust region says
@@ -2587,7 +2947,7 @@ function compileVenueDoc(doc) {
     };
 
     let paths = null;
-    if (typeof CoursePath !== 'undefined' && typeof RoutePlanner !== 'undefined') {
+    if (!light && typeof CoursePath !== 'undefined' && typeof RoutePlanner !== 'undefined') {
         try {
             if (!compileVenueDoc._planner) compileVenueDoc._planner = new RoutePlanner();
             // The same grid the ruler uses. Without it the estimate is measured on a path
@@ -2700,6 +3060,7 @@ function compileVenueDoc(doc) {
         cutoffAuto: secs > 0 ? Math.max(60, Math.ceil(secs * 2 / 60) * 60) : null,
         windRegions,
         currentRegions,
+        rapidsRegions,
         gustRegions,
         marks,
         lines: (course.lines || []).map(l => ({ id: l.id, name: l.name || null, marks: l.marks.slice() })),
@@ -2747,7 +3108,10 @@ const getVenueDoc = (key) => {
 // walk of every number and string in the document, a few milliseconds where a compile
 // is hundreds, and any in-place edit is simply a cache miss. `invalidateCompile()`
 // stays as a belt-and-braces version bump in the key (resetGame calls it).
-let _ccKey = null, _ccOut = null;
+// TWO SLOTS, light and full, so the clubhouse's light compiles cannot evict the full
+// course the editor and the race are working from (or the reverse). A light result and a
+// full result of the same document are different objects, so they must never share a key.
+let _cc = { light: { key: null, out: null }, full: { key: null, out: null } };
 let _compileVersion = 0;
 function invalidateCompile() { _compileVersion++; }
 function docFingerprint(v) {
@@ -2767,12 +3131,13 @@ function docFingerprint(v) {
     walk(v);
     return `${n}|${h}`;
 }
-function compileCached(doc) {
+function compileCached(doc, light) {
+    const slot = _cc[light ? 'light' : 'full'];
     const key = `${_compileVersion}|${docFingerprint(doc)}`;
-    if (_ccOut && _ccKey === key) return structuredClone(_ccOut);
-    const out = compileVenueDoc(doc);
-    _ccKey = key;
-    _ccOut = structuredClone(out);
+    if (slot.out && slot.key === key) return structuredClone(slot.out);
+    const out = compileVenueDoc(doc, light);
+    slot.key = key;
+    slot.out = structuredClone(out);
     return out;
 }
 
@@ -2787,7 +3152,8 @@ window.VenueDoc = {
     get: getVenueDoc,
     migrate: migrateVenueDoc,
     validate: validateVenueDoc,
-    compile: compileCached,
+    // `opts.light` skips the estimate's planner/nav-grid block — see compileVenueDoc.
+    compile: (doc, opts) => compileCached(doc, !!(opts && opts.light)),
     invalidateCompile: invalidateCompile,
     // One definition of what a kind means, shared by the compiler, the editor's inspector
     // and the converter. A second copy anywhere is how "iceberg" comes to mean two things.
