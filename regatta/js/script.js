@@ -2125,6 +2125,7 @@ class BotController {
             if (this.gridTimer == null) this.gridTimer = 0;
             this.gridTimer -= 0.1;
             this.gridAge = (this.gridAge || 0) + 0.1;
+            if (this._c2Window > 0) this._c2Window -= 0.1;
             const goalMoved = !this.gridGoal ||
                 (destX - this.gridGoal.x) ** 2 + (destY - this.gridGoal.y) ** 2 > 300 * 300;
             // ROUTE STABILITY. Replanning every couple of seconds through a drifting
@@ -2270,7 +2271,123 @@ class BotController {
                 if (seg && seg.length > 1) {
                     const pts = seg.map(q => ({ x: q[0], y: q[1] }));
                     pts[pts.length - 1] = { x: destX, y: destY };
+                    // A rebuild that returns the SAME corridor is not new information
+                    // about the pack (measured: 50.2% of beat replans — _replan_why)
+                    // and does not open a manoeuvre re-decision. Only a changed answer
+                    // does: lateral offset of the new path from the old polyline,
+                    // sampled every 60u over the shared span, beyond 120u. Floe
+                    // venues only — the gate that reads this window is _floeObjs-
+                    // scoped, so elsewhere this is dead state.
+                    if (state.course._floeObjs && state.course._floeObjs.length) {
+                        let c2Changed = true;
+                        const c2Old = this.gridPath;
+                        if (c2Old && c2Old.length) {
+                            let oLen = 0, ox = boat.x, oy = boat.y;
+                            for (const q of c2Old) { oLen += Math.hypot(q.x - ox, q.y - oy); ox = q.x; oy = q.y; }
+                            const spanC2 = Math.min(1200, oLen);
+                            const dSegC2 = (sx, sy, ax, ay, bx, by) => {
+                                const dx = bx - ax, dy = by - ay; const L2 = dx * dx + dy * dy;
+                                let tt = L2 ? ((sx - ax) * dx + (sy - ay) * dy) / L2 : 0;
+                                tt = Math.max(0, Math.min(1, tt));
+                                return Math.hypot(sx - (ax + tt * dx), sy - (ay + tt * dy));
+                            };
+                            const dPolyC2 = (sx, sy) => {
+                                let bd = dSegC2(sx, sy, boat.x, boat.y, c2Old[0].x, c2Old[0].y);
+                                for (let ii = 0; ii + 1 < c2Old.length; ii++)
+                                    bd = Math.min(bd, dSegC2(sx, sy, c2Old[ii].x, c2Old[ii].y, c2Old[ii + 1].x, c2Old[ii + 1].y));
+                                return bd;
+                            };
+                            let mx = 0, acc = 0, nxt = 0, px2 = boat.x, py2 = boat.y;
+                            for (const q of pts) {
+                                const dq = Math.hypot(q.x - px2, q.y - py2);
+                                let guard = 0;
+                                while (acc + dq >= nxt && nxt <= spanC2 && guard++ < 40) {
+                                    const ff = dq ? (nxt - acc) / dq : 0;
+                                    mx = Math.max(mx, dPolyC2(px2 + (q.x - px2) * ff, py2 + (q.y - py2) * ff));
+                                    nxt += 60;
+                                }
+                                acc += dq; px2 = q.x; py2 = q.y;
+                                if (acc > spanC2 || mx > 120) break;
+                            }
+                            c2Changed = mx > 120;
+                        }
+                        if (c2Changed) this._c2Window = 4.0;
+                    }
                     this.gridPath = pts.slice(1);   // drop the boat's own cell
+                    // v9 — PATH FAIRING AT SHAVE SEGMENTS (ice-craft session
+                    // 2). The router threads clear CELLS but never aligns to
+                    // floe EDGES: with boats held on priced water (the v8
+                    // rejoin) the on-path shave class shows entry angle med
+                    // 39° vs his 19° and 23% hits. Clamp every path point
+                    // whose drift-predicted hull clearance (at its own ETA,
+                    // within the honest ≤5s horizon — beyond that floe drift
+                    // is fiction) is under 78u onto the 78u offset contour in
+                    // the drifted frame: consecutive clamped points share the
+                    // contour, so the faired segment runs edge-TANGENT by
+                    // construction and the boat arrives aligned. A push that
+                    // would land within 60u of another hull or in a blocked
+                    // cell is rejected. Byte-inert without _floeObjs.
+                    if ((state.course._floeObjs || []).length && this.gridPath.length) {
+                        const gp9 = this.gridPath;
+                        const v9 = Math.max(60, (this.boat.speed || 0) * 60);
+                        let acc9 = 0, px9 = this.boat.x, py9 = this.boat.y;
+                        for (let i9 = 0; i9 < gp9.length; i9++) {
+                            const p9 = gp9[i9];
+                            acc9 += Math.hypot(p9.x - px9, p9.y - py9); px9 = p9.x; py9 = p9.y;
+                            const tE9 = acc9 / v9;
+                            if (tE9 > 5) break;
+                            let f9 = null, c9 = Infinity;
+                            for (const fF of state.course._floeObjs) {
+                                const dx9 = fF.x - p9.x, dy9 = fF.y - p9.y;
+                                const rr9 = (fF.radius || 0) + 160;
+                                if (dx9 * dx9 + dy9 * dy9 > rr9 * rr9) continue;
+                                const cF = floeHullClear(fF,
+                                    p9.x - (fF.driftVx || 0) * tE9,
+                                    p9.y - (fF.driftVy || 0) * tE9, tE9);
+                                if (cF < c9) { c9 = cF; f9 = fF; }
+                            }
+                            if (!f9 || c9 >= 60 || c9 < -20) continue;
+                            // push radially in the DRIFTED frame to the 78u contour
+                            const fx9 = f9.x + (f9.driftVx || 0) * tE9;
+                            const fy9 = f9.y + (f9.driftVy || 0) * tE9;
+                            let ux9 = p9.x - fx9, uy9 = p9.y - fy9;
+                            const dU9 = Math.hypot(ux9, uy9) || 1; ux9 /= dU9; uy9 /= dU9;
+                            const qx9 = p9.x + ux9 * (60 - c9), qy9 = p9.y + uy9 * (60 - c9);
+                            // reject: other hulls or blocked cells at the new point
+                            let ok9 = true;
+                            for (const fF of state.course._floeObjs) {
+                                if (fF === f9) continue;
+                                const dx9 = fF.x - qx9, dy9 = fF.y - qy9;
+                                const rr9 = (fF.radius || 0) + 120;
+                                if (dx9 * dx9 + dy9 * dy9 > rr9 * rr9) continue;
+                                if (floeHullClear(fF,
+                                    qx9 - (fF.driftVx || 0) * tE9,
+                                    qy9 - (fF.driftVy || 0) * tE9, tE9) < 60) { ok9 = false; break; }
+                            }
+                            if (ok9 && botGrid) {
+                                const cc9 = botGrid.cell(qx9, qy9);
+                                if (!botGrid.at(cc9[0], cc9[1])) ok9 = false;
+                            }
+                            // a pushed POINT clears the hull; the SEGMENTS to
+                            // its (possibly unpushed) neighbours may now cut
+                            // the corner the point was pushed around (measured
+                            // on 9101: floeEp 2→9). Push only if both
+                            // adjoining segments clear the hull in the
+                            // drifted frame.
+                            if (ok9) {
+                                const shX9 = (f9.driftVx || 0) * tE9, shY9 = (f9.driftVy || 0) * tE9;
+                                const pv9 = i9 > 0 ? gp9[i9 - 1] : { x: this.boat.x, y: this.boat.y };
+                                if (floeSegNear(f9, pv9.x - shX9, pv9.y - shY9,
+                                    qx9 - shX9, qy9 - shY9, tE9, 25)) ok9 = false;
+                                if (ok9 && i9 < gp9.length - 1) {
+                                    const nx9 = gp9[i9 + 1];
+                                    if (floeSegNear(f9, qx9 - shX9, qy9 - shY9,
+                                        nx9.x - shX9, nx9.y - shY9, tE9, 25)) ok9 = false;
+                                }
+                            }
+                            if (ok9) { p9.x = qx9; p9.y = qy9; }
+                        }
+                    }
                 } else if (!seg) {
                     // No route right now (a drifting pocket closed). A stale path
                     // beats a straight line into the ice — keep the old one and
@@ -2344,7 +2461,143 @@ class BotController {
                     acc += Math.hypot(pts[j + 1].x - pts[j].x, pts[j + 1].y - pts[j].y);
                     j++;
                 }
-                const w = (j >= pts.length - 1) ? { x: destX, y: destY } : pts[j];
+                let w = (j >= pts.length - 1) ? { x: destX, y: destY } : pts[j];
+                // FLOE-AWARE REJOIN (v8, ice-craft session 2, 2026-08-23).
+                // The entry attribution split the sub-78u contact mass: path
+                // shaves hit 0%, but boats DISPLACED off the plan (xtrack
+                // ≥80u, 35% of onsets) hit 58% — their pure-pursuit rejoin
+                // chord crosses drifting hulls the path never priced, and
+                // cross-track control SHRINKS the lookahead, steepening the
+                // chord exactly when it most needs to clear ice (trap 17:
+                // displacement is fixed at the response, not the map). When
+                // off-path near ice, slide the rejoin carrot FORWARD along
+                // the path until the chord to it clears every drift-predicted
+                // hull — rejoin shallower, behind the ice, on priced water.
+                // No held state, no mode; byte-inert without _floeObjs.
+                if ((state.course._floeObjs || []).length && this.boat.raceState.leg >= 1
+                    && xtk > 80 && j < pts.length - 1) {
+                    const vRj = Math.max(60, (boat.speed || 0) * 60);
+                    const chordBlocked = (wx, wy) => {
+                        const dRj = Math.hypot(wx - boat.x, wy - boat.y);
+                        const tMidRj = (dRj / vRj) * 0.5;
+                        for (const fRj of state.course._floeObjs) {
+                            const dxR = fRj.x - boat.x, dyR = fRj.y - boat.y;
+                            const rrR = (fRj.radius || 0) + dRj + 60;
+                            if (dxR * dxR + dyR * dyR > rrR * rrR) continue;
+                            const shX = (fRj.driftVx || 0) * tMidRj, shY = (fRj.driftVy || 0) * tMidRj;
+                            if (floeSegNear(fRj, boat.x - shX, boat.y - shY,
+                                wx - shX, wy - shY, tMidRj, 15)) return true;
+                        }
+                        return false;
+                    };
+                    if (chordBlocked(w.x, w.y)) {
+                        // v8b: prefer a rejoin point where the PATH ITSELF is
+                        // clear of predicted hulls — v8's chord-only slide
+                        // halved the off-path hit class (58%→30%) but landed
+                        // boats ON shaving path segments from rejoin angles
+                        // (on-path shave hits 0%→23%): rejoin BEHIND the
+                        // shave, not into it. Chord-clear-only is the
+                        // fallback; nothing clear in 480u keeps the original
+                        // carrot (the avoidance stack owns it, as today).
+                        const ptClear = (px, py, tE) => {
+                            for (const fRj of state.course._floeObjs) {
+                                const dxR = fRj.x - px, dyR = fRj.y - py;
+                                const rrR = (fRj.radius || 0) + 200;
+                                if (dxR * dxR + dyR * dyR > rrR * rrR) continue;
+                                if (floeHullClear(fRj,
+                                    px - (fRj.driftVx || 0) * tE,
+                                    py - (fRj.driftVy || 0) * tE, tE) < 78) return false;
+                            }
+                            return true;
+                        };
+                        let jR = j, accR = 0, wChord = null;
+                        while (jR < pts.length - 1 && accR < 480) {
+                            accR += Math.hypot(pts[jR + 1].x - pts[jR].x, pts[jR + 1].y - pts[jR].y);
+                            jR++;
+                            if (!chordBlocked(pts[jR].x, pts[jR].y)) {
+                                if (!wChord) wChord = pts[jR];
+                                const dRj2 = Math.hypot(pts[jR].x - boat.x, pts[jR].y - boat.y);
+                                if (ptClear(pts[jR].x, pts[jR].y, dRj2 / vRj)) { w = pts[jR]; wChord = null; break; }
+                            }
+                        }
+                        if (wChord) w = wChord;
+                    }
+                }
+                // AIM THROUGH THE SLOT (T1, 2026-08-23, owner-approved). When
+                // the route inside the lookahead threads TIGHT-tier cells, the
+                // carrot moves to the tight run's exit EXTENDED along the
+                // run's own axis: the hull approaches and transits ALIGNED
+                // (±15u beam needs ~30u aligned vs ~50u at a 23° crab), and
+                // the aligned candidate is the one the tight-tier trust
+                // (0.3 rad) protects — the lab's mouth bails happen at
+                // 18-19° off-axis, right on that boundary. The extension
+                // walks open OR tight water (v1 tested open only, collapsed
+                // the carrot inside the corridor, and lost 4 lab seeds).
+                // Byte-inert wherever the route meets no tight cells.
+                if (botGrid._tight) {
+                    const tightAt = (px2, py2) => {
+                        const c2 = botGrid.cell(px2, py2);
+                        const id2 = c2[1] * botGrid.n + c2[0];
+                        return botGrid.at(c2[0], c2[1])
+                            || (id2 >= 0 && id2 < botGrid.n * botGrid.n && botGrid._tight[id2]);
+                    };
+                    let aT = -1, bT = -1;
+                    for (let k = 0; k <= j && k < pts.length; k++) {
+                        const cc = botGrid.cell(pts[k].x, pts[k].y);
+                        const idT = cc[1] * botGrid.n + cc[0];
+                        const isT = !botGrid.at(cc[0], cc[1])
+                            && idT >= 0 && idT < botGrid.n * botGrid.n && botGrid._tight[idT];
+                        if (isT && aT < 0) aT = k;
+                        if (isT && aT >= 0) bT = k;
+                        if (!isT && aT >= 0) break; // first tight RUN only
+                    }
+                    // SLOT, NOT RIBBON (v4): the override fires only when the
+                    // run has walls on BOTH perpendicular sides at its
+                    // midpoint — a shore-parallel tight ribbon has open water
+                    // abeam, and aiming "through" it walks the boat along the
+                    // bank (river 3x8 measured land +15% without this guard).
+                    const slotTest = (mx3, my3, dxA, dyA) => {
+                        const px3 = -dyA, py3 = dxA;
+                        const off3 = botGrid.res * 1.2;
+                        // a side is a WALL unless genuinely OPEN water sits
+                        // abeam (tight cells abeam = the narrow region
+                        // continues — still a slot, not a shoreline ribbon)
+                        const open3 = (qx, qy) => {
+                            const c3 = botGrid.cell(qx, qy);
+                            return !!botGrid.at(c3[0], c3[1]);
+                        };
+                        return !open3(mx3 + px3 * off3, my3 + py3 * off3)
+                            && !open3(mx3 - px3 * off3, my3 - py3 * off3);
+                    };
+                    if (aT >= 0 && bT >= aT) {
+                        // v3: pure pursuit ON THE RUN'S AXIS LINE — v2 aimed
+                        // straight at the extended exit and the approach cut
+                        // the corner into the sand. Here the carrot is the
+                        // axis point a fixed lead ahead of the boat's own
+                        // axis-projection: the boat converges to the line,
+                        // arrives aligned, and the carrot walks out the exit.
+                        const ax0 = aT > 0 ? pts[aT - 1] : { x: boat.x, y: boat.y };
+                        let dxT = pts[bT].x - ax0.x, dyT = pts[bT].y - ax0.y;
+                        const lT = Math.hypot(dxT, dyT);
+                        if (lT > 20) {
+                            dxT /= lT; dyT /= lT;
+                            const eX = pts[aT].x, eY = pts[aT].y;
+                            const sB = (boat.x - eX) * dxT + (boat.y - eY) * dyT;
+                            const runL = (pts[bT].x - eX) * dxT + (pts[bT].y - eY) * dyT;
+                            let sMax = runL;
+                            for (let s2 = 30; s2 <= 210; s2 += 30) {
+                                if (!tightAt(eX + dxT * (runL + s2), eY + dyT * (runL + s2))) break;
+                                sMax = runL + s2;
+                            }
+                            const midX = eX + dxT * runL * 0.5, midY = eY + dyT * runL * 0.5;
+                            if (slotTest(midX, midY, dxT, dyT)) {
+                                const sC = Math.min(sB + 160, sMax);
+                                const wx2 = eX + dxT * sC, wy2 = eY + dyT * sC;
+                                if (tightAt(wx2, wy2)) w = { x: wx2, y: wy2 };
+                            }
+                        }
+                    }
+                }
                 destX = w.x; destY = w.y;
             }
         }
@@ -2859,6 +3112,76 @@ class BotController {
         if (targetTackSign !== currentTack && this.tackCooldown > 0) {
             // Keep current if cooldown active
             return (currentTack === 1) ? hStarboard : hPort;
+        }
+
+        // THE INFORMATION GATE (arctic router push). In a floe field the
+        // pure-pursuit carrot alternates across the wind at stair frequency
+        // (16.8 side invitations/boat-race, 62% of them BETWEEN replans with
+        // the path object unchanged, converting to manoeuvres at 83% —
+        // _carrot_pin_cf), so the fleet re-decides its board at the cooldown
+        // floor while he holds a median 1335u board and 7 tacks a beat. A
+        // proposed side switch here EXISTS only on information:
+        //   (a) a replan changed the corridor answer (_c2Window, set above)
+        //   (b) the current board is blocked ahead — land or floe — the board
+        //       is genuinely over (his boards end at 78-179u floe clearance)
+        //   (c) an avoidance role or threat is live (rules interplay untouched)
+        //   (e) the plan's FAR corridor (900u, the pure-pursuit LOOK cap)
+        //       agrees with the proposed side — a real corner, not a stair.
+        // The layline return above and the cooldown are untouched; no time
+        // price is added or changed anywhere (the TK3 kill priced re-decisions
+        // in TIME; this changes WHICH re-decisions exist). Floe venues only
+        // (_floeObjs — the canyon-law scope; grid._soft is NOT a floe test),
+        // racing legs only (start tuning sacred): elsewhere stock arithmetic.
+        if (targetTackSign !== currentTack
+            && state.course._floeObjs && state.course._floeObjs.length
+            && this.boat.raceState.leg >= 1) {
+            let c2Reason = (this._c2Window || 0) > 0
+                || (this.avoidanceRole && this.avoidanceRole !== 'NONE')
+                || !!this.threatBoat;
+            // v3 (v1: solo −34 s/boat but fleet med +3/mean +6.3, floe +11%;
+            // v2's any-deviation clause dissolved the gate — floe deviation is
+            // near-continuous here and the solo wins vanished): rivals are
+            // information the plan cannot see. The gate binds only in CLEAR
+            // water — the measured phantom class (38% of fleet side-changes
+            // happen with no role, no threat and no rival inside 300u). Any
+            // unfinished rival within 300u opens the re-decision.
+            if (!c2Reason) {
+                for (const oC2 of state.boats) {
+                    if (oC2 === boat || oC2.isPlayer || oC2.raceState.finished) continue;
+                    if ((oC2.x - boat.x) ** 2 + (oC2.y - boat.y) ** 2 < 300 * 300) { c2Reason = true; break; }
+                }
+            }
+            if (!c2Reason) {
+                const gC2 = (state.course._gridFixed && state.course._gridFixed.length)
+                    ? state.course.botGrid : null;
+                if (gC2) {
+                    const hNow2 = (currentTack === 1) ? hStarboard : hPort;
+                    const reach = Math.max(160, boat.speed * 96);
+                    for (const fC of [0.34, 0.67, 1.0]) {
+                        const cc2 = gC2.cell(boat.x + Math.sin(hNow2) * reach * fC,
+                            boat.y - Math.cos(hNow2) * reach * fC);
+                        if (!gC2.at(cc2[0], cc2[1])) { c2Reason = true; break; }
+                    }
+                } else c2Reason = true;   // no grid: the gate cannot see — stock behavior
+            }
+            if (!c2Reason && this.gridPath && this.gridPath.length) {
+                let fx = null, fy = null, accF = 0, pxF = boat.x, pyF = boat.y;
+                for (const qF of this.gridPath) {
+                    const dF = Math.hypot(qF.x - pxF, qF.y - pyF);
+                    if (accF + dF >= 900) {
+                        const ffF = (900 - accF) / (dF || 1);
+                        fx = pxF + (qF.x - pxF) * ffF; fy = pyF + (qF.y - pyF) * ffF;
+                        break;
+                    }
+                    accF += dF; pxF = qF.x; pyF = qF.y;
+                }
+                if (fx === null) { fx = pxF; fy = pyF; }
+                const sideFar = normalizeAngle(Math.atan2(fx - boat.x, -(fy - boat.y)) - wd) >= 0 ? 1 : -1;
+                if (sideFar === targetTackSign) c2Reason = true;
+            } else if (!c2Reason) {
+                c2Reason = true;   // no plan to consult — the gate cannot see; stock behavior
+            }
+            if (!c2Reason) return (currentTack === 1) ? hStarboard : hPort;
         }
 
         // NO TACKING WITHOUT WAY ON IN A BLOW. Above ~16 kt a boat that tacks slow
@@ -3543,6 +3866,20 @@ class BotController {
         let bestHeading = desiredHeading;
         let minCost = Infinity;
 
+        // D1v2 — CLEAN-PREFERRED ESCAPES UNDER RIVAL RESOLUTION NEAR ICE
+        // (C4 follow-up, owner-approved re-litigation 2026-08-23). While a
+        // rival resolution is live, an escape candidate whose probe crosses
+        // ice loses to ANY fully-clean candidate — but ONLY when a clean
+        // one exists. D1's unconditional wall pushed boxed boats into land
+        // and boats (pooled 32 +10.0 med, land +55%, KILLED); this is a
+        // pure ORDERING rule: no candidate's price changes anywhere, and a
+        // boxed boat keeps today's ordering exactly. Under _trajFloe the
+        // ice test runs information-only (zero cost) on offset!=0
+        // candidates — water the planner never probed.
+        const iceHardD1 = !(state.course._floeObjs && state.course._floeObjs.length)
+            ? false : (this.avoidanceRole !== 'NONE' || !!this.threatBoat);
+        let minCleanCost = Infinity, bestCleanH = null, bestCleanRetro = false, bestIceD1 = false;
+
         // NOTE: leeway-aware candidate projection and an in-irons candidate
         // penalty were both tested here and REGRESSED (see memory: Round 10) —
         // avoidance predictions must stay heading-based and hold-friendly.
@@ -4169,7 +4506,12 @@ class BotController {
             // comment above names is closed.
             let arcPts = null;
             const arcDt = (lookaheadFrames / 60) / 8;
-            if (openWaterAv) {
+            // D2 — RIVAL HONESTY ON ICE (the GWF re-land, C4 push 2026-08-22):
+            // the roll runs on floe venues too — a boat's own achievable turn
+            // is venue-independent — but ONLY the boat-vs-boat test consumes
+            // it there. On ice, futureX/vx (which feed the land/mark/floe
+            // terms) stay the straight projection byte-for-byte.
+            {
                 const snapP = (this.iceEscapeTimer > 0 && !this.penaltySpin);
                 const omP = getTurnSpeed() * 60 * (1.0 + boat.stats.handling * 0.03)
                     * (snapP ? 5.0 : steerageFactor(boat));
@@ -4184,14 +4526,17 @@ class BotController {
                     yp += (-Math.cos(hp) * speed + curAvVy) * dtP;
                     arcPts.push([xp, yp]);
                 }
-                futureX = xp; futureY = yp;
-                vx = (futureX - boat.x) / TP; vy = (futureY - boat.y) / TP;
+                if (openWaterAv) {
+                    futureX = xp; futureY = yp;
+                    vx = (futureX - boat.x) / TP; vy = (futureY - boat.y) / TP;
+                }
             }
 
             let boatCollision = false;
             let staticCollision = false; // Marks/Boundary
             let ruleViolation = false;
             let proximityCost = 0;
+            let iceCrossD1 = false;      // D1v2: this candidate's probe touches ice
 
             // 1. Boats - Check multiple points along the path
             const boatSamples = 5;
@@ -4377,7 +4722,10 @@ class BotController {
                 // START (racingLegF, same gate as the candidate fan — start
                 // tuning is sacred, d55eb97's 4.4 OCS points say so).
                 const arcTest = arcPts && racingLegF;
-                const hardCore = otherSpinC ? pairSafe : Math.min(pairSafe, 80);
+                // the 80u truth core is an OPEN-WATER call (the rules gap
+                // there is priced by the (a)/(b) keep-clear term). On ice
+                // the bubbles stay exactly as priced (D2 / GWF re-land).
+                const hardCore = otherSpinC ? pairSafe : (openWaterAv ? Math.min(pairSafe, 80) : pairSafe);
                 if (arcTest) {
                     let minApproachSq = Infinity;
                     for (let iSeg = 0; iSeg < 8; iSeg++) {
@@ -4953,13 +5301,44 @@ class BotController {
                         // (Inert without floes: static and stamped clearance agree.)
                         let cScale = 10000;
                         const gStat = state.course._botGridStatic;
+                        let floeCausedD3 = false;
                         if (gStat && gStat !== gAv && window.SailCheck) {
                             // static _clear is lazy (only pathSailable builds it) and
                             // routing runs on the stamped grid — build it once here.
                             if (!gStat._clear) gStat._clear = window.SailCheck.clearanceField(gStat);
-                            if (gStat._clear[idAv] >= 3) cScale = 4000;
+                            if (gStat._clear[idAv] >= 3) { cScale = 4000; floeCausedD3 = true; }
                         }
-                        proximityCost += cScale * (1 - clr / 3);
+                        if (floeCausedD3) {
+                            // D3 — FL1c, THE CLEARANCE BAND'S FLOE HALF SEES THE
+                            // TRUE HULL (C4 push, 2026-08-22). The band was the
+                            // last consumer of fat stamps: it demanded 3 CELLS of
+                            // stamped clearance (stamps = hull+clearance+
+                            // prediction) where the recorded human's revealed
+                            // demand is a 46u median / 32u p25 pass-by CPA to the
+                            // true hull. Measured (_phantom_why): 48% of solo
+                            // AVOID_NONE deviation onsets were priced by this
+                            // band's floe half; 55-62% of the deviated time
+                            // counterfactually cleared at his margins. Same fix
+                            // class as FL1/FL1b (change what is MEASURED, keep
+                            // the price scale): clearance at the probe endpoint
+                            // to the predicted true hull, demand 78u (his p25
+                            // clearance-at-tack; solo A/B paid mean −14.7 s/boat
+                            // with floe episodes 18→12).
+                            let tcD3 = Infinity;
+                            const tED3 = lookaheadFrames / 60;
+                            for (const fD3 of (state.course._floeObjs || [])) {
+                                const dxD3 = fD3.x - landFX, dyD3 = fD3.y - landFY;
+                                if (dxD3 * dxD3 + dyD3 * dyD3 > (fD3.radius + 260) * (fD3.radius + 260)) continue;
+                                const cD3 = floeHullClear(fD3,
+                                    landFX - (fD3.driftVx || 0) * tED3,
+                                    landFY - (fD3.driftVy || 0) * tED3, tED3);
+                                if (cD3 < tcD3) tcD3 = cD3;
+                            }
+                            const dmR1 = this.boat.raceState.roundArmed ? 78 : 60;
+                            if (tcD3 < dmR1) proximityCost += 4000 * (1 - Math.max(0, tcD3) / dmR1);
+                        } else {
+                            proximityCost += cScale * (1 - clr / 3);
+                        }
                     }
                 }
             }
@@ -4975,7 +5354,21 @@ class BotController {
                     // steered this tick, floes are ITS job — double-counting them
                     // here re-vetoes the thread it chose.
                     if (isl.fromMask && gAv) continue;
-                    if (isl.isFloe && this._trajFloe) continue;
+                    if (isl.isFloe && this._trajFloe) {
+                        // D1v2: information-only ice test for escape candidates —
+                        // the planner cleared only the zero offset. NO cost here.
+                        if (iceHardD1 && offset !== 0 && !iceCrossD1) {
+                            const tMidI = (lookaheadFrames / 60) * 0.5;
+                            const shXI = (isl.driftVx || 0) * tMidI, shYI = (isl.driftVy || 0) * tMidI;
+                            const sIx = boat.x - shXI, sIy = boat.y - shYI;
+                            const eIx = futureX - shXI, eIy = futureY - shYI;
+                            const dI = Geom.distToSegment({ x: isl.x, y: isl.y },
+                                { x: sIx, y: sIy }, { x: eIx, y: eIy });
+                            if (dI < isl.radius + 30 + 21
+                                && floeSegNear(isl, sIx, sIy, eIx, eIy, tMidI, 12.6)) iceCrossD1 = true;
+                        }
+                        continue;
+                    }
                     // PREDICT the floe, don't pad it. Drift velocity is known
                     // exactly, so test the candidate segment against the floe where
                     // it WILL BE mid-lookahead (equivalently: shift the segment the
@@ -5039,6 +5432,7 @@ class BotController {
                             // ratio 1.91→1.70, min 270 — priced by 3 fins@900 churn,
                             // in-time flat 40. The knee is somewhere below; a notch3
                             // must watch the 900-cap finisher count first.)
+                            if (isl.isFloe && iceHardD1 && offset !== 0) iceCrossD1 = true; // D1v2 flag; price unchanged
                             proximityCost += isl.isFloe ? 3500 : 25000;
                         } else {
                             // Proximity penalty (Buffer zone)
@@ -5172,11 +5566,26 @@ class BotController {
             if (cost < minCost) {
                 minCost = cost;
                 bestHeading = h;
+                bestIceD1 = iceCrossD1;
                 bestRetro = retroOn
                     ? ((Math.sin(h) * (-Math.sin(brgRetro) * sgnRetro) - Math.cos(h) * (Math.cos(brgRetro) * sgnRetro)) < 0)
                     : false;
             }
+            // D1v2: track the best FULLY-CLEAN candidate (no collisions, no
+            // rule violation, probe touches no ice) in parallel.
+            if (iceHardD1 && !iceCrossD1 && !boatCollision && !staticCollision
+                && !ruleViolation && cost < minCleanCost) {
+                minCleanCost = cost;
+                bestCleanH = h;
+                bestCleanRetro = retroOn
+                    ? ((Math.sin(h) * (-Math.sin(brgRetro) * sgnRetro) - Math.cos(h) * (Math.cos(brgRetro) * sgnRetro)) < 0)
+                    : false;
+            }
         }
+        // D1v2 substitution: the winning escape crossed ice while a clean
+        // escape existed — take the clean one. A boxed boat (no clean
+        // candidate) keeps the stock ordering untouched.
+        if (bestIceD1 && bestCleanH != null) { bestHeading = bestCleanH; bestRetro = bestCleanRetro; }
         if (retroOn && bestRetro && proHeading != null) bestHeading = proHeading;
         void retroSet;
         this._lastAvoidChoice = bestHeading;

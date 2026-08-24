@@ -1760,8 +1760,7 @@ window.SCENARIO_DOC = {
       },
       {
         "kind": "goals",
-        "who": 0,
-        "xfail": true
+        "who": 0
       }
     ],
     "boats": [

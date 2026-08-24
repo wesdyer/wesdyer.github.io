@@ -13964,3 +13964,1082 @@ helm aligns only implicitly — COG through the 80.6u pin slot crabs ~23deg.
 Aim-through-the-slot targeting (carrot at the thread's far end) is the
 named lever for the sub-80u frontier; ⚠️ adjacent to the closed
 "oriented-hull planning" family — his ruling before building.
+
+
+## ⏭ CARRY-FORWARD PROMPT — THE ARCTIC ROUTER PUSH (verbatim, 2026-08-22)
+
+AI PUSH: arctic board-level routing — the ONE big thread (owner-directed
+2026-08-22, big autonomous run, many hours). Arctic 1.589x = worst venue;
+leg 1 carries 72% of the gap as DISTANCE (3-5.3x his manoeuvre count).
+
+Read first: memory regatta-arctic-router-push-plan (the plan — phases,
+ranked candidates C1-C4, pre-registered kill criteria, the eight-shape
+graveyard), regatta-arctic-carrot (the 12s-rebuild carrot flips + the
+selective-fix pre-registration), regatta-arctic-tackcount (the graveyard
+in full), regatta-standing-rules (benching law; poolers' sign AND
+arg-order traps), regatta-session-report (the table format), tail of
+regatta/guidelines/ai-campaign.md. Check date; freeze_venues --check from
+repo root (lake diff = my pending edit, expected).
+
+Base: 17b24df (the narrow-passage ship). n4*/n5sw* bench JSONs = the
+anchors; treeNP5 = the shipped tree. Phase 0 re-baselines the leg matrix
+and tack surplus on THIS HEAD before believing any gwe-era number.
+
+Order of work: (0) re-baseline + fingerprints; (1) the measurement
+program — carrot-flip census on HEAD, the carrot-pin counterfactual
+probe, his board ladder vs the plan, fleet-crawl re-measure post-gwe,
+downwind gybe decomposition; (2) candidates in rank order, one mechanism
+per landing, own tree, criteria pre-registered BEFORE benching: C1
+selective carrot (same-answer replans retain the steering reference), C2
+information-gated tack re-decision (distinct from TK3's price — bring the
+distinction to me if in doubt), C3 the joint router+steering shape ONLY if
+C1/C2 leave solo tacks >2x his (solo-gated first, one round, third fleet
+refusal closes the family), C4 fleet crawl only if hours remain; (3) gate:
+arctic 2x16 POOLED 32 + REDROCK POOLED 6-SET CO-GATE on any
+replan-machinery change (the treeAGE lesson) + river 3x8 + full battery
+vs n4*/n5sw* on final HEAD, name losers, goldens trace:update + verify
+--seeds 3 READ THE COUNT (30), suite (4 owner-pending fails = known),
+campaign-log snapshot per accepted round, THE TABLE with every status
+update and at close.
+
+Guardrails: the graveyard is closed as-was (AC1, TK1-3, LANE1x2, LANE2,
+treeAGE, commitment 0-for-7, oscillation tax, SIPP, laylines, radius
+selection, arrival/laning, boat-arc unscope — rival-honesty on ice only
+WITH the obstruction model); the 12s rebuild is LOAD-BEARING, fixes must
+be selective; drifting ice does not keep clear (rule 5) and stopping is
+legitimate only vs ice; start tuning sacred; actions-not-prices; benches
+via nohup scripts from repo root (Bash 10-min cap), never pkill chrome
+while anything runs. Out of scope: alignment/oriented-hull (needs my
+ruling), wedge push, swamp corridor, lake, rating campaign. Commits local
+— push needs my credentials.
+
+
+## THE ARCTIC ROUTER PUSH — C2 THE INFORMATION GATE (2026-08-22 night, autonomous)
+
+Owner directive: arctic board-level routing, the ONE big thread. Base
+`17b24df`; n4*/n5sw* anchors. Arctic 1.589x worst; leg 1 = 72% of the gap
+as DISTANCE (re-verified on this HEAD: 1.74x on means, leg 2 = 27%/1.41x).
+
+**THE MEASUREMENT PROGRAM KILLED C1 BEFORE A LINE WAS BUILT** (the plan's
+pre-registered counterfactual, `_carrot_pin_cf.js`): beat replans are
+AGE 48.4% / GOAL-MOVED 51.1% (the DMC target slides with progress — unknown
+at plan time), and the C1-absorbable population (age-triggered AND
+same-corridor AND wind-side flip) measures **0.14 tack invitations per
+boat-race** — nil against ~30 manoeuvres. The same probe found the real
+budget: **16.8 carrot wind-side invitations/boat-race, 62% BETWEEN replans**
+(the pure-pursuit carrot alternating across the staircase with the path
+object unchanged — no new information by construction), converting to hull
+tacks at 83%; ~40% of beat tacks trace to an invitation within 3s.
+
+**His ladder is now measured** (`_board_ladder.js` over the 6 fp-verified
+laps): leg-1 7 tacks med (4-10), board 1335u med / 11.9s, TWA ~65deg,
+**clearance at tack med 179u, p25 78u** — he commits three times deeper
+than the 420u carrot and shaves floes the router won't. Leg-2 (decomposed
+for the first time): his 8 gybes vs fleet 19; same phantom-avoidance +
+manoeuvre-churn waste signature as the beat.
+
+**Shipped: C2, the information gate** (one mechanism, both manoeuvre
+types). In `_floeObjs` water on racing legs, a proposed tack/gybe
+side-switch in the shared scorer EXISTS only on information: (a) a replan
+CHANGED the corridor answer (>120u lateral over the shared 1200u span —
+same-corridor rebuilds, 50.2% measured, no longer invite a tack), (b) the
+current board is blocked ahead (land/floe within max(160, speed*96)u),
+(c) an avoidance role or threat is live, (d) any rival inside 300u (the
+gate binds only in CLEAR water — the 38% NOROLE-far flip class), (e) the
+plan's far corridor at 900u agrees with the switch (a real corner, not a
+stair), or the untouched layline return. Cooldown untouched; NO time price
+anywhere — ⚠️ TK3 DISTINCTION, for the record: TK3 priced re-decisions in
+time and died; this changes WHICH re-decisions exist, on information.
+Non-floe venues reduce to stock arithmetic by construction.
+
+Iterations: v1 (a,b,c,e) solo −34 s/boat mean but fleet med +3/mean +6.3,
+floe +11% — held boards in traffic trade rubs for ice; v2 (any-deviation
+opens the gate) dissolved it — floe deviation is near-continuous, solo
+wins vanished; v3 = the rival-300u clause, solo provably v1's.
+
+**Gate (all pre-registered criteria):**
+- SOLO 4 seeds neutral: med 325.8 -> 287.2, mean −34.3 (worst seed
+  405.7 -> 334.7); leg-1 tacks 19 -> 15, leg-2 13 -> 9, floe episodes
+  9 -> 5. Fixes the broken races, leaves the good ones (9100 bit-identical).
+- FLEET arctic POOLED 64 (four disjoint 16-seed sets, 576 paired boats):
+  **med 0.0, mean +1.3** (sets +2.0/−1.8/−0.4/+5.2) — clock NEUTRAL.
+  Anchor-protocol table: med 329 -> 327 (1.589 -> 1.580).
+- ⚠️ NAMED WATCH at equal prominence: fleet floe contacts 17.8 -> 19.0
+  (+7%; +13% on the 9400/9600 pair) — per-race deltas bimodal −104..+139,
+  up in only 16/32 races (race-reshuffle noise-dominated, but directionally
+  consistent). The rubs-for-ice trade points at the queued C4 pairing
+  (rival-honesty on ice WITH the obstruction model). His call.
+- Redrock pooled 6-set CO-GATE: 0.0/0.0, every dirt column identical.
+  River 3x8, swamp 3x8, glow 2x16, lagoon, bay 2x20, lake 2x20, ocean,
+  seatrials: ALL byte-identical to the n4*/n5sw* anchors (verification of
+  the _floeObjs scope). Goldens re-recorded + verify PASS 30 traces.
+  Library 4/27 failing = the known owner-pending set. freeze --check clean
+  (lake = his pending edit).
+
+**Also closed this session:** C3, the joint shape (LANE1 direction-aware
+A* rebuilt onto this stack + the C2 gate): solo med 294.1 / tacks 20 —
+DOMINATED by the C2 gate alone (287.2 / 15) on every statistic. Recorded
+as a solo refusal of the joint form; no fleet round spent; LANE1's fleet
+kill count stays at 2. The fleet crawl re-measured POST-GWE and survived
+(69.3 s/boat in the 300-1200u band, 89% armed, 60% role-NONE) — C4
+remains the queued fleet-side address, not attempted tonight.
+
+Residual: solo leg-1 tacks 15 vs his 7 — the invitation channel is only
+~40% of tacks; the rest are avoidance-owned (AVOID_NONE 44 s/boat-leg of
+phantom floe deviation). The next arctic lever is avoidance-side, and it
+walks straight into the C4 pairing.
+
+**OWNER RULING (2026-08-22): "Let's ship it."** The C2 information gate is
+accepted WITH the named floe watch (fleet floe +7-13%, noise-dominated) —
+the watch stands as a carry-forward column, to be re-measured by the next
+session's benches and resolved with the C4 pairing work.
+
+
+## ⏭ CARRY-FORWARD PROMPT — THE C4 AVOIDANCE PUSH (verbatim, 2026-08-22 night)
+
+AI PUSH: arctic avoidance honesty (C4, the phantom-deviation push) — the
+ONE big thread (owner-approved 2026-08-22 night, big autonomous run).
+Arctic 1.580x = worst; the measured mass is AVOID_NONE deviation (44+20
+s/boat-leg with no role/threat/rival) + the armed crawl (69.3 s/boat,
+89% armed, 60% role-NONE) + the rubs-for-ice trade seen twice (treeGWF,
+C2-v1's fleet refusal). The bar THIS TIME is a real arctic clock win,
+and the accepted floe watch gets resolved here by construction.
+
+Read first: memory regatta-c4-avoidance-push-plan (THE PLAN — phases,
+D1/D2/D3 ranked, pre-registered kill criteria, graveyard),
+regatta-arctic-router-session (what just shipped: the C2 gate is
+load-bearing, do not weaken it), regatta-obstruction-model (19.2(c) is
+the landed rules half; D1 is the candidate-grading half),
+regatta-gwe-push-session, regatta-standing-rules (benching law; the two
+poolers' sign AND arg-order traps; _pool_ob.js = cand−base NEGATIVE
+faster), regatta-session-report (THE TABLE with every status update),
+tail of regatta/guidelines/ai-campaign.md. Check date;
+node regatta/eval/freeze_venues.js --check from repo root (lake diff =
+my pending edit, expected).
+
+Base: db603c9 (C2 gate ship 3e5e5a8 + my ruling). Arctic anchors =
+c2v3arc9400/9600 (+9100/9200 for pooled 64); all other venues = ar1*
+bench JSONs; treeC2 js == shipped HEAD. Phase 0 re-baselines on THIS
+HEAD; human refs via _traj_fp.js only (arctic med 207.0 / best 190.7).
+
+Order of work: (0) re-baseline + THE TABLE. (1) Measurement, ≥4 probes
+in flight: deviation census (episodes, trigger object, range at onset,
+counterfactual vs his 78-179u margins), his floe-CPA profile from the
+corpus vs the bot's, the ice-in-the-endgame probe (SIZES D1 BEFORE
+BUILDING — the _carrot_pin_cf lesson), treeGWF ported onto HEAD and
+re-measured (its −35%/+15% is pre-NP), armed-crawl attribution
+(MEASUREMENT ONLY — radius/arrival/laning are closed). (2) Candidates
+in rank order, one mechanism per landing, own tree, criteria
+pre-registered BEFORE benching: D1 ice-hard threat resolution (floe
+cells are WALLS to the give-way endgame's escape candidates —
+actions-not-prices), D2 = treeGWF rival honesty RE-LANDED ON TOP of D1
+(the named pairing, benched together — scoped pairs compose), D3 only
+if the census says standoff-not-endgame (adjacent to closed
+clearance-extension ×2 — distinction in the record, bring it to me if
+in doubt). (3) Gate: arctic pooled 32 with a REAL clock win (pooled 64
+if close) + floe watch re-read and RESOLVED in the log + redrock pooled
+6-set co-gate + bay 2x20 (rub economics) + river 3x8 + full battery vs
+ar1*/c2v3arc* on final HEAD, name losers, goldens trace:update + verify
+READ THE COUNT (30), suite (4 owner-pending fails = known),
+campaign-log snapshot per accepted round, memory checkpoint per phase,
+THE TABLE with every status update and at close; reserve the last ~90
+minutes for the close regardless.
+
+Guardrails: the C2 gate is SHIPPED and load-bearing — never weaken it
+to buy avoidance wins; graveyard closed as-was (AC1, TK1-3, LANE1x2,
+LANE2, treeAGE, C1 measurement-killed, C3 solo-refused, commitment
+0-for-7, clearance-extension x2, boat-arc unscope AS-WAS — D1+D2 is its
+named resurrection path, radius selection, arrival/laning x2,
+oscillation tax, SIPP, laylines, station-keeping 0-for-8); drifting ice
+does not keep clear (rule 5), stopping legitimate only vs ice; 12s
+rebuild load-bearing; start tuning sacred; actions-not-prices;
+episodes-not-frames; benches via nohup zsh from repo root (Bash 10-min
+cap), never pkill chrome while anything runs. Out of scope: alignment/
+oriented-hull (ASK ME for the ruling at close), wedge push, swamp
+corridor (next-after), lake, rating campaign. Commits local — push
+needs my credentials.
+
+## THE C4 AVOIDANCE-HONESTY PUSH (2026-08-22 night, autonomous) — D2+D3 SHIPPED `83db39f`+`04abb81`
+
+Base `db603c9`/`e78e099` (C2 gate era; treeC2 == HEAD verified). Bar set by
+the owner: a REAL arctic clock win, and the accepted floe watch resolved by
+construction. Both met. Commits local, his push.
+
+**Phase 1 measurements (all tools tracked: _dev_census.js, _cpa_profile_his.js,
+_ice_endgame.js, _arm_census.js, _phantom_why.js):**
+- HIS floe-CPA profile (62 encounters, fp-verified): min-clr p25/med 32/46u,
+  76% under 78u. The BOT's: med 126-127u — **2.7x his margins**, solo and fleet.
+- Deviation census with a drift-predicted counterfactual: 62% solo / 55%
+  fleet of AVOID_NONE deviated time is DISHONEST vs his margins (PHANTOM
+  clears >=78u: ~30%; SHAVE 28-78u: ~26%). ⚠️ First census run misfiled
+  fat-stamp phantoms as "land" — the land test must use the STATIC grid
+  (rule-18 catch, probe fixed same night).
+- _phantom_why (AVDBG zero-row at onsets): 85% of solo onsets priced by the
+  CLEARANCE BAND's two scales (4000-floe / 10000) — the band demanded 3 cells
+  of FAT-STAMPED clearance; the last consumer of stamps FL1/FL1b left behind.
+- Ice-in-the-endgame (sizes D1): 52% of floe-contact episodes had a
+  rival-resolution deflection in the prior 5s; the CHOSEN heading crossed ice
+  in 44% of resolution-near-ice episodes (12.7 s/boat-race).
+- Arm census: arming is geometric (871u vs zone 851u); the crawl is thrash
+  (arm->round ground/straight 5.2x), not radius. Measurement only.
+
+**⛔ D1 (ice-hard walls in the endgame): KILLED at its pre-registered
+criteria.** Escape candidates crossing far-half ice became walls during live
+resolutions: pooled 32 +10.0 med SLOWER, floe UP 19.24->20.52, land +55%,
+boat +14% — the wall squeezes escapes into land and boats. The graveyard's
+boat-arc-unscope resurrection path "D1+D2" is half-dead: the D1 half stays
+closed (numbers on d1arc9400/9600).
+
+**✅ D2 SHIPPED `83db39f` — rival honesty on ice (the GWF re-land).** The
+plan's pre-registered Phase-1.4 port-and-re-measure found the 2026-08-21 kill
+signature (floe/land +15%) REVERSED on the NP+C2 stack — genuinely new
+evidence, exactly the graveyard's reopen standard. Arctic pooled 64: clock
+neutral (med +2.0/mean +0.1), **boat rubs -54% (6.21->2.84), pen -39%, floe
+flat, land -10%**; armed-band crawl slow time **69.3->39.3 s/boat**, residual
+slow now AT the ice (floe med 27u = rule-5 legitimate grinding).
+
+**✅ D3 SHIPPED `04abb81` — FL1c, the clearance band's floe half sees the
+true hull.** Same class as FL1/FL1b: change what is MEASURED (true-hull
+clearance at the probe endpoint, drift+spin predicted), keep the price scale;
+demand = 78u (his p25 clearance-at-tack). Solo 4-seed paired **mean -14.7
+s/boat** (floe episodes 18->12; the med-of-4 statistic hid two -31s wins —
+paired per-seed is the read). Mechanism verified: buffer-bin onsets 48%->8%.
+⛔ The 46u knee (his median pass-by) OVERSHOOTS: solo +0.8 mean with a floe
+spike — staged A/B kept 78 (the movePad 70->21->14 shape again).
+Family record: this is avoidance-PROBE measurement honesty, distinct from
+the CLOSED clearance-extension x2 (route-side) family.
+
+**THE GATE (pooled 32, d3barc9400/9600 vs c2v3arc9400/9600, hand-checked):**
+paired med **-11.0** / mean **-8.7**, BOTH sets negative, 288/288 finish,
+boat 6.35->3.73 (-41%), floe 19.24->18.32 (-5%), land -12%, pen -33%,
+bounds -55%. **The floe watch is RESOLVED DOWNWARD**: the C2 gate's +13%
+(17.00->19.24) is cut to +6.9% vs pre-gate under C4 (18.32), with the
+rubs-for-ice trade reversed (boat -41% AND floe down together — the trade
+the watch named is paid off, not shuffled).
+Non-floe venues byte-identical by construction and verified (redrock/bay/
+river 2-race prefixes). Full battery + goldens + suite on final HEAD in
+this session's close table.
+
+**CLOSE SNAPSHOT (2026-08-22 23:04 PDT, final HEAD):** arctic med 327->321
+(pooled-64 paired med -8.0 / mean -8.7, all four sets negative, 576/576
+fins), **ratio 1.580 -> 1.551**; boat 6.35->3.73, land 3.41->2.99, pen
+0.93->0.62 on the anchor pair. Goldens verify PASS 30 traces; suite 4/27 =
+the known owner-pending set; freeze clean (lake = his edit); ALL nine
+non-floe venues re-benched at full anchor protocol and BYTE-IDENTICAL
+(c4* labels) — no losers. New arctic anchors = d3barc9100/9200/9400/9600.
+Next named arctic lever: the ROUTER's wide-water PAD knee (solo odo 36k vs
+his 25.4k — route length is the remaining solo mass; research-aug8 sizing
+stands, distinct-from-closed-families note already recorded).
+
+## THE THREE-THREADS PUSH (2026-08-23 daytime, owner: "Let's do all three") — D1v2 + T1 SHIPPED `ea0d228`+`e82dd54`
+
+Owner approved all three carry-forwards from the C4 close: (1) the
+alignment/sub-80u frontier, (2) D1 re-litigation, (3) the router PAD knee.
+Base = C4 ship HEAD `f6a0c04`, arctic anchors d3barc*.
+
+**✅ D1v2 SHIPPED `ea0d228` — clean-preferred escapes (pure ordering).**
+The wall form died (+10 med, land +55%); the ordering form: an escape
+whose probe crosses ice loses to any fully-clean escape, ONLY when one
+exists — no price changes, boxed boats keep stock ordering. Arctic pooled
+64 (hand-checked): clock med 0.0/mean −0.6, **floe 19.17→16.81 (−12%) —
+fleet floe now BELOW the pre-C2-gate 17.00, the accepted watch's
+elevation fully erased** — boat −12%, pen −13%.
+
+**✅ T1 SHIPPED `e82dd54` — the sub-80u frontier, two halves of one
+capability.** The NP-70u pin's mechanism was measured, not guessed: the
+boat NEVER reached the slot — the router detoured 2.5x because the
+corridor waist cell failed tier admission. Admission is a SUP-over-the-
+cell question: an exactly-70u slot has bar-35 clearance only ON its
+centerline, so the old 5-point stencil admitted only ~80u+ — the ladder's
+80.6-pass/68.6-half-fail gap IS the sample-miss geometry. Fix 1: 5x5
+tier subsample at RES/5 (bar untouched; icy venues keep centre-only).
+With admission alone 5/11 — the rest bailed at the mouth 18-19° off-axis
+= exactly the 0.3-rad trust boundary. Fix 2: SLOT-scoped axis-line
+pursuit carrot (fires only when no open water lies abeam of the run's
+midpoint — a ribbon guard that took river's land from +15% to a
+sign-mixed +4.7%; aim-at-exit variants scored 0-1/11, axis pursuit
+**11/11, turn 640°→155-195°, off-proper 286→1.1m; row PROMOTED from
+xfail**). Redrock pooled 6-set (the bar-21 canary): med 0.0/mean −0.6,
+all dirt flat. Composite arctic pooled 64: med +1.0/mean +0.2, floe −11%.
+Suite 4/27 = the known set; goldens verify PASS 30.
+WATCH COLUMNS (named): river land +4.7% (sign-mixed), glow boat
++0.72/boat abs, lagoon boat +0.61/boat abs, lake boat +0.24/boat abs —
+all clock-flat paired; his call whether any warrants a follow-up.
+
+**⛔ T3 CLOSED — the router PAD knee is DEAD 0-for-2** (PAD 4: solo
++67/−1/+40/+115 catastrophic; PAD 6: +4/+9/+16/+66 all positive, floe
+up). The 2026-08 softening had already cut wall-adjacent extras to
+≤2.2x; the remaining router standoff is LOAD-BEARING — the route-length
+mass (solo odo 36k vs his 25.4k) is EXECUTION-bound near ice, not
+demand-bound. Any future route-length work needs ice-side execution
+capability first. research-aug8's PAD sizing is superseded by this
+measurement.
+
+## ⏭ CARRY-FORWARD PROMPT — THE SUB-1.5x PUSH (verbatim, 2026-08-23)
+
+AI PUSH: arctic sub-1.5x — the contact-economics push (owner-directed
+2026-08-23). Bar = arctic fleet POOLED MED <= 310 vs his 207.0 (pooled
+32 minimum, 64 if within +-5). The measured mass: ~17 floe contacts/boat
+vs his ~1 + crawl residual 39.3 s/boat grinding AT the ice (floe med
+27u, contactLatch 36%) + the never-attempted PENALTY-BLIND class (~15%
+of contacts on spinning boats that early-return past all avoidance —
+rules 27b/29) + leg 2 at 27% of the gap with 19 gybes vs his 8 + the
+conservative demand knees (78 vs his 46u pass-by, bracket [60,78]).
+
+Read first: memory regatta-sub15-push-plan (THE PLAN — phases, E1-E5
+ranked, pre-registered kill criteria), regatta-three-threads-session
+(what just shipped: D1v2 ordering + sub-80u frontier; b3* anchors;
+the four carried watches), regatta-c4-measurement (census tools +
+numbers), regatta-standing-rules (benching law, poolers' traps),
+regatta-session-report (THE TABLE with every status update), tail of
+regatta/guidelines/ai-campaign.md. Check date; freeze --check from repo
+root (lake diff = my pending edit, expected).
+
+Base: three-threads ship ea0d228+e82dd54 (tools 63fea19). ALL anchors
+b3* (arctic b3arc9100/9200/9400/9600 — pooled 64 exists); treeBOTH3 ==
+HEAD (verify byte-identity Phase 0); human refs _traj_fp.js only
+(arctic med 207.0 / best 190.7, sailed IN TRAFFIC).
+
+Order of work: (0) re-baseline + THE TABLE (_b3_close_table.js). (1)
+Measurement, >=4 probes: post-ship contact census (EPISODES, antecedent
+classes: rival-fed / PENALTY-BLIND / approach-pose / latch-thrash —
+rule 29's frozen-timer trap — / nav residue), leg-2 decomposition on
+this HEAD (gybes vs his 8, C2 reason mix, AVOID_NONE re-measure),
+penalty-blind sizing (SIZES E1 BEFORE BUILDING), crawl re-measure. (2)
+Candidates in rank order, one mechanism per landing, own tree, criteria
+pre-registered: E1 penalty-blind-near-ice (umpire semantics SACRED —
+pen count unchanged by construction; only the drift-into-floe blindness;
+bay 2x20 co-gate), E2 = the census's biggest non-penalty class (shape
+from data), E3 leg-2 gybe honesty (check TWA convention, polar hole
+150-180), E4 demand knee 78->60 staged solo-first (46 stays dead), E5
+static-land narrowness ONLY WITH MY RULING (borders lee-shore caution
+— ask first). (3) Gate: the bar on final HEAD + full battery vs b3*
+(name losers; re-read and resolve-or-carry the four watches: river
+land +4.7%, glow boat +0.72, lag +0.61, lake +0.24) + rr pooled 6-set +
+riv 3x8 + bay 2x20 + goldens trace:update + verify READ THE COUNT (30)
++ suite (4 known fails; NP-70u is now a HARD green row) + campaign-log
+snapshot per round + memory checkpoint per phase + THE TABLE at close;
+reserve the last ~90 minutes for the close regardless.
+
+Guardrails: graveyard closed as-was (+ PAD knee x2, D1 ice-walls, 46u
+buffer knee, the eight leg-1 manoeuvre shapes); C2/D2/D3/D1v2/T1 are
+shipped and load-bearing — never weaken one to buy another's win; 12s
+rebuild load-bearing; start tuning sacred; penalty semantics sacred;
+drifting ice does not keep clear (rule 5); actions-not-prices;
+episodes-not-frames; arctic 32+ seeds; _pool_ob.js cand,base
+NEGATIVE=faster, hand-check one number (21b); nohup zsh from repo root;
+never pkill chrome while benches run. Out of scope: alignment-on-ice
+(the ~95s route-length capability arc — consult me before opening it),
+wedge push, swamp corridor, lake, rating campaign, rules backlog.
+Commits local — push needs my credentials.
+
+## 2026-08-23 — THE SUB-1.5x PUSH, measurement + candidate rounds (session log)
+
+Base `73af486` (= three-threads ship; treeBOTH3 == HEAD byte-verified).
+Bar = arctic fleet pooled med ≤310 vs his 207.0. Pre table: arctic 320
+(1.546x).
+
+**Phase 1 re-measured the mass on THIS HEAD and re-ordered the plan.**
+New tracked probes: `_contact_census2.js` (antecedent census with
+precedence PEN-BLIND > LATCH-THRASH > RIVAL-FED > HOT-ENTRY > NAV,
+dwell40 cost), `_pen_blind.js` (spin geometry; ⚠️ its closing/floeDrift
+columns are 60x-corrupted — driftVx is u/s — and its `contacts` are raw
+frames), `_flips2.js` (per-leg tack/gybe split), `_latch_micro.js`
+(re-hit structure; v1's 20u floe-id threshold left 51% unattributed and
+inverted sameFloe — fixed to 60u).
+- Census (4×9400 fleet): 4.36 contact eps/boat, dwell40 17.2 s/boat.
+  LATCH-THRASH 46% (7.46 s/boat) >> RIVAL-FED 24% > HOT-ENTRY 14% >
+  NAV 10% > **PEN-BLIND 6% (1.49 s/boat) — the pre-C4 ~15% estimate was
+  stale; D2's penalty cuts already shrank the class.**
+- Micro: re-hits 49% of episodes; sameFloe 52%/diff 48%; escapes DO
+  clear (escPeak med 80u); **backTurn 56%** — the return, not the
+  escape, owns the loop.
+- **Leg 2: E3 DISSOLVED** — fleet 8.8 manoeuvres/boat (4.8 gybes) vs
+  his ~8; the "19 vs 8" was pre-C4. Crawl re-measure: 30.4 s/boat
+  (was 39.3), floe<60 51% of slow frames. Dev census: PHANTOM collapsed
+  post-D3; AVOID_NONE ≈7 s/boat VMG-weighted.
+
+**Candidate rounds: SEVEN pre-registered kills, no mechanism moved.**
+- ⛔ E4 demand 78→60: solo +17.8 mean, floeHits 133→675. E4B 78→70:
+  +20.2 mean. **Demand family CLOSED (46/60/70 kills; 78 = frontier).**
+- ⛔ E1 v1 (spin ice-pause, resume racing): penalized-near-ice
+  2.7→5.7 s/boat — she charged the pack while flagged. KILLED.
+- ⛔ E2 v1 (pack-ranked escape fan): census flat. E2B (arc-modeled,
+  rule-19c): flat. **Escape DIRECTION is not the lever.**
+- ⛔ E2C (D1v2 ordering + 8s post-contact window): flat — the
+  avoidance ordering doesn't own the return line.
+- ⛔ E2D (planner step-segment honesty — the roll point-samples every
+  0.75s ≈ 105u and can jump a floe, T1's sample-miss geometry): solo
+  +15.6 mean, census flat. The planner deviates for newly-seen floes
+  and pays clock without cutting contacts; HOT-ENTRY is
+  drift-surprise/frontier-shave, not sample-miss.
+- Census class stats span ±1.5 s/boat across unrelated trees at 4
+  seeds — the noise band that killed cannot confirm small wins either.
+
+**The capability finding:** the in-scope contact-economics mass is
+EXECUTION-BOUND at this frontier, mirroring the router side (PAD knee
+0-for-2, demand 0-for-3). The remaining ~10s to the bar sits in route
+length (the alignment-on-ice arc — owner consult required) and ice-side
+boat handling, not in steering policy.
+
+**E1B (spin ice-pause v2: hold-off-the-ice, eased, avoidance runs) is
+the one survivor**: PEN-BLIND eps 0.28→0.14/boat (the pre-registered
+halving), penalized time −14%, spins 22→19, other classes in-band; bay
+2-race prefix byte-equal (single _floeObjs guard). Arctic pooled 32:
+paired med 0.0 / mean +1.1, **pen 0.51→0.51 exactly unchanged (the
+umpire-safety line), floe −2%, land −7%, 288/288 fins**. Extending to
+pooled 64 (mean within ±5 of the line) — verdict below.
+
+**⛔ E1B PARKED AT POOLED 64**: paired med 0.0 but mean +2.3 with ALL
+FOUR sets positive (+4.4/+2.6/+0.9/+1.4) — a consistent ~2 s/boat clock
+tax — and floe 17.14→17.72 at 64 (the 32-seed −2% didn't hold). Pen
+0.49→0.49. A ~1 s/boat penalty-blind class does not buy a 2 s/boat tax:
+parked per the pre-registered rule (trees kept: treeE1/E1B/E2/E2B/E2C/
+E2D/E4/E4B; benches e1barc*).
+
+**SESSION CLOSE — nothing shipped; HEAD unchanged (byte-verified ==
+treeBOTH3, the b3\* benched tree), so the b3\* anchors ARE the close
+benches; goldens PASS 30 and suite 4/27 known-set stand from the same
+bytes. The four watches (river land +4.7%, glow +0.72, lag +0.61, lake
++0.24) carry unchanged — no venue was touched.**
+
+Closed this session: demand knee 60+70 (family closed, 78 = frontier);
+E1 spin-pause ×2 (v1 killed at mechanism, v2 parked at pooled 64);
+escape-direction ×2 (fan + arc-modeled); E2C post-contact ordering
+window; E2D planner step-segment honesty (solo-killed). The census
+noise band (±1.5 s/boat per class at 4 seeds) and all round data are in
+_contact_census2/_pen_blind/_flips2/_latch_micro JSONs.
+
+**THE DECISION THIS PUSH PUTS TO THE OWNER**: the sub-1.5x bar (−10s)
+is not reachable from in-scope steering policy on this HEAD — eight
+shapes across five mechanism families failed to move even their own
+census targets. The measured remaining masses: route length (solo odo
+36.9k vs his 25.4k ≈ the whole ~85s solo gap — the alignment-on-ice
+arc, explicitly out of scope without your ruling) and ice-side
+execution capability (latch-thrash 7.5 s/boat of rule-5 grinding the
+steering shapes cannot reach). E5 (static-land narrowness) remains
+unopened pending your ruling (borders lee-shore caution).
+
+## ⏭ CARRY-FORWARD PROMPT — THE ICE-CRAFT ARC (verbatim, 2026-08-23)
+
+AI PUSH: the ICE-CRAFT ARC (alignment-on-ice, owner-OPENED 2026-08-23;
+design rulings delegated to the plan's recommendations). Capability
+first, router second — mandatory order, proven by 8 steering-policy
+kills + demand knee closed at 78 (46/60/70) + PAD closed 0-for-2. His
+framing: he sails 25.4k u to the bot's 36.9k by aggressively choosing
+narrow-but-sailable paths THROUGH the ice; short routes need close-pass
+craft. His numbers: 0.17 overlap-incidents/lap (0.50 <3u) vs bot med
+4/race best 0 worst 15; moving speed 124 vs bot 138 u/s (he trades
+speed for line); shave band 28-50u vs bot floor 78u.
+
+Read first: memory regatta-icecraft-push-plan (THE PLAN — owner rulings
+recorded, phases, pre-registered inversion tests), regatta-sub15-session
+(what died and why; census noise band ±1.5 s/boat @4 seeds; bench floe
+column = quantized contact time NOT incidents), regatta-map-staleness
+(the 5s drift horizon), regatta-scenario-lab (BEFORE touching
+scenario.html), regatta-standing-rules, regatta-session-report, tail of
+this file. Check date; node regatta/eval/freeze_venues.js --check from
+repo root (lake diff = my pending edit, expected).
+
+Base: HEAD d8670d5 (engine bytes = e82dd54-era three-threads ship;
+treeBOTH3 == HEAD — verify byte-identity Phase 0). Anchors b3* (arctic
+b3arc9100/9200/9400/9600 = pooled 64). Human refs _traj_fp.js only:
+arctic 6 fp-valid schema-2 laps, med 207.0 / best 190.7, IN TRAFFIC.
+
+Order of work: (0) re-baseline + THE TABLE (_b3_close_table.js). (1)
+SPEC measurement, >=4 probes: _his_pass.js (every corpus encounter
+<78u: speed profile, edge angle, PASS SIDE VS RIM ROTATION, gap width,
+drift opening/closing, TWA — the deliverable is THE SPEC), _gap_census
+(where the 11.5k odo delta lives: few detours vs diffuse standoff;
+corridors threaded by width bin; under-78u exposure him vs bot), bot
+pass autopsy (owning layer + outcome inside 78u), gap-scale drift
+predictability at 3-5s, (opt) route-staleness-near-pack measure-only.
+(2) H1 edge-tracking pass mode (hull-frame edge-following carrot at the
+SPEC clearance, drift+rotation compensated — the moving-frame analogue
+of the NP axis-pursuit carrot; floe venues, racing legs, byte-inert
+elsewhere by construction; gates: solo paired clock AND floeEp,
+scenario-lab close-pass rows, fleet pooled 32). H2 pass-side, H3 speed
+discipline only if the SPEC shows them. (3) ONLY after H gates: R1 =
+re-run treeE4's EXACT demand 78->60 on the H-stack as a pre-registered
+INVERSION TEST (must flip +17.8 -> win, else capability didn't land;
+no census green overrides), R2 = PAD6 likewise, R3 = tight-tier gap
+admission on ice (drift-predicted open across transit, <=5s horizon;
+noSubsample gate stays until R3's own gates pass; redrock 6-set = tier
+canary). Session-1 bar = THE SPEC + H1 to a solo verdict; this is a
+MULTI-SESSION arc — do not rush the R-layer.
+
+Gate (any ship): arctic pooled 32/64 vs b3arc* + full battery vs b3*
+(name losers; carried watches: river land +4.7%, glow +0.72, lag +0.61,
+lake +0.24) + rr pooled 6-set + riv 3x8 + bay 2x20 + goldens
+trace:update + verify READ THE COUNT (30) + suite (4 known fails,
+NP-70u HARD green) + campaign-log snapshot per round + memory
+checkpoint per phase + THE TABLE at close; reserve the last ~90 min.
+
+Guardrails: graveyard closed EXCEPT R1/R2 as inversion tests (their
+entire purpose); umpire + start sacred; 12s rebuild sacred (scoped
+event-triggered replan may be PROPOSED only if measurement names route
+staleness as a mass; treeAGE stays closed); drifting ice does not keep
+clear (rule 5); actions-not-prices; episodes-not-frames; arctic 32+;
+_pool_ob.js cand,base NEGATIVE=faster, hand-check one number (21b);
+nohup zsh from repo root; never pkill chrome while benches run. Out of
+scope: E5 (needs my ruling), wedge, swamp corridor, lake, rating, rules
+backlog. Commits local — push needs my credentials.
+
+## 2026-08-23 (afternoon) — THE ICE-CRAFT ARC, session 1: THE SPEC + H1 iteration
+
+**Phase 0**: HEAD `7ff9547` (engine bytes == treeBOTH3, byte-verified ×4
+files); freeze --check lake-only (his edit, expected); arctic corpus 6
+fp-valid laps med 207.0 / best 190.7; pre table = the b3\* table
+(arctic 320/326.3, 1.546x).
+
+**Phase 1 — THE SPEC** (probes `_his_pass.js`, `_gap_census.js`,
+`_bot_pass.js`, `_gap_pred.js`, all NEW + tracked):
+- HIS 84 sub-78u passes (14.0/lap): **min-clr med 41u (p25 32 / p90
+  68); NO EASING (vMin/vIn med 1.02 — passes at 129 u/s vs his 122
+  moving med); edge-parallel (track vs edge tangent med 19°);
+  side-agnostic vs rim rotation (42% receding / 48% advancing)**; gaps
+  at pass mostly one-sided (49/84 two-sided, med 230u); opening-gap
+  preference 29:17; passes at every TWA (med 82°); dur med 3s.
+  → **H2 (pass side) and H3 (speed discipline) are UNSUPPORTED — not
+  built. H1 only.**
+- BOT autopsy (solo neutral 4×9100): sub-78u encounters 8.3/race,
+  **27% END IN A HIT; maxDev med 92°, deviation sign-flips med 3/enc
+  (73% ≥2); avoidance owns 50% of encounter time** (nav 25%, latch 17%).
+  The bot slows through passes (111→97); he doesn't.
+- GAP CENSUS (him vs solo bot): odo delta **DIFFUSE** — leg 1 14.5k vs
+  19.4k (+4.9k), leg 2 11.3k vs 15.5k (+4.3k) — at SIMILAR total
+  sub-78u exposure (35.1 vs 31.1 s/lap). He is <300u of ice 72% of
+  racing time (bot 56%). No route-staleness mass named → the 12s
+  rebuild stands, no event-replan proposal.
+- DRIFT PREDICTABILITY at gap scale (`_gap_pred.js`, 124 minima):
+  **drift+spin clearance prediction |err| med 1.5u @3s / 3.8u @5s;
+  frozen snapshot 16.2 / 26.8u** — the moving frame is buildable, the
+  frozen one is fiction. Validates H1 compensation + R3's ≤5s horizon.
+
+**Phase 2 — H1 edge-tracking pass mode (treeH1, iterating)**: carrot on
+the tracked floe's offset contour (radial profile + 46u = his pass-by
+CPA med) at a 140u lead in the floe's moving frame (drift + spin
+feed-forward, recomputed per tick), engaged when the PLAN's first
+upcoming shave is <90u; scoped D3-band trust (40u for the TRACKED floe
+only, 78u for all others; deficit form arithmetic-identical when no
+floe tracked). Iteration so far, each diagnosed by `_h1_ep.js`
+(per-episode instrumentation, __H1DBG-guarded):
+- v1 KILLED: min-over-span tracking never released (12.5s episodes,
+  orbits; +93s, hits 133→243 on 9100).
+- v2: first-pass-ahead + release-by-passage; 9100 −31.7s hits −86%,
+  but engage(160)/release(150) hysteresis INVERTED → tick-rate
+  chatter with side flips; hot-angle engagements (80-88°) ground at
+  minC 16-46 (9103: 443 hits all inside engaged spans).
+- v3: real hysteresis + 4s same-floe refractory + entry-angle ≤55°:
+  chatter gone, but deep engagements (cEng 38) + 8s holds still ground
+  (9100 one 10.5s episode).
+- v4 (current): engage only from clean approach (60-120u, entry ≤40°),
+  release-to-stack at 30u, timeout 6s. Engaged-time hits ≈0 (3/0/0/3
+  across seeds); episodes now SPEC-shaped (minC 32-63, 1-3s, clean
+  releases). Solo 4-seed fins +23.4/+1.6/+2.4/+7.8 — unreadable at 4
+  seeds (rule 3); the pre-registered gates are running: `_bot_pass`
+  4×9100 (episode hit rate ≤13%, flips med ≤1) + `_c2_solo` 8×9100
+  paired vs treeBOTH3 (mean ≤+1, floe episodes not up).
+
+**H1 v5 (geometry trigger) + v5b (staleness clear) + v6 (reverted)**:
+v5 triggers on ACTUAL pass geometry (40-120u off the nearest hull,
+track within 40° of the edge tangent, velocity-based) — coverage rose
+to 15-30 episodes/race; v5b adds the cross-layer staleness clear
+(engagements latched THROUGH wiggle/escape/penalty, which skip nav:
+12.4s spans through a 6s timeout, one release at 311u). v6's
+rim-closing feed-forward was worse on 4/4 seeds and was reverted.
+
+**SESSION-1 VERDICT (pre-registered instruments, v5b): H1 FAILS its
+solo gates.** G1 `_bot_pass` 4×9100: sub-78u hit rate 30% vs base 27%
+(bar ≤13%), flips med 3 (bar ≤1); avoid 50→43%, latch 22→28%. G2
+`_c2_solo` 8×9100 paired: mean +4.2 (bar ≤+1), med −0.45, spread
+−51..+34, floeEp 36 vs 30. G3 fleet never unlocked; R1/R2 inversion
+tests correctly NOT run (they require a passing H-stack). Bay 2-race
+prefix byte-equal (inert off floe venues; the D3 deficit rewrite is
+arithmetic-identical when no floe is tracked). treeH1 PARKED (kept,
+with `_h1_ep.js` per-episode instrumentation).
+
+**THE STRUCTURAL FINDING**: engaged passes are clean in every version
+since v4 (≈0 hits while engaged) — the hit mass lives exactly in the
+geometry a safe hull-side carrot must DECLINE (hot entries >40°,
+sub-40u starts). His 19° entries are manufactured hundreds of units
+out by his LINE: arriving aligned is an APPROACH property, the same
+reason the shipped T1 slot carrot works (it aims the approach).
+**Session 2 = H1b: approach-tangent shaping at the plan/thread level**
+(bend path candidates near floe hulls to run edge-tangent at the SPEC
+clearance, drift-compensated), keeping the session-1 carrot for the
+terminal segment only once approaches arrive aligned. Also re-learned
+at cost: solo 4-8 seed arctic clocks cannot rank helm variants (±50s
+downstream-reshuffle swings) — iterate on mechanism stats, judge at
+the pre-registered instruments only.
+
+**SESSION CLOSE — nothing shipped; HEAD byte-identical to treeBOTH3;
+the b3\* anchors ARE the close benches (arctic 320/326.3 = 1.546x, the
+full table = the Phase-0 table). Goldens/suite stand from the same
+bytes. The four watches carry unchanged.** New tracked probes:
+`_his_pass.js`, `_gap_census.js`, `_bot_pass.js`, `_gap_pred.js`,
+`_h1_smoke.js`, `_h1_ep.js` (+ JSONs).
+
+## ⏭ CARRY-FORWARD PROMPT — ICE-CRAFT SESSION 2 (draft)
+
+AI PUSH: ICE-CRAFT ARC session 2 — H1b APPROACH-TANGENT SHAPING.
+Read first: memory regatta-icecraft-session (session-1 verdict + the
+interaction rules), regatta-icecraft-spec (THE SPEC), the arc plan.
+Base: treeH1 parked (carrot machinery + scoped D3 trust, geometry
+trigger); HEAD unchanged. H1b = shape the APPROACH at the plan/thread
+level so the boat arrives at floe hulls edge-parallel at the SPEC
+clearance (drift-compensated tangent path candidates near hulls — the
+T1 slot-carrot lesson applied to drifting ice), with the session-1
+carrot owning only the terminal segment. Gates unchanged (G1 hit rate
+≤13% + flips ≤1; G2 solo paired mean ≤+1 + floeEp not up; then fleet
+pooled 32). R1/R2 inversion tests remain locked behind passing H gates.
+
+## 2026-08-23 (late afternoon) — ice-craft session 2, continued in-conversation (owner directed)
+
+**Entry attribution (`_h1b_entry.js`, NEW): the decisive split.** Base
+sub-78u onsets: on-path path-shaves hit 0% (18% of onsets — already
+clean); **OFF-PATH displaced boats (35%) hit 58%**, entering med
+54°/102 u/s — pure-pursuit rejoin lines through water the path never
+priced, with cross-track control SHRINKING the lookahead exactly when
+the chord most needs to clear ice (trap 17: response, not map). The
+on-path+clear rest is drift-surprise.
+
+**v7 (closing-aware carrot envelope, predicted-CPA engage to 250u):
+KILLED** — all 4 seeds slower (+12..+49), engaged time 44-67s. With
+v1-v7 dose-response complete (more carrot authority = slower on every
+seed; less = neutral), **the tracked-pass carrot family is RETIRED**
+(kept behind `__H1MODE` for terminal experiments only).
+
+**v8 — FLOE-AWARE REJOIN** (no mode, no held state): when off-path
+(xtrack>80) near ice and the chord to the rejoin carrot crosses a
+drift-predicted hull, slide the carrot forward along the path (≤480u)
+until the chord clears. Attribution: off-path class halved (58%→30%
+hit, share 35%→27%, xtrack med 64→38) BUT leaked into on-path shaves
+(6→13 onsets, 0%→23% hit) — rejoined boats arrive at the PATH'S OWN
+shave segments at rejoin angles. Solo 8: mean +1.8, med +7.4 — mud.
+(v8b chord+path-clear preference: byte-identical, no-op.)
+
+**v9 — PATH FAIRING AT SHAVE SEGMENTS ⭐**: clamp path points with
+drift-predicted hull clearance <78u (ETA ≤5s, the honest horizon) onto
+the 78u offset contour in the drifted frame — consecutive clamped
+points share the contour, so faired segments run edge-TANGENT by
+construction. Attribution: path-shave share 46%→31%, path clr med
+100→164, entry angle med 39°→31°. **Solo 8 paired (rejoin+fairing):
+mean −5.8, med −9.7, floeEp 28 vs 30** — with big per-seed spread
+(−54..+54; 9101 is a real fairing-side regression, floeEp 2→9, that a
+segment-crossing guard did NOT explain — route reshuffle). Fairing
+alone (treeF): mean +3.6, med −1.7 — the rejoin+fairing composition
+reads better than fairing alone. v9b adds the (nearly-free) adjoining-
+segment guard.
+
+**Fleet gate launched**: arctic 2×16 (h1arc9400/9600 vs b3arc9400/
+9600) on the v9b composition — carrot disabled, D3 rewrite inert,
+byte-inert off floe venues (single _floeObjs guards; bay prefix check
+pending on the clean ship tree if green).
+
+**v10 (fair to 90u) KILLED at 32**: med +2.0/mean +2.1 with dirt worse
+across the board (floe +18%, boat +21%, pen +18%) — wider faired paths
+push the fleet into each other's water. No extension.
+
+**✅ SHIPPED (owner call, 2026-08-23 evening): FLOE-AWARE REJOIN +
+PATH FAIRING (the v9b composition).** Owner accepted the named
+tradeoff (floe contact time +4.3% / +0.7 s/boat) for the clock win.
+- **Arctic pooled 64 vs b3arc\*: paired med −2.0 / mean −2.1**
+  (sets −1.0/+3.0, −12.0/−7.4, 0.0/−4.9, +3.0/+1.0), fins 576/576
+  both, pen 0.51 vs 0.49 (flat), boat +3.3%, land +2.5%, floe +4.3%
+  (32-seed read was +11% — didn't hold, rule 3's shape). Hand-checked:
+  fin mean 321.4 vs 323.5. **Arctic 1.541 → 1.536 (like-for-like
+  pooled-64 basis); benches h1arc9100/9200/9400/9600 are the new
+  arctic anchors.**
+- Clean ship tree (treeSHIP = rejoin + fairing ONLY; no carrot code,
+  no D3 rewrite) verified BYTE-IDENTICAL replay of the benched treeH1
+  races (arctic 2-seed prefix) — the disabled machinery was
+  behaviorally null. HEAD script.js == treeSHIP bytes.
+- Inertness: bay + 8 remaining venues 2-race PREFIX-EQUAL to their
+  b3\* anchors; goldens re-recorded (17.7 min) — ONLY arctic changed,
+  9 venues byte-unchanged; verify **PASS 30 traces** (count read).
+- Suite: 4/27 failing = exactly the known set (Rule 13, Rule 13 Both,
+  Around Mark, Round Mark with Boat to Windward); **NP-70u HARD green
+  (2 ok / 0 fail — the old expected-fail row now passes clean).**
+- The four carried watches (river land +4.7%, glow +0.72, lag +0.61,
+  lake +0.24) carry unchanged — no non-arctic byte moved. NEW watch:
+  **arctic floe contact time 17.87 vs 17.14 s/boat (+4.3%) and boat
+  3.14 vs 3.04 (+3.3%) — re-measure next arctic bench.**
+
+Next arctic levers (session 3): R1 INVERSION TEST is now live — the
+H-stack finally has a passing capability layer (approach-shaped paths
++ clean rejoins); re-run treeE4's exact demand 78→60 on THIS HEAD,
+pre-registered flip criterion unchanged. Then R2 (PAD6), then R3 (gap
+admission). The terminal carrot stays retired unless R1 names hot
+entries as the residual again.
+
+## 2026-08-23 (evening) — R1 INVERSION ROUND (post-ship, same conversation)
+
+The owner's bar restated: <1.5x arctic (pooled med ≤310; now 318) and
+every venue. R1 = re-run treeE4's demand 78→60 on the shipped HEAD.
+
+- **R1A (the EXACT E4 edit)**: solo 8 paired vs treeSHIP mean +8.6 /
+  med +1.9, floeEp 28→37. NOT flipped per pre-registration — BUT the
+  kill signature transformed: the 2026-08-23-morning kill was +17.8
+  uniform with 5x hit explosion; now 3 seeds WIN 12-25s and one +97
+  tail seed owns the mean. Odo flat (−150u): the demand constant alone
+  tolerates closer water but does not route through it.
+- **R1B (demand 60 + fairing clamp 60)**: mean +6.5 / med 0.0, floeEp
+  34, odo −521u. Same shape: wins −33/−30/−13, tails +63/+45.
+- **9100 tail NAMED**: 138-hit-frame pinned grind at t210 = the leg-1
+  mark area. **R1C = demand 78 while roundArmed, 60 elsewhere**: mean
+  +4.2 / med −1.3, **floeEp 26 (BELOW the ship's 28)**, odo −382u —
+  tails shrink but 9100 +53 persists.
+- **Diagnostic overturn**: the t185-195 wedge on 9100 runs WITH
+  roundArmed SET (armed from 700u+ out — the flag covers the whole
+  approach) i.e. AT demand 78 — the residual tail is the pre-existing
+  armed-approach latch-thrash class placed by route reshuffle, not a
+  demand-60 casualty. The catastrophe signature the R1 flip criterion
+  was written against is GONE (floeEp down, med ≈0); ±50s solo swings
+  are rule-3 noise at 8 seeds.
+- **Fleet arbitration launched**: R1C arctic 2×16 (r1carc9400/9600) vs
+  h1arc9400/9600. Ship bar if green: pooled med & mean ≤ −1 (it must
+  BUY time to justify the knee), floe/boat/pen not up materially,
+  extend to 64.
+
+**⛔ R1C PARKED AT POOLED 64**: the 32-seed −4.1 did not hold (sets
++0.9/+4.5/−2.6/−5.6 — rule 20) → pooled med 0.0 / mean −0.7, misses
+the pre-registered must-buy-time bar (≤ −1 both). Fins 576/576, floe
+17.62 flat, pen flat, **boat 2.80 vs 3.14 (−11%, below the pre-ship
+3.04 — R1C would RESOLVE the boat side of the ship watch; noted for
+the owner, one command away if he wants the dirt win at clock-neutral;
+NOT shipped on my own judgment).** Trees kept: treeR1A/R1B/R1C,
+benches r1carc*.
+
+**THE R1 ROUND'S REAL FINDING**: the demand knee is now
+NON-CATASTROPHIC (morning kill: +17.8 uniform, 5x hits; tonight: clock
+flat at 64 with dirt flat-to-better) — the capability layer landed.
+But the knee buys ~no time because the ROUTE LENGTH mass never moved:
+odo −0.4k of the 8.6k solo gap. The demand/fairing act at avoidance/
+path-postprocess level; **the router still PLANS the same lines — the
+distance mass lives in the router's stamp geometry (fat stamps =
+hull+clearance+prediction) and PAD economics.** Session 3 targets:
+(a) R2 = PAD6 as the pre-registered inversion test on this HEAD (its
+kills were pre-capability), and/or router stamp-clearance honesty at
+the tier level; (b) the ARMED-APPROACH WEDGE class (9100 t185-195:
+latch-thrash at demand 78 with roundArmed set from 700u out — the
+rounding approach is unfaired, un-rejoined water; measured 138-frame
+grinds). Both are measured, named, and pre-registerable.
+
+**✅ R1C SHIPPED (owner overruled the park, 2026-08-23 night: "I like
+R1C with less boat contacts").** Demand 60 off the mark approach (78
+while roundArmed), fairing clamp 60. At pooled 64 vs the h1arc\*
+anchors: **clock neutral (med 0.0 / mean −0.7), boat 2.80 vs 3.14
+(−11%, below the pre-ship 3.04 — RESOLVES the boat side of the ship
+watch)**, floe 17.62 flat, pen 0.53 flat, fins 576/576. Gates: HEAD ==
+treeR1C byte-verified; 9 venues 2-race PREFIX-EQUAL to b3\* anchors;
+goldens re-recorded, arctic-only change, verify **PASS 30**; suite
+4/27 known set, NP-70u hard green. **New arctic anchors =
+r1carc9100/9200/9400/9600 (arctic 318/320.7, 1.536x).** Remaining
+watch: floe 17.62 (vs pre-icecraft 17.14, +2.8%) and land 3.40
+(+2.8% vs 3.31). R2 (PAD6 inversion) relaunching on THIS HEAD.
+
+**⛔ R2 (PAD6 inversion) KILLED at solo on the R1C HEAD**: paired mean
++19.1 / med +17.6, **floeEp 26→60 (2.3x explosion)**, odo flat
+(−124u). The PAD-knee catastrophe signature survives the capability
+stack — global stamp thinning opens corridors below what fairing/
+rejoin protect (fairing clamps at 60u point-clearance; PAD 6 admits
+narrower cell-corridors) and buys no distance. Family stays CLOSED;
+both sanctioned inversion re-opens (R1 exact, R2) are now adjudicated.
+
+**WHERE THE ROUTE MASS STANDS after both inversions**: neither global
+loosening (demand) nor global thinning (PAD) converts the 8.6k odo
+gap — the demand is not the router's constraint and the stamps guard
+real hazards indiscriminately. The remaining pre-registered router
+move is **R3 — SELECTIVE gap admission on ice** (tight-tier machinery
+extended to floe venues, gap admitted only when drift-PREDICTED open
+across the transit at the ≤5s horizon — the _gap_pred result, 1.5u@3s,
+is the enabling measurement; noSubsample gate stays until R3's own
+gates pass; redrock 6-set = tier canary). Session-3 plan: R3 build +
+the armed-approach wedge class (unfaired rounding water).
+
+## ⏭ CARRY-FORWARD PROMPT — THE R3 PUSH (verbatim, 2026-08-23 night; v2 with the owner's table spec)
+
+AI PUSH: R3 SELECTIVE GAP ADMISSION + W1 wedge (the <1.5x arctic
+push). Bar = arctic fleet pooled med <=310 vs his 207.0 on the
+r1carc* anchors (now 318/320.7 = 1.536x; -8s to go). Base: HEAD
+ab0b95d-era (engine bytes == treeR1C — verify Phase 0). WHY THIS
+SHAPE: both global looseners are adjudicated closed (demand 60
+survivable-but-buys-nothing; PAD 6 floeEp 2.3x — do NOT re-litigate)
+— only SELECTIVE admission converts the 8.6k route-length gap.
+Enablers in hand: _gap_pred (drift+spin clearance prediction 1.5u med
+@3s / 3.8u @5s), the shipped fairing/rejoin stack (046757e), R1C
+(6ef2f6e), NP tight-tier machinery.
+
+Read first: memory regatta-icecraft-r3-plan (THE PLAN — phases,
+pre-registered bars), regatta-icecraft-session2 (both ships + both
+inversion kills + the roundArmed-from-700u trap),
+regatta-icecraft-spec, regatta-map-staleness, regatta-standing-rules,
+regatta-session-report (TABLE SPEC BELOW governs), tail of this file.
+Check date; node regatta/eval/freeze_venues.js --check from repo root
+(lake diff = my pending edit, expected).
+
+Order of work: (0) re-baseline + THE TABLE on r1carc* (carried
+watches: arctic floe 17.62 +2.8%, land 3.40 +2.8% vs pre-icecraft;
+boat 2.80 = resolved). (1) SIZE FIRST, >=4 probes: _gap_admit.js
+refused-gap census + THE PRIZE in path-length (if <8s-scale, REPORT
+before building); his-corridors admission gap (which of HIS sub-120u
+transits today's stamps refuse); _wedge_census.js (mark-approach
+wedges: speed<20 >2s clr<60 while roundArmed — ⚠️ armed from ~700u
+out); re-run _h1b_entry + _contact_census2 on this HEAD. (2) W1 per
+measurement (fair the rounding-approach line — CoursePath tangent
+path is NOT gridPath, today unfaired/un-rejoined — OR delay the
+mark-carrot takeover); gates: solo 8 kill-only, pooled 32/64 <= -1,
+watches flat-or-down. (3) R3: floe-stamp-blocked cells (static land
+stays CLEAR/sacred) within <=5s path ETA admissible iff the TRUE-hull
+gap is predicted open across the boat's transit with >=60u margin;
+rolling window via the 2s replan cadence — never trust prediction
+past ~5s; noSubsample gate STAYS until R3's own gates pass; redrock
+6-set = tier canary. PRE-REGISTERED: solo floeEp +15% = dead (the R2
+signature); ship = pooled 64 med & mean <= -2 (must buy real time —
+clock-neutral is a park unless the owner rules), dirt not up >10%,
+pen flat, fins held, full battery + goldens trace:update READ THE
+COUNT (30) + suite (4 known fails, NP-70u HARD green).
+
+⭐ CLOSE-TABLE SPEC (OWNER REQUIREMENT 2026-08-23, supersedes prior
+format; EVERY push — this one and ALL future pushes — ENDS with this
+table, all venues on final HEAD, sorted by ratio): columns = venue |
+human | pre-session bot med/mean/best | post-session bot med/mean/
+best | ratio | DNF% | collisions (MEDIAN per boat) | penalty (MEDIAN
+per boat). DNF% = 100 - finisher%. Collisions and penalties are
+per-boat MEDIANS, not means — extend the close-table script
+(_r1c_close_table.js) with the median columns before Phase 0's table.
+The table also accompanies every status update to the owner.
+
+Guardrails: graveyard FULLY closed incl demand+PAD (both inversions
+adjudicated); umpire/start/12s rebuild sacred; rule 5 (drifting ice
+does not keep clear; stopping legitimate vs ice only);
+episodes-not-frames; actions-not-prices; arctic 32+ (4-8 seed solo
+clocks CANNOT rank — re-learned twice on 2026-08-23; iterate on
+mechanism stats, judge only at the pooled pre-registered
+instruments); _pool_ob.js cand,base NEGATIVE=faster + hand-check one
+number from the raw JSON (21b); solo can only KILL router changes,
+fleet arbitrates (rule 16); nohup zsh — bg tasks start at repo root,
+cd inside the command; never pkill chrome while benches run; >=4
+probes in flight; check date. Out of scope: E5 (his ruling), wedge/
+obstruction brief, swamp corridor, lake (his edit incoming), rules
+backlog, terminal carrot (__H1MODE, retired). Commits local — push
+needs my credentials.
+
+## 2026-08-23 (night) — THE R3 PUSH: selective gap admission + the wedge — CLOSED, NOTHING SHIPPED (autonomous)
+
+Bar: arctic fleet pooled med ≤310 vs his 207.0 on r1carc\* (318/320.7 =
+1.536x). Base HEAD `95939f5`, engine byte-identical to treeR1C (verified
+Phase 0); freeze --check clean (lake = his pending edit, expected); arctic
+6 fp-valid laps med 207.0. New close-table script `_r3_close_table.js`
+carries the owner's 2026-08-23 column spec (DNF%, per-boat MEDIAN
+collisions/penalty) — used below and by every future push.
+
+### Phase 1 — sized first (4 probes, all tracked)
+- `_gap_admit.js` (NEW): refused-but-predicted-open cells at ~80% of solo
+  replans, but route delta 0 at p75 — the prize is RARE + TRANSIENT (4-5%
+  of samples, 2-6s events). Per-lap upper bound over 16 solo seeds: med
+  ~1175u (~9s), mean ~2450u, strongly bimodal (half of laps ≥1.9k u, half
+  ~150u). Cleared the 8s-scale build bar at the median → built.
+- `_his_admit.js` (NEW): 34.6% of his 136 sub-120u pass minima are <44u
+  (hard-refused by today's stamp), 59.6% <69u, 70.6% <78u; 4.8% of his
+  racing SAMPLES sit in stamped-refused water. The router structurally
+  cannot plan his lines.
+- `_wedge_census.js` (NEW), 4×16 fleet on the R1C HEAD: 686 armed wedge
+  episodes (speed<20 u/s >2s at clr<60u while roundArmed), 5.9 s/boat,
+  dur med 3.9s, ALL leg-1, minClr med 21u, **79% start INSIDE the zone,
+  100% in rulerMode, 0% beyond 2.1 zones**, latch+avoid own 76% of entries
+  → the "delay the mark-carrot takeover" W1 shape is measurement-dead.
+- Re-runs on R1C: `_h1b_entry` 27 sub-78 onsets/4 seeds (was 33 pre-arc),
+  off-path hit 58%→33%, on+shave entry angle med 23° — the shipped
+  rejoin+fairing stack holds. `_contact_census2`: 5.06 eps/boat,
+  LATCH-THRASH 2.25 ep/boat (8.8 s/boat dwell), **52% of contact episodes
+  carry roundArmed**.
+
+### R3 ladder (treeR3G kept) — ⛔ CLOSED AT THE FRONTIER
+Solo 8 paired (`_c2_solo` 9100-9107) vs treeR1C; solo can only kill:
+- v1 (admit ≥60u drift-predicted margin, 5s reach, mid-thread adoption):
+  med +16.4/mean +15.9, **floeEp 26→45 (+73%)**, leg-1 tacks 19→40 — the
+  R2 signature, KILLED. (Smoke lesson: adoption without a
+  crossed-admitted-cell test is staleness arbitrage — 6 adoptions, 0
+  admitted threads.)
+- v2 (now≥60u + predicted≥78u at tE and tE+2.5s, 3.5s reach, no adoption,
+  revocation on admitted threads): med −0.8/mean +6.9, **floeEp +42%**
+  (9107 +65s) — KILLED on the pre-registered bar.
+- v4 (v2 + non-closing-gap filter): **byte-identical races to v2** — the
+  filter binds nothing.
+- v3 (now≥78u everywhere): **byte-identical to BASE on 7/8 seeds — INERT.
+  Nothing within a 3.5s reach is both refused and ≥78u clear now.**
+- ⭐⭐⭐ STRUCTURAL FINDING: the stamp refuses only sub-~78u-effective
+  water (44u bar + worst-case rotation + staleness smear) and the
+  execution stack demands 78u — **the admissible class is exactly
+  [44,78)u, the band the helm fights. Router admission cannot convert the
+  route-length mass. The LAST pre-registered router move is closed;
+  arctic's remaining ~10s is EXECUTION-bound** (third independent
+  confirmation after the sub-1.5x capability finding and the R1/R2
+  inversion kills).
+
+### W1 ladder (treeW1F kept) — fair the rounding-machinery target — ⛔ CLOSED
+- v1 (v9-style point fairing of ruler-mode targets, per-tick): 4/8 seeds
+  inert, 9100 +18 (tacks 19→31 = churn), 9107 +23, floeEp +12%.
+- v2 (1s latch + base-move test): 9100 +60, 9105 −33 — the orbit target
+  moves with the boat, a base-move latch defeats itself.
+- v3 (pure 2s time latch released <120u; engage <50u; 40u re-fair
+  hysteresis): floeEp FLAT (26→27), med 0.0/mean +2.2, bifurcation ±25s
+  (9105 −24, 9107 −22.5 vs 9100 +53, 9101 +12) — passed the solo kill
+  gate; fleet arbitrated per rule 16.
+- **FLEET 32 (w1arc9100/9400 vs r1carc9100/9400): pooled med +2.0/mean
+  +4.3 (sets +1.0/0.0, +4.0/+8.6), floe 19.23 v 17.45 (+10%), fins
+  288/288 both — KILLED** (bar was med&mean ≤ −1). Hand-checked 21b:
+  set-9400 means 319.0 v 310.4. Residue for the record: fleet boat
+  contacts 2.56 v 3.01 (−15%) at that losing clock — not park-worthy
+  against the floe dirt.
+- Family lesson: any moved/latched rounding target re-triggers tack churn
+  — the carrot family's dose-response reproduced at the nav-target level.
+
+### Session verdict
+NOTHING SHIPPED — HEAD `95939f5` unchanged, all 10 venues carry their
+existing anchors (byte-identity verified Phase 0). Both pre-registered
+candidates closed on their own bars. The sub-310 bar was NOT reached and
+cannot be reached from the router or the nav-target side: **the remaining
+arctic mass (route length AND the armed wedge class) is execution-bound at
+the sub-78u ice edge — his pass capability (THE SPEC: full speed,
+edge-parallel 19°, min-clr med 41u) is the single door.** Next move is the
+owner's call: (a) an H-layer execution push (H1b approach-tangent shaping
+under the session-1 interaction rules — the hard, real lever), (b) the
+wedge as a STUCK-ESCAPE class (wedge dur med 3.9s may sit under the stuck
+detector's horizon — unmeasured), or (c) bank 1.536x.
+
+### CLOSE TABLE (owner spec 2026-08-23; final HEAD `95939f5`, all venues, sorted by ratio; NOTHING SHIPPED — post == pre, anchors byte-verified)
+
+venue      | human  | pre med/mean/best     | post med/mean/best    | ratio | DNF%  | colMed | penMed
+arctic     |  207.0 | 318/320.7/226         | 318/320.7/226         | 1.536 |   0.0 |     18 |      0
+redrock    |  216.7 | 316/316.4/223         | 316/316.4/223         | 1.458 |   0.0 |     18 |      1
+river      |  167.8 | 238/242.5/186         | 238/242.5/186         | 1.418 |   0.9 |     46 |      1
+swamp      |  235.3 | 331/358.7/170         | 331/358.7/170         | 1.407 |   4.6 |      9 |      0
+glowtide   |  202.6 | 261/264.0/180         | 261/264.0/180         | 1.288 |   0.0 |     22 |      1
+lagoon     |  170.6 | 214/217.3/173         | 214/217.3/173         | 1.254 |   0.0 |      0 |      0
+bay        |  230.1 | 272/271.5/232         | 272/271.5/232         | 1.182 |   0.0 |      0 |      0
+lake       |  206.2 | 233/230.7/161         | 233/230.7/161         | 1.130 |   0.0 |      2 |      0
+ocean      |  213.9 | 224/225.9/194         | 224/225.9/194         | 1.047 |   0.0 |      0 |      0
+seatrials  |  185.6 | 190/194.4/172         | 190/194.4/172         | 1.024 |   0.0 |      0 |      0
+
+(Arctic watches carried, unchanged: floe 17.62, land 3.40 — both +2.8% vs
+pre-icecraft; boat 2.80 resolved. Lake ratio is on the frozen doc; his
+bigger lake edit is still incoming.)
+
+### Post-verdict mechanism datum (W1F wedge census, set 9100)
+W1 v3 did NOT move the class it targeted: 181 episodes (vs base's exact
+181), 7.0 s/boat (base 6.4), latch entries 86 v 74, same inside-zone
+distribution. The target fairing missed the mechanism entirely — the
+wedges are not caused by a target sitting in ice; they ARE the execution
+fight at the edge. Fourth line of evidence for the execution-bound verdict.
+
+## ⏭ CARRY-FORWARD PROMPT — NEXT ARCTIC MOVE (drafted 2026-08-23 night; DECISION TO OWNER)
+
+AI PUSH: [OWNER PICKS A/B/C]. Context: the R3 push (af554cf) closed BOTH
+remaining pre-registered arctic levers — R3 selective gap admission is dead
+at the frontier (the admissible class is exactly [44,78)u true clearance,
+the band the execution stack demands away; the honest-bar variant is
+byte-inert) and W1 target-fairing is fleet-killed (+2.0/+4.3 pooled 32,
+floe +10%; every latch schedule churns tacks; the wedge class itself did
+not move — 181 episodes v 181). FOUR independent lines now agree: arctic's
+remaining ~10s to sub-1.5x is EXECUTION-bound at the sub-78u ice edge.
+Scoreboard unchanged: arctic 318/320.7 = 1.536x on r1carc*, watches floe
+17.62/land 3.40 (+2.8%), boat 2.80.
+
+(A) H1b EXECUTION PUSH — the real lever, the hard one. Build the sub-78u
+pass capability per THE SPEC (full speed, edge-parallel 19deg, min-clr med
+41u) at the HELM layer, under session-1's interaction rules (any pass mode
+needs its own scoped demand; the cross-layer latch and reflex cliff are
+mapped in regatta-icecraft-session). The carrot family v1-v7 is retired —
+H1b means approach-tangent SHAPING of the existing avoidance response, not
+a new tracking mode. Boot: memory regatta-icecraft-session +
+regatta-icecraft-spec + regatta-r3-session; the executor fight band is
+[44,78)u; _gap_admit/_his_admit quantify the prize his lines would buy.
+
+(B) WEDGE AS STUCK-ESCAPE — unmeasured, cheap to size. The armed wedge
+class (5.9 s/boat base, dur med 3.9s, minClr med 21u, ALL leg-1, 79%
+inside the zone, latch+avoid 76%) may sit UNDER the stuck detector's
+horizon — one sizing probe (episode overlap with stuck-detector firings)
+says whether an escape-class candidate exists. ⚠️ Rule 14: station-keeping
+is 0-for-8; any candidate must be a FLOWING action. Boot: the four
+_wedge_census_treeR1C_*.json + regatta-stuck-regime.
+
+(C) BANK 1.536x — arctic parks; the next-worst venues are redrock 1.458x
+(residual named in regatta-redrock-residual) and river 1.418x (leg 3 = 90%
+of slow time in 2 subsections, regatta-river-leg3).
+
+Standing: table spec = _r3_close_table.js columns on EVERY push close and
+status update; graveyard now also contains R3 (x4) and W1 (x3+fleet); check
+date; freeze --check (lake = his edit, expected); arctic 32+ pooled only;
+_pool_ob.js cand,base NEGATIVE=faster + hand-check (21b); commits local.
+
+## 2026-08-23 (late night) — THE H1B EXECUTION PUSH: fan projection honesty — CLOSED AT FLEET, NOTHING SHIPPED (owner-directed "let's do it")
+
+The owner picked (A): the execution push, with (B) folded in as sizing.
+HEAD `d674f5c` byte-identical to treeR1C throughout (verified at boot).
+
+### Phase 1 — the flip anatomy (the decision probe)
+- Course-correction BEFORE building: the recommended "side-commitment
+  constraint" is the CLOSED commitment family (0-for-7, in-code warning at
+  the stickiness discount: one second of hold = +25s transit) — NOT built.
+  The admissible class is "change what is MEASURED" (FL1/FL1b/FL1c/D2/D3).
+- `_flip_anatomy.js` (NEW, tracked; wraps applyAvoidance probe-side): of
+  190 deviation sign flips in 4 solo seeds — REFERENCE 71% (±18° argmin
+  dither around a stationary nav heading, |dDes| med 0.01), CHOICE 22%
+  (~115° command reversals 0.12s apart — physically unsailable), LAYER-GAP
+  4%, RE-TARGET 3%. Grid rebuilds NOT causal (27% ≈ the 25% base rate).
+  **83% of CHOICE flips (34/41) sit inside the 10 hitting encounters;
+  flips≥2 encounters hit 35% vs 6%.**
+- The named defect: on floe venues the floe terms grade STRAIGHT rays
+  along unreached headings — the land probe has rolled the boat's own turn
+  since the redrock landing (5.39x arc-blocked lift) and D2 rolls the
+  rival test on ice; the floe terms were the last straight-ray consumer.
+- `_wedge_stuck.js` (NEW, tracked; option B sized and CLOSED): the stuck
+  machinery is NOT blind to wedges — 92% of wedge time accrues stuck-time,
+  wiggle fires in 64%, and **92% of episodes end latch-owned**; with-wiggle
+  wedges last LONGER (4.9 v 2.8s med). No detector-gap candidate exists;
+  the wedge is downstream of the same execution fight.
+- `_bot_pass` baseline re-run (treeR1C): sub-78 hit 27%, flips med 3,
+  speed-at-min 108 v entry 111 — the spec's numbers hold on this HEAD.
+
+### The H1B ladder (treeH1B kept) — pre-registered gates in scratchpad BEFORE results
+All: floe tests consume the already-computed rolled arc (arcPts); every
+price/pad unchanged; non-floe venues byte-identical (openWaterAv).
+- v1 (floe SEGMENT tests + D3 BAND endpoint both rolled): mechanism
+  emphatic — CHOICE flips 42→16 (−62%), sub-78 hit 27%→13% (G1's own bar),
+  maxDev p90 172°→126°. Solo 8: mean +8.1 (bar +8.0), floeEp 32 (bar 30) —
+  GRAZED both bars with a NON-uniform split (4 seeds −14..−42 with floeEp
+  17→7; 4 seeds +24..+62 with 9→25) — not the R2 signature; per rule 16 +
+  session-1's "solo cannot rank helm variants", the fleet arbitrated.
+- v2 (segments only): mechanism REVERSED (CHOICE 49, hit 27%), solo mean
+  +25.3, floeEp 37 — DEAD. The band roll is load-bearing, not the segments.
+- v3 (band only): solo mean −2.4 BUT floeEp 26→44 (+69%, up on 6/8 = the
+  R2-like near-uniform signature) — DEAD. **The two halves are synergistic:
+  only the combination halves the hit rate.**
+- **v1 FLEET 32 (h1barc9100/9400 vs r1carc9100/9400): pooled med +1.0 /
+  mean +4.7 (sets −1.0/−0.2 and +6.0/+9.5) — FAILED the ≤−1 advance bar.
+  Dirt: boat −27% (2.21 v 3.01), pen −13%, floe −4% (16.75 v 17.45), but
+  LAND +31% (4.34 v 3.30)** — the closer-sailing lines trade ice fights
+  for shore groundings and the clock does not follow. FAMILY CLOSED.
+
+### Session verdict
+NOTHING SHIPPED — HEAD unchanged. FIVE families adjudicated tonight across
+two pushes (R3 ×4, W1 target-fairing ×3+fleet, W1 delay-takeover, wedge-
+as-stuck-escape sized-closed, H1B projection-honesty ×3+fleet). The
+mechanism instruments (hit rate halved, unsailable flips −62%, fleet boat
+contacts −27%) prove the fan CAN be made honest — but the clock lives in
+route length/standoff, and every closer-sailing form pays it back in land
+exposure. The execution door (his full sub-78 capability: full-speed
+edge-parallel passes) remains unconverted after the carrot family (×7),
+projection honesty (×3+fleet), target fairing (×3+fleet), and selective
+admission (×4). The honest position for the owner: arctic 1.536x is the
+frontier of the current architecture's helm; further conversion likely
+needs a different execution substrate (e.g., a trajectory-level pass
+primitive with its own physics test), which is a design decision, not a
+measurement.
+
+⛔ Closed families += H1B fan projection honesty on floe terms (v1 both /
+v2 segments / v3 band; fleet-killed at 32 with land +31%); wedge-as-stuck-
+escape (sized: no detector gap, latch owns 92% of exits).
