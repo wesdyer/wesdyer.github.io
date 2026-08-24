@@ -5898,6 +5898,10 @@ const DEFAULT_SETTINGS = {
     // character defines one.
     telltaleColor: '#fbbf24',
     venue: 'bay',
+    windVolume: 1.0,
+    waveSlapVolume: 0.5,
+    riggingCreakVolume: 0.5,
+    sprayDensity: 1.0,
 };
 
 let settings = { ...DEFAULT_SETTINGS };
@@ -11729,9 +11733,173 @@ const Sound = {
         // A gust is brighter as well as louder — pressure arrives in the top of the sound.
         const bright = Math.min(1, t + 0.35 * this.windGust);
 
-        this.windGain.gain.setTargetAtTime(volume, now, 0.08);
+        this.windGain.gain.setTargetAtTime(volume * (settings.windVolume !== undefined ? settings.windVolume : 1.0), now, 0.08);
         this.windFilter.frequency.setTargetAtTime(
             C.rushHiMin + (C.rushHiMax - C.rushHiMin) * bright, now, 0.08);
+    },
+
+    audioRand: mulberry32(0xa1b2c3d4),
+    _audioNoiseSeed: 0x9e3779b9,
+    fillAudioNoise: function (data) {
+        let x = this._audioNoiseSeed;
+        for (let i = 0; i < data.length; i++) {
+            x ^= x << 13; x >>>= 0;
+            x ^= x >>> 17;
+            x ^= x << 5;  x >>>= 0;
+            data[i] = (x / 0x80000000) - 1;
+        }
+        this._audioNoiseSeed = x;
+    },
+
+    triggerWaveSlap: function(intensity) {
+        if (!this.ctx || !settings.soundEnabled || !settings.bgSoundEnabled) return;
+        const now = this.ctx.currentTime;
+        const vol = intensity * (settings.waveSlapVolume !== undefined ? settings.waveSlapVolume : 0.5);
+        if (vol <= 0.01) return;
+
+        // 1. Thump (Sine)
+        const thump = this.ctx.createOscillator();
+        const thumpGain = this.ctx.createGain();
+        thump.type = 'sine';
+        thump.frequency.setValueAtTime(100 + this.audioRand() * 30, now);
+        thump.frequency.exponentialRampToValueAtTime(30, now + 0.3);
+        
+        thumpGain.gain.setValueAtTime(0.3 * vol, now);
+        thumpGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+        
+        thump.connect(thumpGain);
+        thumpGain.connect(this.ctx.destination);
+        thump.start(now);
+        thump.stop(now + 0.5);
+
+        // 2. Splash (Bandpass filtered white noise)
+        const bufferSize = this.ctx.sampleRate * 0.5;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        this.fillAudioNoise(data);
+        
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(800 + this.audioRand() * 400, now);
+        filter.Q.setValueAtTime(1.5, now);
+        
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.4 * vol, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+        
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(this.ctx.destination);
+        
+        noise.start(now);
+        noise.stop(now + 0.6);
+    },
+
+    triggerRiggingCreak: function(intensity) {
+        if (!this.ctx || !settings.soundEnabled || !settings.bgSoundEnabled) return;
+        const now = this.ctx.currentTime;
+        const vol = intensity * (settings.riggingCreakVolume !== undefined ? settings.riggingCreakVolume : 0.5);
+        if (vol <= 0.01) return;
+
+        const numSqueaks = 2 + Math.floor(this.audioRand() * 3);
+        for (let i = 0; i < numSqueaks; i++) {
+            const osc = this.ctx.createOscillator();
+            const gain = this.ctx.createGain();
+            const filter = this.ctx.createBiquadFilter();
+
+            osc.type = 'sawtooth';
+            
+            const baseFreq = 1400 + this.audioRand() * 800;
+            osc.frequency.setValueAtTime(baseFreq, now + i * 0.03);
+            osc.frequency.linearRampToValueAtTime(baseFreq * 0.9, now + i * 0.03 + 0.08);
+
+            filter.type = 'bandpass';
+            filter.frequency.setValueAtTime(baseFreq, now + i * 0.03);
+            filter.Q.setValueAtTime(5, now + i * 0.03);
+
+            const duration = 0.08 + this.audioRand() * 0.06;
+            gain.gain.setValueAtTime(0, now + i * 0.03);
+            gain.gain.linearRampToValueAtTime(0.08 * vol, now + i * 0.03 + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.03 + duration);
+
+            osc.connect(filter);
+            filter.connect(gain);
+            gain.connect(this.ctx.destination);
+
+            osc.start(now + i * 0.03);
+            osc.stop(now + i * 0.03 + duration + 0.02);
+        }
+    },
+
+    updateProceduralEffects: function(dt) {
+        if (!this.ctx || !settings.soundEnabled || !settings.bgSoundEnabled || !this.windAudible()) {
+            return;
+        }
+        const player = state.boats && state.boats[0];
+        if (!player) return;
+
+        // Wave slap triggers
+        let triggerSlap = false;
+        let slapIntensity = 0;
+
+        if (window.Swell && window.Swell.active()) {
+            const currentElev = window.Swell.lift(player.x, player.y);
+            const prevElev = this._prevElev !== undefined ? this._prevElev : currentElev;
+            this._prevElev = currentElev;
+            
+            if ((prevElev < 0 && currentElev >= 0) || (prevElev > 0 && currentElev <= 0)) {
+                triggerSlap = true;
+                const speedFactor = player.speed / 15;
+                slapIntensity = speedFactor * 0.8;
+            }
+        } else {
+            if (player.speed > 3) {
+                this._chopTimer = (this._chopTimer || 0) + dt;
+                const period = 1.5 - Math.min(1.0, player.speed / 15) * 1.0;
+                if (this._chopTimer >= period) {
+                    this._chopTimer = 0;
+                    triggerSlap = true;
+                    slapIntensity = (player.speed / 15) * 0.3;
+                }
+            }
+        }
+
+        if (triggerSlap && slapIntensity > 0.05) {
+            this.triggerWaveSlap(slapIntensity);
+        }
+
+        // Rigging creak triggers
+        const currentHeel = player.heel || 0;
+        const prevHeel = this._prevHeel !== undefined ? this._prevHeel : currentHeel;
+        this._prevHeel = currentHeel;
+        const heelDelta = Math.abs(currentHeel - prevHeel);
+
+        let pitch = 0;
+        if (window.Swell && window.Swell.active()) {
+            const hx = Math.sin(player.heading), hy = -Math.cos(player.heading);
+            const bowLift = window.Swell.lift(player.x + hx * 25, player.y + hy * 25);
+            const sternLift = window.Swell.lift(player.x - hx * 25, player.y - hy * 25);
+            pitch = bowLift - sternLift;
+        } else {
+            pitch = 0.05 * Math.sin(state.time * 2.5) * (player.speed / 10);
+        }
+
+        const prevPitch = this._prevPitch !== undefined ? this._prevPitch : pitch;
+        this._prevPitch = pitch;
+        const pitchDelta = Math.abs(pitch - prevPitch);
+
+        this._riggingStress = (this._riggingStress || 0) + (heelDelta * 10.0 + pitchDelta * 15.0 + currentHeel * 0.02) * dt;
+
+        if (this._riggingStress > 0.15) {
+            const creakIntensity = Math.min(1.0, this._riggingStress * 3.0) * (0.3 + currentHeel * 0.7);
+            this.triggerRiggingCreak(creakIntensity);
+            this._riggingStress = 0;
+        } else {
+            this._riggingStress *= Math.exp(-dt * 2.0);
+        }
     }
 };
 
@@ -11773,6 +11941,10 @@ const UI = {
     settingCameraMode: document.getElementById('setting-camera-mode'),
     settingHudMode: document.getElementById('setting-hud-mode'),
     settingTelltaleColor: document.getElementById('setting-color-telltale'),
+    settingWindVolume: document.getElementById('setting-wind-volume'),
+    settingWaveSlapVolume: document.getElementById('setting-wave-slap-volume'),
+    settingRiggingCreakVolume: document.getElementById('setting-rigging-creak-volume'),
+    settingSprayDensity: document.getElementById('setting-spray-density'),
     leaderboard: document.getElementById('leaderboard'),
     lbLeg: document.getElementById('lb-leg'),
     lbRows: document.getElementById('lb-rows'),
@@ -13619,6 +13791,26 @@ function applySettings() {
     if (UI.settingHudMode) UI.settingHudMode.value = settings.hudMode || 'boat';
     applyHudMode();
     if (UI.settingTelltaleColor) UI.settingTelltaleColor.value = settings.telltaleColor || '#fbbf24';
+    if (UI.settingWindVolume) {
+        UI.settingWindVolume.value = Math.round((settings.windVolume !== undefined ? settings.windVolume : 1.0) * 100);
+        const valEl = document.getElementById('wind-volume-val');
+        if (valEl) valEl.textContent = UI.settingWindVolume.value + '%';
+    }
+    if (UI.settingWaveSlapVolume) {
+        UI.settingWaveSlapVolume.value = Math.round((settings.waveSlapVolume !== undefined ? settings.waveSlapVolume : 0.5) * 100);
+        const valEl = document.getElementById('wave-slap-volume-val');
+        if (valEl) valEl.textContent = UI.settingWaveSlapVolume.value + '%';
+    }
+    if (UI.settingRiggingCreakVolume) {
+        UI.settingRiggingCreakVolume.value = Math.round((settings.riggingCreakVolume !== undefined ? settings.riggingCreakVolume : 0.5) * 100);
+        const valEl = document.getElementById('rigging-creak-volume-val');
+        if (valEl) valEl.textContent = UI.settingRiggingCreakVolume.value + '%';
+    }
+    if (UI.settingSprayDensity) {
+        UI.settingSprayDensity.value = Math.round((settings.sprayDensity !== undefined ? settings.sprayDensity : 1.0) * 100);
+        const valEl = document.getElementById('spray-density-val');
+        if (valEl) valEl.textContent = UI.settingSprayDensity.value + '%';
+    }
     // Boat colors have two editors now (this modal and the pre-race player
     // panel); both write here, so this is where they re-sync.
     refreshPlayerAppearance();
@@ -13806,6 +13998,39 @@ if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.
 if (UI.settingCameraMode) UI.settingCameraMode.addEventListener('change', (e) => { settings.cameraMode = e.target.value; saveSettings(); });
 if (UI.settingHudMode) UI.settingHudMode.addEventListener('change', (e) => { settings.hudMode = e.target.value; applyHudMode(); saveSettings(); });
 if (UI.settingTelltaleColor) UI.settingTelltaleColor.addEventListener('input', (e) => { settings.telltaleColor = e.target.value; saveSettings(); });
+if (UI.settingWindVolume) {
+    UI.settingWindVolume.addEventListener('input', (e) => {
+        settings.windVolume = parseFloat(e.target.value) / 100;
+        const valEl = document.getElementById('wind-volume-val');
+        if (valEl) valEl.textContent = e.target.value + '%';
+        saveSettings();
+        Sound.updateWindSound(Sound.playerWindSpeed());
+    });
+}
+if (UI.settingWaveSlapVolume) {
+    UI.settingWaveSlapVolume.addEventListener('input', (e) => {
+        settings.waveSlapVolume = parseFloat(e.target.value) / 100;
+        const valEl = document.getElementById('wave-slap-volume-val');
+        if (valEl) valEl.textContent = e.target.value + '%';
+        saveSettings();
+    });
+}
+if (UI.settingRiggingCreakVolume) {
+    UI.settingRiggingCreakVolume.addEventListener('input', (e) => {
+        settings.riggingCreakVolume = parseFloat(e.target.value) / 100;
+        const valEl = document.getElementById('rigging-creak-volume-val');
+        if (valEl) valEl.textContent = e.target.value + '%';
+        saveSettings();
+    });
+}
+if (UI.settingSprayDensity) {
+    UI.settingSprayDensity.addEventListener('input', (e) => {
+        settings.sprayDensity = parseFloat(e.target.value) / 100;
+        const valEl = document.getElementById('spray-density-val');
+        if (valEl) valEl.textContent = e.target.value + '%';
+        saveSettings();
+    });
+}
 
 // Pre-race config listeners: the venue customization panel is gone. A course's wind,
 // current, obstacles and leg count are stated by its DOCUMENT, so there is nothing on this
@@ -16305,6 +16530,12 @@ function update(dt) {
     // Sound (the player's APPARENT wind — see Sound.playerWindSpeed). Whether the bed
     // should be heard at all is Sound.windAudible's business, not the loop's.
     Sound.updateWindSound(Sound.playerWindSpeed());
+    Sound.updateProceduralEffects(dt);
+
+    const playerObj = state.boats && state.boats[0];
+    if (playerObj) {
+        updateWaterSpray(playerObj, dt);
+    }
 
     // Global Race Timer
     if (state.race.status === 'prestart') {
@@ -16870,6 +17101,100 @@ function recordTrajectory(dt) {
 
 function createParticle(x, y, type, props = {}) { state.particles.push({ x, y, type, life: 1.0, ...props }); }
 
+function updateWaterSpray(player, dt) {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+    
+    const density = settings.sprayDensity !== undefined ? settings.sprayDensity : 1.0;
+    if (density <= 0.01) return;
+
+    // We only emit spray when moving fast or crossing swell
+    const speed = player.speed;
+    if (speed < 4) return;
+
+    // Check if we are crossing swell
+    let isCrossing = false;
+    if (window.Swell && window.Swell.active()) {
+        const currentElev = window.Swell.lift(player.x, player.y);
+        const prevElev = Sound._prevElev !== undefined ? Sound._prevElev : currentElev;
+        if ((prevElev < 0 && currentElev >= 0) || (prevElev > 0 && currentElev <= 0)) {
+            isCrossing = true;
+        }
+    }
+
+    // Spawn rate scales with speed, density, and swell crossing
+    // At high speed (>8 knots) we constantly emit some bow spray and deck wash.
+    // At swell crossing we trigger a burst!
+    const hx = Math.sin(player.heading), hy = -Math.cos(player.heading);
+    const rx = Math.cos(player.heading), ry = Math.sin(player.heading);
+
+    // 1. Bow Impact Spray
+    const bowSpawnChance = (speed - 4) * 0.05 * density;
+    if (fxRand() < bowSpawnChance || (isCrossing && fxRand() < 0.8 * density)) {
+        const count = isCrossing ? Math.floor(4 + fxRand() * 5 * density) : Math.floor(1 + fxRand() * 3 * density);
+        for (let i = 0; i < count; i++) {
+            const side = fxRand() < 0.5 ? -1 : 1;
+            const angle = player.heading + side * (0.3 + fxRand() * 0.5);
+            const spraySpeed = speed * (0.6 + fxRand() * 0.6);
+            const vx = Math.sin(angle) * spraySpeed * 0.25;
+            const vy = -Math.cos(angle) * spraySpeed * 0.25;
+            
+            createParticle(player.x + hx * 25 + (fxRand() - 0.5) * 5, player.y + hy * 25 + (fxRand() - 0.5) * 5, 'bow-spray', {
+                vx,
+                vy,
+                scale: 0.6 + fxRand() * 0.8,
+                life: 1.0
+            });
+        }
+    }
+
+    // 2. Deck Wash
+    const deckSpawnChance = (speed - 6) * 0.03 * density;
+    if (fxRand() < deckSpawnChance || (isCrossing && fxRand() < 0.6 * density)) {
+        const count = isCrossing ? Math.floor(2 + fxRand() * 4 * density) : Math.floor(1 + fxRand() * 2 * density);
+        for (let i = 0; i < count; i++) {
+            const dist = 5 + fxRand() * 15;
+            const side = fxRand() < 0.5 ? -1 : 1;
+            const px = player.x + hx * dist + rx * side * 4;
+            const py = player.y + hy * dist + ry * side * 4;
+            const vx = -hx * speed * 0.15 + (fxRand() - 0.5) * 1;
+            const vy = -hy * speed * 0.15 + (fxRand() - 0.5) * 1;
+            
+            createParticle(px, py, 'deck-wash', {
+                vx,
+                vy,
+                scale: 0.4 + fxRand() * 0.6,
+                life: 1.0
+            });
+        }
+    }
+
+    // 3. Wind-blown Sea Spray
+    if (window.Swell && window.Swell.active() && speed > 5) {
+        const localWind = getWindAt(player.x, player.y);
+        if (localWind.speed > 10) {
+            const seaSpawnChance = (localWind.speed - 10) * 0.02 * density;
+            if (fxRand() < seaSpawnChance) {
+                const count = Math.floor(1 + fxRand() * 3 * density);
+                for (let i = 0; i < count; i++) {
+                    const angle = fxRand() * Math.PI * 2;
+                    const r = 30 + fxRand() * 120;
+                    const px = player.x + Math.sin(angle) * r;
+                    const py = player.y + Math.cos(angle) * r;
+                    
+                    const elev = Swell.lift(px, py);
+                    if (elev > 0.6) {
+                        createParticle(px, py, 'sea-spray', {
+                            scale: 0.5 + fxRand() * 0.7,
+                            life: 1.0
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
+
 function updateParticles(dt) {
     const timeScale = dt * 60;
     for (let i = state.particles.length - 1; i >= 0; i--) {
@@ -16945,6 +17270,19 @@ function updateParticles(dt) {
                  p.beach -= dt / WIND_BEACH_FADE;
                  if (p.beach <= 0) p.life = 0;
              }
+        } else if (p.type === 'bow-spray' || p.type === 'deck-wash') {
+             decay = p.type === 'bow-spray' ? 0.025 : 0.02;
+             const s = p.scale || 1.0;
+             p.scaleVal = s * (p.type === 'bow-spray' ? (0.5 + (1-p.life)*2.0) : (0.3 + (1-p.life)*1.5));
+             p.alpha = p.life * (p.type === 'bow-spray' ? 0.8 : 0.5);
+        } else if (p.type === 'sea-spray') {
+             decay = 0.015;
+             const local = getWindAt(p.x, p.y);
+             p.x -= Math.sin(local.direction) * local.speed * 1.5 * dt;
+             p.y += Math.cos(local.direction) * local.speed * 1.5 * dt;
+             const s = p.scale || 1.0;
+             p.scaleVal = s * (0.8 + (1-p.life)*3.0);
+             p.alpha = p.life * 0.4;
         } else if (p.type === 'current' || p.type === 'mark-wake') {
              const c = getCurrentAt(p.x, p.y);
              const speed = c ? c.speed : 0;
@@ -17495,7 +17833,7 @@ function drawParticles(ctx, layer) {
         const nite = nightAmt();
         ctx.fillStyle = nite > 0 ? BIO_COLOR : '#ffffff';
         for (const p of state.particles) {
-            if (p.type === 'wake' || p.type === 'wake-wave' || p.type === 'mark-wake') {
+            if (p.type === 'wake' || p.type === 'wake-wave' || p.type === 'mark-wake' || p.type === 'bow-spray' || p.type === 'deck-wash' || p.type === 'sea-spray') {
                 if (!onScreen(p)) continue;
                 ctx.globalAlpha = p.alpha;
                 const s = p.scaleVal || p.scale || 1.0;
