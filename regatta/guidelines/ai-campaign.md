@@ -14758,44 +14758,70 @@ is the enabling measurement; noSubsample gate stays until R3's own
 gates pass; redrock 6-set = tier canary). Session-3 plan: R3 build +
 the armed-approach wedge class (unfaired rounding water).
 
-## ⏭ CARRY-FORWARD PROMPT — THE R3 PUSH (verbatim, 2026-08-23 night)
+## ⏭ CARRY-FORWARD PROMPT — THE R3 PUSH (verbatim, 2026-08-23 night; v2 with the owner's table spec)
 
 AI PUSH: R3 SELECTIVE GAP ADMISSION + W1 wedge (the <1.5x arctic
 push). Bar = arctic fleet pooled med <=310 vs his 207.0 on the
-r1carc* anchors (now 318/320.7 = 1.536x; -8s). Base: HEAD 2aa2bf0-era
-(engine bytes == treeR1C — verify Phase 0). WHY THIS SHAPE: both
-global looseners are adjudicated closed (demand 60
-survivable-but-buys-nothing; PAD 6 floeEp 2.3x) — only SELECTIVE
-admission converts the 8.6k route-length gap. Enablers: _gap_pred
-(1.5u@3s), the shipped fairing/rejoin stack, NP tight-tier machinery.
+r1carc* anchors (now 318/320.7 = 1.536x; -8s to go). Base: HEAD
+ab0b95d-era (engine bytes == treeR1C — verify Phase 0). WHY THIS
+SHAPE: both global looseners are adjudicated closed (demand 60
+survivable-but-buys-nothing; PAD 6 floeEp 2.3x — do NOT re-litigate)
+— only SELECTIVE admission converts the 8.6k route-length gap.
+Enablers in hand: _gap_pred (drift+spin clearance prediction 1.5u med
+@3s / 3.8u @5s), the shipped fairing/rejoin stack (046757e), R1C
+(6ef2f6e), NP tight-tier machinery.
 
 Read first: memory regatta-icecraft-r3-plan (THE PLAN — phases,
 pre-registered bars), regatta-icecraft-session2 (both ships + both
-inversion kills), regatta-icecraft-spec, regatta-map-staleness,
-regatta-standing-rules, tail of this file. date; freeze --check (lake
-= his edit).
+inversion kills + the roundArmed-from-700u trap),
+regatta-icecraft-spec, regatta-map-staleness, regatta-standing-rules,
+regatta-session-report (TABLE SPEC BELOW governs), tail of this file.
+Check date; node regatta/eval/freeze_venues.js --check from repo root
+(lake diff = my pending edit, expected).
 
-Order: (0) re-baseline, table on r1carc* (watches: floe 17.62, land
-3.40). (1) SIZE FIRST: _gap_admit.js refused-gap census + PRIZE in
-path-length (if <8s-scale, report before building); his-corridors
-admission gap; _wedge_census.js (mark-approach wedges; roundArmed is
-set from ~700u out); re-run _h1b_entry + _contact_census2 on this
-HEAD. (2) W1 per measurement (fair the rounding-approach line OR
-delay mark-carrot takeover); gates: solo 8 kill-only, pooled 32/64
-<= -1 with watches flat-or-down. (3) R3: floe-stamp-blocked cells
-(static land CLEAR) within <=5s path ETA admissible iff TRUE-hull gap
-predicted open across the transit with >=60u margin; rolling window
-via the 2s replan; noSubsample STAYS; redrock 6-set canary.
-PRE-REGISTERED: solo floeEp +15% = dead (the R2 signature); ship =
-pooled 64 med & mean <= -2 (must buy real time), dirt not up >10%,
+Order of work: (0) re-baseline + THE TABLE on r1carc* (carried
+watches: arctic floe 17.62 +2.8%, land 3.40 +2.8% vs pre-icecraft;
+boat 2.80 = resolved). (1) SIZE FIRST, >=4 probes: _gap_admit.js
+refused-gap census + THE PRIZE in path-length (if <8s-scale, REPORT
+before building); his-corridors admission gap (which of HIS sub-120u
+transits today's stamps refuse); _wedge_census.js (mark-approach
+wedges: speed<20 >2s clr<60 while roundArmed — ⚠️ armed from ~700u
+out); re-run _h1b_entry + _contact_census2 on this HEAD. (2) W1 per
+measurement (fair the rounding-approach line — CoursePath tangent
+path is NOT gridPath, today unfaired/un-rejoined — OR delay the
+mark-carrot takeover); gates: solo 8 kill-only, pooled 32/64 <= -1,
+watches flat-or-down. (3) R3: floe-stamp-blocked cells (static land
+stays CLEAR/sacred) within <=5s path ETA admissible iff the TRUE-hull
+gap is predicted open across the boat's transit with >=60u margin;
+rolling window via the 2s replan cadence — never trust prediction
+past ~5s; noSubsample gate STAYS until R3's own gates pass; redrock
+6-set = tier canary. PRE-REGISTERED: solo floeEp +15% = dead (the R2
+signature); ship = pooled 64 med & mean <= -2 (must buy real time —
+clock-neutral is a park unless the owner rules), dirt not up >10%,
 pen flat, fins held, full battery + goldens trace:update READ THE
 COUNT (30) + suite (4 known fails, NP-70u HARD green).
 
-Guardrails: graveyard FULLY closed incl demand+PAD (do not
-re-litigate); umpire/start/12s rebuild sacred; rule 5; episodes-not-
-frames; arctic 32+ (4-8 seed clocks cannot rank — twice re-learned);
-_pool_ob.js cand,base NEGATIVE=faster hand-check one number; solo
-KILLS router changes, fleet arbitrates; bg tasks start at repo root
-(cd inside); >=4 probes in flight. Out of scope: E5, wedge brief,
-swamp corridor, lake, rules backlog, terminal carrot. Commits local —
-push needs my credentials.
+⭐ CLOSE-TABLE SPEC (OWNER REQUIREMENT 2026-08-23, supersedes prior
+format; EVERY push — this one and ALL future pushes — ENDS with this
+table, all venues on final HEAD, sorted by ratio): columns = venue |
+human | pre-session bot med/mean/best | post-session bot med/mean/
+best | ratio | DNF% | collisions (MEDIAN per boat) | penalty (MEDIAN
+per boat). DNF% = 100 - finisher%. Collisions and penalties are
+per-boat MEDIANS, not means — extend the close-table script
+(_r1c_close_table.js) with the median columns before Phase 0's table.
+The table also accompanies every status update to the owner.
+
+Guardrails: graveyard FULLY closed incl demand+PAD (both inversions
+adjudicated); umpire/start/12s rebuild sacred; rule 5 (drifting ice
+does not keep clear; stopping legitimate vs ice only);
+episodes-not-frames; actions-not-prices; arctic 32+ (4-8 seed solo
+clocks CANNOT rank — re-learned twice on 2026-08-23; iterate on
+mechanism stats, judge only at the pooled pre-registered
+instruments); _pool_ob.js cand,base NEGATIVE=faster + hand-check one
+number from the raw JSON (21b); solo can only KILL router changes,
+fleet arbitrates (rule 16); nohup zsh — bg tasks start at repo root,
+cd inside the command; never pkill chrome while benches run; >=4
+probes in flight; check date. Out of scope: E5 (his ruling), wedge/
+obstruction brief, swamp corridor, lake (his edit incoming), rules
+backlog, terminal carrot (__H1MODE, retired). Commits local — push
+needs my credentials.
