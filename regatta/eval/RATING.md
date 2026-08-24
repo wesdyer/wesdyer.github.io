@@ -225,6 +225,87 @@ campaign's own nightmare (an AI change masquerading as venue disagreement). To a
 measure the merge, race `ff2f78a` at **bay** and difference that. No pre-merge bay data
 exists; `rating-preAI/` holds only seatrials and a partial ocean, both traffic-free.
 
+## The points rating, and whether it neutralises the courses
+
+Owner's question, 2026-08-23: finish time is in seconds, and a second is worth different
+amounts at swamp (352 s mean race) and seatrials (197 s). The pooled order handles that by
+converting to `deltaPct`, but **average points per race sidesteps it entirely** — a
+finishing position is scale-free, so no normalisation is involved and course length cannot
+leak in through the units. Built from the existing 66,670 races; nothing was re-raced.
+
+**Scale.** 1st = 9 down to 9th = 1, DNF and DNS = 0. Note this *is* the stored rule: the AI
+fleet is nine boats (`fleetSize = ai.length`, the undriven player never finishes), and
+`fleetSize + 1 - place` = `10 - place` = 9…1. A 10-point top score would need `11 - place`,
+which would be a uniform +1 to every finisher — not a neutral relabel, since it raises the
+value of merely finishing and therefore re-weights the DNF-heavy venues.
+
+**It agrees with the time rating: Kendall τ = 0.848.** The two ratings are substantially
+measuring the same thing, which is the reassuring result.
+
+**But it does NOT neutralise cross-course effects — it is slightly worse at it.** Mean τ
+*between venues* is **0.387 on points against 0.435 on time**. Two reasons: finishing order
+discards margin, so each race carries less information than its time does; and DNF = 0
+injects venue-specific bias exactly where the time rating simply had no reading. The
+venue×character matrix remains the real deliverable on either metric.
+
+**The band is tight, as expected:** 3.960 to 5.979 out of 9, a 2.02-point spread around a
+fleet mean of 4.952. Median adjacent gap 0.18 SE with 4 of 99 pairs separated at 2 SE —
+marginally better resolution than the time order's 1 of 99, but still a tier list and not a
+sequence. Top: Stomp 5.979, Talon 5.947, Cruz 5.891, Muninn 5.875, Hug 5.852. Bottom:
+Viper 3.960, Splash 4.054, Pulse 4.055, Knot 4.126.
+
+**Where the two ratings disagree** is where a character is inconsistent — fast on average
+but not converting it, or the reverse. Largest moves: Zing (time #35 → points #59), Anvil
+(#44 → #22), Regal (#30 → #52), Saffron (#34 → #55), Bruce (#60 → #40), Riffle (#27 → #46).
+
+### Average points per venue is a measure of attrition, not difficulty
+
+Scoring is zero-sum inside a race, so a venue's mean points per boat-slot is **pinned at
+exactly 5.000 when every boat finishes**. It can only fall, and only by the DNF rate.
+
+| venue | avg pts | DNF% |
+|---|---|---|
+| lagoon, bay, lake, ocean, arctic | 5.000 | 0.0 |
+| redrock, seatrials, glowtide | 4.999 | 0.1 |
+| **swamp** | 4.873 | 9.2 |
+| **river** | **4.648** | **21.1** |
+
+Best venue by average score: **lagoon** (and the four others tied at 5.000). Worst:
+**river** at 4.648. That gap is entirely river's stuck boats — and since those DNFs are
+`downwind`-correlated (r = +0.462, above), river's points rating is where the bias bites
+hardest of all: a DNF costs a full 5 points against the fleet mean, every time.
+
+## There is no intended-tier list — but the modelled one was right
+
+Asked 2026-08-23: is there a per-character intended tier anywhere? **No.** Checked the
+guidelines, the eval JSONs, `AI_CONFIG` (which has no tier field) and git history including
+deleted files. `guidelines/skills.md` §0 refers to a design sketch that assigned every
+character S–D, but only the verdict on it survives — *16/66, exactly chance* — and the
+sketch itself was never committed. `guidelines/roster-ranking.md` does rank all 100, but it
+is explicitly "a merchandising problem, not a balance problem": desirability for the
+new-player slate, not skill.
+
+What does exist is `tier_grid.json`, and its `future` column is better than intent — it is a
+**falsifiable forecast**. Per `tier_grid.py`: `today` is measured (1,200 races, seatrials,
+when every venue was windward-leeward) and `future` is the same stat lines re-priced for the
+course shapes specced in `guidelines/venues.md`, built to isolate "who is propped up by a
+W/L-only game". Those venues now exist and have been raced. The forecast can be scored:
+
+| predictor | exact tier | within one tier | Kendall τ vs the new pooled order |
+|---|---|---|---|
+| `today` — measured, 1,200 races, seatrials only | 28/81 (35%) | 74% | 0.289 |
+| **`future` — modelled** | **33/81 (41%)** | **90%** | **0.465** |
+| `future_aggr` — aggressive variant | 32/81 (40%) | 93% | — |
+
+**The model predicts the 66,670-race result better than the real 1,200-race measurement it
+was built from, by +0.177 τ**, and **29 of its 40 called movers moved in the predicted
+direction** (Croak S→C landed C, Splat B→D landed D, Wobble B→A landed A, Torch B→A landed
+A). Misses exist: Pearl was called B→S and did not move, Wiggle was called B→S and went to C.
+
+So the tier history splits cleanly. The hand-drawn sketch was chance-level, which is what
+skills.md §0 records. The modelled projection was substantially right, and nothing had
+confirmed that until this campaign.
+
 ## A sixth thing that was wrong: leg types are not single-valued
 
 Finding 4 above fixed *which* marks a leg runs between. It did not fix the assumption
