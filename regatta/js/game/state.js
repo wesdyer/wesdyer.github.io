@@ -49,7 +49,7 @@ let settings = { ...DEFAULT_SETTINGS };
 // (`eval/eval_harness.js`), and the document, card art and golden traces are all
 // filed under it. `river` is Sockeye Run — the key stays `river` for the same
 // reason. KEYS ARE IDENTITY; the card copy is what is free to change.
-const VENUE_ORDER = ['bay', 'lake', 'lagoon', 'swamp', 'river', 'ocean', 'redrock', 'glowtide', 'arctic', 'seatrials'];
+const VENUE_ORDER = ['duckling', 'bay', 'lake', 'lagoon', 'swamp', 'river', 'ocean', 'redrock', 'glowtide', 'arctic', 'seatrials'];
 
 // The card copy for a key, straight from the document. Always an object, so callers
 // read fields without guarding — a missing card just briefs blank.

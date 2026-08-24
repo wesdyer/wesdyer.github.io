@@ -853,6 +853,25 @@
              </div>
         </div>
 
+        <!-- Irons / Recovery Prompt Banner -->
+        <div id="irons-recovery-banner" class="hidden absolute top-24 left-1/2 -translate-x-1/2 z-40 bg-red-950/90 text-red-200 border-2 border-red-500 px-6 py-2 rounded-full font-bold text-base md:text-lg shadow-2xl flex items-center gap-3 animate-pulse pointer-events-none">
+            <span class="text-2xl">&#9888;</span>
+            <span id="irons-recovery-text">IN IRONS! Steer left or right to bear away out of the wind!</span>
+        </div>
+
+        <!-- Tutorial Speech Card Overlay -->
+        <div id="tutorial-card" class="hidden absolute bottom-20 left-1/2 -translate-x-1/2 z-40 max-w-xl w-[90%] bg-slate-900/90 backdrop-blur-md text-white p-4 rounded-2xl border border-sky-400/50 shadow-2xl flex items-center gap-4 transition-all duration-300 pointer-events-auto">
+            <img id="tutorial-card-portrait" src="assets/images/competitors/paddle.png" alt="Paddle" class="w-16 h-16 rounded-full border-2 border-amber-400 object-cover shrink-0">
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="font-bold text-amber-400 text-sm tracking-wider uppercase">Paddle the Mallard</span>
+                    <span class="text-xs bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full font-semibold">Sailing Instructor</span>
+                </div>
+                <p id="tutorial-card-text" class="text-sm md:text-base leading-relaxed text-slate-100 font-medium"></p>
+            </div>
+            <button id="tutorial-card-next" class="hidden shrink-0 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold px-4 py-2 rounded-xl text-sm transition-colors shadow-md">Next &rarr;</button>
+        </div>
+
         <!-- Top Right Container. Translucent by design: the off-screen edge
              indicators pass under it and stay readable through it. -->
         <div id="hud-instruments" class="absolute top-4 right-4 flex flex-col items-center pointer-events-none">
@@ -1041,6 +1060,7 @@
 <script src="js/venuedoc.js"></script>
     <!-- Every venue is a DOCUMENT. One tag each, in journey order; there is no
          directory listing over file://, so the set is stated here. -->
+    <script src="assets/venues/duckling.venue.js"></script>
     <script src="assets/venues/bay.venue.js"></script>
     <script src="assets/venues/lake.venue.js"></script>
     <script src="assets/venues/lagoon.venue.js"></script>
