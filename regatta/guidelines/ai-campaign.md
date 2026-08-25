@@ -15173,3 +15173,37 @@ between them overlaps both") is on the rules-inventory ABSENT list. The
 right build order is: encode multi-boat overlap/mark-room in rules.js
 (correctness doctrine applies), THEN extend the hold across all obligated
 boats. OWNER-VISIBLE design item; parked with treeZ1 + _mrwhy_* JSONs.
+
+## ⏭ CARRY-FORWARD PROMPT — AFTER THE ROUNDING-CRAFT PUSH (2026-08-25 01:15)
+
+AI PUSH: [OWNER PICKS]. Context: R1a exit-handoff LANDED (23c0a56, goldens
+re-recorded, close table rr 1.413 / lk 1.124 / lag 1.202 / glow 1.301 / bay
+1.130; river flat NAMED — land column is grind-count inflation, episodes
+flat; owner review requested). Anchors = r1* on rounding venues, n1 on
+arctic/swamp/seatrials (byte-identity proven). Arctic stays banked.
+
+(A) GLOW/RR RING RESIDUAL — post-R1a census: glow leg2 +8.2 s/lap (51-deg
+req mark!), glow leg3 +9.2 (269-zone rock-box mark, p90 37.7), rr leg2
+armed-phase +10.7 still there (the leg-3 west-wall pocket owns the
+departure). All rock-coupled; likely wants the pocket/execution class, not
+more geometry. Boot: regatta-roundcraft-session + _rc_glowR1a.log shapes.
+(B) MULTI-BOAT MARK-ROOM (rules correctness, then Z1-v2) — _mr_why.js:
+bay concessions third-boat 57%, rr land 43-60%; pairwise holds cannot reach
+either. Needs the absent "boat between them overlaps both" encoding in
+rules.js FIRST (correctness doctrine; owner call), then extend the
+entitlement hold across all obligated boats. treeZ1 + _mrwhy_* JSONs parked.
+(C) ENTRY-FETCH v2 — wrong-way zone entries 17-56% vs his ~0% remain open;
+F3 board-scorer form mechanism-killed: the wrong-way crossing is the FETCH
+LINE to the hunt's cut-in point (close targets return from the fetch branch
+before any board choice). v2 must move the cut-in TARGET (sector/lead aware
+of the fetch line's tangential sign); regression bar = the recorded +8.0s
+sector-hunt-vs-ruler-entry A/B.
+(D) RIGHTS HOLD-THROUGH LEAK — ROW deflects >30 deg while held on 23-46% of
+episodes (bay 34% with zero contacts). Cause unattributed; the honest
+instrument is term-ablation trees (a session of its own). His #3 ask.
+Standing: redrock+glowtide v0.2 INCOMING (re-bench + his re-records after
+promotion retire those anchors/refs); scenario-lab has no green baseline
+(4/27 pre-existing FAILs; my nav landing may drift more — the lab-triage
+session is already queued); close every session with _n1_close_table.js on
+final HEAD; commits LOCAL pending his push; graveyard += tight-orbit x3,
+LOS chord guard, F3 board tax.
