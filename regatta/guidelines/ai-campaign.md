@@ -15043,3 +15043,117 @@ measurement.
 ⛔ Closed families += H1B fan projection honesty on floe terms (v1 both /
 v2 segments / v3 band; fleet-killed at 32 with land +31%); wedge-as-stuck-
 escape (sized: no detector gap, latch owns 92% of exits).
+
+# THE ROUNDING-CRAFT + RIGHTS PUSH — R1a LANDED (2026-08-24 night, autonomous; owner-agreed plan)
+
+Owner raced 30 laps (3x10) and reported three behaviors: (1) OVER-ROUNDING —
+bots round further than needed instead of leaving the mark on the proper side
+and proceeding on the proper course; (2) NO ROUNDING PLANNING at tight marks
+(redrock end of leg 2 = mark-6, lake end of leg 2 = mark-5); (3) RIGHTS
+UNDER-USED (STBD/PORT, LEEWARD/WINDWARD, earlier zone entry — press with
+confidence, last-moment avoidance, let the rival take the penalty). Rulings
+taken at plan time (AskUserQuestion 4/4): behavior push across venues; bench
+current docs (redrock/glowtide v0.2 may retire venue numbers, capability
+findings carry); press rights judged by WHO fouled; land passing candidates
+as local commits. Arctic stays BANKED at the H1B frontier. Also logged: his
+clean-lane-into-iceberg sighting = the measured CHOICE-flip anatomy (H1B);
+RL ships nowhere today (both seams closed) — plausible re-entry is the
+arctic execution substrate, owner design decision.
+
+## P1 — measurement (new tracked probes: _roundcraft.js, _rights_use.js,
+## _ring_own.js, _ring_trace.js, _entry_why.js, _riv_land_where.js,
+## _pair_vs_n1.js, _bench_suite.sh)
+- RING TAX (fleet-minus-him ring time, mean s/lap, position-derived
+  IDENTICALLY for fleet and his fp-valid laps): rr 36.7 (leg2 +15.5), arctic
+  36.6 (banked), glow 16.3, lagoon 14.2, bay 8.3, lake 6.7 (ALL at leg2),
+  river 2.6, ocean -0.2 — i.e. 20-36% of the venue gap on every rounding
+  venue.
+- Signatures: closest approach 1.5-2.5x his radius; beyond-mark 2-3x his,
+  accruing PRE-advance (the exit machinery, not the departure); wrong-way
+  zone entries 17-56% vs his ~0%; rr leg2 splits BOTH ways (armed +10.7 s
+  and post-advance departure +8.9 s = the leg-3 west-wall pocket; worst
+  traces re-orbit 2-6x with repeated full stops there; HIS rounding is one
+  smooth pass, 6-12 s).
+- RING OWNERSHIP (_ring_own): nav-owned 80-97% at every mark (spin/stuck/
+  wiggle/avoidance minor); mean ring speed 64-82 u/s vs his ~100+. The
+  rounding GEOMETRY is the lever — not the reflex stack, not traffic.
+- RIGHTS LEDGER (_rights_use, avoidance-owned deviation via applyAvoidance
+  wrap; controllers are created LAZILY — wrap per frame): ROW max dev med
+  92/92/69/46 deg (rr/lk/riv/bay) vs his 11-23; unforced (dev>30 &
+  CPA>=80u) 49-75%; deflected >30 deg WHILE _rowHold active 23-46% (bay 34%
+  with ZERO contacts = rival-priced); mark-room holder surrenders the
+  INSIDE line in 36-73% of zone pairs; in-episode penalties land on the ROW
+  boat as often as give-way (rr 25 v 18). ⚠️ the identical 92-deg medians
+  are the fan's max swing (avDev AT CPA is ~0 everywhere) — use duration-
+  weighted stats for future gates.
+- ZONE-ENTRY DIAGNOSIS (_entry_why): wrong-way entries happen INSIDE the
+  entry hunt, ON the chosen sector, at speed, avoidance quiet — the
+  mechanism points at the strategy layer resolving a no-go cut-in target to
+  the wrong-side BOARD. Candidate named, NOT built tonight.
+
+## P3 — candidates (gates pre-registered in scratchpad before each build)
+- ⭐⭐ **R1a EXIT-HANDOFF — LANDED.** navigation.js: once `_outbound` (bank +
+  string wrap) on a FLOE-FREE venue with a valid next-leg DMC path, the
+  follower hands to the NEXT leg's path and the armed orbit/exit machinery
+  stands down — the boat leaves the mark on the proper course through the
+  same destination->strategy pipeline every leg uses. NOT the dead
+  aimed-exit-bearing family (x3) — no bearing is forced; NOT the pre-bank
+  pack detour — fires only after the bank, never where floes exist.
+  Census gates: lake ring tax 6.7 -> 0.5 s/lap (leg2 ring 14.6->9.3 mean,
+  beyond 266->124, stuck 2.4->0); rr 36.7->30.9; lagoon 14.2->10.4; bay
+  8.3->7.0; advanced == episodes everywhere (no stranding).
+- ⛔ R1b SOLO-TIGHT ORBIT (ruler-radius ring when alone at the mark, 1.5 s
+  solitude latch): census-killed — rr 30.9->33.5 even solo-gated, no gain
+  on lagoon/lake. Tight-orbit family now x3 (unconditional x2 + solo-gated).
+- ⛔ R1a-v2 LOS GUARD (hand off only when the chord to the next carrot is
+  grid-clear): river arm BYTE-IDENTICAL to v1 (the chord is clear — null-op
+  where aimed) while trimming redrock's win (-9.3 -> -5.4 mean, 5 sets).
+  Strictly dominated; killed.
+- Z1 MARK-ROOM HOLD (entitlement grants the _rowHold even when otherwise
+  give-way; all projection guards + capability release unchanged): MECHANISM
+  SPLIT — lake holder-inside 27->65%, zone dev 92->46 deg, contacts 9->4;
+  bay 51->44%, rr 38->33% (flat/negative) = FAILED the pre-registered
+  2-of-3 bar. NOT fleet-benched. treeZ1 + ledgers kept; v2 wants per-pair
+  cause attribution on rr/bay first (what steals the entitled line there).
+
+## FLEET — R1a v1 at full n1 widths (_pair_vs_n1.js; CAND-BASE, NEG=faster)
+redrock POOLED 6 SETS: med -8.0 / mean -9.3, fins 432/432, boat -27%,
+pen -14%, land -9%, mark -7%. lake 2x20: med -5.0 / mean -10.0, land -61%,
+boat -41%. lagoon: med -3.0 / mean -8.4, land -82%, mark -70%. glowtide:
+med -5.0 / mean -5.8, dirt down. bay 2x20: med -1.0 / mean -1.6. ocean
+0.0/+0.2. arctic ALL FOUR SETS + swamp + seatrials BYTE-IDENTICAL (cmp) —
+the floe/no-round-leg gates proven at bench scale.
+NAMED at equal prominence (owner review requested, non-universal-wins):
+- river: bench land column 76->97/boat, fins 215->211, clock NEUTRAL
+  (pooled med +1.0 / mean -0.2). _riv_land_where (2 s episode debounce):
+  land EPISODES 154->157 FLAT, zero near the handoff mark, all in the known
+  leg-3 bins — the +27% is grind-DURATION inflation at the bench's 0.5 s
+  count debounce, not more groundings (rule 2 applied to my own gate); fins
+  delta is inside the documented island-8 notch lottery (2-6 re-rolls).
+  Fallback if he rules the column unacceptable: scope river out (no
+  measured grid property separates it; would be a named-venue gate).
+- bay small absolute dirt uptick: land 0.19->0.26, mark 0.08->0.14,
+  pen 0.16->0.19 per boat (360 boats).
+
+## CLOSE TABLE — final HEAD (R1a landed; anchors now r1* on rounding venues,
+## n1 elsewhere; _n1_close_table.js updated)
+redrock 1.468 -> 1.413 | lake 1.170 -> 1.124 | lagoon 1.225 -> 1.202 |
+glowtide 1.311 -> 1.301 | bay 1.138 -> 1.130 | river 1.281 -> 1.286 (flat,
+named) | arctic 1.500, swamp 1.414, ocean 1.046, seatrials 1.023 unchanged.
+npm test: same 7 pre-existing red suites. Goldens re-recorded (30, 3 seeds)
+after the landing — rounding venues legitimately moved.
+
+## F3 ROTATION-AWARE ENTRY BOARDS — MECHANISM-KILLED SAME NIGHT (2026-08-25 ~01:00)
+Built per the diagnosis (wrong-way entries tack/gybe-chosen: 69-83% upwind on
+rr legs 1/3, 75% run on leg 2) as a decisive scoreTack term (-2.0, shore-tax
+scale, floe-free + round-leg + !armed + <2.5z scoped, treeF3 on post-R1a HEAD).
+Pre-registered mechanism gate FAILED: wrong-way rates unmoved-or-worse
+(leg1 26->32%, leg2 23->29%, leg3 43->57%, leg4 6->26%, 2 seeds). REFINED
+DIAGNOSIS for the next attempt: close cut-in targets are usually FETCHABLE, so
+getStrategicHeading returns from the fetch branch before any board choice —
+the wrong-way crossing is the FETCH LINE'S OWN GEOMETRY (the hunt's cut-in
+point placed where the close-hauled fetch crosses the zone against rotation).
+A v2 must move the TARGET (cut-in sector/lead aware of the fetch line's
+tangential sign), not the board scorer — with the recorded "+8.0s sector-hunt
+vs ruler-entry" baseline as the regression bar. Stopped per the gate; treeF3
+discarded.
