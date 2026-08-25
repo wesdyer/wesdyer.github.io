@@ -1939,15 +1939,15 @@ const PROP_KINDS = {
     'swamp-heron':          { label: 'Heron',          world:  44, plane: 'surface', contact: 'none', motion: 'fixed' },
 
     // ── GLACIER SOUND'S ICE AND ROCK ────────────────────────────────────────
-    // The first six of a twelve-asset commission, and the first thing this venue has ever
+    // Eleven of a twelve-asset commission, and the first thing this venue has ever
     // been able to put ON its land. Arctic ships 8 `ice` shapes, 3 `granite` shapes and 112
     // floes, and until now the only props standing on any of that were the station and its
     // huts — so the ice cap read as a flat white sheet with a coastline. These are its relief.
-    // Six more are undrawn (three seracs, three icy peaks); see art/manifest.json, which
-    // carries the measured rejection history for every row.
+    // One is undrawn (the serac cluster); see art/manifest.json, which carries the measured
+    // rejection history for every row.
     //
     // EVERY ONE IS surface / none / fixed, AND THE CONTACT ANSWER IS THE INTERESTING ONE.
-    // All six stand on a landmass that ALREADY stops a boat, so a collider here would be a
+    // All of them stand on a landmass that ALREADY stops a boat, so a collider here would be a
     // second hidden circle inside the first — and compile emits one hidden shape per fixed
     // contact prop, which also enters the router's grid. That is the budget river-boulder-large
     // is written around ("script.js records the river's 82 hidden banks causing multi-hundred-
@@ -1991,6 +1991,20 @@ const PROP_KINDS = {
     'arctic-nunatak-crag':     { label: 'Granite crag',       world:  400, plane: 'surface', contact: 'none', motion: 'fixed' },
     'arctic-nunatak-horn':     { label: 'Granite horn',       world:  680, plane: 'surface', contact: 'none', motion: 'fixed' },
     'arctic-nunatak-massif':   { label: 'Granite massif',     world:  900, plane: 'surface', contact: 'none', srcBox: [0.028, 0.233, 0.943, 0.533], motion: 'fixed' },
+    // THE SMALL SHARP ONES, and the only props in this commission small enough to stand near
+    // the waterline without swamping it. Ones and twos along the ice front of `shape-3` and
+    // `shape-4` where the sheet is breaking up, and along the tops of the steeper ice margins.
+    // ⚠️ THEIR ONE REAL RISK IS THE FLOE: the venue drifts 112 of them a few boat lengths away,
+    // and a small white-blue angular ice object is exactly a small floe's silhouette family.
+    // What separates them is that a floe is FLAT — one plane, one tone, an edge — and these are
+    // STEPPED: a bright top plane with a ledge and a rim under it, measured at 20-21% of the
+    // height on both, the same as the peaks. That distinction survives with the colour removed,
+    // which is the test the rule sets — but it only holds while they stand on LAND. Seracs go on
+    // the sheet, floes are in the water, and the two never mix. Prop-spin OFF and set `heading °`
+    // per placement, for the mountains' reason: both bake an upper-left sun into their step
+    // shading, so spinning one spins its sun.
+    'arctic-serac-tower':      { label: 'Serac tower',       world:   90, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'arctic-serac-block':      { label: 'Serac block',       world:   70, plane: 'surface', contact: 'none', motion: 'fixed' },
     // The venue's one WHITE mountain, and the only one that had to be rotated on the way in:
     // it was delivered on a 20.5-degree diagonal and the subject asks for the long axis UP
     // the frame, which is what makes `heading °` mean what a designer expects. Lay it
