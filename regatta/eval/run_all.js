@@ -23,6 +23,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 
 const SUITES = [
+    'test_pages.js',
     'test_arena.js', 'test_venuedoc.js', 'test_shoal.js', 'test_course_model.js',
     'test_route.js', 'test_gates.js', 'test_marks.js', 'test_wind.js', 'test_gusts.js',
     'test_sailable.js', 'test_path_estimate.js', 'test_start_crossing.js',
