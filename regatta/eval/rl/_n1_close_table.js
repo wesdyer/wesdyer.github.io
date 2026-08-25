@@ -17,16 +17,21 @@ const fs = require('fs'); const path = require('path');
 const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8,
     ocean: 214.2, river: 187.4, glowtide: 199.1, redrock: 215.2,
     seatrials: 185.7, swamp: 234.1 };
+// 2026-08-25 (the ROUNDING-CRAFT push): cand = r1* — the R1a exit-handoff
+// landing benched at full n1 widths on treeR1 == the landed HEAD. Venues
+// where the edit is structurally inert carry their byte-identity proof:
+// arctic (all 4 sets cmp-identical — the _hasFloes gate), swamp + seatrials
+// (no round legs; sw9400/st cmp-identical) keep the n1 labels.
 const VENUES = {
-    redrock: { base: ['n1rr9400','n1rr9500','n1rr9600','n1rr9700','n1rr9800','n1rr9900'], cand: ['n1rr9400','n1rr9500','n1rr9600','n1rr9700','n1rr9800','n1rr9900'] },
+    redrock: { base: ['n1rr9400','n1rr9500','n1rr9600','n1rr9700','n1rr9800','n1rr9900'], cand: ['r1rr9400','r1rr9500','r1rr9600','r1rr9700','r1rr9800','r1rr9900'] },
     arctic:  { base: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'], cand: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'] },
-    river:   { base: ['n1riv9400','n1riv9408','n1riv9500'], cand: ['n1riv9400','n1riv9408','n1riv9500'] },
+    river:   { base: ['n1riv9400','n1riv9408','n1riv9500'], cand: ['r1riv9400','r1riv9408','r1riv9500'] },
     swamp:   { base: ['n1sw9400','n1sw9500','n1sw9600'], cand: ['n1sw9400','n1sw9500','n1sw9600'] },
-    glowtide:{ base: ['n1glow'], cand: ['n1glow'] },
-    lagoon:  { base: ['n1lag'], cand: ['n1lag'] },
-    bay:     { base: ['n1bay9400','n1bay9600'], cand: ['n1bay9400','n1bay9600'] },
-    lake:    { base: ['n1lk6100','n1lk6200'], cand: ['n1lk6100','n1lk6200'] },
-    ocean:   { base: ['n1oc'], cand: ['n1oc'] },
+    glowtide:{ base: ['n1glow'], cand: ['r1glow'] },
+    lagoon:  { base: ['n1lag'], cand: ['r1lag'] },
+    bay:     { base: ['n1bay9400','n1bay9600'], cand: ['r1bay9400','r1bay9600'] },
+    lake:    { base: ['n1lk6100','n1lk6200'], cand: ['r1lk6100','r1lk6200'] },
+    ocean:   { base: ['n1oc'], cand: ['r1oc'] },
     seatrials:{ base: ['n1st'], cand: ['n1st'] },
 };
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
