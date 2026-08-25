@@ -256,8 +256,14 @@ window.runBatchSim = function(count = 50) {
         }
 
         results.races++;
-        // Analyze results
-        const winner = state.boats.find(b => b.lbRank === 0);
+        // Analyze results. The winner comes from FINISH TIMES, sim-side truth:
+        // lbRank is render-local state written by updateLeaderboard from the
+        // draw path, and this loop never draws — the old `lbRank === 0` read
+        // was structurally undefined here and no winner was ever counted.
+        const finishers = state.boats.filter(b => b.raceState.finished && !b.raceState.resultStatus);
+        const winner = finishers.length
+            ? finishers.reduce((a, b) => (a.raceState.finishTime < b.raceState.finishTime ? a : b))
+            : null;
         if (winner) {
             if (winner.isPlayer) results.wins.player++; else results.wins.ai++;
             // Count tacks (sum of Upwind legs 1 & 3)

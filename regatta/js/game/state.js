@@ -318,6 +318,18 @@ const state = {
 // player's boat has faded, so shortening this shortens the wait after your own finish.
 const FINISH_FADE_SECS = 2.5;
 
+// ── PLAYER CONTROLS ─────────────────────────────────────────────────────────
+// The one seam between input devices and the physics. updateBoat reads a
+// controls struct, never state.keys directly: the player's is sampled from the
+// keyboard here, bots get NO_CONTROLS (their commands arrive via updateAI).
+// A replay driver, RL crew, or gamepad plugs in at this seam.
+const NO_CONTROLS = Object.freeze({ left: false, right: false, slow: false, trimUp: false, trimDown: false });
+function sampleKeyControls() {
+    const k = state.keys;
+    return { left: !!k.ArrowLeft, right: !!k.ArrowRight, slow: !!k.Shift,
+             trimUp: !!k.ArrowUp, trimDown: !!k.ArrowDown };
+}
+
 class Boat {
     constructor(id, isPlayer, startX, startY, name="USA", config=null) {
         this.id = id;

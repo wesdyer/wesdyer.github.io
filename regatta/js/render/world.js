@@ -378,13 +378,13 @@ function drawProps(ctx, plane, filter, pending) {
 // with a touch of windage, accumulated in `_dx/_dy` so the AUTHORED position stays
 // what the document says. Purely visual by construction — the traits force a drifting
 // prop's contact to none, so nothing physical ever reads the drifted position.
-let _propClock = 0;
-function updateDriftingProps(now) {
+// Sim-clocked: called from update(dt) (leak fixes 2026-08-24 — it used to run from
+// draw() on performance.now(), so headless runs had frozen flotsam and pause didn't
+// pause it). RNG-free, so it cannot move the seeded stream.
+function updateDriftingProps(dt) {
     const props = state.course && state.course.props;
     if (!props || !props.length) return;
-    const dt = _propClock ? Math.min(0.1, (now - _propClock) / 1000) : 0;
-    _propClock = now;
-    if (!dt) return;
+    if (!(dt > 0)) return;
     for (const p of props) {
         if (p.motion !== 'drift') continue;
         const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);

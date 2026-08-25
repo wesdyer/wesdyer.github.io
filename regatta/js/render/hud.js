@@ -1,7 +1,10 @@
 // regatta/js/render/hud.js — the boat-and-instruments surface: drawBoat,
 // rules overlay, nav aids (arrows, gates, ladder/lay lines, mark zones),
-// minimap, leaderboard (⚠ called from draw(); writes boat.lbRank/prevRank and
-// queues Sayings quotes — a documented sim leak, do not 'fix' casually),
+// minimap, leaderboard (runs from draw(); boat.lbRank/prevRank are RENDER-LOCAL
+// state since the 2026-08-24 leak fixes — nothing sim-side reads them, the sim's
+// standing order is fleetRank/finish times. Sayings quote triggers ride the
+// leaderboard's render cadence on purpose: they are presentation, and their
+// Math.random draws must stay OUT of update()'s seeded stream),
 // edge indicators, and the boat/rose HUD. Classic script; global scope.
 // Extracted verbatim from script.js (refactor 2026-08-24).
 function drawBoat(ctx, boat) {

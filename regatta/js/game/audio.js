@@ -648,3 +648,7 @@ const Sound = {
     }
 };
 
+
+// Physics announces; audio answers. (Registered before ui/screens.js loads, so
+// the gun sounds before the banner writes — the order the old direct calls had.)
+GameEvents.on('player-penalty', () => Sound.playPenalty());

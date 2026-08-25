@@ -3109,3 +3109,10 @@ function renderResultsFootnote(leader) {
         : `${vn || 'The race'} — still on the water`;
 }
 
+
+// Physics announces; the banner answers (see GameEvents in game/core.js — this
+// replaced triggerPenalty calling showRaceMessage directly from sim code).
+GameEvents.on('player-penalty', (info) => {
+    const why = info && info.rule ? ` (${info.rule}${info.reason ? ' — ' + info.reason : ''})` : '';
+    showRaceMessage(`PENALTY${why}! DO A 360° TURN TO CLEAR`, "text-red-500", "border-red-500/50");
+});

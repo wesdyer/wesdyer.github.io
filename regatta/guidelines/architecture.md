@@ -99,24 +99,33 @@ and for probes that wrap prototype methods (the class itself is declared in
   js by path. **Never touch `eval/rl/tree*` snapshots** — they are self-contained
   (own index.html + own js/) and mostly unregenerable.
 
-## Known cross-boundary leaks (documented, deliberately NOT fixed here)
+## Cross-boundary couplings (leak fixes landed 2026-08-24)
 
-Fixing any of these changes behavior; each needs its own benched push with a
-golden-trace re-record:
+The five leaks the split documented were closed the same day, all verified
+trace-neutral (goldens byte-identical):
 
-1. `updateLeaderboard` (render/hud.js) is called from `draw()`, **writes**
-   `boat.lbRank`/`boat.prevRank` (read by `runBatchSim` and two renderers) and
-   queues `Sayings` quotes. Render → sim → DOM.
-2. `updateDriftingProps` (render/world.js) and `updateJellyDrifts`
-   (render/effects.js) are wall-clock (`performance.now()`) integrators called
-   from `draw()` — a headless eval that never calls `draw()` gets different
-   prop/jelly positions than a rendering client.
-3. `showResults()` (ui/screens.js) is called from `update()` — the sim tick
-   opens a DOM overlay, and `loop()` then runs 10 sim iterations per frame.
-4. Player input is read inline in `updateBoat` (`state.keys`) — no controller
-   abstraction.
-5. `triggerPenalty` (sim/physics.js) calls `Sound.playPenalty()` and
-   `showRaceMessage()` directly.
+1. **Results overlay**: `update()` only raises a hub-local `_resultsPending`
+   flag; `loop()` opens the overlay presentation-side. Headless drivers calling
+   `update()` directly never touch DOM.
+2. **Penalty feedback**: `triggerPenalty` emits `GameEvents.emit('player-penalty')`
+   (the internal bus in game/core.js — distinct from `window.onRaceEvent`, the
+   eval hook slot); audio and the banner subscribe in their own files.
+3. **Leaderboard**: `boat.lbRank`/`prevRank` are RENDER-LOCAL — nothing sim-side
+   reads them (`runBatchSim` now picks the winner from finish times; it formerly
+   read `lbRank`, which is never set headless, so it counted no winners at all).
+   Sayings triggers stay on the render cadence deliberately: their `Math.random`
+   draws must never enter `update()`'s seeded stream.
+4. **Drifting props & jellyfish**: integrate in `update(dt)` on the sim clock —
+   pause-correct, gameSpeed-correct, identical headless and rendered. Both are
+   RNG-free and purely visual (drifting props force `contact: none`).
+5. **Player input**: `updateBoat` reads a controls struct via
+   `sampleKeyControls()`/`NO_CONTROLS` (game/state.js) — the one seam where a
+   replay driver, RL crew, or gamepad would plug in. `state.keys` itself is
+   owned by ui/input.js.
+
+Still true and deliberate: `Sayings` is AI-triggered but DOM-owning (lives in
+ui/screens.js); `window.onRaceEvent` is a single mutable slot that harness code
+replaces wholesale — use `GameEvents` for game-internal wiring instead.
 
 ## Working in parallel (multiple Claude instances / people)
 

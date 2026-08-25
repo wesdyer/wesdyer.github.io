@@ -468,13 +468,10 @@ function jellyDepth(m, t) {
 // integrates fine here because the animals are SLOW. An Aurelia does a few cm/s; over a
 // three-minute race that is metres, tens of units, so a drift stays a drift instead of
 // swimming off the map. The worry that sent me to sines was unfounded.
-// Clocked like updateDriftingProps, its neighbour in the same call: this runs from draw(),
-// where there is no ambient dt to borrow, and owning the clock keeps the integration honest
-// whatever the frame rate does.
-let _jellyClock = 0;
-function updateJellyDrifts(now) {
-    const dt = _jellyClock ? Math.min(0.1, (now - _jellyClock) / 1000) : 0;
-    _jellyClock = now;
+// Clocked like updateDriftingProps, its neighbour in the same call: sim dt from
+// update() (leak fixes 2026-08-24 — this ran from draw() on performance.now(),
+// which ignored pause/gameSpeed and never ran headless). RNG-free by design.
+function updateJellyDrifts(dt) {
     if (!(dt > 0)) return;
     const props = state.course && state.course.props;
     if (!props || !props.length) return;

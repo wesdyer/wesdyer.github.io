@@ -430,11 +430,10 @@ function triggerPenalty(boat, info) {
         rs.penaltyFlagTime = 0;
         rs.penaltyRot = 0;
         rs.penaltyLastHeading = boat.heading;
-        if (boat.isPlayer) {
-            Sound.playPenalty();
-            const why = info && info.rule ? ` (${info.rule}${info.reason ? ' — ' + info.reason : ''})` : '';
-            showRaceMessage(`PENALTY${why}! DO A 360° TURN TO CLEAR`, "text-red-500", "border-red-500/50");
-        }
+        // Announce, don't call upward: audio and the banner subscribe to this in
+        // game/audio.js and ui/screens.js. Same frame, same order as the old
+        // direct calls (sound first, banner second — registration order).
+        if (boat.isPlayer) GameEvents.emit('player-penalty', info);
     }
 }
 
@@ -463,13 +462,17 @@ function updateBoat(boat, dt) {
         updateAI(boat, dt);
     }
 
+    // The physics reads a CONTROLS STRUCT, not the keyboard — sampleKeyControls()
+    // (game/state.js) is the one seam between input devices and the hull.
+    const ctl = boat.isPlayer ? sampleKeyControls() : NO_CONTROLS;
+
     if (boat.isPlayer && !boat.raceState.finished) {
         // Player Input
         // Apply Handling Stat (Player)
         const handlingMod = (1.0 + boat.stats.handling * 0.03);
-        const turnRate = (state.keys.Shift ? getTurnSpeed() * 0.25 : getTurnSpeed()) * timeScale * handlingMod * steerageFactor(boat);
-        if (state.keys.ArrowLeft) boat.heading -= turnRate;
-        if (state.keys.ArrowRight) boat.heading += turnRate;
+        const turnRate = (ctl.slow ? getTurnSpeed() * 0.25 : getTurnSpeed()) * timeScale * handlingMod * steerageFactor(boat);
+        if (ctl.left) boat.heading -= turnRate;
+        if (ctl.right) boat.heading += turnRate;
     }
 
     boat.heading = normalizeAngle(boat.heading);
@@ -638,8 +641,8 @@ function updateBoat(boat, dt) {
 
     if (boat.manualTrim && boat.isPlayer) {
         const trimRate = 0.8 * dt;
-        if (state.keys.ArrowUp && boat.isPlayer) boat.manualSailAngle = Math.min(Math.PI / 2.0, boat.manualSailAngle + trimRate);
-        if (state.keys.ArrowDown && boat.isPlayer) boat.manualSailAngle = Math.max(0, boat.manualSailAngle - trimRate);
+        if (ctl.trimUp) boat.manualSailAngle = Math.min(Math.PI / 2.0, boat.manualSailAngle + trimRate);
+        if (ctl.trimDown) boat.manualSailAngle = Math.max(0, boat.manualSailAngle - trimRate);
         boat.sailAngle = boat.manualSailAngle * boat.boomSide;
     } else if (boat.isPlayer) {
         // Player Auto-Trim (Instant)
@@ -978,7 +981,7 @@ function updateBoat(boat, dt) {
     }
 
     // Rudder drag
-    if (boat.isPlayer && (state.keys.ArrowLeft || state.keys.ArrowRight)) {
+    if (ctl.left || ctl.right) {
          boat.speed *= Math.pow(CONFIG.turnPenalty, timeScale);
     }
 

@@ -200,3 +200,17 @@ function rayCircleIntersection(ox, oy, dx, dy, cx, cy, r) {
     return (t1 >= 0) ? t1 : (t2 >= 0 ? t2 : null);
 }
 
+// ── GAME EVENTS ──────────────────────────────────────────────────────────────
+// Internal pub/sub so lower layers announce upward without calling upward:
+// physics emits, audio/UI subscribe. DISTINCT from window.onRaceEvent, which is
+// the EVAL hook slot that harnesses and runBatchSim replace wholesale — this
+// bus is the game's own wiring and probes must not patch it. Subscribers run
+// in registration order (= script load order), synchronously, same frame.
+const GameEvents = {
+    _subs: {},
+    on(kind, fn) { (this._subs[kind] || (this._subs[kind] = [])).push(fn); },
+    emit(kind, payload) {
+        const subs = this._subs[kind];
+        if (subs) for (const fn of subs) fn(payload);
+    },
+};

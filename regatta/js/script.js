@@ -1,4 +1,9 @@
 const WORLD_CLOCK = 0.24;
+// Raised by update() when the race ends for the player/fleet; consumed by loop(),
+// which opens the results overlay OUTSIDE the sim tick. Hub-local on purpose:
+// state.race is hashed by the trace harness, and headless drivers call update()
+// without loop(), so this must live where only the render loop can see it.
+let _resultsPending = false;
 
 // HOW FAR THE CAMERA LOOKS PAST THE BOW, as a fraction of the frame's height. The boat ends
 // up at `0.5 + this` down the screen, so 1/6 puts it two thirds of the way down and splits
@@ -187,7 +192,7 @@ function update(dt) {
 
             if (state.camera.target === 'boat') {
                 state.camera.target = 'finish';
-                showResults();
+                _resultsPending = true;
             }
         }
     }
@@ -226,7 +231,7 @@ function update(dt) {
     if (state.camera.target === 'boat') {
         if (player.raceState.finished && player.fadeTimer <= 0) {
              state.camera.target = 'finish';
-             showResults();
+             _resultsPending = true;
         } else {
             // ── THE BOAT SITS LOW, SO THE WATER AHEAD IS ON SCREEN ──────────────
             // Centred, half the frame is spent on where you have already been. What a
@@ -427,6 +432,12 @@ function update(dt) {
     updateParticles(dt);
     updateWindWaves(dt);
     updateSurf(dt);
+    // Sim-clocked since the leak fixes: these used to run from draw() on
+    // performance.now(), so a headless run (which never draws) had frozen props
+    // and a rendering client had wall-clock drift that ignored pause/gameSpeed.
+    // Both are RNG-free and purely visual (drifting props force contact:none).
+    updateDriftingProps(dt);
+    updateJellyDrifts(dt);
     // WHITECAPS, SURF SPRAY AND THE BOW UPWIND. After the boats, because two of the three
     // read `boat.swell` and it is written in updateBoat. Its own particle arrays and its
     // own PRNG, so it can neither be seen by the sim nor perturb it. No-op off the ocean.
@@ -477,8 +488,8 @@ function draw() {
     // surface, so it is the only thing the surface layers are allowed to run across. See
     // drawShoals. Painted shallows go first of all: a shoal inside a lagoon is still a
     // bar, so its sand draws over the zone's tint.
-    updateDriftingProps(performance.now());
-    updateJellyDrifts(performance.now());
+    // (Drifting props and jellyfish integrate in update(dt) now — sim-clocked,
+    // pause-correct, identical for headless and rendering clients.)
     // Moonlight lies ON the water, under the waves, the wakes and the fleet.
     drawNightWater(ctx);
     // Shallows, shoals, bottom vegetation, reefs and the seabed props — in that stacking
@@ -948,6 +959,13 @@ function loop(timestamp) {
         for (let i = 0; i < iterations * subs; i++) {
             update(sub);
         }
+        // The sim only RAISES the flag (update() must not open DOM overlays — the
+        // trace/eval harnesses drive update() directly and never want a screen).
+        // The overlay opens here, same frame, presentation-side.
+        if (_resultsPending) {
+            _resultsPending = false;
+            showResults();
+        }
         draw();
     }
     requestAnimationFrame(loop);
@@ -960,6 +978,7 @@ function resetGame() {
     // at the one gate every rebuild passes through.
     if (window.VenueDoc && window.VenueDoc.invalidateCompile) window.VenueDoc.invalidateCompile();
     loadSettings();
+    _resultsPending = false;
     if (UI.resultsOverlay) UI.resultsOverlay.classList.add('hidden');
     state.camera.target = 'boat';
     state.wind.baseSpeed = 8 + Math.random()*10;
