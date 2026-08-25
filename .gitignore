@@ -71,3 +71,4 @@ regatta/eval/rl/*.json
 # a paired experiment that cannot be regenerated without checking out the old tree.
 regatta/eval/rating/*.jsonl
 regatta/eval/rating/*.part
+regatta/eval/rl/_retired_benches/

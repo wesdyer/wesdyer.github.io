@@ -4,11 +4,11 @@
 // HUMAN = pooled MEDIAN of every lap valid on the CURRENT frozen docs (the
 // 2026-08-24 corpus, 3 laps/venue; the four unchanged venues also keep their
 // older valid laps — n listed beside each).
-// PRE column: the b3/r1carc anchors are valid pre-refactor baselines ONLY on
-// the four venues whose doc did not move (engine proven byte-identical by the
-// refactor's golden traces). On the six PROMOTED venues (arctic, bay, lagoon,
-// lake, ocean, river) the old anchors were measured on the RETIRED doc — they
-// are printed with a "(old doc)" tag and their ratio column is not comparable.
+// PRE column: the n1 anchor sets — the standing pre-session baseline of the
+// new-benchmark era. AT SESSION CLOSE: bench fresh labels on final HEAD, put
+// them in `cand`, leave `base` as the n1 sets (or the previous session's
+// anchors). Pre-promotion b3/r1carc JSONs live in _retired_benches/ — a stale
+// label here reports MISSING rather than silently pooling a retired doc.
 //   node _n1_close_table.js
 const fs = require('fs'); const path = require('path');
 // pooled medians over all benchmark-valid laps, 2026-08-24 (_traj_fp):
@@ -17,18 +17,17 @@ const fs = require('fs'); const path = require('path');
 const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8,
     ocean: 214.2, river: 187.4, glowtide: 199.1, redrock: 215.2,
     seatrials: 185.7, swamp: 234.1 };
-const DOC_MOVED = { arctic: 1, bay: 1, lagoon: 1, lake: 1, ocean: 1, river: 1 };
 const VENUES = {
-    redrock: { base: ['b3rr9400','b3rr9500','b3rr9600','b3rr9700','b3rr9800','b3rr9900'], cand: ['n1rr9400','n1rr9500','n1rr9600','n1rr9700','n1rr9800','n1rr9900'] },
-    arctic:  { base: ['r1carc9100','r1carc9200','r1carc9400','r1carc9600'], cand: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'] },
-    river:   { base: ['b3riv9400','b3riv9408','b3riv9500'], cand: ['n1riv9400','n1riv9408','n1riv9500'] },
-    swamp:   { base: ['b3sw9400','b3sw9500','b3sw9600'], cand: ['n1sw9400','n1sw9500','n1sw9600'] },
-    glowtide:{ base: ['b3glow'], cand: ['n1glow'] },
-    lagoon:  { base: ['b3lag'], cand: ['n1lag'] },
-    bay:     { base: ['b3bay9400','b3bay9600'], cand: ['n1bay9400','n1bay9600'] },
-    lake:    { base: ['b3lk6100','b3lk6200'], cand: ['n1lk6100','n1lk6200'] },
-    ocean:   { base: ['b3oc'], cand: ['n1oc'] },
-    seatrials:{ base: ['b3st'], cand: ['n1st'] },
+    redrock: { base: ['n1rr9400','n1rr9500','n1rr9600','n1rr9700','n1rr9800','n1rr9900'], cand: ['n1rr9400','n1rr9500','n1rr9600','n1rr9700','n1rr9800','n1rr9900'] },
+    arctic:  { base: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'], cand: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'] },
+    river:   { base: ['n1riv9400','n1riv9408','n1riv9500'], cand: ['n1riv9400','n1riv9408','n1riv9500'] },
+    swamp:   { base: ['n1sw9400','n1sw9500','n1sw9600'], cand: ['n1sw9400','n1sw9500','n1sw9600'] },
+    glowtide:{ base: ['n1glow'], cand: ['n1glow'] },
+    lagoon:  { base: ['n1lag'], cand: ['n1lag'] },
+    bay:     { base: ['n1bay9400','n1bay9600'], cand: ['n1bay9400','n1bay9600'] },
+    lake:    { base: ['n1lk6100','n1lk6200'], cand: ['n1lk6100','n1lk6200'] },
+    ocean:   { base: ['n1oc'], cand: ['n1oc'] },
+    seatrials:{ base: ['n1st'], cand: ['n1st'] },
 };
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
@@ -63,7 +62,7 @@ rows.sort((a, b) => b.ratio - a.ratio);
 console.log('venue      | human  | pre med/mean/best     | post med/mean/best    | ratio | DNF%  | colMed | penMed');
 for (const r of rows) {
     const f = (s) => `${s.med}/${s.mean.toFixed(1)}/${s.best}`;
-    const preTag = DOC_MOVED[r.v] ? ' (old doc)' : '';
+    const preTag = '';
     console.log(`${r.v.padEnd(10)} | ${String(HUMAN[r.v]).padStart(6)} | ${(f(r.B) + preTag).padEnd(21)} | ${f(r.C).padEnd(21)} | ${r.ratio.toFixed(3)} | ${r.C.dnf.toFixed(1).padStart(5)} | ${String(r.C.colMed).padStart(6)} | ${String(r.C.penMed).padStart(6)}`);
     console.log(`           |        | dirt means l/b/f/m/pen: ${r.B.land.toFixed(2)}/${r.B.boat.toFixed(2)}/${r.B.floe.toFixed(2)}/${r.B.mark.toFixed(2)}/${r.B.pen.toFixed(2)} -> ${r.C.land.toFixed(2)}/${r.C.boat.toFixed(2)}/${r.C.floe.toFixed(2)}/${r.C.mark.toFixed(2)}/${r.C.pen.toFixed(2)}  fins ${r.B.fins}/${r.B.n} -> ${r.C.fins}/${r.C.n}`);
     if (r.B.missing.length || r.C.missing.length) console.log(`  MISSING: ${[...r.B.missing, ...r.C.missing].join(', ')}`);
