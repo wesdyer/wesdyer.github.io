@@ -43,7 +43,12 @@ const check = (label, ok, detail) => {
             window.resetGame(); window.startRace();
             for (let i = 0; i < 60 * 120 && state.race.status !== 'racing'; i++) window.update(1 / 60);
             const bots = state.boats.filter(b => !b.isPlayer);
-            window.__sb.A = bots[0]; window.__sb.B = bots[1];
+            // Three named boats: A and B are every scenario's asserted pair;
+            // C exists for multi-boat scenarios (the intervening-boat overlap
+            // clause needs a raft). C starts parked like the rest and is
+            // re-parked before any scenario that does not name it, so all
+            // two-boat scenarios see exactly the world they always saw.
+            window.__sb.A = bots[0]; window.__sb.B = bots[1]; window.__sb.C = bots[2];
             for (const o of state.boats) if (o !== bots[0] && o !== bots[1]) {
                 o.x = -1e6; o.y = -1e6; o.raceState.finished = true; o.fadeTimer = 0;
             }
@@ -105,8 +110,12 @@ const check = (label, ok, detail) => {
             let out = null;
             for (let attempt = 0; attempt < maxTries; attempt++) {
                 out = await page.evaluate(([s, attempt]) => {
-                    const { A, B } = window.__sb;
-                    const boats = { A, B };
+                    const { A, B, C } = window.__sb;
+                    const boats = { A, B, C };
+                    // C is only alive inside scenarios that name it.
+                    if (C && !s.boats.some(bs => bs.name === 'C')) {
+                        C.x = -1e6; C.y = -1e6; C.raceState.finished = true; C.fadeTimer = 0;
+                    }
                     const L = [];
                     const fail = (layer, msg) => { L.push({ layer, msg }); };
 
