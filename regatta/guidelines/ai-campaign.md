@@ -15415,3 +15415,20 @@ GUARDRAILS: cwd resets after cd — use ABSOLUTE paths for every probe/ls/cmp
 (this session lost 40 min to wrong-cwd "still running" reads); _sw_anat.js
 output files are tree-stamped now; feathered weed edges break clean-run
 preconditions (rule 4); the two poolers' sign/arg-order traps stand.
+
+## ADDENDUM (2026-08-25 ~15:15, measurement only) — RIVER NOTCH DNF SPECIMEN
+_riv_dnf.js (NEW tracked): sequence replay of bench 9408 with per-frame
+instruments. ⚠️ TWO probe lessons: (1) the probe's addInitScript venue
+write is the OLD EARLY pattern — on river that is a DIFFERENT RACE from the
+bench's default late write (rule 30's resolved trap; exact bench replay
+needs goto-then-set); (2) the f1 rules landing re-rolled the notch lottery
+(f1riv 9409 DNF = Mistral; the old r1 names are stale). The instrumented
+race still produced a genuine specimen: Strut ground the island-8 face for
+694 CONTACT-SECONDS (wiggle 340s + escape 287s churning 11 minutes without
+exit — the x8-dead escape machinery live on tape), while the same race's
+finishers took only 5-27s of contact in 3-8 short grinds. NEW PATTERN for
+thread D: FIRST contacts are avoidance-dodge-led (pre-6s wiggle 0%, avDev
+max 34-92°), but the RE-entries after an escape are WIGGLE-steered (52-98%
+wiggle in the pre-window) — the notch's cost is the RE-BEACHING loop, which
+is the owner's original "re-entry crumb" framing, now measured. Hotspots
+(1100-1300,-2700..-3600) and (3700-4240,-3520..-3740).
