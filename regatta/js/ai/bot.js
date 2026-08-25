@@ -557,6 +557,29 @@ class BotController {
                 }
             }
 
+            // Weed-side precompute (see the weed-aware branch below). Pure
+            // field reads, no RNG; skipped entirely off draggy-awash venues.
+            let weedSideW = 0;
+            if (state.course._hasAwashDrag == null) {
+                state.course._hasAwashDrag = (state.course.islands || []).some(i => i.awash
+                    && ((i.shoalMul != null && i.shoalMul < 1) || (i.drag != null && i.drag > 0)));
+            }
+            if (state.course._hasAwashDrag && this.boat.raceState.leg >= 1
+                && this.boat.shoalMul != null && this.boat.shoalMul < 0.7
+                && window.VenueDoc && window.VenueDoc.shoalField) {
+                const wdW = getWindAt(this.boat.x, this.boat.y).direction;
+                let mPl = 0, mMi = 0;
+                for (const dRW of [80, 150]) {
+                    mPl += window.VenueDoc.shoalField(state.course.islands,
+                        this.boat.x + Math.sin(wdW + 1.75) * dRW,
+                        this.boat.y - Math.cos(wdW + 1.75) * dRW);
+                    mMi += window.VenueDoc.shoalField(state.course.islands,
+                        this.boat.x + Math.sin(wdW - 1.75) * dRW,
+                        this.boat.y - Math.cos(wdW - 1.75) * dRW);
+                }
+                if (Math.abs(mPl - mMi) > 0.1) weedSideW = mPl > mMi ? 1 : -1;
+            }
+
             // MID-ROUNDING: wiggle the way ROUND (see the escape's tie-break — a
             // wrong-way wiggle refunds hard-won sweep).
             const rsW = this.boat.raceState;
@@ -572,7 +595,22 @@ class BotController {
                 this.wiggleSide = w1 >= w2 ? 1 : -1;
             } else
             // If we've been stuck a long time, the smart logic failed. Try Random.
-            if (this.lowSpeedTimer > 8.0) {
+            if (weedSideW !== 0) {
+                // WEED-AWARE WIGGLE SIDE (2026-08-25, the swamp stall-machine
+                // push). A boat parked in mul-0.1 weed wiggles a beam reach in
+                // a SEMI-RANDOM direction — measured: 88% of swamp stalls are
+                // in weed, wiggle owns 73% of stall time, and the restart mul
+                // is still 0.10 (a gust lottery, not an escape). The two
+                // possible wiggle beams reach genuinely different water
+                // (feathered pockets, 25-150u scale); sampled at the actual
+                // beam-reach points, the better-mul side is the one the boat
+                // can accelerate on. Decisive only when the field says the
+                // sides differ (>0.1 summed); ties fall through to the stock
+                // chain, and the stock random stays the >8s loop-breaker for
+                // everything that is not a weed park. No RNG draw is made or
+                // skipped on venues without draggy awash shapes.
+                this.wiggleSide = weedSideW;
+            } else if (this.lowSpeedTimer > 8.0) {
                  this.wiggleSide = (Math.random() > 0.5) ? 1 : -1;
             } else if (closestObs && minD < 100*100) {
                 const angleToObs = Math.atan2(closestObs.x - this.boat.x, -(closestObs.y - this.boat.y)); // 0=Up

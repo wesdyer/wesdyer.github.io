@@ -4,9 +4,17 @@
 // the same sequence both sides (rule 34 safe) — plus fins and dirt columns.
 // SIGN: delta = CAND - BASE, NEGATIVE = CANDIDATE FASTER (stated on every
 // line; rule 21/21b — recompute one venue by hand before publishing).
-//   node _pair_vs_n1.js <prefix>            (e.g. r1)
+//   node _pair_vs_n1.js <prefix> [basePrefix]   (e.g. r1, or: s2 r1)
+// basePrefix (default n1) sets the anchor era: after R1a landed, the
+// current-HEAD baselines on rounding venues are r1* (arctic/swamp/seatrials
+// stay n1* — byte-identical proofs); pass a per-venue base via BASEMAP below.
 const fs = require('fs'); const path = require('path');
 const PFX = process.argv[2] || 'r1';
+const BASEPFX = process.argv[3] || 'n1';
+// When basePrefix is 'head', use the post-R1a anchor map: r1 on venues R1a
+// moved, n1 where it was byte-identical (arctic/swamp/seatrials).
+const HEADBASE = { redrock: 'r1', river: 'r1', glowtide: 'r1', lagoon: 'r1',
+    bay: 'r1', lake: 'r1', ocean: 'r1', arctic: 'n1', swamp: 'n1', seatrials: 'n1' };
 const MAP = {
     redrock: ['rr9400','rr9500','rr9600','rr9700','rr9800','rr9900'],
     arctic: ['arc9100','arc9200','arc9400','arc9600'],
@@ -23,9 +31,10 @@ for (const [venue, sets] of Object.entries(MAP)) {
     const dirt = { b: { land: 0, boat: 0, floe: 0, mark: 0, pen: 0 }, c: { land: 0, boat: 0, floe: 0, mark: 0, pen: 0 } };
     let missing = [], byteEq = true;
     for (const s of sets) {
-        const B = load('n1' + s), C = load(PFX + s);
-        if (!B || !C) { missing.push((B ? '' : 'n1' + s) + (C ? '' : ' ' + PFX + s)); continue; }
-        const fB = path.join(__dirname, `ocean_bench_n1${s}.json`), fC = path.join(__dirname, `ocean_bench_${PFX}${s}.json`);
+        const bp = BASEPFX === 'head' ? HEADBASE[venue] : BASEPFX;
+        const B = load(bp + s), C = load(PFX + s);
+        if (!B || !C) { missing.push((B ? '' : bp + s) + (C ? '' : ' ' + PFX + s)); continue; }
+        const fB = path.join(__dirname, `ocean_bench_${bp}${s}.json`), fC = path.join(__dirname, `ocean_bench_${PFX}${s}.json`);
         if (fs.readFileSync(fB, 'utf8') !== fs.readFileSync(fC, 'utf8')) byteEq = false;
         for (let r = 0; r < Math.min(B.length, C.length); r++) {
             const bi = B[r].info, ci = C[r].info;
