@@ -15157,3 +15157,19 @@ A v2 must move the TARGET (cut-in sector/lead aware of the fetch line's
 tangential sign), not the board scorer — with the recorded "+8.0s sector-hunt
 vs ruler-entry" baseline as the regression bar. Stopped per the gate; treeF3
 discarded.
+
+## Z1-v2 RESEARCH — THE HOLDER ANATOMY (2026-08-25 ~01:30, _mr_why.js NEW tracked)
+Per zone pair-episode with a named mark-room holder, classified at the
+holder's max avoidance-owned deviation (treeN1 and the landed HEAD agree):
+- BAY: conceded-the-inside episodes are THIRD-BOAT 57% (land 0-2%) — the
+  holder yields to a boat that is NOT the obligated rival. A pairwise hold
+  cannot reach it; that is why Z1 was flat on bay while lake (+38 pts)
+  converted — lake's zone pairs are pair-dominated.
+- REDROCK: conceded episodes are LAND-NEAR 43-60% — rocks, not rivals, take
+  the entitled line. Also un-reachable by a pairwise rights hold.
+⇒ Z1-v2 requires MULTI-BOAT mark-room: RRS 18 obliges EVERY outside boat to
+give the holder room, and the rules engine's multi-boat overlap case ("boat
+between them overlaps both") is on the rules-inventory ABSENT list. The
+right build order is: encode multi-boat overlap/mark-room in rules.js
+(correctness doctrine applies), THEN extend the hold across all obligated
+boats. OWNER-VISIBLE design item; parked with treeZ1 + _mrwhy_* JSONs.
