@@ -15207,3 +15207,74 @@ promotion retire those anchors/refs); scenario-lab has no green baseline
 session is already queued); close every session with _n1_close_table.js on
 final HEAD; commits LOCAL pending his push; graveyard += tight-orbit x3,
 LOS chord guard, F3 board tax.
+
+## ⏭ CARRY-FORWARD PROMPT — THE SWAMP STALL-MACHINE PUSH (verbatim, 2026-08-25 morning; owner-agreed)
+
+AI PUSH: THE SWAMP STALL-MACHINE PUSH. Autonomous until ~17:30 PT (owner
+back 18:00). HEAD `a3655ae` (R1a exit-handoff landed last night: rr 1.413,
+lk 1.124; commits LOCAL, unpushed). Boot: read memory
+regatta-swamp-push-plan (the pre-registration — owner rulings 4/4 recorded),
+regatta-roundcraft-session, regatta-standing-rules (ALL traps), 
+regatta-closed-families (check before ANY candidate), regatta-next-pushes-brief
+(brief 3 = the measured swamp mechanism), regatta-gatorgrass,
+regatta-stuck-regime. Check `date` (rule 10 — the clock was misread once
+last night); freeze --check from repo root; anchors = r1* on rounding
+venues + n1arc*/n1sw*/n1st (close table cand/base in _n1_close_table.js).
+
+OWNER RULINGS (this morning, do not re-ask): primary = SWAMP; second thread
+= river island-8 notch (no-go-aware walk + re-entry crumb, treeWNOGO
+evidence); rules-correctness work AUTHORIZED autonomously if the primary
+stalls (multi-boat overlap/mark-room in rules.js, test_markroom.js-style
+precondition-asserted tests, benches NAME costs per the accuracy doctrine,
+umpire-visible changes flagged for review); R1a's river column ACCEPTED
+(no scope-out); landing bar = pre-registered gates + full-width benches,
+universal wins land as local commits, named losers land only with the cost
+named at equal prominence + review requested.
+
+THE MEASURED MECHANISM (2026-08-21 brief, re-validate on current HEAD
+first — it predates the refactor and R1a): swamp 1.414 (DNF 4.6%, med 331 /
+mean 359) is the STALL MACHINE — the clean line THREADS weed corridors; 48%
+of stalls are within 150u of the planned route (p25 47u); in mul-0.1 weed
+4kt of air cannot restart a parked boat. Ruled OUT by measurement: bank
+hits (79% bothClear), dead air, dead angle (8%), point-level router pricing
+(route samples mul 1.0 at all 205 points). ⚠️ shoalFieldAt returns a
+MULTIPLIER (1.0 = clean — a probe read this inverted once). Swampgrass is
+a SOLID collider, duckweed is free passage; light-air venue (0.9-4.8kt).
+Probes on disk: _stall_field.js, _wline_sw.log siblings, plus last night's
+_roundcraft.js/_rights_use.js/_pair_vs_n1.js/_bench_suite.sh idioms
+(lazy per-frame controller wrap; position-derived metrics both sides).
+
+PLAN (measure → analyze → hypothesize → experiment → evaluate → iterate):
+P0 hygiene + re-validate the brief numbers on current doc/HEAD. P1 stall
+anatomy: WHICH LAYER displaces the boat into weed (avoidance/wiggle/leeway/
+tack drift — episodes not frames, rule 2), corridor width along the route
+(mul field within scatter radius of route samples), restart anatomy
+(time-to-restart vs local mul + wind), DNF/tail chaining; river notch
+sizing in parallel. P2 pre-register gates in scratchpad BEFORE building.
+P3 candidates: S1 execution-scatter-aware weed pricing (model-accuracy
+frame: the router prices the point, the hull samples the neighborhood);
+S2 corridor route-following tightening (scope on a MEASURED grid property,
+the noSubsample/venue-class shape — never venue names); S3 weed-stall
+escape (FLOWING actions only, rule 14 — station-keeping is 0-for-8);
+R-notch for river. P4 fleet: swamp 3x8 vs n1sw9400/9500/9600 (bench-vs-
+bench same sequence is safe, rules 30/34); routing changes judged at FULL
+RACES only (rule 16 — scenes can only kill early); constrained-water
+nonlocal guard = lake 2x20 + arctic one-set byte-check on ANY shared-code
+touch (rule 11); recompute one pooled number by hand before any verdict
+(rule 21b); wrong-order-of-magnitude pricing is structural, everything
+else which-actions (rule 1).
+
+GUARDRAILS THAT BIT RECENTLY: cwd resets after cd — run probes from
+eval/rl and `cmp` with correct paths (a wrong-cwd cmp read "DIFFERS" on
+identical files last night); zero-at-every-percentile = probe bug (a lazy
+controller wrap read all-zero deviations); ⛔ do NOT reopen: tight-orbit
+x3, LOS chord guard, F3 entry-board tax, layline x4, commitment 0-for-7,
+station-keeping 0-for-8, clearance-bar lowering (river), RL on f0e290e.
+
+CLOSE (mandatory, ~17:30): _n1_close_table.js on final HEAD with fresh
+cand labels (owner spec: human | pre | post med/mean/best | ratio | DNF% |
+colMed | penMed); goldens re-recorded (npm run trace:update, READ THE
+COUNT = 30) if anything landed; npm test same-7 check; session entry +
+carry-forward appended to ai-campaign.md; memories updated (session file +
+MEMORY.md pointer + graveyard); all commits LOCAL. Every mid-run status
+report uses the same standard table.
