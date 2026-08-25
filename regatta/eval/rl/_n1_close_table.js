@@ -17,22 +17,24 @@ const fs = require('fs'); const path = require('path');
 const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8,
     ocean: 214.2, river: 187.4, glowtide: 199.1, redrock: 215.2,
     seatrials: 185.7, swamp: 234.1 };
-// 2026-08-25 (the ROUNDING-CRAFT push): cand = r1* — the R1a exit-handoff
-// landing benched at full n1 widths on treeR1 == the landed HEAD. Venues
-// where the edit is structurally inert carry their byte-identity proof:
-// arctic (all 4 sets cmp-identical — the _hasFloes gate), swamp + seatrials
-// (no round legs; sw9400/st cmp-identical) keep the n1 labels.
+// 2026-08-25 (the SWAMP STALL-MACHINE push): cand = the composed final HEAD
+// (S3a weed-aware wiggle side 9e267b3 + multi-boat overlap 736e105).
+// f1sw/f1riv/f1lag are fresh composed benches on treeF1 == final HEAD (S3a
+// acts only there); every other venue carries mr* (treeMR), valid on final
+// HEAD because S3a is byte-inert off swamp/river/lagoon (cmp proofs: lake
+// 2x20 x2 + bay 2x20 x2 vs r1 anchors, 3-seed cmp on the other five).
+// PRE column: the r1*/n1* anchors (the post-R1a standing baseline).
 const VENUES = {
-    redrock: { base: ['n1rr9400','n1rr9500','n1rr9600','n1rr9700','n1rr9800','n1rr9900'], cand: ['r1rr9400','r1rr9500','r1rr9600','r1rr9700','r1rr9800','r1rr9900'] },
-    arctic:  { base: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'], cand: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'] },
-    river:   { base: ['n1riv9400','n1riv9408','n1riv9500'], cand: ['r1riv9400','r1riv9408','r1riv9500'] },
-    swamp:   { base: ['n1sw9400','n1sw9500','n1sw9600'], cand: ['n1sw9400','n1sw9500','n1sw9600'] },
-    glowtide:{ base: ['n1glow'], cand: ['r1glow'] },
-    lagoon:  { base: ['n1lag'], cand: ['r1lag'] },
-    bay:     { base: ['n1bay9400','n1bay9600'], cand: ['r1bay9400','r1bay9600'] },
-    lake:    { base: ['n1lk6100','n1lk6200'], cand: ['r1lk6100','r1lk6200'] },
-    ocean:   { base: ['n1oc'], cand: ['r1oc'] },
-    seatrials:{ base: ['n1st'], cand: ['n1st'] },
+    redrock: { base: ['r1rr9400','r1rr9500','r1rr9600','r1rr9700','r1rr9800','r1rr9900'], cand: ['mrrr9400','mrrr9500','mrrr9600','mrrr9700','mrrr9800','mrrr9900'] },
+    arctic:  { base: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'], cand: ['mrarc9100','mrarc9200','mrarc9400','mrarc9600'] },
+    river:   { base: ['r1riv9400','r1riv9408','r1riv9500'], cand: ['f1riv9400','f1riv9408','f1riv9500'] },
+    swamp:   { base: ['n1sw9400','n1sw9500','n1sw9600'], cand: ['f1sw9400','f1sw9500','f1sw9600'] },
+    glowtide:{ base: ['r1glow'], cand: ['mrglow'] },
+    lagoon:  { base: ['r1lag'], cand: ['f1lag'] },
+    bay:     { base: ['r1bay9400','r1bay9600'], cand: ['mrbay9400','mrbay9600'] },
+    lake:    { base: ['r1lk6100','r1lk6200'], cand: ['mrlk6100','mrlk6200'] },
+    ocean:   { base: ['r1oc'], cand: ['mroc'] },
+    seatrials:{ base: ['n1st'], cand: ['mrst'] },
 };
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;

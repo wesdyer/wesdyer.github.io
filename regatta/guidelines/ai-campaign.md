@@ -15278,3 +15278,140 @@ COUNT = 30) if anything landed; npm test same-7 check; session entry +
 carry-forward appended to ai-campaign.md; memories updated (session file +
 MEMORY.md pointer + graveyard); all commits LOCAL. Every mid-run status
 report uses the same standard table.
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE SWAMP STALL-MACHINE PUSH (2026-08-25 day, autonomous ~08:45-14:30)
+# Pre-registration: memory regatta-swamp-push-plan (owner rulings 4/4).
+# HEAD in 5b79dfc (R1a) -> HEAD out 736e105. Both landings LOCAL, unpushed.
+# ═══════════════════════════════════════════════════════════════════════
+
+## P0/P1 — THE MECHANISM, THREE LEVELS DOWN (probes tracked)
+Brief re-validated on HEAD (_stall_field): 301 stalls/4 seeds, mul p50 0.10,
+88% in weed, wind flat vs fleet, dead-angle 12%, ALL leg 1.
+· THE LANE FINDING (_sw_him/_sw_lane): his fast laps (194-220s) sail a lane
+  600-1300u off the planned line at 0.3-5.6% weed time; his slow laps hug
+  the plan (55-111u) and pay 20-34%. The router's OWN arithmetic prices his
+  lane 185-202s against its chosen alley's 223.8s — and NO weed-free path
+  exists on the graph AT ALL (block mul<0.8 cells => no start->goal path):
+  his lane crosses grid-REFUSED cells (prop-clearance fences; 1.7-9.1% of
+  his leg-1 samples, soft=0 tight=0 — the tight tier is deliberately wiped
+  on swamp by the landed 8% knee: med +42s / land +500% when admitted).
+  Scatter-aware pricing at R=100 AND R=200 moves the route <=150u at ~25%
+  weed: no cleaner alley exists in-graph. ⚠️ The 08-21 "route samples mul
+  1.0 at all 205 points" did NOT reproduce: the planned line is ~30% weed
+  (moderate, transit-priced, correctly) threading feathered mul-0.1 pockets.
+  => SWAMP'S HEADROOM BEYOND EXECUTION IS ADMISSION-BOUND — OWNER DESIGN
+  ITEM (the 2026-08-10 sub4 note pre-scoped the reopen: the disc model
+  over-inflates SMALL obstacles — a 12u hull passes a 7u trunk at ~13u, not
+  44u; judged on river+redrock) against the tier knee's measured disaster.
+· IN-ALLEY ANATOMY (_sw_anat, NEW): weed entries happen ON the plan (gridD
+  p50 50u; 70% of entries have the plan's nearest point itself in weed at
+  pathMul p50 0.74) and sink to minMul 0.10 — 72% end >=0.2 worse than
+  their plan. Beat owners nav 54% / avoid 46%; wiggle owns 73% of STALL
+  time (downstream). Fleet weedT p50 135s of 316s raceT. Probe trap (rule
+  4): a "2s clean before entry" precondition NEVER fires across FEATHERED
+  weed edges — first run read 0 entries beside 74 stalls.
+
+## ⛔ KILLED AT PRE-REGISTERED MECHANISM GATES (never fleet-benched)
+- SW1 scoreTack weed factor: entries -8%, stalls -5%. COVERAGE-DEAD —
+  fetchable targets return from getStrategicHeading before scoreTack runs
+  (F3's fetch-line lesson, swamp edition). SW1B pair-normalized built, not
+  gated: normalization cannot buy coverage.
+- SW2 avoidance-arc hard-weed term (arcPts, <0.5-scoped, shaping-sized):
+  WORSE — weedT +16%, stallT +50%, wigT +74%, raceT +14%; avoid-owned
+  stalls 160->220. The term FEEDS the avoidance detour spiral.
+- Graveyard += swamp heading-level weed honesty x2, scatter route pricing
+  x2, corridor-following (measured nonexistent: boats are already on-plan).
+
+## ✅ LANDED 1 — S3a WEED-AWARE WIGGLE SIDE (9e267b3, js/ai/bot.js)
+A weed-parked boat wiggled a beam reach in a SEMI-RANDOM direction and
+restarted at mul p50 0.10 — a gust lottery. S3a samples the field at both
+beam-reach points (80/150u each side; shoalMul<0.7 + leg>=1 + draggy-awash
+venues only; ties fall through; no RNG drawn or skipped elsewhere).
+Mechanism gate: stalls 299->171 (-43%), RESTART mul p50 0.10->0.65 (the
+mechanism, visible), weedT -21%, raceT p50 316->292s, fins 36/36.
+Fleet: swamp 3x8 POOLED n=206 med 0.0 / mean -33.3 (p10 -156, TAIL-shaped
+as a stall-lottery fix must be), fins 206->207, boat -37%, pen -19%; river
+mean -2.9 (land -4%); lagoon flat. BYTE-IDENTICAL lake 2x20 x2 + bay 2x20
+x2 (cmp vs r1 anchors) + 3-seed cmp on the other five (rule 22).
+⚠️ NAMED: the pre-registered fleet subgate asked paired med <= -8; the S3a
+pooled med was 0.0 (per-set 0/-22/0). Landed as a universal win on
+mean/fins/dirt with the pre-registration miss stated, not hidden.
+
+## ✅ LANDED 2 — MULTI-BOAT OVERLAP (736e105, js/rules.js) [rules lane]
+RRS Definition Overlap, second sentence ("they also overlap when a boat
+between them overlaps both") — the inventory ABSENT item blocking Z1-v2
+(bay mark-room concessions are 57% third-boat, _mr_why.js). Encoded as
+isOverlappedThrough (literal one-boat clause; strict-interior between test;
+finished boats never intervene), applied at BOTH consumers (interactions
+ledger -> 18.2 snapshot + r17 context; evaluate() Section A 11-vs-12).
+⚠️ UMPIRE-VISIBLE IN RAFTS — owner review requested; accuracy doctrine
+cited. Tests: _test_multioverlap.js 13/13 (pre-landing HEAD failed exactly
+the unencoded checks); test_scenarios runner extended to a 3rd boat (the 17
+existing scenarios unchanged-green); def-overlap-through-middle raft
+scenario added (18 ALL OK; renders on rules.html); markroom / rule11 /
+exoneration green on the landed tree. Z1-v2 (the HOLD extension across all
+obligated boats) NOT built — the owner-visible design step, now unblocked.
+Fleet (treeMR full suite): WINS bay mark -43% boat -18% (the raft case),
+glowtide med 259->248 boat -17% pen -14%, arctic boat -15% (med 0.0),
+seatrials pen -35%. NAMED COSTS: redrock paired med -1.0 BUT finisher med
+304->310 (boat +13%, pen +8%); lagoon boat 0.61->1.11, mark 0.10->0.22
+(small absolutes); lake med +1.0; river land +11% (fins 211->210, notch
+lottery); swamp-alone mean +6.3 with every dirt column DOWN.
+
+## CLOSE TABLE — final HEAD 736e105 (pre = r1*/n1* anchors; post = f1sw*/
+## f1riv*/f1lag composed + mr* where S3a is byte-inert; human = pooled meds)
+venue      | human  | pre med/mean/best   | post med/mean/best  | ratio | DNF% | colMed | penMed
+arctic     |  209.4 | 314/318.9/218       | 313/318.3/218       | 1.495 |  0.0 |  17 | 0
+redrock    |  215.2 | 304/307.1/216       | 310/307.6/219       | 1.441 |  0.0 |  16 | 1
+swamp      |  234.1 | 331/358.7/170       | 318/326.4/170       | 1.358 |  4.2 |   8 | 0
+river      |  187.4 | 241/256.9/169       | 243/255.5/169       | 1.297 |  2.8 |  37 | 1
+glowtide   |  199.1 | 259/258.3/190       | 248/253.0/186       | 1.246 |  0.0 |  17 | 1
+lagoon     |  174.7 | 210/208.8/167       | 212/212.4/167       | 1.214 |  0.0 |   0 | 0
+lake       |  194.8 | 219/220.1/167       | 221/222.3/168       | 1.134 |  0.0 |   0 | 0
+bay        |  239.0 | 270/269.9/235       | 270/268.5/233       | 1.130 |  0.0 |   0 | 0
+ocean      |  214.2 | 224/226.1/194       | 225/226.0/194       | 1.050 |  0.0 |   0 | 0
+seatrials  |  185.7 | 190/194.4/172       | 190/192.8/172       | 1.023 |  0.0 |   0 | 0
+SWAMP 1.414 -> 1.358 (med -13, mean -32, DNF 4.6->4.2%, boat -30%);
+GLOWTIDE 1.301 -> 1.246. Named at equal prominence: REDROCK finisher med
+304->310 (1.413->1.441 on the table) while the like-for-like paired med is
+-1.0 over the pooled 6-set (rule 20's statistic) — the +6 is reshuffle-and-
+cost mixed, owner review requested with the rules commit; RIVER land column
++11% (the MR grind-count class, fins inside the notch lottery); LAGOON boat
+x1.8 / mark x2 at small absolutes; LAKE +2. npm test: same 7 red suites
+(apparent/dmc/editor/results/sailable/shoal/traffic; test_controls
+canvas-taint crash is environmental). Goldens re-recorded on final HEAD and
+VERIFIED: PASS — 30 traces, 0 behaviour changes. Anchors going forward:
+f1sw*/f1riv*/f1lag + mr* elsewhere (S3a byte-inert there by cmp).
+
+## ⏭ CARRY-FORWARD PROMPT — AFTER THE SWAMP STALL-MACHINE PUSH (2026-08-25 ~14:30)
+
+AI PUSH: [OWNER PICKS]. Context: TWO LANDINGS local on 736e105 — S3a
+weed-aware wiggle side (9e267b3: swamp 1.414->1.358, tail-shaped, byte-inert
+x9) and multi-boat overlap in rules.js (736e105: umpire-visible in rafts,
+bay mark -43%, redrock/lagoon/lake costs named — REVIEW REQUESTED). Goldens
+re-recorded + verified (30). Anchors = f1sw*/f1riv*/f1lag + mr* elsewhere.
+
+(A) SWAMP ADMISSION (the venue's remaining lever, HIS DESIGN CALL): no
+weed-free path exists on the router's graph; his 97%-clean lane is fenced
+off by prop-clearance discs (a 12u hull passes a 7u trunk at ~13u, the bar
+charges 44u); the tight tier is wiped on swamp by the landed 8% knee (med
++42s / land +500% when the whole tier was admitted). A reopen must be
+small-obstacle-scoped model accuracy, judged on river+redrock (the
+2026-08-10 sub4 pre-scoping). Heading-level (x2), route-level (x2) and
+following-level candidates are all measurement-dead — see the graveyard.
+(B) Z1-v2 MULTI-BOAT MARK-ROOM HOLD — now unblocked by the encoding: extend
+the _rowHold entitlement across ALL obligated boats (bay third-boat 57%,
+rr land 43-60% concessions). Owner-visible design; treeZ1 + _mrwhy_* parked.
+(C) GLOW/RR RING RESIDUAL (from R1a): glow leg2 +8.2/leg3 +9.2 s/lap,
+rr leg2 armed +10.7 — pocket/execution class, rock-coupled.
+(D) RIVER ISLAND-8 NOTCH: exactly 5/216 DNFs, all land~1350-1443, all reach
+leg 3 fast then grind to cutoff; escape x8 dead; leads = entry further
+hardened or router line off the face.
+Standing: wrong-way entries (fetch-line target, F3 v2 spec); the arctic
+execution-substrate owner decision; rules program continues (17, 16.2,
+windward-role, 18.1(a)(3), 18.3, 20, 23, rule-19 centroid axis).
+GUARDRAILS: cwd resets after cd — use ABSOLUTE paths for every probe/ls/cmp
+(this session lost 40 min to wrong-cwd "still running" reads); _sw_anat.js
+output files are tree-stamped now; feathered weed edges break clean-run
+preconditions (rule 4); the two poolers' sign/arg-order traps stand.
