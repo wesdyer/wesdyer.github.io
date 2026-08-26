@@ -15732,3 +15732,64 @@ admission-bound.
 The rock-wall wiggle landing is ACCEPTED as-is — swamp trade (med +8s /
 boat +35% for land −34%) and the lake/lagoon one-race lotteries included.
 No revert, no scoping ruling needed. 34eea06 ships; review closed.
+
+# ═══════════════════════════════════════════════════════════════════════
+# ⛔⛔ THE TEN-BOT ERA CUT — 2026-08-26 (owner-directed in session: "I think
+# it's probably worth it to move to 10 boat bot races ... Let's do it.")
+# Infra push, NO AI-behavior change. Pre-registration + verdicts:
+# eval/rl/_tb_gates.md. ⛔ NEVER COMPARE tb* TO ANY EARLIER ANCHOR — every
+# pre-tb anchor (rw*, mr*, f1*, n1*, r1*, ...) is 9-bot era.
+# ═══════════════════════════════════════════════════════════════════════
+
+## WHY (the argument the owner accepted)
+His reference laps are 10-hull races (him + 9 bots); benches parked the
+player at 1e6 and raced 9 hulls, so every bot was measured against 8
+rivals — one hull LESS traffic than the human column, on a frontier that
+is traffic-shaped everywhere (arctic rule-5 grinding, rr avoidance-led
+re-entries, the slow-tail contact problem). The cut prices the missing
+hull in and makes the ≤1.1x goal honest.
+
+## THE MECHANISM (ocean_bench.js only; shipping untouched)
+Construction is shipping-identical through startRace (player + 9-draw,
+same RNG stream), then the player boat is CONVERTED to a full bot:
+settings pin `character` = AI_CONFIG[0].name (the shipping NEVER-RACE-
+YOURSELF 99-wide draw — without it the 9-draw can DUPLICATE the 10th
+boat's name and poison every name-keyed stat); applyBoatIdentity(pl, pc,
+false) re-applies stats + AI_STAT_BONUS ("the player takes none of them"
+— a bare isPlayer flip fields a weak hull); isPlayer=false (updateAI
+creates the controller lazily; boat.ai already exists with shipping-
+identical RNG draws); deterministic start fields (startLinePct = mean of
+the nine, setupDist 300, no RNG drawn). Default ON;
+OCEAN_BENCH_PARKED=1 restores the 9-bot path for reproducing pre-cut
+numbers ONLY (rule-30's opt-out pattern).
+
+## GATES — ALL PASS (numbers in _tb_gates.md)
+G-COUNT 10 distinct boats, 10 finishers; G-DET river+redrock two-process
+byte-identical; G-PARK parked path reproduces rwrr9400 byte-exactly ON
+treeRW (⚠ first attempt used stale treeCTL = pre-landing HEAD and
+differed — G-PARK must run on the anchor's tree; treeCTL retired);
+G-SHIP zero js/ diffs + goldens verify PASS 30/30 run fresh + npm test
+same-7 standing.
+
+## THE DENSITY TAX (the one sanctioned cross-era read: same code, 9 vs 10)
+Med deltas rw->tb: arctic +6 (1.495->1.523, +1 DNF), ocean +5
+(1.050->1.074), glow +4 (1.226->1.246), redrock +3 (1.417->1.431),
+seatrials +2 (1.023->1.034), bay +2 (1.126->1.134), swamp +1 (1.393->
+1.397), lake 0 (1.134), river -3 / lagoon -4 (re-rolled lotteries; river
+MEAN +5.1, land mean 78->103 — the notch churns harder at 10 hulls).
+The tenth hull lives in the BOAT column everywhere: bay 0.39->0.64,
+ocean 0.49->0.68, seatrials 0.19->0.49, arctic 2.21->3.32, rr 3.73->4.49.
+⇒ ~1/3 to 1/2 of the "easy venues' " residual gap vs him is traffic tax,
+now priced. GOAL STILL 2/10 (ocean 1.074, seatrials 1.034).
+
+## NEW ANCHORS = tb* (full widths, treeRW == HEAD b/34eea06 code).
+## Deferred, tracked here: _rb_census.js and the replay probes still park
+## the player — RETROFIT BEFORE first use on a tb* bench. Goldens stay
+## shipping-construction (they test the game, not the bench).
+
+## ⏭ CARRY-FORWARD (2026-08-26) — NEXT PUSH = OWNER'S CALL, TEN-BOT ERA
+All future benches are 10-bot by default; anchors tb*; the owner-decision
+queue stands (swamp small-obstacle admission; arctic execution substrate —
+now 1.523 and carrying the largest density tax, +6 med, floe+boat dirt
+both up; redrock arrival-side grounding; river entry-hardening). Any new
+candidate tree needs mktree.sh off CURRENT HEAD and benches vs tb* only.

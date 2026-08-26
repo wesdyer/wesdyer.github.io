@@ -17,22 +17,26 @@ const fs = require('fs'); const path = require('path');
 const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8,
     ocean: 214.2, river: 187.4, glowtide: 199.1, redrock: 215.2,
     seatrials: 185.7, swamp: 234.1 };
-// 2026-08-25 evening (the ROCK-WALL WIGGLE push): cand = rw* fresh benches
-// on treeRW == final HEAD (land-aware wiggle side; gates in _rrw_gates.md).
-// Arctic keeps mrarc* — proven valid on final HEAD by cmp: rwarc9100 ==
-// ctlarc9100 (fresh HEAD control) == mrarc9100. PRE column: the previous
-// session's mr*/f1* anchors (the post-swamp-push standing baseline).
+// ⛔⛔ 2026-08-26 THE TEN-BOT ERA CUT (_tb_gates.md, owner-directed): tb* =
+// 10-bot benches (the player boat converted to a full bot after startRace —
+// his reference laps were always 10-hull races; benching bots against 8
+// rivals under-dosed the traffic tax). NEVER compare tb* to ANY earlier
+// anchor (rw*, mr*, f1*, and older are all 9-bot). The PRE column below is
+// the 9-bot rw* era shown ONLY to display the density tax at the cut; from
+// the next session on, base and cand are both tb*-era labels. The HUMAN
+// column is unaffected — that parity is the point of the cut. (Arctic PRE =
+// mrarc*, == rw-era HEAD by cmp proof.)
 const VENUES = {
-    redrock: { base: ['mrrr9400','mrrr9500','mrrr9600','mrrr9700','mrrr9800','mrrr9900'], cand: ['rwrr9400','rwrr9500','rwrr9600','rwrr9700','rwrr9800','rwrr9900'] },
-    arctic:  { base: ['mrarc9100','mrarc9200','mrarc9400','mrarc9600'], cand: ['mrarc9100','mrarc9200','mrarc9400','mrarc9600'] },
-    river:   { base: ['f1riv9400','f1riv9408','f1riv9500'], cand: ['rwriv9400','rwriv9408','rwriv9500'] },
-    swamp:   { base: ['f1sw9400','f1sw9500','f1sw9600'], cand: ['rwsw9400','rwsw9500','rwsw9600'] },
-    glowtide:{ base: ['mrglow'], cand: ['rwglow'] },
-    lagoon:  { base: ['f1lag'], cand: ['rwlag'] },
-    bay:     { base: ['mrbay9400','mrbay9600'], cand: ['rwbay9400','rwbay9600'] },
-    lake:    { base: ['mrlk6100','mrlk6200'], cand: ['rwlk6100','rwlk6200'] },
-    ocean:   { base: ['mroc'], cand: ['rwoc'] },
-    seatrials:{ base: ['mrst'], cand: ['rwst'] },
+    redrock: { base: ['rwrr9400','rwrr9500','rwrr9600','rwrr9700','rwrr9800','rwrr9900'], cand: ['tbrr9400','tbrr9500','tbrr9600','tbrr9700','tbrr9800','tbrr9900'] },
+    arctic:  { base: ['mrarc9100','mrarc9200','mrarc9400','mrarc9600'], cand: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'] },
+    river:   { base: ['rwriv9400','rwriv9408','rwriv9500'], cand: ['tbriv9400','tbriv9408','tbriv9500'] },
+    swamp:   { base: ['rwsw9400','rwsw9500','rwsw9600'], cand: ['tbsw9400','tbsw9500','tbsw9600'] },
+    glowtide:{ base: ['rwglow'], cand: ['tbglow'] },
+    lagoon:  { base: ['rwlag'], cand: ['tblag'] },
+    bay:     { base: ['rwbay9400','rwbay9600'], cand: ['tbbay9400','tbbay9600'] },
+    lake:    { base: ['rwlk6100','rwlk6200'], cand: ['tblk6100','tblk6200'] },
+    ocean:   { base: ['rwoc'], cand: ['tboc'] },
+    seatrials:{ base: ['rwst'], cand: ['tbst'] },
 };
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;

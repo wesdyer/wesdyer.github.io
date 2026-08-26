@@ -53,6 +53,17 @@ const VENUE = process.argv[6] || 'ocean';
     // OCEAN_BENCH_EARLY_VENUE=1 restores the old page-loads-on-target-venue path,
     // for reproducing a pre-2026-08-14 number ONLY. Do not bench a candidate on it.
     const LATE_VENUE = process.env.OCEAN_BENCH_EARLY_VENUE !== '1';
+    // ⭐ THE TEN-BOT ERA (2026-08-25 night, owner-directed — see _tb_gates.md).
+    // The player boat is CONVERTED to a full bot after startRace instead of
+    // parked at 1e6: his reference laps are 10-hull races, and benching bots
+    // against 8 rivals under-dosed the traffic tax everywhere it matters.
+    // Settings pin `character` so the shipping "NEVER RACE YOURSELF" exclusion
+    // applies (a 99-wide draw) — without it the 9-draw can duplicate the 10th
+    // boat's name and poison every name-keyed stat downstream.
+    // ⛔ NEVER compare a 10-bot number to a 9-bot-era anchor (pre-tb*).
+    // OCEAN_BENCH_PARKED=1 restores the parked-player path for reproducing a
+    // pre-cut number ONLY. Do not bench a candidate on it.
+    const TEN_BOT = process.env.OCEAN_BENCH_PARKED !== '1';
     if (!LATE_VENUE) {
         await page.addInitScript((v) => {
             localStorage.setItem('regatta_settings', JSON.stringify({ venue: v }));
@@ -60,7 +71,11 @@ const VENUE = process.argv[6] || 'ocean';
     }
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
-    if (LATE_VENUE) await page.evaluate((v) => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), VENUE);
+    if (LATE_VENUE) await page.evaluate(({ v, tenBot }) => {
+        const s = { venue: v };
+        if (tenBot) s.character = AI_CONFIG[0].name;
+        localStorage.setItem('regatta_settings', JSON.stringify(s));
+    }, { v: VENUE, tenBot: TEN_BOT });
     await page.evaluate(() => {
         const inner = window.onRaceEvent;
         window.__cc = {}; window.__ccT = {};
@@ -86,13 +101,28 @@ const VENUE = process.argv[6] || 'ocean';
     const out = [];
     for (let i = 0; i < TRIALS; i++) {
         const seed = SEED0 + i;
-        const r = await page.evaluate(async (seed) => {
+        const r = await page.evaluate(async ({ seed, tenBot }) => {
             window.evalHarness.seed = seed;
             window.resetGame(); window.startRace();
             window.__cc = {}; window.__ccT = {};
             state.course.cutoff = 900;
+            const pl = state.boats.find(b => b.isPlayer);
+            if (tenBot) {
+                // TEN-BOT conversion (header comment + _tb_gates.md): construction
+                // is shipping-identical through startRace, then the player boat
+                // becomes a full bot. Stats + AI_STAT_BONUS must be re-applied —
+                // applyBoatIdentity gave the player none ("you get the boat, not
+                // the sailor"); traits/archetype were already set for every boat
+                // in the constructor. Start fields the 9-draw got and the player
+                // did not are set deterministically; no RNG drawn here.
+                applyBoatIdentity(pl, playerCharacter(), false);
+                pl.isPlayer = false; pl.manualTrim = false;
+                const nine = state.boats.filter(b => b !== pl);
+                const meanPct = nine.reduce((a, b) => a + b.ai.startLinePct, 0) / nine.length;
+                pl.ai.startLinePct = Math.max(0.05, Math.min(0.90, meanPct));
+                pl.ai.setupDist = 300;
+            } else { pl.x = 1e6; pl.y = 1e6; }
             const bots = state.boats.filter(b => !b.isPlayer);
-            const pl = state.boats.find(b => b.isPlayer); pl.x = 1e6; pl.y = 1e6;
             const norm = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
             const nLegs = state.course.dmc.legs.length;
             const info = bots.map(b => ({ name: b.name, legT: {}, fin: null, pen: 0, ocs: 0,
@@ -140,7 +170,7 @@ const VENUE = process.argv[6] || 'ocean';
                 info[k].col = window.__cc[b.name] || {};
             }
             return { nLegs, info };
-        }, seed);
+        }, { seed, tenBot: TEN_BOT });
         out.push({ seed, ...r });
         const fins = r.info.filter(f => f.fin != null).map(f => f.fin).sort((a, b) => a - b);
         console.log(`seed ${seed}: finishers ${fins.length} finT ${fins.join(',')}`);
