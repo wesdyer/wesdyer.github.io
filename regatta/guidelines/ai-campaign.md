@@ -15641,3 +15641,89 @@ zero-at-every-percentile = bug; census `lst` cause labels are approximate
 at the rand8 boundary; treeMR == HEAD js EXCEPT S3a (byte-inert off
 swamp/riv/lag — fine for redrock census; any NEW tree comes from mktree.sh
 off current HEAD).
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE ROCK-WALL WIGGLE PUSH — 2026-08-25 night (autonomous, owner rulings
+# 2/2 pre-recorded). ✅ ONE LANDING (local): land-aware wiggle side.
+# Pre-registration: memory regatta-rrwiggle-push-plan + _rrw_gates.md
+# (gates written AFTER P1, BEFORE the edit). HEAD in b116222 (code 736e105)
+# -> HEAD out: 736e105 + the bot.js branch. LOCAL, unpushed. REVIEW
+# REQUESTED on the named losers below.
+# ═══════════════════════════════════════════════════════════════════════
+
+## P1 — CENSUS EXTENSION (kill bar PASSED at 13x the original n)
+_rb_census.js treeMR on ALL SIX rr anchor benches (48 races, sequence
+replay, 48/48 fins-validated; races 0-3 of 9400 byte-identical to the
+prior census 4/4). Pooled (_rb_kill.js, _rbw_kill_pooled.log): population
+466, asymmetric 224 (48%); **P(re-beach<=10s | blocked) 96% vs open 45% =
+51-pt separation** (bar >=25 at n>=50), consistent in every cause/contact
+split; chooser open 47% = land-blind coin-flip. Re-entry ownership av 72%/
+wig 20% (the pre-named reach caveat — dirt/tail effect expected, not med).
+Screens: lake 2-race firing population 0, bay 0.
+
+## ✅ LANDED — LAND-AWARE WIGGLE SIDE (js/ai/bot.js, the S3a shape)
+New branch after weed, before the >8s random: near-beached (botGrid _clear
+<=2 cells) on an authored-land no-floe venue (leg>=1), wiggle side = higher
+summed beam-point clearance (80/150u at wd±1.75, min(clr,4)/point),
+decisive only at asymmetry >=2 (the census threshold); ties fall through;
+no RNG drawn/skipped outside the firing population; measured-property gate,
+NO venue names (owner ruling). 46 lines incl. the census numbers in the
+comment.
+
+## GATE VERDICTS (full numbers in _rrw_gates.md)
+- **G-MECH PASS**: blocked choices 53%->4.5%; asym-pop re-beach 72%->44%
+  (full conversion to the open rate).
+- **G-RR PASS (the target)**: pooled 6-set paired med 0.0 mean -0.6;
+  **boat 4.48->3.73 (-17%)**, land 10.50->10.33, pen 0.85->0.81, fins
+  432/432 both. Hand-recomputed per rule 21b. Named: mark 0.45->0.54.
+- **G-RIV PASS, a real win**: fins 210->213, med 243->240, **land -28%**
+  (23309->16798). Named: boat 6.66->10.84/boat-race (+63% — river
+  reshuffles under any RNG shift; goes in the ledger regardless).
+- **G-GLOW PASS**: land -9%, boat -2%, mean -2.7 (fires in 15/16 races).
+- **G-BAY PASS clean**; **G-OC/G-ST byte-identical**; **G-ARC byte-equal**
+  vs fresh HEAD control (rule 22; mrarc* anchors remain valid).
+- **⚠ G-SW FAIL (boat) — THE NAMED LOSER**: boat 922->1242 (+35%,
+  consistent 2/3 sets) against land 1410->930 (-34%); paired med 0 every
+  set, fins 207=207, pen flat; venue-table med 318->326 (+8s, tail-shaped)
+  = gives back ~1/3 of S3a's mean win. Mechanism: near-beach swamp boats
+  now wiggle toward open water = toward traffic.
+- **⚠ G-LK FAIL (boat, single-race lottery)**: 206->251 (+22%); 33/40
+  races byte-identical; the delta is ONE re-rolled race (8->44 vs base
+  per-race max 29). Unsizable at n=7 (rule 3); land/med/fins clean.
+- **⚠ G-LAG FAIL (land, single-race)**: 12->34 frames total, one race
+  (2->24); the +10% bar on a base of 12 frames allowed ±1.2 — structurally
+  unmeetable under reshuffle. Med +1, boat/pen flat. GATE-DESIGN LESSON:
+  relative dirt bars on near-zero bases need an absolute floor.
+DECISION per the registered bar: not universal -> **landed locally under
+the named-loser rule; owner review requested** on swamp (the real trade)
+and lake/lagoon (lotteries). Fallback close-and-hand-back NOT taken: P1
+passed and the wins are the push's pre-registered target.
+
+## CLOSE TABLE — final HEAD (pre = mr*/f1* anchors; post = rw* fresh;
+## human = pooled meds; _rbw_close_table.log)
+arctic 1.495 (byte-id) | redrock **1.441->1.417** (boat -17%) | swamp
+1.358->**1.393** (NAMED: med +8, boat +35%, land -34%) | river
+1.297->**1.281** (fins 213, land -28%) | glowtide 1.246->**1.226** |
+lagoon 1.214->1.219 (NAMED: one-race land) | lake 1.134 flat (boat +22%
+one-race NAMED) | bay 1.130->**1.126** | ocean 1.050 | seatrials 1.023
+(both byte-id). Goal (<=1.1x): still 2/10.
+
+## CLOSE-OUT PROOFS
+Goldens re-recorded + verify **PASS 30 traces, 0 behaviour changes**;
+npm test **7 of 34 not passing = the same-7 red**; freeze --check 10/10
+match at boot; anchors going forward = **rw* (+ mrarc* on arctic)**.
+Probes tracked: _rrw_gates.md (registration + verdicts), _rbw_* logs,
+_rb_census_treeRW_* JSONs. treeRW/treeCTL in eval/rl (untracked).
+
+## ⏭ CARRY-FORWARD (2026-08-25 night) — NEXT PUSH = OWNER'S CALL
+The queued push landed. On review, his options as measured tonight:
+(1) ACCEPT the swamp trade as-is; (2) REVERT (one commit, goldens
+re-record); (3) rule on a swamp-side refinement — the loser is confined to
+the firing population on _hasAwashDrag venues, but any scoping there is a
+venue-name gate in disguise, HIS call per the accuracy doctrine. Open
+owner-decision queue (unchanged): swamp small-obstacle ADMISSION (the
+2026-08-10 sub4 pre-scope), arctic NEW EXECUTION SUBSTRATE, redrock
+arrival-side grounding (parked), rr paired-med review from 08-25 morning.
+Standing map: arctic 1.495 execution-frontier, rr 1.417 re-beach loop now
+land-aware, river 1.281 entry-hardening/router-line leads, swamp
+admission-bound.

@@ -580,6 +580,35 @@ class BotController {
                 if (Math.abs(mPl - mMi) > 0.1) weedSideW = mPl > mMi ? 1 : -1;
             }
 
+            // Land-side precompute (see the land-aware branch below). Pure
+            // grid reads, no RNG; authored-land no-floe venues only.
+            let landSideW = 0;
+            if (state.course._gridFixed && state.course._gridFixed.length
+                && !(state.course._floeObjs && state.course._floeObjs.length)
+                && this.boat.raceState.leg >= 1) {
+                const gLW = state.course.botGrid;
+                if (gLW && !gLW._clear && window.SailCheck && window.SailCheck.clearanceField)
+                    gLW._clear = window.SailCheck.clearanceField(gLW);
+                if (gLW && gLW._clear) {
+                    const clrLW = (wx, wy) => {
+                        const c = gLW.cell(wx, wy);
+                        if (c[0] < 0 || c[1] < 0 || c[0] >= gLW.n || c[1] >= gLW.n) return 0;
+                        return gLW._clear[c[1] * gLW.n + c[0]];
+                    };
+                    if (clrLW(this.boat.x, this.boat.y) <= 2) {
+                        const wdL = getWindAt(this.boat.x, this.boat.y).direction;
+                        let sPl = 0, sMi = 0;
+                        for (const dL of [80, 150]) {
+                            sPl += Math.min(clrLW(this.boat.x + Math.sin(wdL + 1.75) * dL,
+                                                  this.boat.y - Math.cos(wdL + 1.75) * dL), 4);
+                            sMi += Math.min(clrLW(this.boat.x + Math.sin(wdL - 1.75) * dL,
+                                                  this.boat.y - Math.cos(wdL - 1.75) * dL), 4);
+                        }
+                        if (Math.abs(sPl - sMi) >= 2) landSideW = sPl > sMi ? 1 : -1;
+                    }
+                }
+            }
+
             // MID-ROUNDING: wiggle the way ROUND (see the escape's tie-break — a
             // wrong-way wiggle refunds hard-won sweep).
             const rsW = this.boat.raceState;
@@ -610,6 +639,23 @@ class BotController {
                 // everything that is not a weed park. No RNG draw is made or
                 // skipped on venues without draggy awash shapes.
                 this.wiggleSide = weedSideW;
+            } else if (landSideW !== 0) {
+                // LAND-AWARE WIGGLE SIDE (2026-08-25, the rock-wall wiggle
+                // push). A near-beached boat (clearance <= 2 cells) wiggles a
+                // beam reach toward or away from the rock face at coin-flip —
+                // measured over all six redrock anchor sets (48 races, 224
+                // asymmetric triggers): re-beach <= 10s is 96% wiggling the
+                // blocked side vs 45% the open side, consistent in every
+                // cause/contact split; the chooser picked open 47% of the
+                // time. Side = the higher summed clearance at the two actual
+                // beam-reach points (80/150u, wd±1.75, min(clr,4) per point);
+                // decisive only at the census's asymmetry threshold (>= 2),
+                // ties and clear-water triggers fall through unchanged, and
+                // no RNG is drawn or skipped outside this firing population.
+                // Fires only on authored-land no-floe venues (measured-
+                // property gate, no venue names): drifting-ice sides are a
+                // different physical line (standing rule 5).
+                this.wiggleSide = landSideW;
             } else if (this.lowSpeedTimer > 8.0) {
                  this.wiggleSide = (Math.random() > 0.5) ? 1 : -1;
             } else if (closestObs && minD < 100*100) {
