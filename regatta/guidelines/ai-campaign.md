@@ -15793,3 +15793,71 @@ queue stands (swamp small-obstacle admission; arctic execution substrate —
 now 1.523 and carrying the largest density tax, +6 med, floe+boat dirt
 both up; redrock arrival-side grounding; river entry-hardening). Any new
 candidate tree needs mktree.sh off CURRENT HEAD and benches vs tb* only.
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE OVERNIGHT ENTRY PUSH — 2026-08-26 01:30-08:50 (autonomous; owner
+# rulings 2/2: river entry primary, fallback = pivot to redrock arrivals).
+# ⛔ NOTHING SHIPPED — every candidate died on its own pre-registered bar.
+# THE NIGHT'S VALUE = THE MAP: river notch + redrock bowl anatomized to
+# bedrock on ten-bot code, and the probe fleet converted to the tb era.
+# Registrations: memory regatta-rventry-push-plan + _rra_gates.md.
+# ═══════════════════════════════════════════════════════════════════════
+
+## P0 ✅ PROBE RETROFIT (the tenbot-cut deferred item — KEPT)
+_rb_census.js + the new probes carry ocean_bench's ten-bot conversion
+(RB_PARKED=1 opt-out); validated by sequence replay vs tbriv9400 fins 3/3
++ every census tonight (river 24/24, redrock 32/32 races fins-matched).
+
+## RIVER ENTRY — CLOSED ON ITS OWN BARS (the primary; no build)
+_rv_entry/_rv_kill (24 tb races): first land contacts 227, **av-owned 83%**,
+clr med [2,1,1,1,1] over the pre-10s at ~7kt (wall-riding, not displacement
+— gfGap 10°), ALL on legs 3-4, two clusters. THE SUBSTRATE (_rv_route/
+_rv_ruler/_rv_sail): **leg-3's DMC ruler is a 2-pt chord THROUGH LAND
+(pathBetween: NO strict-nav path exists) and the finish leg has no ruler**;
+the tier-aware pathSailable line threads at **medClr 2 / min 0 — the notch
+is a ~100u one-lane channel with no wider water to buy** (PAD 8 already);
+bots always carry gridPath (100% of 14k frames), 15% >200u off it.
+Sub-candidates killed by registered bars: current-truth-gap (constant
+at-boat current vs resampled-along-path: **11.7u med over the full 4s
+projection — the model is honest**); one-lane follow (rival<300u 57% < 60;
+av entries split **57% traffic / 43% SOLO argmin-churn** — no single
+action covers the bar). ⇒ river notch = CORRIDOR-LEVEL DESIGN ITEM for the
+owner: no helm-level action reaches >=60% of entries; the routed line
+itself is the channel.
+
+## REDROCK ARRIVALS (the pivot) — CANDIDATE KILLED x2 AT G-MECH
+Census (32 tb races): **av owns 95% of 297 first groundings, all on the
+sw-mark bowl leg** (clusters = the bowl coordinates, confirmed at 10
+hulls); rival<300u 84% at rivKt med 4.8 — **a slow MELEE, not a lane**
+(same-dir 49%: the one-lane-follow rule FAILED, recorded); **off-path pd3
+med 192u, 79% >=60u** — displacement confirmed on current code (was
+63%/86u pre-split). ⚠ UNIT CATCH (rule 31/18 family): the defile meter's
+"parked (<1 kt)" comment tests raw speed >= 1.0 = **4.0 kt** — the code
+already counts sub-4kt rivals; the comment lies by 4x. Candidate = jam
+threshold 4->5.5kt (v1) then ->6.5kt (v2, the one registered iteration):
+**v1 firsts -2.7% (bar -20%), v2 firsts +1% — FAIL, closed.** The meter's
+binding constraint is NOT rival speed. Next lever per the data = the
+return-to-path/displacement side, but that is a candidate-fan scoring
+redesign (the return heading already exists in the fan) = NOT a one-night
+build; flagged for owner review.
+
+## SIDE-THREAD (measurement): ARCTIC TENTH-HULL TAX ANATOMY
+_tb_arctax.js (6 tb races): 41 boat-contact episodes — **51% AT the ice
+(<150u from a floe), 34% start scrum, 0% mark zones**, kt med 4.9. The
+density tax is lane-squeeze at floes; filed for the substrate decision.
+
+## OPS NOTE: a chained bench launcher with a `find -newermt` wait condition
+## stalled silently ~35 min (caught by the owner's ping; TaskStop + direct
+## relaunch). Lesson: never gate a background launch on file mtime — chain
+## with && in ONE command or launch on the completion notification.
+
+## GRAVEYARD ADDS: river one-lane follow (57%<60 coverage); river
+## current-truth-gap (11.7u — model honest); redrock defile slow-jam
+## threshold x2 (5.5/6.5kt, mech-dead). Probes tracked: _rv_entry(v3),
+## _rv_kill (registered bars inline), _rv_route, _rv_ruler, _rv_sail,
+## _rv_curgap, _tb_arctax, _rra_gates.md, logs.
+
+## CLOSE: HEAD unchanged (f52840a) — js/ clean, goldens/npm-test stand,
+## freeze 10/10; the tb* close table is CURRENT (see the era-cut entry).
+## Next push = owner picks; the two sized owner items from tonight:
+## (1) river notch corridor design, (2) redrock displacement/fan review.
