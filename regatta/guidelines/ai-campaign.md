@@ -15487,3 +15487,93 @@ f1riv*, old r1 names are stale); feathered-edge preconditions (rule 4);
 probe output files carry the TREE NAME; zero-at-every-percentile = bug;
 serialize heavy benches (goldens + npm test + suites concurrently starved
 a bench for 90 min).
+
+## THE RE-BEACHING PUSH — 2026-08-25 evening (autonomous, owner rulings 4/4 pre-recorded). NOTHING SHIPPED — both threads killed by their own pre-registered filters. Two findings that reshape the map.
+
+P1 SIDE-OUTCOME CENSUS (_rb_census.js NEW tracked; _rb_kill.js NEW tracked;
+gates and definitions written before any run). Sequence replay per rule 34
+from the anchor benches' seed0s, LATE venue write per rule 30 — replay
+VALIDATED: river 8/8 races and redrock 4/4 match the bench fins boat-for-boat
+(all 6 current river DNF seeds reproduced: 9409/10/11, 9501/02/03).
+Census population = wiggle-trigger rising edges, leg>=1, cause in
+{rand8/obs/rand} (the branches a land-aware side would replace), boat-cell
+clearance <=2 cells; side score = sum over 80/150u beam points of
+min(grid clearance, 4 cells); asymmetric = |delta| >= 2; outcome window
+(t+1.5, t+10]s.
+
+- RIVER (917 triggers, 543 asymmetric): **KILL. P(re-beach | wiggled
+  blocked side) 97% vs open side 98%** (n 278/265); clear-at-trigger split
+  86% vs 82%; every cause split flat; the NO-asymmetry population re-beaches
+  at 93%. Re-beaching in the notch basin is SATURATED — within 10s the basin
+  re-takes the boat whichever way it wiggles (stream pressing the corner +
+  contact x0.4/frame). The pre-registered no-separation clause fired: DEAD
+  PRE-BUILD. The 2026-08-16 "escape machinery reshuffles which boats the
+  notch takes" warning is now measured at the side-choice level too.
+- Stop-condition check: river re-entry ownership at n = wiggle 47% /
+  avoidance 46% / nav 5% — NAV carrots do NOT steer re-entries (no
+  dead-guard-family trigger); the candidate died on the main stat alone.
+- REDROCK (38 triggers, 17 asymmetric): **the side DOES separate — re-beach
+  100% (8/8) blocked-side vs 33% (3/9) open-side**, consistent in every
+  split, chooser at coin-flip (53% open). But redrock re-entries are
+  avoidance-led (74%; wiggle 17%) — the river specimen's wiggle-steered
+  picture is river-specific — and with the primary dead the pooled stat is
+  flat (98/96). Redrock-scoped land-aware wiggle side stands as a SIZED
+  LEAD AT n=17, owner call, not a build (thin n, rule 12/20 country, and
+  the pre-registration's kill clause reads on the pooled/primary stat).
+
+PIVOT (owner ruling 3) — Z1-v2 MULTI-BOAT MARK-ROOM HOLD. Reading the
+landed encoding first paid off twice:
+1. **The rules engine already reaches third boats pairwise**: every (A,C)
+   pair keeps its own 18.2 zoneSnapshot whose overlap test is
+   isOverlappedThrough, so raft entitlement exists at HEAD without any
+   avoidance change. Measured holder-takes-inside at HEAD vs the
+   roundcraft-era baselines: **bay 51->63%, redrock 38->46%, lake 27->52%
+   — the 736e105 encoding landing already harvested the multi-boat
+   conversion Z1-v2 was designed to reach** (_mrwhy_*_head logs, 4 seeds
+   each, 112/164/84 episodes).
+2. treeZ2 (= HEAD + the one-line v1 _rowHold entitlement edit; umpire
+   untouched) vs pre-registered gates (_z2_gates.md, written before any
+   candidate output): **G1 bay 63->63 FAIL** (needed +8; holds fire far
+   more — heldPair at kept-inside 31->65% — outcome unmoved: the hold is
+   no longer bay's binding constraint); **G2 lake 52->39 FAIL** (floor -5;
+   conceded episodes now 59% held + 58% land-near — the extended hold
+   presses entitled boats into land-pinched zone lines and they lose the
+   inside anyway); G3 rr 46->52 pass (heldPair-at-concession 8->28%).
+   **MECHANISM DEAD at HEAD — no fleet round run.** treeZ2 kept in eval/rl.
+   The entitlement-hold family closes: v1 mechanism-split (2026-08-24),
+   v2 flat-or-regressive post-encoding (2026-08-25).
+
+CLOSE TABLE on final HEAD: unchanged from the swamp-push close (no code
+landed; anchors remain f1sw*/f1riv*/f1lag + mr*; _n1_close_table.js re-run
+and identical — arctic 1.495, rr 1.441, swamp 1.358, river 1.297, glow
+1.246, lag 1.214, lake 1.134, bay 1.130, ocean 1.050, seatrials 1.023).
+No goldens re-record, no npm test (no shipping-code change).
+
+## ⏭ CARRY-FORWARD PROMPT — AFTER THE RE-BEACHING PUSH (2026-08-25 evening)
+
+AI PUSH: [OWNER PICKS]. Context: NOTHING SHIPPED this session — the
+re-beaching push's both threads died on pre-registered filters. HEAD
+unchanged (736e105 code); anchors f1sw*/f1riv*/f1lag + mr* stand.
+(A) SWAMP ADMISSION — unchanged, HIS DESIGN CALL (no weed-free path
+in-graph; prop-clearance discs fence the clean lane).
+(B) RIVER NOTCH: now measured DEAD at three levels (entry was the lever —
+HZT landed; escape x8; wiggle-SIDE census-killed — basin saturates re-beach
+at ~98% both sides within 10s). Remaining leads are the 2026-08-16 pair:
+entry further hardened, or router line off the island-8 face. The DNF class
+is 5-6/216, all land 1350-1450.
+(C) REDROCK-SCOPED LAND-AWARE WIGGLE SIDE — the census separates there
+(100% vs 33%, n=17, chooser coin-flip; re-entries avoidance-led 74% so
+reach is partial). OWNER CALL whether a redrock-only candidate is worth a
+round at rule-12/20 bench widths.
+(D) MARK-ROOM: entitlement-hold family CLOSED (v1 split, v2 dead — the
+overlap ENCODING already converted bay 51->63 / rr 38->46 / lake 27->52
+holder-inside). Residual concessions are now pairRival+land shaped;
+glow/rr ring residual (roundcraft C) remains the open rounding thread.
+Standing: wrong-way entries (fetch-line target, F3 v2 spec); arctic
+execution-substrate owner decision; rules program (17, 16.2, windward-role,
+18.1(a)(3), 18.3, 20, 23, rule-19 centroid axis).
+GUARDRAILS: all of the 2026-08-25 list stands (absolute paths, rule 30
+late-write for river replay, rule 34 sequence replay, f1riv* DNF names,
+poolers' sign/arg traps, serialize heavy benches); NEW: _mr_why.js uses the
+EARLY venue write — fine on bay/rr/lake (rule 30's identical seven), do NOT
+reuse it on river/lagoon/swamp without switching to goto-then-set.
