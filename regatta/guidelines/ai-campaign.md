@@ -15577,3 +15577,67 @@ late-write for river replay, rule 34 sequence replay, f1riv* DNF names,
 poolers' sign/arg traps, serialize heavy benches); NEW: _mr_why.js uses the
 EARLY venue write — fine on bay/rr/lake (rule 30's identical seven), do NOT
 reuse it on river/lagoon/swamp without switching to goto-then-set.
+
+## ⏭ CARRY-FORWARD PROMPT — THE ROCK-WALL WIGGLE PUSH (verbatim, 2026-08-25 evening; owner-agreed, runs in a NEW instance)
+
+AI PUSH: THE ROCK-WALL WIGGLE PUSH (land-aware wiggle side, redrock-led).
+Autonomous. HEAD b78c688 or later (code == 736e105; commits after the swamp
+push are campaign/probe-only and LOCAL pending his push). Boot: read memory
+regatta-rrwiggle-push-plan (the pre-registration — owner rulings 2/2
+recorded), regatta-rebeach-session (the census + kill-stat method that
+sized this), regatta-standing-rules (ALL traps), regatta-closed-families
+(check before ANY candidate — the RIVER wiggle-side closure does NOT cover
+this redrock-led candidate, but escape-side x8 / re-entry-guard / Z1-v2
+holds are CLOSED), regatta-swamp-session (S3a = the build template). Check
+`date`; freeze --check from repo root (node regatta/eval/freeze_venues.js
+--check); anchors = f1sw*/f1riv*/f1lag + mr* (close-table cand/base maps in
+_n1_close_table.js).
+
+OWNER RULINGS (do not re-ask): firing scope = MEASURED-PROPERTY GATE
+(_gridFixed non-empty AND no _floeObjs AND blocked cell <=2 cells AND
+leg>=1 — NO venue-name gate; arctic byte-inert by construction, verify by
+cmp); fallback if P1 kills = CLOSE AND HAND BACK (no pivot — swamp
+admission + arctic substrate are HIS design calls); landing bar = same as
+the last three pushes (pre-registered gates before build + full-width
+benches; universal wins land locally; named losers with costs at equal
+prominence + review requested).
+
+THE MEASURED MECHANISM (_rb_census.js, mrrr9400 races 0-3): among
+near-beached wiggle triggers (boat-cell clr<=2) with beam-point asymmetry
+>=2 (score = sum over 80/150u of min(clr,4) per side at wd+-1.75), redrock
+re-beach <=10s = 100% (8/8) blocked-side vs 33% (3/9) open-side; chooser
+picks open at coin-flip. NAMED CAVEATS: n=17 (thin — P1 exists to fix
+this); rr re-entries avoidance-led 74% (expect a DIRT/TAIL win, not med);
+river is side-irrelevant (98% both ways — its gate is flat-don't-regress).
+
+PLAN: P1 census extension FIRST (kill-early): _rb_census.js treeMR on
+mrrr9400 races 4-7 + mrrr9500..9900 all 8 (sequence replay, self-validates
+fins vs bench JSONs); pool with the existing 9400 0-3 json via _rb_kill.js.
+KILL BAR: P(reB|blocked) - P(reB|open) >= 25 points at n(asym) >= 50, else
+CLOSE. Screens: lake 6100 x2 + bay 9400 x2 races (near-beach trigger count,
+expected ~0). P2 = write _rrw_gates.md (tracked) from P1's numbers BEFORE
+the edit (mechanism gate on a candidate-tree census re-run; fleet gates: rr
+pooled 6-set land/boat means improve + paired med <= +2 hand-recomputed
+[rules 12/20/21b], river 3x8 fins >= anchor-1 + land not +10%, swamp 3x8
+flat [weed branch keeps precedence], lake 2x20 + bay 2x20 flat, glow 16,
+lag/oc/st anchor widths, arctic one-set cmp byte-check vs CURRENT-HEAD
+baseline [rule 22]). P3 = mirror S3a exactly (bot.js wiggle-side chain
+AFTER the weed branch, BEFORE the >8s random: botGrid clearance at both
+beam points 80/150u, decisive on asymmetry >= the census threshold only,
+ties fall through, no RNG drawn or skipped outside the firing population,
+rounding+weed precedence kept). P4 = full anchor-width suite, rr first;
+close with _n1_close_table.js on final HEAD, goldens re-record+verify
+(COUNT=30) if landed, npm test same-7, campaign entry + carry-forward,
+memories + graveyard.
+
+GUARDRAILS: ABSOLUTE PATHS for every probe/ls/cmp (cwd resets after cd);
+bench replay = _rb_census.js's pattern ONLY (late goto-then-set write +
+sequence from the bench's seed0 + fins validation — rule 30/34);
+_mr_why.js's EARLY venue write must not be reused on river/lagoon/swamp;
+poolers: _pool_rr.js is <BASE> <CAND> with NEGATIVE=faster and _pool_arc.js
+is the OPPOSITE on both counts — hand-recompute one number before any
+verdict; serialize heavy benches; probe outputs carry the TREE name;
+zero-at-every-percentile = bug; census `lst` cause labels are approximate
+at the rand8 boundary; treeMR == HEAD js EXCEPT S3a (byte-inert off
+swamp/riv/lag — fine for redrock census; any NEW tree comes from mktree.sh
+off current HEAD).
