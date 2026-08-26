@@ -23,6 +23,13 @@ choice, not an accident:
   only works because callers resolve them at call time.
 - An ES-module refactor was tried on 2026-01-04 (PR #475) and **reverted the
   same day** (`e2d7191`) after import wiring broke startup.
+- **Load time is a non-issue** (measured 2026-08-24, 7 runs each): 21 files vs
+  the old single file are statistically identical (~1.0–1.2s local, overlapping
+  distributions). The preload scanner fetches all tags in parallel; only
+  execution serializes, and it's the same code. Page weight is dominated by the
+  venue docs (~4MB+; bay alone 1.6MB), and per-file caching means a push now
+  invalidates one subsystem, not a 1.6MB monolith. Do not bundle "for speed"
+  without a new measurement saying otherwise.
 
 **Rules that keep the mechanism working:**
 1. Every file is a plain classic script. No IIFE around existing symbols, no
@@ -32,6 +39,10 @@ choice, not an accident:
 3. A new file must be added to **all five pages** in the same relative slot:
    `index.html`, `rules.html`, `scenario.html` (both regenerated from
    index.html — their comments say so), `editor.html`, `competitor.html`.
+   **Enforced**: `eval/test_pages.js` (first suite in `npm test`) asserts every
+   game file on disk appears in all five pages, same order, contiguous, ending
+   with `js/script.js`, venuedoc.js before the block, no duplicate tags —
+   forgetting a page fails the suite by name instead of failing the page quietly.
 4. Load-time code (anything that executes at script evaluation) may only read
    bindings from files loaded **earlier**. Runtime code may reference anything.
    The boot (`resetGame(); requestAnimationFrame(loop);`) stays at the end of
@@ -45,8 +56,8 @@ water/swell/seafx/icefx/traffic/planner/sailcheck/rules):
 
 | file | contents | lane |
 |---|---|---|
-| `js/game/core.js` | CONFIG, fonts, RNG streams (`mulberry32`, visuals-only `fxRand`/`snowRand`), mask geometry, angle/segment math, time formatting | shared (rarely changes) |
-| `js/game/state.js` | `state` (the master object), `settings` + defaults, venue table/palette, `class Boat` | shared |
+| `js/game/core.js` | CONFIG, fonts, RNG streams (`mulberry32`, visuals-only `fxRand`/`snowRand`), mask geometry, angle/segment math, time formatting, `GameEvents` (the internal pub/sub bus) | shared (rarely changes) |
+| `js/game/state.js` | `state` (the master object), `settings` + defaults, venue table/palette, `class Boat`, the player-controls seam (`sampleKeyControls`/`NO_CONTROLS`) | shared |
 | `js/game/audio.js` | `MUSIC_TRACKS`, `Sound` | audio |
 | `js/sim/wind.js` | base wind, gusts, island shadows, oscillation, pressure, squalls, `getWindAt`, turbulence, streak/comet layer, gust tone. Sim + its viz deliberately together (highest co-change pair in history, lift 5.8) | physics/world |
 | `js/sim/water.js` | current field (`getCurrentAt`), rapids, wind waves, surf | physics/world |
@@ -133,6 +144,14 @@ replaces wholesale — use `GameEvents` for game-internal wiring instead.
   are shared — coordinate before editing them.
 - New cross-subsystem symbols are API: add them consciously, and prefer adding
   to the file that owns the data.
-- Any change to sim-side files must re-run `npm run trace` (and a golden
-  re-record belongs to whoever changed behavior — never re-record mid-way
-  through someone else's session).
+- Any change to sim-side files must re-run the golden traces — and note the
+  gate's two traps: bare `npm run trace` verifies only 2 of the 3 recorded
+  seeds (use `node regatta/eval/run_traces.js --seeds 3` for the full 30), and
+  `run_traces.js` exits 0 even on FAIL — read the PASS/FAIL line, not the exit
+  code. A golden re-record belongs to whoever changed behavior — never
+  re-record midway through someone else's session.
+- Bench baselines (the n1 era, 2026-08-24): the 24 `eval/rl/ocean_bench_n1*`
+  sets are THE standing anchors, benched on the promoted venue docs with the
+  split engine; `eval/rl/_n1_close_table.js` is the session close script. Every
+  pre-promotion bench JSON lives in `eval/rl/_retired_benches/` so a stale
+  label reports MISSING instead of silently pooling retired-doc data.

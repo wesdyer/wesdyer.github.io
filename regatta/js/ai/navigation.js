@@ -59,7 +59,30 @@ Object.assign(BotController.prototype, {
                 // instead of punching out through the scanned exit sector). The
                 // follower switches paths only when the ENGINE actually advances
                 // rs.leg. (The outbound latch itself lives in update().)
-                void nextPath;
+                //
+                // R1 EXIT-HANDOFF: on a FLOE-FREE venue the POST-bank picture is
+                // different — the rounding is EARNED (the _outbound latch is the
+                // bank AND the string wrap) and the measured cost of riding the
+                // ring to a rotation-sector punch-out is 100-250u sailed past
+                // the mark away from the next leg on every clean venue. Once
+                // outbound, sail the next leg's plan from wherever the boat is:
+                // the destination moves onto the next path and the strategy
+                // layer sails it through the same pipeline every leg uses (this
+                // is NOT the dead aimed-exit-bearing family). The engine still
+                // advances at its own zone-exit test. Floe venues keep the
+                // exit hunt byte-for-byte (the pack is what it exists for);
+                // _outbound resets on leg change, so back-to-back roundings
+                // hand off one leg at a time.
+                if (state.course._hasFloes == null) {
+                    state.course._hasFloes = (state.course.islands || []).some(i => i.isFloe);
+                }
+                if (this._outbound && !state.course._hasFloes
+                    && state.course.route && state.course.route[rs.leg]
+                    && state.course.route[rs.leg].kind === 'round'
+                    && nextPath && nextPath.pts && nextPath.pts.length >= 2) {
+                    followLeg = rs.leg + 1;
+                    followPath = nextPath;
+                }
                 const dmcLegF = followPath;
                 if (this.dmcFollowLeg !== followLeg) { this.dmcFollowLeg = followLeg; this.dmcHint = null; this.dmcCarrotS = null; }
                 const s = CoursePath.project(dmcLegF, boat.x, boat.y, this.dmcHint);
@@ -218,7 +241,7 @@ Object.assign(BotController.prototype, {
                 // pack. The orbit target adapts its radius (tight inside the ring,
                 // 1.6x zone outside, straight back toward the ring from far away)
                 // and the lead angle carries the boat the required way round.
-                if (!entryHandled && rm && rs.roundArmed) {
+                if (!entryHandled && rm && rs.roundArmed && followLeg === rs.leg) {
                     const brgA = Math.atan2(boat.y - rm.y, boat.x - rm.x);
                     const sgnA = rm.side === 'port' ? -1 : 1;
                     if (!this._outbound) {

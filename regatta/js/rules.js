@@ -199,6 +199,44 @@
             return !this.isClearAstern(b1, b2) && !this.isClearAstern(b2, b1);
         },
 
+        /**
+         * RRS Definition — Overlap, second sentence (2026-08-25):
+         *
+         * "However, they also overlap when a boat between them overlaps
+         * both."
+         *
+         * The intervening-boat clause. Without it a three-boat raft at a
+         * mark reads as two independent pairs: the outermost boat is "clear
+         * astern" of the innermost, owes her nothing under 18.2(a)(1), and
+         * the holder's entitled line is taken by a boat the pairwise engine
+         * says has no obligation — measured on bay as 57% of mark-room
+         * concessions (third-boat class, _mr_why.js, 2026-08-24).
+         *
+         * Encoded literally: ONE intervening boat (the clause's own words).
+         * A four-boat chain resolves pairwise-adjacent obligations correctly
+         * through repeated application at the pair level; full transitive
+         * closure is deliberately not built until a measured scene demands
+         * it. "Between" is positional: the intervening boat's centre
+         * projects strictly inside the segment joining the two hulls.
+         * Finished boats are rule-free traffic (house rule, no rule 23) and
+         * never intervene.
+         */
+        isOverlappedThrough: function(b1, b2, boats) {
+            if (this.isOverlapped(b1, b2)) return true;
+            const list = boats || ((typeof state !== 'undefined' && state.boats) || []);
+            const dx = b2.x - b1.x, dy = b2.y - b1.y;
+            const L2 = dx * dx + dy * dy;
+            if (L2 < 1) return true;
+            for (const b3 of list) {
+                if (b3 === b1 || b3 === b2) continue;
+                if (b3.raceState && b3.raceState.finished) continue;
+                const t = ((b3.x - b1.x) * dx + (b3.y - b1.y) * dy) / L2;
+                if (t <= 0 || t >= 1) continue;
+                if (this.isOverlapped(b3, b1) && this.isOverlapped(b3, b2)) return true;
+            }
+            return false;
+        },
+
         distToMark: function(boat, mark) {
             return Math.sqrt((boat.x - mark.x)**2 + (boat.y - mark.y)**2);
         },
@@ -359,7 +397,10 @@
                     // ─── 1. Overlap Status ────────────────────────────
                     // RRS Definition — Overlap: "Two boats overlap when
                     // neither is clear astern of the other."
-                    const currentlyOverlapped = this.isOverlapped(b1, b2);
+                    // Definition-true overlap: includes the intervening-boat
+                    // clause (see isOverlappedThrough) — this ledger feeds the
+                    // 18.2 zone snapshot, where the three-boat raft case lives.
+                    const currentlyOverlapped = this.isOverlappedThrough(b1, b2, state.boats);
                     if (currentlyOverlapped && !data.overlap) {
                         data.overlap = true;
                         data.overlapStart = now;
@@ -707,7 +748,11 @@
             //
             // RRS 12: "When boats are on the same tack and not overlapped,
             // a boat clear astern shall keep clear of a boat clear ahead."
-            const overlapped = this.isOverlapped(b1, b2);
+            // Definition-true overlap (intervening-boat clause included): in a
+            // three-boat raft the outer pair are overlapped THROUGH the middle
+            // boat, so Rule 11 (windward keeps clear), not Rule 12, governs
+            // them — umpire-visible in rafts, flagged for owner review.
+            const overlapped = this.isOverlappedThrough(b1, b2);
 
             if (overlapped) {
                 result.rowBoat = this.getLeewardBoat(b1, b2);

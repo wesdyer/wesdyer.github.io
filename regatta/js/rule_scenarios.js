@@ -126,6 +126,36 @@
     });
 
     S.push({
+        id: 'def-overlap-through-middle',
+        rule: 'Definition: Overlap',
+        title: 'Three-boat raft — overlapped through the boat between',
+        ruleText: 'Two boats overlap when neither is clear astern of the other. However, they also overlap when a boat between them overlaps both.',
+        venue: 'seatrials', anchor: 'openWater',
+        boats: [
+            // Starboard close-hauled raft, staggered 40u bow-to-bow per step:
+            // A inner/leeward/ahead; C the middle boat, 25u of hull overlap
+            // with EACH neighbour; B outer/windward, clear astern of A by
+            // 25u. Pairwise, A-B read Rule 12 (clear astern); the clause
+            // makes them overlapped THROUGH C, so Rule 11 governs the raft's
+            // outer pair — the three-boat mark raft case (bay's third-boat
+            // concessions, _mr_why.js 2026-08-24).
+            // ⚠️ the frame's dl axis (upwind) is NOT abeam of a close-hauled
+            // heading — it leaks cos(0.66)≈0.79 of itself into fore-aft. The
+            // numbers below are solved in the (dl,dh) basis for PURE offsets:
+            // C = 30u abeam / 40u astern of A; B = 60u abeam / 80u astern
+            // (dl = abeam/sin0.66, dh = foreaft − dl·cos0.66).
+            { name: 'A', dl: 0, dh: 0, heading: 'stbdCH' },
+            { name: 'C', dl: 49, dh: -79, heading: 'stbdCH' },
+            { name: 'B', dl: 98, dh: -158, heading: 'stbdCH' },
+        ],
+        phases: [{
+            step: 'rules', frames: 5,
+            pre: { bAsternOfA: true },
+            oracle: { rule: 'Rule 11' },
+        }],
+    });
+
+    S.push({
         id: 'r13-tacking-keeps-clear',
         rule: 'Rule 13',
         title: 'While tacking — past head to wind, not yet close-hauled',

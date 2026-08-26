@@ -17,17 +17,26 @@ const fs = require('fs'); const path = require('path');
 const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8,
     ocean: 214.2, river: 187.4, glowtide: 199.1, redrock: 215.2,
     seatrials: 185.7, swamp: 234.1 };
+// ⛔⛔ 2026-08-26 THE TEN-BOT ERA CUT (_tb_gates.md, owner-directed): tb* =
+// 10-bot benches (the player boat converted to a full bot after startRace —
+// his reference laps were always 10-hull races; benching bots against 8
+// rivals under-dosed the traffic tax). NEVER compare tb* to ANY earlier
+// anchor (rw*, mr*, f1*, and older are all 9-bot). The PRE column below is
+// the 9-bot rw* era shown ONLY to display the density tax at the cut; from
+// the next session on, base and cand are both tb*-era labels. The HUMAN
+// column is unaffected — that parity is the point of the cut. (Arctic PRE =
+// mrarc*, == rw-era HEAD by cmp proof.)
 const VENUES = {
-    redrock: { base: ['n1rr9400','n1rr9500','n1rr9600','n1rr9700','n1rr9800','n1rr9900'], cand: ['n1rr9400','n1rr9500','n1rr9600','n1rr9700','n1rr9800','n1rr9900'] },
-    arctic:  { base: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'], cand: ['n1arc9100','n1arc9200','n1arc9400','n1arc9600'] },
-    river:   { base: ['n1riv9400','n1riv9408','n1riv9500'], cand: ['n1riv9400','n1riv9408','n1riv9500'] },
-    swamp:   { base: ['n1sw9400','n1sw9500','n1sw9600'], cand: ['n1sw9400','n1sw9500','n1sw9600'] },
-    glowtide:{ base: ['n1glow'], cand: ['n1glow'] },
-    lagoon:  { base: ['n1lag'], cand: ['n1lag'] },
-    bay:     { base: ['n1bay9400','n1bay9600'], cand: ['n1bay9400','n1bay9600'] },
-    lake:    { base: ['n1lk6100','n1lk6200'], cand: ['n1lk6100','n1lk6200'] },
-    ocean:   { base: ['n1oc'], cand: ['n1oc'] },
-    seatrials:{ base: ['n1st'], cand: ['n1st'] },
+    redrock: { base: ['rwrr9400','rwrr9500','rwrr9600','rwrr9700','rwrr9800','rwrr9900'], cand: ['tbrr9400','tbrr9500','tbrr9600','tbrr9700','tbrr9800','tbrr9900'] },
+    arctic:  { base: ['mrarc9100','mrarc9200','mrarc9400','mrarc9600'], cand: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'] },
+    river:   { base: ['rwriv9400','rwriv9408','rwriv9500'], cand: ['tbriv9400','tbriv9408','tbriv9500'] },
+    swamp:   { base: ['rwsw9400','rwsw9500','rwsw9600'], cand: ['tbsw9400','tbsw9500','tbsw9600'] },
+    glowtide:{ base: ['rwglow'], cand: ['tbglow'] },
+    lagoon:  { base: ['rwlag'], cand: ['tblag'] },
+    bay:     { base: ['rwbay9400','rwbay9600'], cand: ['tbbay9400','tbbay9600'] },
+    lake:    { base: ['rwlk6100','rwlk6200'], cand: ['tblk6100','tblk6200'] },
+    ocean:   { base: ['rwoc'], cand: ['tboc'] },
+    seatrials:{ base: ['rwst'], cand: ['tbst'] },
 };
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;

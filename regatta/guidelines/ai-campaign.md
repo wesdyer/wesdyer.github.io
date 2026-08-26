@@ -15043,3 +15043,753 @@ measurement.
 ⛔ Closed families += H1B fan projection honesty on floe terms (v1 both /
 v2 segments / v3 band; fleet-killed at 32 with land +31%); wedge-as-stuck-
 escape (sized: no detector gap, latch owns 92% of exits).
+
+# THE ROUNDING-CRAFT + RIGHTS PUSH — R1a LANDED (2026-08-24 night, autonomous; owner-agreed plan)
+
+Owner raced 30 laps (3x10) and reported three behaviors: (1) OVER-ROUNDING —
+bots round further than needed instead of leaving the mark on the proper side
+and proceeding on the proper course; (2) NO ROUNDING PLANNING at tight marks
+(redrock end of leg 2 = mark-6, lake end of leg 2 = mark-5); (3) RIGHTS
+UNDER-USED (STBD/PORT, LEEWARD/WINDWARD, earlier zone entry — press with
+confidence, last-moment avoidance, let the rival take the penalty). Rulings
+taken at plan time (AskUserQuestion 4/4): behavior push across venues; bench
+current docs (redrock/glowtide v0.2 may retire venue numbers, capability
+findings carry); press rights judged by WHO fouled; land passing candidates
+as local commits. Arctic stays BANKED at the H1B frontier. Also logged: his
+clean-lane-into-iceberg sighting = the measured CHOICE-flip anatomy (H1B);
+RL ships nowhere today (both seams closed) — plausible re-entry is the
+arctic execution substrate, owner design decision.
+
+## P1 — measurement (new tracked probes: _roundcraft.js, _rights_use.js,
+## _ring_own.js, _ring_trace.js, _entry_why.js, _riv_land_where.js,
+## _pair_vs_n1.js, _bench_suite.sh)
+- RING TAX (fleet-minus-him ring time, mean s/lap, position-derived
+  IDENTICALLY for fleet and his fp-valid laps): rr 36.7 (leg2 +15.5), arctic
+  36.6 (banked), glow 16.3, lagoon 14.2, bay 8.3, lake 6.7 (ALL at leg2),
+  river 2.6, ocean -0.2 — i.e. 20-36% of the venue gap on every rounding
+  venue.
+- Signatures: closest approach 1.5-2.5x his radius; beyond-mark 2-3x his,
+  accruing PRE-advance (the exit machinery, not the departure); wrong-way
+  zone entries 17-56% vs his ~0%; rr leg2 splits BOTH ways (armed +10.7 s
+  and post-advance departure +8.9 s = the leg-3 west-wall pocket; worst
+  traces re-orbit 2-6x with repeated full stops there; HIS rounding is one
+  smooth pass, 6-12 s).
+- RING OWNERSHIP (_ring_own): nav-owned 80-97% at every mark (spin/stuck/
+  wiggle/avoidance minor); mean ring speed 64-82 u/s vs his ~100+. The
+  rounding GEOMETRY is the lever — not the reflex stack, not traffic.
+- RIGHTS LEDGER (_rights_use, avoidance-owned deviation via applyAvoidance
+  wrap; controllers are created LAZILY — wrap per frame): ROW max dev med
+  92/92/69/46 deg (rr/lk/riv/bay) vs his 11-23; unforced (dev>30 &
+  CPA>=80u) 49-75%; deflected >30 deg WHILE _rowHold active 23-46% (bay 34%
+  with ZERO contacts = rival-priced); mark-room holder surrenders the
+  INSIDE line in 36-73% of zone pairs; in-episode penalties land on the ROW
+  boat as often as give-way (rr 25 v 18). ⚠️ the identical 92-deg medians
+  are the fan's max swing (avDev AT CPA is ~0 everywhere) — use duration-
+  weighted stats for future gates.
+- ZONE-ENTRY DIAGNOSIS (_entry_why): wrong-way entries happen INSIDE the
+  entry hunt, ON the chosen sector, at speed, avoidance quiet — the
+  mechanism points at the strategy layer resolving a no-go cut-in target to
+  the wrong-side BOARD. Candidate named, NOT built tonight.
+
+## P3 — candidates (gates pre-registered in scratchpad before each build)
+- ⭐⭐ **R1a EXIT-HANDOFF — LANDED.** navigation.js: once `_outbound` (bank +
+  string wrap) on a FLOE-FREE venue with a valid next-leg DMC path, the
+  follower hands to the NEXT leg's path and the armed orbit/exit machinery
+  stands down — the boat leaves the mark on the proper course through the
+  same destination->strategy pipeline every leg uses. NOT the dead
+  aimed-exit-bearing family (x3) — no bearing is forced; NOT the pre-bank
+  pack detour — fires only after the bank, never where floes exist.
+  Census gates: lake ring tax 6.7 -> 0.5 s/lap (leg2 ring 14.6->9.3 mean,
+  beyond 266->124, stuck 2.4->0); rr 36.7->30.9; lagoon 14.2->10.4; bay
+  8.3->7.0; advanced == episodes everywhere (no stranding).
+- ⛔ R1b SOLO-TIGHT ORBIT (ruler-radius ring when alone at the mark, 1.5 s
+  solitude latch): census-killed — rr 30.9->33.5 even solo-gated, no gain
+  on lagoon/lake. Tight-orbit family now x3 (unconditional x2 + solo-gated).
+- ⛔ R1a-v2 LOS GUARD (hand off only when the chord to the next carrot is
+  grid-clear): river arm BYTE-IDENTICAL to v1 (the chord is clear — null-op
+  where aimed) while trimming redrock's win (-9.3 -> -5.4 mean, 5 sets).
+  Strictly dominated; killed.
+- Z1 MARK-ROOM HOLD (entitlement grants the _rowHold even when otherwise
+  give-way; all projection guards + capability release unchanged): MECHANISM
+  SPLIT — lake holder-inside 27->65%, zone dev 92->46 deg, contacts 9->4;
+  bay 51->44%, rr 38->33% (flat/negative) = FAILED the pre-registered
+  2-of-3 bar. NOT fleet-benched. treeZ1 + ledgers kept; v2 wants per-pair
+  cause attribution on rr/bay first (what steals the entitled line there).
+
+## FLEET — R1a v1 at full n1 widths (_pair_vs_n1.js; CAND-BASE, NEG=faster)
+redrock POOLED 6 SETS: med -8.0 / mean -9.3, fins 432/432, boat -27%,
+pen -14%, land -9%, mark -7%. lake 2x20: med -5.0 / mean -10.0, land -61%,
+boat -41%. lagoon: med -3.0 / mean -8.4, land -82%, mark -70%. glowtide:
+med -5.0 / mean -5.8, dirt down. bay 2x20: med -1.0 / mean -1.6. ocean
+0.0/+0.2. arctic ALL FOUR SETS + swamp + seatrials BYTE-IDENTICAL (cmp) —
+the floe/no-round-leg gates proven at bench scale.
+NAMED at equal prominence (owner review requested, non-universal-wins):
+- river: bench land column 76->97/boat, fins 215->211, clock NEUTRAL
+  (pooled med +1.0 / mean -0.2). _riv_land_where (2 s episode debounce):
+  land EPISODES 154->157 FLAT, zero near the handoff mark, all in the known
+  leg-3 bins — the +27% is grind-DURATION inflation at the bench's 0.5 s
+  count debounce, not more groundings (rule 2 applied to my own gate); fins
+  delta is inside the documented island-8 notch lottery (2-6 re-rolls).
+  Fallback if he rules the column unacceptable: scope river out (no
+  measured grid property separates it; would be a named-venue gate).
+- bay small absolute dirt uptick: land 0.19->0.26, mark 0.08->0.14,
+  pen 0.16->0.19 per boat (360 boats).
+
+## CLOSE TABLE — final HEAD (R1a landed; anchors now r1* on rounding venues,
+## n1 elsewhere; _n1_close_table.js updated)
+redrock 1.468 -> 1.413 | lake 1.170 -> 1.124 | lagoon 1.225 -> 1.202 |
+glowtide 1.311 -> 1.301 | bay 1.138 -> 1.130 | river 1.281 -> 1.286 (flat,
+named) | arctic 1.500, swamp 1.414, ocean 1.046, seatrials 1.023 unchanged.
+npm test: same 7 pre-existing red suites. Goldens re-recorded (30, 3 seeds)
+after the landing — rounding venues legitimately moved.
+
+## F3 ROTATION-AWARE ENTRY BOARDS — MECHANISM-KILLED SAME NIGHT (2026-08-25 ~01:00)
+Built per the diagnosis (wrong-way entries tack/gybe-chosen: 69-83% upwind on
+rr legs 1/3, 75% run on leg 2) as a decisive scoreTack term (-2.0, shore-tax
+scale, floe-free + round-leg + !armed + <2.5z scoped, treeF3 on post-R1a HEAD).
+Pre-registered mechanism gate FAILED: wrong-way rates unmoved-or-worse
+(leg1 26->32%, leg2 23->29%, leg3 43->57%, leg4 6->26%, 2 seeds). REFINED
+DIAGNOSIS for the next attempt: close cut-in targets are usually FETCHABLE, so
+getStrategicHeading returns from the fetch branch before any board choice —
+the wrong-way crossing is the FETCH LINE'S OWN GEOMETRY (the hunt's cut-in
+point placed where the close-hauled fetch crosses the zone against rotation).
+A v2 must move the TARGET (cut-in sector/lead aware of the fetch line's
+tangential sign), not the board scorer — with the recorded "+8.0s sector-hunt
+vs ruler-entry" baseline as the regression bar. Stopped per the gate; treeF3
+discarded.
+
+## Z1-v2 RESEARCH — THE HOLDER ANATOMY (2026-08-25 ~01:30, _mr_why.js NEW tracked)
+Per zone pair-episode with a named mark-room holder, classified at the
+holder's max avoidance-owned deviation (treeN1 and the landed HEAD agree):
+- BAY: conceded-the-inside episodes are THIRD-BOAT 57% (land 0-2%) — the
+  holder yields to a boat that is NOT the obligated rival. A pairwise hold
+  cannot reach it; that is why Z1 was flat on bay while lake (+38 pts)
+  converted — lake's zone pairs are pair-dominated.
+- REDROCK: conceded episodes are LAND-NEAR 43-60% — rocks, not rivals, take
+  the entitled line. Also un-reachable by a pairwise rights hold.
+⇒ Z1-v2 requires MULTI-BOAT mark-room: RRS 18 obliges EVERY outside boat to
+give the holder room, and the rules engine's multi-boat overlap case ("boat
+between them overlaps both") is on the rules-inventory ABSENT list. The
+right build order is: encode multi-boat overlap/mark-room in rules.js
+(correctness doctrine applies), THEN extend the hold across all obligated
+boats. OWNER-VISIBLE design item; parked with treeZ1 + _mrwhy_* JSONs.
+
+## ⏭ CARRY-FORWARD PROMPT — AFTER THE ROUNDING-CRAFT PUSH (2026-08-25 01:15)
+
+AI PUSH: [OWNER PICKS]. Context: R1a exit-handoff LANDED (23c0a56, goldens
+re-recorded, close table rr 1.413 / lk 1.124 / lag 1.202 / glow 1.301 / bay
+1.130; river flat NAMED — land column is grind-count inflation, episodes
+flat; owner review requested). Anchors = r1* on rounding venues, n1 on
+arctic/swamp/seatrials (byte-identity proven). Arctic stays banked.
+
+(A) GLOW/RR RING RESIDUAL — post-R1a census: glow leg2 +8.2 s/lap (51-deg
+req mark!), glow leg3 +9.2 (269-zone rock-box mark, p90 37.7), rr leg2
+armed-phase +10.7 still there (the leg-3 west-wall pocket owns the
+departure). All rock-coupled; likely wants the pocket/execution class, not
+more geometry. Boot: regatta-roundcraft-session + _rc_glowR1a.log shapes.
+(B) MULTI-BOAT MARK-ROOM (rules correctness, then Z1-v2) — _mr_why.js:
+bay concessions third-boat 57%, rr land 43-60%; pairwise holds cannot reach
+either. Needs the absent "boat between them overlaps both" encoding in
+rules.js FIRST (correctness doctrine; owner call), then extend the
+entitlement hold across all obligated boats. treeZ1 + _mrwhy_* JSONs parked.
+(C) ENTRY-FETCH v2 — wrong-way zone entries 17-56% vs his ~0% remain open;
+F3 board-scorer form mechanism-killed: the wrong-way crossing is the FETCH
+LINE to the hunt's cut-in point (close targets return from the fetch branch
+before any board choice). v2 must move the cut-in TARGET (sector/lead aware
+of the fetch line's tangential sign); regression bar = the recorded +8.0s
+sector-hunt-vs-ruler-entry A/B.
+(D) RIGHTS HOLD-THROUGH LEAK — ROW deflects >30 deg while held on 23-46% of
+episodes (bay 34% with zero contacts). Cause unattributed; the honest
+instrument is term-ablation trees (a session of its own). His #3 ask.
+Standing: redrock+glowtide v0.2 INCOMING (re-bench + his re-records after
+promotion retire those anchors/refs); scenario-lab has no green baseline
+(4/27 pre-existing FAILs; my nav landing may drift more — the lab-triage
+session is already queued); close every session with _n1_close_table.js on
+final HEAD; commits LOCAL pending his push; graveyard += tight-orbit x3,
+LOS chord guard, F3 board tax.
+
+## ⏭ CARRY-FORWARD PROMPT — THE SWAMP STALL-MACHINE PUSH (verbatim, 2026-08-25 morning; owner-agreed)
+
+AI PUSH: THE SWAMP STALL-MACHINE PUSH. Autonomous until ~17:30 PT (owner
+back 18:00). HEAD `a3655ae` (R1a exit-handoff landed last night: rr 1.413,
+lk 1.124; commits LOCAL, unpushed). Boot: read memory
+regatta-swamp-push-plan (the pre-registration — owner rulings 4/4 recorded),
+regatta-roundcraft-session, regatta-standing-rules (ALL traps), 
+regatta-closed-families (check before ANY candidate), regatta-next-pushes-brief
+(brief 3 = the measured swamp mechanism), regatta-gatorgrass,
+regatta-stuck-regime. Check `date` (rule 10 — the clock was misread once
+last night); freeze --check from repo root; anchors = r1* on rounding
+venues + n1arc*/n1sw*/n1st (close table cand/base in _n1_close_table.js).
+
+OWNER RULINGS (this morning, do not re-ask): primary = SWAMP; second thread
+= river island-8 notch (no-go-aware walk + re-entry crumb, treeWNOGO
+evidence); rules-correctness work AUTHORIZED autonomously if the primary
+stalls (multi-boat overlap/mark-room in rules.js, test_markroom.js-style
+precondition-asserted tests, benches NAME costs per the accuracy doctrine,
+umpire-visible changes flagged for review); R1a's river column ACCEPTED
+(no scope-out); landing bar = pre-registered gates + full-width benches,
+universal wins land as local commits, named losers land only with the cost
+named at equal prominence + review requested.
+
+THE MEASURED MECHANISM (2026-08-21 brief, re-validate on current HEAD
+first — it predates the refactor and R1a): swamp 1.414 (DNF 4.6%, med 331 /
+mean 359) is the STALL MACHINE — the clean line THREADS weed corridors; 48%
+of stalls are within 150u of the planned route (p25 47u); in mul-0.1 weed
+4kt of air cannot restart a parked boat. Ruled OUT by measurement: bank
+hits (79% bothClear), dead air, dead angle (8%), point-level router pricing
+(route samples mul 1.0 at all 205 points). ⚠️ shoalFieldAt returns a
+MULTIPLIER (1.0 = clean — a probe read this inverted once). Swampgrass is
+a SOLID collider, duckweed is free passage; light-air venue (0.9-4.8kt).
+Probes on disk: _stall_field.js, _wline_sw.log siblings, plus last night's
+_roundcraft.js/_rights_use.js/_pair_vs_n1.js/_bench_suite.sh idioms
+(lazy per-frame controller wrap; position-derived metrics both sides).
+
+PLAN (measure → analyze → hypothesize → experiment → evaluate → iterate):
+P0 hygiene + re-validate the brief numbers on current doc/HEAD. P1 stall
+anatomy: WHICH LAYER displaces the boat into weed (avoidance/wiggle/leeway/
+tack drift — episodes not frames, rule 2), corridor width along the route
+(mul field within scatter radius of route samples), restart anatomy
+(time-to-restart vs local mul + wind), DNF/tail chaining; river notch
+sizing in parallel. P2 pre-register gates in scratchpad BEFORE building.
+P3 candidates: S1 execution-scatter-aware weed pricing (model-accuracy
+frame: the router prices the point, the hull samples the neighborhood);
+S2 corridor route-following tightening (scope on a MEASURED grid property,
+the noSubsample/venue-class shape — never venue names); S3 weed-stall
+escape (FLOWING actions only, rule 14 — station-keeping is 0-for-8);
+R-notch for river. P4 fleet: swamp 3x8 vs n1sw9400/9500/9600 (bench-vs-
+bench same sequence is safe, rules 30/34); routing changes judged at FULL
+RACES only (rule 16 — scenes can only kill early); constrained-water
+nonlocal guard = lake 2x20 + arctic one-set byte-check on ANY shared-code
+touch (rule 11); recompute one pooled number by hand before any verdict
+(rule 21b); wrong-order-of-magnitude pricing is structural, everything
+else which-actions (rule 1).
+
+GUARDRAILS THAT BIT RECENTLY: cwd resets after cd — run probes from
+eval/rl and `cmp` with correct paths (a wrong-cwd cmp read "DIFFERS" on
+identical files last night); zero-at-every-percentile = probe bug (a lazy
+controller wrap read all-zero deviations); ⛔ do NOT reopen: tight-orbit
+x3, LOS chord guard, F3 entry-board tax, layline x4, commitment 0-for-7,
+station-keeping 0-for-8, clearance-bar lowering (river), RL on f0e290e.
+
+CLOSE (mandatory, ~17:30): _n1_close_table.js on final HEAD with fresh
+cand labels (owner spec: human | pre | post med/mean/best | ratio | DNF% |
+colMed | penMed); goldens re-recorded (npm run trace:update, READ THE
+COUNT = 30) if anything landed; npm test same-7 check; session entry +
+carry-forward appended to ai-campaign.md; memories updated (session file +
+MEMORY.md pointer + graveyard); all commits LOCAL. Every mid-run status
+report uses the same standard table.
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE SWAMP STALL-MACHINE PUSH (2026-08-25 day, autonomous ~08:45-14:30)
+# Pre-registration: memory regatta-swamp-push-plan (owner rulings 4/4).
+# HEAD in 5b79dfc (R1a) -> HEAD out 736e105. Both landings LOCAL, unpushed.
+# ═══════════════════════════════════════════════════════════════════════
+
+## P0/P1 — THE MECHANISM, THREE LEVELS DOWN (probes tracked)
+Brief re-validated on HEAD (_stall_field): 301 stalls/4 seeds, mul p50 0.10,
+88% in weed, wind flat vs fleet, dead-angle 12%, ALL leg 1.
+· THE LANE FINDING (_sw_him/_sw_lane): his fast laps (194-220s) sail a lane
+  600-1300u off the planned line at 0.3-5.6% weed time; his slow laps hug
+  the plan (55-111u) and pay 20-34%. The router's OWN arithmetic prices his
+  lane 185-202s against its chosen alley's 223.8s — and NO weed-free path
+  exists on the graph AT ALL (block mul<0.8 cells => no start->goal path):
+  his lane crosses grid-REFUSED cells (prop-clearance fences; 1.7-9.1% of
+  his leg-1 samples, soft=0 tight=0 — the tight tier is deliberately wiped
+  on swamp by the landed 8% knee: med +42s / land +500% when admitted).
+  Scatter-aware pricing at R=100 AND R=200 moves the route <=150u at ~25%
+  weed: no cleaner alley exists in-graph. ⚠️ The 08-21 "route samples mul
+  1.0 at all 205 points" did NOT reproduce: the planned line is ~30% weed
+  (moderate, transit-priced, correctly) threading feathered mul-0.1 pockets.
+  => SWAMP'S HEADROOM BEYOND EXECUTION IS ADMISSION-BOUND — OWNER DESIGN
+  ITEM (the 2026-08-10 sub4 note pre-scoped the reopen: the disc model
+  over-inflates SMALL obstacles — a 12u hull passes a 7u trunk at ~13u, not
+  44u; judged on river+redrock) against the tier knee's measured disaster.
+· IN-ALLEY ANATOMY (_sw_anat, NEW): weed entries happen ON the plan (gridD
+  p50 50u; 70% of entries have the plan's nearest point itself in weed at
+  pathMul p50 0.74) and sink to minMul 0.10 — 72% end >=0.2 worse than
+  their plan. Beat owners nav 54% / avoid 46%; wiggle owns 73% of STALL
+  time (downstream). Fleet weedT p50 135s of 316s raceT. Probe trap (rule
+  4): a "2s clean before entry" precondition NEVER fires across FEATHERED
+  weed edges — first run read 0 entries beside 74 stalls.
+
+## ⛔ KILLED AT PRE-REGISTERED MECHANISM GATES (never fleet-benched)
+- SW1 scoreTack weed factor: entries -8%, stalls -5%. COVERAGE-DEAD —
+  fetchable targets return from getStrategicHeading before scoreTack runs
+  (F3's fetch-line lesson, swamp edition). SW1B pair-normalized built, not
+  gated: normalization cannot buy coverage.
+- SW2 avoidance-arc hard-weed term (arcPts, <0.5-scoped, shaping-sized):
+  WORSE — weedT +16%, stallT +50%, wigT +74%, raceT +14%; avoid-owned
+  stalls 160->220. The term FEEDS the avoidance detour spiral.
+- Graveyard += swamp heading-level weed honesty x2, scatter route pricing
+  x2, corridor-following (measured nonexistent: boats are already on-plan).
+
+## ✅ LANDED 1 — S3a WEED-AWARE WIGGLE SIDE (9e267b3, js/ai/bot.js)
+A weed-parked boat wiggled a beam reach in a SEMI-RANDOM direction and
+restarted at mul p50 0.10 — a gust lottery. S3a samples the field at both
+beam-reach points (80/150u each side; shoalMul<0.7 + leg>=1 + draggy-awash
+venues only; ties fall through; no RNG drawn or skipped elsewhere).
+Mechanism gate: stalls 299->171 (-43%), RESTART mul p50 0.10->0.65 (the
+mechanism, visible), weedT -21%, raceT p50 316->292s, fins 36/36.
+Fleet: swamp 3x8 POOLED n=206 med 0.0 / mean -33.3 (p10 -156, TAIL-shaped
+as a stall-lottery fix must be), fins 206->207, boat -37%, pen -19%; river
+mean -2.9 (land -4%); lagoon flat. BYTE-IDENTICAL lake 2x20 x2 + bay 2x20
+x2 (cmp vs r1 anchors) + 3-seed cmp on the other five (rule 22).
+⚠️ NAMED: the pre-registered fleet subgate asked paired med <= -8; the S3a
+pooled med was 0.0 (per-set 0/-22/0). Landed as a universal win on
+mean/fins/dirt with the pre-registration miss stated, not hidden.
+
+## ✅ LANDED 2 — MULTI-BOAT OVERLAP (736e105, js/rules.js) [rules lane]
+RRS Definition Overlap, second sentence ("they also overlap when a boat
+between them overlaps both") — the inventory ABSENT item blocking Z1-v2
+(bay mark-room concessions are 57% third-boat, _mr_why.js). Encoded as
+isOverlappedThrough (literal one-boat clause; strict-interior between test;
+finished boats never intervene), applied at BOTH consumers (interactions
+ledger -> 18.2 snapshot + r17 context; evaluate() Section A 11-vs-12).
+⚠️ UMPIRE-VISIBLE IN RAFTS — owner review requested; accuracy doctrine
+cited. Tests: _test_multioverlap.js 13/13 (pre-landing HEAD failed exactly
+the unencoded checks); test_scenarios runner extended to a 3rd boat (the 17
+existing scenarios unchanged-green); def-overlap-through-middle raft
+scenario added (18 ALL OK; renders on rules.html); markroom / rule11 /
+exoneration green on the landed tree. Z1-v2 (the HOLD extension across all
+obligated boats) NOT built — the owner-visible design step, now unblocked.
+Fleet (treeMR full suite): WINS bay mark -43% boat -18% (the raft case),
+glowtide med 259->248 boat -17% pen -14%, arctic boat -15% (med 0.0),
+seatrials pen -35%. NAMED COSTS: redrock paired med -1.0 BUT finisher med
+304->310 (boat +13%, pen +8%); lagoon boat 0.61->1.11, mark 0.10->0.22
+(small absolutes); lake med +1.0; river land +11% (fins 211->210, notch
+lottery); swamp-alone mean +6.3 with every dirt column DOWN.
+
+## CLOSE TABLE — final HEAD 736e105 (pre = r1*/n1* anchors; post = f1sw*/
+## f1riv*/f1lag composed + mr* where S3a is byte-inert; human = pooled meds)
+venue      | human  | pre med/mean/best   | post med/mean/best  | ratio | DNF% | colMed | penMed
+arctic     |  209.4 | 314/318.9/218       | 313/318.3/218       | 1.495 |  0.0 |  17 | 0
+redrock    |  215.2 | 304/307.1/216       | 310/307.6/219       | 1.441 |  0.0 |  16 | 1
+swamp      |  234.1 | 331/358.7/170       | 318/326.4/170       | 1.358 |  4.2 |   8 | 0
+river      |  187.4 | 241/256.9/169       | 243/255.5/169       | 1.297 |  2.8 |  37 | 1
+glowtide   |  199.1 | 259/258.3/190       | 248/253.0/186       | 1.246 |  0.0 |  17 | 1
+lagoon     |  174.7 | 210/208.8/167       | 212/212.4/167       | 1.214 |  0.0 |   0 | 0
+lake       |  194.8 | 219/220.1/167       | 221/222.3/168       | 1.134 |  0.0 |   0 | 0
+bay        |  239.0 | 270/269.9/235       | 270/268.5/233       | 1.130 |  0.0 |   0 | 0
+ocean      |  214.2 | 224/226.1/194       | 225/226.0/194       | 1.050 |  0.0 |   0 | 0
+seatrials  |  185.7 | 190/194.4/172       | 190/192.8/172       | 1.023 |  0.0 |   0 | 0
+SWAMP 1.414 -> 1.358 (med -13, mean -32, DNF 4.6->4.2%, boat -30%);
+GLOWTIDE 1.301 -> 1.246. Named at equal prominence: REDROCK finisher med
+304->310 (1.413->1.441 on the table) while the like-for-like paired med is
+-1.0 over the pooled 6-set (rule 20's statistic) — the +6 is reshuffle-and-
+cost mixed, owner review requested with the rules commit; RIVER land column
++11% (the MR grind-count class, fins inside the notch lottery); LAGOON boat
+x1.8 / mark x2 at small absolutes; LAKE +2. npm test: same 7 red suites
+(apparent/dmc/editor/results/sailable/shoal/traffic; test_controls
+canvas-taint crash is environmental). Goldens re-recorded on final HEAD and
+VERIFIED: PASS — 30 traces, 0 behaviour changes. Anchors going forward:
+f1sw*/f1riv*/f1lag + mr* elsewhere (S3a byte-inert there by cmp).
+
+## ⏭ CARRY-FORWARD PROMPT — AFTER THE SWAMP STALL-MACHINE PUSH (2026-08-25 ~14:30)
+
+AI PUSH: [OWNER PICKS]. Context: TWO LANDINGS local on 736e105 — S3a
+weed-aware wiggle side (9e267b3: swamp 1.414->1.358, tail-shaped, byte-inert
+x9) and multi-boat overlap in rules.js (736e105: umpire-visible in rafts,
+bay mark -43%, redrock/lagoon/lake costs named — REVIEW REQUESTED). Goldens
+re-recorded + verified (30). Anchors = f1sw*/f1riv*/f1lag + mr* elsewhere.
+
+(A) SWAMP ADMISSION (the venue's remaining lever, HIS DESIGN CALL): no
+weed-free path exists on the router's graph; his 97%-clean lane is fenced
+off by prop-clearance discs (a 12u hull passes a 7u trunk at ~13u, the bar
+charges 44u); the tight tier is wiped on swamp by the landed 8% knee (med
++42s / land +500% when the whole tier was admitted). A reopen must be
+small-obstacle-scoped model accuracy, judged on river+redrock (the
+2026-08-10 sub4 pre-scoping). Heading-level (x2), route-level (x2) and
+following-level candidates are all measurement-dead — see the graveyard.
+(B) Z1-v2 MULTI-BOAT MARK-ROOM HOLD — now unblocked by the encoding: extend
+the _rowHold entitlement across ALL obligated boats (bay third-boat 57%,
+rr land 43-60% concessions). Owner-visible design; treeZ1 + _mrwhy_* parked.
+(C) GLOW/RR RING RESIDUAL (from R1a): glow leg2 +8.2/leg3 +9.2 s/lap,
+rr leg2 armed +10.7 — pocket/execution class, rock-coupled.
+(D) RIVER ISLAND-8 NOTCH: exactly 5/216 DNFs, all land~1350-1443, all reach
+leg 3 fast then grind to cutoff; escape x8 dead; leads = entry further
+hardened or router line off the face.
+Standing: wrong-way entries (fetch-line target, F3 v2 spec); the arctic
+execution-substrate owner decision; rules program continues (17, 16.2,
+windward-role, 18.1(a)(3), 18.3, 20, 23, rule-19 centroid axis).
+GUARDRAILS: cwd resets after cd — use ABSOLUTE paths for every probe/ls/cmp
+(this session lost 40 min to wrong-cwd "still running" reads); _sw_anat.js
+output files are tree-stamped now; feathered weed edges break clean-run
+preconditions (rule 4); the two poolers' sign/arg-order traps stand.
+
+## ADDENDUM (2026-08-25 ~15:15, measurement only) — RIVER NOTCH DNF SPECIMEN
+_riv_dnf.js (NEW tracked): sequence replay of bench 9408 with per-frame
+instruments. ⚠️ TWO probe lessons: (1) the probe's addInitScript venue
+write is the OLD EARLY pattern — on river that is a DIFFERENT RACE from the
+bench's default late write (rule 30's resolved trap; exact bench replay
+needs goto-then-set); (2) the f1 rules landing re-rolled the notch lottery
+(f1riv 9409 DNF = Mistral; the old r1 names are stale). The instrumented
+race still produced a genuine specimen: Strut ground the island-8 face for
+694 CONTACT-SECONDS (wiggle 340s + escape 287s churning 11 minutes without
+exit — the x8-dead escape machinery live on tape), while the same race's
+finishers took only 5-27s of contact in 3-8 short grinds. NEW PATTERN for
+thread D: FIRST contacts are avoidance-dodge-led (pre-6s wiggle 0%, avDev
+max 34-92°), but the RE-entries after an escape are WIGGLE-steered (52-98%
+wiggle in the pre-window) — the notch's cost is the RE-BEACHING loop, which
+is the owner's original "re-entry crumb" framing, now measured. Hotspots
+(1100-1300,-2700..-3600) and (3700-4240,-3520..-3740).
+
+## ⏭ CARRY-FORWARD PROMPT — THE RE-BEACHING PUSH (verbatim, 2026-08-25 afternoon; owner-agreed, runs in a NEW instance)
+
+AI PUSH: THE RE-BEACHING PUSH (S3a-transfer: land-aware wiggle side).
+Autonomous. HEAD d5765f7 or later (everything through the swamp push is
+PUSHED to main). Boot: read memory regatta-rebeach-push-plan (the
+pre-registration — owner rulings 4/4 recorded), regatta-swamp-session,
+regatta-standing-rules (ALL traps), regatta-closed-families (check before
+ANY candidate — escape-side x8 and re-entry-guard are CLOSED; wiggle-SIDE
+distinctness is a hypothesis P1 must earn), regatta-notch-rules-push (the
+basin mechanics + the x8 graveyard), regatta-river-leg3. Check `date`;
+freeze --check from repo root; anchors = f1sw*/f1riv*/f1lag + mr* (on the
+pushed HEAD; close-table cand/base maps in _n1_close_table.js).
+
+OWNER RULINGS (do not re-ask): primary = RIVER NOTCH (fins/DNF + land
+column headline; redrock grind = transfer-proof second thread); authored
+land ONLY (gate on no _floeObjs — arctic byte-inert by construction);
+fallback if P1 kills the primary = Z1-v2 MULTI-BOAT MARK-ROOM HOLD (extend
+_rowHold across all obligated boats via isOverlappedThrough, treeZ1 +
+_mrwhy_* parked context, AI-only/umpire-invisible); landing bar = same as
+the last two pushes (pre-registered gates + full-width benches; universal
+wins land locally; named losers with costs at equal prominence + review).
+
+THE MEASURED MECHANISM (d5765f7, _riv_dnf.js): the wiggle side chooser is
+LAND-BLIND (rounding dir, weed [S3a], nearest boat/mark <=100u, else
+RANDOM — authored banks invisible). Specimen: first contacts avoidance-led,
+RE-entries after escape WIGGLE-STEERED (52-98%); one boat looped 694
+contact-s (wig 340 + esc 287) while same-race finishers cleared identical
+grinds in 3-8s. The DNF is a RE-BEACHING LOOP.
+
+PLAN: P1 side-outcome census FIRST (river 6 seeds, redrock 4; per wiggle
+trigger while beached: side, beam-point clearance asymmetry, stream,
+outcome <=10s) — THE KILL STAT: P(re-beach | wiggled blocked-side) vs
+P(re-beach | open-side); no separation => DEAD pre-build, pivot to the
+fallback. Also: re-entry ownership at n (if NAV carrots steer re-entries,
+that is the dead guard family — stop, name it). P2 pre-register gates from
+P1's numbers BEFORE building. P3 = mirror S3a exactly (bot.js wiggle-side
+chain after the weed branch: botGrid at both beam points 80/150u, decisive
+on asymmetry only, ties fall through, fires only with a blocked cell <=2
+cells of the boat, leg>=1, no-floe venues, no RNG drawn/skipped outside the
+firing population). P4 = river 3x8 (fins >=213/216), redrock POOLED 6-set
+(rules 12/20/21b, hand-recompute one number), lake 2x20 + arctic one-set
+byte-check (rule 11), glowtide 16, full suite for a landing; close with
+_n1_close_table.js on final HEAD, goldens re-record+verify (COUNT=30) if
+landed, npm test same-7, campaign entry + carry-forward, memories+graveyard.
+
+GUARDRAILS THAT BIT THIS WEEK: ABSOLUTE PATHS for every probe/ls/cmp (cwd
+resets after cd — the swamp session lost 40 min to wrong-cwd "still
+running" reads); addInitScript = EARLY venue write != the bench race on
+river (rule 30 — exact bench replay needs the late goto-then-set pattern);
+the rules landing re-rolled the notch lottery (current DNF names live in
+f1riv*, old r1 names are stale); feathered-edge preconditions (rule 4);
+probe output files carry the TREE NAME; zero-at-every-percentile = bug;
+serialize heavy benches (goldens + npm test + suites concurrently starved
+a bench for 90 min).
+
+## THE RE-BEACHING PUSH — 2026-08-25 evening (autonomous, owner rulings 4/4 pre-recorded). NOTHING SHIPPED — both threads killed by their own pre-registered filters. Two findings that reshape the map.
+
+P1 SIDE-OUTCOME CENSUS (_rb_census.js NEW tracked; _rb_kill.js NEW tracked;
+gates and definitions written before any run). Sequence replay per rule 34
+from the anchor benches' seed0s, LATE venue write per rule 30 — replay
+VALIDATED: river 8/8 races and redrock 4/4 match the bench fins boat-for-boat
+(all 6 current river DNF seeds reproduced: 9409/10/11, 9501/02/03).
+Census population = wiggle-trigger rising edges, leg>=1, cause in
+{rand8/obs/rand} (the branches a land-aware side would replace), boat-cell
+clearance <=2 cells; side score = sum over 80/150u beam points of
+min(grid clearance, 4 cells); asymmetric = |delta| >= 2; outcome window
+(t+1.5, t+10]s.
+
+- RIVER (917 triggers, 543 asymmetric): **KILL. P(re-beach | wiggled
+  blocked side) 97% vs open side 98%** (n 278/265); clear-at-trigger split
+  86% vs 82%; every cause split flat; the NO-asymmetry population re-beaches
+  at 93%. Re-beaching in the notch basin is SATURATED — within 10s the basin
+  re-takes the boat whichever way it wiggles (stream pressing the corner +
+  contact x0.4/frame). The pre-registered no-separation clause fired: DEAD
+  PRE-BUILD. The 2026-08-16 "escape machinery reshuffles which boats the
+  notch takes" warning is now measured at the side-choice level too.
+- Stop-condition check: river re-entry ownership at n = wiggle 47% /
+  avoidance 46% / nav 5% — NAV carrots do NOT steer re-entries (no
+  dead-guard-family trigger); the candidate died on the main stat alone.
+- REDROCK (38 triggers, 17 asymmetric): **the side DOES separate — re-beach
+  100% (8/8) blocked-side vs 33% (3/9) open-side**, consistent in every
+  split, chooser at coin-flip (53% open). But redrock re-entries are
+  avoidance-led (74%; wiggle 17%) — the river specimen's wiggle-steered
+  picture is river-specific — and with the primary dead the pooled stat is
+  flat (98/96). Redrock-scoped land-aware wiggle side stands as a SIZED
+  LEAD AT n=17, owner call, not a build (thin n, rule 12/20 country, and
+  the pre-registration's kill clause reads on the pooled/primary stat).
+
+PIVOT (owner ruling 3) — Z1-v2 MULTI-BOAT MARK-ROOM HOLD. Reading the
+landed encoding first paid off twice:
+1. **The rules engine already reaches third boats pairwise**: every (A,C)
+   pair keeps its own 18.2 zoneSnapshot whose overlap test is
+   isOverlappedThrough, so raft entitlement exists at HEAD without any
+   avoidance change. Measured holder-takes-inside at HEAD vs the
+   roundcraft-era baselines: **bay 51->63%, redrock 38->46%, lake 27->52%
+   — the 736e105 encoding landing already harvested the multi-boat
+   conversion Z1-v2 was designed to reach** (_mrwhy_*_head logs, 4 seeds
+   each, 112/164/84 episodes).
+2. treeZ2 (= HEAD + the one-line v1 _rowHold entitlement edit; umpire
+   untouched) vs pre-registered gates (_z2_gates.md, written before any
+   candidate output): **G1 bay 63->63 FAIL** (needed +8; holds fire far
+   more — heldPair at kept-inside 31->65% — outcome unmoved: the hold is
+   no longer bay's binding constraint); **G2 lake 52->39 FAIL** (floor -5;
+   conceded episodes now 59% held + 58% land-near — the extended hold
+   presses entitled boats into land-pinched zone lines and they lose the
+   inside anyway); G3 rr 46->52 pass (heldPair-at-concession 8->28%).
+   **MECHANISM DEAD at HEAD — no fleet round run.** treeZ2 kept in eval/rl.
+   The entitlement-hold family closes: v1 mechanism-split (2026-08-24),
+   v2 flat-or-regressive post-encoding (2026-08-25).
+
+CLOSE TABLE on final HEAD: unchanged from the swamp-push close (no code
+landed; anchors remain f1sw*/f1riv*/f1lag + mr*; _n1_close_table.js re-run
+and identical — arctic 1.495, rr 1.441, swamp 1.358, river 1.297, glow
+1.246, lag 1.214, lake 1.134, bay 1.130, ocean 1.050, seatrials 1.023).
+No goldens re-record, no npm test (no shipping-code change).
+
+## ⏭ CARRY-FORWARD PROMPT — AFTER THE RE-BEACHING PUSH (2026-08-25 evening)
+
+AI PUSH: [OWNER PICKS]. Context: NOTHING SHIPPED this session — the
+re-beaching push's both threads died on pre-registered filters. HEAD
+unchanged (736e105 code); anchors f1sw*/f1riv*/f1lag + mr* stand.
+(A) SWAMP ADMISSION — unchanged, HIS DESIGN CALL (no weed-free path
+in-graph; prop-clearance discs fence the clean lane).
+(B) RIVER NOTCH: now measured DEAD at three levels (entry was the lever —
+HZT landed; escape x8; wiggle-SIDE census-killed — basin saturates re-beach
+at ~98% both sides within 10s). Remaining leads are the 2026-08-16 pair:
+entry further hardened, or router line off the island-8 face. The DNF class
+is 5-6/216, all land 1350-1450.
+(C) REDROCK-SCOPED LAND-AWARE WIGGLE SIDE — the census separates there
+(100% vs 33%, n=17, chooser coin-flip; re-entries avoidance-led 74% so
+reach is partial). OWNER CALL whether a redrock-only candidate is worth a
+round at rule-12/20 bench widths.
+(D) MARK-ROOM: entitlement-hold family CLOSED (v1 split, v2 dead — the
+overlap ENCODING already converted bay 51->63 / rr 38->46 / lake 27->52
+holder-inside). Residual concessions are now pairRival+land shaped;
+glow/rr ring residual (roundcraft C) remains the open rounding thread.
+Standing: wrong-way entries (fetch-line target, F3 v2 spec); arctic
+execution-substrate owner decision; rules program (17, 16.2, windward-role,
+18.1(a)(3), 18.3, 20, 23, rule-19 centroid axis).
+GUARDRAILS: all of the 2026-08-25 list stands (absolute paths, rule 30
+late-write for river replay, rule 34 sequence replay, f1riv* DNF names,
+poolers' sign/arg traps, serialize heavy benches); NEW: _mr_why.js uses the
+EARLY venue write — fine on bay/rr/lake (rule 30's identical seven), do NOT
+reuse it on river/lagoon/swamp without switching to goto-then-set.
+
+## ⏭ CARRY-FORWARD PROMPT — THE ROCK-WALL WIGGLE PUSH (verbatim, 2026-08-25 evening; owner-agreed, runs in a NEW instance)
+
+AI PUSH: THE ROCK-WALL WIGGLE PUSH (land-aware wiggle side, redrock-led).
+Autonomous. HEAD b78c688 or later (code == 736e105; commits after the swamp
+push are campaign/probe-only and LOCAL pending his push). Boot: read memory
+regatta-rrwiggle-push-plan (the pre-registration — owner rulings 2/2
+recorded), regatta-rebeach-session (the census + kill-stat method that
+sized this), regatta-standing-rules (ALL traps), regatta-closed-families
+(check before ANY candidate — the RIVER wiggle-side closure does NOT cover
+this redrock-led candidate, but escape-side x8 / re-entry-guard / Z1-v2
+holds are CLOSED), regatta-swamp-session (S3a = the build template). Check
+`date`; freeze --check from repo root (node regatta/eval/freeze_venues.js
+--check); anchors = f1sw*/f1riv*/f1lag + mr* (close-table cand/base maps in
+_n1_close_table.js).
+
+OWNER RULINGS (do not re-ask): firing scope = MEASURED-PROPERTY GATE
+(_gridFixed non-empty AND no _floeObjs AND blocked cell <=2 cells AND
+leg>=1 — NO venue-name gate; arctic byte-inert by construction, verify by
+cmp); fallback if P1 kills = CLOSE AND HAND BACK (no pivot — swamp
+admission + arctic substrate are HIS design calls); landing bar = same as
+the last three pushes (pre-registered gates before build + full-width
+benches; universal wins land locally; named losers with costs at equal
+prominence + review requested).
+
+THE MEASURED MECHANISM (_rb_census.js, mrrr9400 races 0-3): among
+near-beached wiggle triggers (boat-cell clr<=2) with beam-point asymmetry
+>=2 (score = sum over 80/150u of min(clr,4) per side at wd+-1.75), redrock
+re-beach <=10s = 100% (8/8) blocked-side vs 33% (3/9) open-side; chooser
+picks open at coin-flip. NAMED CAVEATS: n=17 (thin — P1 exists to fix
+this); rr re-entries avoidance-led 74% (expect a DIRT/TAIL win, not med);
+river is side-irrelevant (98% both ways — its gate is flat-don't-regress).
+
+PLAN: P1 census extension FIRST (kill-early): _rb_census.js treeMR on
+mrrr9400 races 4-7 + mrrr9500..9900 all 8 (sequence replay, self-validates
+fins vs bench JSONs); pool with the existing 9400 0-3 json via _rb_kill.js.
+KILL BAR: P(reB|blocked) - P(reB|open) >= 25 points at n(asym) >= 50, else
+CLOSE. Screens: lake 6100 x2 + bay 9400 x2 races (near-beach trigger count,
+expected ~0). P2 = write _rrw_gates.md (tracked) from P1's numbers BEFORE
+the edit (mechanism gate on a candidate-tree census re-run; fleet gates: rr
+pooled 6-set land/boat means improve + paired med <= +2 hand-recomputed
+[rules 12/20/21b], river 3x8 fins >= anchor-1 + land not +10%, swamp 3x8
+flat [weed branch keeps precedence], lake 2x20 + bay 2x20 flat, glow 16,
+lag/oc/st anchor widths, arctic one-set cmp byte-check vs CURRENT-HEAD
+baseline [rule 22]). P3 = mirror S3a exactly (bot.js wiggle-side chain
+AFTER the weed branch, BEFORE the >8s random: botGrid clearance at both
+beam points 80/150u, decisive on asymmetry >= the census threshold only,
+ties fall through, no RNG drawn or skipped outside the firing population,
+rounding+weed precedence kept). P4 = full anchor-width suite, rr first;
+close with _n1_close_table.js on final HEAD, goldens re-record+verify
+(COUNT=30) if landed, npm test same-7, campaign entry + carry-forward,
+memories + graveyard.
+
+GUARDRAILS: ABSOLUTE PATHS for every probe/ls/cmp (cwd resets after cd);
+bench replay = _rb_census.js's pattern ONLY (late goto-then-set write +
+sequence from the bench's seed0 + fins validation — rule 30/34);
+_mr_why.js's EARLY venue write must not be reused on river/lagoon/swamp;
+poolers: _pool_rr.js is <BASE> <CAND> with NEGATIVE=faster and _pool_arc.js
+is the OPPOSITE on both counts — hand-recompute one number before any
+verdict; serialize heavy benches; probe outputs carry the TREE name;
+zero-at-every-percentile = bug; census `lst` cause labels are approximate
+at the rand8 boundary; treeMR == HEAD js EXCEPT S3a (byte-inert off
+swamp/riv/lag — fine for redrock census; any NEW tree comes from mktree.sh
+off current HEAD).
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE ROCK-WALL WIGGLE PUSH — 2026-08-25 night (autonomous, owner rulings
+# 2/2 pre-recorded). ✅ ONE LANDING (local): land-aware wiggle side.
+# Pre-registration: memory regatta-rrwiggle-push-plan + _rrw_gates.md
+# (gates written AFTER P1, BEFORE the edit). HEAD in b116222 (code 736e105)
+# -> HEAD out: 736e105 + the bot.js branch. LOCAL, unpushed. REVIEW
+# REQUESTED on the named losers below.
+# ═══════════════════════════════════════════════════════════════════════
+
+## P1 — CENSUS EXTENSION (kill bar PASSED at 13x the original n)
+_rb_census.js treeMR on ALL SIX rr anchor benches (48 races, sequence
+replay, 48/48 fins-validated; races 0-3 of 9400 byte-identical to the
+prior census 4/4). Pooled (_rb_kill.js, _rbw_kill_pooled.log): population
+466, asymmetric 224 (48%); **P(re-beach<=10s | blocked) 96% vs open 45% =
+51-pt separation** (bar >=25 at n>=50), consistent in every cause/contact
+split; chooser open 47% = land-blind coin-flip. Re-entry ownership av 72%/
+wig 20% (the pre-named reach caveat — dirt/tail effect expected, not med).
+Screens: lake 2-race firing population 0, bay 0.
+
+## ✅ LANDED — LAND-AWARE WIGGLE SIDE (js/ai/bot.js, the S3a shape)
+New branch after weed, before the >8s random: near-beached (botGrid _clear
+<=2 cells) on an authored-land no-floe venue (leg>=1), wiggle side = higher
+summed beam-point clearance (80/150u at wd±1.75, min(clr,4)/point),
+decisive only at asymmetry >=2 (the census threshold); ties fall through;
+no RNG drawn/skipped outside the firing population; measured-property gate,
+NO venue names (owner ruling). 46 lines incl. the census numbers in the
+comment.
+
+## GATE VERDICTS (full numbers in _rrw_gates.md)
+- **G-MECH PASS**: blocked choices 53%->4.5%; asym-pop re-beach 72%->44%
+  (full conversion to the open rate).
+- **G-RR PASS (the target)**: pooled 6-set paired med 0.0 mean -0.6;
+  **boat 4.48->3.73 (-17%)**, land 10.50->10.33, pen 0.85->0.81, fins
+  432/432 both. Hand-recomputed per rule 21b. Named: mark 0.45->0.54.
+- **G-RIV PASS, a real win**: fins 210->213, med 243->240, **land -28%**
+  (23309->16798). Named: boat 6.66->10.84/boat-race (+63% — river
+  reshuffles under any RNG shift; goes in the ledger regardless).
+- **G-GLOW PASS**: land -9%, boat -2%, mean -2.7 (fires in 15/16 races).
+- **G-BAY PASS clean**; **G-OC/G-ST byte-identical**; **G-ARC byte-equal**
+  vs fresh HEAD control (rule 22; mrarc* anchors remain valid).
+- **⚠ G-SW FAIL (boat) — THE NAMED LOSER**: boat 922->1242 (+35%,
+  consistent 2/3 sets) against land 1410->930 (-34%); paired med 0 every
+  set, fins 207=207, pen flat; venue-table med 318->326 (+8s, tail-shaped)
+  = gives back ~1/3 of S3a's mean win. Mechanism: near-beach swamp boats
+  now wiggle toward open water = toward traffic.
+- **⚠ G-LK FAIL (boat, single-race lottery)**: 206->251 (+22%); 33/40
+  races byte-identical; the delta is ONE re-rolled race (8->44 vs base
+  per-race max 29). Unsizable at n=7 (rule 3); land/med/fins clean.
+- **⚠ G-LAG FAIL (land, single-race)**: 12->34 frames total, one race
+  (2->24); the +10% bar on a base of 12 frames allowed ±1.2 — structurally
+  unmeetable under reshuffle. Med +1, boat/pen flat. GATE-DESIGN LESSON:
+  relative dirt bars on near-zero bases need an absolute floor.
+DECISION per the registered bar: not universal -> **landed locally under
+the named-loser rule; owner review requested** on swamp (the real trade)
+and lake/lagoon (lotteries). Fallback close-and-hand-back NOT taken: P1
+passed and the wins are the push's pre-registered target.
+
+## CLOSE TABLE — final HEAD (pre = mr*/f1* anchors; post = rw* fresh;
+## human = pooled meds; _rbw_close_table.log)
+arctic 1.495 (byte-id) | redrock **1.441->1.417** (boat -17%) | swamp
+1.358->**1.393** (NAMED: med +8, boat +35%, land -34%) | river
+1.297->**1.281** (fins 213, land -28%) | glowtide 1.246->**1.226** |
+lagoon 1.214->1.219 (NAMED: one-race land) | lake 1.134 flat (boat +22%
+one-race NAMED) | bay 1.130->**1.126** | ocean 1.050 | seatrials 1.023
+(both byte-id). Goal (<=1.1x): still 2/10.
+
+## CLOSE-OUT PROOFS
+Goldens re-recorded + verify **PASS 30 traces, 0 behaviour changes**;
+npm test **7 of 34 not passing = the same-7 red**; freeze --check 10/10
+match at boot; anchors going forward = **rw* (+ mrarc* on arctic)**.
+Probes tracked: _rrw_gates.md (registration + verdicts), _rbw_* logs,
+_rb_census_treeRW_* JSONs. treeRW/treeCTL in eval/rl (untracked).
+
+## ⏭ CARRY-FORWARD (2026-08-25 night) — NEXT PUSH = OWNER'S CALL
+The queued push landed. On review, his options as measured tonight:
+(1) ACCEPT the swamp trade as-is; (2) REVERT (one commit, goldens
+re-record); (3) rule on a swamp-side refinement — the loser is confined to
+the firing population on _hasAwashDrag venues, but any scoping there is a
+venue-name gate in disguise, HIS call per the accuracy doctrine. Open
+owner-decision queue (unchanged): swamp small-obstacle ADMISSION (the
+2026-08-10 sub4 pre-scope), arctic NEW EXECUTION SUBSTRATE, redrock
+arrival-side grounding (parked), rr paired-med review from 08-25 morning.
+Standing map: arctic 1.495 execution-frontier, rr 1.417 re-beach loop now
+land-aware, river 1.281 entry-hardening/router-line leads, swamp
+admission-bound.
+
+## OWNER RULING (2026-08-25 night, in-session): "It's worth it. Let's ship it."
+The rock-wall wiggle landing is ACCEPTED as-is — swamp trade (med +8s /
+boat +35% for land −34%) and the lake/lagoon one-race lotteries included.
+No revert, no scoping ruling needed. 34eea06 ships; review closed.
+
+# ═══════════════════════════════════════════════════════════════════════
+# ⛔⛔ THE TEN-BOT ERA CUT — 2026-08-26 (owner-directed in session: "I think
+# it's probably worth it to move to 10 boat bot races ... Let's do it.")
+# Infra push, NO AI-behavior change. Pre-registration + verdicts:
+# eval/rl/_tb_gates.md. ⛔ NEVER COMPARE tb* TO ANY EARLIER ANCHOR — every
+# pre-tb anchor (rw*, mr*, f1*, n1*, r1*, ...) is 9-bot era.
+# ═══════════════════════════════════════════════════════════════════════
+
+## WHY (the argument the owner accepted)
+His reference laps are 10-hull races (him + 9 bots); benches parked the
+player at 1e6 and raced 9 hulls, so every bot was measured against 8
+rivals — one hull LESS traffic than the human column, on a frontier that
+is traffic-shaped everywhere (arctic rule-5 grinding, rr avoidance-led
+re-entries, the slow-tail contact problem). The cut prices the missing
+hull in and makes the ≤1.1x goal honest.
+
+## THE MECHANISM (ocean_bench.js only; shipping untouched)
+Construction is shipping-identical through startRace (player + 9-draw,
+same RNG stream), then the player boat is CONVERTED to a full bot:
+settings pin `character` = AI_CONFIG[0].name (the shipping NEVER-RACE-
+YOURSELF 99-wide draw — without it the 9-draw can DUPLICATE the 10th
+boat's name and poison every name-keyed stat); applyBoatIdentity(pl, pc,
+false) re-applies stats + AI_STAT_BONUS ("the player takes none of them"
+— a bare isPlayer flip fields a weak hull); isPlayer=false (updateAI
+creates the controller lazily; boat.ai already exists with shipping-
+identical RNG draws); deterministic start fields (startLinePct = mean of
+the nine, setupDist 300, no RNG drawn). Default ON;
+OCEAN_BENCH_PARKED=1 restores the 9-bot path for reproducing pre-cut
+numbers ONLY (rule-30's opt-out pattern).
+
+## GATES — ALL PASS (numbers in _tb_gates.md)
+G-COUNT 10 distinct boats, 10 finishers; G-DET river+redrock two-process
+byte-identical; G-PARK parked path reproduces rwrr9400 byte-exactly ON
+treeRW (⚠ first attempt used stale treeCTL = pre-landing HEAD and
+differed — G-PARK must run on the anchor's tree; treeCTL retired);
+G-SHIP zero js/ diffs + goldens verify PASS 30/30 run fresh + npm test
+same-7 standing.
+
+## THE DENSITY TAX (the one sanctioned cross-era read: same code, 9 vs 10)
+Med deltas rw->tb: arctic +6 (1.495->1.523, +1 DNF), ocean +5
+(1.050->1.074), glow +4 (1.226->1.246), redrock +3 (1.417->1.431),
+seatrials +2 (1.023->1.034), bay +2 (1.126->1.134), swamp +1 (1.393->
+1.397), lake 0 (1.134), river -3 / lagoon -4 (re-rolled lotteries; river
+MEAN +5.1, land mean 78->103 — the notch churns harder at 10 hulls).
+The tenth hull lives in the BOAT column everywhere: bay 0.39->0.64,
+ocean 0.49->0.68, seatrials 0.19->0.49, arctic 2.21->3.32, rr 3.73->4.49.
+⇒ ~1/3 to 1/2 of the "easy venues' " residual gap vs him is traffic tax,
+now priced. GOAL STILL 2/10 (ocean 1.074, seatrials 1.034).
+
+## NEW ANCHORS = tb* (full widths, treeRW == HEAD b/34eea06 code).
+## Deferred, tracked here: _rb_census.js and the replay probes still park
+## the player — RETROFIT BEFORE first use on a tb* bench. Goldens stay
+## shipping-construction (they test the game, not the bench).
+
+## ⏭ CARRY-FORWARD (2026-08-26) — NEXT PUSH = OWNER'S CALL, TEN-BOT ERA
+All future benches are 10-bot by default; anchors tb*; the owner-decision
+queue stands (swamp small-obstacle admission; arctic execution substrate —
+now 1.523 and carrying the largest density tax, +6 med, floe+boat dirt
+both up; redrock arrival-side grounding; river entry-hardening). Any new
+candidate tree needs mktree.sh off CURRENT HEAD and benches vs tb* only.
