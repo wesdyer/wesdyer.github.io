@@ -15727,3 +15727,8 @@ arrival-side grounding (parked), rr paired-med review from 08-25 morning.
 Standing map: arctic 1.495 execution-frontier, rr 1.417 re-beach loop now
 land-aware, river 1.281 entry-hardening/router-line leads, swamp
 admission-bound.
+
+## OWNER RULING (2026-08-25 night, in-session): "It's worth it. Let's ship it."
+The rock-wall wiggle landing is ACCEPTED as-is — swamp trade (med +8s /
+boat +35% for land −34%) and the lake/lagoon one-race lotteries included.
+No revert, no scoping ruling needed. 34eea06 ships; review closed.
