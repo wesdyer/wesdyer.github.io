@@ -896,6 +896,20 @@ const MINIMAP_ISLAND = {
     // dark forest, bright meadow, pale gravel, and the river threading between them.
     humus:     { body: '#26382E', top: '#26382E' },
     mossfloor: { body: '#33563B', top: '#33563B' },
+    // ── GLOWTIDE'S JUNGLE, AND THE SAME ARGUMENT RUN THE OTHER WAY ─────────────────
+    // `jungle` carries trees: true, so with no row here the chart would take its VEG green.
+    // The three notes above all had to pull a ground DOWN to keep it off the water; this one
+    // has to hold a ground UP, because the chart water is Glowtide's near-black indigo
+    // (#1a2560, luma 40) rather than a daylight blue. A forest painted at bayou or river
+    // values would be the darkest thing on the darkest chart in the game.
+    //
+    // #405A33 lands +37 luma over that water at dE 68.7 — the forest reads as a lit shape on
+    // a black chart, which is the honest picture of a moonlit island. Against `karst`, which
+    // has no row and therefore charts at its own body (#5d6068, luma 96, +56), it sits dE
+    // 31.2 and 18 luma lower: bare limestone shore bright, forested interior a step down and
+    // plainly green. That contrast IS the read a player wants off this chart — where the rock
+    // is, and where the rock is wooded.
+    jungle:    { body: '#405A33', top: '#405A33' },
     meadow:    { body: '#8DAD32', top: '#8DAD32' },
     // Fallback only. A bar's real chart colour is DERIVED per shape (shoalTintFor), so a
     // tan bar and a coral-white bar read differently here exactly as they do on the course.

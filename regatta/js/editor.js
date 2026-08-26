@@ -327,9 +327,22 @@ const LAND_TYPES = [
     // ISLAND_STYLES.sunkenrock.body, i.e. the rock IN AIR, matching every other chip here;
     // the game shows it through the water column, so it draws darker than the chip.
     { kind: 'sunkenrock', label: 'Submerged Rock', swatch: '#565f6f' },
+    // The jungle on top of the limestone, and the FIRST Glowtide ground on the
+    // [VENUE] [TERRAIN] label convention Sockeye Run introduced — the two rows above predate
+    // it and keep their names, since the sort is by label and renaming them would move where
+    // a designer has learned to find them. Swatch tracks ISLAND_STYLES.jungle.body, and that
+    // is now the DELIVERED tile mean (2026-08-25), 13 L* darker than the chip this row shipped
+    // with — so the picker went from a mid khaki to a deep leaf-litter brown, which is the
+    // material.
+    { kind: 'jungle',  label: 'Glowtide Jungle Floor', swatch: '#413715' },
     { kind: 'reed',    label: 'Grass',   swatch: '#7aaa1d' },
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
+    // Redrock Reservoir's two new grounds, on the [VENUE] [TERRAIN] label convention so
+    // the label sort files them beside 'Redrock'. Swatches track ISLAND_STYLES.<kind>.body
+    // and are SPEC means until the tiles are delivered — re-chip both on ingest.
+    { kind: 'slickrock',  label: 'Redrock Slickrock',   swatch: '#E3D0AF' },
+    { kind: 'desertsand', label: 'Redrock Desert Sand', swatch: '#D2996B' },
     // Stillwater Lake's three grounds. Swatches track ISLAND_STYLES.<kind>.body and are still
     // the tile SPEC means, so they move when the art is ingested and the bodies are reset.
     // ⚠️ "Glacial Granite" is NOT "Granite" — one is ice-SMOOTHED northern shelf rock, the
@@ -1879,7 +1892,16 @@ const KIND_FILL = {
     // mistake this object exists to punish. Coral Reef is the same category and sits at 0.38
     // because a lagoon is otherwise all bright sand; against Glowtide's dark rock the stone
     // grey needs the weight instead.
-    sunkenrock: 'rgba(86,95,111,0.66)'
+    sunkenrock: 'rgba(86,95,111,0.66)',
+    // Dry land, so solid per this table's rule that only what you may sail over is
+    // translucent — and the schematic is the one place this ground is NOT seen through the
+    // night wash, so it draws here as the leaf-litter brown the tile actually is rather than
+    // the near-black the venue shows it as.
+    jungle: '#413715',
+    // Redrock Reservoir's two new grounds. Both dry land, so both solid per this table's
+    // rule that only what you may sail over is translucent. Values are the spec bodies;
+    // update to delivered tile means on ingest, with the chips.
+    slickrock: '#E3D0AF', desertsand: '#D2996B'
 };
 const KIND_EDGE = {
     granite: '#c9c9c9', karst: '#aab0bb', redrock: '#8a4a26', reed: '#5c8438', swampgrass: '#7d7048',
@@ -1910,7 +1932,15 @@ const KIND_EDGE = {
     coastalrock: '#6f6556', coastalscrub: '#7d7e3c', lane: '#afa898',
     // Bright against its own fill rather than darker, the way granite and karst are: this is
     // the outline you drag vertices on, and it sits on near-black water.
-    sunkenrock: 'rgba(154,160,172,0.9)'
+    sunkenrock: 'rgba(154,160,172,0.9)',
+    // Its own ISLAND_STYLES stroke, per the coastalrock/coastalscrub rule — and darker than
+    // its fill with the earth kinds rather than lighter with granite and karst, because a
+    // jungle cap is usually drawn INSIDE a karst island and its outline is an inland boundary
+    // against a lighter ground, not a coastline against water.
+    jungle: '#26210E',
+    // Each is its own ISLAND_STYLES stroke, per the coastalrock/coastalscrub rule — darker
+    // than the fill, with the earth kinds: pale grounds on bright water need no light edge.
+    slickrock: '#AD9E85', desertsand: '#976E4D'
 };
 
 function drawLandLayer() {

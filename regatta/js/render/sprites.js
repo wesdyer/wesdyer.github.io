@@ -277,7 +277,43 @@ const LAND_TEXTURES = {
     // gives an in-slab texture sd of 0.86 and 0.30 gives 1.17: the tile is barely legible
     // either way once the rock is properly dark, which is the honest look of a dark thing
     // under water at night, so this takes the version with more of it.
-    sunkenrock:   { src: 'assets/images/terrain/arctic/granite.png', tile: 128, alpha: 0.30 }
+    sunkenrock:   { src: 'assets/images/terrain/arctic/granite.png', tile: 128, alpha: 0.30 },
+    // ── THE FIRST GROUND TILE ON A NIGHT VENUE, AND THE ALPHA IS A DIFFERENT SUM ───
+    // Delivered 2026-08-25. Every alpha above is judged on the COMPOSITED pattern, because on
+    // every other venue that is what reaches the eye. Here drawNightWash multiplies the whole
+    // scene afterwards, and it takes a second cut out of the CONTRAST as well as the colour —
+    // measured on this tile's own luma variation, a factor of 0.591. So the tile is quieter on
+    // screen than its alpha says, and the usual reflex of cutting the alpha would land it at
+    // nothing.
+    //
+    // 0.85 IS MEASURED AND IT IS DELIBERATELY HIGH. Tile sd is 7.53 at 128, so composited it
+    // lands 6.40 — the top of the shipped band, beside river mossfloor's 6.69 — and AFTER the
+    // wash it lands 3.78, beside lake forestfloor's 3.14 and bay-sand's 3.93, which is where a
+    // forest floor belongs. Both readings are inside the band, and that is the point of picking
+    // it this way: judge only the post-wash number and the alpha silently breaks the day
+    // someone turns `night` down.
+    //
+    // ⚠️ THE USUAL CEILING IS ABSENT HERE, WHICH IS WHY IT CAN GO THIS HIGH. Raising an alpha
+    // normally re-exposes a seam (see coralrock, pinned at 0.20 by exactly that). This tile
+    // wraps at 1.06x horizontal and 1.05x vertical against an interior neighbour difference —
+    // the cleanest wrap in the game, where the rest run 1.07 to 2.04 — and its periodicity is
+    // 2.25 peak/mean, under lake forestfloor's 2.75, which the note there calls the lowest in
+    // the game. There is no seam and no repeat to protect, so the only question left was how
+    // much of the litter to keep, and the answer is most of it.
+    jungle:       { src: 'assets/images/terrain/glowtide/jungle.png', tile: 128, alpha: 0.85 },
+    // ── REDROCK RESERVOIR'S TWO NEW GROUNDS — SLOTS, ART NOT YET DELIVERED ──
+    // Wired at spec time, the Lighthouse Cove pattern: getLandPattern falls back to the
+    // flat body fill until the file lands, so these rows cost nothing today and make
+    // delivery a pure asset drop. Both alphas are PRE-REGISTERED, not measured — a guess
+    // about a tile that does not exist yet is a starting point and never a spec (the
+    // bay-scrub/marsh lesson, learned twice) — so retune each on its delivered luma sd.
+    //
+    // slickrock: tile 256 with the rocks (granite, sandstone, bay-rock) — bleached benches
+    // and domes are metre-scale features. alpha 0.35, the rock precedent. desertsand: tile
+    // 128 with the sands, which puts pebbles and chips at true size per bay-sand's measured
+    // argument; alpha 0.7, the sand precedent — its structure is broad tonal drift.
+    slickrock:    { src: 'assets/images/terrain/redrock/slickrock.png',  tile: 256, alpha: 0.35 },
+    desertsand:   { src: 'assets/images/terrain/redrock/desertsand.png', tile: 128, alpha: 0.7 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];

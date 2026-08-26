@@ -909,6 +909,25 @@ function drawNightGlow(ctx) {
         // Culling whole EDGES by their midpoint went dark exactly when you sailed up to a
         // shore: this landmass is 33 vertices across the whole map, so one edge can be
         // thousands of units long and its midpoint far off-screen.
+        // ⚠️ AND AN INLAND EDGE IS NOT A COAST EITHER — the same test the DAYTIME surf has
+        // had since Lighthouse Cove, which this pass had simply never needed. drawSurf runs
+        // surfDryEdges: step off each edge along the outward normal and ask whether that
+        // point is inside another solid shape; if it is, the edge faces ground and breaks
+        // nothing. Glowtide is the only venue that runs a night, and its 25 karst shapes are
+        // 25 separate islands — probed, ZERO of their 230 edges face another shape — so the
+        // gap was latent and this change is a measured no-op on everything shipped.
+        //
+        // It stops being latent with `jungle`, which is meant to be drawn as a cap INSIDE a
+        // karst island: two dry shapes, so two coastlines by the exclusions above, and the
+        // cap would have got a full ring of blue surf breaking in the middle of an island —
+        // the exact picture the cove note describes, on the one venue where the glow is the
+        // whole point.
+        //
+        // ⚠️ THE INDEX IS OFF BY ONE BETWEEN THE TWO PASSES AND IT IS NOT COSMETIC. This
+        // loop walks edge i as v[i] -> v[i+1]; surfDryEdges walks j = i-1 -> i and stores
+        // under i. So this edge is that pass's (i + 1), and reading dry[i] here would
+        // silence the wrong shore.
+        const dry = surfDryEdges(isl);
         // ⚠️ SPACING MUST BE UNDER THE CORE DIAMETER OR THE BRIGHT LINE BEADS. At 46u with
         // 9-16u cores the surges came out as a string of evenly spaced pearls — the wash
         // overlapped fine (it is 68-120u wide) but the cores never touched. 24u is inside
@@ -920,6 +939,7 @@ function drawNightGlow(ctx) {
             const ex = a1.x - a0.x, ey = a1.y - a0.y;
             const elen = Math.hypot(ex, ey);
             if (elen < 1) continue;
+            if (dry[(i + 1) % v.length]) { run += elen; continue; }
             const steps = Math.max(1, Math.round(elen / CHUNK));
             for (let k = 0; k < steps; k++) {
                 const f = (k + 0.5) / steps;
@@ -1066,6 +1086,204 @@ function drawNightGlow(ctx) {
     ctx.globalAlpha = 1;
     ctx.restore();
 }
+
+// ── FIRE ─────────────────────────────────────────────────────────────────────
+// The light a bonfire throws. The ART BAKES NONE OF THIS — glowtide-bonfire is painted as a
+// cold woodpile in flat daylight, deliberately, and everything warm about it is added here.
+// Same division as the venue's jellyfish (painted white, tinted and lit by the engine) and
+// its channel buoys (painted without their lamps).
+//
+// ⚠️ THIS IS ITS OWN PASS RATHER THAN A BLOCK INSIDE drawNightGlow, AND THAT IS THE WHOLE
+// POINT OF IT. That function opens `if (nightAmt() <= 0) return`, which is right for
+// bioluminescence and for navigation lamps — both are things you only see after dark. A fire
+// is not. It burns at noon, and a bonfire that existed only on Glowtide would be an unlit
+// woodpile the moment anyone reused it on a day venue. So the night level scales this pass
+// instead of gating it.
+//
+// ⚠️ AND IT SCALES THE TWO HALVES DIFFERENTLY, which is the only interesting decision here.
+// A fire is two things at once: the FLAME, which is emissive and just as visible at midday,
+// and the LIGHT IT THROWS, which you can only see when its surroundings are dark. So the
+// core barely moves with the hour and the halo mostly does. At night the fire pools light
+// across the sand; by day it shrinks back to a bright flame with almost no reach, which is
+// what a fire on a sunlit beach actually looks like.
+//
+// ⚠️ THE HALO MUST CLEAR THE BODY. The buoy lamps learned this the hard way — at radius 9-18
+// inside a 28u hull they read as glowing buoys rather than buoys with lights on them — and a
+// bonfire is worse, because a 42u woodpile lit from within just looks like it is made of
+// embers. FIRE_HALO is 1.9x the prop's own drawn size, so the light lands on the ground
+// outside the ring and the thing reads as a fire.
+//
+// ⚠️ PEAK IS 0.62, NOT 1.0, AND THAT IS MEASURED. Composited against the delivered sprite at
+// full strength the stone ring blows out and loses its form: the object stops being a bonfire
+// and becomes a blob of light. Around 55-60% the fire is unmistakable and the stones are
+// still stones. The flicker envelope below peaks there.
+const FIRE_KINDS = { 'glowtide-bonfire': 1 };
+
+// ⚠️ THE LIGHT IS TIGHT, NOT A POOL, AND THAT CAME FROM REFERENCE. The first cut used the
+// buoy lamp's proportions — one wide soft halo at 1.9x the body over a small core — and it
+// was wrong in a way the buoys are not: a nav lamp IS a point source hung in the dark, so a
+// broad even glow is what it does, while a bonfire is a MASS OF BURNING WOOD. Photographed
+// from above, the ground a body-width outside the ring is already dark; what is bright is
+// the fuel itself, glowing along the length of every log. The 1.9x pool read as a lantern
+// standing on the sand with the woodpile left cold underneath it.
+//
+// So this is built inside-out in four layers instead of two, and the widest of them barely
+// clears the stones:
+//   HEART   a small white-hot centre, the base of the flame
+//   FLAME   the visible fire, drawn as three WANDERING LOBES rather than one disc so the
+//           silhouette licks and is never a circle
+//   EMBERS  a warm layer sized to the PILE, which is what makes the wood read as
+//           incandescent rather than as grey wood with a light above it
+//   THROWN  the only part that reaches past the ring, and it is the faintest
+const FIRE_HEART  = 0.15;   // radius as a multiple of the prop's drawn size
+const FIRE_FLAME  = 0.27;
+const FIRE_EMBER  = 0.52;   // sized to the woodpile itself
+const FIRE_THROWN = 1.25;   // just past the stone ring — see above
+// ⚠️ 0.62 WAS MEASURED ON A BUILD THAT NO LONGER EXISTS, AND CARRYING IT OVER WAS AN ERROR.
+// The cap came from an offline composite of the FIRST construction — one wide soft halo at
+// 1.9x the body — where driving it to full washed the stone ring out and the object stopped
+// being a bonfire. That halo is gone: the light is now four tight layers, the widest of them
+// barely past the stones, and the thrown component is separately scaled down to 0.42. With
+// nothing left to blow the stones out, the old cap was only making the fire dim, and at 0.62
+// it read as a warm patch buried in the woodpile rather than as something burning.
+const FIRE_PEAK   = 1.0;
+// The tongues, outside in. `len`/`wid` are fractions of the prop's drawn size; `rate` is how
+// fast that ring licks — the outer tips whip and the hot core barely moves, which is what a
+// fire does. `k` offsets each ring's angular spacing so the three never line up into spokes.
+const FIRE_RINGS = [
+    // `arc` is how far this ring may stray from the leaning axis — the outer flame swings
+    // widest, the hot core barely moves. `root` spreads each ring's origins over the fuel.
+    // ⚠️ THE AMPS LOOK HIGH AND ARE NOT. A tongue is a CHAIN of four blobs that taper and
+    // fade along its length, so the number here is the brightness of its ROOT and everything
+    // past that is already dimmer; the first pass at 0.30/0.38/0.46 measured sensible and
+    // rendered as a glimmer buried in the woodpile.
+    { n: 7, len: 0.44, wid: 0.150, root: 0.15, arc: 1.35, rate: 2.7, amp: 0.70, rgb: '255,112,24' },
+    { n: 5, len: 0.32, wid: 0.125, root: 0.11, arc: 0.85, rate: 2.1, amp: 0.85, rgb: '255,172,58' },
+    { n: 3, len: 0.21, wid: 0.100, root: 0.06, arc: 0.45, rate: 1.5, amp: 1.00, rgb: '255,235,182' },
+];
+
+const FIRE_RGB = {
+    heart:  '255,248,228',   // white-hot, but never pure white
+    flame:  '255,176,52',
+    ember:  '255,96,18',     // deep orange — this is glowing wood, not a flame
+    thrown: '255,138,44',
+};
+
+// ⚠️ A FLAME IS A SHAPE, NOT A GRADIENT — BUT IT IS NOT A SPIKE EITHER, and getting that
+// wrong twice is what this comment is for. Four additive discs gave light coming off a fire
+// without giving fire. Replacing them with filled tapered tongues gave fire made of DARTS: a
+// dozen hard-edged points radiating evenly from one centre, which reads as a starburst, a
+// sea urchin, an explosion — anything but burning. Two things were wrong and both matter:
+// a real flame has NO HARD EDGE anywhere, and it is never radially even.
+//
+// So a tongue is built as a TAPERED CHAIN OF SOFT BLOBS along its axis, each smaller and
+// fainter than the last. Soft by construction, because glowSprite is already a radial
+// falloff, and it costs no blur filter. Overlapping, the chain reads as one licking body of
+// flame rather than as beads.
+//
+// ⚠️ AND FROM DIRECTLY ABOVE A FLAME DOES NOT POINT UP. It climbs, so a plan view looks
+// along its length and every tongue foreshortens: what you see is an irregular bright heart
+// with the fire reaching OUTWARD and wandering, never a row of vertical spikes. Same mistake
+// the bayou's spanish moss note records — draw the side view of a thing that rises and the
+// camera is wrong however good the flame looks.
+function flameTongue(g, rgb, x, y, ang, len, wid, amp) {
+    const cs = Math.cos(ang), sn = Math.sin(ang);
+    const N = 4;
+    for (let i = 0; i < N; i++) {
+        const u = i / (N - 1);                       // 0 at the root, 1 at the tip
+        const r = wid * (1.0 - 0.62 * u);            // tapers
+        const a = amp * (1.0 - 0.55 * u);            // and fades
+        if (a <= 0.004) continue;
+        g.globalAlpha = Math.min(1, a);
+        const px = x + cs * len * u, py = y + sn * len * u;
+        g.drawImage(glowSprite(rgb), px - r, py - r, r * 2, r * 2);
+    }
+}
+
+function drawFireGlow(ctx) {
+    const props = state.course && state.course.props;
+    if (!props || !props.length) return;
+    const n = nightAmt();
+    const cam = state.camera, t = state.time;
+    const halfW = ctx.canvas.width * 0.5 + 160, halfH = ctx.canvas.height * 0.5 + 160;
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    let opened = false;
+    const blob = (rgb, x, y, r, a) => {
+        if (a <= 0.004 || r <= 0.2) return;
+        ctx.globalAlpha = Math.min(1, a);
+        ctx.drawImage(glowSprite(rgb), x - r, y - r, r * 2, r * 2);
+    };
+    for (const pr of props) {
+        if (!FIRE_KINDS[pr.kind]) continue;
+        const x = pr.x + (pr._dx || 0), y = pr.y + (pr._dy || 0);
+        if (Math.abs(x - cam.x) > halfW || Math.abs(y - cam.y) > halfH) continue;
+        const world = ((reg[pr.kind] || {}).world || 42) * (pr.scale || 1);
+
+        // ⚠️ A FIRE DOES NOT BLINK ON A RHYTHM, so this is not the buoys' clean sine. Three
+        // incommensurable rates sum into something that never obviously repeats, and the
+        // phase is seeded from the prop's own position so two fires on one beach never
+        // flicker in step — the trick the buoy lamps use to stop a channel reading as fairy
+        // lights, borrowed for the opposite reason.
+        const ph = x * 0.0131 + y * 0.0217;
+        const f = Math.max(0.20, Math.min(1, 0.62
+            + 0.22 * Math.sin(t * 3.10 + ph)
+            + 0.11 * Math.sin(t * 7.70 + ph * 1.7)
+            + 0.07 * Math.sin(t * 1.30 + ph * 0.4)));
+
+        // ⚠️ THE TWO HALVES ANSWER THE HOUR DIFFERENTLY, and that is what lets one fire serve
+        // a night venue and a day one. A fire is emissive AND it throws light: the flame is
+        // just as visible at noon, but the light it casts on the ground only shows when the
+        // ground is dark. So the fuel barely moves with `n` and the thrown light mostly does.
+        // By day it collapses to a bright flame with almost no reach, which is exactly what a
+        // fire on a sunlit beach looks like.
+        const fuelAmp   = (0.66 + 0.34 * n) * FIRE_PEAK * f * 1.35;
+        const thrownAmp = (0.10 + 0.90 * n) * FIRE_PEAK * f * 0.42;
+        if (fuelAmp <= 0.004 && thrownAmp <= 0.004) continue;
+
+        if (!opened) {
+            ctx.save();
+            ctx.globalCompositeOperation = 'lighter';
+            opened = true;
+        }
+        blob(FIRE_RGB.thrown, x, y, world * FIRE_THROWN * (0.90 + 0.10 * f), thrownAmp);
+        blob(FIRE_RGB.ember,  x, y, world * FIRE_EMBER  * (0.92 + 0.08 * f), fuelAmp * 0.75);
+
+        // ── THE FLAME ITSELF ────────────────────────────────────────────────
+        // Three rings of tongues, longest and deepest-coloured outside, shortest and
+        // hottest inside, so the fire has a temperature gradient the way a real one does.
+        // Every tongue carries its OWN phase, so they lick independently instead of the
+        // whole flame breathing in and out as one shape.
+        // ⚠️ THE FIRE LEANS, AND THAT IS WHAT STOPS IT LOOKING LIKE A STARBURST. Tongues
+        // spread evenly around the centre give a symmetric spiky rosette however well each
+        // one is drawn. A real fire is lopsided from moment to moment — the body of it
+        // wanders to one side, flares, and falls back. `bias` is that wander, a slow drift
+        // of the whole flame's axis; tongues cluster around it instead of ringing the pile.
+        const bias = t * 0.37 + ph + 1.9 * Math.sin(t * 0.53 + ph);
+        for (const ring of FIRE_RINGS) {
+            for (let k = 0; k < ring.n; k++) {
+                const seed = ph + k * 2.399 + ring.k;
+                // Clustered about the leaning axis, not spread over the full circle.
+                const ang = bias + ring.arc * Math.sin(seed * 1.7 + t * ring.rate * 0.31)
+                          + 0.55 * Math.sin(t * ring.rate + seed * 2.3);
+                const lick = 0.55 + 0.45 * Math.abs(Math.sin(t * (ring.rate * 1.31) + seed));
+                // ⚠️ ORIGINS ARE SPREAD OVER THE FUEL BED, not all at one point. Every tongue
+                // starting from the exact centre is the other half of what made the darts.
+                const ox = world * ring.root * Math.cos(seed * 3.1);
+                const oy = world * ring.root * Math.sin(seed * 3.1);
+                const len = world * ring.len * (0.55 + 0.60 * lick) * (0.75 + 0.35 * f);
+                const wid = world * ring.wid * (0.85 + 0.30 * lick);
+                flameTongue(ctx, ring.rgb, x + ox, y + oy, ang, len, wid,
+                            fuelAmp * ring.amp);
+            }
+        }
+        blob(FIRE_RGB.heart, x, y, world * FIRE_HEART * (0.70 + 0.45 * f), fuelAmp * 1.15);
+    }
+    if (opened) {
+        ctx.globalAlpha = 1;
+        ctx.restore();
+    }
+}
+
 
 function drawWater(ctx) {
     if (window.WaterRenderer) {

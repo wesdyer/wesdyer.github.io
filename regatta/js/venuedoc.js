@@ -1145,6 +1145,109 @@ const PROP_KINDS = {
     // added after the ambient wash, in drawNightGlow — the same split as the nav lights.
     'glowtide-jelly':       { label: 'Jellyfish drift',  world: 32, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
     'glowtide-jelly-bloom': { label: 'Jellyfish (small)', world: 20, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
+    // ── THE STRAIT'S FOUR PLANTS ────────────────────────────────────────────
+    // What vegetates the karst. Declared with the art at `slot`, per the placeholder pattern:
+    // a kind with no sprite draws nothing and costs nothing, so the venue can be planted and
+    // re-planted the day the masters land.
+    //
+    // ⚠️ THEY ARE FIVE OF TWELVE. The venue REUSES Pearl Lagoon's five palms and Bluewater
+    // Bonanza's pandanus and naupaka — the owner's call, and it is what makes these the
+    // shapes they are, because the reused set already owns every ROSETTE silhouette (feathered
+    // blades, spiky straps, closed mound). Colour-removed, the venue's planting reads as: one
+    // SOLID DOME, a DOME BUILT OF LEAF ROSETTES, a SPRAWL OF OVERLAPPING LOBES, a TIGHT LOW
+    // CUSHION, a SCATTER OF BARE WOOD ARCS, and the reused rosettes. Size ladder, all twelve:
+    // 120 / 84 / 78 / 74 / 70 / 68 / 60 / 56 / 52 / 40 / 38 / 26.
+    //
+    // ALL FOUR `surface`, and the reasoning is [[ocean-almond-tropical]]'s rather than new:
+    // `canopy` is a claim that a hull passes UNDERNEATH, and a few hundred inland trees on
+    // that plane draw over the fleet and feed canopyAlpha, fading a wedge of forest around a
+    // boat that was never beneath any of it. Nothing sails under the middle of a karst tower.
+    //
+    // ALL `contact: none`, and the mangrove roots are what had to be argued rather than
+    // assumed. The rest stand on `karst` or `jungle`, both `hard`, so the land grounds
+    // a hull well before a collider here would ever be tested — the shore-tree family's
+    // standing reason. A MANGROVE STANDS IN WATER, so nothing under it grounds anything, and
+    // it is still `none`: a fringe is hundreds of plants and hundreds of hidden colliders is
+    // exactly the load the river's 82 banks and the cove's 318 emitted circles warn about. If
+    // a fringe must stop a boat, lay ONE hidden shape along the shore and leave these as
+    // scenery — the cove quay's solution.
+    //
+    // ⚠️ AND THE MANGROVE IS `surface`, NOT `float`, despite standing in water. `float` means
+    // the water draws OVER the prop, which is right for a lily pad and wrong for a six-metre
+    // tree — the plane comment's own lily-pad line, read in the other direction.
+    'glowtide-laurel-amanu':       { label: 'Alexandrian laurel', world: 120, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'glowtide-hibiscus-sea':       { label: 'Sea hibiscus',       world:  78, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ⚠️ THE MANGROVE IS TWO PROPS, NOT ONE, and the split is the whole reason a fringe can be
+    // built rather than stamped: a band of root patches along the waterline, crowns set behind
+    // and over them at whatever density the shore wants, and a bare root field at the seaward
+    // edge where the trees have not reached. It also let each half take its own size — the
+    // combined asset gave the foliage only ~32u because the knees set the bbox.
+    //
+    // BOTH `surface`, and for the ROOTS that is the interesting call. `float` was the first
+    // instinct, to get free occlusion where a root mat runs onto the karst — but float means
+    // THE WATER DRAWS OVER IT, which is a lily pad, and the test this table states is whether
+    // THE GROUND HOLDS IT UP. A knee root is driven into the mud, so it takes the same answer
+    // as the bayou's knees, trunks and piles.
+    //
+    // ⚠️ ORDER THEM ROOTS-THEN-CROWN IN THE DOCUMENT. Same plane means document order, so
+    // nothing makes the canopy draw over the knees except the order you list them in.
+    //
+    // `wash` ON THE ROOTS AND NOT THE CROWN — the daybeacon's distinction, where contactR is
+    // the pile and not the board: the crown is up in the AIR, the knees are what stand in the
+    // water, so the waterline belongs to them alone. 0.30 IS PROVISIONAL and must be reset
+    // from r99 on delivery, the way cypress-knee's 0.35 was.
+    'glowtide-mangrove-roots': { label: 'Mangrove roots',  world: 68, plane: 'surface', contact: 'none', wash: 0.30, motion: 'fixed' },
+    'glowtide-mangrove-crown': { label: 'Mangrove crown',  world: 56, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ── THE GENERIC PALMS, ON THIS VENUE'S OWN KINDS ────────────────────────
+    // Same art as Pearl Lagoon's palms — `src` points straight at its bakes, so this adds
+    // four kinds and ZERO new files. What it does not share is the PLANE, and that is the
+    // entire reason these rows exist rather than reusing 'lagoon-palm' directly.
+    //
+    // ⚠️ THE LAGOON PALMS ARE `canopy`, AND THAT IS RIGHT THERE AND WRONG HERE. Pearl Lagoon
+    // plants 65 of them on small sand spits, where a hull genuinely passes under a palm
+    // leaning off a beach crest. Glowtide wants HUNDREDS across island interiors, which is
+    // the exact case [[ocean-palm-coconut]]'s note records being tried and reverted: on
+    // canopy every one draws OVER the fleet and feeds canopyAlpha, so sailing past a shore
+    // dims a wedge of forest hundreds of units across around a boat that was never beneath
+    // any of it.
+    //
+    // ⚠️ AND THE Z-ORDER SETTLES IT EVEN IF THAT DID NOT. drawCanopyCached is a separate pass
+    // that runs AFTER the boats, so a canopy palm cannot be height-sorted against anything on
+    // `surface` — it would draw over every laurel, pandanus and shrub regardless of height,
+    // and over the fleet as well. The whole planting is ordered by real height x scale, and a
+    // second stratum breaks that ordering outright.
+    //
+    // Pearl Lagoon is untouched. If its 65 palms should ever move to `surface` too, that is a
+    // one-word edit on four rows there — but it is that venue's call, not this one's.
+    'glowtide-palm':         { label: 'Glowtide palm',         world: 70, plane: 'surface', contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm.png' },
+    'glowtide-palm-dense':   { label: 'Glowtide palm, dense',  world: 74, plane: 'surface', contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-dense.png' },
+    'glowtide-palm-leaning': { label: 'Glowtide palm, leaning', world: 84, plane: 'surface', contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-leaning.png' },
+    'glowtide-palm-fan':     { label: 'Glowtide palm, fan',    world: 60, plane: 'surface', contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-fan.png' },
+    // ── THE BEACH BONFIRE ───────────────────────────────────────────────────
+    // The venue's one human site. The vegetation brief treats the coconut palm as a
+    // human-influence indicator and the planting put 152 of them on five pocket beaches;
+    // coconuts with nothing beside them are a hint at a story with no object in it, and this
+    // is the object. Put it where the coconut clusters already are.
+    //
+    // ⚠️ THE ART BAKES NO FLAME — the fire is the ENGINE's, and that is engine-shaped rather
+    // than artistic. Nothing here casts light from a prop, and props draw BEFORE
+    // drawNightWash, so a painted flame is multiplied toward #4a5aa0 at 0.62 and then lit a
+    // second time by the additive pass over it. The venue already makes this call twice:
+    // [[glowtide-jelly]] is painted white because the engine tints and lights it per
+    // instance, and the channel buoys are painted without their lamps.
+    //
+    // ⚠️ WHEN THE FLAME EFFECT IS WRITTEN, copy the buoy lamp in drawNightGlow and read its
+    // note first: a halo that fits INSIDE the body reads as a glowing object rather than an
+    // object with a light on it. The buoys had to grow their halo past a 28u hull; this is a
+    // 42u pile, so the flame has to clear 42. Two parts, as there — a wide soft halo and a
+    // tight core — scaled by nightAmt(), drawn with 'lighter', with a per-instance phase off
+    // the prop's own position so two fires on one beach never flicker in step.
+    //
+    // `landmark`, not `ambient`, and this is the only prop on the venue where that differs:
+    // the ambient role demands a silhouette that is "soft, rounded or organic", and a stacked
+    // log pile inside a stone ring is deliberately none of those.
+    'glowtide-bonfire':      { label: 'Bonfire',                world: 42, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'glowtide-pemphis':            { label: 'Pemphis',            world:  26, plane: 'surface', contact: 'none', motion: 'fixed' },
     'lagoon-palm':         { label: 'Palm',         world: 70, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-leaning': { label: 'Leaning palm', world: 84, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-young':   { label: 'Young palm',   world: 38, plane: 'canopy', contact: 'none', motion: 'fixed' },
@@ -1464,6 +1567,49 @@ const PROP_KINDS = {
     'river-boulder-large-sunken':  { label: 'Granite boulder, sunken',    world: 52, plane: 'seabed', contact: 'hard', contactR: 18, wash: 0.60, washFrom: 'current', motion: 'fixed', src: 'assets/images/props/river/boulder-large.png' },
     'river-boulder-medium-sunken': { label: 'Granite boulder, sunken, medium', world: 34, plane: 'seabed', contact: 'hard', contactR: 12, wash: 0.62, washFrom: 'current', motion: 'fixed', src: 'assets/images/props/river/boulder-medium.png' },
     'river-boulder-small-sunken':  { label: 'Granite cobble, sunken',     world: 20, plane: 'seabed', contact: 'none', contactR:  7, wash: 0.65, washFrom: 'current', motion: 'fixed', src: 'assets/images/props/river/boulder-small.png' },
+    // ── REDROCK RESERVOIR'S EIGHT TOWERS ────────────────────────────────────
+    // The venue's primary landmarks — the towers ARE Redrock the way the peaks are
+    // Glacier Sound's. Declared with the art at `slot`, per the placeholder pattern: a
+    // kind with no sprite draws nothing and costs nothing, so courses can be dressed and
+    // re-dressed the day the masters land. All eight take the arctic landmark recipe
+    // verbatim — plane `surface`, contact `none`, motion fixed — and the size ladder is
+    // built so adjacent rungs are different STRUCTURES colour-removed (table, blade, two
+    // dots, nested steps, pale blob, dot-on-cone, four dots in a file, one dot with an
+    // undercut crescent), the glowtide silhouette discipline, so no two read as one asset
+    // at two scales.
+    //
+    // ⚠️ A TOWER PROP CASTS NO WIND SHADOW AND STOPS NOTHING. Height lives on SHAPES and
+    // colliders live on shapes or contact props — and this venue's whole card is wind
+    // shadows, so a 640u butte the wind ignores is a lie the player will feel. The recipe
+    // (argued in full in redrock-tower-butte's manifest note): back each LARGE tower
+    // (640-360) with a small `redrock` SHAPE at its footprint with height typed, which
+    // buys the lee and the collider in one object; the four small rungs are scenery and
+    // need nothing.
+    'redrock-tower-butte':    { label: 'Butte',          world: 640, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-tower-fin':      { label: 'Sandstone fin',  world: 520, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-tower-twins':    { label: 'Twin spires',    world: 440, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-tower-castle':   { label: 'Castle tower',   world: 360, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-tower-dome':     { label: 'Slickrock dome', world: 300, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-tower-needle':   { label: 'Needle spire',   world: 220, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-tower-hoodoos':  { label: 'Hoodoo file',    world: 160, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-tower-balanced': { label: 'Balanced rock',  world: 110, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // Two later additions (2026-08-26). The mesa is the SECOND BUTTE — an elongated waisted
+    // table at 560, sitting between butte (640) and fin (520), safe because all three are
+    // different structures; it exists so a venue wanting two big tables does not stamp one
+    // asset twice. The talus is the family's free scatter: a flat graded rubble spill for
+    // wall feet and shorelines — no cap, no crescent, nothing standing — deliberately inside
+    // the hoodoos' rung because dressing and landmarks cannot be confused. Both scenery:
+    // contact none, and only the mesa is big enough to earn a backing `redrock` shape.
+    'redrock-tower-mesa':     { label: 'Mesa',           world: 560, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-talus':          { label: 'Talus pile',     world: 140, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The boulder pair (2026-08-26), on the lake pair's 2.4x step. The LARGE is the venue's
+    // hazard at boat scale — one boat length of rounded sandstone, hard, the one prop where
+    // a circular collider is exactly right — and its contactR 20 is the drawn radius at
+    // fillTo 0.86, PROVISIONAL until re-measured off the bake on delivery (the river rule).
+    // ⚠️ Hard props enter the router's grid: place hard ones in ONES where meeting one is a
+    // decision, and dress shores with the small (contact none) in any quantity.
+    'redrock-boulder-large':  { label: 'Sandstone boulder',        world: 48, plane: 'surface', contact: 'hard', contactR: 20, motion: 'fixed' },
+    'redrock-boulder-small':  { label: 'Sandstone boulder, small', world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-naupaka':         { label: 'Beach naupaka',     world: 40, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-morning-glory':   { label: 'Beach morning glory', world: 30, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-grass-coastal':   { label: 'Coastal grass',     world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },
@@ -2240,7 +2386,41 @@ const SHAPE_KINDS = {
                awash: true, drag: 0.8 },
     // Canyon spires and walls. The tallest thing here, and the reason Redrock's card
     // promises wind shadows.
-    redrock: { motion: 'fixed', hard: false, look: 'redrock',  hidden: false, nav: true, height: 0 },   // ~70 m of canyon wall
+    //
+    // HARD since 2026-08-25, and it was soft for a reason that no longer exists twice
+    // over: the soft came from generateIslands (which only ever marked grass and redrock
+    // soft — see `isle`), and the flag itself turned out to have NO runtime consumer —
+    // checkIslandCollisions treats every non-awash island identically (shove out, 60%
+    // speed loss) and nothing reads the compiled `soft`. So this flip changes the declared
+    // contract, not the physics: it says what the collision pass already does, which is
+    // also what a 70 m canyon wall should say. If soft/hard ever grows a real consumer,
+    // this row is already on the right side of it.
+    redrock: { motion: 'fixed', hard: true,  look: 'redrock',  hidden: false, nav: true, height: 0 },   // ~70 m of canyon wall
+    // ── REDROCK RESERVOIR'S TWO NEW GROUNDS ─────────────────────────────────
+    // Until now the venue was one material: every shape is `redrock`, the orange canyon
+    // wall, which is why it reads as a single poured colour. These two are Lake Powell's
+    // other two thirds — the pale bleached sandstone that stripes the geology, and the soft
+    // sand that collects between all the rock.
+    //
+    // Pale bleached slickrock: higher benches, exposed pale layers, rounded domes, and a
+    // few shoreline shelves — the venue design wants roughly 10-20% of the land in it, as
+    // relief from the orange, not as a rival. It is a BENCH, not a wall: suggested height
+    // ~10 m against redrock's ~70, so a designer re-kinding a rim to it should expect to
+    // lose the wind shadow the wall was casting.
+    //
+    // Desert sand & alluvium: beaches, washes, canyon bottoms, sheltered coves, flat
+    // benches — the soft material between the rock, at roughly 15-25% of the land. It is
+    // what a boat should usually find at the waterline of a cove.
+    //
+    // BOTH HARD, with `redrock` itself (flipped from its generateIslands-era soft the same
+    // day these landed — see its note: the soft flag had no runtime consumer anyway). Every
+    // ground since the cove takes hard on the argument that a shore which only slows you
+    // does not price the mistake, and sand's precedent is `isle`/`lakesand`, both hard. If
+    // grounding on a Powell beach should ever be gentle, flip the sand row only, knowingly
+    // — and note that until soft/hard gains a real consumer in the collision pass, the flip
+    // would be declarative only.
+    slickrock:  { motion: 'fixed', hard: true, look: 'slickrock',  hidden: false, nav: true, height: 0 },   // ~10 m of bare dome
+    desertsand: { motion: 'fixed', hard: true, look: 'desertsand', hidden: false, nav: true, height: 0 },   // a beach — no lee at all
     // Bare rock. The only thing on Glacier Sound that grounds you, and the course rounds it.
     granite: { motion: 'fixed', hard: true,  look: 'granite',  hidden: false, nav: true, height: 0 },   // ~55 m of bare rock
     // Dark karst limestone — Glowtide Strait's rock, and the basic material of its shores.
@@ -2278,6 +2458,30 @@ const SHAPE_KINDS = {
     // shelters anything.
     sunkenrock: { motion: 'fixed', hard: true, look: 'sunkenrock', hidden: false, nav: true, height: 0,
                reef: true },
+    // The jungle that grows on top of the limestone — Glowtide Strait's second dry ground,
+    // and the only one on this venue that is not rock. A karst tower is bare stone at the
+    // tide line and closed forest above it, so this is the interior a `karst` shore encloses:
+    // leaf litter, humus, exposed root, mossy limestone rubble and small green groundcover.
+    //
+    // HARD and nav, with karst and every other dry land: it is the same tower, and the boat
+    // meets its edge exactly where it met the rock.
+    //
+    // ⚠️ IT IS MEANT TO BE DRAWN AS A CAP INSIDE A `karst` SHAPE, which is the one use that
+    // needed engine work before this kind could ship. Both shapes are dry land, so both are
+    // coastlines to the night bioluminescent shore, and the cap's edge is an INLAND boundary
+    // — a full ring of blue surf breaking in the middle of an island. The daytime surf has
+    // solved this since Lighthouse Cove (surfDryEdges probes off the edge and asks whether
+    // that point is inside another solid shape); the night pass had never needed it, because
+    // Glowtide is the only venue that runs one and its 25 karst shapes are 25 separate
+    // islands with, measured, zero inland edges between them. drawNightGlow now runs the
+    // same probe. See its note in effects.js.
+    //
+    // ⚠️ TREES ARE THE FLAG, NOT THE ART. `trees: true` is honest — this is a wooded ground —
+    // and on a doc venue it draws nothing, since compileVenueDoc emits `trees: []` and the
+    // palm pass loops that. What it WOULD have decided is the chart colour, so this kind
+    // takes an explicit MINIMAP_ISLAND row instead, exactly as the river's two forest floors
+    // do. No canopy props exist for this venue yet; the ground ships first.
+    jungle:  { motion: 'fixed', hard: true, look: 'jungle',  hidden: false, nav: true, height: 0 },  // ~35 m of tower, forested above the tide line
     // Ice that does NOT move: shelf, shore, the sound's coastline. Soft, because RRS 31
     // penalizes touching MARKS, not obstructions — hitting ice costs speed, not a 360.
     ice:     { motion: 'fixed', hard: false, look: 'ice',      hidden: false, nav: true, height: 0 },   // ~20 m of shelf and shore

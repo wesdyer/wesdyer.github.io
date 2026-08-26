@@ -689,6 +689,11 @@ function draw() {
     drawNightWash(ctx);
     drawJellyGlow(ctx);
     drawNightGlow(ctx);
+    // ⚠️ AFTER THE WASH, AND NOT GATED ON NIGHT. It has to come after drawNightWash or the
+    // fire would be multiplied down by the very moonlight it is supposed to be pushing back;
+    // and unlike the two passes above it runs on every venue, because a fire burns at noon.
+    // drawFireGlow scales itself by nightAmt() rather than returning early on it.
+    drawFireGlow(ctx);
 
     // Draw Indicators
     for (const boat of state.boats) {

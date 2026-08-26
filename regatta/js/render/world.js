@@ -1224,6 +1224,32 @@ const ISLAND_STYLES = {
     cobbleshoal: { body: '#6E6B65', stroke: '#4E4C48', veg: '#6E6B65', rock: '#4E4C48', trees: false },  // = cobble, kept equal
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
     redrock:  { body: '#cc6533', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },   // body = sandstone tile mean
+    // ── REDROCK RESERVOIR'S TWO NEW GROUNDS ─────────────────────────────────
+    // Both bodies are SPEC means; reset each to its DELIVERED tile's own mean on ingest,
+    // per coralsand, so LAND_TEXTURES' alpha stays a pure contrast knob.
+    //
+    // The three-step value ladder is the design: redrock L* 54.4, desertsand 67.7,
+    // slickrock 84.2 — wall, sand, bleached bench, each a clear step lighter, so the
+    // striped Powell geology reads in value before colour arrives. Separations measured
+    // (CIE76, the library's metric): slickrock-vs-redrock 54.0, desertsand-vs-redrock
+    // 28.6, slickrock-vs-desertsand 25.9 — all in-venue pairs, all past the cove's
+    // accepted sand-vs-rock 23.9. Nearest cross-venue neighbour is `tropical` (#ddc39a)
+    // at 6.9 from slickrock and 19.7 from desertsand — picker-swatch concerns only, per
+    // coastalrock's two-tier rule, and 6.9 has coralrock's accepted 6.1 as precedent.
+    //
+    // SLICKROCK IS PALE, NOT GREY: bleached sandstone is lighter and yellower than the
+    // orange it weathered from, never greyer (the cove's hardest-won colour lesson) — so
+    // it holds saturation ~0.23 where white or grey would read as limestone. Strokes take
+    // the coastalrock convention (~18 L* drop on the body's own hue) rather than carrying
+    // redrock's offsets: redrock's stroke drop is only 15.8 and these bodies are far
+    // lighter, so a coastline needs its own weight.
+    //
+    // veg is a paler dab of the same dry material and rock a darker one — the
+    // granite/redrock convention for a look with nothing growing on it; desertsand's rock
+    // is redrock's own #7c4a2d, the coastalscrub move, because the cobbles in Powell
+    // alluvium ARE the canyon wall broken up. Neither draws on this doc venue anyway.
+    slickrock:  { body: '#E3D0AF', stroke: '#AD9E85', veg: '#EFE0C4', rock: '#A8977A', trees: false },  // body = redrock-slickrock SPEC mean
+    desertsand: { body: '#D2996B', stroke: '#976E4D', veg: '#E2B98F', rock: '#7c4a2d', trees: false },  // body = redrock-desertsand SPEC mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
     // tracer pick below) because it is broken rock, not a rounded sandbank.
     granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false },
@@ -1253,6 +1279,62 @@ const ISLAND_STYLES = {
     // than it looks here. This row is the single source for the material: the bake, the
     // minimap and the editor chip all read it, so darkening the rock is this one hex.
     sunkenrock: { body: '#565f6f', stroke: '#1a1d23', veg: '#3a423d', rock: '#6d7078', trees: false },
+    // ── THE JUNGLE ON TOP OF THE LIMESTONE ──────────────────────────────────
+    // Glowtide's second dry ground, and the first thing on this venue that grows. A dark
+    // muted olive-brown: decomposing leaf litter, humus, exposed root, mossy limestone
+    // rubble, with small green groundcover as the only departure from it. NOT a bright
+    // green — a closed jungle floor gets no light and is the colour of what is rotting on it.
+    //
+    // ⚠️ DELIVERED AND INGESTED 2026-08-25, AND THE BODY BELOW IS THE TILE'S OWN MEAN. The
+    // slot shipped at a spec of #5F5726; the art came back at #413715, dE 15.4 and THIRTEEN
+    // L* DARKER. That is the largest spec miss any ground has landed — the lake's forest floor
+    // came in 7.5 under and its note calls that consequential — and it is ACCEPTED, on the
+    // design rather than on the number. See the delivery paragraph below.
+    //
+    // ⚠️ THE NIGHT WASH IS STILL THE THING THAT DECIDES THIS ROW. drawNightWash multiplies the
+    // scene toward #4a5aa0 at 0.62, so each channel keeps R 0.29 / G 0.35 / B 0.63 of itself:
+    // it strips warmth and spares blue. ALL THE ON-SCREEN NUMBERS BELOW ARE MODAL PIXELS READ
+    // OUT OF THE RUNNING GAME, not arithmetic. This ground renders #242010, karst renders
+    // #343A50, and the water runs #132055 lit to #0A1037 deep.
+    //
+    // A WARM GROUND KEEPS ABOUT HALF ITS CHROMA THROUGH THE WASH AND A NEUTRAL ONE NEARLY
+    // TRIPLES — karst's #5d6068 (C 5.0) arrives visibly blue at C 14.6. That asymmetry is why
+    // an authored ground here must be MORE saturated than the look anyone wants, and it is the
+    // one lesson from the spec that survived the delivery intact.
+    //
+    // ⚠️ WHY THE DARK DELIVERY WAS KEPT, AND IT IS NOT INDULGENCE. The owner's design has this
+    // floor as filler glimpsed BETWEEN plants — "the jungle floor is just to provide something
+    // between the trees and shrubbery as a base" — so the relationship that matters is ground
+    // against CANOPY, not ground against water. Measured both ways, the darker tile wins the
+    // one that counts and loses the one that does not:
+    //     canopy   the shipped plants (washed mean #254E18) go dE 26.5 -> 33.1 and -8.0 ->
+    //              -16.6 L*. [[glowtide-mangrove-crown]] goes -1.1 -> +7.5 L*, which
+    //              RETIRES the venue's thinnest pairing — at spec the darkest tree was the
+    //              same value as the ground it stood on, and accepted only on placement.
+    //              Every crown is now plainly lighter than the floor, which is the honest
+    //              overhead read: canopy over dark litter, not the inverse.
+    //     water    +6.5 -> -2.1 L* against the lit band, so the floor now renders a shade
+    //              DARKER than the sea. dE stays 48.6, so nothing is confusable, and in the
+    //              intended use the jungle is a CAP whose edge never touches water — the
+    //              `karst` ring does, 12.1 L* lighter. A jungle interior that reads darker
+    //              than the channel is also just true.
+    //     karst    dE 29.0 at -12.1 L*, BETTER than the spec's -3.5, so the shore the cap sits
+    //              inside separates more strongly than it was designed to.
+    //
+    // stroke IS RE-DERIVED, NOT CARRIED OVER, and the old value would have been a bug: #332D11
+    // was an 18.3 L* drop from the spec body and is only 4.9 below this one. The coastalrock
+    // convention cannot apply at a body this dark — an 18 L* drop lands under L* 6, which is
+    // black — so this takes a 10.6 drop instead. It renders #15140B: 6.4 under the ground it
+    // encloses and 18.6 under the karst outside it, a definite line against both without
+    // pretending to be a contrast device. The boundary is legible on its own anyway; the two
+    // grounds are 12 L* apart before the stroke arrives.
+    //
+    // veg IS THE TILE'S OWN GROUNDCOVER, measured: pixels where G >= R are 6.9% of the frame
+    // at #393D15, against a spec asking for about a tenth. rock stays karst's stone, because
+    // the mossy fragments in this floor ARE that limestone broken up. Neither draws on a doc
+    // venue — vegVertices and rocks are procedural-island features and the minimap takes the
+    // explicit MINIMAP_ISLAND row — so both are here to be true rather than to be read.
+    jungle:   { body: '#413715', stroke: '#26210E', veg: '#393D15', rock: '#7d8087', trees: true },   // body = glowtide-jungle DELIVERED tile mean
     // Sandy shoal — WET sand, deliberately darker than the dry beach above it.
     //
     // This used to be set equal to `tropical` on the principle that a bar is the beach
