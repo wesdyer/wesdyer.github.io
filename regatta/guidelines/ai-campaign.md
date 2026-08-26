@@ -15432,3 +15432,58 @@ max 34-92°), but the RE-entries after an escape are WIGGLE-steered (52-98%
 wiggle in the pre-window) — the notch's cost is the RE-BEACHING loop, which
 is the owner's original "re-entry crumb" framing, now measured. Hotspots
 (1100-1300,-2700..-3600) and (3700-4240,-3520..-3740).
+
+## ⏭ CARRY-FORWARD PROMPT — THE RE-BEACHING PUSH (verbatim, 2026-08-25 afternoon; owner-agreed, runs in a NEW instance)
+
+AI PUSH: THE RE-BEACHING PUSH (S3a-transfer: land-aware wiggle side).
+Autonomous. HEAD d5765f7 or later (everything through the swamp push is
+PUSHED to main). Boot: read memory regatta-rebeach-push-plan (the
+pre-registration — owner rulings 4/4 recorded), regatta-swamp-session,
+regatta-standing-rules (ALL traps), regatta-closed-families (check before
+ANY candidate — escape-side x8 and re-entry-guard are CLOSED; wiggle-SIDE
+distinctness is a hypothesis P1 must earn), regatta-notch-rules-push (the
+basin mechanics + the x8 graveyard), regatta-river-leg3. Check `date`;
+freeze --check from repo root; anchors = f1sw*/f1riv*/f1lag + mr* (on the
+pushed HEAD; close-table cand/base maps in _n1_close_table.js).
+
+OWNER RULINGS (do not re-ask): primary = RIVER NOTCH (fins/DNF + land
+column headline; redrock grind = transfer-proof second thread); authored
+land ONLY (gate on no _floeObjs — arctic byte-inert by construction);
+fallback if P1 kills the primary = Z1-v2 MULTI-BOAT MARK-ROOM HOLD (extend
+_rowHold across all obligated boats via isOverlappedThrough, treeZ1 +
+_mrwhy_* parked context, AI-only/umpire-invisible); landing bar = same as
+the last two pushes (pre-registered gates + full-width benches; universal
+wins land locally; named losers with costs at equal prominence + review).
+
+THE MEASURED MECHANISM (d5765f7, _riv_dnf.js): the wiggle side chooser is
+LAND-BLIND (rounding dir, weed [S3a], nearest boat/mark <=100u, else
+RANDOM — authored banks invisible). Specimen: first contacts avoidance-led,
+RE-entries after escape WIGGLE-STEERED (52-98%); one boat looped 694
+contact-s (wig 340 + esc 287) while same-race finishers cleared identical
+grinds in 3-8s. The DNF is a RE-BEACHING LOOP.
+
+PLAN: P1 side-outcome census FIRST (river 6 seeds, redrock 4; per wiggle
+trigger while beached: side, beam-point clearance asymmetry, stream,
+outcome <=10s) — THE KILL STAT: P(re-beach | wiggled blocked-side) vs
+P(re-beach | open-side); no separation => DEAD pre-build, pivot to the
+fallback. Also: re-entry ownership at n (if NAV carrots steer re-entries,
+that is the dead guard family — stop, name it). P2 pre-register gates from
+P1's numbers BEFORE building. P3 = mirror S3a exactly (bot.js wiggle-side
+chain after the weed branch: botGrid at both beam points 80/150u, decisive
+on asymmetry only, ties fall through, fires only with a blocked cell <=2
+cells of the boat, leg>=1, no-floe venues, no RNG drawn/skipped outside the
+firing population). P4 = river 3x8 (fins >=213/216), redrock POOLED 6-set
+(rules 12/20/21b, hand-recompute one number), lake 2x20 + arctic one-set
+byte-check (rule 11), glowtide 16, full suite for a landing; close with
+_n1_close_table.js on final HEAD, goldens re-record+verify (COUNT=30) if
+landed, npm test same-7, campaign entry + carry-forward, memories+graveyard.
+
+GUARDRAILS THAT BIT THIS WEEK: ABSOLUTE PATHS for every probe/ls/cmp (cwd
+resets after cd — the swamp session lost 40 min to wrong-cwd "still
+running" reads); addInitScript = EARLY venue write != the bench race on
+river (rule 30 — exact bench replay needs the late goto-then-set pattern);
+the rules landing re-rolled the notch lottery (current DNF names live in
+f1riv*, old r1 names are stale); feathered-edge preconditions (rule 4);
+probe output files carry the TREE NAME; zero-at-every-percentile = bug;
+serialize heavy benches (goldens + npm test + suites concurrently starved
+a bench for 90 min).
