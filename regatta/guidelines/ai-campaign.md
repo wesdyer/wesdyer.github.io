@@ -16086,3 +16086,48 @@ boat/lap on arctic) and called it a LOWER BOUND because the DISTANCE was
 unpriced. **This is that distance, and on arctic leg 1 it is 54.3 s of a 63.2 s
 leg gap.** The substrate decision the arctic thread has been waiting on is now
 shown to be the whole campaign's frontier, not an arctic quirk.
+
+## ⏭ CARRY-FORWARD — AFTER THE START PUSH + THE DISTANCE ATLAS (2026-08-27)
+
+HEAD `8c0a732` (AI code = `20356da`). All commits LOCAL, unpushed.
+Anchors: **river = sp\***, every other venue keeps its **tb\*** anchor (byte-
+identical under the landing, cmp-verified). Goldens PASS 30/0; npm test
+same-7 (venuedoc, shoal, sailable, editor, results, dmc, traffic); freeze 10/10.
+Venue table on final HEAD: arctic 1.523 | redrock 1.431 | swamp 1.397 |
+**river 1.259** | glowtide 1.246 | lagoon 1.196 | lake 1.134 | bay 1.134 |
+ocean 1.074 ✅ | seatrials 1.034 ✅. Goal 2/10.
+
+### THE OWNER'S QUEUE, WITH TONIGHT'S EVIDENCE ATTACHED
+1. **THE SUBSTRATE DECISION IS NOW THE WHOLE CAMPAIGN'S, NOT ARCTIC'S.** The
+   atlas shows boat-handling is solved (pointing and VMG at or above his on
+   every venue measured, undisturbed) and the entire residual is extra ground
+   distance, 8-49% per leg. Every remedy family for it is closed. This is the
+   decision the arctic thread has been parked on since 2026-08-23; it now has
+   fleet-wide evidence.
+2. **THE DEAD `startStageDepth` WRITE** — `repositionBoats` asks for 60 u and
+   the controller keeps 200 u because it does not exist yet (0/10 at reposition,
+   every race). Making it live LOSES on its own (+0.17 s mean, closer but
+   slower at the gun). Does the code get to do what it says?
+3. **SWAMP'S START DEFICIT IS REAL AND WORTHLESS** — +20.7 s of mean leg-0,
+   20% of that venue's gap; closing it costs finishers 237→230 and median
+   327→342. Feeds the swamp small-obstacle ADMISSION call.
+4. **GLOWTIDE 55% OCS AT THE GUN** is a +5.29 kt FAIR set sweeping the fleet
+   over the line, and it costs 3.7 s of crossing each time it happens. The only
+   thing that touched it (the way-on hold) costs glowtide +6 s of lap.
+   ⛔ The current-aware start was RE-OPENED on its falsified premise (the river
+   line measures 4.53 kt, not the 0.77-1.19 it was closed on) and re-measured:
+   still dead (river +2.68, bay +1.13 with OCS 0→30%). The closure now stands
+   on a fresh number.
+5. **LAGOON LEG 4 IS THE ODD ONE OUT AND IS 100% NAV-OWNED** — no avoidance, no
+   contact, no reflex in any top cell; **he sails the WIDER line (cross-track
+   770 u vs their 303) and beats them by 13 s** while they run 76-89 u/s where
+   he runs 110+. Every other venue has the fleet too WIDE. Unexplained, sized
+   at 35% of lagoon's gap, and the cheapest open lead on the board.
+
+### GUARDRAILS ADDED TONIGHT
+zsh does not word-split unquoted parameters (arrays, not `set -- $spec`);
+`npm run trace` verifies 2 seeds = 20 traces, the 30-trace verify needs
+`--seeds 3`; `boat.controller` is the BotController and `boat.ai` is a data bag;
+an OCS column must be sampled AT THE GUN, not OR'd over the pre-start; a
+pre-registered gate written for a UNIVERSAL candidate is structurally
+unmeetable by a SCOPED one — say so rather than reinterpret it.
