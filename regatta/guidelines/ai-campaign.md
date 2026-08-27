@@ -16198,3 +16198,40 @@ two-line change.
 VMG, tack split and heading alignment. All of the excess distance is in the
 frames where it is not doing that.** The substrate decision is about those
 frames.
+
+## ⏭ CARRY-FORWARD v2 — END OF THE 2026-08-27 SESSION (supersedes the entry above)
+
+HEAD `b2e3811`; AI code `20356da` (nothing in js/ has changed since the
+landing). All commits LOCAL. freeze --check 10/10. Goldens PASS 30/0.
+npm test 7 of 34 = the same-7 (venuedoc, shoal, sailable, editor, results,
+dmc, traffic). Anchors: **river = sp\***, every other venue keeps **tb\***
+(byte-identical under the landing, cmp-verified).
+
+### THE VENUE TABLE ON FINAL HEAD
+arctic 1.523 | redrock 1.431 | swamp 1.397 | **river 1.259** (was 1.265) |
+glowtide 1.246 | lagoon 1.196 | lake 1.134 | bay 1.134 | ocean 1.074 ✅ |
+seatrials 1.034 ✅ — goal 2/10.
+
+### FOUR DECISIONS WAITING ON YOU, EACH WITH ITS NUMBER
+1. **THE SUBSTRATE.** Close-hauled and undisturbed the fleet matches or beats
+   him on pointing (38.0° vs 39.5°), VMG (5.01 vs 4.94), tack split (67.9% vs
+   68.1%) and heading alignment (cos 0.786 vs 0.751). **All of the 15-49%
+   excess distance is in the frames where it is not doing that.** Every remedy
+   family for those frames is closed. This is no longer an arctic question.
+2. **⚖️ THE AI STEERS FOR FREE** — `ctl` is NO_CONTROLS for every bot, so the
+   rudder-drag line has never fired for one, while his reference laps paid it
+   every frame. Symmetry costs +1 s (seatrials) to +9 s (redrock) of paired
+   median and nearly doubles redrock's boat contacts. `treeRUD` holds it.
+3. **THE DEAD `startStageDepth` WRITE** — the code asks for 60 u, every bot
+   uses 200. Making it live loses on its own (+0.17 s mean). Should the code do
+   what it says?
+4. **SWAMP'S START** — a real +20.7 s deficit whose closure costs finishers
+   237→230. Feeds the small-obstacle admission call. And **glowtide's 55% OCS**
+   is a +5.29 kt fair set, not an estimator fault (the current-aware start was
+   re-opened on its falsified premise and re-killed).
+
+### CHEAPEST OPEN LEAD IF YOU WANT ONE PICKED FOR YOU
+**lagoon leg 4** — 100% NAV-owned in every top cell, no avoidance, no contact,
+no reflex; **he sails the WIDER line (cross-track 770 u vs their 303) and beats
+them by 13 s** while they run 76-89 u/s where he runs 110+. Every other venue
+has the fleet too wide. 35% of lagoon's gap and still unexplained.
