@@ -46,11 +46,21 @@ for (const f of fs.readdirSync(TD).filter(x => x.startsWith('traj_' + VENUE + '_
         const LL = Math.hypot(bx2 - ax, by2 - ay) || 1;
         const xt = S.map(s => Math.abs(((gi(s, 'x') - ax) * (by2 - ay) - (gi(s, 'y') - ay) * (bx2 - ax)) / LL));
         xt.sort((p1, p2) => p1 - p2);
+        // COARSE odometers: the same track resampled on 1 s and 3 s chords. If the
+        // fine odometer is much longer than the coarse one, the extra distance is
+        // high-frequency helm wiggle; if they agree, it is genuine detour and no
+        // amount of steering discipline can recover it.
+        const coarse = (sec) => { let d = 0, last = 0;
+            for (let i = 1; i < S.length; i++) if (gi(S[i], 't') - gi(S[last], 't') >= sec) {
+                d += Math.hypot(gi(S[i], 'x') - gi(S[last], 'x'), gi(S[i], 'y') - gi(S[last], 'y')); last = i; }
+            d += Math.hypot(gi(S[S.length-1], 'x') - gi(S[last], 'x'), gi(S[S.length-1], 'y') - gi(S[last], 'y'));
+            return d; };
+        const o1 = coarse(1), o3 = coarse(3);
         for (const s of S) { const tw = norm(gi(s, 'hdg') - gi(s, 'windDir')); const sd = tw > 0 ? 1 : -1;
             if (prev !== null && sd !== prev) flips++; prev = sd; }
         const dur = gi(S[S.length - 1], 't') - gi(S[0], 't');
         const st = Math.hypot(gi(S[S.length - 1], 'x') - gi(S[0], 'x'), gi(S[S.length - 1], 'y') - gi(S[0], 'y'));
-        (human[L] = human[L] || []).push({ dur, odo, st, sp: odo / dur, flips, xtMed: xt[Math.floor(xt.length/2)], xtMax: xt[xt.length-1] });
+        (human[L] = human[L] || []).push({ dur, odo, st, sp: odo / dur, flips, xtMed: xt[Math.floor(xt.length/2)], xtMax: xt[xt.length-1], o1, o3 });
     }
 }
 
@@ -91,7 +101,12 @@ for (const f of fs.readdirSync(TD).filter(x => x.startsWith('traj_' + VENUE + '_
                             const LL = Math.hypot(b.x - a.x0, b.y - a.y0) || 1;
                             const xt = a.pts.map(p => Math.abs(((p.x - a.x0) * (b.y - a.y0) - (p.y - a.y0) * (b.x - a.x0)) / LL));
                             xt.sort((p1, p2) => p1 - p2);
-                            a.out.push({ leg: a.leg, dur: tm - a.t0, odo: a.odo,
+                            const cz = (n2) => { let d = 0, last = 0;
+                                for (let i = n2; i < a.pts.length; i += n2) {
+                                    d += Math.hypot(a.pts[i].x - a.pts[last].x, a.pts[i].y - a.pts[last].y); last = i; }
+                                if (a.pts.length) d += Math.hypot(b.x - a.pts[last].x, b.y - a.pts[last].y);
+                                return d; };
+                            a.out.push({ leg: a.leg, dur: tm - a.t0, odo: a.odo, o1: cz(60), o3: cz(180),
                                 st: Math.hypot(b.x - a.x0, b.y - a.y0), flips: a.flips,
                                 xtMed: xt.length ? xt[Math.floor(xt.length / 2)] : 0,
                                 xtMax: xt.length ? xt[xt.length - 1] : 0 });
@@ -114,7 +129,7 @@ for (const f of fs.readdirSync(TD).filter(x => x.startsWith('traj_' + VENUE + '_
     }
     await browser.close();
     console.log(`\n══ ${VENUE} — per-leg DISTANCE vs SPEED, fleet against him (ten-bot, ${TRIALS} races)`);
-    console.log('leg |  him: dur  odo  ratio  kt |  fleet: dur  odo  ratio  kt | Δdur | of which DISTANCE / SPEED | flips h/f | xtrack med h/f');
+    console.log('leg |  him: dur  odo  ratio  kt |  fleet: dur  odo  ratio  kt | Δdur | of which DISTANCE / SPEED | flips h/f | odo/odo1s h/f | odo/odo3s h/f');
     for (const L of Object.keys(bot).map(Number).sort((a, b) => a - b)) {
         const H = human[L], B = bot[L];
         if (!H || !H.length) { console.log(`${String(L).padStart(3)} |  (no fp-valid human lap)`); continue; }
@@ -124,6 +139,6 @@ for (const f of fs.readdirSync(TD).filter(x => x.startsWith('traj_' + VENUE + '_
         // time = distance / speed: split the gap into the part the extra distance
         // buys at HIS speed, and the part his distance would cost at THEIR speed.
         const dDist = (bo - ho) / hs, dSpeed = ho / bs - ho / hs;
-        console.log(`${String(L).padStart(3)} | ${hd.toFixed(1).padStart(10)} ${ho.toFixed(0).padStart(5)} ${hr.toFixed(3).padStart(6)} ${(hs/15).toFixed(2).padStart(5)} | ${bd.toFixed(1).padStart(11)} ${bo.toFixed(0).padStart(5)} ${br.toFixed(3).padStart(6)} ${(bs/15).toFixed(2).padStart(5)} | ${(bd-hd).toFixed(1).padStart(5)} | ${dDist.toFixed(1).padStart(8)} / ${dSpeed.toFixed(1).padStart(6)} | ${med(H.map(x=>x.flips))}/${med(B.map(x=>x.flips))} | ${med(H.map(x=>x.xtMed)).toFixed(0)}/${med(B.map(x=>x.xtMed)).toFixed(0)}`);
+        console.log(`${String(L).padStart(3)} | ${hd.toFixed(1).padStart(10)} ${ho.toFixed(0).padStart(5)} ${hr.toFixed(3).padStart(6)} ${(hs/15).toFixed(2).padStart(5)} | ${bd.toFixed(1).padStart(11)} ${bo.toFixed(0).padStart(5)} ${br.toFixed(3).padStart(6)} ${(bs/15).toFixed(2).padStart(5)} | ${(bd-hd).toFixed(1).padStart(5)} | ${dDist.toFixed(1).padStart(8)} / ${dSpeed.toFixed(1).padStart(6)} | ${med(H.map(x=>x.flips))}/${med(B.map(x=>x.flips))} | ${(ho/med(H.map(x=>x.o1))).toFixed(3)}/${(bo/med(B.map(x=>x.o1))).toFixed(3)} | ${(ho/med(H.map(x=>x.o3))).toFixed(3)}/${(bo/med(B.map(x=>x.o3))).toFixed(3)}`);
     }
 })();

@@ -16174,3 +16174,27 @@ and "the planner's world model must match the physics". The honest no-cost
 alternative is to leave the physics alone and quote the exemption whenever a
 manoeuvre-count comparison against his laps is made. `treeRUD` keeps the
 two-line change.
+
+## THE LAST THREE KILLS OF THE ATLAS THREAD (all pre-build, all by measurement)
+- **HELM SMOOTHING / DEADBAND.** Resampling the same tracks on coarser chords:
+  of the fleet's 15-49% excess distance, only **1-7%** survives a 1-second chord
+  and 2-11% a 3-second one. The extra distance is macroscopic detour, not
+  micro-steering; any deadband or damping candidate is chasing ~1%.
+- **THE TACK-TIME SPLIT** (`_tacksplit.js`). bay leg 1: his favoured-tack share
+  68.1%, the fleet's 67.9%; mean cos(off-chord) his 0.751, the fleet's **0.786**.
+  redrock leg 1: 60.6% / 57.9%, cos 0.775 / **0.790**. **By heading alignment the
+  fleet should sail a SHORTER path than he does** (implied 1.27 against his
+  1.33) and it sails 1.60-2.07. The cosine covers only frames inside the working
+  band while the odometer counts every frame ⇒ the excess is ALL outside the
+  band.
+- **THE TACTICIAN'S OWN CHURN** (`_tackflip.js`). The normal upwind path
+  re-scores the two tacks every tick with no hysteresis while the FORCE branch
+  carries a `forceTack` latch for exactly this reason. Measured: **13.6-20.0
+  commanded reversals per boat-minute, 54-57% undone inside 3 s, dwell p25
+  0.12-0.23 s, commanded/hull 1.75 (43% never become a real tack)**. Real
+  pathology, but the coarse-odometer bound caps the cure at ~1%. Not built.
+
+⇒ **Close-hauled and undisturbed the fleet matches or beats him on pointing,
+VMG, tack split and heading alignment. All of the excess distance is in the
+frames where it is not doing that.** The substrate decision is about those
+frames.
