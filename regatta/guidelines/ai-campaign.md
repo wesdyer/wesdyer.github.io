@@ -15861,3 +15861,47 @@ density tax is lane-squeeze at floes; filed for the substrate decision.
 ## freeze 10/10; the tb* close table is CURRENT (see the era-cut entry).
 ## Next push = owner picks; the two sized owner items from tonight:
 ## (1) river notch corridor design, (2) redrock displacement/fan review.
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE START PUSH — 2026-08-27 (autonomous to 18:00 PT). Owner rulings 4/4
+# recorded BEFORE the work: (1) the START family is OPENED — census then
+# build; (2) OCS / start-scrum cost is TRADEABLE, named at equal prominence;
+# (3) the prestart SHOULD look like a proper timed run (visible change
+# approved); (4) fallback if P1 kills it = redrock early legs.
+# Pre-registration: memory regatta-start-push-plan (+ eval/rl/_stp_gates.md
+# at P2). HEAD in: ee652e1 (code == 34eea06). Anchors tb* (ten-bot era).
+# ═══════════════════════════════════════════════════════════════════════
+
+## WHY THE START (measured tonight, before any candidate existed)
+`_leg_matrix.js` on the tb* anchors, apportioned on MEANS (rule 26), gives a
+leg-0 deficit vs his fp-verified laps on every venue but one:
+  swamp +20.7s (20% of that venue's whole gap) | river +15.2 (23%) |
+  lagoon +4.6 (13%) | ocean +4.3 (18%) | glow +4.0 (8%) | lake +3.9 (16%) |
+  redrock +3.7 (4%) | bay +1.7 (5%) | arctic +1.5 (1%) |
+  **seatrials +0.1 (2%) — the one venue at start parity is the one at goal.**
+Medians (the headline convention): river 14 vs his 2.2, swamp 11 vs 2.8.
+
+## THE MECHANISM (`_st_recon.js`, NEW tracked; treeRW, 2 races x 10 boats)
+`getStartCommand`'s pre-cross hold returns `{ heading: wd }` — TWA 0 is
+HEAD-TO-WIND (rule 19), so the boat parks in irons — and the commit trigger
+`tCross = getApproachTime(STAGE/cos 0.7, boat.speed, stats) + BUF` prices a
+**NOMINAL 78u** run from that stalled speed, assuming instant close-hauled
+drive. Measured at the commit frame: speed 0.0-0.95 kt, TWA 0.01-0.10 rad,
+and distance behind the line **swamp 203u / river 381u / bay 215u /
+seatrials 179u**. The estimator's OWN function on the true distance returns
+8.7s where it returned 3.8s (swamp) and 8.1s vs 2.1s (river). Realized run
+vs estimate+BUF: swamp **+11.1s**, river **+19.8s**, bay +4.0, st +3.6 —
+one defect, dosed by wind and by how far the boat has drifted back.
+`blocked` (post-gun avoidance deviation) 0.0s median on all four: this is
+NOT bay's 2026-08-06 traffic picture. ⚠ that blocked column only counts
+post-gun frames; the P1 ledger counts from the commit frame.
+⛔ Distinct from the CLOSED "start calibration" family (CONSTANTS on correct
+physics) and from the CLOSED current-aware start (built, byte-identical on
+river, sized at 0.2s of the problem). This is model honesty.
+
+## REGISTERED KILL BAR (written before the build)
+River + swamp pooled: **estErr must exceed blocked by >= 3x at n >= 150
+boat-starts**, else the estimator thread is DEAD PRE-BUILD -> pivot to
+redrock early legs (ruling 4). Second registered read: the share of boats
+whose distance-to-line at commit exceeds the nominal 78u by >= 50% must be
+>= 60%, else only the irons half of the mechanism survives.
