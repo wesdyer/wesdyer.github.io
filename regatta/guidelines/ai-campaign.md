@@ -15905,3 +15905,110 @@ boat-starts**, else the estimator thread is DEAD PRE-BUILD -> pivot to
 redrock early legs (ruling 4). Second registered read: the share of boats
 whose distance-to-line at commit exceeds the nominal 78u by >= 50% must be
 >= 60%, else only the irons half of the mechanism survives.
+
+# ═══════════════════════════════════════════════════════════════════════
+# ✅ THE START PUSH — LANDED 2026-08-27 07:44 (`20356da`, local).
+# Owner rulings 4/4 pre-recorded. Registration: memory regatta-start-push-plan
+# + eval/rl/_stp_gates.md (gates written from P1 BEFORE the first candidate).
+# HEAD in ee652e1 (code 34eea06) -> HEAD out 20356da. Anchors: river = sp*,
+# every other venue KEEPS its tb* anchor (byte-identical, verified by cmp).
+# ═══════════════════════════════════════════════════════════════════════
+
+## THE LANDING — way on in the pre-start, in a foul stream only (js/ai/navigation.js)
+`getStartCommand`'s pre-cross hold returns `{ heading: wd }`, and TWA 0 is
+HEAD-TO-WIND (rule 19): the fleet stops dead and stays stopped — **0.0 kt from
+T-12 to T-6** on bay and seatrials (`_st_cmd.js` traces the commanded TWA going
+to 0.00 at T-18), stalled under 1 kt for 50-79% of the last 20 pre-start
+seconds on every venue, arriving at the gun at 2.0-4.6 kt.
+**His own laps say what a start is** — the corpus records phase 0, so every lap
+carries his whole countdown (`_st_human.js`, NEW): he is never under ~1 kt
+after T-27, holds 300-400 u off at 5-6 kt, and closes the last 200 u in the
+final four seconds (bay 321 u at T-4 -> 118 u at the gun AT 5.9 kt).
+That is affordable in a breeze on still water — **bay and seatrials already
+cross SOONER than he does** (1.82 s and 0.93 s vs his 2.1 and 3.4) — and it is
+not affordable in a foul stream, which carries a stopped boat away and does not
+give it back. Landed shape: when the set along the run is foul by >= 1.5 kt,
+**decided once at the first pre-start look**, hold by reaching along the line at
+a depth driven toward the staging depth, expressed as a TARGET so the strategic
+layer crabs it for the set and never commands irons, with the reach clamped
+inside the segment. Off the gate: the shipping code, character for character.
+
+## RESULTS — a universal win (one venue moves, nine are byte-identical)
+- **river 3x8: paired med -3.0, mean -8.9**, med 237->236, mean 253.4->243.9,
+  **land contacts/boat 103.27 -> 78.45 (-24%)**, boat 5.64->5.06, **finishers
+  233 -> 234**, p90 288->280. Start: crossing 15.02 -> 7.98 s, 324 u -> 87 u
+  behind at the gun, 3.5 -> 5.3 kt, and **boats outside the start segment at
+  the gun 31.3% -> 6.3%**.
+- **swamp, redrock, bay, lake, lagoon, glowtide, ocean, seatrials, arctic:
+  BYTE-IDENTICAL `ocean_bench` files** at anchor width (cmp, not "flat").
+- Close table: **river 1.265 -> 1.259**, everything else unchanged. Goal 2/10.
+
+## THE MAP THIS PUSH DREW (the value beyond the landing)
+1. **THE DEAD WRITE.** `repositionBoats` sets `boat.controller.startStageDepth
+   = 60`, but `resetGame` builds fresh `Boat` objects and repositions them
+   BEFORE `updateAI` ever creates a controller — controllers-at-reposition
+   **0 of 10 on every race of a process** (`_stage_check.js`). The write has
+   been dead for the life of the staged-lane start and every bot stages at the
+   constructor's **200 u**, then sails 261 u from a standstill. ⚠ MAKING IT
+   LIVE IS A LOSS ON ITS OWN (SP-A: 4/10 venues sooner, +0.17 s mean — closer
+   but SLOWER at the gun, bay 4.4->2.9 kt) — **left in place deliberately;
+   whether the code should do what it says is an OWNER DESIGN ITEM.**
+2. **THE SET AT THE LINE** (`_st_cur.js`, NEW; owner raised it in session):
+   river **-4.42 kt across the line** (|set| 4.53), glowtide **+5.29** (6.07,
+   +3.03 along), bay -0.67, every other venue 0.00. River's fleet cannot
+   advance on its own line: close-hauled ground VMG there is
+   `5.3·cos40° - 4.4 = -0.34 kt`.
+3. **⛔ THE 2026-08-08 CURRENT-AWARE-START CLOSURE RESTS ON A FALSIFIED
+   PREMISE.** It was sized out at "~0.2 s of a 15.9 s problem" because "the
+   river start line runs 0.77-1.19 kt". The frozen river document measures
+   **4.53 kt** there today. A ground-rate `getApproachTime` (SP-J) was built and
+   measured: it takes glowtide's OCS at the gun **55% -> 20%**, the best OCS
+   number any candidate produced, and loses river and bay. NOT landed —
+   OWNER REVIEW with fresh evidence.
+4. **SWAMP'S START DEFICIT IS REAL AND WORTHLESS.** +20.7 s of mean leg-0
+   (20% of its whole gap); closing it (crossing mean -9.99 s) gave 3x8 median
+   **327 -> 342 and finishers 237 -> 230**, with land and penalties DOWN. A
+   fleet that leaves together arrives at the weed corridor together. For the
+   swamp-admission decision.
+5. **REDROCK'S LIGHT CORNER IS 4.49 kt AND SWAMP'S WHOLE LINE IS 4.46** —
+   the same breeze, 0.03 kt apart. No threshold separates them; a light-air
+   clause takes swamp with one redrock boat in ten (+31% boat contacts) or
+   neither. Not a tuning question.
+6. **THERE IS NO PRE-START TRAFFIC TODAY**: avoidance never deviates more than
+   0.12 rad in 36,000 pre-start boat-frames on bay and seatrials, because the
+   fleet is parked 200 u back in separate lanes (standing rule 4 read as
+   reachability, not as a bug).
+
+## THE HOLD LADDER — seven shapes, six killed by their own measurements
+SP-A stage-60 (+0.17, slower at the gun) · SP-B honest tCross (inert, `behind
+≈ STAGE`) · SP1 A+B (-0.74, misses the bar; speed at the gun falls on all ten)
+· SP-C wind-relative reach (+1.52; the line normal is not the wind axis, walks
+over the line) · SP-D line-relative (+0.95; creeps in) · SP-E/F depth-controlled
+(+1.27/+1.53; leaves the SEGMENT) · SP-G segment-clamped (+1.55; river -7.0 and
+wrecks the still-water venues) · SP-H physics gate (the shape that landed) ·
+SP-I +SP-B (dominated, breaks inertness) · SP-J ground-rate estimate (owner
+item) · SP-K ground-rate hold depth (river 4 u behind at the gun and churns it,
+OCS 0->25%) · SP-L/M/N/O/P gate refinements.
+**The lesson: keeping way on is worth 1.5-2.5 kt at the gun everywhere, and
+worth NOTHING where the boat can already hold station.**
+
+## CLOSE-OUT PROOFS
+Goldens re-recorded + verified **PASS 30 traces, 0 behaviour changes** (⚠ `npm
+run trace` defaults to 2 SEEDS = 20 traces; the 30-trace verify needs
+`run_traces.js --seeds 3` — the count trap, on the verify side this time).
+`npm test` **7 of 34 not passing = the same-7 red** (test_venuedoc, test_shoal,
+test_sailable, test_editor, test_results, test_dmc, test_traffic — named here
+so a future session can check the SET, not just the count). freeze --check
+10/10 at boot. Probes tracked: `_st_ledger2` (the ledger, FAST mode),
+`_st_pool` (verdict tool), `_st_recon`, `_st_branch`, `_st_cmd`, `_st_cur`,
+`_st_gate`, `_st_human`, `_st_land`, `_stage_check`, `_stp_gates.md`.
+
+## OPS LESSONS
+- **zsh does NOT word-split unquoted parameters** (SH_WORD_SPLIT off):
+  `set -- $spec` over "river 9400 8" handed the whole string through as the
+  VENUE and ran ten default-venue races. Use arrays. Cost ~10 min.
+- The OCS column trap AGAIN: OR-ing the flag on every pre-start frame reads
+  "ever flagged", not "at the gun" — it printed 25-48% for candidates whose
+  boats were 86 u behind the line at the gun. Both columns now print.
+- `boat.controller` is the BotController; `boat.ai` is a plain data bag
+  (state.js:432). Reading the wrong one costs 20 minutes of NaN.
