@@ -16131,3 +16131,46 @@ zsh does not word-split unquoted parameters (arrays, not `set -- $spec`);
 an OCS column must be sampled AT THE GUN, not OR'd over the pre-start; a
 pre-registered gate written for a UNIVERSAL candidate is structurally
 unmeetable by a SCOPED one — say so rather than reinterpret it.
+
+# ═══════════════════════════════════════════════════════════════════════
+# ⚖️ THE RUDDER-DRAG ASYMMETRY — 2026-08-27 midday. Measurement only,
+# NOTHING SHIPPED. Memory: regatta-rudder-asymmetry. Tree: `treeRUD`.
+# ═══════════════════════════════════════════════════════════════════════
+
+## THE FACT
+`physics.js` ~467: `const ctl = boat.isPlayer ? sampleKeyControls() : NO_CONTROLS;`
+`physics.js` ~984: `if (ctl.left || ctl.right) boat.speed *= pow(CONFIG.turnPenalty, timeScale);`
+`NO_CONTROLS` is frozen all-false and the bot helm is applied in `updateAI`
+(bot.js ~1526) as `boat.heading += turnAmt`, never through `ctl`.
+⇒ **the rudder-drag line has never fired for a bot.** The player pays ~3% of
+steady speed whenever his helm is over; the fleet pays nothing, ever.
+
+## WHY IT IS NOT A 3% CURIOSITY
+The distance atlas found the fleet manoeuvres **2-4× more than he does** and
+that extra ground distance is the entire remaining gap. **The engine charges it
+nothing for that**, and his laps — the campaign's whole human column — paid the
+penalty every frame. `_lag4_why.js` measured the two helms directly on lagoon
+leg 4: **his median turn rate is 0.0 °/s in four of five x-bands** while the
+fleet runs 1.5 → 11.8 °/s, and in the band where it turns hardest its speed
+falls to 5.65 kt against a polar of 7.61.
+
+## THE COST OF SYMMETRY (treeRUD, ten-bot, ONE anchor set per venue —
+## indicative; redrock wants the pooled 6-set per rules 12/20)
+| venue | med → med | paired med | paired mean | boat/boat |
+|---|---|---|---|---|
+| seatrials | 191→192 | **+1.0** | 0.0 | 0.19→0.25 |
+| arctic | 315→320 | +2.0 | +9.0 | →3.33 |
+| bay | 271→271 | +4.0 | +3.8 | 0.39→0.47 |
+| lagoon | 209→214 | +6.0 | +3.3 | 0.70→0.55 |
+| river | 230→237 | +6.0 | +16.0 | 4.06→4.47 |
+| redrock | 306→323 | **+9.0** | +11.2 | **3.89→7.58** |
+**Ordered exactly by how much each venue makes the fleet turn.** Redrock's boat
+contacts nearly double — a fleet that cannot turn for free collides more.
+
+## ⚖️ NOT LANDED — OWNER DECISION
+It makes every venue slower (redrock 1.431 → ~1.47, river 1.259 → ~1.29) and
+raises contacts, against the standing doctrine "Accuracy > raw AI performance"
+and "the planner's world model must match the physics". The honest no-cost
+alternative is to leave the physics alone and quote the exemption whenever a
+manoeuvre-count comparison against his laps is made. `treeRUD` keeps the
+two-line change.
