@@ -78,7 +78,7 @@ const FAST = process.env.ST_FAST === '1';
                 name: b.name, commit: null, atGun: false, est78: null, estTrue: null, buf: null,
                 spCommit: null, twaCommit: null, behindCommit: null,
                 ironsF: 0, stallF: 0, preF: 0, behind20: null,
-                gunSp: null, gunTwa: null, gunBehind: null, gunOcs: false, stage: null,
+                gunSp: null, gunTwa: null, gunBehind: null, gunOcs: false, everOcs: false, stage: null, gunPct: null,
                 cross: null, blocked: 0, scrum: 0, fin: null
             };
             // crossing + start-scrum contacts off the engine's own events
@@ -137,10 +137,21 @@ const FAST = process.env.ST_FAST === '1';
                         if (r.gunSp == null) {
                             r.gunSp = +(b.speed * 4).toFixed(2); r.gunTwa = +twa.toFixed(3);
                             r.gunBehind = +behind.toFixed(1); r.gunOcs = !!(b.raceState && b.raceState.ocs);
+                            // where along the LINE she is at the gun: outside [0,1] means
+                            // outside the segment, where a crossing does not count at all
+                            // (getStartCommand's own lane comment records that failure).
+                            r.gunPct = +(((b.x - m0.x) * (m1.x - m0.x) + (b.y - m0.y) * (m1.y - m0.y))
+                                / (((m1.x - m0.x) ** 2 + (m1.y - m0.y) ** 2) || 1)).toFixed(3);
                         }
                     }
                     if (r.commit != null && r.cross == null && (b._avDev || 0) > 0.12) r.blocked += dt;
-                    if (b.raceState && b.raceState.ocs) r.gunOcs = r.gunOcs || (state.race.status !== 'racing');
+                    // ⚠️ OCS AT THE GUN, NOT OCS-EVER. The first version OR'd the flag in
+                    // on every pre-start frame, so a boat that dipped over at T-15 and
+                    // returned by T-5 counted as OCS — the same trap _start_all.js hit on
+                    // 2026-08-14, and here it read 25-48% on candidates whose boats were
+                    // 86 u behind the line at the gun. `everOcs` keeps the dip as its own
+                    // column, because returning costs time either way.
+                    if (pre && b.raceState && b.raceState.ocs) r.everOcs = true;
                 }
             };
             for (let it = 0; it < 60 * 940; it++) {
@@ -197,13 +208,14 @@ const FAST = process.env.ST_FAST === '1';
     console.log(`  commit (s before gun):    med ${q(col('commit'),.5)}   est78 med ${q(col('est78'),.5)}  estTrue med ${q(col('estTrue'),.5)}  BUF med ${q(col('buf'),.5)}`);
     console.log(`  AT COMMIT: speed ${q(col('spCommit'),.5)} kt   TWA ${q(col('twaCommit'),.5)} rad   behind line ${q(col('behindCommit'),.5)} u   [the controller's staged run = ${stageMed}/cos0.7 = ${(stageMed/Math.cos(0.7)).toFixed(0)} u]`);
     console.log(`  prestart last 20s: irons(TWA<0.55) ${q(col('ironsF').map((x,i)=>all[i].preF?100*x/all[i].preF:null),.5)}%   stalled(<1kt) ${q(col('stallF').map((x,i)=>all[i].preF?100*x/all[i].preF:null),.5)}%   drift back over the 20s ${q(drift,.5)} u`);
-    console.log(`  AT THE GUN: speed ${q(col('gunSp'),.5)} kt  behind ${q(col('gunBehind'),.5)} u  OCS ${(100*all.filter(r=>r.gunOcs).length/all.length).toFixed(1)}%`);
+    console.log(`  AT THE GUN: speed ${q(col('gunSp'),.5)} kt  behind ${q(col('gunBehind'),.5)} u  OCS at the gun ${(100*all.filter(r=>r.gunOcs).length/all.length).toFixed(1)}%  (ever flagged in the pre-start ${(100*all.filter(r=>r.everOcs).length/all.length).toFixed(1)}%)`);
     console.log(`  realized run med ${q(realized,.5)} s`);
     console.log(`  ⭐ estErr (vs the controller's own staged estimate) med ${q(estErr,.5)} s   p75 ${q(estErr,.75)}`);
     console.log(`     estErr if the estimate had used the TRUE distance: med ${q(estErrTrue,.5)} s  ⇒ the nominal distance alone owns ${(q(estErr,.5)-q(estErrTrue,.5)).toFixed(2)} s`);
     console.log(`  ⭐ blocked (avoidance, commit→cross) med ${q(col('blocked'),.5)} s   p75 ${q(col('blocked'),.75)}   mean ${(col('blocked').reduce((a,b)=>a+b,0)/all.length).toFixed(2)}`);
     console.log(`  REGISTERED READ 2: behindCommit ≥ 1.5× the staged run in ${(100*far.length/all.length).toFixed(1)}% of starts (bar ≥60%)`);
-    console.log(`  start-scrum boat contacts in the first 30 s: ${(col('scrum').reduce((a,b)=>a+b,0)/all.length).toFixed(2)} per boat`);
+    console.log(`  outside the start segment at the gun: ${(100*all.filter(r=>r.gunPct!=null && (r.gunPct<0||r.gunPct>1)).length/all.length).toFixed(1)}%  (pct med ${q(col('gunPct'),.5)})
+  start-scrum boat contacts in the first 30 s: ${(col('scrum').reduce((a,b)=>a+b,0)/all.length).toFixed(2)} per boat`);
     fs.writeFileSync(path.join(__dirname, `_st_ledger2_${TREE}_${VENUE}_${SEED0}${FAST ? '_fast' : ''}.json`), JSON.stringify(races));
     console.log(`  saved _st_ledger2_${TREE}_${VENUE}_${SEED0}${FAST ? '_fast' : ''}.json`);
 })();

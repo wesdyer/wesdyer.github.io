@@ -27,16 +27,22 @@ const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8,
 // column is unaffected — that parity is the point of the cut. (Arctic PRE =
 // mrarc*, == rw-era HEAD by cmp proof.)
 const VENUES = {
-    redrock: { base: ['rwrr9400','rwrr9500','rwrr9600','rwrr9700','rwrr9800','rwrr9900'], cand: ['tbrr9400','tbrr9500','tbrr9600','tbrr9700','tbrr9800','tbrr9900'] },
-    arctic:  { base: ['mrarc9100','mrarc9200','mrarc9400','mrarc9600'], cand: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'] },
-    river:   { base: ['rwriv9400','rwriv9408','rwriv9500'], cand: ['tbriv9400','tbriv9408','tbriv9500'] },
-    swamp:   { base: ['rwsw9400','rwsw9500','rwsw9600'], cand: ['tbsw9400','tbsw9500','tbsw9600'] },
-    glowtide:{ base: ['rwglow'], cand: ['tbglow'] },
-    lagoon:  { base: ['rwlag'], cand: ['tblag'] },
-    bay:     { base: ['rwbay9400','rwbay9600'], cand: ['tbbay9400','tbbay9600'] },
-    lake:    { base: ['rwlk6100','rwlk6200'], cand: ['tblk6100','tblk6200'] },
-    ocean:   { base: ['rwoc'], cand: ['tboc'] },
-    seatrials:{ base: ['rwst'], cand: ['tbst'] },
+    // ⭐ THE START PUSH (2026-08-27): the way-on pre-start hold arms ONLY in a foul
+    // stream (setAlong <= -1.5 kt), which by _st_gate.js is river 10/10 and every
+    // other venue 0/10. The nine unchanged venues were VERIFIED byte-identical at
+    // the whole-race level against their tb* anchors (cmp, one set each at anchor
+    // width), so their cand labels ARE the tb* labels — the table reports no change
+    // because there is provably none, not because nothing was run.
+    redrock: { base: ['tbrr9400','tbrr9500','tbrr9600','tbrr9700','tbrr9800','tbrr9900'], cand: ['tbrr9400','tbrr9500','tbrr9600','tbrr9700','tbrr9800','tbrr9900'] },
+    arctic:  { base: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'], cand: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'] },
+    river:   { base: ['tbriv9400','tbriv9408','tbriv9500'], cand: ['spriv9400','spriv9408','spriv9500'] },
+    swamp:   { base: ['tbsw9400','tbsw9500','tbsw9600'], cand: ['tbsw9400','tbsw9500','tbsw9600'] },
+    glowtide:{ base: ['tbglow'], cand: ['tbglow'] },
+    lagoon:  { base: ['tblag'], cand: ['tblag'] },
+    bay:     { base: ['tbbay9400','tbbay9600'], cand: ['tbbay9400','tbbay9600'] },
+    lake:    { base: ['tblk6100','tblk6200'], cand: ['tblk6100','tblk6200'] },
+    ocean:   { base: ['tboc'], cand: ['tboc'] },
+    seatrials:{ base: ['tbst'], cand: ['tbst'] },
 };
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;

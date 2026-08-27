@@ -26,6 +26,7 @@ const stat = rows => ({
     commit: med(rows.map(r => r.commit)),
     stalled: mean(rows.map(r => r.preF ? 100 * r.stallF / r.preF : null)),
     ocs: 100 * rows.filter(r => r.gunOcs).length / (rows.length || 1),
+    dip: 100 * rows.filter(r => r.everOcs).length / (rows.length || 1),
     scrum: mean(rows.map(r => r.scrum)),
 });
 const fmt = (x, d = 2) => (x == null || Number.isNaN(x)) ? '  -  ' : x.toFixed(d);
@@ -42,7 +43,7 @@ if (!B) {
     }
 } else {
     console.log(`\nSTART DIFF   base ${A}  →  cand ${B}   (negative = candidate crosses sooner)`);
-    console.log('venue      n(b/c)  crossMed b→c        Δ   | crossMean Δ | behind@gun b→c  | kt@gun b→c | OCS% b→c | scrum b→c');
+    console.log('venue      n(b/c)  crossMed b→c        Δ   | crossMean Δ | behind@gun b→c  | kt@gun b→c | OCS@gun b→c | dip% b→c | scrum b→c');
     let wins = 0, tot = 0, dsum = 0;
     for (const v of VEN) {
         const rb = load(A, v), rc = load(B, v);
@@ -55,6 +56,7 @@ if (!B) {
             `${fmt(a.gunBehind, 0)} → ${fmt(c.gunBehind, 0)}`.padStart(14), '|',
             `${fmt(a.gunKt, 1)} → ${fmt(c.gunKt, 1)}`.padStart(11), '|',
             `${fmt(a.ocs, 0)} → ${fmt(c.ocs, 0)}`.padStart(8), '|',
+            `${fmt(a.dip, 0)} → ${fmt(c.dip, 0)}`.padStart(8), '|',
             `${fmt(a.scrum)} → ${fmt(c.scrum)}`);
     }
     console.log(`\n  venues where the candidate crosses sooner: ${wins}/${tot}   mean of the per-venue median deltas: ${(dsum / (tot || 1)).toFixed(2)} s`);
