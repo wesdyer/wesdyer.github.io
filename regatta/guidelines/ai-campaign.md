@@ -16012,3 +16012,77 @@ so a future session can check the SET, not just the count). freeze --check
   boats were 86 u behind the line at the gun. Both columns now print.
 - `boat.controller` is the BotController; `boat.ai` is a plain data bag
   (state.js:432). Reading the wrong one costs 20 minutes of NaN.
+
+# ═══════════════════════════════════════════════════════════════════════
+# ⭐⭐⭐ THE DISTANCE ATLAS — 2026-08-27 morning, after the start push landed.
+# Measurement only, nothing shipped. Memory: regatta-distance-atlas.
+# New tracked instruments: `_leg_odo.js`, `_twa_hist.js`, `_plan_vs_track.js`,
+# `_gp_end.js`; `_gap_grid.js` and `_beat_decomp.js` retrofitted to ten bots.
+# ═══════════════════════════════════════════════════════════════════════
+
+## THE QUESTION `_leg_matrix` COULD NOT ANSWER
+It says WHERE each venue's gap is; it does not say WHAT KIND of gap it is.
+`_leg_odo.js` asks the one question that needs no plan model on either side —
+`time = distance / speed` — and splits every leg's gap into the part the extra
+GROUND distance buys at HIS speed and the part his distance would cost at THEIR
+speed. Ground on both sides (rule 32). Ten-bot, fp-filtered, landed HEAD.
+⚠ It exists because `_beat_decomp`'s reference (VMC toward the LEG TARGET) is
+wrong on the four islandRound venues: a route that must round an island scores
+as waste by construction, and its ARMED bucket is really "the DMC carrot is
+live" — 44 s of a 64 s lake leg.
+
+## THE RESULT, ON 15 OF 15 LEGS: THE GAP IS DISTANCE
+| leg | his ratio | fleet ratio | Δdur | dist/speed | flips h/f | xtrack h/f |
+|---|---|---|---|---|---|---|
+| arctic 1 | 3.334 | **4.343** | +63.2 | **+54.3**/+0.9 | 11/23 | 1269/**3225** |
+| glowtide 2 | 2.744 | **4.350** | +24.3 | **+25.1**/−3.1 | 4/10 | 792/710 |
+| redrock 1 | 1.450 | 1.962 | +19.3 | +11.3/+5.0 | 2/8 | 200/186 |
+| redrock 3 | 1.420 | 1.559 | +18.1 | +7.6/+7.1 | 8/10 | 204/220 |
+| lagoon 4 | 1.440 | 1.611 | +13.0 | +4.2/+5.6 | 1/6 | **770/303** |
+| bay 1 | 1.426 | 1.651 | +9.4 | +6.8/+3.5 | 2/5 | 286/261 |
+| lake 2 | 1.153 | 1.292 | +8.1 | +6.7/−0.8 | 3/1 | 319/566 |
+| bay 3 | 1.255 | 1.449 | −0.0 | **+8.7/−7.5** | 2/4 | 294/679 |
+| lake 1 | 1.359 | 1.482 | +1.6 | **+10.1/−10.5** | 7/12 | 248/241 |
+| ocean 2 | 1.018 | 1.059 | **−3.2** | **−2.9**/0.0 | 0/0 | 139/123 |
+| seatrials 2 | 1.439 | 1.425 | −0.1 | −0.5/+0.1 | 1/1 | 985/1001 |
+On six legs the SPEED column is NEGATIVE — the fleet is quicker through the
+water and loses anyway, because it sails 8-49% further.
+
+## POINTING IS ALREADY BETTER THAN HIS (`_twa_hist.js`)
+Undisturbed frames only (no avoidance deviation, not within 4 s of a side
+change, not armed), upwind |TWA| median and VMG:
+  bay leg 1     fleet **38.0° / 5.01 kt**   him 39.5° / 4.94
+  redrock leg 1 fleet **38.0° / 4.50 kt**   him 39.1° / 4.40
+Over ALL frames the same fleets read 4.65 and 3.97. **The whole loss lives in
+the disturbed frames.** There is no polar, trim or pointing deficit to find,
+and the two venues AT GOAL are exactly the two whose distance ratio matches
+his. ⇒ **The AI sails the boat as well as he does; it does not sail the same
+COURSE.**
+
+## BY PLACE (`_gap_grid`, per-cell deltas reconcile exactly to the mean gap)
+- glowtide leg 2: 42% of the gap is **water she never enters**, at 86-108 u/s,
+  **87-95% NAV** helm ownership. Plus the rock box at (−125,−1125): 51% slow,
+  24% in contact, 47% contact-reflex.
+- lagoon leg 4: **100% NAV in every top cell** — no avoidance, no contact, no
+  reflex — and the fleet runs 76-89 u/s where she runs 110+. **She takes the
+  WIDER line (cross-track 770 vs their 303) and wins by 13 s**: here the fleet
+  is too tight, the opposite of everywhere else.
+
+## ⚠️ A ROUTER-vs-DRIVER SPLIT WAS ATTEMPTED AND RETRACTED BEFORE PUBLICATION
+`_plan_vs_track.js` read "the router asks 36% over the straight line, the boat
+delivers 58%". `_gp_end.js` kills it: gridPath runs **~1077 u ahead, 22 points,
+on a 2424 u leg** — a LOCAL horizon, not a whole-leg plan, so the ratio is not
+commensurable with a whole-leg track ratio. What survives is that **the boat
+stays close to its own current plan** (off-plan med 56 u glowtide-2, 81 u
+lagoon-4, 136 u bay-1). The long route is the SEQUENCE of short plans plus the
+tactician's headings between them.
+
+## WHAT THIS DOES AND DOES NOT LICENSE
+It does NOT license reopening manoeuvre suppression: commitment/holds are
+0-for-7 with a dose-response showing a ONE-SECOND hold costs +25 s of transit,
+and the bay-L1 "undo" suppression was rejected at 20 seeds. What it adds is the
+half the campaign said was missing — it priced the manoeuvre SPEED loss (57 s/
+boat/lap on arctic) and called it a LOWER BOUND because the DISTANCE was
+unpriced. **This is that distance, and on arctic leg 1 it is 54.3 s of a 63.2 s
+leg gap.** The substrate decision the arctic thread has been waiting on is now
+shown to be the whole campaign's frontier, not an arctic quirk.

@@ -353,3 +353,27 @@ Dropping the clause also drops its collateral (the one redrock boat in ten, and
 **10/10 on river and 0/10 everywhere else**, so nine venues are byte-identical
 by construction and river's SP-L numbers carry over unchanged (verified by
 cmp against the SP-L river benches, below). One file, one branch.
+
+## ── THREAD 2: THE CURRENT-AWARE START, RE-OPENED ON THE FALSIFIED PREMISE
+## ── AND STILL DEAD (SP-R = the landed HEAD + a ground-rate `getApproachTime`)
+The 2026-08-08 closure was sized on "the river start line runs 0.77-1.19 kt";
+the frozen document measures 4.53 kt there today, so the premise was gone and
+the family was re-opened with fresh evidence. Measured on the landed HEAD
+(byte-inert wherever the set is zero, so six venues are identical by
+construction):
+
+| venue | crossing Δ | behind@gun | OCS@gun |
+|---|---|---|---|
+| river | **+2.68** | 87 → 22 u | 9 → 18% |
+| bay | **+1.13** | 90 → 18 u | 0 → **30%** |
+| glowtide | −1.00 | −9 → −1 u | 55 → 48% |
+| lagoon | +0.02 | 124 → 103 | 0 → 5% |
+| swamp / seatrials / lake / ocean / redrock / arctic | 0.00 | identical | identical |
+
+1/10 sooner, mean **+0.28 s**. Knowing the ground rate makes the estimate
+saturate against a foul stream, so the boat commits at T-30, sits on the line
+and churns over it — it gives back a third of the landing's river win and puts
+30% of the bay fleet over early for a 1.0 s glowtide gain. **⛔ THE CLOSURE
+STANDS, now for a measured reason rather than a stale one.** Glowtide's 55% OCS
+is NOT an estimator problem; it is a +5.29 kt fair set, and the only thing that
+touched it was the way-on hold, which costs glowtide +6 s of lap.
