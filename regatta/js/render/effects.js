@@ -721,6 +721,46 @@ function drawNightWash(ctx) {
     ctx.restore();
 }
 
+// ⚠️ A BIOLUMINESCENT CREST MUST NOT PAINT ON THE BEACH, and nothing about the draw order
+// stops it. The DAYTIME wind waves are safe for free — drawWindWaves runs before
+// drawIslandsCached, so the land simply covers whatever crosses it — but this pass lives in
+// drawNightGlow, which runs after the islands and after the fleet. Every crest whose centre
+// wandered over a shore was being painted straight onto it, so at night the sea appeared to
+// break over the middle of the jungle.
+//
+// ⚠️ IT IS A PER-CREST TEST AND NOT A CLIP, WHICH WAS THE FIRST INSTINCT. This file already
+// masks the jelly glow by punching holes in a Path2D and clipping to it, and doing the same
+// with the island polygons looks obviously right — until Glowtide, whose `jungle` caps are
+// drawn INSIDE their `karst` islands. Overlapping holes defeat both fill rules: `evenodd`
+// XORs the cap back into view, and `nonzero` counts the two opposite windings to -1 and does
+// the same. Unioning the land first would fix it and costs more than the test it replaces.
+//
+// THREE KINDS OF SHAPE ARE NOT LAND HERE, and this is why it does not just call pointOnLand:
+//   awash   a bar or a painted zone is something you SAIL OVER — it is water, and a crest
+//           breaking across a shoal is exactly right
+//   reef    a sunken rock is UNDER the surface; the wave passes over the top of it
+//   hidden  a collider standing behind something else. compileVenueDoc emits one per hard
+//           prop, so counting them would silently kill the crests around all eighteen
+//           channel buoys
+// pointOnLand excludes only the first, because its own job — deciding whether a tree crown
+// can hide a hull — has different answers for the other two.
+function crestOnLand(x, y) {
+    const islands = (state.course && state.course.islands) || [];
+    for (const isl of islands) {
+        if (isl.awash || isl.reef || isl.hidden) continue;
+        if (!isl.vertices || isl.vertices.length < 3) continue;
+        const dx = x - isl.x, dy = y - isl.y;
+        if (dx * dx + dy * dy > isl.radius * isl.radius) continue;   // bounding circle first
+        if (!pointInVerts(x, y, isl.vertices)) continue;
+        let inHole = false;
+        for (const h of (isl.holes || [])) {
+            if (h && h.length >= 3 && pointInVerts(x, y, h)) { inHole = true; break; }
+        }
+        if (!inHole) return true;
+    }
+    return false;
+}
+
 function drawNightGlow(ctx) {
     const n = nightAmt();
     if (n <= 0) return;
@@ -846,6 +886,15 @@ function drawNightGlow(ctx) {
         const a = 0.95 * n * cap * burst * cyc;
         if (a < 0.02) continue;
         const w = Math.max(20, Math.min(70, wave.windSpeed * 3.6)) * (0.5 + 0.5 * burst);
+        // ⚠️ BOTH ENDS, NOT JUST THE CENTRE. A crest is a line up to 70u long, so a centre-only
+        // test still lets one straddling the waterline poke half its length onto the sand. A
+        // crest with either end ashore is dropped whole — which leaves no glow in the last few
+        // metres before a beach, and that is the right way to be wrong: the shore already
+        // carries its own bioluminescent surf band, so nothing there looks empty.
+        const _ca = wave.angle + (wave.tilt || 0);
+        const _hx = Math.cos(_ca) * w * 0.5, _hy = Math.sin(_ca) * w * 0.5;
+        if (crestOnLand(x, y) || crestOnLand(x - _hx, y - _hy)
+            || crestOnLand(x + _hx, y + _hy)) continue;
         ctx.globalAlpha = Math.min(1, a);
         ctx.strokeStyle = BIO_COLOR;
         ctx.lineWidth = 2.4;

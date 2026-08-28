@@ -339,10 +339,10 @@ const LAND_TYPES = [
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
     // Redrock Reservoir's two new grounds, on the [VENUE] [TERRAIN] label convention so
-    // the label sort files them beside 'Redrock'. Swatches track ISLAND_STYLES.<kind>.body
-    // and are SPEC means until the tiles are delivered — re-chip both on ingest.
-    { kind: 'slickrock',  label: 'Redrock Slickrock',   swatch: '#E3D0AF' },
-    { kind: 'desertsand', label: 'Redrock Desert Sand', swatch: '#D2996B' },
+    // the label sort files them beside 'Redrock'. Swatches track ISLAND_STYLES.<kind>.body,
+    // and both are now the DELIVERED tile means (2026-08-27).
+    { kind: 'slickrock',  label: 'Redrock Slickrock',   swatch: '#e6ca9b' },
+    { kind: 'desertsand', label: 'Redrock Desert Sand', swatch: '#dd9b67' },
     // Stillwater Lake's three grounds. Swatches track ISLAND_STYLES.<kind>.body and are still
     // the tile SPEC means, so they move when the art is ingested and the bodies are reset.
     // ⚠️ "Glacial Granite" is NOT "Granite" — one is ice-SMOOTHED northern shelf rock, the
@@ -1899,9 +1899,9 @@ const KIND_FILL = {
     // the near-black the venue shows it as.
     jungle: '#413715',
     // Redrock Reservoir's two new grounds. Both dry land, so both solid per this table's
-    // rule that only what you may sail over is translucent. Values are the spec bodies;
-    // update to delivered tile means on ingest, with the chips.
-    slickrock: '#E3D0AF', desertsand: '#D2996B'
+    // rule that only what you may sail over is translucent. Both are the DELIVERED tile
+    // means (2026-08-27), matching the chips.
+    slickrock: '#e6ca9b', desertsand: '#dd9b67'
 };
 const KIND_EDGE = {
     granite: '#c9c9c9', karst: '#aab0bb', redrock: '#8a4a26', reed: '#5c8438', swampgrass: '#7d7048',
@@ -1940,7 +1940,8 @@ const KIND_EDGE = {
     jungle: '#26210E',
     // Each is its own ISLAND_STYLES stroke, per the coastalrock/coastalscrub rule — darker
     // than the fill, with the earth kinds: pale grounds on bright water need no light edge.
-    slickrock: '#AD9E85', desertsand: '#976E4D'
+    // Both re-derived from the DELIVERED bodies (2026-08-27), spec offsets carried.
+    slickrock: '#AF9A76', desertsand: '#9F6F4A'
 };
 
 function drawLandLayer() {

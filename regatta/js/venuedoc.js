@@ -1175,8 +1175,8 @@ const PROP_KINDS = {
     // ⚠️ AND THE MANGROVE IS `surface`, NOT `float`, despite standing in water. `float` means
     // the water draws OVER the prop, which is right for a lily pad and wrong for a six-metre
     // tree — the plane comment's own lily-pad line, read in the other direction.
-    'glowtide-laurel-amanu':       { label: 'Alexandrian laurel', world: 120, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'glowtide-hibiscus-sea':       { label: 'Sea hibiscus',       world:  78, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'glowtide-laurel-amanu':       { label: 'Alexandrian laurel', world: 120, plane: 'canopy' , contact: 'none', motion: 'fixed' },
+    'glowtide-hibiscus-sea':       { label: 'Sea hibiscus',       world:  78, plane: 'canopy' , contact: 'none', motion: 'fixed' },
     // ⚠️ THE MANGROVE IS TWO PROPS, NOT ONE, and the split is the whole reason a fringe can be
     // built rather than stamped: a band of root patches along the waterline, crowns set behind
     // and over them at whatever density the shore wants, and a bare root field at the seaward
@@ -1197,32 +1197,50 @@ const PROP_KINDS = {
     // water, so the waterline belongs to them alone. 0.30 IS PROVISIONAL and must be reset
     // from r99 on delivery, the way cypress-knee's 0.35 was.
     'glowtide-mangrove-roots': { label: 'Mangrove roots',  world: 68, plane: 'surface', contact: 'none', wash: 0.30, motion: 'fixed' },
-    'glowtide-mangrove-crown': { label: 'Mangrove crown',  world: 56, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'glowtide-mangrove-crown': { label: 'Mangrove crown',  world: 56, plane: 'canopy' , contact: 'none', motion: 'fixed' },
     // ── THE GENERIC PALMS, ON THIS VENUE'S OWN KINDS ────────────────────────
     // Same art as Pearl Lagoon's palms — `src` points straight at its bakes, so this adds
     // four kinds and ZERO new files. What it does not share is the PLANE, and that is the
     // entire reason these rows exist rather than reusing 'lagoon-palm' directly.
     //
-    // ⚠️ THE LAGOON PALMS ARE `canopy`, AND THAT IS RIGHT THERE AND WRONG HERE. Pearl Lagoon
-    // plants 65 of them on small sand spits, where a hull genuinely passes under a palm
-    // leaning off a beach crest. Glowtide wants HUNDREDS across island interiors, which is
-    // the exact case [[ocean-palm-coconut]]'s note records being tried and reverted: on
-    // canopy every one draws OVER the fleet and feeds canopyAlpha, so sailing past a shore
-    // dims a wedge of forest hundreds of units across around a boat that was never beneath
-    // any of it.
+    // ⚠️ THESE WERE `surface` AND MOVED TO `canopy` ON 2026-08-26, at the owner's call — the
+    // vegetation is meant to paint OVER the boats. Both reasons for keeping them off canopy
+    // turned out not to survive checking, and the checking is the part worth recording:
     //
-    // ⚠️ AND THE Z-ORDER SETTLES IT EVEN IF THAT DID NOT. drawCanopyCached is a separate pass
-    // that runs AFTER the boats, so a canopy palm cannot be height-sorted against anything on
-    // `surface` — it would draw over every laurel, pandanus and shrub regardless of height,
-    // and over the fleet as well. The whole planting is ordered by real height x scale, and a
-    // second stratum breaks that ordering outright.
+    //   THE OLD FADE OBJECTION IS OBSOLETE. [[ocean-palm-coconut]]'s note records canopy
+    //   being tried and reverted on Bluewater Bonanza because "sailing past a shore dimmed a
+    //   wedge of forest around the boat, for a hull that was never underneath any of it".
+    //   That was true then and is not now: drawProps only fades a crown that passes
+    //   crownOverWater(), and its own note is explicit — "a tree whose crown lies entirely
+    //   over land can never hide one, and fading it costs the venue a tree for nothing". A
+    //   jungle interior on canopy does not fade at all. What still fades is a crown actually
+    //   overhanging water with the player under it, which is the case the fade is FOR.
+    //
+    //   THE Z-ORDER OBJECTION ONLY BIT WHILE THE SET WAS SPLIT. drawCanopyCached is a
+    //   separate pass after the boats, so a canopy plant cannot be height-sorted against one
+    //   on `surface`. That breaks a planting spread across BOTH strata — which is what would
+    //   have happened had only the palms moved. Moving the whole vegetation set together puts
+    //   it back in one stratum, and the height sort holds inside it exactly as before.
+    //
+    // ⚠️ THE THREE REUSED OCEAN KINDS CANNOT COME WITH THEM, and that is why the glowtide doc
+    // carries a per-placement `plane` on those props instead. ocean-palm-coconut, -pandanus
+    // and -naupaka are planted 5,476 times on Bluewater Bonanza; changing their PROP_KINDS
+    // row would move that venue's whole canopy. compile honours a placement's own `plane`
+    // over the kind's (see the compiled prop's `plane`), so Glowtide overrides its own copies
+    // and the ocean is untouched.
     //
     // Pearl Lagoon is untouched. If its 65 palms should ever move to `surface` too, that is a
-    // one-word edit on four rows there — but it is that venue's call, not this one's.
-    'glowtide-palm':         { label: 'Glowtide palm',         world: 70, plane: 'surface', contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm.png' },
-    'glowtide-palm-dense':   { label: 'Glowtide palm, dense',  world: 74, plane: 'surface', contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-dense.png' },
-    'glowtide-palm-leaning': { label: 'Glowtide palm, leaning', world: 84, plane: 'surface', contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-leaning.png' },
-    'glowtide-palm-fan':     { label: 'Glowtide palm, fan',    world: 60, plane: 'surface', contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-fan.png' },
+    // one-word edit on three rows there — but it is that venue's call, not this one's.
+    //
+    // ⚠️ THERE WERE FOUR OF THESE AND A LEANING ONE WAS RETIRED 2026-08-26, at the owner's
+    // call. Restoring it is one row pointing at lagoon/palm-leaning.png at world 84, plus its
+    // weight back in plant_glowtide.py — but note that [[lagoon-palm-leaning]] is the asset
+    // whose plan view is genuinely hard, and its manifest note records why: it was the only
+    // palm in the game missing `planRound`, so it was handed the LONG acceptance test, whose
+    // "two long edges must run parallel for its whole length" describes a trunk in elevation.
+    'glowtide-palm':         { label: 'Glowtide palm',         world: 70, plane: 'canopy' , contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm.png' },
+    'glowtide-palm-dense':   { label: 'Glowtide palm, dense',  world: 74, plane: 'canopy' , contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-dense.png' },
+    'glowtide-palm-fan':     { label: 'Glowtide palm, fan',    world: 60, plane: 'canopy' , contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-fan.png' },
     // ── THE BEACH BONFIRE ───────────────────────────────────────────────────
     // The venue's one human site. The vegetation brief treats the coconut palm as a
     // human-influence indicator and the planting put 152 of them on five pocket beaches;
@@ -1247,7 +1265,7 @@ const PROP_KINDS = {
     // the ambient role demands a silhouette that is "soft, rounded or organic", and a stacked
     // log pile inside a stone ring is deliberately none of those.
     'glowtide-bonfire':      { label: 'Bonfire',                world: 42, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'glowtide-pemphis':            { label: 'Pemphis',            world:  26, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'glowtide-pemphis':            { label: 'Pemphis',            world:  26, plane: 'canopy' , contact: 'none', motion: 'fixed' },
     'lagoon-palm':         { label: 'Palm',         world: 70, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-leaning': { label: 'Leaning palm', world: 84, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lagoon-palm-young':   { label: 'Young palm',   world: 38, plane: 'canopy', contact: 'none', motion: 'fixed' },

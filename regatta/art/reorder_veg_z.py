@@ -45,6 +45,15 @@ HEIGHT = {
     # Lighthouse Cove — matches plant_cove.py SPECIES
     "bay-cove-oak-black": 20.0, "bay-cove-pine-pitch": 14.0, "bay-cove-cedar-red": 9.0,
     "bay-cove-oak-scrub": 4.5, "bay-cove-bayberry-northern": 2.5, "bay-cove-plum-beach": 2.0,
+    # Glowtide Strait — matches plant_glowtide.py SPECIES. ⚠️ THE FOUR PALMS SHARE ONE HEIGHT
+    # and that is correct rather than lazy: they are four drawings of the same tree, and the
+    # ladder between them is CROWN WIDTH (world 60-84), which is not what z-order asks about.
+    # Within that class the sort still separates them, because the key is height x this
+    # individual's scale.
+    "ocean-palm-coconut": 26.0, "glowtide-palm": 22.0, "glowtide-palm-dense": 22.0,
+    "glowtide-palm-leaning": 22.0, "glowtide-palm-fan": 22.0,
+    "glowtide-laurel-amanu": 18.0, "ocean-pandanus": 6.0, "glowtide-hibiscus-sea": 5.0,
+    "ocean-naupaka": 2.4, "glowtide-pemphis": 2.0,
 }
 
 

@@ -301,17 +301,18 @@ const LAND_TEXTURES = {
     // the game. There is no seam and no repeat to protect, so the only question left was how
     // much of the litter to keep, and the answer is most of it.
     jungle:       { src: 'assets/images/terrain/glowtide/jungle.png', tile: 128, alpha: 0.85 },
-    // ── REDROCK RESERVOIR'S TWO NEW GROUNDS — SLOTS, ART NOT YET DELIVERED ──
-    // Wired at spec time, the Lighthouse Cove pattern: getLandPattern falls back to the
-    // flat body fill until the file lands, so these rows cost nothing today and make
-    // delivery a pure asset drop. Both alphas are PRE-REGISTERED, not measured — a guess
-    // about a tile that does not exist yet is a starting point and never a spec (the
-    // bay-scrub/marsh lesson, learned twice) — so retune each on its delivered luma sd.
+    // ── REDROCK RESERVOIR'S TWO NEW GROUNDS — DELIVERED 2026-08-27 ──────────
+    // Both alphas were pre-registered and both SURVIVED delivery measured, same script
+    // across the library: slickrock sd 6.73 at tile 256 x 0.35 lands on-screen 2.36, and
+    // desertsand sd 4.93 at tile 128 x 0.7 lands 3.45 — both between sandstone (1.38) and
+    // grass, in family. slickrock's raw tile carries the batch's one flag: its cross-bed
+    // sweeps all run one way (anisotropy 1.34 against a shipped-baseline max of 0.92, ditto
+    // periodicity 29.8 vs 17.1) — accepted because at 0.35 over the body the sweeps all but
+    // vanish; anyone RAISING this alpha re-exposes that direction and should re-look tiled.
     //
     // slickrock: tile 256 with the rocks (granite, sandstone, bay-rock) — bleached benches
-    // and domes are metre-scale features. alpha 0.35, the rock precedent. desertsand: tile
-    // 128 with the sands, which puts pebbles and chips at true size per bay-sand's measured
-    // argument; alpha 0.7, the sand precedent — its structure is broad tonal drift.
+    // and domes are metre-scale features. desertsand: tile 128 with the sands, which puts
+    // pebbles and chips at true size per bay-sand's measured argument.
     slickrock:    { src: 'assets/images/terrain/redrock/slickrock.png',  tile: 256, alpha: 0.35 },
     desertsand:   { src: 'assets/images/terrain/redrock/desertsand.png', tile: 128, alpha: 0.7 }
 };

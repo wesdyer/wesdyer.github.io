@@ -95,8 +95,11 @@ SPECIES = {
         bands=[((9.0, 11.5), 0.28), ((11.5, 14.0), 0.46), ((14.0, 17.0), 0.26)],
         cluster=(4, 12), spread=(140, 420), layer="tree"),
     "palm": dict(
-        kinds=[("glowtide-palm", 0.34), ("glowtide-palm-dense", 0.28),
-               ("glowtide-palm-leaning", 0.22), ("glowtide-palm-fan", 0.16)],
+        # ⚠️ THE LEANING VARIANT WAS DROPPED 2026-08-26 at the owner's call, and its 0.22 is
+        # redistributed across the other three rather than left to renormalise silently.
+        # Three silhouettes still clears the brief's "avoid evenly spaced palm forests".
+        kinds=[("glowtide-palm", 0.44), ("glowtide-palm-dense", 0.36),
+               ("glowtide-palm-fan", 0.20)],
         world=74, height=22.0,
         bands=[((5.5, 6.8), 0.28), ((6.8, 8.2), 0.46), ((8.2, 9.8), 0.26)],
         cluster=(2, 6), spread=(120, 340), layer="tree"),
@@ -124,6 +127,7 @@ SPECIES = {
         cluster=(3, 10), spread=(70, 220), layer="shrub"),
 }
 KIND_SP = {k: s for s, v in SPECIES.items() for k, _ in v["kinds"]}
+REUSED_OCEAN = {"ocean-palm-coconut", "ocean-pandanus", "ocean-naupaka"}
 
 # ── the brief's composition, per substrate ──────────────────────────────────
 MIX = {
@@ -376,10 +380,19 @@ def plant(doc, seed=7, quiet=False):
         diam_m = _pick_diam(sp, rng)
         world_d = diam_m * PX_PER_M * EXAGGERATE
         sc = world_d / SPECIES[sp]["world"]
-        props.append({"id": "veg", "kind": _pick_kind(sp, rng),
-                      "x": round(cx, 1), "y": round(cy, 1),
-                      "heading": round(rng.uniform(0, 2 * math.pi), 3),
-                      "scale": round(sc, 3)})
+        kind = _pick_kind(sp, rng)
+        rec = {"id": "veg", "kind": kind,
+               "x": round(cx, 1), "y": round(cy, 1),
+               "heading": round(rng.uniform(0, 2 * math.pi), 3),
+               "scale": round(sc, 3)}
+        # ⚠️ THE VEGETATION PAINTS OVER THE BOATS, so every plant is on `canopy`. The six
+        # glowtide-only kinds carry that in PROP_KINDS; the three REUSED ocean kinds cannot,
+        # because Bluewater Bonanza plants them 5,476 times and their row is shared. compile
+        # takes a placement's own `plane` over the kind's, so those get it written per prop
+        # here — the venue overrides its own copies and the ocean is untouched.
+        if kind in REUSED_OCEAN:
+            rec["plane"] = "canopy"
+        props.append(rec)
         placed.append((cx, cy, world_d, sp))
         r = world_d * 0.5
         tree = SPECIES[sp]["layer"] == "tree"

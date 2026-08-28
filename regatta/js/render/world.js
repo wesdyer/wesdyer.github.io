@@ -1225,8 +1225,13 @@ const ISLAND_STYLES = {
     ice:      { body: '#e6f2fb', stroke: '#7fb2d9', veg: '#ffffff', rock: '#8fc2e8', trees: false },
     redrock:  { body: '#cc6533', stroke: '#8a4a26', veg: '#d98e57', rock: '#7c4a2d', trees: false },   // body = sandstone tile mean
     // ── REDROCK RESERVOIR'S TWO NEW GROUNDS ─────────────────────────────────
-    // Both bodies are SPEC means; reset each to its DELIVERED tile's own mean on ingest,
-    // per coralsand, so LAND_TEXTURES' alpha stays a pure contrast knob.
+    // DELIVERED AND INGESTED 2026-08-27: both bodies below are their DELIVERED tile's own
+    // mean (the coralsand rule), so LAND_TEXTURES' alpha stays a pure contrast knob. The
+    // other tones carry the spec's own per-channel offsets onto the delivered bodies, the
+    // bayou-mud precedent. Delivered separations, same-script: slickrock-vs-redrock 48.3,
+    // desertsand-vs-redrock 25.3, pair 23.1 — the pair slipped from the spec's 25.9 but
+    // holds at the cove's accepted bar, and both drifted the SAFE direction (yellower and
+    // lighter, never greyer). The paragraphs below record the spec-time argument.
     //
     // The three-step value ladder is the design: redrock L* 54.4, desertsand 67.7,
     // slickrock 84.2 — wall, sand, bleached bench, each a clear step lighter, so the
@@ -1248,8 +1253,8 @@ const ISLAND_STYLES = {
     // granite/redrock convention for a look with nothing growing on it; desertsand's rock
     // is redrock's own #7c4a2d, the coastalscrub move, because the cobbles in Powell
     // alluvium ARE the canyon wall broken up. Neither draws on this doc venue anyway.
-    slickrock:  { body: '#E3D0AF', stroke: '#AD9E85', veg: '#EFE0C4', rock: '#A8977A', trees: false },  // body = redrock-slickrock SPEC mean
-    desertsand: { body: '#D2996B', stroke: '#976E4D', veg: '#E2B98F', rock: '#7c4a2d', trees: false },  // body = redrock-desertsand SPEC mean
+    slickrock:  { body: '#e6ca9b', stroke: '#AF9A76', veg: '#F2DAAE', rock: '#AA936C', trees: false },  // body = redrock-slickrock DELIVERED tile mean
+    desertsand: { body: '#dd9b67', stroke: '#9F6F4A', veg: '#EEBB8A', rock: '#7c4a2d', trees: false },  // body = redrock-desertsand DELIVERED tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
     // tracer pick below) because it is broken rock, not a rounded sandbank.
     granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false },
