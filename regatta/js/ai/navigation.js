@@ -1905,11 +1905,68 @@ Object.assign(BotController.prototype, {
             return { target: { x: aimX, y: aimY }, speed: 1.0 };
         }
 
-        // Pre-cross: get to the staging point in our lane and hold there.
-        if (behind > STAGE + 35) {
-            return { target: { x: stageX, y: stageY }, speed: 0.75 };
+        // ---- Pre-cross ----
+        // The staged hold luffs head-to-wind, which stops the boat dead: measured
+        // 0.0 kt from T-12 to T-6 on bay and seatrials (_st_branch/_st_cmd), and
+        // a fleet that arrives at 2.0-4.6 kt against his 5-6 (_st_human.js reads
+        // his own countdown out of the corpus — phase 0 is recorded).
+        // That is affordable in a breeze on still water: the boat sits where it is
+        // put, and bay/seatrials already cross the line SOONER than he does. It is
+        // not affordable in a FOUL STREAM, which carries a stopped boat away and
+        // does not give it back: the set across river's line runs -4.42 kt against
+        // a close-hauled VMG of about 4 kt (_st_cur.js), which is why its fleet
+        // ends the countdown 324 u adrift with a THIRD of it swept outside the
+        // start segment entirely.
+        // A FAIR stream is not the same case — it delivers the boat to the line
+        // whether she is sailing or not, and the failure that produces (over early)
+        // belongs to the retreat branch. Measured: arming this on glowtide's
+        // +5.29 kt bought a better start (crossing -2.17 s, OCS at the gun 55->40%)
+        // and cost the LAP +6 s with land contacts +28%, all of it at 60 s+.
+        // ⛔ A LIGHT-AIR CLAUSE WAS TRIED AND DROPPED ON THE EVIDENCE. In 3.9 kt a
+        // stopped boat cannot accelerate out of the irons brake either, and arming
+        // the branch there bought swamp a large start (crossing mean -9.99 s,
+        // 100 u -> 45 u behind at the gun) that DID NOT CONVERT: 3x8 gave median
+        // 327->342 and finishers 237->230. The same clause armed one redrock boat
+        // in ten — redrock's light corner is 4.49 kt against swamp's 4.46, the same
+        // breeze, and no threshold separates them — for boat contacts +31%.
+        const setAlongKt = (() => { const c = getCurrentAt(boat.x, boat.y);
+            return c ? c.speed * 4 * Math.cos(c.direction - wd) : 0; })();  // + = toward the line
+        // DECIDED ONCE, at the first pre-start look, and held. A per-frame test lets
+        // a boat that drifts through a patch of stream flip its whole pre-start plan
+        // mid-countdown — on lagoon, whose line reads -0.65 kt at the gun, that
+        // reshuffled 20 of 80 boat-races for nothing. A sailor reads the breeze and
+        // the stream once and picks a plan.
+        if (this.startWayOn == null) this.startWayOn = setAlongKt <= -1.5;
+        const cannotHold = this.startWayOn;
+        if (!cannotHold) {
+            // unchanged: stage in our lane and hold there
+            if (behind > STAGE + 35) {
+                return { target: { x: stageX, y: stageY }, speed: 0.75 };
+            }
+            return { heading: wd, speed: 0.9 };
         }
-        return { heading: wd, speed: 0.9 };
+        // Way on: reach back and forth ALONG the line at a depth driven toward the
+        // staging depth — away when too close, in when too far — as a TARGET, so
+        // the strategic layer crabs it for the set and never commands irons. The
+        // reach is a FRACTION of the line, clamped inside the segment: this file's
+        // own lane comment records what happens otherwise — a boat that wanders
+        // off its lane crosses outside the marks and never starts.
+        const REACHP = P.reachPct != null ? P.reachPct : 0.18;
+        if (this.startReachSide == null) this.startReachSide = this.startLinePct > 0.5 ? -1 : 1;
+        const myPct = ((boat.x - m0.x) * dx + (boat.y - m0.y) * dy) / (lineLen * lineLen);
+        let holdPct = this.startLinePct + this.startReachSide * REACHP;
+        if (holdPct > 0.88 || holdPct < 0.12
+            || (myPct - this.startLinePct) * this.startReachSide > REACHP * 0.8) {
+            this.startReachSide = -this.startReachSide;
+            holdPct = this.startLinePct + this.startReachSide * REACHP;
+        }
+        holdPct = Math.max(0.12, Math.min(0.88, holdPct));
+        if (behind > STAGE + 35) {
+            return { target: { x: stageX, y: stageY }, speed: 1.0 };
+        }
+        const depth = Math.max(40, Math.min(3 * STAGE, STAGE + 1.5 * (STAGE - behind)));
+        return { target: { x: m0.x + dx * holdPct - Math.sin(wd) * depth,
+                           y: m0.y + dy * holdPct + Math.cos(wd) * depth }, speed: 1.0 };
     }
 
 

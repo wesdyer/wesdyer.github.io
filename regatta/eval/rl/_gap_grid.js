@@ -71,9 +71,16 @@ if (!herLaps) { console.log('no fingerprint-matching laps — refusing to print 
 (async () => {
     const b = await chromium.launch(); const p = await b.newPage();
     p.on('pageerror', e => console.log('PAGE ERROR:', String(e).slice(0, 200)));
-    await p.addInitScript((v) => { localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })); }, VENUE);
+    // ⚠️ LATE venue write only (standing rule 30) — the early addInitScript path is
+    // not reproducible on river/lagoon/swamp. The write happens after goto, below.
     await p.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await p.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
+    await p.evaluate(({ v, parked }) => {
+        const st = { venue: v };
+        if (!parked) st.character = AI_CONFIG[0].name;
+        localStorage.setItem('regatta_settings', JSON.stringify(st));
+        window.__ggParked = parked;
+    }, { v: VENUE, parked: process.env.GG_PARKED === '1' });
 
     const bot = {}; let botLaps = 0, botTotal = 0, dnf = 0;
     for (let t = 0; t < TRIALS; t++) {
@@ -85,7 +92,19 @@ if (!herLaps) { console.log('no fingerprint-matching laps — refusing to print 
             };
             window.evalHarness.seed = seed; window.resetGame(); window.startRace();
             state.course.cutoff = 900;
-            const pl = state.boats.find(x => x.isPlayer); if (pl) { pl.x = 1e6; pl.y = 1e6; }
+            // TEN-BOT ERA (2026-08-27 retrofit): convert the player boat instead of
+            // parking it, so the map is drawn at the density his own laps were sailed
+            // in. GG_PARKED=1 restores the 9-bot path for reproducing an old map ONLY.
+            const pl = state.boats.find(x => x.isPlayer);
+            if (window.__ggParked) { if (pl) { pl.x = 1e6; pl.y = 1e6; } }
+            else if (pl) {
+                applyBoatIdentity(pl, playerCharacter(), false);
+                pl.isPlayer = false; pl.manualTrim = false;
+                const nine = state.boats.filter(x => x !== pl);
+                pl.ai.startLinePct = Math.max(0.05, Math.min(0.90,
+                    nine.reduce((a, x) => a + x.ai.startLinePct, 0) / nine.length));
+                pl.ai.setupDist = 300;
+            }
             const per = {};   // boat name -> {cells, fin}
             const DT = 1 / 60;
             for (let it = 0; it < 60 * 900; it++) {

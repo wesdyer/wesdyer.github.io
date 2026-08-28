@@ -31,15 +31,33 @@ const BENCH = process.argv[6] || '';
     page.on('pageerror', e => console.log('PAGE ERROR:', String(e).slice(0, 300)));
     await page.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
-    await page.evaluate((v) => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), VENUE);
+    // TEN-BOT ERA (2026-08-26, _tb_gates.md): same conversion as ocean_bench —
+    // character pinned (name uniqueness + the shipping 99-wide draw), player
+    // boat converted to a full bot after startRace. RB_PARKED=1 restores the
+    // parked 9-bot path for reproducing a pre-cut census ONLY.
+    const TEN_BOT = process.env.RB_PARKED !== '1';
+    await page.evaluate(({ v, tenBot }) => {
+        const s = { venue: v };
+        if (tenBot) s.character = AI_CONFIG[0].name;
+        localStorage.setItem('regatta_settings', JSON.stringify(s));
+    }, { v: VENUE, tenBot: TEN_BOT });
     const allOut = [];
     for (let race = 0; race < NRACES; race++) {
         const seed = SEED0 + race;
-        const r = await page.evaluate(async (seed) => {
+        const r = await page.evaluate(async ({ seed, tenBot }) => {
             window.evalHarness.seed = seed;
             window.resetGame(); window.startRace();
             state.course.cutoff = 900;
-            const pl = state.boats.find(b => b.isPlayer); if (pl) { pl.x = 1e6; pl.y = 1e6; }
+            const pl = state.boats.find(b => b.isPlayer);
+            if (pl && tenBot) {
+                // ocean_bench's ten-bot conversion, verbatim mechanics
+                applyBoatIdentity(pl, playerCharacter(), false);
+                pl.isPlayer = false; pl.manualTrim = false;
+                const nine = state.boats.filter(b => b !== pl);
+                const meanPct = nine.reduce((a, b) => a + b.ai.startLinePct, 0) / nine.length;
+                pl.ai.startLinePct = Math.max(0.05, Math.min(0.90, meanPct));
+                pl.ai.setupDist = 300;
+            } else if (pl) { pl.x = 1e6; pl.y = 1e6; }
             // land-contact times per boat via the engine's own event (rule 31b)
             const CT = {};
             {
@@ -189,7 +207,7 @@ const BENCH = process.argv[6] || '';
             for (const b of state.boats) { if (!b.isPlayer) fins[b.name] = b.raceState.finished ? 1 : 0; }
             return { triggers, eps: eps.slice(0, 600), fins, finT,
                      hasAwash: !!state.course._hasAwashDrag };
-        }, seed);
+        }, { seed, tenBot: TEN_BOT });
         console.log(`race ${race} (seed ${seed}): triggers ${r.triggers.length}, land episodes ${r.eps.length}, fins ${Object.values(r.fins).reduce((a, b) => a + b, 0)}/${Object.keys(r.fins).length}`);
         allOut.push({ seed, ...r });
     }

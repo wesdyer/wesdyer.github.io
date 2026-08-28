@@ -17,9 +17,15 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
 (async () => {
     const b = await chromium.launch(); const p = await b.newPage();
     p.on('pageerror', e => console.log('PAGE ERROR:', String(e).slice(0, 200)));
-    await p.addInitScript((v) => { localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })); }, VENUE);
+    // LATE venue write (standing rule 30) + the ten-bot character pin.
     await p.goto('file://' + path.resolve(ROOT, 'regatta/index.html'));
     await p.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
+    await p.evaluate(({ v, parked }) => {
+        const st = { venue: v };
+        if (!parked) st.character = AI_CONFIG[0].name;
+        localStorage.setItem('regatta_settings', JSON.stringify(st));
+        window.__bdParked = parked;
+    }, { v: VENUE, parked: process.env.BD_PARKED === '1' });
 
     const rows = [];
     let meta = null;
@@ -29,7 +35,20 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeP0');
             window.evalHarness.seed = seed;
             window.resetGame(); window.startRace();
             state.course.cutoff = 900;
-            const pl = state.boats.find(x => x.isPlayer); pl.x = 1e6; pl.y = 1e6;
+            // TEN-BOT ERA (2026-08-27 retrofit, _tb_gates.md): convert the player
+            // boat instead of parking it, so the attribution is taken at the traffic
+            // density his own laps were sailed in. BD_PARKED=1 restores the 9-bot path
+            // for reproducing a pre-cut number ONLY.
+            const pl = state.boats.find(x => x.isPlayer);
+            if (window.__bdParked) { pl.x = 1e6; pl.y = 1e6; }
+            else {
+                applyBoatIdentity(pl, playerCharacter(), false);
+                pl.isPlayer = false; pl.manualTrim = false;
+                const nine = state.boats.filter(x => x !== pl);
+                pl.ai.startLinePct = Math.max(0.05, Math.min(0.90,
+                    nine.reduce((a, x) => a + x.ai.startLinePct, 0) / nine.length));
+                pl.ai.setupDist = 300;
+            }
             const dt = 1 / 60;
             const marks = state.course.marks;
             const route = state.course.route || null;
