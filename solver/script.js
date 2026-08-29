@@ -315,36 +315,32 @@ function calculateBestGuesses(possibleWords, remainingGuesses = 0) {
     let maxGroupSize = 0;
 
     for (const target of possibleWords) {
-      const result = Array(5).fill('gray');
-      const targetArr = target.split('');
-      const guessArr = guess.split('');
+      const result = ['X', 'X', 'X', 'X', 'X'];
       const targetCounts = {};
 
       // First pass: Green
-      // First pass: Green
-      // Note: targetCounts is populated here for non-green letters.
       for (let i = 0; i < 5; i++) {
-        if (targetArr[i] === guessArr[i]) {
-          result[i] = 'green';
-          targetArr[i] = null;
-          guessArr[i] = null;
+        const gChar = guess[i];
+        const tChar = target[i];
+
+        if (gChar === tChar) {
+          result[i] = 'G';
         } else {
-          const letter = targetArr[i];
-          targetCounts[letter] = (targetCounts[letter] || 0) + 1;
+          targetCounts[tChar] = (targetCounts[tChar] || 0) + 1;
         }
       }
 
       // Second pass: Yellow
       for (let i = 0; i < 5; i++) {
-        if (result[i] !== 'green') {
-          const letter = guessArr[i];
-          if (letter && targetCounts[letter]) {
-            result[i] = 'yellow';
-            targetCounts[letter]--;
+        if (result[i] === 'X') {
+          const gChar = guess[i];
+          if (targetCounts[gChar]) {
+            result[i] = 'Y';
+            targetCounts[gChar]--;
           }
         }
       }
-      const fb = result.map(c => c === 'green' ? 'G' : (c === 'yellow' ? 'Y' : 'X')).join('');
+      const fb = result.join('');
       groups[fb] = (groups[fb] || 0) + 1;
       if (groups[fb] > maxGroupSize) maxGroupSize = groups[fb];
     }
