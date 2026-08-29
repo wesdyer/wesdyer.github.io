@@ -1,0 +1,3 @@
+## 2024-06-11 - Accessible Custom Radio Buttons with Tailwind
+**Learning:** When hiding native radio inputs to style custom interactive UI elements with Tailwind, using classes like `invisible`, `hidden`, or `w-0 absolute` removes them from the accessibility tree, breaking screen reader functionality. Additionally, without explicit keyboard focus styles on the visible parent element, keyboard users cannot navigate the interface.
+**Action:** Use the `sr-only` class to visually hide native inputs while preserving screen reader accessibility. Ensure keyboard focus is visible by adding styling to the parent `<label>` using Tailwind's `has-[:focus-visible]` modifier (e.g., `has-[:focus-visible]:ring-2`).
