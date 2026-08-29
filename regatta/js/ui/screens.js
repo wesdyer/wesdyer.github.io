@@ -24,6 +24,9 @@ const Sayings = {
 
     queueQuote: function(boat, type) {
         if (!boat || boat.isPlayer) return;
+        // Sailing School: the classmates keep quiet through the lessons — the only voice on
+        // the water is Paddle's. They get their lines back for the graduation race.
+        if (window.School && School.lesson()) return;
         if (this.queue.length >= 3) return;
         if (!this.overlay) this.init();
 
@@ -2156,6 +2159,26 @@ document.querySelectorAll('.ov-swatch[data-color]').forEach(b => b.addEventListe
 if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
 if (UI.resultsRematchButton) UI.resultsRematchButton.addEventListener('click', (e) => { e.preventDefault(); rematchRace(); });
 if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preventDefault(); startRace(); });
+{
+    // Sailing School. Primary styling until graduated, then a plain secondary — the
+    // clubhouse leads with the school for a first-time player and gets out of the way after.
+    const sb = document.getElementById('school-btn');
+    if (sb) {
+        const style = () => {
+            const grad = window.School && School.graduated();
+            sb.classList.toggle('res-btn-primary', !grad);
+            if (UI.startRaceBtn) UI.startRaceBtn.classList.toggle('res-btn-primary', !!grad);
+            sb.textContent = grad ? 'Sailing School' : 'Sailing School →';
+        };
+        style();
+        window.__styleSchoolBtn = style;
+        sb.addEventListener('click', (e) => {
+            e.preventDefault(); sb.blur();
+            if (state.race.status !== 'waiting' || _venueLoading) return;
+            School.start(1);
+        });
+    }
+}
 {
     const rc = document.getElementById('records-close');
     if (rc) rc.addEventListener('click', () => closeRecordsOverlay());

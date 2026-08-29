@@ -890,6 +890,9 @@ function regionWindAt(x, y) {
         dir = wsum > 0 ? Math.atan2(ux, -uy) : baseDir;
         spd = total > 0 ? sacc / total : 0;
     }
+    // Sailing School fades the wind in from nothing ("Here comes the wind"): one scale on the
+    // region blend, so every reader — polar, HUD, comets, sound — sees the same breeze.
+    if (window.School && School.active && School.windScale != null) spd *= School.windScale;
     return { direction: dir, speed: spd };
 }
 
@@ -1529,7 +1532,11 @@ function drawDisturbedAir(ctx) {
         // ten boats is ten calls a frame where per-particle would be several hundred. The
         // plume is therefore straight — it does not bend along a gradient over its own 450
         // units — but it leaves the boat down the wind that is actually blowing there.
-        const windDir = getWindAt(boat.x, boat.y).direction;
+        const localW = getWindAt(boat.x, boat.y);
+        const windDir = localW.direction;
+        // No wind, no wind shadow: the plume fades out below ~3 kn and is gone in a calm.
+        const calm = Math.min(1, localW.speed / 3);
+        if (calm <= 0.02) continue;
         const wx = -Math.sin(windDir);
         const wy = Math.cos(windDir);
         // Right Vector
@@ -1548,7 +1555,7 @@ function drawDisturbedAir(ctx) {
              // Slightly larger size
              const size = 2.0 + (p.d/450)*2.0;
              // More opaque: 0.4 -> 0.6 max alpha
-             const alpha = Math.max(0, Math.min(1, (1.0 - p.d/450) * 0.6));
+             const alpha = Math.max(0, Math.min(1, (1.0 - p.d/450) * 0.6)) * calm;
 
              ctx.globalAlpha = alpha;
              ctx.beginPath();

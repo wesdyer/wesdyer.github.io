@@ -1550,7 +1550,11 @@ function updateAI(boat, dt) {
     // the decision, not its typical position.
     const aWind = boat.apparentWind || getWindAt(boat.x, boat.y);
     const windAngle = Math.abs(normalizeAngle(aWind.direction - boat.heading));
-    const drawing = windAngle > (boat.spinnaker ? AWA_KITE_DOUSE : AWA_KITE_SET);
+    // `kiteHold` (radians) is a characteristic error: the boat keeps the kite up that much
+    // further forward than the douse angle, so it visibly flogs into the leeward mark.
+    // Sailing School classmates only (tutorial.md §8).
+    const hold = (boat.traits && boat.traits.kiteHold) || 0;
+    const drawing = windAngle > (boat.spinnaker ? AWA_KITE_DOUSE - hold : AWA_KITE_SET);
     // No hysteresis on `speedLimit`, deliberately. It is not a wind condition — it is the
     // AI's throttle, and below 0.9 the bot answers it by FORCE-LUFFING (`forcedLuff` in
     // updateAITrim eases the sheet up to 90 degrees past optimal). Holding the kite through

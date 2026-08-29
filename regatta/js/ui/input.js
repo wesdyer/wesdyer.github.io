@@ -111,7 +111,7 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'F7') { e.preventDefault(); toggleWaterDebug(); }
     // Sailing
     if (e.key === ' ' || e.code === 'Space') {
-        if (state.boats.length > 0) state.boats[0].spinnaker = !state.boats[0].spinnaker;
+        if (state.boats.length > 0 && !(window.School && (School.controlsLocked || School.kiteLocked))) state.boats[0].spinnaker = !state.boats[0].spinnaker;
     }
     if (e.key === 'Tab') {
         e.preventDefault();

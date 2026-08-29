@@ -1,8 +1,17 @@
 # Tutorial Spec — Sailing School at Duckling Pond
 
-*Spec only. No code changes. This document designs the learn-to-sail flow that runs
-at **Duckling Pond** ([venues.md](venues.md) §15) under the menu name **Sailing
-School**.*
+*This document designs the learn-to-sail flow that runs at **Duckling Pond**
+([venues.md](venues.md) §15) under the menu name **Sailing School**.*
+
+> **Build status (Aug 28 2026).** The first pass is in: `assets/venues/pond.venue.js`
+> (endless water, 7 kn from north, third-length W/L), `js/game/school.js` (the segment
+> driver, instructor card, wind ribbon, no-go cone, launch and ducklings, the debrief),
+> the kite TWA luff in `physics.js` (ships everywhere; Wes moved the onset from §3's 115° to **90°**, the polar's crossover — the sail should not shake while it is still the faster sail), the `pinch` / `kiteHold`
+> classmate traits, the Sailing School button and a `regatta_progress.graduated` flag.
+> Decisions taken: venue key `pond` (audio key renamed to `racing-pond`); assigned
+> trainer dinghy; graduated flag only — unlocks and achievements come later; flat water
+> now, venue art later. Not yet built: Wobble's scripted cross (§8), the optional
+> manual-trim lesson (§11), jump-to-unit on re-entry (§12), Paddle's portrait re-roll.
 
 Companion to [venues.md](venues.md) §15 (the venue and its standing constraints),
 [music.md](music.md) §12.4 (the cue brief, already written),

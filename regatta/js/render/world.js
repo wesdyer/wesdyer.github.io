@@ -838,6 +838,9 @@ function boundaryRing(b) {
 function drawBoundary(ctx) {
     const b = state.course.boundary;
     if (!b) return;
+    // The First Sail is one boat alone on endless water: the arena still exists for the
+    // physics (it is 6200u out, unreachable in a four-minute sail) but its ribbon is not drawn.
+    if (window.School && School.active && School.s && School.s.kind === 'sail') return;
     const ring = boundaryRing(b);
     if (!ring || ring.total <= 0) return;
 

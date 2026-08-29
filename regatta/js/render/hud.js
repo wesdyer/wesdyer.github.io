@@ -83,7 +83,7 @@ function drawBoat(ctx, boat) {
         ctx.strokeStyle = spinColor || '#ef4444';
         ctx.lineWidth = 1;
 
-        const luff = boat.luffIntensity || 0;
+        const luff = Math.max(boat.luffIntensity || 0, boat.kiteLuff || 0);
         const baseDepth = 40 * scale;
         let controlX = -boat.boomSide * baseDepth;
         if (luff > 0) {
@@ -111,7 +111,7 @@ function drawBoat(ctx, boat) {
         ctx.save();
         ctx.translate(0, tackY);
         ctx.rotate(boat.sailAngle);
-        const luff = boat.luffIntensity || 0;
+        const luff = part === 'spin' ? Math.max(boat.luffIntensity || 0, boat.kiteLuff || 0) : (boat.luffIntensity || 0);
         const angleRatio = Math.min(1.0, Math.abs(boat.sailAngle) / (Math.PI / 4));
         // Floor the camber squash — a sail scaled too thin reads as a broken sliver
         const flatten = Math.max(0.5, (0.6 + 0.4 * angleRatio) * (1 - luff * 0.8));
@@ -149,7 +149,8 @@ function drawBoat(ctx, boat) {
     // rather than the stern — at the transom it reads as a burgee (decoration) and
     // sits in the boom clutter, where at the mast it lands where the eye already is.
     // Kept short so that being on top buys visibility without adding noise.
-    if (boat.apparentWind && boat.isPlayer) {
+    // A fly hangs limp in no air: nothing to draw below half a knot apparent.
+    if (boat.apparentWind && boat.isPlayer && boat.apparentWind.speed > 0.5) {
         const rel = normalizeAngle(boat.apparentWind.direction - boat.heading);
         const fx = -Math.sin(rel), fy = Math.cos(rel); // streams to where wind blows TO (local frame)
         const px2 = -fy, py2 = fx; // perpendicular, for the flutter wave
@@ -528,7 +529,8 @@ function drawActiveGateLine(ctx) {
 // the game's progression, not a knob a venue author should be reaching for; keys are
 // identity here (see VENUE_ORDER's note), so the test is stable.
 function trainingAidsOn() {
-    return (state.race.venue || settings.venue) === 'seatrials';
+    const v = state.race.venue || settings.venue;
+    return v === 'seatrials' || (typeof v === 'string' && v.startsWith('pond'));
 }
 
 function drawLadderLines(ctx) {
@@ -950,7 +952,9 @@ function drawMinimap() {
     // Mask venues show the WHOLE map: the geography is authored and fixed, so a
     // minimap cropped to player+marks hides most of it and reads nothing like
     // the painted mask.
-    if (state.course.doc) {
+    // Sailing School lifts the arena to the horizon (School.start), so its chart frames
+    // the player and the marks the way a mask-less venue does.
+    if (state.course.doc && !(window.School && School.active)) {
         // Follows the ARENA rather than MASK_WORLD, so it tracks a scaled map and a
         // polygon boundary instead of a constant that no longer describes either. THE
         // ARENA'S LONG AXIS JUST FITS: the chart is for racing, so the water you may
@@ -962,7 +966,7 @@ function drawMinimap() {
         const e = Arena.extent(state.course.boundary);
         minX = e.minX; maxX = e.maxX; minY = e.minY; maxY = e.maxY;
     }
-    const pad = state.course.doc ? 0 : 200;
+    const pad = (state.course.doc && !(window.School && School.active)) ? 0 : 200;
     minX-=pad; maxX+=pad; minY-=pad; maxY+=pad;
     const scale = (width - (state.course.doc ? 0 : 20)) / Math.max(maxX-minX, maxY-minY);
     const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
@@ -1217,7 +1221,7 @@ function drawMinimap() {
     }
 
     // Every other mark: small, cool and quiet.
-    const mkR = state.course.doc ? 0.6 : 1;
+    const mkR = (state.course.doc && !(window.School && School.active)) ? 0.6 : 1;
     for (let i = 0; i < state.course.marks.length; i++) {
         if (active.includes(i)) continue;
         const m = state.course.marks[i];
@@ -1261,7 +1265,7 @@ function drawMinimap() {
     // Marker size. These were tuned when the minimap framed player+marks; a
     // mask venue shows the WHOLE map, where a fixed 8px arrow is a boat the size
     // of an island and the fleet becomes one coloured smear. Shrink to match.
-    const mk = state.course.doc ? 0.55 : 1;
+    const mk = (state.course.doc && !(window.School && School.active)) ? 0.55 : 1;
 
     // COMPETITORS ARE DOTS. Ten rotating triangles a few pixels tall encode a heading
     // nobody can read at this size — they just made the fleet a field of similar shapes
@@ -1324,7 +1328,7 @@ function updateLeaderboard() {
     const totalRaceDist = (state.course.dmc && state.course.dmc.total) || (state.race.totalLegs * len);
 
 
-    if (state.race.status === 'prestart') {
+    if (state.race.status === 'prestart' || (window.School && School.lesson())) {
          UI.leaderboard.classList.add('hidden');
          return;
     }

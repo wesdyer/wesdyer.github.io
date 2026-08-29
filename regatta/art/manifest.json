@@ -4998,6 +4998,34 @@
         0.4995,
         0.4995
       ]
+    },
+    {
+      "key": "pond-duckling",
+      "class": "element",
+      "venue": "pond",
+      "status": "art",
+      "subject": "ONE SINGLE mallard duckling swimming, seen from directly overhead, centred and filling the frame, facing the TOP of the frame. From this angle it is a small plump teardrop: a round body widest just behind the head, tapering to a tiny upturned tail-tuft at the bottom of the frame, and a round head at the top with a short flat bill foreshortened and pointing away up the frame. Two stubby wing-nubs are just visible as soft bumps along the sides; no legs or feet show. COLOUR: the body is a vivid saturated BUTTERCUP YELLOW - not lemon, not cream, not pastel, not spring-chick pale. This bird sits on teal water beside a green lawn and the model's instinct will be to soften it toward pastel or wash it green; do not. Hold the yellow saturated and warm. The species marking is the one darker note: a soft olive-brown cap on the crown, a thin dark eye-stripe running back from each eye, and a faint olive-brown patch on the back and the tail-tuft. The bill is a small flat orange-brown wedge; the two eyes are dark dots either side of the head, seen from above. Crisp flat faceted shading in two or three clean value masses, a fluffy but simplified outline - a few soft tufts breaking the contour, never fur texture or individual feathers - a clean dark contour no heavier than the rest of the set, no glossy speculars, no white halo or plate behind the bird. Exactly one duckling, alone, nothing else in frame. No water, no ripples, no wake, no reflection, no shadow, no ground.",
+      "note": "Paddle's beginner class (tutorial.md 13): the line that leads the player out on the First Sail and falls in behind them at the graduation finish. SHIPS AS A SPRITE (ships:true) for the same reason as the penguins: js/game/school.js draws each bird individually so the chain can lead, raft up and follow; a composed group could not. True scale is ~1px (a duckling is 10cm), so `world` is a legibility size, matching the 14px placeholder the school draws today. Buttercup is the venue's owned hue (venues.md 15, venue-art.md struck-pastels rule) - the subject refuses pastel the way the penguins refuse navy.",
+      "world": 14,
+      "ships": true
+    },
+    {
+      "key": "pond-coach-launch",
+      "class": "world-prop",
+      "role": "traffic",
+      "venue": "pond",
+      "world": 130,
+      "anchor": "center",
+      "status": "art",
+      "subject": "A SAILING-SCHOOL COACH BOAT - a small rigid inflatable launch with an outboard, the boat an instructor idles alongside beginners in - seen from DIRECTLY OVERHEAD, floating level, bow pointing to the TOP of the frame, alone on a transparent background. COMPLETELY FLAT 2D VECTOR-STYLE RENDERING: every shape is a flat fill seen square from its top, no bevelled edges, no isometric walls, no 3D depth anywhere. TRUE PLAN VIEW AT BOTH ENDS: only top surfaces show - no hull side, no bow face, no perspective step. THE PROPORTION IS THE IDENTITY: short and beamy, about two and a half times as long as it is wide, a bluntly rounded bow and a SQUARE cut-off transom. THE SIGNATURE IS THE INFLATABLE TUBE: a thick rounded collar in SAFETY ORANGE runs unbroken around the whole hull from transom to transom, swelling into a fat round nose at the bow, drawn as one bold flat band of colour - it is the single highest-contrast element in the sprite and the first thing that says COACH BOAT. Inside the tube, a pale grey non-slip deck as one unbroken flat tone. YOU ARE LOOKING DOWN INTO AN OPEN BOAT: no cabin, no roof, no windscreen. Forward, a small centre console as a compact dark block with a tiny wheel; behind it, the INSTRUCTOR - a MALLARD DRAKE seen from directly above, a small round bottle-green head with a short yellow bill pointing up the frame, a thin white neck ring, and the chestnut-and-grey back of an orange life jacket around him, sitting at the console. Beside him a coiled pale towline and a small red first-aid box. At the transom, ONE dark outboard motor centred and overhanging the stern as a squat block, the heaviest dark shape on the boat. It is a working powerboat and nothing else: ABSOLUTELY NO SAIL, NO MAST, NO BOOM, NO RIGGING, no sail number and no white triangle anywhere - seen from directly above a training dinghy is a white hull under a yellow triangle, and this boat spends the whole lesson two boat-lengths from one, so it must be the opposite read: a dark grey core inside a fat orange ring. Crisp flat faceted shading in clean value masses, a clean dark contour no heavier than the rest of the set, no glossy speculars, no white halo or plate behind the boat. No wake, no spray, no water, no shadow.",
+      "note": "Paddle's launch: the instructor's boat that motors alongside the player through the First Sail (tutorial.md 13, 'the launch moves with you') and the boat the school card's voice comes from. Drawn by js/game/school.js, not as a venue prop, so it is loaded directly there like the duckling. SIZE IS SET BY ITS OCCUPANT, NOT BY THE HULL (Wes, Aug 2026): the ducklings ship larger than life (22px on screen for a ~1px-true bird), so the drake in the launch has to be their parent's size or the family stops reading. Measured on the delivered master, Paddle is 0.23 of the boat's length; at 1.35x a duckling he is ~26px, so the boat is ~113px and the frame (fillTo 0.86) is 130. That makes the launch LARGER than the venue-neutral committee-boat (92) - accepted: the pond's ambient scale is cartoon-consistent with itself, and the two never share a frame (units 2-3 use the committee boat at the line, the launch is drawn only on the First Sail). TRAFFIC CONTRACT: the orange collar is the separator - a training dinghy is white-and-yellow with a rig, this is grey-and-orange with none.",
+      "fillTo": 0.86,
+      "planRound": false,
+      "allowSymmetry": true,
+      "anchorPx": [
+        0.5,
+        0.4995
+      ]
     }
   ],
   "scale": {

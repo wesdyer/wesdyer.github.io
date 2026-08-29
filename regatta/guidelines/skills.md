@@ -502,7 +502,8 @@ the roster is attached; two thirds stay free.
 | Venue | Native | | Locals |
 |---|---|---|---|
 | Lighthouse Cove | **Bixby** | sea otter | Scoop, Roll |
-| Stillwater Lake | **Gasket** | beaver — *builds the still water* | Paddle ○, Trout ✎ |
+| Stillwater Lake | **Gasket** | beaver — *builds the still water* | Trout ✎ |
+| Duckling Pond | **Paddle** | mallard drake — *runs the beginners' class; the Sailing School instructor and its graduation reward ([tutorial.md](tutorial.md) §13)* | — |
 | Pearl Lagoon | **Pearl** | oyster — venue is named for her | Puff, Jester |
 | Gatorgrass Bayou | **Chomp** | saltwater croc | Etienne ○, Skitter |
 | Sockeye Run | **Slipstream** | sockeye salmon — venue is named for him | Vex, or dipper ✎ |

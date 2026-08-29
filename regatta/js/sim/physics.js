@@ -464,7 +464,8 @@ function updateBoat(boat, dt) {
 
     // The physics reads a CONTROLS STRUCT, not the keyboard — sampleKeyControls()
     // (game/state.js) is the one seam between input devices and the hull.
-    const ctl = boat.isPlayer ? sampleKeyControls() : NO_CONTROLS;
+    // Sailing School can hold the helm for a moment ("feel the wind") — the boat sails itself.
+    const ctl = (boat.isPlayer && !(window.School && School.controlsLocked)) ? sampleKeyControls() : NO_CONTROLS;
 
     if (boat.isPlayer && !boat.raceState.finished) {
         // Player Input
@@ -906,6 +907,20 @@ function updateBoat(boat, dt) {
     } else {
         boat.luffIntensity = 0;
         boat.luffing = false;
+    }
+    // THE KITE TELLS YOU WHEN IT HAS STOPPED PAYING. Auto-trim keeps the spinnaker sheeted
+    // so the angle-of-attack test above never fires on it — a kite carried upwind sat full
+    // and round while costing three quarters of the boat's speed. J111_POLARS puts the
+    // kite/jib crossover at exactly 90° TWA at every wind speed — the kite is the RIGHT sail
+    // all the way down to 90° — so the sail must not shake while it is still paying (Wes:
+    // a luff at 115° contradicts the speedo). Onset at 90°, where it genuinely stops paying,
+    // full flog by 65°, where it is costing half the boat's speed. Render-only — the polar
+    // already charges the speed. guidelines/tutorial.md §3.
+    if (boat.spinnaker && boat.spinnakerDeployProgress > 0.5) {
+        const twaDeg = Math.abs(normalizeAngle(boat.heading - localWind.direction)) * 180 / Math.PI;
+        boat.kiteLuff = Math.min(1, Math.max(0, (90 - twaDeg) / 25));
+    } else {
+        boat.kiteLuff = 0;
     }
 
     // Speed response toward target (acceleration / drag). The per-second retention

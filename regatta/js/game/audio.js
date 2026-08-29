@@ -164,7 +164,7 @@ const MUSIC_TRACKS = {
     //   bed's band, and a pond for beginners should leave the most room of anywhere.
     //   C major r=0.86, ~66 BPM pulse, centroid 797 Hz, 12.2 dB dynamics: warm, slow,
     //   and alive without being loud — ducklings at sunset, as briefed.
-    'racing-duckling': { file: 'assets/audio/duckling-pond.mp3', loopStart: 1.5, loopEnd: 91.0, trim: 0.87 },
+    'racing-pond': { file: 'assets/audio/duckling-pond.mp3', loopStart: 1.5, loopEnd: 91.0, trim: 0.87 },
 };
 
 const MUSIC_VOLUME = 0.3;       // master, before per-track trim

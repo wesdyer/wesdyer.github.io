@@ -213,6 +213,9 @@ function update(dt) {
     checkIslandCollisions(dt);
     checkNearMisses(dt);
 
+    // Sailing School: the segment driver, the companions, the coaching.
+    if (window.School && School.active) School.update(dt);
+
     // Sayings
     Sayings.update(dt);
 
@@ -547,6 +550,9 @@ function draw() {
     // shadow, the land, the marks, the boats — passes over it, because a band of club
     // branding running across a coastline is exactly what it used to look like.
     drawBoundary(ctx);
+    // Sailing School overlays: the wind ribbon, the no-go cone, lesson buoys, the
+    // launch and the ducklings. World space, under the boats. No-op outside school.
+    if (window.School && School.active) School.drawWorld(ctx);
 
     // FLOATING PROPS — on the water, behind the land. Placed here and nowhere else, and the
     // two neighbours are both load-bearing:
@@ -614,6 +620,10 @@ function draw() {
     //
     // Gate line, ladder rungs and laylines are all derived from a windward GATE and mean
     // nothing on an island rounding, so they are skipped there.
+    // The First Sail is one boat alone on open water: no line, no gate, no course overlay.
+    // The course exists (the school moves the player to it for the Start) but is not drawn.
+    const soloSail = window.School && School.active && School.s && School.s.kind === 'sail';
+    if (!soloSail) {
     drawActiveGateLine(ctx);
     // Ladder rungs measure progress up a windward leg and have no meaning on a
     // single island rounding. The start/finish line and the laylines do, so they
@@ -622,6 +632,7 @@ function draw() {
     drawLayLines(ctx);
     drawMarkZones(ctx);
     drawRoundingArrows(ctx);
+    }
 
     drawDisturbedAir(ctx);
     // Cached world tile on floe-free courses; the arctic (floes drift, spin, and may be
@@ -635,8 +646,10 @@ function draw() {
     // Cached world tile; drifters draw live — see drawSurfacePropsCached.
     drawSurfacePropsCached(ctx);
     drawTraffic(ctx);
-    drawMarkShadows(ctx);
-    drawMarkBodies(ctx);
+    if (!soloSail) {
+        drawMarkShadows(ctx);
+        drawMarkBodies(ctx);
+    }
     drawRulesOverlay(ctx);
 
     // Draw All Boats (viewport cull: mid-race most of the fleet is off-screen)
@@ -660,6 +673,8 @@ function draw() {
         drawBoat(ctx, boat);
         ctx.restore();
     }
+    // Sailing School callouts that must sit ABOVE the boats (the ring round your own hull).
+    if (window.School && School.active) School.drawAbove(ctx);
 
     // Canopy props: the crowns a hull sails beneath, so they go over the fleet — and
     // under the air layer, because a wind comet passes over a treetop too. Split by
@@ -695,8 +710,11 @@ function draw() {
     // drawFireGlow scales itself by nightAmt() rather than returning early on it.
     drawFireGlow(ctx);
 
-    // Draw Indicators
+    // Draw Indicators. Not on the First Sail: the classmates are scenery there, and a name
+    // tag pointing off-screen is one more thing for a beginner to wonder about.
+    const firstSail = window.School && School.active && School.s && School.s.kind === 'sail';
     for (const boat of state.boats) {
+        if (firstSail && !boat.isPlayer) continue;
         if (boat.opacity === undefined || boat.opacity > 0.1) {
              ctx.save();
              if (boat.opacity !== undefined) ctx.globalAlpha = boat.opacity;
@@ -745,7 +763,7 @@ function draw() {
             return { x: canvas.width/2 + rx*f, y: canvas.height/2 + ry*f, onScreen: t >= 1.0 };
         };
 
-        if (state.showNavAids) {
+        if (state.showNavAids && !(window.School && School.lesson())) {
             const leg = player.raceState.leg;
             const marks = state.course.marks;
             // ROUTE-DRIVEN, not shape-guessed. The old split ("gate legs if the course has
@@ -800,8 +818,8 @@ function draw() {
         }
     }
 
-    drawBoatInstruments(ctx, player);
-    drawMinimap();
+    if (!(window.School && School.active && School.panelHidden)) drawBoatInstruments(ctx, player);
+    if (!(window.School && School.hudHidden)) drawMinimap();
     drawWindDebug(ctx);
 
     // UI Updates (Player Data)
@@ -892,7 +910,7 @@ function draw() {
             // legTimes is its own positioned container now, so it no longer inherits
             // the venue caption's hidden state — it has to gate on 'waiting' itself
             // or stale splits would show over the venue picker.
-            const legTimesHidden = state.race.status === 'prestart' || state.race.status === 'waiting';
+            const legTimesHidden = state.race.status === 'prestart' || state.race.status === 'waiting' || (window.School && School.active);
             UI.legTimes.classList.toggle('hidden', legTimesHidden);
             if (!legTimesHidden) {
                  let html = "";
@@ -969,7 +987,8 @@ function loop(timestamp) {
         // The overlay opens here, same frame, presentation-side.
         if (_resultsPending) {
             _resultsPending = false;
-            showResults();
+            if (window.School && School.active) School.onResults();
+            else showResults();
         }
         draw();
     }
@@ -983,6 +1002,10 @@ function resetGame() {
     // at the one gate every rebuild passes through.
     if (window.VenueDoc && window.VenueDoc.invalidateCompile) window.VenueDoc.invalidateCompile();
     loadSettings();
+    // The pond is the school's venue, never the clubhouse's: a stored 'pond' (a reload
+    // mid-lesson) falls back to the front door. School.start() saves 'pond' precisely so
+    // this reload survives it.
+    if ((settings.venue === 'pond' || settings.venue === 'pond-open') && !(window.School && window.School.active)) settings.venue = 'bay';
     _resultsPending = false;
     if (UI.resultsOverlay) UI.resultsOverlay.classList.add('hidden');
     state.camera.target = 'boat';
@@ -1071,7 +1094,9 @@ function resetGame() {
     state.race.bestOutcome = null;
 
     // Create Boats (Initialized at 0,0, positioned by repositionBoats)
-    const pc = playerCharacter();
+    // Sailing School assigns a training dinghy; the picker is withheld until Lighthouse Cove.
+    const school = window.School && window.School.active;
+    const pc = school ? School.playerConfig() : playerCharacter();
     const player = new Boat(0, true, 0, 0, pc.name, pc);
     // applySettings() only runs on load/save, so a boat built after that would
     // otherwise ignore a stored Auto Trim = off and start the race auto-trimming.
@@ -1087,7 +1112,9 @@ function resetGame() {
     // unreadable and the edge indicators ambiguous. The draw count is unchanged at 9, so
     // the rng stream is the same length; only which nine come out differs.
     const available = AI_CONFIG.filter(c => c.name !== settings.character);
-    for (let i = 0; i < 9 && available.length > 0; i++) {
+    if (school) {
+        opponents.push(...School.classmateConfigs());   // three classmates, no rng
+    } else for (let i = 0; i < 9 && available.length > 0; i++) {
         const idx = Math.floor(Math.random() * available.length);
         opponents.push(available[idx]);
         available.splice(idx, 1);
@@ -1115,6 +1142,7 @@ function resetGame() {
         state.boats.push(ai);
     }
 
+    if (school) School.onFleetBuilt();
     repositionBoats();
     // THE CAMERA IS PART OF SETTING THE COURSE. It follows the player by lerping 10% a
     // frame, so a race that starts with it parked over the LAST race's finish line spends

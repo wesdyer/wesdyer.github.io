@@ -1304,6 +1304,10 @@ Object.assign(BotController.prototype, {
         
         let mode = 'reach';
         let optTWA = getCharacterOptimalVMGAngle('upwind', localWind.speed, boat.stats);
+        // A characteristic error, not a stat: `pinch` (radians) squeezes the boat above its
+        // VMG angle on every beat. Only the Sailing School classmates carry it — a beginner
+        // who points too high and goes nowhere, seen from the outside (tutorial.md §8).
+        if (boat.traits && boat.traits.pinch) optTWA = Math.max(0.45, optTWA - boat.traits.pinch);
 
         if (absTWA < Math.PI / 3.5) mode = 'upwind';
         else if (absTWA > Math.PI * 0.7) {
