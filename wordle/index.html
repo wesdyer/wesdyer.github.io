@@ -69,23 +69,23 @@
 <header class="flex items-center px-4 py-3 justify-between border-b border-neutral-100 sticky top-0 z-10 bg-white/95 backdrop-blur-sm">
 <div class="size-10 shrink-0"></div>
 <h1 class="text-2xl md:text-3xl font-extrabold tracking-tight text-center flex-1">Endless Wordle</h1>
-<button class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-text-primary">
+<button aria-label="View Statistics" class="flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-neutral-100 transition-colors text-text-primary">
 <span class="material-symbols-outlined text-[24px]">bar_chart</span>
 </button>
 </header>
 <div class="px-6 py-4">
 <div class="flex h-10 w-full items-center justify-center rounded-xl bg-neutral-100 p-1">
-<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 has-[:checked]:bg-white has-[:checked]:shadow-sm text-neutral-500 has-[:checked]:text-black transition-all duration-200">
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 has-[:checked]:bg-white has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-neutral-400 relative text-neutral-500 has-[:checked]:text-black transition-all duration-200">
 <span class="truncate text-xs font-bold uppercase tracking-wide">Easy</span>
-<input class="invisible w-0 absolute" name="difficulty" type="radio" value="Easy"/>
+<input class="sr-only" name="difficulty" type="radio" value="Easy"/>
 </label>
-<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 has-[:checked]:bg-white has-[:checked]:shadow-sm text-neutral-500 has-[:checked]:text-black transition-all duration-200">
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 has-[:checked]:bg-white has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-neutral-400 relative text-neutral-500 has-[:checked]:text-black transition-all duration-200">
 <span class="truncate text-xs font-bold uppercase tracking-wide">Medium</span>
-<input checked="" class="invisible w-0 absolute" name="difficulty" type="radio" value="Medium"/>
+<input checked="" class="sr-only" name="difficulty" type="radio" value="Medium"/>
 </label>
-<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 has-[:checked]:bg-white has-[:checked]:shadow-sm text-neutral-500 has-[:checked]:text-black transition-all duration-200">
+<label class="flex cursor-pointer h-full grow items-center justify-center overflow-hidden rounded-lg px-2 has-[:checked]:bg-white has-[:checked]:shadow-sm has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-neutral-400 relative text-neutral-500 has-[:checked]:text-black transition-all duration-200">
 <span class="truncate text-xs font-bold uppercase tracking-wide">Hard</span>
-<input class="invisible w-0 absolute" name="difficulty" type="radio" value="Hard"/>
+<input class="sr-only" name="difficulty" type="radio" value="Hard"/>
 </label>
 </div>
 </div>
@@ -99,11 +99,11 @@
 </div>
 </div>
 
-<div id="stats-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+<div id="stats-modal" role="dialog" aria-modal="true" aria-labelledby="stats-title" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-auto flex flex-col max-h-full">
         <div class="flex justify-between items-center p-6 border-b shrink-0">
-            <h2 class="text-2xl font-bold">Statistics</h2>
-            <button id="close-stats" class="text-gray-500 hover:text-gray-800">
+            <h2 id="stats-title" class="text-2xl font-bold">Statistics</h2>
+            <button aria-label="Close" id="close-stats" class="text-gray-500 hover:text-gray-800">
                 <span class="material-symbols-outlined">close</span>
             </button>
         </div>
