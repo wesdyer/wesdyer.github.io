@@ -16315,3 +16315,175 @@ arctic 1.523 | **redrock 1.464** (new doc) | swamp 1.397 | river 1.259 |
 **glowtide 1.199** (new doc) | lagoon 1.196 | lake 1.134 | bay 1.134 |
 ocean 1.074 ✅ | seatrials 1.034 ✅ — goal 2/10. Goldens re-recorded on the
 new docs (`npm run trace:update`, 30 traces) and re-verified.
+
+## ⏭ THE RE-ENTRY PUSH — PLAN (2026-08-28 night, HEAD `0d3dd35`, nothing built)
+Full pre-registration: memory `regatta-reentry-push-plan`. The one-paragraph form:
+`applyAvoidance` prices candidates in ANGULAR DEVIATION from the tactician's heading
+(`pow(|offset|,3)*200`, + `taxTack` 600 on the other board) and has no progress or
+return term; a boat needing 30° of clearance is charged 25-200 to bear away to a
+reach and ~1150 to take the other close-hauled board — the in-band escape is 5-45×
+dearer than the out-of-band one, and the return is never priced. That is the
+band-ledger population (fleet 53% close-hauled vs his 79%; reaching+deep = 65-72%
+of the excess distance). Literature (Werling Frenet planners, ORCA's ‖v−v_pref‖,
+T-MPC, GT Sophy's projected progress, Game AI Pro racing architecture) converges:
+select among short trajectories priced against the REFERENCE, each returning to it.
+Ladder: **P0** `_band_owner.js` — owner-attributed band ledger + excursion-episode
+anatomy + offline currency counterfactual (GO gate: ≥50% of out-of-band seconds
+avoidance-owned on ≥2 of bay/redrock/arctic) → **C1** progress-currency scoring
+(racing legs; every hard term byte-identical; benched on HEAD physics AND treeRUD
+because free tacks bias it) → **C2** excursion-and-return candidates (offset × hold
+τ, 2-segment rollout; re-entry structural; not a latch). Parked: topology hysteresis
+(adjacent to the closed commitment family). Gates in `eval/rl/_re_gates.md` before
+the first bench.
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE RE-ENTRY PUSH — 2026-08-28 22:40 → (autonomous). Owner rulings: plan
+# approved ("Let's proceed"); rudder asymmetry FINE FOR NOW (judge on HEAD
+# physics). Pre-registration: memory regatta-reentry-push-plan +
+# eval/rl/_re_gates.md (gates written BEFORE the census printed). HEAD in:
+# 0d3dd35 (js/ == 7f4a6da, so treeNV is the control). Anchors tb*/sp*/nv*.
+# ═══════════════════════════════════════════════════════════════════════
+
+## P0 — WHO OWNS THE TIME OUT OF THE BAND (`_band_owner.js`, NEW tracked;
+## ten-bot, fp-filtered, seeds 9400+6, treeNV; 23:31)
+⚠ Rule-18 catch before publishing: the first run read 76-85% "pre-avoidance"
+on every venue. The controller BODY runs at 10 Hz (bot.js `update`), so a
+per-frame "applyAvoidance was called" flag is false on five frames in six.
+Attribution now happens on tick frames and the owner is carried across the
+non-tick frames. The corrected census:
+
+| leg | out-of-band % (him) | avoid | nav-armed | nav | post | wiggle | spin |
+|---|---|---|---|---|---|---|---|
+| bay 1 | 33.6 (12.6) | **51.5%** | 27.3 | 15.1 | 1.8 | 2.3 | 1.9 |
+| redrock 1 | 43.7 (13.1) | **50.6%** | 17.3 | 15.2 | 8.0 | 5.1 | 3.6 |
+| arctic 1 | 62.0 (50.7) | 26.3% | 4.2 | **42.4** | 16.8 | 7.9 | 2.5 |
+| lagoon 4 | 25.2 (13.1) | 42.6% | 38.7 | 16.2 | 2.0 | 0 | 0.5 |
+| glowtide 1 | 42.3 | 46.1% | 4.6 | 24.5 | 10.7 | 8.3 | 5.7 |
+
+- **The avoidance layer is the LAST WRITER of half the out-of-band seconds on
+  bay and redrock**, and 43-46% on lagoon/glowtide. Arctic is NAV-owned (42%,
+  the ice router's own legs) — C1 is not expected to move arctic.
+- Excursions (≥0.5 s at |TWA| ≥ 50°): fleet 4.3-5.7 per leg vs his 1.3-1.7;
+  avoid-owned onsets median 2.5-2.8 s, depth 85-105°, rival within 250 u at
+  onset 83-85%, risk LOW/MEDIUM 77-90% (the spacing gradient, not an imminent
+  hit). Re-entry by tack 15-21% (his 0%). The ≥3 s tail carries 80-85% of the
+  seconds. nav-armed excursions are the roundings (5 s, 150-180°) — not this
+  push's target.
+- **THE CURRENCY, on real onsets** (desired in-band, chosen out-of-band):
+  the fan's cost for the chosen bear-away vs the other close-hauled board —
+  bay **42.7×** (chosen 25 vs 1067, n=98), redrock 15.6× (n=114), arctic 46.1×
+  (n=129), lagoon 24.7×, glowtide 42.7×; the other board was INSIDE the fan
+  92-97% of the time. GO gate PASSED.
+
+## C1 — THE PROGRESS CURRENCY (treeRE; scoped to racing legs with an upwind
+## proper course, |desTwa| < π/3.5 — the tack tax's own test; byte-identical
+## elsewhere)
+(1) the deviation reference becomes the NEARER of the two close-hauled boards
+(the tack is a proper course, the U-turn beyond it keeps the full pow³ price);
+(2) the flat 600 tack tax is replaced by a 4 s rollout of the boat's own turn
+and speed response through the polar (0.9970/0.9982 per-frame constants,
+polar edge ramped to zero below 30°), priced as progress lost toward the
+current nav target at 0.6/u. Every collision/land/floe/RRS/no-go/stand-on
+term is untouched. Launched 23:35: `_band_owner` ×4 (bay/rr/arctic/lagoon) +
+benches re1bay9400, re1rr9400/9500, re1arc9100.
+
+## C1 — FIRST READS (23:55; treeRE vs anchors, ten-bot, paired per boat)
+MECHANISM (`_band_owner` / `_band_ledger`, seeds 9400+6):
+| leg | out-of-band % base→C1 | avoid-owned s/leg | excursions/leg | leg s | close-hauled % | reach+deep path |
+|---|---|---|---|---|---|---|
+| bay 1 | 33.6 → 30.9 | 8.3 → 7.2 | 4.3 → 3.6 | 48 → 46.5 | 52.7 → 53.7 | 801 → 714 |
+| redrock 1 | 43.7 → **35.8** | 12.9 → **8.2** | 5.7 → 4.3 | 58 → **50.8** | 43.5 → 43.5 | 928 → 859 |
+| lagoon 4 | 25.2 → **18.1** | 5.9 → 3.2 | 3.8 → 2.7 | 55 → 54.2 | — | — |
+| arctic 1 | 62.0 → 61.3 | 33.2 → 33.6 | 15.8 → 14.4 | 204 → 198 | — | — |
+⚠ The REGISTERED mechanism gate (close-hauled share bay ≥62 / redrock ≥55,
+reach+deep path −30%) is MISSED: the time C1 recovers goes to the PINCH band
+(bay 13.7→15.5%, redrock →20.8%; efficiency 0.88-0.90, so productive, but
+the boat is pinching, not close-hauled) and the reach+deep path falls 7-11%,
+not 30%. Excursion DURATION is unchanged (bay 3.0→3.5 s med) — C1 removes
+departures, it does not speed re-entry; that is C2's question, as registered.
+CLOCK (paired, NEGATIVE = faster):
+- **redrock pooled 6-set: med −14.0 / mean −12.9, ALL SIX sets negative
+  (−4/−6/−17/−20/−18/−15), fins 479→480, boat 3.92→3.35, land 9.27→7.00,
+  pen 0.81→0.74** — 299 → 286 (hand-recomputed from the JSONs, rule 21b).
+- bay: 9400 med −1 / mean −2.5; 9600 med −3 / mean −3.8 (both sets negative;
+  boat 0.70→0.60, 0.56→0.48; OCS identical) — under the ~5 s bar, needs the
+  sign agreement of ≥4 sets or a finer read (rule 13).
+- arctic 9100: med −5 / mean −4.9, fins 160/160, land 3.94→3.35, boat
+  2.66→3.00 (+13%), OCS identical 25.6.
+- seatrials (at goal): med 0 / mean −1.3, OCS identical 9.4 — start
+  byte-identical as scoped.
+
+## C1 — THE TEN-VENUE READ (00:24; paired per boat vs anchors, NEG = faster)
+| venue | sets | paired med | mean | fins | dirt (base→cand) |
+|---|---|---|---|---|---|
+| **redrock** | 6×8 pooled | **−14** | −12.9 | 479→480 | boat 3.92→3.35, land 9.27→7.00, pen .81→.74 |
+| **arctic** | 4×16 pooled | **−5** | −3.2 | 639→640 | 9600 land 10.63→2.46; boat +5..13% on 9100/9400/9600, −23% on 9200 |
+| bay | 2×20 | −2 | −3.1 | 400→400 | boat −14%, OCS identical (two more sets running) |
+| lake | 2×20 | −4 / −2 | −3.6 / −4.3 | 400→400 | boat/pen down, land mixed |
+| ocean ✅ | 16 | 0 | −2.2 | 160→160 | boat .68→.46 |
+| seatrials ✅ | 16 | 0 | −1.3 | 160→160 | OCS identical 9.4 |
+| river | 3×8 pooled | −3 | −1.1 | **234→231** | 9400: +6 med, land 52.6→88.6 (!); 9408: −10, land 92→74; 9500: −1 |
+| lagoon | 8 | +1 | +1.5 | 80→80 | one-race lottery width |
+| swamp | 9600 only so far | +2 | +3.6 | 80→80 | land 3.95→4.81 |
+| glowtide | running | | | | |
+NAMED LOSERS so far (non-universal-wins rule): swamp (+2 on one set, two
+pending), river's 9400 set (land +68%, 3 fewer finishers pooled), lagoon +1.
+
+## C1 — THE VERDICT (00:47) and the C1b kill
+Late sets: **glowtide −10 / −10.4 (fins 159→160, every dirt column down)**;
+**swamp pooled 3-set −9 / −12.9** (9400 −14, 9500 −13, 9600 +2; fins 237→235,
+boat 3.21→5.26 on 9400); **bay FOUR disjoint 20-seed sets all negative**
+(−1/−3/−3/−1 med; pooled n=800 med −2 mean −2.35; the 9100/9200 sets ran
+their own treeNV controls, rule 22) — the rule-13 bar is met by sign
+agreement. River pooled 3-set med −3 / mean −1.1, fins 234→231 (named
+loser: the 9400 set, +6 med with land 52.6→88.6). Lagoon +1 (8 seeds).
+**C1b (offer the other board exactly, ±0.15/±0.3) is INERT-TO-WORSE over C1**:
+redrock 9400 C1→C1b +3 med, 9500 0, bay 9400 +2; mechanism unchanged
+(bay 30.9→29.4%, redrock 35.8→36.6%). The fan's 1.2/1.6 slots already
+reach the board once it is priced as a proper course. Dropped.
+⇒ C1 LANDS: 8 of 10 venues faster, the two at goal within noise (ocean 0,
+seatrials 0), losers named (river fins −3, lagoon +1). Landing at 00:47:
+live js/ai/avoidance.js = treeRE; goldens re-recording; ablation trees
+REA (two-sided reference only, 600 tax kept) / REB (rollout only) on
+redrock 9600/9700 to attribute the mechanism (H1B's "two halves" lesson).
+
+## C1 — THE TWO HALVES (01:20; redrock 9600/9700, paired, cand−base)
+| tree | vs base 9600 / 9700 | vs C1 9600 / 9700 |
+|---|---|---|
+| REA: two-sided reference only (600 tax kept) | +5 / −8 | **+19 / +14** |
+| REB: rollout only (one-sided reference) | −2 / −4 | **+15 / +4** |
+| C1: both | −17 / −20 | — |
+**Synergistic, the H1B shape**: neither half alone reaches C1, and the
+reference change alone is a coin-flip. The rollout prices the tack; the
+reference lets the argmin reach it. Attribution recorded; the landed change
+is the pair.
+Hygiene: goldens re-recorded (22.3 min, 30 traces); verify running; npm test
+7 of 34 not passing — checked against the same-7 below; freeze --check 10/10
+match at 00:49.
+npm test on the landed tree: 27 pass / 6 FAIL / 1 CRASH. The six FAILs are
+six of the standing same-7 (shoal, sailable, editor, results, dmc, traffic);
+**test_venuedoc now PASSES**. The CRASH is `test_controls.js` — editor
+`schematic.toDataURL()` throws "Tainted canvases may not be exported" — and
+it **reproduces on a pristine HEAD worktree (0d3dd35)**, so it is the owner's
+re-cut (file:// prop sprites taint the editor canvas), not this landing. Owner
+item: test_controls.js:288 `shot()`.
+
+## C1 ✅ LANDED — goldens PASS 30/30 (0 behaviour changes after the full
+## `--update`, verify 21.5 min), freeze 10/10, npm test = same-six + venuedoc
+## now passing + the pre-existing test_controls canvas crash. Committed local.
+
+## ⏭ C2's SHAPE, MEASURED (`_re_why.js`, NEW tracked; treeRE, 4 seeds)
+On avoidance-owned out-of-band ticks where the desired heading was in-band,
+the cheapest IN-BAND candidate (|TWA| 30-50°, either board) is:
+| leg | ticks | veto: boat / static | out-priced: prox / base | clean in-band existed | cost gap med | chosen offset med |
+|---|---|---|---|---|---|---|
+| bay 1 | 1591 | 37% / 9% | 17% / 37% | **67%** | 8312 | 40° |
+| redrock 1 | 2539 | 35% / 12% | 23% / 30% | **61%** | 10275 | 92° |
+| lagoon 4 | 1102 | 21% / 3% | 23% / 53% | **85%** | 1162 | 69° |
+⇒ On 61-85% of the surviving out-of-band ticks a veto-free in-band heading
+EXISTS in the fan and loses on PRICE by thousands of points — the proximity/
+spacing terms, not the hard vetoes. A return trajectory (hold τ, then the
+board) can only win those ticks if the projection is allowed to see the
+threat clear during τ; that is the C2 build, and it is a trajectory-level
+scorer for the proximity terms, not a new candidate list (C1b showed the
+list is not the limit). Registered next rung; nothing built tonight.

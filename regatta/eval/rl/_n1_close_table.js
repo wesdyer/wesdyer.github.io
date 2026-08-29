@@ -43,16 +43,21 @@ const VENUES = {
     // the cut only (README PROMOTE: old baselines are retired, not compared);
     // nv* = the new-doc anchors (treeNV == HEAD 7f4a6da). nvst is the byte-
     // identity verification of the unchanged venues vs tbst (cmp-equal).
-    redrock: { base: ['tbrr9400','tbrr9500','tbrr9600','tbrr9700','tbrr9800','tbrr9900'], cand: ['nvrr9400','nvrr9500','nvrr9600','nvrr9700','nvrr9800','nvrr9900'] },
-    arctic:  { base: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'], cand: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'] },
-    river:   { base: ['tbriv9400','tbriv9408','tbriv9500'], cand: ['spriv9400','spriv9408','spriv9500'] },
-    swamp:   { base: ['tbsw9400','tbsw9500','tbsw9600'], cand: ['tbsw9400','tbsw9500','tbsw9600'] },
-    glowtide:{ base: ['tbglow'], cand: ['nvglow'] },
-    lagoon:  { base: ['tblag'], cand: ['tblag'] },
-    bay:     { base: ['tbbay9400','tbbay9600'], cand: ['tbbay9400','tbbay9600'] },
-    lake:    { base: ['tblk6100','tblk6200'], cand: ['tblk6100','tblk6200'] },
-    ocean:   { base: ['tboc'], cand: ['tboc'] },
-    seatrials:{ base: ['tbst'], cand: ['nvst'] },
+    // ⭐ THE RE-ENTRY PUSH (2026-08-29): C1 progress currency landed; re1* =
+    // treeRE == the landed js on every venue (bay also has re0/re1 9100/9200
+    // control+cand pairs for the rule-13 four-set bar; not in the table).
+    // PRE column = the session-open anchors (nv* redrock/glowtide/seatrials,
+    // sp* river, tb* elsewhere).
+    redrock: { base: ['nvrr9400','nvrr9500','nvrr9600','nvrr9700','nvrr9800','nvrr9900'], cand: ['re1rr9400','re1rr9500','re1rr9600','re1rr9700','re1rr9800','re1rr9900'] },
+    arctic:  { base: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'], cand: ['re1arc9100','re1arc9200','re1arc9400','re1arc9600'] },
+    river:   { base: ['spriv9400','spriv9408','spriv9500'], cand: ['re1riv9400','re1riv9408','re1riv9500'] },
+    swamp:   { base: ['tbsw9400','tbsw9500','tbsw9600'], cand: ['re1sw9400','re1sw9500','re1sw9600'] },
+    glowtide:{ base: ['nvglow'], cand: ['re1glow'] },
+    lagoon:  { base: ['tblag'], cand: ['re1lag'] },
+    bay:     { base: ['tbbay9400','tbbay9600'], cand: ['re1bay9400','re1bay9600'] },
+    lake:    { base: ['tblk6100','tblk6200'], cand: ['re1lk6100','re1lk6200'] },
+    ocean:   { base: ['tboc'], cand: ['re1oc'] },
+    seatrials:{ base: ['nvst'], cand: ['re1st'] },
 };
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;

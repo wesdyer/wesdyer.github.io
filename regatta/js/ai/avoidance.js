@@ -1066,6 +1066,40 @@ Object.assign(BotController.prototype, {
         const sgnRetro = (rmRetro && rmRetro.side === 'port') ? -1 : 1;
         let proCost = Infinity, proHeading = null, bestRetro = false, retroSet = false;
 
+        // C1 rollout (see the currency note below): 4 s in 8 steps, heading slews
+        // at the bot's own turn authority, speed relaxes toward the polar on the
+        // physics' up/down constants (0.9970 / 0.9982 per frame), progress = VMC
+        // toward the nav target. The polar table's own edge is honoured (below
+        // 30 deg the speed ramps to zero — the table would otherwise wrap to a run).
+        const c1On = racingLegF && Math.abs(desTwaAv) < Math.PI / 3.5;
+        let c1Ref = 0, c1Roll = null;
+        if (c1On) {
+            const wAt = getWindAt(this.boat.x, this.boat.y);
+            const wsC1 = wAt.speed, spinC1 = !!this.boat.spinnaker;
+            const nav = this._lastNav;
+            const brgC1 = nav ? Math.atan2(nav.x - this.boat.x, -(nav.y - this.boat.y)) : desiredHeading;
+            const turnC1 = getTurnSpeed() * 60 * (1.0 + (this.boat.stats ? this.boat.stats.handling : 0) * 0.03);
+            const polC1 = (tw) => {
+                const a = Math.abs(tw);
+                if (a < 0.5236) return getTargetSpeed(0.5236, spinC1, wsC1) * (a / 0.5236) * 15;
+                return getTargetSpeed(a, spinC1, wsC1) * 15;
+            };
+            const h0 = this.boat.heading, v0 = this.boat.speed * 60;
+            c1Roll = (hCand) => {
+                let hh = h0, v = v0, prog = 0; const dtC = 0.5;
+                for (let i = 0; i < 8; i++) {
+                    const d = normalizeAngle(hCand - hh), mx = turnC1 * dtC;
+                    hh = normalizeAngle(hh + Math.max(-mx, Math.min(mx, d)));
+                    const vp = polC1(normalizeAngle(hh - wdAv));
+                    const al = vp > v ? 1 - Math.pow(0.9970, 30) : 1 - Math.pow(0.9982, 30);
+                    v += (vp - v) * al;
+                    prog += v * Math.cos(normalizeAngle(hh - brgC1)) * dtC;
+                }
+                return prog;
+            };
+            c1Ref = c1Roll(desiredHeading);
+        }
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -1103,7 +1137,32 @@ Object.assign(BotController.prototype, {
                 ? Math.pow(Math.abs(offset), 3) * 200
                 : Math.pow(Math.abs(offset), 1.5) * 10;
 
-            if (taxTack && (normalizeAngle(h - wdAv) > 0 ? 1 : -1) !== hullTkAv) {
+            // C1 — THE PROGRESS CURRENCY (the re-entry push, 2026-08-28). Upwind, the
+            // proper course has TWO headings, and the deviation term above measured
+            // from only one of them: a close-hauled boat needing 30 deg of clearance
+            // was charged 25 to bear away to a reach and ~1150 (549 + the flat 600
+            // tack tax) to take the other close-hauled board — the IN-BAND escape
+            // 5-45x dearer than the out-of-band one (`_band_owner.js`: bay 43x,
+            // redrock 16x, arctic 46x at the median of real onsets, the other board
+            // inside the fan 92-97% of the time). The band ledger says the fleet
+            // spends 53% of an upwind leg close-hauled to his 79% and that the
+            // reaching+deep frames are 65-72% of the whole excess distance; the
+            // avoidance layer is the last writer of half of those seconds.
+            // Two changes, both scoped to RACING LEGS with an UPWIND proper course
+            // (the same |desTwa| < pi/3.5 test the tack tax used), byte-identical
+            // elsewhere: (1) the deviation reference becomes the NEARER of the two
+            // close-hauled boards, so the tack is a proper course, not a 1.4 rad
+            // swerve (the U-turn beyond it keeps the full pow3 price); (2) the flat
+            // 600 tack tax is replaced by what the tack actually costs — a 4 s
+            // rollout of the boat's own turn and speed response through the polar,
+            // priced as progress lost toward the current nav target (VMC, u) at
+            // 0.6/u. Bearing away is now priced by what it does not buy.
+            if (c1On) {
+                const hOther = normalizeAngle(2 * wdAv - desiredHeading);
+                const devO = Math.abs(normalizeAngle(h - hOther));
+                if (devO < Math.abs(offset)) cost = Math.pow(devO, 3) * 200;
+                cost += 0.6 * Math.max(0, c1Ref - c1Roll(h));
+            } else if (taxTack && (normalizeAngle(h - wdAv) > 0 ? 1 : -1) !== hullTkAv) {
                 cost += 600 * jamF;
             }
 
