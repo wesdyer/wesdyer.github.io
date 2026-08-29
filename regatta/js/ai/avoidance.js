@@ -845,6 +845,7 @@ Object.assign(BotController.prototype, {
         // sacred). 1200u bound = the farthest a 4s projection of two 7.5kt
         // boats can close to gradient range.
         if (!this._rowHold) this._rowHold = new Set(); else this._rowHold.clear();
+        const rhWhy = dbgOn ? {} : null; // __AVDBG ledger only: why a rights-holder is NOT held
         if (racingLegF) {
             for (const obR of state.boats) {
                 if (obR === boat || obR.raceState.finished) continue;
@@ -854,12 +855,12 @@ Object.assign(BotController.prototype, {
                 // REVERTED: Rule 11's overlapped pair sits at 100u, and leeward
                 // holding her course there IS the doctrine — the floor reverted
                 // Rule 11 to its full 15m baseline drift.)
-                if (obR.raceState.penalty && obR.controller && obR.controller.penaltySpin) continue;
+                if (obR.raceState.penalty && obR.controller && obR.controller.penaltySpin) { if (rhWhy) rhWhy[obR.id] = 'spin'; continue; }
                 let rowR = null;
                 try { rowR = getRightOfWay(boat, obR); } catch (e) { }
-                if (!rowR || rowR.boat !== boat) continue;
-                if (rowR.constraints && rowR.constraints.indexOf('Rule 15') >= 0) continue;
-                if (rowR.markRoom != null && rowR.markRoom !== boat.id) continue;
+                if (!rowR || rowR.boat !== boat) { if (rhWhy) rhWhy[obR.id] = 'not-row'; continue; }
+                if (rowR.constraints && rowR.constraints.indexOf('Rule 15') >= 0) { if (rhWhy) rhWhy[obR.id] = 'rule15'; continue; }
+                if (rowR.markRoom != null && rowR.markRoom !== boat.id) { if (rhWhy) rhWhy[obR.id] = 'markroom'; continue; }
                 // A boat MID-TACK OR FRESH FROM ONE cannot be projected linearly
                 // — her velocity sweeps through the turn and then rebuilds from
                 // half speed, so distCPA/tCPA are noise on her (the Rule-21
@@ -872,10 +873,10 @@ Object.assign(BotController.prototype, {
                 // tack or its settle window (0.75 on the 0.24x state clock ≈ 3
                 // real seconds past the flip the rules module already stamps) —
                 // exactly the baseline behavior that never made contact.
-                if (obR.raceState.isTacking) continue;
+                if (obR.raceState.isTacking) { if (rhWhy) rhWhy[obR.id] = 'tacking'; continue; }
                 const flipR = (window.Rules && window.Rules._tackFlipT)
                     ? window.Rules._tackFlipT[obR.id] : undefined;
-                if (flipR !== undefined && state.time - flipR < 0.75) continue;
+                if (flipR !== undefined && state.time - flipR < 0.75) { if (rhWhy) rhWhy[obR.id] = 'flip<0.75'; continue; }
                 const mR = getRiskMetrics(boat, obR);
                 // RELEASE = "clear she is not keeping clear" — CAPABILITY-SCALED
                 // (the swamp lesson, 2026-08-20). A fixed tCPA<2 bar assumes she
@@ -941,6 +942,7 @@ Object.assign(BotController.prototype, {
                     // refreshed while the pair stays hot.
                     if (!this._rhDropT) this._rhDropT = {};
                     this._rhDropT[obR.id] = state.time + 0.75;
+                    if (rhWhy) rhWhy[obR.id] = 'release';
                     continue;
                 }
                 if (this._rhDropT && (this._rhDropT[obR.id] || -1e9) > state.time) {
@@ -949,7 +951,7 @@ Object.assign(BotController.prototype, {
                     // danger is not a flap risk: her yield is real and the
                     // CPA truly opens. Re-hold early (owner doctrine: the
                     // stand-on reads the other boat's response).
-                    if (!yieldSafe()) continue;
+                    if (!yieldSafe()) { if (rhWhy) rhWhy[obR.id] = 'latch'; continue; }
                     delete this._rhDropT[obR.id];
                 }
                 this._rowHold.add(obR);
@@ -1066,6 +1068,40 @@ Object.assign(BotController.prototype, {
         const sgnRetro = (rmRetro && rmRetro.side === 'port') ? -1 : 1;
         let proCost = Infinity, proHeading = null, bestRetro = false, retroSet = false;
 
+        // C1 rollout (see the currency note below): 4 s in 8 steps, heading slews
+        // at the bot's own turn authority, speed relaxes toward the polar on the
+        // physics' up/down constants (0.9970 / 0.9982 per frame), progress = VMC
+        // toward the nav target. The polar table's own edge is honoured (below
+        // 30 deg the speed ramps to zero — the table would otherwise wrap to a run).
+        const c1On = racingLegF && Math.abs(desTwaAv) < Math.PI / 3.5;
+        let c1Ref = 0, c1Roll = null;
+        if (c1On) {
+            const wAt = getWindAt(this.boat.x, this.boat.y);
+            const wsC1 = wAt.speed, spinC1 = !!this.boat.spinnaker;
+            const nav = this._lastNav;
+            const brgC1 = nav ? Math.atan2(nav.x - this.boat.x, -(nav.y - this.boat.y)) : desiredHeading;
+            const turnC1 = getTurnSpeed() * 60 * (1.0 + (this.boat.stats ? this.boat.stats.handling : 0) * 0.03);
+            const polC1 = (tw) => {
+                const a = Math.abs(tw);
+                if (a < 0.5236) return getTargetSpeed(0.5236, spinC1, wsC1) * (a / 0.5236) * 15;
+                return getTargetSpeed(a, spinC1, wsC1) * 15;
+            };
+            const h0 = this.boat.heading, v0 = this.boat.speed * 60;
+            c1Roll = (hCand) => {
+                let hh = h0, v = v0, prog = 0; const dtC = 0.5;
+                for (let i = 0; i < 8; i++) {
+                    const d = normalizeAngle(hCand - hh), mx = turnC1 * dtC;
+                    hh = normalizeAngle(hh + Math.max(-mx, Math.min(mx, d)));
+                    const vp = polC1(normalizeAngle(hh - wdAv));
+                    const al = vp > v ? 1 - Math.pow(0.9970, 30) : 1 - Math.pow(0.9982, 30);
+                    v += (vp - v) * al;
+                    prog += v * Math.cos(normalizeAngle(hh - brgC1)) * dtC;
+                }
+                return prog;
+            };
+            c1Ref = c1Roll(desiredHeading);
+        }
+
         for (const offset of candidates) {
             const h = normalizeAngle(desiredHeading + offset);
 
@@ -1103,7 +1139,32 @@ Object.assign(BotController.prototype, {
                 ? Math.pow(Math.abs(offset), 3) * 200
                 : Math.pow(Math.abs(offset), 1.5) * 10;
 
-            if (taxTack && (normalizeAngle(h - wdAv) > 0 ? 1 : -1) !== hullTkAv) {
+            // C1 — THE PROGRESS CURRENCY (the re-entry push, 2026-08-28). Upwind, the
+            // proper course has TWO headings, and the deviation term above measured
+            // from only one of them: a close-hauled boat needing 30 deg of clearance
+            // was charged 25 to bear away to a reach and ~1150 (549 + the flat 600
+            // tack tax) to take the other close-hauled board — the IN-BAND escape
+            // 5-45x dearer than the out-of-band one (`_band_owner.js`: bay 43x,
+            // redrock 16x, arctic 46x at the median of real onsets, the other board
+            // inside the fan 92-97% of the time). The band ledger says the fleet
+            // spends 53% of an upwind leg close-hauled to his 79% and that the
+            // reaching+deep frames are 65-72% of the whole excess distance; the
+            // avoidance layer is the last writer of half of those seconds.
+            // Two changes, both scoped to RACING LEGS with an UPWIND proper course
+            // (the same |desTwa| < pi/3.5 test the tack tax used), byte-identical
+            // elsewhere: (1) the deviation reference becomes the NEARER of the two
+            // close-hauled boards, so the tack is a proper course, not a 1.4 rad
+            // swerve (the U-turn beyond it keeps the full pow3 price); (2) the flat
+            // 600 tack tax is replaced by what the tack actually costs — a 4 s
+            // rollout of the boat's own turn and speed response through the polar,
+            // priced as progress lost toward the current nav target (VMC, u) at
+            // 0.6/u. Bearing away is now priced by what it does not buy.
+            if (c1On) {
+                const hOther = normalizeAngle(2 * wdAv - desiredHeading);
+                const devO = Math.abs(normalizeAngle(h - hOther));
+                if (devO < Math.abs(offset)) cost = Math.pow(devO, 3) * 200;
+                cost += 0.6 * Math.max(0, c1Ref - c1Roll(h));
+            } else if (taxTack && (normalizeAngle(h - wdAv) > 0 ? 1 : -1) !== hullTkAv) {
                 cost += 600 * jamF;
             }
 
@@ -1213,6 +1274,7 @@ Object.assign(BotController.prototype, {
 
             // 1. Boats - Check multiple points along the path
             const boatSamples = 5;
+            const costPreRiv = cost; // __AVDBG ledger only (byte-inert unset)
             for (const other of state.boats) {
                 if (other === boat || other.raceState.finished) continue;
                 
@@ -1508,6 +1570,8 @@ Object.assign(BotController.prototype, {
                 }
             }
 
+            const rivCostDbg = cost - costPreRiv; // __AVDBG ledger only
+            const costPreMk = cost;
             // 2. Marks - Use Segment Distance Check (Prevent Tunneling)
             if (state.course.marks) {
                 for (const m of state.course.marks) {
@@ -2234,7 +2298,7 @@ Object.assign(BotController.prototype, {
                 }
                 if (tanC < 0) retroSet = true;
             }
-            if (dbgOn) dbgRows.push({ off: offset, cost, prox: proximityCost,
+            if (dbgOn) dbgRows.push({ off: offset, cost, prox: proximityCost, riv: rivCostDbg, pre: costPreRiv, mkp: costPreMk,
                 bc: boatCollision ? 1 : 0, sc: staticCollision ? 1 : 0, rv: ruleViolation ? 1 : 0 });
             if (cost < minCost) {
                 minCost = cost;
@@ -2288,7 +2352,10 @@ Object.assign(BotController.prototype, {
                                held: this._rowHold.has(nearB) ? 1 : 0 };
                 } catch (e) { rowDbg = { err: String(e).slice(0, 60) }; }
             }
-            (window.__AVLOG = window.__AVLOG || []).push({
+            let near250 = 0, held250 = 0;
+            for (const ob of state.boats) { if (ob === boat || ob.raceState.finished) continue;
+                if (Math.hypot(ob.x - boat.x, ob.y - boat.y) < 250) { near250++; if (this._rowHold.has(ob)) held250++; } }
+            (window.__AVLOG = window.__AVLOG || []).push({ near250, held250, why: nearB ? (rhWhy[nearB.id] || (this._rowHold.has(nearB) ? 'held' : 'far')) : null,
                 t: +state.time.toFixed(2), n: boat.name,
                 role: this.avoidanceRole, risk: this.riskState,
                 vo: this._voActive ? 1 : 0, voin: this._voIn ? this._voIn.size : 0,

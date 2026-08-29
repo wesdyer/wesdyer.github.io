@@ -14,8 +14,14 @@ const fs = require('fs'); const path = require('path');
 // pooled medians over all benchmark-valid laps, 2026-08-24 (_traj_fp):
 // arctic n=3, bay n=3, lagoon n=3, lake n=3, ocean n=3, river n=3,
 // glowtide n=9, redrock n=9, seatrials n=10, swamp n=9
+// ⭐ 2026-08-28 GLOWTIDE + REDROCK RE-CUT (owner redesign: course/wind/current
+// byte-identical, shapes/world/props moved — a collider-geometry cut, not an
+// adjudicable boundary-only one). Both re-frozen; the earlier glowtide (n=9)
+// and redrock (n=9) laps are RETIRED refs (rule 23). New owner laps on the
+// re-cut docs: glowtide n=4 (189.5/194.4/214.3/215.2 -> med 204.4 = mean of
+// the middle pair), redrock n=3 (203.6/204.2/219.1 -> med 204.2).
 const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8,
-    ocean: 214.2, river: 187.4, glowtide: 199.1, redrock: 215.2,
+    ocean: 214.2, river: 187.4, glowtide: 204.4, redrock: 204.2,
     seatrials: 185.7, swamp: 234.1 };
 // ⛔⛔ 2026-08-26 THE TEN-BOT ERA CUT (_tb_gates.md, owner-directed): tb* =
 // 10-bot benches (the player boat converted to a full bot after startRace —
@@ -33,16 +39,25 @@ const VENUES = {
     // the whole-race level against their tb* anchors (cmp, one set each at anchor
     // width), so their cand labels ARE the tb* labels — the table reports no change
     // because there is provably none, not because nothing was run.
-    redrock: { base: ['tbrr9400','tbrr9500','tbrr9600','tbrr9700','tbrr9800','tbrr9900'], cand: ['tbrr9400','tbrr9500','tbrr9600','tbrr9700','tbrr9800','tbrr9900'] },
-    arctic:  { base: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'], cand: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'] },
-    river:   { base: ['tbriv9400','tbriv9408','tbriv9500'], cand: ['spriv9400','spriv9408','spriv9500'] },
-    swamp:   { base: ['tbsw9400','tbsw9500','tbsw9600'], cand: ['tbsw9400','tbsw9500','tbsw9600'] },
-    glowtide:{ base: ['tbglow'], cand: ['tbglow'] },
-    lagoon:  { base: ['tblag'], cand: ['tblag'] },
-    bay:     { base: ['tbbay9400','tbbay9600'], cand: ['tbbay9400','tbbay9600'] },
-    lake:    { base: ['tblk6100','tblk6200'], cand: ['tblk6100','tblk6200'] },
-    ocean:   { base: ['tboc'], cand: ['tboc'] },
-    seatrials:{ base: ['tbst'], cand: ['tbst'] },
+    // ⛔ 2026-08-28: redrock/glowtide PRE = tb* on the RETIRED docs, shown for
+    // the cut only (README PROMOTE: old baselines are retired, not compared);
+    // nv* = the new-doc anchors (treeNV == HEAD 7f4a6da). nvst is the byte-
+    // identity verification of the unchanged venues vs tbst (cmp-equal).
+    // ⭐ THE RE-ENTRY PUSH (2026-08-29): C1 progress currency landed; re1* =
+    // treeRE == the landed js on every venue (bay also has re0/re1 9100/9200
+    // control+cand pairs for the rule-13 four-set bar; not in the table).
+    // PRE column = the session-open anchors (nv* redrock/glowtide/seatrials,
+    // sp* river, tb* elsewhere).
+    redrock: { base: ['nvrr9400','nvrr9500','nvrr9600','nvrr9700','nvrr9800','nvrr9900'], cand: ['re1rr9400','re1rr9500','re1rr9600','re1rr9700','re1rr9800','re1rr9900'] },
+    arctic:  { base: ['tbarc9100','tbarc9200','tbarc9400','tbarc9600'], cand: ['re1arc9100','re1arc9200','re1arc9400','re1arc9600'] },
+    river:   { base: ['spriv9400','spriv9408','spriv9500'], cand: ['re1riv9400','re1riv9408','re1riv9500'] },
+    swamp:   { base: ['tbsw9400','tbsw9500','tbsw9600'], cand: ['re1sw9400','re1sw9500','re1sw9600'] },
+    glowtide:{ base: ['nvglow'], cand: ['re1glow'] },
+    lagoon:  { base: ['tblag'], cand: ['re1lag'] },
+    bay:     { base: ['tbbay9400','tbbay9600'], cand: ['re1bay9400','re1bay9600'] },
+    lake:    { base: ['tblk6100','tblk6200'], cand: ['re1lk6100','re1lk6200'] },
+    ocean:   { base: ['tboc'], cand: ['re1oc'] },
+    seatrials:{ base: ['nvst'], cand: ['re1st'] },
 };
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;
