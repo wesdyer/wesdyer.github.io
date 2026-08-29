@@ -18,7 +18,7 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeRE');
     await page.addScriptTag({ content: fs.readFileSync(path.resolve(ROOT, 'regatta/eval/eval_harness.js'), 'utf8') });
     await page.evaluate((v) => localStorage.setItem('regatta_settings',
         JSON.stringify({ venue: v, character: AI_CONFIG[0].name })), VENUE);
-    const agg = { n: 0, cls: {}, board: {}, gap: [], sameBoardInBand: 0, otherBoardInBand: 0, chosenOff: [], role: {}, rowWho: {}, rng: [] };
+    const agg = { why: {}, pre: [], mk: [], late: [], preW: 0, mkW: 0, lateW: 0, meRowHeld: 0, meRow: 0, unheldNear: 0, allHeldNear: 0, noNear: 0, rivShare: [], n: 0, cls: {}, board: {}, gap: [], sameBoardInBand: 0, otherBoardInBand: 0, chosenOff: [], role: {}, rowWho: {}, rng: [] };
     for (let t = 0; t < TRIALS; t++) {
         const r = await page.evaluate(async ({ seed, LEG }) => {
             window.evalHarness.seed = seed; window.resetGame(); window.startRace();
@@ -49,10 +49,14 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeRE');
                         .filter(x => x.twa >= 30 && x.twa < 50);
                     if (!inb.length) { out.push({ cls: 'none-in-fan', board: '-', gap: null, off: best.off }); continue; }
                     const ch = inb.reduce((m, x) => x.r.cost < m.r.cost ? x : m, inb[0]);
-                    const cls = ch.r.sc ? 'static' : ch.r.bc ? 'boat' : ch.r.rv ? 'rule' : (ch.r.prox > (ch.r.cost - ch.r.prox) ? 'prox' : 'base');
+                    const rivC = ch.r.riv || 0, proxC = ch.r.prox || 0, baseC = ch.r.cost - rivC - proxC;
+                    const cls = ch.r.sc ? 'static' : ch.r.bc ? 'boat' : ch.r.rv ? 'rule'
+                        : (rivC >= proxC && rivC >= baseC) ? 'rival-price' : (proxC >= baseC) ? 'static-price' : 'base-price';
                     const rowWho = e.rowDbg && e.rowDbg.row ? (e.rowDbg.row === e.n ? 'ME-row' : 'RIVAL-row') : 'no-row';
                     out.push({ cls, board: ch.side === s0 ? 'same' : 'other', gap: ch.r.cost - best.cost, off: best.off,
-                        role: e.role || 'NONE', rowWho, rng: e.rng,
+                        role: e.role || 'NONE', rowWho, rng: e.rng, held: e.rowDbg ? e.rowDbg.held : null,
+                        near250: e.near250, held250: e.held250, rivC, proxC, baseC, why: e.why,
+                        pre: ch.r.pre || 0, mk: (ch.r.mkp != null ? ch.r.mkp - (ch.r.pre || 0) - rivC : 0), late: ch.r.cost - (ch.r.mkp || 0) - proxC,
                         anyClean: inb.some(x => !x.r.sc && !x.r.bc && !x.r.rv) ? 1 : 0 });
                 }
                 if (state.boats.every(x => x.raceState.finished)) break;
@@ -63,6 +67,10 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeRE');
             agg.n++; agg.cls[e.cls] = (agg.cls[e.cls] || 0) + 1; agg.board[e.board] = (agg.board[e.board] || 0) + 1;
             if (e.gap != null) agg.gap.push(e.gap); agg.chosenOff.push(Math.abs(e.off));
             if (e.anyClean) agg.sameBoardInBand++;
+            if (e.rowWho === 'ME-row') { agg.meRow++; if (e.held) agg.meRowHeld++; agg.why[e.why] = (agg.why[e.why] || 0) + 1; }
+            if (e.cls === 'base-price') { agg.pre.push(e.pre); agg.mk.push(e.mk); agg.late.push(e.late); const m = Math.max(e.pre, e.mk, e.late); if (m === e.pre) agg.preW++; else if (m === e.mk) agg.mkW++; else agg.lateW++; }
+            if (e.near250 === 0) agg.noNear++; else if (e.held250 === e.near250) agg.allHeldNear++; else agg.unheldNear++;
+            agg.rivShare.push(e.rivC / Math.max(1, e.rivC + e.proxC + e.baseC));
             agg.role[e.role] = (agg.role[e.role] || 0) + 1; agg.rowWho[e.rowWho] = (agg.rowWho[e.rowWho] || 0) + 1; if (e.rng != null) agg.rng.push(e.rng);
         }
     }
@@ -73,5 +81,9 @@ const ROOT = path.join(__dirname, process.argv[6] || 'treeRE');
     console.log(`  cheapest in-band candidate is: ${pct(agg.cls, agg.n)}`);
     console.log(`  ...on the ${pct(agg.board, agg.n)} board; some CLEAN (no veto) in-band candidate existed on ${(100 * agg.sameBoardInBand / agg.n).toFixed(0)}% of ticks`);
     console.log(`  my avoidance ROLE: ${pct(agg.role, agg.n)} | nearest rival holds ROW: ${pct(agg.rowWho, agg.n)} | nearest rival med ${med(agg.rng)} u`);
+    console.log(`  ME-row ticks where that rival is actually in _rowHold: ${(100 * agg.meRowHeld / Math.max(1, agg.meRow)).toFixed(0)}% of ${agg.meRow}; rivals <250u: none ${(100*agg.noNear/agg.n).toFixed(0)}%  all held ${(100*agg.allHeldNear/agg.n).toFixed(0)}%  some UNHELD ${(100*agg.unheldNear/agg.n).toFixed(0)}%`);
+    console.log(`  ME-row nearest rival's hold status: ${pct(agg.why, Math.max(1, agg.meRow))}`);
+    const nb = agg.pre.length; console.log(`  base-price ticks (${nb}): dominant = helm-currency ${(100*agg.preW/Math.max(1,nb)).toFixed(0)}%  marks ${(100*agg.mkW/Math.max(1,nb)).toFixed(0)}%  late(land-probe/floe/liveness/gap) ${(100*agg.lateW/Math.max(1,nb)).toFixed(0)}%; med pre ${med(agg.pre).toFixed(0)} mk ${med(agg.mk).toFixed(0)} late ${med(agg.late).toFixed(0)}`);
+    console.log(`  cheapest in-band candidate's cost share from RIVAL terms: med ${(100*med(agg.rivShare)).toFixed(0)}%`);
     console.log(`  cost gap (in-band − chosen) med ${med(agg.gap).toFixed(0)}; chosen |offset| med ${(med(agg.chosenOff) * 180 / Math.PI).toFixed(0)} deg`);
 })();

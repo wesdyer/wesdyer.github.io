@@ -84,3 +84,20 @@ C1b: INERT-TO-WORSE over C1 (redrock +3/0, bay +2) — dropped.
 Landing hygiene: goldens `--update` (running), verify, npm test, freeze
 --check, venue table (printed 00:48: rr 1.401, arctic 1.500, glow 1.155,
 sw 1.367, riv 1.243, lag 1.214, bay 1.121, lake 1.114, oc 1.074, st 1.029).
+
+## C2(b) — rights-aware proximity pricing (owner pick 2026-08-29)
+Registered kill bar BEFORE the census: the cheapest in-band candidate's cost
+must be rival-price-dominated on >= 25% of avoidance-owned out-of-band ticks
+on >= 2 of {bay 1, redrock 1, lagoon 4}, else there is no price to make
+rights-aware. MEASURED: 6 / 4 / 5% (rival-term share median 0%). **DEAD
+PRE-BUILD.** Residual is the boat-collision VETO by unheld rivals (35-37%
+bay/redrock) — unheld because flip<0.75 / tacking / rule 15 (58-70% of
+ME-row ticks). Pivot registered: forecast-honesty census (`_re_forecast.js`);
+a candidate exists only if the 2 s forecast error on those veto ticks exceeds
+the 80 u hard core at the median for the flip/tacking classes AND the held
+class does not.
+Pivot bar MEASURED: flip 31-36 u / tacking 38-56 u median error vs held
+41-52 — NOT above 80, NOT worse than held. **PIVOT DEAD.** Rights-side lead
+closed at two levels (no price; honest veto). Nothing built. Hooks (byte-
+inert ledger fields) kept for the next census; goldens verify on them
+running at close.

@@ -845,6 +845,7 @@ Object.assign(BotController.prototype, {
         // sacred). 1200u bound = the farthest a 4s projection of two 7.5kt
         // boats can close to gradient range.
         if (!this._rowHold) this._rowHold = new Set(); else this._rowHold.clear();
+        const rhWhy = dbgOn ? {} : null; // __AVDBG ledger only: why a rights-holder is NOT held
         if (racingLegF) {
             for (const obR of state.boats) {
                 if (obR === boat || obR.raceState.finished) continue;
@@ -854,12 +855,12 @@ Object.assign(BotController.prototype, {
                 // REVERTED: Rule 11's overlapped pair sits at 100u, and leeward
                 // holding her course there IS the doctrine — the floor reverted
                 // Rule 11 to its full 15m baseline drift.)
-                if (obR.raceState.penalty && obR.controller && obR.controller.penaltySpin) continue;
+                if (obR.raceState.penalty && obR.controller && obR.controller.penaltySpin) { if (rhWhy) rhWhy[obR.id] = 'spin'; continue; }
                 let rowR = null;
                 try { rowR = getRightOfWay(boat, obR); } catch (e) { }
-                if (!rowR || rowR.boat !== boat) continue;
-                if (rowR.constraints && rowR.constraints.indexOf('Rule 15') >= 0) continue;
-                if (rowR.markRoom != null && rowR.markRoom !== boat.id) continue;
+                if (!rowR || rowR.boat !== boat) { if (rhWhy) rhWhy[obR.id] = 'not-row'; continue; }
+                if (rowR.constraints && rowR.constraints.indexOf('Rule 15') >= 0) { if (rhWhy) rhWhy[obR.id] = 'rule15'; continue; }
+                if (rowR.markRoom != null && rowR.markRoom !== boat.id) { if (rhWhy) rhWhy[obR.id] = 'markroom'; continue; }
                 // A boat MID-TACK OR FRESH FROM ONE cannot be projected linearly
                 // — her velocity sweeps through the turn and then rebuilds from
                 // half speed, so distCPA/tCPA are noise on her (the Rule-21
@@ -872,10 +873,10 @@ Object.assign(BotController.prototype, {
                 // tack or its settle window (0.75 on the 0.24x state clock ≈ 3
                 // real seconds past the flip the rules module already stamps) —
                 // exactly the baseline behavior that never made contact.
-                if (obR.raceState.isTacking) continue;
+                if (obR.raceState.isTacking) { if (rhWhy) rhWhy[obR.id] = 'tacking'; continue; }
                 const flipR = (window.Rules && window.Rules._tackFlipT)
                     ? window.Rules._tackFlipT[obR.id] : undefined;
-                if (flipR !== undefined && state.time - flipR < 0.75) continue;
+                if (flipR !== undefined && state.time - flipR < 0.75) { if (rhWhy) rhWhy[obR.id] = 'flip<0.75'; continue; }
                 const mR = getRiskMetrics(boat, obR);
                 // RELEASE = "clear she is not keeping clear" — CAPABILITY-SCALED
                 // (the swamp lesson, 2026-08-20). A fixed tCPA<2 bar assumes she
@@ -941,6 +942,7 @@ Object.assign(BotController.prototype, {
                     // refreshed while the pair stays hot.
                     if (!this._rhDropT) this._rhDropT = {};
                     this._rhDropT[obR.id] = state.time + 0.75;
+                    if (rhWhy) rhWhy[obR.id] = 'release';
                     continue;
                 }
                 if (this._rhDropT && (this._rhDropT[obR.id] || -1e9) > state.time) {
@@ -949,7 +951,7 @@ Object.assign(BotController.prototype, {
                     // danger is not a flap risk: her yield is real and the
                     // CPA truly opens. Re-hold early (owner doctrine: the
                     // stand-on reads the other boat's response).
-                    if (!yieldSafe()) continue;
+                    if (!yieldSafe()) { if (rhWhy) rhWhy[obR.id] = 'latch'; continue; }
                     delete this._rhDropT[obR.id];
                 }
                 this._rowHold.add(obR);
@@ -1272,6 +1274,7 @@ Object.assign(BotController.prototype, {
 
             // 1. Boats - Check multiple points along the path
             const boatSamples = 5;
+            const costPreRiv = cost; // __AVDBG ledger only (byte-inert unset)
             for (const other of state.boats) {
                 if (other === boat || other.raceState.finished) continue;
                 
@@ -1567,6 +1570,8 @@ Object.assign(BotController.prototype, {
                 }
             }
 
+            const rivCostDbg = cost - costPreRiv; // __AVDBG ledger only
+            const costPreMk = cost;
             // 2. Marks - Use Segment Distance Check (Prevent Tunneling)
             if (state.course.marks) {
                 for (const m of state.course.marks) {
@@ -2293,7 +2298,7 @@ Object.assign(BotController.prototype, {
                 }
                 if (tanC < 0) retroSet = true;
             }
-            if (dbgOn) dbgRows.push({ off: offset, cost, prox: proximityCost,
+            if (dbgOn) dbgRows.push({ off: offset, cost, prox: proximityCost, riv: rivCostDbg, pre: costPreRiv, mkp: costPreMk,
                 bc: boatCollision ? 1 : 0, sc: staticCollision ? 1 : 0, rv: ruleViolation ? 1 : 0 });
             if (cost < minCost) {
                 minCost = cost;
@@ -2347,7 +2352,10 @@ Object.assign(BotController.prototype, {
                                held: this._rowHold.has(nearB) ? 1 : 0 };
                 } catch (e) { rowDbg = { err: String(e).slice(0, 60) }; }
             }
-            (window.__AVLOG = window.__AVLOG || []).push({
+            let near250 = 0, held250 = 0;
+            for (const ob of state.boats) { if (ob === boat || ob.raceState.finished) continue;
+                if (Math.hypot(ob.x - boat.x, ob.y - boat.y) < 250) { near250++; if (this._rowHold.has(ob)) held250++; } }
+            (window.__AVLOG = window.__AVLOG || []).push({ near250, held250, why: nearB ? (rhWhy[nearB.id] || (this._rowHold.has(nearB) ? 'held' : 'far')) : null,
                 t: +state.time.toFixed(2), n: boat.name,
                 role: this.avoidanceRole, risk: this.riskState,
                 vo: this._voActive ? 1 : 0, voin: this._voIn ? this._voIn.size : 0,

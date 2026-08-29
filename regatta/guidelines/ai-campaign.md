@@ -16515,3 +16515,73 @@ loser; lagoon +1 lottery; arctic boat contacts +5-13% on three sets;
 test_controls.js:288 canvas taint; the earlier four (substrate ✓ started,
 rudder, startStageDepth, swamp admission).
 NEXT RUNG: C2 (a) or (b) above — owner picks; (b) recommended first.
+
+# ═══════════════════════════════════════════════════════════════════════
+# C2(b) — RIGHTS-AWARE PROXIMITY PRICING (owner pick, 2026-08-29 08:53).
+# Measure first. Tree treeRB == HEAD 0c563ed + byte-inert __AVDBG ledger
+# fields (rival-cost / pre-rival / pre-mark splits, _rowHold exclusion
+# reason per rival, rivals-within-250u held/unheld) — goldens verify running.
+# ═══════════════════════════════════════════════════════════════════════
+
+## THE CENSUS (`_re_why.js` v2, 4 seeds, avoidance-owned out-of-band ticks
+## whose desired heading was in-band; the cheapest IN-BAND candidate is…)
+| leg | ticks | boat VETO | static veto | static price | base price | **rival price** |
+|---|---|---|---|---|---|---|
+| bay 1 | 1591 | **37%** | 9 | 17 | 30 | **6%** |
+| redrock 1 | 2539 | **35%** | 12 | 23 | 26 | **4%** |
+| lagoon 4 | 1102 | 21% | 3 | 23 | 49 | **5%** |
+The cheapest in-band candidate's cost share from the RIVAL price terms is
+**0% at the median on all three legs.** The held-rival exemption that the
+deflection push landed (`_rowHold` skips the gradient, the hard-core CPA term
+and the projected-collision veto) already removed the rival PRICE; what keeps
+the boat out of band is the boat-collision VETO by a rival she does NOT hold,
+plus land price/veto, plus a marginal band-edge class (base-price ticks sit
+at pre-rival cost ~12 — the 50-55° edge of the band, not a decision).
+⛔ **C2(b) AS PICKED IS DEAD PRE-BUILD**: there is no rival price to make
+rights-aware. Rule 4's corollary: an exactly-zero share is a reachability
+fact, and it is the deflection push's own landing.
+
+## WHERE THE RIGHTS-HOLDER GOES UNHELD (ME-row ticks, nearest rival)
+| leg | held | flip<0.75 | tacking | rule 15 | markroom | release/latch |
+|---|---|---|---|---|---|---|
+| bay 1 | 42% | 23 | 17 | 16 | 1 | 0 |
+| redrock 1 | 30% | 29 | 14 | 21 | 2 | 1 |
+| lagoon 4 | 36% | 22 | 14 | 25 | 2 | 1 |
+58-70% of the ticks where the engine gives HER rights, the rival is excluded
+from `_rowHold` by one of the three earned exclusions — she just flipped
+(<0.75 state units ≈ 3 s), she is mid-tack, or Rule 15 (rights just acquired,
+room owed). Every one of those was paid for in the lab with a contact
+(holding through a rival's tack hit twice). The imminence release/latch —
+the mechanism I expected — is ~0%.
+⇒ the rights-side residual is the VETO on a freshly-tacked / tacking rival,
+i.e. a boat the scorer projects LINEARLY at the one moment she is turning.
+`_re_forecast.js` (NEW) measures the 2 s forecast error of that rival on
+the veto ticks, split by hold status — running.
+
+## THE FORECAST IS HONEST — the pivot's bar FAILS (`_re_forecast.js`, 4 seeds)
+2 s forecast error of the nearest rival on boat-VETO ticks (scorer's own
+velocity × t), by her hold status:
+| leg | ticks | all: err med / p90 / >80u | not-row | flip<0.75 | tacking | rule 15 | held |
+|---|---|---|---|---|---|---|---|
+| bay 1 | 597 | 39 / 113 / 21% | 35 (18%) | 36 (20%) | 56 (30%) | 43 (25%) | 52 (21%) |
+| redrock 1 | 929 | 34 / 105 / 17% | 30 (15%) | 31 (7%) | 38 (2%) | 73 (47%) | 41 (19%) |
+| lagoon 4 | 227 | 40 / 105 / 22% | 37 (27%) | 33 (26%) | 48 (15%) | 41 (20%) | 3 (0%) |
+(cells: error median u, and share of ticks with error > the 80 u hard core;
+the rival moved 122-158 u in those 2 s.) The registered bar — flip/tacking
+classes above 80 u at the median while held is not — is missed everywhere;
+the freshly-tacked rival is forecast AS WELL AS a steady one (31-36 u).
+Rule 15 on redrock (73 u, 47% > 80) is the one class where the forecast is
+poor, and Rule 15 is exactly where the RRS say she must give room anyway.
+⇒ **THE RIGHTS-SIDE LEAD IS CLOSED AT TWO LEVELS**: (1) no rival PRICE
+survives the held-rival exemption to be made rights-aware; (2) the VETO that
+holds a rights-holder out of band is built on an honest forecast of a rival
+who is genuinely inside the hard core in 2-4 s — 53-57% of those ticks she
+holds rights over ME. The fleet is giving way when it must. The rights-side
+residual measured by `_re_why` (ME-row 42-52%) was a ROLE tally, not a
+mechanism; the mechanism is the honest Rule-14 veto.
+What the residual out-of-band time IS, after C1: honest boat vetoes (21-37%),
+LAND price/veto (26-35% — bay 26, redrock 35, lagoon 26), and the band-edge
+marginal class (26-49%, pre-rival cost ~12: the 50-55° shoulder). Nothing in
+this list is a price the rules let us remove; the land half is the next
+measurable target and it is a different push (which land, at what
+clearance, vs his line — the `_gap_grid` water-he-never-enters question).
