@@ -1,0 +1,3 @@
+## 2024-05-08 - Icon-Only Button & Custom Radio Button Accessibility
+**Learning:** In Tailwind-based applications like `mines/index.html`, icon-only buttons require `aria-label` and `title` attributes for screen readers, and explicit `focus-visible` utility classes (e.g., `focus-visible:ring-2`) to ensure keyboard accessibility. Additionally, custom radio buttons that hide the native `<input>` using `sr-only` must apply keyboard focus styles to the parent `<label>` element using Tailwind's `has-[:focus-visible]` modifier to provide clear visual feedback during `Tab` navigation.
+**Action:** Always add `aria-label`, `title`, and `focus-visible` styles to icon-only buttons. For custom radio buttons, use `has-[:focus-visible]` on the label when the input is visually hidden.
