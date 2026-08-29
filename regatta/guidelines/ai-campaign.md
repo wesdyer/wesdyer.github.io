@@ -16269,3 +16269,49 @@ dose-response says is usually a correct local response (a 1 s hold costs +25 s o
 transit). **The unsolved half is RE-ENTRY** — the excursions are multi-second
 events, which is exactly why chord-smoothing never touched them and why the
 wiggle bound capped the tactician-churn cure at ~1%.
+
+## ⭐⭐⭐ THE GLOWTIDE + REDROCK RE-CUT — 2026-08-28 (owner redesign; benchmark PROMOTED)
+The owner redesigned both venues (commits `45a659c`..`951e463`, merged `7f4a6da`)
+and recorded seven new laps on the redesigned docs (glowtide ×4, redrock ×3).
+This session is the intake: ingest, refreeze, re-anchor, table. NO AI change.
+
+### What moved, by key (the bay-adjudication diff)
+`course`, `wind`, `current` (and redrock's `gusts`) are BYTE-IDENTICAL on both
+venues. `world`, `shapes` and `props` moved: glowtide shapes 55→66 (new
+tropicshoal ×4, tropicsand ×5, jungle ×2), props 49→**4145** (13 kinds); redrock
+shapes 16→22 (the 16 `redrock` shapes re-drawn as redrock 12 + desertsand 9 +
+slickrock 1), props 0→82. Shapes are collider geometry ⇒ a REAL cut, not a
+boundary-only adjudication: both venues re-frozen (`freeze_venues --add`,
+glowtide `4820671e`→`10ccf3df`, redrock `fcfb6518`→`3e91c748`), every tb*
+anchor on them RETIRED, and the earlier glowtide n=9 / redrock n=9 laps are
+retired refs (rule 23). `_traj_fp`: all seven new laps "matches FROZEN".
+
+### His js/ changes are sim-inert on the other eight venues — VERIFIED, not assumed
+The merge touched script.js (+5, a `drawFireGlow` pass) and venuedoc.js (+224,
+prop-kind rows, all `contact: 'none'`), plus render/*. Two independent proofs:
+(1) golden verify on the OLD goldens: **24/30 PASS, the 6 failures are exactly
+redrock ×3 + glowtide ×3** (the re-cut docs); (2) seatrials 16-seed re-bench on
+treeNV (== HEAD) `cmp`-equal to `tbst` byte-for-byte. ⇒ the tb*/sp* anchors of
+the other eight venues stand.
+
+### New human refs (fp-verified on the frozen docs)
+glowtide n=4: 189.5 / 194.4 / 214.3 / 215.2 → **med 204.4** (mean of the middle
+pair), mean 203.4. redrock n=3: 203.6 / 204.2 / 219.1 → **med 204.2**.
+
+### New anchors — `nv*` (treeNV == HEAD 7f4a6da, ten-bot)
+| venue | label(s) | med/mean/best | fins | land/boat/pen per boat |
+|---|---|---|---|---|
+| glowtide | nvglow (16 seeds) | 245/245.6/176 | 159/160 | 10.73/2.81/0.80 |
+| redrock | nvrr9400..9900 (6×8, pooled) | 299/299.5/220 | 479/480 | 9.27/3.92/0.81 |
+redrock per-set medians 301/305/293/301/296/299 — the tightest 6-set spread the
+venue has ever shown (rule 20 wants it printed). One DNF each on the new docs.
+⛔ These are NOT comparable to tb* (different document); the old-doc numbers
+are shown in the table only to mark the cut: glowtide 1.246→**1.199** and
+redrock 1.431→**1.464** are "the fleet on the new course vs him on the new
+course", not a change in the AI.
+
+### THE VENUE TABLE ON HEAD 7f4a6da (`_n1_close_table.js`)
+arctic 1.523 | **redrock 1.464** (new doc) | swamp 1.397 | river 1.259 |
+**glowtide 1.199** (new doc) | lagoon 1.196 | lake 1.134 | bay 1.134 |
+ocean 1.074 ✅ | seatrials 1.034 ✅ — goal 2/10. Goldens re-recorded on the
+new docs (`npm run trace:update`, 30 traces) and re-verified.
