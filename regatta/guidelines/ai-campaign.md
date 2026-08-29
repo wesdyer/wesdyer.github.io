@@ -16487,3 +16487,31 @@ board) can only win those ticks if the projection is allowed to see the
 threat clear during τ; that is the C2 build, and it is a trajectory-level
 scorer for the proximity terms, not a new candidate list (C1b showed the
 list is not the limit). Registered next rung; nothing built tonight.
+**And WHO the boat is when it stays out of band** (`_re_why.js` role tally,
+same ticks): bay — GIVE_WAY 52%, NONE 31%, **STAND_ON 16%**, and the boat
+itself HOLDS right of way against the nearest rival on **42%** of those ticks
+(redrock: GIVE_WAY 46 / NONE 34 / STAND_ON 20; ME-row **52%**); nearest rival
+median 132 u. Half of the residual out-of-band time is a boat with rights
+(or no determined role) paying proximity price to a rival that owes her the
+water — the Trautman "joint prediction" lead from the plan's §3, now sized.
+The deflection push landed "stand-on sails her course" at the RRS level; at
+the PRICE level the stand-on boat still buys clearance. C2 has two shapes on
+the table: (a) trajectory-level proximity scoring (hold τ then the board);
+(b) rights-aware proximity pricing for the ME-row half. (b) is the smaller
+build and sits on the doctrine line "ROW sails its course"; check the
+graveyard's "stand-on line-holding in the thread" entry before building — it
+was a helm HOLD, not a price, so it does not close (b).
+
+## ⏭ CARRY-FORWARD — END OF THE RE-ENTRY PUSH (2026-08-29 01:50)
+HEAD `0c563ed` (LOCAL, unpushed). Anchors now **re1\*** on every venue (bay
+also re0/re1 9100/9200 control+cand). Goldens PASS 30/30. freeze 10/10.
+npm test: same-six + venuedoc PASSING + test_controls canvas crash
+(pre-existing on 0d3dd35 — owner item).
+VENUE TABLE (final HEAD): arctic 1.500 | redrock 1.401 | swamp 1.367 |
+river 1.243 | lagoon 1.214 | glowtide 1.155 | bay 1.121 | lake 1.114 |
+ocean 1.074 ✅ | seatrials 1.029 ✅ — goal 2/10.
+OWNER ITEMS: river's 9400 set (land +68%, fins −3 pooled) is the named
+loser; lagoon +1 lottery; arctic boat contacts +5-13% on three sets;
+test_controls.js:288 canvas taint; the earlier four (substrate ✓ started,
+rudder, startStageDepth, swamp admission).
+NEXT RUNG: C2 (a) or (b) above — owner picks; (b) recommended first.
