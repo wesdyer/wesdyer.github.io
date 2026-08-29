@@ -196,7 +196,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const newGameBtn = document.createElement('button');
         newGameBtn.id = 'new-game-btn';
         newGameBtn.textContent = 'New Game';
-        newGameBtn.className = 'h-14 w-full rounded bg-correct text-white text-lg font-bold flex items-center justify-center transition-colors uppercase';
+        newGameBtn.className = 'h-14 w-full rounded bg-correct text-white text-lg font-bold flex items-center justify-center transition-colors uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400';
         newGameBtn.addEventListener('click', () => init(true));
         keyboard.appendChild(newGameBtn);
     }
@@ -269,13 +269,14 @@ document.addEventListener('DOMContentLoaded', () => {
             row.split('-').forEach(keyGroup => {
                 if (keyGroup === 'ENTER') {
                     const enterBtn = document.createElement('button');
-                    enterBtn.className = 'h-14 w-[15%] rounded bg-key-bg hover:bg-neutral-300 active:bg-neutral-400 text-key-text text-[12px] font-bold flex items-center justify-center transition-colors uppercase';
+                    enterBtn.className = 'h-14 w-[15%] rounded bg-key-bg hover:bg-neutral-300 active:bg-neutral-400 text-key-text text-[12px] font-bold flex items-center justify-center transition-colors uppercase focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400';
                     enterBtn.textContent = 'Enter';
                     enterBtn.dataset.key = 'Enter';
                     rowDiv.appendChild(enterBtn);
                 } else if (keyGroup === 'BACKSPACE') {
                     const backspaceBtn = document.createElement('button');
-                    backspaceBtn.className = 'h-14 w-[15%] rounded bg-key-bg hover:bg-neutral-300 active:bg-neutral-400 text-key-text text-sm font-bold flex items-center justify-center transition-colors';
+                    backspaceBtn.className = 'h-14 w-[15%] rounded bg-key-bg hover:bg-neutral-300 active:bg-neutral-400 text-key-text text-sm font-bold flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400';
+                    backspaceBtn.setAttribute('aria-label', 'Backspace');
                     const span = document.createElement('span');
                     span.className = 'material-symbols-outlined text-[20px]';
                     span.textContent = 'backspace';
@@ -285,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     keyGroup.split('').forEach(key => {
                         const keyBtn = document.createElement('button');
-                        keyBtn.className = 'h-14 flex-1 rounded bg-key-bg hover:bg-neutral-300 active:bg-neutral-400 text-key-text text-[13px] font-bold flex items-center justify-center transition-colors';
+                        keyBtn.className = 'h-14 flex-1 rounded bg-key-bg hover:bg-neutral-300 active:bg-neutral-400 text-key-text text-[13px] font-bold flex items-center justify-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400';
                         keyBtn.textContent = key;
                         keyBtn.dataset.key = key;
                         rowDiv.appendChild(keyBtn);

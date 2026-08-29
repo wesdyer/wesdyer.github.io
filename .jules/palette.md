@@ -1,0 +1,3 @@
+## 2024-07-02 - Accessible styling for custom visually-hidden inputs
+**Learning:** When styling custom UI elements (like radio buttons) by visually hiding the native input using Tailwind CSS, using utilities like `invisible`, `hidden`, or `w-0 absolute` removes them from the accessibility tree or disrupts focus flow. Additionally, if the native input is hidden, the visual focus ring is typically lost.
+**Action:** Always use the `sr-only` class to hide the native input visually while preserving its accessibility and focusability. Concurrently, apply focus styles to the visible parent container (e.g., `<label>`) using Tailwind's `has-[:focus-visible]` modifier (e.g., `has-[:focus-visible]:ring-2`) to provide a clear visual indicator for keyboard users.
