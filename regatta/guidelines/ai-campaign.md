@@ -16235,3 +16235,37 @@ seatrials 1.034 ✅ — goal 2/10.
 no reflex; **he sails the WIDER line (cross-track 770 u vs their 303) and beats
 them by 13 s** while they run 76-89 u/s where he runs 110+. Every other venue
 has the fleet too wide. 35% of lagoon's gap and still unexplained.
+
+## ⭐⭐⭐ THE ATLAS QUESTION CLOSED — IT IS TIME OUT OF THE WORKING BAND
+`_band_ledger.js` (NEW, tracked) buckets every frame of a leg by |TWA| and
+records the ground path and the NET progress along the leg's own chord that each
+band buys. This converts the atlas's derivation into a measurement.
+
+bay leg 1 — time% · path/leg · progress/leg
+| band | HIM | FLEET |
+|---|---|---|
+| pinch <30° | 8.5% · 280 · +241 | 13.7% · 512 · +444 |
+| **close-hauled 30-50°** | **78.9%** · 2744 · +1967 | **52.7%** · 2311 · +1812 |
+| wide 50-75° | 5.8% · 178 · +140 | 13.7% · 608 · +302 |
+| reaching 75-110° | 3.6% · 115 · +33 | 10.5% · 436 · +59 |
+| **deep >110°** | 3.2% · 93 · +1 | **9.4% · 365 · −185** |
+
+redrock leg 1: close-hauled **70.7% → 43.5%**, deep **6.2% → 13.0%**, and in the
+deep band the fleet sails 483 u to go **−320 u**.
+
+- **He sails upwind for 79% of an upwind leg; the fleet for 53%** (redrock 71/44).
+- Reaching+deep together: fleet 801 u of path for **−126 u** net (bay) and 928 u
+  for **−318 u** (redrock), against his 208/+34 and 264/−64. **That difference is
+  72% of bay's excess distance and 65% of redrock's.**
+- ⭐ In the productive bands the FLEET IS MORE EFFICIENT THAN HE IS (close-hauled
+  progress/path 0.784 vs 0.717 bay, 0.770 vs 0.757 redrock; pinch 0.867 vs
+  0.860). It is the better sailor per second of sailing upwind — it is simply not
+  sailing upwind.
+
+⇒ **THE TARGET IS TIME-IN-BAND.** Not tack count, not pointing, not the route.
+And it says why the graveyard is the shape it is: holds, commitment, side-locks
+and flip cooldowns all try to stop the boat LEAVING the band, which the
+dose-response says is usually a correct local response (a 1 s hold costs +25 s of
+transit). **The unsolved half is RE-ENTRY** — the excursions are multi-second
+events, which is exactly why chord-smoothing never touched them and why the
+wiggle bound capped the tactician-churn cure at ~1%.
