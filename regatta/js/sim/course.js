@@ -729,7 +729,10 @@ function initCourse(opts) {
         // The router's leg paths are for RACING — the AI's carrot, the ruler, the leg
         // splits. The board's chart falls back to straight legs when `dmc` is null, so
         // the light build states that honestly instead of paying a second for it.
-        if (light) state.course.dmc = null; else buildCoursePaths();
+        // The light build still gets the SAVED paths (see VenueDoc.savedPaths): reading a
+        // polyline costs nothing, and the chart draws the legs the race will measure.
+        if (light) state.course.dmc = (window.VenueDoc && window.VenueDoc.savedPaths) ? window.VenueDoc.savedPaths(doc) : null;
+        else buildCoursePaths();
         // Which build this is, and of what — startRace reads both to decide whether the
         // world is ready to race or needs the full load first.
         state.course.venueKey = settings.venue;
@@ -1098,9 +1101,19 @@ function buildCoursePaths() {
             }
         }
         if (!state._dmcPlanner) state._dmcPlanner = new RoutePlanner();
-        state.course.dmc = CoursePath.build(state.course.marks, state.course.route,
-                                            state.course.islands || [], state._dmcPlanner,
-                                            'dmc-' + (state.course.navVersion || 0), grid);
+        // THE DOCUMENT'S SAVED PATHS, when it carries current ones — the same polylines the
+        // board's chart drew (see VenueDoc.savedPaths). Routing here is the fallback for a
+        // document not saved from the editor since its course or land changed, and it says
+        // so. ⚠️ Decided HERE, after the grid: everything above — botGrid, the lee stamp —
+        // is the AI's, and an early return that skipped it left the bots with no nav grid.
+        const saved = doc && window.VenueDoc.savedPaths ? window.VenueDoc.savedPaths(doc) : null;
+        if (saved) state.course.dmc = saved;
+        else {
+            if (doc) console.warn('[dmc] ' + settings.venue + ': no current course.paths in the document — routing at load; Save it in editor.html');
+            state.course.dmc = CoursePath.build(state.course.marks, state.course.route,
+                                                state.course.islands || [], state._dmcPlanner,
+                                                'dmc-' + (state.course.navVersion || 0), grid);
+        }
     } catch (e) {
         console.warn('[dmc] course path build failed', e);
         state.course.dmc = null;

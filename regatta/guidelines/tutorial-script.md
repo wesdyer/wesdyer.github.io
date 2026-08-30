@@ -30,9 +30,9 @@ on a beam reach and the helm is held.
 | 2 | These streaks show which way the wind is blowing and how strong it is. Right now, it's coming from the side. | Press [Enter] to continue | wind 0 → 7 kn in 0.25 s; the big WIND arrow appears; the TWA panel under the boat appears with a ring on it |
 | 3 | Steer with [←] / [→] or [A] / [D]. / Now follow those ducklings! | Follow the ducklings  *n of 5* (the tally set apart) | helm released; five ducklings 200 u apart in an S off the nearer beam (about ±24°), carried along with the boat at a fixed offset until you point at the nearest one (within 10°), when the S holds in the water so you can sail up to it; reach it (within a boat length) and only that duckling swims to the far end of the line while you carry on to the next; the count rises; five reached → exit line *Nice! That's a reach — sailing with the wind from the side. Fast and easy.* |
 | 4 | Now let's sail upwind. Follow the ducklings. | Follow the ducklings | ducklings dead upwind at the edge; they hold the edge until your first tack, then the gap closes with ground to windward |
-| 4a | You can't sail straight into the wind. Turn out of the red *no-sail zone*. | Turn out of the no-sail zone | first time: 3 s inside ±38° of the wind; the red cone appears (and stays) |
+| 4a | You can't sail straight into the wind. Turn out of the red *no-sail zone*. | Turn out of the red zone | first time: 3 s inside ±38° of the wind; the red cone appears (and stays) |
 | 4b | To sail upwind, zigzag back and forth just outside the red zone. | Follow the ducklings | first time out of the zone |
-| 4a′ | Too far into the wind. Turn out of the red zone. | Turn out of the no-sail zone | every later 3 s in the zone — the short correction, never the full lesson again |
+| 4a′ | Too far into the wind. Turn out of the red zone. | Turn out of the red zone | every later 3 s in the zone — the short correction, never the full lesson again |
 | 4b′ | Good. Keep working your way upwind. | Follow the ducklings | every later exit from the zone |
 | 4c | Nice! That was a tack — you crossed through the wind to sail the other way. | Follow the ducklings | first tack (said once); done when the ducklings are reached |
 | 5 | Great! Now let's sail downwind. | Follow the ducklings | ducklings dead downwind at the edge; cone off; they hold the edge until the kite is up |
@@ -40,7 +40,7 @@ on a beam reach and the helm is held.
 | 5b | There she goes! Follow the ducklings downwind. | Follow the ducklings | kite up; done when reached |
 | 6 | Now let's head back upwind. | Follow the ducklings | ducklings move to 60° off the wind, on your side; they hold the edge until the kite is down |
 | 6a | See that flapping? The spinnaker doesn't work upwind. Let's take it down. | Press [Space] to lower the spinnaker | the kite starts to luff (TWA < 90°) |
-| 6b | Much better. Keep following the ducklings. | Follow the ducklings | kite down; done when reached, then Screen B |
+| 6b | Much better. Keep following the ducklings. | Follow the ducklings | kite down; done when reached → boat and ducklings fade → Screen B |
 
 ## Section 2 — Pond manoeuvring
 
@@ -102,7 +102,8 @@ Listed in priority order — when several hold at once, the first speaks and the
 
 Plus the one-shots: "This one counts. Same start as practice — be ready at zero." at the prestart;
 "That's the gun — go race!" at the gun (over early: "Over early! Get back behind the line, then
-start again."); on the first give-way cross "Watch the boat markers: RED means you give way. GREEN
+start again."); "You're off! Sail upwind to the windward gate." on crossing the line; "Through the
+gate! Now downwind to the finish." on starting leg 2; on the first give-way cross "Watch the boat markers: RED means you give way. GREEN
 means they give way." and, 3 s later on a starboard cross, "They're on starboard. Pass behind
 them."; "Penalty cleared. Keep racing!" when a penalty clears. Otherwise Paddle stays quiet.
 

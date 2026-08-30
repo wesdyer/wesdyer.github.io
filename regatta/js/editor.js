@@ -908,8 +908,26 @@ async function openFile() {
     }
 }
 
+// THE RULER SHIPS WITH THE DOCUMENT. What the editor drew as the leg paths is what the game
+// will measure and chart — see VenueDoc.savedPaths. Baked on every Save, from the same
+// `course.dmc` the marks/route views draw, stamped with the signature of what it came from.
+function bakeCoursePaths() {
+    if (!doc || !doc.course || !course || !window.VenueDoc || !window.VenueDoc.courseSig) return;
+    livePathRefresh();
+    const dmc = course.dmc;
+    if (!dmc || !dmc.legs || dmc.legs.length !== (doc.course.route || []).length) return;
+    const legs = dmc.legs.map(L => {
+        const o = { pts: L.pts.map(p => [Math.round(p.x * 10) / 10, Math.round(p.y * 10) / 10]) };
+        if (L.roundSweep != null) o.roundSweep = Math.round(L.roundSweep * 1e4) / 1e4;
+        if (L.roundZone != null) o.roundZone = Math.round(L.roundZone);
+        return o;
+    });
+    doc.course.paths = { sig: window.VenueDoc.courseSig(doc), legs };
+}
+
 async function save(saveAs) {
     if (!doc) return;
+    bakeCoursePaths();
     const text = '// GENERATED ONCE by art/export_venue_doc.js — now the SOURCE OF TRUTH.\n'
         + '// Emitted as JS, not JSON: the eval harness loads over file://, where fetch is blocked.\n'
         + '// Edited in editor.html.\n'

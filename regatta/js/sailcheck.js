@@ -357,15 +357,16 @@ const NB = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
 
 // Nearest navigable cell to a point, so a waypoint that lands just inside land or just
 // outside the arena still yields a usable path endpoint.
-function nearestNav(grid, wx, wy, maxR) {
+function nearestNav(grid, wx, wy, maxR) { return nearestCell(grid, wx, wy, (i, j) => grid.at(i, j), maxR); }
+function nearestCell(grid, wx, wy, at, maxR) {
     const [ci, cj] = grid.cell(wx, wy);
-    if (grid.at(ci, cj)) return [ci, cj];
+    if (at(ci, cj)) return [ci, cj];
     const span = Math.ceil((maxR || 900) / grid.res);
     for (let r = 1; r <= span; r++) {
         for (let dj = -r; dj <= r; dj++) {
             for (let di = -r; di <= r; di++) {
                 if (Math.max(Math.abs(di), Math.abs(dj)) !== r) continue;
-                if (grid.at(ci + di, cj + dj)) return [ci + di, cj + dj];
+                if (at(ci + di, cj + dj)) return [ci + di, cj + dj];
             }
         }
     }
@@ -419,11 +420,26 @@ function smoothPath(grid, pts) {
 }
 
 // Shortest hull-width path between two world points, as world waypoints.
+// ⚠️ TWO PASSES, FULL CLEARANCE FIRST. `nav` is the hull-plus-margin water, and on a
+// narrow venue it can come apart into pieces: River's channel below the start reads as
+// land at full CLEARANCE for ~450u, so a BFS from the start gate never reaches the finish
+// gate. Its caller (CoursePath._route) took a null here as "no detour needed" and drew
+// the chord — leg 3 of River as a 9.8k-unit straight line through the woods, which is
+// also what the leaderboard's distance-made-good was measuring against. The tight tier
+// is exactly the reduced-clearance water the bot router threads through such a slot
+// (taxed, in planRoute), so when the stock water does not connect, the ruler follows the
+// same thread the boats do. Stock water still wins wherever it connects, so no venue
+// that routed before routes differently now.
 function pathBetween(grid, from, to) {
-    const s = nearestNav(grid, from[0], from[1]);
-    const g = nearestNav(grid, to[0], to[1]);
+    return pathPass(grid, from, to, false) || (grid._tight ? pathPass(grid, from, to, true) : null);
+}
+function pathPass(grid, from, to, tight) {
+    const N = grid.n, T = tight ? grid._tight : null;
+    const at = (i, j) => grid.at(i, j) || !!(T && i >= 0 && j >= 0 && i < N && j < N && T[j * N + i]);
+    const s = nearestCell(grid, from[0], from[1], at);
+    const g = nearestCell(grid, to[0], to[1], at);
     if (!s || !g) return null;
-    const N = grid.n, prev = new Int32Array(N * N).fill(-1);
+    const prev = new Int32Array(N * N).fill(-1);
     const si = s[1] * N + s[0], gi = g[1] * N + g[0];
     prev[si] = si;
     const q = [si];
@@ -434,9 +450,14 @@ function pathBetween(grid, from, to) {
         const ci = cur % N, cj = (cur - ci) / N;
         for (const [di, dj] of NB) {
             const a = ci + di, b = cj + dj;
-            if (!grid.at(a, b)) continue;
-            // A diagonal must not cut a corner a hull could not pass.
-            if (di && dj && (!grid.at(ci + di, cj) || !grid.at(ci, cj + dj))) continue;
+            if (!at(a, b)) continue;
+            // A diagonal must not cut a corner a hull could not pass. Same rule as the
+            // router: a tight corner is legal only when the step itself ends in a tight
+            // cell — a deliberate thread — otherwise the stock hull-width rule holds.
+            if (di && dj) {
+                if (T && !grid.at(a, b)) { if (!at(ci + di, cj) || !at(ci, cj + dj)) continue; }
+                else if (!grid.at(ci + di, cj) || !grid.at(ci, cj + dj)) continue;
+            }
             const nid = b * N + a;
             if (prev[nid] !== -1) continue;
             prev[nid] = cur;

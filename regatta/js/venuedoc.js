@@ -524,6 +524,14 @@ function validateVenueDoc(doc) {
         err(`course.startTime ${course.startTime}s is outside 5–600s`);
     }
     if (course.cutoff != null && !(course.cutoff > 0)) err('course.cutoff must be a positive number of seconds');
+    // The saved leg paths — see courseSig. Missing or stale, the game computes at load and
+    // the board's chart draws straight legs until the document is saved from the editor.
+    if (course.paths != null) {
+        const P = course.paths;
+        if (!P || typeof P !== 'object' || typeof P.sig !== 'string' || !Array.isArray(P.legs)) err('course.paths must be { sig, legs[] } as the editor saves it');
+        else if (P.legs.length !== rt.length) err(`course.paths has ${P.legs.length} legs for a ${rt.length}-entry route`);
+        else if (P.sig !== courseSig(doc)) warn('course.paths is stale — the marks, route or land changed since it was saved; Save in editor.html to refresh it');
+    } else if (rt.length > 1) warn('course.paths missing — Save in editor.html to bake the leg paths (until then the board draws straight legs)');
     if (doc.wind && doc.wind.baseDirection != null) {
         warn('wind.baseDirection is ignored — the wind is stated by regions');
     }
@@ -3395,8 +3403,10 @@ function compileVenueDoc(doc, light) {
         return { geom: d, sailed: d * (up ? 1.45 : 1.0), secs: 0, upwind: up ? d : 0 };
     };
 
-    let paths = null;
-    if (!light && typeof CoursePath !== 'undefined' && typeof RoutePlanner !== 'undefined') {
+    // The editor's own ruler first — the one saved path the chart, the race and this
+    // estimate all share. Only a document without one (or with a stale one) is routed here.
+    let paths = savedCoursePaths(doc);
+    if (!paths && !light && typeof CoursePath !== 'undefined' && typeof RoutePlanner !== 'undefined') {
         try {
             if (!compileVenueDoc._planner) compileVenueDoc._planner = new RoutePlanner();
             // The same grid the ruler uses. Without it the estimate is measured on a path
@@ -3592,7 +3602,64 @@ function compileCached(doc, light) {
 
 const U_PER_M = 5;
 
+// ── SAVED COURSE PATHS ──────────────────────────────────────────────────────
+// The polylines the legs actually follow — the board's chart, the race's distance-made-good
+// ruler, the AI's carrot and the time estimate all read ONE set — are computed in the
+// EDITOR and saved into the document as `course.paths`, not computed at load.
+//
+// Why saved: the clubhouse builds a venue LIGHT on a tile click (no nav grid, no router,
+// ~20 ms), and a light course had no paths at all, so the chart drew every leg as a straight
+// line through whatever land was in the way — on every venue — while the race, built full,
+// routed around it. Two different answers for one course. Computing in the editor also
+// makes the ruler something the author SEES and signs off on before it ships, instead of a
+// number that is silently different in the game from what the editor's readout priced.
+//
+// `sig` is what the paths were computed FROM: marks, lines, route, the boundary and the
+// fixed non-awash land. A document whose signature no longer matches has been edited
+// since its paths were saved; its saved paths are ignored (the game computes at load and
+// warns), and the validator says so where the editor shows it.
+function courseSig(doc) {
+    const c = (doc && doc.course) || {};
+    const r = (v) => Math.round(v);
+    const pt = (p) => [r(p[0]), r(p[1])];
+    const marks = (c.marks || []).map(m => [m.id || '', r(m.x), r(m.y), m.kind || '', m.radius != null ? r(m.radius) : '']);
+    const land = [];
+    for (const sh of migrateShapes(doc)) {
+        const t = shapeTraits(sh);
+        if (t.motion !== 'fixed' || t.awash) continue;
+        land.push([(sh.outer || []).map(pt), (sh.holes || []).map(h => h.map(pt))]);
+    }
+    const s = JSON.stringify([marks, c.lines || null, c.route || [], (doc.world && doc.world.boundary) || null, land]);
+    let h = 5381;
+    for (let i = 0; i < s.length; i++) h = (Math.imul(h, 33) ^ s.charCodeAt(i)) >>> 0;
+    return 'v1-' + h.toString(16) + '-' + s.length.toString(36);
+}
+// The saved paths as the game's `dmc` structure ({ legs: [{ pts, cum, length, base, roundSweep?,
+// roundZone? }], total }), or null when the document has none or they are stale.
+function savedCoursePaths(doc) {
+    const P = doc && doc.course && doc.course.paths;
+    if (!P || !Array.isArray(P.legs) || typeof P.sig !== 'string') return null;
+    if (P.legs.length !== ((doc.course.route || []).length)) return null;
+    if (P.sig !== courseSig(doc)) return null;
+    const legs = [];
+    let total = 0;
+    for (const L of P.legs) {
+        const pts = ((L && L.pts) || []).map(q => ({ x: q[0], y: q[1] }));
+        const cum = [0];
+        for (let k = 1; k < pts.length; k++) cum.push(cum[k - 1] + Math.hypot(pts[k].x - pts[k - 1].x, pts[k].y - pts[k - 1].y));
+        const leg = { pts, cum, length: cum[cum.length - 1] || 0, base: total };
+        if (L && L.roundSweep != null) leg.roundSweep = L.roundSweep;
+        if (L && L.roundZone != null) leg.roundZone = L.roundZone;
+        legs.push(leg);
+        total += leg.length;
+    }
+    return { legs, total, saved: true };
+}
+
 window.VenueDoc = {
+    // The course's leg polylines, saved by the editor — see courseSig / savedCoursePaths.
+    courseSig,
+    savedPaths: savedCoursePaths,
     // THE GAME'S ONE LENGTH CONVERSION, in the file both the game and the editor already
     // load. It was about to exist in three places at once — the editor's uToM/mToU, the
     // validator's rails, and the gust sizes in script.js — and three copies of "how long is

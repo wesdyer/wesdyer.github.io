@@ -20,6 +20,9 @@ const School = {
     active: false,
     unit: 0,                 // 1 open water · 2 pond manoeuvring · 3 start practice · 4 the race
     venueKey: 'pond',
+    // Paddle's own colours, for the coach card: the head green (lifted so it carries a dark
+    // card) and the vest orange, sampled off the shipped portrait.
+    GREEN: '#2FAE5C', GREEN_HI: '#3DBB68', GREEN_LO: '#23924B', ORANGE: '#F5851F',
     controlsLocked: false,   // physics reads this: the helm is held during "feel the wind"
     kiteLocked: false,       // input.js reads this: SPACE does nothing until the downwind beat
     hudHidden: false,        // the DOM instruments (rose, minimap)
@@ -65,6 +68,7 @@ const School = {
         this.active = true;
         this.unit = unit;
         this._fade = null; this._handoff = null;   // a Skip/Restart mid-fade must not fire the old section's callback
+        this._hint = null; this._tip = null; this._lines = [];   // the card starts each section clean
         // Collisions arrive as race events; chain onto whatever telemetry has installed.
         if (!this._evWrapped) {
             this._evWrapped = true;
@@ -450,35 +454,35 @@ const School = {
         // Teach the zone once, in full; every later visit gets the short correction.
         if (!up.inZone && up.zoneT >= 3) {
             up.inZone = true; s.coneOn = true;
-            if (!up.zoneTaught) this.instruct("You can't sail straight into the wind. Turn out of the red <em>no-sail zone</em>.", 'Turn out of the no-sail zone');
-            else this.instruct('Too far into the wind. Turn out of the red zone.', 'Turn out of the no-sail zone');
+            if (!up.zoneTaught) this.instruct("You can't sail straight into the wind. Turn out of the <em>red no-sail zone</em>.", 'Turn out of the red zone');
+            else this.instruct('Too far into the wind. Turn out of the <em>red zone</em>.', 'Turn out of the red zone');
         } else if (up.inZone && !inZone) {                     // out at 38°, same edge the cone and the red TWA use
             up.inZone = false;
-            if (!up.zoneTaught) { up.zoneTaught = true; this.instruct('To sail upwind, zigzag back and forth just outside the red zone.', 'Follow the ducklings'); }
+            if (!up.zoneTaught) { up.zoneTaught = true; this.instruct('To sail upwind, <em>zigzag</em> back and forth just outside the red zone.', 'Follow the ducklings'); }
             else this.instruct('Good. Keep working your way upwind.', 'Follow the ducklings');
         } else if (!up.inZone && tacks >= 1 && !up.saidTack) {
             up.saidTack = true;
-            this.instruct('Nice! That was a tack — you crossed through the wind to sail the other way.', 'Follow the ducklings');
+            this.instruct('Nice! That was a <em>tack</em> — you crossed through the wind to sail the other way.', 'Follow the ducklings');
         }
     },
     tickDownwind(s, r) {
         const dw = s.dw;
         if (dw.phase === 'sail' && r.abs > 150 * Math.PI / 180) {
             dw.phase = 'hoist'; this.kiteLocked = false;
-            this.instruct('This works, but we can go faster. Time for the spinnaker!', 'Press ' + this.K('Space') + ' to raise the spinnaker');
+            this.instruct('This works, but we can go faster. Time for the <em>spinnaker</em>!', 'Press ' + this.K('Space') + ' to raise the spinnaker');
         } else if (dw.phase === 'hoist' && r.kite) {
             dw.phase = 'kite'; s.duckHoldOff = false;
-            this.instruct('There she goes! Follow the ducklings downwind.', 'Follow the ducklings');
+            this.instruct('There she goes! Follow the ducklings <em>downwind</em>.', 'Follow the ducklings');
         }
     },
     tickCloseReach(s, r) {
         const cr = s.cr, p = r.p;
         if (cr.phase === 'sail' && p.spinnaker && (p.kiteLuff || 0) > 0.05) {
             cr.phase = 'douse';
-            this.instruct("See that flapping? The spinnaker doesn't work upwind. Let's take it down.", 'Press ' + this.K('Space') + ' to lower the spinnaker');
+            this.instruct("See that flapping? The spinnaker doesn't work <em>upwind</em>. Let's take it down.", 'Press ' + this.K('Space') + ' to lower the spinnaker');
         } else if (cr.phase === 'douse' && !p.spinnaker) {
             cr.phase = 'again'; s.duckHoldOff = false;
-            this.instruct('Much better. Keep following the ducklings.', 'Follow the ducklings');
+            this.instruct('<em>Much better.</em> Keep following the ducklings.', 'Follow the ducklings');
         } else if (cr.phase === 'sail' && !p.spinnaker && s.segT > 1) {
             cr.phase = 'again'; s.duckHoldOff = false;           // dropped it unprompted: already learned
         }
@@ -545,7 +549,7 @@ const School = {
     K(label) { return `<span class="ov-kbd" style="font-size:12px; margin:0 2px;">${label}</span>`; },
     // A goal with progress: the count sits apart from the words, so it reads as a tally
     // rather than as part of the instruction.
-    goalCount(text, n, of) { return `${text}<span class="t-mono" style="margin-left:18px; font-size:13px; letter-spacing:0; color:rgba(255,255,255,0.62);">${n} of ${of}</span>`; },
+    goalCount(text, n, of) { return { label: text, count: [n, of] }; },
 
     firstSailSegments() {
         const S = this;
@@ -562,36 +566,36 @@ const School = {
         return [
             { id: 'boat', timeout: Infinity,
               enter: (s) => { armEnter(s); S.highlight = { world: (p) => ({ x: p.x, y: p.y, r: 70 }) }; },
-              lines: [{ t: 0, text: 'This is your boat.' }],
+              lines: [{ t: 0, text: 'This is your <em>boat</em>.' }],
               goal: ENTER, done: enterAfter(0) },
             { id: 'wind', timeout: Infinity,
               enter: (s) => { armEnter(s); s.windIndicator = true; S.windRamp(7, 0.25); S.setPanel(true); S.highlight = { dom: () => [S.panelRect()].filter(Boolean) }; },
-              lines: [{ t: 0, text: "These streaks show which way the wind is blowing and how strong it is. Right now, it's coming from the side." }],
+              lines: [{ t: 0, text: "These streaks show which way the <em>wind</em> is blowing and how strong it is. Right now, it's coming <em>from the side</em>." }],
               goal: ENTER, done: enterAfter(0),
               exit: (s) => { s.windIndicator = false; } },
             { id: 'snake', timeout: Infinity,
-              enter: (s) => { S.highlight = null; S.setControls(true); S.kiteLocked = true; S.setPanel(true); S.spawnSnakeDucks(); },
-              lines: [{ t: 0, text: 'Steer with ' + S.K('&larr;') + ' / ' + S.K('&rarr;') + ' or ' + S.K('A') + ' / ' + S.K('D') + '.' },
-                      { t: 0.1, text: 'Now follow those ducklings!' }],
+              enter: (s) => { S.highlight = null; S.setControls(true); S.kiteLocked = true; S.setPanel(true); S.spawnSnakeDucks();
+                              S.hint('steer with ' + S.kbd('&larr;') + S.kbd('&rarr;') + ' or ' + S.kbd('A') + S.kbd('D')); },
+              lines: [{ t: 0, text: 'Now follow those <em>ducklings!</em>' }],
               goal: S.goalCount('Follow the ducklings', 0, 5),
               tick: (s) => S.tickSnake(s),
               done: (s) => s.snake && s.snake.count >= 5,
-              exitLine: "Nice! That's a reach — sailing with the wind from the side. Fast and easy." },
+              exitLine: "Nice! That's a <em>reach</em> — sailing with the wind from the side. Fast and easy." },
             { id: 'upwind', timeout: Infinity,
               enter: (s) => { S.spawnUpwindDucks(); s.up = { phase: 'sail', zoneT: 0, tacks0: s.tacks }; },
-              lines: [{ t: 0, text: "Now let's sail upwind. Follow the ducklings." }],
+              lines: [{ t: 0, text: "Now let's sail <em>upwind</em>. Follow the ducklings." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickUpwind(s, r),
               done: (s) => S.ducksReached() },
             { id: 'downwind', timeout: Infinity,
               enter: (s) => { s.coneOn = false; S.spawnDucksAt(normalizeAngle(S.wd() + Math.PI)); s.dw = { phase: 'sail' }; s.duckHoldOff = true; },
-              lines: [{ t: 0, text: "Great! Now let's sail downwind." }],
+              lines: [{ t: 0, text: "Great! Now let's sail <em>downwind</em>." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickDownwind(s, r),
               done: (s) => s.dw.phase === 'kite' && S.ducksReached() },
             { id: 'closereach', timeout: Infinity,
               enter: (s) => { const side = S.playerRead().twa >= 0 ? 1 : -1; S.spawnDucksAt(normalizeAngle(S.wd() + side * 60 * Math.PI / 180)); s.cr = { phase: 'sail' }; s.duckHoldOff = true; },
-              lines: [{ t: 0, text: "Now let's head back upwind." }],
+              lines: [{ t: 0, text: "Now let's head back <em>upwind</em>." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickCloseReach(s, r),
               done: (s) => s.cr.phase === 'again' && S.ducksReached() },
@@ -668,7 +672,8 @@ const School = {
     },
 
     onFirstSailDone() {
-        this.start(2); this.screen('B');
+        // The boat and its ducklings fade together (drawAbove follows the player's opacity).
+        this.fadeThen(() => { this.start(2); this.screen('B'); });
     },
 
     // ── UNIT 2 · THE POND ─────────────────────────────────────────────────────
@@ -702,27 +707,27 @@ const School = {
         return [
             { kind: 'mark', side: 'port',
               place: () => S.edgeTarget(normalizeAngle(wd() + Math.PI / 2)),
-              line: "Welcome to Duckling Pond! See that mark? Sail around it, keeping it on your LEFT. That's called a port rounding.",
+              line: "Welcome to Duckling Pond! See that mark? Sail around it, keeping it on your <em>LEFT</em>. That's called a <em>port rounding</em>.",
               goal: 'Round the mark to port · keep it left' },
             { kind: 'mark', side: 'starboard',
               place: () => S.waterPoint(C(), wd(), 2400, 600, 250),
-              line: "Nice! Now round the mark at the top, keeping it on your RIGHT. That's a starboard rounding.",
+              line: "Nice! Now round the mark at the top, keeping it on your <em>RIGHT</em>. That's a <em>starboard rounding</em>.",
               goal: 'Round the mark to starboard · keep it right' },
             { kind: 'gate', mode: 'round', end: 'either', id: 'leeward',
               place: () => S.waterPoint(C(), normalizeAngle(wd() + Math.PI), 2400, 600, 430),
-              line: 'Now for a gate. Sail between the two marks, round either one, then head back upwind.',
+              line: 'Now for a gate. Sail <em>between the two marks</em>, round either one, then head back upwind.',
               goal: 'Go through the gate and round a mark' },
             { kind: 'mark', side: 'starboard',
               place: () => S.waterPoint(C(), normalizeAngle(wd() - Math.PI / 2), 2400, 600, 250),
-              line: 'Next up: the mark on the left. Round it to starboard — keep it on your right.',
+              line: 'Next up: the mark on the left. Round it to <em>starboard</em> — keep it on your right.',
               goal: 'Round the mark to starboard' },
             { kind: 'mark', side: 'starboard',
               place: () => ({ x: C().x, y: C().y }),
-              line: 'Now the middle mark. Round it to starboard.',
+              line: 'Now the middle mark. Round it to <em>starboard</em>.',
               goal: 'Round the mark to starboard' },
             { kind: 'gate', mode: 'through', id: 'leeward',
               place: () => S.s.leewardGate || S.waterPoint(C(), normalizeAngle(wd() + Math.PI), 2400, 600, 430),
-              line: 'Last one! Sail straight through the downwind gate.',
+              line: 'Last one! Sail <em>straight through</em> the downwind gate.',
               goal: 'Go through the gate' },
         ];
     },
@@ -808,7 +813,7 @@ const School = {
             if (T.kind === 'mark') {
                 const res = (typeof roundingStep === 'function') ? roundingStep(p, s.track, s.rm, s.nextA) : { done: false };
                 s.track.lastPos = { x: p.x, y: p.y };
-                if (res.wrong) this.instruct(`Wrong side. Go back and round the mark with it on your ${T.side === 'starboard' ? 'RIGHT' : 'LEFT'}.`, T.goal);
+                if (res.wrong) this.instruct(`<em>Wrong side.</em> Go back and round the mark with it on your <em>${T.side === 'starboard' ? 'RIGHT' : 'LEFT'}</em>.`, T.goal);
                 if (res.done) { s.prevTarget = s.W; this.nextPondTask(); }
             } else {
                 const A = s.gateA, mid = s.gateMid;
@@ -836,19 +841,19 @@ const School = {
                 // The rule in full the first time; a short correction after that.
                 if (over && s.startPhase !== 'over') {
                     s.startPhase = 'over'; s.earlyCount++;
-                    this.instruct(s.earlyCount === 1 ? 'Too soon! Get back behind the start line before the clock reaches zero.' : 'Too soon! Back behind the line.', 'Get back behind the start line');
-                } else if (!over && s.startPhase === 'over') { s.startPhase = 'wait'; this.instruct('Good. Now stay behind the line until zero.', 'Stay behind the start line'); }
+                    this.instruct(s.earlyCount === 1 ? '<em>Too soon!</em> Get back behind the start line before the clock reaches zero.' : '<em>Too soon!</em> Back behind the line.', 'Get back behind the start line');
+                } else if (!over && s.startPhase === 'over') { s.startPhase = 'wait'; this.instruct('Good. Now stay <em>behind the line</em> until zero.', 'Stay behind the start line'); }
             }
             if (state.race.status === 'racing' && !s.said.gun) {
                 s.said.gun = true; s.ocsAtGun = !!rs.ocs; s.startPhase = s.ocsAtGun ? 'overGun' : 'go';
                 this.highlight = null;
                 // Over at the gun is two steps, and the goal shows one at a time: back first, then across.
-                if (s.ocsAtGun) this.instruct('Over early! Get back behind the line first.', 'Get back behind the start line');
-                else this.instruct("That's the gun — go! Cross the start line.", 'Cross the start line');
+                if (s.ocsAtGun) this.instruct('<em>Over early!</em> Get back behind the line first.', 'Get back behind the start line');
+                else this.instruct("That's the gun — <em>go!</em> Cross the start line.", 'Cross the start line');
             }
             if (s.startPhase === 'overGun' && !rs.ocs) {
                 s.startPhase = 'go';
-                this.instruct('Good — now cross the line!', 'Cross the start line');
+                this.instruct('Good — now <em>cross the line!</em>', 'Cross the start line');
             }
             if (state.race.status === 'racing' && rs.leg >= 1 && !s.said.crossed) {
                 s.said.crossed = true;
@@ -886,7 +891,7 @@ const School = {
         const secs = Math.round(state.race.timer);
         s.startPhase = 'wait'; s.earlyCount = 0;
         this.highlight = { dom: () => [this.domRect(['#hud-timer'])].filter(Boolean) };
-        this.instruct('Get ready! Stay behind the line until zero — but try to stay close.', 'Stay behind the start line');
+        this.instruct('Get ready! Stay <em>behind the line</em> until zero — but try to stay close.', 'Stay behind the start line');
     },
 
     // ── UNIT 2 · THE START ────────────────────────────────────────────────────
@@ -978,7 +983,7 @@ const School = {
                    pinchT: 0, beatT: 0, kiteUpwindT: 0, wrongWay: 0, finishRank: null };
         beginRace();                         // the shipped prestart: leaderboard, clock, music — and the
                                              // document's own start sequence (course.startTime)
-        this.say('This one counts. Same start as practice — be ready at zero.');
+        this.say('This one counts. Same start as practice — be ready at <em>zero</em>.');
     },
 
     updateRace(dt) {
@@ -990,9 +995,12 @@ const School = {
             s.said.gun = true;
             s.ocsAtGun = !!rs.ocs;
             s.gunT = s.t;
-            this.say(s.ocsAtGun ? 'Over early! Get back behind the line, then start again.' : "That's the gun — go race!");
+            this.say(s.ocsAtGun ? '<em>Over early!</em> Get back behind the line, then start again.' : "That's the gun — <em>go race!</em>");
         }
         if (rs.finished) return;
+        // The legs, as they begin: across the line, the beat; through the gate, the run.
+        if (state.race.status === 'racing' && rs.leg >= 1 && !s.said.upwind) { s.said.upwind = true; this.say("You're off! Sail <em>upwind</em> to the windward gate."); }
+        if (state.race.status === 'racing' && rs.leg >= 2 && !s.said.downwind) { s.said.downwind = true; this.say('Through the gate! Now <em>downwind</em> to the finish.'); }
         // Before the gun only the silent zone cone and the collision line watch; the rest
         // are about the race itself.
         this.updateReminders(dt, r, state.race.status === 'racing' ? undefined : new Set(['zone', 'collide']));
@@ -1004,19 +1012,19 @@ const School = {
                 const ps = pairs.get(j);
                 if (ps && ps.show && !ps.pend && ps.wi !== 0) {
                     s.said.rules = true;
-                    this.say('Watch the boat markers: RED means you give way. GREEN means they give way.');
+                    this.say('Watch the boat markers: <em>RED</em> means you give way. <em>GREEN</em> means they give way.');
                     s.ruleT = s.t; s.pendingRule = ps.rule;
                     break;
                 }
             }
         }
         if (s.pendingRule && s.t - s.ruleT > 3.2) {
-            if (/10/.test(s.pendingRule)) this.say("They're on starboard. Pass behind them.");
+            if (/10/.test(s.pendingRule)) this.say("They're on starboard. Pass <em>behind</em> them.");
             s.pendingRule = null;
         }
         // A beginner needs to hear that the circle counted: arm on the penalty, speak on the clear.
         if (rs.penaltyTurnsOwed > 0) s.said.pen = true;
-        else if (s.said.pen) { s.said.pen = false; this.say('Penalty cleared. Keep racing!'); }
+        else if (s.said.pen) { s.said.pen = false; this.say('Penalty cleared. <em>Keep racing!</em>'); }
 
         // What the debrief will say: measured, not guessed.
         const upwind = r.abs < 60 * Math.PI / 180;
@@ -1307,6 +1315,7 @@ const School = {
             }
         }
         this.updateWind(dt);
+        this.renderDots();
         if (this.s.kind === 'sail') this.updateFirstSail(dt);
         else if (this.s.kind === 'pond') this.updatePond(dt);
         else if (this.s.kind === 'start') this.updateStart(dt);
@@ -1403,8 +1412,12 @@ const School = {
         // On the First Sail the launch motors alongside. For the start and the race it IS the
         // committee boat at the line's boat end — the venue draws that mark — so the ducklings
         // raft up beside it and the launch is not drawn twice.
+        // While a section fades out, the companions go with the boat.
+        ctx.save();
+        if (this._fade) ctx.globalAlpha *= Math.max(0, Math.min(1, state.boats[0].opacity == null ? 1 : state.boats[0].opacity));
         if (s.kind === 'sail' && s.launch) this.drawLaunch(ctx, s.launch);
         for (const d of s.ducks) this.drawDuck(ctx, d);
+        ctx.restore();
     },
 
     // The school's own marks on the chart: the gate line, and each live buoy as the
@@ -1668,29 +1681,45 @@ const School = {
     // ── the instructor card, the skip controls and the debrief ────────────────
     ensureDom() {
         if (this._dom) return;
+        // THE COACH CARD (design 16b/17b): three cells. Paddle's portrait on a green column,
+        // the lesson (label + beat dots, one bold line with its payload words in orange, a
+        // small hint row), and the ACTION CELL on the right — the one place the player looks
+        // for "what do I do": a keycap, or pips for a counted goal, over an orange label.
         const card = document.createElement('div');
         card.id = 'school-card';
-        // ONE BOX: Paddle's lines on top (every line of the current goal stays up until the
-        // goal is met), the goal along the bottom.
         card.style.cssText = 'position:fixed; left:50%; transform:translateX(-50%); z-index:60; bottom:26px;'
-            + 'display:none; flex-direction:column; width:min(92vw,640px);'
-            + 'background:rgba(8,16,28,0.88); border:1px solid rgba(245,197,24,0.55); border-radius:18px;'
-            + 'box-shadow:0 10px 30px rgba(0,0,0,0.45); pointer-events:none; opacity:0; transition:opacity .25s; overflow:hidden;';
+            + 'display:none; width:min(92vw,900px);'
+            + 'background:rgba(7,19,34,0.92); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.16); border-radius:14px;'
+            + 'box-shadow:0 14px 40px rgba(4,16,28,0.45); pointer-events:none; opacity:0; transition:opacity .25s; overflow:hidden; color:#eef3fb;';
         card.innerHTML = `
-            <div style="display:flex; align-items:flex-start; gap:14px; padding:14px 20px 12px 14px;">
-                <div style="width:48px; height:48px; border-radius:50%; background:#2FAE5C; border:3px solid #F58A00; flex:none; overflow:hidden;">
-                    <img src="assets/images/competitors/paddle.png" alt="Paddle" style="width:100%; height:100%; object-fit:cover; display:block; transform-origin:50% 50%; transform:scale(2.1) translate(6%, 24%);">
-                </div>
-                <div style="display:flex; flex-direction:column; min-width:0; gap:4px;">
-                    <span class="t-label" style="font-size:9px; letter-spacing:0.26em; color:#F5C518;">Coach Paddle</span>
-                    <div id="school-card-text" class="t-display" style="font-size:21px; line-height:1.2; color:#fff; display:flex; flex-direction:column; gap:3px;"></div>
-                </div>
+            <div style="flex:none; width:112px; align-self:stretch; background:linear-gradient(180deg,${this.GREEN_HI},${this.GREEN} 55%,${this.GREEN_LO}); display:flex; align-items:flex-end; justify-content:center; overflow:hidden;">
+                <img src="assets/images/competitors/paddle.png" alt="Coach Paddle" style="width:100px; height:auto; display:block; margin-bottom:-8px;">
             </div>
-            <div id="school-goal" style="display:none; align-items:center; gap:10px; padding:9px 20px; background:rgba(143,216,208,0.10); border-top:1px solid rgba(255,255,255,0.12);">
-                <span id="school-goal-text" class="t-display" style="font-size:16px; color:#fff;"></span>
+            <div style="flex:1; min-width:0; padding:16px 20px 14px; display:flex; flex-direction:column; justify-content:center;">
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span style="font-size:10px; font-weight:800; letter-spacing:.18em; color:#8fa3bd;">COACH PADDLE</span>
+                    <span id="school-dots" style="display:flex; gap:5px; align-items:center;" title="section progress"></span>
+                </div>
+                <div id="school-card-text" style="margin-top:5px; font-size:19px; line-height:1.4; font-weight:700; color:#dfe8f4; max-width:52ch; text-wrap:pretty;"></div>
+                <div id="school-card-hint" style="margin-top:7px; display:none; align-items:center; gap:6px; flex-wrap:wrap; font-size:11.5px; font-weight:700; color:#8fa3bd;"></div>
+            </div>
+            <div id="school-goal" style="flex:none; width:170px; display:none; flex-direction:column; align-items:center; justify-content:center; gap:9px; padding:12px 14px; border-left:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.03); text-align:center;">
+                <span id="school-goal-key" style="display:none; font-size:12px; font-weight:900; letter-spacing:.1em; color:#eef3fb; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.3); border-bottom-width:3px; border-radius:6px; padding:5px 14px; text-transform:uppercase;"></span>
+                <span id="school-goal-pips" style="display:none; gap:5px;"></span>
+                <span id="school-goal-text" style="font-size:10.5px; font-weight:800; letter-spacing:.06em; line-height:1.4; color:${this.ORANGE}; text-transform:uppercase;"></span>
             </div>`;
         document.body.appendChild(card);
         const goal = card.querySelector('#school-goal');
+        const cardCss = document.createElement('style');
+        cardCss.textContent = `
+            #school-card em { font-style:normal; font-weight:900; color:${this.ORANGE}; }
+            #school-card .ov-kbd { vertical-align:baseline; }
+            #school-card .school-kbd { font-size:9.5px; font-weight:900; color:#c4d2e6; background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.25); border-bottom-width:2px; border-radius:5px; padding:1px 6px; }
+            #school-card .school-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.22); }
+            #school-card .school-dot.on { background:${this.GREEN_HI}; }
+            #school-card .school-pip { width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); box-sizing:border-box; }
+            #school-card .school-pip.on { border:0; background:${this.ORANGE}; box-shadow:0 0 7px rgba(245,133,31,0.6); }`;
+        document.head.appendChild(cardCss);
         // "Press Enter to continue".
         window.addEventListener('keydown', (e) => { if (this.active && (e.key === 'Enter' || e.code === 'Enter')) this._enter = true; });
 
@@ -1728,15 +1757,28 @@ const School = {
         document.head.appendChild(css);
 
         this._lines = []; this._goalOn = false;
-        this._dom = { card, text: card.querySelector('#school-card-text'), deb, goal, goalText: goal.querySelector('#school-goal-text'), ring, rings: [ring], screen };
+        this._dom = { card, text: card.querySelector('#school-card-text'), hint: card.querySelector('#school-card-hint'), dots: card.querySelector('#school-dots'), deb, goal,
+                      goalText: goal.querySelector('#school-goal-text'), goalKey: goal.querySelector('#school-goal-key'), goalPips: goal.querySelector('#school-goal-pips'), ring, rings: [ring], screen };
     },
-    goal(text) {
+    // A GOAL fills the action cell. It takes a plain label, a "Press <kbd> to <do>" string
+    // (the keycap goes above the label), or { label, key, count: [n, of] } — pips for a
+    // counted goal. Null clears the cell.
+    goal(spec) {
         this.ensureDom();
-        const g = this._dom.goal;
-        this._goalOn = !!text;
-        if (!text) { g.style.display = 'none'; if (!this._lines.length) this.hideCard(); return; }
-        if (text.includes('<')) this._dom.goalText.innerHTML = text; else this._dom.goalText.textContent = text;
-        g.style.display = 'flex';
+        const d = this._dom;
+        this._goalOn = !!spec;
+        if (!spec) { d.goal.style.display = 'none'; if (!this._lines.length && !this._tip) this.hideCard(); return; }
+        let g = typeof spec === 'string' ? { label: spec } : Object.assign({}, spec);
+        if (typeof spec === 'string') {
+            const m = /^Press <span class="ov-kbd"[^>]*>(.*?)<\/span> to (.*)$/.exec(spec);
+            if (m) g = { key: m[1], label: m[2] };
+        }
+        d.goalKey.style.display = g.key ? '' : 'none';
+        if (g.key) d.goalKey.innerHTML = g.key;
+        d.goalPips.style.display = g.count ? 'flex' : 'none';
+        if (g.count) d.goalPips.innerHTML = Array.from({ length: g.count[1] }, (_, i) => `<span class="school-pip${i < g.count[0] ? ' on' : ''}"></span>`).join('');
+        if (g.label.includes('<')) d.goalText.innerHTML = g.label; else d.goalText.textContent = g.label;
+        d.goal.style.display = 'flex';
         clearTimeout(this._cardTimer);       // a goal keeps the box up until it is met
         this.showCard();
     },
@@ -1744,8 +1786,7 @@ const School = {
     // to it. With no goal (the Start, the race) each line replaces the last, as before.
     say(text) {
         this.ensureDom();
-        if (!this._goalOn) this._lines = [];
-        this._lines.push(text);
+        this._lines = [text];                // one bold thing: the latest line replaces the last
         this.renderLines();
         clearTimeout(this._cardTimer);
         if (!this._goalOn) this._cardTimer = setTimeout(() => this.hideCard(), 9000);
@@ -1759,13 +1800,38 @@ const School = {
         this.renderLines();
         if (!this._tip && !this._lines.length && !this._goalOn) this.hideCard();
     },
+    // The hint row: a small line under the lesson (the steering keycaps), replaced by a
+    // reminder while one holds. A reminder with no lesson on the card takes the lesson line.
+    hint(html) { this.ensureDom(); this._hint = html || null; this.renderLines(); },
+    kbd(label) { return `<span class="school-kbd">${label}</span>`; },
     renderLines() {
         const d = this._dom;
         const esc = t => t.includes('<') ? t : t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-        let html = this._lines.map(t => `<div>${esc(t)}</div>`).join('');
-        if (this._tip) html += `<div style="color:#8fd8d0; font-size:18px; margin-top:2px;">${esc(this._tip)}</div>`;
-        d.text.innerHTML = html;
+        const line = this._lines.length ? this._lines[this._lines.length - 1] : (this._tip || '');
+        d.text.innerHTML = esc(line);
+        const sub = (this._lines.length && this._tip) ? `<span style="color:${this.ORANGE};">${esc(this._tip)}</span>` : (this._hint || '');
+        d.hint.innerHTML = sub;
+        d.hint.style.display = sub ? 'flex' : 'none';
+        this.renderDots();
         if (this._lines.length || this._goalOn || this._tip) this.showCard();
+    },
+    // The beats of the current section, as dots by the coach's name.
+    beats() {
+        const s = this.s; if (!s) return null;
+        if (s.kind === 'sail') return { n: Math.max(0, s.segIdx + 1), of: this.segments.length };
+        if (s.kind === 'pond' && s.phase !== 'start') return { n: Math.max(0, (s.taskIdx || 0) + 1), of: (s.tasks || this.pondTasks()).length };
+        if (s.kind === 'pond') return { n: s.said && s.said.gun ? 2 : 1, of: 2 };
+        // The race's four beats: before zero, after the gun, the upwind leg, the downwind leg.
+        if (s.kind === 'race') { const leg = state.boats[0].raceState.leg; return { n: state.race.status !== 'racing' ? 1 : leg >= 2 ? 4 : leg >= 1 ? 3 : 2, of: 4 }; }
+        return null;
+    },
+    renderDots() {
+        if (!this._dom) return;
+        const p = this.beats();
+        const key = p ? p.n + '/' + p.of : '';
+        if (key === this._dotsKey) return;
+        this._dotsKey = key;
+        this._dom.dots.innerHTML = p ? Array.from({ length: p.of }, (_, i) => `<span class="school-dot${i < p.n ? ' on' : ''}"></span>`).join('') : '';
     },
     showCard() {
         const d = this._dom;
@@ -1774,7 +1840,7 @@ const School = {
     },
     hideCard() {
         if (!this._dom) return;
-        this._lines = []; this._tip = null;
+        this._lines = []; this._tip = null; this._hint = null;
         this._dom.card.style.opacity = '0';
         clearTimeout(this._cardTimer);
         setTimeout(() => { if (this._dom.card.style.opacity === '0') this._dom.card.style.display = 'none'; }, 260);
