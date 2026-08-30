@@ -954,7 +954,11 @@ function loop(timestamp) {
     lastTime = timestamp;
     if (!state.paused) {
         let iterations = 1;
-        if (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden')) {
+        // The fleet finishes at 10x once you have: the shipped results overlay, and the
+        // Sailing School's own results screen (E), which keeps the sim running behind it
+        // and re-reads the finish order as the classmates come in.
+        if ((UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden'))
+            || (window.School && School.active && School._screenId === 'E')) {
             iterations = 10;
         }
 
