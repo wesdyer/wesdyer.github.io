@@ -534,6 +534,11 @@
                         <span class="ov-title" style="font-size: 15px; letter-spacing: .04em;">RESUME</span>
                         <span class="ov-kbd">ESC</span>
                     </button>
+                    <!-- Sailing School only: on to the next section. Hidden everywhere else. -->
+                    <button id="skip-button" class="ov-row hidden">
+                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">SKIP SECTION</span>
+                        <span style="font-size: 12px; color: #66748c;">›</span>
+                    </button>
                     <button id="restart-button" class="ov-row">
                         <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">RESTART</span>
                         <span style="font-size: 12px; color: #66748c;">↻</span>
@@ -547,7 +552,7 @@
                         <span class="ov-kbd ov-kbd-dim">?</span>
                     </button>
                     <button id="abandon-button" class="ov-row ov-row-danger">
-                        <span style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">ABANDON RACE</span>
+                        <span id="abandon-label" style="font-size: 14px; font-weight: 800; letter-spacing: .04em;">ABANDON RACE</span>
                     </button>
                 </div>
             </div>

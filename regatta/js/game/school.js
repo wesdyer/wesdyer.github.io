@@ -420,7 +420,7 @@ const School = {
             n.count++;
             head.k = n.nextK++; head.station = this.snakeStation(head.k);
             s.ducks.push(s.ducks.shift());                       // to the back of the queue, front of the line
-            this.goal(`Follow the ducklings · ${Math.min(5, n.count)} of 5`);
+            this.goal(this.goalCount('Follow the ducklings', Math.min(5, n.count), 5));
         }
     },
     updateSnake(dt) {
@@ -447,38 +447,38 @@ const School = {
         const inZone = r.abs < 38 * Math.PI / 180;
         up.zoneT = inZone ? up.zoneT + 1 / 60 : 0;
         const tacks = s.tacks - up.tacks0;
-        if (up.phase === 'sail' && up.zoneT >= 3) {
-            up.phase = 'zone'; s.coneOn = true;
-            this.instruct("You're in the <em>no sail zone</em>. You can't sail directly upwind. Instead, zig zag back and forth just outside of the no sail zone to head upwind.", 'Turn outside of the no sail zone');
-        } else if (up.phase === 'zone' && !inZone && r.abs > 42 * Math.PI / 180) {
-            up.phase = 'zigzag'; up.tacksAt = tacks;
-            this.instruct('Zig zag back and forth upwind.', 'Follow the ducklings');
-        } else if ((up.phase === 'zigzag' || up.phase === 'sail') && tacks >= 1 && !up.saidTack) {
-            up.saidTack = true; up.phase = 'tack1';
-            this.instruct('Good job! That was your first tack. A tack is when you cross the wind to zig zag back and forth.', 'Follow the ducklings');
-        } else if (up.phase === 'tack1' && tacks >= 2) {
-            up.phase = 'zigzag2';
-            this.instruct('Zig zag back and forth upwind.', 'Follow the ducklings');
+        // Teach the zone once, in full; every later visit gets the short correction.
+        if (!up.inZone && up.zoneT >= 3) {
+            up.inZone = true; s.coneOn = true;
+            if (!up.zoneTaught) this.instruct("You can't sail straight into the wind. Turn out of the red <em>no-sail zone</em>.", 'Turn out of the no-sail zone');
+            else this.instruct('Too far into the wind. Turn out of the red zone.', 'Turn out of the no-sail zone');
+        } else if (up.inZone && !inZone) {                     // out at 38°, same edge the cone and the red TWA use
+            up.inZone = false;
+            if (!up.zoneTaught) { up.zoneTaught = true; this.instruct('To sail upwind, zigzag back and forth just outside the red zone.', 'Follow the ducklings'); }
+            else this.instruct('Good. Keep working your way upwind.', 'Follow the ducklings');
+        } else if (!up.inZone && tacks >= 1 && !up.saidTack) {
+            up.saidTack = true;
+            this.instruct('Nice! That was a tack — you crossed through the wind to sail the other way.', 'Follow the ducklings');
         }
     },
     tickDownwind(s, r) {
         const dw = s.dw;
         if (dw.phase === 'sail' && r.abs > 150 * Math.PI / 180) {
             dw.phase = 'hoist'; this.kiteLocked = false;
-            this.instruct("Good, but it's faster to sail downwind with your spinnaker. Hoist your spinnaker.", 'Press ' + this.K('Space') + ' to raise your spinnaker.');
+            this.instruct('This works, but we can go faster. Time for the spinnaker!', 'Press ' + this.K('Space') + ' to raise the spinnaker');
         } else if (dw.phase === 'hoist' && r.kite) {
             dw.phase = 'kite'; s.duckHoldOff = false;
-            this.instruct('Sail downwind with your spinnaker.', 'Follow the ducklings');
+            this.instruct('There she goes! Follow the ducklings downwind.', 'Follow the ducklings');
         }
     },
     tickCloseReach(s, r) {
         const cr = s.cr, p = r.p;
         if (cr.phase === 'sail' && p.spinnaker && (p.kiteLuff || 0) > 0.05) {
             cr.phase = 'douse';
-            this.instruct("The spinnaker is not for sailing upwind. Let's put it away.", 'Press ' + this.K('Space') + ' to put your spinnaker away.');
+            this.instruct("See that flapping? The spinnaker doesn't work upwind. Let's take it down.", 'Press ' + this.K('Space') + ' to lower the spinnaker');
         } else if (cr.phase === 'douse' && !p.spinnaker) {
             cr.phase = 'again'; s.duckHoldOff = false;
-            this.instruct('Sail upwind again.', 'Follow the ducklings');
+            this.instruct('Much better. Keep following the ducklings.', 'Follow the ducklings');
         } else if (cr.phase === 'sail' && !p.spinnaker && s.segT > 1) {
             cr.phase = 'again'; s.duckHoldOff = false;           // dropped it unprompted: already learned
         }
@@ -543,6 +543,9 @@ const School = {
     },
     // The keycap, drawn the way the Controls menu draws one.
     K(label) { return `<span class="ov-kbd" style="font-size:12px; margin:0 2px;">${label}</span>`; },
+    // A goal with progress: the count sits apart from the words, so it reads as a tally
+    // rather than as part of the instruction.
+    goalCount(text, n, of) { return `${text}<span class="t-mono" style="margin-left:18px; font-size:13px; letter-spacing:0; color:rgba(255,255,255,0.62);">${n} of ${of}</span>`; },
 
     firstSailSegments() {
         const S = this;
@@ -563,32 +566,32 @@ const School = {
               goal: ENTER, done: enterAfter(0) },
             { id: 'wind', timeout: Infinity,
               enter: (s) => { armEnter(s); s.windIndicator = true; S.windRamp(7, 0.25); S.setPanel(true); S.highlight = { dom: () => [S.panelRect()].filter(Boolean) }; },
-              lines: [{ t: 0, text: "Wind streaks show which way it's blowing and how hard. The wind is coming from our side at 90 degrees." }],
+              lines: [{ t: 0, text: "These streaks show which way the wind is blowing and how strong it is. Right now, it's coming from the side." }],
               goal: ENTER, done: enterAfter(0),
               exit: (s) => { s.windIndicator = false; } },
             { id: 'snake', timeout: Infinity,
               enter: (s) => { S.highlight = null; S.setControls(true); S.kiteLocked = true; S.setPanel(true); S.spawnSnakeDucks(); },
               lines: [{ t: 0, text: 'Steer with ' + S.K('&larr;') + ' / ' + S.K('&rarr;') + ' or ' + S.K('A') + ' / ' + S.K('D') + '.' },
-                      { t: 0.1, text: 'Follow those ducklings!' }],
-              goal: 'Follow the ducklings · 0 of 5',
+                      { t: 0.1, text: 'Now follow those ducklings!' }],
+              goal: S.goalCount('Follow the ducklings', 0, 5),
               tick: (s) => S.tickSnake(s),
               done: (s) => s.snake && s.snake.count >= 5,
-              exitLine: "That's a reach — wind on your side. Fastest, easiest point of sail." },
+              exitLine: "Nice! That's a reach — sailing with the wind from the side. Fast and easy." },
             { id: 'upwind', timeout: Infinity,
               enter: (s) => { S.spawnUpwindDucks(); s.up = { phase: 'sail', zoneT: 0, tacks0: s.tacks }; },
-              lines: [{ t: 0, text: "Now let's try sailing upwind. Follow the ducklings." }],
+              lines: [{ t: 0, text: "Now let's sail upwind. Follow the ducklings." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickUpwind(s, r),
               done: (s) => S.ducksReached() },
             { id: 'downwind', timeout: Infinity,
               enter: (s) => { s.coneOn = false; S.spawnDucksAt(normalizeAngle(S.wd() + Math.PI)); s.dw = { phase: 'sail' }; s.duckHoldOff = true; },
-              lines: [{ t: 0, text: "Let's sail downwind." }],
+              lines: [{ t: 0, text: "Great! Now let's sail downwind." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickDownwind(s, r),
               done: (s) => s.dw.phase === 'kite' && S.ducksReached() },
             { id: 'closereach', timeout: Infinity,
               enter: (s) => { const side = S.playerRead().twa >= 0 ? 1 : -1; S.spawnDucksAt(normalizeAngle(S.wd() + side * 60 * Math.PI / 180)); s.cr = { phase: 'sail' }; s.duckHoldOff = true; },
-              lines: [{ t: 0, text: 'Sail upwind again.' }],
+              lines: [{ t: 0, text: "Now let's head back upwind." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickCloseReach(s, r),
               done: (s) => s.cr.phase === 'again' && S.ducksReached() },
@@ -699,27 +702,27 @@ const School = {
         return [
             { kind: 'mark', side: 'port',
               place: () => S.edgeTarget(normalizeAngle(wd() + Math.PI / 2)),
-              line: "Welcome to the Duckling Pond! Let's round a mark. Keep it on your LEFT side as you go around — that's a port rounding.",
-              goal: 'Round the mark to port' },
+              line: "Welcome to Duckling Pond! See that mark? Sail around it, keeping it on your LEFT. That's called a port rounding.",
+              goal: 'Round the mark to port · keep it left' },
             { kind: 'mark', side: 'starboard',
               place: () => S.waterPoint(C(), wd(), 2400, 600, 250),
-              line: 'Now the mark at the top of the pond. This time keep it on your RIGHT side — a starboard rounding.',
-              goal: 'Round the mark to starboard' },
+              line: "Nice! Now round the mark at the top, keeping it on your RIGHT. That's a starboard rounding.",
+              goal: 'Round the mark to starboard · keep it right' },
             { kind: 'gate', mode: 'round', end: 'either', id: 'leeward',
               place: () => S.waterPoint(C(), normalizeAngle(wd() + Math.PI), 2400, 600, 430),
-              line: 'Now the downwind gate. Go through it, round one of its marks, and head back upwind.',
-              goal: 'Round the gate' },
+              line: 'Now for a gate. Sail between the two marks, round either one, then head back upwind.',
+              goal: 'Go through the gate and round a mark' },
             { kind: 'mark', side: 'starboard',
               place: () => S.waterPoint(C(), normalizeAngle(wd() - Math.PI / 2), 2400, 600, 250),
-              line: 'Next, the mark on the left side of the pond. Keep it on your right.',
+              line: 'Next up: the mark on the left. Round it to starboard — keep it on your right.',
               goal: 'Round the mark to starboard' },
             { kind: 'mark', side: 'starboard',
               place: () => ({ x: C().x, y: C().y }),
-              line: 'Now the mark in the middle of the pond. Keep it on your right.',
+              line: 'Now the middle mark. Round it to starboard.',
               goal: 'Round the mark to starboard' },
             { kind: 'gate', mode: 'through', id: 'leeward',
               place: () => S.s.leewardGate || S.waterPoint(C(), normalizeAngle(wd() + Math.PI), 2400, 600, 430),
-              line: 'Last one: straight through the downwind gate.',
+              line: 'Last one! Sail straight through the downwind gate.',
               goal: 'Go through the gate' },
         ];
     },
@@ -805,7 +808,7 @@ const School = {
             if (T.kind === 'mark') {
                 const res = (typeof roundingStep === 'function') ? roundingStep(p, s.track, s.rm, s.nextA) : { done: false };
                 s.track.lastPos = { x: p.x, y: p.y };
-                if (res.wrong) this.instruct(`Wrong way round — keep the mark on your ${T.side === 'starboard' ? 'RIGHT' : 'LEFT'} side as you go around it.`, T.goal);
+                if (res.wrong) this.instruct(`Wrong side. Go back and round the mark with it on your ${T.side === 'starboard' ? 'RIGHT' : 'LEFT'}.`, T.goal);
                 if (res.done) { s.prevTarget = s.W; this.nextPondTask(); }
             } else {
                 const A = s.gateA, mid = s.gateMid;
@@ -815,7 +818,7 @@ const School = {
                 if (!s.gateCrossed && forward && hullCrossedLine(p, s.GL.x, s.GL.y, s.GR.x, s.GR.y)) {
                     s.gateCrossed = true;
                     if (T.mode === 'through') { s.prevTarget = mid; this.nextPondTask(); return; }
-                    this.instruct(T.end === 'starboard' ? 'Through the gate. Now round its right-hand mark and come back.' : 'Through the gate. Now round one of its marks and come back.', T.goal);
+                    this.instruct(T.end === 'starboard' ? 'Through the gate! Now round the right-hand mark and head back upwind.' : 'Through the gate! Now round one of its marks and head back upwind.', T.goal);
                 }
                 // Rounded: back on the entry side, having gone round the right end.
                 if (s.gateCrossed && perp < -40 && (T.end !== 'starboard' || along > 120)) {
@@ -830,20 +833,30 @@ const School = {
                 const [m0, m1] = startLinePts(); const cr = startCrossNormal();
                 const perp = (p.x - (m0.x + m1.x) / 2) * cr.x + (p.y - (m0.y + m1.y) / 2) * cr.y;
                 const over = rs.ocs || perp > -12;
-                if (over && s.startPhase !== 'over') { s.startPhase = 'over'; this.instruct("You haven't started yet.", 'Return to behind the start line'); }
-                else if (!over && s.startPhase === 'over') { s.startPhase = 'wait'; this.instruct("Let's practice starting a race. Stay behind the line until after the timer runs out.", 'Stay behind the line'); }
+                // The rule in full the first time; a short correction after that.
+                if (over && s.startPhase !== 'over') {
+                    s.startPhase = 'over'; s.earlyCount++;
+                    this.instruct(s.earlyCount === 1 ? 'Too soon! Get back behind the start line before the clock reaches zero.' : 'Too soon! Back behind the line.', 'Get back behind the start line');
+                } else if (!over && s.startPhase === 'over') { s.startPhase = 'wait'; this.instruct('Good. Now stay behind the line until zero.', 'Stay behind the start line'); }
             }
             if (state.race.status === 'racing' && !s.said.gun) {
-                s.said.gun = true; s.ocsAtGun = !!rs.ocs; s.startPhase = 'go';
+                s.said.gun = true; s.ocsAtGun = !!rs.ocs; s.startPhase = s.ocsAtGun ? 'overGun' : 'go';
                 this.highlight = null;
-                this.instruct(s.ocsAtGun ? 'Over early! Get back behind the line, then cross it.' : "That's the gun. Cross the start line!", 'Cross the start line');
+                // Over at the gun is two steps, and the goal shows one at a time: back first, then across.
+                if (s.ocsAtGun) this.instruct('Over early! Get back behind the line first.', 'Get back behind the start line');
+                else this.instruct("That's the gun — go! Cross the start line.", 'Cross the start line');
+            }
+            if (s.startPhase === 'overGun' && !rs.ocs) {
+                s.startPhase = 'go';
+                this.instruct('Good — now cross the line!', 'Cross the start line');
             }
             if (state.race.status === 'racing' && rs.leg >= 1 && !s.said.crossed) {
                 s.said.crossed = true;
                 const late = rs.startTimeDisplay || 0;
-                this._startNote = s.ocsAtGun ? 'Over early at the gun — but you got back and crossed. Wait for the clock next time.'
-                    : late > 5 ? `You crossed ${Math.round(late)} seconds after the gun. Closer next time.`
-                    : 'Right on time. That is a start.';
+                this._startNote = s.ocsAtGun ? 'You were over early, but you recovered! Next time, stay behind the line until zero.'
+                    : late > 5 ? `You started ${Math.round(late)} seconds after the gun. Next time, try to be closer to the line at zero.`
+                    : late <= 1.5 ? 'Great start! Right on the gun.'
+                    : 'Nice start! You crossed right after the gun.';
                 this.goal(null);
                 this.fadeThen(() => { this.start(4); this.screen('D'); });
             }
@@ -871,9 +884,9 @@ const School = {
         hideRaceMessage();
         snapCameraToStart();
         const secs = Math.round(state.race.timer);
-        s.startPhase = 'wait';
+        s.startPhase = 'wait'; s.earlyCount = 0;
         this.highlight = { dom: () => [this.domRect(['#hud-timer'])].filter(Boolean) };
-        this.instruct("Let's practice starting a race. Stay behind the line until after the timer runs out.", 'Stay behind the line');
+        this.instruct('Get ready! Stay behind the line until zero — but try to stay close.', 'Stay behind the start line');
     },
 
     // ── UNIT 2 · THE START ────────────────────────────────────────────────────
@@ -965,7 +978,7 @@ const School = {
                    pinchT: 0, beatT: 0, kiteUpwindT: 0, wrongWay: 0, finishRank: null };
         beginRace();                         // the shipped prestart: leaderboard, clock, music — and the
                                              // document's own start sequence (course.startTime)
-        this.say('Real start, real gun.');
+        this.say('This one counts. Same start as practice — be ready at zero.');
     },
 
     updateRace(dt) {
@@ -977,7 +990,7 @@ const School = {
             s.said.gun = true;
             s.ocsAtGun = !!rs.ocs;
             s.gunT = s.t;
-            this.say(s.ocsAtGun ? 'Over early. Back below the line, then go.' : "That's the gun. You've got it.");
+            this.say(s.ocsAtGun ? 'Over early! Get back behind the line, then start again.' : "That's the gun — go race!");
         }
         if (rs.finished) return;
         // Before the gun only the silent zone cone and the collision line watch; the rest
@@ -991,17 +1004,19 @@ const School = {
                 const ps = pairs.get(j);
                 if (ps && ps.show && !ps.pend && ps.wi !== 0) {
                     s.said.rules = true;
-                    this.say('Red triangle: you give way. Green: they do.');
+                    this.say('Watch the boat markers: RED means you give way. GREEN means they give way.');
                     s.ruleT = s.t; s.pendingRule = ps.rule;
                     break;
                 }
             }
         }
         if (s.pendingRule && s.t - s.ruleT > 3.2) {
-            if (/10/.test(s.pendingRule)) this.say("They're on starboard. Steer behind them.");
+            if (/10/.test(s.pendingRule)) this.say("They're on starboard. Pass behind them.");
             s.pendingRule = null;
         }
-        if (rs.penaltyTurnsOwed === 0 && s.said.pen && !s.said.penClear) { s.said.penClear = true; this.say('Clear. Carry on.'); }
+        // A beginner needs to hear that the circle counted: arm on the penalty, speak on the clear.
+        if (rs.penaltyTurnsOwed > 0) s.said.pen = true;
+        else if (s.said.pen) { s.said.pen = false; this.say('Penalty cleared. Keep racing!'); }
 
         // What the debrief will say: measured, not guessed.
         const upwind = r.abs < 60 * Math.PI / 180;
@@ -1021,30 +1036,31 @@ const School = {
           cond: (c) => c.r.abs < 38 * Math.PI / 180 },
         { id: 'collide', dwell: 0, every: 8,
           cond: (c) => c.s.collisionT != null && c.s.t - c.s.collisionT < 0.3,
-          text: () => 'Avoid hitting objects, it slows you down.' },
+          text: () => 'Careful — hitting things slows you down.' },
         { id: 'penalty', dwell: 3, every: 10,
           cond: (c) => c.rs.penaltyTurnsOwed > 0 && !c.penaltyProgress,
-          text: () => 'You have a penalty. Do a full 360° turn to clear it.' },
+          text: () => 'You have a penalty. Sail one full circle to clear it.' },
         { id: 'ocs', dwell: 3, every: 10,
           cond: (c) => c.rs.ocs && !c.headingBack,
-          text: () => 'You were over early. Turn around and go back behind the start line.' },
+          text: () => "You're over early. Get back behind the start line." },
         { id: 'douse', dwell: 3, every: 12,
           cond: (c) => c.r.abs < 90 * Math.PI / 180 && c.p.spinnaker,
-          text: (c) => 'The spinnaker is not for upwind. Press ' + c.S.K('Space') + ' to douse it.' },
+          text: (c) => 'Your spinnaker is flapping. Press ' + c.S.K('Space') + ' to lower it.' },
         { id: 'notstarted', dwell: 5, every: 10,
           cond: (c) => state.race.status === 'racing' && c.rs.leg === 0 && !c.rs.ocs,   // only once the gun has gone
-          text: () => 'The race has started. Cross the start line.' },
+          text: () => 'The gun has gone! Cross the start line.' },
         { id: 'pastgate', dwell: 3, every: 10,
           cond: (c) => c.pastGate,
-          text: (c) => `You've gone past the ${c.targetName}. Turn back and sail between its two marks.` },
+          text: (c) => c.targetName === 'finish line' ? 'You passed the finish line. Turn back and sail between the marks.' : 'You passed the windward gate. Turn back and sail between the marks.' },
         { id: 'hoist', dwell: 3, every: 12,
           // Only once racing and not returning from OCS — a boat dipping back below the line
           // is sailing downwind on purpose and does not want a kite.
           cond: (c) => (c.unit !== 3 || c.rs.leg >= 1) && !c.rs.ocs && c.r.abs > 110 * Math.PI / 180 && !c.p.spinnaker,
-          text: (c) => 'Sailing downwind? Press ' + c.S.K('Space') + ' to raise your spinnaker.' },
+          text: (c) => 'Going downwind? Press ' + c.S.K('Space') + ' to raise your spinnaker.' },
         { id: 'noprogress', dwell: 3, every: 10,
           cond: (c) => c.rs.leg >= 1 && !c.rs.ocs && c.rs.penaltyTurnsOwed === 0 && !c.pastGate && c.wpDelta >= -0.02,
-          text: (c) => `Turn ${c.turnSide} — the ${c.targetName} is that way.` },
+          text: (c) => { const what = c.targetName === 'finish line' ? 'The finish' : c.targetName === 'windward gate' ? 'The windward gate' : 'The next mark';
+                         return c.turnSide === 'around' ? `${what} is behind you. Turn around.` : `${what} is to your ${c.turnSide.toUpperCase()}. Turn toward it.`; } },
     ],
     updateReminders(dt, r, allow) {
         const s = this.s, p = r.p, rs = p.raceState;
@@ -1133,15 +1149,16 @@ const School = {
         const lines = [];
         if (!graduated) lines.push("Didn't finish this one. Everyone's first race is a mess.");
         else lines.push(rank === 1 ? 'Won it. Good.' : `${['', 'First', 'Second', 'Third', 'Fourth'][rank] || rank + 'th'} of four. That counts.`);
-        if (rs.leg === 0) lines.push('Never crossed the start line. The race starts when the clock hits zero.');
-        else if (s.ocsAtGun) lines.push('Over early at the gun — you gave the fleet a head start.');
-        else lines.push(rs.startLegDuration != null && rs.startLegDuration > 5 ? `Started ${Math.round(rs.startLegDuration)} seconds late. Arrive at speed next time.` : 'Good start.');
+        if (rs.leg === 0) lines.push('You never crossed the start line. When the clock reaches zero, go!');
+        else if (s.ocsAtGun) lines.push('You were over early and had to go back. Next time, stay behind the line until zero.');
+        else lines.push(rs.startLegDuration != null && rs.startLegDuration > 5 ? `You started ${Math.round(rs.startLegDuration)} seconds after the gun. Next time, be closer to the line at zero.` : 'Great start — you crossed just after the gun.');
+        // The sailing itself, plain and actionable. A boat that never started has no leg to
+        // judge, so it gets only what its prestart showed (a penalty), or nothing more.
         const pinchFrac = s.beatT > 5 ? s.pinchT / s.beatT : 0;
-        if (rs.leg === 0) lines.push('Be near the line, at speed, when the clock runs out.');
-        else if (pinchFrac > 0.25) lines.push('You pinched on the beat. Err wide, never high.');
-        else if (s.kiteUpwindT > 6) lines.push('Kite came down late. When it shakes, drop it.');
-        else if (rs.totalPenalties > 0) lines.push(`${rs.totalPenalties} penalty turn${rs.totalPenalties > 1 ? 's' : ''}. Red triangle means you give way.`);
-        else lines.push('Clean beat, kite down in time. Nothing to fix.');
+        if (pinchFrac > 0.25) lines.push('You sailed too close to the wind. Give the red no-sail zone a little more room.');
+        else if (s.kiteUpwindT > 6) lines.push('Your spinnaker stayed up too long. When it starts flapping, lower it.');
+        else if (rs.totalPenalties > 0) lines.push(rs.totalPenalties === 1 ? 'You took a penalty turn. When your marker is red, you need to give way.' : `You took ${rs.totalPenalties} penalty turns. When your marker is red, you need to give way.`);
+        else if (rs.leg > 0) lines.push('Nice sailing — clean upwind leg, and the spinnaker came down on time.');
         return lines;
     },
 
@@ -1662,7 +1679,7 @@ const School = {
         card.innerHTML = `
             <div style="display:flex; align-items:flex-start; gap:14px; padding:14px 20px 12px 14px;">
                 <div style="width:48px; height:48px; border-radius:50%; background:#2FAE5C; border:3px solid #F58A00; flex:none; overflow:hidden;">
-                    <img src="assets/images/competitors/paddle.png" alt="Paddle" style="width:100%; height:100%; object-fit:cover; display:block; transform-origin:50% 50%; transform:scale(2.1) translate(3%, 22%);">
+                    <img src="assets/images/competitors/paddle.png" alt="Paddle" style="width:100%; height:100%; object-fit:cover; display:block; transform-origin:50% 50%; transform:scale(2.1) translate(6%, 24%);">
                 </div>
                 <div style="display:flex; flex-direction:column; min-width:0; gap:4px;">
                     <span class="t-label" style="font-size:9px; letter-spacing:0.26em; color:#F5C518;">Coach Paddle</span>
@@ -1687,17 +1704,6 @@ const School = {
         st.textContent = '@keyframes school-pulse { 0%,100% { transform:scale(1); opacity:.95 } 50% { transform:scale(1.08); opacity:.7 } }';
         document.head.appendChild(st);
 
-        const frame = document.createElement('div');
-        frame.id = 'school-frame';
-        frame.style.cssText = 'position:fixed; right:18px; bottom:18px; z-index:60; display:none; gap:8px;';
-        frame.innerHTML = `
-            <button id="school-skip" class="res-btn" style="padding:8px 14px; font-size:12px;">Skip ›</button>
-            <button id="school-restart" class="res-btn" style="padding:8px 14px; font-size:12px;">Restart</button>
-            <button id="school-quit" class="res-btn" style="padding:8px 14px; font-size:12px;">Leave school</button>`;
-        document.body.appendChild(frame);
-        frame.querySelector('#school-restart').addEventListener('click', (e) => { e.preventDefault(); this.start(1); e.target.blur(); });
-        frame.querySelector('#school-skip').addEventListener('click', (e) => { e.preventDefault(); this.skip(); e.target.blur(); });
-        frame.querySelector('#school-quit').addEventListener('click', (e) => { e.preventDefault(); this.exit(); });
 
         const deb = document.createElement('div');
         deb.id = 'school-debrief';
@@ -1722,7 +1728,7 @@ const School = {
         document.head.appendChild(css);
 
         this._lines = []; this._goalOn = false;
-        this._dom = { card, text: card.querySelector('#school-card-text'), frame, deb, goal, goalText: goal.querySelector('#school-goal-text'), ring, rings: [ring], screen };
+        this._dom = { card, text: card.querySelector('#school-card-text'), deb, goal, goalText: goal.querySelector('#school-goal-text'), ring, rings: [ring], screen };
     },
     goal(text) {
         this.ensureDom();
@@ -1773,12 +1779,11 @@ const School = {
         clearTimeout(this._cardTimer);
         setTimeout(() => { if (this._dom.card.style.opacity === '0') this._dom.card.style.display = 'none'; }, 260);
     },
-    showFrame(on) {
-        this.ensureDom();
-        this._dom.frame.style.display = on ? 'flex' : 'none';
-        const race = this.s && this.s.kind === 'race';
-        this._dom.frame.querySelector('#school-skip').style.display = race ? 'none' : '';
-    },
+    // The corner buttons (Skip · Restart · Leave school) are gone: those live in the ESC
+    // pause menu now, so nothing sits over the water. Kept as a no-op for its callers.
+    showFrame(on) {},
+    // Whether the pause menu's Skip has anywhere to go: every section but the race.
+    canSkip() { return !!(this.active && this.s && this.s.kind !== 'race'); },
     showDebrief(graduated, rank, player) {
         this.ensureDom();
         const lines = this.debriefLines(graduated, rank, player);
@@ -1787,7 +1792,7 @@ const School = {
             <div style="width:min(92vw,720px); background:#0c1322; border:1px solid rgba(245,197,24,0.4); border-radius:18px; padding:28px 30px; color:#eef3fb; box-shadow:0 30px 80px rgba(0,0,0,0.6);">
                 <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
                     <div style="width:72px; height:72px; border-radius:50%; background:#2FAE5C; border:3px solid #F58A00; flex:none; overflow:hidden;">
-                        <img src="assets/images/competitors/paddle.png" alt="Paddle" style="width:100%; height:100%; object-fit:cover; display:block; transform-origin:50% 50%; transform:scale(2.1) translate(3%, 22%);">
+                        <img src="assets/images/competitors/paddle.png" alt="Paddle" style="width:100%; height:100%; object-fit:cover; display:block; transform-origin:50% 50%; transform:scale(2.1) translate(6%, 24%);">
                     </div>
                     <div>
                         <div class="t-label" style="color:#F5C518; letter-spacing:0.28em;">${graduated ? 'Graduated · Sailing School' : 'Sailing School'}</div>
@@ -1885,27 +1890,28 @@ const School = {
         const btns = (...b) => b.filter(Boolean);
         switch (id) {
             case 'A': return {
-                kicker: 'Sailing School · Section 1 of 4', title: 'Welcome to sailing school!',
-                body: "Let's start by learning the basics of the boat: how it moves, where the wind is, and how to steer it.",
+                kicker: 'Sailing School · Section 1 of 4', title: 'Your first sail',
+                body: 'Learn to read the wind, steer the boat, and sail upwind and downwind.',
                 media: null, buttons: btns(next(), skip, club) };
             case 'B': return {
-                kicker: 'The Pond · Section 2 of 4', title: "You've learned to sail the boat.",
-                body: "Now let's move to Duckling Pond and learn to sail a course around marks and through gates.",
+                kicker: 'Duckling Pond · Section 2 of 4', title: "Now let's sail a course.",
+                body: "You'll learn to round marks and sail through gates. No racing yet — just follow the course.",
                 media: (host) => { S.venueArtPreview(host, 300); S.chartPreview(host, true, 300); }, buttons: btns(next(), skip, restart, club) };
             case 'C': return {
-                kicker: 'Start Practice · Section 3 of 4', title: 'Nicely sailed around the pond.',
-                body: `You rounded the mark and took the gate. Now we practice a start sequence: a ${Math.round(state.race.startTimerDuration || 30)}-second clock, and a line you may not cross until it reaches zero. Be near the line, at speed, when it does.`,
+                kicker: 'Start Practice · Section 3 of 4', title: "Let's practice a race start.",
+                body: 'Stay behind the start line while the clock counts down. When it reaches zero, cross the line as soon as you can. Try to be close, moving, and ready.',
                 media: (host) => S.startLinePreview(host), buttons: btns(next(), skip, restart, club) };
             case 'D': return {
-                kicker: 'The Race · Section 4 of 4', title: "That's a start. Now you race.",
-                body: (S._startNote ? S._startNote + ' ' : '') + 'One lap of Duckling Pond: up through the windward gate, back down through the finish. Three classmates are on the line with you. Start on time, keep the mark on the right side, and drop the kite before you head up — do that and you will beat them.',
+                kicker: 'The Race · Section 4 of 4', title: 'Time for your first race.',
+                body: (S._startNote ? S._startNote + ' ' : '') + "Now put it all together. Start with three classmates, sail up through the windward gate, then race back down through the finish. One lap. That's it. They're beginners too. Sail what you've learned.",
                 media: (host) => { S.courseChartPreview(host, 300, 300); S.fleetPreview(host); }, buttons: btns(next('Begin &rarr;'), restart, club) };
             case 'E': {
                 const r = S._lastRace || {};
                 return {
-                    kicker: r.graduated ? 'Graduated · Sailing School' : 'Sailing School · the race',
-                    title: r.graduated ? (r.rank === 1 ? 'You won it.' : `${['', 'First', 'Second', 'Third', 'Fourth'][r.rank] || r.rank + 'th'} of four. You graduate.`) : "Didn't finish this one.",
-                    body: (r.lines || []).slice(1).map(l => `<div style="display:flex; gap:12px; margin:4px 0;"><span style="color:#F5C518;">&mdash;</span><span>${l}</span></div>`).join(''),
+                    kicker: r.graduated ? 'Sailing School Complete' : 'The Race · Sailing School',
+                    title: r.graduated ? ({ 1: 'You won your first race!', 2: 'Second place — nice racing!', 3: 'Third place — you finished your first race!' }[r.rank] || 'First race finished!') : 'Race not finished.',
+                    body: (r.lines || []).slice(1).map(l => `<div style="display:flex; gap:12px; margin:4px 0;"><span style="color:#F5C518;">&mdash;</span><span>${l}</span></div>`).join('')
+                        + (r.graduated ? `<div style="margin-top:14px; color:#F5C518; font-weight:700;">That's sailing school. Welcome to the club!</div>` : ''),
                     media: (host) => S.resultsPreview(host), buttons: [{ label: 'Go to Clubhouse', primary: true, go: () => S.exit() }, { label: 'Race again', go: () => { S.start(4); S.screen('D'); } }, { label: 'Restart school', go: () => { S.start(1); S.screen('A'); } }] };
             }
         }
@@ -1949,22 +1955,24 @@ const School = {
         const ctx = cv.getContext('2d');
         const pal = (window.VenueDoc.get('pond') || {}).palette || {};
         ctx.fillStyle = pal.baseColor || '#2a7f8c'; ctx.fillRect(0, 0, W, H);
-        ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;
-        for (let i = 0; i < 10; i++) { const x = (i * 53 + 20) % W, y = (i * 37 + 15) % H; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 26, y); ctx.stroke(); }
         const y = 78;
         ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 4; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(300, y); ctx.stroke();
         ctx.fillStyle = '#fff'; ctx.font = "900 italic 14px 'Saira', 'Archivo', sans-serif"; ctx.textAlign = 'center'; ctx.fillText('START', 180, y - 10);
         const draw = (kind, x, yy, w) => { const sp = (typeof markSprite === 'function') && markSprite(kind); if (sp && sp.img && sp.img.naturalWidth) { const h = w * sp.img.naturalHeight / sp.img.naturalWidth; ctx.drawImage(sp.img, x - w / 2, yy - h / 2, w, h); } else { ctx.fillStyle = kind === 'coach' ? '#f97316' : '#f97316'; ctx.beginPath(); ctx.arc(x, yy, 10, 0, Math.PI * 2); ctx.fill(); } };
         draw('inflatable', 60, y, 22);
         draw('coach', 300, y, 60);
-        // the trainer below the line, bow up
-        ctx.save(); ctx.translate(150, 150);
-        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#1e2836'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(0, -22); ctx.quadraticCurveTo(12, -6, 10, 18); ctx.lineTo(-10, 18); ctx.quadraticCurveTo(-12, -6, 0, -22); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#F5C518'; ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(0, 14); ctx.quadraticCurveTo(22, 4, 0, -18); ctx.fill();
+        // The trainer below the line, bow up — the game's own boat renderer on a stand-in
+        // boat, so the picture is the boat they are about to sail.
+        const T = this.TRAINER;
+        const stand = { colors: { hull: T.hull, sail: T.sail, cockpit: T.cockpit, spinnaker: T.spinnaker, spinAccent: T.spinnaker2 },
+                        spinPattern: T.spinPattern, sailAngle: 0.35, boomSide: 1, luffIntensity: 0, kiteLuff: 0,
+                        telltalePhase: 0, telltaleTime: 0, spinnaker: false, spinnakerDeployProgress: 0,
+                        isPlayer: true, heading: 0, apparentWind: { speed: 0, direction: 0 }, opacity: 1 };
+        ctx.save(); ctx.translate(150, 135); ctx.scale(0.55, 0.55);   // about half the launch, as on the water
+        if (typeof drawBoat === 'function') { try { drawBoat(ctx, stand); } catch (e) {} }
         ctx.restore();
         ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = "700 12px 'Archivo', sans-serif"; ctx.textAlign = 'center';
-        ctx.fillText('wait below the line, cross when the clock hits 0:00', 180, 190);
+        ctx.fillText('Cross the start line when the clock reaches 0:00', 180, 190);
     },
     // The race-day board's course chart — the same renderer, in the screen's own box.
     courseChartPreview(host, w, h) {

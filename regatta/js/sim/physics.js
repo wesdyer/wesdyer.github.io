@@ -1469,7 +1469,7 @@ function updateBoatRaceState(boat, dt) {
                         // cleared, and a boat correctly returning was flagged OCS.
                         if (crossingDir === requiredDirection) {
                             boat.raceState.ocs = true;
-                            if (boat.isPlayer) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
+                            if (boat.isPlayer) showRaceMessage("OVER EARLY - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
                         } else {
                             boat.raceState.ocs = false;
                             if (boat.isPlayer) hideRaceMessage();

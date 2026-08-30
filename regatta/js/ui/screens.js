@@ -124,6 +124,8 @@ const UI = {
     resumeHelp: document.getElementById('resume-help'),
     resumeButton: document.getElementById('resume-button'),
     restartButton: document.getElementById('restart-button'),
+    skipButton: document.getElementById('skip-button'),
+    abandonLabel: document.getElementById('abandon-label'),
     settingsButton: document.getElementById('settings-button'),
     closeSettings: document.getElementById('close-settings'),
     saveSettings: document.getElementById('save-settings'),
@@ -2043,6 +2045,11 @@ function togglePause(show) {
     if (shouldPause) {
         state.paused = true;
         if (UI.pauseContext) UI.pauseContext.innerHTML = raceContextLine();
+        // Sailing School wears the menu differently: a Skip to the next section (not on the
+        // last one), and the red row leaves the school rather than abandoning a race.
+        const school = !!(window.School && School.active);
+        if (UI.skipButton) UI.skipButton.classList.toggle('hidden', !(school && School.canSkip()));
+        if (UI.abandonLabel) UI.abandonLabel.textContent = school ? 'LEAVE SCHOOL' : 'ABANDON RACE';
         if (UI.pauseScreen) UI.pauseScreen.classList.remove('hidden');
         if (UI.helpScreen) UI.helpScreen.classList.add('hidden');
         if (UI.settingsScreen) UI.settingsScreen.classList.add('hidden');
@@ -2134,7 +2141,8 @@ if (UI.resumeButton) UI.resumeButton.addEventListener('click', (e) => { e.preven
 // dumps you on the pre-race board.
 // In Sailing School, Restart is the whole tutorial from its intro screen.
 if (UI.restartButton) UI.restartButton.addEventListener('click', (e) => { e.preventDefault(); if (window.School && School.active) { togglePause(false); School.begin(); } else rematchRace(); });
-if (UI.abandonButton) UI.abandonButton.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(true); UI.abandonButton.blur(); });
+if (UI.abandonButton) UI.abandonButton.addEventListener('click', (e) => { e.preventDefault(); UI.abandonButton.blur(); if (window.School && School.active) { togglePause(false); School.exit(); } else toggleAbandon(true); });
+if (UI.skipButton) UI.skipButton.addEventListener('click', (e) => { e.preventDefault(); UI.skipButton.blur(); if (window.School && School.active) { togglePause(false); School.skip(); } });
 if (UI.abandonKeep) UI.abandonKeep.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(false); togglePause(false); });
 if (UI.abandonConfirm) UI.abandonConfirm.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(false); restartRace(); });
 if (UI.settingsButton) UI.settingsButton.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); UI.settingsButton.blur(); });

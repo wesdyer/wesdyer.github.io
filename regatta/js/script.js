@@ -141,7 +141,7 @@ function update(dt) {
                         if (over !== !!b.raceState.ocs) {
                             b.raceState.ocs = over;
                             if (b.isPlayer) {
-                                if (over) showRaceMessage("OCS - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
+                                if (over) showRaceMessage("OVER EARLY - RETURN TO PRE-START!", "text-red-500", "border-red-500/50");
                                 else hideRaceMessage();
                             }
                         }
