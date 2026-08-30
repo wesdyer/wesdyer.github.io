@@ -1,0 +1,42 @@
+{
+  "bay": {
+    "hash": "51fd317aa521c763",
+    "frozen": "2026-08-25"
+  },
+  "arctic": {
+    "hash": "806767c7271f9663",
+    "frozen": "2026-08-25"
+  },
+  "seatrials": {
+    "hash": "3ed01bfea3320ee7",
+    "frozen": "2026-08-15"
+  },
+  "ocean": {
+    "hash": "5ef03408e4b23864",
+    "frozen": "2026-08-25"
+  },
+  "river": {
+    "hash": "6bda96afc236e1dd",
+    "frozen": "2026-08-25"
+  },
+  "redrock": {
+    "hash": "3e91c7483baf8617",
+    "frozen": "2026-08-29"
+  },
+  "lake": {
+    "hash": "981a075538517a81",
+    "frozen": "2026-08-25"
+  },
+  "lagoon": {
+    "hash": "98fb18366b5eaf71",
+    "frozen": "2026-08-25"
+  },
+  "swamp": {
+    "hash": "1765db68520e6362",
+    "frozen": "2026-08-10"
+  },
+  "glowtide": {
+    "hash": "10ccf3df50ffd918",
+    "frozen": "2026-08-29"
+  }
+}
