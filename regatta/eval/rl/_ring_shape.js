@@ -54,10 +54,14 @@ function shape(S, g) {
     const toExit = exv ? (cx * exv[0] + cy * exv[1]) / exl : null;
     // approach line offset from the mark: perpendicular distance from the mark to the line through S[0] along h0
     const ox = S[0].x - g.x, oy = S[0].y - g.y; const lineOff = Math.abs(-(ox) * ay + oy * ax);
+    // approach class at window open: |TWA| of the hull, and where the mark bears relative to the heading
+    const twaOpen = S[0].w != null ? Math.abs(nm(S[0].h - S[0].w)) * 180 / Math.PI : null;
+    const brgMark = Math.atan2(-ox, oy);                 // heading-convention bearing from the boat to the mark
+    const relMark = nm(brgMark - h0) * 180 / Math.PI * sgn;   // + = mark on the required side of the bow
     return { minR: rr[iMin], vMin: S[iMin].v, vOpen: S[0].v, vTurnMin: Math.min(...S.slice(a, b + 1).map(s => s.v)),
              R: Rfit, cDist: Math.hypot(cx, cy), cAlong: along, cAbeam: abeam * sgn, cToExit: toExit,
              hdgChange: Math.abs(nm(S[b].h - S[a].h)) * 180 / Math.PI, turnDur: S[b].t - S[a].t,
-             trMax: Math.max(...tr.slice(a, b + 1).map(Math.abs)), lineOff, span: S[S.length - 1].t - S[0].t };
+             trMax: Math.max(...tr.slice(a, b + 1).map(Math.abs)), lineOff, twaOpen, relMark, span: S[S.length - 1].t - S[0].t };
 }
 
 (async () => {
@@ -90,7 +94,7 @@ function shape(S, g) {
                 if (!opened) { if (leg === g.leg && d < g.zone * 2) opened = true; else continue; }
                 if (leg > g.leg) adv = true;
                 if (leg > g.leg + 1 || (adv && d > g.zone * 2)) break;
-                S.push({ t: gi(s, 't'), x: gi(s, 'x'), y: gi(s, 'y'), h: gi(s, 'hdg'), v: gi(s, 'spd') * 60 });   // recorder stores boat.speed (u/frame) → u/s
+                S.push({ t: gi(s, 't'), x: gi(s, 'x'), y: gi(s, 'y'), h: gi(s, 'hdg'), v: gi(s, 'spd') * 60, w: gi(s, 'windDir') });   // recorder stores boat.speed (u/frame) → u/s
             }
             const sh = shape(S, g); if (sh) HIS.push({ ...sh, leg: g.leg, who: 'him', lap: f });
         }
@@ -125,7 +129,7 @@ function shape(S, g) {
                         if (rs.leg > g.leg) E.adv = true;
                         if (E.adv && d > g.zone * 2) { E.done = true; continue; }
                         const v = bo.velocity ? Math.hypot(bo.velocity.x, bo.velocity.y) * 60 : bo.speed * 60;
-                        E.S.push({ t, x: bo.x, y: bo.y, h: bo.heading, v });
+                        E.S.push({ t, x: bo.x, y: bo.y, h: bo.heading, v, w: getWindAt(bo.x, bo.y).direction });
                     }
                 }
                 if (state.race.timer > 895) break;
@@ -142,7 +146,7 @@ function shape(S, g) {
     fs.writeFileSync(path.join(__dirname, `_ring_shape_${VENUE}_${TREE}.json`), JSON.stringify({ VENUE, FP, GEO, HIS, FLEET }));
     const med = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y); return s[(s.length - 1) >> 1]; };
     const f0 = (v) => isFinite(v) ? v.toFixed(0) : '—';
-    const row = (lab, A) => `${lab.padEnd(14)} n=${String(A.length).padStart(3)} | centre dist ${f0(med(A.map(x => x.cDist)))}  along ${f0(med(A.map(x => x.cAlong)))}  abeam(req side +) ${f0(med(A.map(x => x.cAbeam)))}  toward-exit ${f0(med(A.map(x => x.cToExit)))} | R ${f0(med(A.map(x => x.R)))}  minR ${f0(med(A.map(x => x.minR)))}  lineOff ${f0(med(A.map(x => x.lineOff)))} | v open ${f0(med(A.map(x => x.vOpen)))}  v@min ${f0(med(A.map(x => x.vMin)))}  v turn-min ${f0(med(A.map(x => x.vTurnMin)))} | Δhdg ${f0(med(A.map(x => x.hdgChange)))}°  turn ${med(A.map(x => x.turnDur)).toFixed(1)} s  tr max ${med(A.map(x => x.trMax)).toFixed(2)} rad/s`;
+    const row = (lab, A) => `${lab.padEnd(14)} n=${String(A.length).padStart(3)} | centre dist ${f0(med(A.map(x => x.cDist)))}  along ${f0(med(A.map(x => x.cAlong)))}  abeam(req side +) ${f0(med(A.map(x => x.cAbeam)))}  toward-exit ${f0(med(A.map(x => x.cToExit)))} | R ${f0(med(A.map(x => x.R)))}  minR ${f0(med(A.map(x => x.minR)))}  lineOff ${f0(med(A.map(x => x.lineOff)))} | TWA@open ${f0(med(A.map(x => x.twaOpen)))}°  mark rel-brg ${f0(med(A.map(x => x.relMark)))}° | v open ${f0(med(A.map(x => x.vOpen)))}  v@min ${f0(med(A.map(x => x.vMin)))}  v turn-min ${f0(med(A.map(x => x.vTurnMin)))} | Δhdg ${f0(med(A.map(x => x.hdgChange)))}°  turn ${med(A.map(x => x.turnDur)).toFixed(1)} s  tr max ${med(A.map(x => x.trMax)).toFixed(2)} rad/s`;
     console.log(`\n=== ${VENUE.toUpperCase()} ROUNDING SHAPE (fp ${FP}; his laps ${new Set(HIS.map(h => h.lap)).size}, fleet ${FLEET.length}) — turn circle fitted over |turn rate| >= 0.35 rad/s; centre offsets in u from the mark ===`);
     for (const g of GEO) {
         console.log(`LEG ${g.leg} (${g.side}, zone ${g.zone})`);

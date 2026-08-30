@@ -16907,3 +16907,23 @@ admission rule). Owner items: the six new npm failures; the editor's 0.1 u
 save-rounding (item 1 above); river's land column 82.8→87.7/boat on the
 docs cut (lottery, fins 231/240 both); the earlier standing five (substrate,
 rudder, startStageDepth, swamp admission, test_controls).
+
+## P0 ADDENDUM (03:52) — THE APPROACH CLASS (`_ring_shape.js` +TWA@open, +mark
+## relative bearing at window open, 2z out; redrock, medians)
+| leg | kind | him: TWA@open / mark off the bow | leader: TWA@open / mark off the bow |
+|---|---|---|---|
+| 1 | windward (port) | 48° / **28°** | 38° / 5° |
+| 2 | leeward (port) | 169° / **12°** | 165° / 5° |
+| 3 | windward (stbd) | 39° / **25°** | 38° / 7° |
+| 4 | leeward (stbd) | 169° / **31°** | 169° / 8° |
+| 5 | windward (port) | 38° / **16°** | 38° / 25° |
+He arrives at two zones with the mark 12-31° off the bow on four of five legs
+— the offset line is laid BEFORE the zone, on the approach board (close-hauled
+on the beats, deep on the runs), not steered inside it; the leader arrives
+pointed within 5-8° of the mark on four of five. So half (a) of the corner is
+an APPROACH AIM (a wide layline / wide run-in on the required side, ~R_c off
+the mark), which lives in the DMC follower / strategic heading for the last
+two zones — not in the entrance hunt, which only starts at 2.1z where the
+window opens. Leg 5 is the exception both ways (his 16°, the leader's 25°) and
+the leg where HE enters "wrong-way" 100%: the approach geometry there is not
+the same problem. Owner: the daylight build should start from THIS table.
