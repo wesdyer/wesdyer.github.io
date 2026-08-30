@@ -31,6 +31,11 @@ VENUES = {
     "arctic":    ("steel navy and faceted ice blue-white", "penguin yellow, orca black"),
     "seatrials": ("plain honest blue", "one orange mark"),
     "flats":     ("warm amber-gold drying sandbars", "deep saturated slate-blue channel water, rust-red withy markers"),
+    # Added Aug 2026 with pond-boathouse. It was MISSING while pond-duckling and
+    # pond-coach-launch were generated, so those two got no venue clause at all --
+    # both carried their own colour argument inside the subject, which is why it was
+    # not noticed. A building has no such argument, hence the key.
+    "pond":      ("fresh meadow green, mown lawn right to the water's edge", "buttercup yellow -- training sails and ducklings"),
 }
 
 # The base style was written for top-down props and asserts flat two-tone shading. Portraits

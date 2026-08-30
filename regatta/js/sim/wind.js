@@ -1518,7 +1518,10 @@ function drawDisturbedAir(ctx) {
     const cullR2 = (Math.hypot(ctx.canvas.width, ctx.canvas.height) * 0.5 + DIRTYAIR_REACH + 40) ** 2;
 
     for (const boat of state.boats) {
-        if (boat.raceState.finished || !boat.turbulence) continue;
+        if (!boat.turbulence) continue;
+        // A fading boat's plume fades with it rather than switching off at the line.
+        const fade = boat.opacity === undefined ? 1 : boat.opacity;
+        if (fade <= 0.01) continue;
         const bdx = boat.x - camX, bdy = boat.y - camY;
         if (bdx * bdx + bdy * bdy > cullR2) continue;
 
@@ -1535,7 +1538,7 @@ function drawDisturbedAir(ctx) {
         const localW = getWindAt(boat.x, boat.y);
         const windDir = localW.direction;
         // No wind, no wind shadow: the plume fades out below ~3 kn and is gone in a calm.
-        const calm = Math.min(1, localW.speed / 3);
+        const calm = Math.min(1, localW.speed / 3) * fade;
         if (calm <= 0.02) continue;
         const wx = -Math.sin(windDir);
         const wy = Math.cos(windDir);
@@ -2071,7 +2074,9 @@ function drawParticles(ctx, layer) {
         for (const p of state.particles) {
             if (p.type === 'wake' || p.type === 'wake-wave' || p.type === 'mark-wake') {
                 if (!onScreen(p)) continue;
-                ctx.globalAlpha = p.alpha;
+                const bf = p.boat && p.boat.opacity !== undefined ? p.boat.opacity : 1;   // foam follows its boat's fade
+                if (bf <= 0.01) continue;
+                ctx.globalAlpha = p.alpha * bf;
                 const s = p.scaleVal || p.scale || 1.0;
                 ctx.beginPath(); ctx.arc(p.x, p.y, 3 * s, 0, Math.PI * 2); ctx.fill();
             }

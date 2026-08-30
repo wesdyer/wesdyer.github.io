@@ -335,7 +335,8 @@ const LAND_TYPES = [
     // with — so the picker went from a mid khaki to a deep leaf-litter brown, which is the
     // material.
     { kind: 'jungle',  label: 'Glowtide Jungle Floor', swatch: '#413715' },
-    { kind: 'reed',    label: 'Grass',   swatch: '#7aaa1d' },
+    { kind: 'reed',    label: 'Grass (marsh)', swatch: '#7aaa1d' },
+    { kind: 'lawn',    label: 'Lawn',    swatch: '#769e2e' },
     { kind: 'ice',     label: 'Ice',     swatch: '#e8edf5' },
     { kind: 'redrock', label: 'Redrock', swatch: '#c2703e' },
     // Redrock Reservoir's two new grounds, on the [VENUE] [TERRAIN] label convention so
@@ -1837,7 +1838,7 @@ function drawDriftingFloes() {
 // Sand at a glance. The schematic still gives it a solid outline where the game gives it a
 // gradient: here you are dragging vertices and you have to be able to see where they are.
 const KIND_FILL = {
-    granite: '#8d8d8d', karst: '#5d6068', redrock: '#c2703e', reed: '#7aaa1d', swampgrass: '#a09453',
+    granite: '#8d8d8d', karst: '#5d6068', redrock: '#c2703e', reed: '#7aaa1d', lawn: '#769e2e', swampgrass: '#a09453',
     isle: '#e8dcb1', ice: '#e8edf5', bank: '#6b7280', floe: 'rgba(125,211,252,0.55)',
     shoal: 'rgba(232,220,177,0.38)',
     // The painted water zones are translucent like the shoal — you can see the water
@@ -1904,7 +1905,7 @@ const KIND_FILL = {
     slickrock: '#e6ca9b', desertsand: '#dd9b67'
 };
 const KIND_EDGE = {
-    granite: '#c9c9c9', karst: '#aab0bb', redrock: '#8a4a26', reed: '#5c8438', swampgrass: '#7d7048',
+    granite: '#c9c9c9', karst: '#aab0bb', redrock: '#8a4a26', reed: '#5c8438', lawn: '#597a22', swampgrass: '#7d7048',
     isle: '#d4b483', ice: '#ffffff', bank: '#9ca3af', floe: 'rgba(224,242,254,0.7)',
     shoal: 'rgba(232,220,177,0.75)',
     shallows: 'rgba(56,189,248,0.8)', seagrass: 'rgba(122,160,120,0.9)',
@@ -2233,6 +2234,19 @@ function drawCourseLayer() {
             ctx.lineTo(p.x - r * 0.7, p.y + r * 1.3);
             ctx.lineTo(p.x - r * 0.95, p.y - r * 0.1);
             ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.2; ctx.stroke();
+        } else if (kind === 'coach') {
+            // The coach launch: the same hull silhouette in its safety-orange collar.
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath();
+            ctx.moveTo(p.x, p.y - r * 1.9);
+            ctx.lineTo(p.x + r * 0.95, p.y - r * 0.2);
+            ctx.lineTo(p.x + r * 0.8, p.y + r * 1.4);
+            ctx.lineTo(p.x - r * 0.8, p.y + r * 1.4);
+            ctx.lineTo(p.x - r * 0.95, p.y - r * 0.2);
+            ctx.closePath(); ctx.fill();
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(p.x - r * 0.45, p.y - r * 0.6, r * 0.9, r * 1.6);
             ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.2; ctx.stroke();
         } else if (kind === 'none') {
             // No buoy at all: a POSITION, not an object. Drawn as an empty ring so it can
@@ -3437,7 +3451,7 @@ function objRefresh() {
         act('+ Mark', () => $('btn-add-mark').click());
         const ml = dmarksOf().map((m, i) => row({
             i, on: sel.mark === i,
-            glyph: m.kind === 'can' ? '▣' : m.kind === 'none' ? '◌' : m.kind === 'committee' ? '⛴' : '●',
+            glyph: m.kind === 'can' ? '▣' : m.kind === 'none' ? '◌' : m.kind === 'committee' ? '⛴' : m.kind === 'coach' ? '🛥' : '●',
             name: markLabel(i), count: MARK_KIND_LABEL[m.kind] || 'buoy' })).join('')
             || '<div class="ob-empty">No marks yet.</div>';
         const ll = dlines().map((ln, i) => {
@@ -5098,6 +5112,7 @@ function info() {
         $('course-venue').textContent = doc.venue;
         $('course-start').value = doc.course.startTime != null ? doc.course.startTime : '';
         $('course-cutoff').value = doc.course.cutoff != null ? doc.course.cutoff : '';
+        $('course-fleet').value = doc.course.fleet != null ? doc.course.fleet : '';
     }
 
     // Distance and time. The straight-line figure from compile is the fallback the GAME
@@ -5279,7 +5294,7 @@ function deleteSelectedShape() {
 const MARK_KINDS = Object.keys(window.VenueDoc.MARK_KINDS);
 const MARK_KIND_TITLE = {};
 for (const k of MARK_KINDS) MARK_KIND_TITLE[k] = window.VenueDoc.MARK_KINDS[k].label;
-const MARK_KIND_LABEL = { inflatable: 'orange buoy', can: 'yellow can', committee: 'committee boat', none: 'no buoy' };
+const MARK_KIND_LABEL = { inflatable: 'orange buoy', can: 'yellow can', committee: 'committee boat', coach: 'coach boat', none: 'no buoy' };
 
 // A leg's readable name. Authored `name` wins; otherwise derive it from what the leg IS.
 // A leg is a USE of a mark or a gate, so its label names the thing plus what this use
@@ -8522,6 +8537,17 @@ const timeField = (id, key, lo, hi, what) => $(id).addEventListener('change', ()
 });
 timeField('course-start', 'startTime', 5, 600, 'Prestart');
 timeField('course-cutoff', 'cutoff', 30, 7200, 'Time limit');
+// Fleet size, counting the player: the game lays out and races this many, and every
+// fleet-shaped check (spawn spread, spawn on land) judges that fleet, not the club's ten.
+$('course-fleet').addEventListener('change', () => {
+    if (!doc) return;
+    const raw = $('course-fleet').value.trim();
+    if (!raw) { delete doc.course.fleet; afterEdit(true, 'fleet'); toast('Fleet back to the default ten'); return; }
+    const v = parseInt(raw, 10);
+    if (!isFinite(v) || v < 2 || v > 10) { toast('Fleet must be 2–10 boats', true); info(); return; }
+    doc.course.fleet = v;
+    afterEdit(true, 'fleet');
+});
 // The card copy LIVES IN THE FILE (`doc.card`) — name, tag, blurb, conditions,
 // hazards, exactly the strings the clubhouse shows. Blank means "not authored":
 // the field is deleted rather than saved empty, and the venue key stands in

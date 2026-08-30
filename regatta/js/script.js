@@ -354,7 +354,7 @@ function update(dt) {
                     const sdx = q.x - p.x, sdy = q.y - p.y;
                     const sl = Math.sqrt(sdx * sdx + sdy * sdy) || 1;
                     const off = (fxRand() - 0.5) * 2 * (8 + p.age * 8);
-                    createParticle(p.x + (-sdy / sl) * off, p.y + (sdx / sl) * off, 'wake', { scale: 0.7 + fxRand() * 0.9 });
+                    createParticle(p.x + (-sdy / sl) * off, p.y + (sdx / sl) * off, 'wake', { scale: 0.7 + fxRand() * 0.9, boat });   // tagged so the foam fades with its boat
                 }
             }
         }
@@ -622,13 +622,13 @@ function draw() {
     // nothing on an island rounding, so they are skipped there.
     // The First Sail is one boat alone on open water: no line, no gate, no course overlay.
     // The course exists (the school moves the player to it for the Start) but is not drawn.
-    const soloSail = window.School && School.active && School.s && School.s.kind === 'sail';
+    const soloSail = window.School && School.courseHidden();
     if (!soloSail) {
     drawActiveGateLine(ctx);
     // Ladder rungs measure progress up a windward leg and have no meaning on a
     // single island rounding. The start/finish line and the laylines do, so they
     // stay — skipping drawActiveGateLine took the start line with it.
-    if (state.course.type !== 'islandRound') drawLadderLines(ctx);
+    if (state.course.type !== 'islandRound' && !(window.School && School.startPractice())) drawLadderLines(ctx);
     drawLayLines(ctx);
     drawMarkZones(ctx);
     drawRoundingArrows(ctx);
@@ -763,6 +763,7 @@ function draw() {
             return { x: canvas.width/2 + rx*f, y: canvas.height/2 + ry*f, onScreen: t >= 1.0 };
         };
 
+        if (window.School && School.lesson()) School.drawEdgeIndicators(ctx, toScreen, rot);
         if (state.showNavAids && !(window.School && School.lesson())) {
             const leg = player.raceState.leg;
             const marks = state.course.marks;
@@ -1114,7 +1115,7 @@ function resetGame() {
     const available = AI_CONFIG.filter(c => c.name !== settings.character);
     if (school) {
         opponents.push(...School.classmateConfigs());   // three classmates, no rng
-    } else for (let i = 0; i < 9 && available.length > 0; i++) {
+    } else for (let i = 0; i < fleetOpponents() && available.length > 0; i++) {
         const idx = Math.floor(Math.random() * available.length);
         opponents.push(available[idx]);
         available.splice(idx, 1);
@@ -1190,6 +1191,16 @@ function snapCameraToStart() {
     const look = state.camera.mode === 'heading' ? canvas.height * CAM_LOOK_AHEAD : 0;
     state.camera.x = p.x + Math.sin(state.camera.rotation) * look;
     state.camera.y = p.y - Math.cos(state.camera.rotation) * look;
+}
+
+// HOW MANY BOATS RACE HERE: the document's `course.fleet` (2–10, counting the player),
+// else the club's ten. A small pond lays a 100 m line for four boats; the editor's checks
+// and the fleet it lays out behind the line both read this, so they judge the race that
+// will actually be sailed. Sailing School casts its own three classmates regardless.
+function fleetOpponents() {
+    const d = window.VenueDoc && window.VenueDoc.get(settings.venue);
+    const n = d && d.course && d.course.fleet;
+    return (n >= 2 && n <= 10) ? Math.round(n) - 1 : 9;
 }
 
 function restartRace() { resetGame(); togglePause(false); }

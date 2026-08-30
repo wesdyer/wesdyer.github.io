@@ -128,6 +128,9 @@ function drawWakes(ctx) {
     for (const boat of state.boats) {
         const trail = boat.wakeTrail;
         if (!trail || trail.length < 2) continue;
+        // A fading boat's wake fades with it (finish, and the school's section ends).
+        const fade = boat.opacity === undefined ? 1 : boat.opacity;
+        if (fade <= 0.01) continue;
         const dxv = boat.x - camX, dyv = boat.y - camY;
         if (dxv * dxv + dyv * dyv > viewR2) continue;
 
@@ -143,7 +146,7 @@ function drawWakes(ctx) {
                 const nx = -segDY / len, ny = segDX / len;
                 const wA = (9 + a.age * 6) * wScale * a.str;
                 const wB = (9 + b.age * 6) * wScale * b.str;
-                const alpha = Math.pow(1 - a.age / MAX_AGE, 1.25) * aScale * a.str;
+                const alpha = Math.pow(1 - a.age / MAX_AGE, 1.25) * aScale * a.str * fade;
                 if (alpha <= 0.01) continue;
                 ctx.fillStyle = `rgba(255,255,255,${alpha.toFixed(3)})`;
                 ctx.beginPath();

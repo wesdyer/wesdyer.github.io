@@ -18,7 +18,7 @@ const SCHOOL_PROGRESS_KEY = 'regatta_progress';
 
 const School = {
     active: false,
-    unit: 0,                 // 1 First Sail (open water) · 2 the pond, free sailing · 3 the Start · 4 the race
+    unit: 0,                 // 1 open water · 2 pond manoeuvring · 3 start practice · 4 the race
     venueKey: 'pond',
     controlsLocked: false,   // physics reads this: the helm is held during "feel the wind"
     kiteLocked: false,       // input.js reads this: SPACE does nothing until the downwind beat
@@ -30,7 +30,7 @@ const School = {
     // The assigned training dinghy: white hull, yellow training sail (venues.md §15). Not a
     // character — the picker is withheld until Lighthouse Cove. Baseline stats.
     TRAINER: { name: 'Trainer', creature: 'Training Dinghy', hull: '#FFFFFF', sail: '#F5C518',
-               spinnaker: '#22E05A', spinnaker2: '#FFFFFF', cockpit: '#C9CCD6', spinPattern: 'solid',
+               spinnaker: '#8FCBFF', spinnaker2: '#FFFFFF', cockpit: '#C9CCD6', spinPattern: 'fiverays',
                personality: 'A rented boat with a yellow sail.', beat: '', archetype: 'metronome', stats: {} },
 
     // The classmates (tutorial.md §8): all from the Starting Ten, none of the bullies. Each
@@ -41,7 +41,7 @@ const School = {
         { name: 'Wobble',   traits: { pinch: 8 * Math.PI / 180 } },      // pinches up the beat
         { name: 'Cheer',    traits: { kiteHold: 22 * Math.PI / 180 } },  // carries the kite too long
     ],
-    HANDICAP: -3,   // per performance stat, below the zero baseline (AI bonus removed too)
+    CLASSMATE_PACE: 0.9,   // classmates sail at 90% of the polar, everywhere, always
 
     // ── persistence: the graduated flag only (unlocks come later) ─────────────
     progress() {
@@ -64,6 +64,16 @@ const School = {
         }
         this.active = true;
         this.unit = unit;
+        this._fade = null; this._handoff = null;   // a Skip/Restart mid-fade must not fire the old section's callback
+        // Collisions arrive as race events; chain onto whatever telemetry has installed.
+        if (!this._evWrapped) {
+            this._evWrapped = true;
+            const prev = window.onRaceEvent;
+            window.onRaceEvent = (ty, d) => {
+                if (typeof prev === 'function') prev(ty, d);
+                if (this.active && this.s && d && d.boat && d.boat.isPlayer && /^collision_(boat|mark|island|traffic)$/.test(ty)) this.s.collisionT = this.s.t;
+            };
+        }
         // The First Sail runs on the open-water twin of the pond (see registerOpenWater);
         // everything from unit 2 on is the pond itself, lawn and all.
         settings.venue = unit === 1 ? 'pond-open' : this.venueKey;
@@ -72,11 +82,17 @@ const School = {
         // the rose — so the school runs with both, whatever the player has set.
         if (this._saved && this._saved.hudMode === undefined) this._saved.hudMode = settings.hudMode;
         settings.hudMode = 'both';
+        // Heading camera throughout: the lessons put the boat low in frame and their goals
+        // at the screen's edge, which only means something with the bow pointing up.
+        if (this._saved && this._saved.cameraMode === undefined) this._saved.cameraMode = settings.cameraMode;
+        settings.cameraMode = 'heading';
+        state.camera.mode = 'heading';
         saveSettings();                      // resetGame() re-reads settings from storage first
         if (typeof applyHudMode === 'function') applyHudMode();
 
         state.showNavAids = true;
         this.s = null;                       // per-unit script state
+        this._waterBounds = null;
         this.log = this.log || [];
         this.hideDebrief();
         this.ensureDom();
@@ -94,7 +110,7 @@ const School = {
             state.course.cutoff = 1e9;       // no clock on a lesson
             if (unit === 1) this.beginFirstSail();
             else if (unit === 2) this.beginPond();
-            else this.beginStart();
+            else this.beginStartPractice();
         }
         // resetGame() reopens the clubhouse; the school has zero screens between the click
         // and the water.
@@ -110,13 +126,17 @@ const School = {
         const sv = this._saved || {};
         this.active = false;
         this.unit = 0;
-        this.s = null;
+        this.s = null; this._fade = null; this._handoff = null;
         this.hideCard();
         this.hideDebrief();
+        if (this._dom) this._dom.screen.style.display = 'none';
+        if (this._simHeld) { this._simHeld = false; state.paused = false; }
         this.showFrame(false);
         this.setControls(true); this.setHud(true); this.setPanel(true); this.goal(null);
         this.windScale = null; this.highlight = null;
         settings.hudMode = sv.hudMode || 'boat';
+        settings.cameraMode = sv.cameraMode || 'heading';
+        state.camera.mode = settings.cameraMode;
         if (typeof applyHudMode === 'function') applyHudMode();
         settings.venue = nextVenue || sv.venue || 'bay';
         settings.autoTrim = sv.autoTrim !== undefined ? sv.autoTrim : true;
@@ -130,9 +150,49 @@ const School = {
         if (window.__styleSchoolBtn) window.__styleSchoolBtn();
     },
 
+    // The pond's WATER, as a box: sampled once per section from the document's arena and the
+    // land mask, so the chart on the pond frames the whole pond and no more.
+    minimapBounds() {
+        if (!this.s || this.s.kind !== 'pond') return null;
+        if (this._waterBounds) return this._waterBounds;
+        try {
+            const doc = window.VenueDoc.get(this.venueKey);
+            const b = doc ? window.VenueDoc.compile(doc, { light: true }).boundary : state.course.boundary;
+            if (!b) return null;
+            const e = Arena.extent(b);
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            const N = 60;
+            for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) {
+                const x = e.minX + (e.maxX - e.minX) * i / N, y = e.minY + (e.maxY - e.minY) * j / N;
+                if (!Arena.contains(b, x, y, 0)) continue;
+                if (typeof inMaskWater === 'function' && !inMaskWater(x, y)) continue;
+                minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+            }
+            if (!isFinite(minX)) return null;
+            this._waterBounds = { minX, maxX, minY, maxY };
+            return this._waterBounds;
+        } catch (e) { return null; }
+    },
+    // The practice start shows the start line and nothing else of the course: not the
+    // windward gate, not the ladder rungs to it.
+    startPractice() { return this.active && !!this.s && this.s.kind === 'pond' && this.s.phase === 'start'; },
+    hideMark(m) {
+        if (!this.startPractice() || !state.course.marks) return false;
+        const sl = (typeof startLineMarks === 'function') ? startLineMarks() : [0, 1];
+        const i = state.course.marks.indexOf(m);
+        return i >= 0 && sl.indexOf(i) === -1;
+    },
+    // The section's name, as its screen's kicker gives it.
+    sectionName() { return ({ 1: 'Sailing School', 2: 'The Pond', 3: 'Start Practice', 4: 'The Race' })[this.unit] || 'Sailing School'; },
     // A lesson (units 1 and 2) as opposed to the graduation race: the HUD hides its race
     // furniture — clock, leaderboard, caption, course edge indicators — while this is true.
     lesson() { return this.active && !!this.s && this.s.kind !== 'race'; },
+    // Sections 1 and 2 have no course: no line, no marks, no gate, no committee boat, no
+    // laylines, no chart. The course exists (the race is built from it) but is not drawn.
+    courseHidden() {
+        if (this._previewHideCourse != null) return !!this._previewHideCourse;
+        return this.active && !!this.s && (this.s.kind === 'sail' || (this.s.kind === 'pond' && !this.s.showCourse));
+    },
 
     // resetGame() asks these.
     playerConfig() { return this.TRAINER; },
@@ -146,10 +206,12 @@ const School = {
     },
     onFleetBuilt() {
         // Handicap, don't zero (tutorial.md §8): a baseline-competent boat beats a
-        // five-minute-old sailor. Below zero on every performance stat, AI bonus gone.
+        // five-minute-old sailor. Baseline stats (the AI bonus gone) and a flat 10% off the
+        // pace at every angle — a slower boat, not a differently shaped one.
         for (const b of state.boats) {
             if (b.isPlayer) { b.manualTrim = false; continue; }
-            for (const k of BONUS_STATS) b.stats[k] = this.HANDICAP;
+            for (const k of BONUS_STATS) b.stats[k] = 0;
+            b.speedScale = this.CLASSMATE_PACE;
         }
     },
 
@@ -268,12 +330,18 @@ const School = {
         s.beamBearing = bearing;
         s.duckMode = 'beam';
         const T = this.beamTarget();
-        s.ducks = [];
-        for (let i = 0; i < 5; i++) {
-            const back = -Math.sin(s.beamBearing) * i * 24, backY = Math.cos(s.beamBearing) * i * 24;
-            s.ducks.push({ x: T.x + back, y: T.y + backY, h: s.beamBearing });
+        if (!s.ducks || !s.ducks.length) {
+            s.ducks = [];
+            for (let i = 0; i < 5; i++) {
+                const back = -Math.sin(s.beamBearing) * i * 24, backY = Math.cos(s.beamBearing) * i * 24;
+                s.ducks.push({ x: T.x + back, y: T.y + backY, h: s.beamBearing });
+            }
+            s.duckLead = { x: T.x, y: T.y };
+        } else {
+            // The flock is already on the water: the lead swims to the new station (see
+            // updateCompanions), and the line follows.
+            s.duckLead = { x: s.ducks[0].x, y: s.ducks[0].y };
         }
-        s.duckLead = { x: T.x, y: T.y };
     },
     // UPWIND, THE SAME IDEA: the ducklings stand dead upwind at the screen's edge, but their
     // along-wind station only ever comes DOWN toward the player — sail downwind or sideways
@@ -286,10 +354,93 @@ const School = {
         const T = this.edgeTarget(this.wd());
         s.upAlong = (T.x - p.x) * U.x + (T.y - p.y) * U.y;       // the ducks' lead over the player, along the wind
         s.upGap = s.upAlong;
-        s.ducks = [];
-        for (let i = 0; i < 5; i++) s.ducks.push({ x: T.x - U.x * i * 24, y: T.y - U.y * i * 24, h: this.wd() });
-        s.duckLead = { x: T.x, y: T.y };
+        if (!s.ducks || !s.ducks.length) {
+            s.ducks = [];
+            for (let i = 0; i < 5; i++) s.ducks.push({ x: T.x - U.x * i * 24, y: T.y - U.y * i * 24, h: this.wd() });
+            s.duckLead = { x: T.x, y: T.y };
+        } else {
+            s.duckLead = { x: s.ducks[0].x, y: s.ducks[0].y };   // swim there from wherever they are
+        }
         s.upBase = { x: p.x, y: p.y };                           // the along-wind origin
+    },
+    // "Reached": the nearest duckling is within a boat length (56u) — and the beat moves on
+    // before the hull can get to them, so they are never run over.
+    ducksReached() {
+        const s = this.s, p = state.boats[0];
+        if (!s || !s.ducks || !s.ducks.length) return false;
+        let best = Infinity;
+        for (const d of s.ducks) best = Math.min(best, this.dist(p, d));
+        return best < 56;
+    },
+    // Move a point toward a target at a capped speed (units/s): ducklings SWIM to a new
+    // station, across the screen, rather than appearing there.
+    swim(pt, target, speed, dt) {
+        const dx = target.x - pt.x, dy = target.y - pt.y, d = Math.hypot(dx, dy);
+        if (d < 1e-3) return false;
+        const step = Math.min(d, speed * dt);
+        pt.x += dx / d * step; pt.y += dy / d * step;
+        return d > step;
+    },
+    DUCK_SWIM: 300,          // units/s, a duckling crossing the screen for a new station
+    DUCK_APPROACH: 150,      // units/s, a duckling coming to meet a boat pointed at it
+
+    // ── THE S: five ducklings to reach, laid out in an S off the beam. Each holds station
+    // unless the boat points at it — then it swims toward the boat. Reached, it swims to the
+    // front of the line (the next bend of the S), and the queue moves on.
+    spawnSnakeDucks() {
+        const s = this.s, p = state.boats[0], w = this.wd();
+        const a = normalizeAngle(w + Math.PI / 2), b = normalizeAngle(w - Math.PI / 2);
+        const bearing = Math.abs(normalizeAngle(p.heading - a)) <= Math.abs(normalizeAngle(p.heading - b)) ? a : b;
+        const dir = { x: Math.sin(bearing), y: -Math.cos(bearing) };   // along the beam
+        const U = this.U();
+        s.duckMode = 'snake';
+        s.snake = { anchor: { x: p.x, y: p.y }, frozen: false, dir, U, count: 0, nextK: 6 };
+        s.ducks = [];
+        for (let k = 1; k <= 5; k++) {
+            const st = this.snakeStation(k);
+            s.ducks.push({ x: st.x, y: st.y, h: bearing, k, station: st });
+        }
+    },
+    // Stations are offsets from an ANCHOR along the beam bearing chosen at the start. While
+    // the boat points elsewhere the anchor is RIGIDLY attached to the boat at whatever offset
+    // it currently has — the S moves with the boat and never drifts away from it. The moment
+    // the boat points at the next duckling (within 10°) the anchor freezes where it is, so the
+    // S holds in the water and the boat sails up to it; a reached duckling swims to the far end
+    // of the line while the rest stay put. The S: ±90u across for 200u along, ~24° off the
+    // beam — still well clear of a beat.
+    snakeStation(k) {
+        const n = this.s.snake;
+        const along = 200 + k * 200, across = (k % 2 ? 1 : -1) * 90;
+        return { x: n.anchor.x + n.dir.x * along + n.U.x * across, y: n.anchor.y + n.dir.y * along + n.U.y * across };
+    },
+    tickSnake(s) {
+        const p = state.boats[0], n = s.snake, head = s.ducks[0];
+        if (!head) return;
+        if (this.dist(p, head) < 56) {
+            n.count++;
+            head.k = n.nextK++; head.station = this.snakeStation(head.k);
+            s.ducks.push(s.ducks.shift());                       // to the back of the queue, front of the line
+            this.goal(`Follow the ducklings · ${Math.min(5, n.count)} of 5`);
+        }
+    },
+    updateSnake(dt) {
+        const s = this.s, p = state.boats[0], n = s.snake, head = s.ducks[0];
+        if (!head) return;
+        const bearing = Math.atan2(head.x - p.x, -(head.y - p.y));
+        const aimed = Math.abs(normalizeAngle(p.heading - bearing)) < 10 * Math.PI / 180;
+        if (aimed) {
+            n.frozen = true;                                                     // hold where it is; sail up to it
+        } else {
+            if (n.frozen || !n.off) { n.frozen = false; n.off = { x: n.anchor.x - p.x, y: n.anchor.y - p.y }; }
+            n.anchor.x = p.x + n.off.x; n.anchor.y = p.y + n.off.y;              // carried along, offset unchanged
+        }
+        for (const d of s.ducks) {
+            d.station = this.snakeStation(d.k);
+            const before = { x: d.x, y: d.y };
+            const moving = this.swim(d, d.station, this.DUCK_SWIM, dt);
+            if (moving) d.h = this.headingOf(d.x - before.x, d.y - before.y);
+            else d.h = normalizeAngle(Math.atan2(d.x - p.x, -(d.y - p.y)));   // holding: facing away from the boat
+        }
     },
     tickUpwind(s, r) {
         const up = s.up, p = r.p;
@@ -406,80 +557,41 @@ const School = {
         const TWA_PILL = '#hud-wind-angle', TWS_PILL = '#hud-wind-speed', SOG = '#hud-speed';
         const WIND_ARROW = '#hud-wind-arrow > div';   // the blue triangle itself, not its full-dial rotor
         return [
-            { id: 'welcome', timeout: Infinity,
-              enter: (s) => { armEnter(s); S.highlight = null; },
-              lines: [{ t: 0.3, text: 'Welcome to sailing school!' }],
-              goal: ENTER, done: enterAfter(1.5) },
             { id: 'boat', timeout: Infinity,
               enter: (s) => { armEnter(s); S.highlight = { world: (p) => ({ x: p.x, y: p.y, r: 70 }) }; },
-              lines: [{ t: 0, text: 'This is your boat. It will stay here in the center of the screen.' }],
-              goal: ENTER, done: enterAfter(1.5) },
+              lines: [{ t: 0, text: 'This is your boat.' }],
+              goal: ENTER, done: enterAfter(0) },
             { id: 'wind', timeout: Infinity,
-              enter: (s) => { armEnter(s); S.highlight = null; s.windIndicator = true; S.windRamp(5, 4); },
-              lines: [{ t: 0, text: 'Here comes the wind from the left. Notice the wind comets showing the wind direction and speed.' }],
-              goal: ENTER, done: enterAfter(2.5) },
-            { id: 'wake', timeout: Infinity,
-              enter: (s) => { armEnter(s); s.windIndicator = false; S.highlight = { world: (p) => ({ x: p.x - Math.sin(p.heading) * 55, y: p.y + Math.cos(p.heading) * 55, r: 48 }) }; },
-              lines: [{ t: 0, text: 'Your boat is picking up speed. When your boat is moving it has a wake.' }],
-              goal: ENTER, done: enterAfter(1.5) },
-            { id: 'air', timeout: Infinity,
-              enter: (s) => { armEnter(s); S.highlight = { world: (p) => S.dirtyAirCircle(p) }; },
-              lines: [{ t: 0, text: 'The air is disturbed downwind of your sails.' }],
-              goal: ENTER, done: enterAfter(1.5) },
-            { id: 'angle', timeout: Infinity,
-              enter: (s) => { armEnter(s); S.setPanel(true); S.highlight = { dom: () => [S.panelRect()].filter(Boolean) }; },
-              lines: [{ t: 0, text: 'The wind is blowing at 90 degrees to your boat. Just on the side.' }],
-              goal: ENTER, done: enterAfter(1.5) },
-            { id: 'twa', timeout: Infinity,
-              enter: (s) => { armEnter(s); S.setHud(true); S.highlight = { dom: rings(TWA_PILL, WIND_ARROW) }; },
-              lines: [{ t: 0, text: 'Your angle to the wind is also shown on your instruments.' }],
-              goal: ENTER, done: enterAfter(1.5) },
-            { id: 'tws', timeout: Infinity,
-              enter: (s) => { armEnter(s); S.highlight = { dom: rings(TWS_PILL) }; },
-              lines: [{ t: 0, text: 'Your instruments also tell you the wind speed.' }],
-              goal: ENTER, done: enterAfter(1.5) },
-            { id: 'sog', timeout: Infinity,
-              enter: (s) => { armEnter(s); S.highlight = { dom: rings(SOG) }; },
-              lines: [{ t: 0, text: 'You can see your boat speed.' }],
-              goal: ENTER, done: enterAfter(1.5) },
-            { id: 'build', timeout: Infinity,
-              enter: (s) => { armEnter(s); S.windRamp(7, 5); S.highlight = { dom: rings(TWS_PILL, SOG) }; },
-              lines: [{ t: 0, text: 'The wind is building, increasing its speed and your boat speed.' }],
-              goal: ENTER, done: enterAfter(3) },
-            { id: 'steer', timeout: Infinity,
-              enter: (s) => { S.highlight = null; S.setControls(true); S.kiteLocked = true; s.turnL = 0; s.turnR = 0; },
-              lines: [{ t: 0, text: 'Turn the boat with ' + S.K('&larr;') + '/' + S.K('&rarr;') + ' or ' + S.K('A') + '/' + S.K('D') + '.' }],
-              goal: 'Turn to the left and right.',
-              done: (s) => s.turnL >= Math.PI / 4 && s.turnR >= Math.PI / 4 },
-            { id: 'twa-turn', timeout: Infinity,
-              enter: (s) => { s.turnL = 0; s.turnR = 0; S.highlight = { dom: () => [S.panelRect()].filter(Boolean) }; },
-              lines: [{ t: 0, text: 'Notice that your angle to the wind changes as you turn.' }],
-              goal: 'Turn to the left and right.',
-              done: (s) => s.turnL >= Math.PI / 4 && s.turnR >= Math.PI / 4 },
-            { id: 'ducks', timeout: Infinity,
-              enter: (s) => { S.highlight = null; S.setHud(true); S.setPanel(true); S.spawnBeamDucks(); s.duckHoldOff = false; },
-              lines: [{ t: 0, text: 'Try sailing towards a goal.' }],
-              goal: 'Follow the ducklings',
-              done: (s) => s.ducks.length > 0 && S.dist(player(), s.ducks[0]) < 60,
+              enter: (s) => { armEnter(s); s.windIndicator = true; S.windRamp(7, 0.25); S.setPanel(true); S.highlight = { dom: () => [S.panelRect()].filter(Boolean) }; },
+              lines: [{ t: 0, text: "Wind streaks show which way it's blowing and how hard. The wind is coming from our side at 90 degrees." }],
+              goal: ENTER, done: enterAfter(0),
+              exit: (s) => { s.windIndicator = false; } },
+            { id: 'snake', timeout: Infinity,
+              enter: (s) => { S.highlight = null; S.setControls(true); S.kiteLocked = true; S.setPanel(true); S.spawnSnakeDucks(); },
+              lines: [{ t: 0, text: 'Steer with ' + S.K('&larr;') + ' / ' + S.K('&rarr;') + ' or ' + S.K('A') + ' / ' + S.K('D') + '.' },
+                      { t: 0.1, text: 'Follow those ducklings!' }],
+              goal: 'Follow the ducklings · 0 of 5',
+              tick: (s) => S.tickSnake(s),
+              done: (s) => s.snake && s.snake.count >= 5,
               exitLine: "That's a reach — wind on your side. Fastest, easiest point of sail." },
             { id: 'upwind', timeout: Infinity,
               enter: (s) => { S.spawnUpwindDucks(); s.up = { phase: 'sail', zoneT: 0, tacks0: s.tacks }; },
-              lines: [{ t: 0, text: 'Try sailing upwind.' }],
+              lines: [{ t: 0, text: "Now let's try sailing upwind. Follow the ducklings." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickUpwind(s, r),
-              done: (s) => s.upGap != null && s.upGap < 60 },
+              done: (s) => S.ducksReached() },
             { id: 'downwind', timeout: Infinity,
               enter: (s) => { s.coneOn = false; S.spawnDucksAt(normalizeAngle(S.wd() + Math.PI)); s.dw = { phase: 'sail' }; s.duckHoldOff = true; },
               lines: [{ t: 0, text: "Let's sail downwind." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickDownwind(s, r),
-              done: (s) => s.dw.phase === 'kite' && s.ducks.length > 0 && S.dist(player(), s.ducks[0]) < 60 },
+              done: (s) => s.dw.phase === 'kite' && S.ducksReached() },
             { id: 'closereach', timeout: Infinity,
               enter: (s) => { const side = S.playerRead().twa >= 0 ? 1 : -1; S.spawnDucksAt(normalizeAngle(S.wd() + side * 60 * Math.PI / 180)); s.cr = { phase: 'sail' }; s.duckHoldOff = true; },
               lines: [{ t: 0, text: 'Sail upwind again.' }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickCloseReach(s, r),
-              done: (s) => s.cr.phase === 'again' && s.ducks.length > 0 && S.dist(player(), s.ducks[0]) < 60 },
+              done: (s) => s.cr.phase === 'again' && S.ducksReached() },
         ];
     },
 
@@ -498,7 +610,8 @@ const School = {
         this.goal(null);
         this._lines = s.exitLine ? [s.exitLine] : []; this.renderLines();
         if (seg.enter) seg.enter(s);
-        this.goal(seg.goal || null);
+        s.goalShown = seg.goalAfter == null;
+        if (s.goalShown) this.goal(seg.goal || null);
     },
 
     updateFirstSail(dt) {
@@ -541,6 +654,7 @@ const School = {
                 this.say(lines[s.lineIdx].text);
             }
             if (s.exitLine && s.exitT > 3.5 && s.lineIdx < 0 && !this._goalOn) { s.exitLine = null; this.hideCard(); }
+            if (!s.goalShown && s.segT >= seg.goalAfter) { s.goalShown = true; this.goal(seg.goal || null); }
             if (seg.tick) seg.tick(s, r);
             if (seg.done(s, r)) { if (seg.exit) seg.exit(s); this.nextSegment(); }
             else if (s.segT >= seg.timeout) { s.byTimer = true; s.timerAdvances++; this.nextSegment(); }
@@ -551,37 +665,222 @@ const School = {
     },
 
     onFirstSailDone() {
-        this.say("That's the boat. Let's take it to the pond.");
-        this._handoff = 3.0;
+        this.start(2); this.screen('B');
     },
 
     // ── UNIT 2 · THE POND ─────────────────────────────────────────────────────
     // The pond proper, for the first time: land, marks, the launch at the line. Free sailing
     // for now — the lessons that live here are still being written.
+    // Four beats: explore (200 m of sailing), round a windward mark to starboard, go through
+    // a leeward gate and round it, then a practice start on the real line. The course stays
+    // hidden until the start; the mark and gate are the school's own buoys.
     beginPond() {
         const player = state.boats[0];
-        const C = state.course.marks;
-        const cx = (C[0].x + C[1].x) / 2, cy = (C[0].y + C[1].y) / 2;
-        const S = this.pt(cx, cy, -500, 300);                 // below the line, a little to one side
-        this.placeBoat(player, S, normalizeAngle(this.wd() + Math.PI / 2), 4);
+        const b = state.course.boundary || { x: 0, y: 0 };
+        const S = { x: b.x, y: b.y };                          // the middle of the pond
+        this.placeBoat(player, S, this.wd(), 0);              // head to wind, stopped: the first tip writes itself
         state.race.status = 'racing';
         state.race.timer = 0;
         snapCameraToStart();
-        this.s = { kind: 'pond', t: 0, ducks: [], launch: null, buoys: [], coneOn: false, highlight: null };
+        this.s = { kind: 'pond', phase: 'explore', t: 0, dist: 0, lastPos: { x: S.x, y: S.y },
+                   ducks: [], launch: null, buoys: [], coneOn: false, highlight: null, showCourse: false, said: {} };
         this.setControls(true); this.setHud(true); this.setPanel(true); this.goal(null);
         this.windScale = null; this.highlight = null;
-        this.say('Welcome to Duckling Pond. Have a sail around.');
+        this.s.phase = 'tasks'; this.s.taskIdx = -1; this.s.prevTarget = { x: S.x, y: S.y };
+        this.nextPondTask();
+    },
+    // THE COURSE LESSON: marks and gates in turn, each placed from the pond and the previous
+    // target (the very first "previous target" is where the boat began, so the first rounding
+    // reads the way a real leg would). A mark carries a rounding side; a gate is laid across
+    // the approach from the previous target, and is either ROUNDED (through, then round an end
+    // and come back) or THROUGH.
+    pondTasks() {
+        const S = this, C = () => state.course.boundary || state.boats[0], wd = () => S.wd();
+        return [
+            { kind: 'mark', side: 'port',
+              place: () => S.edgeTarget(normalizeAngle(wd() + Math.PI / 2)),
+              line: "Welcome to the Duckling Pond! Let's round a mark. Keep it on your LEFT side as you go around — that's a port rounding.",
+              goal: 'Round the mark to port' },
+            { kind: 'mark', side: 'starboard',
+              place: () => S.waterPoint(C(), wd(), 2400, 600, 250),
+              line: 'Now the mark at the top of the pond. This time keep it on your RIGHT side — a starboard rounding.',
+              goal: 'Round the mark to starboard' },
+            { kind: 'gate', mode: 'round', end: 'either', id: 'leeward',
+              place: () => S.waterPoint(C(), normalizeAngle(wd() + Math.PI), 2400, 600, 430),
+              line: 'Now the downwind gate. Go through it, round one of its marks, and head back upwind.',
+              goal: 'Round the gate' },
+            { kind: 'mark', side: 'starboard',
+              place: () => S.waterPoint(C(), normalizeAngle(wd() - Math.PI / 2), 2400, 600, 250),
+              line: 'Next, the mark on the left side of the pond. Keep it on your right.',
+              goal: 'Round the mark to starboard' },
+            { kind: 'mark', side: 'starboard',
+              place: () => ({ x: C().x, y: C().y }),
+              line: 'Now the mark in the middle of the pond. Keep it on your right.',
+              goal: 'Round the mark to starboard' },
+            { kind: 'gate', mode: 'through', id: 'leeward',
+              place: () => S.s.leewardGate || S.waterPoint(C(), normalizeAngle(wd() + Math.PI), 2400, 600, 430),
+              line: 'Last one: straight through the downwind gate.',
+              goal: 'Go through the gate' },
+        ];
+    },
+    nextPondTask() {
+        const s = this.s;
+        if (!s.tasks) s.tasks = this.pondTasks();
+        s.taskIdx++;
+        const T = s.tasks[s.taskIdx];
+        s.buoys = []; s.GL = s.GR = null;
+        if (!T) { this.fadeThen(() => { this.start(3); this.screen('C'); }); return; }
+        s.task = T;
+        if (T.kind === 'mark') {
+            const M = T.place(), p = state.boats[0];
+            s.W = M; s.buoys = [{ p: M, on: true, kind: 'inflatable', side: T.side }];
+            // THE RACE'S OWN ROUNDING RULE (physics roundingStep), fed the last goal as where
+            // the boat comes from and the next goal as where it goes: the required sweep is the
+            // taut string from one to the other round the mark, exactly as a race leg's is.
+            const N = s.tasks[s.taskIdx + 1];
+            s.nextA = N ? N.place() : { x: M.x - (M.x - s.prevTarget.x), y: M.y - (M.y - s.prevTarget.y) };
+            s.rm = { x: M.x, y: M.y, zone: 165, radius: 12, side: T.side };
+            s.rm.reqSweep = (typeof CoursePath !== 'undefined' && CoursePath.requiredSweepPts) ? CoursePath.requiredSweepPts(s.rm, s.prevTarget, s.nextA) : null;
+            s.track = { roundSweep: 0, roundArmed: false, roundBanked: false, roundRebased: false, roundEntryB: null,
+                        roundFrom: { x: p.x, y: p.y }, roundWrong: 0, _wrongRound: false, lastPos: { x: p.x, y: p.y } };
+            s.target = M;
+        } else {
+            const G = T.place();
+            if (T.id === 'leeward') s.leewardGate = G;
+            // Laid across the approach from the previous target: right-hand of travel.
+            const ax = G.x - s.prevTarget.x, ay = G.y - s.prevTarget.y, al = Math.hypot(ax, ay) || 1;
+            s.gateA = { x: ax / al, y: ay / al };
+            const rx = -s.gateA.y, ry = s.gateA.x;
+            s.gateRight = { x: rx, y: ry };
+            s.GL = { x: G.x - rx * 250, y: G.y - ry * 250 }; s.GR = { x: G.x + rx * 250, y: G.y + ry * 250 };
+            s.gateMid = G; s.gateCrossed = false;
+            const round = T.mode === 'round';
+            s.buoys = [{ p: s.GL, on: true, kind: 'can', side: round && T.end !== 'starboard' ? 'port' : null, noZone: !round },
+                       { p: s.GR, on: true, kind: 'can', side: round ? 'starboard' : null, noZone: !round }];
+            s.target = G;
+        }
+        this.instruct(T.line, T.goal);
+    },
+    // A point `want` units from `from` along a bearing, pulled back until it is on the water
+    // and inside the arena with a margin — the pond is small and has a lawn in it.
+    // `clear` is the water needed AROUND the point: a mark is rounded, so the whole turning
+    // circle must be sailable, not just the buoy's own pixel. Falls back to the pond's
+    // centre if nothing on that bearing from `from` has the room.
+    waterPoint(from, bearing, want, min, clear) {
+        const dx = Math.sin(bearing), dy = -Math.cos(bearing);
+        const ok = (x, y) => {
+            const b = state.course.boundary;
+            const ring = [[0, 0]]; const cr = clear || 220;
+            for (let k = 0; k < 8; k++) ring.push([Math.cos(k * Math.PI / 4) * cr, Math.sin(k * Math.PI / 4) * cr]);
+            for (const [ox, oy] of ring) {
+                if (b && !Arena.contains(b, x + ox, y + oy, 120)) return false;
+                if (typeof inMaskWater === 'function' && !inMaskWater(x + ox, y + oy)) return false;
+            }
+            return true;
+        };
+        for (let d = want; d >= (min || 300); d -= 50) {
+            const x = from.x + dx * d, y = from.y + dy * d;
+            if (ok(x, y)) return { x, y };
+        }
+        const c = state.course.boundary || from;
+        for (let d = want; d >= 0; d -= 50) {
+            const x = c.x + dx * d, y = c.y + dy * d;
+            if (ok(x, y)) return { x, y };
+        }
+        return { x: c.x, y: c.y };
     },
     updatePond(dt) {
-        this.s.t += dt;
+        const s = this.s, r = this.playerRead(), p = r.p, rs = p.raceState;
+        s.t += dt;
+        if (s.phase !== 'start') {
+            // The hidden course must not score anything: no legs, no finish, no OCS.
+            rs.leg = 0; rs.finished = false; rs.ocs = false;
+            this.updateReminders(dt, r, new Set(['zone', 'collide', 'hoist', 'douse']));
+        } else {
+            this.updateReminders(dt, r, new Set(['zone', 'collide', 'ocs', 'notstarted', 'douse']));
+        }
+
+        if (s.phase === 'tasks') {
+            const T = s.task; if (!T) return;
+            if (T.kind === 'mark') {
+                const res = (typeof roundingStep === 'function') ? roundingStep(p, s.track, s.rm, s.nextA) : { done: false };
+                s.track.lastPos = { x: p.x, y: p.y };
+                if (res.wrong) this.instruct(`Wrong way round — keep the mark on your ${T.side === 'starboard' ? 'RIGHT' : 'LEFT'} side as you go around it.`, T.goal);
+                if (res.done) { s.prevTarget = s.W; this.nextPondTask(); }
+            } else {
+                const A = s.gateA, mid = s.gateMid;
+                const perp = (p.x - mid.x) * A.x + (p.y - mid.y) * A.y;       // + = past the gate, along the approach
+                const along = (p.x - mid.x) * s.gateRight.x + (p.y - mid.y) * s.gateRight.y;
+                const forward = (p.velocity.x * A.x + p.velocity.y * A.y) > 0;
+                if (!s.gateCrossed && forward && hullCrossedLine(p, s.GL.x, s.GL.y, s.GR.x, s.GR.y)) {
+                    s.gateCrossed = true;
+                    if (T.mode === 'through') { s.prevTarget = mid; this.nextPondTask(); return; }
+                    this.instruct(T.end === 'starboard' ? 'Through the gate. Now round its right-hand mark and come back.' : 'Through the gate. Now round one of its marks and come back.', T.goal);
+                }
+                // Rounded: back on the entry side, having gone round the right end.
+                if (s.gateCrossed && perp < -40 && (T.end !== 'starboard' || along > 120)) {
+                    s.prevTarget = mid;
+                    this.nextPondTask();
+                }
+            }
+        } else if (s.phase === 'start') {
+            if (state.race.status === 'prestart') {
+                // Over the line before the gun (physics flags OCS on the crossing; the position
+                // test catches a boat that drifted over): say so until they are back behind it.
+                const [m0, m1] = startLinePts(); const cr = startCrossNormal();
+                const perp = (p.x - (m0.x + m1.x) / 2) * cr.x + (p.y - (m0.y + m1.y) / 2) * cr.y;
+                const over = rs.ocs || perp > -12;
+                if (over && s.startPhase !== 'over') { s.startPhase = 'over'; this.instruct("You haven't started yet.", 'Return to behind the start line'); }
+                else if (!over && s.startPhase === 'over') { s.startPhase = 'wait'; this.instruct("Let's practice starting a race. Stay behind the line until after the timer runs out.", 'Stay behind the line'); }
+            }
+            if (state.race.status === 'racing' && !s.said.gun) {
+                s.said.gun = true; s.ocsAtGun = !!rs.ocs; s.startPhase = 'go';
+                this.highlight = null;
+                this.instruct(s.ocsAtGun ? 'Over early! Get back behind the line, then cross it.' : "That's the gun. Cross the start line!", 'Cross the start line');
+            }
+            if (state.race.status === 'racing' && rs.leg >= 1 && !s.said.crossed) {
+                s.said.crossed = true;
+                const late = rs.startTimeDisplay || 0;
+                this._startNote = s.ocsAtGun ? 'Over early at the gun — but you got back and crossed. Wait for the clock next time.'
+                    : late > 5 ? `You crossed ${Math.round(late)} seconds after the gun. Closer next time.`
+                    : 'Right on time. That is a start.';
+                this.goal(null);
+                this.fadeThen(() => { this.start(4); this.screen('D'); });
+            }
+        }
+    },
+    // Section 3: the pond with the course shown, one boat, the document's prestart.
+    beginStartPractice() {
+        const player = state.boats[0];
+        this.s = { kind: 'pond', phase: 'start', t: 0, dist: 0, lastPos: { x: player.x, y: player.y },
+                   ducks: [], launch: null, buoys: [], coneOn: false, highlight: null, showCourse: true, said: {} };
+        this.setControls(true); this.setHud(true); this.setPanel(true); this.goal(null);
+        this.windScale = null; this.highlight = null;
+        this.beginPracticeStart();
+    },
+    beginPracticeStart() {
+        const s = this.s, player = state.boats[0], rs = player.raceState;
+        rs.leg = 0; rs.ocs = false; rs.finished = false; rs.startTimeDisplayTimer = 0;
+        const [m0, m1] = startLinePts();
+        const cross = startCrossNormal();
+        const lx = m1.x - m0.x, ly = m1.y - m0.y;
+        const P = { x: m0.x + lx * 0.25 - cross.x * 220, y: m0.y + ly * 0.25 - cross.y * 220 };
+        this.placeBoat(player, P, this.wd(), 0);              // stopped, head to wind: they have to make the start happen
+        state.race.status = 'prestart';
+        state.race.timer = state.race.startTimerDuration;      // the document's prestart (30 s on the pond)
+        hideRaceMessage();
+        snapCameraToStart();
+        const secs = Math.round(state.race.timer);
+        s.startPhase = 'wait';
+        this.highlight = { dom: () => [this.domRect(['#hud-timer'])].filter(Boolean) };
+        this.instruct("Let's practice starting a race. Stay behind the line until after the timer runs out.", 'Stay behind the line');
     },
 
     // ── UNIT 2 · THE START ────────────────────────────────────────────────────
     beginStart() {
         const player = state.boats[0];
         if (this.unit !== 3 || !this.s || this.s.kind !== 'start') {
-            this.s = { kind: 'start', run: 0, launch: { x: player.x, y: player.y, h: player.heading },
-                       ducks: this.makeDucks(player), duckMode: 'launch', t: 0, phase: 'setup', results: [] };
+            this.s = { kind: 'start', run: 0, launch: null, ducks: [], duckMode: 'hold', t: 0, phase: 'setup', results: [] };
         }
         this.startRun();
     },
@@ -653,16 +952,20 @@ const School = {
     beginRace() {
         this.setControls(true); this.setHud(true); this.setPanel(true); this.goal(null);
         this.windScale = null; this.highlight = null;
+        // THE RACE IS ON THE POND, whichever water the school was on when it was asked for —
+        // "skip to the race" from the open-water First Sail included.
+        settings.venue = this.venueKey;
         settings.penaltiesEnabled = true;
+        saveSettings();                      // resetGame() re-reads settings first
         resetGame();
         this.liftArena();
         const player = state.boats[0];
-        this.s = { kind: 'race', launch: { x: player.x, y: player.y, h: player.heading }, ducks: this.makeDucks(player),
-                   duckMode: 'launch', t: 0, coneOn: true, said: {}, ocsAtGun: false,
+        this.s = { kind: 'race', launch: null, ducks: [],
+                   duckMode: 'launch', t: 0, coneOn: false, said: {}, ocsAtGun: false,
                    pinchT: 0, beatT: 0, kiteUpwindT: 0, wrongWay: 0, finishRank: null };
-        beginRace();                         // the shipped prestart: leaderboard, clock, music
-        state.race.timer = state.race.startTimerDuration = 20;
-        this.say('Real start, real gun. Cone comes off when it fires.');
+        beginRace();                         // the shipped prestart: leaderboard, clock, music — and the
+                                             // document's own start sequence (course.startTime)
+        this.say('Real start, real gun.');
     },
 
     updateRace(dt) {
@@ -671,11 +974,15 @@ const School = {
         this.updateCompanions(dt, r);
 
         if (state.race.status === 'racing' && !s.said.gun) {
-            s.said.gun = true; s.coneOn = false;
+            s.said.gun = true;
             s.ocsAtGun = !!rs.ocs;
-            this.say(s.ocsAtGun ? 'Over early. Back below the line, then go.' : "Cone's gone. You've got it.");
+            s.gunT = s.t;
+            this.say(s.ocsAtGun ? 'Over early. Back below the line, then go.' : "That's the gun. You've got it.");
         }
-        if (state.race.status !== 'racing' || rs.finished) return;
+        if (rs.finished) return;
+        // Before the gun only the silent zone cone and the collision line watch; the rest
+        // are about the race itself.
+        this.updateReminders(dt, r, state.race.status === 'racing' ? undefined : new Set(['zone', 'collide']));
 
         // The rules, coached live off the same debounced verdict the overlay draws.
         const pairs = (typeof drawRulesOverlay === 'function' && drawRulesOverlay._pairs) || null;
@@ -694,42 +1001,144 @@ const School = {
             if (/10/.test(s.pendingRule)) this.say("They're on starboard. Steer behind them.");
             s.pendingRule = null;
         }
-        if (rs.penaltyTurnsOwed > 0 && !s.said.pen) { s.said.pen = true; this.say('You owe a 360. Spin one.'); }
         if (rs.penaltyTurnsOwed === 0 && s.said.pen && !s.said.penClear) { s.said.penClear = true; this.say('Clear. Carry on.'); }
 
         // What the debrief will say: measured, not guessed.
         const upwind = r.abs < 60 * Math.PI / 180;
         if (rs.leg === 1 && upwind) { s.beatT += dt; if (r.abs < 35 * Math.PI / 180) s.pinchT += dt; }
         if (r.kite && r.abs < 90 * Math.PI / 180) s.kiteUpwindT += dt;
-        if (rs.leg >= 2 && s.duckMode !== 'follow') s.duckMode = 'follow';
+
+    },
+
+    // ── REMINDERS, section 3. Each watches one condition; after it has held for `dwell`
+    // seconds the line is said (and repeated every `every` seconds while it still holds),
+    // and the box clears the moment the condition ends. Only one reminder speaks at a time.
+    // Listed in PRIORITY order: when several hold at once, the first ripe one speaks and the
+    // rest wait. The zone cone is silent and independent: it shows only after the boat has
+    // sat inside the no-sail zone (TWA < 38°) for `dwell` seconds, and drops when it leaves.
+    RACE_REMINDERS: [
+        { id: 'zone', dwell: 3, silent: true,
+          cond: (c) => c.r.abs < 38 * Math.PI / 180 },
+        { id: 'collide', dwell: 0, every: 8,
+          cond: (c) => c.s.collisionT != null && c.s.t - c.s.collisionT < 0.3,
+          text: () => 'Avoid hitting objects, it slows you down.' },
+        { id: 'penalty', dwell: 3, every: 10,
+          cond: (c) => c.rs.penaltyTurnsOwed > 0 && !c.penaltyProgress,
+          text: () => 'You have a penalty. Do a full 360° turn to clear it.' },
+        { id: 'ocs', dwell: 3, every: 10,
+          cond: (c) => c.rs.ocs && !c.headingBack,
+          text: () => 'You were over early. Turn around and go back behind the start line.' },
+        { id: 'douse', dwell: 3, every: 12,
+          cond: (c) => c.r.abs < 90 * Math.PI / 180 && c.p.spinnaker,
+          text: (c) => 'The spinnaker is not for upwind. Press ' + c.S.K('Space') + ' to douse it.' },
+        { id: 'notstarted', dwell: 5, every: 10,
+          cond: (c) => state.race.status === 'racing' && c.rs.leg === 0 && !c.rs.ocs,   // only once the gun has gone
+          text: () => 'The race has started. Cross the start line.' },
+        { id: 'pastgate', dwell: 3, every: 10,
+          cond: (c) => c.pastGate,
+          text: (c) => `You've gone past the ${c.targetName}. Turn back and sail between its two marks.` },
+        { id: 'hoist', dwell: 3, every: 12,
+          // Only once racing and not returning from OCS — a boat dipping back below the line
+          // is sailing downwind on purpose and does not want a kite.
+          cond: (c) => (c.unit !== 3 || c.rs.leg >= 1) && !c.rs.ocs && c.r.abs > 110 * Math.PI / 180 && !c.p.spinnaker,
+          text: (c) => 'Sailing downwind? Press ' + c.S.K('Space') + ' to raise your spinnaker.' },
+        { id: 'noprogress', dwell: 3, every: 10,
+          cond: (c) => c.rs.leg >= 1 && !c.rs.ocs && c.rs.penaltyTurnsOwed === 0 && !c.pastGate && c.wpDelta >= -0.02,
+          text: (c) => `Turn ${c.turnSide} — the ${c.targetName} is that way.` },
+    ],
+    updateReminders(dt, r, allow) {
+        const s = this.s, p = r.p, rs = p.raceState;
+        if (!s.rem) { s.rem = {}; s.wpLast = null; s.penRotLast = rs.penaltyRot || 0; }
+
+        // The facts every reminder reads, computed once.
+        const c = { S: this, r, p, rs, s, unit: this.unit };
+        const leg = rs.leg, entry = (typeof routeLeg === 'function') ? routeLeg(Math.min(leg, state.race.totalLegs)) : null;
+        c.targetName = entry && entry.role === 'windward' ? 'windward gate' : (entry && (entry.finish || entry.role === 'leeward')) ? 'finish line' : 'next mark';
+        // Progress toward the next waypoint: the distance's trend over the last second.
+        const wp = rs.nextWaypoint && rs.nextWaypoint.dist;
+        if (s.wpLast == null || wp == null) { c.wpDelta = -1; } else { c.wpDelta = (wp - s.wpLast) / Math.max(dt, 1e-3); }
+        s.wpLast = wp;
+        // Which way to turn for it.
+        if (rs.nextWaypoint) {
+            const rel = normalizeAngle(Math.atan2(rs.nextWaypoint.x - p.x, -(rs.nextWaypoint.y - p.y)) - p.heading);
+            c.turnSide = rel > 0 ? 'right' : 'left';
+        } else c.turnSide = 'around';
+        // Past the gate: beyond its line, on the far side, while the leg still wants it.
+        c.pastGate = false;
+        if (entry && entry.marks && leg >= 1 && leg <= state.race.totalLegs && state.course.marks) {
+            const m1 = state.course.marks[entry.marks[0]], m2 = state.course.marks[entry.marks[1]];
+            if (m1 && m2) {
+                const gdx = m2.x - m1.x, gdy = m2.y - m1.y, gl = Math.hypot(gdx, gdy) || 1;
+                const nx = (entry.dir >= 0 ? 1 : -1) * gdy / gl, ny = -(entry.dir >= 0 ? 1 : -1) * gdx / gl;
+                const d = (p.x - m1.x) * nx + (p.y - m1.y) * ny;
+                c.pastGate = d > 40;
+            }
+        }
+        // OCS: are they at least heading back toward the pre-start side?
+        if (rs.ocs && typeof startCrossNormal === 'function') {
+            const cr = startCrossNormal();
+            c.headingBack = (p.velocity.x * cr.x + p.velocity.y * cr.y) < -0.05;
+        } else c.headingBack = true;
+        // Penalty: is the turn under way?
+        const rot = rs.penaltyRot || 0;
+        c.penaltyProgress = Math.abs(rot - s.penRotLast) > 0.02;
+        s.penRotLast = rot;
+
+        let spoken = false;
+        for (const R of this.RACE_REMINDERS) {
+            if (allow && !allow.has(R.id)) continue;
+            const st = s.rem[R.id] || (s.rem[R.id] = { t: 0, said: -1e9, on: false });
+            const active = !!R.cond(c);
+            st.t = active ? st.t + dt : 0;
+            if (!active && st.on) {
+                st.on = false;
+                if (R.silent) s.coneOn = false; else if (s.remSpeaking === R.id) { this.tip(null); s.remSpeaking = null; }
+            }
+            if (!active || st.t < R.dwell) continue;
+            if (R.silent) { s.coneOn = true; st.on = true; continue; }
+            if (spoken) continue;                                // a higher-priority reminder holds the box
+            spoken = true;
+            if (s.t - st.said >= (R.every || 1e9) || !st.on) {
+                st.on = true; st.said = s.t;
+                if (s.remSpeaking && s.remSpeaking !== R.id) { const o = s.rem[s.remSpeaking]; if (o) o.on = false; }
+                s.remSpeaking = R.id;
+                this.tip(R.text(c));
+            }
+        }
     },
 
     onResults() {
         // The player's boat has faded: graduation. Ducklings fall in behind (already following).
         const s = this.s, player = state.boats[0];
-        const sorted = [...state.boats].sort((a, b) => {
-            const fa = a.raceState.finished && !a.raceState.resultStatus, fb = b.raceState.finished && !b.raceState.resultStatus;
-            if (fa !== fb) return fa ? -1 : 1;
-            if (fa) return a.raceState.finishTime - b.raceState.finishTime;
-            return getBoatProgress(b) - getBoatProgress(a);
-        });
+        const sorted = this.raceOrder();
         s.finishRank = sorted.indexOf(player) + 1;
         const graduated = player.raceState.finished && !player.raceState.resultStatus;
         if (graduated) this.saveProgress({ graduated: true, graduatedAt: new Date().toISOString(), rank: s.finishRank });
         console.log('[school] run', JSON.stringify({ log: this.log, race: { rank: s.finishRank, ocs: s.ocsAtGun, pinchT: +s.pinchT.toFixed(1), beatT: +s.beatT.toFixed(1), kiteUpwindT: +s.kiteUpwindT.toFixed(1), penalties: player.raceState.totalPenalties } }));
         this.hideCard();
-        this.showDebrief(graduated, s.finishRank, player);
+        this._lastRace = { graduated, rank: s.finishRank, player, sorted, lines: this.debriefLines(graduated, s.finishRank, player) };
+        this.fadeThen(() => this.screen('E'), 0);
     },
 
+    raceOrder() {
+        return [...state.boats].sort((a, b) => {
+            const fa = a.raceState.finished && !a.raceState.resultStatus, fb = b.raceState.finished && !b.raceState.resultStatus;
+            if (fa !== fb) return fa ? -1 : 1;
+            if (fa) return a.raceState.finishTime - b.raceState.finishTime;
+            return getBoatProgress(b) - getBoatProgress(a);
+        });
+    },
     debriefLines(graduated, rank, player) {
         const s = this.s, rs = player.raceState;
         const lines = [];
         if (!graduated) lines.push("Didn't finish this one. Everyone's first race is a mess.");
         else lines.push(rank === 1 ? 'Won it. Good.' : `${['', 'First', 'Second', 'Third', 'Fourth'][rank] || rank + 'th'} of four. That counts.`);
-        if (s.ocsAtGun) lines.push('Over early at the gun — you gave the fleet a head start.');
+        if (rs.leg === 0) lines.push('Never crossed the start line. The race starts when the clock hits zero.');
+        else if (s.ocsAtGun) lines.push('Over early at the gun — you gave the fleet a head start.');
         else lines.push(rs.startLegDuration != null && rs.startLegDuration > 5 ? `Started ${Math.round(rs.startLegDuration)} seconds late. Arrive at speed next time.` : 'Good start.');
         const pinchFrac = s.beatT > 5 ? s.pinchT / s.beatT : 0;
-        if (pinchFrac > 0.25) lines.push('You pinched on the beat. Err wide, never high.');
+        if (rs.leg === 0) lines.push('Be near the line, at speed, when the clock runs out.');
+        else if (pinchFrac > 0.25) lines.push('You pinched on the beat. Err wide, never high.');
         else if (s.kiteUpwindT > 6) lines.push('Kite came down late. When it shakes, drop it.');
         else if (rs.totalPenalties > 0) lines.push(`${rs.totalPenalties} penalty turn${rs.totalPenalties > 1 ? 's' : ''}. Red triangle means you give way.`);
         else lines.push('Clean beat, kite down in time. Nothing to fix.');
@@ -781,16 +1190,14 @@ const School = {
 
         // The ducklings: a chain following a leader point.
         let lead;
+        if (s.duckMode === 'snake') { this.updateSnake(dt); return; }
         if (s.duckMode === 'beam') {
             // Heading at them (within ~14°) and they stay put, so the boat closes; anywhere
             // else and they slide to keep station at the screen's edge on the beam.
             // `duckHoldOff`: a beat that still has something to teach before the ducks may be
             // reached (hoist the kite, drop it) keeps them at the edge even when aimed at.
             const aligned = !s.duckHoldOff && Math.abs(normalizeAngle(p.heading - s.beamBearing)) < 14 * Math.PI / 180;
-            if (!aligned) {
-                const T = this.beamTarget(), k = 1 - Math.pow(0.02, dt);
-                s.duckLead.x += (T.x - s.duckLead.x) * k; s.duckLead.y += (T.y - s.duckLead.y) * k;
-            }
+            if (!aligned) this.swim(s.duckLead, this.beamTarget(), this.DUCK_SWIM, dt);
             lead = s.duckLead;
             // Facing away from the boat, whether or not they are moving.
             for (const d of s.ducks) d.h = s.beamBearing;
@@ -805,9 +1212,8 @@ const School = {
             const tacked = s.up && (s.tacks - s.up.tacks0) >= 1;
             s.upAlong = tacked ? Math.min(s.upAlong, edgeAlong) : edgeAlong;
             s.upGap = s.upAlong - pu;
-            const k = 1 - Math.pow(0.02, dt);
             const goalX = s.upBase.x + U.x * s.upAlong + R.x * pr, goalY = s.upBase.y + U.y * s.upAlong + R.y * pr;
-            s.duckLead.x += (goalX - s.duckLead.x) * k; s.duckLead.y += (goalY - s.duckLead.y) * k;
+            this.swim(s.duckLead, { x: goalX, y: goalY }, this.DUCK_SWIM, dt);
             lead = s.duckLead;
             for (const d of s.ducks) d.h = this.wd();
         } else if (s.duckMode === 'hold') {
@@ -827,13 +1233,15 @@ const School = {
         } else {
             lead = s.ducks[0] ? { x: s.ducks[0].x, y: s.ducks[0].y } : { x: p.x, y: p.y };
         }
-        const dk = 1 - Math.pow(0.05, dt);
         const faceAway = s.duckMode === 'beam' || s.duckMode === 'upwind';
         let prev = lead;
         for (const d of s.ducks) {
-            const tx = prev.x, ty = prev.y;
-            const dx = tx - d.x, dy = ty - d.y, dd = Math.hypot(dx, dy);
-            if (dd > 22) { d.x += dx * dk; d.y += dy * dk; if (!faceAway) d.h = this.headingOf(dx, dy); }
+            const dx = prev.x - d.x, dy = prev.y - d.y, dd = Math.hypot(dx, dy);
+            if (dd > 22) {
+                const before = { x: d.x, y: d.y };
+                this.swim(d, { x: prev.x - dx / dd * 22, y: prev.y - dy / dd * 22 }, this.DUCK_SWIM * 1.15, dt);
+                if (!faceAway) d.h = this.headingOf(d.x - before.x, d.y - before.y);
+            }
             prev = d;
         }
     },
@@ -850,13 +1258,33 @@ const School = {
     },
 
     // ── per-frame ─────────────────────────────────────────────────────────────
+    // A SECTION ENDS THE WAY A RACE DOES: the boat fades out, the water sits empty for a
+    // beat, then the next screen comes up. `secs` is the fade (the race's own FINISH_FADE_SECS
+    // by default; 0 when the race has already faded the boat itself), and the beat is fixed.
+    // The helm is dropped and the card cleared so the boat just glides away.
+    fadeThen(fn, secs) {
+        const fade = secs == null ? FINISH_FADE_SECS : secs, beat = 0.7;
+        this._fade = { t: fade + beat, fade, beat, fn };
+        this.setControls(false); this.goal(null); this.tip(null); this.hideCard();
+    },
     update(dt) {
         if (!this.active || !this.s) return;
+        if (this._fade) {
+            const F = this._fade, p = state.boats[0];
+            F.t -= dt;
+            if (!p.raceState.finished) {
+                p.fadeTimer = Math.max(0, F.t - F.beat);
+                p.opacity = F.fade > 0 ? Math.max(0, Math.min(1, p.fadeTimer / F.fade)) : 0;
+            }
+            if (F.t <= 0) { this._fade = null; F.fn(); }
+            return;
+        }
         if (this._handoff != null) {
             this._handoff -= dt;
             if (this._handoff <= 0) {
                 this._handoff = null;
                 if (this.s.kind === 'sail') { this.unit = 2; this.start(2); }
+                else if (this.s.kind === 'pond') this.start(this.s.phase === 'start' ? 4 : 3);
                 else if (this.s.kind === 'start') { this.unit = 4; this.beginRace(); }
                 return;
             }
@@ -871,7 +1299,8 @@ const School = {
         // HUD furniture: no clock or leaderboard on a lesson; both back for the race.
         const lesson = this.s.kind !== 'race';
         // The clock is the whole lesson in unit 2; it means nothing on the First Sail.
-        if (UI.timer) UI.timer.style.visibility = (this.s.kind === 'sail' || this.s.kind === 'pond') ? 'hidden' : '';
+        const clockOff = this.s.kind === 'sail' || (this.s.kind === 'pond' && this.s.phase !== 'start');
+        if (UI.timer) UI.timer.style.visibility = clockOff ? 'hidden' : '';
         if (lesson && UI.leaderboard) UI.leaderboard.classList.add('hidden');
         if (UI.legInfo) UI.legInfo.parentElement.classList.toggle('hidden', lesson);
         // The minimap is a picture of the course; the First Sail has none to show.
@@ -879,13 +1308,15 @@ const School = {
         if (mm && mm.parentElement) mm.parentElement.style.visibility = this.s.kind === 'sail' ? 'hidden' : '';
     },
 
+    // Skip the SECTION, to the next section's screen. (The race has nothing to skip to.)
     skip() {
         if (!this.active || !this.s) return;
-        if (this.s.kind === 'sail') { this.s.byTimer = true; this.nextSegment(); }
-        else if (this.s.kind === 'pond') { this.unit = 3; this.start(3); }
+        if (this.s.kind === 'sail') { this.start(2); this.screen('B'); }
+        else if (this.s.kind === 'pond' && this.s.phase !== 'start') { this.start(3); this.screen('C'); }
+        else if (this.s.kind === 'pond') { this.start(4); this.screen('D'); }
         else if (this.s.kind === 'start') { this.unit = 4; this.beginRace(); }
     },
-    skipToRace() { if (this.active) { this.unit = 4; this.beginRace(); } },
+
 
     // ── the overlays: buoys, launch, ducklings, ribbon, cone ──────────────────
     drawWorld(ctx) {
@@ -894,10 +1325,48 @@ const School = {
         if (s.windIndicator) this.drawWindIndicator(ctx, player);
         if (s.coneOn) this.drawCone(ctx, player);
 
+        // The zone circle, exactly as the course draws its own (165u, amber with the hull inside).
+        for (const b of (s.buoys || [])) {
+            if (!b.on || b.done || b.noZone) continue;
+            const inZone = this.dist(player, b.p) < 165 + 25;
+            ctx.save();
+            ctx.strokeStyle = inZone ? 'rgba(251, 191, 36, 0.95)' : `rgba(${typeof NAV_RGB !== 'undefined' ? NAV_RGB : '64, 245, 200'}, 0.68)`;
+            ctx.lineWidth = inZone ? 5.5 : 4;
+            ctx.beginPath(); ctx.arc(b.p.x, b.p.y, 165, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+        }
+        // The rounding arrow, the course's own glyph (drawRoundingArrows): a spinning half-arc
+        // with a head, clockwise for a mark left to starboard, anticlockwise for port. The
+        // windward mark is rounded to starboard; the gate's left can is rounded like a leeward
+        // pin (clockwise) and its right can like the boat end (anticlockwise).
+        if (s.buoys && s.buoys.length) {
+            const rgb = (typeof NAV_RGB !== 'undefined') ? NAV_RGB : '64, 245, 200';
+            s.buoys.forEach((b, i) => {
+                if (!b.on || b.done || !b.side) return;
+                const ccw = b.side === 'port';
+                const start = ccw ? Math.PI : 0, end = ccw ? 0 : Math.PI;
+                ctx.save();
+                ctx.lineWidth = 7; ctx.lineCap = 'round';
+                ctx.strokeStyle = `rgba(${rgb}, 0.85)`; ctx.fillStyle = `rgba(${rgb}, 0.85)`;
+                ctx.translate(b.p.x, b.p.y);
+                ctx.rotate(state.wind.baseDirection + state.time * 8.0 * (ccw ? -1 : 1));
+                ctx.beginPath(); ctx.arc(0, 0, 80, start, end, ccw); ctx.stroke();
+                ctx.translate(80 * Math.cos(end), 80 * Math.sin(end));
+                ctx.rotate(end + (ccw ? -Math.PI / 2 : Math.PI / 2));
+                ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(10, 0); ctx.lineTo(-10, 10); ctx.lineTo(-6, 0); ctx.fill();
+                ctx.restore();
+            });
+        }
+        if (s.GL && s.GR) {
+            ctx.save();
+            ctx.strokeStyle = 'rgba(245,197,24,0.55)'; ctx.lineWidth = 3; ctx.setLineDash([16, 12]);
+            ctx.beginPath(); ctx.moveTo(s.GL.x, s.GL.y); ctx.lineTo(s.GR.x, s.GR.y); ctx.stroke();
+            ctx.restore();
+        }
         if (s.buoys) {
-            const sp = markSprite('can');
             for (const b of s.buoys) {
-                if (!b.on) continue;
+                if (!b.on || b.done) continue;
+                const sp = markSprite(b.kind || 'can');
                 ctx.save();
                 ctx.translate(b.p.x, b.p.y);
                 ctx.globalAlpha = b.done ? 0.35 : 1;
@@ -919,6 +1388,37 @@ const School = {
         // raft up beside it and the launch is not drawn twice.
         if (s.kind === 'sail' && s.launch) this.drawLaunch(ctx, s.launch);
         for (const d of s.ducks) this.drawDuck(ctx, d);
+    },
+
+    // The school's own marks on the chart: the gate line, and each live buoy as the
+    // course's beacon (drawMinimap hands over its transform and its beacon glyph).
+    drawMinimapExtras(ctx, t, beacon) {
+        const s = this.s; if (!s || !s.buoys) return;
+        if (s.GL && s.GR) {
+            const a = t(s.GL.x, s.GL.y), b = t(s.GR.x, s.GR.y);
+            ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = '#fde047'; ctx.lineWidth = 2.5; ctx.stroke();
+        }
+        for (const bq of s.buoys) {
+            if (!bq.on || bq.done) continue;
+            const p = t(bq.p.x, bq.p.y);
+            beacon(p.x, p.y, 4.2);
+        }
+    },
+
+    // Off-screen indicators for the school's own marks, drawn by the HUD's edge-indicator
+    // block with the course's own glyph: distance, and the rounding arrow for a mark that
+    // is rounded (the windward mark to starboard; the gate's ends port and starboard).
+    drawEdgeIndicators(ctx, toScreen, rot) {
+        const s = this.s; if (!s || !s.buoys || typeof drawMarkEdgeIndicator !== 'function') return;
+        const player = state.boats[0];
+        s.buoys.forEach((b, i) => {
+            if (!b.on || b.done) return;
+            const p = toScreen(b.p.x, b.p.y);
+            if (p.onScreen) return;
+            const d = Math.round(this.dist(player, b.p) * 0.2);
+            drawMarkEdgeIndicator(ctx, p.x, p.y, d + 'm', b.side || null, rot);
+        });
     },
 
     // ── the teal ring: what Paddle is pointing at ─────────────────────────────
@@ -1192,11 +1692,11 @@ const School = {
         frame.style.cssText = 'position:fixed; right:18px; bottom:18px; z-index:60; display:none; gap:8px;';
         frame.innerHTML = `
             <button id="school-skip" class="res-btn" style="padding:8px 14px; font-size:12px;">Skip ›</button>
-            <button id="school-skip-race" class="res-btn" style="padding:8px 14px; font-size:12px;">Skip to the race ››</button>
+            <button id="school-restart" class="res-btn" style="padding:8px 14px; font-size:12px;">Restart</button>
             <button id="school-quit" class="res-btn" style="padding:8px 14px; font-size:12px;">Leave school</button>`;
         document.body.appendChild(frame);
+        frame.querySelector('#school-restart').addEventListener('click', (e) => { e.preventDefault(); this.start(1); e.target.blur(); });
         frame.querySelector('#school-skip').addEventListener('click', (e) => { e.preventDefault(); this.skip(); e.target.blur(); });
-        frame.querySelector('#school-skip-race').addEventListener('click', (e) => { e.preventDefault(); this.skipToRace(); e.target.blur(); });
         frame.querySelector('#school-quit').addEventListener('click', (e) => { e.preventDefault(); this.exit(); });
 
         const deb = document.createElement('div');
@@ -1204,8 +1704,25 @@ const School = {
         deb.style.cssText = 'position:fixed; inset:0; z-index:200; display:none; align-items:center; justify-content:center;'
             + 'background:rgba(5,10,20,0.88);';
         document.body.appendChild(deb);
+        const screen = document.createElement('div');
+        screen.id = 'school-screen';
+        screen.style.cssText = 'position:fixed; inset:0; z-index:215; display:none; align-items:center; justify-content:center;'
+            + 'background:radial-gradient(120% 90% at 20% 10%, #16233a 0%, #0c1322 55%, #080e19 100%); color:#eef3fb; overflow:auto;';
+        document.body.appendChild(screen);
+        const css = document.createElement('style');
+        css.textContent = `
+            .school-screen-inner { display:flex; gap:56px; align-items:center; width:min(1180px, 94vw); padding:40px 0; }
+            .school-screen-coach { flex:none; display:flex; flex-direction:column; align-items:center; }
+            .school-screen-face { width:300px; height:300px; border-radius:50%; overflow:hidden; background:#2FAE5C; border:6px solid #F58A00; box-shadow:0 0 0 10px rgba(64,245,200,0.18), 0 30px 60px rgba(0,0,0,0.55); }
+            .school-screen-face img { width:100%; height:100%; object-fit:cover; display:block; transform-origin:50% 50%; transform:scale(1.15) translate(0, 6%); }
+            .school-screen-body { flex:1; min-width:0; }
+            .school-screen-media { display:flex; gap:22px; align-items:center; flex-wrap:wrap; margin:22px 0 6px; }
+            .school-screen-buttons { display:flex; gap:12px; flex-wrap:wrap; margin-top:26px; }
+            @media (max-width: 900px) { .school-screen-inner { flex-direction:column; gap:24px; } .school-screen-face { width:200px; height:200px; } }`;
+        document.head.appendChild(css);
+
         this._lines = []; this._goalOn = false;
-        this._dom = { card, text: card.querySelector('#school-card-text'), frame, deb, goal, goalText: goal.querySelector('#school-goal-text'), ring, rings: [ring] };
+        this._dom = { card, text: card.querySelector('#school-card-text'), frame, deb, goal, goalText: goal.querySelector('#school-goal-text'), ring, rings: [ring], screen };
     },
     goal(text) {
         this.ensureDom();
@@ -1228,10 +1745,21 @@ const School = {
         if (!this._goalOn) this._cardTimer = setTimeout(() => this.hideCard(), 9000);
     },
     clearLines() { this._lines = []; if (this._dom) this.renderLines(); },
+    // A TIP is a reminder: one row of its own under the instruction, replaced rather than
+    // stacked, cleared when its condition ends — the instruction and goal stay put.
+    tip(text) {
+        this.ensureDom();
+        this._tip = text || null;
+        this.renderLines();
+        if (!this._tip && !this._lines.length && !this._goalOn) this.hideCard();
+    },
     renderLines() {
         const d = this._dom;
-        d.text.innerHTML = this._lines.map(t => `<div>${t.includes('<') ? t : t.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</div>`).join('');
-        if (this._lines.length || this._goalOn) this.showCard();
+        const esc = t => t.includes('<') ? t : t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+        let html = this._lines.map(t => `<div>${esc(t)}</div>`).join('');
+        if (this._tip) html += `<div style="color:#8fd8d0; font-size:18px; margin-top:2px;">${esc(this._tip)}</div>`;
+        d.text.innerHTML = html;
+        if (this._lines.length || this._goalOn || this._tip) this.showCard();
     },
     showCard() {
         const d = this._dom;
@@ -1240,7 +1768,7 @@ const School = {
     },
     hideCard() {
         if (!this._dom) return;
-        this._lines = [];
+        this._lines = []; this._tip = null;
         this._dom.card.style.opacity = '0';
         clearTimeout(this._cardTimer);
         setTimeout(() => { if (this._dom.card.style.opacity === '0') this._dom.card.style.display = 'none'; }, 260);
@@ -1250,14 +1778,13 @@ const School = {
         this._dom.frame.style.display = on ? 'flex' : 'none';
         const race = this.s && this.s.kind === 'race';
         this._dom.frame.querySelector('#school-skip').style.display = race ? 'none' : '';
-        this._dom.frame.querySelector('#school-skip-race').style.display = race ? 'none' : '';
     },
     showDebrief(graduated, rank, player) {
         this.ensureDom();
         const lines = this.debriefLines(graduated, rank, player);
         const deb = this._dom.deb;
         deb.innerHTML = `
-            <div style="width:min(92vw,560px); background:#0c1322; border:1px solid rgba(245,197,24,0.4); border-radius:18px; padding:28px 30px; color:#eef3fb; box-shadow:0 30px 80px rgba(0,0,0,0.6);">
+            <div style="width:min(92vw,720px); background:#0c1322; border:1px solid rgba(245,197,24,0.4); border-radius:18px; padding:28px 30px; color:#eef3fb; box-shadow:0 30px 80px rgba(0,0,0,0.6);">
                 <div style="display:flex; align-items:center; gap:16px; margin-bottom:18px;">
                     <div style="width:72px; height:72px; border-radius:50%; background:#2FAE5C; border:3px solid #F58A00; flex:none; overflow:hidden;">
                         <img src="assets/images/competitors/paddle.png" alt="Paddle" style="width:100%; height:100%; object-fit:cover; display:block; transform-origin:50% 50%; transform:scale(2.1) translate(3%, 22%);">
@@ -1270,16 +1797,13 @@ const School = {
                 <div style="display:flex; flex-direction:column; gap:10px; font-size:17px; line-height:1.35;">
                     ${lines.map(l => `<div style="display:flex; gap:12px;"><span style="color:#F5C518;">—</span><span>${l}</span></div>`).join('')}
                 </div>
-                <div class="t-mono" style="font-size:11px; color:#7787a0; margin-top:18px;">There's more boat than this. TAB hands you the sheets.</div>
-                <div style="display:flex; gap:10px; margin-top:22px; flex-wrap:wrap;">
-                    <button id="school-go-cove" class="res-btn res-btn-primary" style="font-size:16px; padding:12px 26px;">Sail Lighthouse Cove &rarr;</button>
+                <div style="display:flex; gap:10px; margin-top:22px; flex-wrap:nowrap; white-space:nowrap;">
+                    <button id="school-club" class="res-btn res-btn-primary" style="font-size:16px; padding:12px 26px;">Go to Clubhouse</button>
                     <button id="school-again" class="res-btn">Race again</button>
-                    <button id="school-replay" class="res-btn">Replay the sail</button>
-                    <button id="school-club" class="res-btn">Back to Clubhouse</button>
+                    <button id="school-replay" class="res-btn">Restart school</button>
                 </div>
             </div>`;
         deb.style.display = 'flex';
-        deb.querySelector('#school-go-cove').addEventListener('click', () => this.exit('bay'));
         deb.querySelector('#school-again').addEventListener('click', () => this.start(4));
         deb.querySelector('#school-replay').addEventListener('click', () => this.start(1));
         deb.querySelector('#school-club').addEventListener('click', () => this.exit());
@@ -1287,6 +1811,218 @@ const School = {
         Sound.updateMusic();
     },
     hideDebrief() { if (this._dom) this._dom.deb.style.display = 'none'; },
+
+    // ── THE SCREENS. One before and after every section: an opaque full page, Coach
+    // Paddle large, what came before and what comes next, and the ways out. The next
+    // section is already built underneath (start(n) ran) and the sim is held until Next.
+    // Screen A shows the pond, but section 1 runs on the open-water twin — so the pond is
+    // built first, its chart captured, and then section 1 is built underneath the screen.
+    begin() { this.start(1); this.screen('A'); },
+    screen(id) {
+        this.ensureDom();
+        const el = this._dom.screen;
+        this._screenId = id;
+        clearInterval(this._screenTick); this._screenTick = null;
+        if (id === 'E') { this._simHeld = false; }               // the fleet is still racing behind it
+        else { this._simHeld = true; state.paused = true; }
+        // The card is NOT hidden: the section underneath has already said its first line,
+        // and the screen is opaque and above it. Hiding it here lost section 3's opener.
+        this.showFrame(false);
+        const c = this.screenContent(id);
+        el.innerHTML = `
+            <div class="school-screen-inner">
+                <div class="school-screen-coach">
+                    <div class="school-screen-face"><img src="assets/images/competitors/paddle.png" alt="Coach Paddle"></div>
+                    <div class="t-label" style="color:#F5C518; letter-spacing:0.3em; font-size:11px; margin-top:14px;">Coach Paddle</div>
+                </div>
+                <div class="school-screen-body">
+                    <div class="t-label" style="color:#8fd8d0; letter-spacing:0.28em; font-size:11px;">${c.kicker}</div>
+                    <h1 class="t-display uppercase" style="font-size:46px; line-height:1; margin:10px 0 14px; color:#fff;">${c.title}</h1>
+                    <div style="font-size:19px; line-height:1.45; color:#dbe5f3; max-width:62ch;">${c.body}</div>
+                    <div class="school-screen-media" id="school-screen-media"></div>
+                    <div class="school-screen-buttons" id="school-screen-buttons"></div>
+                </div>
+            </div>`;
+        el.style.display = 'flex';
+        if (c.media) c.media(el.querySelector('#school-screen-media'));
+        if (id === 'E') {
+            // Re-read the finish order as the classmates come in.
+            this._screenTick = setInterval(() => {
+                if (this._screenId !== 'E' || !this._lastRace) { clearInterval(this._screenTick); return; }
+                this._lastRace.sorted = this.raceOrder();
+                const list = el.querySelector('#school-results-list'); if (!list) return;
+                this.renderResultsList(list);                    // the chart stays; only the order refreshes
+            }, 1000);
+        }
+        const bar = el.querySelector('#school-screen-buttons');
+        for (const b of c.buttons) {
+            const btn = document.createElement('button');
+            btn.className = 'res-btn' + (b.primary ? ' res-btn-primary' : '');
+            btn.style.cssText = 'font-size:17px; padding:14px 30px;';
+            btn.innerHTML = b.label;
+            btn.addEventListener('click', (e) => { e.preventDefault(); b.go(); });
+            bar.appendChild(btn);
+        }
+        Sound.updateMusic();
+    },
+    hideScreen() {
+        if (this._dom) this._dom.screen.style.display = 'none';
+        this._screenId = null;
+        clearInterval(this._screenTick); this._screenTick = null;
+        if (this._simHeld) { this._simHeld = false; state.paused = false; }
+        if (this.active) this.showFrame(true);
+    },
+    // Next runs the section that is already built; the others rebuild and show a screen.
+    screenContent(id) {
+        const S = this;
+        const next = (label) => ({ label: label || 'Begin &rarr;', primary: true, go: () => S.hideScreen() });
+        const restart = { label: 'Restart', go: () => { S.start(1); S.screen('A'); } };
+        // Skip: to the next section's screen. A→B, B→C, C→D (which is also "skip to race").
+        const skipTo = { A: ['B', 2], B: ['C', 3], C: ['D', 4] }[id];
+        const skip = skipTo ? { label: 'Skip &rsaquo;', go: () => { S.start(skipTo[1]); S.screen(skipTo[0]); } } : null;
+        const club = { label: 'Go to Clubhouse', go: () => S.exit() };
+        const chart = (hideCourse, size) => (host) => S.chartPreview(host, hideCourse, size || 340);
+        const btns = (...b) => b.filter(Boolean);
+        switch (id) {
+            case 'A': return {
+                kicker: 'Sailing School · Section 1 of 4', title: 'Welcome to sailing school!',
+                body: "Let's start by learning the basics of the boat: how it moves, where the wind is, and how to steer it.",
+                media: null, buttons: btns(next(), skip, club) };
+            case 'B': return {
+                kicker: 'The Pond · Section 2 of 4', title: "You've learned to sail the boat.",
+                body: "Now let's move to Duckling Pond and learn to sail a course around marks and through gates.",
+                media: (host) => { S.venueArtPreview(host, 300); S.chartPreview(host, true, 300); }, buttons: btns(next(), skip, restart, club) };
+            case 'C': return {
+                kicker: 'Start Practice · Section 3 of 4', title: 'Nicely sailed around the pond.',
+                body: `You rounded the mark and took the gate. Now we practice a start sequence: a ${Math.round(state.race.startTimerDuration || 30)}-second clock, and a line you may not cross until it reaches zero. Be near the line, at speed, when it does.`,
+                media: (host) => S.startLinePreview(host), buttons: btns(next(), skip, restart, club) };
+            case 'D': return {
+                kicker: 'The Race · Section 4 of 4', title: "That's a start. Now you race.",
+                body: (S._startNote ? S._startNote + ' ' : '') + 'One lap of Duckling Pond: up through the windward gate, back down through the finish. Three classmates are on the line with you. Start on time, keep the mark on the right side, and drop the kite before you head up — do that and you will beat them.',
+                media: (host) => { S.courseChartPreview(host, 300, 300); S.fleetPreview(host); }, buttons: btns(next('Begin &rarr;'), restart, club) };
+            case 'E': {
+                const r = S._lastRace || {};
+                return {
+                    kicker: r.graduated ? 'Graduated · Sailing School' : 'Sailing School · the race',
+                    title: r.graduated ? (r.rank === 1 ? 'You won it.' : `${['', 'First', 'Second', 'Third', 'Fourth'][r.rank] || r.rank + 'th'} of four. You graduate.`) : "Didn't finish this one.",
+                    body: (r.lines || []).slice(1).map(l => `<div style="display:flex; gap:12px; margin:4px 0;"><span style="color:#F5C518;">&mdash;</span><span>${l}</span></div>`).join(''),
+                    media: (host) => S.resultsPreview(host), buttons: [{ label: 'Go to Clubhouse', primary: true, go: () => S.exit() }, { label: 'Race again', go: () => { S.start(4); S.screen('D'); } }, { label: 'Restart school', go: () => { S.start(1); S.screen('A'); } }] };
+            }
+        }
+        return { kicker: '', title: '', body: '', buttons: [club] };
+    },
+    // The chart, borrowed whole from the HUD's minimap (same code, bigger canvas), with the
+    // course hidden or shown as the screen wants.
+    chartCanvas(hideCourse, size) {
+        const cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+        cv.style.cssText = `width:${size}px; height:${size}px; border-radius:14px; border:2px solid rgba(148,163,184,0.25); box-shadow:0 12px 30px rgba(0,0,0,0.4); background:#0b1c2b;`;
+        if (typeof drawMinimap !== 'function' || typeof minimapCtx === 'undefined') return cv;
+        const saved = minimapCtx; const wasHidden = this._previewHideCourse;
+        this._previewHideCourse = hideCourse; this._previewWhole = true;
+        try {
+            const doc = window.VenueDoc.get(this.venueKey);
+            this._previewBounds = doc ? window.VenueDoc.compile(doc, { light: true }).boundary : null;
+        } catch (e) { this._previewBounds = null; }
+        try { minimapCtx = cv.getContext('2d'); drawMinimap(); } catch (e) {}
+        minimapCtx = saved; this._previewHideCourse = wasHidden; this._previewWhole = false; this._previewBounds = null;
+        return cv;
+    },
+    chartPreview(host, hideCourse, size) {
+        host.appendChild(this.chartCanvas(hideCourse, size));
+    },
+    // The venue's card art (assets/images/venues/pond.png), as the clubhouse shows it. Until
+    // that art is delivered the pond's chart stands in.
+    venueArtPreview(host, size) {
+        const img = new Image();
+        img.style.cssText = `width:${size}px; height:${size}px; object-fit:cover; border-radius:14px; border:2px solid rgba(148,163,184,0.25); box-shadow:0 12px 30px rgba(0,0,0,0.4); display:block;`;
+        img.alt = 'Duckling Pond';
+        img.onerror = () => { img.remove(); this.chartPreview(host, true, size); };
+        img.src = `assets/images/venues/${this.venueKey}.png`;
+        host.appendChild(img);
+    },
+    // A start line, drawn plainly: the pin, the coach boat, the line, and you below it.
+    startLinePreview(host) {
+        const W = 360, H = 200;
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        cv.style.cssText = `width:${W}px; height:${H}px; border-radius:14px; border:2px solid rgba(148,163,184,0.25); box-shadow:0 12px 30px rgba(0,0,0,0.4);`;
+        host.appendChild(cv);
+        const ctx = cv.getContext('2d');
+        const pal = (window.VenueDoc.get('pond') || {}).palette || {};
+        ctx.fillStyle = pal.baseColor || '#2a7f8c'; ctx.fillRect(0, 0, W, H);
+        ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 2;
+        for (let i = 0; i < 10; i++) { const x = (i * 53 + 20) % W, y = (i * 37 + 15) % H; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 26, y); ctx.stroke(); }
+        const y = 78;
+        ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 4; ctx.setLineDash([]); ctx.beginPath(); ctx.moveTo(60, y); ctx.lineTo(300, y); ctx.stroke();
+        ctx.fillStyle = '#fff'; ctx.font = "900 italic 14px 'Saira', 'Archivo', sans-serif"; ctx.textAlign = 'center'; ctx.fillText('START', 180, y - 10);
+        const draw = (kind, x, yy, w) => { const sp = (typeof markSprite === 'function') && markSprite(kind); if (sp && sp.img && sp.img.naturalWidth) { const h = w * sp.img.naturalHeight / sp.img.naturalWidth; ctx.drawImage(sp.img, x - w / 2, yy - h / 2, w, h); } else { ctx.fillStyle = kind === 'coach' ? '#f97316' : '#f97316'; ctx.beginPath(); ctx.arc(x, yy, 10, 0, Math.PI * 2); ctx.fill(); } };
+        draw('inflatable', 60, y, 22);
+        draw('coach', 300, y, 60);
+        // the trainer below the line, bow up
+        ctx.save(); ctx.translate(150, 150);
+        ctx.fillStyle = '#fff'; ctx.strokeStyle = '#1e2836'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, -22); ctx.quadraticCurveTo(12, -6, 10, 18); ctx.lineTo(-10, 18); ctx.quadraticCurveTo(-12, -6, 0, -22); ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = '#F5C518'; ctx.beginPath(); ctx.moveTo(0, -18); ctx.lineTo(0, 14); ctx.quadraticCurveTo(22, 4, 0, -18); ctx.fill();
+        ctx.restore();
+        ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.font = "700 12px 'Archivo', sans-serif"; ctx.textAlign = 'center';
+        ctx.fillText('wait below the line, cross when the clock hits 0:00', 180, 190);
+    },
+    // The race-day board's course chart — the same renderer, in the screen's own box.
+    courseChartPreview(host, w, h) {
+        const box = document.createElement('div');
+        box.style.cssText = `position:relative; width:${w}px; height:${h}px; border-radius:14px; overflow:hidden; background:rgba(11,28,43,0.75); border:2px solid rgba(148,163,184,0.25); box-shadow:0 12px 30px rgba(0,0,0,0.4); flex:none;`;
+        const inner = document.createElement('div');
+        inner.style.cssText = 'position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);';
+        const cv = document.createElement('canvas');
+        cv.style.cssText = 'display:block; width:100%; height:100%;';
+        inner.appendChild(cv); box.appendChild(inner); host.appendChild(box);
+        if (typeof drawCourseMiniMap === 'function') {
+            try { drawCourseMiniMap({ box, inner, canvas: cv, noRecords: true, visible: () => this._screenId != null }); } catch (e) {}
+        }
+    },
+    // A fleet band — the clubhouse's own card: face, name, species, archetype, the rig.
+    fleetBand(config, opts) {
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'width:min(560px, 100%);';
+        wrap.innerHTML = (typeof profileBandHTML === 'function') ? profileBandHTML(config, Object.assign({ compact: true, boat: true }, opts || {})) : `<div>${config.name}</div>`;
+        const cv = wrap.querySelector('.profile-boat-canvas');
+        if (cv && typeof renderProfileBoat === 'function') requestAnimationFrame(() => { try { renderProfileBoat(cv, config); } catch (e) {} });
+        return wrap;
+    },
+    // The three classmates, as their clubhouse cards.
+    fleetPreview(host) {
+        const list = document.createElement('div');
+        list.style.cssText = 'display:flex; flex-direction:column; gap:8px; flex:1; min-width:420px;';
+        for (const c of this.classmateConfigs()) list.appendChild(this.fleetBand(c));
+        host.appendChild(list);
+    },
+    // The race, abbreviated: rank, face, name, time.
+    resultsPreview(host) {
+        const r = this._lastRace; if (!r || !r.sorted) return;
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'display:flex; gap:22px; align-items:flex-start; flex-wrap:wrap;';
+        const list = document.createElement('div');
+        list.id = 'school-results-list';
+        list.style.cssText = 'display:flex; flex-direction:column; gap:8px; flex:1; min-width:420px;';
+        this.renderResultsList(list);
+        wrap.appendChild(list);
+        host.appendChild(wrap);
+    },
+    renderResultsList(list) {
+        const r = this._lastRace; if (!r || !r.sorted) return;
+        list.innerHTML = '';
+        r.sorted.forEach((b, i) => {
+            const rs = b.raceState;
+            const time = rs.finished && !rs.resultStatus ? formatTime(rs.finishTime) : (rs.resultStatus || 'racing');
+            const config = b.isPlayer ? this.TRAINER : (AI_CONFIG.find(c => c.name === b.name) || { name: b.name, creature: '', hull: b.colors.hull, spinnaker: b.colors.spinnaker, sail: b.colors.sail, cockpit: b.colors.cockpit });
+            const row = document.createElement('div');
+            row.style.cssText = 'display:flex; align-items:center; gap:12px;';
+            row.innerHTML = `<div class="t-display" style="font-size:30px; width:34px; text-align:right; color:${i === 0 ? '#F5C518' : '#7787a0'};">${i + 1}</div>`;
+            const band = this.fleetBand(config, { label: (b.isPlayer ? 'YOU · ' : '') + `<span class="t-mono" style="letter-spacing:0; color:${rs.resultStatus ? '#f87171' : '#fff'};">${time}</span>` });
+            band.style.flex = '1';
+            row.appendChild(band);
+            list.appendChild(row);
+        });
+    },
 };
 // THE FIRST SAIL'S WATER is the pond document with its land and props stripped: same
 // palette, same wind, nothing to hit, and school.js lifts its arena to the horizon. Derived

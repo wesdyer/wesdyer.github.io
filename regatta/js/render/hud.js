@@ -244,6 +244,9 @@ function drawRulesOverlay(ctx) {
 
     // Helper to draw triangle
     const drawTriangle = (boat, target, color) => {
+        // The arrows belong to the pair: when either boat is fading out, so are they.
+        const fade = Math.min(boat.opacity === undefined ? 1 : boat.opacity, target.opacity === undefined ? 1 : target.opacity);
+        if (fade <= 0.01) return;
         const dx = target.x - boat.x;
         const dy = target.y - boat.y;
         const angle = Math.atan2(dy, dx);
@@ -259,6 +262,7 @@ function drawRulesOverlay(ctx) {
         const ty = boat.y + Math.sin(angle) * dist;
 
         ctx.save();
+        ctx.globalAlpha *= fade;
         ctx.translate(tx, ty);
         ctx.rotate(angle);
 
@@ -954,7 +958,13 @@ function drawMinimap() {
     // the painted mask.
     // Sailing School lifts the arena to the horizon (School.start), so its chart frames
     // the player and the marks the way a mask-less venue does.
-    if (state.course.doc && !(window.School && School.active)) {
+    // (A school SCREEN's preview asks for the whole pond, like the clubhouse would.)
+    const wholeMap = state.course.doc && (!(window.School && School.active) || School._previewWhole);
+    const schoolBounds = !wholeMap && window.School && School.active && School.minimapBounds && School.minimapBounds();
+    if (schoolBounds) {
+        // Sailing School on the pond: the chart frames the WATER, whole, and no more.
+        minX = schoolBounds.minX; maxX = schoolBounds.maxX; minY = schoolBounds.minY; maxY = schoolBounds.maxY;
+    } else if (wholeMap) {
         // Follows the ARENA rather than MASK_WORLD, so it tracks a scaled map and a
         // polygon boundary instead of a constant that no longer describes either. THE
         // ARENA'S LONG AXIS JUST FITS: the chart is for racing, so the water you may
@@ -963,10 +973,12 @@ function drawMinimap() {
         // what keeps that cropped scenery sitting on sea rather than on glass). This
         // deliberately reverts an experiment that grew the extent to take in all
         // scenery — an atoll ring 3x the arena shrank the racing to a postage stamp.
-        const e = Arena.extent(state.course.boundary);
+        // A school preview frames the DOCUMENT's arena: the race lifts the live one to the
+        // horizon, which would put the whole pond in one pixel.
+        const e = Arena.extent((window.School && School._previewBounds) || state.course.boundary);
         minX = e.minX; maxX = e.maxX; minY = e.minY; maxY = e.maxY;
     }
-    const pad = (state.course.doc && !(window.School && School.active)) ? 0 : 200;
+    const pad = wholeMap ? 0 : (schoolBounds ? 60 : 200);
     minX-=pad; maxX+=pad; minY-=pad; maxY+=pad;
     const scale = (width - (state.course.doc ? 0 : 20)) / Math.max(maxX-minX, maxY-minY);
     const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
@@ -1201,6 +1213,7 @@ function drawMinimap() {
     const drawG = (i1, i2, a) => {
         const m1 = state.course.marks[i1], m2 = state.course.marks[i2];
         if (!m1 || !m2) return;
+        if (window.School && (School.hideMark(m1) || School.hideMark(m2))) return;
         const p1 = t(m1.x, m1.y), p2 = t(m2.x, m2.y);
         ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
         // Inactive geometry is nearly gone. It still says "there is a gate here" for
@@ -1211,8 +1224,9 @@ function drawMinimap() {
         ctx.lineWidth = a ? 2.5 : 1;
         ctx.stroke();
     };
+    const courseOff = window.School && School.courseHidden();
     const drawn = {};
-    for (const e of (state.course.route || [])) {
+    for (const e of (courseOff ? [] : (state.course.route || []))) {
         if (!e.marks) continue;
         const key = e.marks.join(',');
         if (drawn[key]) continue;
@@ -1222,10 +1236,11 @@ function drawMinimap() {
 
     // Every other mark: small, cool and quiet.
     const mkR = (state.course.doc && !(window.School && School.active)) ? 0.6 : 1;
-    for (let i = 0; i < state.course.marks.length; i++) {
+    for (let i = 0; i < (courseOff ? 0 : state.course.marks.length); i++) {
         if (active.includes(i)) continue;
         const m = state.course.marks[i];
         if (roundMark && m === roundMark) continue;
+        if (window.School && School.hideMark(m)) continue;
         const p = t(m.x, m.y);
         ctx.beginPath(); ctx.arc(p.x, p.y, 2.6 * mkR, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(148, 163, 184, 0.55)'; ctx.fill();
@@ -1245,11 +1260,12 @@ function drawMinimap() {
         ctx.fillStyle = '#f97316'; ctx.fill();
         ctx.strokeStyle = '#0b1c2b'; ctx.lineWidth = 1.4; ctx.stroke();
     };
-    for (const i of active) {
+    for (const i of (courseOff ? [] : active)) {
         const m = state.course.marks[i];
         if (m) { const p = t(m.x, m.y); beacon(p.x, p.y, 4.2); }
     }
-    if (roundMark) {
+    if (window.School && School.active) School.drawMinimapExtras(ctx, t, beacon);
+    if (roundMark && !courseOff) {
         const p = t(roundMark.x, roundMark.y);
         // A rounding's zone is the thing you have to get inside, so draw it: the ring is
         // the instruction, not decoration. Floored in pixels so it survives a whole-map
@@ -1766,6 +1782,9 @@ function boatInstrumentData(player) {
     const vmg = Math.abs(v.x * Math.sin(w.direction) - v.y * Math.cos(w.direction)) * 4;
     return {
         sog, vmg, tws: w.speed, twa, twsCol, sogCol, badAir,
+        // In the no-sail zone: inside ~38° of the wind, where the polar runs out. Both faces
+        // paint the angle red so the number itself says why the boat is stopping.
+        noGo: twa < 38,
         planing: !!player.raceState.isPlaning,
         surfing: !!(surf && surf.surfing)
     };
@@ -1804,7 +1823,7 @@ function updateRoseHud(player, localWind) {
     if (UI.speed) { UI.speed.textContent = d.sog.toFixed(1); UI.speed.style.color = d.sogCol; }
     if (UI.vmg) UI.vmg.textContent = d.vmg.toFixed(1);
     if (UI.windSpeed) { UI.windSpeed.textContent = d.tws.toFixed(1) + (d.badAir ? ' \u2193' : ''); UI.windSpeed.style.color = d.twsCol; }
-    if (UI.windAngle) UI.windAngle.textContent = `${d.twa}\u00b0`;
+    if (UI.windAngle) { UI.windAngle.textContent = `${d.twa}\u00b0`; UI.windAngle.style.color = d.noGo ? '#f87171' : ''; }
     roseCue('hud-planing-label', 'absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-cyan-400 hidden', 'PLANING', d.planing);
     roseCue('hud-surfing-label', 'absolute -top-9 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-amber-300 hidden', 'SURFING', d.surfing);
 }
@@ -1842,7 +1861,10 @@ function boatInstruments(player) {
 function drawBoatInstruments(ctx, player) {
     if (!hudShowsBoat()) return;
     if (!player || !player.raceState) return;
-    if (player.raceState.finished) return;              // nothing left to sail by
+    // A fading boat takes its reading with it (the finish, and the school's section ends);
+    // once fully gone there is nothing left to sail by.
+    const fade = player.opacity === undefined ? 1 : player.opacity;
+    if (fade <= 0.01) return;
     const rot = -state.camera.rotation;
     const dx = player.x - state.camera.x, dy = player.y - state.camera.y;
     const sx = canvas.width / 2 + dx * Math.cos(rot) - dy * Math.sin(rot);
@@ -1852,6 +1874,7 @@ function drawBoatInstruments(ctx, player) {
     const d = boatInstruments(player);
 
     ctx.save();
+    ctx.globalAlpha *= fade;
     ctx.beginPath();
     ctx.roundRect(left, top, BI_W, BI_H, 7);
     ctx.fillStyle = BI_BG;
@@ -1876,7 +1899,7 @@ function drawBoatInstruments(ctx, player) {
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 4;
     ctx.font = FONT.mono(15);
-    ctx.fillStyle = '#bfdbfe';
+    ctx.fillStyle = d.noGo ? '#f87171' : '#bfdbfe';
     ctx.fillText(d.twa + '°', sx, top + BI_H / 2 + 0.5);
     ctx.restore();
 }

@@ -61,6 +61,9 @@ const LAND_TEXTURES = {
     // (their mottle is busier than sand's); the rock at 0.35, the granite precedent.
     coralsand:  { src: 'assets/images/terrain/lagoon/coralsand.png',  tile: 128, alpha: 0.7 },
     grass:      { src: 'assets/images/terrain/grass.png',            tile: 128, alpha: 0.5 },
+    // Duckling Pond's mown lawn (pond-lawn, delivered 2026-08-29). A sward, so 128 and 0.5
+    // like its siblings; the nap is finer than a tussock mottle but the scale rule holds.
+    lawn:       { src: 'assets/images/terrain/pond/lawn.png',        tile: 128, alpha: 0.5 },
     swampgrass: { src: 'assets/images/terrain/swamp/swampgrass.png', tile: 128, alpha: 0.5 },
     redrock:    { src: 'assets/images/terrain/redrock/sandstone.png', tile: 256, alpha: 0.35 },
     // Delivered 2026-08-09. Takes sand's 0.7 as pre-registered — its mottle is broad tonal
@@ -485,7 +488,7 @@ function spinWedge(g, s, cx, cy, a0, a1) {
 // from these, while the Settings modal hard-codes the same list in markup.
 const SPIN_PATTERN_LABELS = {
     solid: 'Solid', halves: 'Halves', crosshalves: 'Cross Halves', gores: 'Gores',
-    stripes: 'Stripes', rays: 'Rays', triangle: 'Triangle',
+    stripes: 'Stripes', rays: 'Rays', fiverays: 'Five rays', triangle: 'Triangle',
     thirds: 'Thirds', chevron: 'Chevron', sunburst: 'Sunburst', tricolour: 'Tricolour'
 };
 // DERIVED from the pattern data, never hand-maintained: no regions = one colour,
@@ -516,6 +519,10 @@ const SPIN_PATTERNS = {
     // Rising-sun rays from the front-edge center (pairs with the triangle)
     rays: [1, 3, 5, 7].map(i => (g, s) =>
         spinWedge(g, s, 512, 512, -Math.PI / 2 + i * (Math.PI / 9), -Math.PI / 2 + (i + 1) * (Math.PI / 9))),
+    // Five broad rays over the front half — base, accent, base, accent, base. The Sailing
+    // School trainer's kite: green with two white rays, big enough to read at race scale.
+    fiverays: [1, 3].map(i => (g, s) =>
+        spinWedge(g, s, 512, 512, -Math.PI / 2 + i * (Math.PI / 5), -Math.PI / 2 + (i + 1) * (Math.PI / 5))),
     // Triangle: tip on the straight (luff) edge at the BACK of the kite, opening
     // forward. The two rays run well past the leech, so the silhouette clips the
     // wide end into a curve that follows the sail's front edge — a wedge with a
@@ -730,7 +737,9 @@ function getSpinnakerSprite(pattern, colorA, colorB, colorC) {
 const MARK_SPRITES = {
     inflatable: { src: 'assets/images/props/mark.png',            world: 30 },
     can:        { src: 'assets/images/props/mark-can-yellow.png', world: 30 },
-    committee:  { src: 'assets/images/props/committee-boat.png',  world: 92 }
+    committee:  { src: 'assets/images/props/committee-boat.png',  world: 92 },
+    // pond-coach-launch: 130 frame, hull 61x112 inside it (see the manifest note on its size).
+    coach:      { src: 'assets/images/props/pond/coach-launch.png', world: 130 }
 };
 for (const k in MARK_SPRITES) {
     const s = MARK_SPRITES[k];

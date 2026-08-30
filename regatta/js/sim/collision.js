@@ -286,6 +286,7 @@ function checkMarkCollisions(dt) {
         if (!close) continue;
 
         const poly = getHullPolygon(boat);
+        if (window.School && School.courseHidden()) break;     // an unseen mark is not there to hit
         for (const mark of state.course.marks) {
           for (const circ of (mark.body || [{ x: mark.x, y: mark.y, r: 12 }])) {
             const res = satPolygonCircle(poly, circ, circ.r);

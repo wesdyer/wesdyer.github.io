@@ -40,7 +40,9 @@ window.addEventListener('keydown', (e) => {
     if (state.keys.hasOwnProperty(key)) state.keys[key] = true;
 
     // View & System
-    if (e.key.toLowerCase() === 'c') {
+    // Sailing School frames every lesson in heading mode (the boat low in frame, goals at
+    // the screen's edge), so the camera toggle is off while it runs.
+    if (e.key.toLowerCase() === 'c' && !(window.School && School.active)) {
         const modes = ['heading', 'north'];
         state.camera.mode = modes[(modes.indexOf(state.camera.mode) + 1) % modes.length];
         settings.cameraMode = state.camera.mode;

@@ -409,7 +409,10 @@ const MARK_BODIES = {
     // Half the 85x37px hull, as a 3-circle capsule down the centreline. r=19 covers the
     // beam; the two end circles sit far enough out to cover the bow and transom, which a
     // single circle leaves free for a boat to clip.
-    committee: { r: 19, along: [-22, 0, 22], offset: 19 }
+    committee: { r: 19, along: [-22, 0, 22], offset: 19 },
+    // The coach launch: a 61x112px hull in its 130 frame. r=30 covers the beam, the end
+    // circles reach the round bow and the outboard.
+    coach:     { r: 30, along: [-30, 0, 30], offset: 30 }
 };
 const markBody = (kind) => MARK_BODIES[kind] || null;
 
@@ -455,7 +458,16 @@ function orientCourseMarks() {
             if (idx[0] === i) { k = e; other = idx[1]; }
             else if (idx[1] === i) { k = e; other = idx[0]; }
         }
-        if (k < 0 || !marks[other]) continue;
+        if (k < 0 || !marks[other]) {
+            // A vessel that is not a line end — a coach boat parked on the pond — still has a
+            // hull to hit. Moored head-to-wind, on its point, no outboard nudge.
+            const wd = (state.wind && state.wind.baseDirection) || 0;
+            const nx = Math.sin(wd), ny = -Math.cos(wd);
+            m.heading = wd;
+            m.body = spec.along.map(d => ({ x: m.x + nx * d, y: m.y + ny * d, r: spec.r }));
+            m.bodyR = Math.max(...m.body.map(c => Math.hypot(c.x - m.x, c.y - m.y) + c.r));
+            continue;
+        }
 
         // Direction of travel through the line: the ROUTE'S OWN crossing normal, which is
         // `dir * (gateDy, -gateDx)` over the entry's mark pair in the entry's order — the

@@ -707,6 +707,7 @@ function drawIslandShadows(ctx) {
 function drawMarkShadows(ctx) {
     for (const m of state.course.marks) {
         if (m.kind === 'none') continue;          // nothing there to cast one
+        if (window.School && School.hideMark(m)) continue;
         ctx.save(); ctx.translate(m.drawX != null ? m.drawX : m.x, m.drawY != null ? m.drawY : m.y);
         // Sized to the mark's VISIBLE width (~29px at W=30), so it reads as a contact
         // shadow rather than a disc sticking out from under it. Cosmetic only.
@@ -735,6 +736,7 @@ function drawMarkBodies(ctx) {
         // gets an indicator rather than a sprite. Drawn in drawMarkZones, which already
         // owns the "here is what the course asks of you" layer.
         if (m.kind === 'none') continue;
+        if (window.School && School.hideMark(m)) continue;   // the practice start shows the line only
         const sp = markSprite(m.kind);
         // The sprite is fill-normalized at ingest, so the frame size IS the declared
         // world size and the art's own fill decides what you see: 30 -> ~29px for the
@@ -1088,6 +1090,7 @@ const ISLAND_STYLES = {
     // to be moved wholesale to `swampgrass` below — the bayou keeps its sun-cured look
     // (its docs were re-kinded), and everything else's grass isles read alive.
     grass:    { body: '#7aaa1d', stroke: '#5c8438', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },   // body = grass tile mean
+    lawn:     { body: '#769e2e', stroke: '#597a22', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },   // body = pond-lawn DELIVERED tile mean
     swampgrass: { body: '#a09453', stroke: '#7d7048', veg: '#4d7c0f', rock: '#8a8a7a', trees: true },   // body = swampgrass tile mean
     // ── LIGHTHOUSE COVE'S TWO GROUNDS ───────────────────────────────────────
     // Coastal scrub upland. Body is the bay-scrub tile's SPEC mean; reset it to the DELIVERED

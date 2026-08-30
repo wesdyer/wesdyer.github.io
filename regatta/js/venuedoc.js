@@ -491,7 +491,7 @@ function validateVenueDoc(doc) {
         return mi != null && marks[mi] ? { x: marks[mi].x, y: marks[mi].y } : null;
     };
     for (const m of marks) {
-        if (!m.kind || !(MARK_KINDS[m.kind] || {}).vessel) continue;
+        if (m.kind !== 'committee') continue;      // the starboard-end rule is the committee boat's alone
         const mi = idxById[m.id];
         let k = -1;
         for (let e = 0; e < cbRoute.length && k < 0; e++) {
@@ -517,6 +517,9 @@ function validateVenueDoc(doc) {
     // where they can be seen and acted on, and the CI gate counts them.
     if (rt.length && !Array.isArray(rt)) err('course.route must be an array');
     if (course.legs != null) warn('course.legs is ignored — the leg count is derived from the route');
+    if (course.fleet != null && !(course.fleet >= 2 && course.fleet <= 10 && course.fleet === Math.round(course.fleet))) {
+        err(`course.fleet ${course.fleet} must be a whole number of boats, 2–10`);
+    }
     if (course.startTime != null && !(course.startTime >= 5 && course.startTime <= 600)) {
         err(`course.startTime ${course.startTime}s is outside 5–600s`);
     }
@@ -746,6 +749,10 @@ const MARK_KINDS = {
     inflatable: { label: 'Orange inflatable buoy' },
     can:        { label: 'Yellow can buoy' },
     committee:  { label: 'Committee boat', vessel: true },
+    // Paddle's launch as a MARK: the coach boat a line can be sighted from, or simply a place
+    // on the pond. Same vessel plumbing as the committee boat (heading along its line, hull
+    // collider, drawn off the line end); only the art and the size differ.
+    coach:      { label: 'Coach boat', vessel: true },
     none:       { label: 'No buoy (position only)' }
 };
 
@@ -2267,7 +2274,57 @@ const PROP_KINDS = {
     // wake RIBBON, not kelvin: a RIB planes rather than pushing water aside, which is what that
     // field distinguishes. It is a fact about the hull, true wherever she sails, so it belongs on
     // the kind whether or not any given placement is moving.
-    'zodiac':                  { label: 'Zodiac',             world:   54, plane: 'surface', contact: 'none', srcBox: [0.268, 0.019, 0.464, 0.962], motion: 'fixed', src: 'assets/images/props/zodiac.png', wake: { kind: 'ribbon' } }
+    'zodiac':                  { label: 'Zodiac',             world:   54, plane: 'surface', contact: 'none', srcBox: [0.268, 0.019, 0.464, 0.962], motion: 'fixed', src: 'assets/images/props/zodiac.png', wake: { kind: 'ribbon' } },
+
+    // ── DUCKLING POND ───────────────────────────────────────────────────────
+    // The sailing school's shore. Eight kinds, registered as the art landed; until this block
+    // existed the bakes were on disk and in the manifest and PLACEABLE NOWHERE, because the
+    // editor lists kinds from here.
+    //
+    // ⚠️ EVERY ONE IS `contact: 'none'`, AND THAT IS A VENUE RULE RATHER THAN A JUDGEMENT ON
+    // EACH PROP. venues.md 15 makes it a standing constraint: this venue has no course hazards
+    // "None, ever ... not a frozen baseline, a safe classroom." So the two floats break with
+    // their own siblings elsewhere on purpose — `lake-raft-swim` is hard at contactR 14 and
+    // `cove-float` is a hazard, where `pond-raft-practice` and `pond-pontoon` are scenery. The
+    // art still telegraphs solid, which is the landmark contract; it simply never gets a
+    // collider here. Anyone who gives one of these a contact has re-opened a design decision
+    // that belongs to the venue, not to the prop.
+    //
+    // ⚠️ THE FOUR PLANTS ARE `surface`, NOT `canopy`, following the ocean and glowtide blocks
+    // rather than the lake's. `canopy` is a claim that a hull passes UNDERNEATH: props on that
+    // plane draw over the fleet and feed canopyAlpha, so a shore full of them fades a wedge of
+    // forest around a boat that was never beneath any of it. Nothing sails under a tree on a
+    // mown lawn ringing a pond. THE ONE ASSET THAT COULD ARGUE OTHERWISE IS THE WEEPING WILLOW,
+    // which leans out over the water by design — decide its plane when its art lands, and if it
+    // goes on `canopy` it inherits the openings floor with it.
+    //
+    // srcBox IS CARRIED ONLY WHERE THE INK IS THIN ENOUGH TO PAY, the lake block's rule.
+    // Measured off each shipped bake with a 1% margin: the pontoon fills 40.5% of its frame's
+    // width and the susans 46.6% of its height, so those two skip 62% and 57% of their quad
+    // respectively. The rest are round crowns or square decks that fill their frames — oak,
+    // maple, dogwood, holly, the rack and the raft all sit between 22% and 30%, which is not
+    // worth a number to maintain. RE-MEASURE ON ANY RE-INGEST: a box too small clips the sprite.
+    //
+    // SIZES ARE THE MANIFEST'S, and three of them were corrected against the grass and
+    // pond-palette composites rather than against arithmetic — the holly 18 -> 26 (at 18 it is a
+    // dark disc, not a plant), the susans 26 -> 44 (at 26 the flowers are a yellow smear) and the
+    // raft 30 -> 37 (world sizes the FRAME, and the ladder projects past the deck, so the deck
+    // was drawing 2.6 m against the 3.3 m declared). See each asset's note in art/manifest.json.
+    // ⚠️ THE BOATHOUSE IS A KNOWN-DEFECTIVE PLACEHOLDER, ingested on request so the venue has a
+    // building while a better one is generated. At race scale it reads as a tall grey box rather
+    // than a building seen from above — its full-width, full-tone slipway fuses with the roof —
+    // and it carries a P1 `rework` block in art/manifest.json saying so. Its 64%-skipped srcBox
+    // is a symptom of the same defect: a correctly proportioned boathouse is not a narrow strip.
+    // WORLD AND srcBox BOTH BELONG TO THIS ART, NOT TO THE REROLL — recompute both when it lands.
+    'pond-boathouse':          { label: 'Boathouse',          world:  174, plane: 'surface', contact: 'none', srcBox: [0.297, 0.059, 0.405, 0.882], motion: 'fixed' },
+    'pond-oak-white':          { label: 'White oak',          world:  150, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'pond-maple-red':          { label: 'Red maple',          world:   84, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'pond-pontoon':            { label: 'Club pontoon',       world:   74, plane: 'float',   contact: 'none', srcBox: [0.287, 0.058, 0.425, 0.885], motion: 'fixed' },
+    'pond-dinghy-rack':        { label: 'Dinghy rack',        world:   44, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'pond-blackeyed-susan':    { label: 'Black-eyed Susans',  world:   44, plane: 'surface', contact: 'none', srcBox: [0.058, 0.257, 0.884, 0.486], motion: 'fixed' },
+    'pond-dogwood-redosier':   { label: 'Red-osier dogwood',  world:   40, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'pond-raft-practice':      { label: 'Practice raft',      world:   37, plane: 'float',   contact: 'none', motion: 'fixed' },
+    'pond-holly-inkberry':     { label: 'Inkberry holly',     world:   26, plane: 'surface', contact: 'none', motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
@@ -2303,6 +2360,9 @@ const SHAPE_KINDS = {
     // Grass island — the bayou's hummocks, the strait's islets. Barely stands out of the
     // water, and shadows accordingly: you do not get a lee from a marsh.
     reed:    { motion: 'fixed', hard: false, look: 'grass',    hidden: false, nav: true, height: 0 },   // ~4 m — you get no lee from a marsh
+    // Duckling Pond's mown lawn: the same grass, but LAND — a hull stops at the bank. Reed
+    // is a marsh you sail into; a lawn is where the pond ends.
+    lawn:    { motion: 'fixed', hard: true,  look: 'lawn',     hidden: false, nav: true, height: 0 },   // ~1 m of bank, and solid
     // The reed's twin in everything but colour: `grass` brightened to meadow green
     // (2026-08-08), and the tan-olive it used to be lives here. The swamp's docs were
     // re-kinded to this, so the bayou looks exactly as it always did.

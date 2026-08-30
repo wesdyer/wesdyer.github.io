@@ -24,9 +24,9 @@ const Sayings = {
 
     queueQuote: function(boat, type) {
         if (!boat || boat.isPlayer) return;
-        // Sailing School: the classmates keep quiet through the lessons — the only voice on
-        // the water is Paddle's. They get their lines back for the graduation race.
-        if (window.School && School.lesson()) return;
+        // Sailing School: the classmates keep quiet, lessons and race alike — the only voice
+        // on the water is Coach Paddle's, and the race's reminders need the box to themselves.
+        if (window.School && School.active) return;
         if (this.queue.length >= 3) return;
         if (!this.overlay) this.init();
 
@@ -561,10 +561,13 @@ function layoutVenueCourseMap(pending) {
     if (show) drawCourseMiniMap();
 }
 
-function drawCourseMiniMap() {
-    const box = document.getElementById('venue-course-box');
-    const inner = document.getElementById('venue-course-inner');
-    const canvas = document.getElementById('venue-course-map');
+// `target` lets another surface borrow the chart whole — Sailing School's screens draw it
+// into their own box. Absent, it is the race-day board's.
+function drawCourseMiniMap(target) {
+    const T = target || {};
+    const box = T.box || document.getElementById('venue-course-box');
+    const inner = T.inner || document.getElementById('venue-course-inner');
+    const canvas = T.canvas || document.getElementById('venue-course-map');
     if (!box || !inner || !canvas) return;
     const availW = box.clientWidth, availH = box.clientHeight;
     if (availW < 40 || availH < 40) return;
@@ -612,7 +615,7 @@ function drawCourseMiniMap() {
     inner.style.width = w + 'px';
     inner.style.height = h + 'px';
     // The record book fills the water the chart leaves, when there is enough of it.
-    const recEl = document.getElementById('venue-records-inline');
+    const recEl = T.noRecords ? null : document.getElementById('venue-records-inline');
     if (recEl) {
         const remain = availW - w - 16;
         if (remain >= 215) {
@@ -715,6 +718,8 @@ function drawCourseMiniMap() {
     const A = _chartAnim;
     if (A.raf) { cancelAnimationFrame(A.raf); A.raf = 0; }
     A.static = off; A.w = w; A.h = h; A.dpr = dpr; A.last = 0;
+    A.box = box; A.canvas = canvas;
+    A.visible = T.visible || (() => UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden'));
     // The chart-to-world transform, inverted — the field lives in world units.
     A.scale = scale; A.cx = cx; A.cy = cy;
     A.X = X; A.Y = Y;
@@ -1053,10 +1058,10 @@ function chartStaticCourse(ctx, X, Y) {
 // drawCourseMiniMap, which restarts it.
 function chartCometFrame(ts) {
     const A = _chartAnim;
-    const box = document.getElementById('venue-course-box');
-    const canvas = document.getElementById('venue-course-map');
-    const boardUp = UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden');
-    if (!A.static || !box || !canvas || box.style.display === 'none' || !boardUp) {
+    const box = A.box || document.getElementById('venue-course-box');
+    const canvas = A.canvas || document.getElementById('venue-course-map');
+    const boardUp = A.visible ? A.visible() : (UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden'));
+    if (!A.static || !box || !canvas || box.style.display === 'none' || !boardUp || !canvas.isConnected) {
         A.raf = 0;
         return;
     }
@@ -1950,6 +1955,7 @@ function saveSettings() {
 // venue's races, for a UI action that has nothing to do with the simulation.
 function swapClashingOpponent() {
     if (!state.boats || !state.boats.length) return false;
+    if (window.School && School.active) return false;   // the classmates are cast, not drawn; nobody clashes with a trainer
     const mine = settings.character;
     const clash = state.boats.find(b => !b.isPlayer && b.name === mine);
     if (!clash) return false;
@@ -1961,8 +1967,16 @@ function swapClashingOpponent() {
 }
 
 // Point the player's boat at whoever they are now, without rebuilding the race.
+// WHO THE PLAYER IS RIGHT NOW: the chosen character — except in Sailing School, where the
+// player sails the assigned trainer dinghy. Every re-apply of settings (the C key, the
+// settings screen, any saveSettings) used to reach for the stored character and turn the
+// trainer back into it mid-lesson.
+function currentPlayerConfig() {
+    return (window.School && School.active) ? School.playerConfig() : playerCharacter();
+}
+
 function applyPlayerCharacter() {
-    const pc = playerCharacter();
+    const pc = currentPlayerConfig();
     if (state.boats && state.boats.length) {
         applyBoatIdentity(state.boats[0], pc, true);
         swapClashingOpponent();
@@ -1974,7 +1988,7 @@ function applySettings() {
     state.showNavAids = settings.navAids;
     if (state.boats.length > 0) {
         state.boats[0].manualTrim = !settings.autoTrim;
-        applyBoatIdentity(state.boats[0], playerCharacter(), true);
+        applyBoatIdentity(state.boats[0], currentPlayerConfig(), true);
         swapClashingOpponent();
     }
     state.camera.mode = settings.cameraMode;
@@ -1999,6 +2013,8 @@ function applySettings() {
 // leaderboard's own order); before the gun there is no standing to report.
 function raceContextLine() {
     const p = state.boats[0];
+    // Sailing School: the pond and the section, as the section screen names it.
+    if (window.School && School.active && School.sectionName) return `DUCKLING POND · ${School.sectionName().toUpperCase()}`;
     const venue = (venueDisplayName(state.race.venue) || '').toUpperCase();
     const total = state.race.totalLegs;
     const leg = p ? p.raceState.leg : 0;
@@ -2116,7 +2132,8 @@ if (UI.resumeButton) UI.resumeButton.addEventListener('click', (e) => { e.preven
 // RESTART re-races NOW (same venue, same fleet). Leaving for the clubhouse is
 // its own action — ABANDON, behind a confirm — so restart no longer silently
 // dumps you on the pre-race board.
-if (UI.restartButton) UI.restartButton.addEventListener('click', (e) => { e.preventDefault(); rematchRace(); });
+// In Sailing School, Restart is the whole tutorial from its intro screen.
+if (UI.restartButton) UI.restartButton.addEventListener('click', (e) => { e.preventDefault(); if (window.School && School.active) { togglePause(false); School.begin(); } else rematchRace(); });
 if (UI.abandonButton) UI.abandonButton.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(true); UI.abandonButton.blur(); });
 if (UI.abandonKeep) UI.abandonKeep.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(false); togglePause(false); });
 if (UI.abandonConfirm) UI.abandonConfirm.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(false); restartRace(); });
@@ -2175,7 +2192,7 @@ if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preven
         sb.addEventListener('click', (e) => {
             e.preventDefault(); sb.blur();
             if (state.race.status !== 'waiting' || _venueLoading) return;
-            School.start(1);
+            School.begin();
         });
     }
 }

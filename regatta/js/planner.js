@@ -325,6 +325,19 @@ const CoursePath = {
     // A flat threshold cannot serve: a triangle corner needs a fraction of a turn while an
     // out-and-back needs the whole circle. The engine used 45 degrees for everything, so a
     // 60-degree nibble at Glacier Sound's isle completed a leg that requires 360.
+    // The same rule for a mark that is not on a route: from one point, round, to another.
+    requiredSweepPts(mark, from, to) {
+        if (!mark || !from) return null;
+        to = to || from;
+        const sgn = mark.side === 'port' ? -1 : 1;
+        const a0 = CoursePath._tangent(mark, from, sgn, true).a;
+        const a1 = CoursePath._tangent(mark, to, sgn, false).a;
+        let sweep = (a1 - a0) * sgn;
+        while (sweep < 0) sweep += Math.PI * 2;
+        while (sweep > Math.PI * 2) sweep -= Math.PI * 2;
+        if (sweep < 0.2) sweep = Math.PI * 2;
+        return sweep;
+    },
     requiredSweep(marks, route, leg) {
         const e = route && route[leg];
         if (!e || e.kind !== 'round' || !e.mark) return null;

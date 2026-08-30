@@ -881,7 +881,9 @@ function updateBoat(boat, dt) {
         boat.heading = normalizeAngle(boat.heading + RAPIDS_YAW * boat.rapidsTurb * shove * dt);
     }
 
-    let targetGameSpeed = targetKnots * 0.25;
+    // A flat pace scale on the hull (default 1). Sailing School's classmates carry 0.9 —
+    // ten percent slower at every angle and in every breeze, which no stat can express.
+    let targetGameSpeed = targetKnots * 0.25 * (boat.speedScale || 1);
 
     // Penalties no longer slow the boat directly — the cost is the owed 360°
     // turn (see triggerPenalty). Rule 21 keep-clear still applies while flagged.
@@ -1418,216 +1420,15 @@ function updateBoatRaceState(boat, dt) {
         && state.race.status === 'racing' && !boat.raceState.finished) {
         const rs = boat.raceState;
         const rm = _entry.mark;
-        const sgn = (rm.side === 'port') ? -1 : 1;
-        const rx1 = boat.x - rm.x, ry1 = boat.y - rm.y;
-        const d2 = rx1 * rx1 + ry1 * ry1;
-
-        // THE ZONE DOES NOT GATE COMPLETION. The circle is a RULES construct — where
-        // mark-room applies, where the AI switches to its orbit machinery — and a
-        // rounding is complete the way the racing rules say it is: pass the mark on
-        // the required side, in sequence. The string rule cares which side you left
-        // it on, not how close you came, so a wide rounding outside the circle is a
-        // legitimate (if slow) rounding. Zone entry used to ARM the sweep, and a
-        // player who gave the first can a sensible berth sailed a perfect rounding
-        // that silently never counted.
-        //
-        // So the signed sweep accumulates for the WHOLE leg, at any distance. The
-        // sign carries the side: a pass on the wrong side sweeps negative and can
-        // never reach the requirement, however close or far it was.
-        //
-        // Note the sweep is only ever read for its SIGN — see the completion test
-        // below for why a magnitude threshold cannot work.
-        //
-        // ARMED BY THE HULL, not the centre — armed now feeds only the AI's rounding
-        // machinery and the wrong-way warning, but it should still flip exactly when
-        // the drawn ring lights amber, and both test the hull per RRS 18.1.
-        if (!rs.roundArmed) {
-            const sinH = Math.sin(boat.heading), cosH = Math.cos(boat.heading);
-            const hp = getClosestPointOnSegment(rm.x, rm.y,
-                boat.x + 25 * sinH, boat.y - 25 * cosH,
-                boat.x - 30 * sinH, boat.y + 30 * cosH);
-            if ((hp.x - rm.x) ** 2 + (hp.y - rm.y) ** 2 < rm.zone * rm.zone) rs.roundArmed = true;
+        const nextA = (typeof CoursePath !== 'undefined' && state.course.route)
+            ? CoursePath.anchor(state.course.route[rs.leg + 1], state.course.marks) : null;
+        const res = roundingStep(boat, rs, rm, nextA);
+        if (res.wrong && boat.isPlayer) {
+            showRaceMessage(`WRONG WAY ROUND — LEAVE IT TO ${String(rm.side).toUpperCase()}`,
+                            "text-orange-500", "border-orange-500/50");
+            setTimeout(hideRaceMessage, 2500);
         }
-        // ⚠️ THE APPROACH BANKS WINDING SHE NEVER SPENT ROUNDING — re-base on arrival.
-        //
-        // `roundSweep` accumulates from LEG START at any distance. That is right for the
-        // SIDE judgement — the sign carries it — and wrong for the MAGNITUDE, because an
-        // approach even slightly off the mark's beam banks bearing change the boat never
-        // spent rounding. Owner, sailing Redrock by hand: "I hit the first rounding circle
-        // and tacked outside to get high enough to round and it counted as rounding."
-        //
-        // So the requirement is asked of the winding made from the moment she ARRIVES in
-        // the mark's neighbourhood. Once per leg — leaving and re-entering does not re-arm
-        // it, or a boat could shed a wrong-way excursion by stepping outside and back.
-        if (!rs.roundRebased && d2 < (rm.zone * ROUND_NEAR) ** 2) {
-            rs.roundRebased = true;
-            rs.roundSweep = 0;
-            rs.roundBanked = false;
-            rs.roundFrom = { x: boat.x, y: boat.y };
-            rs.roundEntryB = Math.atan2(ry1, rx1);
-        }
-        const activeR = rm.zone * ROUND_ACTIVE;
-        const d2prev = (rs.lastPos.x - rm.x) ** 2 + (rs.lastPos.y - rm.y) ** 2;
-        {
-            const rx0 = rs.lastPos.x - rm.x, ry0 = rs.lastPos.y - rm.y;
-            let dA = Math.atan2(ry1, rx1) - Math.atan2(ry0, rx0);
-            while (dA > Math.PI) dA -= Math.PI * 2;
-            while (dA < -Math.PI) dA += Math.PI * 2;
-            // Wrong-way travel gets its OWN accumulator, so the warning and the side
-            // judgement cannot eat each other.
-            const prog = dA * sgn;
-            // NET signed sweep, not a magnitude race. What matters is which SIDE the
-            // mark was left on, and the sign carries that. It is not clamped at zero:
-            // a wrong-way excursion must be able to cancel, or you could bank credit
-            // one way and then pass on the wrong side.
-            rs.roundSweep = (rs.roundSweep || 0) + prog;
-            // The WARNING stays gated to the mark's neighbourhood. Far from the mark
-            // the bearing wobbles with every tack of an ordinary beat, and those
-            // wobbles accumulate one-directionally here — ungated, a long approach
-            // could scold a boat that never put a foot wrong.
-            if (prog < 0 && d2 < activeR * activeR) {
-                rs.roundWrong = (rs.roundWrong || 0) - prog;
-                if (rs.roundWrong > Math.PI * 0.55 && boat.isPlayer && !rs._wrongRound) {
-                    rs._wrongRound = true;
-                    showRaceMessage(`WRONG WAY ROUND — LEAVE IT TO ${String(rm.side).toUpperCase()}`,
-                                    "text-orange-500", "border-orange-500/50");
-                    setTimeout(hideRaceMessage, 2500);
-                }
-            }
-        }
-
-        // COMPLETION ON DEPARTURE, not on a sweep threshold.
-        //
-        // A fixed threshold (this was 160 degrees) is wrong in general. Sailing in a
-        // straight line PAST a mark sweeps ~180 degrees by itself, so the threshold was
-        // not measuring "went round" — it was accidentally measuring "passed close".
-        // And the sweep a real rounding needs depends on where the NEXT mark is: an
-        // out-and-back needs ~180, a triangle corner might need 60. No single number
-        // can serve both.
-        //
-        // The actual racing rule is "leave the mark on the required side", so that is
-        // what this tests. Proximity is the zone; the SIDE is the sign of the net
-        // sweep; and the leg completes when the boat has passed the mark and is
-        // leaving. The small minimum only rejects degenerate cases — a boat nudging
-        // the zone edge and retreating has not passed anything.
-        // HOW FAR ROUND THIS COURSE REQUIRES, not a constant. `Math.PI / 4` was applied to
-        // every mark on every course: a 60-degree nibble at Glacier Sound's isle completed a
-        // leg whose geometry needs the whole circle, because the boat leaves for the line it
-        // arrived from. `reqSweep` comes from where the previous and next marks are.
-        //
-        // ROUND_SWEEP_TOL is 1: the rule states no tolerance, and the AI's exit logic
-        // reads the same constant, so any discount here is also an instruction to the
-        // fleet to stop short. See the constant for the rule text.
-        //
-        // No zone requirement here — the departure radius only stops the leg completing
-        // in the middle of a tight turn; a wide rounding is already outside it.
-        const need = (rm.reqSweep != null ? rm.reqSweep * ROUND_SWEEP_TOL : Math.PI / 4);
-        // A ROUNDING, ONCE MADE, STAYS MADE. The string is drawn over her track "until
-        // she finishes", so the wrap is a fact about the track and not about where she
-        // happens to be standing when the departure test fires. Without this, the
-        // requirement is unreachable at the margin: the sweep PEAKS inside the
-        // completion radius — the ideal path's exit tangent lies inside zone*1.25 — and
-        // unwinds a couple of tenths of a radian as she fights out through the ring,
-        // measured 3.44 rad banked against a 3.40 requirement and only 2.97 left by the
-        // time she was far enough out to be asked. That unwind is the same one the AI's
-        // exit buffer exists to cover; with no tolerance left in `need` it has to be
-        // handled here instead of paid for with a discount.
-        //
-        // She can still GIVE IT BACK — by sailing back round the other way, which is
-        // what the net signed accumulator measures. See ROUND_GIVEBACK for how much.
-        // ⚠️ THE REQUIREMENT IS TO REACH THE EXIT BEARING, NOT TO BANK A NUMBER.
-        //
-        // A swept-angle threshold cannot tell a rounding from a near miss, because coming
-        // close to a mark and turning away genuinely DOES swing your bearing about it a
-        // long way. Measured (`test_rounding_nibble.js`): a boat that touches the zone and
-        // tacks off banks 82 degrees on Redrock against a 46-degree requirement, 126
-        // against 92 on bay, 126 against 89 on ocean — completing all three legs without
-        // going round the mark at all. Raising the number does not fix it; it only makes
-        // real roundings register late, which is the other half of the same complaint.
-        //
-        // What actually separates the two is WHERE SHE IS GOING. A rounding ends with the
-        // boat leaving for the next mark; a near miss ends with her leaving the way she
-        // came. So the requirement is the winding from her ARRIVAL bearing round to the
-        // bearing of the next anchor, taken the required way — a per-boat, per-leg fact
-        // about the geometry she actually sailed, not a course constant.
-        //
-        // The tolerance is DERIVED, not tuned: she leaves on a TANGENT, so at distance d
-        // from a mark she rounds at radius R her bearing falls short of the exit bearing
-        // by exactly acos(R/d). Allowing that and no more means the leg completes the
-        // moment she is genuinely on her way out, and not a moment before.
-        let needExit = need;
-        if (rs.roundEntryB != null && typeof CoursePath !== 'undefined' && state.course.route) {
-            const nextA = CoursePath.anchor(state.course.route[rs.leg + 1], state.course.marks);
-            if (nextA) {
-                const bQ = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
-                let w = (bQ - rs.roundEntryB) * sgn;
-                while (w <= 0) w += Math.PI * 2;
-                while (w > Math.PI * 2) w -= Math.PI * 2;
-                const R = (typeof CoursePath._roundR === 'function')
-                    ? CoursePath._roundR(rm, null) : Math.max(90, (rm.radius || 12) + 70);
-                const dNow = Math.sqrt(d2);
-                const beta = Math.acos(Math.max(0, Math.min(1, R / Math.max(R, dNow))));
-                needExit = Math.max(need, w - beta - ROUND_EXIT_SLACK);
-            }
-        }
-        if ((rs.roundSweep || 0) >= needExit) rs.roundBanked = true;
-        else if (rs.roundBanked && (rs.roundSweep || 0) < needExit - ROUND_GIVEBACK) rs.roundBanked = false;
-        // SHE HAS LEFT THE ZONE — the rules' own boundary for being finished with a
-        // mark (18.2(b) ends mark-room when the boat entitled to it "leaves the zone").
-        // This was zone*1.25, a margin whose stated job was to stop the leg completing
-        // in the middle of a tight turn. `roundBanked` does that job properly: it does
-        // not latch until the whole geometric requirement is swept, so a boat mid-turn
-        // cannot complete however far out she wanders. The extra 25% is not free —
-        // Glacier Sound's rounding mark has a zone of 851, so it held boats on the
-        // rounding leg's path for another 213 units of outbound transit, orbiting an
-        // island instead of steering the next leg.
-        // AND THE STRING MUST ACTUALLY HAVE WRAPPED THE MARK.
-        //
-        // The swept-angle threshold is a PROXY for the rule, and `reqSweep` lands within
-        // about fifteen degrees of the real boundary on Glacier Sound — so the half
-        // radian of give-back the latch allows can carry a boat back across it. Measured
-        // (`_string_truth_probe`, 12 arctic seeds): the rounding work alone left 2% of
-        // completed roundings with a track that never wrapped the mark, and the fleet
-        // changes on top of it drifted that back to 12%, all of them sitting within a
-        // few hundredths of a radian of the boundary.
-        //
-        // So test the rule itself as well. Over a leg the net winding about the mark
-        // takes one of exactly two values 2*pi apart — the larger is the one where the
-        // taut string wraps the mark — so this is a two-class decision with a full pi of
-        // margin, and it needs no tolerance of its own:
-        //
-        //   required = the signed angle from (mark -> where she began the leg) to
-        //              (mark -> the next mark), taken the required way round, in (0,2pi]
-        //   actual   = roundSweep + the short-way sweep still to come on a run to that
-        //              next mark from where she is now
-        //   WRAPPED iff actual >= required - pi
-        //
-        // It is an AND, never an OR: it can only ever hold a boat in, and a boat held in
-        // is a boat still rounding, which is what she is supposed to be doing. When the
-        // geometry cannot be read — no next anchor, no recorded start — it stands aside.
-        let wrapped = true;
-        if (rs.roundFrom && typeof CoursePath !== 'undefined' && state.course.route) {
-            const nextA = CoursePath.anchor(state.course.route[rs.leg + 1], state.course.marks);
-            if (nextA) {
-                const bTo = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
-                const bFrom = Math.atan2(rs.roundFrom.y - rm.y, rs.roundFrom.x - rm.x);
-                let needW = (bTo - bFrom) * sgn;
-                while (needW <= 0) needW += Math.PI * 2;
-                while (needW > Math.PI * 2) needW -= Math.PI * 2;
-                let rem = bTo - Math.atan2(ry1, rx1);
-                while (rem > Math.PI) rem -= Math.PI * 2;
-                while (rem < -Math.PI) rem += Math.PI * 2;
-                wrapped = ((rs.roundSweep || 0) + rem * sgn) >= needW - Math.PI;
-            }
-        }
-        // The AI has to see this too, or she banks the sweep, turns for the exit on
-        // `roundBanked` alone, and sails away from a mark she has not been round —
-        // measured at 12 boats in 144 failing to finish. Same coupling as the
-        // tolerance and the exit latch: half of this change strands boats.
-        rs.roundWrapped = wrapped;
-        if (d2 > rm.zone ** 2 && d2 > d2prev && rs.roundBanked && wrapped) {
-            advanceLeg();
-        }
+        if (res.done) advanceLeg();
     }
 
     // CROSSING legs: lines and gates. Guarded on >= 2 marks, not >= 4 — a course
@@ -1948,3 +1749,220 @@ function fleetRank(boat) {
 // ⚠️ KEYED BY VENUE **AND LEG COUNT**. A two-leg race and a four-leg race around the same
 // marks are not the same event, and a "best" that mixes them is a lie the first time
 // someone shortens the course.
+
+// ── ROUNDING, THE ONE RULE ─────────────────────────────────────────────────────
+// Everything a mark rounding is — arming in the zone, the rebase at ROUND_NEAR, the signed
+// sweep, the wrong-way accumulator, the exit requirement measured to the NEXT anchor, the
+// taut-string `wrapped` test and the leave-the-zone-outbound trigger — in one function, so
+// the race and Sailing School judge a rounding by exactly the same code. `rs` is the track
+// (the race passes boat.raceState; the school its own object with the same round* fields and
+// a `lastPos`), `rm` the mark ({x, y, zone, radius, side, reqSweep}), `nextA` the anchor of
+// whatever comes next (the following route entry, or the school's next goal).
+function roundingStep(boat, rs, rm, nextA) {
+    const sgn = (rm.side === 'port') ? -1 : 1;
+    let wrong = false;
+    const rx1 = boat.x - rm.x, ry1 = boat.y - rm.y;
+    const d2 = rx1 * rx1 + ry1 * ry1;
+
+    // THE ZONE DOES NOT GATE COMPLETION. The circle is a RULES construct — where
+    // mark-room applies, where the AI switches to its orbit machinery — and a
+    // rounding is complete the way the racing rules say it is: pass the mark on
+    // the required side, in sequence. The string rule cares which side you left
+    // it on, not how close you came, so a wide rounding outside the circle is a
+    // legitimate (if slow) rounding. Zone entry used to ARM the sweep, and a
+    // player who gave the first can a sensible berth sailed a perfect rounding
+    // that silently never counted.
+    //
+    // So the signed sweep accumulates for the WHOLE leg, at any distance. The
+    // sign carries the side: a pass on the wrong side sweeps negative and can
+    // never reach the requirement, however close or far it was.
+    //
+    // Note the sweep is only ever read for its SIGN — see the completion test
+    // below for why a magnitude threshold cannot work.
+    //
+    // ARMED BY THE HULL, not the centre — armed now feeds only the AI's rounding
+    // machinery and the wrong-way warning, but it should still flip exactly when
+    // the drawn ring lights amber, and both test the hull per RRS 18.1.
+    if (!rs.roundArmed) {
+        const sinH = Math.sin(boat.heading), cosH = Math.cos(boat.heading);
+        const hp = getClosestPointOnSegment(rm.x, rm.y,
+            boat.x + 25 * sinH, boat.y - 25 * cosH,
+            boat.x - 30 * sinH, boat.y + 30 * cosH);
+        if ((hp.x - rm.x) ** 2 + (hp.y - rm.y) ** 2 < rm.zone * rm.zone) rs.roundArmed = true;
+    }
+    // ⚠️ THE APPROACH BANKS WINDING SHE NEVER SPENT ROUNDING — re-base on arrival.
+    //
+    // `roundSweep` accumulates from LEG START at any distance. That is right for the
+    // SIDE judgement — the sign carries it — and wrong for the MAGNITUDE, because an
+    // approach even slightly off the mark's beam banks bearing change the boat never
+    // spent rounding. Owner, sailing Redrock by hand: "I hit the first rounding circle
+    // and tacked outside to get high enough to round and it counted as rounding."
+    //
+    // So the requirement is asked of the winding made from the moment she ARRIVES in
+    // the mark's neighbourhood. Once per leg — leaving and re-entering does not re-arm
+    // it, or a boat could shed a wrong-way excursion by stepping outside and back.
+    if (!rs.roundRebased && d2 < (rm.zone * ROUND_NEAR) ** 2) {
+        rs.roundRebased = true;
+        rs.roundSweep = 0;
+        rs.roundBanked = false;
+        rs.roundFrom = { x: boat.x, y: boat.y };
+        rs.roundEntryB = Math.atan2(ry1, rx1);
+    }
+    const activeR = rm.zone * ROUND_ACTIVE;
+    const d2prev = (rs.lastPos.x - rm.x) ** 2 + (rs.lastPos.y - rm.y) ** 2;
+    {
+        const rx0 = rs.lastPos.x - rm.x, ry0 = rs.lastPos.y - rm.y;
+        let dA = Math.atan2(ry1, rx1) - Math.atan2(ry0, rx0);
+        while (dA > Math.PI) dA -= Math.PI * 2;
+        while (dA < -Math.PI) dA += Math.PI * 2;
+        // Wrong-way travel gets its OWN accumulator, so the warning and the side
+        // judgement cannot eat each other.
+        const prog = dA * sgn;
+        // NET signed sweep, not a magnitude race. What matters is which SIDE the
+        // mark was left on, and the sign carries that. It is not clamped at zero:
+        // a wrong-way excursion must be able to cancel, or you could bank credit
+        // one way and then pass on the wrong side.
+        rs.roundSweep = (rs.roundSweep || 0) + prog;
+        // The WARNING stays gated to the mark's neighbourhood. Far from the mark
+        // the bearing wobbles with every tack of an ordinary beat, and those
+        // wobbles accumulate one-directionally here — ungated, a long approach
+        // could scold a boat that never put a foot wrong.
+        if (prog < 0 && d2 < activeR * activeR) {
+            rs.roundWrong = (rs.roundWrong || 0) - prog;
+            if (rs.roundWrong > Math.PI * 0.55 && !rs._wrongRound) {
+                rs._wrongRound = true;
+                wrong = true;
+            }
+        }
+    }
+
+    // COMPLETION ON DEPARTURE, not on a sweep threshold.
+    //
+    // A fixed threshold (this was 160 degrees) is wrong in general. Sailing in a
+    // straight line PAST a mark sweeps ~180 degrees by itself, so the threshold was
+    // not measuring "went round" — it was accidentally measuring "passed close".
+    // And the sweep a real rounding needs depends on where the NEXT mark is: an
+    // out-and-back needs ~180, a triangle corner might need 60. No single number
+    // can serve both.
+    //
+    // The actual racing rule is "leave the mark on the required side", so that is
+    // what this tests. Proximity is the zone; the SIDE is the sign of the net
+    // sweep; and the leg completes when the boat has passed the mark and is
+    // leaving. The small minimum only rejects degenerate cases — a boat nudging
+    // the zone edge and retreating has not passed anything.
+    // HOW FAR ROUND THIS COURSE REQUIRES, not a constant. `Math.PI / 4` was applied to
+    // every mark on every course: a 60-degree nibble at Glacier Sound's isle completed a
+    // leg whose geometry needs the whole circle, because the boat leaves for the line it
+    // arrived from. `reqSweep` comes from where the previous and next marks are.
+    //
+    // ROUND_SWEEP_TOL is 1: the rule states no tolerance, and the AI's exit logic
+    // reads the same constant, so any discount here is also an instruction to the
+    // fleet to stop short. See the constant for the rule text.
+    //
+    // No zone requirement here — the departure radius only stops the leg completing
+    // in the middle of a tight turn; a wide rounding is already outside it.
+    const need = (rm.reqSweep != null ? rm.reqSweep * ROUND_SWEEP_TOL : Math.PI / 4);
+    // A ROUNDING, ONCE MADE, STAYS MADE. The string is drawn over her track "until
+    // she finishes", so the wrap is a fact about the track and not about where she
+    // happens to be standing when the departure test fires. Without this, the
+    // requirement is unreachable at the margin: the sweep PEAKS inside the
+    // completion radius — the ideal path's exit tangent lies inside zone*1.25 — and
+    // unwinds a couple of tenths of a radian as she fights out through the ring,
+    // measured 3.44 rad banked against a 3.40 requirement and only 2.97 left by the
+    // time she was far enough out to be asked. That unwind is the same one the AI's
+    // exit buffer exists to cover; with no tolerance left in `need` it has to be
+    // handled here instead of paid for with a discount.
+    //
+    // She can still GIVE IT BACK — by sailing back round the other way, which is
+    // what the net signed accumulator measures. See ROUND_GIVEBACK for how much.
+    // ⚠️ THE REQUIREMENT IS TO REACH THE EXIT BEARING, NOT TO BANK A NUMBER.
+    //
+    // A swept-angle threshold cannot tell a rounding from a near miss, because coming
+    // close to a mark and turning away genuinely DOES swing your bearing about it a
+    // long way. Measured (`test_rounding_nibble.js`): a boat that touches the zone and
+    // tacks off banks 82 degrees on Redrock against a 46-degree requirement, 126
+    // against 92 on bay, 126 against 89 on ocean — completing all three legs without
+    // going round the mark at all. Raising the number does not fix it; it only makes
+    // real roundings register late, which is the other half of the same complaint.
+    //
+    // What actually separates the two is WHERE SHE IS GOING. A rounding ends with the
+    // boat leaving for the next mark; a near miss ends with her leaving the way she
+    // came. So the requirement is the winding from her ARRIVAL bearing round to the
+    // bearing of the next anchor, taken the required way — a per-boat, per-leg fact
+    // about the geometry she actually sailed, not a course constant.
+    //
+    // The tolerance is DERIVED, not tuned: she leaves on a TANGENT, so at distance d
+    // from a mark she rounds at radius R her bearing falls short of the exit bearing
+    // by exactly acos(R/d). Allowing that and no more means the leg completes the
+    // moment she is genuinely on her way out, and not a moment before.
+    let needExit = need;
+    if (rs.roundEntryB != null && typeof CoursePath !== 'undefined') {
+        if (nextA) {
+            const bQ = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
+            let w = (bQ - rs.roundEntryB) * sgn;
+            while (w <= 0) w += Math.PI * 2;
+            while (w > Math.PI * 2) w -= Math.PI * 2;
+            const R = (typeof CoursePath._roundR === 'function')
+                ? CoursePath._roundR(rm, null) : Math.max(90, (rm.radius || 12) + 70);
+            const dNow = Math.sqrt(d2);
+            const beta = Math.acos(Math.max(0, Math.min(1, R / Math.max(R, dNow))));
+            needExit = Math.max(need, w - beta - ROUND_EXIT_SLACK);
+        }
+    }
+    if ((rs.roundSweep || 0) >= needExit) rs.roundBanked = true;
+    else if (rs.roundBanked && (rs.roundSweep || 0) < needExit - ROUND_GIVEBACK) rs.roundBanked = false;
+    // SHE HAS LEFT THE ZONE — the rules' own boundary for being finished with a
+    // mark (18.2(b) ends mark-room when the boat entitled to it "leaves the zone").
+    // This was zone*1.25, a margin whose stated job was to stop the leg completing
+    // in the middle of a tight turn. `roundBanked` does that job properly: it does
+    // not latch until the whole geometric requirement is swept, so a boat mid-turn
+    // cannot complete however far out she wanders. The extra 25% is not free —
+    // Glacier Sound's rounding mark has a zone of 851, so it held boats on the
+    // rounding leg's path for another 213 units of outbound transit, orbiting an
+    // island instead of steering the next leg.
+    // AND THE STRING MUST ACTUALLY HAVE WRAPPED THE MARK.
+    //
+    // The swept-angle threshold is a PROXY for the rule, and `reqSweep` lands within
+    // about fifteen degrees of the real boundary on Glacier Sound — so the half
+    // radian of give-back the latch allows can carry a boat back across it. Measured
+    // (`_string_truth_probe`, 12 arctic seeds): the rounding work alone left 2% of
+    // completed roundings with a track that never wrapped the mark, and the fleet
+    // changes on top of it drifted that back to 12%, all of them sitting within a
+    // few hundredths of a radian of the boundary.
+    //
+    // So test the rule itself as well. Over a leg the net winding about the mark
+    // takes one of exactly two values 2*pi apart — the larger is the one where the
+    // taut string wraps the mark — so this is a two-class decision with a full pi of
+    // margin, and it needs no tolerance of its own:
+    //
+    //   required = the signed angle from (mark -> where she began the leg) to
+    //              (mark -> the next mark), taken the required way round, in (0,2pi]
+    //   actual   = roundSweep + the short-way sweep still to come on a run to that
+    //              next mark from where she is now
+    //   WRAPPED iff actual >= required - pi
+    //
+    // It is an AND, never an OR: it can only ever hold a boat in, and a boat held in
+    // is a boat still rounding, which is what she is supposed to be doing. When the
+    // geometry cannot be read — no next anchor, no recorded start — it stands aside.
+    let wrapped = true;
+    if (rs.roundFrom && typeof CoursePath !== 'undefined') {
+        if (nextA) {
+            const bTo = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
+            const bFrom = Math.atan2(rs.roundFrom.y - rm.y, rs.roundFrom.x - rm.x);
+            let needW = (bTo - bFrom) * sgn;
+            while (needW <= 0) needW += Math.PI * 2;
+            while (needW > Math.PI * 2) needW -= Math.PI * 2;
+            let rem = bTo - Math.atan2(ry1, rx1);
+            while (rem > Math.PI) rem -= Math.PI * 2;
+            while (rem < -Math.PI) rem += Math.PI * 2;
+            wrapped = ((rs.roundSweep || 0) + rem * sgn) >= needW - Math.PI;
+        }
+    }
+    // The AI has to see this too, or she banks the sweep, turns for the exit on
+    // `roundBanked` alone, and sails away from a mark she has not been round —
+    // measured at 12 boats in 144 failing to finish. Same coupling as the
+    // tolerance and the exit latch: half of this change strands boats.
+    rs.roundWrapped = wrapped;
+    if (d2 > rm.zone ** 2 && d2 > d2prev && rs.roundBanked && wrapped) return { done: true, wrong };
+    return { done: false, wrong };
+}
