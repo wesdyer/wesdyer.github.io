@@ -16585,3 +16585,325 @@ marginal class (26-49%, pre-rival cost ~12: the 50-55° shoulder). Nothing in
 this list is a price the rules let us remove; the land half is the next
 measurable target and it is a different push (which land, at what
 clearance, vs his line — the `_gap_grid` water-he-never-enters question).
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE PATHS INTAKE + REBENCH — 2026-08-30 02:08 → (autonomous, owner asleep
+# until 08:00 PT). Owner: "I added sailing school (duck pond) venue, but it
+# isn't a focus of the AI campaign. I also added stored paths for venues but
+# those did not change the venues themselves. First look at the changes, make
+# sure venues are up to date, and rebench everything." HEAD in: 6d8b7c4
+# (owner commits d4dba84..6d8b7c4 on top of the C2(b) close 88728ae).
+# ═══════════════════════════════════════════════════════════════════════
+
+## WHAT MOVED (by key, `scratchpad/keydiff.js` — the recut-session diff)
+All TEN benchmark docs differ from their frozen copies, and on every one the
+ONLY key that moved is `course.paths` (new): marks, lines, route, wind,
+current, gusts, shapes, world, props BYTE-IDENTICAL to the frozen cut. The
+owner's statement holds. Pond (`pond.venue.js`, `course.fleet` 4) is content,
+not benchmarked (README option 3: DON'T TRACK).
+js/ changes that touch the sim: `buildCoursePaths` now PREFERS the document's
+saved `course.paths` over routing at load (course.js); `sailcheck.pathBetween`
+gained a tight-tier second pass (river leg-3 chord fix); physics `speedScale`
+(default 1) + `roundingStep` refactor (behaviour-preserving by construction);
+bot.js `kiteHold` / navigation.js `pinch` are trait-gated (School classmates
+only — no roster bot carries them); `fleetOpponents()` reads `course.fleet`
+(no racing doc has one → 9, unchanged).
+
+## ARE THE SAVED PATHS THE ROUTER'S PATHS? (`_pa_paths_eq.js`, NEW tracked)
+Loads each venue on treePA, takes the dmc the game built from the document,
+routes the same course with `CoursePath.build` on the same grid, compares leg
+by leg at 51 samples: **maxΔ 0 u on every leg of all ten venues**, point
+counts and lengths identical. The editor bakes the router's own output. The
+only differences are the editor's ROUNDING on save (`editor.js
+bakeCoursePaths`): pts to 0.1 u, `roundSweep` to 1e-4, `roundZone` to 1 u
+(arctic 850.516→851, glowtide 269.158→269). Neither dmc `roundSweep` nor
+`roundZone` has a reader outside editor/venuedoc/planner (the mark's
+`reqSweep` comes from `CoursePath.requiredSweep`, not the dmc), so the live
+change is ≤0.05 u of carrot position — a chaos seed, not a design change.
+
+## PROMOTED: all ten re-frozen (`freeze_venues` default four + `--add` ×6),
+## `--check` 10/10 match. Old frozen copies kept in `eval/rl/_venues_nopaths/`
+## for the attribution tree. Trees: treePA = HEAD js + paths docs (== shipping);
+## treeNP = HEAD js + the OLD no-paths docs (isolates js from docs).
+
+## ATTRIBUTION (cmp, byte level) — every venue where both sets finished
+| venue (set) | np* vs re1* (js effect) | pa* vs np* (paths effect) |
+|---|---|---|
+| seatrials | IDENTICAL | IDENTICAL |
+| swamp 9400 | IDENTICAL | IDENTICAL |
+| ocean | IDENTICAL | differ |
+| lagoon | IDENTICAL | differ |
+| river 9400 | IDENTICAL | differ |
+| redrock 9400 | IDENTICAL | differ |
+| bay 9400 | IDENTICAL | differ |
+| lake 6100 | IDENTICAL | differ |
+| glowtide | IDENTICAL | differ |
+⇒ **The owner's js/ is SIM-INERT on the benchmark (9/9 venues cmp-identical
+to the re1* anchors on the old docs).** The paths docs reshuffle eight venues
+through the 0.1 u rounding (seatrials' and swamp's docs happen to bake to the
+same coordinates). Golden verify on HEAD before re-record: **24/30 FAIL, the
+six PASSES are exactly seatrials ×3 + swamp ×3** — the same partition, from an
+independent harness (shipping construction, seeds 90210-2).
+
+## HUMAN REFS SURVIVE THE CUT — ADJUDICATED (`_traj_fp.js`)
+The recorder stamps a whole-doc hash, so every lap stamped on the pre-paths docs
+read "⛔ retired document" after the re-freeze (and `_roundcraft.js` found
+"his laps 0"). Same class as the bay boundary adjudication (2026-08-10), and
+cleaner: `course.paths` is not an input to anything he sails against. The ten
+pre-paths stamps are now in `ADJUDICATED` (arctic 86fc97f4, bay 915b07e4,
+glowtide 3fbd12b1, lagoon 3acc77de, lake 84140c1f, ocean 1b1a7101, redrock
+60f2a5ec, river 76659ee5, seatrials ae1026bc, swamp c351353c) — `_traj_fp`
+prints "✓ ADJUDICATED VALID" for every corpus lap that was valid yesterday.
+Probes that take an `[fp]` argument (`_band_owner`, `_leg_odo`, `_gap_grid`)
+must be handed the OLD stamp; `_roundcraft.js` now takes one as argv[6].
+⚠️ The HUMAN column of the close table is unchanged by construction.
+
+# ═══════════════════════════════════════════════════════════════════════
+# HYPOTHESIS PHASE (03:00 →) — three censuses on treePA, nothing built yet
+# ═══════════════════════════════════════════════════════════════════════
+
+## H1 "THE FAN GOES TOO DEEP" — ⛔ CLOSED PRE-BUILD (`_pa_depth.js`, NEW tracked)
+On avoidance-owned out-of-band ticks (desired 30-50°, chosen ≥50°), the fan
+sorted by the |TWA| each candidate lands on:
+| leg | ticks | chosen depth med (p25/p75) | ≥10° shallower veto-free existed | shallower slots vetoed: boat / static / clean | gap of the cheapest clean shallower: <100 / 100-1000 / ≥1000 |
+|---|---|---|---|---|---|
+| bay 1 | 1591 | 61° (54/81) | 76% | 54 / 10 / 36% | 24 / 10 / 66% |
+| redrock 1 | 2539 | 67° (54/107) | 73% | 44 / 18 / 38% | 18 / 4 / 78% |
+| lagoon 4 | 1351 | 55° (54/69) | 86% | 44 / 8 / 48% | 41 / 9 / 49% |
+The ≥1000 class is carried by (a) the RULE-19 SQUEEZE CLIFF — `if (gap <
+110) cost += 22000`, a direct cost with no veto flag, on the desired heading
+itself (offset 0 on 13-19% of ticks) — and (b) the land-clearance stamp
+`cScale·(1−clr/3)` = 3333 / 6667 (the dProx histogram is those two values
+and zero). The CHOSEN candidate in that class is C1's own tack, landing at
+54° on the other board through the 1.6 slot (cost 4-85; C1b showed the exact
+board is inert). The <100 class (18-41%) is the POLAR'S 30° KNEE: the boat
+picks 54° over a 31° pinch at a price gap under 100 — pre/C1-rollout
+currency 90-94%, an honest VMC call. ⇒ depth is veto-bound or rules/land-
+priced; no cheap lever. Ledger note (rule 33 spirit): `prox` in the __AVDBG
+rows mixes the RIVAL spacing gradient (1568/1592/1655) with the LAND terms
+(1957-2188); `riv` is only the DIRECT rival cost before line 1573; the
+rule-19 22000 and the collision-flag 10000/15000/20000 land in `late`. The
+C2(b) census's "rival PRICE share 0%" was measured on `riv`, i.e. direct
+rival cost only — the conclusion stands (the gradient is bounded at 500),
+but the field names are not what they say.
+
+## H2 "THE TACTICIAN REACHES AT CARROTS ON A BEAT" — ⛔ CLOSED PRE-BUILD
+## (`_pa_navoob.js`, NEW tracked; nav-owned out-of-band frames on upwind legs)
+| leg | OOB % of leg | owners (avoid / nav-armed / nav / post) | nav-owned OOB s/boat-leg | carrot-reach-on-a-beat s/boat-leg |
+|---|---|---|---|---|
+| bay 1 | 31% | 53 / 28 / 17 / 1 | 2.3 | 0.5 |
+| redrock 1 | 37% | 47 / 17 / 18 / 8 | 3.6 | 1.3 |
+(glowtide 1 is a reaching leg — anchor at 77° TWA — so the band test does
+not apply there.) The tactician's own out-of-band time on a beat is 2-4
+s/leg and the carrot-reach component under 1.5 s. Not a lever.
+
+## H3 THE RING TAX, RE-MEASURED WITH HIS LAPS ADMITTED (`_roundcraft.js`, treePA)
+Fleet-minus-him ring time: **redrock 28.0 s/lap** (of a ~95 s gap), **lagoon
+11.8 s/lap** (of ~37). Per leg on redrock, him vs fleet (medians):
+| leg | ring time | ring dist | closest | beyond-mark | excess sweep | escape tax | wrong-way entry |
+|---|---|---|---|---|---|---|---|
+| 1 | 7.8 vs 12.7 | 674 vs 893 | **48 vs 83** | **58 vs 145** | 179 vs 143 | 3.7 vs 4.5 | 0 vs 39% |
+| 2 | 7.3 vs 14.0 | 732 vs 1076 | **41 vs 114** | **41 vs 158** | 183 vs 191 | 2.5 vs 4.9 | 0 vs 11% |
+| 3 | 9.5 vs 13.7 | 733 vs 911 | **42 vs 98** | 79 vs 110 | 202 vs 193 | 4.5 vs 5.4 | 33 vs 39% |
+| 4 | 6.5 vs 12.7 | 691 vs 1049 | **51 vs 103** | **57 vs 150** | 180 vs 235 | 3.0 vs 5.2 | 0 vs 3% |
+| 5 | 9.5 vs 12.7 | 721 vs 933 | **47 vs 95** | 60 vs 114 | 167 vs 180 | 3.7 vs 5.2 | **100 vs 25%** |
+Lagoon is the same shape (closest 39-63 vs 64-104, beyond 53-66 vs 94-195).
+- **The ring tax is RADIUS, not sweep.** He sweeps as much bearing about the
+  mark as they do (excess 155-202° vs 143-235°) and enters "wrong-way" by the
+  2-s winding test himself (100% on leg 5, 33% on leg 3) — that metric is
+  partly approach geometry, not a fault. What differs is where the turn IS:
+  closest 2.0-2.8× his, overshoot past the mark 1.4-3.9×, ring distance
+  +24-52%, ring speed 70 vs 86 u/s.
+- **Why the fleet sits at ~95 u**: the armed target is a point 0.85 rad ahead
+  on a ring of radius RA (0.72-0.85 z) centred ON THE MARK; pursuit of such a
+  point settles at r = RA·cos(0.85) = 78-92 u — exactly the measured closest.
+  And the turn authority at speed (0.015 rad/frame × 0.7 high-speed scale ≈
+  0.63 rad/s) makes r_min ≈ 110-125 u at 70-80 u/s, so a TIGHTER concentric
+  ring cannot be executed — which is why the tight-orbit family is 0-for-3.
+  His 45 u closest at 86 u/s is not a smaller circle round the mark: it is a
+  turn whose CENTRE is not the mark (straight in close aboard, one minimum-
+  radius turn, straight out — a corner, not an orbit).
+⇒ The next rounding candidate is a different SHAPE from every closed one:
+not a smaller ring, not an aimed exit bearing, not an entry governor — the
+turn centre. Leader-vs-pack split pending (crowding tax vs geometry tax).
+
+## H3b THE PARKED F3-v2 ("move the cut-in TARGET") — ⛔ NOT SUPPORTED
+## (`_entry_why.js` extended: chord / desired-heading / velocity signs at the
+## 1.2z crossing)
+| venue leg | wrong-way entries | chord-to-cut-in wrong-signed | DESIRED heading wrong-signed | (right-way entries: chord / desired) |
+|---|---|---|---|---|
+| redrock 1 | 27% (10) | 10% | **50%** | 19% / 4% |
+| redrock 3 | 28% (11) | 9% | **64%** | 10% / 21% |
+| redrock 5 | 11% (5) | 20% | **60%** | 21% / 5% |
+| lagoon 1 | 26% (9) | 0% | **44%** | 27% / 0% |
+The cut-in target's chord is right-signed at 80-100% of wrong-way crossings
+(no worse than at right-way ones). The wrong sign enters between the target
+and the helm: the tactician's DESIRED heading is wrong-signed on 44-64% (the
+fetch/board choice for an upwind chord — TWA at entry 38-45°), and on the
+rest the hull's momentum carries a right-signed command across the rim the
+wrong way. Moving the target would not move the sign. Parked lead retired.
+
+## H3c LEADER vs PACK — THE RING TAX IS GEOMETRY, NOT CROWDING (`_roundcraft.js`
+## now records `t0`; fleet split by arrival order per seed-leg, all legs pooled, medians)
+| | n | ring s | ring dist | closest | beyond | escape | wrong-way |
+|---|---|---|---|---|---|---|---|
+| redrock him | 15 | 7.9 | 721 | **47** | **58** | 3.7 | 27% |
+| redrock fleet LEADER (first into the ring, nobody ahead) | 20 | 12.4 | 927 | 101 | 125 | 5.3 | 20% |
+| redrock fleet 2nd-3rd | 40 | 12.6 | 957 | 100 | 150 | 5.1 | 38% |
+| redrock fleet 4th+ | 120 | 13.3 | 1000 | 100 | 138 | 5.1 | 19% |
+| lagoon him | 15 | 5.2 | 583 | **55** | **65** | 1.7 | 0% |
+| lagoon fleet LEADER | 20 | 6.8 | 770 | 98 | 111 | 3.4 | 10% |
+| lagoon fleet rest | 160 | 7.4 | 753 | 91 | 111 | 3.1 | 10% |
+The leader rounds exactly like the pack (closest 101 vs 100, ring 12.4 vs
+13.3). Traffic buys ~1 s of the 4.5 s/rounding redrock gap; the other ~3.5 s
+is the turn's geometry, present with nobody within two zones. Five roundings
+a lap ⇒ ~18 s/lap of redrock's 83 s gap and ~8 s of lagoon's 35 s sit in a
+shape the fleet sails alone.
+
+## ⏭ NOTHING BUILT TONIGHT — and why (process, not timidity)
+Three hypotheses died pre-build on their own censuses (H1 depth, H2 carrot
+reach, H3b cut-in target). The fourth (H3: the turn CENTRE) is the first
+rounding lead in weeks that is not in the graveyard's shape — every closed
+rounding family moved the RADIUS of a ring centred on the mark (tight orbit
+×3, ruler-radius ring, orbit radius <70 u) or forced an exit BEARING (×3),
+and the turn-authority arithmetic above says a concentric ring under ~110 u
+cannot be sailed at speed, which is what those benches found. But building
+the corner needs the one measurement not yet taken: HIS rounding TRACK as a
+shape (r(θ), heading, speed through the turn — where his turn centre sits
+relative to the mark and the exit line) against the leader's, from the same
+episodes `_roundcraft.js` already delimits. Pre-registering it as the next
+push rather than guessing the geometry at 03:30 is the standing process
+(measure → gates → build); a candidate built on a paper model of his path
+would be benched against nothing.
+
+## P0 BUILT AND RUN ANYWAY — THE SHAPE OF HIS ROUNDING (`_ring_shape.js`, NEW
+## tracked; turn circle fitted over the |turn rate| ≥ 0.35 rad/s span nearest the
+## closest approach; redrock 4 seeds, his 3 laps; medians, u)
+| redrock pooled | n | approach-line offset from mark | ONE turn: Δhdg / duration | turn radius R | centre dist from mark | closest | speed open → in turn | tr max |
+|---|---|---|---|---|---|---|---|---|
+| him | 15 | **137** | **162° / 3.5 s** | 90 | 45 | **47** | 84 → 68 | 0.92 |
+| fleet leader | 20 | **43** | **69° / 1.4 s** | 87 | 50 | 100 | 85 → 70 | 0.90 |
+| fleet rest | 143 | 111 | 77° / 1.5 s | 94 | 39 | 98 | 82 → 70 | 0.90 |
+Lagoon pooled: him lineOff 99, Δhdg 93°/2.0 s, R 135, closest 55, speed 110 held
+through the turn; leader lineOff 115, Δhdg 123°/2.3 s, R 139, closest 78, speed
+113 → 85; rest closest 95.
+⛔ **My paper model was WRONG and the instrument said so before anything was
+built**: the GO gate I wrote at 03:20 ("his turn centre ≥60 u from the mark,
+the leader's within 30") FAILS — both centres sit ~45-50 u from the mark and
+both turn at R ≈ 90 with the SAME turn authority (0.90-0.92 rad/s). What
+actually differs, in order:
+1. **The approach line.** He arrives on a line that passes 137 u from the mark
+   (lagoon 99); the fleet LEADER arrives aimed 43 u off it — nearly head-on.
+2. **One turn, not several.** He makes ONE continuous 162° turn at full rate
+   for 3.5 s; the fleet's largest contiguous turn is 69-77° for 1.4-1.5 s — a
+   polygon of short turns with straight runs between (pursuit of a carrot
+   0.85 rad ahead re-picked at 10 Hz never asks for more than ~50° at once).
+3. **Closest 47 vs 100 is the CONSEQUENCE**: a single R=90 arc from an offset
+   line dips to 47 u at its apex; a polygon of short arcs around a head-on
+   arrival never gets inside ~100 u. Speed through the turn is the same
+   (68-70 u/s at the slowest), so there is no hull-speed reason for the fleet
+   not to sail his shape.
+⇒ **THE CORNER = an offset approach line + one continuous full-rate turn to the
+exit heading.** This is NOT in the graveyard's shape: tight-orbit ×3 and the
+ruler-radius ring changed the RING (concentric target radius); aimed-exit ×3
+forced the exit BEARING from a head-on arrival (no offset line, so the single
+turn cut the mark or overshot); entry governors ×3 gated the ENTRY; the
+solo-tight R1b and #47 (lead 0.85→1.1) both kept the pursuit-of-a-ring
+structure that fragments the turn. Nothing has yet combined the two things he
+does: set up wide, then turn ONCE.
+
+## ⏭ NEXT PUSH — THE CORNER PUSH, PRE-REGISTRATION (owner to approve)
+**C1 shape (floe-free marks only; `orbitTightR(rm) != null` is too strict for
+redrock — its marks read null — so admission = the DMC arc's own ring water,
+`CoursePath._roundR` circle clear on the botGrid; arctic byte-identical via
+`_hasFloes`).** (a) APPROACH: from `rulerMode` on the rounding leg, aim at the
+DMC tangent-in point offset so the approach line passes R_c = 90-110 u from
+the mark on the required side (his 137 on redrock is the DMC's own tangent at
+`_roundR`+hull, measure per venue in P0's `lineOff`); the entrance hunt keeps
+its crowd logic but scores sectors on the approach tangent, not a radial.
+(b) THE TURN: once the hull is abeam the mark on the required side (winding
+since window-open ≥ the approach line's own sweep), the desired heading is the
+EXIT heading (the DMC tangent-out bearing) DIRECTLY — a single full-rate turn —
+with the concentric orbit as the fallback if the turn would put the hull on
+the wrong side (the existing wrapped/roundBanked test). Nothing else changes.
+**Mechanism gates (P0 instrument, 4 seeds)**: leader Δhdg-per-turn 69→≥120°,
+closest 100→≤65 u, lineOff 43→≥90 u on ≥3 of 5 redrock legs; mark contacts
+flat. **Clock gates**: redrock 6-set pooled paired median ≤ −4 with fins ≥480
+and no set worse than +3; lagoon/bay/lake non-positive; ocean/seatrials/
+swamp/arctic cmp-identical. **Regression bars from the graveyard**: R1b
+solo-tight (rr 30.9→33.5 s/lap ring) and the first tight cut's redrock
+funnel (fins 11→6, mark contacts 2.3×) — both must be beaten on the same
+instruments. Rule 1 check: this changes WHICH ACTIONS EXIST (the single-turn
+command and the offset aim point), not a price.
+Not built tonight: the instrument closed at 03:34 and a corner built on the
+wrong model at 03:20 would have been benched against nothing; the owner's
+process asks for measure → gates → build, and the build is a two-part helm
+change on the rounding machinery (the file with the densest graveyard) that
+deserves daylight and his sign-off on the admission rule.
+
+## OWNER ITEMS (2026-08-30)
+1. `editor.js bakeCoursePaths` rounds `pts` to 0.1 u — harmless to play, but
+   it means the shipping game's carrot differs from routed-at-load by up to
+   0.05 u and every venue's goldens re-recorded on a chaos reshuffle; save at
+   full precision (or 1e-3) and the next Save is byte-inert.
+2. `course.paths.roundZone` is saved as an integer (arctic 850.516→851) and
+   `roundSweep` to 1e-4 — no reader outside the editor today; note for when
+   one appears.
+3. Pond: `course.fleet` 4, not benchmarked (DON'T TRACK). Its `coach` mark
+   body / `lawn` shape kind / classmate traits are inert on the ten.
+4. Arctic on the paths docs: +2 med / +5 mean pooled over 4×16 with all four
+   sets non-negative (+2/+2/0/+3 med) — inside the venue's 16-seed error bars
+   (rule 3) and there is no mechanism (dmc is built once at load, before and
+   after), so it is recorded as the cut's noise, not a regression. Watch it
+   on the next arctic re-bench.
+
+## npm test on HEAD 6d8b7c4 (js/ untouched by this session): 13 of 34 not passing
+Standing same-six (shoal, sailable, editor, results, dmc, traffic) + the
+test_controls canvas crash, PLUS six NEW ones that are the owner's commits, not
+this session's: **test_pages ×9** (rules/scenario/editor/competitor.html are
+missing `js/game/school.js` and `assets/venues/pond.venue.js`, and the game
+block order drifted from index.html — the "every game file goes into ALL FIVE
+pages" rule), **check_venues pond ×5 errors** (fleet spawned on land 10/10,
+start-line midpoint not in water, zone inside the shape it stands on, rounding
+clearance 0 m — the pond doc as saved does not validate), **test_start_line**
+(venue selection did not take for 2 venues), **test_apparent ×2** (apparent
+always forward of true 99.99%; mid sail-change rig), **test_venuedoc** (a
+fixture now warns "course.paths missing"), **test_path_estimate** (river: no
+measured segment crosses land — 8 of 8 hops; the tight-tier second pass
+changed the ruler on river leg 3, which is what the owner intended). Owner
+items, all six.
+
+## HYGIENE
+Goldens re-recorded on the paths docs (`npm run trace:update`, 30 traces,
+29.4 min) and verified: **PASS — 30 traces checked, 0 behaviour changes**.
+`freeze_venues --check` 10/10 match. Anchors `pa*` (widths as re1*). New
+tracked instruments: `_pa_paths_eq.js`, `_pa_depth.js`, `_pa_navoob.js`,
+`_ring_shape.js`, `_pa_close_table.js`; `_roundcraft.js` (+`[fp]`, +`t0`),
+`_entry_why.js` (+chord/desired/velocity signs), `_traj_fp.js` (+10
+adjudications). Committed LOCAL, unpushed.
+
+## THE VENUE TABLE ON HEAD 6d8b7c4 — pa* anchors (`_pa_close_table.js`; PRE = re1* on the pre-paths docs, shown for the cut only)
+| venue | human | pre med/mean/best | post med/mean/best | ratio | DNF% | dirt l/b/f/m/pen (post) |
+|---|---|---|---|---|---|---|
+| arctic | 209.4 | 314/320.0/192 | 318/325.3/192 | **1.519** | 0.0 | 3.22/3.33/17.86/0.09/0.60 |
+| redrock | 204.2 | 286/286.6/216 | 287/288.0/218 | **1.405** | 0.0 | 7.28/3.48/0/0.39/0.75 |
+| swamp | 234.1 | 320/321.5/174 | 320/321.5/174 (identical) | **1.367** | 2.1 | 4.50/5.17/0/0.08/0.70 |
+| river | 187.4 | 233/243.1/171 | 228/243.7/172 | **1.217** | 3.7 | 87.67/5.38/0/0.15/0.77 |
+| lagoon | 174.7 | 212/211.7/171 | 210/210.4/170 | **1.202** | 0.0 | 0.65/0.60/0/0.16/0.31 |
+| glowtide | 204.4 | 236/235.5/173 | 230/230.8/172 | **1.125** | 0.0 | 10.51/2.37/0/0.40/0.57 |
+| bay | 239.0 | 268/267.4/232 | 268/266.6/224 | **1.121** | 0.0 | 0.15/0.55/0/0.10/0.17 |
+| lake | 194.8 | 217/217.5/169 | 218/217.7/168 | **1.119** | 0.0 | 0.30/0.54/0/0.07/0.16 |
+| ocean | 214.2 | 230/227.4/194 | 224/223.2/194 | **1.046 ✅** | 0.0 | 0.06/0.47/0/0.09/0.16 |
+| seatrials | 185.7 | 191/192.9/176 | 191/192.9/176 (identical) | **1.029 ✅** | 0.0 | 0.00/0.56/0/0.16/0.16 |
+Goal 2/10, unchanged. Every delta in this table is the 0.1 u save-rounding
+reshuffle of a document cut (js proven inert), not an AI change; the arctic
++4 med is inside its 16-seed error bars (rule 3) and has no mechanism.
+
+## ⏭ CARRY-FORWARD (2026-08-30 ~04:00)
+HEAD = 6d8b7c4 + this session's eval/guidelines commit (local). Anchors pa*.
+Goldens PASS 30/30 on the paths docs. Human refs unchanged (adjudicated).
+NEXT PUSH = **THE CORNER** (pre-registration above; owner to approve the
+admission rule). Owner items: the six new npm failures; the editor's 0.1 u
+save-rounding (item 1 above); river's land column 82.8→87.7/boat on the
+docs cut (lottery, fins 231/240 both); the earlier standing five (substrate,
+rudder, startStageDepth, swamp admission, test_controls).

@@ -40,8 +40,27 @@ const docFp = (p, v) => {
 // remain valid human references. See regatta-corpus-fingerprints / regatta-venuedoc-cut.
 // ⚠️ This adjudicates the HUMAN column only. Bay's BOT anchors on that cut ARE
 // retired, because the boundary is an input to buildGrid and the goldens moved.
+// ⭐ THE PATHS INTAKE (2026-08-30): the owner saved the editor's leg polylines into
+// every document as `course.paths` and all ten were re-frozen onto that cut. By-key
+// diff (scratchpad keydiff, recorded in ai-campaign.md): `course.paths` is the ONLY
+// key that moved — marks, lines, route, wind, current, gusts, shapes, world, props
+// byte-identical — and `_pa_paths_eq.js` shows the saved polylines ARE the router's
+// (maxΔ 0 u). Nothing he sails against moved, so every lap stamped on the pre-paths
+// docs (including the re-cut glowtide/redrock stamps of 2026-08-28) stays a valid
+// human reference. Bot anchors on the old cut are retired (0.1 u save-rounding of
+// the carrot reshuffles eight venues; re1* → pa*).
+const PATHS_WHY = 'course.paths added only — every other key byte-identical (2026-08-30 paths intake)';
 const ADJUDICATED = {
-    bay: { stamps: ['a331fe02:13481'], why: 'boundary-only change, tracks re-verified inside the new arena' },
+    bay: { stamps: ['a331fe02:13481', '915b07e4:1019761'], why: 'boundary-only change, tracks re-verified inside the new arena; ' + PATHS_WHY },
+    arctic:    { stamps: ['86fc97f4:97975'],   why: PATHS_WHY },
+    glowtide:  { stamps: ['3fbd12b1:514566'],  why: PATHS_WHY },
+    lagoon:    { stamps: ['3acc77de:61737'],   why: PATHS_WHY },
+    lake:      { stamps: ['84140c1f:1000622'], why: PATHS_WHY },
+    ocean:     { stamps: ['1b1a7101:564735'],  why: PATHS_WHY },
+    redrock:   { stamps: ['60f2a5ec:63791'],   why: PATHS_WHY },
+    river:     { stamps: ['76659ee5:1786811'], why: PATHS_WHY },
+    seatrials: { stamps: ['ae1026bc:1595'],    why: PATHS_WHY },
+    swamp:     { stamps: ['c351353c:335590'],  why: PATHS_WHY },
 };
 
 const TD = path.join(__dirname, 'traj');

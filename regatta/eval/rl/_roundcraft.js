@@ -22,7 +22,7 @@
 // (tAdv - tBank), armed contact-frames proxy.
 // Positions on both sides (standing rule 32); episodes not frames (rule 2);
 // per-mark tables on MEANS for attribution (rule 26), medians beside them.
-//   node _roundcraft.js <venue> <trials> <seed0> <tree>
+//   node _roundcraft.js <venue> <trials> <seed0> <tree> [fp]
 // Writes _roundcraft_<venue>_<tree>.json with every episode row.
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path'); const vm = require('vm');
@@ -41,7 +41,10 @@ const docFp = (p, v) => {
     const doc = sandbox.window.VENUE_DOC && sandbox.window.VENUE_DOC[v];
     return doc ? djb(JSON.stringify(doc)) : null;
 };
-const FP = docFp(path.resolve(__dirname, '../../assets/venues', VENUE + '.venue.js'), VENUE);
+// [fp] override (argv[6]): the stamp his laps carry when the shipping doc has moved
+// on a key he never sails against (see _traj_fp.js ADJUDICATED — e.g. the 2026-08-30
+// paths intake, where `course.paths` was added and nothing else changed).
+const FP = process.argv[6] || docFp(path.resolve(__dirname, '../../assets/venues', VENUE + '.venue.js'), VENUE);
 
 (async () => {
     const b = await chromium.launch(); const p = await b.newPage();
@@ -126,7 +129,8 @@ const FP = docFp(path.resolve(__dirname, '../../assets/venues', VENUE + '.venue.
             stuck: +E.stuck.toFixed(1), advanced: E.advanced ? 1 : 0,
             ringPost: +E.ringPost.toFixed(1), beyondPost: Math.round(E.beyondPost),
             stuckPost: +E.stuckPost.toFixed(1),
-            armSpan: E.tAdv != null ? +(E.tAdv - E.t0).toFixed(1) : null };
+            armSpan: E.tAdv != null ? +(E.tAdv - E.t0).toFixed(1) : null,
+            t0: E.t0 != null ? +E.t0.toFixed(1) : null };   // window-open race time: ranks arrivals per seed-leg (leader vs pack)
     };
 
     // ── his corpus ──

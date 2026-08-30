@@ -41,7 +41,7 @@ const ROOT = path.join(__dirname, TREE);
                     const c = bo.controller;
                     if (!c || !c.applyAvoidance || c.__ewrap) continue;
                     const orig = c.applyAvoidance.bind(c);
-                    c.applyAvoidance = (dh, sr) => { const out = orig(dh, sr); bo._avDev = Math.abs(norm(out - dh)); return out; };
+                    c.applyAvoidance = (dh, sr) => { const out = orig(dh, sr); bo._avDev = Math.abs(norm(out - dh)); bo._desH = dh; return out; };
                     c.__ewrap = 1;
                 }
             };
@@ -77,10 +77,32 @@ const ROOT = path.join(__dirname, TREE);
                         }
                         const wdE = getWindAt(bo.x, bo.y).direction;
                         const twaE = Math.abs(norm(bo.heading - wdE)) * 180 / Math.PI;
+                        // v2 diagnostics (2026-08-30): the GEOMETRY the boat was handed at the
+                        // crossing — the hunt's cut-in target as navigation.js builds it, the
+                        // chord from the hull to it, the tactician's desired heading and the
+                        // hull's ground velocity — each signed against the required rotation.
+                        let chordTan = null, desTan = null, onSector = null, rCutU = null, velTan = null;
+                        if (c._entryBrg != null) {
+                            const myBrg = Math.atan2(dy, dx);
+                            let da = (c._entryBrg - myBrg) * sgn;
+                            while (da < 0) da += Math.PI * 2;
+                            while (da >= Math.PI * 2) da -= Math.PI * 2;
+                            onSector = (da <= 0.4 || da >= Math.PI * 2 - 0.4) ? 1 : 0;
+                            const lead = (state.course._hasFloes ? 0 : 0.6);
+                            const aCut = c._entryBrg + sgn * lead;
+                            const orb = (typeof orbitTightR === 'function') ? orbitTightR(rc.m) : null;
+                            const rCut = orb != null ? orb : rc.m.zone * 0.72;
+                            rCutU = Math.round(rCut);
+                            const tX = rc.m.x + Math.cos(aCut) * rCut, tY = rc.m.y + Math.sin(aCut) * rCut;
+                            const cx = tX - bo.x, cy = tY - bo.y, cl = Math.hypot(cx, cy) || 1;
+                            chordTan = +((cx * tx + cy * ty) / cl).toFixed(2);
+                        }
+                        if (bo._desH != null) desTan = +((Math.sin(bo._desH) * tx - Math.cos(bo._desH) * ty)).toFixed(2);
+                        if (bo.velocity) { const vl = Math.hypot(bo.velocity.x, bo.velocity.y) || 1; velTan = +(((bo.velocity.x * tx + bo.velocity.y * ty) / vl)).toFixed(2); }
                         out.push({ leg: rc.leg, vTan: +vTan.toFixed(0), wrong: vTan < -5 ? 1 : 0,
                             ruler: c._rulerMode ? 1 : 0, hunt: c._entryBrg != null ? 1 : 0,
                             armed: bo.raceState.roundArmed ? 1 : 0, avDev: +( (bo._avDev||0) * 180/Math.PI).toFixed(0),
-                            dBrg, sp: Math.round(sp), twa: Math.round(twaE) });
+                            dBrg, sp: Math.round(sp), twa: Math.round(twaE), chordTan, desTan, onSector, rCutU, velTan });
                     }
                 }
                 if (state.race.status === 'racing' && state.race.timer > 895) break;
@@ -102,6 +124,8 @@ const ROOT = path.join(__dirname, TREE);
         const db = (rows) => { const v = rows.map(r => r.dBrg).filter(x => x != null); v.sort((a, b2) => a - b2); return v.length ? v[Math.floor(v.length / 2)] : '—'; };
         console.log(`        dBrg-to-hunt-sector med: wrong ${db(W)}°  right ${db(A.filter(r => !r.wrong))}°  | speed med wrong ${(W.map(r=>r.sp).sort((a,b2)=>a-b2)[Math.floor(W.length/2)]||'—')} right ${(A.filter(r=>!r.wrong).map(r=>r.sp).sort((a,b2)=>a-b2)[Math.floor((A.length-W.length)/2)]||'—')}`);
         const md = (rows, k) => { const v = rows.map(r => r[k]).filter(x => x != null).sort((a, b2) => a - b2); return v.length ? v[Math.floor(v.length / 2)] : '—'; };
+        const sh = (rows, k) => { const v = rows.filter(r => r[k] != null); return v.length ? `${pct(v.filter(r => r[k] < 0).length, v.length)} of ${v.length}` : '—'; };
+        console.log(`        v2 geometry — share with the WRONG-WAY sign: chord-to-cut-in: wrong ${sh(W, 'chordTan')} / right ${sh(A.filter(r => !r.wrong), 'chordTan')}  | desired heading: wrong ${sh(W, 'desTan')} / right ${sh(A.filter(r => !r.wrong), 'desTan')}  | ground velocity: wrong ${sh(W, 'velTan')}  | on-sector at crossing: wrong ${pct(W.filter(r => r.onSector).length, W.length)} right ${pct(A.filter(r => !r.wrong && r.onSector).length, A.length - W.length)}  | rCut med ${md(W, 'rCutU')} u`);
         console.log(`        TWA at entry med: wrong ${md(W, 'twa')}°  right ${md(A.filter(r => !r.wrong), 'twa')}°  | wrong upwind(<51°): ${pct(W.filter(r => r.twa < 51).length, W.length)}  reach(51-126°): ${pct(W.filter(r => r.twa >= 51 && r.twa < 126).length, W.length)}  run: ${pct(W.filter(r => r.twa >= 126).length, W.length)}`);
     }
 })();
