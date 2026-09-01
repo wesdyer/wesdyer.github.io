@@ -263,7 +263,7 @@ function sizeRaceDayHero() {
     // width-limited on a laptop, height-limited on a big screen, never scrolling either
     // way. Only when height wins does space-between have any slack to spread.
     if (picker && h > 0) {
-        const GAP = 10, ROWS = 2, COLS = 5;
+        const GAP = 10, ROWS = 2, COLS = Math.ceil(VENUE_ORDER.length / ROWS);
         const widthTile = Math.floor((w - (COLS - 1) * GAP) / COLS);
         const heightTile = Math.floor((h * VENUE_STRIP_SHARE - (ROWS - 1) * GAP) / ROWS);
         const tile = Math.max(64, Math.min(widthTile, heightTile));
@@ -1715,6 +1715,7 @@ function selectVenue(key) {
 }
 
 function setupPreRaceOverlay() {
+    if (typeof TUTORIAL !== 'undefined') TUTORIAL.stop();
     renderVenuePicker();
     if (!UI.preRaceOverlay) return;
 
@@ -1880,6 +1881,243 @@ function hideVenueLoading() {
     if (_venueLoadingEl) _venueLoadingEl.style.display = 'none';
 }
 
+// --- Tutorial System (Sailing School at Duckling Pond) ---------------------
+const TUTORIAL = {
+    active: false,
+    step: 0,
+    stepTimer: 0,
+    verbFlags: {},
+    steps: [
+        {
+            id: 'welcome',
+            text: "Welcome to Sailing School at Duckling Pond! I'm Paddle the Mallard. Use A / D or Left / Right Arrow keys to steer your boat.",
+            buttonText: 'Next →',
+            check: function() {
+                if (state.keys.ArrowLeft || state.keys.ArrowRight || state.keys.KeyA || state.keys.KeyD) {
+                    TUTORIAL.verbFlags.steered = true;
+                }
+                return TUTORIAL.verbFlags.steered && TUTORIAL.stepTimer > 2.0;
+            }
+        },
+        {
+            id: 'sail_trim',
+            text: "Great steering! Use W / S (or Up / Down) to adjust sail trim, or press T to toggle auto-trim.",
+            buttonText: 'Next →',
+            check: function() {
+                if (state.keys.ArrowUp || state.keys.ArrowDown || state.keys.KeyW || state.keys.KeyS || state.keys.KeyT) {
+                    TUTORIAL.verbFlags.trimmed = true;
+                }
+                return TUTORIAL.verbFlags.trimmed && TUTORIAL.stepTimer > 2.5;
+            }
+        },
+        {
+            id: 'no_go_zone',
+            text: "Boats cannot sail directly into the wind! The red cone shows the No-Go Zone. If you steer into it, you'll stall in irons.",
+            buttonText: 'Next →',
+            check: function() {
+                const player = state.boats[0];
+                if (!player) return false;
+                const twa = Math.abs(normalizeAngle(player.heading - state.wind.direction));
+                if (twa < 0.6) {
+                    TUTORIAL.verbFlags.sawIrons = true;
+                }
+                return TUTORIAL.verbFlags.sawIrons && twa > 0.75 && TUTORIAL.stepTimer > 3.0;
+            }
+        },
+        {
+            id: 'tacking',
+            text: "To sail upwind, you must tack—steer across the No-Go Zone to switch sides relative to the wind. Try tacking now!",
+            buttonText: 'Next →',
+            check: function() {
+                const player = state.boats[0];
+                if (!player) return false;
+                if (!TUTORIAL.verbFlags.startTack) {
+                    TUTORIAL.verbFlags.startTack = player.tack || 1;
+                } else if (player.tack && player.tack !== TUTORIAL.verbFlags.startTack) {
+                    const twa = Math.abs(normalizeAngle(player.heading - state.wind.direction));
+                    if (twa > 0.7) TUTORIAL.verbFlags.tacked = true;
+                }
+                return TUTORIAL.verbFlags.tacked && TUTORIAL.stepTimer > 2.5;
+            }
+        },
+        {
+            id: 'right_of_way',
+            text: "Let's practice Right-of-Way! Look at the bow triangles: GREEN means hold course (Stand-On); RED/ORANGE means keep clear (Give-Way).",
+            buttonText: 'Next →',
+            check: function() {
+                return TUTORIAL.stepTimer > 6.0;
+            }
+        },
+        {
+            id: 'graduation',
+            text: "Outstanding sailing! You've completed all lessons and graduated Sailing School at Duckling Pond!",
+            buttonText: 'Graduate & Return to Menu',
+            check: function() {
+                return false;
+            }
+        }
+    ],
+
+    start: function() {
+        this.active = true;
+        this.step = 0;
+        this.stepTimer = 0;
+        this.verbFlags = {};
+        this.updateCard();
+        this.setupNpcs();
+    },
+
+    stop: function() {
+        this.active = false;
+        const card = document.getElementById('tutorial-card');
+        if (card) card.classList.add('hidden');
+        const banner = document.getElementById('irons-recovery-banner');
+        if (banner) banner.classList.add('hidden');
+    },
+
+    setupNpcs: function() {
+        if (state.boats && state.boats.length > 1) {
+            const player = state.boats[0];
+            const npc = state.boats[1];
+            if (npc && player) {
+                npc.x = player.x + 220;
+                npc.y = player.y - 120;
+                npc.heading = normalizeAngle(state.wind.direction - Math.PI / 4);
+                npc.speed = 2.5;
+            }
+        }
+    },
+
+    updateCard: function() {
+        const card = document.getElementById('tutorial-card');
+        const textEl = document.getElementById('tutorial-card-text');
+        const nextBtn = document.getElementById('tutorial-card-next');
+        if (!card || !textEl) return;
+
+        if (!this.active || this.step >= this.steps.length) {
+            card.classList.add('hidden');
+            return;
+        }
+
+        const curr = this.steps[this.step];
+        textEl.textContent = curr.text;
+        card.classList.remove('hidden');
+
+        if (nextBtn) {
+            nextBtn.textContent = curr.buttonText || 'Next →';
+            nextBtn.classList.remove('hidden');
+            nextBtn.onclick = () => this.nextStep();
+        }
+    },
+
+    nextStep: function() {
+        this.stepTimer = 0;
+        this.verbFlags = {};
+        this.step++;
+        if (this.step >= this.steps.length) {
+            this.complete();
+        } else {
+            this.updateCard();
+        }
+    },
+
+    complete: function() {
+        try {
+            localStorage.setItem('salty_tutorial_completed', 'true');
+            if (typeof settings !== 'undefined') settings.tutorialCompleted = true;
+        } catch (e) {}
+        this.stop();
+        resetGame();
+        if (typeof setupPreRaceOverlay === 'function') setupPreRaceOverlay();
+    },
+
+    update: function(dt) {
+        if (!this.active) return;
+        this.stepTimer += dt;
+        const curr = this.steps[this.step];
+        if (curr && curr.check && curr.check()) {
+            this.nextStep();
+        }
+
+        const player = state.boats[0];
+        const banner = document.getElementById('irons-recovery-banner');
+        if (player && banner) {
+            const twa = Math.abs(normalizeAngle(player.heading - state.wind.direction));
+            if (twa < 0.55) {
+                banner.classList.remove('hidden');
+            } else {
+                banner.classList.add('hidden');
+            }
+        }
+    },
+
+    draw: function(ctx) {
+        if (!state.boats || !state.boats[0]) return;
+        const player = state.boats[0];
+        const twa = Math.abs(normalizeAngle(player.heading - state.wind.direction));
+
+        // Visual Stall Cone Overlay
+        if (twa < 0.7 || this.active) {
+            ctx.save();
+            ctx.translate(player.x, player.y);
+            const upwindAngle = normalizeAngle(state.wind.direction + Math.PI);
+            ctx.rotate(upwindAngle);
+
+            const coneHalfAngle = 0.62;
+            const coneRadius = 180;
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.arc(0, 0, coneRadius, -coneHalfAngle - Math.PI/2, coneHalfAngle - Math.PI/2);
+            ctx.closePath();
+
+            const grad = ctx.createRadialGradient(0, 0, 10, 0, 0, coneRadius);
+            grad.addColorStop(0, 'rgba(239, 68, 68, 0.4)');
+            grad.addColorStop(1, 'rgba(239, 68, 68, 0.05)');
+            ctx.fillStyle = grad;
+            ctx.fill();
+
+            ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([6, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.restore();
+        }
+
+        // Color-Coded Right-of-Way Triangles
+        for (const boat of state.boats) {
+            if (!boat) continue;
+            const other = state.boats.find(b => b !== boat);
+            let isRow = true;
+            if (other && typeof Rules !== 'undefined' && Rules.evaluate) {
+                const evalRes = Rules.evaluate(boat, other);
+                if (evalRes && evalRes.rowBoat) {
+                    isRow = (evalRes.rowBoat === boat);
+                }
+            }
+
+            ctx.save();
+            ctx.translate(boat.x, boat.y);
+            ctx.rotate(boat.heading);
+            ctx.translate(0, -32);
+
+            ctx.beginPath();
+            ctx.moveTo(0, -10);
+            ctx.lineTo(7, 8);
+            ctx.lineTo(-7, 8);
+            ctx.closePath();
+
+            ctx.fillStyle = isRow ? '#22c55e' : '#f97316';
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            ctx.restore();
+        }
+    }
+};
+
 function beginRace() {
     if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
     UI.leaderboard.classList.remove('hidden'); // Or hidden if prestart logic handles it
@@ -1891,6 +2129,12 @@ function beginRace() {
 
     state.race.status = 'prestart';
     state.race.timer = state.race.startTimerDuration;
+
+    if (state.race.venue === 'duckling' || settings.venue === 'duckling') {
+        TUTORIAL.start();
+    } else {
+        TUTORIAL.stop();
+    }
 
     // Init Audio Context if needed (user interaction trusted here)
     if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
