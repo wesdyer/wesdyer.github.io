@@ -42,7 +42,12 @@ const READ_ONLY = new Set(['brect-inset', 'scalemap', 'rotmap', 'ice-scatter', '
     // per-layer probes in test_editor cover that, one field at a time.
     check('the page still declares controls to check', ids.length > 20, `${ids.length} found`);
 
-    const browser = await chromium.launch();
+    // ⚠️ --allow-file-access-from-files, for the same reason test_editor's header spells
+    // out: this suite reads the editor canvas back with toDataURL, and any venue that
+    // draws a prop/mark sprite from a file:// URL TAINTS the canvas permanently without
+    // the flag — the suite then dies mid-run with SecurityError instead of failing a
+    // check. file:// images are genuinely same-origin here.
+    const browser = await chromium.launch({ args: ['--allow-file-access-from-files'] });
     const page = await browser.newPage();
     const errs = [];
     page.on('pageerror', e => errs.push(e.message));

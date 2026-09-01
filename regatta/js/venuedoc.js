@@ -529,8 +529,16 @@ function validateVenueDoc(doc) {
     if (course.paths != null) {
         const P = course.paths;
         if (!P || typeof P !== 'object' || typeof P.sig !== 'string' || !Array.isArray(P.legs)) err('course.paths must be { sig, legs[] } as the editor saves it');
-        else if (P.legs.length !== rt.length) err(`course.paths has ${P.legs.length} legs for a ${rt.length}-entry route`);
+        // STALENESS BEFORE SHAPE. Editing the route makes BOTH true — the leg count no
+        // longer matches AND the signature no longer matches — and that is the ordinary
+        // mid-edit state of every document whose author just added a leg, not corruption:
+        // the game already ignores stale paths and routes at load (savedCoursePaths
+        // returns null). Erroring here put "course may be unsailable" on the editor's
+        // screen for the whole session between the route edit and the Save that rebakes
+        // (test_editor's arctic session tripped it, 2026-08-31). A leg-count mismatch on
+        // a CURRENT signature can only be hand-corruption, and stays an error.
         else if (P.sig !== courseSig(doc)) warn('course.paths is stale — the marks, route or land changed since it was saved; Save in editor.html to refresh it');
+        else if (P.legs.length !== rt.length) err(`course.paths has ${P.legs.length} legs for a ${rt.length}-entry route`);
     } else if (rt.length > 1) warn('course.paths missing — Save in editor.html to bake the leg paths (until then the board draws straight legs)');
     if (doc.wind && doc.wind.baseDirection != null) {
         warn('wind.baseDirection is ignored — the wind is stated by regions');
@@ -3444,8 +3452,22 @@ function compileVenueDoc(doc, light) {
     if (paths) {
         // Priced by the SHARED function, per leg, so the editor's per-leg readout and this
         // total cannot drift apart. Stamped back onto the leg for that readout to use.
+        // ⚠️ GUARDED like priceSeg above: since the documents carry SAVED paths
+        // (2026-08-30), `paths` is non-null even where CoursePath does not exist —
+        // the eval harness loads this file standalone, and test_shoal crashed on the
+        // first shipping doc it compiled. Same degradation as the straight-line
+        // fallback: geometry is priced, seconds are not.
+        const priceLine = (pts) => {
+            if (typeof CoursePath !== 'undefined') return CoursePath.priceLeg(pts, wb, REF_WIND);
+            const r = { geom: 0, sailed: 0, secs: 0, upwind: 0 };
+            for (let i = 1; i < pts.length; i++) {
+                const q = priceSeg(pts[i - 1], pts[i]);
+                r.geom += q.geom; r.sailed += q.sailed; r.upwind += q.upwind;
+            }
+            return r;
+        };
         for (const L of paths.legs) {
-            const r = CoursePath.priceLeg(L.pts, wb, REF_WIND);
+            const r = priceLine(L.pts);
             L.secs = r.secs; L.sailed = r.sailed; L.upwind = r.upwind;
             addPriced(r);
         }
@@ -3463,7 +3485,7 @@ function compileVenueDoc(doc, light) {
             // A circle averages to a beam reach; priced by the shared function on a
             // synthetic beam-reach segment so it uses the same polar.
             const bx = Math.sin(wb + Math.PI / 2) * arc, by = -Math.cos(wb + Math.PI / 2) * arc;
-            secs += CoursePath.priceLeg([{ x: 0, y: 0 }, { x: bx, y: by }], wb, REF_WIND).secs;
+            secs += priceLine([{ x: 0, y: 0 }, { x: bx, y: by }]).secs;
         }
     } else {
         // Fallback for a context with no planner loaded: straight mark to mark, which can

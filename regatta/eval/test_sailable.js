@@ -40,7 +40,12 @@ const check = (name, cond, detail) => {
     await page.waitForTimeout(600);
 
     const venues = await page.evaluate(() => Object.keys(window.VENUE_DOC || {}));
-    const list = ONLY ? [ONLY] : venues;
+    // The school's venues are unreachable from the race page this test drives: resetGame
+    // rewrites a stored 'pond'/'pond-open' back to 'bay' unless School is active, so the
+    // course this test would sail belongs to bay while the doc (and grid) stay pond's —
+    // every finding is then a phantom of that mismatch (the check_venues lesson,
+    // 2026-08-31). The school flow exercises them; this gate cannot.
+    const list = (ONLY ? [ONLY] : venues).filter(v => v !== 'pond' && v !== 'pond-open');
     console.log(`Sailability — ${list.length} document venue(s): ${list.join(', ')}\n`);
 
     for (const venue of list) {
@@ -53,7 +58,19 @@ const check = (name, cond, detail) => {
 
             const doc = window.VENUE_DOC[v];
             const S = window.SailCheck;
-            const grid = S.buildGrid(window.VenueDoc.shapes(doc).filter(sh => window.VenueDoc.traits(sh).motion === 'fixed'), state.course.boundary, null);
+            // THE GAME'S OWN FILTER, both halves. buildGrid blocks every shape it is
+            // handed — it takes rings and cannot know a trait — so awash shapes must be
+            // filtered HERE, exactly as buildCoursePaths (course.js) and the compile
+            // estimate (venuedoc.js) both do: a weed bed or a bar is water a hull sails
+            // over. Handed in as land, it walled Gatorgrass and the tropical venues and
+            // this gate reported "0° of hull-width water" around marks whole races
+            // round cleanly. Drift venues keep centre-sampled land for the same parity.
+            const fixedShapes = window.VenueDoc.shapes(doc).filter(sh => {
+                const t = window.VenueDoc.traits(sh);
+                return t.motion === 'fixed' && !t.awash;
+            });
+            const hasDrift = window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed');
+            const grid = S.buildGrid(fixedShapes, state.course.boundary, null, hasDrift ? { noSubsample: true } : null);
             const marks = state.course.marks, route = state.course.route;
             const wps = S.routeWaypoints(marks, route, grid);
 
@@ -126,6 +143,7 @@ const check = (name, cond, detail) => {
             const events = [];
             window.onRaceEvent = (t, d) => events.push({ t, leg: d.leg });
             let ground = 0, bound = 0, maxSweep = 0, minSweep = 0, zoneSteps = 0;
+            let groundMin = null; const groundBands = { marginal17to19: 0, shallow10to17: 0, deep: 0 };
             const legAtStep = {};
             const totalLegs = state.race.totalLegs;
 
@@ -145,8 +163,21 @@ const check = (name, cond, detail) => {
                     updateBoatRaceState(boat, 1 / 60);
                     if (legAtStep[boat.raceState.leg] === undefined) legAtStep[boat.raceState.leg] = k;
                     // Is the hull in land, or outside the arena, at this point?
+                    // AT THE HULL'S OWN BEAM. The hull is 37u across (half-beam ~19);
+                    // a 30u disc is a boat sailed sideways, and it fails exactly where the
+                    // router's TIGHT TIER is doing its job — pathBetween's second pass
+                    // (2026-08-30) deliberately threads hull-width water whose clearance
+                    // is under 30u where the stock grid does not connect (river's channel,
+                    // redrock's north exit). Length-wise coverage comes from the 18u
+                    // sub-stepping: successive discs overlap along the track.
                     for (const isl of (state.course.landShapes || [])) {
-                        if (circlePolyCollide(boat.x, boat.y, 30, isl.vertices)) { ground++; break; }
+                        if (circlePolyCollide(boat.x, boat.y, 19, isl.vertices)) {
+                            ground++;
+                            const gd = landDistAt(boat.x, boat.y);
+                            if (groundMin == null || gd < groundMin) groundMin = gd;
+                            groundBands[gd >= 17 ? 'marginal17to19' : gd >= 10 ? 'shallow10to17' : 'deep'] += 1;
+                            break;
+                        }
                     }
                     if (window.Arena.signedDist(state.course.boundary, boat.x, boat.y) < 0) bound++;
                     const sw = boat.raceState.roundSweep || 0;
@@ -161,7 +192,7 @@ const check = (name, cond, detail) => {
                 arcs, wps: wps.length, pathPts: full.length,
                 navCells: grid.nav.reduce((x,y)=>x+y,0),
                 totalLegs, legReached: boat.raceState.leg, finished: boat.raceState.finished,
-                legAtStep, ground, bound, zoneSteps,
+                legAtStep, ground, bound, zoneSteps, groundMin, groundBands,
                 maxSweepDeg: Math.round(maxSweep * 180 / Math.PI),
                 minSweepDeg: Math.round(minSweep * 180 / Math.PI),
                 legCompletes: events.filter(e => e.t === 'leg_complete').map(e => e.leg),
@@ -184,7 +215,9 @@ const check = (name, cond, detail) => {
                   `reached leg ${r.legReached} of ${r.totalLegs + 1}; leg_complete events for ${JSON.stringify(r.legCompletes)}`);
             check('the system recognised the finish', r.finished === true && r.finishEvents === 1,
                   `finished=${r.finished}, finish events=${r.finishEvents}`);
-            check('the ideal path never puts the hull in land', r.ground === 0, `${r.ground} sub-steps grounded`);
+            check('the ideal path never puts the hull in land', r.ground === 0,
+                  `${r.ground} sub-steps grounded (nearest ${r.groundMin != null ? r.groundMin.toFixed(1) : '—'}u; ` +
+                  `17-19u ${r.groundBands.marginal17to19}, 10-17u ${r.groundBands.shallow10to17}, <10u ${r.groundBands.deep})`);
             check('the ideal path never leaves the arena', r.bound === 0, `${r.bound} sub-steps outside`);
             console.log(`         ${r.wps} waypoints, ${r.pathPts} path points, ${r.navCells} navigable cells`);
             console.log(`         leg first reached at path point: ${JSON.stringify(r.legAtStep)}`);

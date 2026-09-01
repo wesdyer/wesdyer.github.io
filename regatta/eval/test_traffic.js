@@ -328,8 +328,23 @@ check('one knot is 15 u/s, the fleet\'s own clock', KT === 15,
         const head = v.path.points[0];
         ok('spawns at the head of its path', v.active && Math.hypot(v.x - head.x, v.y - head.y) < 1,
            `(${v.x.toFixed(0)},${v.y.toFixed(0)}) vs authored (${head.x.toFixed(0)},${head.y.toFixed(0)})`);
-        setClock(first + dur + 2); ok('despawns at the end', !v.active);
-        setClock(first + dur + delay - 2); ok('stays away through respawnDelay', !v.active);
+        // A lane may be AUTHORED with respawnDelay 0 — the cove's cargo lanes are, since
+        // the re-cut — and localTime's contract then cycles the vessel seamlessly:
+        // elapsed % (dur + 0) never leaves the path, so there is no dark window to
+        // observe. The despawn window is a property of lanes that HAVE one.
+        if (delay > 4) {
+            setClock(first + dur + 2); ok('despawns at the end', !v.active);
+            setClock(first + dur + delay - 2); ok('stays away through respawnDelay', !v.active);
+        } else {
+            setClock(first + dur + 2); ok('a zero-delay lane cycles without a gap', v.active);
+            // ...and the lap wraps exactly: 2s after the lap is the same place as 2s after
+            // the first spawn (position is a pure function of the clock, modulo the lap).
+            const wrapped = { x: v.x, y: v.y };
+            setClock(first + 2);
+            ok('...restarting from the head of its path',
+               Math.hypot(v.x - wrapped.x, v.y - wrapped.y) < 1,
+               `(${wrapped.x.toFixed(0)},${wrapped.y.toFixed(0)}) vs (${v.x.toFixed(0)},${v.y.toFixed(0)})`);
+        }
         setClock(first + dur + delay + 1); ok('respawns on schedule', v.active);
 
         // determinism: the same clock is the same answer, whatever happened in between

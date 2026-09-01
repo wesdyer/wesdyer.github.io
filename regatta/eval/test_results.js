@@ -121,10 +121,14 @@ const { chromium } = require('playwright'); const path=require('path');
   ok('the header states the venue', /CLUBHOUSE POINT/i.test(info.subtitle), info.subtitle);
   ok('the footnote names the winner', /takes/.test(info.footnote), info.footnote);
 
-  // ⚠️ A single race has no series, so any of these on the page is a bug, not a feature:
-  // points are the position column doing arithmetic and "next race" has nowhere to go.
+  // ⚠️ A single race has no series, so standings and "next race" on the page are bugs.
+  // POINTS ARE NO LONGER ON THAT LIST: the results table scores places deliberately now
+  // (screens.js POINTS_FOR_PLACE — "10 for a win, down to 1 for tenth... nobody who
+  // sailed the race scores nothing", finished boats only, DNF shows an em dash), so the
+  // column is a designed feature of the single-race page, not series furniture.
   console.log('\nno series furniture on a single race');
-  ok('no points column', !/\bPTS\b|\bPOINTS\b/i.test(info.pageText));
+  // innerText carries the header's CSS uppercase, so match case-insensitively.
+  ok('the points column scores finishers only', /\bPTS\b/i.test(info.pageText));
   ok('no standings or next race', !/NEXT RACE|STANDINGS|SERIES/i.test(info.pageText));
   ok('two ways off the page', info.buttons.length === 2, info.buttons.join(', '));
 

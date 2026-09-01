@@ -160,6 +160,14 @@ for (const key of Object.keys(global.window.VENUE_DOC)) {
     const want = new Map();
     for (const s of V.shapes(dv)) want.set(s.id, V.traits(s).awash);
     for (const isl of V.compile(dv).islands) {
+        // CONTACT PROPS COMPILE TO HIDDEN `.hit` SHAPES by design (venuedoc compile:
+        // hard -> a hidden isle, soft -> a hidden SHOAL carrying the prop's drag, so
+        // collision, the drag field and the router meet them as ordinary shapes). They
+        // have no document shape to compare against — the doc-vs-runtime match below is
+        // about AUTHORED shapes keeping their trait through compile, and a soft float's
+        // awash shoal is the compiler doing its job, not a drifted trait (bay's cove
+        // floats and dinghies, 2026-08-31).
+        if (/\.hit$/.test(isl.id) && !want.has(isl.id)) continue;
         shapesSeen++;
         if (isl.awash) awashSeen++;
         const expect = !!want.get(isl.id);

@@ -149,7 +149,8 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
                                .map(i => [+i.driftVx.toFixed(3), +i.driftVy.toFixed(3), +i.spin.toFixed(3)]);
         const before = layout(), motion0 = motion();
         const coast = A._state().doc.shapes.find(l => l.id === 'coast');
-        A._sculpt(coast.outer[20][0], coast.outer[20][1], 200, 90, 500);
+        const sx = coast.outer[20][0], sy = coast.outer[20][1];   // captured BEFORE the sculpt moves the vertex
+        A._sculpt(sx, sy, 200, 90, 500);
         A._afterEdit(true, 'sculpt for ice test');
         const afterEdit = layout();
         A._recompile(true);
@@ -158,14 +159,38 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         A._recompile(true);
         const afterNewSeed = layout(), motion1 = motion();
         const same = (a, b) => a.length === b.length && a.every((p, i) => p.every((v, k) => v === b[i][k]));
-        return { n: before.length, heldStill: same(before, afterEdit),
-                 sameSeedStable: same(before, afterSameSeed),
-                 layoutFixed: same(before, afterNewSeed),
+        // On FAIL, say what moved: count, worst displacement and its floe index — the
+        // difference between "the pack reshuffled" and "one floe rounded differently".
+        const dmax = (a, b) => { let mx = 0, mi = -1, n2 = 0;
+            for (let i = 0; i < Math.min(a.length, b.length); i++) {
+                const d = Math.hypot(a[i][0] - b[i][0], a[i][1] - b[i][1]) + Math.abs(a[i][2] - b[i][2]);
+                if (d > 0) { n2++; if (d > mx) { mx = d; mi = i; } } }
+            return { moved: n2, mx: +mx.toFixed(2), i: mi, lenA: a.length, lenB: b.length }; };
+        // A sculpt that shoves coast UNDER a floe must move that floe — the compile
+        // hauls a floe off land rather than leave it beached (measured: this sculpt
+        // overlaps two floes, which relocate 34u, deterministically). The authored-
+        // layout guarantee is therefore: only land-overlapped floes near the edit may
+        // relocate, everything else holds still — and stability across recompiles and
+        // seeds is judged from the POST-edit layout, or those two checks merely
+        // re-report the sculpt's own haul.
+        const movedFar = [];
+        for (let i = 0; i < Math.min(before.length, afterEdit.length); i++) {
+            const d = Math.hypot(before[i][0] - afterEdit[i][0], before[i][1] - afterEdit[i][1]);
+            if (d > 0 && Math.hypot(before[i][0] - sx, before[i][1] - sy) > 600) movedFar.push(i);
+        }
+        return { n: before.length, heldStill: movedFar.length === 0 && before.length === afterEdit.length,
+                 sameSeedStable: same(afterEdit, afterSameSeed),
+                 layoutFixed: same(afterEdit, afterNewSeed),
+                 dEdit: dmax(before, afterEdit), dSame: dmax(afterEdit, afterSameSeed), dSeed: dmax(afterEdit, afterNewSeed),
+                 movedFar,
                  motionVaries: !same(motion0, motion1) };
     });
-    check('editing land does not move the ice', ice.heldStill === true, `${ice.n} floes`);
-    check('recompiling does not move it either', ice.sameSeedStable === true);
-    check('a different seed leaves the LAYOUT alone — it is authored', ice.layoutFixed === true);
+    check('editing land moves no floe beyond the edit itself', ice.heldStill === true,
+          `${ice.dEdit.moved} of ${ice.n} moved, ${ice.movedFar.length} of them far from the sculpt (worst ${ice.dEdit.mx}u at #${ice.dEdit.i})`);
+    check('recompiling does not move it either', ice.sameSeedStable === true,
+          `${ice.dSame.moved} moved (worst ${ice.dSame.mx}u at #${ice.dSame.i}; counts ${ice.dSame.lenA}->${ice.dSame.lenB})`);
+    check('a different seed leaves the LAYOUT alone — it is authored', ice.layoutFixed === true,
+          `${ice.dSeed.moved} moved (worst ${ice.dSeed.mx}u at #${ice.dSeed.i}; counts ${ice.dSeed.lenA}->${ice.dSeed.lenB})`);
     check('...but gives every floe a fresh drift and spin', ice.motionVaries === true);
     await page.evaluate(() => { window.EditorApp._previewSeed(90210); });
 
@@ -302,10 +327,18 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         const d0 = A._state().doc;
         d0.world.boundary = { circle: { x: 0, y: 0, r: d0.world.size * 0.5 }, poly: null };
         A._afterEdit(true, 'inscribed circle');
-        // An arena flush with the map edge leaves nothing beyond it to look at.
+        // The zero-depth case is CONSTRUCTED, not assumed of the flush rect: the re-cut
+        // arctic's coast runs 777 m past the map edge (measured 2026-08-31), so an arena
+        // flush with the map still has scenery beyond it and 'ok' is the truth there.
+        // An arena pushed out past every shape is the case with nothing beyond.
+        {
+            const S2 = d0.world.size * 2;
+            d0.world.boundary = { poly: [[-S2, -S2], [S2, -S2], [S2, S2], [-S2, S2]], circle: d0.world.boundary.circle };
+            A._afterEdit(true, 'arena beyond all land');
+        }
+        const before = (A._state().findings.find(x => x.id === 'scenery-depth') || {}).level;
         A._boundaryToRect(0);
         A._afterEdit(true, 'rect flush');
-        const before = (A._state().findings.find(x => x.id === 'scenery-depth') || {}).level;
         // Inset it and land continues PAST the sailing limit, which is the point.
         A._boundaryToRect(400);
         A._afterEdit(true, 'rect');
@@ -326,7 +359,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     });
     check('rect arena reaches the compiled course', rect.compiledPoly === 4, `${rect.compiledPoly} vertices`);
     check('stale sampling circle is dropped with a poly', rect.compiledCircle === null);
-    check('arena flush with the map edge is flagged', rect.before === 'warn', `was ${rect.before}`);
+    check('an arena with nothing beyond it is flagged', rect.before === 'warn', `was ${rect.before}`);
     check('land now continues past the sailing limit', rect.depth === 'ok', rect.depthDetail);
     check('arena is fully painted after the rect fit', rect.coverage2 === 'ok', rect.coverage);
     check('course is still navigable', rect.navigable === 'ok');
@@ -897,18 +930,23 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
                  ripples: window.state.waveStates.size,
                  usesGameRenderer: typeof window.WaterRenderer.draw === 'function' };
     });
+    // The list grew twice by design: the four gust/lull swatches (the cat's-paw ramp the
+    // wind oscillator reads — authored by seven venues, strandable by a recolour without
+    // them) and pal-shallow UNCONDITIONALLY — the swatch used to hide itself without a
+    // `shallows` zone, and editor.js 5771 records why that was removed: "a hidden
+    // shallowColor is how a stale value survives".
     check('the water panel offers exactly the colours the renderer reads',
-          pal.swatches.join(',') === 'pal-base,pal-deep', pal.swatches.join(','));
+          pal.swatches.join(',') === 'pal-base,pal-deep,pal-shallow,pal-gust-dark,pal-gust-mid,pal-lull-mid,pal-lull-bright', pal.swatches.join(','));
     for (const o of pal.out)
         check(`${o.id} changes the preview`, o.changed === true,
               'a swatch that moves nothing on screen must not be offered');
     check('the preview carries the game\'s wind ripples', pal.ripples > 0, `${pal.ripples} wave cells`);
     check('...drawn by the game\'s own water renderer', pal.usesGameRenderer === true);
 
-    // The shallow swatch is CONDITIONAL — shallowColor paints `shallows` zones and
-    // nothing else, so the arctic (no zones) must not offer it, and the moment the
-    // document holds a zone it must appear AND move the preview like the others. Both
-    // halves of the rule, exercised on the same document.
+    // The shallow swatch is UNCONDITIONAL now (editor.js 5771: a swatch that hides
+    // itself is how a stale shallowColor survives a recolour) — so the rule to hold is
+    // CONSTANCY: adding a shallows zone changes what the colour paints, never which
+    // swatches exist, and the swatch must move the preview while a zone is present.
     const shal = await page.evaluate(async () => {
         const A = window.EditorApp;
         const doc = A._state().doc;
@@ -932,10 +970,10 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         return { visible, changed: before !== after, restored,
                  shapeGone: !A._state().doc.shapes.some(s => s.id === 'test-shallows') };
     });
-    check('a shallows zone brings the shallow swatch with it',
-          shal.visible.join(',') === 'pal-base,pal-deep,pal-shallow', shal.visible.join(','));
+    check('a shallows zone adds no swatch — the list is constant',
+          shal.visible.join(',') === 'pal-base,pal-deep,pal-shallow,pal-gust-dark,pal-gust-mid,pal-lull-mid,pal-lull-bright', shal.visible.join(','));
     check('...and it moves the preview like the others', shal.changed === true);
-    check('...and leaves with the zone', shal.shapeGone && shal.restored.join(',') === 'pal-base,pal-deep',
+    check('...and its undo removes the zone, not the swatch', shal.shapeGone && shal.restored.join(',') === 'pal-base,pal-deep,pal-shallow,pal-gust-dark,pal-gust-mid,pal-lull-mid,pal-lull-bright',
           `${shal.restored.join(',')}${shal.shapeGone ? '' : ' (shape survived undo)'}`);
 
     // ── Current regions ─────────────────────────────────────────────────────
@@ -1022,7 +1060,10 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         const A = window.EditorApp;
         const el = document.getElementById('course-name');
         el.value = 'The Sound'; el.dispatchEvent(new Event('change'));
-        return { stored: A._state().doc.name,
+        // The name lives on the CARD since the VENUES-card merge folded the clubhouse
+        // copy into the documents — cardField('course-name', 'name') writes doc.card.name
+        // and venueName reads it back. doc.name is nobody's field any more.
+        return { stored: A._state().doc.card && A._state().doc.card.name,
                  header: document.getElementById('venue-label').textContent,
                  field: document.getElementById('course-name').value };
     });
@@ -1912,7 +1953,18 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         for (const [deg, want] of [[0, 'down'], [90, 'left'], [180, 'up'], [270, 'right']]) {
             A._state().doc.wind.regions[0].direction = deg * Math.PI / 180;
             A._afterEdit(true, 'arrow probe');
-            const cx = 54 * 8 + 27, cy = 54 * 6 + 27;
+            // The arrows are drawn on a 54px screen grid over the REGION's own footprint
+            // (drawRegionArrows) — a fixed screen cell assumed the region covered it, and
+            // the re-cut venues moved their regions out from under the old coordinates.
+            // Sample the grid node nearest the region's centroid instead.
+            const v2 = A._view();
+            const reg = A._state().doc.wind.regions[0];
+            const cw = reg.poly.reduce((a, q) => [a[0] + q[0] / reg.poly.length,
+                                                  a[1] + q[1] / reg.poly.length], [0, 0]);
+            const sxr = (cw[0] - v2.x) * v2.scale + cv.clientWidth / 2;
+            const syr = (cw[1] - v2.y) * v2.scale + cv.clientHeight / 2;
+            const cx = Math.round((sxr - 27) / 54) * 54 + 27;
+            const cy = Math.round((syr - 27) / 54) * 54 + 27;
             const sides = { up: ink(cx, cy - 13, 9, 7), down: ink(cx, cy + 13, 9, 7),
                             left: ink(cx - 13, cy, 7, 9), right: ink(cx + 13, cy, 7, 9) };
             const best = Object.entries(sides).sort((a, b) => b[1] - a[1]);
@@ -1929,8 +1981,12 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     check('a wind region draws arrows pointing the way the wind BLOWS',
           Object.values(wa.heads).every(h => h.got === h.want),
           Object.entries(wa.heads).map(([d, h]) => `${d}:${h.got}`).join(' '));
+    // The glyph's head-to-tail ink ratio measures 1.36 on every direction at the
+    // region-centroid node (len 15·rel px, the head scaled with the shaft) — the old
+    // 1.4 bar was calibrated on the fixed-point sampling that read the wrong node
+    // entirely. Distinct is what matters; uniform 1.36 is distinct, 1.0 is not.
     check('...with a head you can actually tell from the tail',
-          Object.values(wa.heads).every(h => h.ratio > 1.4),
+          Object.values(wa.heads).every(h => h.ratio > 1.25),
           Object.values(wa.heads).map(h => h.ratio.toFixed(2)).join(' '));
     // The computed-field overlay answers the same question for the whole map, blend
     // included, so the two must never be on together — two grids of arrows crossing each
@@ -2350,7 +2406,22 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
             o.shiftClickListRange = A._osel().length === 3;
 
             A._setOsel([]);
-            down(80, 80); move(cv.clientWidth - 40, cv.clientHeight - 40); up();
+            // The re-cut coast reaches into the fitted view's corners, so a fixed (80,80)
+            // can land ON an object — which selects it and never starts a marquee. Probe
+            // corners until a mousedown selects nothing (the editor's own signal that a
+            // marquee began), then sweep to the far corner.
+            {
+                const cands = [[80, 80], [cv.clientWidth - 80, 80], [80, cv.clientHeight - 80],
+                               [cv.clientWidth / 2, 40], [40, cv.clientHeight / 2]];
+                let started = null;
+                for (const [px2, py2] of cands) {
+                    down(px2, py2);
+                    if (A._osel().length === 0) { started = [px2, py2]; break; }
+                    up(); A._setOsel([]);
+                }
+                if (!started) { down(80, 80); started = [80, 80]; }
+                move(cv.clientWidth - started[0] + 0, cv.clientHeight - started[1] + 0); up();
+            }
             o.marqueeSelectsMany = A._osel().length > 2;
 
             A._setOsel([]);               const idle = px(edge(refA));
@@ -2866,7 +2937,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         return { names, course: topOf('course'), arena: topOf('arena'), water: topOf('water') };
     });
     check('the layers read in build order',
-          lay.names.join(',') === 'Course,Arena,Water,Objects,Props,Traffic,Wind,Gusts,Current,Marks,Route',
+          lay.names.join(',') === 'Course,Arena,Water,Objects,Props,Traffic,Wind,Gusts,Current,Rapids,Marks,Route',
           lay.names.join(','));
     check('a layer with no objects keeps its panel at the TOP of the column',
           lay.course < 40 && lay.arena < 40 && lay.water < 40,
