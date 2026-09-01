@@ -1010,7 +1010,14 @@ function resetGame() {
     // The pond is the school's venue, never the clubhouse's: a stored 'pond' (a reload
     // mid-lesson) falls back to the front door. School.start() saves 'pond' precisely so
     // this reload survives it.
-    if ((settings.venue === 'pond' || settings.venue === 'pond-open') && !(window.School && window.School.active)) settings.venue = 'bay';
+    // ⚠️ NOT IN THE EDITOR. EditorApp.recompile() registers the open document, remembers
+    // its venue and drives THIS resetGame to build the course it edits and checks —
+    // redirected, the editor silently built BAY under pond's land, and every pond
+    // finding in check_venues was bay's marks and bay's fleet tested against the
+    // pond's lawn (five phantom errors, 2026-08-31). The redirect is a clubhouse
+    // reload rule; the editor legitimately opens the school's water.
+    if ((settings.venue === 'pond' || settings.venue === 'pond-open') && !(window.School && window.School.active)
+        && !window.EditorApp) settings.venue = 'bay';
     _resultsPending = false;
     if (UI.resultsOverlay) UI.resultsOverlay.classList.add('hidden');
     state.camera.target = 'boat';

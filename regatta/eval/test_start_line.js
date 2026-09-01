@@ -57,7 +57,13 @@ const MEASURE = () => {
     await p.waitForFunction(() => window.state && window.VENUE_DOC && window.Arena);
     await p.evaluate(m => { window.__measure = eval('(' + m + ')'); }, MEASURE.toString());
 
-    const venues = await p.evaluate(() => Object.keys(window.VENUE_DOC));
+    // The school's venues are deliberately unreachable from the clubhouse: resetGame
+    // rewrites a stored 'pond'/'pond-open' back to 'bay' unless School is active
+    // (js/script.js — "the pond is the school's venue, never the clubhouse's"), so
+    // selecting them here can never take. They are exercised by the school flow, not
+    // by the race harness.
+    const venues = await p.evaluate(() => Object.keys(window.VENUE_DOC)
+        .filter(v => v !== 'pond' && v !== 'pond-open'));
 
     console.log('the fleet spawns behind the start line, in every venue\n');
     {

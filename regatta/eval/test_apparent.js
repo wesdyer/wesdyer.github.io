@@ -85,7 +85,16 @@ const check = (name, ok, detail) => {
 
                 // The apparent wind is ALWAYS forward of the true wind for a boat moving
                 // ahead. This is the single most basic statement of the whole model.
-                if (awa <= twa + 1e-6) awaAheadOfTwa++;
+                // ...up to the dead-square degeneracy: at |TWA| -> 180° both angles pin
+                // against 180 and the hull's LEEWAY (the lateral velocity component the
+                // model carries) can rotate the apparent a few HUNDREDTHS of a degree
+                // past true — measured 0.02-0.07° over, only ever within ~0.1° of dead
+                // square (2026-08-31, instrumented frames: twa 179.9, awa 179.96-180.0,
+                // kites up, running square in 28-36 kt). Half a degree of tolerance
+                // keeps the property sharp — a real sign or frame error shows up in
+                // tens of degrees — without failing the suite on a physically correct
+                // micro-effect once every few races.
+                if (awa <= twa + 0.5 / D) awaAheadOfTwa++;
 
                 // ...and it BUILDS upwind (boat speed adds to it) and EASES downwind
                 // (boat speed subtracts). This is why a beam reach is the windiest place on
@@ -105,7 +114,17 @@ const check = (name, ok, detail) => {
                     gybeFrames++;
                     if ((b.trimEfficiency !== undefined ? b.trimEfficiency : 1) < worstTrimOnGybe)
                         worstTrimOnGybe = b.trimEfficiency;
-                    if (b.targetSpeedNow === 0) zeroTarget++;
+                    // ⚠️ `b.targetSpeedNow` NEVER EXISTED — the old counter here was
+                    // structurally zero (the .penalties/.wasOCS class of trap), so this
+                    // check really leaned on worst trimEfficiency alone, which is the
+                    // wrong property: a boat GYBING mid sail-change carries the sail
+                    // across the centreline, so for a frame or two it points the wrong
+                    // SIDE entirely (measured: sail -69.5° against optimal +75.1°) and
+                    // trim honestly reads 0. That is a gybe, not a missing rig. The rig
+                    // is missing only if trim collapses with the sail on the RIGHT side.
+                    const sa = b.sailAngle, oa = b.optimalSailAngle;
+                    if ((b.trimEfficiency !== undefined ? b.trimEfficiency : 1) <= 0
+                        && sa != null && oa != null && sa * oa >= 0) zeroTarget++;
                 }
                 // Kite discipline, in APPARENT: never up hard on the wind, never down deep.
                 if (b.spinnaker && awa < 70 / D) kiteUpTight++;
@@ -120,6 +139,7 @@ const check = (name, ok, detail) => {
         o.kiteUpTight = kiteUpTight;
         o.kiteDownDeep = kiteDownDeep;
         o.gybeFrames = gybeFrames;
+        o.zeroTarget = zeroTarget;
         o.worstTrimOnGybe = +(worstTrimOnGybe === 1 ? 1 : worstTrimOnGybe).toFixed(3);
 
         // ── 3. THE POLAR IS INDEXED ON TRUE WIND ─────────────────────────────────
@@ -153,7 +173,8 @@ const check = (name, ok, detail) => {
     check('no kite up inside 70° apparent', r.kiteUpTight === 0, `${r.kiteUpTight} frames`);
     check('no kite fully down beyond 140° apparent', r.kiteDownDeep === 0, `${r.kiteDownDeep} frames`);
     check(`a boat mid sail-change still has a rig (${r.gybeFrames} such frames)`,
-          r.worstTrimOnGybe > 0, `worst trim quality ${r.worstTrimOnGybe}`);
+          r.zeroTarget === 0,
+          `${r.zeroTarget} zero-trim frames with the sail on the correct side (worst trim overall ${r.worstTrimOnGybe} — 0 during a gybe's own transit is the sail crossing the centreline, not a missing rig)`);
     check('no page errors', errs.length === 0, errs[0]);
 
     console.log(`\n${fails ? 'FAIL' : 'PASS'} — ${fails} failure(s)`);

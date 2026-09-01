@@ -16927,3 +16927,43 @@ two zones — not in the entrance hunt, which only starts at 2.1z where the
 window opens. Leg 5 is the exception both ways (his 16°, the leader's 25°) and
 the leg where HE enters "wrong-way" 100%: the approach geometry there is not
 the same problem. Owner: the daylight build should start from THIS table.
+
+## THE SIX NEW npm FAILURES — ALL RESOLVED (2026-08-31 evening, owner: "fix
+## these, or change the expectations if they don't represent real failures")
+npm test 13 → **7 of 34 not passing = exactly the standing seven** (shoal,
+sailable, editor, results, dmc, traffic + the test_controls canvas crash).
+- **test_pages (real defect, fixed in the pages)**: `js/game/school.js` added
+  to rules/scenario/editor/competitor.html after telemetry.js (index's order);
+  `pond.venue.js` added to rules + scenario. PASS.
+- **check_venues pond ×5 (real defect, fixed in js/script.js)**: the pond→bay
+  redirect in resetGame fired inside the EDITOR — `EditorApp.recompile()`
+  remembers the doc's venue and drives resetGame, so the editor silently built
+  BAY under pond's land and all five "errors" were bay's marks, roundMark and
+  fleet tested against the pond's lawn (bay's roundMark explains rounding
+  checks firing on a gate-only course). Redirect now exempts
+  `window.EditorApp`. check_venues: **0 errors** (pond AND pond-open clean).
+- **test_start_line (expectation)**: pond/pond-open are deliberately
+  unreachable from the clubhouse (the redirect is the design); the venue-
+  selection sweep now skips them. PASS.
+- **test_venuedoc (expectation)**: a synthetic fixture legitimately lacks
+  baked `course.paths`; that Save-nudge warning is excluded from the
+  soundness assertion. PASS.
+- **test_path_estimate (expectation)**: river leg 3's hop now legitimately
+  threads TIGHT-TIER water (the owner's two-pass `pathBetween` — the fix the
+  test predates); a segment is land only if a sampled point is neither nav
+  nor `_tight`. PASS.
+- **test_apparent (expectations, evidence-based)**: the test is UNSEEDED
+  (different race every run) and both failures were rare-event tails,
+  instrumented before touching them: (1) aft-of-true frames are dead-square
+  boats (twa 179.9°) where leeway rotates apparent **0.02-0.07°** past true —
+  tolerance now 0.5° with the anatomy in the comment; (2) the zero-trim
+  mid-sail-change frames are GYBE transits (sail −69.5° vs optimal +75.1° —
+  crossing the centreline), and the check's own `zeroTarget` counter read a
+  field (`b.targetSpeedNow`) that NEVER EXISTED (the `.penalties`/`.wasOCS`
+  trap class — rule 35's sibling, found via rule 4's spirit). The check now
+  asserts zero trim never happens with the sail on the CORRECT side. 3/3
+  fresh runs PASS 12/12 checks (pre-fix: 1/3).
+Hygiene: goldens **PASS 30/30** after the script.js edit (the editor gate
+cannot fire on index.html); freeze untouched. Pre-existing-failure proof:
+test_apparent PASSES at 88728ae and 79e52a8 worktrees — the tails were
+re-rolled by the paths chaos, not introduced by it.
