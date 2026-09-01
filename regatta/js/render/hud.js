@@ -1901,6 +1901,28 @@ function drawBoatInstruments(ctx, player) {
     ctx.font = FONT.mono(15);
     ctx.fillStyle = d.noGo ? '#f87171' : '#bfdbfe';
     ctx.fillText(d.twa + '°', sx, top + BI_H / 2 + 0.5);
+    // ── THE HALYARD GAUGE ───────────────────────────────────────────────────
+    // A hoist or douse takes seconds, and a player who presses Space and sees nothing
+    // presses it again. While the kite is travelling (plus a half-second linger at either
+    // end, so the completion registers), a thin bar under the TWA pill shows how much
+    // sail is actually UP — filling on the hoist, draining on the douse — in the boat's
+    // own spinnaker colour. An instrument, not a task meter: it reports the sail, so it
+    // needs no raising/lowering inference and reads the same in the school and a race.
+    const dp = player.spinnakerDeployProgress || 0;
+    if (player._kiteBarLast != null && dp !== player._kiteBarLast) player._kiteBarAt = state.time;
+    player._kiteBarLast = dp;
+    if (player._kiteBarAt != null && state.time - player._kiteBarAt < 0.5) {
+        const by = top + BI_H + 4, bh = 5, r = bh / 2;
+        ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.roundRect(left, by, BI_W, bh, r);
+        ctx.fillStyle = BI_BG; ctx.fill();
+        ctx.strokeStyle = BI_RIM; ctx.lineWidth = 1; ctx.stroke();
+        if (dp > 0.02) {
+            ctx.beginPath(); ctx.roundRect(left, by, Math.max(bh, BI_W * dp), bh, r);
+            ctx.fillStyle = (player.colors && player.colors.spinnaker) || '#f2c14e';
+            ctx.fill();
+        }
+    }
     ctx.restore();
 }
 

@@ -69,6 +69,8 @@ const School = {
         this.unit = unit;
         this._fade = null; this._handoff = null;   // a Skip/Restart mid-fade must not fire the old section's callback
         this._hint = null; this._tip = null; this._lines = [];   // the card starts each section clean
+        this._deploy = null; this._deployKey = null;
+        this.continueUI(false);
         // Collisions arrive as race events; chain onto whatever telemetry has installed.
         if (!this._evWrapped) {
             this._evWrapped = true;
@@ -385,7 +387,8 @@ const School = {
         pt.x += dx / d * step; pt.y += dy / d * step;
         return d > step;
     },
-    DUCK_SWIM: 300,          // units/s, a duckling crossing the screen for a new station
+    DUCK_SWIM: 300,
+    SNAKE_AIM_TOL: 10 * Math.PI / 180,   // "pointed at the ducklings": the freeze test AND the aim arrow use this one number          // units/s, a duckling crossing the screen for a new station
     DUCK_APPROACH: 150,      // units/s, a duckling coming to meet a boat pointed at it
 
     // ── THE S: five ducklings to reach, laid out in an S off the beam. Each holds station
@@ -431,7 +434,10 @@ const School = {
         const s = this.s, p = state.boats[0], n = s.snake, head = s.ducks[0];
         if (!head) return;
         const bearing = Math.atan2(head.x - p.x, -(head.y - p.y));
-        const aimed = Math.abs(normalizeAngle(p.heading - bearing)) < 10 * Math.PI / 180;
+        const aimed = Math.abs(normalizeAngle(p.heading - bearing)) < this.SNAKE_AIM_TOL;
+        // Not pointed at the ducklings for a second: the lesson has not landed, so a
+        // teal arrow (drawTurnArrow) shows which way to turn until the bow comes round.
+        n.offAimT = aimed ? 0 : (n.offAimT || 0) + dt;
         if (aimed) {
             n.frozen = true;                                                     // hold where it is; sail up to it
         } else {
@@ -450,6 +456,39 @@ const School = {
         const up = s.up, p = r.p;
         const inZone = r.abs < 38 * Math.PI / 180;
         up.zoneT = inZone ? up.zoneT + 1 / 60 : 0;
+        // GUIDANCE: the heading the lesson wants right now, shown as the teal turn arrow
+        // (drawAbove) after one second of not doing it. In the zone: the nearer close-hauled
+        // course, out the short way. Out of the zone: only when they are plainly not making
+        // the ducklings — past the layline (the ducklings clearly on the other board), or
+        // sailing away from ducklings they could point straight at — so an honest zigzag
+        // never gets nagged.
+        {
+            const wd = this.wd(), duck = s.ducks[0];
+            const CH = 45 * Math.PI / 180;   // close-hauled, just outside the cone
+            let target = null;
+            if (inZone) {
+                const side = Math.abs(r.twa) > 0.06 ? Math.sign(r.twa)
+                    : (duck ? (Math.sign(normalizeAngle(Math.atan2(duck.x - p.x, -(duck.y - p.y)) - wd)) || 1) : 1);
+                target = normalizeAngle(wd + side * CH);
+            } else if (up.zoneTaught && !up.saidTack) {
+                // "Zigzag back and forth" is up and they have never tacked: the arrow shows
+                // the tack itself — all the way through the red zone to the other board's
+                // close-hauled course. Held off while near head-to-wind (the in-zone branch
+                // owns that), it appears a second after the instruction and clears with the
+                // first tack.
+                if (Math.abs(r.twa) > 30 * Math.PI / 180) target = normalizeAngle(wd - Math.sign(r.twa) * CH);
+            } else if (duck) {
+                const bearing = Math.atan2(duck.x - p.x, -(duck.y - p.y));
+                const bw = normalizeAngle(bearing - wd);
+                if (Math.abs(bw) > 48 * Math.PI / 180) {
+                    if (Math.abs(normalizeAngle(bearing - p.heading)) > 45 * Math.PI / 180) target = bearing;
+                } else if (Math.abs(bw) > 25 * Math.PI / 180 && Math.sign(bw) !== Math.sign(r.twa)) {
+                    target = normalizeAngle(wd + Math.sign(bw) * CH);
+                }
+            }
+            if (target != null) { up.target = target; up.offT = (up.offT || 0) + 1 / 60; }
+            else { up.offT = 0; up.target = null; }
+        }
         const tacks = s.tacks - up.tacks0;
         // Teach the zone once, in full; every later visit gets the short correction.
         if (!up.inZone && up.zoneT >= 3) {
@@ -545,6 +584,20 @@ const School = {
         if (Math.abs(d) < 1e-4) return;
         this.windScale += Math.sign(d) * Math.min(Math.abs(d), s.windRate * dt);
     },
+    // A reading gate's input: one advance per keypress or click, 400 ms apart so a held
+    // key or a double-tap cannot blow through two gates before the second is read.
+    acceptContinue(e) {
+        if (!this.active || !this._continueArmed || state.paused) return;   // paused: the menu's (or a screen's) input is its own
+        const now = performance.now();
+        if (now - (this._continueAt || 0) < 400) return;
+        this._continueAt = now;
+        this._enter = true;
+        if (e) { e.stopPropagation(); e.preventDefault(); }
+    },
+    continueUI(on) {
+        this._continueArmed = !!on;
+        if (this._dom) { this._dom.card.style.pointerEvents = on ? 'auto' : 'none'; this._dom.card.style.cursor = on ? 'pointer' : ''; }
+    },
     // The keycap, drawn the way the Controls menu draws one.
     K(label) { return `<span class="ov-kbd" style="font-size:12px; margin:0 2px;">${label}</span>`; },
     // A goal with progress: the count sits apart from the words, so it reads as a tally
@@ -554,9 +607,11 @@ const School = {
     firstSailSegments() {
         const S = this;
         const near = (pt, r) => S.dist(state.boats[0], pt) < r;
-        const ENTER = 'Press ' + S.K('Enter') + ' to continue';
-        const enterAfter = (secs) => (s) => S._enter && s.segT > secs;
-        const armEnter = (s) => { S._enter = false; };
+        // The two reading gates advance on ANY key (Esc stays pause, F-keys and bare
+        // modifiers stay theirs) or a click on the card — see acceptContinue.
+        const ENTER = { button: 'Continue &rsaquo;', label: 'press any key · or click' };
+        const enterAfter = (secs) => (s) => { if (S._enter && s.segT > secs) { S.continueUI(false); return true; } return false; };
+        const armEnter = (s) => { S._enter = false; S.continueUI(true); };
         const player = () => state.boats[0];
         const flow = () => { const w = state.wind.direction; return { x: -Math.sin(w), y: Math.cos(w) }; };
         // Each entry is one ring: a CSS selector, or a list of selectors merged into one ring.
@@ -1315,6 +1370,22 @@ const School = {
             }
         }
         this.updateWind(dt);
+        // THE KITE TAKES SECONDS, and a new player who presses Space and sees nothing
+        // presses it again. While the sail is moving, a teal progress ring rides the boat
+        // (drawAbove) and the card's hint row names what is happening.
+        {
+            const pb = state.boats[0];
+            const kp = pb ? (pb.spinnakerDeployProgress || 0) : 0;
+            const dep = (kp > 0.02 && kp < 0.98) ? (pb.spinnaker ? 'up' : 'down') : null;
+            this._deploy = dep ? { up: dep === 'up', f: dep === 'up' ? kp : 1 - kp } : null;
+            if (dep !== this._deployKey) {
+                this._deployKey = dep;
+                if (this._dom) {
+                    this.renderLines();
+                    if (!dep && !this._lines.length && !this._tip && !this._goalOn) this.hideCard();
+                }
+            }
+        }
         this.renderDots();
         if (this.s.kind === 'sail') this.updateFirstSail(dt);
         else if (this.s.kind === 'pond') this.updatePond(dt);
@@ -1453,15 +1524,71 @@ const School = {
 
     // ── the teal ring: what Paddle is pointing at ─────────────────────────────
     drawAbove(ctx) {
+        if (!state.boats[0]) return;
         const h = this.highlight;
-        if (!h || !h.world || !state.boats[0]) return;
-        const c = h.world(state.boats[0]);
-        const pulse = 1 + 0.08 * Math.sin(state.time * 9);
+        if (h && h.world) {
+            const c = h.world(state.boats[0]);
+            const pulse = 1 + 0.08 * Math.sin(state.time * 9);
+            ctx.save();
+            ctx.strokeStyle = 'rgba(64, 245, 200, 0.95)';
+            ctx.lineWidth = 4;
+            ctx.shadowColor = 'rgba(64, 245, 200, 0.8)'; ctx.shadowBlur = 14;
+            ctx.beginPath(); ctx.arc(c.x, c.y, c.r * pulse, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+        }
+        // The steering lesson's nudge: one second not pointed at the ducklings and a teal
+        // arc arrow shows which way to bring the bow round; it fades in, pulses, and goes
+        // the moment they are aimed (offAimT resets in updateSnake).
+        const sn = this.s && this.s.snake;
+        if (sn && (sn.offAimT || 0) >= 1 && this.s.ducks[0]) {
+            const hd = this.s.ducks[0];
+            this.drawTurnArrow(ctx, state.boats[0], Math.atan2(hd.x - state.boats[0].x, -(hd.y - state.boats[0].y)), sn.offAimT);
+        }
+        // The upwind lesson's nudge, same shape: out of the red zone, or onto the making
+        // board — tickUpwind decides the heading to show and how long they have been off it.
+        const up = this.s && this.s.up;
+        if (up && (up.offT || 0) >= 1 && up.target != null) this.drawTurnArrow(ctx, state.boats[0], up.target, up.offT);
+        // The spinnaker-in-motion visual is the HUD's halyard gauge (drawBoatInstruments),
+        // the same instrument the shipped game shows; the school adds only the hint-row
+        // text naming it (renderLines reads _deploy).
+    },
+    drawTurnArrow(ctx, p, target, offT) {
+        let d = normalizeAngle(target - p.heading);
+        // The SAME test that freezes the S: if the boat is not aimed, the arrow shows —
+        // an arrow that gave up early left a dead band (10°–12.6°) where the ducklings
+        // never came closer and nothing said why. Near the threshold the true arc is a
+        // stub, so the drawn sweep has a floor; the direction is still the real one.
+        if (Math.abs(d) < this.SNAKE_AIM_TOL) return;
+        if (Math.abs(d) < 0.35) d = Math.sign(d) * 0.35;
+        const R = 88;
+        const fade = Math.min(1, (offT - 1) / 0.35);
+        const a = fade * (0.7 + 0.25 * Math.sin(state.time * 5));
+        const t0 = p.heading - Math.PI / 2, t1 = t0 + d;       // canvas angles: heading 0 is up
         ctx.save();
-        ctx.strokeStyle = 'rgba(64, 245, 200, 0.95)';
-        ctx.lineWidth = 4;
-        ctx.shadowColor = 'rgba(64, 245, 200, 0.8)'; ctx.shadowBlur = 14;
-        ctx.beginPath(); ctx.arc(c.x, c.y, c.r * pulse, 0, Math.PI * 2); ctx.stroke();
+        ctx.strokeStyle = `rgba(64, 245, 200, ${a.toFixed(3)})`;
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = 'rgba(64, 245, 200, 0.8)'; ctx.shadowBlur = 12;
+        // Dashes MARCH toward the arrowhead: motion along the path says "go this way" in a
+        // way a pulse never does. The path runs t0 -> t1 whichever way the arc bends, so one
+        // offset sign serves both turn directions.
+        ctx.setLineDash([13, 11]);
+        ctx.lineDashOffset = -((state.time * 55) % 24);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, R, t0, t1, d < 0);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // The head, along the arc's direction of travel at its far end.
+        const hx = p.x + Math.cos(t1) * R, hy = p.y + Math.sin(t1) * R;
+        const tang = t1 + (d > 0 ? Math.PI / 2 : -Math.PI / 2);
+        const L = 16;
+        ctx.beginPath();
+        ctx.moveTo(hx + Math.cos(tang) * L, hy + Math.sin(tang) * L);
+        ctx.lineTo(hx + Math.cos(tang - 2.5) * (L * 0.62), hy + Math.sin(tang - 2.5) * (L * 0.62));
+        ctx.lineTo(hx + Math.cos(tang + 2.5) * (L * 0.62), hy + Math.sin(tang + 2.5) * (L * 0.62));
+        ctx.closePath();
+        ctx.fill();
         ctx.restore();
     },
     // The ring round the disturbed air is fitted to the dots drawDisturbedAir actually paints
@@ -1705,6 +1832,7 @@ const School = {
             </div>
             <div id="school-goal" style="flex:none; width:170px; display:none; flex-direction:column; align-items:center; justify-content:center; gap:9px; padding:12px 14px; border-left:1px solid rgba(255,255,255,0.12); background:rgba(255,255,255,0.03); text-align:center;">
                 <span id="school-goal-key" style="display:none; font-size:12px; font-weight:900; letter-spacing:.1em; color:#eef3fb; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.3); border-bottom-width:3px; border-radius:6px; padding:5px 14px; text-transform:uppercase;"></span>
+                <span id="school-goal-btn" style="display:none; font-size:12px; font-weight:900; letter-spacing:.08em; color:${this.ORANGE}; background:rgba(245,133,31,0.12); border:1px solid ${this.ORANGE}; border-radius:8px; padding:7px 18px; text-transform:uppercase;"></span>
                 <span id="school-goal-pips" style="display:none; gap:5px;"></span>
                 <span id="school-goal-text" style="font-size:10.5px; font-weight:800; letter-spacing:.06em; line-height:1.4; color:${this.ORANGE}; text-transform:uppercase;"></span>
             </div>`;
@@ -1720,8 +1848,21 @@ const School = {
             #school-card .school-pip { width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); box-sizing:border-box; }
             #school-card .school-pip.on { border:0; background:${this.ORANGE}; box-shadow:0 0 7px rgba(245,133,31,0.6); }`;
         document.head.appendChild(cardCss);
-        // "Press Enter to continue".
-        window.addEventListener('keydown', (e) => { if (this.active && (e.key === 'Enter' || e.code === 'Enter')) this._enter = true; });
+        // The reading gates: any key advances (never Esc — pause — nor F-keys nor a bare
+        // modifier, and never a key-repeat), and the keystroke is CONSUMED in capture so
+        // it only advances — C must not also swap the camera. Clicking the card works too;
+        // the card only accepts pointer events while a gate is armed (continueUI).
+        window.addEventListener('keydown', (e) => {
+            if (!this.active || !this._continueArmed) return;
+            if (e.repeat || e.key === 'Escape' || /^F\d{1,2}$/.test(e.key)
+                || e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt' || e.key === 'Meta') return;
+            this.acceptContinue(e);
+        }, true);
+        // A click ANYWHERE on the page advances an armed gate — the whole page is the
+        // button, matching "press any key". Not while paused: the pause menu's clicks are
+        // its own. (The card still flips to pointer-events:auto while armed, purely for the
+        // pointer cursor; its clicks reach this listener by bubbling.)
+        window.addEventListener('click', () => { if (!state.paused) this.acceptContinue(); });
 
         const ring = document.createElement('div');
         ring.id = 'school-ring';
@@ -1757,7 +1898,7 @@ const School = {
         document.head.appendChild(css);
 
         this._lines = []; this._goalOn = false;
-        this._dom = { card, text: card.querySelector('#school-card-text'), hint: card.querySelector('#school-card-hint'), dots: card.querySelector('#school-dots'), deb, goal,
+        this._dom = { card, text: card.querySelector('#school-card-text'), hint: card.querySelector('#school-card-hint'), dots: card.querySelector('#school-dots'), deb, goal, goalBtn: card.querySelector('#school-goal-btn'),
                       goalText: goal.querySelector('#school-goal-text'), goalKey: goal.querySelector('#school-goal-key'), goalPips: goal.querySelector('#school-goal-pips'), ring, rings: [ring], screen };
     },
     // A GOAL fills the action cell. It takes a plain label, a "Press <kbd> to <do>" string
@@ -1775,6 +1916,13 @@ const School = {
         }
         d.goalKey.style.display = g.key ? '' : 'none';
         if (g.key) d.goalKey.innerHTML = g.key;
+        // The reading gates get a real BUTTON (buttons invite clicking; a keycap never
+        // does), with the how — any key, or click — as the quiet line under it.
+        d.goalBtn.style.display = g.button ? '' : 'none';
+        if (g.button) d.goalBtn.innerHTML = g.button;
+        d.goalText.style.color = g.button ? 'rgba(255,255,255,0.55)' : this.ORANGE;
+        d.goalText.style.textTransform = g.button ? 'none' : '';
+        d.goalText.style.fontSize = g.button ? '10px' : '';
         d.goalPips.style.display = g.count ? 'flex' : 'none';
         if (g.count) d.goalPips.innerHTML = Array.from({ length: g.count[1] }, (_, i) => `<span class="school-pip${i < g.count[0] ? ' on' : ''}"></span>`).join('');
         if (g.label.includes('<')) d.goalText.innerHTML = g.label; else d.goalText.textContent = g.label;
@@ -1809,11 +1957,12 @@ const School = {
         const esc = t => t.includes('<') ? t : t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
         const line = this._lines.length ? this._lines[this._lines.length - 1] : (this._tip || '');
         d.text.innerHTML = esc(line);
-        const sub = (this._lines.length && this._tip) ? `<span style="color:${this.ORANGE};">${esc(this._tip)}</span>` : (this._hint || '');
+        const dep = this._deploy ? `<span style="color:rgb(64,245,200); font-weight:800;">${this._deploy.up ? 'Raising' : 'Lowering'} the spinnaker&hellip;</span>` : null;
+        const sub = dep || ((this._lines.length && this._tip) ? `<span style="color:${this.ORANGE};">${esc(this._tip)}</span>` : (this._hint || ''));
         d.hint.innerHTML = sub;
         d.hint.style.display = sub ? 'flex' : 'none';
         this.renderDots();
-        if (this._lines.length || this._goalOn || this._tip) this.showCard();
+        if (this._lines.length || this._goalOn || this._tip || this._deploy) this.showCard();
     },
     // The beats of the current section, as dots by the coach's name.
     beats() {
@@ -1939,6 +2088,10 @@ const School = {
     hideScreen() {
         if (this._dom) this._dom.screen.style.display = 'none';
         this._screenId = null;
+        // The click (or Enter) that pressed Begin must not ALSO advance the first reading
+        // gate: the button's handler unpauses before the same event reaches the gate's
+        // window listener, so the cooldown starts now and swallows it.
+        this._continueAt = performance.now();
         clearInterval(this._screenTick); this._screenTick = null;
         if (this._simHeld) { this._simHeld = false; state.paused = false; }
         if (this.active) this.showFrame(true);

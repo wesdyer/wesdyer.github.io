@@ -26,8 +26,8 @@ on a beam reach and the helm is held.
 
 | # | Coach Paddle says | Goal (bottom of the box) | Shown / advances on |
 |---|---|---|---|
-| 1 | This is your boat. | Press [Enter] to continue | teal ring around the hull |
-| 2 | These streaks show which way the wind is blowing and how strong it is. Right now, it's coming from the side. | Press [Enter] to continue | wind 0 → 7 kn in 0.25 s; the big WIND arrow appears; the TWA panel under the boat appears with a ring on it |
+| 1 | This is your boat. | Continue › (any key, or click the card) | teal ring around the hull |
+| 2 | These streaks show which way the wind is blowing and how strong it is. Right now, it's coming from the side. | Continue › (any key, or click the card) | wind 0 → 7 kn in 0.25 s; the big WIND arrow appears; the TWA panel under the boat appears with a ring on it |
 | 3 | Steer with [←] / [→] or [A] / [D]. / Now follow those ducklings! | Follow the ducklings  *n of 5* (the tally set apart) | helm released; five ducklings 200 u apart in an S off the nearer beam (about ±24°), carried along with the boat at a fixed offset until you point at the nearest one (within 10°), when the S holds in the water so you can sail up to it; reach it (within a boat length) and only that duckling swims to the far end of the line while you carry on to the next; the count rises; five reached → exit line *Nice! That's a reach — sailing with the wind from the side. Fast and easy.* |
 | 4 | Now let's sail upwind. Follow the ducklings. | Follow the ducklings | ducklings dead upwind at the edge; they hold the edge until your first tack, then the gap closes with ground to windward |
 | 4a | You can't sail straight into the wind. Turn out of the red *no-sail zone*. | Turn out of the red zone | first time: 3 s inside ±38° of the wind; the red cone appears (and stays) |
