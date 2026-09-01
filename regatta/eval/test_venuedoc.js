@@ -85,8 +85,12 @@ console.log('\nbaked centroid/radius agree with the vertices');
 }
 
 console.log('\nvalidation accepts a sound document');
-check('no problems reported', V.validate(doc).length === 0,
-      V.validate(doc).map(p => p.msg).join('; '));
+// `course.paths missing` is the editor's Save nudge (the shipping docs all carry
+// baked paths since 2026-08-30); a synthetic fixture that never saw the editor is
+// allowed to lack them, so that one warning is not a soundness problem.
+const soundness = (d) => V.validate(d).filter(p => !/course\.paths missing/.test(p.msg));
+check('no problems reported', soundness(doc).length === 0,
+      soundness(doc).map(p => p.msg).join('; '));
 
 console.log('\nvalidation rejects what it should');
 const mutate = (fn) => { const d = JSON.parse(JSON.stringify(doc)); fn(d); return V.validate(d).filter(p => p.level === 'error'); };

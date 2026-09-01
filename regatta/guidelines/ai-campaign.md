@@ -16927,3 +16927,150 @@ two zones — not in the entrance hunt, which only starts at 2.1z where the
 window opens. Leg 5 is the exception both ways (his 16°, the leader's 25°) and
 the leg where HE enters "wrong-way" 100%: the approach geometry there is not
 the same problem. Owner: the daylight build should start from THIS table.
+
+## THE SIX NEW npm FAILURES — ALL RESOLVED (2026-08-31 evening, owner: "fix
+## these, or change the expectations if they don't represent real failures")
+npm test 13 → **7 of 34 not passing = exactly the standing seven** (shoal,
+sailable, editor, results, dmc, traffic + the test_controls canvas crash).
+- **test_pages (real defect, fixed in the pages)**: `js/game/school.js` added
+  to rules/scenario/editor/competitor.html after telemetry.js (index's order);
+  `pond.venue.js` added to rules + scenario. PASS.
+- **check_venues pond ×5 (real defect, fixed in js/script.js)**: the pond→bay
+  redirect in resetGame fired inside the EDITOR — `EditorApp.recompile()`
+  remembers the doc's venue and drives resetGame, so the editor silently built
+  BAY under pond's land and all five "errors" were bay's marks, roundMark and
+  fleet tested against the pond's lawn (bay's roundMark explains rounding
+  checks firing on a gate-only course). Redirect now exempts
+  `window.EditorApp`. check_venues: **0 errors** (pond AND pond-open clean).
+- **test_start_line (expectation)**: pond/pond-open are deliberately
+  unreachable from the clubhouse (the redirect is the design); the venue-
+  selection sweep now skips them. PASS.
+- **test_venuedoc (expectation)**: a synthetic fixture legitimately lacks
+  baked `course.paths`; that Save-nudge warning is excluded from the
+  soundness assertion. PASS.
+- **test_path_estimate (expectation)**: river leg 3's hop now legitimately
+  threads TIGHT-TIER water (the owner's two-pass `pathBetween` — the fix the
+  test predates); a segment is land only if a sampled point is neither nav
+  nor `_tight`. PASS.
+- **test_apparent (expectations, evidence-based)**: the test is UNSEEDED
+  (different race every run) and both failures were rare-event tails,
+  instrumented before touching them: (1) aft-of-true frames are dead-square
+  boats (twa 179.9°) where leeway rotates apparent **0.02-0.07°** past true —
+  tolerance now 0.5° with the anatomy in the comment; (2) the zero-trim
+  mid-sail-change frames are GYBE transits (sail −69.5° vs optimal +75.1° —
+  crossing the centreline), and the check's own `zeroTarget` counter read a
+  field (`b.targetSpeedNow`) that NEVER EXISTED (the `.penalties`/`.wasOCS`
+  trap class — rule 35's sibling, found via rule 4's spirit). The check now
+  asserts zero trim never happens with the sail on the CORRECT side. 3/3
+  fresh runs PASS 12/12 checks (pre-fix: 1/3).
+Hygiene: goldens **PASS 30/30** after the script.js edit (the editor gate
+cannot fire on index.html); freeze untouched. Pre-existing-failure proof:
+test_apparent PASSES at 88728ae and 79e52a8 worktrees — the tails were
+re-rolled by the paths chaos, not introduced by it.
+
+## THE STANDING SEVEN — 2026-08-31 evening (owner: "Take a run at those")
+npm test 7 → **1 of 34 not passing**; goldens PASS 30/30 after each js/ edit.
+- **test_shoal CRASH → PASS (real venuedoc defect)**: since the docs carry saved
+  paths, `compileVenueDoc`'s pricing loop reached `CoursePath.priceLeg` in the
+  standalone-node context where CoursePath does not exist (the guard existed for
+  the routing branch but not the saved-paths branch). Guarded via `priceLine`
+  (falls back to the priceSeg geometry pricing). That unmasked the suite's real
+  failure: contact props compile to hidden `.hit` shapes (soft → an awash shoal
+  carrying the prop's drag — the compiler's documented design), which the
+  doc-vs-runtime awash match had no expectation for; they are now excluded.
+- **test_dmc 8 → PASS**: the land check counted AWASH islands (seagrass, shoals —
+  lagoon read 82% of its own course "inside land"); it now drops `awash` exactly
+  as `state.course.landShapes` and every game grid site do. The 800u abeam bound
+  (sized for arctic's one arc) → 1000 (re-cut redrock's hairpins read 892).
+- **test_traffic 2 → PASS**: the cove's cargo lanes are AUTHORED `respawnDelay: 0`
+  and `localTime` cycles them seamlessly (`elapsed % (dur+0)`) — there is no dark
+  window to observe. The lifecycle checks now branch on the delay; the zero-delay
+  arm asserts the pure-function wrap (pos at dur+2 == pos at 2) instead.
+- **test_results 1 → PASS (owner intent changed)**: the Pts column is deliberate
+  (`POINTS_FOR_PLACE` = 11−pos floor 1, finishers only, with its own design
+  comment) — the test's "no points column" doctrine and index.html's stale
+  comment both updated; standings/"next race" remain forbidden.
+- **test_controls CRASH → PASS**: the suite lacked `--allow-file-access-from-files`
+  — the exact flag test_editor's header documents for file:// sprite taint; the
+  re-cut arctic's 66 props tainted the canvas at the first toDataURL. Flag added;
+  no workarounds needed.
+- **test_editor 13 → PASS**: (1) validator: a stale-sig `course.paths` with a
+  different leg count is now the stale WARN, not an error — editing a route no
+  longer flags "course may be unsailable" until Save (venuedoc.js, check order);
+  (2) ice trio: instrumented — the sculpt shoves coast under TWO floes which the
+  compile hauls 34u clear (deterministic, seed-independent; the game refusing a
+  beached floe), and the other two checks failed only as cascades of comparing
+  against the pre-sculpt layout. Expectations re-pointed: no floe beyond 600u of
+  the edit may move; recompile/seed stability judged from the post-edit layout;
+  (3) arena-flush: the re-cut coast runs 777 m past the map edge, so a flush
+  arena truthfully has scenery beyond it — the zero-depth case is now
+  CONSTRUCTED (arena at 2× world size) and venuecheck counts "beyond" only past
+  1u (on-the-line vertices are not scenery); (4) wind arrows: the probe sampled
+  a fixed screen cell the re-cut regions moved out from under — it now samples
+  the 54px grid node at the region's own centroid (directions then read
+  correctly: 0:down 90:left 180:up 270:right) and the head/tail bar is 1.25
+  (glyph measures a uniform 1.36); (5) palette: swatches never hide any more
+  (editor.js 5771: "a hidden shallowColor is how a stale value survives") — the
+  expected list is the seven the renderer reads, and the conditional-shallow
+  trio became constancy checks; (6) marquee: the probe's fixed (80,80) start
+  landed ON the re-cut coast (selecting it instead of starting a marquee) — it
+  now scans for a start point that selects nothing; (7) layer order gained
+  Rapids; (8) course name lives on `doc.card.name` since the VENUES-card merge.
+  ⚠ "...scatter still drives how many Place drops" flaked once in five runs
+  (stochastic placement probe) — noted, not chased.
+- **test_sailable 20 → 3, THE ONE REAL STANDING FINDING**: the test's grid now
+  matches the game's (awash filtered + drift subsampling — it had walled
+  Gatorgrass and the tropical venues and reported "0° of hull-width water"
+  around marks whole races round); school venues skipped (the redirect makes
+  index-page phantoms); the ground test runs at the hull's 19u half-beam, not a
+  30u disc (a hull-width tight-tier thread has <30u clearance by design), and
+  the FAIL detail now prints the penetration anatomy. What remains is REAL:
+  **the ideal path puts the hull into SOLID land on bay (12 sub-steps, nearest
+  0.4u), redrock (9, nearest 0.2u), swamp (26, nearest 0.8u)** — sub-cell land
+  fingers the grid's sampling admits between water cells. That is the ruler
+  (and the saved course.paths) clipping real land slivers; per the venue-gate
+  doctrine it stays red as an AI/grid-fidelity finding, not an expectation to
+  manage away. Instrument: the bands in the FAIL line (17-19u marginal vs <10u
+  punch-through — bay 6, redrock 2, swamp 13 are true punch-throughs).
+
+## ⚠️ CORRECTION (owner: "How is that possible? I can sail all of those venues
+## without being in land") — HE WAS RIGHT, the "real standing finding" was NOT one
+The grounded points were dumped (positions, distances, shape ids): every single
+one is a **hard-contact PROP collider**, not coastline — bay `prop-5/6.hit` (the
+cove floats), lagoon `prop-43.hit` (a 40u coral head), swamp `tree-*/knee-*.hit`
+(cypress trunks and knees, 9-17u). Mechanism: the GAME's routing grid adds a
+12-gon wall per hard prop (course.js CP1, 2026-08-08 — "32 of the lagoon's 37
+coral heads blocked ZERO grid cells while physics stopped boats dead"), but
+test_sailable's own grid built from `VenueDoc.shapes(doc)` only — blind to
+props — so its "ideal path" sailed straight through a float, and the ground
+check (landShapes, where compiled prop colliders DO live) flagged the hull "in
+land". The venues are fine; the shipped ruler and the AI's grid both carry the
+walls; only the test's grid didn't. It now mirrors course.js's prop-ring build
+exactly, and **test_sailable PASSES — npm test 0 of 34 not passing**. Yesterday's
+"sub-cell land fingers" reading is RETRACTED (rule 6's spirit: the anomaly was
+in the instrument, and the dump that settled it took ten minutes).
+OWNER ITEM (found while tracing this): `courseSig` hashes marks, lines, route,
+boundary and fixed non-awash LAND — **not props** — while hard props ARE walls
+in the grid the saved `course.paths` were routed on. Moving a hard prop in the
+editor therefore changes the real course without staling the saved paths; the
+ruler would keep drawing a line through the prop's new position until some
+other edit bumps the sig. One-line fix candidate: fold hard-prop (id, x, y,
+contactR) into the sig's land list.
+
+## courseSig v2 — HARD PROPS ARE HASHED (owner: "Shouldn't we hash hard props?")
+`courseSig` now folds every fixed hard-contact prop's (x, y, contactR) into the
+signature (prefix v1→v2) — a moved coral head stales the saved paths the moment
+it moves, closing the gap found in the sailable chase. Soft props stay out by
+design: the ruler is a geometric shortest path; drag prices the bots' router,
+never this polyline. All eleven path-carrying docs (ten venues + pond) were
+RE-STAMPED sig-only — the polylines are untouched because the hard props were
+already walls in the grid the paths were routed on (CP1), so the v1 sigs were
+computed FROM the same geometry v2 now names.
+**Behaviour-neutrality PROVEN three ways**: goldens PASS 30/30 on the re-stamped
+docs; seatrials 16-seed, lagoon 8-seed and bay 20-seed treePB benches all
+cmp-BYTE-IDENTICAL to their pa* anchors. ⇒ the ten venues were re-frozen (doc
+bytes changed with the sig string) and **the pa* anchors CARRY** — the same
+behaviour-preserving promotion as the great split. ⚠ pa* meta files stamp the
+pre-v2 fingerprints; cmp_bench refusals against them are this cut, not a drifted
+venue (the byte-identity proof above is the adjudication). Corpus lap
+adjudications are keyed on the LAPS' own stamps and are unaffected.

@@ -2821,7 +2821,7 @@ window.VENUE_DOC["ocean"] = {
     ],
     "cutoff": 360,
     "paths": {
-      "sig": "v1-77fc84c5-4wf",
+      "sig": "v2-8f41ab0f-4wi",
       "legs": [
         {
           "pts": []

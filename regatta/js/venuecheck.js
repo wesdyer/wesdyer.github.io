@@ -138,7 +138,11 @@ function runChecks(ctx) {
         const beyond = [];
         let deepest = 0;
         for (const l of land) {
-            const outs = l.outer.filter(p => !window.Arena.contains(bnd, p[0], p[1]));
+            // STRICTLY beyond, by more than a hull's paint: a coast drawn TO the map edge
+            // puts vertices exactly on a flush arena's line, and "0 m of scenery beyond"
+            // is exactly the world-ends case this check exists to flag (the flush-rect
+            // probe in test_editor read 'ok' off those on-the-line vertices, 2026-08-31).
+            const outs = l.outer.filter(p => window.Arena.signedDist(bnd, p[0], p[1]) < -1);
             if (!outs.length) continue;
             beyond.push(l.id);
             for (const p of outs) deepest = Math.max(deepest, -window.Arena.signedDist(bnd, p[0], p[1]));

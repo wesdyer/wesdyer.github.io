@@ -1,42 +1,42 @@
 {
   "bay": {
-    "hash": "d2bd929dda506d40",
-    "frozen": "2026-08-30"
+    "hash": "ef29814a129c6f6b",
+    "frozen": "2026-09-01"
   },
   "arctic": {
-    "hash": "20ab3b5853badb8f",
-    "frozen": "2026-08-30"
+    "hash": "2ed9042f8af5c77c",
+    "frozen": "2026-09-01"
   },
   "seatrials": {
-    "hash": "628376beb8d901e0",
-    "frozen": "2026-08-30"
+    "hash": "19cc2eab39bc31d9",
+    "frozen": "2026-09-01"
   },
   "ocean": {
-    "hash": "1b2e198d2a3557ca",
-    "frozen": "2026-08-30"
+    "hash": "44492d8735772896",
+    "frozen": "2026-09-01"
   },
   "river": {
-    "hash": "5c0453851cb8dfb7",
-    "frozen": "2026-08-30"
+    "hash": "520d827df16e52ec",
+    "frozen": "2026-09-01"
   },
   "redrock": {
-    "hash": "fee43d4d4bc1e2ff",
-    "frozen": "2026-08-30"
+    "hash": "e1dab2993d41eac5",
+    "frozen": "2026-09-01"
   },
   "lake": {
-    "hash": "da448da0b5dd7811",
-    "frozen": "2026-08-30"
+    "hash": "1d268e9a9ca6725e",
+    "frozen": "2026-09-01"
   },
   "lagoon": {
-    "hash": "dc7af78e2ce305b2",
-    "frozen": "2026-08-30"
+    "hash": "76be617375e125e5",
+    "frozen": "2026-09-01"
   },
   "swamp": {
-    "hash": "1c2e5e630ca9e09b",
-    "frozen": "2026-08-30"
+    "hash": "d93d5c1e6ec43358",
+    "frozen": "2026-09-01"
   },
   "glowtide": {
-    "hash": "99c1c17b94bf5155",
-    "frozen": "2026-08-30"
+    "hash": "c74e777270e755dc",
+    "frozen": "2026-09-01"
   }
 }

@@ -739,7 +739,7 @@ window.VENUE_DOC["pond"] = {
     "startTime": 30,
     "cutoff": 600,
     "paths": {
-      "sig": "v1-b77052e6-106",
+      "sig": "v2-10d9458c-113",
       "legs": [
         {
           "pts": []

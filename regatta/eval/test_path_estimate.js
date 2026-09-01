@@ -134,7 +134,24 @@ const check = (name, cond, detail) => {
                             for (let i = 1; i < taut.length; i++) {
                                 L += Math.hypot(taut[i][0] - taut[i-1][0], taut[i][1] - taut[i-1][1]);
                                 const interior = i > 1 && i < taut.length - 1;
-                                if (interior && !S.losClear(grid, taut[i-1][0], taut[i-1][1], taut[i][0], taut[i][1])) bad++;
+                                // Full-clearance LOS first; where that fails, the segment may
+                                // legitimately run through the TIGHT TIER (reduced-clearance
+                                // water the router threads at a tax — pathBetween's second
+                                // pass, 2026-08-30: river's channel reads as land at full
+                                // clearance for ~450u). Land is only land if a sampled point
+                                // is neither nav NOR tight.
+                                const tightOk = (x1, y1, x2, y2) => {
+                                    const L2 = Math.hypot(x2 - x1, y2 - y1), steps = Math.max(1, Math.ceil(L2 / (grid.res / 2)));
+                                    for (let k2 = 0; k2 <= steps; k2++) {
+                                        const px = x1 + (x2 - x1) * k2 / steps, py = y1 + (y2 - y1) * k2 / steps;
+                                        const [ci, cj] = grid.cell(px, py);
+                                        const on = grid.at(ci, cj) || (grid._tight && ci >= 0 && cj >= 0 && ci < grid.n && cj < grid.n && grid._tight[cj * grid.n + ci]);
+                                        if (!on) return false;
+                                    }
+                                    return true;
+                                };
+                                if (interior && !S.losClear(grid, taut[i-1][0], taut[i-1][1], taut[i][0], taut[i][1])
+                                    && !tightOk(taut[i-1][0], taut[i-1][1], taut[i][0], taut[i][1])) bad++;
                             }
                             if (S.losClear(grid, prev.x, prev.y, wp.x, wp.y))
                                 worstInflation = Math.max(worstInflation, L / straight);
