@@ -17056,3 +17056,21 @@ editor therefore changes the real course without staling the saved paths; the
 ruler would keep drawing a line through the prop's new position until some
 other edit bumps the sig. One-line fix candidate: fold hard-prop (id, x, y,
 contactR) into the sig's land list.
+
+## courseSig v2 — HARD PROPS ARE HASHED (owner: "Shouldn't we hash hard props?")
+`courseSig` now folds every fixed hard-contact prop's (x, y, contactR) into the
+signature (prefix v1→v2) — a moved coral head stales the saved paths the moment
+it moves, closing the gap found in the sailable chase. Soft props stay out by
+design: the ruler is a geometric shortest path; drag prices the bots' router,
+never this polyline. All eleven path-carrying docs (ten venues + pond) were
+RE-STAMPED sig-only — the polylines are untouched because the hard props were
+already walls in the grid the paths were routed on (CP1), so the v1 sigs were
+computed FROM the same geometry v2 now names.
+**Behaviour-neutrality PROVEN three ways**: goldens PASS 30/30 on the re-stamped
+docs; seatrials 16-seed, lagoon 8-seed and bay 20-seed treePB benches all
+cmp-BYTE-IDENTICAL to their pa* anchors. ⇒ the ten venues were re-frozen (doc
+bytes changed with the sig string) and **the pa* anchors CARRY** — the same
+behaviour-preserving promotion as the great split. ⚠ pa* meta files stamp the
+pre-v2 fingerprints; cmp_bench refusals against them are this cut, not a drifted
+venue (the byte-identity proof above is the adjudication). Corpus lap
+adjudications are keyed on the LAPS' own stamps and are unaffected.

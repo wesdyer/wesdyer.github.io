@@ -117,7 +117,7 @@ window.VENUE_DOC["seatrials"] = {
     ],
     "cutoff": 360,
     "paths": {
-      "sig": "v1-b8df0e76-er",
+      "sig": "v2-82f72dc-eu",
       "legs": [
         {
           "pts": []

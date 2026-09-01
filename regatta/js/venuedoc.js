@@ -3651,10 +3651,25 @@ function courseSig(doc) {
         if (t.motion !== 'fixed' || t.awash) continue;
         land.push([(sh.outer || []).map(pt), (sh.holes || []).map(h => h.map(pt))]);
     }
-    const s = JSON.stringify([marks, c.lines || null, c.route || [], (doc.world && doc.world.boundary) || null, land]);
+    // HARD-CONTACT PROPS ARE WALLS in the grid these paths were routed on (course.js
+    // CP1 adds a 12-gon per hard prop), so they are inputs to the paths as surely as a
+    // coastline is: move a coral head and the correct route around it moves, and a sig
+    // that never noticed kept a line drawn through the prop's new position (found
+    // 2026-08-31 chasing test_sailable's phantom groundings). SOFT props stay out on
+    // the same reasoning in reverse — the ruler is a geometric shortest path, and drag
+    // prices the bots' router, never this polyline.
+    const props = [];
+    for (const p of (doc.props || [])) {
+        if (!PROP_KINDS[p.kind]) continue;
+        const T = propTraits(p);
+        if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
+        props.push([r(p.x), r(p.y), r(T.contactR)]);
+    }
+    const s = JSON.stringify([marks, c.lines || null, c.route || [], (doc.world && doc.world.boundary) || null, land, props]);
     let h = 5381;
     for (let i = 0; i < s.length; i++) h = (Math.imul(h, 33) ^ s.charCodeAt(i)) >>> 0;
-    return 'v1-' + h.toString(16) + '-' + s.length.toString(36);
+    // v2: the algorithm grew the hard-prop list — every v1 sig is stale by construction.
+    return 'v2-' + h.toString(16) + '-' + s.length.toString(36);
 }
 // The saved paths as the game's `dmc` structure ({ legs: [{ pts, cum, length, base, roundSweep?,
 // roundZone? }], total }), or null when the document has none or they are stale.

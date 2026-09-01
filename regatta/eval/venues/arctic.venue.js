@@ -8900,7 +8900,7 @@ window.VENUE_DOC["arctic"] = {
     ],
     "cutoff": 420,
     "paths": {
-      "sig": "v1-a63d8c2f-3rx",
+      "sig": "v2-c1390a9e-3tz",
       "legs": [
         {
           "pts": []

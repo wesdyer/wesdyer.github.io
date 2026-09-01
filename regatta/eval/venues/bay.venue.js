@@ -5188,7 +5188,7 @@ window.VENUE_DOC["bay"] = {
       }
     ],
     "paths": {
-      "sig": "v1-7bc52a22-9hj",
+      "sig": "v2-d866e8-9uz",
       "legs": [
         {
           "pts": []

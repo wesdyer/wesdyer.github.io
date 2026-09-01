@@ -6810,7 +6810,7 @@ window.VENUE_DOC["river"] = {
     ],
     "cutoff": 360,
     "paths": {
-      "sig": "v1-1aa56460-ejc",
+      "sig": "v2-dfadff42-eya",
       "legs": [
         {
           "pts": []
