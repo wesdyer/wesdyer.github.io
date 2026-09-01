@@ -69,6 +69,25 @@ const check = (name, cond, detail) => {
                 const t = window.VenueDoc.traits(sh);
                 return t.motion === 'fixed' && !t.awash;
             });
+            // ...AND THE HARD-CONTACT PROPS, exactly as buildCoursePaths adds them (the
+            // CP1 lesson, course.js 2026-08-08: "hard contact props are walls here too" —
+            // 32 of the lagoon's 37 coral heads blocked zero grid cells while physics
+            // stopped boats dead). Without these rings this test's ideal path sailed
+            // straight through Lighthouse Cove's floats and Gatorgrass's cypress knees,
+            // and the ground check — which reads landShapes, where the compiled prop
+            // colliders DO live — reported "the hull in land" on water nobody sails
+            // wrong. The venues were fine; this grid was blind.
+            for (const p of (doc.props || [])) {
+                if (!window.VenueDoc.PROP_KINDS[p.kind]) continue;
+                const T = window.VenueDoc.propTraits(p);
+                if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
+                const rC = T.contactR, ringC = [];
+                for (let i = 0; i < 12; i++) {
+                    const a = (i / 12) * Math.PI * 2;
+                    ringC.push([p.x + rC * Math.sin(a), p.y - rC * Math.cos(a)]);
+                }
+                fixedShapes.push({ id: p.id + '.hit', kind: 'isle', outer: ringC, holes: [], hidden: true });
+            }
             const hasDrift = window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed');
             const grid = S.buildGrid(fixedShapes, state.course.boundary, null, hasDrift ? { noSubsample: true } : null);
             const marks = state.course.marks, route = state.course.route;

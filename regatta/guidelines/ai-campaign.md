@@ -17032,3 +17032,27 @@ npm test 7 → **1 of 34 not passing**; goldens PASS 30/30 after each js/ edit.
   doctrine it stays red as an AI/grid-fidelity finding, not an expectation to
   manage away. Instrument: the bands in the FAIL line (17-19u marginal vs <10u
   punch-through — bay 6, redrock 2, swamp 13 are true punch-throughs).
+
+## ⚠️ CORRECTION (owner: "How is that possible? I can sail all of those venues
+## without being in land") — HE WAS RIGHT, the "real standing finding" was NOT one
+The grounded points were dumped (positions, distances, shape ids): every single
+one is a **hard-contact PROP collider**, not coastline — bay `prop-5/6.hit` (the
+cove floats), lagoon `prop-43.hit` (a 40u coral head), swamp `tree-*/knee-*.hit`
+(cypress trunks and knees, 9-17u). Mechanism: the GAME's routing grid adds a
+12-gon wall per hard prop (course.js CP1, 2026-08-08 — "32 of the lagoon's 37
+coral heads blocked ZERO grid cells while physics stopped boats dead"), but
+test_sailable's own grid built from `VenueDoc.shapes(doc)` only — blind to
+props — so its "ideal path" sailed straight through a float, and the ground
+check (landShapes, where compiled prop colliders DO live) flagged the hull "in
+land". The venues are fine; the shipped ruler and the AI's grid both carry the
+walls; only the test's grid didn't. It now mirrors course.js's prop-ring build
+exactly, and **test_sailable PASSES — npm test 0 of 34 not passing**. Yesterday's
+"sub-cell land fingers" reading is RETRACTED (rule 6's spirit: the anomaly was
+in the instrument, and the dump that settled it took ten minutes).
+OWNER ITEM (found while tracing this): `courseSig` hashes marks, lines, route,
+boundary and fixed non-awash LAND — **not props** — while hard props ARE walls
+in the grid the saved `course.paths` were routed on. Moving a hard prop in the
+editor therefore changes the real course without staling the saved paths; the
+ruler would keep drawing a line through the prop's new position until some
+other edit bumps the sig. One-line fix candidate: fold hard-prop (id, x, y,
+contactR) into the sig's land list.
