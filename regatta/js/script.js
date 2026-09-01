@@ -741,17 +741,28 @@ function draw() {
         ctx.restore();
     }
 
-    // Edge indicators: next mark(s) and nearby competitors.
-    if (state.race.status !== 'finished') {
+    // Edge indicators: next mark(s) and nearby competitors. Goal chips draw on the
+    // OVERLAY canvas — above the leaderboard, minimap and rose — because the next mark
+    // is the most important thing on the screen; competitor markers stay on the game
+    // canvas underneath and pass under the panels as ambient info.
+    if (!window._indCtx) {
+        const icv = document.getElementById('indicatorCanvas');
+        if (icv) { icv.width = canvas.width; icv.height = canvas.height; window._indCtx = icv.getContext('2d'); }
+    }
+    const ictx = window._indCtx;
+    if (ictx) ictx.clearRect(0, 0, ictx.canvas.width, ictx.canvas.height);
+    // Nothing draws to the overlay while paused, while the clubhouse board is up, or while
+    // the RESULTS screen is showing (the race often still runs behind it at 10x): the
+    // overlay sits ABOVE those layers (z-65), so a chip there would float over the page.
+    const boardUp = typeof UI !== 'undefined'
+        && ((UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden'))
+            || (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden')));
+    if (state.race.status !== 'finished' && !state.paused && !boardUp) {
         const m = 40, hw = Math.max(10, canvas.width/2-m), hh = Math.max(10, canvas.height/2-m);
         const rot = -state.camera.rotation;
-        // THE HUD SITS ON TOP OF THE CANVAS, and that is fine: indicators track
-        // the edge band honestly and pass under the panels. The instruments
-        // (top right) are translucent, so an indicator sliding behind them stays
-        // readable; the leaderboard is near-opaque, so IT is the one that yields —
-        // it sits inset from the left edge (see index.html) leaving the band
-        // clear. No dodging: every scheme that slid indicators around the panels
-        // flickered, because near a corner the choice of escape side is unstable.
+        // Competitor markers pass UNDER the HUD panels; goal chips ride the overlay
+        // canvas above them (no dodging — every scheme that slid indicators around the
+        // panels flickered, because near a corner the escape side is unstable).
         // Project a world point into screen space, clamped to the screen edge band.
         const toScreen = (wx, wy) => {
             const dx = wx - state.camera.x, dy = wy - state.camera.y;
@@ -763,7 +774,26 @@ function draw() {
             return { x: canvas.width/2 + rx*f, y: canvas.height/2 + ry*f, onScreen: t >= 1.0 };
         };
 
-        if (window.School && School.lesson()) School.drawEdgeIndicators(ctx, toScreen, rot);
+        // A GOAL IS VISIBLE ONLY IF A PLAYER CAN SEE IT: on the screen AND not behind an
+        // opaque panel. A mark parked behind the leaderboard, the rose, the minimap or the
+        // school's coach card gets its chip drawn AT the mark, over the panel.
+        if (!window._occCache || Math.abs(state.time - window._occCache.t) > 0.25) {
+            const rects = [];
+            for (const id of ['leaderboard', 'hud-rose', 'hud-minimap-wrap', 'school-card']) {
+                const el = document.getElementById(id);
+                if (!el || el.classList.contains('hidden')) continue;
+                const cs = getComputedStyle(el);
+                if (cs.display === 'none' || +cs.opacity < 0.2) continue;
+                const r = el.getBoundingClientRect();
+                if (r.width > 4 && r.height > 4) rects.push(r);
+            }
+            window._occCache = { t: state.time, rects };
+        }
+        const occluded = (x, y) => window._occCache.rects.some(r => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom);
+        if (window.School && School.lesson()) School.drawEdgeIndicators(window._indCtx || ctx, toScreen, rot, occluded,
+            (wx, wy) => { const dx = wx - state.camera.x, dy = wy - state.camera.y;
+                          const x = canvas.width/2 + dx*Math.cos(rot) - dy*Math.sin(rot), y = canvas.height/2 + dx*Math.sin(rot) + dy*Math.cos(rot);
+                          return { x, y, inView: x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height }; });
         if (state.showNavAids && !(window.School && School.lesson())) {
             const leg = player.raceState.leg;
             const marks = state.course.marks;
@@ -772,37 +802,156 @@ function draw() {
             // indicator at all — legMarks() is null there — and gave the start and finish
             // lines a single pip at the nearest point instead of one per end.
             const e = routeLeg(Math.min(leg, state.race.totalLegs));
+            const gctx = ictx || ctx;
+            // ── PATH-AWARE. The chip points along the COURSE PATH (the dmc ruler), not
+            // straight at the mark: a carrot 500u ahead on the leg's polyline sets the
+            // direction, and the distance shown is what is left of the path — so around a
+            // headland the chip points where you should sail and the number keeps falling.
+            const dmcPath = state.course.dmc && state.course.dmc.legs && state.course.dmc.legs[leg];
+            let car = null;
+            if (dmcPath && dmcPath.pts && dmcPath.pts.length >= 2 && dmcPath.length > 1 && typeof CoursePath !== 'undefined') {
+                if (player._indLeg !== leg) { player._indLeg = leg; player._indS = null; }
+                const sv = CoursePath.project(dmcPath, player.x, player.y, player._indS);
+                player._indS = sv;
+                car = { s: sv, path: dmcPath, remain: Math.max(0, dmcPath.length - sv),
+                        pt: pathPointAt(dmcPath, Math.min(dmcPath.length, sv + 500)) };
+                // A rounding leg's path ends at the entry TANGENT and the arc — the right
+                // line to SAIL, but the wrong thing for the chip to aim at: followed off
+                // the screen it leaves you pointed beside the mark. Once the carrot would
+                // land on the rounding geometry, the chip aims at the MARK CENTRE — by
+                // then the ring and its arrows are about to take over anyway.
+                if (e && e.kind === 'round' && e.mark) {
+                    const arcLen = (dmcPath.roundSweep || 0) * (dmcPath.roundZone || 0);
+                    if (sv + 500 > dmcPath.length - arcLen - 150) car.pt = { x: e.mark.x, y: e.mark.y };
+                }
+            }
+            const toRaw = (wx, wy) => {
+                const dx = wx - state.camera.x, dy = wy - state.camera.y;
+                return { x: dx*Math.cos(rot) - dy*Math.sin(rot), y: dx*Math.sin(rot) + dy*Math.cos(rot) };
+            };
+            // Where a world point ACTUALLY sits on screen (no edge-band clamp), and whether
+            // its centre is inside the viewport at all. toScreen's onScreen is 40px shy of
+            // the edge — right for placing chips, wrong for deciding one is needed: a mark
+            // whose centre the player can see gets no chip.
+            const viewPos = (wx, wy) => {
+                const r0 = toRaw(wx, wy);
+                const x = canvas.width / 2 + r0.x, y = canvas.height / 2 + r0.y;
+                return { x, y, inView: x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height };
+            };
+            const edgeToward = (pt) => {
+                const r0 = toRaw(pt.x, pt.y);
+                const t = (Math.abs(r0.x) > 0.1 || Math.abs(r0.y) > 0.1) ? Math.min(hw/Math.abs(r0.x), hh/Math.abs(r0.y)) : 1;
+                return { x: canvas.width/2 + r0.x*t, y: canvas.height/2 + r0.y*t };
+            };
+            const remainLabel = car ? Math.round(car.remain * 0.2) + 'm' : null;
+            // CLEAR WATER TO THE GOAL? The same test the path builder uses, cached ~4 Hz —
+            // the verdict changes slowly. THE RULE (owner, 2026-09-01): with nothing but
+            // water between boat and goal, the chip aims at the GOAL'S CENTRE — point at
+            // the chip and you hit the mark dead-on; laylines are planned off it. The
+            // carrot may only override the direct bearing when the direct line is blocked.
+            const lineClearTo = (gx, gy) => {
+                const grid = state.course.botGrid;
+                if (!grid || !window.SailCheck) return true;
+                const key = leg + ':' + (gx | 0) + ':' + (gy | 0);
+                const c = player._aimClear;
+                if (c && c.key === key && frameCount - c.f < 15) return c.ok;
+                const ok = window.SailCheck.segClearGeom(grid, player.x, player.y, gx, gy);
+                player._aimClear = { key, f: frameCount, ok };
+                return ok;
+            };
+            // (A dashed on-water preview of the path was tried here and pulled — too much
+            // ink. The carrot-aimed chip and its path distance carry the bend on their own.)
+            // What the rose's green arrow should agree with: the same aim the chip uses
+            // (the carrot on the path, the mark centre near the rounding) — published for
+            // updateRoseHud, whether or not a chip is drawn this frame.
+            let goalAimPt = car ? car.pt : null;
             if (e && e.kind === 'round' && e.mark) {
-                // Rounding leg: point straight at the mark, whatever the path to it looks
-                // like — the indicator answers "where is it", not "how do I get there".
                 const rm = e.mark;
-                const p = toScreen(rm.x, rm.y);
-                // AN EDGE INDICATOR IS FOR THINGS OFF THE EDGE. Once the mark itself is
-                // in view it is the better thing to look at.
-                if (!p.onScreen) {
-                    const d = Math.sqrt((rm.x-player.x)**2 + (rm.y-player.y)**2) * 0.2;
-                    drawMarkEdgeIndicator(ctx, p.x, p.y, Math.round(d) + 'm', rm.side || null, rot);
+                const direct = !car || lineClearTo(rm.x, rm.y);
+                goalAimPt = direct ? { x: rm.x, y: rm.y } : car.pt;
+                const v = viewPos(rm.x, rm.y);
+                // The chip stands down only when the mark's centre is genuinely in view.
+                // Off the edge: on clear water it sits on the MARK'S OWN BEARING (aim at it
+                // and you hit it); only a blocked line hands it to the carrot. Merely hidden
+                // behind a panel, it sits AT the mark, over the panel.
+                if (!v.inView || occluded(v.x, v.y)) {
+                    const at = v.inView ? v : (direct ? toScreen(rm.x, rm.y) : edgeToward(car.pt));
+                    drawMarkEdgeIndicator(gctx, at.x, at.y,
+                        remainLabel || (Math.round(Math.hypot(rm.x-player.x, rm.y-player.y) * 0.2) + 'm'),
+                        rm.side || null, rot);
                 }
             } else if (e && e.marks && marks) {
                 // A line or a gate: BOTH ends get an indicator — a line's whole span is
                 // crossable, and which end you favour is a tactical choice the display
-                // should not make for you. Mid-race gate marks also carry the mini
-                // rounding-direction arc; the start and finish ends do not.
+                // should not make for you — UNLESS the path leaves somewhere else entirely
+                // (around a landform): then one chip on the path direction tells the truth
+                // both ends would lie about.
                 const isGate = e.kind === 'gate' && !e.finish && leg > 0 && leg < state.race.totalLegs;
-                for (const idx of e.marks) {
-                    const mk = marks[idx];
-                    if (!mk) continue;
-                    const p = toScreen(mk.x, mk.y);
-                    if (p.onScreen) continue;
-                    const d = Math.sqrt((mk.x-player.x)**2 + (mk.y-player.y)**2) * 0.2;
-                    drawMarkEdgeIndicator(ctx, p.x, p.y, Math.round(d) + 'm', isGate ? idx : null, rot);
+                // A rounding gate's two chips each carry THAT mark's own rounding arc:
+                // the left-of-travel can rounds to port, the right-of-travel to starboard —
+                // the school's gate convention, now the race's too. Travel direction comes
+                // from the entry's own crossing normal (same derivation as the past-gate
+                // reminder), so a reversed gate keeps the sides honest.
+                let gateSideOf = null;
+                if (isGate) {
+                    const m1 = marks[e.marks[0]], m2 = marks[e.marks[1]];
+                    if (m1 && m2) {
+                        const gdx = m2.x - m1.x, gdy = m2.y - m1.y, gl = Math.hypot(gdx, gdy) || 1;
+                        const gs = (e.dir >= 0 ? 1 : -1);
+                        const nx = gs * gdy / gl, ny = -gs * gdx / gl;   // direction of travel through
+                        const grx = -ny, gry = nx;                       // right of travel
+                        const gmx = (m1.x + m2.x) / 2, gmy = (m1.y + m2.y) / 2;
+                        gateSideOf = (mk) => ((mk.x - gmx) * grx + (mk.y - gmy) * gry > 0) ? 'starboard' : 'port';
+                    }
+                }
+                let diverges = false;
+                if (car) {
+                    let best = null;
+                    for (const idx of e.marks) { const mk = marks[idx]; if (!mk) continue;
+                        const d2 = (mk.x-player.x)**2 + (mk.y-player.y)**2; if (!best || d2 < best.d2) best = { mk, d2 }; }
+                    // ONE RULE: per-end chips on each mark's own bearing whenever the
+                    // straight water is clear; the single path chip exists only when land
+                    // actually blocks the line to the gate.
+                    if (best) diverges = !lineClearTo(best.mk.x, best.mk.y);
+                }
+                if (!(diverges && car)) goalAimPt = { x: player.raceState.nextWaypoint.x, y: player.raceState.nextWaypoint.y };
+                const offEnds = (e.marks || []).map(i => marks[i]).filter(mk => mk && !viewPos(mk.x, mk.y).inView);
+                if (diverges && offEnds.length) {
+                    const at = edgeToward(car.pt);
+                    drawMarkEdgeIndicator(gctx, at.x, at.y, remainLabel, null, rot);
+                } else {
+                    // Both ends, unless they land on the same spot of the edge — a distant
+                    // line's two chips stack into an unreadable pile, so within a plate's
+                    // width they collapse into ONE chip carrying the path distance.
+                    const ends = [];
+                    for (const idx of e.marks) {
+                        const mk = marks[idx];
+                        if (!mk) continue;
+                        const v = viewPos(mk.x, mk.y);
+                        if (v.inView && !occluded(v.x, v.y)) continue;
+                        const at = v.inView ? v : toScreen(mk.x, mk.y);
+                        const d = Math.sqrt((mk.x-player.x)**2 + (mk.y-player.y)**2) * 0.2;
+                        ends.push({ x: at.x, y: at.y, label: Math.round(d) + 'm', mi: gateSideOf ? gateSideOf(mk) : null });
+                    }
+                    if (ends.length === 2 && Math.hypot(ends[0].x - ends[1].x, ends[0].y - ends[1].y) < 48) {
+                        drawMarkEdgeIndicator(gctx, (ends[0].x + ends[1].x) / 2, (ends[0].y + ends[1].y) / 2,
+                            remainLabel || ends[0].label, null, rot);
+                    } else for (const en of ends) drawMarkEdgeIndicator(gctx, en.x, en.y, en.label, en.mi, rot);
                 }
             } else {
                 // No route entry to read (defensive): the single waypoint pip, as before.
                 const wp = player.raceState.nextWaypoint;
-                const p = toScreen(wp.x, wp.y);
-                if (!p.onScreen) drawMarkEdgeIndicator(ctx, p.x, p.y, Math.round(wp.dist) + 'm', null, rot);
+                const wdirect = !car || lineClearTo(wp.x, wp.y);
+                goalAimPt = wdirect ? { x: wp.x, y: wp.y } : (goalAimPt || { x: wp.x, y: wp.y });
+                const v = viewPos(wp.x, wp.y);
+                if (!v.inView || occluded(v.x, v.y)) {
+                    const at = v.inView ? v : (wdirect ? toScreen(wp.x, wp.y) : edgeToward(car.pt));
+                    drawMarkEdgeIndicator(gctx, at.x, at.y, remainLabel || (Math.round(wp.dist) + 'm'), null, rot);
+                }
             }
+            if (goalAimPt) window._goalAim = { t: frameCount, a: Math.atan2(goalAimPt.x - player.x, -(goalAimPt.y - player.y)) };
+            // One pulse on the chip when the leg changes — the moment the goal is new.
+            if (state._goalLegSeen !== leg) { state._goalLegSeen = leg; state._goalPulseT = state.time; }
         }
 
         // Competitors: off-screen but close-ish. On-screen boats already carry
@@ -945,6 +1094,16 @@ function draw() {
             }
         }
     }
+}
+
+// A point at arc length `s` along a dmc leg path — the ruler's own cum table, walked.
+function pathPointAt(path, s) {
+    const cum = path.cum, pts = path.pts;
+    let i = 1;
+    while (i < cum.length && cum[i] < s) i++;
+    if (i >= pts.length) return pts[pts.length - 1];
+    const t = (s - cum[i - 1]) / Math.max(1e-6, cum[i] - cum[i - 1]);
+    return { x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * t, y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * t };
 }
 
 let lastTime = 0;

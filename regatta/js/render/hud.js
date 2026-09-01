@@ -358,6 +358,37 @@ function drawRulesOverlay(ctx) {
 // laylines, amber only for the active in-zone state, Saira italic labels.
 const NAV_RGB = '64, 245, 200';
 
+// THE EXIT HEAD: an arrowhead just OUTSIDE a rounding circle, pointing the way the path
+// heads next, in the active ring's amber. ⚠️ IT HAS NO ACTIVATION TEST OF ITS OWN — it is
+// called by whoever just drew an ACTIVE (amber) ring, with that ring's own radius, so head
+// and ring share ONE inZone computation and can never disagree. A mark with a `side` gets
+// the tangent-based exit (the rounding's true departure line); a gate mark, radial toward
+// the next goal.
+function drawRoundingExitHead(ctx, rm, zoneR, nextA) {
+    if (!nextA) return;
+    let dir, qx, qy;
+    if (rm.side && typeof CoursePath !== 'undefined') {
+        const sgn = rm.side === 'port' ? -1 : 1;
+        const tp = CoursePath._tangent(rm, nextA, sgn, false, null);
+        dir = Math.atan2(nextA.y - tp.y, nextA.x - tp.x);
+        const ex = Math.cos(dir), ey = Math.sin(dir);
+        const ox = tp.x - rm.x, oy = tp.y - rm.y;
+        const ou = ox * ex + oy * ey;
+        const t = -ou + Math.sqrt(Math.max(0, ou * ou + zoneR * zoneR - (ox * ox + oy * oy)));
+        qx = tp.x + ex * t; qy = tp.y + ey * t;
+    } else {
+        dir = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
+        qx = rm.x + Math.cos(dir) * zoneR; qy = rm.y + Math.sin(dir) * zoneR;
+    }
+    const ux = Math.cos(dir), uy = Math.sin(dir);
+    ctx.save();
+    ctx.translate(qx + ux * 16, qy + uy * 16);
+    ctx.rotate(dir);
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.95)';   // the active ring's amber, solid — no pulse, no glow
+    ctx.beginPath(); ctx.moveTo(26, 0); ctx.lineTo(-10, -15); ctx.lineTo(-3, 0); ctx.lineTo(-10, 15); ctx.closePath(); ctx.fill();
+    ctx.restore();
+}
+
 function drawRoundingArrows(ctx) {
     if (!state.showNavAids || !state.course || !state.course.marks || state.race.status === 'finished') return;
 
@@ -814,6 +845,10 @@ function drawMarkZones(ctx) {
         ctx.lineWidth = inZone ? 5.5 : 5;
         ctx.beginPath(); ctx.arc(rm.x, rm.y, rm.zone, 0, Math.PI * 2); ctx.stroke();
         ctx.restore();
+        // The exit head rides THIS ring's own activation — one test for both.
+        if (inZone && typeof CoursePath !== 'undefined' && state.course.route) {
+            drawRoundingExitHead(ctx, rm, rm.zone, CoursePath.anchor(state.course.route[player.raceState.leg + 1], state.course.marks));
+        }
         return;
     }
 
@@ -835,6 +870,11 @@ function drawMarkZones(ctx) {
         ctx.strokeStyle = inZone ? 'rgba(251, 191, 36, 0.95)' : `rgba(${NAV_RGB}, 0.68)`;
         ctx.lineWidth = inZone ? 5.5 : 4;
         ctx.beginPath(); ctx.arc(m.x, m.y, 165, 0, Math.PI*2); ctx.stroke();
+        // A rounding GATE's exit, same instrument: on whichever mark's ring is amber,
+        // radial toward the next leg — one inZone test for ring and head alike.
+        if (inZone && typeof CoursePath !== 'undefined' && state.course.route) {
+            drawRoundingExitHead(ctx, m, 165, CoursePath.anchor(state.course.route[player.raceState.leg + 1], state.course.marks));
+        }
     }
 
     // Flat GATE label on the water between the active gate marks
@@ -1662,39 +1702,64 @@ function drawBoatIndicator(ctx, boat) {
 // closest point on the start/finish line). The mini arc mirrors the in-world
 // rounding arrows of drawRoundingArrows: same start/end/ccw per mark index,
 // rotated into screen space so it always agrees with what you'll see at the mark.
+// THE GOAL CHIP — promoted above every other edge marker. It rides the overlay canvas
+// (above the leaderboard, minimap and rose: the next mark is the most important thing on
+// screen), sits on a dark plate so it reads on any water, keeps the rounding-direction arc,
+// and carries the distance in a pill of its own. Pulses once when the leg changes so the
+// eye reacquires the new goal.
 function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot) {
     ctx.save();
     ctx.translate(x, y);
+    const pulseAge = state._goalPulseT != null ? state.time - state._goalPulseT : 99;
+    const k = 1 + 0.25 * Math.max(0, 1 - pulseAge / 0.8);
+    ctx.scale(k, k);
 
-    ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI*2); ctx.fillStyle = '#22c55e'; ctx.fill();
-    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2; ctx.stroke();
+    // The plate: one dark disc behind dot and arc, rimmed in the nav teal.
+    ctx.beginPath(); ctx.arc(0, 0, 27, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(15,23,42,0.66)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(64,245,200,0.55)'; ctx.lineWidth = 1.5; ctx.stroke();
+
+    ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fillStyle = '#22c55e'; ctx.fill();
+    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5; ctx.stroke();
 
     if (markIndex !== null) {
-        let start, end, ccw;
-        // A rounding leg passes the SIDE ('port'/'starboard') instead of a gate index —
-        // same chirality convention as drawRoundingArrows: port rounds are the ccw ones.
-        if (markIndex === 'port' || markIndex === 'starboard') {
-                                    start = 0;       end = Math.PI; ccw = markIndex === 'port'; }
+        let start, end, ccw, fixed = false;
+        // A rounding leg passes the SIDE ('port'/'starboard') instead of a gate index. The
+        // side arc is the BOAT'S PATH, drawn from the APPROACHING rounder's perspective
+        // (you sail toward the chip, entering from its bottom): a PORT rounding keeps the
+        // mark to port, so the path passes up the chip's RIGHT and curls left over the
+        // top; starboard mirrors it up the LEFT curling right. Not the mark's named side —
+        // that framing put the arc where the boat never goes.
+        if (markIndex === 'starboard') { start = Math.PI - 1.2; end = Math.PI + 1.2; ccw = false; fixed = true; }
+        else if (markIndex === 'port') { start = 1.2;           end = -1.2;          ccw = true;  fixed = true; }
         else if (markIndex === 0) { start = 0;       end = Math.PI; ccw = false; }
         else if (markIndex === 1) { start = Math.PI; end = 0;       ccw = true; }
         else if (markIndex === 2) { start = 0;       end = Math.PI; ccw = true; }
         else                      { start = Math.PI; end = 0;       ccw = false; }
 
         ctx.save();
-        ctx.rotate(state.wind.baseDirection + screenRot);
-        ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 3; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.arc(0, 0, 15, start, end, ccw); ctx.stroke();
-        const tipX = 15 * Math.cos(end), tipY = 15 * Math.sin(end);
+        if (!fixed) ctx.rotate(state.wind.baseDirection + screenRot);
+        ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.arc(0, 0, 20, start, end, ccw); ctx.stroke();
+        const tipX = 20 * Math.cos(end), tipY = 20 * Math.sin(end);
         const tangent = end + (ccw ? -Math.PI/2 : Math.PI/2);
         ctx.translate(tipX, tipY); ctx.rotate(tangent);
         ctx.fillStyle = '#22d3ee';
-        ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(5, 0); ctx.lineTo(-5, 5); ctx.lineTo(-3, 0); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(-6, -6); ctx.lineTo(7, 0); ctx.lineTo(-6, 6); ctx.lineTo(-4, 0); ctx.fill();
         ctx.restore();
     }
 
-    ctx.fillStyle = '#ffffff'; ctx.font = FONT.label(15); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.shadowColor = 'black'; ctx.shadowBlur = 4;
-    ctx.fillText(label, 0, markIndex !== null ? -21 : -12);
+    // The distance, bold, in its own pill — under the plate, or ABOVE it when the chip
+    // rides the bottom edge, so the number never slips below the screen.
+    ctx.font = FONT.mono(14);
+    const tw = ctx.measureText(label).width;
+    const below = y < ctx.canvas.height - 110;
+    const py = below ? 32 : -53;
+    ctx.beginPath(); ctx.roundRect(-tw / 2 - 8, py, tw + 16, 21, 9);
+    ctx.fillStyle = 'rgba(15,23,42,0.75)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(64,245,200,0.4)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, 0, py + 11);
     ctx.restore();
 }
 
@@ -1780,8 +1845,9 @@ function boatInstrumentData(player) {
     // this whole refactor exists to prevent. Projected on the wind axis, same convention the
     // physics uses (heading and wind both point the way they are going).
     const vmg = Math.abs(v.x * Math.sin(w.direction) - v.y * Math.cos(w.direction)) * 4;
+    const _dmc = dmcRate(player);
     return {
-        sog, vmg, tws: w.speed, twa, twsCol, sogCol, badAir,
+        sog, vmg, dmc: (_dmc == null ? 0 : _dmc), dmcNA: _dmc == null, tws: w.speed, twa, twsCol, sogCol, badAir,
         // In the no-sail zone: inside ~38° of the wind, where the polar runs out. Both faces
         // paint the angle red so the number itself says why the boat is stopping.
         noGo: twa < 38,
@@ -1813,7 +1879,18 @@ function roseCue(id, cls, text, on) {
 function updateRoseHud(player, localWind) {
     if (UI.compassRose) UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
     if (UI.windArrow) UI.windArrow.style.transform = `rotate(${localWind.direction}rad)`;
-    if (UI.waypointArrow) UI.waypointArrow.style.transform = `rotate(${player.raceState.nextWaypoint.angle}rad)`;
+    if (UI.waypointArrow) {
+        // No goal exists before the gun, so no arrow; racing, it points where the goal
+        // chip points (the published path-aware aim), falling back to the raw waypoint
+        // bearing when the chip machinery has not run (nav aids off, lessons).
+        const show = state.race.status === 'racing';
+        UI.waypointArrow.style.visibility = show ? '' : 'hidden';
+        if (show) {
+            const g = window._goalAim;
+            const ang = (g && frameCount - g.t < 30) ? g.a : player.raceState.nextWaypoint.angle;
+            UI.waypointArrow.style.transform = `rotate(${ang}rad)`;
+        }
+    }
     if (UI.headingArrow) UI.headingArrow.style.transform = `rotate(${player.heading - state.camera.rotation}rad)`;
     if (frameCount % 10 !== 0) return;
     const d = boatInstruments(player);
@@ -1821,7 +1898,7 @@ function updateRoseHud(player, localWind) {
     // hex by boatInstrumentData, and a class list that has to be scrubbed before every write
     // is how the old block grew a six-name remove() call.
     if (UI.speed) { UI.speed.textContent = d.sog.toFixed(1); UI.speed.style.color = d.sogCol; }
-    if (UI.vmg) UI.vmg.textContent = d.vmg.toFixed(1);
+    if (UI.vmg) UI.vmg.textContent = d.dmcNA ? '\u2014' : d.dmc.toFixed(1);
     if (UI.windSpeed) { UI.windSpeed.textContent = d.tws.toFixed(1) + (d.badAir ? ' \u2193' : ''); UI.windSpeed.style.color = d.twsCol; }
     if (UI.windAngle) { UI.windAngle.textContent = `${d.twa}\u00b0`; UI.windAngle.style.color = d.noGo ? '#f87171' : ''; }
     roseCue('hud-planing-label', 'absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-cyan-400 hidden', 'PLANING', d.planing);
@@ -1850,6 +1927,63 @@ function applyHudMode() {
 // Only the NUMBERS are held. The panel's position still tracks the hull every frame — that
 // has to be smooth, and it is not what the eye is trying to read.
 let _biCache = null, _biBucket = -1, _biWho = null;
+// DMC — SPEED MADE GOOD ALONG THE COURSE, in knots: the smoothed rate of the boat's
+// progress down the same dmc ruler the leaderboard ranks by. This replaces VMG on the
+// dial: VMG is wind-relative and half the time the answer is "who cares", while DMC is
+// the number a racer is actually trying to maximise, bends and all. Negative when
+// sailing away from the course. Zero before the gun (progress has no meaning yet).
+// WHEN THE NUMBER WOULD BE NOISE, IT IS A DASH: inside the zone of the active rounding
+// mark (projection onto a tight arc stalls and jumps — the reading is boat-handling
+// noise, not speed made good) and through the prestart (no progress exists yet). The
+// smoother is dropped for the whole pause, so waking up re-seeds from current progress
+// instead of discharging the arc as a spike.
+function dmcNA(player) {
+    if (state.race.status === 'prestart') return true;
+    const lesson = window.School && School.active && School.lesson && School.lesson();
+    if (lesson) {
+        const s = School.s;
+        if (s && s.kind === 'pond' && s.phase === 'tasks' && s.task && s.task.kind === 'mark' && s.W) {
+            return Math.hypot(player.x - s.W.x, player.y - s.W.y) < (s.W.zone || 165);
+        }
+        return false;
+    }
+    if (state.race.status === 'racing' && typeof routeLeg === 'function') {
+        const e = routeLeg(player.raceState.leg);
+        if (e && e.kind === 'round' && e.mark) {
+            return Math.hypot(player.x - e.mark.x, player.y - e.mark.y) < (e.mark.zone || 165);
+        }
+    }
+    return false;
+}
+
+function dmcRate(player) {
+    if (dmcNA(player)) { player._dmcHud = null; return null; }
+    // In a school LESSON the venue's course is hidden and its ruler means nothing — the
+    // pond's own legs run somewhere else entirely, which is how heading straight for the
+    // first task mark read as NEGATIVE. There, DMC is the closing speed on the lesson's
+    // own goal (the task mark, the gate's middle, the ducklings).
+    let prog = null;
+    const lesson = window.School && School.active && School.lesson && School.lesson();
+    if (lesson) {
+        const tgt = School.dmcTarget ? School.dmcTarget() : null;
+        if (tgt) prog = -Math.hypot(tgt.x - player.x, tgt.y - player.y);
+    } else if (state.race.status === 'racing' && typeof getBoatProgress === 'function' && state.course.dmc) {
+        prog = getBoatProgress(player);
+    }
+    if (prog == null) { player._dmcHud = null; return 0; }
+    // Clocked on RACE TIME, not state.time: progress accrues per update() step, and the
+    // race timer is the clock that ticks with it — state.time tracks the render loop.
+    const t = state.race.timer;
+    if (!player._dmcHud) { player._dmcHud = { p: prog, t, rate: 0 }; return 0; }
+    const h = player._dmcHud, dt = t - h.t;
+    if (dt <= 0) return h.rate;
+    const inst = (prog - h.p) / dt / 15;                 // units/s -> knots (15 u/s per kn)
+    // A leg change steps `base` under the reading — swallow the spike, keep the trend.
+    if (Math.abs(inst) < 40) h.rate += (inst - h.rate) * Math.min(1, dt * 3);
+    h.p = prog; h.t = t;
+    return h.rate;
+}
+
 function boatInstruments(player) {
     const bucket = Math.floor(frameCount / 10);
     if (_biCache && _biBucket === bucket && _biWho === player) return _biCache;
@@ -1903,15 +2037,13 @@ function drawBoatInstruments(ctx, player) {
     ctx.fillText(d.twa + '°', sx, top + BI_H / 2 + 0.5);
     // ── THE HALYARD GAUGE ───────────────────────────────────────────────────
     // A hoist or douse takes seconds, and a player who presses Space and sees nothing
-    // presses it again. While the kite is travelling (plus a half-second linger at either
-    // end, so the completion registers), a thin bar under the TWA pill shows how much
-    // sail is actually UP — filling on the hoist, draining on the douse — in the boat's
-    // own spinnaker colour. An instrument, not a task meter: it reports the sail, so it
-    // needs no raising/lowering inference and reads the same in the school and a race.
+    // presses it again. While the kite is travelling — and ONLY while it is travelling:
+    // the bar vanishes the frame it reaches full or empty — a thin bar under the TWA pill
+    // shows how much sail is actually UP, filling on the hoist and draining on the douse,
+    // in the boat's own spinnaker colour. An instrument, not a task meter: it reports the
+    // sail, so it needs no raising/lowering inference and reads the same everywhere.
     const dp = player.spinnakerDeployProgress || 0;
-    if (player._kiteBarLast != null && dp !== player._kiteBarLast) player._kiteBarAt = state.time;
-    player._kiteBarLast = dp;
-    if (player._kiteBarAt != null && state.time - player._kiteBarAt < 0.5) {
+    if (dp > 0.001 && dp < 0.999) {
         const by = top + BI_H + 4, bh = 5, r = bh / 2;
         ctx.shadowBlur = 0;
         ctx.beginPath(); ctx.roundRect(left, by, BI_W, bh, r);

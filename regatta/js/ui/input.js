@@ -3,7 +3,11 @@
 // after ui/screens.js (needs the UI cache). Classic script; global scope.
 // Extracted verbatim from script.js (refactor 2026-08-24).
 let minimapCtx = null;
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function resize() {
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    const ic = document.getElementById('indicatorCanvas');
+    if (ic) { ic.width = window.innerWidth; ic.height = window.innerHeight; }
+}
 window.addEventListener('resize', resize);
 // The race-day hero is sized from its column's width, so it has to be re-sized with it.
 window.addEventListener('resize', sizeRaceDayHero);

@@ -792,6 +792,7 @@ const School = {
         s.taskIdx++;
         const T = s.tasks[s.taskIdx];
         s.buoys = []; s.GL = s.GR = null;
+        s.stallT = 0; s._stallD = null; s._stallRate = null;   // a fresh goal, a fresh stall clock
         if (!T) { this.fadeThen(() => { this.start(3); this.screen('C'); }); return; }
         s.task = T;
         if (T.kind === 'mark') {
@@ -818,6 +819,10 @@ const School = {
             s.GL = { x: G.x - rx * 250, y: G.y - ry * 250 }; s.GR = { x: G.x + rx * 250, y: G.y + ry * 250 };
             s.gateMid = G; s.gateCrossed = false;
             const round = T.mode === 'round';
+            // Where the path heads AFTER a rounding gate — the next task, pre-placed the way
+            // the mark branch does it — so an amber gate ring carries the exit head too.
+            const N2 = s.tasks[s.taskIdx + 1];
+            s.nextA = round ? (N2 ? N2.place() : { x: s.prevTarget.x, y: s.prevTarget.y }) : null;
             s.buoys = [{ p: s.GL, on: true, kind: 'can', side: round && T.end !== 'starboard' ? 'port' : null, noZone: !round },
                        { p: s.GR, on: true, kind: 'can', side: round ? 'starboard' : null, noZone: !round }];
             s.target = G;
@@ -865,11 +870,29 @@ const School = {
 
         if (s.phase === 'tasks') {
             const T = s.task; if (!T) return;
+            // STALLED? The closing speed on the task's goal, smoothed; at zero or backwards
+            // for a second — and not rounding, where the number means nothing — the teal
+            // turn arrow shows which way to go: straight at the goal, or the nearer
+            // close-hauled course when the goal sits inside the no-sail cone.
+            {
+                const tgt = this.dmcTarget();
+                const rounding = T.kind === 'mark' && s.W && this.dist(p, s.W) < ((s.W.zone) || 165);
+                if (tgt && !rounding) {
+                    const d = Math.hypot(tgt.x - p.x, tgt.y - p.y);
+                    if (s._stallD != null && dt > 0) {
+                        const inst = (s._stallD - d) / dt;               // units/s closing
+                        s._stallRate = (s._stallRate == null) ? inst : s._stallRate + (inst - s._stallRate) * Math.min(1, dt * 3);
+                        s.stallT = (s._stallRate <= 0) ? (s.stallT || 0) + dt : 0;
+                        s.stallTarget = Math.atan2(tgt.x - p.x, -(tgt.y - p.y));   // plainly: where the goal is
+                    }
+                    s._stallD = d;
+                } else { s.stallT = 0; s._stallD = null; s._stallRate = null; }
+            }
             if (T.kind === 'mark') {
                 const res = (typeof roundingStep === 'function') ? roundingStep(p, s.track, s.rm, s.nextA) : { done: false };
                 s.track.lastPos = { x: p.x, y: p.y };
                 if (res.wrong) this.instruct(`<em>Wrong side.</em> Go back and round the mark with it on your <em>${T.side === 'starboard' ? 'RIGHT' : 'LEFT'}</em>.`, T.goal);
-                if (res.done) { s.prevTarget = s.W; this.nextPondTask(); }
+                if (res.done) { Sound.playGateClear(); s.prevTarget = s.W; this.nextPondTask(); }
             } else {
                 const A = s.gateA, mid = s.gateMid;
                 const perp = (p.x - mid.x) * A.x + (p.y - mid.y) * A.y;       // + = past the gate, along the approach
@@ -877,11 +900,12 @@ const School = {
                 const forward = (p.velocity.x * A.x + p.velocity.y * A.y) > 0;
                 if (!s.gateCrossed && forward && hullCrossedLine(p, s.GL.x, s.GL.y, s.GR.x, s.GR.y)) {
                     s.gateCrossed = true;
-                    if (T.mode === 'through') { s.prevTarget = mid; this.nextPondTask(); return; }
+                    if (T.mode === 'through') { Sound.playGateClear(); s.prevTarget = mid; this.nextPondTask(); return; }
                     this.instruct(T.end === 'starboard' ? 'Through the gate! Now round the right-hand mark and head back upwind.' : 'Through the gate! Now round one of its marks and head back upwind.', T.goal);
                 }
                 // Rounded: back on the entry side, having gone round the right end.
                 if (s.gateCrossed && perp < -40 && (T.end !== 'starboard' || along > 120)) {
+                    Sound.playGateClear();
                     s.prevTarget = mid;
                     this.nextPondTask();
                 }
@@ -1431,6 +1455,13 @@ const School = {
             ctx.lineWidth = inZone ? 5.5 : 4;
             ctx.beginPath(); ctx.arc(b.p.x, b.p.y, 165, 0, Math.PI * 2); ctx.stroke();
             ctx.restore();
+            // The exit head rides THIS ring's own activation — the same inZone that turned
+            // it amber — so ring and head can never disagree. Mark tasks use the rounding's
+            // tangent exit (s.rm carries the side); gate-round ends point at the next goal.
+            if (inZone && s.nextA && typeof drawRoundingExitHead === 'function') {
+                const rm = (s.task && s.task.kind === 'mark' && s.rm) ? s.rm : { x: b.p.x, y: b.p.y };
+                drawRoundingExitHead(ctx, rm, 165, s.nextA);
+            }
         }
         // The rounding arrow, the course's own glyph (drawRoundingArrows): a spinning half-arc
         // with a head, clockwise for a mark left to starboard, anticlockwise for port. The
@@ -1473,10 +1504,8 @@ const School = {
                 } else {
                     ctx.fillStyle = '#F5C518'; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill();
                 }
-                if (!b.done) {
-                    ctx.strokeStyle = 'rgba(245,197,24,0.55)'; ctx.lineWidth = 3;
-                    ctx.beginPath(); ctx.arc(0, 0, 34 + Math.sin(state.time * 6) * 4, 0, Math.PI * 2); ctx.stroke();
-                }
+                // No halo ring: the buoy sprite already reads as a mark, and the rounding
+                // sweep above says which way — a yellow circle on top was just noise.
                 ctx.restore();
             }
         }
@@ -1510,13 +1539,14 @@ const School = {
     // Off-screen indicators for the school's own marks, drawn by the HUD's edge-indicator
     // block with the course's own glyph: distance, and the rounding arrow for a mark that
     // is rounded (the windward mark to starboard; the gate's ends port and starboard).
-    drawEdgeIndicators(ctx, toScreen, rot) {
+    drawEdgeIndicators(ctx, toScreen, rot, occluded, viewPos) {
         const s = this.s; if (!s || !s.buoys || typeof drawMarkEdgeIndicator !== 'function') return;
         const player = state.boats[0];
         s.buoys.forEach((b, i) => {
             if (!b.on || b.done) return;
-            const p = toScreen(b.p.x, b.p.y);
-            if (p.onScreen) return;
+            const v = viewPos ? viewPos(b.p.x, b.p.y) : null;
+            const p = (v && v.inView) ? v : toScreen(b.p.x, b.p.y);
+            if (v ? (v.inView && !(occluded && occluded(v.x, v.y))) : p.onScreen) return;
             const d = Math.round(this.dist(player, b.p) * 0.2);
             drawMarkEdgeIndicator(ctx, p.x, p.y, d + 'm', b.side || null, rot);
         });
@@ -1548,9 +1578,43 @@ const School = {
         // board — tickUpwind decides the heading to show and how long they have been off it.
         const up = this.s && this.s.up;
         if (up && (up.offT || 0) >= 1 && up.target != null) this.drawTurnArrow(ctx, state.boats[0], up.target, up.offT);
+        // The pond's: a second of no progress on the task (updatePond's stall clock) gets
+        // a plain pointer — boat to goal, no turn geometry.
+        const ps = this.s && this.s.kind === 'pond' && this.s.phase === 'tasks' ? this.s : null;
+        if (ps && (ps.stallT || 0) >= 1 && ps.stallTarget != null) this.drawPointArrow(ctx, state.boats[0], ps.stallTarget, ps.stallT);
         // The spinnaker-in-motion visual is the HUD's halyard gauge (drawBoatInstruments),
         // the same instrument the shipped game shows; the school adds only the hint-row
         // text naming it (renderLines reads _deploy).
+    },
+    // A straight pointer from the boat toward a bearing: the dashed shaft marches toward
+    // the head, same teal, same fade clock as the turn arrow.
+    drawPointArrow(ctx, p, bearing, offT) {
+        const fade = Math.min(1, (offT - 1) / 0.35);
+        const a = fade * (0.7 + 0.25 * Math.sin(state.time * 5));
+        const ux = Math.sin(bearing), uy = -Math.cos(bearing);
+        const r0 = 60, r1 = 135;
+        ctx.save();
+        ctx.strokeStyle = `rgba(64, 245, 200, ${a.toFixed(3)})`;
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.lineWidth = 5;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = 'rgba(64, 245, 200, 0.8)'; ctx.shadowBlur = 12;
+        ctx.setLineDash([13, 11]);
+        ctx.lineDashOffset = -((state.time * 55) % 24);
+        ctx.beginPath();
+        ctx.moveTo(p.x + ux * r0, p.y + uy * r0);
+        ctx.lineTo(p.x + ux * r1, p.y + uy * r1);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        const hx = p.x + ux * (r1 + 4), hy = p.y + uy * (r1 + 4);
+        const ha = Math.atan2(uy, ux), L = 16;
+        ctx.beginPath();
+        ctx.moveTo(hx + Math.cos(ha) * L, hy + Math.sin(ha) * L);
+        ctx.lineTo(hx + Math.cos(ha - 2.5) * (L * 0.62), hy + Math.sin(ha - 2.5) * (L * 0.62));
+        ctx.lineTo(hx + Math.cos(ha + 2.5) * (L * 0.62), hy + Math.sin(ha + 2.5) * (L * 0.62));
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
     },
     drawTurnArrow(ctx, p, target, offT) {
         let d = normalizeAngle(target - p.heading);
@@ -1999,6 +2063,17 @@ const School = {
     showFrame(on) {},
     // Whether the pause menu's Skip has anywhere to go: every section but the race.
     canSkip() { return !!(this.active && this.s && this.s.kind !== 'race'); },
+    // The lesson's own goal, for the HUD's DMC: the closing speed on this point stands in
+    // for course progress while the venue's course (and its ruler) is hidden.
+    dmcTarget() {
+        const s = this.s; if (!s) return null;
+        if (s.kind === 'sail') { const d = s.ducks && s.ducks[0]; return d ? { x: d.x, y: d.y } : null; }
+        if (s.kind === 'pond' && s.phase === 'tasks') {
+            if (s.task && s.task.kind === 'mark' && s.W) return { x: s.W.x, y: s.W.y };
+            if (s.GL && s.GR) return { x: (s.GL.x + s.GR.x) / 2, y: (s.GL.y + s.GR.y) / 2 };
+        }
+        return null;
+    },
     showDebrief(graduated, rank, player) {
         this.ensureDom();
         const lines = this.debriefLines(graduated, rank, player);

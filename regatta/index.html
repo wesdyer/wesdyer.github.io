@@ -393,11 +393,10 @@
             </div>
         </div>
 
-        <!-- Leaderboard. Inset from the left edge (left-16, not left-4) on purpose:
-             the off-screen edge indicators ride a band 40px in from the screen edge,
-             and this panel is near-opaque — the inset leaves that lane visible
-             instead of swallowing the indicators. -->
-        <div id="leaderboard" class="absolute top-24 left-16 z-10 flex flex-col gap-0 pointer-events-none transition-opacity duration-300 w-72 hidden">
+        <!-- Leaderboard, back on the left edge. It used to sit inset (left-16) so the
+             edge-indicator band stayed visible past it; goal indicators now draw on the
+             overlay canvas ABOVE this panel, so the lane no longer needs reserving. -->
+        <div id="leaderboard" class="absolute top-24 left-4 z-10 flex flex-col gap-0 pointer-events-none transition-opacity duration-300 w-72 hidden">
            <!-- Header: which leg, and how many are left. The pips say the second thing
                 without arithmetic — four dashes, two lit. -->
            <div id="lb-header" class="px-4 py-2.5 rounded-t-xl flex justify-between items-center"
@@ -518,6 +517,14 @@
                 </div>
             </div>
         </div>
+
+        <!-- Goal indicators live HERE, above the HUD panels AND the school's coach card
+             (z-65 beats the leaderboard's z-10, the chrome's z-20 and the card's z-60): the
+             next mark is the most important thing on the screen and never hides behind a
+             panel or an instruction. Nothing is drawn to it while paused, so the pause and
+             screen overlays above it (z-50+) never carry stray chips. Competitor indicators
+             stay on the game canvas underneath — ambient info passes under the HUD. -->
+        <canvas id="indicatorCanvas" class="absolute inset-0 z-[65] pointer-events-none"></canvas>
 
         <!-- Pause Screen — a held breath, not a different app: the race context
              (venue, leg, standing) stays on the card, the world stays visible
@@ -926,15 +933,18 @@
                             <div class="t-mono text-xl text-white leading-none drop-shadow-md">
                                 <span id="hud-speed">0.0</span>
                             </div>
-                            <!-- SOG, not KTS. KTS names the unit; the question is WHICH speed,
-                                 and this one is over the ground — it carries the tide. -->
-                            <div class="t-label t-label-xs t-label-bright">SOG</div>
+                            <!-- "Speed" for humans (it is SOG underneath — over the ground,
+                                 tide and all; see boatInstrumentData). -->
+                            <div class="t-label t-label-xs t-label-bright">SPEED</div>
                         </div>
                         <div class="flex flex-col items-center">
                             <div class="t-mono text-xl text-green-400 leading-none drop-shadow-md">
                                 <span id="hud-vmg">0.0</span>
                             </div>
-                            <div class="t-label t-label-xs" style="color:#4ade80;">VMG</div>
+                            <!-- "Progress" for humans (it is DMC underneath — speed made good
+                                 along the course path, the ruler the leaderboard ranks by; a dash
+                                 in a rounding zone and through the prestart). -->
+                            <div class="t-label t-label-xs" style="color:#4ade80;">PROGRESS</div>
                         </div>
                     </div>
 

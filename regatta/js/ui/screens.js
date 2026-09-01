@@ -2044,6 +2044,9 @@ function togglePause(show) {
     const shouldPause = show !== undefined ? show : !isPaused;
     if (shouldPause) {
         state.paused = true;
+        // The indicator overlay sits ABOVE this menu (z-65) and draw() stops while paused,
+        // so whatever chips were on it would FREEZE over the menu. Clear it now.
+        if (window._indCtx) window._indCtx.clearRect(0, 0, window._indCtx.canvas.width, window._indCtx.canvas.height);
         if (UI.pauseContext) UI.pauseContext.innerHTML = raceContextLine();
         // Sailing School wears the menu differently: a Skip to the next section (not on the
         // last one), and the red row leaves the school rather than abandoning a race.
