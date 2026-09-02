@@ -427,7 +427,7 @@ const School = {
             n.count++;
             head.k = n.nextK++; head.station = this.snakeStation(head.k);
             s.ducks.push(s.ducks.shift());                       // to the back of the queue, front of the line
-            this.goal(this.goalCount('Follow the ducklings', Math.min(5, n.count), 5));
+            this.goal(this.goalCount('Follow the ducklings', Math.min(3, n.count), 3));
         }
     },
     updateSnake(dt) {
@@ -456,19 +456,25 @@ const School = {
         const up = s.up, p = r.p;
         const inZone = r.abs < 38 * Math.PI / 180;
         up.zoneT = inZone ? up.zoneT + 1 / 60 : 0;
+        // ── WHICH WAY OUT OF THE ZONE: SIDE MEMORY ──────────────────────────────
+        // The board they ENTERED from is remembered, and "through" flips only once the
+        // bow has crossed head-to-wind by a margin — so the advice is stable: before the
+        // crossing, the short way out is BACK to the course they came from; after it,
+        // the short way out is FORWARD, which is finishing a tack. Copy and arrow both
+        // read this one decision, so they can never disagree.
+        const sgn = r.twa >= 0 ? 1 : -1;
+        if (inZone && !up.wasIn) { up.wasIn = true; up.zoneSide = sgn; up.zoneThrough = false; }
+        if (inZone && !up.zoneThrough && sgn !== up.zoneSide && Math.abs(r.twa) > 5 * Math.PI / 180) up.zoneThrough = true;
+        if (!inZone) up.wasIn = false;
         // GUIDANCE: the heading the lesson wants right now, shown as the teal turn arrow
-        // (drawAbove) after one second of not doing it. In the zone: the nearer close-hauled
-        // course, out the short way. Out of the zone: only when they are plainly not making
-        // the ducklings — past the layline (the ducklings clearly on the other board), or
-        // sailing away from ducklings they could point straight at — so an honest zigzag
-        // never gets nagged.
+        // (drawAbove) after one second of not doing it. Out of the zone it speaks up only
+        // when they are plainly not making the ducklings, so an honest zigzag never nags.
         {
             const wd = this.wd(), duck = s.ducks[0];
             const CH = 45 * Math.PI / 180;   // close-hauled, just outside the cone
             let target = null;
             if (inZone) {
-                const side = Math.abs(r.twa) > 0.06 ? Math.sign(r.twa)
-                    : (duck ? (Math.sign(normalizeAngle(Math.atan2(duck.x - p.x, -(duck.y - p.y)) - wd)) || 1) : 1);
+                const side = up.zoneThrough ? -up.zoneSide : up.zoneSide;
                 target = normalizeAngle(wd + side * CH);
             } else if (up.zoneTaught && !up.saidTack) {
                 // "Zigzag back and forth" is up and they have never tacked: the arrow shows
@@ -490,15 +496,40 @@ const School = {
             else { up.offT = 0; up.target = null; }
         }
         const tacks = s.tacks - up.tacks0;
-        // Teach the zone once, in full; every later visit gets the short correction.
+        // ── THE COPY, off the same decision the arrow reads ─────────────────────
+        // Lingering in the zone (3 s) teaches it; crossing head-to-wind mid-linger turns
+        // the advice into "finish the tack"; leaving out the FAR side stays quiet and lets
+        // the tack detector deliver the praise; leaving back the way they came resumes the
+        // zigzag coaching.
         if (!up.inZone && up.zoneT >= 3) {
-            up.inZone = true; s.coneOn = true;
-            if (!up.zoneTaught) this.instruct("You can't sail straight into the wind. Turn out of the <em>red no-sail zone</em>.", 'Turn out of the red zone');
-            else this.instruct('Too far into the wind. Turn out of the <em>red zone</em>.', 'Turn out of the red zone');
+            up.inZone = true; s.coneOn = true; up.saidThrough = false;
+            if (up.zoneThrough) {
+                up.saidThrough = true;
+                this.instruct(up.saidTack ? 'Keep turning — through and out the <em>other side</em>.'
+                                          : "Keep turning all the way through — you're <em>tacking</em>!",
+                              up.saidTack ? 'Turn out of the red zone' : 'Finish the tack');
+            } else if (!up.zoneTaught) {
+                this.instruct("You can't sail straight into the wind. Turn out of the <em>red no-sail zone</em>.", 'Turn out of the red zone');
+            } else {
+                this.instruct('Too far into the wind. Turn <em>back</em> out of the red zone.', 'Turn out of the red zone');
+            }
+        } else if (up.inZone && inZone && up.zoneThrough && !up.saidThrough) {
+            up.saidThrough = true;
+            this.instruct(up.saidTack ? 'Keep turning — through and out the <em>other side</em>.'
+                                      : "Keep turning all the way through — you're <em>tacking</em>!",
+                          up.saidTack ? 'Turn out of the red zone' : 'Finish the tack');
         } else if (up.inZone && !inZone) {                     // out at 38°, same edge the cone and the red TWA use
             up.inZone = false;
-            if (!up.zoneTaught) { up.zoneTaught = true; this.instruct('To sail upwind, <em>zigzag</em> back and forth just outside the red zone.', 'Follow the ducklings'); }
-            else this.instruct('Good. Keep working your way upwind.', 'Follow the ducklings');
+            if (up.zoneThrough && !up.saidTack) {
+                // They came out the far side: that IS the tack — the detector's praise
+                // lands next, so nothing steps on it here.
+                if (!up.zoneTaught) up.zoneTaught = true;
+            } else if (!up.zoneTaught) {
+                up.zoneTaught = true;
+                this.instruct('To sail upwind, <em>zigzag</em> back and forth just outside the red zone.', 'Follow the ducklings');
+            } else {
+                this.instruct('Good. Keep working your way upwind.', 'Follow the ducklings');
+            }
         } else if (!up.inZone && tacks >= 1 && !up.saidTack) {
             up.saidTack = true;
             this.instruct('Nice! That was a <em>tack</em> — you crossed through the wind to sail the other way.', 'Follow the ducklings');
@@ -632,9 +663,9 @@ const School = {
               enter: (s) => { S.highlight = null; S.setControls(true); S.kiteLocked = true; S.setPanel(true); S.spawnSnakeDucks();
                               S.hint('steer with ' + S.kbd('&larr;') + S.kbd('&rarr;') + ' or ' + S.kbd('A') + S.kbd('D')); },
               lines: [{ t: 0, text: 'Now follow those <em>ducklings!</em>' }],
-              goal: S.goalCount('Follow the ducklings', 0, 5),
+              goal: S.goalCount('Follow the ducklings', 0, 3),
               tick: (s) => S.tickSnake(s),
-              done: (s) => s.snake && s.snake.count >= 5,
+              done: (s) => s.snake && s.snake.count >= 3,
               exitLine: "Nice! That's a <em>reach</em> — sailing with the wind from the side. Fast and easy." },
             { id: 'upwind', timeout: Infinity,
               enter: (s) => { S.spawnUpwindDucks(); s.up = { phase: 'sail', zoneT: 0, tacks0: s.tacks }; },
