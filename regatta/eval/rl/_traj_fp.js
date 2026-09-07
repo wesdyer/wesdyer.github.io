@@ -49,18 +49,27 @@ const docFp = (p, v) => {
 // docs (including the re-cut glowtide/redrock stamps of 2026-08-28) stays a valid
 // human reference. Bot anchors on the old cut are retired (0.1 u save-rounding of
 // the carrot reshuffles eight venues; re1* → pa*).
+// ⚠️ 2026-09-07 THE SWAMP WIND CUT: an adjudication is a claim about ONE pair of
+// documents — "these laps are valid on THAT frozen doc". It must not outlive the
+// doc it was made against, or the next unrelated edit inherits a ruling nobody
+// made (the swamp +2 kt wind cut would have shown his nine old-wind laps as
+// ✓ VALID on the new-wind doc). Every entry now carries `on`, the frozen stamp
+// it was adjudicated against, and applies ONLY while the frozen doc still has
+// that stamp. Swamp's `on` is the pre-wind paths doc (34a25f9f; copy in
+// eval/rl/_venues_prewind/), so on the new-wind doc his laps read ⛔ RETIRED —
+// which is the truth until he re-sails it.
 const PATHS_WHY = 'course.paths added only — every other key byte-identical (2026-08-30 paths intake)';
 const ADJUDICATED = {
-    bay: { stamps: ['a331fe02:13481', '915b07e4:1019761'], why: 'boundary-only change, tracks re-verified inside the new arena; ' + PATHS_WHY },
-    arctic:    { stamps: ['86fc97f4:97975'],   why: PATHS_WHY },
-    glowtide:  { stamps: ['3fbd12b1:514566'],  why: PATHS_WHY },
-    lagoon:    { stamps: ['3acc77de:61737'],   why: PATHS_WHY },
-    lake:      { stamps: ['84140c1f:1000622'], why: PATHS_WHY },
-    ocean:     { stamps: ['1b1a7101:564735'],  why: PATHS_WHY },
-    redrock:   { stamps: ['60f2a5ec:63791'],   why: PATHS_WHY },
-    river:     { stamps: ['76659ee5:1786811'], why: PATHS_WHY },
-    seatrials: { stamps: ['ae1026bc:1595'],    why: PATHS_WHY },
-    swamp:     { stamps: ['c351353c:335590'],  why: PATHS_WHY },
+    bay: { stamps: ['a331fe02:13481', '915b07e4:1019761'], on: 'c48f3aae:1021110', why: 'boundary-only change, tracks re-verified inside the new arena; ' + PATHS_WHY },
+    arctic:    { stamps: ['86fc97f4:97975'],   on: 'b0074f92:98492', why: PATHS_WHY },
+    glowtide:  { stamps: ['3fbd12b1:514566'],  on: '10b0f94a:515467', why: PATHS_WHY },
+    lagoon:    { stamps: ['3acc77de:61737'],   on: 'ebd9cc79:62851', why: PATHS_WHY },
+    lake:      { stamps: ['84140c1f:1000622'], on: '4ac9dd20:1001243', why: PATHS_WHY },
+    ocean:     { stamps: ['1b1a7101:564735'],  on: '46475464:565174', why: PATHS_WHY },
+    redrock:   { stamps: ['60f2a5ec:63791'],   on: 'a6530aaa:65152', why: PATHS_WHY },
+    river:     { stamps: ['76659ee5:1786811'], on: 'd5e773f6:1787917', why: PATHS_WHY },
+    seatrials: { stamps: ['ae1026bc:1595'],    on: 'ad2dd96f:1751', why: PATHS_WHY },
+    swamp:     { stamps: ['c351353c:335590'],  on: '34a25f9f:335920', why: PATHS_WHY },
 };
 
 const TD = path.join(__dirname, 'traj');
@@ -78,12 +87,15 @@ for (const v of want) {
     for (const f of (byVenue[v] || []).sort()) {
         const j = JSON.parse(fs.readFileSync(path.join(TD, f), 'utf8'));
         const fp = j.venueFingerprint;
-        const adj = ADJUDICATED[v] && ADJUDICATED[v].stamps.includes(fp) ? ADJUDICATED[v] : null;
+        const A = ADJUDICATED[v];
+        const adj = A && A.stamps.includes(fp) && (!A.on || A.on === froz) ? A : null;
+        const adjStale = A && A.stamps.includes(fp) && A.on && A.on !== froz;
         const tag = fp == null ? 'NO STAMP (schema-1)'
             : fp === froz ? 'matches FROZEN  ✓ comparable to benches'
                 : fp === ship ? (froz && froz !== ship ? 'matches SHIPPING only  ⚠️ not the benched venue' : 'matches shipping ✓')
                     : adj ? `retired stamp — ✓ ADJUDICATED VALID (${adj.why})`
-                        : 'matches NEITHER  ⛔ retired document';
+                        : adjStale ? `⛔ RETIRED — adjudicated valid on doc ${A.on} only; frozen doc has moved since (re-adjudicate or re-sail)`
+                            : 'matches NEITHER  ⛔ retired document';
         if (fp !== froz && !(froz === null && fp === ship) && !adj) mismatched++;
         console.log(`   ${(j.finishTime != null ? j.finishTime.toFixed(1) : '   -').padStart(7)}s  ${String(fp).padEnd(18)} ${tag}   ${f}`);
     }
