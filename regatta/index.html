@@ -223,6 +223,71 @@
             box-shadow: 0 6px 24px rgba(47,107,255,0.4);
         }
         .res-btn-primary:hover { background: #4a80ff; color: #fff; }
+        /* ── The clubhouse (Sep 2026 redesign): hub, cup and series pickers, standings ── */
+        .ch-overlay { background: #0c1322; color: #eef3fb; }
+        .ch-header { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 32px; border-bottom: 1px solid rgba(255,255,255,0.07); }
+        .ch-chip { font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 10.5px; letter-spacing: 1.6px; background: rgba(6,14,26,0.45); border-radius: 999px; padding: 5px 13px; white-space: nowrap; }
+        .ch-door { display: flex; flex-direction: column; background: #101a2e; border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; overflow: hidden; min-width: 0; text-align: left; cursor: pointer; padding: 0; color: inherit; font: inherit; transition: box-shadow 0.15s, transform 0.15s; }
+        /* Each door owns an accent (--door-accent, set inline): hovering the card lights its ring
+           and its button in that colour — teal for the school, gold for cups, the wordmark blue
+           for a series, race-mark orange for a single race. */
+        .ch-door:hover { box-shadow: 0 0 0 2px var(--door-accent, rgba(255,255,255,0.22)); }
+        .ch-door.primary { box-shadow: 0 0 0 2px #5aa7ff, 0 10px 30px rgba(90,167,255,0.28); }
+        .ch-door.primary:hover { box-shadow: 0 0 0 2px var(--door-accent, #7fbcff), 0 10px 30px rgba(90,167,255,0.4); }
+        .ch-door:hover .ch-cta, .ch-door.primary:hover .ch-cta { background: var(--door-accent); border-color: transparent; color: var(--door-ink, #0c1322); font-weight: 900; box-shadow: 0 6px 20px color-mix(in srgb, var(--door-accent) 45%, transparent); }
+        .ch-door:hover .ch-door-name { color: var(--door-accent); }
+        #hub-skipper:hover .pr-change-pill { background: #2f6bff; border-color: #2f6bff; color: #fff; }
+        .ch-cta { transition: background-color 0.15s, color 0.15s, box-shadow 0.15s; }
+        .ch-door-name { transition: color 0.15s; }
+        .ch-door-pic { height: 236px; position: relative; overflow: hidden; background: #0a1220; }
+        .ch-door-pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .ch-door-body { display: flex; flex-direction: column; gap: 10px; padding: 20px 22px 22px; flex-grow: 1; }
+        .ch-door-name { font-size: 36px; line-height: 0.98; text-transform: uppercase; }
+        .ch-door-blurb { font-size: 14px; line-height: 1.5; color: #d5ecf5; }
+        .ch-door-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; }
+        .ch-cta { border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #c4d2e6; background: transparent; }
+        .ch-door.primary .ch-cta { background: #2f6bff; border-color: transparent; color: #fff; font-weight: 900; font-style: italic; font-size: 14px; padding: 12px 22px; box-shadow: 0 6px 24px rgba(47,107,255,0.4); }
+        .ch-door.compact .ch-door-pic { height: 118px; }
+        .ch-door.compact .ch-door-body { gap: 5px; padding: 10px 16px 12px; }
+        .ch-door.compact .ch-door-name { font-size: 28px; }
+        .ch-door.compact .ch-door-blurb { font-size: 12.5px; line-height: 1.4; }
+        .ch-door.compact .ch-cta { padding: 8px 12px; font-size: 11.5px; }
+        .ch-door.compact.primary .ch-cta { padding: 9px 14px; font-size: 12px; }
+        .ch-door.compact .ch-fan { padding: 10px; gap: 4px; }
+        .ch-fan-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .ch-fan { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 18px; }
+        .ch-fan .pr-venue-shot { aspect-ratio: auto; height: 100%; }
+        /* A cup row: trophy · name/blurb/state/button · the four venues, which take the row's whole
+           height and every pixel of width the text does not need. The three rows share the page. */
+        .ch-cup { display: grid; grid-template-columns: 130px 272px minmax(0, 1fr); gap: 24px; align-items: stretch; background: #101a2e; border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 18px 24px; opacity: 0.85; cursor: pointer; text-align: left; color: inherit; font: inherit; flex: 1 1 0; min-height: 0; max-height: 320px; grid-template-rows: minmax(0, 1fr); }
+        .ch-cup-venues { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: 1fr; gap: 12px; height: 100%; min-height: 0; }
+        .ch-cup-tile { min-width: 0; min-height: 0; height: 100%; overflow: hidden; }
+        .ch-cup-tile .pr-venue-shot { height: 100%; aspect-ratio: auto; }
+        .ch-cup-tile .pr-venue-name { font-size: 15px; padding: 26px 11px 9px; }
+        .ch-cup-tile .pr-route-tag { font-size: 12px; padding: 4px 10px; top: 10px; left: 10px; }
+        /* A short window (a 1366x768 laptop) cannot hold three rows of full-size text: the name
+           steps down and the blurb clamps, so the rows still share the page without scrolling. */
+        @media (max-height: 900px) {
+            .ch-cup { padding: 14px 20px; gap: 20px; }
+            .ch-cup .ch-cup-name { font-size: 28px !important; }
+            .ch-cup .ch-cup-blurb { font-size: 13px !important; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+        }
+        .ch-cup:hover { opacity: 1; }
+        .ch-cup.sel { opacity: 1; box-shadow: 0 0 0 2px #5aa7ff, 0 6px 18px rgba(90,167,255,0.25); }
+        .ch-len { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 22px 0; border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; background: transparent; color: #c4d2e6; cursor: pointer; }
+        .ch-len:hover { background: rgba(255,255,255,0.06); }
+        .ch-len.sel { background: #2f6bff; border-color: transparent; color: #fff; box-shadow: 0 6px 24px rgba(47,107,255,0.4); }
+        .ch-len .n { font-size: 44px; line-height: 1; }
+        .ch-panel { background: rgba(6,14,26,0.45); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 16px 18px; }
+        .ch-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #101a2e; border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 16px 16px 16px 24px; }
+        .ch-grid { display: grid; gap: 10px; align-items: center; grid-template-columns: 52px 40px 60px 200px repeat(var(--races, 4), 72px) 100px; }
+        .ch-row { padding: 5px 14px; border-radius: 12px; }
+        .ch-row.me { background: rgba(242,193,78,0.08); box-shadow: 0 0 0 2px #f2c14e; }
+        .ch-row.alt { background: rgba(255,255,255,0.025); }
+        .pr-lock-pill { font-size: 10.5px; letter-spacing: 0.18em; color: #9fb2cc; border: 1px solid rgba(159,178,204,0.4); border-radius: 999px; padding: 3px 10px; margin-left: 10px; background: rgba(6,14,26,0.35); white-space: nowrap; }
+        .pr-route-tile .pr-venue-shot { aspect-ratio: 2.6; }
+        .pr-route-tile.dim { opacity: 0.5; }
+        .pr-route-tag { position: absolute; top: 8px; left: 8px; font-size: 11px; color: #eef3fb; background: rgba(6,14,26,0.7); border-radius: 999px; padding: 3px 9px; }
 
         /* ── Race-day board (pre-race) ──────────────────────────────────────
            Two grids of square art: the venue strip and the fleet. Both say
@@ -315,7 +380,6 @@
             .pr-record { display: flex; align-items: center; gap: 14px; margin-top: 10px; padding: 7px 14px; }
             .pr-record > div:first-child { flex: 1 1 auto; }
             .pr-record-time { font-size: 17px; margin-top: 0; }
-            #venue-picker { grid-template-columns: repeat(5, minmax(0, 132px)) !important; }
         }
         /* ≤780px — a 1366×768 laptop leaves ~650px of viewport. */
         @media (max-height: 780px) {
@@ -323,7 +387,6 @@
             .pr-venue-title.long { font-size: 24px; }
             .pr-blurb { margin-top: 6px; font-size: 12.5px; }
             .pr-row { padding: 4px 10px; }
-            #venue-picker { grid-template-columns: repeat(5, minmax(0, 112px)) !important; }
         }
         /* Shortest (720p laptops: ~610px of viewport). The venue chips and the
            blurb give way — the name carries the identity, and the essentials are
@@ -703,6 +766,223 @@
 
              Palette is the results screen's (#0c1322 page, #141d31 panels, #101a2e bar), so
              the two ends of a race now look like the same game. -->
+
+        <!-- ══ THE CLUBHOUSE (Sep 2026 redesign) ══════════════════════════════════════
+             Four doors: Sailing School (the front door until you graduate), Cup, Series,
+             Race. Cup and Series have a picker each; Race opens the board below unchanged.
+             Every door shows its state — that is what makes a hub worth its click. -->
+        <!-- ══ THE CLUBHOUSE (Sep 2026 redesign) ══════════════════════════════════════
+             A painting on top — the club at Lighthouse Cove, the starting ten racing past —
+             with the wordmark in its sky, and the four doors in a row below it: Sailing
+             School (the front door until you graduate), Cup, Series, Race. Every door shows
+             its state; that is what makes a hub worth its click. -->
+        <div id="clubhouse-overlay" class="hidden absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-hidden ch-overlay">
+            <!-- The painting takes every pixel the doors leave, and is ANCHORED TO ITS BOTTOM EDGE: the
+                 racers live in the bottom of the picture, so they are always the subject of the crop;
+                 a taller window simply shows more sky and roofline above them. The anchor sits at 86%
+                 rather than the very bottom so a short window trims foreground water before anything else. -->
+            <div id="hub-hero" class="relative" style="flex:1 1 auto; min-height:320px; overflow:hidden; background:#0c1322;">
+                <!-- The hero master lands at assets/images/hero/clubhouse.png (art/manifest.json
+                     `hero-clubhouse`); until then the home venue's card stands in, cropped wide. -->
+                <img id="hub-hero-img" src="assets/images/venues/bay.png" alt="" draggable="false" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 86%;">
+                <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgba(12,19,34,0.55) 0%, rgba(12,19,34,0.0) 28%, rgba(12,19,34,0.0) 70%, #0c1322 100%);"></div>
+                <div style="position:absolute; inset:0; background:linear-gradient(to right, rgba(12,19,34,0.45) 0%, rgba(12,19,34,0.0) 45%);"></div>
+                <div class="ch-header" style="position:absolute; left:0; right:0; top:0; border-bottom:none;">
+                    <div class="flex items-center gap-4">
+                        <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
+                        <div>
+                            <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:38px; letter-spacing:-0.02em; text-shadow:0 2px 12px rgba(0,0,0,0.6);">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
+                            <div id="clubhouse-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#c4d2e6; margin-top:7px; text-shadow:0 1px 6px rgba(0,0,0,0.7);">FAIR WINDS &middot; SALTY RIVALS</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 shrink-0">
+                        <!-- WHO YOU ARE AT THE CLUB. The character is a persistent setting, not a
+                             per-race choice, so it lives here — the one place, for every mode. -->
+                        <button id="hub-skipper" class="res-btn" title="Change skipper" style="display:flex; align-items:center; gap:12px; padding:8px 16px 8px 8px; background:rgba(12,19,34,0.55); text-transform:none; letter-spacing:0;">
+                            <img id="hub-skipper-img" src="" alt="" draggable="false" style="width:44px; height:44px; object-fit:cover; border-radius:10px; background:rgba(255,255,255,0.06);">
+                            <span style="display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left;">
+                                <span class="t-label t-label-sm" style="color:#9fb2cc;">Sailing as</span>
+                                <span id="hub-skipper-name" class="t-display uppercase" style="font-size:20px; line-height:1; color:#fff;"></span>
+                            </span>
+                            <span class="pr-change-pill" style="margin-left:4px;">Change</span>
+                        </button>
+                        <button class="res-btn js-open-settings" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center; background:rgba(12,19,34,0.45);"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
+                    </div>
+                </div>
+            </div>
+            <div class="flex flex-col shrink-0" style="gap:12px; padding:6px 32px 22px;">
+                <div class="flex items-baseline justify-between">
+                    <div class="t-display italic uppercase" style="font-size:24px; letter-spacing:0.03em;">What are we sailing today?</div>
+                    <div id="clubhouse-tally" class="t-mono" style="font-size:14.5px; color:#c4d2e6; letter-spacing:0.04em;"></div>
+                </div>
+                <div class="grid" style="grid-template-columns:repeat(4, minmax(0, 1fr)); gap:18px;">
+                    <button id="door-school" class="ch-door compact" style="--door-accent:#7ff0d4; --door-ink:#0c1322;">
+                        <div class="ch-door-pic"><img src="assets/images/venues/pond.png" alt="Duckling Pond"><span id="door-school-chip" class="ch-chip" style="position:absolute; top:12px; left:12px; background:#2f6bff; color:#fff;">Start here</span></div>
+                        <div class="ch-door-body">
+                            <div class="t-display ch-door-name">Sailing School</div>
+                            <div class="ch-door-blurb">Learn the ropes on Duckling Pond: three short lessons, then a graduation race.</div>
+                            <div class="ch-door-foot"><span id="door-school-state" class="t-label t-label-sm"></span><span id="door-school-cta" class="ch-cta">Start school <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
+                        </div>
+                    </button>
+                    <button id="door-cup" class="ch-door compact" style="--door-accent:#f2c14e; --door-ink:#0c1322;">
+                        <div id="door-cup-pic" class="ch-door-pic"></div>
+                        <div class="ch-door-body">
+                            <div class="t-display ch-door-name">Cup</div>
+                            <div class="ch-door-blurb">Four races. One trophy. Choose the Commodore&rsquo;s, Explorer&rsquo;s, or Swirl Cup.</div>
+                            <div class="ch-door-foot"><span id="door-cup-state" class="t-label t-label-sm"></span><span class="ch-cta">Choose a cup <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
+                        </div>
+                    </button>
+                    <button id="door-series" class="ch-door compact" style="--door-accent:#5aa7ff; --door-ink:#0c1322;">
+                        <div id="door-series-pic" class="ch-door-pic"></div>
+                        <div class="ch-door-body">
+                            <div class="t-display ch-door-name">Series</div>
+                            <div class="ch-door-blurb">Draw 4&ndash;12 venues and race them as a series. Points add up; the final race breaks ties.</div>
+                            <div class="ch-door-foot"><span id="door-series-state" class="t-label t-label-sm"></span><span class="ch-cta">Draw a series <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
+                        </div>
+                    </button>
+                    <button id="door-race" class="ch-door compact" style="--door-accent:#ff9a3c; --door-ink:#0c1322;">
+                        <div id="door-race-pic" class="ch-door-pic"></div>
+                        <div class="ch-door-body">
+                            <div class="t-display ch-door-name">Race</div>
+                            <div class="ch-door-blurb">One race. Any venue. Just line up and go. Set a record.</div>
+                            <div class="ch-door-foot"><span id="door-race-state" class="t-label t-label-sm"></span><span class="ch-cta">Pick a venue <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cup picker: the three cups, each with its four races and its trophy's state. -->
+        <div id="cup-overlay" class="hidden absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-y-auto ch-overlay">
+            <div class="ch-header">
+                <div class="flex items-center gap-4">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
+                    <div>
+                        <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:31px; letter-spacing:-0.02em;">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
+                        <div id="cup-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;">CUP &middot; FOUR RACES, ONE TROPHY</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <button id="cup-back-btn" class="res-btn" style="display:flex; align-items:center; gap:8px; padding:14px 20px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"></path></svg>Clubhouse</button>
+                    <button class="res-btn js-open-settings" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="flex flex-col flex-1" style="gap:16px; padding:22px 32px 24px; min-height:0;">
+                <div class="flex items-baseline justify-between shrink-0">
+                    <div class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">Choose a cup</div>
+                    <div class="t-mono" style="font-size:12px; color:#7787a0;">10 points for a win, down to 1 &middot; DNF scores 0 &middot; ties go to the last race</div>
+                </div>
+                <div id="cup-list" class="flex flex-col flex-1" style="gap:16px; min-height:0;"></div>
+            </div>
+        </div>
+
+        <!-- Series picker: how many races, and the draw. Redraw is free until you start. -->
+        <div id="series-overlay" class="hidden absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-y-auto ch-overlay">
+            <div class="ch-header">
+                <div class="flex items-center gap-4">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
+                    <div>
+                        <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:31px; letter-spacing:-0.02em;">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
+                        <div id="series-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;">SERIES &middot; A RANDOM DRAW</div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <button id="series-back-btn" class="res-btn" style="display:flex; align-items:center; gap:8px; padding:14px 20px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"></path></svg>Clubhouse</button>
+                    <button class="res-btn js-open-settings" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="grid flex-1" style="grid-template-columns:420px minmax(0, 1fr); gap:32px; padding:26px 32px 28px; min-height:0;">
+                <div class="flex flex-col" style="gap:18px;">
+                    <div class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">How many races?</div>
+                    <div id="series-lengths" class="grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px;"></div>
+                    <div class="ch-panel flex flex-col" style="gap:8px;">
+                        <div class="t-label t-label-sm" style="color:#dbeafe;">How it scores</div>
+                        <div style="font-size:14px; line-height:1.55; color:#d5ecf5;">10 points for a win, down to 1 for tenth. Retiring scores 0. Every race counts, and a tie goes to whoever placed better in the last race. Same fleet, same boat, all the way through.</div>
+                    </div>
+                </div>
+                <div class="flex flex-col" style="gap:16px; min-height:0;">
+                    <div class="flex items-baseline justify-between">
+                        <div class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">Your draw</div>
+                        <div id="series-draw-note" class="t-mono" style="font-size:12px; color:#7787a0;"></div>
+                    </div>
+                    <div id="series-draw" class="grid" style="gap:14px;"></div>
+                    <div style="flex-grow:1;"></div>
+                    <div class="ch-bar">
+                        <div style="font-size:13px; font-weight:700; color:#9fb2cc;">Not the draw you wanted? Redraw as often as you like &mdash; it is free until you start.</div>
+                        <div class="flex gap-2.5 shrink-0">
+                            <button id="series-redraw-btn" class="res-btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg> Redraw</button>
+                            <button id="series-start-btn" class="res-btn res-btn-primary">Sail this series <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- THE FLEET (Sep 2026): its own page between choosing and starting. You, changeable
+             until race one of a cup or series starts; the nine rivals with their scouting notes. -->
+        <div id="fleet-overlay" class="hidden absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-hidden ch-overlay">
+            <div class="ch-header">
+                <div class="flex items-center gap-4">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
+                    <div>
+                        <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:31px; letter-spacing:-0.02em;">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
+                        <div id="fleet-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0">
+                    <button id="fleet-back-btn" class="res-btn" style="display:flex; align-items:center; gap:8px; padding:14px 20px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"></path></svg><span id="fleet-back-label">Back</span></button>
+                    <button id="fleet-primary-btn" class="res-btn res-btn-primary" style="font-size:18px; padding:14px 38px;"></button>
+                    <button class="res-btn js-open-settings" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+                </div>
+            </div>
+            <div class="grid flex-1" style="grid-template-columns:400px minmax(0, 1fr); gap:28px; padding:22px 32px 24px; min-height:0;">
+                <div id="fleet-context" class="flex flex-col" style="gap:14px; min-height:0;"></div>
+                <div class="flex flex-col gap-3" style="min-height:0;">
+                    <div class="flex items-baseline justify-between shrink-0">
+                        <div class="t-display italic uppercase" style="font-size:23px; letter-spacing:0.04em;"><span style="color:#f2c14e; font-size:14px; vertical-align:middle;">&#9679;</span> The Fleet</div>
+                        <div id="pr-fleet-count" style="font-size:15px; font-weight:800; color:#9fb2cc; letter-spacing:0.02em;"></div>
+                    </div>
+                    <!-- Ten badges in two columns; a rival's scouting notes open under its badge. -->
+                    <div id="pr-competitors-grid" class="grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; align-content:start; flex:1 1 auto; min-height:0; overflow-y:auto;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Standings between races, and the podium after the last one. One screen, two dresses. -->
+        <div id="standings-overlay" class="hidden absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-y-auto ch-overlay">
+            <div class="ch-header">
+                <div class="flex items-center gap-4">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
+                    <div>
+                        <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:31px; letter-spacing:-0.02em;">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
+                        <div id="standings-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;"></div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0"><button id="standings-abandon-btn" class="res-btn"></button><button id="standings-next-btn" class="res-btn res-btn-primary" style="font-size:18px; padding:14px 38px;"></button>
+                    <button class="res-btn js-open-settings" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center;">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    </button>
+                </div>
+            </div>
+            <div id="standings-hero" class="hidden flex items-center" style="gap:36px; padding:22px 36px; border-bottom:1px solid rgba(255,255,255,0.07); background:radial-gradient(700px 220px at 25% 0%, rgba(242,193,78,0.14), transparent);"></div>
+            <div class="grid flex-1" style="grid-template-columns:minmax(0, 1fr) 420px; gap:28px; padding:22px 32px 28px; min-height:0;">
+                <div class="flex flex-col" style="gap:12px; min-width:0;">
+                    <div class="flex items-baseline justify-between">
+                        <div class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">Standings</div>
+                        <div id="standings-note" class="t-mono" style="font-size:12px; color:#7787a0;"></div>
+                    </div>
+                    <div id="standings-table" class="flex flex-col" style="gap:4px;"></div>
+                </div>
+                <div id="standings-side" class="flex flex-col" style="gap:14px;"></div>
+            </div>
+        </div>
+
         <div id="pre-race-overlay" class="absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-hidden"
              style="background:#0c1322; color:#eef3fb;">
 
@@ -719,9 +999,13 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
-                    <!-- Sailing School: offered, never forced. The bright primary until the
-                         player has graduated, a plain secondary after (tutorial.md §12). -->
-                    <button id="school-btn" class="res-btn" style="font-size:15px; padding:14px 22px;">Sailing School</button>
+                    <!-- The way back to the clubhouse hub (the four doors). Sailing School used to
+                         be a button here; it is the hub's front door now (Sep 2026 redesign). -->
+                    <button id="prerace-back-btn" class="res-btn" style="display:flex; align-items:center; gap:8px; padding:14px 20px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"></path></svg>Clubhouse
+                    </button>
+                    <!-- Inside a cup or series: which one, and which race. Hidden for a single race. -->
+                    <span id="prerace-series-chip" class="ch-chip hidden" style="color:#f2c14e; border:1px solid rgba(242,193,78,0.4); background:rgba(242,193,78,0.10); padding:9px 16px;"></span>
                     <button id="start-race-btn" class="res-btn res-btn-primary" style="font-size:18px; padding:14px 38px;">Start Race &rarr;</button>
                     <button id="prerace-settings-btn" class="res-btn" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center;">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -732,35 +1016,35 @@
                 </div>
             </div>
 
-            <div id="pr-columns" class="flex-1 grid gap-6" style="grid-template-columns:minmax(0,1fr) 470px; padding:18px 32px 20px; min-height:0;">
+            <!-- THE PREVIEW ON THE LEFT, THE CHOICE ON THE RIGHT (Sep 2026). The hero is art plus
+                 briefing with the course chart under it; the right column is every venue card, or
+                 inside a cup or series the route. The fleet is its own page now (fleet-overlay). -->
+            <div id="pr-columns" class="flex-1 grid gap-6" style="grid-template-columns:minmax(0,1fr) 440px; padding:18px 32px 20px; min-height:0;">
 
                 <div class="flex flex-col gap-3" style="min-width:0; min-height:0;">
-                    <!-- Hero: the briefing on the wide side, the square art on the short one -->
-                    <div id="venue-hero" class="flex overflow-hidden shrink-0"
-                         style="border-radius:16px; flex:1 1 auto; min-height:220px;">
-                        <div id="venue-detail" class="flex flex-col" style="flex:1 1 auto; min-width:0; padding:24px 28px;"></div>
+                    <div id="venue-hero" class="flex overflow-hidden shrink-0" style="border-radius:16px; min-height:220px;">
                         <div id="venue-art" class="relative shrink-0" style="height:100%; aspect-ratio:1;"></div>
+                        <div id="venue-detail" class="flex flex-col" style="flex:1 1 auto; min-width:0; padding:24px 28px;"></div>
                     </div>
-                    <!-- Same square art again, downscaled. No second crop to maintain.
-                         Two rows of five rather than one row of ten: at this size the tile
-                         is a picture of somewhere rather than a swatch, and the name sits
-                         ON TOP where it reads as a heading for the picture under it. -->
-                    <div id="venue-picker" class="grid shrink-0" style="grid-template-columns:repeat(5,minmax(0,150px)); gap:10px; justify-content:space-between;"></div>
+                    <!-- The chart gets the whole width and whatever height the hero leaves — the
+                         SHAPE of the course is the thing a preview should show big. -->
+                    <div id="venue-course-box" class="relative" style="flex:1 1 auto; min-height:120px; min-width:0;">
+                        <div id="venue-course-inner" style="position:absolute; left:0; bottom:0; border-radius:8px; background:rgba(6,14,26,0.45); overflow:hidden;">
+                            <canvas id="venue-course-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+                        </div>
+                        <div id="venue-records-inline" style="position:absolute; bottom:0; right:0; display:none; min-width:0; overflow:hidden;"></div>
+                    </div>
                 </div>
 
                 <div class="flex flex-col gap-3" style="min-height:0;">
-                    <div class="flex items-baseline justify-between shrink-0">
-                        <div class="t-display italic uppercase" style="font-size:23px; letter-spacing:0.04em;"><span style="color:#f2c14e; font-size:14px; vertical-align:middle;">&#9679;</span> The Fleet</div>
-                        <!-- Set in the same face as "4 legs" in the start bar, so the two
-                             counts on this screen match each other rather than one being an
-                             instrument readout and the other a label. -->
-                        <div id="pr-fleet-count" style="font-size:15px; font-weight:800; color:#9fb2cc; letter-spacing:0.02em;"></div>
+                    <div class="flex flex-col shrink-0" style="gap:2px;">
+                        <div id="pr-right-title" class="t-display italic uppercase" style="font-size:23px; letter-spacing:0.04em; line-height:1.1;"><span style="color:#5aa7ff; font-size:14px; vertical-align:middle;">&#9679;</span> Venues</div>
+                        <div id="pr-route-note" class="t-mono" style="font-size:12px; color:#7787a0;"></div>
                     </div>
-                    <!-- THE FLEET AS A LIST OF BADGES — the same identity band the character
-                         picker and the results screen use, boat preview and all. Ten of them
-                         do not fit a column, and that is fine: this one panel scrolls, and
-                         clicking a badge opens that boat's scouting notes underneath it. -->
-                    <div id="pr-competitors-grid" class="flex flex-col" style="gap:8px; flex:1 1 auto; min-height:0; overflow-y:auto;"></div>
+                    <div id="venue-picker" class="grid" style="grid-template-columns:repeat(3, minmax(0, 1fr)); gap:10px; overflow-y:auto; min-height:0; align-content:start;"></div>
+                    <div id="pr-route" class="hidden flex flex-col" style="gap:10px; overflow-y:auto; min-height:0;">
+                        <div id="pr-route-grid" class="grid" style="gap:10px; align-content:start;"></div>
+                    </div>
                 </div>
             </div>
 
@@ -1050,6 +1334,9 @@
     <script src="assets/venues/redrock.venue.js"></script>
     <script src="assets/venues/glowtide.venue.js"></script>
     <script src="assets/venues/arctic.venue.js"></script>
+    <script src="assets/venues/otter.venue.js"></script>
+    <script src="assets/venues/flats.venue.js"></script>
+    <script src="assets/venues/volcanic.venue.js"></script>
     <script src="assets/venues/seatrials.venue.js"></script>
     <script src="assets/venues/pond.venue.js"></script>
     <script src="js/ai-quotes.js"></script>
@@ -1066,6 +1353,7 @@
     <script src="js/rules.js"></script>
     <script src="js/game/core.js"></script>
     <script src="js/game/state.js"></script>
+    <script src="js/game/series.js"></script>
     <script src="js/game/audio.js"></script>
     <script src="js/sim/wind.js"></script>
     <script src="js/sim/water.js"></script>

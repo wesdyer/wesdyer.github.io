@@ -51,6 +51,16 @@ const School = {
         try { return JSON.parse(localStorage.getItem(SCHOOL_PROGRESS_KEY)) || {}; } catch (e) { return {}; }
     },
     graduated() { return !!this.progress().graduated; },
+    // Which of the four sections have been COMPLETED — reached the next one by finishing,
+    // not by skipping. Kept beside the graduated flag; the clubhouse door shows them as dots.
+    completeUnit(n) {
+        const p = this.progress();
+        this.saveProgress({ units: Object.assign({}, p.units || {}, { [n]: true }) });
+    },
+    unitsDone() {
+        const p = this.progress(), u = p.units || {};
+        return [1, 2, 3, 4].map(n => !!u[n] || !!p.graduated);
+    },
     saveProgress(patch) {
         const p = Object.assign(this.progress(), patch);
         try { localStorage.setItem(SCHOOL_PROGRESS_KEY, JSON.stringify(p)); } catch (e) {}
@@ -154,6 +164,7 @@ const School = {
         restartRace();                       // back to the clubhouse, on the chosen venue
         if (typeof selectVenue === 'function') selectVenue(settings.venue);
         if (window.__styleSchoolBtn) window.__styleSchoolBtn();
+        if (typeof showClubhouse === 'function') showClubhouse();   // the hub, whose front door this is
     },
 
     // The pond's WATER, as a box: sampled once per section from the document's arena and the
@@ -759,6 +770,7 @@ const School = {
 
     onFirstSailDone() {
         // The boat and its ducklings fade together (drawAbove follows the player's opacity).
+        this.completeUnit(1);
         this.fadeThen(() => { this.start(2); this.screen('B'); });
     },
 
@@ -824,7 +836,7 @@ const School = {
         const T = s.tasks[s.taskIdx];
         s.buoys = []; s.GL = s.GR = null;
         s.stallT = 0; s._stallD = null; s._stallRate = null;   // a fresh goal, a fresh stall clock
-        if (!T) { this.fadeThen(() => { this.start(3); this.screen('C'); }); return; }
+        if (!T) { this.completeUnit(2); this.fadeThen(() => { this.start(3); this.screen('C'); }); return; }
         s.task = T;
         if (T.kind === 'mark') {
             const M = T.place(), p = state.boats[0];
@@ -973,6 +985,7 @@ const School = {
                     : late <= 1.5 ? 'Great start! Right on the gun.'
                     : 'Nice start! You crossed right after the gun.';
                 this.goal(null);
+                this.completeUnit(3);
                 this.fadeThen(() => { this.start(4); this.screen('D'); });
             }
         }
@@ -1247,7 +1260,7 @@ const School = {
         const sorted = this.raceOrder();
         s.finishRank = sorted.indexOf(player) + 1;
         const graduated = player.raceState.finished && !player.raceState.resultStatus;
-        if (graduated) this.saveProgress({ graduated: true, graduatedAt: new Date().toISOString(), rank: s.finishRank });
+        if (graduated) { this.saveProgress({ graduated: true, graduatedAt: new Date().toISOString(), rank: s.finishRank }); this.completeUnit(4); }
         console.log('[school] run', JSON.stringify({ log: this.log, race: { rank: s.finishRank, ocs: s.ocsAtGun, pinchT: +s.pinchT.toFixed(1), beatT: +s.beatT.toFixed(1), kiteUpwindT: +s.kiteUpwindT.toFixed(1), penalties: player.raceState.totalPenalties } }));
         this.hideCard();
         this._lastRace = { graduated, rank: s.finishRank, player, sorted, lines: this.debriefLines(graduated, s.finishRank, player) };

@@ -66,11 +66,14 @@ eye-path, focal element, wildlife witness).
 | Glowtide Strait | near-black indigo night | electric cyan biolume + red lit buoy + moon gold |
 | Glacier Sound | steel navy + faceted ice blue-white | penguin yellow, orca black |
 | Clubhouse Point | plain honest blue | one orange mark + committee boat |
-| Curlew Flats | warm amber-gold sandbars | deep slate-blue channels, rust-red withies |
+| Spoonbill Flats (specced as Curlew Flats) | warm amber-gold sandbars | deep slate-blue channels, rust-red withies. *Shipped Sep 2026 at 0.693* |
+| Emberfall Isle | volcanic black rock + near-black water | ember red — lava cracks, vents, dusk glow. *Claimed Sep 2026; the shipped card is the Aug 2026 one and still carries the aurora and starfield the reroll must drop* |
 | Duckling Pond | fresh meadow green (lawn to the water's edge) | buttercup yellow — training sails, ducklings |
+| Otter Point | cold saturated teal-green kelp-forest water + dark olive/rust-brown giant kelp mats | ice-plant magenta on the cliff tops (pale granite and white surf are neutrals, not hues)  *Shipped Sep 2026 at 0.720 saturation; the water landed teal-blue (hue 194°, between Sockeye and Stillwater)* |
 
-Unclaimed hue territory for future venues: greys (storm/fog), volcanic black +
-ember red.
+Unclaimed hue territory for future venues: greys (storm/fog — Otter Point puts
+grey in its SKY as a fog bank, so the hue itself is still open). Volcanic black +
+ember red went to Emberfall Isle in Sep 2026.
 
 *Spring pastels was listed here and has been struck: pastel means low chroma,
 which contradicts rule 2's "saturated and confident". The first Curlew Flats
@@ -100,9 +103,10 @@ the venue plays from the top fifth alone. Rule 5's cartoon-cumulus recipe is the
 | Glowtide Strait | night information game | clear moonlit night, minimal cloud. Already correct |
 | Glacier Sound | katabatic, ice | low grey overcast, sea smoke off the water, snow streaks. Already correct |
 | Clubhouse Point | it is a benchmark | deliberately plain and evenly lit — blandness is the identity. Flatter than everything else |
-| Curlew Flats | falling tide, building current | wide open estuary sky, varied blob-stack cumulus at mixed sizes plus thin streaks |
-| Emberfall Isle | vents & pumice | ash plume drifting downwind, ember-lit from beneath |
+| Spoonbill Flats | falling tide, building current | wide open estuary sky, varied blob-stack cumulus at mixed sizes plus thin streaks |
+| Emberfall Isle | vents & pumice | ash plume drifting downwind, ember-lit from beneath, at DUSK. *The shipped card is a starfield with an aurora — the reroll owed since the July audit* |
 | Duckling Pond | light, steady, safe — nothing is coming | early-morning gradient, buttery gold low to pale blue high, essentially cloudless — first-lesson light. ⚠️ Distinct from Lake's near-empty *midday* pale: the warmth is the difference, and Lake owns the tiny-cumulus scatter |
+| Otter Point | building sea breeze, swell, fog on the last leg | clear saturated blue overhead, and a flat-topped **fog bank** parked along the offshore horizon like a low wall — flat-topped with a slightly uneven upper edge, sunlit on top, one flat grey-blue shade beneath. The marine layer the sea breeze is about to pull in. ⚠️ Not Glacier Sound's overcast: a bright day with a wall of grey on one edge |
 
 **Status (July 2026).** Reworked and shipped: **Lagoon** (squall cell + rain
 shaft), **Lake** (12 small puffs), **Bay** (sea-breeze line — land:water cloud
@@ -124,8 +128,12 @@ running unbroken through them — not soft gradients, not reflections.
 
 1. Save the full-size original: `regatta/assets/images/venues/<key>.png`
    (the `<key>` matches the `VENUES` config key in script.js).
-2. Generate the picker thumbnail:
-   `sips -Z 256 <key>.png --out thumbs/<key>.png`
+2. Generate the picker thumbnails — `python3 art/ingest.py <key>` writes both, or by hand:
+   `sips -Z 256 <key>.png --out thumbs/<key>.png` and a 640px JPEG as
+   `thumbs/<key>-640.jpg` (quality ~86). The tiles pick between them with `srcset`
+   (screens.js `venueThumb`): a 150px tile on a Retina display already needs 300
+   device pixels, and the series draw shows tiles up to ~360px, so the 256 alone
+   blurs on every large tile (found Sep 2026).
 3. The picker card and detail panel pick it up by key automatically.
 
 ## Quality checklist before accepting a piece

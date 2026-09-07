@@ -53,7 +53,8 @@ const pass = (m) => console.log(`  ok   ${m}`);
     console.log('every control persists AT THE MOMENT IT IS USED\n');
 
     // --- character, through the picker --------------------------------------
-    await p.evaluate(() => { setupPreRaceOverlay(); selectCompetitor(PLAYER_CARD_KEY); });
+    // The fleet lives on its own page now (Sep 2026): open it so the badge is clickable.
+    await p.evaluate(() => { setupPreRaceOverlay(); if (typeof showFleetPage === 'function') showFleetPage(); selectCompetitor(PLAYER_CARD_KEY); });
     await p.waitForTimeout(400);
     await step('character', 'character picker', async () => {
         // Your own badge, at the top of the fleet list, is the way in: the header chip and
@@ -66,6 +67,8 @@ const pass = (m) => console.log(`  ok   ${m}`);
     });
 
     // --- venue, by clicking its card ----------------------------------------
+    await p.evaluate(() => { if (typeof showRaceBoard === 'function') showRaceBoard(); });
+    await p.waitForTimeout(300);
     await step('venue', 'venue card', async () => {
         const key = await p.evaluate(() => Object.keys(window.VENUE_DOC).find(k => k !== settings.venue));
         // No silent fallback to selectVenue(): that would quietly test the programmatic

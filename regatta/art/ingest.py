@@ -69,7 +69,13 @@ def master_for(asset, prof, delivered):
 def check_master(img, prof, key, m):
     """Structural checks that are cheap now and expensive after 80 files."""
     notes = []
-    if img.width != img.height:
+    if prof.get("wide"):
+        # A wide profile (the clubhouse hero) states its master as [W, H]; the aspect must
+        # match to within a couple of percent, and nothing else about squareness applies.
+        W, H = prof["wide"]
+        if abs(img.width / img.height - W / H) > 0.03:
+            raise Fail(f"wrong aspect: {img.width}x{img.height}, this profile is {W}x{H}")
+    elif img.width != img.height:
         raise Fail(f"not square: {img.width}x{img.height}")
 
     if prof["background"] == "transparent":
@@ -178,6 +184,30 @@ def punch_holes(img, luma_max, open_px, feather=1.0):
     return Image.fromarray(np.dstack([rgb, al * (1 - hole)]).astype(np.uint8), "RGBA")
 
 
+def key_holes(img, color, thresh, feather=1.0):
+    """Open every pixel within `thresh` of `color` to alpha 0 — ENCLOSED regions included.
+
+    The one thing dekey.py cannot do: its flood fill starts at the border, so a key-coloured
+    crater floor ringed by rock is exactly the region it protects. This keys by colour alone,
+    wherever the colour is, which is what an asset means when its subject says "paint this
+    opening flat magenta and the engine removes it": the volcano props open their craters and
+    lava channels this way so a `magma` or `lava` shape placed under the prop shows through.
+    `thresh` is the summed RGB distance (a clean flat magenta sits at 0; an antialiased
+    fringe blending toward dark rock climbs fast), `feather` blurs the mask edge so the
+    opening does not land on a hard aliased line. Returns the image and the keyed fraction.
+    """
+    a = np.asarray(img.convert("RGBA")).astype(int)
+    d = np.abs(a[..., :3] - np.array(color, dtype=int)).sum(-1)
+    mask = d <= thresh
+    m = Image.fromarray((mask * 255).astype(np.uint8), "L")
+    if feather > 0:
+        m = m.filter(ImageFilter.GaussianBlur(feather))
+    keep = 255 - np.asarray(m).astype(int)
+    out = a.copy()
+    out[..., 3] = np.minimum(out[..., 3], keep)
+    return Image.fromarray(out.astype(np.uint8), "RGBA"), float(mask.mean())
+
+
 def ingest(asset, profiles, check_only=False):
     key = asset["key"]
     prof = profiles[asset["class"]]
@@ -242,6 +272,22 @@ def ingest(asset, profiles, check_only=False):
                 f"cut through the alpha, so this occludes like a solid disc"
                 + (" — and punchHoles could not recover them either" if ph0 else ""))
 
+    # ── DID THE OPENINGS COME BACK AS KEY COLOUR? ───────────────────────────
+    # A `keyHoles` asset asks the generator to paint its openings flat magenta. Measured
+    # on arrival so a crater that came back painted as black rock, or as a glowing pool,
+    # is caught here rather than in the venue with a magma shape shining on nothing.
+    kh = asset.get("keyHoles")
+    if kh:
+        _, frac = key_holes(img, kh.get("color", [255, 0, 255]), kh.get("thresh", 120), 0)
+        floor = kh.get("min", 0.004)
+        if frac < floor:
+            notes.append(
+                f"NO KEYED OPENING: {frac:.2%} of the frame is the key colour, asked for at least "
+                f"{floor:.1%}. The crater or channel came back painted rather than keyed — the "
+                f"magma placed under this prop will have nothing to show through")
+        else:
+            print(f"    keyed openings: {frac:.2%} of the frame")
+
     for n in notes:
         print(f"    warn: {n}")
 
@@ -253,7 +299,11 @@ def ingest(asset, profiles, check_only=False):
     # Dividing by the profile master instead silently corrupts the anchor whenever
     # the delivered master is a different size (a 2048px file lands the anchor at 1.0).
     src_w = img.width
-    if img.size != (m, m):
+    if prof.get("wide"):
+        W, H = prof["wide"]
+        if img.size != (W, H):
+            img = img.resize((W, H), Image.LANCZOS)
+    elif img.size != (m, m):
         img = (wrap_resize(img, m) if prof.get("tileWorld")
                else img.resize((m, m), Image.LANCZOS))
 
@@ -265,9 +315,18 @@ def ingest(asset, profiles, check_only=False):
     if ph:
         img = punch_holes(img, ph.get("luma", 32), ph.get("open", 5), ph.get("feather", 1.0))
         print(f"    punched openings: luma<{ph.get('luma', 32)}, open {ph.get('open', 5)}px")
+    if kh:
+        img, frac = key_holes(img, kh.get("color", [255, 0, 255]), kh.get("thresh", 120),
+                              kh.get("feather", 1.0))
+        print(f"    keyed openings: {frac:.2%} of the frame opened to alpha")
 
     outdir = REPO / prof["out"]
     dest = paths.store(outdir, asset, PREFIXES)
+    if prof.get("flat"):
+        # Venue cards are loaded by the game as <out>/<key>.png and <out>/thumbs/<key>.png,
+        # not nested under a venue folder like props. Found Sep 2026 on the first card to go
+        # through ingest (otter): paths.rel() nested it as venues/otter/otter.png.
+        dest = outdir / (asset["key"] + ".png")
     shown = dest.relative_to(REPO)
 
     if prof["track"] == "element":
@@ -377,6 +436,21 @@ def ingest(asset, profiles, check_only=False):
             thumb.parent.mkdir(parents=True, exist_ok=True)
             out.resize((t, t), Image.LANCZOS).save(thumb)
             print(f"    -> {thumb.relative_to(REPO)}  ({t}px)")
+        if prof.get("jpeg"):
+            # What the PAGE loads. A 2528px opaque PNG is 5 MB; the same picture as a JPEG at
+            # this quality is under a tenth of that, and the hub is the first screen.
+            jpg = dest.with_suffix(".jpg")
+            out.convert("RGB").save(jpg, quality=int(prof["jpeg"]), optimize=True, progressive=True)
+            print(f"    -> {jpg.relative_to(REPO)}  (jpeg q{prof['jpeg']})")
+        if prof.get("thumbMid"):
+            # The tile's Retina/large size: a JPEG, since a card has no alpha and a 640px PNG
+            # of painted water runs ~500 KB where the JPEG is ~100. The picker, route strip
+            # and series draw pick it through srcset (screens.js venueThumb) when a tile is
+            # drawn wider than the 256 thumb can fill sharply.
+            m = prof["thumbMid"]
+            mid = dest.parent / "thumbs" / f"{dest.stem}-{m}.jpg"
+            out.convert("RGB").resize((m, m), Image.LANCZOS).save(mid, quality=86, optimize=True, progressive=True)
+            print(f"    -> {mid.relative_to(REPO)}  ({m}px jpeg)")
 
     asset["status"] = "art"
     return asset

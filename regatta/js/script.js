@@ -756,7 +756,9 @@ function draw() {
     // overlay sits ABOVE those layers (z-65), so a chip there would float over the page.
     const boardUp = typeof UI !== 'undefined'
         && ((UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden'))
-            || (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden')));
+            || (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden'))
+            // the clubhouse hub, a cup or series picker, the standings (Sep 2026)
+            || (typeof clubhouseUp === 'function' && clubhouseUp()));
     if (state.race.status !== 'finished' && !state.paused && !boardUp) {
         const m = 40, hw = Math.max(10, canvas.width/2-m), hh = Math.max(10, canvas.height/2-m);
         const rot = -state.camera.rotation;
@@ -1285,6 +1287,13 @@ function resetGame() {
     const available = AI_CONFIG.filter(c => c.name !== settings.character);
     if (school) {
         opponents.push(...School.classmateConfigs());   // three classmates, no rng
+    } else if (window.Series && Series.active && Series.active.fleet) {
+        // A cup or series races the SAME fleet every time: the nine drawn for race one,
+        // pinned at its start (Series.lockFleet). Cast, not drawn — like the classmates.
+        for (const n of Series.active.fleet) {
+            const c = AI_CONFIG.find(a => a.name === n);
+            if (c && c.name !== settings.character) opponents.push(c);
+        }
     } else for (let i = 0; i < fleetOpponents() && available.length > 0; i++) {
         const idx = Math.floor(Math.random() * available.length);
         opponents.push(available[idx]);
@@ -1373,7 +1382,8 @@ function fleetOpponents() {
     return (n >= 2 && n <= 10) ? Math.round(n) - 1 : 9;
 }
 
-function restartRace() { resetGame(); togglePause(false); }
+// Back to the clubhouse — the hub with its four doors, not the race board (Sep 2026).
+function restartRace() { resetGame(); togglePause(false); if (typeof showClubhouse === 'function') showClubhouse(); }
 
 // Same venue, same fleet, straight back onto the water — the results page's primary
 // action, since without a series there is no "next race" to send anyone to. It goes
@@ -1382,6 +1392,7 @@ function restartRace() { resetGame(); togglePause(false); }
 function rematchRace() { resetGame(); togglePause(false); startRace(); }
 
 resetGame();
+if (typeof showClubhouse === 'function') showClubhouse();   // the hub is the first screen
 requestAnimationFrame(loop);
 
 // Water Debug Logic

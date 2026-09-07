@@ -30,6 +30,13 @@ window.addEventListener('keydown', (e) => {
         if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
         else if (e.key === 'Escape' && settingsOpen) toggleSettings(false);
         else if (e.key === 'Escape' && recordsOpen) closeRecordsOverlay();
+        else if (e.key === 'Escape') {
+            // ESC is "back" through the clubhouse screens (Sep 2026). The character picker
+            // closes itself on ESC (its own listener); an open abandon confirm is "keep".
+            if (UI.characterPicker && !UI.characterPicker.classList.contains('hidden')) return;
+            if (UI.abandonScreen && !UI.abandonScreen.classList.contains('hidden')) { toggleAbandon(false); togglePause(false); return; }
+            if (typeof clubhouseBack === 'function' && clubhouseBack()) e.preventDefault();
+        }
         return;
     }
 

@@ -59,6 +59,7 @@ water/swell/seafx/icefx/traffic/planner/sailcheck/rules):
 | `js/game/core.js` | CONFIG, fonts, RNG streams (`mulberry32`, visuals-only `fxRand`/`snowRand`), mask geometry, angle/segment math, time formatting, `GameEvents` (the internal pub/sub bus) | shared (rarely changes) |
 | `js/game/state.js` | `state` (the master object), `settings` + defaults, venue table/palette, `class Boat`, the player-controls seam (`sampleKeyControls`/`NO_CONTROLS`) | shared |
 | `js/game/audio.js` | `MUSIC_TRACKS`, `Sound` | audio |
+| `js/game/series.js` | `CUPS`, `Series` — a cup or series is a race list plus a scoring rule (10..1, DNF 0, pure sums, last-race tie-break), the fleet lock, the trophy shelf (`regatta_trophies`). In memory only; a reload forfeits | clubhouse/UI |
 | `js/sim/wind.js` | base wind, gusts, island shadows, oscillation, pressure, squalls, `getWindAt`, turbulence, streak/comet layer, gust tone. Sim + its viz deliberately together (highest co-change pair in history, lift 5.8) | physics/world |
 | `js/sim/water.js` | current field (`getCurrentAt`), rapids, wind waves, surf | physics/world |
 | `js/sim/ice.js` | floes, bot occupancy grid, floe hull queries | physics/world |

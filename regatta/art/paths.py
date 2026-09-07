@@ -29,6 +29,14 @@ def venue_prefixes(assets):
             groups.setdefault(v, []).append(a["key"])
     out = {}
     for v, keys in groups.items():
+        # THE VENUE CARD IS NOT A PREFIX VOTE. Cards ingested since Sep 2026 carry `venue`
+        # and are keyed by the bare venue name (`volcanic`, `otter`, `flats`), and a bare
+        # key has no prefix to share — so it used to break unanimity and every OTHER asset
+        # of that venue shipped under its full key: volcanic-basalt landed as
+        # terrain/volcanic/volcanic-basalt.png where river-cobble lands as river/cobble.png.
+        # The card itself is unaffected either way: its name never starts with `<v>-`, and
+        # the illustration profile stores it flat regardless.
+        keys = [k for k in keys if k != v]
         heads = {k.split("-", 1)[0] for k in keys if "-" in k}
         # Only strip when it is unanimous; a mixed venue keeps full keys.
         out[v] = heads.pop() if len(heads) == 1 and all("-" in k for k in keys) else None

@@ -1261,6 +1261,84 @@ const ISLAND_STYLES = {
     // alluvium ARE the canyon wall broken up. Neither draws on this doc venue anyway.
     slickrock:  { body: '#e6ca9b', stroke: '#AF9A76', veg: '#F2DAAE', rock: '#AA936C', trees: false },  // body = redrock-slickrock DELIVERED tile mean
     desertsand: { body: '#dd9b67', stroke: '#9F6F4A', veg: '#EEBB8A', rock: '#7c4a2d', trees: false },  // body = redrock-desertsand DELIVERED tile mean
+    // ── EMBERFALL ISLE'S FOUR GROUNDS, 2026-09-04 ───────────────────────────
+    // Declared with the art still at `slot`, the Sockeye Run path, and delivered the same
+    // day — see the delivery paragraph below the argument. Lava has no tile; drawLava
+    // paints it.
+    //
+    // ⚠️ EVERY `body` BELOW IS PROVISIONAL AND MUST BE RESET TO ITS TILE'S DELIVERED MEAN
+    // on ingest, the step every ground since the cove has gone through; the LAND_TEXTURES
+    // alpha is a pure contrast knob only while body equals the tile's own mean.
+    //
+    // ⚠️ THIS SET SITS UNDER THE LIBRARY'S SEPARATION BAR ON PURPOSE, AND THE DESIGN IS
+    // WHY. Every ground since the cove clears dE 23 from its own water and from its
+    // in-venue neighbours. These cannot: the venue's premise is black rock on black
+    // water, and three nearly-black materials beside a #123338 sea (L* 19) have nowhere
+    // in CIE space to go. Measured (review.py's CIE76): basalt 10.6 from the base water,
+    // cinder 19.4, black sand 13.7, lava crust 19.9; in-venue pairs 9-14. What separates
+    // them instead is arranged deliberately, on four axes:
+    //     VALUE    a ladder AROUND the water rather than above it — basalt and cinder
+    //              +6 luma over the base band, black sand -11 UNDER it, lava crust -13.
+    //              The shore is where two of these meet the sea, and there the sand's
+    //              darkness against the water is the read: the owner's spec is "velvety
+    //              dark shapes against the blue water".
+    //     HUE      basalt cool blue-charcoal (b* -5), cinder warm rust-purple (a* +7),
+    //              sand dead neutral (C 1.5), lava crust warm. Against a teal water the
+    //              neutral and the warm both separate by chroma where value cannot.
+    //     TEXTURE  plates, grain, velvet, glowing seams — the tiles carry most of the
+    //              distinction, which is why their subjects are specced on STRUCTURE
+    //              and hold each material inside a stated value range.
+    //     EDGE     the venue's ember `shorelineColor` (#b4491c), the surf, and lava's
+    //              own front glow say "land here" the way the card does.
+    // ⚠️ THE KARST LESSON APPLIES IF THE ROCK VANISHES IN PLAY: a hazard darker than the
+    // water is a hazard nobody sees. If basalt dissolves into the sea at race scale, the
+    // lever is VALUE — hold the body a few L* higher — not saturation, and not the tile.
+    // The chart already makes that call: all four take explicit MINIMAP_ISLAND rows held
+    // well above the water, because a flat 0.9 wash of #123338 has no texture to help.
+    //
+    // Nearest cross-venue neighbours, picker-only per coastalrock's two-tier rule: basalt
+    // 16.4 from `granite`, cinder 12.7 from `humus`, black sand 16.3 from `humus`.
+    //
+    // Strokes: the coastalrock ~18 L* drop cannot apply at these bodies (it lands under
+    // L* 2, which is black), so each takes what is left — 12.1, 8.8 and 5.9 — the jungle
+    // precedent. veg and rock are lighter and darker dabs of the same material, the
+    // granite/redrock convention for grounds with nothing growing on them; nothing on a
+    // doc venue draws them anyway.
+    //
+    // DELIVERED AND INGESTED 2026-09-04, the same day: every body below is its DELIVERED
+    // tile's own mean, so the LAND_TEXTURES alphas are pure contrast knobs. The masters
+    // landed close to spec — basalt #30333A against #2C3038 (dE 1.7, a hair lighter and
+    // still cool at b* -4.9), cinder #3A2B29 against #3A2B2C (dE 2.0, and warmer still
+    // at a* +6.6 b* +4.0), black sand #212121 against #1E1F21 (dE 1.8, dead neutral at
+    // chroma 0) — so the ladder above holds as designed: basalt and cinder +9 and +6
+    // luma over the base water, sand -9 under it. Delivered separations: basalt-cinder
+    // 10.9, basalt-sand 9.8, cinder-sand 10.0; from the base water 11.0 / 19.9 / 13.8.
+    // stroke, veg and rock carry the spec's per-channel offsets onto the delivered
+    // bodies, the bayou-mud precedent.
+    //
+    // ⚠️ THE WATER MOVED UNDER THIS SET THE SAME AFTERNOON. Every number above was
+    // measured against the black-teal #123338 the venue shipped with; the owner then
+    // re-palletted the water to navy #0a182f (L* 8.3, luma 22) from the editor. Against
+    // that the three grounds separate BETTER — basalt dE 18.1 at +28 luma, cinder 24.0
+    // at +25, black sand 18.1 at +11 — but the ladder is no longer AROUND the water: all
+    // three now sit above it, and the black sand's "darker than the sea" read is gone.
+    // Left as delivered, deliberately: the palette is the owner's call and the sand is
+    // the delivered tile's mean. If the beach should read below the water again, the
+    // lever is the water (a lighter shallow band at the shore) before it is the sand.
+    basalt:    { body: '#30333A', stroke: '#191A1D', veg: '#41454D', rock: '#4E535C', trees: false },  // body = volcanic-basalt DELIVERED tile mean
+    cinder:    { body: '#3A2B29', stroke: '#241A18', veg: '#4A3231', rock: '#5A3A2F', trees: false },  // body = volcanic-cinder DELIVERED tile mean
+    blacksand: { body: '#212121', stroke: '#151514', veg: '#292A2B', rock: '#1A1A1A', trees: false },  // body = volcanic-blacksand DELIVERED tile mean
+    // Lava's body is the CRUST — the cooled plates drawLava lays over the bed — and its
+    // stroke is the EMBER, because on this one kind the coastline is the hottest thing in
+    // the picture, not the darkest: the flow front is where the sea boils. drawLava reads
+    // both (see LAVA_STYLE for the bed, core and rim it adds); nothing draws this row
+    // flat, since the kind never reaches the flat-fill path.
+    lava:      { body: '#241A18', stroke: '#FF6A2A', veg: '#2C201C', rock: '#1A1210', trees: false },
+    // Active lava. Body is the volcanic-lava-bed tile's DELIVERED mean — the material you
+    // see IS the bed here, so the coralsand rule applies to it directly — and the stroke is
+    // the tile's hottest tongue tone: a lake's edge is brighter than a tongue's front.
+    // drawMagma paints it; nothing draws this row flat.
+    magma:     { body: '#EC6F09', stroke: '#FFC24A', veg: '#F58A1E', rock: '#8A1E06', trees: false },  // body = volcanic-lava-bed DELIVERED tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
     // tracer pick below) because it is broken rock, not a rounded sandbank.
     granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false },
@@ -2836,8 +2914,14 @@ function bakeIslandSprite(isl) {
     // `tropicshoal` stay rounded, which is what makes the rim legible.
     //
     // `coastalscrub`, `tropicscrub` and every other sward stay rounded too — a sward drapes.
+    //
+    // Basalt joins them: a fresh flow is plates and fracture, the most geometric rock in
+    // the game, and a rounded tracer would draw it as a black sandbank. (Cinder and black
+    // sand stay rounded — a cone drapes and a beach shelves.) Doc venues draw their land
+    // as direct paths and never reach this tracer; the row is here so a procedural mass
+    // of it would be right.
     const trace = (isl.style === 'ice' || isl.style === 'granite' || isl.style === 'karst'
-                   || isl.style === 'coralrock')
+                   || isl.style === 'coralrock' || isl.style === 'basalt')
         ? traceAngularPoly : traceRoundedPoly;
 
     let maxR = isl.radius;
@@ -2996,6 +3080,638 @@ function bakeIslandSprite(isl) {
     isl._sprite = { canvas: c, r: spriteR, baked: palmImg.complete && palmImg.naturalWidth > 0 };
 }
 
+// ── LAVA: THE ONE GROUND THAT MOVES ─────────────────────────────────────────
+//
+// A lava tongue is three pictures stacked: an incandescent BED, a CRUST of cooled plates
+// riding on it with the seams between them open, and a FRONT where the flow meets the
+// sea. The bed and the front are what move — the bed DRIFTS (a world-nailed pattern whose
+// transform walks a few units a second, so the flow visibly runs under the plates) and
+// both breathe on three incommensurable rates, the fire prop's trick, phased from the
+// shape's position so two tongues never pulse in step — and the crust is what stays still.
+// So crust, cooling and front are each baked ONCE per shape (from its own seeded PRNG,
+// never Math.random: render must not touch the eval RNG stream, and a crust that
+// re-cracked itself every reload would read as a bug), and a frame costs a pattern fill,
+// a dim fill and four drawImages under one clip.
+//
+// THE CRUST IS THE BASALT TILE WITH ITS JOINTS OPENED. A flow cools into the field around
+// it, so the plates on a tongue are the plates on the island: the crust is
+// LAND_TEXTURES.basalt's own image, warmed and darkened by a multiply tint, and made
+// TRANSPARENT wherever the basalt is dark — the joints between its plates. That keying is
+// done without reading a pixel (see lavaLumaAlphaFilter for why): the tile's luma is
+// pushed through brightness() and contrast() so the joints snap to black and the plates to
+// white, an SVG luminanceToAlpha turns that into alpha, and destination-in cuts the crust
+// with it. The seams WIDEN toward the coast because the mask is multiplied darker over the
+// last `front` units before the threshold, so plates near the sea fall under it and open —
+// the physics: the interior is old crust nearly closed, the front is fresh and broken.
+//
+// Procedural fallback: a jittered grid of irregular plates with the seams stroked out by
+// destination-out, and a flat ember bed. It is what draws until the two tiles load, and
+// what draws forever if url() canvas filters are unsupported.
+//
+// `isl.heat` (undefined = 1) scales every glow — the hook the eruption cycle will drive.
+const LAVA_STYLE = {
+    bed:    '255,84,20',        // fallback bed, seen through the seams
+    core:   '255,214,128',      // hotspots — seams running near-white
+    rim:    '255,128,48',       // the front, spilling its light onto the water
+    floor:  '#4A1606',          // fallback seam floor: dim ember, and OPAQUE
+    plates: ['#241A18', '#2A1E1B', '#1F1614', '#2F221E'],   // fallback crust, four tones round ISLAND_STYLES.lava.body
+    spacing: 30,                // world units between fallback plate centres — a 3 m plate
+    gapMid: 1.5, gapEdge: 4.5,  // fallback seam width in units, interior -> front
+    front: 70,                  // how far in from the coast the crust reads as fresh
+    hotEvery: 9,                // one hotspot per this many fresh plates
+    // The keyed crust. `tint` multiplies the basalt (48,51,58) to (41,32,29) — the crust
+    // plate tone. `joint` is the basalt luma AT TILE SCALE that separates seam from plate
+    // (measured: joints p1-p5 23-30, plates p20-p70 49-52), `ramp` the contrast() factor —
+    // about nine luma of soft edge, so a plate hovering at the threshold thins to a glowing
+    // skin rather than flickering. `coastDark`^`coastSteps` is the multiply at the coast:
+    // 0.95^6 = 0.735 takes a 50 plate to 37, just over the threshold, so the front opens.
+    tint: 'rgb(217,158,128)', joint: 36, ramp: 8, coastDark: 0.05, coastSteps: 6,
+    drift: 4                    // bed drift, world units per REAL second (see lavaClock)
+};
+
+// ⚠️ state.time RUNS AT WORLD_CLOCK (0.24) OF REAL TIME — ice.js says it: "it exists to
+// phase animations, not to measure them". A rate written as units per second of
+// state.time is therefore units per four real seconds, which is how the first magma
+// shipped drifting at a pixel a second and read as a still. Pulses stay on state.time,
+// the fire prop's convention; anything that has to MOVE a distance is timed on this.
+function lavaClock() { return state.time / WORLD_CLOCK; }
+
+function lavaOutlinePath(g, isl) {
+    g.beginPath();
+    g.moveTo(isl.vertices[0].x, isl.vertices[0].y);
+    for (let i = 1; i < isl.vertices.length; i++) g.lineTo(isl.vertices[i].x, isl.vertices[i].y);
+    g.closePath();
+    for (const h of (isl.holes || [])) {
+        if (!h || h.length < 3) continue;
+        g.moveTo(h[0].x, h[0].y);
+        for (let i = 1; i < h.length; i++) g.lineTo(h[i].x, h[i].y);
+        g.closePath();
+    }
+}
+
+function bakeLavaSprites(isl) {
+    const R = isl.radius + 24;
+    const scale = Math.min(1, 900 / R);          // bakeIslandSprite's cap
+    const size = Math.max(8, Math.ceil(R * 2 * scale));
+    const mk = () => {
+        const c = document.createElement('canvas');
+        c.width = c.height = size;
+        const g = c.getContext('2d');
+        g.scale(scale, scale);
+        g.translate(R - isl.x, R - isl.y);       // world coords -> sprite space
+        return { c, g };
+    };
+    // Seeded from the shape's id — the bakeVegSprite recipe.
+    let seed = 2166136261;
+    for (const ch of String(isl.id || 'lava')) seed = ((seed ^ ch.charCodeAt(0)) * 16777619) >>> 0;
+    const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+
+    const rings = [isl.vertices].concat((isl.holes || []).filter(h => h && h.length >= 3));
+    const outline = (g) => lavaOutlinePath(g, isl);
+    const inside = (x, y) => {
+        if (!pointInVerts(x, y, isl.vertices)) return false;
+        for (let k = 1; k < rings.length; k++) if (pointInVerts(x, y, rings[k])) return false;
+        return true;
+    };
+    const edgeDist = (x, y) => {
+        let d2 = Infinity;
+        for (const ring of rings) {
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                const x1 = ring[j].x, y1 = ring[j].y, x2 = ring[i].x, y2 = ring[i].y;
+                const dx = x2 - x1, dy = y2 - y1;
+                const L2 = dx * dx + dy * dy || 1;
+                const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
+                const px = x1 + t * dx - x, py = y1 + t * dy - y;
+                const dd = px * px + py * py;
+                if (dd < d2) d2 = dd;
+            }
+        }
+        return Math.sqrt(d2);
+    };
+    const poly = (g, pts) => {
+        g.beginPath();
+        g.moveTo(pts[0].x, pts[0].y);
+        for (let k = 1; k < pts.length; k++) g.lineTo(pts[k].x, pts[k].y);
+        g.closePath();
+    };
+    const box = (g) => g.fillRect(isl.x - R, isl.y - R, R * 2, R * 2);
+
+    // The plate grid: the fallback crust is built from it, and the cooling blobs and
+    // hotspots are placed on it either way.
+    const S = LAVA_STYLE.spacing;
+    const plates = [];
+    for (let gy = isl.y - R; gy < isl.y + R; gy += S) {
+        for (let gx = isl.x - R; gx < isl.x + R; gx += S) {
+            const x = gx + (rand() - 0.5) * S * 0.6, y = gy + (rand() - 0.5) * S * 0.6;
+            const on = inside(x, y);
+            const ed = edgeDist(x, y);
+            if (!on && ed > S * 0.7) continue;
+            const n = 5 + Math.floor(rand() * 3);
+            const rot = rand() * Math.PI * 2;
+            const r = S * (0.78 + rand() * 0.2);
+            const pts = [];
+            for (let k = 0; k < n; k++) {
+                const a = rot + (k / n) * Math.PI * 2 + (rand() - 0.5) * 0.5;
+                const rr = r * (0.8 + rand() * 0.4);
+                pts.push({ x: x + Math.cos(a) * rr, y: y + Math.sin(a) * rr });
+            }
+            // 0 deep inside the flow, 1 at the coast.
+            const fresh = on ? 1 - Math.min(1, ed / LAVA_STYLE.front) : 1;
+            plates.push({ x, y, pts, fresh,
+                          tone: LAVA_STYLE.plates[Math.floor(rand() * LAVA_STYLE.plates.length)] });
+        }
+    }
+
+    const bedTile = lavaBedTile();
+    const rockTile = lavaBasaltTile();
+    const lumaFilter = rockTile ? lavaLumaAlphaFilter() : null;
+
+    // ── THE CRUST ───────────────────────────────────────────────────────────
+    const crust = mk();
+    let keyed = false;
+    if (rockTile && lumaFilter) {
+        const g = crust.g;
+        // The plates: the basalt itself, warmed and darkened.
+        g.save();
+        outline(g); g.clip('evenodd');
+        g.fillStyle = g.createPattern(rockTile, 'repeat'); box(g);
+        g.globalCompositeOperation = 'multiply';
+        g.fillStyle = LAVA_STYLE.tint; box(g);
+        g.restore();
+        // Mask 1: the same basalt, multiplied darker toward the coast so the threshold
+        // below opens more of it there. Six strokes of widening half-width, each 5% dark.
+        const m1 = mk();
+        {
+            const q = m1.g;
+            q.save();
+            outline(q); q.clip('evenodd');
+            q.fillStyle = q.createPattern(rockTile, 'repeat'); box(q);
+            q.globalCompositeOperation = 'multiply';
+            q.strokeStyle = `rgba(0,0,0,${LAVA_STYLE.coastDark})`;
+            q.lineJoin = 'round';
+            for (let k = 1; k <= LAVA_STYLE.coastSteps; k++) {
+                q.lineWidth = 2 * LAVA_STYLE.front * k / LAVA_STYLE.coastSteps;
+                outline(q); q.stroke();
+            }
+            q.restore();
+        }
+        // Mask 2: the threshold. brightness() lifts `joint` to mid-grey, contrast() snaps
+        // around it — joints to black, plates to white, a soft ramp between.
+        const m2 = mk();
+        m2.g.setTransform(1, 0, 0, 1, 0, 0);
+        m2.g.filter = `brightness(${(127.5 / LAVA_STYLE.joint).toFixed(3)}) contrast(${LAVA_STYLE.ramp})`;
+        m2.g.drawImage(m1.c, 0, 0);
+        // Mask 3: luma -> alpha, and the cut.
+        const m3 = mk();
+        m3.g.setTransform(1, 0, 0, 1, 0, 0);
+        m3.g.filter = lumaFilter;
+        m3.g.drawImage(m2.c, 0, 0);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.globalCompositeOperation = 'destination-in';
+        g.drawImage(m3.c, 0, 0);
+        g.globalCompositeOperation = 'source-over';
+        keyed = true;
+    }
+    if (!keyed) {
+        const g = crust.g;
+        g.save();
+        outline(g); g.clip('evenodd');
+        for (const p of plates) { g.fillStyle = p.tone; poly(g, p.pts); g.fill(); }
+        g.globalCompositeOperation = 'destination-out';
+        g.lineJoin = 'round';
+        for (const p of plates) {
+            g.lineWidth = LAVA_STYLE.gapMid + (LAVA_STYLE.gapEdge - LAVA_STYLE.gapMid) * p.fresh;
+            poly(g, p.pts); g.stroke();
+        }
+        g.restore();
+    }
+
+    // ── THE BED ─────────────────────────────────────────────────────────────
+    // Cooled toward the interior by a soft dark blob over every old plate — so the seams
+    // deep in the tongue glow dull and the ones at the front glow bright — with a scatter
+    // of near-white hotspots along the fresh end. With the bed tile in hand these are two
+    // overlays the tile is drawn under; without it the cooling sits on a flat ember fill.
+    const cool = mk(), hot = mk();
+    {
+        const g = cool.g;
+        g.save();
+        outline(g); g.clip('evenodd');
+        if (!bedTile) { g.fillStyle = `rgba(${LAVA_STYLE.bed},1)`; outline(g); g.fill('evenodd'); }
+        for (const p of plates) {
+            const c = (1 - p.fresh) * 0.85;
+            if (c < 0.05) continue;
+            const r = S * 0.9;
+            const grad = g.createRadialGradient(p.x, p.y, 0, p.x, p.y, r);
+            grad.addColorStop(0, `rgba(40,8,2,${c})`);
+            grad.addColorStop(1, 'rgba(40,8,2,0)');
+            g.fillStyle = grad;
+            g.fillRect(p.x - r, p.y - r, r * 2, r * 2);
+        }
+        g.restore();
+        const h = hot.g;
+        h.save();
+        outline(h); h.clip('evenodd');
+        h.globalCompositeOperation = 'lighter';
+        let k = 0;
+        for (const p of plates) {
+            if (p.fresh < 0.5 || (k++ % LAVA_STYLE.hotEvery) !== 0) continue;
+            const r = S * (0.5 + rand() * 0.4);
+            h.globalAlpha = 0.45 + p.fresh * 0.35;
+            h.drawImage(glowSprite(LAVA_STYLE.core), p.x - r, p.y - r, r * 2, r * 2);
+        }
+        h.restore();
+    }
+
+    // ── THE FRONT ───────────────────────────────────────────────────────────
+    // The coastline stroked wide and soft, NOT clipped: half of it lies on the water,
+    // which is the point — a flow entering the sea lights the sea. shadowBlur is in
+    // device px and ignores the transform, hence the scale.
+    const rim = mk();
+    {
+        const g = rim.g;
+        g.save();
+        g.strokeStyle = `rgba(${LAVA_STYLE.rim},0.9)`;
+        g.lineWidth = 14;
+        g.lineJoin = 'round';
+        g.shadowColor = `rgba(${LAVA_STYLE.rim},1)`;
+        g.shadowBlur = 22 * scale;
+        outline(g); g.stroke();
+        g.restore();
+    }
+
+    const da = rand() * Math.PI * 2;
+    isl._lava = {
+        crust: crust.c, cool: cool.c, hot: hot.c, rim: rim.c, r: R,
+        ph: isl.x * 0.0131 + isl.y * 0.0217,
+        tile: bedTile, pattern: null, dir: { x: Math.cos(da), y: Math.sin(da) },
+        // Rebaked once both images have landed; a missing url() filter is permanent and
+        // the procedural crust is the answer to it, not a rebake every frame.
+        provisional: !(bedTile && rockTile)
+    };
+}
+
+function drawLava(ctx, isl) {
+    if (!isl._lava || (isl._lava.provisional && lavaBedTile() && lavaBasaltTile())) bakeLavaSprites(isl);
+    const s = isl._lava, t = state.time, ph = s.ph;
+    const heat = isl.heat == null ? 1 : Math.max(0, Math.min(1, isl.heat));
+    // Three rates that never obviously repeat — the fire prop's argument, at a lava pace.
+    const f = 0.66 + 0.12 * Math.sin(t * 0.70 + ph) + 0.06 * Math.sin(t * 1.90 + ph * 1.7)
+            + 0.04 * Math.sin(t * 4.30 + ph * 0.4);
+    const x = isl.x - s.r, y = isl.y - s.r, d = s.r * 2;
+
+    ctx.save();
+    lavaOutlinePath(ctx, isl);
+    ctx.clip('evenodd');
+    if (s.tile) {
+        // The bed: the tile, world-nailed, walking `drift` units a second. Pattern space is
+        // user space at fill time, so the translate is in world units and the camera never
+        // moves it.
+        if (!s.pattern) s.pattern = ctx.createPattern(s.tile, 'repeat');
+        const k = lavaClock() * LAVA_STYLE.drift;
+        s.pattern.setTransform(new DOMMatrix([1, 0, 0, 1, k * s.dir.x, k * s.dir.y]));
+        ctx.fillStyle = s.pattern;
+        ctx.fillRect(x, y, d, d);
+        ctx.drawImage(s.cool, x, y, d, d);
+        // The breath: a dim laid over the bed, deepest when the pulse is low or the heat is.
+        ctx.fillStyle = `rgba(30,6,2,${((1 - heat * f) * 0.85).toFixed(3)})`;
+        ctx.fillRect(x, y, d, d);
+    } else {
+        // Fallback: an opaque seam floor so no seam ever shows the water lattice, and the
+        // flat ember bed additively at the moment's heat.
+        ctx.fillStyle = LAVA_STYLE.floor;
+        ctx.fillRect(x, y, d, d);
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.globalAlpha = heat * f;
+        ctx.drawImage(s.cool, x, y, d, d);
+    }
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = heat * f;
+    ctx.drawImage(s.hot, x, y, d, d);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.globalAlpha = 1;
+    ctx.drawImage(s.crust, x, y, d, d);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = heat * (0.45 + 0.25 * Math.sin(t * 1.10 + ph + 1.3)) * f;
+    ctx.drawImage(s.rim, x, y, d, d);
+    ctx.restore();
+}
+
+// ── MAGMA: THE GROUND THAT BOILS ────────────────────────────────────────────
+//
+// Active lava — a lake, a live channel — is the bed with no crust to speak of, and what
+// makes it read as ACTIVE is motion that starts and ends, which a tile cannot carry. So
+// the lake is the same bed tile the tongue uses, and everything else is time.
+//
+// ⚠️ REWORKED AGAINST THE OWNER'S REFERENCES (2026-09-04), and what they corrected is
+// worth keeping. The first cut screen-blended two bed layers, floated grey basalt rafts
+// on the result and drew bubbles as domes and rings: it came out a uniform yellow with
+// grey chips and cartoon circles on it. An aerial lava lake is DEEP RED-ORANGE, its skin
+// is DARK RED-BROWN (never grey — that is cold rock), its heat is a CORE that brightens in
+// broad patches where the lake upwells, its margins are cooler and darker with a hot lip
+// right at the edge, and nothing on it is a ring. Gas escapes as a brief flare and a few
+// flung spatters. So:
+//
+//   TWO BED LAYERS   the tile drifting one way at full strength and a second copy drifting
+//                    another way, slowly turning, MULTIPLIED in at half strength. Multiply
+//                    is the point: where the two skins cross the surface goes dark red,
+//                    where two tears cross it stays yellow, and the pattern of both moves
+//                    — evolving dark skin with bright cracks between, the reference's
+//                    coal-bed read, rather than a brighter texture sliding.
+//   SKIN             the basalt tile keyed at a high threshold, tinted DARK RED-BROWN, and
+//                    drawn as a pattern riding the first bed layer: cooled skin that moves
+//                    with the lake it floats on. One global tile, one fill.
+//   UPWELLINGS       a few large soft glows per lake, breathing on their own slow periods
+//                    and wandering a little — the hot core. They brighten the skin they
+//                    cross, which is what skin over an upwelling looks like.
+//   MARGINS          baked: the lake multiplied darker over its last `margin` units, so the
+//                    edge reads as the cooler crust it is, and the FRONT — a bright lip on
+//                    the outline, unclipped, lighting the rock and water beside it.
+//   FLARES           gas bursts as pure functions of time — a seeded point, period and
+//                    phase each; for the first fifth of its cycle a flare swells and fades
+//                    while three or four spatters fly out on deterministic paths, and for
+//                    the rest of it nothing is drawn. No particle state, no runtime RNG.
+//
+// `isl.heat` dims everything as it does for lava; `isl.activity` (undefined = 1) scales
+// the drift, the upwellings' breathing and the flaring — the eruption cycle's second hook.
+const MAGMA_STYLE = {
+    // ⚠️ EVERY RATE HERE IS PER REAL SECOND (lavaClock), scaled by isl.activity.
+    drift: 16,                  // first bed layer, world units per second
+    spin: 0.045,                // ...and it turns, radians per second, about the shape's centre
+    drift2: 11,                 // second layer, multiplied in: drifts the other way and
+    spin2: -0.07,               // turns the other way about an OFFSET centre, so the two
+    off2: 0.45,                 // (offset as a fraction of the radius) never share a fixed point,
+    breathe2: 0.06, breatheHz: 0.09,   // and swells and shrinks a little
+    layer2Alpha: 0.55,
+    // The skin: the bed tile's OWN dark swirls, cut out and painted dark red-brown, on a
+    // third transform — it slides over the bed beneath it and turns about a third centre.
+    // Not the basalt: keyed plates are a fixed crazy paving however they are moved, and a
+    // lake's skin is ropy and always re-forming. skinLuma is the bed luma below which a
+    // pixel is skin (~20% of the tile); skinRamp the contrast() factor.
+    skinLuma: 95, skinRamp: 8, skinBase: '#5E1A0C', skinGrain: 0.25,
+    skinDrift: 22, skinSpin: 0.035, skinOff: 0.4,
+    wellPer: 55000,             // one upwelling per this many square units, clamped
+    wellMin: 2, wellMax: 8,
+    wellR: [0.30, 0.52],        // of the shape's radius
+    wellPeriod: [4, 8],         // seconds, the breathing
+    wellOrbit: 0.35,            // of its own radius — it wanders, on a slower loop:
+    wellOrbitPeriod: [11, 19],
+    well: '255,168,56',         // the hot core
+    wellCore: '255,232,150',    // its centre
+    flarePer: 4200,             // one flare per this many square units, clamped
+    flareMin: 4, flareMax: 60,
+    flareR: [10, 24],           // world units
+    flarePeriod: [2.5, 6],      // seconds; a flare is live for the first fifth of its cycle
+    edge: 18,
+    flash: '255,236,180',
+    margin: 48,                 // the cooler crust round the edge, world units
+    marginDark: 0.12, marginSteps: 6,   // (1-0.12)^6 = 0.46 at the very edge
+    rim: '255,176,72'           // the lip, and the light it throws
+};
+
+let _magmaSkinTile;
+function magmaSkinTile() {
+    if (_magmaSkinTile !== undefined) return _magmaSkinTile;
+    const bed = lavaBedTile(), lumaFilter = bed ? lavaLumaAlphaFilter() : null;
+    if (!bed) return null;                        // not yet — try again next frame
+    if (!lumaFilter) { _magmaSkinTile = null; return null; }
+    const T = bed.width;
+    const mk = () => { const c = document.createElement('canvas'); c.width = c.height = T; return c; };
+    const tile = mk(), g = tile.getContext('2d');
+    g.fillStyle = MAGMA_STYLE.skinBase; g.fillRect(0, 0, T, T);
+    g.globalCompositeOperation = 'multiply';
+    g.globalAlpha = MAGMA_STYLE.skinGrain;
+    g.drawImage(bed, 0, 0);
+    g.globalAlpha = 1;
+    g.globalCompositeOperation = 'source-over';
+    // invert() first, so the DARK swirls are what comes out white and becomes alpha.
+    const m2 = mk(), q2 = m2.getContext('2d');
+    q2.filter = `invert(1) brightness(${(127.5 / (255 - MAGMA_STYLE.skinLuma)).toFixed(3)}) contrast(${MAGMA_STYLE.skinRamp})`;
+    q2.drawImage(bed, 0, 0);
+    const m3 = mk(), q3 = m3.getContext('2d');
+    q3.filter = lumaFilter;
+    q3.drawImage(m2, 0, 0);
+    g.globalCompositeOperation = 'destination-in';
+    g.drawImage(m3, 0, 0);
+    _magmaSkinTile = tile;
+    return tile;
+}
+
+function bakeMagmaSprites(isl) {
+    const R = isl.radius + 30;
+    const scale = Math.min(1, 900 / R);
+    const size = Math.max(8, Math.ceil(R * 2 * scale));
+    const mk = () => {
+        const c = document.createElement('canvas');
+        c.width = c.height = size;
+        const g = c.getContext('2d');
+        g.scale(scale, scale);
+        g.translate(R - isl.x, R - isl.y);
+        return { c, g };
+    };
+    let seed = 2166136261;
+    for (const ch of String(isl.id || 'magma')) seed = ((seed ^ ch.charCodeAt(0)) * 16777619) >>> 0;
+    const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const rings = [isl.vertices].concat((isl.holes || []).filter(h => h && h.length >= 3));
+    const inside = (x, y) => {
+        if (!pointInVerts(x, y, isl.vertices)) return false;
+        for (let k = 1; k < rings.length; k++) if (pointInVerts(x, y, rings[k])) return false;
+        return true;
+    };
+    const edgeDist = (x, y) => {
+        let d2 = Infinity;
+        for (const ring of rings) {
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                const x1 = ring[j].x, y1 = ring[j].y, x2 = ring[i].x, y2 = ring[i].y;
+                const dx = x2 - x1, dy = y2 - y1;
+                const L2 = dx * dx + dy * dy || 1;
+                const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
+                const px = x1 + t * dx - x, py = y1 + t * dy - y;
+                const dd = px * px + py * py;
+                if (dd < d2) d2 = dd;
+            }
+        }
+        return Math.sqrt(d2);
+    };
+    let area = 0;
+    for (let i = 0, j = isl.vertices.length - 1; i < isl.vertices.length; j = i++)
+        area += (isl.vertices[j].x + isl.vertices[i].x) * (isl.vertices[j].y - isl.vertices[i].y);
+    area = Math.abs(area) / 2;
+    const scatter = (want, minEdge, spacing, make) => {
+        const out = [];
+        for (let tries = 0; out.length < want && tries < want * 60; tries++) {
+            const x = isl.x + (rand() * 2 - 1) * isl.radius, y = isl.y + (rand() * 2 - 1) * isl.radius;
+            if (!inside(x, y)) continue;
+            const ed = edgeDist(x, y);
+            if (ed < minEdge) continue;
+            const o = make(x, y, ed);
+            if (out.some(q => Math.hypot(q.x - x, q.y - y) < (q.r + o.r) * spacing)) continue;
+            out.push(o);
+        }
+        return out;
+    };
+
+    // The upwellings: few, large, slow.
+    const wells = scatter(
+        Math.max(MAGMA_STYLE.wellMin, Math.min(MAGMA_STYLE.wellMax, Math.round(area / MAGMA_STYLE.wellPer))),
+        isl.radius * MAGMA_STYLE.wellR[0] * 0.6, 0.55,
+        (x, y, ed) => {
+            const r = Math.min(ed * 1.3, isl.radius * (MAGMA_STYLE.wellR[0] + rand() * (MAGMA_STYLE.wellR[1] - MAGMA_STYLE.wellR[0])));
+            const period = MAGMA_STYLE.wellPeriod[0] + rand() * (MAGMA_STYLE.wellPeriod[1] - MAGMA_STYLE.wellPeriod[0]);
+            const orbit = MAGMA_STYLE.wellOrbitPeriod[0] + rand() * (MAGMA_STYLE.wellOrbitPeriod[1] - MAGMA_STYLE.wellOrbitPeriod[0]);
+            return { x, y, r, period, phase: rand() * period, orbit, oa: rand() * Math.PI * 2, dir: rand() < 0.5 ? 1 : -1 };
+        });
+    // The flares: many, small, brief.
+    const flares = scatter(
+        Math.max(MAGMA_STYLE.flareMin, Math.min(MAGMA_STYLE.flareMax, Math.round(area / MAGMA_STYLE.flarePer))),
+        MAGMA_STYLE.edge, 1.4,
+        (x, y) => {
+            const r = MAGMA_STYLE.flareR[0] + rand() * (MAGMA_STYLE.flareR[1] - MAGMA_STYLE.flareR[0]);
+            const period = MAGMA_STYLE.flarePeriod[0] + rand() * (MAGMA_STYLE.flarePeriod[1] - MAGMA_STYLE.flarePeriod[0]);
+            const sp = [];
+            const n = 3 + Math.floor(rand() * 2);
+            for (let k = 0; k < n; k++) sp.push({ a: rand() * Math.PI * 2, d: r * (1.8 + rand() * 2.2), s: 0.22 + rand() * 0.18 });
+            return { x, y, r, period, phase: rand() * period, sp };
+        });
+
+    // The margins: the lake multiplied darker toward its edge, baked and clipped.
+    const margin = mk();
+    {
+        const g = margin.g;
+        g.save();
+        lavaOutlinePath(g, isl); g.clip('evenodd');
+        g.strokeStyle = `rgba(40,6,2,${MAGMA_STYLE.marginDark})`;
+        g.lineJoin = 'round';
+        for (let k = 1; k <= MAGMA_STYLE.marginSteps; k++) {
+            g.lineWidth = 2 * MAGMA_STYLE.margin * k / MAGMA_STYLE.marginSteps;
+            lavaOutlinePath(g, isl); g.stroke();
+        }
+        g.restore();
+    }
+    // The lip: a bright line on the outline, soft, unclipped, so it lights what is beside it.
+    const rim = mk();
+    {
+        const g = rim.g;
+        g.strokeStyle = `rgba(${MAGMA_STYLE.rim},0.95)`;
+        g.lineWidth = 12;
+        g.lineJoin = 'round';
+        g.shadowColor = `rgba(${MAGMA_STYLE.rim},1)`;
+        g.shadowBlur = 30 * scale;
+        lavaOutlinePath(g, isl); g.stroke();
+    }
+    const da = rand() * Math.PI * 2, db = da + 1.9 + rand() * 1.2, ds = da + 0.7 + rand() * 0.8;
+    const oa = rand() * Math.PI * 2, os = oa + 2.1 + rand();
+    isl._magma = {
+        margin: margin.c, rim: rim.c, r: R, wells, flares,
+        ph: isl.x * 0.0131 + isl.y * 0.0217,
+        dirA: { x: Math.cos(da), y: Math.sin(da) }, dirB: { x: Math.cos(db), y: Math.sin(db) },
+        dirS: { x: Math.cos(ds), y: Math.sin(ds) },
+        // The three pivots: the shape's centre, and two offset from it in different directions.
+        cB: { x: isl.x + Math.cos(oa) * isl.radius * MAGMA_STYLE.off2, y: isl.y + Math.sin(oa) * isl.radius * MAGMA_STYLE.off2 },
+        cS: { x: isl.x + Math.cos(os) * isl.radius * MAGMA_STYLE.skinOff, y: isl.y + Math.sin(os) * isl.radius * MAGMA_STYLE.skinOff },
+        tile: lavaBedTile(), patA: null, patB: null, skinPat: null, skinTile: null
+    };
+}
+
+function drawMagma(ctx, isl) {
+    let s = isl._magma;
+    if (!s) { bakeMagmaSprites(isl); s = isl._magma; }
+    if (!s.tile) s.tile = lavaBedTile();          // arrives whenever it arrives
+    if (!s.skinTile) s.skinTile = magmaSkinTile();
+    const heat = isl.heat == null ? 1 : Math.max(0, Math.min(1, isl.heat));
+    const act = isl.activity == null ? 1 : Math.max(0, isl.activity);
+    const t = state.time, ph = s.ph;
+    const f = 0.76 + 0.12 * Math.sin(t * 1.10 + ph) + 0.06 * Math.sin(t * 2.70 + ph * 1.7)
+            + 0.04 * Math.sin(t * 6.10 + ph * 0.4);
+    const x = isl.x - s.r, y = isl.y - s.r, d = s.r * 2;
+    const k = lavaClock() * act;                  // REAL seconds, scaled by activity
+    const cam = state.camera;
+    const halfW = ctx.canvas.width * 0.5 + 160, halfH = ctx.canvas.height * 0.5 + 160;
+    const inView = (px, py, r) => Math.abs(px - cam.x) < halfW + r && Math.abs(py - cam.y) < halfH + r;
+
+    ctx.save();
+    lavaOutlinePath(ctx, isl);
+    ctx.clip('evenodd');
+    if (s.tile) {
+        if (!s.patA) { s.patA = ctx.createPattern(s.tile, 'repeat'); s.patB = ctx.createPattern(s.tile, 'repeat'); }
+        // Three transforms, no two sharing a pivot or a direction: a pattern that only
+        // slides is a conveyor belt; one that turns about a point off the shape's centre
+        // while another turns the other way about a different point is convection.
+        const spin = (c, rad, sc, dx, dy) => new DOMMatrix().translate(c.x, c.y).rotate(rad * 180 / Math.PI)
+                                              .scale(sc, sc).translate(-c.x, -c.y).translate(dx, dy);
+        s.patA.setTransform(spin(isl, k * MAGMA_STYLE.spin, 1,
+                                 k * MAGMA_STYLE.drift * s.dirA.x, k * MAGMA_STYLE.drift * s.dirA.y));
+        ctx.fillStyle = s.patA;
+        ctx.fillRect(x, y, d, d);
+        const sc2 = 1 + MAGMA_STYLE.breathe2 * Math.sin(k * MAGMA_STYLE.breatheHz * Math.PI * 2 + ph);
+        s.patB.setTransform(spin(s.cB, k * MAGMA_STYLE.spin2, sc2,
+                                 k * MAGMA_STYLE.drift2 * s.dirB.x, k * MAGMA_STYLE.drift2 * s.dirB.y));
+        ctx.globalCompositeOperation = 'multiply';
+        ctx.globalAlpha = MAGMA_STYLE.layer2Alpha;
+        ctx.fillStyle = s.patB;
+        ctx.fillRect(x, y, d, d);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.globalAlpha = 1;
+        if (s.skinTile) {
+            if (!s.skinPat) s.skinPat = ctx.createPattern(s.skinTile, 'repeat');
+            s.skinPat.setTransform(spin(s.cS, k * MAGMA_STYLE.skinSpin, 1,
+                                        k * MAGMA_STYLE.skinDrift * s.dirS.x, k * MAGMA_STYLE.skinDrift * s.dirS.y));
+            ctx.fillStyle = s.skinPat;
+            ctx.fillRect(x, y, d, d);
+        }
+    } else {
+        ctx.fillStyle = `rgba(${LAVA_STYLE.bed},1)`;
+        ctx.fillRect(x, y, d, d);
+    }
+    ctx.drawImage(s.margin, x, y, d, d);
+    // The breath.
+    ctx.fillStyle = `rgba(30,6,2,${((1 - heat * f) * 0.6).toFixed(3)})`;
+    ctx.fillRect(x, y, d, d);
+
+    // ── THE HOT CORE ────────────────────────────────────────────────────────
+    ctx.globalCompositeOperation = 'lighter';
+    for (const w of s.wells) {
+        if (!inView(w.x, w.y, w.r)) continue;
+        const u = (k + w.phase) / w.period * Math.PI * 2;
+        const b = 0.5 + 0.5 * Math.sin(u);
+        const o = w.oa + w.dir * k / w.orbit * Math.PI * 2;
+        const wx = w.x + Math.cos(o) * w.r * MAGMA_STYLE.wellOrbit;
+        const wy = w.y + Math.sin(o * 1.3 + 0.6) * w.r * MAGMA_STYLE.wellOrbit;
+        const r = w.r * (0.85 + 0.15 * b);
+        ctx.globalAlpha = (0.42 + 0.40 * b) * heat;
+        ctx.drawImage(glowSprite(MAGMA_STYLE.well), wx - r, wy - r, r * 2, r * 2);
+        const cr = r * 0.5;
+        ctx.globalAlpha = (0.16 + 0.36 * b) * heat;
+        ctx.drawImage(glowSprite(MAGMA_STYLE.wellCore), wx - cr, wy - cr, cr * 2, cr * 2);
+    }
+
+    // ── THE FLARES ──────────────────────────────────────────────────────────
+    for (const b of s.flares) {
+        const u = (((k + b.phase) % b.period) + b.period) % b.period / b.period;
+        if (u >= 0.2 || !inView(b.x, b.y, b.r * 4)) continue;
+        const g = u / 0.2, env = Math.sin(Math.PI * g);
+        const fr = b.r * (0.6 + 1.6 * g);
+        ctx.globalAlpha = 0.9 * env * heat;
+        ctx.drawImage(glowSprite(MAGMA_STYLE.flash), b.x - fr, b.y - fr, fr * 2, fr * 2);
+        for (const p of b.sp) {
+            const reach = Math.sqrt(g);
+            const px = b.x + Math.cos(p.a) * p.d * reach, py = b.y + Math.sin(p.a) * p.d * reach;
+            const pr = b.r * p.s * (1 - 0.5 * g);
+            ctx.globalAlpha = (1 - g) * 0.85 * heat;
+            ctx.drawImage(glowSprite(MAGMA_STYLE.flash), px - pr, py - pr, pr * 2, pr * 2);
+        }
+    }
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.globalAlpha = heat * (0.6 + 0.2 * Math.sin(t * 1.7 + ph + 0.8)) * f;
+    ctx.drawImage(s.rim, x, y, d, d);
+    ctx.restore();
+}
+
 // `which`: 'land' for static geometry, 'floe' for drifting ice, omitted for all.
 // The two are drawn in separate passes so the nav aids can sit BETWEEN them —
 // ladder lines and laylines are paint on the water, and ice floats over paint.
@@ -3037,6 +3753,10 @@ function drawIslands(ctx) {
         // default, which fills that hole solid and paints the sea white — this
         // has to be 'evenodd'.
         if (isl.fromMask) {
+            // The two grounds that move. Their own painters, every frame — see drawLava
+            // and drawMagma.
+            if (isl.lava)  { drawLava(ctx, isl);  drawn++; continue; }
+            if (isl.magma) { drawMagma(ctx, isl); drawn++; continue; }
             ctx.save();
             ctx.beginPath();
             ctx.moveTo(isl.vertices[0].x, isl.vertices[0].y);

@@ -344,6 +344,18 @@ const LAND_TYPES = [
     // and both are now the DELIVERED tile means (2026-08-27).
     { kind: 'slickrock',  label: 'Redrock Slickrock',   swatch: '#e6ca9b' },
     { kind: 'desertsand', label: 'Redrock Desert Sand', swatch: '#dd9b67' },
+    // Emberfall Isle's four grounds (2026-09-04), on the [VENUE] [TERRAIN] convention.
+    // Three swatches track ISLAND_STYLES.<kind>.body, the DELIVERED tile means
+    // (2026-09-04). Lava's is NOT its body: the body is the cooled crust, near-black, and a black
+    // chip labelled Lava tells a designer nothing — so the chip is the ember the painter
+    // shows, the weeds' rule (the chip is what you see, not the table's first field).
+    { kind: 'basalt',    label: 'Volcanic Basalt',     swatch: '#30333A' },
+    { kind: 'cinder',    label: 'Volcanic Cinder',     swatch: '#3A2B29' },
+    { kind: 'blacksand', label: 'Volcanic Black Sand', swatch: '#212121' },
+    { kind: 'lava',      label: 'Volcanic Lava',       swatch: '#E0561F' },
+    // Active lava: swatch is ISLAND_STYLES.magma.body, the bed tile's own mean — here the
+    // material you see IS the body, unlike lava's crust.
+    { kind: 'magma',     label: 'Volcanic Magma',      swatch: '#EC6F09' },
     // Stillwater Lake's three grounds. Swatches track ISLAND_STYLES.<kind>.body and are still
     // the tile SPEC means, so they move when the art is ingested and the bodies are reset.
     // ⚠️ "Glacial Granite" is NOT "Granite" — one is ice-SMOOTHED northern shelf rock, the
@@ -1920,7 +1932,17 @@ const KIND_FILL = {
     // Redrock Reservoir's two new grounds. Both dry land, so both solid per this table's
     // rule that only what you may sail over is translucent. Both are the DELIVERED tile
     // means (2026-08-27), matching the chips.
-    slickrock: '#e6ca9b', desertsand: '#dd9b67'
+    slickrock: '#e6ca9b', desertsand: '#dd9b67',
+    // Emberfall Isle. All four are dry land, so all four are solid per this table's rule.
+    // Lava fills as its crust with the ember on its EDGE (KIND_EDGE), which is how the
+    // painter shows it — a flow is dark with a hot front — and is also the one legible
+    // arrangement on a schematic, where a solid orange blob would read as a mark zone.
+    basalt: '#30333A', cinder: '#3A2B29', blacksand: '#212121', lava: '#241A18',
+    // Magma fills as the bed itself: it has no crust to hide behind, so the schematic
+    // shows the orange — the one dry-land fill here that is not dark, and the reason
+    // lava's edge carries its ember instead (a solid orange blob next to a solid orange
+    // blob would need a label to tell a lake from a tongue).
+    magma: '#EC6F09'
 };
 const KIND_EDGE = {
     granite: '#c9c9c9', karst: '#aab0bb', redrock: '#8a4a26', reed: '#5c8438', lawn: '#597a22', swampgrass: '#7d7048',
@@ -1960,7 +1982,13 @@ const KIND_EDGE = {
     // Each is its own ISLAND_STYLES stroke, per the coastalrock/coastalscrub rule — darker
     // than the fill, with the earth kinds: pale grounds on bright water need no light edge.
     // Both re-derived from the DELIVERED bodies (2026-08-27), spec offsets carried.
-    slickrock: '#AF9A76', desertsand: '#9F6F4A'
+    slickrock: '#AF9A76', desertsand: '#9F6F4A',
+    // Emberfall Isle. Each is its own ISLAND_STYLES stroke. The three grounds take dark
+    // edges with the earth kinds; lava's stroke IS the ember, and here that matters more
+    // than anywhere: on the schematic the edge is the only thing that says this dark
+    // shape is the hot one.
+    basalt: '#191A1D', cinder: '#241A18', blacksand: '#151514', lava: '#FF6A2A',
+    magma: '#FFC24A'
 };
 
 function drawLandLayer() {
@@ -8837,6 +8865,9 @@ window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefau
 window.EditorApp = { resize, fitView, loadVenue, loadBlank, newDoc, draw, buildKindPicker,
     // exposed for headless tests
     _state: () => ({ doc, findings, history: history.length, histIdx, dirty: isDirty(), tool, sel, mode }),
+    // The Save-time path bake, so a headless script can stamp course.paths on a document
+    // authored outside the editor (a hand-laid first cut) without a file picker.
+    _bakeCoursePaths: bakeCoursePaths,
     // The layer table, for test_controls: it asserts the visibility eyes and this list
     // agree as SETS. It used to assert a hardcoded count of seven, which meant shipping
     // the Props layer broke a test that had found nothing wrong — the failure landed on

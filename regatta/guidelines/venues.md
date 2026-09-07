@@ -1,4 +1,4 @@
-# Venue Spec — All 15 Candidates
+# Venue Spec — All 16 Candidates
 
 *Spec only. No code changes. Each venue is designed here on its own merits and
 pushed as far as it will go — trimming comes after, once we can see what each one
@@ -91,6 +91,7 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 | 13 | Fallwater Fjord | **Out & Back** | take the downdraft or sail around it? | punching through the fall at speed |
 | 14 | Flamingo Reach | **Round the Cans** | where can I possibly pass? | the flock erupting across your bow |
 | 15 | Duckling Pond | **Lessons → mini W/L** | where is the wind, and what does that let me do? | the graduation horn, ducklings escorting you over the line |
+| 16 | Otter Point | **Coastal triangle**, 2 laps | inside the kelp or outside in the swell — and has the answer changed since last lap? | rounding Otter Rock as a set breaks on it |
 
 ---
 
@@ -962,7 +963,7 @@ meaningless.
 
 ---
 
-# 11. Spoonbill Flats `flats` — *art ready*
+# 11. Spoonbill Flats `flats` — *first-cut document; card and track shipped Sep 2 2026*
 
 **Proposed tagline** Ebb & Sandbar
 
@@ -1026,9 +1027,17 @@ drain runnel (terrain) · **spoon-billed sandpiper flock landing on newly dry
 sand** (ambient — *and the depth gauge; the witness IS the hazard readout*) ·
 eddy line (terrain) · stranded dinghy (ambient).
 
+**Status (Sep 2 2026).** `assets/venues/flats.venue.js` is a hand-laid first cut: a
+loop round a central sandbar, 2 laps — beat up the west channel, reach across the
+top, run down the east side where the inner lane past a spit is shoaled and slow
+and the outer lane is clear, reach home. The shoals are static; the tide (drying
+bars, building flow, the slack window) is unbuilt. Card: the Aug 2026 pass-4 master
+(0.693 saturation) ingested as `flats`. Track wired as `racing-flats`
+([music.md](music.md) §12.1). Cup: the Swirl Cup set.
+
 ---
 
-# 12. Emberfall Isle `volcanic` — *art ready*
+# 12. Emberfall Isle `volcanic` — *first-cut document; card and track shipped Sep 2 2026*
 
 **Proposed tagline** Ash & Ember
 
@@ -1080,6 +1089,55 @@ eruptions, with a pumice raft drifting into your exit.
 glowing vent (hazard) · pumice raft (terrain, drifting) · steam column (weather
 prop) · lava delta (terrain) · seabirds on the thermal (ambient) · black sand
 shore (terrain).
+
+**Status (Sep 2 2026).** `assets/venues/volcanic.venue.js` is a hand-laid first cut:
+round the cans, one lap — three cone islets rounded in order (port, starboard,
+starboard), the main isle and a lava delta as scenery, on the venue's own ground set
+since Sep 4 (below). Eruption cycles, vents, pumice and steam are unbuilt. Card: the Aug 2026 master ingested as-is
+(0.874 saturation) — the aurora/starfield reroll above is still owed, and the
+manifest slot's subject encodes it. Track wired as `racing-volcanic`
+([music.md](music.md) §12.1). In-game water is black-teal with an ember shoreline,
+kept off Glowtide's indigo on purpose. Cup: the Swirl Cup set.
+
+**Ground set (Sep 4 2026).** Four kinds, declared and delivered the same day
+(`SHAPE_KINDS` / `ISLAND_STYLES` / `LAND_TEXTURES` carry the reasoning and the
+measured numbers):
+
+| Kind | Material | Share of land | Use it for | Character |
+|---|---|---|---|---|
+| `basalt` | Fresh basalt lava field — nearly black blue-charcoal, chunky angular plates and cooled flow lobes, long cracks, raised ridges, **no glow baked in** | 55–65% (primary) | the island, seamount summits, cliffs, cooled lava tongues, most exposed ground | hard, fractured, geometric, dangerous-looking |
+| `cinder` | Cinder & volcanic ash — matte charcoal to very dark rust-purple, fine grain with scattered scoria; slightly warmer than the basalt | 20–30% | crater rims, cone slopes, vent fields, ash fans, fumarole hollows | loose, dusty, soft-edged, rounded |
+| `blacksand` | Black sand & basalt shingle — smooth black sand with flattened dark pebbles; the lowest-contrast ground, and the one that sits *below* the water in value | 10–20% | tiny beaches, coves, low shelves, spits, wave-ground rock | calm, flat, velvety against the blue |
+| `lava` | Hardening lava — the first **dynamic** ground: the basalt's own plates over a drifting incandescent bed, seams open and hot at the front where the flow meets the sea | where a flow is cooling | lava tongues entering the sea, lobes on the delta | glowing, pulsing; `isl.heat` is the eruption-cycle hook |
+| `magma` | Active lava — the second dynamic ground: the bare bed in two layers multiplied together, each turning about its own pivot and drifting its own way; skin cut from the bed's own dark swirls sliding over them on a third transform; a hot core of breathing, wandering upwellings; brief flares with spatter; cooler margins and a hot lip — all pure functions of time, on REAL seconds (`state.time` runs at 0.24x, which is why the first cut barely moved). Reworked Sep 4 against Wes's aerial references: deep red-orange, never yellow; skin warm and ropy, never grey plates; no rings | where lava is live | crater lakes, the channel feeding a delta, the pool at a vent | seething, boiling; `isl.heat` and `isl.activity` are the cycle's hooks |
+
+Black rock on black water is the premise, so this set deliberately separates by
+hue and texture rather than value — the library's dE 23 bar is not met and the
+ISLAND_STYLES block says why, and what to move (value, not the tile) if the rock
+vanishes in play. Tiles: `volcanic-basalt` (256, alpha 0.65), `volcanic-cinder`
+(256, 0.5 — retiled up from 128 because its mound mottle tiles as a lattice; a P2
+rework is open), `volcanic-blacksand` (128, 0.7), all ingested Sep 4 with bodies
+reset to the delivered means. Lava has two: `volcanic-lava-bed` (256, emissive — the
+first loud tile in the library, and `prompt.py` grew an `emissive` flag for it) drifts
+under a crust that is the basalt tile with its joints keyed to alpha, composite-only
+(an SVG luminanceToAlpha filter, probed, with the procedural plates as fallback), all
+in `drawLava`. The water was
+re-palletted to navy `#0a182f` the same afternoon, which lifts all three grounds
+above it in value (the black sand no longer sits below the sea).
+The venue doc is re-kinded onto the set (cones `cinder`, isle `basalt`, delta and
+beach `blacksand`); no lava shape is placed yet.
+
+**Props (Sep 6 2026, at slot).** Five landmarks declared, the redrock tower recipe
+(plane surface, contact none, the land shape underneath is the collider and the
+height): `volcanic-volcano-main` (1400, the hero: breached crater, three lava
+channels), `volcanic-cone-west` (640, steep and narrow, one crack), `volcanic-cone-east`
+(560, broad and low, wide breached horseshoe, cinder-warm), `volcanic-vent-islet` (360,
+a flat fumarole slab with one vent) and `volcanic-vent-underwater` (320, seabed, a
+fissure in pillow lava). **Every crater, channel and fissure is a hole**: painted flat
+magenta in the master and keyed to alpha by ingest's new `keyHoles`, so a `magma` shape
+under a crater and `lava` shapes under the channels show through and animate — Wes's
+call. Nothing emissive is baked: glow is the magma's, plume/steam/surf are the engine's
+(the downwind plume veil and a submerged magma pass for the seabed vent are still owed).
 
 ---
 
@@ -1430,3 +1488,92 @@ and it already differentiates how the venues feel.
 5. **Does any venue get more than one course**, or is course a fixed venue
    property? Lighthouse Cove is the tempting exception — W/L for a first race,
    Trapezoid thereafter.
+
+---
+
+# 16. Otter Point `otter` — *first-cut document; card and track shipped Sep 2 2026*
+
+**Tagline** Kelp & Swell · **Chips** ROCKY LEE SHORE, INSIDE OR OUTSIDE
+
+> **Naming.** Named for its witness, per the convention (Sockeye Run, Gatorgrass,
+> Spoonbill Flats). Wes's brief: the Monterey–Carmel coast, somewhere he sails and
+> finds "absolutely beautiful and unique" — a rocky coast, kelp, swell, islands,
+> otters, great whites, distinct vegetation, and a coastal race whose distinct
+> challenge is navigating a rocky shore in swell. The name is a working one.
+
+**Description.** A granite coast under a wall of fog. Kelp beds flatten the swell
+and grab your keel; outside them the sets roll through and the breeze builds all
+afternoon.
+
+**Character & narrative.** Beautiful and cold. Otters rafting in the kelp, harbor
+seals hauled out on the rocks, pelicans diving in a line, a great white's fin once
+a race and never a hazard. Wind-sculpted cypress on the headlands, ice plant on the
+cliff tops. The story is *the coast*: how close you dare, and whether the inside
+line was worth it.
+
+**Traits.** A sea breeze that **builds through the race** (10 → 16 kn), steady in
+direction (`shiftiness` low). Long-period Pacific swell from seaward. The swell is
+the weather here, not the wind — the one venue where the water is rougher than
+the sky.
+
+**Art.** Cold kelp-forest emerald water with a copper-bronze kelp canopy; charcoal
+granite and white surf as neutrals; **ice-plant magenta** on the cliff tops as the
+single warm accent. Sky: a flat-topped **fog bank parked on the offshore horizon**
+under clear blue — the marine layer the sea breeze is about to pull in. Card slot
+`otter` in `art/manifest.json` (`python3 art/prompt.py otter`); hue and sky claimed
+in [venue-art.md](venue-art.md).
+
+**Key mechanics.**
+
+- **Kelp beds** — *new, and the venue's one new system.* A region that damps swell
+  and adds drag. Inside the kelp the water is flat and the boat is slow; outside,
+  the sets roll through with surf speed on the reaches and broach risk on the beat.
+  Reuses `fx.swell` (Bluewater) and the rapids' turbulence-only drag idea (Sockeye
+  Run) — a swell-damping drag region, nothing more.
+- **Rocks as marks.** Otter Rock, the offshore islet, is rounded; the point is a
+  hazard you beat past. Surf breaks on their seaward faces (`drawSurf`).
+- **Building sea breeze.** Wind speed ramps across the race. The cheapest new
+  mechanic in the set — a time term on the wind region — and it is what makes the
+  inside/outside answer *change* mid-race.
+- **Fog on the last leg** — *aesthetic, later.* The bank rolls in for the final leg:
+  a visibility vignette and the venue secret, not a mechanic on the first pass.
+  Kept out of the rules the way rapids stayed turbulence-only.
+
+### Course — Coastal triangle, 2 laps
+
+Beat up the kelp line to the point mark, reach out to Otter Rock and round it, run
+home down the swell. The rocky shore is on one side of the beat the whole way, and
+that is the course: **the beat is where inside-or-outside lives.**
+
+- **Inside**: shorter, flat water, kelp drag, rocks close aboard — and the breeze
+  fills there last.
+- **Outside**: longer, lumpy, clean pressure — and the sea breeze arrives there
+  first, so outside gets better every lap.
+
+Early in the race inside wins; late, outside. A player who reads the breeze
+building switches lanes a lap before the fleet does. Distinct from Glacier Sound's
+out-and-back (same cup) and from Bluewater's one-lap distance triangle: two laps, a
+shore on one side, and a rock for a mark.
+
+**The question it asks.** *Inside the kelp or outside in the swell — and has the
+answer changed since last lap?*
+
+**Course hazards.** **Kelp** (drag, not grounding). **Granite rocks with breaking
+surf** (hard hazard, like the bergs). **Swell sets on the reach** (broach). **The
+fog bank on the last leg** (visibility — later).
+
+**Signature moment.** Rounding Otter Rock with surf breaking on its seaward face
+while the boats that went outside surf in on a set.
+
+**Key assets.** Granite headland + Otter Rock (terrain) · **kelp canopy patches**
+(terrain/fx — the bronze on the water, and the mechanic's readout) · wind-sculpted
+cypress (vegetation) · ice plant (vegetation) · coastal scrub (texture) · **sea
+otter raft** (ambient — the witness) · harbor seals hauled out (ambient) · pelican
+line (ambient) · great white fin (ambient) · fog bank (weather prop, later).
+
+**Status.** `assets/venues/otter.venue.js` is a hand-laid first cut — the coast,
+the point, Otter Rock, the triangle, and Bluewater's swell trains turned 30° off the
+wind. Card delivered Sep 2 (round 2 — Wes judged it against his own Monterey photos;
+saturation 0.720, in range). Track delivered Sep 2 and wired as `racing-otter`
+([music.md](music.md) §12.1: surf rock, ~136 BPM, 12.9 dB headroom). Kelp, the
+building breeze and the fog are unbuilt. Cup: the World's End Trophy set. Characters: none assigned — Wes's map.

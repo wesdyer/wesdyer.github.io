@@ -1626,6 +1626,30 @@ const PROP_KINDS = {
     // (640-360) with a small `redrock` SHAPE at its footprint with height typed, which
     // buys the lee and the collider in one object; the four small rungs are scenery and
     // need nothing.
+    // ── EMBERFALL ISLE'S VOLCANOES ──────────────────────────────────────────
+    // Declared 2026-09-06 with the art at `slot`, the redrock tower pattern: plane `surface`,
+    // contact `none`, motion fixed, and NO wind shadow and NO collider of their own — the
+    // cone stands on a land SHAPE (the isle's basalt, the islets' cinder) that already
+    // grounds you and carries the typed height, and the prop is the picture on it.
+    //
+    // ⚠️ THE CRATERS AND LAVA CHANNELS ARE HOLES. Every one of these sprites has its crater
+    // floor (and, on the main cone and the west cone, its lava channels) keyed OUT to alpha
+    // at ingest (`keyHoles` in the manifest), so a `magma` shape drawn under the crater and
+    // `lava` shapes drawn under the channels show through and animate. The glow, the
+    // plume, the steam and the surf are all the engine's: nothing emissive is baked. The
+    // size ladder is built so the four read as different STRUCTURES at race scale — a
+    // breached cone with rivers, a steep narrow cone with one crack, a broad low cone with
+    // a wide breached crater, a low rock with one vent — the redrock silhouette discipline.
+    'volcanic-volcano-main':    { label: 'Volcano (main)',   world: 1400, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'volcanic-cone-west':       { label: 'West cone',        world:  640, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'volcanic-cone-east':       { label: 'East cone',        world:  560, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'volcanic-vent-islet':      { label: 'Vent islet',       world:  360, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The seabed vent: drawn on the bottom, through the water column like the sunken
+    // boulders (wash is what a seabed sprite takes from the water; see those rows). Its
+    // fissure is a hole too — what shows through it today is the seabed underlay, and the
+    // glow it is designed around needs a SUBMERGED magma pass (a `magma` shape drawn in the
+    // seabed stratum under the water, dimmed by submergedTint) that does not exist yet.
+    'volcanic-vent-underwater': { label: 'Underwater vent',  world:  320, plane: 'seabed',  contact: 'none', motion: 'fixed', wash: 0.6, washFrom: 'current' },
     'redrock-tower-butte':    { label: 'Butte',          world: 640, plane: 'surface', contact: 'none', motion: 'fixed' },
     'redrock-tower-fin':      { label: 'Sandstone fin',  world: 520, plane: 'surface', contact: 'none', motion: 'fixed' },
     'redrock-tower-twins':    { label: 'Twin spires',    world: 440, plane: 'surface', contact: 'none', motion: 'fixed' },
@@ -2576,6 +2600,88 @@ const SHAPE_KINDS = {
     // takes an explicit MINIMAP_ISLAND row instead, exactly as the river's two forest floors
     // do. No canopy props exist for this venue yet; the ground ships first.
     jungle:  { motion: 'fixed', hard: true, look: 'jungle',  hidden: false, nav: true, height: 0 },  // ~35 m of tower, forested above the tide line
+    // ── EMBERFALL ISLE'S FOUR GROUNDS ───────────────────────────────────────
+    // Declared 2026-09-04 with the art at `slot`, the Sockeye Run path: each draws as its
+    // flat ISLAND_STYLES body until its tile lands. The venue shipped its first cut with
+    // `cobble` and `humus` standing in for lava rock and black sand; these retire that.
+    //
+    // THE SET IS A VALUE LADDER ON A NEAR-BLACK VENUE, and that is the one design fact
+    // every row below answers to. The water runs #123338 (L* 19), and every one of these
+    // grounds is asked to be nearly black too — so unlike any other venue, the land does
+    // not separate from the water by VALUE. Basalt and cinder sit a hair above it, black
+    // sand sits below it, and what separates the four from each other is HUE (blue-
+    // charcoal, rust-purple, neutral, warm) and TEXTURE (plates, grain, velvet, seams).
+    // The ember coastline — the venue's `shorelineColor`, the surf and the lava front — is
+    // what says "land here", as it does on the card. ISLAND_STYLES carries the numbers.
+    //
+    // Fresh basalt lava field: the venue's PRIMARY ground and the one that defines it —
+    // the volcanic island, seamount summits, sea cliffs, cooled lava tongues, most exposed
+    // ground. Roughly 55-65% of exposed land. Chunky angular plates and cooled flow lobes,
+    // long cracks, raised ridges; hard, fractured, geometric. NO glow baked in — the
+    // glowing flow is `lava` below, a separate kind, so a designer decides where the heat
+    // is. HARD, with granite and karst: a flow front is a wall, and the card promises a
+    // gauntlet. Suggested height ~12 m for a flow front or sea cliff when a designer
+    // wants the lee.
+    basalt:    { motion: 'fixed', hard: true, look: 'basalt',    hidden: false, nav: true, height: 0 },   // ~12 m of flow front
+    // Cinder and volcanic ash: the CONE ground — crater rims, the slopes of the small
+    // cones, vent fields, ash fans, the hollows around fumaroles. Roughly 20-30% of the
+    // land. Loose, dusty, soft-edged and rounded where basalt is plated and sharp;
+    // slightly WARMER than the basalt (charcoal toward a very dark rust-purple) and still
+    // extremely dark. The cones are the marks on this venue, so this is the ground a
+    // rounding is judged against. HARD: a cone is a hill you ground on. Suggested height
+    // ~40 m for a cone — the tallest thing here, and a vent's dead air is sized off it.
+    cinder:    { motion: 'fixed', hard: true, look: 'cinder',    hidden: false, nav: true, height: 0 },   // ~40 m of cone
+    // Black sand and basalt shingle: the SHORELINE ground — tiny beaches, coves, low
+    // shelves, spits between lava formations, anywhere the sea has ground the rock down.
+    // Roughly 10-20% of the land. Smooth black sand with flattened dark pebbles; the
+    // lowest-contrast ground in the set, calm and velvety, and the one that sits BELOW the
+    // water in value (L* 11.7 against the water's 19) so it reads as a dark flat shape
+    // against the blue. HARD, with `isle`, `lakesand` and `desertsand`: every beach in the
+    // game grounds you. A beach — no lee at all.
+    blacksand: { motion: 'fixed', hard: true, look: 'blacksand', hidden: false, nav: true, height: 0 },   // a beach — no lee at all
+    // ── AND THE ONE GROUND THAT MOVES ───────────────────────────────────────
+    // Lava. Molten flow under a cooled crust: dark plates riding an incandescent bed, the
+    // seams between them glowing, the front where it meets the sea the hottest of all.
+    // THE FIRST DYNAMIC GROUND: drawIslands hands a `lava` shape to drawLava instead of
+    // the flat fill, and that painter breathes — the bed and the front pulse on three
+    // incommensurable rates seeded from the shape's position, so two tongues never beat
+    // in step (the fire prop's trick). The crust, the seams and the hotspots are baked
+    // once per shape from its own seeded PRNG, so the layout is the venue's, not the
+    // session's.
+    //
+    // `lava: true` IS THE RENDERER'S FLAG, the way `paint` and `reef` are: compileVenueDoc
+    // copies it onto the island and drawIslands keys on it. Everything else about this
+    // shape is ordinary land — HARD (a boat on a lava front is a boat that has stopped),
+    // nav, drawn in document order, a coastline to the surf. `look: 'lava'` names the
+    // ISLAND_STYLES row the painter takes its crust and its ember from.
+    //
+    // ⚠️ THE ERUPTION CYCLE IS NOT BUILT (venues.md §12) and this kind does not pretend
+    // to be it. The hook is one number: the painter multiplies every glow by `isl.heat`
+    // (undefined reads as 1), so the cycle, when it exists, can cool a tongue to a dull
+    // crust and bring it back without touching the renderer. Until then a lava shape
+    // glows at full heat, always.
+    //
+    // Suggested height ~3 m: a flow lobe is low, and shelters nothing worth typing.
+    lava:      { motion: 'fixed', hard: true, look: 'lava',      hidden: false, nav: true, height: 0,
+               lava: true },                                                                              // ~3 m of flow lobe
+    // Magma: ACTIVE lava — a lake in a crater floor, the live channel feeding a delta, the
+    // pool at a vent. Where `lava` is a flow hardening under a crust, this is the bed with
+    // no crust to speak of: the surface seethes, rafts of cooled skin ride it, and it
+    // BUBBLES — domes of skin swell, burst and throw spatter. A second kind rather than a
+    // heat setting on `lava` because it draws a different picture, and because the
+    // eruption cycle will want to address the two differently: a tongue cools, a lake
+    // boils. `magma: true` is the renderer's flag (drawMagma), exactly as `lava` is.
+    //
+    // Every motion in it is a pure function of state.time and the shape's own seed — two
+    // bed layers sliding across each other, the rafts riding one of them, each bubble's
+    // stage read off its own period and phase — so there is no particle state, no runtime
+    // RNG, and a replay draws the same lake. `isl.heat` dims it as it dims a tongue;
+    // `isl.activity` (undefined = 1) scales the bubbling and the drift, the second hook the
+    // cycle will drive: a lake brought to the boil and let settle.
+    //
+    // HARD, with lava: molten rock is a wall. Height 0 — a lake shelters nothing.
+    magma:     { motion: 'fixed', hard: true, look: 'magma',     hidden: false, nav: true, height: 0,
+               magma: true },                                                                             // a lake — no lee at all
     // Ice that does NOT move: shelf, shore, the sound's coastline. Soft, because RRS 31
     // penalizes touching MARKS, not obstructions — hitting ice costs speed, not a 360.
     ice:     { motion: 'fixed', hard: false, look: 'ice',      hidden: false, nav: true, height: 0 },   // ~20 m of shelf and shore
@@ -2864,6 +2970,10 @@ function shapeTraits(s) {
         // who renders it, `drag` says what it costs, and neither reads the other.
         paint:  !!k.paint,
         reef:   !!k.reef,
+        // Kind-level like `paint`, and it says the same sort of thing: this kind draws
+        // its own picture (drawLava), and it is the one picture that moves.
+        lava:   !!k.lava,
+        magma:  !!k.magma,
         // What this shape is GROWING — the name of its render spec (VEG_STYLES in
         // script.js), or null for bare ground. Kind-level like `paint`, and for the same
         // reason: a bed of hydrilla is a different plant from a bed of lilies, not the
@@ -3017,6 +3127,9 @@ function compileVenueDoc(doc, light) {
             awash: T.awash,
             paint: T.paint,
             reef: T.reef,
+            // The one dynamic ground. Read by drawIslands alone — see the kind's note.
+            lava: !!T.lava,
+            magma: !!T.magma,
             // What is growing here, for the renderer. Null on bare ground, which is
             // every shape that existed before the bayou.
             veg: T.veg,

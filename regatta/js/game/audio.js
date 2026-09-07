@@ -165,6 +165,28 @@ const MUSIC_TRACKS = {
     //   C major r=0.86, ~66 BPM pulse, centroid 797 Hz, 12.2 dB dynamics: warm, slow,
     //   and alive without being loud — ducklings at sunset, as briefed.
     'racing-pond': { file: 'assets/audio/duckling-pond.mp3', loopStart: 1.5, loopEnd: 91.0, trim: 0.87 },
+    // Otter Point, Sep 2026 — the surf-rock track, and the first electric-guitar-led cue in the
+    // set (guidelines/music.md §12.1). Wes's second brief after rejecting a lap-steel one as
+    // country-adjacent: spring-reverb guitar, combo organ, briefed 128 BPM, landed ~136 on
+    // Sockeye Run's rung — instrumentation separates them, per §10's band rule. 125.0 s of body
+    // from a 138.7 s file with a 0.4 dB seam; the 6 s opening is too sparse to loop into and is
+    // skipped. 38.6% in the wind band and a 2569 Hz centroid — bright, like Sockeye — so the
+    // pairing was probed at the venue's own 13 kn rather than assumed (see the §11 headroom
+    // column). Dynamics 4.2 dB against a brief that asked for alternating sections: the
+    // sections are there but subtle; accepted by ear as the owner's pick.
+    'racing-otter': { file: 'assets/audio/otter.mp3',            loopStart: 6.0, loopEnd: 131.0, trim: 0.91 },
+    // Spoonbill Flats and Emberfall Isle, wired Sep 2026 the day the venues landed — both files
+    // had sat measured and unwired since Aug 2026 (guidelines/music.md §7: no row for a venue
+    // that does not exist). Rows are the ones music_loop.py printed then, unchanged.
+    //   flats: hammered dulcimer over bass clarinet, 76 BPM, E minor — 139.5 s of body, nothing
+    //   trimmed. 11.8% of frames sit 6 dB under the median, the most of any candidate: probably
+    //   the dulcimer's decay rather than gaps, but this is the brief that excluded long silences.
+    'racing-flats': { file: 'assets/audio/flats.mp3',            loopEnd: 139.5, trim: 0.92 },
+    //   volcanic: struck metal and taiko, the only percussion-led venue, take 2. 230.0 s of body so
+    //   the seam is reached once at the very end (3.5 dB, the Glowtide trade). ⚠️ 41.3% in the wind
+    //   band is the highest in the set — struck metal lives in the bed's band — so the pairing was
+    //   probed at the venue's own 14 kn the day it was wired; see the §11 headroom column.
+    'racing-volcanic': { file: 'assets/audio/volcanic.mp3',      loopStart: 10.5, loopEnd: 240.5, trim: 0.71 },
 };
 
 const MUSIC_VOLUME = 0.3;       // master, before per-track trim

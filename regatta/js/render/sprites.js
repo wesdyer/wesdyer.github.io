@@ -317,13 +317,120 @@ const LAND_TEXTURES = {
     // and domes are metre-scale features. desertsand: tile 128 with the sands, which puts
     // pebbles and chips at true size per bay-sand's measured argument.
     slickrock:    { src: 'assets/images/terrain/redrock/slickrock.png',  tile: 256, alpha: 0.35 },
-    desertsand:   { src: 'assets/images/terrain/redrock/desertsand.png', tile: 128, alpha: 0.7 }
+    desertsand:   { src: 'assets/images/terrain/redrock/desertsand.png', tile: 128, alpha: 0.7 },
+    // ── EMBERFALL ISLE'S THREE GROUNDS — DELIVERED 2026-09-04 ───────────────
+    // Every ISLAND_STYLES body was reset to its tile's delivered mean first, so each alpha
+    // here is a pure contrast knob, and every one is MEASURED on the tile at the size the
+    // camera sees (the 1024 master squashed to `tile`, the getLandPattern path), the same
+    // script as the rest of the library. THIS VENUE SPENDS ITS CONTRAST ON PURPOSE: it is
+    // the one place the ground does not separate from the water by value (see the
+    // ISLAND_STYLES block), so texture is doing the job value does elsewhere, and all
+    // three sit at the busy end of their families rather than the quiet one.
+    //
+    // Basalt: tile sd 8.81 at 256. 0.65 lands on-screen 5.73 — river-outcrop's alpha and
+    // its neighbourhood (gneiss 5.55, cobble 6.6), the two other rocks whose jointed
+    // plates ARE the read. Wrap 1.76x / 2.28x an interior boundary on the master, inside
+    // the river four's 1.5-3.3x that the tiled-and-composited test cleared; at 0.65 the
+    // seam is under 2 luma. Periodicity peak/mean 5.8 at 4 cycles, under every shipped
+    // ground. ⚠️ THE ROPY PAHOEHOE SWIRLS ARE THE LANDMARK RISK: three or four per tile,
+    // each distinct, and the main isle is thirteen tiles across. Judge them on the isle,
+    // not the master; if they count, the fix is a regenerated tile with fewer lobes.
+    basalt:       { src: 'assets/images/terrain/volcanic/basalt.png',    tile: 256, alpha: 0.65 },
+    // ⚠️ Cinder: 256, NOT the 128 its manifest slot pre-registered, and the reason is a
+    // repeat. The master's "low soft mounds" came back as a DIAGONAL QUILT — a lattice of
+    // soft lighter ridges — and at 128 that lattice tiles at boat-length spacing and reads
+    // as a grid on every cone (checked on a 3x3 composite at both alphas; the sd-based
+    // alpha could not hide it, because a repeat is a period, not a contrast). 256 halves
+    // its density to something a cone islet two tiles across barely shows, at the cost of
+    // scoria chunks twice the size (28-80 cm rather than 14-40), which is still cinder.
+    // Retiling cannot FIX periodicity — bay-sand's note has the numbers — so the slot
+    // carries a rework: the real answer is a regenerated master with the mounds stated as
+    // irregular. Tile sd 6.83 at 256; 0.5 lands on-screen 3.41, between
+    // bay-sand's 4.12 and desertsand's 3.45, with the chunks legible. Cleanest wrap of the
+    // three (1.43x / 1.12x on the master).
+    cinder:       { src: 'assets/images/terrain/volcanic/cinder.png',    tile: 256, alpha: 0.5 },
+    // Black sand: tile sd 4.49 at 128. 0.7 as pre-registered lands 3.14, between coralsand
+    // (1.80) and desertsand (3.45): the calm one of the set, as specced. The pebble drifts
+    // run one diagonal, so the one thing to watch tiled is a direction; at 3 luma it does
+    // not read. If the beach looks dead the move is UP (1.0 -> 4.49), never down.
+    blacksand:    { src: 'assets/images/terrain/volcanic/blacksand.png', tile: 128, alpha: 0.7 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];
     t.img = new Image();
     t.img.src = t.src;
     t.patterns = {};   // keyed by the base colour it is blended over
+}
+
+// ── THE LAVA'S TWO TILES ────────────────────────────────────────────────────
+// Not LAND_TEXTURES rows: neither is a ground fill blended over a body at an alpha. The
+// BED is an emissive tile (volcanic-lava-bed) that drawLava drifts under the crust at
+// full strength; the CRUST is not a file at all — it is LAND_TEXTURES.basalt's own image
+// with its joints keyed out to alpha, so a flow reads as the island's rock at a different
+// temperature. Both are handed out as world-unit tile canvases (the master squashed to
+// `tile`, exactly as getLandPattern does) and null until the image lands; drawLava bakes
+// procedurally in the meantime and rebakes once they arrive.
+const LAVA_TILES = {
+    bed:   { src: 'assets/images/terrain/volcanic/lava-bed.png', tile: 256 },
+    crust: { from: 'basalt', tile: 256 }
+};
+LAVA_TILES.bed.img = new Image();
+LAVA_TILES.bed.img.src = LAVA_TILES.bed.src;
+function lavaTileCanvas(t, img) {
+    if (t.canvas) return t.canvas;
+    if (!img || !img.complete || !img.naturalWidth) return null;
+    const c = document.createElement('canvas');
+    c.width = c.height = t.tile;
+    const g = c.getContext('2d');
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(img, 0, 0, t.tile, t.tile);
+    t.canvas = c;
+    return c;
+}
+function lavaBedTile()    { return lavaTileCanvas(LAVA_TILES.bed, LAVA_TILES.bed.img); }
+function lavaBasaltTile() {
+    const b = LAND_TEXTURES[LAVA_TILES.crust.from];
+    return b ? lavaTileCanvas(LAVA_TILES.crust, b.img) : null;
+}
+
+// LUMINANCE -> ALPHA WITHOUT READING A PIXEL. The crust wants "transparent where the basalt
+// is dark", and the honest way to get alpha from luma is feColorMatrix's luminanceToAlpha,
+// reachable from a canvas as `filter: url(#id)` on an SVG filter in the document. It is
+// used instead of getImageData for the reason the hull bakes give (sprites.js:485): a
+// canvas that has drawn a file:// image is TAINTED and getImageData throws, and the eval
+// harness and the owner's local dev both run over file://. Composite ops and filters never
+// read back, so they are safe on a tainted canvas.
+//
+// Probed once, on a canvas that has drawn NO image (so the readback is legal): if the
+// browser ignores url() filters the mask would come back opaque and the crust would have
+// no seams, silently. The probe turns that into a fallback to the procedural plates.
+let _lavaLumaFilter;
+function lavaLumaAlphaFilter() {
+    if (_lavaLumaFilter !== undefined) return _lavaLumaFilter;
+    _lavaLumaFilter = null;
+    try {
+        const NS = 'http://www.w3.org/2000/svg';
+        const svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('width', '0'); svg.setAttribute('height', '0');
+        svg.style.position = 'absolute';
+        const f = document.createElementNS(NS, 'filter');
+        f.setAttribute('id', 'lava-luma-alpha');
+        f.setAttribute('color-interpolation-filters', 'sRGB');
+        const m = document.createElementNS(NS, 'feColorMatrix');
+        m.setAttribute('type', 'luminanceToAlpha');
+        f.appendChild(m); svg.appendChild(f); document.body.appendChild(svg);
+        const src = document.createElement('canvas'); src.width = 2; src.height = 1;
+        const sg = src.getContext('2d');
+        sg.fillStyle = '#fff'; sg.fillRect(0, 0, 1, 1);
+        sg.fillStyle = '#000'; sg.fillRect(1, 0, 1, 1);
+        const dst = document.createElement('canvas'); dst.width = 2; dst.height = 1;
+        const dg = dst.getContext('2d');
+        dg.filter = 'url(#lava-luma-alpha)';
+        dg.drawImage(src, 0, 0);
+        const px = dg.getImageData(0, 0, 2, 1).data;
+        if (px[3] > 200 && px[7] < 40) _lavaLumaFilter = 'url(#lava-luma-alpha)';
+    } catch (e) { _lavaLumaFilter = null; }
+    return _lavaLumaFilter;
 }
 
 function getLandPattern(ctx, style, base) {

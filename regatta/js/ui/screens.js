@@ -185,6 +185,22 @@ const UI = {
     toastMsg: document.getElementById('toast-message'),
 
     startRaceBtn: document.getElementById('start-race-btn'),
+    // The clubhouse (Sep 2026): the hub and its pickers, and the board's series dress.
+    preRaceBackBtn: document.getElementById('prerace-back-btn'),
+    preRaceSeriesChip: document.getElementById('prerace-series-chip'),
+    prRoute: document.getElementById('pr-route'),
+    prRouteGrid: document.getElementById('pr-route-grid'),
+    prRouteNote: document.getElementById('pr-route-note'),
+    clubhouse: document.getElementById('clubhouse-overlay'),
+    cupOverlay: document.getElementById('cup-overlay'),
+    seriesOverlay: document.getElementById('series-overlay'),
+    standingsOverlay: document.getElementById('standings-overlay'),
+    fleetOverlay: document.getElementById('fleet-overlay'),
+    fleetPrimaryBtn: document.getElementById('fleet-primary-btn'),
+    fleetBackLabel: document.getElementById('fleet-back-label'),
+    fleetContext: document.getElementById('fleet-context'),
+    fleetCrumb: document.getElementById('fleet-crumb'),
+    prRightTitle: document.getElementById('pr-right-title'),
     boatRows: {},
 
     // Water Debug
@@ -201,9 +217,22 @@ const UI = {
 // The strip under the hero: every venue as its own square art tile. Square because the
 // art IS square (1254x1254) — the same master the hero shows at full size, downscaled,
 // so there is no second crop to keep in sync with the first.
+// A venue thumbnail that stays sharp at whatever size the tile is drawn: the 256px PNG for
+// small tiles and the 640px JPEG once the tile needs more device pixels than 256 (a 150px
+// tile on a Retina display already does). `cssPx` is the tile's rendered CSS width, which
+// is what the browser needs to choose — approximate is fine, it only has to land the same
+// side of 256 device pixels as the truth.
+function venueThumb(key, alt, cssPx) {
+    const base = `assets/images/venues/thumbs/${key}`;
+    return `<img src="${base}.png" srcset="${base}.png 256w, ${base}-640.jpg 640w" sizes="${Math.round(cssPx || 150)}px" alt="${alt || ''}" draggable="false">`;
+}
+
 function renderVenuePicker() {
     if (!UI.venuePicker) return;
-    const selected = (settings.venue && VENUE_ORDER.includes(settings.venue)) ? settings.venue : 'bay';
+    // Inside a cup or series the venue is not a choice: it is the current race's.
+    const inSeries = !!(window.Series && Series.active);
+    const selected = inSeries ? Series.currentVenue()
+        : ((settings.venue && VENUE_ORDER.includes(settings.venue)) ? settings.venue : 'bay');
     const visibleKeys = VENUE_ORDER;
 
     if (UI.venuePicker._keys !== visibleKeys.join()) {
@@ -219,7 +248,7 @@ function renderVenuePicker() {
             // the art, over a scrim, it costs nothing and labels the thing it names.
             btn.innerHTML = `
                 <div class="pr-venue-shot">
-                    <img src="assets/images/venues/thumbs/${key}.png" alt="${c.tag || key}" draggable="false">
+                    ${venueThumb(key, c.tag || key, 150)}
                     <span class="pr-venue-name t-display-8 uppercase">${c.name || c.tag || key}</span>
                 </div>`;
             btn.addEventListener('click', (e) => { e.preventDefault(); selectVenue(key); });
@@ -230,6 +259,21 @@ function renderVenuePicker() {
     for (const btn of UI.venuePicker.children) {
         btn.classList.toggle('sel', btn.dataset.venue === selected);
     }
+    // The board's series dress: the picker gives way to the route, and the header names
+    // the race. A single race shows neither.
+    UI.venuePicker.classList.toggle('hidden', inSeries);
+    if (UI.prRoute) { UI.prRoute.classList.toggle('hidden', !inSeries); if (inSeries) renderRouteStrip(); }
+    if (!inSeries) {
+        if (UI.prRightTitle) UI.prRightTitle.innerHTML = '<span style="color:#5aa7ff; font-size:14px; vertical-align:middle;">&#9679;</span> Venues';
+        if (UI.prRouteNote) UI.prRouteNote.textContent = `${VENUE_ORDER.length} venues`;
+    }
+    // The board's button is the gun in every mode (Sep 6): the skipper is chosen on the hub and
+    // the fleet page is no longer a step. (It still exists for the eval suites.)
+    if (UI.startRaceBtn) UI.startRaceBtn.innerHTML = `Start Race ${_CH_ARROW}`;
+    if (UI.preRaceSeriesChip) {
+        UI.preRaceSeriesChip.classList.toggle('hidden', !inSeries);
+        if (inSeries) UI.preRaceSeriesChip.textContent = `${Series.active.name} · Race ${Series.raceNumber()} of ${Series.total()}`;
+    }
     sizeRaceDayHero();
     renderVenueDetail(selected);
 }
@@ -239,7 +283,7 @@ function renderVenuePicker() {
 // of the column the art is allowed to have — otherwise the panel hits its max-width, stops
 // being square, and the art letterboxes onto the gradient. CSS cannot express "my height
 // depends on my width", so this runs on every render and on resize.
-const HERO_ART_SHARE = 0.58;   // of the column's WIDTH — the art is square
+const HERO_ART_SHARE = 0.5;    // of the column's WIDTH — the art is square; the chart under the hero gets the rest
 const VENUE_STRIP_SHARE = 0.55; // of the column's HEIGHT — the hero keeps the rest
 function sizeRaceDayHero() {
     const hero = document.getElementById('venue-hero');
@@ -250,25 +294,18 @@ function sizeRaceDayHero() {
     const w = col.clientWidth, h = col.clientHeight;
     if (w <= 0) return;
 
-    const side = Math.round(w * HERO_ART_SHARE);
-    // ⚠️ ONE NUMBER GOVERNS BOTH ENDS. The height cap and the art's width ceiling have to be
-    // the same share of the column: cap the height higher than the width and the square
+    // ⚠️ ONE NUMBER GOVERNS BOTH ENDS. The hero's height and the art's width ceiling have to
+    // be the same share of the column: cap the height higher than the width and the square
     // panel hits its width limit, stops being square, and the art letterboxes.
-    hero.style.maxHeight = side + 'px';
-    art.style.maxWidth = side + 'px';
-
-    // THE TILES FILL THE ROW; the strip's height share is what stops two rows of them
-    // eating the hero. With the start bar gone the strip owns more of the column (0.55),
-    // and a tile is the smaller of "a fifth of the row" and "half the strip's budget" —
-    // width-limited on a laptop, height-limited on a big screen, never scrolling either
-    // way. Only when height wins does space-between have any slack to spread.
-    if (picker && h > 0) {
-        const GAP = 10, ROWS = 2, COLS = 5;
-        const widthTile = Math.floor((w - (COLS - 1) * GAP) / COLS);
-        const heightTile = Math.floor((h * VENUE_STRIP_SHARE - (ROWS - 1) * GAP) / ROWS);
-        const tile = Math.max(64, Math.min(widthTile, heightTile));
-        picker.style.gridTemplateColumns = `repeat(${COLS}, minmax(0, ${tile}px))`;
-    }
+    // The chart lives UNDER the hero now (Sep 2026) and takes whatever height is left, so the
+    // hero also yields when the column is short: the chart keeps at least CHART_MIN.
+    const side = Math.round(w * HERO_ART_SHARE);
+    const CHART_MIN = 200, GAP = 12;
+    const height = h > 0 ? Math.max(220, Math.min(side, h - CHART_MIN - GAP)) : side;
+    hero.style.height = height + 'px';
+    hero.style.maxHeight = height + 'px';
+    art.style.maxWidth = height + 'px';
+    void picker;   // the cards are a plain 3-column grid now; CSS owns their size
 }
 
 // THE BREEZE A BRIEFING SHOULD QUOTE. Not `state.wind.baseSpeed`, which is the region
@@ -443,7 +480,7 @@ function renderVenueDetail(key) {
 
     UI.venueDetail.innerHTML = `
         <div class="pr-chips flex gap-2 shrink-0">
-            <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">Venue ${idx} of ${VENUE_ORDER.length}</span>
+            <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">${(window.Series && Series.active) ? `Race ${Series.raceNumber()} of ${Series.total()}` : `Venue ${idx} of ${VENUE_ORDER.length}`}</span>
             <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#7ff0d4; white-space:nowrap;">${c.tag || key}</span>
         </div>
         <div class="t-display uppercase pr-venue-title${longName}">${c.name || c.tag || key}</div>
@@ -456,19 +493,11 @@ function renderVenueDetail(key) {
              stay a fixed-width readout column, anchored to the bottom edge like
              the chart so the two read as one baseline. The Course row still
              carries the numbers, so nothing is lost when the chart yields. -->
-        <div class="pr-bottom flex" style="flex:1 1 auto; gap:14px;">
-            <!-- The box is the AVAILABLE room; the inner card crops itself to the
-                 course's own aspect inside it (drawCourseMiniMap sizes it), pinned
-                 to the bottom-left so growth spends the slack upward. -->
-            <div id="venue-course-box" class="relative" style="flex:1 1 auto; min-width:0;">
-                <div id="venue-course-inner" style="position:absolute; left:0; bottom:0; border-radius:8px; background:rgba(6,14,26,0.45); overflow:hidden;">
-                    <canvas id="venue-course-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
-                </div>
-                <!-- The record book rides in whatever water the chart leaves — see
-                     drawCourseMiniMap, which places it and decides if it fits. -->
-                <div id="venue-records-inline" style="position:absolute; bottom:0; right:0; display:none; min-width:0; overflow:hidden;"></div>
-            </div>
-            <div class="pr-facts flex flex-col gap-1.5" style="flex:0 1 360px; min-width:240px; align-self:flex-end;">
+        <div style="flex:1 1 auto;"></div>
+        <!-- The chart is no longer in here: it sits under the hero, full width, in
+             #venue-course-box (index.html). The facts anchor to the panel's bottom. -->
+        <div class="pr-bottom flex" style="gap:14px;">
+            <div class="pr-facts flex flex-col gap-1.5" style="flex:1 1 auto; min-width:240px;">
                 ${row('Wind', pending ? '&hellip;' : windRangeText())}
                 ${row('Water', waterVal || (pending ? '&hellip;' : '&mdash;'))}
                 ${row('Hazards', c.hazards || '—')}
@@ -1547,6 +1576,7 @@ function characterBoatCanvas(cfg) {
 
 function openCharacterPicker() {
     if (!UI.characterPicker) return;
+    if (window.Series && Series.locked()) { showToast(`Your skipper is locked for the ${Series.active.kind}`); return; }
     const grid = UI.characterPicker.querySelector('#character-grid');
     // Unhide BEFORE filling it: `renderProfileBoat` measures its parent, and a display:none
     // grid measures zero — which would shrink every boat to the 104px floor.
@@ -1594,11 +1624,13 @@ function closeCharacterPicker() {
 })();
 
 function pickCharacter(name) {
+    if (window.Series && Series.locked()) { closeCharacterPicker(); return; }
     settings.character = name;
     saveSettings();
     applyPlayerCharacter();
     closeCharacterPicker();
     renderCompetitorGrid();
+    if (typeof refreshClubhouse === 'function') refreshClubhouse();   // the hub's skipper badge
 }
 
 // --- Who the player is ------------------------------------------------------
@@ -1715,11 +1747,13 @@ function selectVenue(key) {
 }
 
 function setupPreRaceOverlay() {
+    // Un-hide BEFORE rendering. The chart sizes itself from the briefing column, and a
+    // display:none column measures zero: the chart then hides its own box and the resize
+    // observer watching that box never wakes. Harmless while the board was the first
+    // screen and always up; the clubhouse hub now hides it between visits (Sep 2026).
+    if (UI.preRaceOverlay) UI.preRaceOverlay.classList.remove('hidden');
     renderVenuePicker();
     if (!UI.preRaceOverlay) return;
-
-    // Show Overlay
-    UI.preRaceOverlay.classList.remove('hidden');
     UI.preRaceOverlay.querySelectorAll('.overflow-y-auto').forEach(el => el.scrollTop = 0);
     UI.leaderboard.classList.add('hidden');
     UI.legInfo.parentElement.classList.add('hidden'); // Hide venue caption
@@ -1772,6 +1806,8 @@ function renderCompetitorGrid() {
     UI.prCompetitorsGrid.innerHTML = '';
     const count = document.getElementById('pr-fleet-count');
     if (count) count.textContent = `${state.boats.length} boats`;
+    // No changing skipper mid-cup: the fleet — you included — is what started race one.
+    const seriesLocked = !!(window.Series && Series.locked());
 
     // ONE BADGE PER BOAT, listed — the same identity band the picker and the results screen
     // use, boat preview and all, so a rival looks the same everywhere you meet them. Ten do
@@ -1794,12 +1830,16 @@ function renderCompetitorGrid() {
             compact: true, boat: true,
             // Your badge says YOU where a rival's says what kind of sailor they are, and it
             // carries the control that swaps you for someone else.
-            label: boat.isPlayer ? 'You <span class="pr-change-pill">Change</span>' : undefined
+            label: boat.isPlayer
+                ? (seriesLocked ? `You <span class="pr-lock-pill">Locked for the ${Series.active.kind}</span>` : 'You <span class="pr-change-pill">Change</span>')
+                : undefined
         });
         // YOUR badge is the way to change character — there is no header chip any more, and
         // your own badge has no scouting notes to open, so its click is free to mean the
         // one thing you would want from it.
-        badge.addEventListener('click', () => boat.isPlayer ? openCharacterPicker() : selectCompetitor(key));
+        badge.addEventListener('click', () => boat.isPlayer
+            ? (seriesLocked ? showToast(`Your skipper is locked for the ${Series.active.kind}`) : openCharacterPicker())
+            : selectCompetitor(key));
         item.appendChild(badge);
 
         // YOUR badge does not open scouting notes. There is nothing to scout — you take no
@@ -1882,6 +1922,12 @@ function hideVenueLoading() {
 
 function beginRace() {
     if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
+    if (typeof hideClubhouseOverlays === 'function') hideClubhouseOverlays();
+    // Starting race one of a cup or series is what locks the fleet: these nine, and you as
+    // this skipper, race every venue in it. Nothing is locked before the gun.
+    if (window.Series && Series.active && !Series.locked()) {
+        Series.lockFleet(state.boats.filter(b => !b.isPlayer).map(b => b.name), settings.character);
+    }
     UI.leaderboard.classList.remove('hidden'); // Or hidden if prestart logic handles it
     // Prestart logic usually hides leaderboard until start? No, updateLeaderboard logic: if 'prestart' UI.leaderboard.classList.add('hidden');
 
@@ -2017,7 +2063,8 @@ function raceContextLine() {
     const p = state.boats[0];
     // Sailing School: the pond and the section, as the section screen names it.
     if (window.School && School.active && School.sectionName) return `DUCKLING POND · ${School.sectionName().toUpperCase()}`;
-    const venue = (venueDisplayName(state.race.venue) || '').toUpperCase();
+    const pre = (window.Series && Series.active) ? `${Series.active.name} · RACE ${Series.raceNumber()}/${Series.total()} · `.toUpperCase() : '';
+    const venue = pre + (venueDisplayName(state.race.venue) || '').toUpperCase();
     const total = state.race.totalLegs;
     const leg = p ? p.raceState.leg : 0;
     if (!p || leg === 0) return `${venue} · PRESTART`;
@@ -2028,6 +2075,11 @@ function raceContextLine() {
 // What abandoning costs, in the race's own terms — the honest version of "are
 // you sure?". Staying in the race is the default (and what ESC does).
 function abandonContextLine() {
+    // A cup or series is abandoned whole: no per-race retire, no restart, standings gone.
+    if (window.Series && Series.active) {
+        const s = Series.active, t = Series.total(), done = s.results.filter(Boolean).length;
+        return `This ends the ${s.name} ${done ? `after race ${done} of ${t}` : `before race ${Series.raceNumber()} of ${t}`}. The standings won't be kept.`;
+    }
     const p = state.boats[0];
     const total = state.race.totalLegs;
     const leg = p ? p.raceState.leg : 0;
@@ -2052,7 +2104,10 @@ function togglePause(show) {
         // last one), and the red row leaves the school rather than abandoning a race.
         const school = !!(window.School && School.active);
         if (UI.skipButton) UI.skipButton.classList.toggle('hidden', !(school && School.canSkip()));
-        if (UI.abandonLabel) UI.abandonLabel.textContent = school ? 'LEAVE SCHOOL' : 'ABANDON RACE';
+        const series = !school && !!(window.Series && Series.active);
+        if (UI.abandonLabel) UI.abandonLabel.textContent = school ? 'LEAVE SCHOOL' : series ? `ABANDON ${Series.active.kind.toUpperCase()}` : 'ABANDON RACE';
+        // No restarting a race inside a cup: abandoning ends the whole thing (Wes, Sep 4 2026).
+        if (UI.restartButton) UI.restartButton.classList.toggle('hidden', series);
         if (UI.pauseScreen) UI.pauseScreen.classList.remove('hidden');
         if (UI.helpScreen) UI.helpScreen.classList.add('hidden');
         if (UI.settingsScreen) UI.settingsScreen.classList.add('hidden');
@@ -2071,6 +2126,8 @@ function toggleAbandon(show) {
     if (!UI.abandonScreen) return;
     if (show) {
         if (UI.abandonContext) UI.abandonContext.textContent = abandonContextLine();
+        const title = UI.abandonScreen.querySelector('.ov-title');
+        if (title) title.textContent = (window.Series && Series.active) ? `Abandon ${Series.active.kind}?` : 'Abandon race?';
         UI.abandonScreen.classList.remove('hidden');
     } else {
         UI.abandonScreen.classList.add('hidden');
@@ -2147,7 +2204,7 @@ if (UI.restartButton) UI.restartButton.addEventListener('click', (e) => { e.prev
 if (UI.abandonButton) UI.abandonButton.addEventListener('click', (e) => { e.preventDefault(); UI.abandonButton.blur(); if (window.School && School.active) { togglePause(false); School.exit(); } else toggleAbandon(true); });
 if (UI.skipButton) UI.skipButton.addEventListener('click', (e) => { e.preventDefault(); UI.skipButton.blur(); if (window.School && School.active) { togglePause(false); School.skip(); } });
 if (UI.abandonKeep) UI.abandonKeep.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(false); togglePause(false); });
-if (UI.abandonConfirm) UI.abandonConfirm.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(false); restartRace(); });
+if (UI.abandonConfirm) UI.abandonConfirm.addEventListener('click', (e) => { e.preventDefault(); toggleAbandon(false); if (window.Series && Series.active) Series.abandon(); restartRace(); });
 if (UI.settingsButton) UI.settingsButton.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); UI.settingsButton.blur(); });
 if (UI.preRaceSettingsBtn) UI.preRaceSettingsBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); UI.preRaceSettingsBtn.blur(); });
 if (UI.closeSettings) UI.closeSettings.addEventListener('click', () => toggleSettings(false));
@@ -2184,28 +2241,43 @@ document.querySelectorAll('.ov-swatch[data-color]').forEach(b => b.addEventListe
 }
 // Two ways off the results page, where a series would have offered "next race": back to
 // the clubhouse to change venue or character, or straight into another race here.
-if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); restartRace(); });
-if (UI.resultsRematchButton) UI.resultsRematchButton.addEventListener('click', (e) => { e.preventDefault(); rematchRace(); });
+// Inside a cup or series the same two buttons are "abandon" (behind the confirm) and
+// "standings" — the results page never offers a rematch mid-series.
+if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); if (window.Series && Series.active) toggleAbandon(true); else restartRace(); });
+if (UI.resultsRematchButton) UI.resultsRematchButton.addEventListener('click', (e) => { e.preventDefault(); if (window.Series && Series.active) proceedToStandings(); else rematchRace(); });
 if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preventDefault(); startRace(); });
 {
-    // Sailing School. Primary styling until graduated, then a plain secondary — the
-    // clubhouse leads with the school for a first-time player and gets out of the way after.
-    const sb = document.getElementById('school-btn');
-    if (sb) {
-        const style = () => {
-            const grad = window.School && School.graduated();
-            sb.classList.toggle('res-btn-primary', !grad);
-            if (UI.startRaceBtn) UI.startRaceBtn.classList.toggle('res-btn-primary', !!grad);
-            sb.textContent = grad ? 'Sailing School' : 'Sailing School →';
-        };
-        style();
-        window.__styleSchoolBtn = style;
-        sb.addEventListener('click', (e) => {
-            e.preventDefault(); sb.blur();
-            if (state.race.status !== 'waiting' || _venueLoading) return;
-            School.begin();
-        });
-    }
+    // THE CLUBHOUSE DOORS (Sep 2026 redesign). The school is the front door until you
+    // graduate; Cup and Series go through a picker; Race opens the board as it always was.
+    const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', (e) => { e.preventDefault(); el.blur(); fn(e); }); };
+    const idle = () => state.race.status === 'waiting' && !_venueLoading;
+    on('door-school', () => { if (!idle()) return; hideClubhouseOverlays(); School.begin(); });
+    on('door-cup', () => { if (!idle()) return; showCupPicker(); });
+    on('door-series', () => { if (!idle()) return; showSeriesPicker(); });
+    on('door-race', () => { if (!idle()) return; if (window.Series && Series.active) Series.abandon(); showRaceBoard(); });
+    on('cup-back-btn', () => showClubhouse());
+    on('series-back-btn', () => showClubhouse());
+    // Leaving the board mid-cup is abandoning the cup, so it goes through the confirm.
+    on('prerace-back-btn', () => { if (!idle()) return; if (window.Series && Series.active) toggleAbandon(true); else showClubhouse(); });
+    on('series-redraw-btn', () => { _seriesDraw = Series.draw(_seriesLen); renderSeriesPicker(); });
+    on('series-start-btn', () => { if (!idle() || !_seriesDraw) return; Series.startSeries(_seriesDraw); _seriesDraw = null; enterSeriesRace(); });   // straight to the race 1 briefing, like a cup
+    // The fleet page: back to where you chose, or on — a single race starts here, a cup or
+    // series goes to its first briefing.
+    on('fleet-back-btn', () => {
+        if (!idle()) return;
+        if (window.Series && Series.active && _fleetFrom !== 'board') { const k = Series.active.kind; Series.abandon(); if (k === 'cup') showCupPicker(); else showSeriesPicker(); }
+        else showRaceBoard();
+    });
+    on('hub-skipper', () => { if (!idle()) return; openCharacterPicker(); });
+    on('fleet-primary-btn', () => { if (!idle()) return; if (window.Series && Series.active) showRaceBoard(); else startRace(); });
+    on('standings-abandon-btn', () => { if (!Series.active) return; if (Series.finished()) { Series.abandon(); restartRace(); } else toggleAbandon(true); });
+    on('standings-next-btn', () => {
+        if (!Series.active) return;
+        if (Series.finished()) { const sr = Series.active; if (sr.kind === 'cup') Series.startCup(sr.id); else Series.startSeries(sr.venues); enterSeriesRace(); }
+        else { Series.advance(); enterSeriesRace(); }
+    });
+    document.querySelectorAll('.js-open-settings').forEach(b => b.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); b.blur(); }));
+    window.__styleSchoolBtn = () => refreshClubhouse();   // School.exit() calls this by name
 }
 {
     const rc = document.getElementById('records-close');
@@ -2621,6 +2693,7 @@ function showResults() {
     renderResultsSplits(player);
     renderResultsRows(sorted, leader, fleetExtremes(), gapScale);
     renderResultsFootnote(leader);
+    styleResultsButtons();
 }
 
 // Venue, breeze, fleet size — and whether the race is actually over, which it often is
@@ -3167,3 +3240,406 @@ GameEvents.on('player-penalty', (info) => {
     const why = info && info.rule ? ` (${info.rule}${info.reason ? ' — ' + info.reason : ''})` : '';
     showRaceMessage(`PENALTY${why}! DO A 360° TURN TO CLEAR`, "text-red-500", "border-red-500/50");
 });
+
+
+// ═══════════════════════════ THE CLUBHOUSE (Sep 2026 redesign) ═══════════════════════════
+// Four doors in front of the race board. Sailing School goes straight onto the pond; Cup
+// and Series pick a race list and then use the SAME board a single race uses, in its
+// series dress: the picker gives way to the route, the header names the race, and from
+// race two your skipper is locked. Between races: the standings; after the last: the
+// podium. The series itself — venues, index, points, tie-break — is js/game/series.js.
+
+const _CH_ARROW = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>';
+const _CH_REDO = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg>';
+function _ordinal(n) { const sfx = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (sfx[(v - 20) % 10] || sfx[v] || sfx[0]); }
+
+function _chOverlays() { return [UI.clubhouse, UI.cupOverlay, UI.seriesOverlay, UI.standingsOverlay, UI.fleetOverlay].filter(Boolean); }
+function hideClubhouseOverlays() { for (const el of _chOverlays()) el.classList.add('hidden'); }
+function _chShow(el) {
+    hideClubhouseOverlays();
+    if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
+    if (UI.resultsOverlay) UI.resultsOverlay.classList.add('hidden');
+    if (el) { el.classList.remove('hidden'); el.scrollTop = 0; }
+}
+// Is any clubhouse screen (hub, a picker, the standings) up? The render loop and the
+// keyboard treat these like the board.
+function clubhouseUp() { return _chOverlays().some(el => !el.classList.contains('hidden')); }
+
+// The shelf's four states, one colour each: won (gold), a best finish of 2nd (silver) or
+// 3rd (bronze), and not yet placed (a dim ghost). The medal dots on the standings use the
+// same three metals, so a trophy and its dot agree.
+const TROPHY_TONES = {
+    won:    ['#f2c14e', 'rgba(242,193,78,0.18)'],
+    silver: ['#c0c8d4', 'rgba(192,200,212,0.16)'],
+    bronze: ['#c88a5a', 'rgba(200,138,90,0.16)'],
+    none:   ['#7787a0', 'rgba(119,135,160,0.10)'],
+};
+function trophyState(cupId) {
+    const t = Series.trophies()[cupId];
+    if (!t) return 'none';
+    if (t.won) return 'won';
+    if (t.best === 2) return 'silver';
+    if (t.best === 3) return 'bronze';
+    return 'none';
+}
+const rankState = (rank) => rank === 1 ? 'won' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : 'none';
+
+// Placeholder silverware, one form per cup — a two-handled cup, a tall chalice, a wide
+// bowl — until the masters land (art/manifest.json `trophy-<id>`).
+function trophySVG(form, size, state) {
+    const [c, fill] = TROPHY_TONES[state === true ? 'won' : (state || 'none')] || TROPHY_TONES.none;
+    const common = `xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 64 64" fill="${fill}" stroke="${c}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"`;
+    if (form === 'cup') return `<svg ${common}><path d="M18 12h28v14a14 14 0 0 1-28 0z"></path><path d="M18 18h-6a6 6 0 0 0 6 10"></path><path d="M46 18h6a6 6 0 0 1-6 10"></path><path d="M32 40v8"></path><path d="M22 52h20"></path><path d="M18 56h28"></path></svg>`;
+    if (form === 'chalice') return `<svg ${common}><path d="M22 8h20v16a10 10 0 0 1-20 0z"></path><path d="M32 34v14"></path><path d="M32 22l3 4h-6z"></path><path d="M24 52h16"></path><path d="M20 56h24"></path></svg>`;
+    if (form === 'trophy') return `<svg ${common}><path d="M24 8h16l-2 26h-12z"></path><path d="M28 34h8v8h-8z"></path><path d="M20 46h24l2 8H18z"></path><path d="M14 56h36"></path><path d="M32 14v10"></path></svg>`;
+    return `<svg ${common}><path d="M10 24h44a22 22 0 0 1-44 0z"></path><path d="M32 46v6"></path><path d="M20 56h24"></path><path d="M26 32a6 6 0 1 1 6 6a3 3 0 1 1 -3 -3"></path></svg>`;
+}
+
+// The cup's trophy at `size`px in the given state: the delivered gold master when the cup
+// has `art`, else the placeholder of the same form. One master per cup — the silver, the
+// bronze and the ghost are CSS on the same image.
+function trophyHTML(cup, size, state) {
+    const st = state === true ? 'won' : (state || 'none');
+    if (!cup || !cup.art) return trophySVG(cup ? cup.form : 'cup', size, st);
+    const filt = { won: 'drop-shadow(0 0 16px rgba(242,193,78,0.45))', silver: 'grayscale(1) brightness(1.08)',
+                   bronze: 'sepia(0.6) hue-rotate(-18deg) saturate(1.1) brightness(0.72)', none: 'grayscale(1) brightness(0.55) opacity(0.45)' }[st];
+    return `<img src="assets/images/trophies/trophy-${cup.id}.png" alt="" draggable="false" style="width:${size}px; height:${size}px; object-fit:contain; filter:${filt};">`;
+}
+
+// A venue tile as a picture of where you are going: thumb, name on the scrim, a tag.
+function _routeTile(key, cls, tag, aspect, cssPx) {
+    // aspect: the tile's width/height (1 = square); the route strip passes its own.
+    const name = venueDisplayName(key) || key;
+    const sel = /\bsel\b/.test(cls || '');
+    return `<div class="${cls || ''}" style="min-width:0;">
+        <div class="pr-venue-shot" style="${aspect ? `aspect-ratio:${aspect};` : ''}${sel ? 'box-shadow:0 0 0 2px #5aa7ff, 0 6px 18px rgba(90,167,255,0.35);' : ''}">
+            ${venueThumb(key, escapeHTMLText(name), cssPx || 170)}
+            ${tag ? `<span class="t-mono pr-route-tag">${tag}</span>` : ''}
+            <span class="pr-venue-name t-display-8 uppercase">${escapeHTMLText(name)}</span>
+        </div></div>`;
+}
+
+// ESC AS "BACK" (Wes, Sep 6): whatever the screen's own back button would do. Dialogs
+// (settings, the record book, the character picker, the abandon confirm) are peeled off
+// first by the key handler in input.js; this is only reached with none of them open.
+function clubhouseBack() {
+    const up = (el) => el && !el.classList.contains('hidden');
+    const idle = state.race.status === 'waiting' && !_venueLoading;
+    if (!idle) return false;
+    const inS = !!(window.Series && Series.active);
+    if (up(UI.fleetOverlay)) {
+        if (inS && _fleetFrom !== 'board') { const k = Series.active.kind; Series.abandon(); if (k === 'cup') showCupPicker(); else showSeriesPicker(); }
+        else showRaceBoard();
+        return true;
+    }
+    if (up(UI.cupOverlay) || up(UI.seriesOverlay)) { showClubhouse(); return true; }
+    if (up(UI.standingsOverlay)) {
+        if (Series.finished()) { Series.abandon(); restartRace(); } else toggleAbandon(true);
+        return true;
+    }
+    if (up(UI.preRaceOverlay)) { if (inS) toggleAbandon(true); else showClubhouse(); return true; }
+    return false;   // the hub: nowhere further back to go
+}
+
+// ── the hub ──────────────────────────────────────────────────────────────────
+// The hub's painting. null until the hero master is ingested (art/manifest.json
+// `hero-clubhouse` -> assets/images/hero/clubhouse.png); the home venue's card stands in.
+const HUB_HERO = 'assets/images/hero/hero-clubhouse.jpg';   // the JPEG ingest writes beside the PNG master
+
+function showClubhouse() {
+    if (!UI.clubhouse) return;
+    refreshClubhouse();
+    _chShow(UI.clubhouse);
+}
+// Every door shows its state; the school keeps the primary dress until you graduate.
+function refreshClubhouse() {
+    if (!UI.clubhouse || !window.Series) return;
+    const $ = (id) => document.getElementById(id);
+    const grad = !!(window.School && School.graduated());
+    const door = $('door-school');
+    if (door) {
+        door.classList.toggle('primary', !grad);
+        // The front door until you graduate; the last door after. Moving the element keeps
+        // every handler and id, so nothing else has to know the order changed.
+        const row = door.parentElement;
+        if (row) { if (grad && row.lastElementChild !== door) row.appendChild(door); else if (!grad && row.firstElementChild !== door) row.prepend(door); }
+    }
+    const chip = $('door-school-chip'); if (chip) chip.classList.toggle('hidden', grad);
+    // Four dots, one per section, filled as each is completed (all four once graduated).
+    if (door) {
+        const pic = door.querySelector('.ch-door-pic');
+        const dots = (window.School && School.unitsDone) ? School.unitsDone() : [false, false, false, false];
+        let holder = pic && pic.querySelector('.ch-dots');
+        if (pic && !holder) {
+            holder = document.createElement('div'); holder.className = 'ch-dots';
+            holder.style.cssText = 'position:absolute; right:12px; bottom:12px; display:flex; gap:7px; padding:7px 10px; border-radius:999px; background:rgba(6,14,26,0.72);';
+            pic.appendChild(holder);
+        }
+        if (holder) {
+            holder.title = `${dots.filter(Boolean).length} of 4 sections completed`;
+            holder.innerHTML = dots.map(d => `<span style="width:11px; height:11px; border-radius:999px; border:2px solid #7ff0d4; background:${d ? '#7ff0d4' : 'transparent'};"></span>`).join('');
+        }
+    }
+    const st = $('door-school-state'); if (st) { st.textContent = grad ? 'Graduated' : 'Not yet graduated'; st.style.color = grad ? '#7f8ea9' : '#7ff0d4'; }
+    const cta = $('door-school-cta'); if (cta) cta.innerHTML = (grad ? 'Sail again ' : 'Start school ') + _CH_ARROW;
+    const t = Series.trophies();
+    const won = Series.cupsWon();
+    const cupState = $('door-cup-state'); if (cupState) { cupState.textContent = won ? `${won} of ${CUPS.length} won` : 'No cups won yet'; cupState.style.color = won ? '#f2c14e' : '#7f8ea9'; }
+    const cupPic = $('door-cup-pic'); if (cupPic) cupPic.innerHTML = `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:18px; background:radial-gradient(420px 160px at 50% 100%, rgba(242,193,78,0.14), transparent);">${CUPS.map(c => trophyHTML(c, 84, trophyState(c.id))).join('')}</div>`;
+    const sb = t.series && t.series.best;
+    const seriesState = $('door-series-state'); if (seriesState) { seriesState.textContent = sb ? `Best: ${_ordinal(sb.rank)} · ${sb.n} races` : 'No series yet'; seriesState.style.color = sb && sb.rank === 1 ? '#f2c14e' : '#7f8ea9'; }
+    // THE DRAW AS A HAND OF CARDS (design 21a): three venue cards fanned on a graphite
+    // stage, the outer two splayed and tilted, the middle one on top, all peeking up from
+    // the bottom edge — a draw you could pick up. Dealt once per visit, not on every refresh.
+    const seriesPic = $('door-series-pic');
+    if (seriesPic && !seriesPic.children.length) {
+        const hand = Series.draw(3);
+        const card = (k, i) => {
+            const tf = i === 0 ? 'translateX(-50%) translateX(-58px) rotate(-14deg)' : i === 2 ? 'translateX(-50%) translateX(58px) rotate(14deg)' : 'translateX(-50%)';
+            const shadow = i === 1 ? '0 10px 24px rgba(0,0,0,0.6)' : '0 8px 20px rgba(0,0,0,0.5)';
+            return `<div class="ch-fan-card" style="position:absolute; left:50%; bottom:${i === 1 ? -20 : -28}px; width:110px; height:90px; border-radius:8px; border:2px solid #fff; overflow:hidden; box-shadow:${shadow}; transform:${tf}; z-index:${i === 1 ? 2 : 1};">${venueThumb(k, escapeHTMLText(venueDisplayName(k) || k), 110)}</div>`;
+        };
+        seriesPic.innerHTML = `<div style="position:absolute; inset:0; background:radial-gradient(ellipse at 50% 110%, #2a3450, #111a2e 70%);">${[0, 2, 1].map(i => card(hand[i], i)).join('')}</div>`;
+    }
+    const last = (settings.venue && VENUE_ORDER.includes(settings.venue)) ? settings.venue : 'bay';
+    const raceState = $('door-race-state'); if (raceState) raceState.textContent = `Last race · ${venueDisplayName(last) || last}`;
+    const racePic = $('door-race-pic');
+    if (racePic) {
+        racePic.innerHTML = `<img src="assets/images/venues/${last}.png" alt="${escapeHTMLText(venueDisplayName(last) || last)}" draggable="false">`;
+        // The record for that venue, as the briefing states it: your best time in gold, else
+        // the course's time to beat. The door says "Set a record" — this is the number.
+        const best = (typeof bestForVenue === 'function') ? bestForVenue(last) : null;
+        const prov = (typeof provisionalRecord === 'function') ? provisionalRecord(last) : null;
+        const rec = best ? { label: 'Your best', t: best.t, mine: true } : (prov != null ? { label: 'Time to beat', t: prov, mine: false } : { label: 'No record yet', t: null, mine: false });
+        // m:ss.s — the door is a glance, not the records book.
+        const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
+        racePic.insertAdjacentHTML('beforeend', `<span class="ch-chip" style="position:absolute; right:12px; bottom:12px; display:inline-flex; align-items:center; gap:8px; background:rgba(6,14,26,0.8); color:${rec.mine ? '#f2c14e' : rec.t != null ? '#dbeafe' : '#9fb2cc'}; border:1px solid ${rec.mine ? 'rgba(242,193,78,0.5)' : 'rgba(255,255,255,0.22)'};">${rec.label}${rec.t != null ? ` <span class="t-mono" style="font-size:13px; letter-spacing:0; text-transform:none;">${fmt(rec.t)}</span>` : ''}</span>`);
+    }
+    const hero = $('hub-hero-img'); if (hero && HUB_HERO && hero.getAttribute('src') !== HUB_HERO) hero.src = HUB_HERO;
+    // Who you are, in the header. Locked mid-series, so the pill says so then.
+    const me = playerCharacter();
+    const skImg = $('hub-skipper-img'); if (skImg) { skImg.src = `assets/images/competitors/${me.name.toLowerCase()}.png`; skImg.alt = me.name; }
+    const skName = $('hub-skipper-name'); if (skName) skName.textContent = me.name;
+    const tally = $('clubhouse-tally'); if (tally) tally.textContent = `${Series.pool().length} venues · ${CUPS.length} cups · ${(typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.length : 0} sailors`;
+}
+// The race board — the pre-race overlay, in whichever dress the moment calls for.
+function showRaceBoard() {
+    hideClubhouseOverlays();
+    if (UI.resultsOverlay) UI.resultsOverlay.classList.add('hidden');
+    setupPreRaceOverlay();
+}
+
+// ── cups ─────────────────────────────────────────────────────────────────────
+let _cupSel = null;
+function showCupPicker() { renderCupPicker(); _chShow(UI.cupOverlay); }
+function renderCupPicker() {
+    const list = document.getElementById('cup-list'); if (!list) return;
+    const t = Series.trophies();
+    if (!_cupSel) _cupSel = (CUPS.find(c => !(t[c.id] && t[c.id].won)) || CUPS[0]).id;
+    list.innerHTML = CUPS.map(c => {
+        const tr = t[c.id], won = !!(tr && tr.won), sel = c.id === _cupSel;
+        const stateText = won ? `Won · best ${tr.bestPts} pts` : (tr && tr.sailed) ? `Sailed · best ${_ordinal(tr.best)}` : 'Not yet sailed';
+        return `<button type="button" class="ch-cup${sel ? ' sel' : ''}" data-cup="${c.id}">
+            <div class="flex items-center justify-center" style="position:relative;">${trophyHTML(c, 120, trophyState(c.id))}${
+                // A podium finish IS the trophy's metal. Anything worse shows the greyed cup with
+                // your best place over it, so a cup you have sailed never looks like one you haven't.
+                (tr && tr.sailed && !won && tr.best > 3)
+                    ? `<span class="t-mono" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:19px; color:#eef3fb; background:rgba(6,14,26,0.86); border:1px solid rgba(255,255,255,0.28); border-radius:999px; padding:5px 13px; letter-spacing:0.04em; white-space:nowrap;">${_ordinal(tr.best)}</span>`
+                    : ''}</div>
+            <div class="flex flex-col" style="gap:8px; min-width:0;">
+                <div class="t-display uppercase ch-cup-name" style="font-size:36px; line-height:0.98;">${c.name}</div>
+                <div class="ch-cup-blurb" style="font-size:14px; line-height:1.5; color:#d5ecf5;">${c.blurb}</div>
+                <div class="t-label t-label-sm" style="color:${won ? '#f2c14e' : '#7f8ea9'};">${stateText}</div>
+                <div style="margin-top:auto; padding-top:10px;">${sel ? `<span class="res-btn res-btn-primary js-cup-start" style="display:inline-block;">Sail this cup ${_CH_ARROW}</span>` : `<span class="res-btn" style="display:inline-block;">Select</span>`}</div>
+            </div>
+            <div class="ch-cup-venues">${c.venues.map((k, i) => _routeTile(k, 'ch-cup-tile', String(i + 1), null, 260)).join('')}</div>
+        </button>`;
+    }).join('');
+    list.querySelectorAll('.ch-cup').forEach(b => b.addEventListener('click', (e) => {
+        const id = b.dataset.cup;
+        if (id === _cupSel && e.target.closest('.js-cup-start')) { startCup(id); return; }
+        _cupSel = id; renderCupPicker();
+    }));
+}
+function startCup(id) {
+    if (state.race.status !== 'waiting' || _venueLoading) return;
+    if (!Series.startCup(id)) return;
+    enterSeriesRace();   // straight to the race 1 briefing; the fleet is a detour from there
+}
+
+// ── series ───────────────────────────────────────────────────────────────────
+let _seriesLen = 4, _seriesDraw = null;
+function showSeriesPicker() { if (!_seriesDraw) _seriesDraw = Series.draw(_seriesLen); renderSeriesPicker(); _chShow(UI.seriesOverlay); }
+function renderSeriesPicker() {
+    const lens = document.getElementById('series-lengths'), grid = document.getElementById('series-draw'), note = document.getElementById('series-draw-note');
+    if (!lens || !grid || !_seriesDraw) return;
+    lens.innerHTML = Series.lengths().map(n => `<button type="button" class="ch-len${n === _seriesLen ? ' sel' : ''}" data-n="${n}"><span class="t-display n">${n}</span><span class="t-label t-label-sm" style="color:${n === _seriesLen ? '#dbeafe' : '#7f8ea9'};">races</span></button>`).join('')
+        + `<div class="flex items-center" style="padding:0 6px; font-size:13px; line-height:1.5; color:#9fb2cc;">Twelve is every venue, shuffled.</div>`;
+    lens.querySelectorAll('.ch-len').forEach(b => b.addEventListener('click', () => { _seriesLen = +b.dataset.n; _seriesDraw = Series.draw(_seriesLen); renderSeriesPicker(); }));
+    const n = _seriesDraw.length;
+    const cols = n <= 4 ? 4 : n <= 6 ? 3 : 4;
+    grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
+    const tilePx = n <= 4 ? 260 : n <= 6 ? 360 : 260;   // 4 or 3 columns of the draw grid
+    grid.innerHTML = _seriesDraw.map((k, i) => _routeTile(k, '', `Race ${i + 1}`, n > 6 ? 1.8 : (n > 4 ? 1.4 : 1), tilePx)).join('');
+    if (note) note.textContent = `${n} races · about ${n * 5} minutes on the water`;
+}
+
+// Onto the board for the current race of the cup or series.
+function enterSeriesRace(opts) {
+    if (!Series.active) return;
+    settings.venue = Series.currentVenue();
+    saveSettings();
+    resetGame();
+    // At a start the fleet page comes first (you can still change skipper); between races
+    // the fleet is locked, so the briefing is next.
+    if (opts && opts.fleetFirst) showFleetPage({ from: 'picker' }); else showRaceBoard();
+}
+
+// ── the fleet page ───────────────────────────────────────────────────────────
+// Between choosing and starting: you (changeable until race one of a cup or series starts)
+// and the nine rivals with their scouting notes. A single race starts from here; a cup or
+// series goes on to its first briefing.
+let _fleetFrom = 'board';
+function showFleetPage(opts) {
+    if (!UI.fleetOverlay) return;
+    const inS = !!(window.Series && Series.active);
+    _fleetFrom = (opts && opts.from) || (inS ? 'picker' : 'board');
+    _chShow(UI.fleetOverlay);
+    // Render AFTER un-hiding: the boat previews measure the band they sit in.
+    selectedCompetitor = null;
+    renderCompetitorGrid();
+    if (UI.fleetCrumb) UI.fleetCrumb.textContent = inS ? `${Series.active.name} · the fleet for all ${Series.total()} races`.toUpperCase() : 'THE FLEET · ONE RACE';
+    const fromBoard = _fleetFrom === 'board';
+    if (UI.fleetBackLabel) UI.fleetBackLabel.textContent = inS ? (fromBoard ? 'Briefing' : (Series.active.kind === 'cup' ? 'Cups' : 'Series')) : 'Venues';
+    if (UI.fleetPrimaryBtn) UI.fleetPrimaryBtn.innerHTML = inS ? (fromBoard ? `Back to the briefing ${_CH_ARROW}` : `Race 1 briefing ${_CH_ARROW}`) : `Start Race ${_CH_ARROW}`;
+    if (UI.fleetContext) {
+        const key = settings.venue, c = venueCard(key);
+        const me = playerCharacter();
+        UI.fleetContext.innerHTML = `
+            <div class="t-label t-label-sm" style="color:#dbeafe;">${inS ? 'Race 1 of ' + Series.total() : 'Race day'}</div>
+            <div style="border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.09); background:#101a2e;">
+                <div class="pr-venue-shot" style="aspect-ratio:1.5; border-radius:0; box-shadow:none;">${venueThumb(key, escapeHTMLText(c.name || key), 400)}</div>
+                <div class="flex flex-col" style="padding:16px 20px 18px; gap:6px;">
+                    <div class="t-display uppercase" style="font-size:30px; line-height:0.98;">${escapeHTMLText(c.name || venueDisplayName(key) || key)}</div>
+                    <div style="font-size:13px; line-height:1.5; color:#d5ecf5;">${escapeHTMLText(c.blurb || '')}</div>
+                </div>
+            </div>
+            <div class="ch-panel flex flex-col" style="gap:10px;">
+                <div class="t-label t-label-sm" style="color:#dbeafe;">You're sailing as</div>
+                <div class="t-display uppercase" style="font-size:28px; line-height:1;">${escapeHTMLText(me.name)}</div>
+                <div class="t-mono" style="font-size:12px; color:#9fb2cc;">${escapeHTMLText(me.creature || '')}</div>
+                <button id="fleet-change-btn" class="res-btn" style="align-self:flex-start; padding:11px 18px; font-size:13px;">Change skipper</button>
+                <div style="font-size:13px; line-height:1.5; color:#9fb2cc;">${inS ? `Your skipper and this fleet lock when race 1 starts, for the whole ${escapeHTMLText(Series.active.kind)}.` : 'Click a rival for their scouting notes.'}</div>
+            </div>`;
+        const cb = document.getElementById('fleet-change-btn');
+        if (cb) cb.addEventListener('click', (e) => { e.preventDefault(); openCharacterPicker(); });
+    }
+}
+
+// The route strip on the board: every race of it, sailed / now / to come.
+function renderRouteStrip() {
+    if (!UI.prRouteGrid || !window.Series || !Series.active) return;
+    const s = Series.active, n = s.venues.length, cur = s.index;
+    const twoCols = n > 6;
+    UI.prRouteGrid.style.gridTemplateColumns = twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr';
+    UI.prRouteGrid.innerHTML = s.venues.map((k, i) => _routeTile(k, 'pr-route-tile' + (i === cur ? ' sel' : i > cur ? ' dim' : ''),
+        i < cur ? `Race ${i + 1} · sailed` : i === cur ? `Race ${i + 1} · now` : `Race ${i + 1}`, twoCols ? 2.0 : 2.6, twoCols ? 210 : 430)).join('');
+    if (UI.prRightTitle) UI.prRightTitle.innerHTML = `<span style="color:#f2c14e; font-size:14px; vertical-align:middle;">&#9679;</span> ${s.kind === 'cup' ? 'The cup, race by race' : 'The series, race by race'}`;
+    if (UI.prRouteNote) UI.prRouteNote.textContent = cur === 0 ? 'Your skipper locks when you start race 1' : _standingsBlurb();
+}
+function _standingsBlurb() {
+    const table = Series.standings(); const me = table.find(r => r.isPlayer); if (!me) return '';
+    const done = Series.active.results.filter(Boolean).length;
+    if (me.rank === 1) { const gap = table[1] ? me.total - table[1].total : 0; return `After race ${done}: you lead${gap ? ` by ${gap}` : ' on the tie-break'}`; }
+    return `After race ${done}: you're ${_ordinal(me.rank)}, ${table[0].total - me.total ? `${table[0].total - me.total} behind ${table[0].name}` : `level with ${table[0].name}`}`;
+}
+
+// ── between races ────────────────────────────────────────────────────────────
+// The results page's own finish order: finishers by time, then DNF, then DNS, then anyone
+// still on the water — by progress, since they are behind whoever is looking at the page.
+function finishOrder() {
+    const score = (boat) => !boat.raceState.finished ? 3 : boat.raceState.resultStatus === 'DNS' ? 2 : boat.raceState.resultStatus === 'DNF' ? 1 : 0;
+    return [...state.boats].sort((a, b) => {
+        const sa = score(a), sb = score(b);
+        if (sa !== sb) return sa - sb;
+        if (sa === 0) return a.raceState.finishTime - b.raceState.finishTime;
+        return getBoatProgress(b) - getBoatProgress(a);
+    });
+}
+function styleResultsButtons() {
+    const inS = !!(window.Series && Series.active);
+    if (UI.resultsRestartButton) UI.resultsRestartButton.textContent = inS ? `Abandon ${Series.active.kind}` : 'Back to Clubhouse';
+    if (UI.resultsRematchButton) UI.resultsRematchButton.innerHTML = inS ? `Standings ${_CH_ARROW}` : 'Rematch &#8635;';
+}
+function proceedToStandings() {
+    if (!window.Series || !Series.active) return;
+    if (!Series.active.results[Series.active.index]) Series.recordRace(finishOrder());
+    const final = Series.finished();
+    if (final) Series.recordFinal();
+    renderStandings(final);
+    _chShow(UI.standingsOverlay);
+}
+function renderStandings(final) {
+    const $ = (id) => document.getElementById(id);
+    const s = Series.active, table = Series.standings(), n = s.venues.length, done = s.results.filter(Boolean).length;
+    const me = table.find(r => r.isPlayer) || table[0];
+    const crumb = $('standings-crumb'); if (crumb) crumb.textContent = `${s.name} · ${final ? 'final standings' : `standings after race ${done} of ${n}`}`.toUpperCase();
+    // A tie the player is part of is the one worth explaining.
+    const note = $('standings-note');
+    if (note) {
+        const i = table.indexOf(me);
+        const tied = (i > 0 && table[i - 1].total === me.total) || (i < table.length - 1 && table[i + 1].total === me.total);
+        note.textContent = tied ? 'Tied on points? The better place in the last race wins.' : `${done} of ${n} race${n === 1 ? '' : 's'} sailed · 10 for a win, down to 1`;
+    }
+    const short = (k) => (venueDisplayName(k) || k).split(' ')[0];
+    const cols = `--races:${n};`;
+    const head = `<div class="ch-grid t-label" style="${cols} padding:0 14px 2px; font-size:10px; letter-spacing:0.14em; color:#66748c;"><div>Pos</div><div></div><div></div><div>Skipper</div>${s.venues.map(k => `<div style="text-align:right;">${escapeHTMLText(short(k))}</div>`).join('')}<div style="text-align:right;">Total</div></div>`;
+    const medal = (i) => i < 3 ? `<span style="display:inline-block; width:10px; height:10px; border-radius:999px; background:${['#f2c14e', '#c0c8d4', '#c88a5a'][i]};"></span>` : '';
+    const rows = table.map((r, i) => {
+        const cfg = (typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.find(c => c.name === r.name) : null;
+        const cells = s.venues.map((k, j) => { const p = r.pts[j]; const sailed = j < done; return `<div class="t-mono" style="font-size:15px; text-align:right; color:${sailed ? '#eef3fb' : '#3d4a63'};">${sailed ? p : '&mdash;'}</div>`; });
+        return `<div class="ch-grid ch-row${r.isPlayer ? ' me' : (i % 2 ? ' alt' : '')}" style="${cols}">
+            <div class="t-mono" style="font-size:16px; color:${r.isPlayer ? '#f2c14e' : '#eef3fb'};">${r.rank}</div>
+            <div>${medal(i)}</div>
+            <div><img src="assets/images/competitors/${escapeHTMLText(r.name.toLowerCase())}.png" alt="" style="width:42px; height:42px; object-fit:cover; border-radius:10px; background:${cfg ? bandColorFor(cfg.hull, cfg.spinnaker) : '#1f2937'}33;" draggable="false"></div>
+            <div style="min-width:0;"><div class="t-display uppercase truncate" style="font-size:20px; line-height:1;">${escapeHTMLText(r.name)}${r.isPlayer ? ' <span class="t-label t-label-sm" style="color:#f2c14e;">You</span>' : ''}</div><div class="t-mono" style="font-size:11px; color:#9fb2cc; margin-top:3px;">${escapeHTMLText(cfg ? cfg.creature : '')}</div></div>
+            ${cells.join('')}
+            <div class="t-mono" style="font-size:20px; text-align:right; color:${r.isPlayer ? '#f2c14e' : '#fff'};">${r.total}</div>
+        </div>`;
+    }).join('');
+    const tbl = $('standings-table'); if (tbl) tbl.innerHTML = head + rows;
+
+    const hero = $('standings-hero'), side = $('standings-side');
+    const cup = s.kind === 'cup' ? Series.cup(s.id) : null;
+    if (final) {
+        const winner = table[0];
+        if (hero) {
+            hero.classList.remove('hidden');
+            hero.innerHTML = `${trophyHTML(cup, 120, rankState(me.rank))}
+                <div class="flex flex-col" style="gap:8px;">
+                    <div class="t-label" style="color:#f2c14e;">${me.rank === 1 ? 'Winner' : 'Final result'}</div>
+                    <div class="t-display uppercase" style="font-size:56px; line-height:0.95;">${me.rank === 1 ? `You take the ${escapeHTMLText(s.name)}` : `${escapeHTMLText(winner.name)} takes the ${escapeHTMLText(s.name)}`}</div>
+                    <div style="font-size:15px; line-height:1.5; color:#d5ecf5; max-width:720px;">${me.rank === 1 ? `${me.total} points over ${n} races.` : `You finished ${_ordinal(me.rank)} on ${me.total} points, ${winner.total - me.total} behind.`}${cup ? (me.rank === 1 ? ' The trophy goes on the shelf.' : ' The trophy stays on the shelf, waiting.') : ''}</div>
+                </div>`;
+        }
+        if (side) side.innerHTML = `<div class="t-label t-label-sm" style="color:#dbeafe;">The ${escapeHTMLText(s.kind)}, race by race</div>
+            <div class="grid" style="grid-template-columns:repeat(${Math.min(n, 4)}, minmax(0, 1fr)); gap:8px;">${s.venues.map((k, i) => _routeTile(k, '', String(i + 1), null, 100)).join('')}</div>`;
+    } else {
+        if (hero) { hero.classList.add('hidden'); hero.innerHTML = ''; }
+        const next = Series.nextVenue(); const c = next ? venueCard(next) : {};
+        if (side) side.innerHTML = `<div class="t-label t-label-sm" style="color:#dbeafe;">Next up</div>
+            <div style="border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.09); background:#101a2e;">
+                <div class="pr-venue-shot" style="aspect-ratio:1.5; border-radius:0; box-shadow:none;"><img src="assets/images/venues/${next}.png" alt="" draggable="false"><span class="t-mono pr-route-tag" style="top:12px; left:12px; padding:4px 10px;">Race ${done + 1} of ${n}</span></div>
+                <div class="flex flex-col" style="padding:18px 20px 20px; gap:8px;">
+                    <div class="t-display uppercase" style="font-size:34px; line-height:0.98;">${escapeHTMLText(c.name || venueDisplayName(next) || next)}</div>
+                    <div style="font-size:14px; line-height:1.5; color:#d5ecf5;">${escapeHTMLText(c.blurb || '')}</div>
+                </div>
+            </div>
+            <div class="grid" style="grid-template-columns:repeat(${Math.min(n, 4)}, minmax(0, 1fr)); gap:8px;">${s.venues.map((k, i) => _routeTile(k, i === done ? 'sel' : i > done ? 'dim' : '', String(i + 1), null, 100)).join('')}</div>
+            <div style="flex-grow:1;"></div>
+            <div style="font-size:13px; line-height:1.5; color:#9fb2cc;">Abandoning ends the whole ${escapeHTMLText(s.kind)}. There is no restarting a race inside one.</div>`;
+    }
+    const ab = $('standings-abandon-btn'), nx = $('standings-next-btn');
+    if (ab) ab.textContent = final ? 'Back to clubhouse' : `Abandon ${s.kind}`;
+    if (nx) nx.innerHTML = final ? `Sail it again ${_CH_REDO}` : `Next race ${_CH_ARROW}`;
+}

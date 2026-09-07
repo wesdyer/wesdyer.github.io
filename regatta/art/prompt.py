@@ -36,6 +36,10 @@ VENUES = {
     # both carried their own colour argument inside the subject, which is why it was
     # not noticed. A building has no such argument, hence the key.
     "pond":      ("fresh meadow green, mown lawn right to the water's edge", "buttercup yellow -- training sails and ducklings"),
+    # Added Sep 2026 with the Otter Point card slot (venues.md 16). Charcoal granite and
+    # white surf are NEUTRALS in this card, not hues -- the commitment is the water.
+    "volcanic":  ("volcanic black rock and near-black water", "ember red — lava cracks, vents and the dusk glow"),
+    "otter":     ("deep cold saturated teal-green kelp-forest water with dark olive and rust-brown giant kelp mats", "ice-plant magenta on the cliff tops"),
 }
 
 # The base style was written for top-down props and asserts flat two-tone shading. Portraits
@@ -71,6 +75,37 @@ BASE_TEXTURE_SUBS = (
      "flat even ambient light with no light direction; "),
     ("vivid saturated jewel-toned color",
      "restrained color held in a narrow value range"),
+)
+
+# ── A TILE THAT IS SUPPOSED TO BE LOUD ──────────────────────────────────────
+# Every texture clause above, and the QUIET sentence in the class add-on, exists because
+# a ground is the surface boats are drawn on top of and must lose the contrast fight with
+# them. An asset flagged `emissive` is not a ground in that sense: it is the LIGHT INSIDE a
+# hazard — the molten bed the engine shows through the seams of a crust it draws itself —
+# and asking it to be restrained and narrow-valued would hand back a dim orange mud. Same
+# shape of problem as the portrait and tinted-master substitutions, same fix: the quiet
+# clauses are REPLACED at the source rather than argued down in the subject, because a
+# prompt carrying an instruction and its opposite is resolved by the generator dropping
+# one half at random. Everything about tiling, wrap and light direction stays: a bed
+# repeats exactly as a ground does.
+BASE_EMISSIVE_COLOR = ("incandescent saturated colour across a WIDE value range — this "
+                       "surface is self-lit and reads as heat")
+TEXTURE_QUIET_CLAUSE = (
+    "QUIET AND LOW CONTRAST: this is the surface every boat, mark and prop is drawn on "
+    "top of, so it must lose the contrast fight with them. Hold the whole image inside "
+    "a narrow value range. "
+)
+TEXTURE_EMISSIVE_CLAUSE = (
+    "LOUD ON PURPOSE: this is not a surface anything is drawn on top of — it is the light "
+    "inside a hazard, seen only through openings the engine cuts in a crust it draws "
+    "itself — so it may be as bright and as saturated as its material really is, and the "
+    "value range is WIDE. Keep every feature SOFT and flowing, so the brightness reads as "
+    "heat rather than as pattern. "
+)
+EMISSIVE_NEGATIVE = (
+    ", crust, cooled crust, black plates, cracked plates, dark cracks, crack lines, rock, "
+    "stone, ash, cinder, cinders, smoke, steam, sparks, embers flying, flames, fire, "
+    "water, dull, muted, desaturated, restrained, dim"
 )
 
 # Portrait-only negatives: reinforce the uniform, and the two failures both trial
@@ -260,6 +295,17 @@ CLASS_ADDON = {
         "Square aerial-oblique venue illustration, opaque, no text or lettering, no humans. "
         "Give the eye a path through the water. One focal element; corners quiet; bottom "
         "fifth simple enough for a name scrim."
+    ),
+    # The clubhouse hero (Sep 2026): the one wide painting in the library. It is CROPPED
+    # to a ~3:1 band on the hub and the wordmark sits in its upper left, so the composition
+    # has to survive both: the picture lives in the middle band, the upper-left is sky.
+    "hero": (
+        "Wide 3:2 landscape painting, opaque, no text or lettering anywhere, no humans. "
+        "COMPOSED FOR A WIDE CROP: the horizon sits at about 42% of the height; everything "
+        "that matters lives in the middle 55% of the height; the top fifth is sky only and the "
+        "bottom fifth is open water only. THE UPPER-LEFT QUARTER IS CLEAR SKY — the club's "
+        "wordmark is typeset over it later. Eye level, from a low vantage just above the "
+        "water, the way a sailor sees a harbour."
     ),
     # Rewritten after a review of all 82 portraits plus one generated trial. Seven decisions,
     # each of which the roster was measurably failing:
@@ -456,6 +502,23 @@ CLASS_ADDON = {
         "Flat interface icon, transparent background, heavy optical padding, one clear "
         "idea, readable at 32px over both dark navy and bright water."
     ),
+    # Cup trophies (Sep 2026 clubhouse). A trophy is club silverware, so it is modelled like a
+    # portrait (soft shading inside clean masses) rather than flat like a prop, and it is seen
+    # the one way a trophy is ever seen: straight on, at its own height, on a shelf. One master
+    # per cup; the not-yet-won state is a CSS grayscale of the same image, never a second asset.
+    "trophy": (
+        "A single piece of yacht-club silverware, alone. {bg} Seen STRAIGHT ON FROM THE FRONT "
+        "at its own height, the way a trophy stands on a shelf; upright, centred, filling about "
+        "80% of the frame's height, generous clear margin on every side, nothing else in frame. "
+        "It draws at about {display}px tall in a dark navy clubhouse, so the SILHOUETTE and the one "
+        "motif that says which cup this is must read at {display}px; fine engraving may not, and "
+        "there is no lettering anywhere. REAL METAL, modelled: polished GOLD built from a few "
+        "large clean value masses — warm pale-yellow highlights, a saturated gold body, one deep "
+        "amber-brown reflection band — with hard-edged faceted highlights, the way this library "
+        "models a hull; never chrome mirroring a room, never plastic, never a flat vector icon. "
+        "The game makes the silver and bronze podium versions from this one gold master, so the "
+        "gold is clean and even and there is no other metal on it."
+    ),
 }
 
 # ⚠️ THE HAZARD CLAUSE USED TO MANDATE A SPIKY SILHOUETTE AND THAT WAS ONE VENUE'S ANSWER
@@ -525,6 +588,26 @@ ARRANGEMENT_NEGATIVE = (
     "pattern, tiled pattern"
 )
 
+# The hero: what a harbour painting drifts toward when left alone — sunsets, people, text.
+HERO_NEGATIVE = (
+    ", text, lettering, signage, writing on flags or hulls, sail numbers, humans, people, "
+    "human hands, faces of people, night, dusk silhouettes, sunset filling the sky, sun in "
+    "frame, lens flare, god rays, fog, haze, ice, snow, lava, palm trees, tropical water, "
+    "more than ten racing boats, boats cut off by the frame edge, motorboat wakes, jet skis, "
+    "cruise ship, modern glass buildings, marina towers, cluttered foreground, "
+    "photographic depth of field, bokeh"
+)
+
+# Trophies: the failure modes of generated silverware. Engraving is the big one — a model
+# asked for a trophy WRITES ON IT — and after that, the things that make it read as a toy.
+TROPHY_NEGATIVE = (
+    ", engraved text, lettering, inscription, plaque text, numbers, date, monogram, logo on "
+    "the trophy, medal, ribbon, coin, badge, sticker, flat vector icon, clip art, emoji, "
+    "figurine on top, human figure, sailor figure, model boat on top, chrome mirror reflections "
+    "of a room, lens flare, sparkle stars, plastic, silver trophy, chrome, steel, rainbow, two "
+    "trophies, a set of trophies, shelf, table, wall, room, background objects, spotlight beam"
+)
+
 # Textures take these INSTEAD of ARRANGEMENT_NEGATIVE, which forbids "tiled pattern" and
 # "evenly spaced" — the two things a tile is required to be. A class-level swap, not an
 # `allowSymmetry` flag: the contradiction belongs to the class, not to any one asset.
@@ -581,11 +664,14 @@ def build(asset, profiles, bg="transparent"):
     prof = profiles[asset["class"]]
     display = asset.get("world", prof.get("reduceTest", 64))
     base = BASE
-    if asset["class"] == "portrait":
+    if asset["class"] in ("portrait", "trophy"):
         base = base.replace(BASE_PROP_SHADING, BASE_PORTRAIT_SHADING)
     elif asset["class"] == "texture":
         for old, new in BASE_TEXTURE_SUBS:
             base = base.replace(old, new)
+        if asset.get("emissive"):
+            base = base.replace("restrained color held in a narrow value range",
+                                BASE_EMISSIVE_COLOR)
     if asset.get("tintedMaster"):
         base = base.replace("vivid saturated jewel-toned color", BASE_TINTED_COLOR)
     tile = tile_world(asset, prof)
@@ -596,9 +682,13 @@ def build(asset, profiles, bg="transparent"):
     # ORTHO_ROUND / ORTHO_LONG note. Same `planRound` flag ingest measures against, so the
     # prompt and the delivery check can never disagree about what shape this thing is.
     ortho = ORTHO_BASE + (ORTHO_ROUND if asset.get("planRound") else ORTHO_LONG)
-    parts = [base, CLASS_ADDON[asset["class"]].format(
+    addon = CLASS_ADDON[asset["class"]].format(
         display=display, bg=BACKGROUNDS[bg], tileworld=tile, minfeature=minfeature,
-        ortho=ortho)]
+        ortho=ortho)
+    if asset["class"] == "texture" and asset.get("emissive"):
+        assert TEXTURE_QUIET_CLAUSE in addon, "the quiet clause moved; update TEXTURE_QUIET_CLAUSE"
+        addon = addon.replace(TEXTURE_QUIET_CLAUSE, TEXTURE_EMISSIVE_CLAUSE)
+    parts = [base, addon]
 
     if asset.get("role"):
         parts.append(ROLE_ADDON[asset["role"]])
@@ -610,6 +700,20 @@ def build(asset, profiles, bg="transparent"):
             parts.append(
                 f"Palette is committed to {dominant}, with {accent} as the only accent. "
                 "Do not introduce hues outside that commitment."
+            )
+        elif asset["class"] == "texture" and asset.get("emissive"):
+            # THE ACCENT IS THE MATERIAL. The ordinary texture clause below ends by banishing
+            # the venue's accents from the ground, which is right for every ground and exactly
+            # wrong for the one tile that IS the accent — Emberfall's ember red is lava, and
+            # a lava bed told the ember appears nowhere in it is a prompt arguing with itself
+            # again. So the emissive tile gets the venue's world for context and OWNS the
+            # accent instead of excluding it.
+            parts.append(
+                f"VENUE CONTEXT: this is seen against {dominant}, and it is the one surface "
+                f"in that world that IS the venue's accent — {accent} — rather than a ground "
+                "the accent sits on. The accent is the whole picture here; take the colour "
+                "from the subject below and do not mute it toward the venue's darks. Nothing "
+                "neon or fluorescent: incandescent, the colour of the material itself."
             )
         elif asset["class"] == "texture":
             # REWRITTEN when the second texture was declared. The first version had textures
@@ -697,7 +801,8 @@ def emit(asset, profiles, bg="transparent"):
     # Per-asset master/gen, or the header lies to whoever hand-runs this: the cove
     # cargo family is generated 1024x1536 onto a 1536 master, not the profile's 1024.
     m = asset.get("master", prof["master"])
-    line = f"master {m}x{m} {prof['background']}"
+    line = (f"master {prof['wide'][0]}x{prof['wide'][1]} {prof['background']}" if prof.get("wide")
+            else f"master {m}x{m} {prof['background']}")
     if "gen" in asset:
         line += f"   generate at {asset['gen']}"
     if asset["class"] == "texture":
@@ -717,6 +822,25 @@ def emit(asset, profiles, bg="transparent"):
     elif asset["class"] == "texture":
         # "ground plane" is a prop negative and the one thing a ground texture must be.
         neg = NEGATIVE.replace("ground plane, ", "") + TEXTURE_NEGATIVE
+        if asset.get("emissive"):
+            # The three contrast negatives would refuse the one thing this tile is for.
+            neg = (neg.replace("excessive bloom, ", "")
+                      .replace(", high contrast, deep black shadow", "")
+                   + EMISSIVE_NEGATIVE)
+    elif asset["class"] == "hero":
+        # A harbour painting IS an eye-level perspective picture: the prop camera negatives
+        # would fight it. The arrangement list stays — a fleet must not come back evenly spaced.
+        neg = NEGATIVE.replace(
+            "three-quarter view, 3/4 view, 45 degree angle, oblique view, tilted camera, angled "
+            "camera, hero angle, hero shot, product shot, eye level, low angle, dutch angle, ", ""
+        ).replace("perspective view, ", "").replace(", depth, receding ground, vanishing point, foreshortening", "") + HERO_NEGATIVE + ARRANGEMENT_NEGATIVE
+    elif asset["class"] == "trophy":
+        # A trophy is shot the way NEGATIVE forbids for props — level, from the front — and is
+        # deliberately symmetric, so the camera clause and the arrangement list both come out.
+        neg = NEGATIVE.replace(
+            "three-quarter view, 3/4 view, 45 degree angle, oblique view, tilted camera, angled "
+            "camera, hero angle, hero shot, product shot, eye level, low angle, dutch angle, ", ""
+        ).replace("perspective view, ", "") + TROPHY_NEGATIVE
     else:
         neg = NEGATIVE if asset.get("allowSymmetry") else NEGATIVE + ARRANGEMENT_NEGATIVE
         # Only a subject that claims to be round in plan can be faulted for not being round.

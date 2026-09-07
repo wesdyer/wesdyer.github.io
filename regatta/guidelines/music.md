@@ -263,7 +263,7 @@ flux **and** no periodicity.
 1. Download the MP3 from Suno at the highest quality offered.
 2. Save as `regatta/assets/audio/<venuekey>.mp3` — keys are the ones in `VENUES`
    (`bay`, `lake`, `lagoon`, `swamp`, `river`, `ocean`, `redrock`, `glowtide`,
-   `arctic`, `seatrials`).
+   `arctic`, `otter`, `flats`, `volcanic`, `seatrials`).
 3. Measure it and paste the row it prints into `MUSIC_TRACKS`:
    ```
    python3 regatta/art/music_loop.py regatta/assets/audio/<name>.mp3
@@ -322,7 +322,7 @@ loaded per cue. 128 kbps would roughly halve it but needs `lame` or `ffmpeg` ins
 | `menu` | `yacht-club.mp3` | 0 → 127.5, trim 0.85 | the Game's Song; Dec 2025 original retired to `yacht-club-2025.mp3` |
 | `prestart` | — | — | **deliberately none**; the venue track covers the countdown |
 | `racing` | `spinnaker-run.mp3` | 0 → 264.5, trim 0.96 | house fallback; nothing reaches it now, kept for an 11th venue |
-| `racing-<venue>` | ten files | see §11 | one per venue |
+| `racing-<venue>` | thirteen files | see §11 | one per venue (Otter Point, Spoonbill Flats and Emberfall Isle joined Sep 2026) |
 | `results` | `harbor-glow.mp3` | 0 → 120.0, trim 1.02 | `harbor-results.mp3` retired to unassigned |
 
 **There is no prestart cue.** Prestart and racing resolve to the same cue, so the
@@ -354,15 +354,16 @@ must claim unclaimed territory.
 | Pearl Lagoon | `lagoon` | steel pan, hand percussion | island offbeat + a squall gear | 106 → 89 | C major |
 | Lighthouse Cove | `bay` | penny whistle, concertina | easy club-race 4/4 — the reference | 112 → 108 | D major |
 | Sockeye Run | `river` | banjo roll, fiddle | continuous ostinato, never rests | 120 → 136 | D major |
+| Spoonbill Flats | `flats` | hammered dulcimer, bass clarinet | figures that fall and restart — the tide | 76 → 76 | D minor |
+| Otter Point | `otter` | spring-reverb surf guitar, combo organ | driving surf groove — a riff, not a tune; two textures trading | 128 → ~136 | A minor (r=0.56, weak) |
+| Emberfall Isle | `volcanic` | struck metal (anvil, brake drums), taiko | percussion-led, the only one — the gauntlet | 132 → 129 | C (mode unreadable, §14) |
 
 **Unbuilt venues — claimed here so nothing collides later:**
 
 | Venue | key | Signature instruments | Feel / form | BPM | Key |
 |---|---|---|---|---|---|
-| Spoonbill Flats | `flats` | hammered dulcimer, bass clarinet | figures that fall and restart — the tide | 76 | E minor |
 | Flamingo Reach | `wetland` | muted trumpet, vibraphone | a groove that circles and never resolves, plus one flurry | 108 | E major |
 | Fallwater Fjord | `fjord` | nyckelharpa, frame drum | driving; the falls are the slalom | 124 | A minor |
-| Emberfall Isle | `volcanic` | struck metal (anvil, brake drums), taiko | percussion-led, the only one — the gauntlet | 132 | C minor |
 | Duckling Pond | `pond` | felt piano | short phrases that always resolve — the lesson | 88 | C major |
 
 ⚠️⚠️ **Rule 4 does not scale past about ten venues.** Ten used
@@ -398,7 +399,8 @@ line, not as the lead.
 
 ## 11. Measured properties of every track — **Observed**
 
-Measured over the loop body. `*` = venue not built; track saved but unwired.
+Measured over the loop body. `*` = venue not built; track saved but unwired (Spoonbill
+Flats and Emberfall Isle lost theirs Sep 2 2026 when the venues landed).
 
 | Venue | key | body s | wind band | >2 kHz | centroid | dyn | key | flux | pulse |
 |---|---|---|---|---|---|---|---|---|---|
@@ -412,12 +414,13 @@ Measured over the loop body. `*` = venue not built; track saved but unwired.
 | Glowtide Strait | glowtide | 238.5 | 15.7% | 16.1% | 1209 | **13.5** | F major | 0.226 | 99 |
 | Glacier Sound | arctic | 122.5 | **5.4%** | **2.4%** | **309** | 13.2 | C major | 0.129 | 83 |
 | Clubhouse Point | seatrials | 99.0 | 21.4% | 16.4% | 1116 | 13.4 | C major | **0.235** | 99 |
+| Otter Point | otter | 125.0 | 38.6% | 43.4% | 2569 | 4.2 | A minor (r=0.56) | 0.126 | ~136 (reads 68) |
 | **Menu** | menu | 127.5 | 23.8% | 22.8% | 1619 | 4.3 | A minor | 0.200 | 112 |
 | **Results** | results | 120.0 | 32.0% | 29.8% | 1875 | 11.2 | F major | 0.140 | 89 |
 | Fallwater Fjord | fjord* | 133.5 | 26.2% | 21.8% | 1319 | 8.6 | A minor | 0.164 | 123 |
-| Emberfall Isle | volcanic* | 230.0 | **41.3%** | 37.8% | 1981 | 5.7 | C major | 0.166 | 129 |
+| Emberfall Isle | volcanic | 230.0 | **41.3%** | 37.8% | 1981 | 5.7 | C major | 0.166 | 129 |
 | Flamingo Reach | wetland* | 241.0 | 16.9% | 20.0% | 1472 | 6.8 | A minor | 0.168 | 99 |
-| Spoonbill Flats | flats* | 139.5 | 24.1% | 21.0% | 1491 | 11.9 | D minor | 0.156 | 76 |
+| Spoonbill Flats | flats | 139.5 | 24.1% | 21.0% | 1491 | 11.9 | D minor | 0.156 | 76 |
 
 **Headroom** — music RMS over the wind bed, at each venue's own breeze:
 
@@ -428,8 +431,19 @@ Measured over the loop body. `*` = venue not built; track saved but unwired.
 | Stillwater `lake` | −43.1 | 16.1 | | Lighthouse Cove `bay` | −40.8 | 13.3 |
 | Redrock `redrock` | −41.4 | 15.9 | | Bluewater `ocean` | −39.1 | 12.2 |
 | Clubhouse Point `seatrials` | −41.4 | 14.9 | | Glacier Sound `arctic` | −38.8 | **10.2** |
+| Otter Point `otter` | −39.4 | 12.9 | | Spoonbill Flats `flats` | −39.8 | 14.2 |
+| Emberfall Isle `volcanic` | −41.3 | **9.2** | | | | |
 
 The ladder is the venues' own wind, in order, which is the shape it should have.
+
+⚠️ **Emberfall Isle is now the tightest pairing in the set — 9.2 dB at 14 kn, under
+Glacier Sound's 10.2 at 20 kn.** Exactly what §12.1's entry predicted: 41.3% of the
+track sits in the wind band, so the bed and the struck metal share a register. It is
+not a calm venue, so the arctic warning sign does not fire outright, but it is the
+first track to sit below the ice on a lighter breeze. Judge it by ear on a gusty lap
+before the venue's identity pass adds vents to the soundscape; the trim knob is the
+wrong tool (it moves the whole cue against the set's mean), a reroll asking for the
+metal to sit lower is the right one.
 
 ## 12. The prompts — **Reference**
 
@@ -537,6 +551,77 @@ Bright C major club bed, instrumental, 100 BPM, soft woodblock pulse, warm uprig
 this is the eval anchor, and blandness is its identity. ⚠️ **Do not build the album
 Persona from it** (§13).*
 
+**Otter Point** `otter` · *inside the kelp or outside in the swell?* · Weirdness 35 · SI 85 · 4–6 min · **shipped Sep 2 2026**
+`'racing-otter': { file: 'assets/audio/otter.mp3', loopStart: 6.0, loopEnd: 131.0, trim: 0.91 }`
+```
+E major surf rock instrumental, 128 BPM, clean electric guitar drenched in spring reverb with rapid tremolo picking and descending glissando dives, combo organ chords, walking electric bass, driving drums with snare rolls and tom fills, a repeating riff rather than a tune, alternating sections: full band with the reverb guitar riding on top, then organ and bass carry the groove alone while the guitar drops to palm-muted rhythm, sunlit surf and cold green water, seamless loop, no intro, no outro, ends as it began
+```
+`vocals, wordless vocalise, whistling, country, pedal steel, lap steel, banjo, fiddle, ukulele, steel pan, accordion, heavy distortion, punk, lo-fi, dark, muffled, ambient drone, long silences`
+*Second brief, Sep 2 2026. Wes rejected the first before generation — lap steel and
+mandolin — as too country-adjacent and not exciting enough: **"California surf culture
+à la Santa Cruz and Monterey."** So the register phrase is the point here (§3.1 allows
+one), and the claim is the surf sound itself: spring reverb, tremolo picking, glissando
+dives, a combo organ. ⚠️ This is the first electric-guitar-led track and the first with
+sticks rather than brushes — a deliberate step out of the house register on the owner's
+call, so judge it against its neighbours in the fast band (Fjord 123, Emberfall 129,
+Sockeye 136), not against Lighthouse Cove. ⚠️ **Redrock is the collision to watch**: it
+owns baritone tremolo guitar with dry slapback. Otter Point is the wet version — standard
+tuning, spring reverb, glissandos — and the organ is what keeps them apart; if a take comes
+back dry and baritone, it is Redrock's and gets rerolled. Rule 5 still holds: a riff that
+repeats is fine, a tune you can hum is not, so the line asks for a riff by name. The
+two-textures form survives from the first brief because the venue's question survives.
+128 BPM sits between Fjord and Emberfall inside tolerance; instrumentation separates it.
+E major is surf guitar's home key. Country and its instruments are excluded by name
+because a clean twangy guitar at the front of a style line pulls Nashville in unless
+told not to. On delivery: the venue is specced to race at 10–16 kn with the breeze
+BUILDING, so run `_probe_audio.js otter` for headroom at the late-race wind; and a
+reverb-heavy guitar lives right in the 900 Hz–6.5 kHz wind band, so read that number
+first (§6). **Delivered:** Wes's pick from Suno, 138.7 s file → 125.0 s body (the 6 s opening is
+too sparse to loop into, 3.7 s of fade trimmed), seam 0.4 dB. Tempo reads 68 with a 136
+peak — the half-time artefact §14 warns about — so it landed ~136 against the briefed
+128, on Sockeye Run's rung; instrumentation separates them. Key reads A minor at r=0.56,
+a weak reading against a briefed E major: the tonic drifted, not only the third, and the
+chroma is not peaked enough to argue with. 38.6% in the wind band and a 2569 Hz centroid
+are Sockeye-bright, which is why the pairing was probed: **12.9 dB of headroom at 13 kn**,
+level with Lighthouse Cove (13.3) and Pearl Lagoon (13.7). Dynamics 4.2 dB against a brief
+that asked for alternating sections — the sections are audible but subtle; accepted by
+ear as the owner's pick. Flux 0.126: a riff, not a tune, as briefed.*
+
+**Spoonbill Flats** `flats` · *the clock* · Weirdness 25 · SI 85 · 4–6 min · **shipped Sep 2 2026**
+`'racing-flats': { file: 'assets/audio/flats.mp3', loopEnd: 139.5, trim: 0.92 }`
+```
+E minor hammered dulcimer instrumental, 76 BPM, bright ringing dulcimer figures that fall and restart continuously, low bass clarinet beneath, brushed frame drum, wide open estuary with a quiet unease
+```
+`vocals, wordless vocalise, dark, muffled, ambient drone, long silences, sparse arrangement`
+*⚠️ Listening check: 11.8% of frames sit more than 6 dB under the median — most of any
+candidate. Probably the dulcimer's decay envelope rather than arrangement gaps, but
+this is the venue whose brief excluded `long silences`. Does it breathe, or does it stop?*
+
+**Emberfall Isle** `volcanic` · *the gauntlet* · Weirdness 35 · SI 85 · 4–6 min · **shipped Sep 2 2026**
+`'racing-volcanic': { file: 'assets/audio/volcanic.mp3', loopStart: 10.5, loopEnd: 240.5, trim: 0.71 }`
+```
+C minor percussive instrumental, 132 BPM, struck metal — anvil and brake drums — over deep taiko drums, low prepared piano ostinato, alien and dangerous, hard edged
+```
+`vocals, wordless vocalise, epic choir, trailer braams, orchestral strings, tuned bells, chimes, wind chimes, glockenspiel, celesta, bell tree, dark, muffled`
+*The only percussion-led venue. The Aug 2026 file in the slot is TAKE 2, accepted;
+take 1 is retired to `volcanic-take1.mp3`, unassigned. Take 1 was judged by ear: the
+taiko line and the struck metal ARE the track, the tuned bells — the "chimes" — were
+not. So `and tuned bells` left the metal clause, the bell family went into Exclude by
+name (§3.4 — negatives go in Exclude, and "chimes" is exactly the kind of word Suno
+performs), and `and bright` went with them, since the bells were most of what "bright"
+bought. Every number moved the right way: pulse 66 → 129 against the briefed 132
+(take 1 had settled into a half-time feel; the gauntlet now drives), wind band
+44.6% → 41.3%, centroid 2269 → 1981 Hz, flux 0.129 → 0.166.
+⚠️ 41.3% is STILL the highest wind band in the set — struck metal lives exactly in
+the bed's band and no bell cut changes that. `_probe_audio.js volcanic` remains
+mandatory when the venue lands and the row above gets wired (§7: no MUSIC_TRACKS row
+until then).
+⚠️ The 3.5 dB seam is the Glowtide trade: 230.0 s of body against a ~245 s
+prestart+race, so it is reached once, at the very end.
+⚠️ Key reads C major at r=0.84 and is still not to be believed (§14) — the tonic C is
+real, the mode is percussion noise. Dynamics 5.7 dB is a pass under the Sockeye rule:
+this brief is relentlessness, not contrast.*
+
 ### 12.2 Menu and results
 
 These two are unlike the race tracks in four ways, and the differences drive the briefs:
@@ -608,18 +693,9 @@ Tense instrumental countdown bed, 88 BPM, ticking rim and shaker, low pulsing ba
 
 ### 12.3 Unbuilt venues — tracks in hand, **not wired**
 
-All four files are on disk and **deliberately absent from `MUSIC_TRACKS`** (§7). Add
-the row the day the venue lands.
-
-**Spoonbill Flats** `flats` · *the clock* · Weirdness 25 · SI 85 · 4–6 min
-`'racing-flats': { file: 'assets/audio/flats.mp3', loopEnd: 139.5, trim: 0.92 }`
-```
-E minor hammered dulcimer instrumental, 76 BPM, bright ringing dulcimer figures that fall and restart continuously, low bass clarinet beneath, brushed frame drum, wide open estuary with a quiet unease
-```
-`vocals, wordless vocalise, dark, muffled, ambient drone, long silences, sparse arrangement`
-*⚠️ Listening check: 11.8% of frames sit more than 6 dB under the median — most of any
-candidate. Probably the dulcimer's decay envelope rather than arrangement gaps, but
-this is the venue whose brief excluded `long silences`. Does it breathe, or does it stop?*
+Two files remain on disk and **deliberately absent from `MUSIC_TRACKS`** (§7). Add the
+row the day the venue lands — Spoonbill Flats and Emberfall Isle got theirs Sep 2 2026
+and their entries moved up to §12.1.
 
 **Flamingo Reach** `wetland` · *where can I possibly pass?* · Weirdness 25 · SI 85 · 4–6 min
 `'racing-wetland': { file: 'assets/audio/wetland.mp3', loopEnd: 241.0, trim: 0.99 }`
@@ -641,31 +717,6 @@ is the strongest vocal trigger in the set**, so chanting/throat singing/choir ar
 excluded by name; and the venues doc requires a **summer** fjord to vacate Glacier
 Sound's palette, hence `icy`. ⚠️ Its 3.98 dB seam is the worst in the project and the
 tool will not fix it — see §14.*
-
-**Emberfall Isle** `volcanic` · *the gauntlet* · Weirdness 35 · SI 85 · 4–6 min
-`'racing-volcanic': { file: 'assets/audio/volcanic.mp3', loopStart: 10.5, loopEnd: 240.5, trim: 0.71 }`
-```
-C minor percussive instrumental, 132 BPM, struck metal — anvil and brake drums — over deep taiko drums, low prepared piano ostinato, alien and dangerous, hard edged
-```
-`vocals, wordless vocalise, epic choir, trailer braams, orchestral strings, tuned bells, chimes, wind chimes, glockenspiel, celesta, bell tree, dark, muffled`
-*The only percussion-led venue. The Aug 2026 file in the slot is TAKE 2, accepted;
-take 1 is retired to `volcanic-take1.mp3`, unassigned. Take 1 was judged by ear: the
-taiko line and the struck metal ARE the track, the tuned bells — the "chimes" — were
-not. So `and tuned bells` left the metal clause, the bell family went into Exclude by
-name (§3.4 — negatives go in Exclude, and "chimes" is exactly the kind of word Suno
-performs), and `and bright` went with them, since the bells were most of what "bright"
-bought. Every number moved the right way: pulse 66 → 129 against the briefed 132
-(take 1 had settled into a half-time feel; the gauntlet now drives), wind band
-44.6% → 41.3%, centroid 2269 → 1981 Hz, flux 0.129 → 0.166.
-⚠️ 41.3% is STILL the highest wind band in the set — struck metal lives exactly in
-the bed's band and no bell cut changes that. `_probe_audio.js volcanic` remains
-mandatory when the venue lands and the row above gets wired (§7: no MUSIC_TRACKS row
-until then).
-⚠️ The 3.5 dB seam is the Glowtide trade: 230.0 s of body against a ~245 s
-prestart+race, so it is reached once, at the very end.
-⚠️ Key reads C major at r=0.84 and is still not to be believed (§14) — the tonic C is
-real, the mode is percussion noise. Dynamics 5.7 dB is a pass under the Sockeye rule:
-this brief is relentlessness, not contrast.*
 
 ### 12.4 Tutorial — Duckling Pond `pond` — proposed, **Intent** · *venue specced, not built*
 

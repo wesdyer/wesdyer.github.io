@@ -957,6 +957,23 @@ const MINIMAP_ISLAND = {
     // is, and where the rock is wooded.
     jungle:    { body: '#405A33', top: '#405A33' },
     meadow:    { body: '#8DAD32', top: '#8DAD32' },
+    // ── EMBERFALL ISLE, AND THE ARGUMENT RUN ON A BLACK SEA ─────────────────
+    // All four of the venue's grounds take rows, and all four are held UP, the jungle
+    // argument: the chart water is a flat 0.9 wash of #123338 (luma 42), the grounds are
+    // asked to be nearly black on the course (bodies at luma 29-48, within 13 of the
+    // water either way), and the tiles' texture — most of what separates them there — is
+    // not on the chart. Basalt lands +40 luma over the water, cinder +35 and warm, black
+    // sand +17 as the darkest of the three, keeping the course's own three-way split
+    // (cool / warm / neutral) at dE 11-13 from each other. Lava charts as its EMBER, not
+    // its crust: it is the hazard, and the one thing on this chart that must not be
+    // missable.
+    basalt:    { body: '#4C525C', top: '#4C525C' },
+    cinder:    { body: '#5C4649', top: '#5C4649' },
+    blacksand: { body: '#393B3F', top: '#393B3F' },
+    lava:      { body: '#E0561F', top: '#E0561F' },
+    // Active lava charts a step yellower and brighter than the hardening tongue: of the
+    // two it is the hazard, and the chart should say which is which.
+    magma:     { body: '#F5901E', top: '#F5901E' },
     // Fallback only. A bar's real chart colour is DERIVED per shape (shoalTintFor), so a
     // tan bar and a coral-white bar read differently here exactly as they do on the course.
     shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }
