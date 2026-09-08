@@ -32,7 +32,10 @@ const fs = require('fs'); const path = require('path');
 // the middle pair), redrock n=3 (203.6/204.2/219.1 -> med 204.2).
 const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8,
     ocean: 214.2, river: 187.4, glowtide: 204.4, redrock: 204.2,
-    seatrials: 185.7, swamp: 145.7 };
+    seatrials: 185.7, swamp: 173.3 };
+// ⭐ 2026-09-08 SWAMP +0.75 LAPS: owner re-sailed on the re-trimmed doc (stamp
+// 59f2931b:335924 == frozen): 163.0 / 173.3 / 183.6 -> med 173.3 (n=3). The +2-wind
+// 145.7 and the original-wind 234.1 are RETIRED. The ratio is real again.
 // ⭐ 2026-09-08 SWAMP NEW-WIND LAPS: owner re-sailed Gatorgrass on the +2 kt doc
 // (stamp 8632d79f:335920 == frozen): 127.9 / 145.7 / 158.6 -> med 145.7 (n=3),
 // replacing the RETIRED old-wind 234.1 (n=9). The ratio is real again.
@@ -71,7 +74,7 @@ const VENUES = {
     redrock: { base: ['re1rr9400','re1rr9500','re1rr9600','re1rr9700','re1rr9800','re1rr9900'], cand: ['parr9400','parr9500','parr9600','parr9700','parr9800','parr9900'] },
     arctic:  { base: ['re1arc9100','re1arc9200','re1arc9400','re1arc9600'], cand: ['paarc9100','paarc9200','paarc9400','paarc9600'] },
     river:   { base: ['re1riv9400','re1riv9408','re1riv9500'], cand: ['pariv9400','pariv9408','pariv9500'] },
-    swamp:   { base: ['wdsw9400','wdsw9500','wdsw9600'], cand: ['wbsw9400','wbsw9500','wbsw9600'], note: '⚠ RE-TRIM 2026-09-08: PRE = +2 kt wind (not comparable); human 145.7 = his +2-wind laps, RETIRED here → ratio PROVISIONAL (fit predicts ~191)' },
+    swamp:   { base: ['wdsw9400','wdsw9500','wdsw9600'], cand: ['wbsw9400','wbsw9500','wbsw9600'], note: '⚠ RE-TRIM 2026-09-08: PRE = +2 kt wind (his med there was 145.7), not comparable; human = 3 laps on the +0.75 doc' },
     glowtide:{ base: ['re1glow'], cand: ['paglow'] },
     lagoon:  { base: ['re1lag'], cand: ['palag'] },
     bay:     { base: ['re1bay9400','re1bay9600'], cand: ['pabay9400','pabay9600'] },

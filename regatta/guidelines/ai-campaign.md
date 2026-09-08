@@ -17150,3 +17150,21 @@ stall regime is a function of wind, and +0.75 restores ~70% of it. Anchors:
 **Goldens**: verify FAILED exactly swamp/90210-12 (27/30 unchanged); re-recorded
 via `npm run trace:update`; verify PASS 30/30 (count read); only the swamp
 entries differ from HEAD's golden file.
+**2026-09-08 09:03-09:19 — HIS +0.75 LAPS ARRIVED (3)**: stamps 59f2931b:335924
+== frozen, schema 2, 10-hull, all finished: 163.0 / 173.3 / 183.6 → **human
+med 173.3 (n=3)**, mean 173.3 (events 0/0/12 — he sails it clean). He beat the
+fit (185–190) by ~12 s; the fleet did not (253 vs 261 predicted) ⇒ **swamp
+1.460** (fleet med 253 / mean 272.6). The three wind points on the same js:
+3.75 kt 1.367 (his n=9) · **4.50 kt 1.460 (n=3)** · 5.75 kt 1.325 (n=3). The
+ratio is WORST at the middle setting: the fleet's light-air stall regime (dirt
+80% of the original, 5 DNFs, 800 s straggler, mean 20 s over med) is back at
+4.5 kt while his laps are clean — the gap is the fleet's tail, not his pace.
+n=3 human bars are ±~10 s ⇒ 1.38–1.55; read the 1.46 as "second-worst venue,
+between arctic 1.519 and redrock 1.405", not as a precise number.
+Venue length: 173.3 sits 1.4 s UNDER lagoon (174.7) — still the shortest venue,
+not the mid-pack (~190) the −1.25 aimed at; the owner's call whether that is
+the zone he wanted.
+Per-leg (`_leg_matrix.js fp=59f2931b:335924 swamp wbsw*`, MEANS): leg 0 his 4.0
+vs fleet 20.6 = 16.6 s (17% of the 99.3 s gap); leg 1 his 169.2 vs 252.0 =
+82.8 s (83%, ratio 1.49). Swamp is now the campaign's #2 gap on this doc.
+`_wb_close_table.js` HUMAN swamp = 173.3.
