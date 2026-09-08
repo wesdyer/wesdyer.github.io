@@ -17074,3 +17074,36 @@ behaviour-preserving promotion as the great split. ⚠ pa* meta files stamp the
 pre-v2 fingerprints; cmp_bench refusals against them are this cut, not a drifted
 venue (the byte-identity proof above is the adjudication). Corpus lap
 adjudications are keyed on the LAPS' own stamps and are unaffected.
+
+## 2026-09-07 — THE SWAMP WIND CUT (owner design change; venue PROMOTED, AI untouched)
+Owner: "+2 knots to the baseline speed of every wind region … keep it in the low
+region but at least the player will be able to maintain speed … shorten races."
+Edit: all 54 `wind.regions[].speed` in `assets/venues/swamp.venue.js` +2.00
+(0.9–4.84 → 2.9–6.84 kt, mean 3.75 → 5.75); `speedVar`, direction, period,
+falloff, polygons untouched; diff is speed-only (54 lines). The eight "dead air"
+pockets went 0.9–1.46 → 2.9–3.46 kt (names still say dead air — owner's call).
+**PROMOTED** per venues/README: swamp re-frozen d93d5c1e → 60016588 (all ten
+match), the pre-wind frozen copy kept at `eval/rl/_venues_prewind/swamp.venue.js`
+so pasw* stays reproducible. Trees: treeSW (HEAD fafd44a js + new doc), treeSWC
+(same js + old doc = control).
+**Control**: wcsw9400 (HEAD js, OLD wind) is BYTE-IDENTICAL to pasw9400 on all
+8 races (full info arrays) ⇒ the js drift since 6d8b7c4 (HUD/render/school/
+series/clubhouse) is sim-inert on swamp; the whole delta below is the wind.
+**Swamp, 3×8 seeds, ten bots (wdsw9400/9500/9600 vs pasw*)**:
+  med 320 → **193**, mean 321.5 → **202.4**, p25 254 → 163, p75 372 → 224,
+  best 174 → 124, worst 651 → 604, fins 235/240 → **240/240**; dirt per boat
+  land 4.50 → 2.42, boat 5.17 → 2.35, pen 0.70 → 0.36. New/old med 0.603.
+⛔ pasw* are RETIRED (old wind) — shown for the cut only. ⛔ HUMAN ref 234.1 =
+his nine OLD-wind laps; the fleet now sits at 0.824 of it, which is meaningless
+until he re-sails Gatorgrass (owner: "the ratio will be off until I rebuild
+human trajectories"). `_traj_fp.js` now reports those nine laps ⛔ RETIRED.
+**Harness fix landed with the cut**: `_traj_fp.js` adjudications were keyed on
+the LAP's old stamp only, so the swamp paths-intake adjudication silently
+declared his old-wind laps ✓ VALID on the new-wind doc. Every entry now carries
+`on:` (the frozen stamp it was adjudicated against) and applies only while the
+frozen doc still has that stamp; the other nine venues are unaffected
+(seatrials cmp-checked). Close table for the era: `_wd_close_table.js`.
+Other nine venues: pa* carry (js sim-inert by the control + goldens).
+**Goldens**: verify on HEAD with the new doc FAILED exactly swamp/90210-12
+(27/30 unchanged = the other nine venues' behaviour is byte-stable under HEAD
+js); re-recorded via `npm run trace:update`; verify PASS 30/30 (count read).
