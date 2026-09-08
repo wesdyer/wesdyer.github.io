@@ -336,19 +336,16 @@ const LAND_TEXTURES = {
     // each distinct, and the main isle is thirteen tiles across. Judge them on the isle,
     // not the master; if they count, the fix is a regenerated tile with fewer lobes.
     basalt:       { src: 'assets/images/terrain/volcanic/basalt.png',    tile: 256, alpha: 0.65 },
-    // ⚠️ Cinder: 256, NOT the 128 its manifest slot pre-registered, and the reason is a
-    // repeat. The master's "low soft mounds" came back as a DIAGONAL QUILT — a lattice of
-    // soft lighter ridges — and at 128 that lattice tiles at boat-length spacing and reads
-    // as a grid on every cone (checked on a 3x3 composite at both alphas; the sd-based
-    // alpha could not hide it, because a repeat is a period, not a contrast). 256 halves
-    // its density to something a cone islet two tiles across barely shows, at the cost of
-    // scoria chunks twice the size (28-80 cm rather than 14-40), which is still cinder.
-    // Retiling cannot FIX periodicity — bay-sand's note has the numbers — so the slot
-    // carries a rework: the real answer is a regenerated master with the mounds stated as
-    // irregular. Tile sd 6.83 at 256; 0.5 lands on-screen 3.41, between
-    // bay-sand's 4.12 and desertsand's 3.45, with the chunks legible. Cleanest wrap of the
-    // three (1.43x / 1.12x on the master).
-    cinder:       { src: 'assets/images/terrain/volcanic/cinder.png',    tile: 256, alpha: 0.5 },
+    // Cinder: 128 with the sands, as the slot always wanted — and it took a second master
+    // to get there. Round one's "low soft mounds" came back as a DIAGONAL QUILT that tiled as
+    // a lattice at 128 at any alpha (a repeat is a period, not a contrast, so no alpha could
+    // hide it) and shipped retiled to 256 with a rework open. Round two (2026-09-07) has the
+    // quilt mostly gone — a faint weave on a 3x3 composite, periodicity peak/mean 5.1 against
+    // 6.3 — so it is back at 128 and the chunks are at true size. It is a QUIET master (sd
+    // 4.04 at 128 against round one's 5.43), so the alpha sits at 0.85, above the family's
+    // 0.5-0.7: 0.85 lands on-screen 3.43 beside desertsand's 3.45, and the scoria is the read.
+    // Wrap 2.65x / 2.09x on the master, under 3 luma composited.
+    cinder:       { src: 'assets/images/terrain/volcanic/cinder.png',    tile: 128, alpha: 0.85 },
     // Black sand: tile sd 4.49 at 128. 0.7 as pre-registered lands 3.14, between coralsand
     // (1.80) and desertsand (3.45): the calm one of the set, as specced. The pebble drifts
     // run one diagonal, so the one thing to watch tiled is a direction; at 3 luma it does

@@ -3344,7 +3344,7 @@ function clubhouseBack() {
 // ── the hub ──────────────────────────────────────────────────────────────────
 // The hub's painting. null until the hero master is ingested (art/manifest.json
 // `hero-clubhouse` -> assets/images/hero/clubhouse.png); the home venue's card stands in.
-const HUB_HERO = 'assets/images/hero/hero-clubhouse.jpg';   // the JPEG ingest writes beside the PNG master
+const HUB_HERO = 'assets/images/hero/hero-clubhouse-trio.jpg';   // the JPEG ingest writes beside the PNG master
 
 function showClubhouse() {
     if (!UI.clubhouse) return;
@@ -3415,7 +3415,7 @@ function refreshClubhouse() {
         const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
         racePic.insertAdjacentHTML('beforeend', `<span class="ch-chip" style="position:absolute; right:12px; bottom:12px; display:inline-flex; align-items:center; gap:8px; background:rgba(6,14,26,0.8); color:${rec.mine ? '#f2c14e' : rec.t != null ? '#dbeafe' : '#9fb2cc'}; border:1px solid ${rec.mine ? 'rgba(242,193,78,0.5)' : 'rgba(255,255,255,0.22)'};">${rec.label}${rec.t != null ? ` <span class="t-mono" style="font-size:13px; letter-spacing:0; text-transform:none;">${fmt(rec.t)}</span>` : ''}</span>`);
     }
-    const hero = $('hub-hero-img'); if (hero && HUB_HERO && hero.getAttribute('src') !== HUB_HERO) hero.src = HUB_HERO;
+    for (const id of ['hub-hero-img', 'hub-hero-bg']) { const el = $(id); if (el && HUB_HERO && el.getAttribute('src') !== HUB_HERO) el.src = HUB_HERO; }
     // Who you are, in the header. Locked mid-series, so the pill says so then.
     const me = playerCharacter();
     const skImg = $('hub-skipper-img'); if (skImg) { skImg.src = `assets/images/competitors/${me.name.toLowerCase()}.png`; skImg.alt = me.name; }
@@ -3579,6 +3579,18 @@ function proceedToStandings() {
     renderStandings(final);
     _chShow(UI.standingsOverlay);
 }
+// The route down the side of the standings: every race as a wide tile, sailed / next / to
+// come, in one column up to six races and two beyond, sharing whatever height is left.
+function _routeList(s, n, nextIdx) {
+    const twoCols = n > 6;
+    const tiles = s.venues.map((k, i) => {
+        const state = nextIdx == null ? '' : i === nextIdx ? 'sel' : i > nextIdx ? 'dim' : '';
+        const tag = nextIdx == null ? `Race ${i + 1}` : i < nextIdx ? `Race ${i + 1} · sailed` : i === nextIdx ? `Race ${i + 1} · next` : `Race ${i + 1}`;
+        return _routeTile(k, `ch-fill-tile ${state}`, tag, null, twoCols ? 200 : 420);
+    }).join('');
+    return `<div class="ch-route-list" style="grid-template-columns:${twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr'};">${tiles}</div>`;
+}
+
 function renderStandings(final) {
     const $ = (id) => document.getElementById(id);
     const s = Series.active, table = Series.standings(), n = s.venues.length, done = s.results.filter(Boolean).length;
@@ -3591,9 +3603,11 @@ function renderStandings(final) {
         const tied = (i > 0 && table[i - 1].total === me.total) || (i < table.length - 1 && table[i + 1].total === me.total);
         note.textContent = tied ? 'Tied on points? The better place in the last race wins.' : `${done} of ${n} race${n === 1 ? '' : 's'} sailed · 10 for a win, down to 1`;
     }
-    const short = (k) => (venueDisplayName(k) || k).split(' ')[0];
     const cols = `--races:${n};`;
-    const head = `<div class="ch-grid t-label" style="${cols} padding:0 14px 2px; font-size:10px; letter-spacing:0.14em; color:#66748c;"><div>Pos</div><div></div><div></div><div>Skipper</div>${s.venues.map(k => `<div style="text-align:right;">${escapeHTMLText(short(k))}</div>`).join('')}<div style="text-align:right;">Total</div></div>`;
+    // A race column's header is the venue's thumbnail with its race number: it reads at any
+    // race count where a name would not, and the names live in the route on the right.
+    const headThumb = (k, i) => `<div style="display:flex; justify-content:flex-end;"><div class="pr-venue-shot" title="Race ${i + 1} · ${escapeHTMLText(venueDisplayName(k) || k)}" style="width:${n > 8 ? 44 : 50}px; height:${n > 8 ? 34 : 38}px; aspect-ratio:auto; border-radius:6px; ${i < done ? '' : 'opacity:0.45;'}">${venueThumb(k, escapeHTMLText(venueDisplayName(k) || k), 50)}<span class="t-mono" style="position:absolute; left:4px; top:3px; font-size:10px; line-height:1; color:#eef3fb; background:rgba(6,14,26,0.78); border-radius:999px; padding:2px 5px;">R${i + 1}</span></div></div>`;
+    const head = `<div class="ch-grid t-label" style="${cols} padding:0 14px 6px; font-size:10px; letter-spacing:0.14em; color:#66748c;"><div>Pos</div><div></div><div></div><div>Skipper</div>${s.venues.map(headThumb).join('')}<div style="text-align:right;">Total</div></div>`;
     const medal = (i) => i < 3 ? `<span style="display:inline-block; width:10px; height:10px; border-radius:999px; background:${['#f2c14e', '#c0c8d4', '#c88a5a'][i]};"></span>` : '';
     const rows = table.map((r, i) => {
         const cfg = (typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.find(c => c.name === r.name) : null;
@@ -3622,8 +3636,8 @@ function renderStandings(final) {
                     <div style="font-size:15px; line-height:1.5; color:#d5ecf5; max-width:720px;">${me.rank === 1 ? `${me.total} points over ${n} races.` : `You finished ${_ordinal(me.rank)} on ${me.total} points, ${winner.total - me.total} behind.`}${cup ? (me.rank === 1 ? ' The trophy goes on the shelf.' : ' The trophy stays on the shelf, waiting.') : ''}</div>
                 </div>`;
         }
-        if (side) side.innerHTML = `<div class="t-label t-label-sm" style="color:#dbeafe;">The ${escapeHTMLText(s.kind)}, race by race</div>
-            <div class="grid" style="grid-template-columns:repeat(${Math.min(n, 4)}, minmax(0, 1fr)); gap:8px;">${s.venues.map((k, i) => _routeTile(k, '', String(i + 1), null, 100)).join('')}</div>`;
+        if (side) side.innerHTML = `<div class="t-label t-label-sm shrink-0" style="color:#dbeafe;">The ${escapeHTMLText(s.kind)}, race by race</div>
+            ${_routeList(s, n, null)}`;
     } else {
         if (hero) { hero.classList.add('hidden'); hero.innerHTML = ''; }
         const next = Series.nextVenue(); const c = next ? venueCard(next) : {};
@@ -3635,9 +3649,8 @@ function renderStandings(final) {
                     <div style="font-size:14px; line-height:1.5; color:#d5ecf5;">${escapeHTMLText(c.blurb || '')}</div>
                 </div>
             </div>
-            <div class="grid" style="grid-template-columns:repeat(${Math.min(n, 4)}, minmax(0, 1fr)); gap:8px;">${s.venues.map((k, i) => _routeTile(k, i === done ? 'sel' : i > done ? 'dim' : '', String(i + 1), null, 100)).join('')}</div>
-            <div style="flex-grow:1;"></div>
-            <div style="font-size:13px; line-height:1.5; color:#9fb2cc;">Abandoning ends the whole ${escapeHTMLText(s.kind)}. There is no restarting a race inside one.</div>`;
+            ${_routeList(s, n, done)}
+            <div class="shrink-0" style="font-size:13px; line-height:1.5; color:#9fb2cc;">Abandoning ends the whole ${escapeHTMLText(s.kind)}. There is no restarting a race inside one.</div>`;
     }
     const ab = $('standings-abandon-btn'), nx = $('standings-next-btn');
     if (ab) ab.textContent = final ? 'Back to clubhouse' : `Abandon ${s.kind}`;

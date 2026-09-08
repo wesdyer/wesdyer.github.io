@@ -265,6 +265,10 @@
         .ch-cup-tile .pr-venue-shot { height: 100%; aspect-ratio: auto; }
         .ch-cup-tile .pr-venue-name { font-size: 15px; padding: 26px 11px 9px; }
         .ch-cup-tile .pr-route-tag { font-size: 12px; padding: 4px 10px; top: 10px; left: 10px; }
+        /* The standings' route list: tiles that share the column's height (see cup rows). */
+        .ch-route-list { display: grid; grid-auto-rows: minmax(44px, 1fr); gap: 8px; flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+        .ch-fill-tile { min-width: 0; min-height: 0; height: 100%; overflow: hidden; }
+        .ch-fill-tile .pr-venue-shot { height: 100%; aspect-ratio: auto; }
         /* A short window (a 1366x768 laptop) cannot hold three rows of full-size text: the name
            steps down and the blurb clamps, so the rows still share the page without scrolling. */
         @media (max-height: 900px) {
@@ -280,7 +284,9 @@
         .ch-len .n { font-size: 44px; line-height: 1; }
         .ch-panel { background: rgba(6,14,26,0.45); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 16px 18px; }
         .ch-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #101a2e; border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 16px 16px 16px 24px; }
-        .ch-grid { display: grid; gap: 10px; align-items: center; grid-template-columns: 52px 40px 60px 200px repeat(var(--races, 4), 72px) 100px; }
+        /* Twelve race columns must still fit: the skipper, race and total tracks can shrink from their
+           preferred widths (a 12-race table overran its box by ~16px at 2000 wide). */
+        .ch-grid { display: grid; gap: 10px; align-items: center; grid-template-columns: 52px 40px 60px minmax(120px, 200px) repeat(var(--races, 4), minmax(46px, 72px)) minmax(70px, 100px); }
         .ch-row { padding: 5px 14px; border-radius: 12px; }
         .ch-row.me { background: rgba(242,193,78,0.08); box-shadow: 0 0 0 2px #f2c14e; }
         .ch-row.alt { background: rgba(255,255,255,0.025); }
@@ -779,12 +785,15 @@
         <div id="clubhouse-overlay" class="hidden absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-hidden ch-overlay">
             <!-- The painting takes every pixel the doors leave, and is ANCHORED TO ITS BOTTOM EDGE: the
                  racers live in the bottom of the picture, so they are always the subject of the crop;
-                 a taller window simply shows more sky and roofline above them. The anchor sits at 86%
-                 rather than the very bottom so a short window trims foreground water before anything else. -->
+                 the whole painting is shown, scaled to fit. -->
             <div id="hub-hero" class="relative" style="flex:1 1 auto; min-height:320px; overflow:hidden; background:#0c1322;">
                 <!-- The hero master lands at assets/images/hero/clubhouse.png (art/manifest.json
                      `hero-clubhouse`); until then the home venue's card stands in, cropped wide. -->
-                <img id="hub-hero-img" src="assets/images/venues/bay.png" alt="" draggable="false" style="position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center 86%;">
+                <!-- The painting FITS the band, whole, both ways (Wes, Sep 7): object-fit contain, anchored
+                     to the bottom so the racers sit on the doors. The bars a wide window leaves at the sides
+                     are the same painting blurred and dimmed, so they read as atmosphere rather than gaps. -->
+                <img id="hub-hero-bg" src="assets/images/venues/bay.png" alt="" draggable="false" aria-hidden="true" style="position:absolute; inset:-6%; width:112%; height:112%; object-fit:cover; object-position:center 60%; filter:blur(26px) brightness(0.42) saturate(1.15);">
+                <img id="hub-hero-img" src="assets/images/venues/bay.png" alt="" draggable="false" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center bottom;">
                 <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgba(12,19,34,0.55) 0%, rgba(12,19,34,0.0) 28%, rgba(12,19,34,0.0) 70%, #0c1322 100%);"></div>
                 <div style="position:absolute; inset:0; background:linear-gradient(to right, rgba(12,19,34,0.45) 0%, rgba(12,19,34,0.0) 45%);"></div>
                 <div class="ch-header" style="position:absolute; left:0; right:0; top:0; border-bottom:none;">
@@ -979,7 +988,7 @@
                     </div>
                     <div id="standings-table" class="flex flex-col" style="gap:4px;"></div>
                 </div>
-                <div id="standings-side" class="flex flex-col" style="gap:14px;"></div>
+                <div id="standings-side" class="flex flex-col" style="gap:14px; min-height:0;"></div>
             </div>
         </div>
 

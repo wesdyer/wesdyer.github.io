@@ -1632,24 +1632,84 @@ const PROP_KINDS = {
     // cone stands on a land SHAPE (the isle's basalt, the islets' cinder) that already
     // grounds you and carries the typed height, and the prop is the picture on it.
     //
-    // ⚠️ THE CRATERS AND LAVA CHANNELS ARE HOLES. Every one of these sprites has its crater
-    // floor (and, on the main cone and the west cone, its lava channels) keyed OUT to alpha
-    // at ingest (`keyHoles` in the manifest), so a `magma` shape drawn under the crater and
-    // `lava` shapes drawn under the channels show through and animate. The glow, the
-    // plume, the steam and the surf are all the engine's: nothing emissive is baked. The
-    // size ladder is built so the four read as different STRUCTURES at race scale — a
-    // breached cone with rivers, a steep narrow cone with one crack, a broad low cone with
-    // a wide breached crater, a low rock with one vent — the redrock silhouette discipline.
-    'volcanic-volcano-main':    { label: 'Volcano (main)',   world: 1400, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'volcanic-cone-west':       { label: 'West cone',        world:  640, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'volcanic-cone-east':       { label: 'East cone',        world:  560, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'volcanic-vent-islet':      { label: 'Vent islet',       world:  360, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ⚠️ THE CRATERS AND LAVA CHANNELS ARE KEYED REGIONS (reworked 2026-09-07). Each
+    // master paints its molten parts in two flat keys — magenta for a crater LAKE, cyan for
+    // a running CHANNEL — and ingest opens them to alpha in the rock sprite and (next step)
+    // writes a mask per key, so the game paints its own animated magma and lava into the
+    // masked regions under the rock at draw time. The first design drew a `magma` land
+    // SHAPE under a transparent crater; it charted as an ember blob the size of the cone and
+    // was a second object to keep aligned, and the owner replaced it with this. The glow,
+    // the plume, the steam and the surf are all the engine's: nothing emissive is baked. The
+    // The set is the cone FAMILY below (crater only, one, two, three and four streams, all
+    // world 1400 and meant to be placed at any scale and heading) plus the vent islet; the
+    // separate west and east satellite cones were retired 2026-09-07 — the family covers
+    // them, and a rotated, scaled family member is a different landmark for free.
+    // `lava` is what drawPropLava paints from: one entry per keyed region, its centre and
+    // equivalent radius as FRACTIONS OF THE SPRITE FRAME, measured by ingest off the mask
+    // (the runtime cannot read the mask back — the srcBox/contactR contract). The magma
+    // entry is the crater lake; the lava entry is the channels, whose "radius" is only an
+    // area measure — downhill is computed from the crater's centre, not this one.
+    'volcanic-volcano-main':    { label: 'Volcano (4 streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.4942, cy: 0.4952, r: 0.1058 }, lava: { cx: 0.4903, cy: 0.5124, r: 0.0961 } } },
+    // The rest of the family (2026-09-07), at slot: same size and contract, told apart by
+    // stream count and silhouette. Each gets its `lava` numbers from ingest when its master
+    // lands; until then drawPropLava sees no regions and the rock draws alone.
+    'volcanic-volcano-crater':  { label: 'Volcano (crater only)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.4944, cy: 0.4892, r: 0.1266 } } },   // ingested 2026-09-07; no channels, so no lava entry
+    'volcanic-volcano-1':       { label: 'Volcano (1 stream)',    world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.4823, cy: 0.4902, r: 0.1158 }, lava: { cx: 0.6697, cy: 0.7863, r: 0.0723 } } },   // ingested 2026-09-07
+    'volcanic-volcano-4':       { label: 'Volcano (4 wide streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.4953, cy: 0.4993, r: 0.097 }, lava: { cx: 0.5647, cy: 0.5065, r: 0.1228 } } },   // ingested 2026-09-07; the 2-stream slot was retired for this
+    'volcanic-volcano-3':       { label: 'Volcano (3 streams)',   world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.4956, cy: 0.5016, r: 0.1102 }, lava: { cx: 0.5402, cy: 0.5905, r: 0.1053 } } },   // ingested 2026-09-07
+    // A lava lake without a mountain: a molten pool in a rampart of basalt, on the same keyed
+    // contract (magma only). Its `lava` numbers arrive with its master.
+    'volcanic-lava-lake':       { label: 'Lava lake (round)',    world:  700, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.4862, cy: 0.4953, r: 0.2869 } } },   // ingested 2026-09-07
+    // Two more lakes, IRREGULAR in plan (a long kidney and a three-lobed pool), so a shore
+    // can carry a lake that is not a disc. Numbers arrive with their masters.
+    'volcanic-lava-lake-2':     { label: 'Lava lake (kidney)',   world:  700, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.4783, cy: 0.4997, r: 0.2391 } } },   // ingested 2026-09-07
+    'volcanic-lava-lake-3':     { label: 'Lava lake (lobed)',    world:  700, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.515, cy: 0.5138, r: 0.2917 } } },   // ingested 2026-09-07
+    // Loose basalt rocks, the river boulder ladder re-run in basalt: same sizes, same
+    // contact numbers — a car-sized block in the water stops a hull, a knee-high one is
+    // texture. On land the colliders are redundant and harmless.
+    // ⚠️ ONE SHARED SIZE, THREE VARIETIES (owner's call on delivery, 2026-09-07): not a
+    // ladder — scale a placement for size. All hard, so a rock placed in the water stops a
+    // hull; on land the collider is redundant and harmless.
+    'volcanic-boulder-large':   { label: 'Basalt boulder A (block)', world: 40, plane: 'surface', contact: 'hard', contactR: 14, motion: 'fixed' },
+    'volcanic-boulder-medium':  { label: 'Basalt boulder B (slab)',  world: 40, plane: 'surface', contact: 'hard', contactR: 14, motion: 'fixed' },
+    'volcanic-boulder-small':   { label: 'Basalt boulder C (lump)',  world: 40, plane: 'surface', contact: 'hard', contactR: 14, motion: 'fixed' },
+    // Basalt crags, the redrock tower recipe: landmarks with no lee and no collider of their
+    // own — in the water, back one with a small `basalt` shape at its footprint, height typed.
+    // Three structures (honeycomb of column tops, a blade, a heap of blocks) so no two read
+    // as one asset at two scales.
+    'volcanic-crag-columns':    { label: 'Basalt crag (columns)', world: 320, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'volcanic-crag-fin':        { label: 'Basalt crag (ridge)',   world: 260, plane: 'surface', contact: 'none', motion: 'fixed' },   // a serrated ridge of summits, keyed `fin` for the file
+    'volcanic-crag-tor':        { label: 'Basalt crag (peak)',    world: 180, plane: 'surface', contact: 'none', motion: 'fixed' },   // a single sharp peak, keyed `tor` for the file
+    'volcanic-vent-islet':      { label: 'Vent islet',       world:  360, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.606, cy: 0.4382, r: 0.0756 } } },   // ingested 2026-09-07
     // The seabed vent: drawn on the bottom, through the water column like the sunken
     // boulders (wash is what a seabed sprite takes from the water; see those rows). Its
     // fissure is a hole too — what shows through it today is the seabed underlay, and the
     // glow it is designed around needs a SUBMERGED magma pass (a `magma` shape drawn in the
     // seabed stratum under the water, dimmed by submergedTint) that does not exist yet.
-    'volcanic-vent-underwater': { label: 'Underwater vent',  world:  320, plane: 'seabed',  contact: 'none', motion: 'fixed', wash: 0.6, washFrom: 'current' },
+    'volcanic-vent-underwater': { label: 'Underwater vent (fissure)', world: 320, plane: 'seabed',  contact: 'none', motion: 'fixed', wash: 0.6, washFrom: 'current',
+                                  lava: { magma: { cx: 0.5145, cy: 0.5059, r: 0.1202 } } },   // ingested 2026-09-07; drawn submerged
+    // Two more vents (a mound with a pit, a rift on the diagonal) and three LAND CRACKS —
+    // fissures with nothing but their lip, laid on whatever basalt shape is under them, the
+    // magma key painted at the surface. Numbers arrive with their masters.
+    'volcanic-vent-underwater-2': { label: 'Underwater vent (mound)', world: 320, plane: 'seabed', contact: 'none', motion: 'fixed', wash: 0.6, washFrom: 'current',
+                                    lava: { magma: { cx: 0.5185, cy: 0.4464, r: 0.136 } } },    // ingested 2026-09-07
+    'volcanic-vent-underwater-3': { label: 'Underwater vent (rift)',  world: 320, plane: 'seabed', contact: 'none', motion: 'fixed', wash: 0.6, washFrom: 'current',
+                                    lava: { magma: { cx: 0.5037, cy: 0.4973, r: 0.1086 } } },   // ingested 2026-09-07
+    'volcanic-crack-long':      { label: 'Lava crack (long)',  world: 400, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.4856, cy: 0.501, r: 0.1506 } } },    // ingested 2026-09-07
+    'volcanic-crack-fork':      { label: 'Lava crack (fork)',  world: 360, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.501, cy: 0.4833, r: 0.1747 } } },    // ingested 2026-09-07
+    'volcanic-crack-web':       { label: 'Lava crack (web)',   world: 320, plane: 'surface', contact: 'none', motion: 'fixed',
+                                  lava: { magma: { cx: 0.5034, cy: 0.5014, r: 0.1568 } } },   // ingested 2026-09-07
     'redrock-tower-butte':    { label: 'Butte',          world: 640, plane: 'surface', contact: 'none', motion: 'fixed' },
     'redrock-tower-fin':      { label: 'Sandstone fin',  world: 520, plane: 'surface', contact: 'none', motion: 'fixed' },
     'redrock-tower-twins':    { label: 'Twin spires',    world: 440, plane: 'surface', contact: 'none', motion: 'fixed' },

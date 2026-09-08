@@ -350,7 +350,7 @@ const LAND_TYPES = [
     // chip labelled Lava tells a designer nothing — so the chip is the ember the painter
     // shows, the weeds' rule (the chip is what you see, not the table's first field).
     { kind: 'basalt',    label: 'Volcanic Basalt',     swatch: '#30333A' },
-    { kind: 'cinder',    label: 'Volcanic Cinder',     swatch: '#3A2B29' },
+    { kind: 'cinder',    label: 'Volcanic Cinder',     swatch: '#3F2C29' },
     { kind: 'blacksand', label: 'Volcanic Black Sand', swatch: '#212121' },
     { kind: 'lava',      label: 'Volcanic Lava',       swatch: '#E0561F' },
     // Active lava: swatch is ISLAND_STYLES.magma.body, the bed tile's own mean — here the
@@ -1937,7 +1937,7 @@ const KIND_FILL = {
     // Lava fills as its crust with the ember on its EDGE (KIND_EDGE), which is how the
     // painter shows it — a flow is dark with a hot front — and is also the one legible
     // arrangement on a schematic, where a solid orange blob would read as a mark zone.
-    basalt: '#30333A', cinder: '#3A2B29', blacksand: '#212121', lava: '#241A18',
+    basalt: '#30333A', cinder: '#3F2C29', blacksand: '#212121', lava: '#241A18',
     // Magma fills as the bed itself: it has no crust to hide behind, so the schematic
     // shows the orange — the one dry-land fill here that is not dark, and the reason
     // lava's edge carries its ember instead (a solid orange blob next to a solid orange
@@ -1987,7 +1987,7 @@ const KIND_EDGE = {
     // edges with the earth kinds; lava's stroke IS the ember, and here that matters more
     // than anywhere: on the schematic the edge is the only thing that says this dark
     // shape is the hot one.
-    basalt: '#191A1D', cinder: '#241A18', blacksand: '#151514', lava: '#FF6A2A',
+    basalt: '#191A1D', cinder: '#291B18', blacksand: '#151514', lava: '#FF6A2A',
     magma: '#FFC24A'
 };
 

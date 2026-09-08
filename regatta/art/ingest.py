@@ -184,6 +184,86 @@ def punch_holes(img, luma_max, open_px, feather=1.0):
     return Image.fromarray(np.dstack([rgb, al * (1 - hole)]).astype(np.uint8), "RGBA")
 
 
+def key_colors(kh):
+    """The key colours an asset declares: `color` (one) or `colors` (a name -> RGB dict)."""
+    if kh.get("colors"):
+        return dict(kh["colors"])
+    return {"hole": kh.get("color", [255, 0, 255])}
+
+
+def key_mask(img, color, thresh, dilate=2, feather=1.0):
+    """An alpha mask of every pixel within `thresh` of `color`: the region the game paints
+    lava into under the rock sprite. DILATED a couple of pixels so the lava reaches under the
+    antialiased fringe the opening leaves in the rock (otherwise that fringe shows as a dark
+    outline over nothing), then feathered so the cut is not an aliased line."""
+    a = np.asarray(img.convert("RGBA")).astype(int)
+    d = np.abs(a[..., :3] - np.array(color, dtype=int)).sum(-1)
+    mask = (d <= thresh) & (a[..., 3] > 0)
+    m = Image.fromarray((mask * 255).astype(np.uint8), "L")
+    if dilate:
+        m = m.filter(ImageFilter.MaxFilter(2 * dilate + 1))
+    if feather > 0:
+        m = m.filter(ImageFilter.GaussianBlur(feather))
+    return m
+
+
+def _box_sum(x, r):
+    """Sum over a (2r+1)^2 window, by integral image. Zero-padded at the border."""
+    p = np.pad(x, ((r + 1, r), (r + 1, r)), mode="constant")
+    c = p.cumsum(0).cumsum(1)
+    return c[2 * r + 1:, 2 * r + 1:] - c[:-2 * r - 1, 2 * r + 1:] - c[2 * r + 1:, :-2 * r - 1] + c[:-2 * r - 1, :-2 * r - 1]
+
+
+def despill(img, colors, thresh, reach, radius=3):
+    """Repaint the antialiased FRINGE between a key region and the rock from its rock
+    neighbours. A generator blends the key into the surrounding paint over a pixel or two;
+    the pixels inside `thresh` open to alpha, but the ones between `thresh` and `reach`
+    stay opaque with a magenta or cyan cast and draw as a hairline round every crater and
+    channel. Each is replaced by the mean of the clean pixels in a (2*radius+1) window —
+    a neighbourhood inpaint, no colour model needed. Returns the image and the fringe count."""
+    a = np.asarray(img.convert("RGBA")).astype(float)
+    rgb, alpha = a[..., :3], a[..., 3]
+    dmin = None
+    for rgbk in colors.values():
+        d = np.abs(rgb - np.array(rgbk, dtype=float)).sum(-1)
+        dmin = d if dmin is None else np.minimum(dmin, d)
+    keyed = dmin <= thresh
+    fringe = (dmin <= reach) & ~keyed & (alpha > 0)
+    good = (alpha > 0) & ~keyed & ~fringe
+    w = good.astype(float)
+    den = _box_sum(w, radius)
+    out = a.copy()
+    for c in range(3):
+        num = _box_sum(rgb[..., c] * w, radius)
+        fill = np.where(den > 0, num / np.maximum(den, 1e-9), rgb[..., c])
+        out[..., c] = np.where(fringe, fill, rgb[..., c])
+    return Image.fromarray(out.clip(0, 255).astype(np.uint8), "RGBA"), int(fringe.sum())
+
+
+def rock_fix(img, src_hex, dst_hex, colors, thresh):
+    """A colour post-fix for the rock body: per-channel gain taking `src` to `dst`, applied to
+    the COOL opaque pixels only (blue >= red), so the warm lit lips keep their colour. This is
+    the library's 'a dE miss is a Lab post-fix, not a reroll' rule made mechanical, for a body
+    that came back tinted by key spill."""
+    d = [int(dst_hex[i:i + 2], 16) for i in (1, 3, 5)]
+    a = np.asarray(img.convert("RGBA")).astype(float)
+    rgb, alpha = a[..., :3], a[..., 3]
+    dmin = None
+    for rgbk in colors.values():
+        dd = np.abs(rgb - np.array(rgbk, dtype=float)).sum(-1)
+        dmin = dd if dmin is None else np.minimum(dmin, dd)
+    cool = (alpha > 0) & (dmin > thresh) & (rgb[..., 2] >= rgb[..., 0])
+    # The gain is measured off the pixels it will touch, not the whole body: gaining the cool
+    # faces by a whole-rock ratio (which the lit faces and lips had pulled warm) took a
+    # violet body to green-grey on the first try. `from` overrides it when given.
+    s = ([int(src_hex[i:i + 2], 16) for i in (1, 3, 5)] if src_hex
+         else rgb[cool].mean(0).tolist())
+    gain = np.array([d[i] / max(1.0, s[i]) for i in range(3)])
+    out = a.copy()
+    out[..., :3] = np.where(cool[..., None], rgb * gain, rgb)
+    return Image.fromarray(out.clip(0, 255).astype(np.uint8), "RGBA"), int(cool.sum())
+
+
 def key_holes(img, color, thresh, feather=1.0):
     """Open every pixel within `thresh` of `color` to alpha 0 — ENCLOSED regions included.
 
@@ -276,17 +356,24 @@ def ingest(asset, profiles, check_only=False):
     # A `keyHoles` asset asks the generator to paint its openings flat magenta. Measured
     # on arrival so a crater that came back painted as black rock, or as a glowing pool,
     # is caught here rather than in the venue with a magma shape shining on nothing.
+    # TWO KEYS SINCE THE VOLCANO REWORK (2026-09-07): `colors` names one colour per
+    # behaviour — magma (a churning lake) and lava (a running channel) — and each is
+    # reported on its own, because a master that painted both as one colour has lost the
+    # distinction the game paints from. `min` is the floor for the keys added together.
     kh = asset.get("keyHoles")
     if kh:
-        _, frac = key_holes(img, kh.get("color", [255, 0, 255]), kh.get("thresh", 120), 0)
+        cols = key_colors(kh)
+        total = 0.0
+        for name, rgb in cols.items():
+            _, frac = key_holes(img, rgb, kh.get("thresh", 120), 0)
+            total += frac
+            print(f"    keyed {name}: {frac:.2%} of the frame")
         floor = kh.get("min", 0.004)
-        if frac < floor:
+        if total < floor:
             notes.append(
-                f"NO KEYED OPENING: {frac:.2%} of the frame is the key colour, asked for at least "
-                f"{floor:.1%}. The crater or channel came back painted rather than keyed — the "
-                f"magma placed under this prop will have nothing to show through")
-        else:
-            print(f"    keyed openings: {frac:.2%} of the frame")
+                f"NO KEYED OPENING: {total:.2%} of the frame is any key colour, asked for at least "
+                f"{floor:.1%}. The crater or channel came back painted (or transparent) rather "
+                f"than keyed — the game will have no region to paint lava into")
 
     for n in notes:
         print(f"    warn: {n}")
@@ -315,10 +402,27 @@ def ingest(asset, profiles, check_only=False):
     if ph:
         img = punch_holes(img, ph.get("luma", 32), ph.get("open", 5), ph.get("feather", 1.0))
         print(f"    punched openings: luma<{ph.get('luma', 32)}, open {ph.get('open', 5)}px")
+    key_masks = {}
     if kh:
-        img, frac = key_holes(img, kh.get("color", [255, 0, 255]), kh.get("thresh", 120),
-                              kh.get("feather", 1.0))
-        print(f"    keyed openings: {frac:.2%} of the frame opened to alpha")
+        # Every key opens to alpha in the rock sprite, and every key ALSO becomes a mask
+        # file beside the bake (<name>-<key>.png), taken BEFORE the opening while the colour
+        # is still there, and pushed through the very same fill normalisation and bake
+        # resize as the sprite below so the two register to the pixel. drawPropLava paints
+        # the lava into the mask under the rock.
+        for name, rgb in key_colors(kh).items():
+            key_masks[name] = key_mask(img, rgb, kh.get("thresh", 120),
+                                       kh.get("dilate", 2), kh.get("feather", 1.0))
+        if kh.get("despill"):
+            img, n_fr = despill(img, key_colors(kh), kh.get("thresh", 120), kh["despill"],
+                                kh.get("despillRadius", 3))
+            print(f"    despilled fringe: {n_fr} px repainted from their rock neighbours")
+        rf = asset.get("rockFix")
+        if rf:
+            img, n_cool = rock_fix(img, rf.get("from"), rf["to"], key_colors(kh), kh.get("thresh", 120))
+            print(f"    rock fix: cool body -> {rf['to']} on {n_cool} px (from {rf.get('from', 'the measured cool mean')}), warm lips untouched")
+        for name, rgb in key_colors(kh).items():
+            img, frac = key_holes(img, rgb, kh.get("thresh", 120), kh.get("feather", 1.0))
+            print(f"    keyed {name}: {frac:.2%} of the frame opened to alpha")
 
     outdir = REPO / prof["out"]
     dest = paths.store(outdir, asset, PREFIXES)
@@ -395,6 +499,12 @@ def ingest(asset, profiles, check_only=False):
                                Image.LANCZOS)
             img = Image.new("RGBA", (m, m), (0, 0, 0, 0))
             img.alpha_composite(crop, ((m - crop.width) // 2, (m - crop.height) // 2))
+            # The masks take the identical crop, scale and centring, or they drift off the rock.
+            for name in list(key_masks):
+                mc = key_masks[name].crop(box).resize(crop.size, Image.LANCZOS)
+                mm = Image.new("L", (m, m), 0)
+                mm.paste(mc, ((m - crop.width) // 2, (m - crop.height) // 2))
+                key_masks[name] = mm
             bbox = img.getchannel("A").getbbox(); src_w = m
             fw, fh = (bbox[2] - bbox[0]) / m, (bbox[3] - bbox[1]) / m
             print(f"    fill normalized to {asset['fillTo']:.0%} — content {fw:.0%}x{fh:.0%} "
@@ -413,6 +523,32 @@ def ingest(asset, profiles, check_only=False):
         size = round(asset["world"] * bake)
         game = img.resize((size, size), Image.LANCZOS)
         game.save(dest)
+        if key_masks:
+            regions = {}
+            for name, mm in key_masks.items():
+                mk = mm.resize((size, size), Image.LANCZOS)
+                if not mk.getbbox():
+                    # A key the master does not use (a crater-only cone has no channels):
+                    # no file, no region, and the kind's row simply carries no entry for it.
+                    print(f"    ({name}: no pixels — no mask written)")
+                    continue
+                out_m = Image.new("RGBA", (size, size), (255, 255, 255, 0))
+                out_m.putalpha(mk)
+                mpath = dest.with_name(f"{dest.stem}-{name}.png")
+                out_m.save(mpath)
+                arr = np.asarray(mk).astype(float) / 255.0
+                tot = arr.sum()
+                if tot > 0:
+                    yy, xx = np.indices(arr.shape)
+                    cx, cy = (xx * arr).sum() / tot, (yy * arr).sum() / tot
+                    regions[name] = {"cx": round(cx / size, 4), "cy": round(cy / size, 4),
+                                     "r": round(float(np.sqrt(tot / np.pi)) / size, 4)}
+                print(f"    -> {mpath.relative_to(REPO)}  ({name} mask, {tot / (size * size):.2%} of the frame"
+                      + (f", centre {regions[name]['cx']},{regions[name]['cy']} r {regions[name]['r']} of the frame)" if name in regions else ")"))
+            # Carried on the asset like anchorPx, and copied onto the PROP_KINDS row by hand:
+            # the runtime cannot read the mask's pixels back, so where each region sits and
+            # how big it is are numbers measured here.
+            asset["keyRegions"] = regions
         content = size * (asset.get("fillTo") or 1.0)
         have = src_w * (asset.get("fillTo") or 1.0)
         print(f"    -> {shown}  ({size}px bake at {bake}x for {asset['world']}px display)")

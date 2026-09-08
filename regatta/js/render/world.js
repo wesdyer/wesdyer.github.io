@@ -290,29 +290,291 @@ function propGrid() {
     if (!course || !course.props) return null;
     if (course._propGrid && course._propGrid.src === course.props) return course._propGrid;
     const cells = new Map();
+    // THE REACH OF THE SEARCH IS A FACT ABOUT THE PROPS, NOT A CONSTANT. drawProps widens
+    // its bucket sweep past the view by this much, and it used to be a fixed 460 — sized
+    // for the biggest thing the game had, a 440u crown. Emberfall's main volcano is 1400u,
+    // and the owner placed it at scale 1.93: a 1350u half-extent. The per-prop test below
+    // was right all along (a sprite draws while its own half-width reaches the view), but
+    // a prop whose bucket the sweep never visits is never tested, so once the summit sat
+    // more than ~460u beyond the view edge the whole mountain vanished with its flank still
+    // filling the screen, leaving the magma shape under it. Measured: at scale 1 it drew
+    // to 1400u off and was gone at 1500u, where it should reach ~1530u. So the reach is the
+    // largest half-extent in the course, taken once here — props do not move — with the
+    // old 460 kept as the floor so drifters keep their slack.
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    let maxHalf = 0;
     course.props.forEach((p, i) => {
         const key = `${Math.floor(p.x / PROP_CELL)},${Math.floor(p.y / PROP_CELL)}`;
         let a = cells.get(key);
         if (!a) cells.set(key, a = []);
         a.push(i);
+        const k = reg[p.kind] || {};
+        let world = k.world || 0;
+        if (k.parts) for (const part of Object.values(k.parts)) world = Math.max(world, (reg[part] || {}).world || 0);
+        maxHalf = Math.max(maxHalf, world * (p.scale || 1) * 0.5);
+        // A keyed prop's masks start loading NOW, once per course, rather than on the frame
+        // the prop first reaches the screen: fetched lazily they arrive a few frames late,
+        // and those frames show the ground through the crater.
+        if (k.lava) for (const key of Object.keys(k.lava)) propLavaMask(p.kind, key);
     });
-    return (course._propGrid = { src: course.props, cells });
+    return (course._propGrid = { src: course.props, cells, reach: Math.max(460, maxHalf) });
 }
 
 // `filter(p, w)`: optional predicate the world-tile caches use to split a plane into its
 // cacheable (static) and live (fading/drifting) populations — see drawCanopyCached.
 // `pending`: optional array; sprites whose image has not finished loading are pushed so a
 // tile baked too early knows to rebake when the art lands. Returns the number drawn.
+// ── LAVA INSIDE A PROP: THE KEYED REGIONS ───────────────────────────────────
+//
+// A volcano prop's crater and channels are painted in the master as flat key colours,
+// and ingest turns each key into a MASK file beside the bake (<name>-magma.png,
+// <name>-lava.png) plus the region's centre and radius on the kind (`lava` on the
+// PROP_KINDS row, measured at ingest — the runtime cannot read a mask's pixels back). This
+// paints the game's own lava into those masks, under the rock sprite, every frame:
+//
+//   magma   the crater lake — the magma lake painter's layers (two bed patterns
+//           multiplied, the skin sliding over them, a breathing hot core, flares), pivoting
+//           on the crater's centre;
+//   lava    the channels — the bed pattern running DOWNHILL, which on a cone is radially
+//           away from the summit. A looping outward zoom about the crater does that with no
+//           new art: two copies of the pattern scaling up about the centre half a period
+//           apart, each fading in and out on a triangle so their sum stays one.
+//
+// Drawn into a scratch canvas covering only the part of the prop that is on screen, cut
+// with the mask through the prop's own transform (destination-in, composite-only — nothing
+// reads a pixel), then blitted under the rock. Worst case a few screen-sized fills per
+// visible volcano. `p.heat` and `p.activity` (undefined = 1) are the eruption cycle's
+// hooks, exactly as `isl.heat` / `isl.activity` are on a magma shape.
+//
+// This is what replaced "a magma SHAPE under a hole in the prop": that charted as an ember
+// blob the size of the cone and was a second object to keep aligned. One authored object.
+const PROP_LAVA_STYLE = {
+    lakeDrift: 14, lakeSpin: 0.05, lakeDrift2: 10, lakeSpin2: -0.07, skinDrift: 20, skinSpin: 0.035,
+    lakeDim: 0.6,
+    channelScale: 0.5,          // the bed pattern at half size in a channel — finer swirls for a narrow run
+    zoom: 1.8,                  // how far a channel layer swells before it hands over
+    zoomPeriod: 4.5,            // seconds per hand-over, real time
+    channelBase: '#7A2208',     // under the fading layers, so the hand-over never shows ground
+    channelDim: 0.15,
+    glow: '255,130,50',         // the crater lighting its own rim, over the rock
+    flaresPer: 0.0012,          // flares per square unit of crater
+    // The seabed vents, 2026-09-07, owner's call: "the non-lava parts stick out too much in
+    // the water and the lava does not show up". So under water the ROCK draws at half the
+    // seabed plane's 0.72 and the LAVA at half again above it (1.08, which caps at opaque),
+    // with the lava's water wash halved so the extra opacity arrives as brightness rather
+    // than as more of the water's own colour. Keyed seabed props only — coral heads and
+    // sunken boulders keep the plane's alpha.
+    submergedRock: 0.5,         // multiplier on PROP_PLANE_ALPHA.seabed for the rock sprite
+    submergedLava: 1.0,         // the lava blit's alpha (0.72 x 1.5, capped)
+    submergedWash: 0.26         // SEABED_WASH / 2 on the lava
+};
+const PROP_LAVA_MASKS = {};
+function propLavaMask(kind, key) {
+    let m = PROP_LAVA_MASKS[kind];
+    if (!m) m = PROP_LAVA_MASKS[kind] = {};
+    if (m[key]) return m[key];
+    const s = propSprite(kind);
+    if (!s) return null;
+    const img = new Image();
+    img.src = s.img.src.replace(/\.png$/, `-${key}.png`);
+    return (m[key] = img);
+}
+function propLavaState(p, w) {
+    if (p._lava) return p._lava;
+    let seed = 2166136261;
+    for (const ch of String(p.id || (p.x + ',' + p.y))) seed = ((seed ^ ch.charCodeAt(0)) * 16777619) >>> 0;
+    const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    const da = rand() * Math.PI * 2, db = da + 1.9 + rand(), ds = da + 0.7 + rand();
+    const flares = [];
+    const n = Math.max(3, Math.min(40, Math.round(PROP_LAVA_STYLE.flaresPer * w * w * 0.05)));
+    for (let k = 0; k < n; k++) {
+        const a = rand() * Math.PI * 2, d = Math.sqrt(rand()) * 0.8;
+        const sp = [];
+        for (let j = 0; j < 3; j++) sp.push({ a: rand() * Math.PI * 2, d: 2.2 + rand() * 2, s: 0.25 + rand() * 0.15 });
+        flares.push({ ux: Math.cos(a) * d, uy: Math.sin(a) * d, rs: 0.06 + rand() * 0.06,
+                      period: 2.5 + rand() * 4, phase: rand() * 7, sp });
+    }
+    return (p._lava = {
+        ph: p.x * 0.0131 + p.y * 0.0217,
+        dirA: { x: Math.cos(da), y: Math.sin(da) }, dirB: { x: Math.cos(db), y: Math.sin(db) },
+        dirS: { x: Math.cos(ds), y: Math.sin(ds) },
+        oB: rand() * Math.PI * 2, oS: rand() * Math.PI * 2,
+        wellPeriod: 5 + rand() * 4, flares, pats: null
+    });
+}
+let _propLavaScratch = null;
+// `submerged` is the seabed vent's case: the same lava, seen THROUGH the water column. The
+// masked layers are washed toward the venue's water at SEABED_WASH before the blit (the
+// submergedSprite recipe, composite-only) and blitted at the seabed plane's alpha, so the
+// fissure reads as light under the sea rather than a hole with a fire in it; the rim glow
+// over the rock is what bleeds up through the surface, and it draws at reduced strength.
+function drawPropLava(ctx, p, s, w, kind, x, y, submerged) {
+    const spec = kind.lava;
+    if (!spec) return;
+    const bed = lavaBedTile();
+    if (!bed) return;
+    const heat = p.heat == null ? 1 : Math.max(0, Math.min(1, p.heat));
+    const act = p.activity == null ? 1 : Math.max(0, p.activity);
+    const t = state.time, k = lavaClock() * act;
+    const st = propLavaState(p, w);
+    const f = 0.76 + 0.12 * Math.sin(t * 1.10 + st.ph) + 0.06 * Math.sin(t * 2.70 + st.ph * 1.7)
+            + 0.04 * Math.sin(t * 6.10 + st.ph * 0.4);
+    // The on-screen part of the prop, rotation-safe, in world units.
+    const cam = state.camera, R = cullRadius(ctx);
+    const half = w * 0.7071;
+    const x0 = Math.max(x - half, cam.x - R), y0 = Math.max(y - half, cam.y - R);
+    const x1 = Math.min(x + half, cam.x + R), y1 = Math.min(y + half, cam.y + R);
+    if (x1 - x0 < 2 || y1 - y0 < 2) return;
+    const W = Math.min(2048, Math.ceil(x1 - x0)), H = Math.min(2048, Math.ceil(y1 - y0));
+    if (!_propLavaScratch) _propLavaScratch = document.createElement('canvas');
+    const sc = _propLavaScratch;
+    if (sc.width !== W || sc.height !== H) { sc.width = W; sc.height = H; }
+    const g = sc.getContext('2d');
+    if (!st.pats) {
+        st.pats = { a: g.createPattern(bed, 'repeat'), b: g.createPattern(bed, 'repeat'),
+                    c1: g.createPattern(bed, 'repeat'), c2: g.createPattern(bed, 'repeat'), skin: null };
+    }
+    if (!st.pats.skin) { const sk = magmaSkinTile(); if (sk) st.pats.skin = g.createPattern(sk, 'repeat'); }
+    // A region's centre in world space: the kind's frame fractions through the prop's transform.
+    const cs = Math.cos(p.heading || 0), sn = Math.sin(p.heading || 0);
+    const centre = (r) => { const lx = (r.cx - 0.5) * w, ly = (r.cy - 0.5) * w;
+                            return { x: x + lx * cs - ly * sn, y: y + lx * sn + ly * cs }; };
+    const spin = (c, rad, sc_, dx, dy) => new DOMMatrix().translate(c.x, c.y).rotate(rad * 180 / Math.PI)
+                                            .scale(sc_, sc_).translate(-c.x, -c.y).translate(dx, dy);
+    const cut = (key) => {
+        const mask = propLavaMask(p.kind, key);
+        if (!mask || !mask.complete || !mask.naturalWidth) return false;
+        g.globalCompositeOperation = 'destination-in';
+        g.globalAlpha = 1;
+        g.save();
+        g.translate(x, y);
+        if (p.heading) g.rotate(p.heading);
+        drawSpriteBoxed(g, mask, s, w);
+        g.restore();
+        if (submerged) {
+            const W_ = window.WATER_CONFIG || {};
+            const hex = String(W_.heroColor || W_.baseColor || '#0ea5e9').replace('#', '');
+            g.globalCompositeOperation = 'source-atop';
+            g.fillStyle = `rgba(${parseInt(hex.substr(0, 2), 16)},${parseInt(hex.substr(2, 2), 16)},`
+                        + `${parseInt(hex.substr(4, 2), 16)},${PROP_LAVA_STYLE.submergedWash})`;
+            g.fillRect(x0, y0, W, H);
+        }
+        g.globalCompositeOperation = 'source-over';
+        return true;
+    };
+    const blit = () => {
+        ctx.save();
+        if (submerged) ctx.globalAlpha = PROP_LAVA_STYLE.submergedLava;
+        ctx.drawImage(sc, x0, y0);
+        ctx.restore();
+    };
+    const P = PROP_LAVA_STYLE;
+
+    // ── THE CRATER LAKE ─────────────────────────────────────────────────────
+    const mg = spec.magma;
+    const mgMask = mg && propLavaMask(p.kind, 'magma');
+    if (mg && mgMask && mgMask.complete && mgMask.naturalWidth) {
+        const C = centre(mg), cr = mg.r * w;
+        const cB = { x: C.x + Math.cos(st.oB) * cr * 0.5, y: C.y + Math.sin(st.oB) * cr * 0.5 };
+        const cS = { x: C.x + Math.cos(st.oS) * cr * 0.45, y: C.y + Math.sin(st.oS) * cr * 0.45 };
+        g.setTransform(1, 0, 0, 1, -x0, -y0);
+        g.globalCompositeOperation = 'source-over';
+        g.globalAlpha = 1;
+        g.clearRect(x0, y0, W, H);
+        st.pats.a.setTransform(spin(C, k * P.lakeSpin, 1, k * P.lakeDrift * st.dirA.x, k * P.lakeDrift * st.dirA.y));
+        g.fillStyle = st.pats.a; g.fillRect(x0, y0, W, H);
+        st.pats.b.setTransform(spin(cB, k * P.lakeSpin2, 1, k * P.lakeDrift2 * st.dirB.x, k * P.lakeDrift2 * st.dirB.y));
+        g.globalCompositeOperation = 'multiply'; g.globalAlpha = 0.55;
+        g.fillStyle = st.pats.b; g.fillRect(x0, y0, W, H);
+        g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+        if (st.pats.skin) {
+            st.pats.skin.setTransform(spin(cS, k * P.skinSpin, 1, k * P.skinDrift * st.dirS.x, k * P.skinDrift * st.dirS.y));
+            g.fillStyle = st.pats.skin; g.fillRect(x0, y0, W, H);
+        }
+        g.fillStyle = `rgba(30,6,2,${((1 - heat * f) * P.lakeDim).toFixed(3)})`;
+        g.fillRect(x0, y0, W, H);
+        // The hot core, breathing at the centre, and the flares.
+        g.globalCompositeOperation = 'lighter';
+        const b = 0.5 + 0.5 * Math.sin((k + st.ph) / st.wellPeriod * Math.PI * 2);
+        const wr = cr * (0.75 + 0.15 * b);
+        g.globalAlpha = (0.35 + 0.4 * b) * heat;
+        g.drawImage(glowSprite(MAGMA_STYLE.well), C.x - wr, C.y - wr, wr * 2, wr * 2);
+        const wc = wr * 0.45;
+        g.globalAlpha = (0.12 + 0.3 * b) * heat;
+        g.drawImage(glowSprite(MAGMA_STYLE.wellCore), C.x - wc, C.y - wc, wc * 2, wc * 2);
+        for (const fl of st.flares) {
+            const u = (((k + fl.phase) % fl.period) + fl.period) % fl.period / fl.period;
+            if (u >= 0.2) continue;
+            const gg = u / 0.2, env = Math.sin(Math.PI * gg);
+            const fx = C.x + fl.ux * cr, fy = C.y + fl.uy * cr, fr0 = fl.rs * cr;
+            const fr = fr0 * (0.6 + 1.6 * gg);
+            g.globalAlpha = 0.9 * env * heat;
+            g.drawImage(glowSprite(MAGMA_STYLE.flash), fx - fr, fy - fr, fr * 2, fr * 2);
+            for (const sp of fl.sp) {
+                const reach = Math.sqrt(gg);
+                const px = fx + Math.cos(sp.a) * sp.d * fr0 * reach, py = fy + Math.sin(sp.a) * sp.d * fr0 * reach;
+                const pr = fr0 * sp.s * (1 - 0.5 * gg);
+                g.globalAlpha = (1 - gg) * 0.85 * heat;
+                g.drawImage(glowSprite(MAGMA_STYLE.flash), px - pr, py - pr, pr * 2, pr * 2);
+            }
+        }
+        g.globalAlpha = 1;
+        if (cut('magma')) blit();
+    }
+
+    // ── THE CHANNELS ────────────────────────────────────────────────────────
+    const lv = spec.lava;
+    const lvMask = lv && propLavaMask(p.kind, 'lava');
+    if (lv && lvMask && lvMask.complete && lvMask.naturalWidth) {
+        const C = mg ? centre(mg) : centre(lv);      // downhill is away from the summit
+        g.setTransform(1, 0, 0, 1, -x0, -y0);
+        g.globalCompositeOperation = 'source-over';
+        g.globalAlpha = 1;
+        g.clearRect(x0, y0, W, H);
+        g.fillStyle = P.channelBase; g.fillRect(x0, y0, W, H);
+        const u1 = ((k / P.zoomPeriod) % 1 + 1) % 1, u2 = (u1 + 0.5) % 1;
+        for (const [pat, u] of [[st.pats.c1, u1], [st.pats.c2, u2]]) {
+            const scl = P.channelScale * Math.pow(P.zoom, u);
+            pat.setTransform(spin(C, k * 0.02, scl, 0, 0));
+            g.globalAlpha = 1 - Math.abs(2 * u - 1);
+            g.fillStyle = pat; g.fillRect(x0, y0, W, H);
+        }
+        g.globalAlpha = 1;
+        g.fillStyle = `rgba(30,6,2,${(P.channelDim + (1 - heat * f) * 0.4).toFixed(3)})`;
+        g.fillRect(x0, y0, W, H);
+        if (cut('lava')) blit();
+    }
+}
+// The crater lights its own rim: an additive glow OVER the rock, after the sprite draws.
+function drawPropLavaGlow(ctx, p, w, kind, x, y, submerged) {
+    const mg = kind.lava && kind.lava.magma;
+    if (!mg || !lavaBedTile()) return;
+    const heat = p.heat == null ? 1 : Math.max(0, Math.min(1, p.heat));
+    const st = propLavaState(p, w), t = state.time;
+    const cs = Math.cos(p.heading || 0), sn = Math.sin(p.heading || 0);
+    const lx = (mg.cx - 0.5) * w, ly = (mg.cy - 0.5) * w;
+    const cx = x + lx * cs - ly * sn, cy = y + lx * sn + ly * cs;
+    const r = mg.r * w * 1.7;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    // Under water the glow is what bleeds up through the surface: wider, and softer.
+    ctx.globalAlpha = (0.16 + 0.10 * Math.sin(t * 1.3 + st.ph)) * heat * (submerged ? 0.7 : 1);
+    const rr = submerged ? r * 1.4 : r;
+    ctx.drawImage(glowSprite(PROP_LAVA_STYLE.glow), cx - rr, cy - rr, rr * 2, rr * 2);
+    ctx.restore();
+}
+
 function drawProps(ctx, plane, filter, pending) {
     const props = state.course && state.course.props;
     if (!props || !props.length) return 0;
     const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
     const viewRadius = cullRadius(ctx);
     const camX = state.camera.x, camY = state.camera.y;
-    // Reach one cell beyond the view so a big crown centred just outside still draws; the
-    // per-prop test below is what actually decides, this only narrows the search.
+    // Reach as far past the view as the biggest prop's half-extent (see propGrid's note)
+    // so a prop centred outside still draws; the per-prop test below is what actually
+    // decides, this only narrows the search.
     const grid = propGrid();
-    const pad = viewRadius + 460;
+    const pad = viewRadius + (grid ? grid.reach : 460);
     const visit = [];
     if (grid) {
         const cx0 = Math.floor((camX - pad) / PROP_CELL), cx1 = Math.floor((camX + pad) / PROP_CELL);
@@ -359,16 +621,24 @@ function drawProps(ctx, plane, filter, pending) {
         // camera — the big ones, the expensive ones — are exactly the ones at zero.
         // ...and only a crown that OVERHANGS WATER fades at all: one standing wholly on land
         // cannot hide a hull, so it stays a solid tree. See crownOverWater.
+        const kind = reg[p.kind] || {};
         const alpha = (PROP_PLANE_ALPHA[plane] || 1)
                     * (plane === 'canopy' && crownOverWater(p, w)
-                       ? canopyAlpha(p, (reg[p.kind] || {}).fadeMin) : 1);
+                       ? canopyAlpha(p, kind.fadeMin) : 1)
+                    // A keyed seabed prop's ROCK fades back so its lava can carry the read.
+                    * (plane === 'seabed' && kind.lava ? PROP_LAVA_STYLE.submergedRock : 1);
         if (alpha <= 0.004) continue;
+        // Lava under the rock, for a prop whose kind carries keyed regions — on the surface,
+        // or on the seabed seen through the water (the vent).
+        const lavaHere = kind.lava && (plane === 'surface' || plane === 'seabed');
+        if (lavaHere) drawPropLava(ctx, p, s, w, kind, x, y, plane === 'seabed');
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.translate(x, y);
         if (p.heading) ctx.rotate(p.heading);
         drawSpriteBoxed(ctx, plane === 'seabed' ? submergedSprite(s) : s.img, s, w);
         ctx.restore();
+        if (lavaHere) drawPropLavaGlow(ctx, p, w, kind, x, y, plane === 'seabed');
         drawn++;
     }
     return drawn;
@@ -1326,7 +1596,7 @@ const ISLAND_STYLES = {
     // the delivered tile's mean. If the beach should read below the water again, the
     // lever is the water (a lighter shallow band at the shore) before it is the sand.
     basalt:    { body: '#30333A', stroke: '#191A1D', veg: '#41454D', rock: '#4E535C', trees: false },  // body = volcanic-basalt DELIVERED tile mean
-    cinder:    { body: '#3A2B29', stroke: '#241A18', veg: '#4A3231', rock: '#5A3A2F', trees: false },  // body = volcanic-cinder DELIVERED tile mean
+    cinder:    { body: '#3F2C29', stroke: '#291B18', veg: '#4F3331', rock: '#5F3B2F', trees: false },  // body = volcanic-cinder ROUND-TWO tile mean (2026-09-07), spec offsets carried
     blacksand: { body: '#212121', stroke: '#151514', veg: '#292A2B', rock: '#1A1A1A', trees: false },  // body = volcanic-blacksand DELIVERED tile mean
     // Lava's body is the CRUST — the cooled plates drawLava lays over the bed — and its
     // stroke is the EMBER, because on this one kind the coastline is the hottest thing in

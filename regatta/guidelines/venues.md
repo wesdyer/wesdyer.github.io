@@ -1115,8 +1115,8 @@ Black rock on black water is the premise, so this set deliberately separates by
 hue and texture rather than value — the library's dE 23 bar is not met and the
 ISLAND_STYLES block says why, and what to move (value, not the tile) if the rock
 vanishes in play. Tiles: `volcanic-basalt` (256, alpha 0.65), `volcanic-cinder`
-(256, 0.5 — retiled up from 128 because its mound mottle tiles as a lattice; a P2
-rework is open), `volcanic-blacksand` (128, 0.7), all ingested Sep 4 with bodies
+(128, 0.85 — round one shipped retiled to 256 because its mound mottle tiled as a
+lattice; the Sep 7 regeneration lost the quilt and went back to 128), `volcanic-blacksand` (128, 0.7), all ingested Sep 4 with bodies
 reset to the delivered means. Lava has two: `volcanic-lava-bed` (256, emissive — the
 first loud tile in the library, and `prompt.py` grew an `emissive` flag for it) drifts
 under a crust that is the basalt tile with its joints keyed to alpha, composite-only
@@ -1127,17 +1127,44 @@ above it in value (the black sand no longer sits below the sea).
 The venue doc is re-kinded onto the set (cones `cinder`, isle `basalt`, delta and
 beach `blacksand`); no lava shape is placed yet.
 
-**Props (Sep 6 2026, at slot).** Five landmarks declared, the redrock tower recipe
-(plane surface, contact none, the land shape underneath is the collider and the
-height): `volcanic-volcano-main` (1400, the hero: breached crater, three lava
-channels), `volcanic-cone-west` (640, steep and narrow, one crack), `volcanic-cone-east`
-(560, broad and low, wide breached horseshoe, cinder-warm), `volcanic-vent-islet` (360,
-a flat fumarole slab with one vent) and `volcanic-vent-underwater` (320, seabed, a
-fissure in pillow lava). **Every crater, channel and fissure is a hole**: painted flat
-magenta in the master and keyed to alpha by ingest's new `keyHoles`, so a `magma` shape
-under a crater and `lava` shapes under the channels show through and animate — Wes's
-call. Nothing emissive is baked: glow is the magma's, plume/steam/surf are the engine's
-(the downwind plume veil and a submerged magma pass for the seabed vent are still owed).
+**Props (Sep 6 2026; reworked Sep 7).** Five landmarks declared, the redrock tower
+recipe (plane surface, contact none, the land shape underneath is the collider and the
+height): `volcanic-volcano-main` (1400, the hero: breached crater, four lava
+channels), `volcanic-vent-islet` (360, a flat fumarole slab with one vent) and
+`volcanic-vent-underwater` (320, seabed, a fissure in pillow lava). The separate west
+and east satellite cones were retired Sep 7: the cone family below covers them, placed at
+any scale and heading. Plus a family of four more 1400-unit cones at slot (Sep 7), told apart by stream count
+and silhouette — `volcanic-volcano-crater` (lake only, the largest crater), `-1` (one
+broad river from a breach), `-3` (three, unevenly spread), `-4` (four WIDE channels,
+delivered unprompted and taken in place of the two-stream slot, retired Sep 7) — with
+the main cone relabelled "Volcano (4 streams)". All five are ingested. Also at slot (Sep 7): `volcanic-lava-lake` (700, a molten pool in a rampart of basalt,
+magma key only), three loose basalt boulders on the river ladder (`volcanic-boulder-large`
+52 hard, `-medium` 34 hard, `-small` 20 scenery) and three basalt crags on the redrock
+tower recipe (`volcanic-crag-columns` 320, a honeycomb of column tops; `-fin` 260, a
+blade on the diagonal; `-tor` 180, a heap of blocks — back one with a `basalt` shape when
+it stands in water). Sep 7 evening, at slot: two more underwater vents (`volcanic-vent-underwater-2`, a
+mound with a pit; `-3`, a rift on the diagonal) and three land cracks
+(`volcanic-crack-long` 400, `-fork` 360, `-web` 320) — fissures that carry nothing but
+their lip, laid on whatever basalt shape is under them, magma key painted at the
+surface. The seabed vents draw through the submerged lava pass built the same day. **Every crater, channel and fissure is a keyed region:** the
+master paints a crater lake flat magenta and a running channel flat cyan, ingest opens
+both to alpha in the rock sprite and will write a mask per key, and the game paints
+churning magma and running lava into the masked regions under the rock at draw time.
+The first design, a `magma` land shape under a transparent crater, charted as an ember
+blob the size of the cone and was a second object to keep aligned, so Wes replaced it.
+The main cone was delivered under the hole design (real transparency) and carried a P1
+rework; its round two landed Sep 7 on the keyed contract and
+the whole chain is built: ingest writes `<name>-magma.png` / `<name>-lava.png` masks
+beside the bake plus each region's centre and radius (copied onto the `lava` field of
+the PROP_KINDS row), despills the key fringe by neighbourhood inpaint and can post-fix a
+spill-tinted body (`rockFix`), and `drawPropLava` paints the lake and the channels into
+the masks under the rock every frame, with the channels running radially away from the
+summit by a looping outward zoom. Nothing emissive is baked: plume/steam/surf are the
+engine's, and the downwind plume veil and a submerged pass for the seabed vent are still
+owed. The prop bucket sweep in `drawProps` used to reach a fixed 460 units
+past the view, too short for a 1400-unit prop at scale 2, so the volcano vanished
+mid-leg with its flank still on screen; since Sep 7 the reach is the largest prop
+half-extent in the course, computed once in `propGrid`.
 
 ---
 
