@@ -17107,3 +17107,46 @@ Other nine venues: pa* carry (js sim-inert by the control + goldens).
 **Goldens**: verify on HEAD with the new doc FAILED exactly swamp/90210-12
 (27/30 unchanged = the other nine venues' behaviour is byte-stable under HEAD
 js); re-recorded via `npm run trace:update`; verify PASS 30/30 (count read).
+**2026-09-08 — HIS NEW-WIND LAPS ARRIVED (3)**: stamps 8632d79f:335920 ==
+frozen (schema 2, 10-hull, aiStatBonus 4, all finished): 127.9 / 145.7 / 158.6
+→ **human med 145.7 (n=3)**, mean 144.1. Old-wind 234.1 (n=9) RETIRED. He got
+38% faster on the wind cut; the fleet got 40% faster (320 → 193). ⇒ **swamp
+1.325** (was 1.367 on the old wind) — the cut moved both sides together and the
+AI's relative standing is unchanged: still ~47 s behind him on a 146 s lap.
+Fleet best-of-240 = 124 s vs his best-of-3 = 128 s (order-statistic trap:
+different n, not a comparison). Goal count stays 2/10. `_wd_close_table.js`
+HUMAN swamp = 145.7.
+Per-leg on the new wind (`_leg_matrix.js fp=8632d79f:335920 swamp wdsw*`, MEANS):
+leg 0 (start) his 2.7 vs fleet 20.5 = **17.8 s, 30% of the 58.3 s gap** (the start
+push's "swamp +20.7 s start deficit" survives the wind cut — the fleet's median
+line-crossing is 10 s after the gun, his 2 s); leg 1 his 141.3 vs 182.1 = 40.7 s,
+70%, ratio 1.29. Same shape as the old wind: the cut scaled both sides.
+
+## 2026-09-08 — SWAMP WIND RE-TRIM: −1.25 kt from the +2 cut (owner: "keep the
+## unique part but not have it be annoying"; net +0.75 vs the original)
+Owner's read of the +2 cut: the original swamp "you barely move"; +2 "feels like
+a more normal race and super short" (his 145.7 was the shortest venue by 29 s
+over lagoon). Fit through the two measured points (polar is LINEAR below 6 kt ⇒
+t ∝ 1/wind; measured exponent 1.11) predicted his med ~191 at +0.75. Edit: all
+54 regions −1.25 from current (1.65–5.59 kt, mean 4.50; dead-air pockets
+1.65–2.21). Speed-only diff, 54 lines. **PROMOTED**: swamp re-frozen 60016588 →
+**661d9e7b** (corpus stamp 59f2931b:335924); the +2 frozen copy kept in
+`eval/rl/_venues_wind2/`, the original in `_venues_prewind/`. treeSWB = HEAD
+14a6f31 js (== the wd* js, no js change since) on the new doc.
+**Swamp, 3×8 seeds, ten bots — three wind eras on the same js**:
+  original 3.75 kt (pasw*): med 320 / mean 321.5 / best 174, fins 235/240,
+    land 4.50 boat 5.17 pen 0.70
+  +2.00 → 5.75 kt (wdsw*):  med 193 / 202.4 / 124, fins 240/240, 2.42/2.35/0.36
+  **+0.75 → 4.50 kt (wbsw*): med 253 / 272.6 / 155, fins 235/240 (2.1% DNF),
+    land 3.96 boat 3.77 pen 0.54, p25 220 p75 318, worst 800**
+Fit predicted fleet med ~261; measured 253. At the ratio that held across the
++2 cut (1.33–1.37) his median should land **185–190 s** — the seatrials/river
+cluster, roughly halfway between 234 and 146. ⛔ wdsw* RETIRED (+2 wind);
+⛔ HUMAN swamp: all 12 laps (9 original-wind, 3 +2-wind) RETIRED on this doc —
+ratio PROVISIONAL until he re-sails. Note the dirt comes most of the way back
+(land 2.42 → 3.96, boat 2.35 → 3.77, 5 DNFs, an 800 s straggler): the light-air
+stall regime is a function of wind, and +0.75 restores ~70% of it. Anchors:
+**swamp = wbsw9400/9500/9600**. Close table: `_wb_close_table.js`.
+**Goldens**: verify FAILED exactly swamp/90210-12 (27/30 unchanged); re-recorded
+via `npm run trace:update`; verify PASS 30/30 (count read); only the swamp
+entries differ from HEAD's golden file.

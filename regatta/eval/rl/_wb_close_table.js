@@ -1,13 +1,13 @@
-// WD CLOSE TABLE — THE SWAMP WIND CUT (2026-09-07; derived from _pa_close_table.js)
-// ⚠️ 2026-09-07 SWAMP WIND CUT (owner design change): every wind region +2 kt
-// baseline (0.9-4.84 -> 2.9-6.84 kt, speedVar untouched). Swamp re-frozen
-// (d93d5c1e -> 60016588); the pre-wind frozen copy lives in _venues_prewind/.
-// wd* = HEAD fafd44a js on the NEW swamp doc; wcsw9400 = the same js on the OLD
-// doc (control vs pasw9400: byte-identical => the js is sim-inert and the whole
-// delta is the wind). ⛔ pasw* (PRE) is the OLD wind — shown for the cut only,
-// never compared. ⛔ HUMAN swamp 234.1 = his 9 laps on the OLD wind: the ratio is
-// PROVISIONAL until he re-sails the venue — DONE 2026-09-08, see HUMAN below.
-//   node _wd_close_table.js
+// WB CLOSE TABLE — THE SWAMP WIND RE-TRIM (2026-09-08; derived from _wd_close_table.js)
+// ⚠️ 2026-09-08 SWAMP WIND RE-TRIM (owner design change): every region −1.25 kt
+// from the +2 kt cut (net +0.75 vs the original: 1.65-5.59 kt, mean 4.50; dead-
+// air pockets 1.65-2.21). Swamp re-frozen 60016588 -> 661d9e7b; the +2 frozen
+// copy lives in _venues_wind2/, the original in _venues_prewind/.
+// wb* = HEAD 14a6f31 js (== the wd* js) on the −1.25 doc. ⛔ wdsw* (PRE) is the
+// +2 wind — shown for the cut only, never compared. ⛔ HUMAN swamp 145.7 = his
+// three +2-wind laps: RETIRED on this doc; the ratio is PROVISIONAL until he
+// re-sails (fit prediction: ~191 s from the 1/wind^1.1 curve through 234/146).
+//   node _wb_close_table.js
 // N1 CLOSE TABLE — THE NEW-BENCHMARK ERA (2026-08-24, after THE GREAT SPLIT +
 // the venue-doc promotion). Owner-spec format (same as _r3_close_table.js):
 //   venue | human | pre med/mean/best | post med/mean/best | ratio | DNF% | colMed | penMed
@@ -71,7 +71,7 @@ const VENUES = {
     redrock: { base: ['re1rr9400','re1rr9500','re1rr9600','re1rr9700','re1rr9800','re1rr9900'], cand: ['parr9400','parr9500','parr9600','parr9700','parr9800','parr9900'] },
     arctic:  { base: ['re1arc9100','re1arc9200','re1arc9400','re1arc9600'], cand: ['paarc9100','paarc9200','paarc9400','paarc9600'] },
     river:   { base: ['re1riv9400','re1riv9408','re1riv9500'], cand: ['pariv9400','pariv9408','pariv9500'] },
-    swamp:   { base: ['pasw9400','pasw9500','pasw9600'], cand: ['wdsw9400','wdsw9500','wdsw9600'], note: '⚠ WIND CUT 2026-09-07: PRE = old wind (his old-wind med was 234.1, n=9), not comparable; human = 3 new-wind laps' },
+    swamp:   { base: ['wdsw9400','wdsw9500','wdsw9600'], cand: ['wbsw9400','wbsw9500','wbsw9600'], note: '⚠ RE-TRIM 2026-09-08: PRE = +2 kt wind (not comparable); human 145.7 = his +2-wind laps, RETIRED here → ratio PROVISIONAL (fit predicts ~191)' },
     glowtide:{ base: ['re1glow'], cand: ['paglow'] },
     lagoon:  { base: ['re1lag'], cand: ['palag'] },
     bay:     { base: ['re1bay9400','re1bay9600'], cand: ['pabay9400','pabay9600'] },

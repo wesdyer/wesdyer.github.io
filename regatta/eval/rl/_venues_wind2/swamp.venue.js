@@ -12482,7 +12482,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 160,
         "direction": -0.64137,
         "dirVar": 0.8,
-        "speed": 1.65,
+        "speed": 2.9,
         "speedVar": 0.45,
         "period": 205
       },
@@ -12550,7 +12550,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.45904,
         "dirVar": 0.64859,
-        "speed": 4.7,
+        "speed": 5.95,
         "speedVar": 1.23,
         "period": 80
       },
@@ -12618,7 +12618,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.228717,
         "dirVar": 0.716389,
-        "speed": 5.19,
+        "speed": 6.44,
         "speedVar": 1.44,
         "period": 260
       },
@@ -12686,7 +12686,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.270809,
         "dirVar": 0.576392,
-        "speed": 4.77,
+        "speed": 6.02,
         "speedVar": 1.25,
         "period": 63
       },
@@ -12754,7 +12754,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 160,
         "direction": -0.306738,
         "dirVar": 0.8,
-        "speed": 2.21,
+        "speed": 3.46,
         "speedVar": 0.45,
         "period": 388
       },
@@ -12822,7 +12822,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 160,
         "direction": -0.257614,
         "dirVar": 0.8,
-        "speed": 1.65,
+        "speed": 2.9,
         "speedVar": 0.45,
         "period": 58
       },
@@ -12890,7 +12890,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.123762,
         "dirVar": 0.538977,
-        "speed": 5.15,
+        "speed": 6.4,
         "speedVar": 1.41,
         "period": 540
       },
@@ -12958,7 +12958,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.295861,
         "dirVar": 0.590913,
-        "speed": 4.65,
+        "speed": 5.9,
         "speedVar": 1.21,
         "period": 36
       },
@@ -13026,7 +13026,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.309713,
         "dirVar": 1.041916,
-        "speed": 4.44,
+        "speed": 5.69,
         "speedVar": 1.55,
         "period": 542
       },
@@ -13094,7 +13094,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.64243,
         "dirVar": 1.141467,
-        "speed": 4.55,
+        "speed": 5.8,
         "speedVar": 1.59,
         "period": 115
       },
@@ -13162,7 +13162,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.027942,
         "dirVar": 0.708454,
-        "speed": 5.25,
+        "speed": 6.5,
         "speedVar": 1.46,
         "period": 50
       },
@@ -13230,7 +13230,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.069174,
         "dirVar": 0.651391,
-        "speed": 4.76,
+        "speed": 6.01,
         "speedVar": 1.24,
         "period": 165
       },
@@ -13298,7 +13298,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": 0.076391,
         "dirVar": 1.072881,
-        "speed": 4.81,
+        "speed": 6.06,
         "speedVar": 1.74,
         "period": 78
       },
@@ -13366,7 +13366,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": 0,
         "dirVar": 0.960516,
-        "speed": 4.62,
+        "speed": 5.87,
         "speedVar": 1.64,
         "period": 232
       },
@@ -13434,7 +13434,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.530205,
         "dirVar": 1.033708,
-        "speed": 5.59,
+        "speed": 6.84,
         "speedVar": 2.13,
         "period": 64
       },
@@ -13502,7 +13502,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": 0.030215,
         "dirVar": 0.636406,
-        "speed": 5.34,
+        "speed": 6.59,
         "speedVar": 1.5,
         "period": 427
       },
@@ -13570,7 +13570,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.606722,
         "dirVar": 0.723625,
-        "speed": 5.23,
+        "speed": 6.48,
         "speedVar": 1.45,
         "period": 59
       },
@@ -13638,7 +13638,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.448031,
         "dirVar": 1.077037,
-        "speed": 5.3,
+        "speed": 6.55,
         "speedVar": 1.96,
         "period": 416
       },
@@ -13706,7 +13706,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.219118,
         "dirVar": 1.139067,
-        "speed": 4.87,
+        "speed": 6.12,
         "speedVar": 1.75,
         "period": 128
       },
@@ -13774,7 +13774,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.525446,
         "dirVar": 0.935333,
-        "speed": 4.39,
+        "speed": 5.64,
         "speedVar": 1.53,
         "period": 555
       },
@@ -13842,7 +13842,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.46523,
         "dirVar": 0.583236,
-        "speed": 4.96,
+        "speed": 6.21,
         "speedVar": 1.33,
         "period": 186
       },
@@ -13910,7 +13910,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.437406,
         "dirVar": 0.542602,
-        "speed": 5.28,
+        "speed": 6.53,
         "speedVar": 1.47,
         "period": 38
       },
@@ -13978,7 +13978,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.648224,
         "dirVar": 0.549068,
-        "speed": 5.3,
+        "speed": 6.55,
         "speedVar": 1.48,
         "period": 130
       },
@@ -14046,7 +14046,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": 0.7853981633974483,
         "dirVar": 0.621581,
-        "speed": 5.21,
+        "speed": 6.46,
         "speedVar": 1.44,
         "period": 58
       },
@@ -14114,7 +14114,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.564619,
         "dirVar": 0.687514,
-        "speed": 5,
+        "speed": 6.25,
         "speedVar": 1.36,
         "period": 308
       },
@@ -14182,7 +14182,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": 0.092836,
         "dirVar": 0.592062,
-        "speed": 4.69,
+        "speed": 5.94,
         "speedVar": 1.23,
         "period": 45
       },
@@ -14250,7 +14250,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.07473,
         "dirVar": 0.542657,
-        "speed": 4.73,
+        "speed": 5.98,
         "speedVar": 1.23,
         "period": 556
       },
@@ -14318,7 +14318,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.309481,
         "dirVar": 0.62793,
-        "speed": 4.71,
+        "speed": 5.96,
         "speedVar": 1.28,
         "period": 442
       },
@@ -14386,7 +14386,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.291132,
         "dirVar": 0.710849,
-        "speed": 4.79,
+        "speed": 6.04,
         "speedVar": 1.26,
         "period": 280
       },
@@ -14454,7 +14454,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.477324,
         "dirVar": 0.633068,
-        "speed": 4.83,
+        "speed": 6.08,
         "speedVar": 1.34,
         "period": 454
       },
@@ -14522,7 +14522,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.367528,
         "dirVar": 0.637306,
-        "speed": 4.74,
+        "speed": 5.99,
         "speedVar": 1.27,
         "period": 398
       },
@@ -14590,7 +14590,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.309737,
         "dirVar": 0.707089,
-        "speed": 4.79,
+        "speed": 6.04,
         "speedVar": 1.28,
         "period": 159
       },
@@ -14658,7 +14658,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 160,
         "direction": -0.294782,
         "dirVar": 0.8,
-        "speed": 1.93,
+        "speed": 3.18,
         "speedVar": 0.45,
         "period": 474
       },
@@ -14726,7 +14726,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.241252,
         "dirVar": 0.546031,
-        "speed": 5.15,
+        "speed": 6.4,
         "speedVar": 1.42,
         "period": 157
       },
@@ -14794,7 +14794,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.135864,
         "dirVar": 0.700719,
-        "speed": 4.93,
+        "speed": 6.18,
         "speedVar": 1.37,
         "period": 384
       },
@@ -14862,7 +14862,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 160,
         "direction": -0.290689,
         "dirVar": 0.8,
-        "speed": 1.65,
+        "speed": 2.9,
         "speedVar": 0.45,
         "period": 424
       },
@@ -14930,7 +14930,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.140677,
         "dirVar": 0.617315,
-        "speed": 5,
+        "speed": 6.25,
         "speedVar": 1.33,
         "period": 73
       },
@@ -14998,7 +14998,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.161128,
         "dirVar": 0.550645,
-        "speed": 5.15,
+        "speed": 6.4,
         "speedVar": 1.42,
         "period": 464
       },
@@ -15066,7 +15066,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.428872,
         "dirVar": 0.6819,
-        "speed": 5.05,
+        "speed": 6.3,
         "speedVar": 1.38,
         "period": 544
       },
@@ -15134,7 +15134,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.233346,
         "dirVar": 0.603981,
-        "speed": 5.27,
+        "speed": 6.52,
         "speedVar": 1.48,
         "period": 545
       },
@@ -15202,7 +15202,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.184049,
         "dirVar": 0.579957,
-        "speed": 5.23,
+        "speed": 6.48,
         "speedVar": 1.4,
         "period": 129
       },
@@ -15270,7 +15270,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.238229,
         "dirVar": 0.653777,
-        "speed": 5.33,
+        "speed": 6.58,
         "speedVar": 1.47,
         "period": 152
       },
@@ -15338,7 +15338,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 160,
         "direction": -0.212856,
         "dirVar": 0.8,
-        "speed": 1.93,
+        "speed": 3.18,
         "speedVar": 0.45,
         "period": 467
       },
@@ -15406,7 +15406,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.086242,
         "dirVar": 0.704657,
-        "speed": 5.05,
+        "speed": 6.3,
         "speedVar": 1.34,
         "period": 367
       },
@@ -15474,7 +15474,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": 0.038663,
         "dirVar": 0.62864,
-        "speed": 4.94,
+        "speed": 6.19,
         "speedVar": 1.35,
         "period": 535
       },
@@ -15542,7 +15542,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.177853,
         "dirVar": 0.589535,
-        "speed": 4.78,
+        "speed": 6.03,
         "speedVar": 1.26,
         "period": 553
       },
@@ -15610,7 +15610,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.072066,
         "dirVar": 0.544068,
-        "speed": 4.87,
+        "speed": 6.12,
         "speedVar": 1.35,
         "period": 315
       },
@@ -15678,7 +15678,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.159035,
         "dirVar": 0.6053,
-        "speed": 5.24,
+        "speed": 6.49,
         "speedVar": 1.42,
         "period": 359
       },
@@ -15746,7 +15746,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.206346,
         "dirVar": 0.629447,
-        "speed": 5.27,
+        "speed": 6.52,
         "speedVar": 1.42,
         "period": 347
       },
@@ -15814,7 +15814,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.209969,
         "dirVar": 0.718254,
-        "speed": 5,
+        "speed": 6.25,
         "speedVar": 1.32,
         "period": 230
       },
@@ -15882,7 +15882,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 160,
         "direction": -0.131938,
         "dirVar": 0.8,
-        "speed": 1.65,
+        "speed": 2.9,
         "speedVar": 0.45,
         "period": 503
       },
@@ -15950,7 +15950,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.105341,
         "dirVar": 0.570881,
-        "speed": 4.75,
+        "speed": 6,
         "speedVar": 1.31,
         "period": 121
       },
@@ -16018,7 +16018,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.108269,
         "dirVar": 0.566602,
-        "speed": 4.85,
+        "speed": 6.1,
         "speedVar": 1.29,
         "period": 210
       },
@@ -16086,7 +16086,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 160,
         "direction": -0.149224,
         "dirVar": 0.8,
-        "speed": 2.07,
+        "speed": 3.32,
         "speedVar": 0.45,
         "period": 41
       }
