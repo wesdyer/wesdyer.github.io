@@ -191,14 +191,33 @@ def key_colors(kh):
     return {"hole": kh.get("color", [255, 0, 255])}
 
 
+def key_like(rgb, color, thresh, hue_min=15):
+    """Which pixels ARE the key: within `thresh` of it in summed RGB, OR carrying its hue.
+
+    The hue test is what catches the wide soft fringe a generator paints where a channel
+    runs out at the sprite's edge — cyan fading into dark rock over twenty pixels, every one
+    of them a dark teal 300+ from pure cyan. A key is two channels high and one low; a pixel
+    whose two high channels both clear the low one by `hue_min` has the key's hue at any
+    brightness. 15 is safe on basalt, whose channels spread by ten at most and the wrong
+    way for magenta; the lit lips are warm and never trip either key.
+    """
+    k = np.array(color, dtype=float)
+    d = np.abs(rgb - k).sum(-1)
+    like = d <= thresh
+    hi = [i for i in range(3) if k[i] > 127]
+    lo = [i for i in range(3) if k[i] <= 127]
+    if len(hi) == 2 and len(lo) == 1:
+        like |= (np.minimum(rgb[..., hi[0]], rgb[..., hi[1]]) - rgb[..., lo[0]]) > hue_min
+    return like
+
+
 def key_mask(img, color, thresh, dilate=2, feather=1.0):
     """An alpha mask of every pixel within `thresh` of `color`: the region the game paints
     lava into under the rock sprite. DILATED a couple of pixels so the lava reaches under the
     antialiased fringe the opening leaves in the rock (otherwise that fringe shows as a dark
     outline over nothing), then feathered so the cut is not an aliased line."""
     a = np.asarray(img.convert("RGBA")).astype(int)
-    d = np.abs(a[..., :3] - np.array(color, dtype=int)).sum(-1)
-    mask = (d <= thresh) & (a[..., 3] > 0)
+    mask = key_like(a[..., :3].astype(float), color, thresh) & (a[..., 3] > 0)
     m = Image.fromarray((mask * 255).astype(np.uint8), "L")
     if dilate:
         m = m.filter(ImageFilter.MaxFilter(2 * dilate + 1))
@@ -224,19 +243,31 @@ def despill(img, colors, thresh, reach, radius=3):
     a = np.asarray(img.convert("RGBA")).astype(float)
     rgb, alpha = a[..., :3], a[..., 3]
     dmin = None
+    keyed = np.zeros(rgb.shape[:2], dtype=bool)
     for rgbk in colors.values():
         d = np.abs(rgb - np.array(rgbk, dtype=float)).sum(-1)
         dmin = d if dmin is None else np.minimum(dmin, d)
-    keyed = dmin <= thresh
+        # Anything that IS the key by distance or by hue (key_like) is the opening, and
+        # the opening is key_holes' business; what is left for the despill is the thin
+        # blended band just outside it.
+        keyed |= key_like(rgb, rgbk, thresh)
     fringe = (dmin <= reach) & ~keyed & (alpha > 0)
     good = (alpha > 0) & ~keyed & ~fringe
     w = good.astype(float)
-    den = _box_sum(w, radius)
     out = a.copy()
-    for c in range(3):
-        num = _box_sum(rgb[..., c] * w, radius)
-        fill = np.where(den > 0, num / np.maximum(den, 1e-9), rgb[..., c])
-        out[..., c] = np.where(fringe, fill, rgb[..., c])
+    # Two windows: the tight one first, then a wide one for fringe with no clean neighbour
+    # nearby — a channel mouth, where key meets the transparent background and the nearest
+    # rock is several pixels off. Whatever is left after both is key-adjacent edge with no
+    # rock to borrow from, and it simply goes transparent: it was the key's own antialiasing.
+    done = np.zeros_like(fringe)
+    for r in (radius, radius * 3):
+        den = _box_sum(w, r)
+        todo = fringe & ~done & (den > 0)
+        for c in range(3):
+            num = _box_sum(rgb[..., c] * w, r)
+            out[..., c] = np.where(todo, num / np.maximum(den, 1e-9), out[..., c])
+        done |= todo
+    out[..., 3] = np.where(fringe & ~done, 0, out[..., 3])
     return Image.fromarray(out.clip(0, 255).astype(np.uint8), "RGBA"), int(fringe.sum())
 
 
@@ -252,7 +283,8 @@ def rock_fix(img, src_hex, dst_hex, colors, thresh):
     for rgbk in colors.values():
         dd = np.abs(rgb - np.array(rgbk, dtype=float)).sum(-1)
         dmin = dd if dmin is None else np.minimum(dmin, dd)
-    cool = (alpha > 0) & (dmin > thresh) & (rgb[..., 2] >= rgb[..., 0])
+    cool = (alpha > 0) & (dmin > thresh) & (rgb[..., 2] >= rgb[..., 0]) \
+           & ~np.any([key_like(rgb, c, thresh) for c in colors.values()], axis=0)
     # The gain is measured off the pixels it will touch, not the whole body: gaining the cool
     # faces by a whole-rock ratio (which the lit faces and lips had pulled warm) took a
     # violet body to green-grey on the first try. `from` overrides it when given.
@@ -262,6 +294,29 @@ def rock_fix(img, src_hex, dst_hex, colors, thresh):
     out = a.copy()
     out[..., :3] = np.where(cool[..., None], rgb * gain, rgb)
     return Image.fromarray(out.clip(0, 255).astype(np.uint8), "RGBA"), int(cool.sum())
+
+
+def resize_rgba(img, size):
+    """Resample an RGBA image PREMULTIPLIED, so transparent pixels contribute nothing.
+
+    PIL's resize works on straight alpha: a pixel with alpha 0 still lends its RGB to the
+    neighbours it is averaged with. On a keyed sprite that is exactly wrong — key_holes
+    zeroes the alpha of a magenta or cyan region but leaves the key colour underneath — so
+    every bake grew a key-hued rim along every opening, thousands of pixels, that no despill
+    on the master could touch because it was born in the resize. Premultiply, resample the
+    four planes as floats, divide back.
+    """
+    if img.mode != "RGBA":
+        return img.resize(size, Image.LANCZOS)
+    a = np.asarray(img).astype(np.float32) / 255.0
+    al = a[..., 3:4]
+    pre = np.concatenate([a[..., :3] * al, al], axis=-1)
+    planes = [Image.fromarray(pre[..., i], "F").resize(size, Image.LANCZOS) for i in range(4)]
+    out = np.stack([np.asarray(p, dtype=np.float32) for p in planes], axis=-1)
+    oa = np.clip(out[..., 3:4], 0.0, 1.0)
+    rgb = np.where(oa > 1e-4, out[..., :3] / np.maximum(oa, 1e-4), 0.0)
+    res = np.concatenate([np.clip(rgb, 0.0, 1.0), oa], axis=-1)
+    return Image.fromarray((res * 255.0 + 0.5).astype(np.uint8), "RGBA")
 
 
 def key_holes(img, color, thresh, feather=1.0):
@@ -277,15 +332,33 @@ def key_holes(img, color, thresh, feather=1.0):
     opening does not land on a hard aliased line. Returns the image and the keyed fraction.
     """
     a = np.asarray(img.convert("RGBA")).astype(int)
-    d = np.abs(a[..., :3] - np.array(color, dtype=int)).sum(-1)
-    mask = d <= thresh
+    mask = key_like(a[..., :3].astype(float), color, thresh)
+    out = a.copy()
+    # ⚠️ THE KEY COLOUR MUST GO FROM THE RGB TOO, not only from the alpha. The feathered
+    # edge of the opening leaves a ring of pixels at partial alpha, and those pixels kept
+    # their magenta or cyan underneath — drawn over lava they read as a bright key-hued
+    # rim round every crater and channel, and no despill on the master could see them,
+    # because on the master they are plain key. So every keyed pixel takes the colour of
+    # the nearest clean rock first (a box-window inpaint, tight then wide, body colour as
+    # the last resort), and only then does the alpha come off.
+    good = (~mask) & (a[..., 3] > 0)
+    w = good.astype(float)
+    done = np.zeros_like(mask)
+    for r in (4, 12):
+        den = _box_sum(w, r)
+        todo = mask & ~done & (den > 0)
+        for c in range(3):
+            num = _box_sum(a[..., c] * w, r)
+            out[..., c] = np.where(todo, (num / np.maximum(den, 1e-9)).round(), out[..., c])
+        done |= todo
+    for c, v in enumerate((0x30, 0x33, 0x3A)):
+        out[..., c] = np.where(mask & ~done, v, out[..., c])
     m = Image.fromarray((mask * 255).astype(np.uint8), "L")
     if feather > 0:
         m = m.filter(ImageFilter.GaussianBlur(feather))
     keep = 255 - np.asarray(m).astype(int)
-    out = a.copy()
     out[..., 3] = np.minimum(out[..., 3], keep)
-    return Image.fromarray(out.astype(np.uint8), "RGBA"), float(mask.mean())
+    return Image.fromarray(out.clip(0, 255).astype(np.uint8), "RGBA"), float(mask.mean())
 
 
 def ingest(asset, profiles, check_only=False):
@@ -365,7 +438,7 @@ def ingest(asset, profiles, check_only=False):
         cols = key_colors(kh)
         total = 0.0
         for name, rgb in cols.items():
-            _, frac = key_holes(img, rgb, kh.get("thresh", 120), 0)
+            _, frac = key_holes(img, rgb, kh.get("thresh", 120), 0)   # key_like inside: distance or hue
             total += frac
             print(f"    keyed {name}: {frac:.2%} of the frame")
         floor = kh.get("min", 0.004)
@@ -392,7 +465,7 @@ def ingest(asset, profiles, check_only=False):
             img = img.resize((W, H), Image.LANCZOS)
     elif img.size != (m, m):
         img = (wrap_resize(img, m) if prof.get("tileWorld")
-               else img.resize((m, m), Image.LANCZOS))
+               else resize_rgba(img, (m, m)))
 
     MASTERS.mkdir(exist_ok=True)
     img.save(paths.store(MASTERS, asset, PREFIXES))
@@ -495,8 +568,7 @@ def ingest(asset, profiles, check_only=False):
             box = tuple(int(v * k) for v in bbox)
             crop = img.crop(box)
             f = asset["fillTo"] * m / max(crop.size)
-            crop = crop.resize((max(1, round(crop.width * f)), max(1, round(crop.height * f))),
-                               Image.LANCZOS)
+            crop = resize_rgba(crop, (max(1, round(crop.width * f)), max(1, round(crop.height * f))))
             img = Image.new("RGBA", (m, m), (0, 0, 0, 0))
             img.alpha_composite(crop, ((m - crop.width) // 2, (m - crop.height) // 2))
             # The masks take the identical crop, scale and centring, or they drift off the rock.
@@ -521,7 +593,7 @@ def ingest(asset, profiles, check_only=False):
         # raising `world` past master/bake and quietly shipping a soft sprite.
         bake = asset.get("bake", prof["bake"])
         size = round(asset["world"] * bake)
-        game = img.resize((size, size), Image.LANCZOS)
+        game = resize_rgba(img, (size, size))
         game.save(dest)
         if key_masks:
             regions = {}

@@ -352,8 +352,11 @@ const PROP_LAVA_STYLE = {
     lakeDrift: 14, lakeSpin: 0.05, lakeDrift2: 10, lakeSpin2: -0.07, skinDrift: 20, skinSpin: 0.035,
     lakeDim: 0.6,
     channelScale: 0.5,          // the bed pattern at half size in a channel — finer swirls for a narrow run
-    zoom: 1.8,                  // how far a channel layer swells before it hands over
-    zoomPeriod: 4.5,            // seconds per hand-over, real time
+    // ⚠️ SLOWED 2026-09-08 (owner: "the streams flow much too fast"). The apparent speed of
+    // an outward zoom is r * ln(zoom) / period, so at 1.8 over 4.5 s a point 600u from the
+    // summit ran at ~78 u/s. 1.5 over 12 s puts it at ~20 u/s there and ~10 u/s halfway.
+    zoom: 1.5,                  // how far a channel layer swells before it hands over
+    zoomPeriod: 12,             // seconds per hand-over, real time
     channelBase: '#7A2208',     // under the fading layers, so the hand-over never shows ground
     channelDim: 0.15,
     glow: '255,130,50',         // the crater lighting its own rim, over the rock

@@ -968,12 +968,12 @@
         "magma": {
           "cx": 0.4942,
           "cy": 0.4952,
-          "r": 0.1058
+          "r": 0.1071
         },
         "lava": {
-          "cx": 0.4903,
-          "cy": 0.5124,
-          "r": 0.0961
+          "cx": 0.4894,
+          "cy": 0.5126,
+          "r": 0.1004
         }
       },
       "rockFix": {
@@ -1017,7 +1017,7 @@
         "magma": {
           "cx": 0.4944,
           "cy": 0.4892,
-          "r": 0.1266
+          "r": 0.1281
         }
       },
       "anchorPx": [
@@ -1068,12 +1068,12 @@
         "magma": {
           "cx": 0.4823,
           "cy": 0.4902,
-          "r": 0.1158
+          "r": 0.1172
         },
         "lava": {
-          "cx": 0.6697,
-          "cy": 0.7863,
-          "r": 0.0723
+          "cx": 0.6692,
+          "cy": 0.7852,
+          "r": 0.0747
         }
       },
       "anchorPx": [
@@ -1119,14 +1119,14 @@
       },
       "keyRegions": {
         "magma": {
-          "cx": 0.4956,
+          "cx": 0.4955,
           "cy": 0.5016,
-          "r": 0.1102
+          "r": 0.1115
         },
         "lava": {
-          "cx": 0.5402,
-          "cy": 0.5905,
-          "r": 0.1053
+          "cx": 0.5409,
+          "cy": 0.5904,
+          "r": 0.1086
         }
       },
       "anchorPx": [
@@ -1172,14 +1172,14 @@
       },
       "keyRegions": {
         "magma": {
-          "cx": 0.4953,
-          "cy": 0.4993,
-          "r": 0.097
+          "cx": 0.4952,
+          "cy": 0.4994,
+          "r": 0.0983
         },
         "lava": {
           "cx": 0.5647,
-          "cy": 0.5065,
-          "r": 0.1228
+          "cy": 0.5087,
+          "r": 0.1265
         }
       },
       "anchorPx": [
@@ -1225,9 +1225,9 @@
       },
       "keyRegions": {
         "magma": {
-          "cx": 0.4862,
-          "cy": 0.4953,
-          "r": 0.2869
+          "cx": 0.4861,
+          "cy": 0.4952,
+          "r": 0.2885
         }
       },
       "anchorPx": [
@@ -1271,8 +1271,8 @@
       "keyRegions": {
         "magma": {
           "cx": 0.4783,
-          "cy": 0.4997,
-          "r": 0.2391
+          "cy": 0.4999,
+          "r": 0.2404
         }
       },
       "anchorPx": [
@@ -1315,9 +1315,9 @@
       "note": "THE LOBED LAKE, the second irregular lake: three pools run together with pinched waists — a structure the round lake and the kidney do not have, so the three read apart at any scale. Roughly as tall as wide, so planRound stays TRUE. Same contract and pipeline as the round lake (magma key only). World 700, master 2048, bake 2. ✅ INGESTED 2026-09-07: 2048 RGBA, one component (three stray pixels stripped, nothing else), three lobes of different sizes at two pinched waists exactly as specced, lake 22% of the frame, body ratio 1.012. The generator added a small ROCK ISLET inside the lake that the subject never asked for; keyed round it, it stands as rock over the magma, which reads as a stack in a lake and was kept. Rim cool faces #33333A, on spec, no rockFix; lip #992E1A; 11,654 fringe px despilled (the longest shoreline of the three lakes). Mask lava-lake-3-magma.png, 26.7% of the frame, centre 0.515,0.514 r 0.292 — on the PROP_KINDS row. All three lakes are now in.",
       "keyRegions": {
         "magma": {
-          "cx": 0.515,
-          "cy": 0.5138,
-          "r": 0.2917
+          "cx": 0.5153,
+          "cy": 0.5139,
+          "r": 0.2934
         }
       },
       "anchorPx": [
@@ -1467,7 +1467,7 @@
         "magma": {
           "cx": 0.606,
           "cy": 0.4382,
-          "r": 0.0756
+          "r": 0.0771
         }
       },
       "anchorPx": [
@@ -1508,14 +1508,9 @@
       "note": "THE VENUE'S SIGNATURE VISUAL, per the design doc: 'black water lit from below' — a molten seep in the sea floor with its light bleeding up through the surface. World 320, plane SEABED (the sunken-boulder recipe: drawn on the bottom through submergedTint, wash 0.6). NOT planRound — it is a fissure, two to one — so the prompt carries the parallel-sides test instead. The fissure is a keyHole; ⚠️ WHAT SHOWS THROUGH IT TODAY IS THE SEABED UNDERLAY, because `magma` draws in the LAND layer, above the water: the piece this asset is designed around is a submerged magma pass — a `magma` shape drawn in the seabed stratum under the water column, dimmed by submergedTint, with the surface glow and a wisp of steam added over the water — and that is engine work still owed. Until it exists the vent is a dark patch on the bottom with a hole in it, which is honest and harmless. ON DELIVERY: parallel long edges, the crack tapering to nothing at both ends (a crack that runs off the edge reads as a channel), lobes flat-toned. ⚠️ REWORKED 2026-09-07 — THE OPENINGS ARE NOW KEYED REGIONS, NOT HOLES, AND THERE ARE TWO OF THEM. The hole-plus-magma-shape composition (a `magma` land shape drawn under the prop, showing through a transparent crater) worked on the course and failed on the chart: the shape charted as an ember blob the size of the cone, and it was a second object to author and keep aligned. The owner's call is a texture replace instead: the master paints its molten regions in flat key colours, ingest opens them to alpha AND writes a mask file per key, and the game paints its animated lava into the masked region under the rock sprite at draw time — one authored object, exact alignment, nothing on the chart, `heat`/`activity` on the prop. Two keys because two behaviours: MAGENTA #FF00FF is a crater LAKE (the churning magma painter) and CYAN #00FFFF is a flowing CHANNEL (the bed running downhill, radially away from the crater). Masks come out of `keyHoles.colors` at ingest; the masked draw is engine work owed alongside them. A master that comes back with the regions transparent (as the first round did) can still be used: the mask is derived by closing the silhouette and subtracting the rock, but then every region is one kind, so the keys are worth asking for. ✅ INGESTED 2026-09-07: 2048 RGBA, a lobed patch of pillow lava with a long branching magenta fissure down its middle — the side cracks branch and taper as asked, the patch is rounder than the two-to-one specced (body ratio 1.012) and a little more of a pillow pile than a fissure field, accepted. Two pieces kept, 10 chips stripped (14k px, 1.8% width inflation). Rock mean #2C303D, on spec, no rockFix; 3,785 fringe px despilled. Mask vent-underwater-magma.png, 4.5% of the frame, centre 0.515,0.506 r 0.120 — on the PROP_KINDS row. A handful of near-cyan pixels produced an empty lava mask that was deleted by hand; the kind carries the magma entry only. ⚠️ AND THE SUBMERGED PASS IT WAS WAITING FOR NOW EXISTS: drawPropLava takes a `submerged` flag for the seabed plane — the masked lava is washed toward the water at SEABED_WASH (the submergedSprite recipe) and blitted at the seabed alpha, and the rim glow over the rock draws wider and softer as the light bleeding up through the surface. Steam at the surface is still the engine's, still owed with the plume.",
       "keyRegions": {
         "magma": {
-          "cx": 0.5145,
-          "cy": 0.5059,
-          "r": 0.1202
-        },
-        "lava": {
-          "cx": 0.8803,
-          "cy": 0.5297,
-          "r": 0.003
+          "cx": 0.5151,
+          "cy": 0.5068,
+          "r": 0.1262
         }
       },
       "anchorPx": [
@@ -1556,9 +1551,9 @@
       "note": "THE MOUND VENT: a pit at the top of a dome with short radiating cracks — a different structure from the first vent's long branching fissure. planRound TRUE. World 320. One of THREE UNDERWATER VENTS (the branching fissure in a lobed patch, this one, and one more), told apart by STRUCTURE: fissure, mound with a pit, rift. Same seabed contract as the first (plane seabed, wash 0.6, the submerged lava pass draws the key through the water), same pipeline; add rockFix if the rock comes back violet. ✅ INGESTED 2026-09-07: 2048 RGBA, a dome of pillow lobes with a magenta pit off centre (4.9% of the frame) and four radiating cracks tapering out between the lobes — as specced; body ratio 1.039. Seven pieces kept (the dome and six fragments against its edge), no chips. Rock mean #313441, on spec, no rockFix; 2,342 fringe px despilled. Mask vent-underwater-2-magma.png, 5.8% of the frame, centre 0.519,0.446 r 0.136 — on the PROP_KINDS row.",
       "keyRegions": {
         "magma": {
-          "cx": 0.5185,
-          "cy": 0.4464,
-          "r": 0.136
+          "cx": 0.519,
+          "cy": 0.4484,
+          "r": 0.1394
         }
       },
       "anchorPx": [
@@ -1600,9 +1595,9 @@
       "note": "THE RIFT VENT: a long trench on the diagonal with one pinching fissure — the long rung. planRound FALSE, parallel-sides test. World 320; rotate on placement. One of THREE UNDERWATER VENTS (the branching fissure in a lobed patch, this one, and one more), told apart by STRUCTURE: fissure, mound with a pit, rift. Same seabed contract as the first (plane seabed, wash 0.6, the submerged lava pass draws the key through the water), same pipeline; add rockFix if the rock comes back violet. ✅ INGESTED 2026-09-07: 2048 RGBA, a band of jammed blocks on the diagonal split by one long fissure that pinches and reopens (3.1% of the frame) — the rift as specced, its walls rendered as a blocky rampart rather than pillow lava, accepted. Four pieces kept, five chips stripped (6k px, 0.9% height inflation). Rock mean #343238, on spec, no rockFix; 1,996 fringe px despilled. Mask vent-underwater-3-magma.png, 3.7% of the frame, centre 0.504,0.497 r 0.109 — on the PROP_KINDS row. All three underwater vents are in.",
       "keyRegions": {
         "magma": {
-          "cx": 0.5037,
-          "cy": 0.4973,
-          "r": 0.1086
+          "cx": 0.5038,
+          "cy": 0.4971,
+          "r": 0.1124
         }
       },
       "anchorPx": [
@@ -1644,9 +1639,9 @@
       "note": "THE LONG CRACK, the simplest of the three: one sinuous fissure with a ragged lip, on the diagonal (planRound FALSE, parallel-sides test does not really apply to a taper, but the roundness test would be worse). World 400; rotate on placement. One of THREE LAND CRACKS — the owner's ask: fissures to lay on the basalt ground anywhere, carrying no ground of their own. Plane surface, contact none, magma key only; the crack sits on whatever land shape is under it and the game paints churning magma into the key. Told apart by STRUCTURE: one long sinuous crack, a fork, a web round a pool. ⚠️ THE MASTER MUST BE MOSTLY TRANSPARENT — the lips are the only rock — or the crack arrives with a plate of rock round it that will not match the ground; the subject says so four ways. Standard 1024 master; add rockFix if the lip rock comes back violet. ✅ INGESTED 2026-09-07: 2048 RGBA, 84% of the frame TRANSPARENT as the subject demanded — a sinuous fissure on the diagonal tapering to hairlines, with a ragged lip of blocks either side and nothing else; one component, no chips. Key 6.3% of the frame. Lip rock reads warm-dark (#312229 mean over the lips, which are mostly lit edge), no rockFix; 2,278 fringe px despilled. Mask crack-long-magma.png, 7.1% of the frame, centre 0.486,0.501 r 0.151 — on the PROP_KINDS row. Bake 800 px at 2x for 400.",
       "keyRegions": {
         "magma": {
-          "cx": 0.4856,
-          "cy": 0.501,
-          "r": 0.1506
+          "cx": 0.4861,
+          "cy": 0.5007,
+          "r": 0.1544
         }
       },
       "anchorPx": [
@@ -1687,9 +1682,9 @@
       "note": "THE FORK: a lopsided Y with a side-crack, wider at the junction. planRound FALSE. World 360. One of THREE LAND CRACKS — the owner's ask: fissures to lay on the basalt ground anywhere, carrying no ground of their own. Plane surface, contact none, magma key only; the crack sits on whatever land shape is under it and the game paints churning magma into the key. Told apart by STRUCTURE: one long sinuous crack, a fork, a web round a pool. ⚠️ THE MASTER MUST BE MOSTLY TRANSPARENT — the lips are the only rock — or the crack arrives with a plate of rock round it that will not match the ground; the subject says so four ways. Standard 1024 master; add rockFix if the lip rock comes back violet. ✅ INGESTED 2026-09-07: 2048 RGBA, 75% transparent, a lopsided X rather than the Y specced — a main fissure with two arms leaving on both sides at the junction, all four ends tapering — accepted, it is the busier fork; 13 chips stripped (19k px, negligible inflation). Key 8.3% of the frame. Lip rock #352930, no rockFix; 2,791 fringe px despilled. Mask crack-fork-magma.png, 9.6% of the frame, centre 0.501,0.483 r 0.175 — on the PROP_KINDS row. Bake 720 px at 2x for 360.",
       "keyRegions": {
         "magma": {
-          "cx": 0.501,
-          "cy": 0.4833,
-          "r": 0.1747
+          "cx": 0.5006,
+          "cy": 0.4835,
+          "r": 0.1792
         }
       },
       "anchorPx": [
@@ -1730,14 +1725,9 @@
       "note": "THE WEB: a pool with radiating cracks and one closed cell — the busiest of the three, and the one that scales up to a crater-floor breakup. planRound TRUE (a ragged star, still as tall as wide). World 320. One of THREE LAND CRACKS — the owner's ask: fissures to lay on the basalt ground anywhere, carrying no ground of their own. Plane surface, contact none, magma key only; the crack sits on whatever land shape is under it and the game paints churning magma into the key. Told apart by STRUCTURE: one long sinuous crack, a fork, a web round a pool. ⚠️ THE MASTER MUST BE MOSTLY TRANSPARENT — the lips are the only rock — or the crack arrives with a plate of rock round it that will not match the ground; the subject says so four ways. Standard 1024 master; add rockFix if the lip rock comes back violet. ✅ INGESTED 2026-09-07 WITH A CAVEAT: the pool and its radiating cracks came back as specced (one closed cell, five arms tapering out, key 5.4% of the frame), but the generator drew a FACETED PLATE OF ROCK round the web — 24% of the frame is rock where the other two cracks carry 9% and 14% — the very thing the subject forbade four ways. Ingested anyway: the plate is basalt-toned and reads as heaved ground round the pool, but it will not blend into the ground the way the other two do, and its edge is visible. Reroll from the same prompt if that shows; the prompt is unchanged. Rock #342C34, no rockFix; 6,355 fringe px despilled. Mask crack-web-magma.png, 7.7% of the frame, centre 0.503,0.501 r 0.157 — on the PROP_KINDS row. Bake 640 px at 2x for 320.",
       "keyRegions": {
         "magma": {
-          "cx": 0.5034,
-          "cy": 0.5014,
-          "r": 0.1568
-        },
-        "lava": {
-          "cx": 0.4602,
-          "cy": 0.4477,
-          "r": 0.0059
+          "cx": 0.5064,
+          "cy": 0.5029,
+          "r": 0.164
         }
       },
       "anchorPx": [
@@ -1778,7 +1768,7 @@
       "class": "hero",
       "status": "art",
       "subject": "the SALTY CRITTER YACHT CLUB at Lighthouse Cove on a late summer afternoon, seen from low on the water just off the club's own marina on the cove's NORTH SHORE, looking east-south-east along that shore. THIS IS A CALM, UNCLUTTERED PICTURE: three boats, one mark, the club, the island, the sky. RIGHT FOREGROUND: the clubhouse — a two-storey grey-shingled house with white trim, a white cupola, and a deep covered veranda facing the water — standing on a heavy timber pier over the shallows, a modest bank of blue hydrangeas along its shore, a tall white flagpole on the pier end flying THE CLUB BURGEE straight out in the breeze: a triangular pennant, navy-blue band at the hoist, broad red middle with a white paw print (four round toes over one pad), navy-blue point. Beside the pier a quiet little marina: a boatshed, one green trawler and a white dinghy tied up, nothing else afloat; behind, the village climbs the slope — grey and white clapboard cottages, a white church steeple, a cafe on a stone quay with plain white parasols. MIDDLE, THREE RACING YACHTS AND ONLY THREE, on a fast beam reach heading to the RIGHT (west), the wind off the land behind the viewer, mainsails set and SPINNAKERS FULL and flying ahead of the bows, staggered in depth like a real race: the LEADER large and low in the frame just right of centre, about ninety metres off the club's pier, hardening up round the mark with white spray off the bow and the kite lit by the low sun; the SECOND boat a length and a half behind and a little further offshore, overlapping so its kite partly hides the leader's stern, heeled harder, hunting; the THIRD boat well back and higher in the frame, small, out toward the lighthouse island, kite full, clearly last and clearly enjoying it. The mark they are racing for is a BRIGHT ORANGE INFLATABLE TETRAHEDRAL race mark — a three-sided pyramid of taut orange fabric standing on the water, pointed at the top, NOT a cylinder and NOT a can — just off the club's pier. Sleek modern keelboats with white sails except where named. THE ATTACHED REFERENCE SHEET SHOWS ALL THREE: the skipper's portrait, the boat from above in its hull colour, and the spinnaker's panel pattern. Match them exactly. Each skipper is a small ANTHROPOMORPHIC animal at the helm, big enough in the nearest two boats to read its face, in the same friendly storybook style as the portraits, wearing a life vest in the colours named. LEADER, BIXBY — a SEA OTTER, dark chocolate-brown fur (#6F563F) with a paler muzzle, small round ears, long whiskers, a relaxed heavy-lidded half-smile, one paw on the tiller; azure-blue vest with amber-gold panels. Royal-blue hull (#0046ff), white mainsail; spinnaker split straight across the middle, bright yellow (#FFD400) above, royal blue (#0046ff) below — two flat halves. SECOND, BRUCE — a GREAT WHITE SHARK, slate grey (#727577) above and white below, a toothy grin, a smooth rounded head with NO fin on it, and one big TRIANGULAR DORSAL FIN standing up from the middle of his BACK, behind the shoulders and above the vest's collar, its tip higher than his head, seen in profile as a sharp grey triangle behind him; red vest with black panels. Black hull (#121212), white mainsail; spinnaker one plain solid red (#ff0606), no pattern. THIRD, CHEER — a POM-POM CRAB, pale aqua-white shell (#C7F2F4) with pink markings, huge bright eyes and a wide open joyful smile, holding a fluffy white pom-pom up in each claw; pink vest with cyan panels. Pink hull (#FF9ECF), white mainsail; spinnaker a SUNBURST: cyan (#00E5FF) with pink (#FF9ECF) and pale yellow (#FFE066) rays fanning out from the front edge. THE COLOUR IS DELIBERATELY BALANCED, and this is the point of the picture: three colour notes on a calm ground — yellow-and-blue nearest, one deep red in the middle, soft pink-and-cyan far off and gentled by distance. Kite patterns are BIG FLAT PANELS, never fine stripes. LEFT MIDDLE DISTANCE: the lighthouse island — a green wooded island with grey rocky shores and a WHITE LIGHTHOUSE with a black lantern on its near western tip — and the shipping channel between it and the village shore marked by JUST ONE PAIR of channel buoys, one red and one green, small and far off near the island — no other buoys anywhere — with a small coastal freighter coming in through the northern entrance, distant and pale. FAR DISTANCE across the bay: the low green southern shore, a second white lighthouse as a speck on its headland, and the SEA-BREEZE SKY: a line of flat-bottomed cumulus stacked over the far land and clear sky over the water. LIGHT: late afternoon, the sun low in the west behind the viewer's right shoulder and OUT OF FRAME — warm low light on the club's face, the three spinnakers and the island, long shadows stretching left, the water azure in the bay and glowing pale turquoise over the sand shallows along the shore, built from big angular ripple planes in two clear tones with crisp white foam lines on the rocks; the sky a deepening clear blue, clouds pink-lit on their western faces. Saturated and confident, jewel-toned, never dusky: golden hour, not sunset. PALETTE: coastal azure water, green headlands and the grey club are the ground; the burgee's navy and red and the orange mark are the accents; the three liveries are the only other strong colour in the picture, each hull and spinnaker in exactly its own colour, and NO other red on the water but Bruce's kite and the one red channel buoy. STRICTLY EXCLUDE: a fourth boat; any text or lettering; sail numbers; a yellow can buoy; a cylindrical race mark; more than two channel buoys; a red tugboat; striped parasols; a fin on top of the shark's head; a frog, lizard or generic fish at the helm; a real crab without pom-poms; humans; a sun or lens flare in frame; a sunset or purple dusk; silhouetted boats; fog; crowds of moored boats; anything busy in the bottom fifth; anything at all in the upper-left quarter but sky",
-      "note": "STANDING RULE for edit prompts (Wes, Sep 7): every Gemini edit prompt ends with an output clause — generate at the maximum available size, at least 2528x1686 in the same 3:2 aspect, sharp and fully detailed, no blur, softening or upscaling haze; ingest rejects nothing on sharpness, so check it by eye at 100% before ingesting. ROUND 2 (asym edit, attempt 1) DELIVERED AND INGESTED Sep 7 2026, live: Gemini reshaped the kites a little (taller, luff forward) but they still read as symmetric balloons — no bowsprit tack, foot round and low, leech curved. Attempt 2 attaches a side-view diagram, guidelines/references/asym-vs-sym.png (symmetric balloon marked NOT THIS beside the wanted gennaker with HEAD/TACK/CLEW/LUFF/LEECH/FOOT labelled), and describes the silhouette as 'an oversized jib' rather than by corner names alone. Round-1 master kept in the session scratchpad only. ROUND 1 DELIVERED AND INGESTED Sep 7 2026 at 2528x1686, live on the hub (HUB_HERO -> hero-clubhouse-trio.jpg): all three skippers, hulls and kites right, the club, burgee, mark, island and one buoy pair all landed, colour calm as asked. One follow-up (Wes, Sep 7): the painting's kites are SYMMETRIC spinnakers (round balloons); the game sails ASYMMETRIC ones, so an in-place Gemini EDIT reshapes all three into asyms (tack at a short bowsprit, luff curving up to the masthead, clew trailing aft; a forward-leaning wing, no pole) keeping each kite's exact colours and panel pattern and changing nothing else in the picture — skippers, hulls, mainsails, setting all untouched. Prompt in the session. (The earlier idea of seating Bruce and Cheer lower in their cockpits was dropped for this.) Slot opened Sep 7 2026 (Wes): a SECOND hero painting with only THREE race boats — Bixby leading, Bruce second, Cheer in the background — to balance the colour and cut the busyness of ten liveries at once; the ten-boat painting stays in hero-clubhouse for comparison. Same viewpoint, geometry, club, island, mark and light as the ten-boat brief (see that slot's note for the bay.venue.js derivation and the five-round history); the changes are the fleet count, a quieter marina (no red tug, plain parasols, one trawler) so Bruce's kite is the only red on the water, larger nearer boats so the faces read, and an explicit colour statement: yellow-and-blue near, red mid, pastel pink-and-cyan far. ATTACH guidelines/references/hero-trio.png (rendered from the real portraits and the game's boat and kite sprites by the same script as the ten-sheet; three rows). Bruce's fin language and Cheer's pom-poms are spelled out because the shark's fin migrated to his head in two of five earlier rounds. Deliver 3:2 at 2528x1686 or larger; ingest with `python3 art/ingest.py hero-clubhouse-trio`; then point HUB_HERO in js/ui/screens.js at assets/images/hero/hero-clubhouse-trio.jpg. Check first for lettering (the burgee and sails attract it), that the burgee is the club's, and that the upper-left quarter is clear sky for the wordmark."
+      "note": "ROUND 3 (asym edit, attempt 2, with the diagram attached) DELIVERED AND INGESTED Sep 8 2026, live: ALL THREE KITES NOW READ AS ASYMS — tack at the bow, bulging luff, straight leech by the mast. Gemini repainted the whole picture rather than masking (flatter, more posterized water and blockier reflections than round 2; skippers, hulls, club and setting otherwise held), and it came back at 1536x1024 despite the output clause — ingest upscaled it to the 2528x1686 master (its warning is about that), and at 100% the linework is still cleaner than round 2's soft haze. If a sharper master is wanted, the lever is the image tool's 2K/4K output setting rather than prompt wording. Round-2 master kept in the session scratchpad only. STANDING RULE for edit prompts (Wes, Sep 7): every Gemini edit prompt ends with an output clause — generate at the maximum available size, at least 2528x1686 in the same 3:2 aspect, sharp and fully detailed, no blur, softening or upscaling haze; ingest rejects nothing on sharpness, so check it by eye at 100% before ingesting. ROUND 2 (asym edit, attempt 1) DELIVERED AND INGESTED Sep 7 2026, live: Gemini reshaped the kites a little (taller, luff forward) but they still read as symmetric balloons — no bowsprit tack, foot round and low, leech curved. Attempt 2 attaches a side-view diagram, guidelines/references/asym-vs-sym.png (symmetric balloon marked NOT THIS beside the wanted gennaker with HEAD/TACK/CLEW/LUFF/LEECH/FOOT labelled), and describes the silhouette as 'an oversized jib' rather than by corner names alone. Round-1 master kept in the session scratchpad only. ROUND 1 DELIVERED AND INGESTED Sep 7 2026 at 2528x1686, live on the hub (HUB_HERO -> hero-clubhouse-trio.jpg): all three skippers, hulls and kites right, the club, burgee, mark, island and one buoy pair all landed, colour calm as asked. One follow-up (Wes, Sep 7): the painting's kites are SYMMETRIC spinnakers (round balloons); the game sails ASYMMETRIC ones, so an in-place Gemini EDIT reshapes all three into asyms (tack at a short bowsprit, luff curving up to the masthead, clew trailing aft; a forward-leaning wing, no pole) keeping each kite's exact colours and panel pattern and changing nothing else in the picture — skippers, hulls, mainsails, setting all untouched. Prompt in the session. (The earlier idea of seating Bruce and Cheer lower in their cockpits was dropped for this.) Slot opened Sep 7 2026 (Wes): a SECOND hero painting with only THREE race boats — Bixby leading, Bruce second, Cheer in the background — to balance the colour and cut the busyness of ten liveries at once; the ten-boat painting stays in hero-clubhouse for comparison. Same viewpoint, geometry, club, island, mark and light as the ten-boat brief (see that slot's note for the bay.venue.js derivation and the five-round history); the changes are the fleet count, a quieter marina (no red tug, plain parasols, one trawler) so Bruce's kite is the only red on the water, larger nearer boats so the faces read, and an explicit colour statement: yellow-and-blue near, red mid, pastel pink-and-cyan far. ATTACH guidelines/references/hero-trio.png (rendered from the real portraits and the game's boat and kite sprites by the same script as the ten-sheet; three rows). Bruce's fin language and Cheer's pom-poms are spelled out because the shark's fin migrated to his head in two of five earlier rounds. Deliver 3:2 at 2528x1686 or larger; ingest with `python3 art/ingest.py hero-clubhouse-trio`; then point HUB_HERO in js/ui/screens.js at assets/images/hero/hero-clubhouse-trio.jpg. Check first for lettering (the burgee and sails attract it), that the burgee is the club's, and that the upper-left quarter is clear sky for the wordmark."
     },
     {
       "key": "arctic-albatross",
