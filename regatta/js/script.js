@@ -172,7 +172,7 @@ function update(dt) {
         const cutoffTime = (state.course.cutoff != null)
             ? state.course.cutoff : totalDistMeters * 0.1875;
 
-        if (state.race.timer >= cutoffTime) { // Dynamic Cutoff
+        if (state.race.venue !== 'duckling' && settings.venue !== 'duckling' && state.race.timer >= cutoffTime) { // Dynamic Cutoff
             state.race.status = 'finished';
 
             // Mark all active boats as DNF/DNS
@@ -218,6 +218,8 @@ function update(dt) {
 
     // Sayings
     Sayings.update(dt);
+
+    if (typeof TUTORIAL !== 'undefined') TUTORIAL.update(dt);
 
     // Player Cam
     const player = state.boats[0];
@@ -724,6 +726,7 @@ function draw() {
     }
 
     drawDebugWorld(ctx);
+    if (typeof TUTORIAL !== 'undefined' && (TUTORIAL.active || state.race.venue === 'duckling' || settings.venue === 'duckling')) TUTORIAL.draw(ctx);
 
     ctx.restore();
 
