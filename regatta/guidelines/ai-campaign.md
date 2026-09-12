@@ -17168,3 +17168,31 @@ Per-leg (`_leg_matrix.js fp=59f2931b:335924 swamp wbsw*`, MEANS): leg 0 his 4.0
 vs fleet 20.6 = 16.6 s (17% of the 99.3 s gap); leg 1 his 169.2 vs 252.0 =
 82.8 s (83%, ratio 1.49). Swamp is now the campaign's #2 gap on this doc.
 `_wb_close_table.js` HUMAN swamp = 173.3.
+
+## THE VENUE TABLE ON HEAD ddcaca3 — swamp = wbsw* on the +0.75 kt doc (661d9e7b), the other nine = pa* carried (`_wb_close_table.js`, 2026-09-12)
+Bot columns are the CURRENT anchors: swamp = the fresh wbsw9400/9500/9600 sets
+on the re-trimmed doc; the other nine carry pa* — the 2026-09-07 control
+(wcsw9400 == pasw9400, 8/8 races byte-identical) and 27/30 unchanged goldens
+show HEAD's js is sim-inert on them. Human = fingerprint-verified laps on the
+doc benched (n beside each; swamp's three earlier stamps are RETIRED).
+| venue | human med (n) | bot med/mean/best | ratio | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat) | fins |
+|---|---|---|---|---|---|---|---|---|
+| arctic | 209.4 (3) | 318/325.3/192 | **1.519** | 0.0 | 19 | 0 | 3.22/3.33/17.86/0.09/0.60 | 640/640 |
+| swamp | 173.3 (3) | 253/272.6/155 | **1.460** | 2.1 | 4 | 0 | 3.96/3.77/0/0.04/0.54 | 235/240 |
+| redrock | 204.2 (3) | 287/288.0/218 | **1.405** | 0.0 | 8 | 1 | 7.28/3.48/0/0.39/0.75 | 480/480 |
+| river | 187.4 (3) | 228/243.7/172 | **1.217** | 3.7 | 31 | 1 | 87.67/5.38/0/0.15/0.77 | 231/240 |
+| lagoon | 174.7 (3) | 210/210.4/170 | **1.202** | 0.0 | 0 | 0 | 0.65/0.60/0/0.16/0.31 | 80/80 |
+| glowtide | 204.4 (4) | 230/230.8/172 | **1.125** | 0.0 | 6 | 0 | 10.51/2.37/0/0.40/0.57 | 160/160 |
+| bay | 239.0 (3) | 268/266.6/224 | **1.121** | 0.0 | 0 | 0 | 0.15/0.55/0/0.10/0.17 | 400/400 |
+| lake | 194.8 (3) | 218/217.7/168 | **1.119** | 0.0 | 0 | 0 | 0.30/0.54/0/0.07/0.16 | 400/400 |
+| ocean | 214.2 (3) | 224/223.2/194 | **1.046 ✅** | 0.0 | 0 | 0 | 0.06/0.47/0/0.09/0.16 | 160/160 |
+| seatrials | 185.7 (10) | 191/192.9/176 | **1.029 ✅** | 0.0 | 0 | 0 | 0.00/0.56/0/0.16/0.16 | 160/160 |
+Goal 2/10, unchanged. **Swamp moved from #4 (1.367 on the original wind) to #2
+on the re-trim** and is the only venue besides river with DNFs. The swamp row's
+three wind eras on the same js, for the record: original 3.75 kt — his 234.1
+(n=9) / fleet 320 → 1.367; +2.00 → 5.75 kt — his 145.7 (3) / fleet 193 → 1.325;
+**+0.75 → 4.50 kt — his 173.3 (3) / fleet 253 → 1.460**. ⛔ pasw* and wdsw* are
+retired docs; only wbsw* is comparable to anything benched from here on.
+Venue lengths by his median, shortest → longest: swamp 173 · lagoon 175 ·
+seatrials 186 · river 187 · lake 195 · redrock 204 · glowtide 204 · arctic 209 ·
+ocean 214 · bay 239.
