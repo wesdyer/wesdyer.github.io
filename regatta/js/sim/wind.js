@@ -1747,7 +1747,17 @@ const CUR_HALO_A = 0.55;          // halo alpha, x the core
 // The streak layer reports the wind field; it is never the subject of the frame. These are
 // the ceilings no pressure reading, jitter roll, gust or venue document can push past —
 // see the note in streakChannels for why they are clamps rather than coefficients.
-const STREAK_MAX_ALPHA = 0.55;      // never opaque: boats, marks and labels stay on top
+// ⚠️ 0.55 -> 0.80 (Sep 12 2026), and it went UP for a colour reason, not a density one. At
+// 0.55 every warm stop in the ramp composited to grey on blue water: gold at 20 kt drew as
+// khaki on Bluewater and crimson at 35 as mauve, so the hot end of the scale had no hue on
+// exactly the venues where it is reached. Warm over blue needs ~0.8 to stay warm. The
+// widths were halved in August, so a thin SOLID mark is the design; and the boost that
+// uses this headroom (COMET.aWarm) lands on the warm end only, so the light end weighs
+// exactly what it did. The cost, measured on the SAME frames with both alpha models over
+// 30 s of real wind: peak alpha-weighted ink 0.76% -> 1.07% of the viewport on Bluewater
+// (26 kt), 0.33% -> 0.41% on Glacier Sound, 0.39% -> 0.45% on Pearl Lagoon. Still ~1% at
+// the very top, which is the figure the layer was already accepted at.
+const STREAK_MAX_ALPHA = 0.80;      // never opaque: boats, marks and labels stay on top
 const STREAK_MAX_HALFWIDTH = 2.3;   // world units, so ~4.6 px across the head at 1:1
 // ⚠️ THE CEILING WAS THE BINDING CONSTRAINT, not the ramp. At 0.20 per attempt with two
 // attempts a frame the layer tops out at ~24 spawns a second, which over a 4.5 s life is
@@ -1763,75 +1773,82 @@ const STREAK_MAX_SPAWN = 0.50;      // per attempt, 2 attempts a frame — the d
 const WIND_BEACH_FADE = 0.35;     // seconds to fade out on reaching land — and the
                                   // look-ahead, so the fade finishes AT the shore
 
-// Pressure ramp, cool -> warm, after the LiveLine pressure overlay in
-// guidelines/references/sailgp-halifax-pressure.jpg (teal -> yellow -> orange). Anchored
-// to the COURSE's own p10/p90 (see computeWindPressureScale), not to absolute knots:
-// what a player needs off this layer is "the pressure is over there", and 18 knots is a
-// hole on one venue and a squall on another. Absolute wind is carried by the other two
-// channels — how many streaks there are, and how long each one is.
+// ── THE COLOUR RAMP: white in the middle, warm at the top, no green, no blue ─────────
 //
-// Deliberately NOT drawn from `palette.gusts`. Those tints are the venue's own WATER
-// showing through a cat's-paw (race-view.md §8); this is the course talking to the
-// player, and it stays one language across all ten venues so warm always means pressure.
-// ── COLOUR IS ABSOLUTE: KNOTS, NOT THE COURSE'S OWN RAMP ────────────────────
-// This reverses the anchoring rule in race-view.md 8.1, deliberately.
+// Modelled on SailGP's 2026 LOW -> HIGH wind bar (navy -> cyan -> cream-white -> yellow ->
+// orange -> crimson), which measured in OKLab is a LIGHTNESS-DIVERGING scale: dark at both
+// ends, near-white at the midpoint, chroma near zero at the pivot and high at both ends.
+// The lesson taken from it is the structure — the reading is "how far from white, and in
+// which direction" — not the stops, because two things about this game's water differ from
+// a broadcast's grey harbour:
 //
-// The old ramp read off `pressureAt()`, i.e. p10-p90 of THIS course. That makes the hot
-// end always reachable and always used, which is good for showing where the pressure is —
-// but it means the same colour is 5 knots on Gatorgrass and 30 on Glacier Sound. A player
-// cannot learn "that shade means it is windy over there" if the shade is re-scaled every
-// time they change venue; they can only learn it within one race, and then it is wrong on
-// the next. Reading the wind is the primary skill this game asks for, so the reading has
-// to be transferable.
+//   THE LOW END CANNOT BE BLUE. Rendered water runs OKLab L 0.22 (Glowtide) to 0.75 (Pearl
+//   Lagoon) and is blue or cyan on 12 of 15 venues; SailGP's navy-to-cyan low end measured
+//   dE 0.01-0.05 against Lighthouse Cove, Redrock and Pearl Lagoon — invisible. So the
+//   cool end is a pale ICE, and light air is still carried mainly by density and width
+//   (a lull is bare water, race-view.md 8.1).
 //
-// The original argument for anchoring to the course was that nine of the ten venues state
-// ONE uniform wind region, so an absolute ramp would paint them a single flat colour with
-// no gradient to read. That is much less true now — Gatorgrass alone carries 27 regions —
-// and even where it holds, gusts, lulls and island lees all move the LOCAL speed, so an
-// absolute ramp still marks them. It marks them better, in fact, because it is not already
-// pinned at the top of a narrow course ramp.
+//   THE MIDDLE IS WHITE, NOT GREEN. Venue medians sit at 8-18 kt on 13 of 15 venues, so the
+//   5-18 kt band is what players look at most. The retired ramp put mint and green there,
+//   which composited over blue water to a water-like teal (hue 168-209 deg on Bluewater),
+//   sat next to nav teal #40F5C8 and the status green, and reads as "go" rather than "more
+//   wind". White is the highest-contrast mark on every water but the lagoon's, and it is
+//   where the scale is neutral: the colour starts meaning something only when it leaves it.
 //
-// DENSITY AND WIDTH STAY ON THE COURSE RAMP. That is the division of labour: colour says
-// how much wind there is, density and width say which side of THIS course is the windy
-// one. They cannot contradict each other — within a race both rise together — and it keeps
-// the "windy side" reading alive on a venue whose absolute range is too narrow to shift
-// hue much. race-view.md 8.1 says all four channels read off `pressureAt` so they cannot
-// disagree; that invariant is now "three do, and colour answers a different question".
-// WHITE -> GREEN -> YELLOW -> AMBER -> CRIMSON, in knots. Two things shaped the stops
-// beyond the basic progression:
+//   WARM ONLY WHEN IT IS WINDY, AND RED AT THE TOP. Cream from 14, yellow at 18, gold 22,
+//   amber 26, red-orange 30, red 35. Bluewater (18-28 kt) shows yellow -> amber across the
+//   course, Glacier Sound (18-38) runs to red, and squalls on Pearl Lagoon go gold; the
+//   flat 13-kt venues stay white. Amber is still the closest pass to the fleet's orange
+//   (on blue water it composites to a tan ~dE 0.09 from Wobble's #FF8C1A at 26 kt) — the
+//   ramp keeps moving through it to red rather than resting there, the mark is a 4 px line
+//   against a 40 px outlined hull, and the top stop is a lighter red than SailGP's crimson
+//   because 35 kt only happens on Glacier Sound's near-black water.
 //
-//   ORANGE IS THE FLEET. A saturated orange streak and a boat's topsides were once the
-//   same swatch, and every inflatable mark is that colour too. The hot end of an absolute
-//   scale lands only on the windiest venues — which is exactly where the fleet is packed
-//   and where a boat most needs to be findable — so the ramp passes THROUGH amber to a
-//   dark crimson rather than sitting on orange. Crimson still reads as the danger end and
-//   separates from the hulls by being darker and pinker.
+// COLOUR IS ABSOLUTE — KNOTS, NOT THE COURSE'S OWN RAMP. Density and width read the course's
+// p10-p90 (`pressureAt`), so they say which side of THIS course is windy; colour reads
+// knots, so a shade means the same wind on every venue and the reading transfers between
+// them. Within a race both rise together, so the channels cannot contradict each other.
+// Deliberately NOT drawn from `palette.gusts` either: those tints are the venue's own
+// water showing through a cat's-paw; this is the course talking to the player, in one
+// language on every venue.
 //
-//   GREEN IS THE WATER on two of the venues that need this layer most: Gatorgrass paints
-//   #606c38 olive and the river banks are grass. So the band Gatorgrass actually occupies
-//   (it tops out around 7 kt) is white through pale MINT, not grass green, and the green
-//   proper does not arrive until 12-16 kt where the water underneath is blue.
+// STOPS ARE CLOSE TOGETHER ON PURPOSE. These are interpolated in RGB, which cuts the chord
+// between two colours rather than following hue — a wide jump between distant hues passes
+// through grey. Neighbouring stops are always adjacent in hue.
 //
-// STOPS ARE CLOSE TOGETHER ON PURPOSE. These are interpolated in RGB, which cuts the
-// chord between two colours rather than following hue — so a wide jump between distant
-// hues passes through grey. A first pass went teal at 14 straight to gold at 20 and drew
-// a dead olive at 17. Neighbouring stops here are always adjacent in hue, so the chord
-// stays on the ramp.
+// ⚠️ A RAMP CANNOT BE JUDGED ON WHITE, OR AT FULL STRENGTH. What the eye gets is the stop
+// composited over the venue's water at the streak's alpha, and at the old 0.55 ceiling every
+// warm stop lost its hue on blue water (see STREAK_MAX_ALPHA). `window.__KT_SWEEP = true`
+// draws every comet on screen with the knots taken from its screen x (0 at the left edge,
+// 35 at the right), so the whole scale can be seen on any venue without sailing into it;
+// eval/_comet_sweep.js shoots it.
 const STREAK_KT_MAX = 35;         // top of the scale; above this the colour holds
 const STREAK_PALETTES = {
     wind: [
-        [0,  [255, 255, 255]],    // glass: a cat's-paw is white water
-        [5,  [214, 244, 232]],    // pale mint — clears Gatorgrass olive
-        [10, [150, 226, 176]],    // mint green
-        [15, [186, 226, 110]],    // yellow-green
-        [20, [246, 224, 104]],    // gold
-        [26, [246, 182,  92]],    // amber, stopping short of the marks' orange
-        [32, [226,  96,  86]],    // warm red
-        [35, [198,  52,  78]]     // crimson
+        [0,  [198, 232, 255]],    // ice: drifting conditions, still a light mark
+        [6,  [226, 243, 255]],
+        [10, [255, 255, 255]],    // white: the moderate breeze most venues live in
+        [14, [255, 250, 222]],    // cream — the scale starts to leave neutral
+        [18, [255, 238, 150]],    // pale yellow
+        [22, [255, 212,  88]],    // gold
+        [26, [250, 166,  64]],    // amber, passed through rather than rested on
+        [30, [236,  96,  58]],    // red-orange
+        [35, [214,  44,  62]]     // red: lighter than SailGP's crimson, for the navy water it lands on
     ],
-    // Kept for A/B only: the literal white->green->yellow->orange->red proposal, which
-    // sits on the fleet's orange at 26 and on olive water at 7-14. `window.__streakPalette`
-    // switches at runtime so the two can be compared inside one race.
+    // Kept for A/B only (`window.__streakPalette('mint')`): the ramp that shipped from Aug 2
+    // to Sep 12 2026. Its 5-18 kt mint/green composited to water-teal on blue venues and its
+    // gold at 20 to khaki, which is why it was replaced.
+    mint: [
+        [0,  [255, 255, 255]],
+        [5,  [214, 244, 232]],
+        [10, [150, 226, 176]],
+        [15, [186, 226, 110]],
+        [20, [246, 224, 104]],
+        [26, [246, 182,  92]],
+        [32, [226,  96,  86]],
+        [35, [198,  52,  78]]
+    ],
+    // Kept for A/B only: the literal white->green->yellow->orange->red proposal.
     heat: [
         [0,  [255, 255, 255]],
         [7,  [176, 232, 150]],
@@ -1894,7 +1911,17 @@ const COMET = {
     // spread and it was set when the ceiling above clipped everything anyway. The floor
     // stays low on purpose: it is what keeps a lull sparse rather than merely dimmer, which
     // is both what a sailor sees and the only encoding that survives on a dark palette.
-    dens0: 0.05, dens1: 0.55         // spawn chance floor and pressure-weighted span
+    dens0: 0.05, dens1: 0.55,        // spawn chance floor and pressure-weighted span
+    // ⚠️ THE WARM END GETS EXTRA ALPHA, keyed on ABSOLUTE knots — the same axis the colour
+    // reads — because a warm stop at half alpha over blue water is grey (see
+    // STREAK_MAX_ALPHA). Zero below `warmFrom`, so the white and ice end of the scale keeps
+    // exactly the weight it had; full `aWarm` from `warmFrom + warmSpan` up, where the ramp
+    // is amber and needs it. The ceiling above still clamps the sum.
+    aWarm: 0.30, warmFrom: 14, warmSpan: 12,
+    // The head is drawn at body alpha PLUS this rather than times 1.1: the head is where the
+    // eye takes the reading, and an additive step keeps it solid at the light end too, where
+    // a 10% multiplier on 0.36 was nothing.
+    headBoost: 0.25
 };
 const cometCfg = () => (typeof window !== 'undefined' && window.__COMET) ? Object.assign({}, COMET, window.__COMET) : COMET;
 
@@ -1929,7 +1956,9 @@ function streakChannels(t, jit, spd) {
     // number someone will later raise for a venue that "needs more" — and the failure it
     // produces is a wall of ink over a mark rounding. A clamp cannot be tuned past by
     // accident, and STREAK_MAX_* are the numbers to argue about if it ever must move.
-    const rawAlpha = (c.a0 + c.a1 * Math.pow(t, c.aPow)) * (0.80 + jit * 0.40);
+    // (With the warm boost the raw sum can reach 1.21; the ceiling is what it meets.)
+    const warm = Math.max(0, Math.min(1, (spd - c.warmFrom) / c.warmSpan));
+    const rawAlpha = (c.a0 + c.a1 * Math.pow(t, c.aPow)) * (0.80 + jit * 0.40) + c.aWarm * warm;
     const rawWidth = (c.w0 + c.w1 * t) * (c.wLight + (1 - c.wLight) * abs) * (0.80 + jit * 0.40);
     _streakCh.alpha = Math.min(STREAK_MAX_ALPHA, rawAlpha);
     _streakCh.halfWidth = Math.min(STREAK_MAX_HALFWIDTH, rawWidth);
@@ -2108,7 +2137,12 @@ function drawParticles(ctx, layer) {
             const trail = p.trail;
             if (!trail || trail.length < 2) continue;
 
-            const t = pressureAt(p.spd || 0);
+            // Diagnostic: with `window.__KT_SWEEP` set, every channel reads knots off the
+            // streak's screen x instead of its wind, so the whole 0-35 scale is on screen at
+            // once on any venue (eval/_comet_sweep.js). Never set in play.
+            let spd = p.spd || 0;
+            if (window.__KT_SWEEP) spd = Math.max(0, Math.min(STREAK_KT_MAX, ((p.x - camX) / ctx.canvas.width + 0.5) * STREAK_KT_MAX));
+            const t = pressureAt(spd);
             // Streaks arrive and leave. The fade-in also covers the half second the tail
             // takes to form, so a newborn stub is never seen. (The old envelope was
             // min(life, 1) on a life that STARTED above 1 — every streak snapped on at
@@ -2117,7 +2151,7 @@ function drawParticles(ctx, layer) {
             const env = Math.min(1, age / _streakRef.fadeIn, left / WIND_FADE_OUT, p.beach);
             if (env <= 0.02) continue;
 
-            const ch = streakChannels(t, p.jit || 0.5, p.spd || 0);
+            const ch = streakChannels(t, p.jit || 0.5, spd);
             const alpha = env * ch.alpha, wH = ch.halfWidth, col = ch.color;
 
             const n = streakSpine(p);
@@ -2152,10 +2186,10 @@ function drawParticles(ctx, layer) {
             ctx.closePath();
             ctx.fill();
 
-            // Rounded head, brighter but still TINTED — the eye goes to the brightest
-            // point of a comet, and forcing that point to pure white (as it was) threw
-            // away the colour exactly where the pressure read is being taken.
-            ctx.fillStyle = `rgba(${Math.min(255, col[0] + 24)},${Math.min(255, col[1] + 20)},${Math.min(255, col[2] + 16)},${(alpha * 1.1).toFixed(3)})`;
+            // Rounded head, brighter and more solid but still TINTED — the eye goes to the
+            // brightest point of a comet, and forcing that point to pure white (as it was)
+            // threw away the colour exactly where the pressure read is being taken.
+            ctx.fillStyle = `rgba(${Math.min(255, col[0] + 24)},${Math.min(255, col[1] + 20)},${Math.min(255, col[2] + 16)},${Math.min(1, alpha + cometCfg().headBoost).toFixed(3)})`;
             ctx.beginPath();
             ctx.arc(p.x, p.y, wH * 0.82, 0, Math.PI * 2);
             ctx.fill();

@@ -372,23 +372,41 @@ course's p90 and a gust pushes local wind straight past it, so every channel pin
 exactly where the fleet is and exactly where the boats most need to be visible.
 
 Verified by forcing the whole view to the top of the ramp (`_comet_ceiling.js`), including
-with the config knobs deliberately abused: alpha holds at 0.55, half-width at 4.6, and the
-population moves 67 → 72 on screen. Alpha-weighted ink stays near **1% of the viewport**.
+with the config knobs deliberately abused: alpha holds at the ceiling, half-width at 4.6, and
+the population moves 67 → 72 on screen. Alpha-weighted ink stays near **1% of the viewport**
+(measured Sep 12 2026 at real wind over 30 s: peak 1.07% on Bluewater at 26 kt, 0.41% on
+Glacier Sound, 0.45% on Pearl Lagoon).
 
 Rules this layer must keep:
 
-- **Through amber, never sitting on orange.** Saturated orange is the hull colour of four
-  boats and the fill of every inflatable mark — side by side, a streak and Cruz's topsides
-  were the same swatch. An absolute ramp only reaches its hot end on the windiest venues,
-  which is exactly where the fleet is packed and where a boat most needs to be findable, so
-  the ramp passes *through* amber (26 kt) to a dark **crimson** (35 kt) rather than resting
-  on orange. Crimson still reads as the danger end and separates from the hulls by being
-  darker and pinker.
-- **Green arrives late, because green is the water.** Gatorgrass paints `#606c38` olive and
-  the river banks are grass, so a green streak in the 7–14 kt band is the lowest-contrast
-  pairing in the game. The band Gatorgrass actually occupies (it tops out near 7 kt) is
-  white through pale **mint**; green proper does not arrive until 12–16 kt, where the water
-  underneath is blue.
+- **White in the middle, warm at the top, no green, no blue** (Sep 12 2026, after SailGP's
+  2026 wind bar — which in OKLab is a lightness-diverging scale, dark at both ends and
+  near-white at the pivot). The *structure* transfers; the stops do not. The low end cannot
+  be blue: rendered water runs OKLab L 0.22 (Glowtide) to 0.75 (Pearl Lagoon) and is blue
+  or cyan on 12 of 15 venues, and SailGP's navy-to-cyan measured dE 0.01–0.05 on three of
+  them. So the cool end is a pale **ice** and light air is still carried by density and
+  width. The middle is **white**, because venue medians sit at 8–18 kt on 13 of 15 venues
+  and that band is what players look at most: the retired mint/green there composited to a
+  water-like teal on blue venues, sat next to nav teal and the status green, and read as
+  "go" rather than "more wind". Warm arrives only when it is windy (cream 14, yellow 18,
+  gold 22, amber 26, red 35), so Bluewater shows yellow → amber across its course, Glacier
+  Sound runs to red, and the flat 13-kt venues stay white.
+- **Through amber, never sitting on orange — still.** Saturated orange is the hull colour
+  of four boats and the fill of every inflatable mark. The ramp keeps moving through amber
+  (26 kt) to red (35) rather than resting there; on blue water the 26-kt streak composites
+  to a tan about dE 0.09 from Wobble's `#FF8C1A`, a 4 px line against a 40 px outlined
+  hull. The top stop is a lighter red than SailGP's crimson because 35 kt only happens on
+  Glacier Sound's near-black water, where a dark crimson has no lightness contrast.
+- **Warm needs alpha.** A ramp cannot be judged on white or at full strength: what the eye
+  gets is the stop composited over the venue's water at the streak's alpha, and at the old
+  0.55 ceiling every warm stop lost its hue on blue water (gold at 20 kt drew as khaki on
+  Bluewater, crimson as mauve — composited chroma 0.02–0.05). `STREAK_MAX_ALPHA` is 0.80
+  and `COMET.aWarm` adds up to 0.30 keyed on **absolute knots above 14**, so the ice/white
+  end keeps exactly the weight it had and only the warm end uses the headroom. The cost,
+  measured on the same frames with both alpha models: peak ink 0.76% → 1.07% on Bluewater,
+  0.33% → 0.41% on Glacier Sound, 0.39% → 0.45% on Pearl Lagoon — a 15–40% rise at the
+  warm end, nothing at the light end. The head is drawn at body alpha + 0.25 rather than
+  × 1.1.
 - **Stops sit close together.** The LUT interpolates in RGB, which cuts the chord between
   two colours instead of following hue — a wide jump between distant hues passes through
   grey. A first pass went teal at 14 kt straight to gold at 20 and drew a dead olive at 17.
@@ -444,19 +462,23 @@ Rules this layer must keep:
   `STREAK_FLOOR_FRAC` (the floor is `min(STREAK_MIN_WIND, med × frac)`, so above ~13 knots
   median the absolute cap decides it). Verified: Redrock's 15–20 and 20+ bands come out
   byte-identical in length and width.
-- **The ramp is white → mint → green → yellow-green → gold → amber → red → crimson**
-  (`STREAK_PALETTES.wind`). The literal white→green→yellow→orange→red proposal is kept
-  alongside it as `heat` and switches live with `window.__streakPalette('heat')`. Two things
-  keep it from being the shipping ramp, both visible in `eval/_comet_ramp.js`'s strip: its
-  saturated green at 7–14 kt loses contrast on Gatorgrass's olive water, and its orange at
-  ~26 kt lands on the fleet's mark orange.
+- **The ramp is ice → white → cream → yellow → gold → amber → red-orange → red**
+  (`STREAK_PALETTES.wind`, stops at 0/6/10/14/18/22/26/30/35 kt). The ramp that shipped
+  Aug 2 – Sep 12 2026 (white → mint → green → gold → amber → crimson) is kept as `mint`, and
+  the literal white→green→yellow→orange→red proposal as `heat`; both switch live with
+  `window.__streakPalette(name)`. `window.__KT_SWEEP = true` draws every comet with the knots
+  taken from its screen x (0 left, 35 right) so the whole scale can be judged on any venue.
+- **The HUD wind chip is the legend.** The wind icon beside the TWS number is tinted with
+  `streakColorFor(tws)` (`js/render/hud.js`), so the player sees the number next to the
+  colour the comets are drawn in and learns the scale without a key. The number keeps its
+  own colour, which is course-relative and means something else.
 
 Diagnostics: `eval/_comet_probe.js` (drawn vs `getWindAt`), `_comet_flicker.js` (tip
 smoothness), `_comet_venues.js` (all ten), `_comet_cost.js`, `_comet_look.js` (variant
 sheets), `_dir_check.js` (which way a comet points), `_comet_lowend.js` (all four channels
 per wind band), `_spawnbias.js` (spawn chance in a puff vs clear), `_windspread.js` (is there
-any pressure to show?), `_comet_ramp.js` (ramp candidates over venue water). Tunables live on
-`window.__COMET`.
+any pressure to show?), `_comet_ramp.js` (ramp candidates over venue water), `_comet_sweep.js`
+(the full 0–35 kt scale on screen, per venue and palette). Tunables live on `window.__COMET`.
 
 ### 8.2 Puffs on the water — **Observed** (`drawGusts`, `puffToneCal`)
 

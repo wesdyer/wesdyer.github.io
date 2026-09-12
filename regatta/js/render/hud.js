@@ -1916,7 +1916,16 @@ function updateRoseHud(player, localWind) {
     // is how the old block grew a six-name remove() call.
     if (UI.speed) { UI.speed.textContent = d.sog.toFixed(1); UI.speed.style.color = d.sogCol; }
     if (UI.vmg) UI.vmg.textContent = d.dmcNA ? '\u2014' : d.dmc.toFixed(1);
-    if (UI.windSpeed) { UI.windSpeed.textContent = d.tws.toFixed(1) + (d.badAir ? ' \u2193' : ''); UI.windSpeed.style.color = d.twsCol; }
+    if (UI.windSpeed) {
+        UI.windSpeed.textContent = d.tws.toFixed(1) + (d.badAir ? ' \u2193' : ''); UI.windSpeed.style.color = d.twsCol;
+        // The wind icon beside the number takes the comet ramp's colour for this many knots
+        // (streakColorFor, js/sim/wind.js), so the chip doubles as the legend for the streaks
+        // on the water: the player sees "14.2" next to the same cream the comets are drawn
+        // in, and learns the scale without a key. The NUMBER keeps its own colour — that one
+        // is course-relative (more or less pressure than normal here) and says something else.
+        const ico = UI.windSpeed.previousElementSibling;
+        if (ico && typeof streakColorFor === 'function') { const c = streakColorFor(d.tws); ico.style.color = `rgb(${c[0]},${c[1]},${c[2]})`; }
+    }
     if (UI.windAngle) { UI.windAngle.textContent = `${d.twa}\u00b0`; UI.windAngle.style.color = d.noGo ? '#f87171' : ''; }
     roseCue('hud-planing-label', 'absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-cyan-400 hidden', 'PLANING', d.planing);
     roseCue('hud-surfing-label', 'absolute -top-9 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-amber-300 hidden', 'SURFING', d.surfing);
