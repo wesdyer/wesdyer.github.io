@@ -14,7 +14,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 
-const VENUES = ['bay', 'lake', 'lagoon', 'swamp', 'river', 'ocean', 'redrock', 'glowtide', 'arctic', 'seatrials'];
+const VENUES = ['bay', 'lake', 'lagoon', 'swamp', 'river', 'ocean', 'redrock', 'glowtide', 'arctic', 'seatrials', 'volcanic'];
 
 let failures = 0;
 const check = (name, cond, detail) => {

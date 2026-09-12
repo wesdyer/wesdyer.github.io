@@ -1452,6 +1452,14 @@ function getWindAt(x, y) {
         }
     }
 
+    // ── THE PLUME ── dead air under an erupting cone's ash, and under the vent islet's
+    // steam column: a multiplier on the resultant, deepest at the cloud's core and gone
+    // where the cloud has thinned away downwind. See volcano.js.
+    if (state.volcano && window.Volcano) {
+        const vm = Volcano.windMul(x, y);
+        if (vm < 1) { sumWx *= vm; sumWy *= vm; }
+    }
+
     // The local mean, which gates whether a wake reached here — the lee's AIM still comes
     // from each obstacle's own wind.
     const shadowFactor = shadowAt(x, y, dir, 'wind');

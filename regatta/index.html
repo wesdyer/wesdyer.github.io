@@ -447,6 +447,20 @@
         .row-highlight {
             animation: highlight-flash 1s ease-out;
         }
+        /* FRIED ELECTRONICS (volcano.js): a HUD panel a strike took out. Jitter, inversion
+           blinks and a rolling scanline until its system reboots. */
+        .fried { animation: hud-fry 0.11s steps(2, end) infinite; }
+        .fried::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+            background: repeating-linear-gradient(0deg, rgba(255,255,255,0.10) 0 2px, rgba(0,0,0,0.30) 2px 4px);
+            animation: hud-fry-scan 0.35s linear infinite; }
+        @keyframes hud-fry {
+            0%   { transform: translate(0, 0); filter: none; opacity: 1; }
+            25%  { transform: translate(-3px, 1px) skewX(-4deg); filter: invert(0.85) hue-rotate(160deg) contrast(1.6); opacity: 0.75; }
+            50%  { transform: translate(2px, -2px); filter: contrast(2.2) saturate(0); opacity: 0.4; }
+            75%  { transform: translate(-1px, 2px) skewX(3deg); filter: hue-rotate(-90deg) brightness(1.8); opacity: 0.9; }
+            100% { transform: none; filter: none; opacity: 0.6; }
+        }
+        @keyframes hud-fry-scan { from { background-position: 0 0; } to { background-position: 0 8px; } }
     </style>
 </head>
 <body>
@@ -1355,6 +1369,7 @@
     <script src="js/swell.js"></script>
     <script src="js/seafx.js"></script>
     <script src="js/icefx.js"></script>
+    <script src="js/volcano.js"></script>
     <script src="js/traffic.js"></script>
     <script src="js/planner.js"></script>
     <!-- Grid pathing: the course-path ruler needs it for keyholed land (see CoursePath). -->

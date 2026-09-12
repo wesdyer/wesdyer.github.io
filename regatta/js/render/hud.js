@@ -1377,6 +1377,8 @@ function drawMinimap() {
         ctx.strokeStyle = '#0b1c2b'; ctx.lineWidth = 1.6; ctx.stroke();
         ctx.restore();
     }
+    // Fried electronics: the chart tears and goes to static until it reboots (volcano.js).
+    if (window.Volcano && state.volcano && Volcano.hudFried('minimap')) Volcano.drawMinimapFry(ctx);
 }
 
 function updateLeaderboard() {
@@ -1895,6 +1897,20 @@ function roseCue(id, cls, text, on) {
 
 function updateRoseHud(player, localWind) {
     if (UI.compassRose) UI.compassRose.style.transform = `rotate(${-state.camera.rotation}rad)`;
+    // Fried electronics (volcano.js): every needle spins and every number is static.
+    if (window.Volcano && state.volcano && Volcano.hudFried('rose')) {
+        const spin = (k) => `rotate(${(frameCount * 0.31 * k + Math.sin(frameCount * 0.9 * k) * 2.5).toFixed(3)}rad)`;
+        if (UI.windArrow) UI.windArrow.style.transform = spin(1);
+        if (UI.waypointArrow) { UI.waypointArrow.style.visibility = ''; UI.waypointArrow.style.transform = spin(-1.3); }
+        if (UI.headingArrow) UI.headingArrow.style.transform = spin(0.7);
+        if (frameCount % 3 === 0) {
+            if (UI.speed) { UI.speed.textContent = Volcano.garble('0.0', 1); UI.speed.style.color = '#fb7185'; }
+            if (UI.vmg) UI.vmg.textContent = Volcano.garble('0.0', 1);
+            if (UI.windSpeed) { UI.windSpeed.textContent = Volcano.garble('00.0', 1); UI.windSpeed.style.color = '#fb7185'; }
+            if (UI.windAngle) { UI.windAngle.textContent = Volcano.garble('000\u00b0', 1); UI.windAngle.style.color = '#fb7185'; }
+        }
+        return;
+    }
     if (UI.windArrow) UI.windArrow.style.transform = `rotate(${localWind.direction}rad)`;
     if (UI.waypointArrow) {
         // No goal exists before the gun, so no arrow; racing, it points where the goal
@@ -2032,6 +2048,12 @@ function drawBoatInstruments(ctx, player) {
     const top = sy + BI_DROP;
     const left = sx - BI_W / 2;
     const d = boatInstruments(player);
+    // Fried electronics (volcano.js): the pill jitters and its reading goes to static; the
+    // omens before a strike put a smaller jitter on it first.
+    const vg = (window.Volcano && state.volcano) ? Volcano.glitch() : 0;
+    const vfried = vg > 0 && Volcano.hudFried('instruments');
+    const jx = vg ? (((frameCount * 7919) % 97) / 97 - 0.5) * 7 * vg : 0;
+    const jy = vg ? (((frameCount * 104729) % 89) / 89 - 0.5) * 5 * vg : 0;
 
     ctx.save();
     ctx.globalAlpha *= fade;
@@ -2059,8 +2081,9 @@ function drawBoatInstruments(ctx, player) {
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 4;
     ctx.font = FONT.mono(15);
-    ctx.fillStyle = d.noGo ? '#f87171' : '#bfdbfe';
-    ctx.fillText(d.twa + '°', sx, top + BI_H / 2 + 0.5);
+    ctx.fillStyle = vfried ? '#fb7185' : (d.noGo ? '#f87171' : '#bfdbfe');
+    const twaTxt = vfried ? Volcano.garble(d.twa + '°', 1) : (vg > 0 ? Volcano.garble(d.twa + '°', vg * 0.5) : d.twa + '°');
+    ctx.fillText(twaTxt, sx + jx, top + BI_H / 2 + 0.5 + jy);
     // ── THE HALYARD GAUGE ───────────────────────────────────────────────────
     // A hoist or douse takes seconds, and a player who presses Space and sees nothing
     // presses it again. While the kite is travelling — and ONLY while it is travelling:

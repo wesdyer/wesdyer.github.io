@@ -1099,6 +1099,54 @@ manifest slot's subject encodes it. Track wired as `racing-volcanic`
 ([music.md](music.md) §12.1). In-game water is black-teal with an ember shoreline,
 kept off Glowtide's indigo on purpose. Cup: the Swirl Cup set.
 
+**Weather (Sep 12 2026) — `js/volcano.js`.** The eruption cycle is BUILT, and the
+three effects that key off it, chosen from Wes's list of seven after a brainstorm
+(night and the aurora rejected — Glowtide owns night, and the doc says dusk):
+
+- **The cycle.** Every placed prop whose kind carries `cone` (the five volcano kinds;
+  the vent islet is `cone: 0.45, steam: true`, a permanent steam column) erupts on its
+  own period, 96–150 s dealt from the race seed (+91), quiet → build 14 s → peak 26 s →
+  wane 12 s. The lava is NOT touched — Wes: the flow must not speed up when the cone
+  erupts, "just add the ash plumes" — so the `p.heat`/`p.activity` hooks stay unused and
+  the eruption is the plume (plus embers round the crater). Learnable, and a restart is
+  the same race.
+- **The plume.** Parcels of ash leave the crater every 0.55 s and ride the MEAN wind
+  field (`regionWindAt` — never the plume's own dead air, or it would stall itself),
+  widening and thinning with age (22 s of ash, 9 s of wisp) so the veil dissipates with
+  distance. `getWindAt` multiplies its resultant by `Volcano.windMul()`: up to 80% of the
+  wind gone at an erupting cloud's core, 35% under the islet's steam. A quiet cone breathes
+  a thin pale wisp — the venue's wind sock — that costs nothing. Drawn as a CONNECTED
+  SHEET: pre-baked ragged puff sprites (steam/ash/dark/light × 4 variants) into a
+  4-units/px bake, blurred on composite, over the fleet (a boat under ash is seen
+  through it). Ash is the pale grey-brown of a lit plume seen from above, never
+  rock-dark — the first cut painted it basalt-coloured and it vanished on basalt.
+- **Lightning and the fry.** A charged plume (peak, young parcels) throws a strike every
+  5–12 s, AIMED: when a boat is under the cloud, 70% of strikes land 140–420 units from
+  one of the boats there (Wes: unaimed, it "usually strikes far from any boat"). The tell
+  is 2.8 s and the point is MARKED ON THE WATER for all of it — the 640-unit fry radius as
+  a turning dashed ring, three ripples closing on the point, a crackling heart — so
+  avoiding action is possible; boats within 1100 units also show masthead corona and
+  instrument jitter. The strike flashes the screen, crawls forks across the cloud base,
+  lights the water, casts the fleet's shadows away from it, and `Sound.playThunder` rolls
+  in dist/340 m/s later — Wes's two ElevenLabs takes (`thunder-near.mp3` crack-and-boom,
+  `thunder-far.mp3` roll), crossfaded by distance over 1400 units. The ELECTRONICS FRY for a time PROPORTIONAL TO PROXIMITY: 7 s at
+  the point, linearly to nothing at 640 units (under 0.8 s is skipped), so a boat at 5 kn
+  that sails away for the tell cuts ~2 s off. The player's rose, instruments, chart, goal
+  chips and leaderboard go to static (CSS `.fried`, `Volcano.drawMinimapFry`, `garble`)
+  and reboot staggered (rose 55%, instruments 70%, chart 85%, chips 92%, leaderboard 100%
+  of the outage); a bot's controller skips its body and holds course blind. A penalty on
+  INFORMATION, not control.
+- **Vent boils.** Every seabed vent kind carries `boil` (fissure 0.7, mound 0.55, rift
+  0.8): a turbulence zone of radius 0.42 × the vent's box, in the rapids' units — physics
+  takes `max(rapidsTurbAt, Volcano.boilAt)`, so it is drag and yaw with no lift — under
+  a connected foam sheet (nine heaving lobes round a bright heart, fine crests that die
+  in place, bubbles) and a steam wisp.
+
+Not built, still on the list: bombs at the eruption's peak (a ring of splashes round the
+cone), the Surtsey moment (a vent breaching into a shoal mid-race), laze along the lava
+fronts, an ash slick on the water. `eval/test_volcano.js` drives the real page through
+all of the above; the render suite now includes `volcanic`.
+
 **Ground set (Sep 4 2026).** Four kinds, declared and delivered the same day
 (`SHAPE_KINDS` / `ISLAND_STYLES` / `LAND_TEXTURES` carry the reasoning and the
 measured numbers):

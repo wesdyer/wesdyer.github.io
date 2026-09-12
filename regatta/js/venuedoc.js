@@ -1649,18 +1649,18 @@ const PROP_KINDS = {
     // (the runtime cannot read the mask back — the srcBox/contactR contract). The magma
     // entry is the crater lake; the lava entry is the channels, whose "radius" is only an
     // area measure — downhill is computed from the crater's centre, not this one.
-    'volcanic-volcano-main':    { label: 'Volcano (4 streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+    'volcanic-volcano-main':    { label: 'Volcano (4 streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
                                   lava: { magma: { cx: 0.4942, cy: 0.4952, r: 0.1058 }, lava: { cx: 0.4903, cy: 0.5124, r: 0.0961 } } },
     // The rest of the family (2026-09-07), at slot: same size and contract, told apart by
     // stream count and silhouette. Each gets its `lava` numbers from ingest when its master
     // lands; until then drawPropLava sees no regions and the rock draws alone.
-    'volcanic-volcano-crater':  { label: 'Volcano (crater only)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+    'volcanic-volcano-crater':  { label: 'Volcano (crater only)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
                                   lava: { magma: { cx: 0.4944, cy: 0.4892, r: 0.1266 } } },   // ingested 2026-09-07; no channels, so no lava entry
-    'volcanic-volcano-1':       { label: 'Volcano (1 stream)',    world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+    'volcanic-volcano-1':       { label: 'Volcano (1 stream)',    world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
                                   lava: { magma: { cx: 0.4823, cy: 0.4902, r: 0.1158 }, lava: { cx: 0.6697, cy: 0.7863, r: 0.0723 } } },   // ingested 2026-09-07
-    'volcanic-volcano-4':       { label: 'Volcano (4 wide streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+    'volcanic-volcano-4':       { label: 'Volcano (4 wide streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
                                   lava: { magma: { cx: 0.4953, cy: 0.4993, r: 0.097 }, lava: { cx: 0.5647, cy: 0.5065, r: 0.1228 } } },   // ingested 2026-09-07; the 2-stream slot was retired for this
-    'volcanic-volcano-3':       { label: 'Volcano (3 streams)',   world: 1400, plane: 'surface', contact: 'none', motion: 'fixed',
+    'volcanic-volcano-3':       { label: 'Volcano (3 streams)',   world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
                                   lava: { magma: { cx: 0.4956, cy: 0.5016, r: 0.1102 }, lava: { cx: 0.5402, cy: 0.5905, r: 0.1053 } } },   // ingested 2026-09-07
     // A lava lake without a mountain: a molten pool in a rampart of basalt, on the same keyed
     // contract (magma only). Its `lava` numbers arrive with its master.
@@ -1688,21 +1688,21 @@ const PROP_KINDS = {
     'volcanic-crag-columns':    { label: 'Basalt crag (columns)', world: 320, plane: 'surface', contact: 'none', motion: 'fixed' },
     'volcanic-crag-fin':        { label: 'Basalt crag (ridge)',   world: 260, plane: 'surface', contact: 'none', motion: 'fixed' },   // a serrated ridge of summits, keyed `fin` for the file
     'volcanic-crag-tor':        { label: 'Basalt crag (peak)',    world: 180, plane: 'surface', contact: 'none', motion: 'fixed' },   // a single sharp peak, keyed `tor` for the file
-    'volcanic-vent-islet':      { label: 'Vent islet',       world:  360, plane: 'surface', contact: 'none', motion: 'fixed',
+    'volcanic-vent-islet':      { label: 'Vent islet',       world:  360, plane: 'surface', contact: 'none', motion: 'fixed', cone: 0.45, steam: true,
                                   lava: { magma: { cx: 0.606, cy: 0.4382, r: 0.0756 } } },   // ingested 2026-09-07
     // The seabed vent: drawn on the bottom, through the water column like the sunken
     // boulders (wash is what a seabed sprite takes from the water; see those rows). Its
     // fissure is a hole too — what shows through it today is the seabed underlay, and the
     // glow it is designed around needs a SUBMERGED magma pass (a `magma` shape drawn in the
     // seabed stratum under the water, dimmed by submergedTint) that does not exist yet.
-    'volcanic-vent-underwater': { label: 'Underwater vent (fissure)', world: 320, plane: 'seabed',  contact: 'none', motion: 'fixed', wash: 0.6, washFrom: 'current',
+    'volcanic-vent-underwater': { label: 'Underwater vent (fissure)', world: 320, plane: 'seabed',  contact: 'none', motion: 'fixed', boil: 0.7, wash: 0.6, washFrom: 'current',
                                   lava: { magma: { cx: 0.5145, cy: 0.5059, r: 0.1202 } } },   // ingested 2026-09-07; drawn submerged
     // Two more vents (a mound with a pit, a rift on the diagonal) and three LAND CRACKS —
     // fissures with nothing but their lip, laid on whatever basalt shape is under them, the
     // magma key painted at the surface. Numbers arrive with their masters.
-    'volcanic-vent-underwater-2': { label: 'Underwater vent (mound)', world: 320, plane: 'seabed', contact: 'none', motion: 'fixed', wash: 0.6, washFrom: 'current',
+    'volcanic-vent-underwater-2': { label: 'Underwater vent (mound)', world: 320, plane: 'seabed', contact: 'none', motion: 'fixed', boil: 0.55, wash: 0.6, washFrom: 'current',
                                     lava: { magma: { cx: 0.5185, cy: 0.4464, r: 0.136 } } },    // ingested 2026-09-07
-    'volcanic-vent-underwater-3': { label: 'Underwater vent (rift)',  world: 320, plane: 'seabed', contact: 'none', motion: 'fixed', wash: 0.6, washFrom: 'current',
+    'volcanic-vent-underwater-3': { label: 'Underwater vent (rift)',  world: 320, plane: 'seabed', contact: 'none', motion: 'fixed', boil: 0.8, wash: 0.6, washFrom: 'current',
                                     lava: { magma: { cx: 0.5037, cy: 0.4973, r: 0.1086 } } },   // ingested 2026-09-07
     'volcanic-crack-long':      { label: 'Lava crack (long)',  world: 400, plane: 'surface', contact: 'none', motion: 'fixed',
                                   lava: { magma: { cx: 0.4856, cy: 0.501, r: 0.1506 } } },    // ingested 2026-09-07

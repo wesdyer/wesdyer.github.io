@@ -566,6 +566,76 @@ const Sound = {
     // The bed follows APPARENT wind — what the boat actually feels. Bearing away and
     // accelerating makes its own wind, and that is information the HUD does not show;
     // running deep goes quiet, which is both true and useful.
+    // THUNDER, `delay` seconds after the flash (the sim hands over distance / 340 m/s),
+    // `loud` 0..1 and `dist` in world units. Wes's two ElevenLabs takes (Sep 12 2026): a
+    // close crack-and-boom and a distant roll, CROSSFADED BY DISTANCE — inside ~1400 units
+    // the crack leads with the roll under it, beyond that the roll alone. Plain media
+    // elements, never routed through Web Audio (see makeVoice: on file:// that path is
+    // silent). The far take opens on 0.14 s of nothing, so it starts at THUNDER.farStart.
+    // The synthesized burst (synthThunder) is the fallback when a take has not loaded.
+    THUNDER: { near: 'assets/audio/thunder-near.mp3', far: 'assets/audio/thunder-far.mp3', farStart: 0.12, nearReach: 1400, volume: 0.9 },
+    _thunderWarm: null,
+    warmThunder: function() {
+        if (this._thunderWarm) return this._thunderWarm;
+        const mk = (file) => { const el = new Audio(file); el.preload = 'auto'; return el; };
+        return (this._thunderWarm = { near: mk(this.THUNDER.near), far: mk(this.THUNDER.far) });
+    },
+    playThunder: function(delay, loud, dist) {
+        if (!settings.soundEnabled) return;
+        this.init();
+        const L = Math.max(0, Math.min(1, loud == null ? 1 : loud));
+        const d = dist != null ? dist : (1 - L) * 5000;
+        const T = this.THUNDER;
+        const nearMix = Math.max(0, Math.min(1, 1 - d / T.nearReach));
+        const near = T.volume * nearMix * (0.6 + 0.4 * L);
+        const far = T.volume * L * (0.35 + 0.65 * (1 - nearMix));
+        this._lastThunder = { delay, dist: d, near, far };
+        const warm = this.warmThunder();
+        const failed = (el) => !!(el && el.error);
+        if (failed(warm.near) || failed(warm.far) || typeof Audio === 'undefined') { this.synthThunder(delay, loud); return; }
+        const fire = (file, vol, start) => {
+            if (vol < 0.02) return;
+            const el = new Audio(file);
+            el.volume = Math.min(1, vol);
+            const go = () => { try { if (start) el.currentTime = start; el.play().catch(() => {}); } catch (e) {} };
+            setTimeout(go, Math.max(0, delay || 0) * 1000);
+        };
+        fire(T.near, near, 0);
+        fire(T.far, far, T.farStart);
+    },
+    synthThunder: function(delay, loud) {
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime + Math.max(0, delay || 0);
+        const L = Math.max(0.05, Math.min(1, loud == null ? 1 : loud));
+        const dur = 2.2 + 1.2 * L;
+        const buffer = this.ctx.createBuffer(1, Math.ceil(this.ctx.sampleRate * dur), this.ctx.sampleRate);
+        this.fillNoise(buffer.getChannelData(0));
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const lp = this.ctx.createBiquadFilter();
+        lp.type = 'lowpass';
+        lp.frequency.setValueAtTime(300 + 1400 * L, now);
+        lp.frequency.exponentialRampToValueAtTime(60, now + dur);
+        const g = this.ctx.createGain();
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(0.9 * L, now + 0.03 + 0.12 * (1 - L));
+        g.gain.exponentialRampToValueAtTime(0.35 * L, now + 0.6);
+        g.gain.exponentialRampToValueAtTime(0.001, now + dur);
+        noise.connect(lp); lp.connect(g); g.connect(this.ctx.destination);
+        noise.start(now); noise.stop(now + dur + 0.05);
+        // The crack: a sub thump only a near strike carries.
+        if (L > 0.5) {
+            const osc = this.ctx.createOscillator(), og = this.ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(90, now);
+            osc.frequency.exponentialRampToValueAtTime(35, now + 0.5);
+            og.gain.setValueAtTime(0.8 * L, now);
+            og.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+            osc.connect(og); og.connect(this.ctx.destination);
+            osc.start(now); osc.stop(now + 0.8);
+        }
+    },
+
     playerWindSpeed: function() {
         const p = state.boats && state.boats[0];
         if (p && p.apparentWind && isFinite(p.apparentWind.speed)) return p.apparentWind.speed;

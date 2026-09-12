@@ -179,6 +179,9 @@ class BotController {
         this.updateTimer -= dt;
         if (this.updateTimer > 0) return;
         this.updateTimer = 0.1; // 10Hz updates
+        // FRIED. A strike took the instruments: no wind read, no plan, no avoidance — she
+        // holds what she was steering until the electronics come back. See volcano.js.
+        if (state.volcano && window.Volcano && Volcano.isFried(this.boat)) return;
         // ⚠️ THE BODY RUNS AT 10Hz BUT dt IS THE FRAME STEP (1/60), so a `± dt`
         // timer in here runs six times slower than its comment claims: a "5 second"
         // wiggle held for 30 and the stall detector needed 18s to notice. TICK is

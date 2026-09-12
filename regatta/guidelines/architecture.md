@@ -52,7 +52,7 @@ choice, not an accident:
 ## File map and ownership lanes
 
 Load order inside the game block (after arena/venuedoc/venue docs/ai-quotes/
-water/swell/seafx/icefx/traffic/planner/sailcheck/rules):
+water/swell/seafx/icefx/volcano/traffic/planner/sailcheck/rules):
 
 | file | contents | lane |
 |---|---|---|

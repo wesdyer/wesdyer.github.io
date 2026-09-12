@@ -29,6 +29,7 @@ function update(dt) {
     updateBaseWind(dt);
     updateGusts(dt);
     updateSqualls(dt);
+    if (window.Volcano) Volcano.update(dt);
     // No dt: every vessel is evaluated straight from the race clock, so it cannot drift
     // with the frame rate the way an integrated position would.
     updateTraffic();
@@ -640,6 +641,8 @@ function draw() {
     drawIslandsCached(ctx);
     // Surf sits ON the shore, so it goes over the land and under the air layer.
     drawSurf(ctx);
+    // A vent's boil is water, so it sits with the surf: over the sea, under the hulls.
+    if (window.Volcano && state.volcano) Volcano.drawBoils(ctx);
     // Surface props: over the land they stand on, under everything that races. This is the
     // plane for a thing the GROUND holds up — a trunk, a beached log — as against `float`
     // above, which is for a thing the WATER holds up and which the land therefore covers.
@@ -696,6 +699,9 @@ function draw() {
 
     // Wind comets are air, not water — they pass over hulls and sails, not under them.
     drawParticles(ctx, 'air');
+    // Ash and steam are the highest thing in the air: over the comets, and over the fleet
+    // — a boat under the plume is a boat seen through it. See volcano.js.
+    if (window.Volcano && state.volcano) Volcano.drawVeil(ctx);
 
     // ── THE LIGHT COMES DOWN, THEN WHAT MAKES ITS OWN GOES BACK UP ──────────
     // Placed here, after the last PHYSICAL layer and before the indicators: everything in
@@ -703,6 +709,9 @@ function draw() {
     // every venue that authors no `palette.night`.
     drawNightWash(ctx);
     drawJellyGlow(ctx);
+    // Lightning is the brightest thing in the frame, so it goes over the night wash: the
+    // forks, the lit water, the fleet's thrown shadows, then the flash across the screen.
+    if (window.Volcano && state.volcano) { Volcano.drawFlash(ctx); Volcano.drawStrikes(ctx); }
     drawNightGlow(ctx);
     // ⚠️ AFTER THE WASH, AND NOT GATED ON NIGHT. It has to come after drawNightWash or the
     // fire would be multiplied down by the very moonlight it is supposed to be pushing back;
@@ -796,7 +805,8 @@ function draw() {
             (wx, wy) => { const dx = wx - state.camera.x, dy = wy - state.camera.y;
                           const x = canvas.width/2 + dx*Math.cos(rot) - dy*Math.sin(rot), y = canvas.height/2 + dx*Math.sin(rot) + dy*Math.cos(rot);
                           return { x, y, inView: x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height }; });
-        if (state.showNavAids && !(window.School && School.lesson())) {
+        // Fried electronics show no goal chips until the nav reboots (volcano.js).
+        if (state.showNavAids && !(window.School && School.lesson()) && !(state.volcano && Volcano.hudFried('nav'))) {
             const leg = player.raceState.leg;
             const marks = state.course.marks;
             // ROUTE-DRIVEN, not shape-guessed. The old split ("gate legs if the course has
@@ -978,6 +988,7 @@ function draw() {
     const localWind = getWindAt(player.x, player.y);
 
     if (hudShowsRose()) updateRoseHud(player, localWind);
+    if (window.Volcano && state.volcano) Volcano.applyHudClasses();
 
 
     // OCS banner: persistent while the flag is up (the transient race message is

@@ -873,6 +873,8 @@ function updateBoat(boat, dt) {
     // state.time, so a fleet in the same stopper tosses independently and no RNG is
     // drawn.
     boat.rapidsTurb = rapidsTurbAt(boat.x, boat.y);
+    // A seabed vent's BOIL is the same broken water — drag and yaw, no lift (volcano.js).
+    if (state.volcano && window.Volcano) boat.rapidsTurb = Math.max(boat.rapidsTurb, Volcano.boilAt(boat.x, boat.y));
     if (boat.rapidsTurb > 0.01) {
         targetKnots *= (1 - RAPIDS_DRAG * boat.rapidsTurb);
         if (boat._rapidsPhase == null) boat._rapidsPhase = (_rapidsPhaseN++ % 32) * 2.399963;

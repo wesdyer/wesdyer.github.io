@@ -706,6 +706,9 @@ function initCourse(opts) {
         // and marched off the map. Their layout keys on the race seed, so restarting
         // re-deals them; the trades they march are this course's own.
         initSqualls();
+        // The eruption cycle, the same way and for the same reasons: it keys on the race
+        // seed and on the placed props, and every door into a race passes through here.
+        if (window.Volcano) Volcano.init();
         // Traffic, on the same path and for a simpler reason: it needs state.course.doc,
         // and every door into a race passes through here. Its vessels are pure functions
         // of the race clock, so this only compiles the path tables — there is no live
