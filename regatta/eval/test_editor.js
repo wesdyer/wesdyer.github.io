@@ -2968,6 +2968,95 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
           `${col.rows} rows for ${col.docShapes} shapes`);
     await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
 
+    // ── Space + left-drag pans ──────────────────────────────────────────────
+    // With the pen armed a plain left press adds a point, so this is the case where
+    // holding Space has to win: the view moves, the document does not.
+    console.log('\nspace + left-drag pans');
+    const sp = await page.evaluate(() => {
+        const A = window.EditorApp;
+        document.querySelector('#layer-list [data-layer="land"]').click();
+        A._pickTool('draw');
+        const cv = document.getElementById('schematic');
+        const r = cv.getBoundingClientRect();
+        const key = (type) => window.dispatchEvent(new KeyboardEvent(type, { key: ' ', code: 'Space', bubbles: true }));
+        const down = (x, y) => cv.dispatchEvent(new MouseEvent('mousedown', {
+            clientX: r.left + x, clientY: r.top + y, button: 0, bubbles: true }));
+        const move = (x, y) => window.dispatchEvent(new MouseEvent('mousemove', {
+            clientX: r.left + x, clientY: r.top + y, bubbles: true }));
+        const up = () => window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+        const esc = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+        const before = JSON.stringify(A._state().doc), hist = A._state().history;
+        const v0 = A._view();
+        key('keydown'); key('keydown');                     // auto-repeat delivers more than one
+        const grab = cv.classList.contains('spacepan');
+        down(200, 200);
+        const kind = A._dragKind(), grabbing = cv.classList.contains('dragging');
+        move(230, 210);
+        key('keyup');                                        // let go of Space mid-drag…
+        const stillPan = A._dragKind();
+        move(260, 230);                                      // …and the pan runs on
+        up();
+        const v1 = A._view();
+        const grabOff = !cv.classList.contains('spacepan');
+        // Space up, pen still armed: a press is a point again, not a pan.
+        down(200, 200); const kind2 = A._dragKind(); up(); esc();
+        A._pickTool('select');
+        return { grab, kind, grabbing, stillPan, grabOff, kind2,
+                 dx: (v0.x - v1.x) * v0.scale, dy: (v0.y - v1.y) * v0.scale,
+                 same: JSON.stringify(A._state().doc) === before, hist: A._state().history === hist };
+    });
+    check('holding Space shows the grab cursor', sp.grab);
+    check('Space + left press starts a pan with the pen armed', sp.kind === 'pan' && sp.grabbing);
+    check('releasing Space mid-drag keeps the pan going', sp.stillPan === 'pan');
+    check('the view followed the pointer by (60, 30) px', Math.abs(sp.dx - 60) < 1e-6 && Math.abs(sp.dy - 30) < 1e-6, `${sp.dx}, ${sp.dy}`);
+    check('the document and history are untouched', sp.same && sp.hist);
+    check('Space up: the cursor is back and a press is not a pan', sp.grabOff && sp.kind2 !== 'pan', sp.kind2);
+
+    // ── Export image ────────────────────────────────────────────────────────
+    // The whole venue through the game renderer. Small on purpose (maxSide) so the
+    // suite stays quick; the button is the same function with the default size.
+    console.log('\nexport image');
+    const xbefore = await page.evaluate(() => { const g = document.getElementById('gameCanvas');
+        return { w: g.width, h: g.height, cam: Object.assign({}, state.camera), paused: state.paused, nav: state.showNavAids, grad: WATER_CONFIG.depthGradientScale }; });
+    const [xdl, xres] = await Promise.all([page.waitForEvent('download', { timeout: 120000 }),
+        page.evaluate(() => window.EditorApp._exportImage({ maxSide: 1024 }))]);
+    const xpath = 'regatta/eval/_editor_export.png';
+    await xdl.saveAs(xpath);
+    const xpng = require('fs').readFileSync(xpath);
+    const xdims = { w: xpng.readUInt32BE(16), h: xpng.readUInt32BE(20) };
+    const xexp = await page.evaluate((b64) => new Promise((resolve) => {
+        const A = window.EditorApp, doc = A._state().doc, bd = doc.world.boundary;
+        let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+        const add = (x, y) => { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); };
+        if (bd.poly && bd.poly.length) for (const p of bd.poly) add(p[0], p[1]);
+        else { add(bd.circle.x - bd.circle.r, bd.circle.y - bd.circle.r); add(bd.circle.x + bd.circle.r, bd.circle.y + bd.circle.r); }
+        const W = Math.ceil(c - a + 1200), H = Math.ceil(d - b + 1200), s = Math.min(1, 1024 / Math.max(W, H));
+        const g = document.getElementById('gameCanvas');
+        const after = { w: g.width, h: g.height, cam: Object.assign({}, state.camera), paused: state.paused, nav: state.showNavAids, grad: WATER_CONFIG.depthGradientScale };
+        const parked = state.boats.some(bt => Math.abs(bt.x) > 1e5 || Math.abs(bt.y) > 1e5);
+        const img = new Image();
+        img.onload = () => {
+            const cv2 = document.createElement('canvas'); cv2.width = img.width; cv2.height = img.height;
+            const gx = cv2.getContext('2d'); gx.drawImage(img, 0, 0);
+            const seen = new Set(); let n = 0;
+            for (let y = 0; y < cv2.height; y += Math.max(1, cv2.height >> 5))
+                for (let x = 0; x < cv2.width; x += Math.max(1, cv2.width >> 5)) {
+                    const p = gx.getImageData(x, y, 1, 1).data; n++;
+                    seen.add((p[0] >> 4) + ',' + (p[1] >> 4) + ',' + (p[2] >> 4));
+                }
+            resolve({ w: Math.round(W * s), h: Math.round(H * s), after, parked, samples: n, distinct: seen.size,
+                      button: !!document.getElementById('btn-image'), toast: document.getElementById('toast').textContent });
+        };
+        img.src = 'data:image/png;base64,' + b64;
+    }), xpng.toString('base64'));
+    check('the export button is in the top bar', xexp.button);
+    check('the download is named for the venue and its size', xres && new RegExp(`^[A-Za-z0-9_-]+-venue-${xdims.w}x${xdims.h}-\\d{8}-\\d{6}\\.png$`).test(xdl.suggestedFilename()), xdl.suggestedFilename());
+    check('the PNG is the sailing box plus margin, fitted to the asked size', xdims.w === xexp.w && xdims.h === xexp.h, `${xdims.w}x${xdims.h} vs ${xexp.w}x${xexp.h}`);
+    check('the image has content: many distinct colours over a 32x32 sample grid', xexp.distinct >= 6, `${xexp.distinct} of ${xexp.samples}`);
+    check('the game canvas, camera, pause, nav aids and water config are put back', JSON.stringify(xexp.after) === JSON.stringify(xbefore), JSON.stringify(xexp.after).slice(0, 160));
+    check('the fleet is back on the water', xexp.parked === false);
+    check('the toast reports the save', /^Saved /.test(xexp.toast), xexp.toast);
+
     // ── Save output    // ── Save output ─────────────────────────────────────────────────────────
     console.log('\nsave output');
     const out = await page.evaluate(() => {

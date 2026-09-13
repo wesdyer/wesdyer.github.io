@@ -1707,7 +1707,7 @@ function hintBar() {
         name.textContent = 'Nothing to edit on this layer';
         $('hint-mods').innerHTML = '<span class="mod">pick a layer to edit it</span>'
             + '<span class="mod">M to measure</span>'
-            + '<span class="mod">right- or middle-drag pans · wheel zooms</span>';
+            + '<span class="mod">right-, middle- or Space+drag pans · wheel zooms</span>';
         return;
     }
     key.hidden = false;
@@ -1725,7 +1725,7 @@ function hintBar() {
     const m0 = MODS[t.id];
     const mods = (typeof m0 === 'function' ? m0() : m0) || [];
     $('hint-mods').innerHTML = mods.map(m => `<span class="mod">${m}</span>`).join('')
-        || '<span class="mod">right- or middle-drag pans · wheel zooms</span>';
+        || '<span class="mod">right-, middle- or Space+drag pans · wheel zooms</span>';
 }
 
 // ── Stats band ──────────────────────────────────────────────────────────────
@@ -7464,6 +7464,10 @@ const normDir = (r) => ((r % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
 
 // ── Mouse ───────────────────────────────────────────────────────────────────
 let lastMouse = null;
+// HOLD SPACE TO PAN WITH THE LEFT BUTTON, the way every drawing app does it: the pointer
+// stays on the tool you were using and the other hand holds the bar. Set on keydown,
+// cleared on keyup and on window blur (a Cmd-Tab mid-hold would otherwise leave it stuck).
+let spaceHeld = false;
 
 // Middle mouse pans regardless of the active tool: reaching for a Pan tool to move
 // around is the kind of friction that makes an editor tiring to use.
@@ -7472,11 +7476,14 @@ cv.addEventListener('auxclick', (e) => { if (e.button === 1 || e.button === 2) e
 // most people could not make. The editor has no context menus of its own (they were dropped
 // deliberately), so the OS one is suppressed across the WHOLE document — not just the
 // canvas — and right-drag means the same thing wherever the pointer happens to be.
+// SPACE + LEFT-DRAG pans too (Sep 2026): with a brush or the pen armed, or a selection
+// that would turn a plain drag into a marquee, it is the only way to move without
+// switching tools. Releasing Space mid-drag does not end the pan — the button does.
 document.addEventListener('contextmenu', (e) => e.preventDefault());
 cv.addEventListener('mousedown', (e) => {
     const r = cv.getBoundingClientRect();
     const w = toW(e.clientX - r.left, e.clientY - r.top);
-    if (e.button === 1 || e.button === 2) {
+    if (e.button === 1 || e.button === 2 || (e.button === 0 && spaceHeld)) {
         e.preventDefault();
         drag = { kind: 'pan', sx: e.clientX, sy: e.clientY, vx: view.x, vy: view.y };
         cv.classList.add('dragging');
@@ -8165,6 +8172,14 @@ cv.addEventListener('wheel', (e) => {
 // ── Keyboard ────────────────────────────────────────────────────────────────
 window.addEventListener('keydown', (e) => {
     if (/^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement.tagName)) return;
+    // Space is a modifier here (hold it, left-drag pans — see the mousedown handler), so
+    // it must not scroll the page or re-fire whichever toolbar button last had focus.
+    // Auto-repeat keeps delivering keydowns while it is held; the flag is idempotent.
+    if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault();
+        if (!spaceHeld) { spaceHeld = true; cv.classList.add('spacepan'); }
+        return;
+    }
     if (e.key === 'Enter' && !doc && lastHandle) { reopenLast(); return; }
     const mod = e.metaKey || e.ctrlKey;
     if (mod && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
@@ -8380,6 +8395,9 @@ window.addEventListener('keydown', (e) => {
         if (t && (!t.enabled || t.enabled())) pickTool(id);
     }
 });
+const spaceUp = () => { spaceHeld = false; cv.classList.remove('spacepan'); };
+window.addEventListener('keyup', (e) => { if (e.key === ' ' || e.code === 'Space') spaceUp(); });
+window.addEventListener('blur', spaceUp);
 
 // Right panel: Overview and Checks are separate panes. The course stats, legend and
 // route are what you look at while working; the checks are what you consult. Stacking
@@ -8391,6 +8409,125 @@ $('btn-drawer').addEventListener('click', () => {
     d.hidden = !d.hidden;
     $('tally-chev').style.transform = d.hidden ? '' : 'rotate(180deg)';
 });
+
+// ── Export image: the WHOLE venue, through the game's renderer ─────────────
+// For looking at a venue the way a player sees it, all at once — a plate for analysis,
+// not the schematic. The game renderer is translate-only (one world unit is one pixel;
+// art/plates.js relies on it) and its cached strata size their bitmaps from the canvas,
+// so a venue cannot go through one giant canvas: it is rendered in EXPORT_TILE-unit
+// tiles at 1:1 with the camera parked on each, and the tiles are composited into one
+// image that is scaled to fit. No seams: everything the renderer draws is world-anchored
+// once the one screen-space thing (below) is flattened.
+//
+// What it changes for the duration, and puts back in `finally`:
+//   - the loop is paused, and draw() is called by hand per tile;
+//   - the fleet is parked at 1e6 — a landscape, not a race shot (art/_aerial.js does
+//     the same); the wakes are empty because nothing has sailed;
+//   - nav aids are off: laylines and ladder rungs are relative to a boat;
+//   - gusts are cleared and a fresh wind-wave lattice is seeded per tile from the
+//     venue's own wind, so the water carries the authored breeze and no random puffs;
+//   - the water's depth vignette is flattened (depthGradientScale → huge). It is a
+//     SCREEN-SPACE radial gradient centred on the player, so per tile it would print a
+//     grid of vignettes; flat base colour is the water the player sees around the boat.
+// Sprite art loads lazily on first draw, and a tile baked before its art lands draws
+// without it — so every Image created during the pass is waited for, and the pass runs
+// again if there were any (the second export in a session is one pass).
+//
+// Size: the sailing boundary's box plus EXPORT_MARGIN, fitted to EXPORT_MAX_SIDE (the
+// bay comes out at 0.75×, small venues at 1:1). Option/Alt-click asks for 1:1, which
+// the browser caps at EXPORT_LIMIT_SIDE a side and EXPORT_LIMIT_AREA pixels — the ocean
+// still scales. Measured 2026-09-13: redrock 1.7 s at 1:1 (27 MB), bay 6 s (79 MB),
+// volcanic 7 s (50 MB).
+const EXPORT_MAX_SIDE = 8192, EXPORT_TILE = 2048, EXPORT_MARGIN = 600;
+const EXPORT_LIMIT_SIDE = 16384, EXPORT_LIMIT_AREA = 220e6;
+let _exporting = false;
+async function exportVenueImage(opts) {
+    opts = opts || {};
+    if (!doc) { toast('Open a venue first', true); return null; }
+    if (_exporting) return null;
+    if (typeof window.draw !== 'function' || !window.state || !window.WATER_CONFIG || typeof window.updateWindWaves !== 'function') {
+        toast('The game renderer is not loaded', true); return null;
+    }
+    _exporting = true;
+    const gc = document.getElementById('gameCanvas');
+    const st = window.state, WC = window.WATER_CONFIG;
+    const tick = () => new Promise(r => setTimeout(r, 0));
+    const saved = { w: gc.width, h: gc.height, paused: st.paused, cam: Object.assign({}, st.camera), nav: st.showNavAids,
+                    grad: WC.depthGradientScale, waves: st.waveStates, gusts: st.gusts, boats: null };
+    let result = null;
+    try {
+        toast('Rendering the venue…'); await tick();
+        // Build exactly the document as it stands: the commit-time recompile, so the
+        // image shows what would be raced rather than the last drag's preview.
+        recompile();
+        saved.boats = st.boats.map(bt => [bt, bt.x, bt.y]);
+        const bd = doc.world && doc.world.boundary;
+        let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+        const add = (x, y) => { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); d = Math.max(d, y); };
+        if (bd && bd.poly && bd.poly.length) for (const p of bd.poly) add(p[0], p[1]);
+        else if (bd && bd.circle) { add(bd.circle.x - bd.circle.r, bd.circle.y - bd.circle.r); add(bd.circle.x + bd.circle.r, bd.circle.y + bd.circle.r); }
+        if (!isFinite(a)) ({ a, b, c, d } = bounds());
+        a -= EXPORT_MARGIN; b -= EXPORT_MARGIN; c += EXPORT_MARGIN; d += EXPORT_MARGIN;
+        const W = Math.ceil(c - a), H = Math.ceil(d - b);
+        const maxSide = opts.maxSide || (opts.full ? EXPORT_LIMIT_SIDE : EXPORT_MAX_SIDE);
+        const s = Math.min(1, maxSide / Math.max(W, H), Math.sqrt(EXPORT_LIMIT_AREA / (W * H)));
+        const out = document.createElement('canvas');
+        out.width = Math.round(W * s); out.height = Math.round(H * s);
+        const og = out.getContext('2d');
+        og.imageSmoothingEnabled = true; og.imageSmoothingQuality = 'high';
+        const nx = Math.ceil(W / EXPORT_TILE), ny = Math.ceil(H / EXPORT_TILE), n = nx * ny;
+
+        st.paused = true; st.showNavAids = false; WC.depthGradientScale = 1e4;
+        st.waveStates = new Map(); st.gusts = [];
+        for (const [bt] of saved.boats) { bt.x = 1e6; bt.y = 1e6; }
+
+        const pass = async (label) => {
+            for (let ty = 0; ty < ny; ty++) for (let tx = 0; tx < nx; tx++) {
+                const x0 = a + tx * EXPORT_TILE, y0 = b + ty * EXPORT_TILE;
+                const tw = Math.ceil(Math.min(EXPORT_TILE, c - x0)), th = Math.ceil(Math.min(EXPORT_TILE, d - y0));
+                gc.width = tw; gc.height = th;
+                st.camera.x = x0 + tw / 2; st.camera.y = y0 + th / 2; st.camera.rotation = 0;
+                for (let k = 0; k < 3; k++) window.updateWindWaves(1 / 30);
+                window.draw();
+                og.drawImage(gc, 0, 0, tw, th, (x0 - a) * s, (y0 - b) * s, tw * s, th * s);
+                const i = ty * nx + tx + 1;
+                if (i % 4 === 0 || i === n) { toast(`${label} ${i}/${n}…`); await tick(); }
+            }
+        };
+        const created = [], RealImage = window.Image;
+        window.Image = function (...args) { const img = new RealImage(...args); created.push(img); return img; };
+        try { await pass('Rendering'); } finally { window.Image = RealImage; }
+        if (created.length) {
+            const t0 = Date.now();
+            while (created.some(i => !i.complete) && Date.now() - t0 < 15000) await new Promise(r => setTimeout(r, 50));
+            await pass('Rendering with art');
+        }
+        toast('Encoding PNG…'); await tick();
+        const blob = await new Promise(r => out.toBlob(r, 'image/png'));
+        if (!blob) throw new Error('the browser refused a canvas this large');
+        const dt = new Date(), p2 = (v) => String(v).padStart(2, '0');   // local time, like the F12 screenshot
+        const stamp = `${dt.getFullYear()}${p2(dt.getMonth() + 1)}${p2(dt.getDate())}-${p2(dt.getHours())}${p2(dt.getMinutes())}${p2(dt.getSeconds())}`;
+        const name = `${doc.venue}-venue-${out.width}x${out.height}-${stamp}.png`;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a'); link.download = name; link.href = url; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+        // Short: the toast shares the header row with the buttons, and the browser's own
+        // download shelf shows the file name.
+        toast(`Saved a ${Math.max(1, Math.round(blob.size / 1048576))} MB PNG at ${s === 1 ? '1:1' : s.toFixed(2) + '× of 1:1'}`);
+        result = { name, width: out.width, height: out.height, scale: s, bytes: blob.size, tiles: n, passes: created.length ? 2 : 1 };
+    } catch (err) {
+        console.warn('Export image failed:', err);
+        toast(`Could not export the image: ${err && err.message}`, true);
+    } finally {
+        gc.width = saved.w; gc.height = saved.h;
+        st.paused = saved.paused; Object.assign(st.camera, saved.cam);
+        st.showNavAids = saved.nav; WC.depthGradientScale = saved.grad;
+        st.waveStates = saved.waves; st.gusts = saved.gusts;
+        if (saved.boats) for (const [bt, x, y] of saved.boats) { bt.x = x; bt.y = y; }
+        _exporting = false;
+    }
+    return result;
+}
 
 // ── Wire up ─────────────────────────────────────────────────────────────────
 // Switching mode clears what that mode owned. A shape left selected in Land mode kept its
@@ -8485,6 +8622,7 @@ $('btn-new').addEventListener('click', newDoc);
 $('btn-open').addEventListener('click', openFile);
 $('btn-save').addEventListener('click', () => save(false));
 $('btn-saveas').addEventListener('click', () => save(true));
+$('btn-image').addEventListener('click', (e) => exportVenueImage({ full: e.altKey }));
 $('btn-fit').addEventListener('click', fitView);
 // One region covering the whole arena: the consistent way to say "the wind over this course
 // differs from the venue default" as a single editable object, rather than having a base-wind
@@ -8890,7 +9028,7 @@ window.EditorApp = { resize, fitView, loadVenue, loadBlank, newDoc, draw, buildK
     _setMode: (m) => setMode(m),
     _brush: (b, d) => { if (b != null) brush = b; if (d != null) detail = d; return { brush, detail }; },
     _scaleMap: scaleMap, _rotateMap: rotateMap, _afterEdit: afterEdit, _undo: undo, _redo: redo,
-    _resample: resampleShape, _shapeById: shapeById, _recompile: recompile,
+    _resample: resampleShape, _shapeById: shapeById, _recompile: recompile, _exportImage: exportVenueImage,
     _boundaryToRect: boundaryToRect,
     _toggleFinishOwnLine: toggleFinishOwnLine, _markLabel: (i) => markLabel(i),
     _lineLabel: (id) => lineLabel(id),

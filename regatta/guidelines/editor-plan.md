@@ -1295,6 +1295,9 @@ Consequences worth stating:
   nothing selected it pans. A *click* on empty water deselects, because that is what a click
   on empty space means everywhere else — without it, selecting a shape left no way out but
   Escape. Escape now clears any selection in any mode.
+- Holding **Space** makes a left-drag a pan whatever the tool or selection (Sep 13 2026):
+  the pen, a brush, or a selection that would otherwise marquee no longer need the right
+  button to move about. Letting go of Space mid-drag does not end the pan; the button does.
 - Mode keys renumbered 1–9.
 
 #### Ice is a shape, so it takes a shape's gestures
@@ -1875,3 +1878,17 @@ sits BESIDE the groove, keyed on local wind, not inside it.
    ends; a rounding is a mark or a reference to a land shape. The schema above
    picks one of each — worth a second look when the refactor starts, since it is
    cheap to change then and expensive later.
+
+## Export Image (Sep 13 2026)
+
+A button in the top bar renders the WHOLE venue through the game's own renderer and
+downloads it as a PNG — a plate for analysis, not the schematic. What it is: the sailing
+box plus a 600-unit margin, rendered in 2048-unit tiles at 1:1 (the renderer is
+translate-only and its cached strata size their bitmaps from the canvas, so one giant
+canvas is not an option), composited and fitted to 8192 px on the long side; Option/Alt-click
+asks for 1:1, which the browser caps at 16384 px a side and ~220 M pixels. What it is not:
+a race — the fleet is parked out of frame, nav aids are off, gusts are cleared, and the
+water's screen-space depth vignette is flattened so the tiles stitch. Lazy sprite art is
+waited for and the pass re-run when the first pass loaded any. Measured: redrock 1.7 s at
+1:1 (27 MB), bay 6 s at 0.75× (79 MB), volcanic 7 s at 0.6× (50 MB). `exportVenueImage`
+in js/editor.js; the suite drives it at 1024 px.
