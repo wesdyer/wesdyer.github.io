@@ -19,6 +19,92 @@ window.addEventListener('click', () => {
     if ((settings.soundEnabled || settings.musicEnabled) && (!Sound.ctx || Sound.ctx.state !== 'running')) Sound.init();
 });
 
+// ── Screenshot (F12) ─────────────────────────────────────────────────────────
+// The water is a canvas and the HUD is DOM, so a screenshot is a composite of the
+// two. This used to hand the page to html2canvas, which re-implements CSS layout
+// itself and got it slightly wrong everywhere: the timer sat 14 px low, the venue
+// name came out a size too big, the quote card drifted, and the "Capturing" toast
+// landed in the shot (6% of pixels off against a real screenshot, 2026-09-13).
+// html-to-image instead serialises the live DOM into an SVG <foreignObject> and
+// lets the browser rasterise it — the same layout engine that painted the screen —
+// with every canvas pasted in 1:1. Measured 98.7% of pixels identical to a real
+// screenshot at 1x and 2x; the rest is glyph anti-aliasing (eval/_shot_f12.js).
+//
+// An SVG drawn into an <img> may not fetch anything, so the web fonts have to ride
+// inside it as data URLs. That CSS is built here, once, from the page's stylesheet
+// <link>s and handed over as fontEmbedCSS. Letting the library find the fonts is
+// not an option: its cross-origin fallback (1.11.13) fetches the Google Fonts CSS
+// and INSERTS the embedded @font-face rules into the page's first inline stylesheet
+// on every capture — a megabyte of base64 per press, kept forever — and logs two
+// console.errors while it does it.
+let _screenshotFontCSS = null;
+async function screenshotFontCSS() {
+    if (_screenshotFontCSS !== null) return _screenshotFontCSS;
+    const asDataURL = (blob) => new Promise((res, rej) => {
+        const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(blob);
+    });
+    const URL_RE = /url\(["']?([^"')]+)["']?\)/g;
+    let css = '', complete = true;
+    for (const link of document.querySelectorAll('link[rel="stylesheet"]')) {
+        let text = '';
+        try { const r = await fetch(link.href); if (r.ok) text = await r.text(); } catch (e) { complete = false; }
+        const faces = text.match(/@font-face\s*\{[^}]*\}/g) || [];
+        // The game's copy is English: the Latin and Latin-extended subsets are enough,
+        // and leaving out Cyrillic and Vietnamese halves the payload.
+        const latin = faces.filter(f => /unicode-range:[^;]*U\+0(000-00FF|100-02BA)/.test(f));
+        const keep = latin.length ? latin : faces;
+        const urls = [...new Set(keep.flatMap(f => [...f.matchAll(URL_RE)].map(m => m[1])))];
+        const data = {};
+        await Promise.all(urls.map(async (u) => {
+            try {
+                const r = await fetch(new URL(u, link.href).href);
+                if (r.ok) data[u] = await asDataURL(await r.blob()); else complete = false;
+            } catch (e) { complete = false; }
+        }));
+        css += keep.map(f => f.replace(URL_RE, (m, u) => data[u] ? `url(${data[u]})` : m)).join('\n') + '\n';
+    }
+    // A font that failed to fetch (offline, blocked) falls back in the shot; only a
+    // full set is worth remembering, so the next press tries again otherwise.
+    if (complete) _screenshotFontCSS = css;
+    return css;
+}
+
+// A timestamp in the name, so a burst of F12s is not screenshot (1), (2), (3)...
+function screenshotFileName() {
+    const d = new Date(), p = (n) => String(n).padStart(2, '0');
+    return `regatta-screenshot-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}.png`;
+}
+
+let _screenshotBusy = false;
+async function saveScreenshot() {
+    if (!window.htmlToImage || _screenshotBusy) return;
+    _screenshotBusy = true;
+    try {
+        const fontEmbedCSS = await screenshotFontCSS();
+        const c = await htmlToImage.toCanvas(document.body, {
+            width: window.innerWidth, height: window.innerHeight,
+            pixelRatio: window.devicePixelRatio || 1,   // the screen's pixels, not CSS pixels
+            fontEmbedCSS,
+            // Every overlay (clubhouse, results, pause, settings…) is in the DOM behind
+            // display:none; cloning them with computed styles would double the cost.
+            filter: (n) => n.nodeType !== 1 || (n.tagName !== 'SCRIPT' && getComputedStyle(n).display !== 'none'),
+        });
+        const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = screenshotFileName();
+        link.href = url;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+        showToast("Screenshot Saved");
+    } catch (err) {
+        console.warn('Screenshot failed:', err);
+        showToast("Screenshot Failed");
+    } finally {
+        _screenshotBusy = false;
+    }
+}
+
 window.addEventListener('keydown', (e) => {
     if (state.race.status === 'waiting') {
         // Settings and the record book are reachable from the clubhouse, so their
@@ -76,21 +162,7 @@ window.addEventListener('keydown', (e) => {
         showToast(`Sailing Rules: ${settings.penaltiesEnabled ? "ON" : "OFF"}`);
     }
 
-    if (e.key === 'F12') {
-        e.preventDefault();
-        if (window.html2canvas) {
-            showToast("Capturing Screenshot...");
-            setTimeout(() => {
-                window.html2canvas(document.body).then(c => {
-                    const link = document.createElement('a');
-                    link.download = 'regatta-screenshot.png';
-                    link.href = c.toDataURL();
-                    link.click();
-                    showToast("Screenshot Saved");
-                });
-            }, 100);
-        }
-    }
+    if (e.key === 'F12') { e.preventDefault(); saveScreenshot(); }
 
     if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
     if (e.key === '?' || (e.shiftKey && e.key === '/')) toggleHelp();
