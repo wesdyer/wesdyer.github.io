@@ -873,8 +873,19 @@ function updateBoat(boat, dt) {
     // state.time, so a fleet in the same stopper tosses independently and no RNG is
     // drawn.
     boat.rapidsTurb = rapidsTurbAt(boat.x, boat.y);
-    // A seabed vent's BOIL is the same broken water — drag and yaw, no lift (volcano.js).
-    if (state.volcano && window.Volcano) boat.rapidsTurb = Math.max(boat.rapidsTurb, Volcano.boilAt(boat.x, boat.y));
+    // A seabed vent's BOIL is broken water with a difference: aerated, it will not hold a
+    // hull up or let it grip. It takes the rapids' drag and yaw below, AND it SCRUBS speed
+    // on contact — a share per second, not a target the boat drifts toward — so crossing
+    // a rift costs boat lengths you then spend re-accelerating, against a detour of a
+    // couple of hundred units round its end. That is the choice (Wes: "it doesn't present
+    // a real choice"). The router prices the same field (Volcano.boilMul) and the bots
+    // read it locally, so the fleet knows what the foam means.
+    boat.boil = (state.volcano && window.Volcano) ? Volcano.boilAt(boat.x, boat.y) : 0;
+    if (boat.boil > 0.01) {
+        boat.rapidsTurb = Math.max(boat.rapidsTurb, boat.boil);
+        targetKnots *= (1 - (BOIL_DRAG - RAPIDS_DRAG) * boat.boil);   // on top of the rapids' share below
+        boat.speed *= Math.max(0, 1 - BOIL_SCRUB * boat.boil * dt);
+    }
     if (boat.rapidsTurb > 0.01) {
         targetKnots *= (1 - RAPIDS_DRAG * boat.rapidsTurb);
         if (boat._rapidsPhase == null) boat._rapidsPhase = (_rapidsPhaseN++ % 32) * 2.399963;

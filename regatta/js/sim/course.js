@@ -884,11 +884,15 @@ function buildCoursePaths() {
             // whose bars differ rebuilds this field instead of racing on the wrong one.
             if (grid) {
                 const shoals = (state.course.islands || []).filter(i => i.awash);
+                // Vent boils price like shoals (volcano.js, Volcano.boilMul): the same field,
+                // keyed the same way, so a venue that gains a vent rebuilds its costs.
+                const vents = (state.volcano && window.Volcano) ? state.volcano.vents : [];
                 let sKey = '';
                 for (const s of shoals) sKey += `|${s.id},${s.shoalMul},${s.shoalFeather},${s.x | 0},${s.y | 0},${s.radius | 0}`;
+                for (const b of vents) sKey += `|vent,${b.x | 0},${b.y | 0},${b.a | 0},${b.b | 0},${b.ang.toFixed(2)},${b.strength}`;
                 if (grid._shoalKey !== sKey) {
                     grid._shoalKey = sKey;
-                    if (!shoals.length) {
+                    if (!shoals.length && !vents.length) {
                         grid._shoal = null;
                     } else {
                         // ── PRICE THE TRANSIT, NOT THE EQUILIBRIUM ──────────
@@ -934,7 +938,8 @@ function buildCoursePaths() {
                         for (let j = 0; j < N; j++) {
                             for (let i = 0; i < N; i++) {
                                 const [wx, wy] = grid.world(i, j);
-                                const m = window.VenueDoc.shoalField(shoals, wx, wy);
+                                let m = window.VenueDoc.shoalField(shoals, wx, wy);
+                                if (vents.length) m = Math.min(m, Volcano.boilMul(wx, wy));
                                 mm[j * N + i] = m;
                                 if (m >= 0.999) dist[j * N + i] = 0;   // open water = the rim
                             }
@@ -1022,6 +1027,21 @@ function buildCoursePaths() {
                             const s = 2 * (dist[k] === Infinity ? 0 : dist[k]) * grid.res;
                             const u = invU(s / scale, m);
                             sc[k] = 1 / Math.max(m, Math.min(1, u));
+                        }
+                        // ⚠️ A BOIL IS PRICED AT ITS STEADY STATE, NOT ITS TRANSIT. The lag
+                        // model above is right for a bar, where the physics lets speed
+                        // drift toward the target and a 2 s crossing costs little. A vent's
+                        // boil SCRUBS speed on contact (BOIL_SCRUB, physics.js), so the lag
+                        // model under-prices it by an order of magnitude — measured 1.07
+                        // for a crossing that halves boat speed in two seconds. The floor
+                        // is the boil's own multiplier, and it applies only where a boil is.
+                        if (vents.length) {
+                            for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+                                const k = j * N + i;
+                                const [wx, wy] = grid.world(i, j);
+                                const bm = Volcano.boilMul(wx, wy);
+                                if (bm < 0.999) sc[k] = Math.max(sc[k], 1 / Math.max(0.08, bm));
+                            }
                         }
                         grid._shoal = sc;
                     }

@@ -91,7 +91,8 @@ function recordTrajectory(dt) {
                 format: ['t', 'phase', 'x', 'y', 'hdg', 'spd', 'windDir', 'windSpd',
                          'leg', 'sweep', 'armed', 'ringSect16', 'rivals',
                          'legProg', 'floes', 'giveWayN', 'ocs', 'penaltyTurnsOwed',
-                         'awa', 'aws', 'playerTack', 'rivalsX', 'current'],
+                         'awa', 'aws', 'playerTack', 'rivalsX', 'current',
+                         'fried', 'boil', 'windMul'],
                 formatNotes: {
                     ringSect16: '0clear 3closing 5lead 8plug 10hard, scalar 0 when >3 zones from the round mark',
                     rivals: 'unfinished rivals as [x,y,hdg,spd,tack(1=stbd,-1=port)]',
@@ -101,6 +102,9 @@ function recordTrajectory(dt) {
                     awa: 'signed rad from the apparent-wind model', playerTack: '1=stbd -1=port',
                     rivalsX: 'aligned with rivals: [boatIdx, leg, flags(1=penalty 2=spiraling 4=ocs)] — stable identity across frames + rule-21 state',
                     current: 'local water current at the player [vx,vy] u/s, [0,0] where the venue has none',
+                    fried: 'seconds of electronics outage left on the player (volcano.js), 0 when none',
+                    boil: 'broken water under the player from a vent boil, 0..1 (volcano.js)',
+                    windMul: 'the plume dead-air multiplier at the player, 1 in clear air (volcano.js)',
                 },
                 samples: [], acc: 0,
             };
@@ -204,6 +208,10 @@ function recordTrajectory(dt) {
                     const c = (typeof getCurrentAt === 'function') && getCurrentAt(player.x, player.y);
                     return c ? [+(c.x || 0).toFixed(2), +(c.y || 0).toFixed(2)] : [0, 0];
                 } catch (e) { return [0, 0]; } })(),
+                // The venue's weather at the player (volcano.js); zeros off Emberfall.
+                (() => { try { const f = state.volcano && window.Volcano && Volcano.fryOf(player); return f ? +Math.max(0, f.t0 + f.dur - state.volcano.t).toFixed(1) : 0; } catch (e) { return 0; } })(),
+                +((player.boil || 0).toFixed(2)),
+                (() => { try { return (state.volcano && window.Volcano) ? +Volcano.windMul(player.x, player.y).toFixed(2) : 1; } catch (e) { return 1; } })(),
             ]);
         } else if (recTraj && recTraj.samples.length > 50) {
             const t = recTraj; recTraj = null;

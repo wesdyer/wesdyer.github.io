@@ -581,7 +581,9 @@ const Sound = {
         return (this._thunderWarm = { near: mk(this.THUNDER.near), far: mk(this.THUNDER.far) });
     },
     playThunder: function(delay, loud, dist) {
-        if (!settings.soundEnabled) return;
+        // Weather is heard ON THE WATER, like the wind bed: not behind the briefing, not
+        // over the podium (Wes heard a strike from inside the pre-race briefing).
+        if (!settings.soundEnabled || !this.windAudible()) return;
         this.init();
         const L = Math.max(0, Math.min(1, loud == null ? 1 : loud));
         const d = dist != null ? dist : (1 - L) * 5000;
@@ -597,7 +599,7 @@ const Sound = {
             if (vol < 0.02) return;
             const el = new Audio(file);
             el.volume = Math.min(1, vol);
-            const go = () => { try { if (start) el.currentTime = start; el.play().catch(() => {}); } catch (e) {} };
+            const go = () => { if (!this.windAudible()) return; try { if (start) el.currentTime = start; el.play().catch(() => {}); } catch (e) {} };
             setTimeout(go, Math.max(0, delay || 0) * 1000);
         };
         fire(T.near, near, 0);
@@ -634,6 +636,50 @@ const Sound = {
             osc.connect(og); og.connect(this.ctx.destination);
             osc.start(now); osc.stop(now + 0.8);
         }
+    },
+
+    // ERUPTION. Two takes: an ONSET — the concussive boom as a cone opens up, the audible
+    // telegraph, played once at the start of the build and scaled by distance — and a
+    // seamless RUMBLE loop whose volume follows the loudest erupting cone the player can
+    // hear (Volcano.update hands over the level every frame). Plain media elements, never
+    // routed through Web Audio (see makeVoice). The loop is gated like the wind bed: sound
+    // on, background sound on, on the water, not paused. A take that has not landed on
+    // disk simply stays silent — the element errors and is left alone.
+    ERUPTION: { onset: 'assets/audio/eruption-onset.wav', loop: 'assets/audio/eruption-loop.wav',
+                reach: 4200, onsetReach: 6500, volume: 0.8, onsetVolume: 0.9 },
+    _eruption: null, _eruptionLevel: 0,
+    playEruptionOnset: function(loud) {
+        if (!settings.soundEnabled || !this.windAudible()) return;
+        const L = Math.max(0, Math.min(1, loud == null ? 1 : loud));
+        if (L < 0.03) return;
+        this._lastEruptionOnset = { loud: L };
+        try {
+            const el = new Audio(this.ERUPTION.onset);
+            el.volume = Math.min(1, L * this.ERUPTION.onsetVolume);
+            el.play().catch(() => {});
+        } catch (e) {}
+    },
+    updateEruption: function(level, mute = false) {
+        const off = !settings.soundEnabled || !settings.bgSoundEnabled || mute || !this.windAudible();
+        const want = off ? 0 : Math.max(0, Math.min(1, level || 0));
+        this._eruptionLevel = want;
+        if (!this._eruption) {
+            if (want <= 0.01) return;
+            let el = null;
+            try { el = new Audio(this.ERUPTION.loop); el.loop = true; el.preload = 'auto'; el.volume = 0; } catch (e) { return; }
+            this._eruption = { el, vol: 0, playing: false };
+        }
+        const e = this._eruption;
+        if (e.el.error) return;
+        // Smooth toward the target: a rumble swells and dies, it does not step.
+        e.vol += (want * this.ERUPTION.volume - e.vol) * 0.08;
+        if (e.vol < 0.005 && want <= 0.01) {
+            if (e.playing) { e.el.pause(); e.playing = false; }
+            e.vol = 0;
+            return;
+        }
+        e.el.volume = Math.min(1, Math.max(0, e.vol));
+        if (!e.playing) { e.playing = true; e.el.play().catch(() => { e.playing = false; }); }
     },
 
     playerWindSpeed: function() {

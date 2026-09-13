@@ -805,8 +805,8 @@ function draw() {
             (wx, wy) => { const dx = wx - state.camera.x, dy = wy - state.camera.y;
                           const x = canvas.width/2 + dx*Math.cos(rot) - dy*Math.sin(rot), y = canvas.height/2 + dx*Math.sin(rot) + dy*Math.cos(rot);
                           return { x, y, inView: x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height }; });
-        // Fried electronics show no goal chips until the nav reboots (volcano.js).
-        if (state.showNavAids && !(window.School && School.lesson()) && !(state.volcano && Volcano.hudFried('nav'))) {
+        // Fried electronics (volcano.js) draw the goal chips fried — see drawMarkEdgeIndicator.
+        if (state.showNavAids && !(window.School && School.lesson())) {
             const leg = player.raceState.leg;
             const marks = state.course.marks;
             // ROUTE-DRIVEN, not shape-guessed. The old split ("gate legs if the course has
@@ -1048,8 +1048,10 @@ function draw() {
                 timerClass = 'text-green-400';
             }
 
-            UI.timer.textContent = formatTime(displayTime);
-            UI.timer.className = `t-mono text-4xl tracking-widest drop-shadow-md ${timerClass}`;
+            // Fried electronics (volcano.js): the clock goes to static with the rest of them.
+            const timerFried = !!(state.volcano && window.Volcano && Volcano.hudFried('timer'));
+            UI.timer.textContent = timerFried ? Volcano.garble(formatTime(displayTime), 1) : formatTime(displayTime);
+            UI.timer.className = `t-mono text-4xl tracking-widest drop-shadow-md ${timerFried ? 'text-rose-400 fried' : timerClass}`;
         }
 
         if (UI.startTime) {

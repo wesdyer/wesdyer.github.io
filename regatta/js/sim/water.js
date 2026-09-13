@@ -69,6 +69,9 @@ function ambientCurrentAt(x, y) {
 // Touches no RNG (pure in position), so rapids cannot move the eval anchor.
 const RAPIDS_DRAG = 0.6;   // share of drive that 100%-broken water takes
 const RAPIDS_YAW = 0.45;   // rad/s of bow-shove at 100%-broken, before the wobble shape
+// A vent's BOIL (volcano.js) rides the same model and then some — see updateBoat.
+const BOIL_DRAG = 0.85;    // share of drive a boil takes at full strength (rapids take 0.6)
+const BOIL_SCRUB = 1.1;    // share of SPEED scrubbed per second at full strength — the contact cost
 let _rapidsPhaseN = 0;     // per-boat wobble phase, dealt in boat-update order — no RNG
 function rapidsTurbAt(x, y) {
     const regs = state.course.rapidsRegions;

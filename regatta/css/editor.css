@@ -647,6 +647,14 @@ select.in-wide option, select.to-sel option {
   overflow: hidden; text-overflow: ellipsis;
 }
 #toast.bad { color: var(--ed-warn); }
+/* THE TOAST SHARES THE ROW WITH THE BUTTONS, so it is the one thing allowed to give.
+   It used to be an ordinary flex item: a long message squeezed the buttons into wrapping
+   ("Save / As…", "Export / Image…"), and because a faded toast kept its text at opacity 0
+   it kept squeezing them after it was gone — the header looked broken with nothing on
+   it. Now the toast shrinks first and truncates; everything else in the row is rigid. */
+#course-controls { min-width: 0; }
+#toast { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+#course-controls > .btn, #course-controls > .ed-venue, #course-controls > .ed-sep, #course-controls > .ed-saved { flex: none; white-space: nowrap; }
 
 /* ── Fleet view ──────────────────────────────────────────────────────────
    Still Tailwind markup: it is a separate view with 66 cards, and rebuilding it

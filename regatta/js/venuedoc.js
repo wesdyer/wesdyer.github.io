@@ -1696,14 +1696,19 @@ const PROP_KINDS = {
     // glow it is designed around needs a SUBMERGED magma pass (a `magma` shape drawn in the
     // seabed stratum under the water, dimmed by submergedTint) that does not exist yet.
     'volcanic-vent-underwater': { label: 'Underwater vent (fissure)', world: 320, plane: 'seabed',  contact: 'none', motion: 'fixed', boil: 0.7, wash: 0.6, washFrom: 'current',
-                                  lava: { magma: { cx: 0.5145, cy: 0.5059, r: 0.1202 } } },   // ingested 2026-09-07; drawn submerged
+                                  lava: { magma: { cx: 0.5145, cy: 0.5059, r: 0.1202 } },
+                                  // The boil follows the LAVA, not a disc: the mask's centre, major axis and
+                                  // half-extents (box fractions, measured from the ingested masks Sep 13).
+                                  boilShape: { cx: 0.5153, cy: 0.5068, ang: 0.837, a: 0.46, b: 0.137 } },   // ingested 2026-09-07; drawn submerged
     // Two more vents (a mound with a pit, a rift on the diagonal) and three LAND CRACKS —
     // fissures with nothing but their lip, laid on whatever basalt shape is under them, the
     // magma key painted at the surface. Numbers arrive with their masters.
     'volcanic-vent-underwater-2': { label: 'Underwater vent (mound)', world: 320, plane: 'seabed', contact: 'none', motion: 'fixed', boil: 0.55, wash: 0.6, washFrom: 'current',
-                                    lava: { magma: { cx: 0.5185, cy: 0.4464, r: 0.136 } } },    // ingested 2026-09-07
+                                    lava: { magma: { cx: 0.5185, cy: 0.4464, r: 0.136 } },
+                                    boilShape: { cx: 0.519, cy: 0.4484, ang: -0.861, a: 0.225, b: 0.183 } },    // ingested 2026-09-07
     'volcanic-vent-underwater-3': { label: 'Underwater vent (rift)',  world: 320, plane: 'seabed', contact: 'none', motion: 'fixed', boil: 0.8, wash: 0.6, washFrom: 'current',
-                                    lava: { magma: { cx: 0.5037, cy: 0.4973, r: 0.1086 } } },   // ingested 2026-09-07
+                                    lava: { magma: { cx: 0.5037, cy: 0.4973, r: 0.1086 } },
+                                    boilShape: { cx: 0.5038, cy: 0.4971, ang: -0.786, a: 0.517, b: 0.034 } },   // ingested 2026-09-07
     'volcanic-crack-long':      { label: 'Lava crack (long)',  world: 400, plane: 'surface', contact: 'none', motion: 'fixed',
                                   lava: { magma: { cx: 0.4856, cy: 0.501, r: 0.1506 } } },    // ingested 2026-09-07
     'volcanic-crack-fork':      { label: 'Lava crack (fork)',  world: 360, plane: 'surface', contact: 'none', motion: 'fixed',

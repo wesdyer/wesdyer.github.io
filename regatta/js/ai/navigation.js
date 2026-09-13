@@ -1510,6 +1510,18 @@ Object.assign(BotController.prototype, {
             const pressureCoeff = 0.1 * (1.0 + pressureFactor) * traits.pressureSense;
             score += windBonus * pressureCoeff;
 
+            // THE PLUME (volcano.js). Dead air under an erupting cone's ash is priced along
+            // the whole projected path, not at the one point above: three samples of the
+            // wind multiplier, and a penalty in the score's own units — the drive this
+            // tack would give up — so a tack that runs under the cloud loses to the one
+            // that does not, and the wind-sensitive helms feel it most.
+            if (state.volcano && window.Volcano) {
+                let mul = 0;
+                for (const f of [0.45, 1, 1.7]) mul += Volcano.windMul(boat.x + (projX - boat.x) * f, boat.y + (projY - boat.y) * f);
+                mul /= 3;
+                if (mul < 0.999) score -= (1 - mul) * speedOverGround * 1.2 * traits.pressureSense;
+            }
+
             // 4b. Current Scouting (river): score the tack by the water it
             // LEADS TO — slack near the banks against an adverse stream, full
             // midstream push when the flow helps. This is what makes river

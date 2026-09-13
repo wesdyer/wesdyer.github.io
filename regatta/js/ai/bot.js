@@ -157,6 +157,43 @@ class BotController {
         this.finalTarget = null;
     }
 
+    // THE DODGE (volcano.js). A strike marked within the fry radius costs up to 15 s if
+    // you hold course and a couple of seconds of detour if you don't — so the price is
+    // clear, and the only question is whether THIS helm reads the omen in time. Decided
+    // ONCE per marked strike from the strike's own seed (no RNG stream touched), with a
+    // chance that rides the boat's handling: the crisp helms usually answer, the sloppy
+    // ones usually don't, and it reads as personality. The escape is straight away from
+    // the point, bent to the edge of the no-go cone if that is where away is.
+    dodgeChance() {
+        const st = this.boat.stats || {};
+        return Math.max(0.15, Math.min(0.9, 0.55 + 0.06 * (st.handling || 0)));
+    }
+    strikeDodge() {
+        const v = state.volcano;
+        if (!v || !v.strikers || !window.Volcano) return null;
+        let best = null, bd = Infinity;
+        for (const st of v.strikers) {
+            const s = st.pending;
+            if (!s) continue;
+            const d = Math.hypot(this.boat.x - s.x, this.boat.y - s.y);
+            if (d < bd) { bd = d; best = s; }
+        }
+        if (!best || bd > VOLCANO.fryR * 0.9) { this._dodgeKey = null; return null; }
+        if (this._dodgeKey !== best.seed) {
+            this._dodgeKey = best.seed;
+            let h = (best.seed + this.boat.name.length * 7919) | 0;
+            h = Math.imul(h ^ (h >>> 15), 2246822519); h = Math.imul(h ^ (h >>> 13), 3266489917); h ^= h >>> 16;
+            this._dodgeGo = ((h >>> 0) / 4294967296) < this.dodgeChance();
+        }
+        if (!this._dodgeGo) return null;
+        const dx = this.boat.x - best.x, dy = this.boat.y - best.y;
+        let away = bd > 1 ? Math.atan2(dx, -dy) : normalizeAngle(this.boat.heading + Math.PI / 2);
+        const wd = getWindAt(this.boat.x, this.boat.y).direction;
+        const twa = normalizeAngle(away - wd);
+        if (Math.abs(twa) < 0.75) away = normalizeAngle(wd + (twa >= 0 ? 0.75 : -0.75));
+        return away;
+    }
+
     updateWindTracker() {
         const localWind = getWindAt(this.boat.x, this.boat.y);
         const wd = localWind.direction;
@@ -179,9 +216,18 @@ class BotController {
         this.updateTimer -= dt;
         if (this.updateTimer > 0) return;
         this.updateTimer = 0.1; // 10Hz updates
-        // FRIED. A strike took the instruments: no wind read, no plan, no avoidance — she
-        // holds what she was steering until the electronics come back. See volcano.js.
-        if (state.volcano && window.Volcano && Volcano.isFried(this.boat)) return;
+        // FRIED (volcano.js). A strike took the INSTRUMENTS, not the helm: the wind read
+        // freezes (stale numbers, like a dead masthead unit), the plan freezes (no new
+        // tack, gybe or route until the reboot) and the helm wanders a little — but eyes
+        // are not electronics, so collision avoidance, land clearance and the liveness
+        // watchdog all keep running. The first cut returned here and held course blind,
+        // which sailed bots into rock and through other boats.
+        const fried = !!(state.volcano && window.Volcano && Volcano.isFried(this.boat));
+        if (fried) {
+            const f = Volcano.fryOf(this.boat);
+            if (this._friedOn !== f) { this._friedOn = f; this._friedIntent = this.prevDesired != null ? this.prevDesired : this.boat.heading; this._friedTicks = 0; }
+            this._friedTicks++;
+        } else if (this._friedOn) { this._friedOn = null; }
         // ⚠️ THE BODY RUNS AT 10Hz BUT dt IS THE FRAME STEP (1/60), so a `± dt`
         // timer in here runs six times slower than its comment claims: a "5 second"
         // wiggle held for 30 and the stall detector needed 18s to notice. TICK is
@@ -190,8 +236,8 @@ class BotController {
         // avoidance number at once.
         const TICK = 0.1;
 
-        // Update Wind Tracker
-        this.updateWindTracker();
+        // Update Wind Tracker (frozen while fried: the read is stale, not gone)
+        if (!fried) this.updateWindTracker();
 
         // Update Risk Assessment
         this.updateRiskAssessment(dt);
@@ -567,18 +613,20 @@ class BotController {
                 state.course._hasAwashDrag = (state.course.islands || []).some(i => i.awash
                     && ((i.shoalMul != null && i.shoalMul < 1) || (i.drag != null && i.drag > 0)));
             }
-            if (state.course._hasAwashDrag && this.boat.raceState.leg >= 1
-                && this.boat.shoalMul != null && this.boat.shoalMul < 0.7
+            // A vent's boil (volcano.js) is the same kind of water to this check: the field
+            // is the shoal field times the boil's steady multiplier, and being IN a boil
+            // trips it the way being on a bar does.
+            const inBoil = !!(state.volcano && this.boat.boil > 0.15);
+            const hasBoils = !!(state.volcano && state.volcano.vents && state.volcano.vents.length);
+            if ((state.course._hasAwashDrag || hasBoils) && this.boat.raceState.leg >= 1
+                && ((this.boat.shoalMul != null && this.boat.shoalMul < 0.7) || inBoil)
                 && window.VenueDoc && window.VenueDoc.shoalField) {
                 const wdW = getWindAt(this.boat.x, this.boat.y).direction;
+                const fieldAt = (x, y) => window.VenueDoc.shoalField(state.course.islands, x, y) * (hasBoils ? Volcano.boilMul(x, y) : 1);
                 let mPl = 0, mMi = 0;
                 for (const dRW of [80, 150]) {
-                    mPl += window.VenueDoc.shoalField(state.course.islands,
-                        this.boat.x + Math.sin(wdW + 1.75) * dRW,
-                        this.boat.y - Math.cos(wdW + 1.75) * dRW);
-                    mMi += window.VenueDoc.shoalField(state.course.islands,
-                        this.boat.x + Math.sin(wdW - 1.75) * dRW,
-                        this.boat.y - Math.cos(wdW - 1.75) * dRW);
+                    mPl += fieldAt(this.boat.x + Math.sin(wdW + 1.75) * dRW, this.boat.y - Math.cos(wdW + 1.75) * dRW);
+                    mMi += fieldAt(this.boat.x + Math.sin(wdW - 1.75) * dRW, this.boat.y - Math.cos(wdW - 1.75) * dRW);
                 }
                 if (Math.abs(mPl - mMi) > 0.1) weedSideW = mPl > mMi ? 1 : -1;
             }
@@ -726,8 +774,18 @@ class BotController {
             const nav = this.getNavigationTarget();
             this._lastNav = nav;
 
-            // 2. Strategy (Tack/Gybe/Laylines)
-            desiredHeading = this.getStrategicHeading(nav);
+            // 2. Strategy (Tack/Gybe/Laylines) — or, fried, the intent held at the strike
+            // with a slow wander on the helm (no new decisions until the reboot).
+            if (fried) {
+                const ph = (this.boat._rapidsPhase != null ? this.boat._rapidsPhase : 0) + this.boat.name.length;
+                desiredHeading = normalizeAngle(this._friedIntent + 0.12 * Math.sin(state.volcano.t * 0.9 + ph));
+            } else {
+                desiredHeading = this.getStrategicHeading(nav);
+                // THE DODGE: a strike marked on the water within reach, and this helm decided
+                // to answer it — bear away from the point for the tell. See strikeDodge.
+                const dodge = this.strikeDodge();
+                if (dodge != null) desiredHeading = dodge;
+            }
         }
 
         // 3. Prestart Override

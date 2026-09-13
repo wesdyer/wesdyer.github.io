@@ -450,6 +450,7 @@
         /* FRIED ELECTRONICS (volcano.js): a HUD panel a strike took out. Jitter, inversion
            blinks and a rolling scanline until its system reboots. */
         .fried { animation: hud-fry 0.11s steps(2, end) infinite; }
+        #hud-timer.fried { position: relative; }   /* the clock is static-positioned; its scanlines need a box */
         .fried::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
             background: repeating-linear-gradient(0deg, rgba(255,255,255,0.10) 0 2px, rgba(0,0,0,0.30) 2px 4px);
             animation: hud-fry-scan 0.35s linear infinite; }

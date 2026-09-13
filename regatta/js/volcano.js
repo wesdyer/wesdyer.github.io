@@ -17,17 +17,27 @@
 // costs nothing to sail under. Drawn as a CONNECTED SHEET (overlapping textured discs
 // baked at 4 units/px and blurred on composite), never as particles.
 //
-// LIGHTNING. A charged plume — the peak of the cycle, its youngest parcels — throws a
-// strike every few seconds. TELL seconds before each one, every boat within reach shows
-// the omens: corona at the masthead, instrument jitter. The strike flashes the screen,
-// crawls forks across the cloud base to the point it hits, lights the water there, casts
-// the fleet's shadows away from it, and the thunder arrives dist / 340 m/s later. A boat
-// within FRY_R has her ELECTRONICS FRIED: the player's chart, rose, instruments and goal
-// chips go to static and reboot staggered; a bot holds her course blind. The penalty is
-// on INFORMATION, not on control — you can always sail by the water.
+// LIGHTNING. FOUR ROLLING STRIKERS (Wes's design, Sep 13): each waits a dealt 5–20 s,
+// strikes, and rerolls. Three land anywhere on the racecourse's WATER; the fourth is AIMED —
+// it lands a few hull lengths off where a boat (the player weighted) WILL BE at strike
+// time — so there is always a boat being affected. The first cut hung strikes on the
+// plumes, and the plumes drift over the isle, so nearly every bolt fell on rock. TELL
+// seconds before each strike the point is marked on the water and boats within reach show
+// the omens (masthead corona, instrument jitter). The bolt crawls from the nearest charged
+// cloud — or from the sky upwind when none is near — to the point, flashes the screen (a
+// wall of light near the camera, a flicker far off), lights the water, casts the fleet's
+// shadows, and the thunder arrives dist / 340 m/s later. A boat within FRY_R has her
+// ELECTRONICS FRIED for a time proportional to proximity: the player's chart, rose,
+// instruments, clock and goal chips go to static and reboot together; a bot holds her course
+// blind. The penalty is on INFORMATION, not on control — you can always sail by the water.
 //
 // BOILS. Every seabed vent (`boil`) is a small turbulence zone — the rapids model, drag
 // and yaw, no lift — under a churning white sheet and a steam wisp.
+//
+// LAZE. Where lava meets the sea it flashes the water to steam — Heimaey's harbour, every
+// ocean entry on Hawaii. Every edge of a `lava` or `magma` shape that has WATER on its
+// far side is a lava front, and it breathes steam parcels that ride the wind like the
+// vents' do. Pure visual, no dead air. It needs the author to draw lava to the shore.
 //
 // Nothing here touches the eval RNG: the cycle and the strikes draw from their own seeded
 // stream (race seed + 91), consumed in a fixed order; visuals hash time and index.
@@ -44,17 +54,29 @@ const VOLCANO = {
     deadMax: 0.8,             // share of the wind an erupting plume kills at its core
     steamDead: 0.35,          // the islet's fixed hole
     quietDensity: 0.3,        // the wisp: pale, and readable as a wind sock
-    strikeEvery: [5, 12],     // s between strikes while charged
-    // AIMED AT THE FLEET. A cloud that struck wherever it pleased mostly hit empty water
-    // or the isle. When a boat is under the plume, this share of strikes lands a dealt
-    // distance from one of them — near enough to matter, far enough to sail out of.
-    aimShare: 0.7, aimNear: 140, aimFar: 420,
+    strikeEvery: [5, 20],     // s a striker waits before its next strike, rerolled after each
+    freeStrikers: 3,          // strikers that land anywhere on the course's water (Wes: two was not enough ambient lightning)
+    aimLengths: [3, 6],       // the aimed striker lands this many hull lengths off a boat's projected position
+    hull: 55,                 // hull length, world units (HULL_LOCALS spans -25..30)
+    playerWeight: 3,          // the aimed striker's draw counts the player as this many boats
+    cloudReach: 2500,         // a bolt comes from a charged parcel this close, else from the sky
+    skyRise: 500,             // ... which sits this far upwind of the point
+    flashReach: 2600,         // the flash is a wall of light near the camera, a flicker far off
     tell: 2.8, tellR: 1100,   // the omens' lead time — long enough for avoiding action — and reach
     // The outage is PROPORTIONAL TO PROXIMITY: fryMax at the strike point, nothing at fryR,
     // and a fry shorter than fryLeast is not worth having. Sailing away during the tell
     // pays directly in seconds.
-    fryR: 640, fryMax: 7, fryLeast: 0.8,
-    boilR: 0.42,              // boil radius as a share of the vent's box
+    fryR: 640, fryMax: 15, fryLeast: 0.8,
+    boilR: 0.42,              // boil radius as a share of the vent's box (a vent with no boilShape)
+    boilMargin: 48,           // foam and broken water reach this far beyond the lava's own extent
+    boilMinHalf: 34,          // a crack thinner than this still boils this wide
+    // The router's price. Measured (crossprobe, Sep 13): a rift crossing costs ~1050 units of
+    // distance made good against clear water — the scrub plus the slow recovery — for ~200
+    // units of boil, i.e. ~5x. A multiplier of 1 - 1.2 * strength, floored at 0.12, prices
+    // the rift's core at ~4x, the fissure at ~3x and the mound at ~2x.
+    boilPrice: 1.2, boilFloor: 0.12,
+    lazeStep: 120,            // world units between steam sources along a lava front
+    lazeEvery: 3, lazeMax: 80, // s between a source's parcels; cap on sources per venue
     shadowR: 1300,            // how far a strike throws a shadow
     speedOfSound: 5 * 340,    // world units per second (5 units to the metre)
 };
@@ -81,6 +103,36 @@ const VOLCANO = {
         return { x: p.x + lx * cs - ly * sn, y: p.y + lx * sn + ly * cs, w };
     }
 
+    // Walk each lava/magma shape's outline in LAZE_STEP strides; a stride whose outward
+    // side is water is a lava front and gets a steam source there. Outward is whichever side
+    // of the edge is water — a shape's winding is not promised.
+    function lavaFronts(c) {
+        const out = [];
+        if (!c || !c.islands || !window.Arena) return out;
+        for (const isl of c.islands) {
+            if (!(isl.lava || isl.magma) || !isl.vertices || isl.vertices.length < 3) continue;
+            const vs = isl.vertices;
+            let carry = 0;
+            for (let i = 0; i < vs.length; i++) {
+                const a = vs[i], b = vs[(i + 1) % vs.length];
+                const ex = b.x - a.x, ey = b.y - a.y, len = Math.hypot(ex, ey);
+                if (len < 1) continue;
+                const nx = -ey / len, ny = ex / len;
+                for (let d = carry; d < len; d += VOLCANO.lazeStep) {
+                    const px = a.x + ex * d / len, py = a.y + ey * d / len;
+                    let side = 0;
+                    if (onWater(px + nx * 28, py + ny * 28)) side = 1;
+                    else if (onWater(px - nx * 28, py - ny * 28)) side = -1;
+                    if (side) out.push({ x: px + nx * side * 22, y: py + ny * side * 22, phase: (out.length * 0.618) % 1 });
+                    carry = d + VOLCANO.lazeStep - len;
+                    if (out.length >= VOLCANO.lazeMax) return out;
+                }
+                if (carry < 0) carry = 0;
+            }
+        }
+        return out;
+    }
+
     function init() {
         state.volcano = null;
         const c = state.course;
@@ -100,18 +152,35 @@ const VOLCANO = {
                     p, kind, x: cr.x, y: cr.y, scale: kind.cone, steam: !!kind.steam,
                     period: per[0] + rng() * (per[1] - per[0]),
                     phase: rng(),
-                    parcels: [], emitT: 0, intensity: 0,
-                    nextStrike: VOLCANO.strikeEvery[0] + rng() * (VOLCANO.strikeEvery[1] - VOLCANO.strikeEvery[0]),
-                    pending: null
+                    parcels: [], emitT: 0, intensity: 0
                 });
             } else if (kind.boil) {
                 const cr = craterOf(p, kind);
-                vents.push({ p, kind, x: cr.x, y: cr.y, r: cr.w * VOLCANO.boilR, strength: kind.boil,
+                const w = cr.w, sh = kind.boilShape;
+                let x = cr.x, y = cr.y, ang = (p.heading || 0), a = w * VOLCANO.boilR, b = w * VOLCANO.boilR;
+                if (sh) {
+                    // The lava's own ellipse, through the prop's transform.
+                    const lx = (sh.cx - 0.5) * w, ly = (sh.cy - 0.5) * w;
+                    const cs = Math.cos(p.heading || 0), sn = Math.sin(p.heading || 0);
+                    x = p.x + lx * cs - ly * sn; y = p.y + lx * sn + ly * cs;
+                    ang = (p.heading || 0) + sh.ang;
+                    a = sh.a * w + VOLCANO.boilMargin;
+                    b = Math.max(sh.b * w, VOLCANO.boilMinHalf) + VOLCANO.boilMargin;
+                }
+                vents.push({ p, kind, x, y, ang, a, b, r: Math.max(a, b), strength: kind.boil,
                              phase: rng() * Math.PI * 2, parcels: [], emitT: rng() * 1.4 });
             }
         }
-        if (!cones.length && !vents.length) return;
-        state.volcano = { t: 0, rng, cones, vents, strikes: [], flash: 0, fry: new Map(),
+        // Lava fronts: every edge of a lava or magma shape with water on its far side.
+        const fronts = lavaFronts(c);
+        if (!cones.length && !vents.length && !fronts.length) return;
+        // The strikers: dealt short first waits, so the storm opens with the race.
+        const strikers = [];
+        if (cones.some(c => !c.steam)) {
+            for (let i = 0; i < VOLCANO.freeStrikers; i++) strikers.push({ aimed: false, next: 2 + rng() * 10, pending: null });
+            strikers.push({ aimed: true, next: 2 + rng() * 10, pending: null });
+        }
+        state.volcano = { t: 0, rng, cones, vents, strikers, fronts, laze: [], strikes: [], flash: 0, fry: new Map(),
                           lightning: cfg.lightning !== false };
     }
 
@@ -174,57 +243,150 @@ const VOLCANO = {
                 }
             }
             advect(c.parcels, dt);
-            // Lightning: a charged cloud throws strikes from its young parcels.
-            if (v.lightning && !c.steam) {
-                if (I > 0.5) {
-                    c.nextStrike -= dt;
-                    if (!c.pending && c.nextStrike <= 0) {
-                        const young = c.parcels.filter(q => q.age > 1 && q.age < 10);
-                        if (young.length) {
-                            // Who is under the cloud?
-                            const under = [];
-                            for (const boat of state.boats) {
-                                if (boat.raceState && boat.raceState.finished) continue;
-                                for (const q of young) {
-                                    const r = radiusOf(q) * 1.3;
-                                    if ((boat.x - q.x) ** 2 + (boat.y - q.y) ** 2 < r * r) { under.push(boat); break; }
-                                }
-                            }
-                            let x, y, ox, oy;
-                            const aimed = under.length > 0 && v.rng() < VOLCANO.aimShare;
-                            if (aimed) {
-                                const b = under[Math.floor(v.rng() * under.length)];
-                                const a = v.rng() * Math.PI * 2, d = VOLCANO.aimNear + v.rng() * (VOLCANO.aimFar - VOLCANO.aimNear);
-                                x = b.x + Math.cos(a) * d; y = b.y + Math.sin(a) * d;
-                                let best = null, bd = Infinity;
-                                for (const q of young) { const dd = (q.x - x) ** 2 + (q.y - y) ** 2; if (dd < bd) { bd = dd; best = q; } }
-                                ox = best.x; oy = best.y;
-                            } else {
-                                const q = young[Math.floor(v.rng() * young.length)];
-                                const a = v.rng() * Math.PI * 2, d = Math.sqrt(v.rng()) * radiusOf(q) * 0.7;
-                                x = q.x + Math.cos(a) * d; y = q.y + Math.sin(a) * d; ox = q.x; oy = q.y;
-                            }
-                            c.pending = { ox, oy, x, y, at: t + VOLCANO.tell, seed: Math.floor(v.rng() * 1e9), aimed, under: under.length };
-                        }
-                        c.nextStrike = VOLCANO.strikeEvery[0] + v.rng() * (VOLCANO.strikeEvery[1] - VOLCANO.strikeEvery[0]);
-                    }
-                } else {
-                    c.nextStrike = Math.max(c.nextStrike, 2);
+        }
+        // The sound of it: a boom as a cone opens up (the audible telegraph, by distance),
+        // and the rumble bed at the level of the loudest erupting cone the player can hear.
+        if (typeof Sound !== 'undefined' && Sound.updateEruption && state.boats.length) {
+            const p = state.boats[0];
+            let level = 0;
+            for (const c of v.cones) {
+                if (c.steam) continue;
+                const d = Math.hypot(p.x - c.x, p.y - c.y);
+                level = Math.max(level, c.intensity * Math.pow(clamp01(1 - d / Sound.ERUPTION.reach), 1.5));
+                const on = c.intensity > 0;
+                // A cone already erupting when the race opens does not boom on frame one.
+                if (c.wasOn === undefined) c.wasOn = on;
+                if (on && !c.wasOn && Sound.playEruptionOnset) Sound.playEruptionOnset(clamp01(1 - d / Sound.ERUPTION.onsetReach));
+                c.wasOn = on;
+            }
+            Sound.updateEruption(level);
+        }
+        // The strikers (held, timers and tells alike, while the player is off the water).
+        if (v.lightning && v.strikers && !live()) {
+            for (const s of v.strikers) if (s.pending) s.pending.at += dt;
+        } else if (v.lightning && v.strikers) {
+            for (const s of v.strikers) {
+                if (s.pending) {
+                    if (t >= s.pending.at) { fire(v, s.pending); s.pending = null; s.next = dealWait(v); }
+                    continue;
                 }
-                if (c.pending && t >= c.pending.at) { fire(v, c.pending); c.pending = null; }
+                s.next -= dt;
+                if (s.next > 0) continue;
+                const pt = s.aimed ? aimedPoint(v) : freePoint(v);
+                if (!pt) { s.next = 1; continue; }      // nothing to aim at yet: look again shortly
+                const o = cloudOrigin(v, pt.x, pt.y);
+                s.pending = { ox: o.x, oy: o.y, x: pt.x, y: pt.y, at: t + VOLCANO.tell, seed: Math.floor(v.rng() * 1e9),
+                              aimed: s.aimed, boat: pt.boat || null, px: pt.px, py: pt.py };
             }
         }
+        // Laze: each front source breathes on its own phase.
+        if (v.fronts && v.fronts.length) {
+            const per = VOLCANO.lazeEvery;
+            for (let i = 0; i < v.fronts.length; i++) {
+                const f = v.fronts[i];
+                const k = Math.floor((t + f.phase * per) / per);
+                if (f.last === k) continue;
+                f.last = k;
+                if (t < 0.5) continue;      // no burst on the first frame
+                emit(v.laze, f.x + (hash(k * 7 + i) - 0.5) * 30, f.y + (hash(k * 11 + i) - 0.5) * 30, 48, 9, 9, 0.5, 0, 0, k * 131 + i);
+            }
+            advect(v.laze, dt);
+        }
         for (const b of v.vents) {
+            // Steam off the boil: a rate that grows with the crack's length, so a long rift
+            // smokes along its whole run and a mound puffs (Wes: "more steam coming off the
+            // water"). Each parcel is born at a point on the lava.
             b.emitT -= dt;
-            if (b.emitT <= 0) {
-                b.emitT += 1.4;
-                emit(b.parcels, b.x, b.y, 36, 8, 7, 0.28, 0, 0, Math.floor(t * 17) + b.parcels.length);
+            const rate = 0.7 + b.a / 150;
+            let guard = 0;
+            while (b.emitT <= 0 && guard++ < 8) {
+                b.emitT += 1 / rate;
+                const k = Math.floor(t * 17) + b.parcels.length + guard;
+                const at = ventPoint(b, hash(k * 3 + 1), hash(k * 5 + 2), 0.8);
+                // Sizes and lives scattered, so the wisps blend into a bank instead of combing
+                // into rows born at one cadence and blown one way.
+                emit(b.parcels, at.x, at.y, (30 + b.b * 0.25) * (0.7 + 0.6 * hash(k * 7 + 3)), 9 + 6 * hash(k * 11 + 4), 6 + 3 * hash(k * 13 + 5), 0.42, 0, 0, k);
             }
             advect(b.parcels, dt);
         }
         // Strikes age out; the flash decays; fried boats recover.
         for (let i = v.strikes.length - 1; i >= 0; i--) if (t - v.strikes[i].t0 > 0.55) v.strikes.splice(i, 1);
         for (const [boat, f] of v.fry) if (t - f.t0 > f.dur) { v.fry.delete(boat); boat.fried = null; }
+    }
+
+    // ── The strikers ────────────────────────────────────────────────────────
+    const dealWait = (v) => VOLCANO.strikeEvery[0] + v.rng() * (VOLCANO.strikeEvery[1] - VOLCANO.strikeEvery[0]);
+    // The storm holds while the player is off the water: behind the pre-race briefing, and
+    // over the podium while the race runs on behind it. Same rule the wind bed follows
+    // (Sound.windAudible) — a strike nobody can see or answer is a fried HUD waiting for you
+    // when the briefing closes, and thunder over the briefing (Wes heard it) is a bug.
+    function live() {
+        if (!state.race || (state.race.status !== 'prestart' && state.race.status !== 'racing')) return false;
+        if (typeof UI !== 'undefined') {
+            if (UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden')) return false;
+            if (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden')) return false;
+        }
+        return true;
+    }
+    // Water: inside the arena and on no solid island (a shoal or a floe counts as water).
+    function onWater(x, y) {
+        const c = state.course;
+        if (!c || !window.Arena) return true;
+        if (c.boundary && !Arena.contains(c.boundary, x, y)) return false;
+        for (const isl of (c.islands || [])) {
+            if (isl.awash) continue;
+            const dx = x - isl.x, dy = y - isl.y;
+            if (dx * dx + dy * dy > isl.radius * isl.radius) continue;
+            if (isl.vertices && Arena.pointInPoly(x, y, isl.vertices)) return false;
+        }
+        return true;
+    }
+    // Anywhere on the racecourse's water — the field the marks span, not the whole arena,
+    // so a free strike is one the fleet can see.
+    function freePoint(v) {
+        const fld = (typeof squallField === 'function') ? squallField() : null;
+        if (!fld) return null;
+        for (let i = 0; i < 16; i++) {
+            const a = v.rng() * Math.PI * 2, r = Math.sqrt(v.rng()) * fld.R;
+            const x = fld.cx + Math.cos(a) * r, y = fld.cy + Math.sin(a) * r;
+            if (onWater(x, y)) return { x, y };
+        }
+        return null;
+    }
+    // A few hull lengths off where a boat WILL BE when the strike lands: hold your course
+    // and it finds you; turn and it does not. The player is drawn as several boats.
+    function aimedPoint(v) {
+        const boats = state.boats.filter(b => b.raceState && !b.raceState.finished);
+        if (!boats.length) return null;
+        let total = 0;
+        for (const b of boats) total += b.isPlayer ? VOLCANO.playerWeight : 1;
+        let pick = v.rng() * total, boat = boats[boats.length - 1];
+        for (const b of boats) { pick -= b.isPlayer ? VOLCANO.playerWeight : 1; if (pick <= 0) { boat = b; break; } }
+        const vx = boat.velocity ? boat.velocity.x * 60 : 0, vy = boat.velocity ? boat.velocity.y * 60 : 0;
+        const px = boat.x + vx * VOLCANO.tell, py = boat.y + vy * VOLCANO.tell;
+        const d = (VOLCANO.aimLengths[0] + v.rng() * (VOLCANO.aimLengths[1] - VOLCANO.aimLengths[0])) * VOLCANO.hull;
+        let x = px, y = py;
+        for (let i = 0; i < 6; i++) {
+            const a = v.rng() * Math.PI * 2;
+            x = px + Math.cos(a) * d; y = py + Math.sin(a) * d;
+            if (onWater(x, y)) break;
+        }
+        return { x, y, boat, px, py };
+    }
+    // Where the bolt comes from: the nearest charged parcel within reach, else the sky —
+    // a point upwind of the strike, off the top of the frame.
+    function cloudOrigin(v, x, y) {
+        let best = null, bd = VOLCANO.cloudReach * VOLCANO.cloudReach;
+        for (const c of v.cones) for (const q of c.parcels) {
+            if (q.ash < 0.3) continue;
+            const dd = (q.x - x) ** 2 + (q.y - y) ** 2;
+            if (dd < bd) { bd = dd; best = q; }
+        }
+        if (best) return { x: best.x, y: best.y };
+        const w = regionWindAt(x, y);
+        const ux = Math.sin(w.direction), uy = -Math.cos(w.direction);      // upwind
+        const side = (v.rng() - 0.5) * VOLCANO.skyRise;
+        return { x: x + ux * VOLCANO.skyRise + uy * side, y: y + uy * VOLCANO.skyRise - ux * side };
     }
 
     // ── The strike ──────────────────────────────────────────────────────────
@@ -307,19 +469,52 @@ const VOLCANO = {
         return Math.max(0.12, mul);
     }
 
+    // A vent's boil is an ELLIPSE along its lava (the mask's own axis): 0 outside, 1 at the
+    // axis. `ventU` is the normalised radius, so the same shape serves the physics, the
+    // foam and the steam.
+    function ventU(b, x, y) {
+        const dx = x - b.x, dy = y - b.y;
+        const cs = Math.cos(b.ang), sn = Math.sin(b.ang);
+        const u = (dx * cs + dy * sn) / b.a, w = (-dx * sn + dy * cs) / b.b;
+        return Math.sqrt(u * u + w * w);
+    }
+    // A point on the lava, uniform over the ellipse (for the steam and the bubbles).
+    function ventPoint(b, r1, r2, shrink) {
+        const ang = r1 * Math.PI * 2, rr = Math.sqrt(r2) * (shrink == null ? 1 : shrink);
+        const u = Math.cos(ang) * rr * b.a, w = Math.sin(ang) * rr * b.b;
+        const cs = Math.cos(b.ang), sn = Math.sin(b.ang);
+        return { x: b.x + u * cs - w * sn, y: b.y + u * sn + w * cs };
+    }
     // Broken water over a vent, 0..1, in the rapids' units.
     function boilAt(x, y) {
         const v = V();
         if (!v || !v.vents.length) return 0;
         let turb = 0;
         for (const b of v.vents) {
-            const dx = x - b.x, dy = y - b.y, d2 = dx * dx + dy * dy;
-            if (d2 >= b.r * b.r) continue;
+            const dx = x - b.x, dy = y - b.y;
+            if (dx * dx + dy * dy >= b.r * b.r) continue;
+            const d = ventU(b, x, y);
+            if (d >= 1) continue;
             const breath = 0.6 + 0.4 * (0.5 + 0.5 * Math.sin(v.t * 0.35 + b.phase));
-            const s = smooth(1 - Math.sqrt(d2) / b.r);
-            turb = Math.max(turb, b.strength * breath * s);
+            turb = Math.max(turb, b.strength * breath * smooth(1 - d));
         }
         return turb;
+    }
+
+    // The boil as a STEADY speed multiplier, 1 in clear water, for the route planner's cost
+    // field and the bots' side checks: no breathing, so a grid built from it is stable.
+    function boilMul(x, y) {
+        const v = V();
+        if (!v || !v.vents.length) return 1;
+        let turb = 0;
+        for (const b of v.vents) {
+            const dx = x - b.x, dy = y - b.y;
+            if (dx * dx + dy * dy >= b.r * b.r) continue;
+            const d = ventU(b, x, y);
+            if (d >= 1) continue;
+            turb = Math.max(turb, b.strength * 0.8 * smooth(1 - d));
+        }
+        return Math.max(VOLCANO.boilFloor, 1 - VOLCANO.boilPrice * turb);
     }
 
     const fryOf = (boat) => { const v = V(); return v ? (v.fry.get(boat) || null) : null; };
@@ -329,8 +524,8 @@ const VOLCANO = {
         const v = V();
         if (!v) return 0;
         let k = 0;
-        for (const c of v.cones) {
-            const s = c.pending;
+        for (const st of (v.strikers || [])) {
+            const s = st.pending;
             if (!s) continue;
             const d = Math.hypot(boat.x - s.x, boat.y - s.y);
             if (d > VOLCANO.tellR) continue;
@@ -341,14 +536,16 @@ const VOLCANO = {
     }
 
     // ── The player's electronics ────────────────────────────────────────────
-    // Each system reboots at its own share of the outage, so the HUD comes back in pieces.
-    const REBOOT = { rose: 0.55, instruments: 0.7, minimap: 0.85, nav: 0.92, leaderboard: 1 };
+    // Every system is out for the WHOLE outage and they all come back together (Wes, Sep 13:
+    // the first cut rebooted them staggered, rose first and leaderboard last, and the
+    // pieces coming back at different times read as noise). `sys` is kept so a caller can
+    // still ask per system.
     function hudFried(sys) {
         const v = V();
         if (!v || !state.boats.length) return false;
         const f = v.fry.get(state.boats[0]);
         if (!f) return false;
-        return (v.t - f.t0) / f.dur < (REBOOT[sys] || 1);
+        return (v.t - f.t0) < f.dur;
     }
     // Glitch amplitude for the player's instruments: the outage's burst, or the omens.
     function glitch() {
@@ -379,6 +576,28 @@ const VOLCANO = {
             if (el) el.classList.toggle('fried', on[id]);
         }
     }
+    // A fried EDGE indicator does not stay put: it wanders round the screen's rim — a slow
+    // drift, a faster wobble and the odd jump — and is re-clamped to the same band the
+    // honest one sits in. A chip drawn AT a visible mark (not on the rim) keeps its place
+    // and only jitters; sending it to the edge would point at nothing. (Wes: "it should be
+    // hard to trust your instruments".)
+    function friedEdgePos(ctx, x, y, seed) {
+        const v = V();
+        if (!v) return { x, y };
+        const W = ctx.canvas.width, H = ctx.canvas.height, m = 40;
+        const cx = W / 2, cy = H / 2, hw = Math.max(10, cx - m), hh = Math.max(10, cy - m);
+        const rx = x - cx, ry = y - cy;
+        if (Math.abs(rx) < hw - 2 && Math.abs(ry) < hh - 2) return { x, y };
+        const s = (seed | 0) * 0.7 + 1;
+        const t = v.t;
+        const jump = (hash(Math.floor(t / 0.7) * 13 + (seed | 0)) - 0.5) * 2.4;
+        const ang = Math.atan2(ry, rx) + 0.9 * Math.sin(t * 1.3 + s) + 0.5 * Math.sin(t * 3.1 + s * 2) + jump;
+        const dx = Math.cos(ang), dy = Math.sin(ang);
+        const k = Math.min(hw / Math.max(1e-6, Math.abs(dx)), hh / Math.max(1e-6, Math.abs(dy)));
+        return { x: cx + dx * k, y: cy + dy * k };
+    }
+    const strSeed = (str) => { let h = 7; for (let i = 0; i < String(str).length; i++) h = (Math.imul(h, 31) + String(str).charCodeAt(i)) | 0; return h; };
+
     function drawMinimapFry(ctx) {
         const W = ctx.canvas.width, H = ctx.canvas.height;
         const f = (typeof frameCount !== 'undefined' ? frameCount : 0) >> 1;
@@ -518,6 +737,7 @@ const VOLCANO = {
             // The billows: three lit-and-shaded knots inside each parcel (a light puff up-sun
             // of a dark one), so the cloud has a cauliflower surface and not a fog's.
             for (const s of seen) {
+                if (s.k < 0.05) { put(puffs.light[s.i], s.px - s.r * 0.16, s.py - s.r * 0.18, s.r * 0.6, s.rot + 1, s.a * 0.25); continue; }
                 for (let b = 0; b < 3; b++) {
                     const ang = hash(s.q.seed + 40 + b * 9) * Math.PI * 2, d = s.r * (0.15 + 0.35 * hash(s.q.seed + 50 + b * 9));
                     const bx = s.px + Math.cos(ang) * d, by = s.py + Math.sin(ang) * d, br = s.r * (0.3 + 0.16 * hash(s.q.seed + 60 + b));
@@ -528,6 +748,7 @@ const VOLCANO = {
         };
         for (const c of v.cones) paint(c.parcels);
         for (const b of v.vents) paint(b.parcels);
+        if (v.laze) paint(v.laze);
         g.globalAlpha = 1;
         if (!any) return;
         ctx.save();
@@ -537,63 +758,100 @@ const VOLCANO = {
         ctx.restore();
     }
 
+    let _boilScratch = null, _boilMaskScratch = null;
     function drawBoils(ctx) {
         const v = V();
         if (!v || !v.vents.length) return;
         const cam = state.camera;
-        const reach = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6 + 300;
+        const reach = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6 + 400;
         for (const b of v.vents) {
             const dx = b.x - cam.x, dy = b.y - cam.y;
             if (dx * dx + dy * dy > reach * reach) continue;
             const breath = 0.5 + 0.5 * Math.sin(v.t * 0.35 + b.phase);
-            const r = b.r * (0.86 + 0.14 * breath);
-            // The sheet: ONE CONNECTED BODY of foam — a ring of soft lobes that heave in
-            // place round a bright heart, so the boil reads as a patch of broken water
-            // and never as a shoal of white objects.
-            const lobe = (x, y, rr, a) => {
-                const gr = ctx.createRadialGradient(x, y, 0, x, y, rr);
-                gr.addColorStop(0, `rgba(255,255,255,${a.toFixed(3)})`);
-                gr.addColorStop(0.5, `rgba(244,248,251,${(a * 0.55).toFixed(3)})`);
+            const k = 0.86 + 0.14 * breath;
+            // Where the sheet is drawn: a scratch square round the ellipse, 1 px per unit, so
+            // it can be clipped to the lava mask before it touches the frame.
+            const half = Math.ceil(b.r + 40), S = half * 2;
+            if (!_boilScratch || _boilScratch.width < S) { _boilScratch = document.createElement('canvas'); _boilMaskScratch = document.createElement('canvas'); _boilScratch.width = _boilScratch.height = _boilMaskScratch.width = _boilMaskScratch.height = S; }
+            const g = _boilScratch.getContext('2d');
+            g.setTransform(1, 0, 0, 1, 0, 0);
+            g.clearRect(0, 0, _boilScratch.width, _boilScratch.height);
+            g.translate(half - b.x, half - b.y);
+            const lobe = (x, y, rr, al) => {
+                const gr = g.createRadialGradient(x, y, 0, x, y, rr);
+                gr.addColorStop(0, `rgba(255,255,255,${al.toFixed(3)})`);
+                gr.addColorStop(0.5, `rgba(244,248,251,${(al * 0.55).toFixed(3)})`);
                 gr.addColorStop(1, 'rgba(240,246,250,0)');
-                ctx.fillStyle = gr;
-                ctx.beginPath(); ctx.arc(x, y, rr, 0, Math.PI * 2); ctx.fill();
+                g.fillStyle = gr;
+                g.beginPath(); g.arc(x, y, rr, 0, Math.PI * 2); g.fill();
             };
-            for (let k = 0; k < 9; k++) {
-                const ang = k / 9 * Math.PI * 2 + Math.sin(v.t * 0.5 + b.phase + k) * 0.25;
-                const d = r * (0.42 + 0.12 * Math.sin(v.t * 0.8 + k * 1.7 + b.phase));
-                lobe(b.x + Math.cos(ang) * d, b.y + Math.sin(ang) * d, r * 0.6, 0.2 + 0.1 * breath);
+            // The sheet: lobes strung ALONG the lava's axis, heaving in place, so a crack
+            // boils as a ribbon and a mound as a knot — never a disc round the centre.
+            const cs = Math.cos(b.ang), sn = Math.sin(b.ang);
+            const n = Math.max(3, Math.round(b.a / (b.b * 0.7)));
+            for (let i = 0; i < n; i++) {
+                const u = (n === 1 ? 0 : (i / (n - 1) * 2 - 1)) * b.a * 0.82 * k;
+                const wob = Math.sin(v.t * 0.8 + i * 1.7 + b.phase) * b.b * 0.25;
+                lobe(b.x + u * cs - wob * sn, b.y + u * sn + wob * cs, b.b * 1.25 * k, 0.3 + 0.12 * breath);
             }
-            lobe(b.x, b.y, r * 0.8, 0.38 + 0.16 * breath);
-            // The churn: a fine hash grid of crests that brighten and die IN PLACE — texture
-            // on the sheet, each too small to be a thing.
-            const cell = 14, n = Math.ceil(r / cell);
-            const gx0 = Math.floor((b.x - r) / cell), gy0 = Math.floor((b.y - r) / cell);
-            for (let gy = gy0; gy <= gy0 + 2 * n; gy++) for (let gx = gx0; gx <= gx0 + 2 * n; gx++) {
+            lobe(b.x, b.y, Math.min(b.a, b.b * 1.6) * k, 0.3 + 0.14 * breath);
+            // The churn: fine crests inside the ellipse that brighten and die in place.
+            const cell = 14, nc = Math.ceil(b.r / cell);
+            const gx0 = Math.floor((b.x - b.r) / cell), gy0 = Math.floor((b.y - b.r) / cell);
+            for (let gy = gy0; gy <= gy0 + 2 * nc; gy++) for (let gx = gx0; gx <= gx0 + 2 * nc; gx++) {
                 const i = gx * 7919 + gy * 104729;
                 const cx = (gx + hash(i)) * cell, cy = (gy + hash(i + 1)) * cell;
-                const d = Math.hypot(cx - b.x, cy - b.y);
-                if (d > r * 0.95) continue;
+                const d = ventU(b, cx, cy);
+                if (d > 0.95) continue;
                 const life = (v.t * (1.3 + hash(i + 2) * 0.9) + hash(i + 3)) % 1;
-                const a = Math.sin(Math.PI * life) * (0.45 + 0.55 * hash(i + 4)) * (1 - d / r) * (0.6 + 0.4 * breath);
-                if (a < 0.03) continue;
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate(hash(i + 5) * Math.PI);
-                ctx.fillStyle = `rgba(255,255,255,${(a * 0.7).toFixed(3)})`;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 4 + hash(i + 6) * 5, 2 + hash(i + 7) * 3, 0, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
+                const al = Math.sin(Math.PI * life) * (0.45 + 0.55 * hash(i + 4)) * (1 - d) * (0.6 + 0.4 * breath);
+                if (al < 0.03) continue;
+                g.save();
+                g.translate(cx, cy);
+                g.rotate(hash(i + 5) * Math.PI);
+                g.fillStyle = `rgba(255,255,255,${(al * 0.7).toFixed(3)})`;
+                g.beginPath();
+                g.ellipse(0, 0, 4 + hash(i + 6) * 5, 2 + hash(i + 7) * 3, 0, 0, Math.PI * 2);
+                g.fill();
+                g.restore();
             }
-            // Bubbles: rings that swell and burst at the heart.
-            for (let k = 0; k < 6; k++) {
-                const life = (v.t * (0.9 + hash(k + 50) * 0.5) + hash(k + 60)) % 1;
-                const ang = hash(k + 70) * Math.PI * 2, d = hash(k + 80) * r * 0.45;
+            // Bubbles: rings that swell and burst on the lava itself.
+            for (let q = 0; q < 8; q++) {
+                const life = (v.t * (0.9 + hash(q + 50) * 0.5) + hash(q + 60)) % 1;
+                const at = ventPoint(b, hash(q + 70), hash(q + 80), 0.6);
                 const rr = 3 + life * 11;
-                ctx.strokeStyle = `rgba(255,255,255,${(0.55 * (1 - life)).toFixed(3)})`;
-                ctx.lineWidth = 1.5;
-                ctx.beginPath(); ctx.arc(b.x + Math.cos(ang) * d, b.y + Math.sin(ang) * d, rr, 0, Math.PI * 2); ctx.stroke();
+                g.strokeStyle = `rgba(255,255,255,${(0.55 * (1 - life)).toFixed(3)})`;
+                g.lineWidth = 1.5;
+                g.beginPath(); g.arc(at.x, at.y, rr, 0, Math.PI * 2); g.stroke();
             }
+            // CLIPPED TO THE LAVA: the vent's keyed mask, dilated by the margin and softened,
+            // through the prop's own transform — so the foam sits exactly on the crack's
+            // wiggles. Until the mask has loaded, the ellipse alone shapes it.
+            const kind = b.kind, keys = kind.lava ? Object.keys(kind.lava) : [];
+            const masks = (typeof propLavaMask === 'function') ? keys.map(kk => propLavaMask(b.p.kind, kk)).filter(m => m && m.complete && m.naturalWidth) : [];
+            if (masks.length) {
+                const m = _boilMaskScratch.getContext('2d');
+                m.setTransform(1, 0, 0, 1, 0, 0);
+                m.clearRect(0, 0, _boilMaskScratch.width, _boilMaskScratch.height);
+                const w = (kind.world || 100) * (b.p.scale || 1);
+                const px = b.p.x - b.x + half, py = b.p.y - b.y + half;
+                const R = VOLCANO.boilMargin;
+                for (let o = 0; o < 9; o++) {
+                    const ox = o === 0 ? 0 : Math.cos(o / 8 * Math.PI * 2) * R, oy = o === 0 ? 0 : Math.sin(o / 8 * Math.PI * 2) * R;
+                    m.save();
+                    m.translate(px + ox, py + oy);
+                    if (b.p.heading) m.rotate(b.p.heading);
+                    for (const img of masks) m.drawImage(img, -w / 2, -w / 2, w, w);
+                    m.restore();
+                }
+                g.save();
+                g.setTransform(1, 0, 0, 1, 0, 0);
+                g.globalCompositeOperation = 'destination-in';
+                try { g.filter = 'blur(6px)'; } catch (e) {}
+                g.drawImage(_boilMaskScratch, 0, 0);
+                g.restore();
+            }
+            ctx.drawImage(_boilScratch, 0, 0, S, S, b.x - half, b.y - half, S, S);
         }
     }
 
@@ -615,8 +873,8 @@ const VOLCANO = {
         // so avoiding action is possible: the fry radius as a slowly turning dashed ring,
         // three ripples closing on the point, a flickering heart that grows and crackles
         // as the strike nears. Electric blue-white, additive, in the water's own plane.
-        for (const c of v.cones) {
-            const s = c.pending;
+        for (const st of (v.strikers || [])) {
+            const s = st.pending;
             if (!s) continue;
             const dx = s.x - cam.x, dy = s.y - cam.y;
             if (dx * dx + dy * dy > (reach + VOLCANO.fryR) ** 2) continue;
@@ -748,8 +1006,12 @@ const VOLCANO = {
     function drawFlash(ctx) {
         const v = V();
         if (!v || !v.strikes.length) return;
+        const cam = state.camera;
         let e = 0;
-        for (const s of v.strikes) e = Math.max(e, boltEnv(v.t - s.t0));
+        for (const s of v.strikes) {
+            const d = Math.hypot(s.x - cam.x, s.y - cam.y);
+            e = Math.max(e, boltEnv(v.t - s.t0) * Math.pow(clamp01(1 - d / VOLCANO.flashReach), 1.2));
+        }
         if (e <= 0.02) return;
         ctx.save();
         ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -761,9 +1023,9 @@ const VOLCANO = {
     function reset() { if (typeof state !== 'undefined') state.volcano = null; _bake = null; }
 
     window.Volcano = {
-        init, update, reset, puffSprites,
-        windMul, boilAt, chargeOf, fryOf, isFried,
-        hudFried, glitch, garble, applyHudClasses, drawMinimapFry,
+        init, update, reset, puffSprites, onWater, lavaFronts, ventU,
+        windMul, boilAt, boilMul, chargeOf, fryOf, isFried,
+        hudFried, glitch, garble, applyHudClasses, drawMinimapFry, friedEdgePos, strSeed,
         drawVeil, drawBoils, drawStrikes, drawFlash,
         intensityOf, active: () => !!V()
     };

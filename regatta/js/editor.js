@@ -993,14 +993,20 @@ async function save(saveAs) {
     }
 }
 
+let toastClearT = null;
 let toastT = null;
 function toast(msg, bad) {
     const el = $('toast');
     el.textContent = msg;
     el.style.color = bad ? '#fda4af' : '#6ee7b7';
     el.style.opacity = '1';
-    clearTimeout(toastT);
-    toastT = setTimeout(() => { el.style.opacity = '0'; }, 2600);
+    clearTimeout(toastT); clearTimeout(toastClearT);
+    toastT = setTimeout(() => {
+        el.style.opacity = '0';
+        // Drop the text once it has faded: an invisible toast still has a width, and it
+        // sits in the same flex row as the buttons (see #toast in editor.css).
+        toastClearT = setTimeout(() => { el.textContent = ''; }, 400);
+    }, 2600);
 }
 
 // A venue's NAME is what it is called; its id is its filename. Everything a person reads

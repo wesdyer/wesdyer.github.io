@@ -1727,8 +1727,20 @@ function drawBoatIndicator(ctx, boat) {
 // and carries the distance in a pill of its own. Pulses once when the leg changes so the
 // eye reacquires the new goal.
 function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot) {
+    // Fried electronics (volcano.js): a chip on the rim wanders round it, and every chip
+    // jitters, flickers, turns hot and reads static, like every other instrument — the goal
+    // is still out there, but the box that points at it is not to be trusted.
+    const friedNav = !!(window.Volcano && state.volcano && Volcano.hudFried('nav'));
+    if (friedNav) { const w = Volcano.friedEdgePos(ctx, x, y, markIndex != null ? markIndex * 17 + 3 : Volcano.strSeed(label)); x = w.x; y = w.y; }
     ctx.save();
     ctx.translate(x, y);
+    if (friedNav) {
+        const f = frameCount >> 1;
+        ctx.translate((((f * 7919) % 97) / 97 - 0.5) * 8, (((f * 104729) % 89) / 89 - 0.5) * 6);
+        ctx.globalAlpha *= 0.55 + 0.45 * (((f * 31) % 13) / 13);
+        try { ctx.filter = 'hue-rotate(-110deg) saturate(1.6) contrast(1.4)'; } catch (e) {}
+        label = Volcano.garble(String(label), 1);
+    }
     const pulseAge = state._goalPulseT != null ? state.time - state._goalPulseT : 99;
     const k = 1 + 0.25 * Math.max(0, 1 - pulseAge / 0.8);
     ctx.scale(k, k);
@@ -1786,8 +1798,17 @@ function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot) {
 // with the boat's current rank inside and its name above.
 function drawNpcEdgeIndicator(ctx, x, y, boat) {
     const color = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
+    // Fried electronics (volcano.js): see drawMarkEdgeIndicator — the marker wanders the rim.
+    const fried = !!(window.Volcano && state.volcano && Volcano.hudFried('nav'));
+    if (fried) { const w = Volcano.friedEdgePos(ctx, x, y, Volcano.strSeed(boat.name)); x = w.x; y = w.y; }
     ctx.save();
     ctx.translate(x, y);
+    if (fried) {
+        const f = frameCount >> 1;
+        ctx.translate((((f * 7919 + 17) % 97) / 97 - 0.5) * 8, (((f * 104729 + 5) % 89) / 89 - 0.5) * 6);
+        ctx.globalAlpha *= 0.55 + 0.45 * (((f * 37) % 11) / 11);
+        try { ctx.filter = 'hue-rotate(-110deg) saturate(1.6) contrast(1.4)'; } catch (e) {}
+    }
 
     ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI*2);
     ctx.fillStyle = color; ctx.fill();
@@ -1796,12 +1817,12 @@ function drawNpcEdgeIndicator(ctx, x, y, boat) {
     if (state.race.status === 'racing' && boat.lbRank !== undefined) {
         ctx.fillStyle = isVeryDark(color) ? '#ffffff' : '#0f172a';
         ctx.font = FONT.mono(10); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(String(boat.lbRank + 1), 0, 0.5);
+        ctx.fillText(fried ? Volcano.garble(String(boat.lbRank + 1), 1) : String(boat.lbRank + 1), 0, 0.5);
     }
 
     ctx.fillStyle = '#ffffff'; ctx.font = FONT.label(10); ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
     ctx.shadowColor = 'black'; ctx.shadowBlur = 4;
-    ctx.fillText(boat.name.toUpperCase(), 0, -13);
+    ctx.fillText(fried ? Volcano.garble(boat.name.toUpperCase(), 1) : boat.name.toUpperCase(), 0, -13);
     ctx.restore();
 }
 

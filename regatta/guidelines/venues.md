@@ -1109,7 +1109,14 @@ three effects that key off it, chosen from Wes's list of seven after a brainstor
   wane 12 s. The lava is NOT touched — Wes: the flow must not speed up when the cone
   erupts, "just add the ash plumes" — so the `p.heat`/`p.activity` hooks stay unused and
   the eruption is the plume (plus embers round the crater). Learnable, and a restart is
-  the same race.
+  the same race. Its SOUND (Sep 12): `Sound.playEruptionOnset` booms once as a cone opens
+  up, scaled by distance over 6500 units — the audible telegraph — and `Sound.updateEruption`
+  runs a seamless rumble loop at the level of the loudest erupting cone within 4200 units,
+  gated like the wind bed. Takes (Wes, Sep 13, cut and levelled from his ElevenLabs
+  renders with a scratch numpy pass — no ffmpeg on the machine, so both ship as WAV):
+  `assets/audio/eruption-onset.wav` (4.6 s stereo, RMS −13 dBFS, peak −3) and
+  `eruption-loop.wav` (the take's steady 3.1–9.6 s body, mono, closed with a 0.8 s
+  equal-power crossfade into a 5.7 s seamless loop, RMS −22 dBFS as a bed).
 - **The plume.** Parcels of ash leave the crater every 0.55 s and ride the MEAN wind
   field (`regionWindAt` — never the plume's own dead air, or it would stall itself),
   widening and thinning with age (22 s of ash, 9 s of wisp) so the veil dissipates with
@@ -1120,31 +1127,73 @@ three effects that key off it, chosen from Wes's list of seven after a brainstor
   4-units/px bake, blurred on composite, over the fleet (a boat under ash is seen
   through it). Ash is the pale grey-brown of a lit plume seen from above, never
   rock-dark — the first cut painted it basalt-coloured and it vanished on basalt.
-- **Lightning and the fry.** A charged plume (peak, young parcels) throws a strike every
-  5–12 s, AIMED: when a boat is under the cloud, 70% of strikes land 140–420 units from
-  one of the boats there (Wes: unaimed, it "usually strikes far from any boat"). The tell
-  is 2.8 s and the point is MARKED ON THE WATER for all of it — the 640-unit fry radius as
-  a turning dashed ring, three ripples closing on the point, a crackling heart — so
-  avoiding action is possible; boats within 1100 units also show masthead corona and
-  instrument jitter. The strike flashes the screen, crawls forks across the cloud base,
-  lights the water, casts the fleet's shadows away from it, and `Sound.playThunder` rolls
-  in dist/340 m/s later — Wes's two ElevenLabs takes (`thunder-near.mp3` crack-and-boom,
-  `thunder-far.mp3` roll), crossfaded by distance over 1400 units. The ELECTRONICS FRY for a time PROPORTIONAL TO PROXIMITY: 7 s at
-  the point, linearly to nothing at 640 units (under 0.8 s is skipped), so a boat at 5 kn
-  that sails away for the tell cuts ~2 s off. The player's rose, instruments, chart, goal
-  chips and leaderboard go to static (CSS `.fried`, `Volcano.drawMinimapFry`, `garble`)
-  and reboot staggered (rose 55%, instruments 70%, chart 85%, chips 92%, leaderboard 100%
-  of the outage); a bot's controller skips its body and holds course blind. A penalty on
-  INFORMATION, not control.
+- **Lightning and the fry.** FOUR ROLLING STRIKERS (Wes's design, Sep 13 — the first
+  cut hung strikes on the plumes, and the plumes drift over the isle, so nearly every bolt
+  fell on rock: "almost all strikes are far from the boats"). Each waits a dealt 5–20 s,
+  strikes, and rerolls. Three land anywhere on the RACECOURSE'S WATER (the field the marks
+  span, rejecting land — two "was not enough ambient lightning"); the fourth is AIMED: it draws a boat (the player counted three
+  times), projects it by the tell along its velocity, and lands 3–6 hull lengths off that
+  point — hold your course and it finds you, turn and it does not — so a boat is always
+  being affected. The tell is 2.8 s and the point is MARKED ON THE WATER for all of it —
+  the 640-unit fry radius as a turning dashed ring, three ripples closing on the point, a
+  crackling heart — so avoiding action is possible; boats within 1100 units also show
+  masthead corona and instrument jitter. The bolt comes from the nearest charged parcel
+  within 2500 units, else from the sky 500 units upwind; it flashes the screen (scaled by
+  distance from the camera over 2600 units, so a far strike is a flicker), crawls forks to
+  the point, lights the water, casts the fleet's shadows away from it, and
+  `Sound.playThunder` rolls in dist/340 m/s later — Wes's two ElevenLabs takes
+  (`thunder-near.mp3` crack-and-boom, `thunder-far.mp3` roll), crossfaded by distance over
+  1400 units. The ELECTRONICS FRY for a time PROPORTIONAL TO PROXIMITY: 15 s at the point
+  (Wes, Sep 13; was 7), linearly to nothing at 640 units (under 0.8 s is skipped), so a boat
+  at 5 kn that sails away for the tell cuts ~5 s off. The player's rose, instruments, chart, goal chips and
+  leaderboard, race clock and the off-screen indicators (goal chips and competitor markers,
+  jittering, garbled and WANDERING ROUND THE RIM rather than hidden — "it should be hard to
+  trust your instruments") go to static (CSS `.fried`, `Volcano.drawMinimapFry`, `garble`)
+  for the whole outage and REBOOT TOGETHER (Wes, Sep 13: the first cut brought them back
+  staggered, rose first and leaderboard last, and he wanted one outage at the longest); THE BOTS (Sep 13): a fried bot loses INFORMATION, not the helm — its wind
+  read freezes (stale, like a dead masthead unit), its plan freezes (the intent held at
+  the strike, with a slow wander on the helm, no new tack/gybe/route) but collision
+  avoidance, land clearance and the liveness watchdog keep running (the first cut
+  returned early and held course blind, which sailed bots into rock). Bots DODGE a strike
+  marked within 0.9 × the fry radius with a chance riding their handling (0.25 sloppy to
+  0.85 crisp, decided once per strike from its seed), bearing straight away bent to the
+  no-go cone's edge. And bots PRICE THE PLUME: the tack scorer samples `Volcano.windMul`
+  at three points along each candidate's projected path and docks the drive it would
+  give up (× 1.2 × pressureSense). A penalty on INFORMATION, not control. The storm HOLDS while the player is off the water — behind the
+  pre-race briefing and over the podium — and so do the thunder and the eruption boom, on the
+  wind bed's own rule (`Sound.windAudible`); Wes heard a strike from inside the briefing.
 - **Vent boils.** Every seabed vent kind carries `boil` (fissure 0.7, mound 0.55, rift
-  0.8): a turbulence zone of radius 0.42 × the vent's box, in the rapids' units — physics
-  takes `max(rapidsTurbAt, Volcano.boilAt)`, so it is drag and yaw with no lift — under
-  a connected foam sheet (nine heaving lobes round a bright heart, fine crests that die
-  in place, bubbles) and a steam wisp.
+  0.8) and a `boilShape` — the keyed lava mask's centre, axis and half-extents, measured at
+  ingest — so the boil FOLLOWS THE LAVA (Wes, Sep 13: "not round areas"): an ellipse along
+  the crack, 26 units past the lava's own extent and never thinner than 18 half-width, in
+  the rapids' units — physics takes `max(rapidsTurbAt, Volcano.boilAt)`, so it is drag and
+  yaw with no lift. The foam is lobes strung along the axis, crests inside the ellipse and
+  bubbles on the lava, and the whole sheet is CLIPPED to the vent's dilated mask through
+  the prop's transform, so it sits on the crack's wiggles; the steam rises from points on
+  the lava. A vent kind without `boilShape` boils as a disc of 0.42 × its box.
+  THE CHOICE (Wes, Sep 13: "it doesn't present a real choice"): a boil is aerated water,
+  so besides the rapids' drag (0.85 of drive at full strength, `BOIL_DRAG`) it SCRUBS
+  speed on contact — `BOIL_SCRUB` 1.1 of speed per second at full strength (water.js /
+  physics.js) — and the zone reaches 48 units past the lava (half-width floor 34). Two
+  seconds in a crack halves boat speed, and the recovery is paid in boat lengths, against
+  a detour of a couple of hundred units round the crack's end. THE BOTS KNOW: the route
+  planner prices the same field (`Volcano.boilMul`, a steady 1 − 1.2 × strength floored at
+  0.12 — measured: a rift crossing costs ~1050 units made good, ~4 s, for ~200 of boil — folded
+  into the grid's shoal cost field in `buildCoursePaths` and keyed with the vents) — at
+  its STEADY STATE, not the bars' transit model, which under-priced a crossing at 1.07 —
+  and the bots' local side check (bot.js, the weed/shoal branch) reads it when a boat is
+  in a boil.
+
+- **Laze (Sep 13).** Where a `lava` or `magma` shape's edge has water on its far side, a
+  steam source every 120 units breathes a parcel every 4 s (staggered), and the parcels
+  ride the wind with the vents' steam: white banks hugging the shore where lava enters
+  the sea (Heimaey's harbour). Pure visual — no dead air. Found at init from the
+  compiled islands (`Volcano.lavaFronts`), capped at 80 sources, so it needs the author
+  to DRAW LAVA TO THE SHORE: a magma lake inland breathes nothing.
 
 Not built, still on the list: bombs at the eruption's peak (a ring of splashes round the
-cone), the Surtsey moment (a vent breaching into a shoal mid-race), laze along the lava
-fronts, an ash slick on the water. `eval/test_volcano.js` drives the real page through
+cone), the Surtsey moment (a vent breaching into a shoal mid-race), an ash slick on the
+water. `eval/test_volcano.js` drives the real page through
 all of the above; the render suite now includes `volcanic`.
 
 **Ground set (Sep 4 2026).** Four kinds, declared and delivered the same day

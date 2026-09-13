@@ -1,4 +1,4 @@
-// FIRST CUT by hand (Sep 1 2026) — now the SOURCE OF TRUTH.
+// GENERATED ONCE by art/export_venue_doc.js — now the SOURCE OF TRUTH.
 // Emitted as JS, not JSON: the eval harness loads over file://, where fetch is blocked.
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
@@ -883,9 +883,9 @@ window.VENUE_DOC["otter"] = {
     ]
   },
   "palette": {
-    "baseColor": "#0f7a6a",
-    "deepColor": "#0a4f4a",
-    "shallowColor": "#3fb8a0",
+    "baseColor": "#268f97",
+    "deepColor": "#165d65",
+    "shallowColor": "#31b4b0",
     "shorelineColor": "#c79a4b"
   },
   "swell": {
