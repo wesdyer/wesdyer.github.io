@@ -293,6 +293,100 @@ dead.
 
 ---
 
+## Emberfall Isle (`volcanic`)
+
+Protocol: `node regatta/eval/rl/volcanic_bench.js 20 9100 <label>` — 20-seed set
+(9100-9119), cutoff raised to 900 (venue cutoff 360), 9 bots, player parked at
+(30000, 30000) AND marked finished (the aimed striker draws the player three times
+over; a parked live player pulls strikes off the course). `volcanic_report.js <label>`
+prints these tables; `volcanic_ab.js <A> <B>` pairs two labels over their shared seeds.
+Weather columns are sampled at 10 Hz while racing: fries and seconds fried
+(`Volcano.fryOf`), seconds in a boil (`boat.boil > 0.1`), seconds in plume dead air
+(`Volcano.windMul < 0.6`), strikes per race, dodges (a bot's `_dodgeGo` decisions).
+Venue FROZEN 2026-09-13 at `b79ac315b9dfc104` (`freeze_venues --add volcanic`;
+venues:check green). Human = 5 trajectories sailed 2026-09-13 22:39-22:55 on that same
+cut (recorder fingerprint `4ac8c0e5:45501` matches the current file), ingested to
+`regatta/eval/rl/traj/`; the recorder now also logs `fried`, `boil`, `windMul` at the
+player, so the next laps fill the human weather row.
+
+### 2026-09-13 baseline (working tree at 5ef9d99 + the uncommitted Emberfall weather: eruption cycle, plume dead air, four rolling strikers with the 15 s proportional fry, vent boils that scrub speed and are priced by the router, laze; bots fried-as-information, dodging, plume-aware tack scoring)
+
+### Starts (time to cross after the gun, s)
+
+| Who | DNS% | OCS% | Median | Mean | Min | Max |
+|---|---|---|---|---|---|---|
+| bots | 0.0 | 55.0 | 9.0 | 14.1 | 0.0 | 51.0 |
+| human (5 traj) | 0 | 0.0 | 1.4 | 2.6 | 0.1 | 9.0 |
+
+### Course (finish time, s)
+
+| Who | DNF% @360 | DNF% @900 | Median | Mean | Min | Max |
+|---|---|---|---|---|---|---|
+| bots | 0.6 | 0.0 | 239.5 | 244.7 | 170.0 | 429.0 |
+| human (5 traj) | 0 | 0 | 195.5 | 194.5 | 185.7 | 203.3 |
+
+### Legs (median split, s)
+
+| Who | L1 | L2 | L3 | L4 | Sum |
+|---|---|---|---|---|---|
+| bots | 74.0 | 43.0 | 52.0 | 47.5 | 216.5 |
+| human | 62.7 | 36.6 | 43.3 | 45.8 | 188.4 |
+| bots − human | +11.3 | +6.4 | +8.7 | +1.7 | +28.1 |
+
+### Contacts and penalties (per boat-race)
+
+| Who | boat | land | mark | bounds | penalties |
+|---|---|---|---|---|---|
+| bots | 1.1 | 0.2 | 0.1 | 0.0 | 0.3 |
+| human | 0.0 | — | — | — | 0 |
+
+### Weather (per boat-race unless noted)
+
+| Who | strikes/race | fries | s fried | dodges | s in boil | s in dead air |
+|---|---|---|---|---|---|---|
+| bots | 79.4 | 5.7 | 30.1 | 4.9 | 9.7 | 0.8 |
+| human | — | n/r | n/r | n/r | n/r | n/r |
+
+### Human laps
+
+| lap | finish | place | L1 | L2 | L3 | L4 |
+|---|---|---|---|---|---|---|
+| 1789339418631 | 203.3 | 2/10 | 66.3 | 33.5 | 50.5 | 51.4 |
+| 1789339659551 | 197.9 | 1/10 | 56.8 | 43.1 | 51.7 | 44.9 |
+| 1789339893876 | 189.9 | 1/10 | 64.9 | 36.6 | 41.7 | 45.8 |
+| 1789340128226 | 195.5 | 2/10 | 59.1 | 34.0 | 43.3 | 50.1 |
+| 1789340358236 | 185.7 | 2/10 | 62.7 | 39.0 | 41.9 | 42.1 |
+
+Per-seed bot winner: med 198.0, mean 200.0, best 170.0 (human med 195.5, best 185.7).
+
+Human boat contacts per `traj_report.js`: 0/0/3/5/0 (the events column above is the
+recorder's, which logged none). Human places: 2nd, 1st, 1st, 2nd, 2nd — she won two of
+five and was never worse than second; zero penalties, zero OCS.
+
+**Findings (baseline, nothing changed):**
+- **The leader is at human pace; the fleet is not.** Per-seed winner med 198 vs her
+  195.5 (best 170 vs her 185.7); fleet median 239.5 = +44 s, spread 170-429, all 180
+  boat-races finishing (one over the venue's own 360 cutoff).
+- **Lightning is the fleet's cost, not the leader's.** Paired A/B, 6 seeds, strikers
+  removed (`NOLIGHTNING=1`): finish med -25.0 s, mean -34.7 s, winner -5.0 s; 5.8
+  fries/boat and 30.4 s fried/boat (12% of the race blind) go to zero; everything else
+  flat. Holding the storm until the gun (`GUNLIGHTNING=1`) was WORSE (+12.5 med, +17
+  winner, fries +0.8) — four strikers all dealing 2-12 s after the gun front-load the
+  outages into the first beat. Neither knob adopted; recorded so the next round starts
+  from the mechanism.
+- **The 55% OCS is not the weather.** Identical (57.4%) with the strikers removed. It
+  is the venue's start — bots' gun crossing med 9.0 s / mean 14.1 / max 51 vs her 1.4 /
+  2.6 / 9.0 — a start-layer problem on this line and wind, and the first thing a round
+  should look at.
+- **Boils: bots cross where she goes round.** 9.7 s/boat-race in broken water vs her
+  0.3-5.0 s (1-3 crossings a lap). The router prices a rift at ~4x, which still lets
+  A* take the short line; the measured crossing cost is ~1050 units made good.
+- **Plume dead air barely touches the fleet** (0.8 s/boat-race): the plumes drift over
+  the isle on this wind. Her own wind samples show 18-39 s/lap under 50% of the median
+  breeze, but that is island lee as much as ash; the new `windMul` column will split it.
+- Per-leg: +11.3 / +6.4 / +8.7 / +1.7 = +28.1 s on the medians; L1 (the start and the
+  first beat, where the storm opens) carries the most.
+
 ## Instrumentation TODO (to make the tables complete)
 
 DONE 2026-08-03 (a0c3633 + instr commit): items 1-3 — bay_bench/fleet_leg2
