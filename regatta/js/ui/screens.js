@@ -187,7 +187,7 @@ const UI = {
     startRaceBtn: document.getElementById('start-race-btn'),
     // The clubhouse (Sep 2026): the hub and its pickers, and the board's series dress.
     preRaceBackBtn: document.getElementById('prerace-back-btn'),
-    preRaceSeriesChip: document.getElementById('prerace-series-chip'),
+    preRaceCrumb: document.getElementById('prerace-crumb'),
     prRoute: document.getElementById('pr-route'),
     prRouteGrid: document.getElementById('pr-route-grid'),
     prRouteNote: document.getElementById('pr-route-note'),
@@ -270,9 +270,11 @@ function renderVenuePicker() {
     // The board's button is the gun in every mode (Sep 6): the skipper is chosen on the hub and
     // the fleet page is no longer a step. (It still exists for the eval suites.)
     if (UI.startRaceBtn) UI.startRaceBtn.innerHTML = `Start Race ${_CH_ARROW}`;
-    if (UI.preRaceSeriesChip) {
-        UI.preRaceSeriesChip.classList.toggle('hidden', !inSeries);
-        if (inSeries) UI.preRaceSeriesChip.textContent = `${Series.active.name} · Race ${Series.raceNumber()} of ${Series.total()}`;
+    // The header's second line: which cup or series and which race, where the standings
+    // screen says the same thing. A single race keeps the club motto.
+    if (UI.preRaceCrumb) {
+        UI.preRaceCrumb.textContent = inSeries ? `${Series.active.name} · Race ${Series.raceNumber()} of ${Series.total()}`.toUpperCase() : 'FAIR WINDS · SALTY RIVALS';
+        UI.preRaceCrumb.style.color = inSeries ? '#f2c14e' : '#7787a0';
     }
     sizeRaceDayHero();
     renderVenueDetail(selected);
@@ -476,6 +478,7 @@ function renderVenueDetail(key) {
                                text-decoration:underline; text-underline-offset:3px; white-space:nowrap;">All records &rarr;</button>
             </div>
             <div class="t-mono pr-record-time" style="color:${rec.mine ? '#f2c14e' : '#ffffff'};">${rec.t != null ? formatBestTime(rec.t) : '&mdash;'}</div>
+            ${recordsEligible() ? '' : `<div class="t-label t-label-xs" style="color:#9fb2cc; margin-top:4px;">Records are set in single races</div>`}
         </div>`;
 
     UI.venueDetail.innerHTML = `
@@ -1726,6 +1729,9 @@ function selectVenue(key) {
     if (!(window.VenueDoc && window.VenueDoc.get(key)) || state.race.status !== 'waiting') return;
     if (_venueLoading) return;   // mid "Preparing…" — the start already owns the world
     settings.venue = key;
+    // The Race door remembers what was chosen HERE, on the board — never what a cup or
+    // series put in `settings.venue` on its way through.
+    if (!(window.Series && Series.active)) settings.lastRaceVenue = key;
     saveSettings();
 
     // Beat one: paint now, from the document alone. renderVenueDetail shows the
@@ -2254,7 +2260,15 @@ if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preven
     on('door-school', () => { if (!idle()) return; hideClubhouseOverlays(); School.begin(); });
     on('door-cup', () => { if (!idle()) return; showCupPicker(); });
     on('door-series', () => { if (!idle()) return; showSeriesPicker(); });
-    on('door-race', () => { if (!idle()) return; if (window.Series && Series.active) Series.abandon(); showRaceBoard(); });
+    on('door-race', () => {
+        if (!idle()) return;
+        if (window.Series && Series.active) Series.abandon();
+        // The board opens on the venue the door was previewing — the last one picked HERE —
+        // not on whatever venue the last cup or series race left in `settings.venue`.
+        const lv = settings.lastRaceVenue;
+        if (lv && VENUE_ORDER.includes(lv) && lv !== settings.venue) selectVenue(lv);
+        showRaceBoard();
+    });
     on('cup-back-btn', () => showClubhouse());
     on('series-back-btn', () => showClubhouse());
     // Leaving the board mid-cup is abandoning the cup, so it goes through the confirm.
@@ -2326,11 +2340,35 @@ function showToast(text) {
     }
 }
 
+// ── RECORDS ARE SET IN SINGLE RACES, ON THE VENUE AS IT STANDS ────────────────────────
+// (owner's call, Sep 13 2026.) A cup or series race sets nothing — the record book is a
+// single-race pursuit — and neither does the school. Every key in BOTH stores (the
+// personal-best store below and the record book after it) carries the venue's records
+// hash (VenueDoc.recordsHash: the venue's physical content, not its copy or colours), so
+// editing a venue retires its book. Old entries stay in storage under the old hash and
+// come back if the edit is reverted. Pre-hash entries are simply never read again.
+function recordsEligible() {
+    return !(window.Series && Series.active) && !(window.School && School.active);
+}
+// Cached per venue on the document's identity: the game never edits a document in place,
+// and hashing one is a canonical walk of ~10k props.
+const _recordsHashCache = {};
+function recordsVenueHash(venue) {
+    const key = venue || settings.venue;
+    const VD = window.VenueDoc;
+    const doc = (VD && VD.get) ? VD.get(key) : null;
+    const c = _recordsHashCache[key];
+    if (c && c.doc === doc) return c.hash;
+    const hash = (doc && VD.recordsHash) ? VD.recordsHash(doc) : 'r1-none';
+    _recordsHashCache[key] = { doc, hash };
+    return hash;
+}
+
 const RESULT_BESTS_KEY = 'regatta_bests';
 function loadVenueBests() {
     try { return JSON.parse(localStorage.getItem(RESULT_BESTS_KEY)) || {}; } catch (e) { return {}; }
 }
-function venueBestKey(venue) { return `${venue || settings.venue}:${state.race.totalLegs}`; }
+function venueBestKey(venue) { return `${venue || settings.venue}:${recordsVenueHash(venue)}:${state.race.totalLegs}`; }
 
 // TWO RECORDS, KEPT APART. A time and a finish are not the same achievement and do not
 // move together: a light-air race you win can be a minute slower than a windy one you come
@@ -2355,6 +2393,7 @@ function bestForVenue(venue) {
 // Called once per race, from the first showResults() of that race — see `bestChecked`.
 // Returns what there was to beat on each record, and whether this race beat it.
 function recordVenueBest(seconds, pos) {
+    if (!recordsEligible()) return null;   // a cup, series or school race: nothing to beat, nothing set
     const bests = loadVenueBests();
     const key = venueBestKey();
     const prev = bestForVenue();
@@ -2402,7 +2441,8 @@ function saveAllRecords(r) {
 }
 function runTrimBoard(rs) { return (rs && rs.usedAutoTrim) ? 'auto' : 'manual'; }
 function recordsBoardKey(board, venue, legs) {
-    return `${venue || settings.venue}:${legs || state.race.totalLegs}:${board}`;
+    const v = venue || settings.venue;
+    return `${v}:${recordsVenueHash(v)}:${legs || state.race.totalLegs}:${board}`;
 }
 const EMPTY_BOARD = () => ({ track: null, legs: [], topSpeed: null, minDist: null, start: null });
 function recordsFor(board, venue, legs) {
@@ -2438,6 +2478,7 @@ function trackRecordFor(board, venue) {
 // the first run over a course founds every entry in the book, and founding is not
 // breaking — announcing it would paint the whole first results screen gold.
 function commitLegRecord(board, legIdx, t) {
+    if (!recordsEligible()) return false;
     const all = loadAllRecords();
     const key = recordsBoardKey(board);
     const rec = all[key] || (all[key] = EMPTY_BOARD());
@@ -2455,12 +2496,13 @@ function commitLegRecord(board, legIdx, t) {
 function finalizeRaceRecords(player) {
     const rs = player.raceState;
     const board = runTrimBoard(rs);
+    const out = { board, track: false, topSpeed: false, minDist: false, start: false,
+                  legs: (state.race.legRecordsSet || []).slice(), eligible: recordsEligible() };
+    if (!out.eligible) return out;   // cup, series, school: the book is closed
     const all = loadAllRecords();
     const key = recordsBoardKey(board);
     const rec = all[key] || (all[key] = EMPTY_BOARD());
     const me = settings.character;
-    const out = { board, track: false, topSpeed: false, minDist: false, start: false,
-                  legs: (state.race.legRecordsSet || []).slice() };
 
     // Same founding-vs-breaking rule everywhere: the entry is written either way,
     // but `out` — which drives the toast, the gold tiles and the pills — only says
@@ -2767,19 +2809,18 @@ function recordCard(best, rs) {
     const frame = won
         ? 'background:linear-gradient(150deg,rgba(242,193,78,0.16),rgba(242,193,78,0.05));border:1px solid rgba(242,193,78,0.5);'
         : 'background:#141d31;border:1px solid rgba(255,255,255,0.09);';
+    // SECONDARY BY DESIGN: the reference, not the result. Smaller and quieter than your own
+    // time on the hero (Wes, Sep 13 2026 — it used to be the biggest number on the page).
     return `
-        <div style="flex:none;${frame}border-radius:14px;padding:16px 20px;text-align:center;">
-            <div class="t-label" style="font-size:11px;letter-spacing:0.22em;color:${won ? '#f2c14e' : '#9fb2cc'};">
+        <div style="flex:none;${frame}border-radius:12px;padding:11px 16px;text-align:center;">
+            <div class="t-label" style="font-size:10px;letter-spacing:0.2em;color:${won ? '#f2c14e' : '#7787a0'};">
                 ${won ? '✦ New Course Record ✦' : 'Course Record'}
             </div>
-            <!-- The time you just set, and what it was worth. The old time struck through
-                 with an arrow to the new one was three numbers to say one thing, and the
-                 delta underneath already carries the one you cannot work out yourself. -->
-            <div class="flex items-baseline justify-center gap-2" style="margin-top:6px;">
-                <span class="t-mono" style="font-size:30px;font-weight:900;color:${won ? '#f2c14e' : '#eef3fb'};">${formatBestTime(won ? rs.finishTime : best.previous)}</span>
+            <div class="flex items-baseline justify-center gap-2" style="margin-top:4px;">
+                <span class="t-mono" style="font-size:20px;font-weight:800;color:${won ? '#f2c14e' : '#c4d2e6'};">${formatBestTime(won ? rs.finishTime : best.previous)}</span>
             </div>
             <div class="t-mono" style="font-size:11px;font-weight:800;color:${won ? '#34d399' : '#7787a0'};margin-top:2px;">
-                ${won ? '−' + delta + 's off the record' : '+' + delta + 's off the record'}
+                ${won ? 'beat it by ' + delta + 's' : '+' + delta + 's off the record'}
             </div>
             ${pillRow}
         </div>`;
@@ -2869,7 +2910,11 @@ function renderResultsHero(sorted, player, leader) {
                 <div class="flex items-baseline gap-3.5" style="margin-top:4px;">
                     <span class="t-display italic" style="font-size:${dnf ? 46 : 72}px;line-height:1;color:${pc};">${headline}</span>
                     <div>
-                        <div class="t-display-8 t-display uppercase" style="font-size:19px;letter-spacing:0.02em;">${escapeHTMLText(player.name)}${dnf ? '' : ' · ' + formatTime(rs.finishTime)}</div>
+                        <div class="t-display-8 t-display uppercase" style="font-size:19px;letter-spacing:0.02em;">${escapeHTMLText(player.name)}</div>
+                        <!-- YOUR time is the second-biggest thing on the page, at full precision — the
+                             record card beside it used to out-size it with thousandths while this
+                             read 02:44, which put the emphasis on the wrong race. -->
+                        ${dnf ? '' : `<div class="t-mono" style="font-size:34px;font-weight:900;line-height:1.05;margin-top:2px;color:${best && best.isBest ? '#f2c14e' : '#eef3fb'};">${formatBestTime(rs.finishTime)}</div>`}
                         <div style="font-size:13px;color:#9fb2cc;margin-top:2px;">${gap}</div>
                     </div>
                 </div>
@@ -3137,7 +3182,7 @@ function renderResultsRows(sorted, leader, ext, gapScale) {
             timeEl.textContent = 'racing';
             timeEl.style.color = '#66748c';
         } else {
-            timeEl.textContent = formatTime(rs.finishTime);
+            timeEl.textContent = formatBestTime(rs.finishTime);
             timeEl.style.color = '#eef3fb';
         }
 
@@ -3229,7 +3274,7 @@ function renderResultsFootnote(leader) {
     const vn = venueDisplayName(settings.venue);
     el.innerHTML = (rs.finished && !rs.resultStatus)
         ? `<span style="color:#eef3fb;font-weight:800;">${escapeHTMLText(leader.name)}</span> takes `
-          + `${vn || 'the race'} in <span class="t-mono" style="color:#eef3fb;">${formatTime(rs.finishTime)}</span>`
+          + `${vn || 'the race'} in <span class="t-mono" style="color:#eef3fb;">${formatBestTime(rs.finishTime)}</span>`
         : `${vn || 'The race'} — still on the water`;
 }
 
@@ -3311,12 +3356,29 @@ function _routeTile(key, cls, tag, aspect, cssPx) {
     // aspect: the tile's width/height (1 = square); the route strip passes its own.
     const name = venueDisplayName(key) || key;
     const sel = /\bsel\b/.test(cls || '');
+    // The tag pill says the state as well as the number: blue and bold for the race in play,
+    // grey with a tick and your result for one already sailed.
+    const done = /\bdone\b/.test(cls || '');
+    const tagStyle = sel ? 'background:#5aa7ff;color:#0c1322;font-weight:800;' : done ? 'color:#9fb2cc;' : '';
     return `<div class="${cls || ''}" style="min-width:0;">
         <div class="pr-venue-shot" style="${aspect ? `aspect-ratio:${aspect};` : ''}${sel ? 'box-shadow:0 0 0 2px #5aa7ff, 0 6px 18px rgba(90,167,255,0.35);' : ''}">
             ${venueThumb(key, escapeHTMLText(name), cssPx || 170)}
-            ${tag ? `<span class="t-mono pr-route-tag">${tag}</span>` : ''}
+            ${tag ? `<span class="t-mono pr-route-tag" style="${tagStyle}">${tag}</span>` : ''}
             <span class="pr-venue-name t-display-8 uppercase">${escapeHTMLText(name)}</span>
         </div></div>`;
+}
+// Your place in race i of the active cup or series, as the tile tag says it: "1st", "DNF".
+function _raceResultTag(i) {
+    const r = Series.active && Series.active.results[i];
+    const me = r && r.rows && r.rows.find(q => q.isPlayer);
+    if (!me) return '';
+    return me.status ? me.status : (me.pos ? _ordinal(me.pos) : '');
+}
+// One rule for both rails: which class and which tag a race gets from its state.
+function _raceTileSpec(i, cur, nowWord) {
+    if (cur == null || i < cur) { const res = _raceResultTag(i); return { cls: 'done', tag: `✓ Race ${i + 1}${res ? ' · ' + res : ''}` }; }
+    if (i === cur) return { cls: 'sel', tag: `Race ${i + 1} · ${nowWord}` };
+    return { cls: 'up', tag: `Race ${i + 1}` };
 }
 
 // ESC AS "BACK" (Wes, Sep 6): whatever the screen's own back button would do. Dialogs
@@ -3384,7 +3446,18 @@ function refreshClubhouse() {
     const cta = $('door-school-cta'); if (cta) cta.innerHTML = (grad ? 'Sail again ' : 'Start school ') + _CH_ARROW;
     const t = Series.trophies();
     const won = Series.cupsWon();
-    const cupState = $('door-cup-state'); if (cupState) { cupState.textContent = won ? `${won} of ${CUPS.length} won` : 'No cups won yet'; cupState.style.color = won ? '#f2c14e' : '#7f8ea9'; }
+    // The best result in a cup you have NOT won stays on the door (Wes, Sep 13 2026) — the
+    // cup page says "Sailed · best 6th", and the door should not forget it the moment you
+    // walk out. With no cup sailed at all the line says so.
+    const unwon = CUPS.map(c => ({ c, t: t[c.id] })).filter(x => x.t && x.t.sailed && !x.t.won && x.t.best);
+    const bestUnwon = unwon.length ? unwon.reduce((a, b) => (b.t.best < a.t.best ? b : a)) : null;
+    const bestTxt = bestUnwon ? `${_ordinal(bestUnwon.t.best)} in the ${bestUnwon.c.name.replace(/ Cup$/i, '')}` : '';
+    const cupState = $('door-cup-state');
+    if (cupState) {
+        cupState.textContent = won ? `${won} of ${CUPS.length} won${bestTxt ? ' · best ' + bestTxt : ''}`
+                             : bestTxt ? `No cup yet · best ${bestTxt}` : 'No cups sailed yet';
+        cupState.style.color = won ? '#f2c14e' : bestTxt ? '#c4d2e6' : '#7f8ea9';
+    }
     const cupPic = $('door-cup-pic'); if (cupPic) cupPic.innerHTML = `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:18px; background:radial-gradient(420px 160px at 50% 100%, rgba(242,193,78,0.14), transparent);">${CUPS.map(c => trophyHTML(c, 84, trophyState(c.id))).join('')}</div>`;
     const sb = t.series && t.series.best;
     const seriesState = $('door-series-state'); if (seriesState) { seriesState.textContent = sb ? `Best: ${_ordinal(sb.rank)} · ${sb.n} races` : 'No series yet'; seriesState.style.color = sb && sb.rank === 1 ? '#f2c14e' : '#7f8ea9'; }
@@ -3401,7 +3474,10 @@ function refreshClubhouse() {
         };
         seriesPic.innerHTML = `<div style="position:absolute; inset:0; background:radial-gradient(ellipse at 50% 110%, #2a3450, #111a2e 70%);">${[0, 2, 1].map(i => card(hand[i], i)).join('')}</div>`;
     }
-    const last = (settings.venue && VENUE_ORDER.includes(settings.venue)) ? settings.venue : 'bay';
+    // The door previews the last venue picked on the race board (settings.lastRaceVenue).
+    // A profile from before that key existed falls back to `venue` once, until a pick.
+    const last = VENUE_ORDER.includes(settings.lastRaceVenue) ? settings.lastRaceVenue
+               : (settings.venue && VENUE_ORDER.includes(settings.venue)) ? settings.venue : 'bay';
     const raceState = $('door-race-state'); if (raceState) raceState.textContent = `Last race · ${venueDisplayName(last) || last}`;
     const racePic = $('door-race-pic');
     if (racePic) {
@@ -3449,8 +3525,8 @@ function renderCupPicker() {
             <div class="flex flex-col" style="gap:8px; min-width:0;">
                 <div class="t-display uppercase ch-cup-name" style="font-size:36px; line-height:0.98;">${c.name}</div>
                 <div class="ch-cup-blurb" style="font-size:14px; line-height:1.5; color:#d5ecf5;">${c.blurb}</div>
-                <div class="t-label t-label-sm" style="color:${won ? '#f2c14e' : '#7f8ea9'};">${stateText}</div>
-                <div style="margin-top:auto; padding-top:10px;">${sel ? `<span class="res-btn res-btn-primary js-cup-start" style="display:inline-block;">Sail this cup ${_CH_ARROW}</span>` : `<span class="res-btn" style="display:inline-block;">Select</span>`}</div>
+                <div class="t-label t-label-sm ch-cup-state" style="color:${won ? '#f2c14e' : '#7f8ea9'};">${stateText}</div>
+                <div class="ch-cup-cta" style="margin-top:auto; padding-top:10px;">${sel ? `<span class="res-btn res-btn-primary js-cup-start" style="display:inline-block;">Sail this cup ${_CH_ARROW}</span>` : `<span class="res-btn" style="display:inline-block;">Select</span>`}</div>
             </div>
             <div class="ch-cup-venues">${c.venues.map((k, i) => _routeTile(k, 'ch-cup-tile', String(i + 1), null, 260)).join('')}</div>
         </button>`;
@@ -3542,8 +3618,8 @@ function renderRouteStrip() {
     const s = Series.active, n = s.venues.length, cur = s.index;
     const twoCols = n > 6;
     UI.prRouteGrid.style.gridTemplateColumns = twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr';
-    UI.prRouteGrid.innerHTML = s.venues.map((k, i) => _routeTile(k, 'pr-route-tile' + (i === cur ? ' sel' : i > cur ? ' dim' : ''),
-        i < cur ? `Race ${i + 1} · sailed` : i === cur ? `Race ${i + 1} · now` : `Race ${i + 1}`, twoCols ? 2.0 : 2.6, twoCols ? 210 : 430)).join('');
+    UI.prRouteGrid.innerHTML = s.venues.map((k, i) => { const sp = _raceTileSpec(i, cur, 'NOW');
+        return _routeTile(k, 'pr-route-tile ' + sp.cls, sp.tag, twoCols ? 2.0 : 2.6, twoCols ? 210 : 430); }).join('');
     if (UI.prRightTitle) UI.prRightTitle.innerHTML = `<span style="color:#f2c14e; font-size:14px; vertical-align:middle;">&#9679;</span> ${s.kind === 'cup' ? 'The cup, race by race' : 'The series, race by race'}`;
     if (UI.prRouteNote) UI.prRouteNote.textContent = cur === 0 ? 'Your skipper locks when you start race 1' : _standingsBlurb();
 }
@@ -3583,11 +3659,8 @@ function proceedToStandings() {
 // come, in one column up to six races and two beyond, sharing whatever height is left.
 function _routeList(s, n, nextIdx) {
     const twoCols = n > 6;
-    const tiles = s.venues.map((k, i) => {
-        const state = nextIdx == null ? '' : i === nextIdx ? 'sel' : i > nextIdx ? 'dim' : '';
-        const tag = nextIdx == null ? `Race ${i + 1}` : i < nextIdx ? `Race ${i + 1} · sailed` : i === nextIdx ? `Race ${i + 1} · next` : `Race ${i + 1}`;
-        return _routeTile(k, `ch-fill-tile ${state}`, tag, null, twoCols ? 200 : 420);
-    }).join('');
+    const tiles = s.venues.map((k, i) => { const sp = _raceTileSpec(i, nextIdx, 'NEXT');
+        return _routeTile(k, `ch-fill-tile ${sp.cls}`, sp.tag, null, twoCols ? 200 : 420); }).join('');
     return `<div class="ch-route-list" style="grid-template-columns:${twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr'};">${tiles}</div>`;
 }
 
@@ -3609,16 +3682,22 @@ function renderStandings(final) {
     const headThumb = (k, i) => `<div style="display:flex; justify-content:flex-end;"><div class="pr-venue-shot" title="Race ${i + 1} · ${escapeHTMLText(venueDisplayName(k) || k)}" style="width:${n > 8 ? 44 : 50}px; height:${n > 8 ? 34 : 38}px; aspect-ratio:auto; border-radius:6px; ${i < done ? '' : 'opacity:0.45;'}">${venueThumb(k, escapeHTMLText(venueDisplayName(k) || k), 50)}<span class="t-mono" style="position:absolute; left:4px; top:3px; font-size:10px; line-height:1; color:#eef3fb; background:rgba(6,14,26,0.78); border-radius:999px; padding:2px 5px;">R${i + 1}</span></div></div>`;
     const head = `<div class="ch-grid t-label" style="${cols} padding:0 14px 6px; font-size:10px; letter-spacing:0.14em; color:#66748c;"><div>Pos</div><div></div><div></div><div>Skipper</div>${s.venues.map(headThumb).join('')}<div style="text-align:right;">Total</div></div>`;
     const medal = (i) => i < 3 ? `<span style="display:inline-block; width:10px; height:10px; border-radius:999px; background:${['#f2c14e', '#c0c8d4', '#c88a5a'][i]};"></span>` : '';
+    // YOUR ROW, THE WAY THE RESULTS TABLE DOES IT: border, tint and badge in your own boat
+    // colour, numbers white like everyone else's. It was gold here and blue there, and the
+    // two screens sit one click apart.
+    const pb = state.boats.find(b => b.isPlayer);
+    const meStyle = pb ? `background:${boatGlow(pb, 0.10)}; box-shadow:0 0 0 2px ${boatGlow(pb, 0.55)}, 0 0 18px ${boatGlow(pb, 0.30)};` : '';
+    const meBadge = pb ? `<span class="t-label" style="font-size:9px; letter-spacing:0.12em; color:#0c1322; background:${deepBandFor(pb.colors.hull, pb.colors.spinnaker, pb.colors.spinAccent)}; border-radius:4px; padding:2px 5px; line-height:1.15; vertical-align:middle; margin-left:6px;">You</span>` : ' <span class="t-label t-label-sm">You</span>';
     const rows = table.map((r, i) => {
         const cfg = (typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.find(c => c.name === r.name) : null;
         const cells = s.venues.map((k, j) => { const p = r.pts[j]; const sailed = j < done; return `<div class="t-mono" style="font-size:15px; text-align:right; color:${sailed ? '#eef3fb' : '#3d4a63'};">${sailed ? p : '&mdash;'}</div>`; });
-        return `<div class="ch-grid ch-row${r.isPlayer ? ' me' : (i % 2 ? ' alt' : '')}" style="${cols}">
-            <div class="t-mono" style="font-size:16px; color:${r.isPlayer ? '#f2c14e' : '#eef3fb'};">${r.rank}</div>
+        return `<div class="ch-grid ch-row${r.isPlayer ? ' me' : (i % 2 ? ' alt' : '')}" style="${cols}${r.isPlayer ? meStyle : ''}">
+            <div class="t-mono" style="font-size:16px; color:#eef3fb;">${r.rank}</div>
             <div>${medal(i)}</div>
             <div><img src="assets/images/competitors/${escapeHTMLText(r.name.toLowerCase())}.png" alt="" style="width:42px; height:42px; object-fit:cover; border-radius:10px; background:${cfg ? bandColorFor(cfg.hull, cfg.spinnaker) : '#1f2937'}33;" draggable="false"></div>
-            <div style="min-width:0;"><div class="t-display uppercase truncate" style="font-size:20px; line-height:1;">${escapeHTMLText(r.name)}${r.isPlayer ? ' <span class="t-label t-label-sm" style="color:#f2c14e;">You</span>' : ''}</div><div class="t-mono" style="font-size:11px; color:#9fb2cc; margin-top:3px;">${escapeHTMLText(cfg ? cfg.creature : '')}</div></div>
+            <div style="min-width:0;"><div class="t-display uppercase truncate" style="font-size:20px; line-height:1;">${escapeHTMLText(r.name)}${r.isPlayer ? meBadge : ''}</div><div class="t-mono" style="font-size:11px; color:#9fb2cc; margin-top:3px;">${escapeHTMLText(cfg ? cfg.creature : '')}</div></div>
             ${cells.join('')}
-            <div class="t-mono" style="font-size:20px; text-align:right; color:${r.isPlayer ? '#f2c14e' : '#fff'};">${r.total}</div>
+            <div class="t-mono" style="font-size:20px; text-align:right; color:#fff;">${r.total}</div>
         </div>`;
     }).join('');
     const tbl = $('standings-table'); if (tbl) tbl.innerHTML = head + rows;
@@ -3640,15 +3719,12 @@ function renderStandings(final) {
             ${_routeList(s, n, null)}`;
     } else {
         if (hero) { hero.classList.add('hidden'); hero.innerHTML = ''; }
-        const next = Series.nextVenue(); const c = next ? venueCard(next) : {};
-        if (side) side.innerHTML = `<div class="t-label t-label-sm" style="color:#dbeafe;">Next up</div>
-            <div style="border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.09); background:#101a2e;">
-                <div class="pr-venue-shot" style="aspect-ratio:1.5; border-radius:0; box-shadow:none;"><img src="assets/images/venues/${next}.png" alt="" draggable="false"><span class="t-mono pr-route-tag" style="top:12px; left:12px; padding:4px 10px;">Race ${done + 1} of ${n}</span></div>
-                <div class="flex flex-col" style="padding:18px 20px 20px; gap:8px;">
-                    <div class="t-display uppercase" style="font-size:34px; line-height:0.98;">${escapeHTMLText(c.name || venueDisplayName(next) || next)}</div>
-                    <div style="font-size:14px; line-height:1.5; color:#d5ecf5;">${escapeHTMLText(c.blurb || '')}</div>
-                </div>
-            </div>
+        // ONE LIST, IN RACE ORDER. The next race used to get its own card above the list and
+        // then appear again inside it, so race 2 was on the rail twice and race 1 sat below
+        // race 2. Now the rail is the races in order, the sailed ones greyed with your result,
+        // the next one ringed and named as next, the rest plain.
+        const next = Series.nextVenue();
+        if (side) side.innerHTML = `<div class="t-label t-label-sm shrink-0" style="color:#dbeafe;">The ${escapeHTMLText(s.kind)}, race by race${next ? ` · next: ${escapeHTMLText(venueDisplayName(next) || next)}` : ''}</div>
             ${_routeList(s, n, done)}
             <div class="shrink-0" style="font-size:13px; line-height:1.5; color:#9fb2cc;">Abandoning ends the whole ${escapeHTMLText(s.kind)}. There is no restarting a race inside one.</div>`;
     }

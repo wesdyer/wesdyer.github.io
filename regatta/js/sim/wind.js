@@ -914,13 +914,10 @@ function regionWindAt(x, y) {
 // denominator, and an island's lee — real pressure variation on a "steady" course —
 // would have nothing to resolve against.
 const PRESSURE_MIN_SPAN = 0.18;   // half-width of the narrowest ramp, as a fraction of the median
-// The streak layer's floor and tail window are derived from this same scale, so they are
-// refreshed together rather than at the call sites — `computeWindPressureScaleRaw` has
-// several early returns and a fallback path, and any of them could otherwise leave the
-// layer reading a previous venue's reference.
+// (The wind-comet layer used to derive a per-course floor and tail window from this scale.
+// It no longer reads it at all — every comet channel is absolute knots, see the layer.)
 function computeWindPressureScale() {
     computeWindPressureScaleRaw();
-    computeStreakRef();
 }
 function computeWindPressureScaleRaw() {
     const med0 = Math.max(1, state.wind.baseSpeed || 10);
@@ -1610,100 +1607,26 @@ function drawDisturbedAir(ctx) {
 // there, so anything before it is unused material. music_loop.py measures it by DENSITY
 // (the local floor), not by level, because level cannot see sparseness at all.
 // ── THE WIND-STREAK LAYER ───────────────────────────────────────────────────
-// Below this the water is glassy and carries no along-wind streaks at all — real
-// water starts showing them somewhere in a moderate breeze, and drawing a streak in
-// four knots claims pressure that is not there. It is also what makes a lull legible:
-// a lull is BARE WATER, which survives on a dark palette in a way that "dimmer white"
-// never did.
-const STREAK_MIN_WIND = 5.5;      // knots
+// ⚠️ EVERY CONSTANT HERE IS ABSOLUTE AND THE SAME ON EVERY VENUE (owner's call, Sep 13
+// 2026). A comet is the same comet everywhere: five knots on the bay draws exactly what
+// five knots draws on the swamp — same drift, same length, same width, same colour — and
+// fifteen knots is unmistakably a bigger mark than ten. The layer exists to let the
+// player READ WIND SPEED, and a reading is only learnable if it means the same thing on
+// every course. Nothing in the layer consults the course's pressure scale any more. It
+// used to: the tail window was stretched up to 2.5x on light venues and width and alpha
+// rode the course's own p10-p90 ramp, so a 6-knot mark on Gatorgrass came out as fat as a
+// 16-knot one on Bluewater and 2.5x longer than a 6-knot mark on the bay. Density was
+// gated below 5.5 knots ("a lull is bare water"); the field is uniform now, so a lull is a
+// field of short pale dashes instead — see updateCometField.
 const WIND_LIFE = 4.5;            // seconds a streak persists
 const WIND_FADE_IN = 0.55;        // seconds — exactly the tail window, so a streak reaches
                                   // full strength at the same moment it reaches full length
 const WIND_FADE_OUT = 1.3;        // seconds
 const WIND_TAIL_PTS = 5;          // history samples behind the live head
-const WIND_TAIL_STEP = 0.11;      // seconds between samples -> a 0.44-0.55s window of track
+const WIND_TAIL_STEP = 0.11;      // seconds between samples -> a 0.55 s window of track, so a
+                                  // comet is knots x 15 x its 0.6-0.9 drift x 0.55 = ~6.2 units
+                                  // per knot: 31 at five knots, 62 at ten, 124 at twenty
 const WIND_WATER_RECHECK = 0.12;  // seconds between "am I still over water" tests
-
-// ── THE LAYER'S REFERENCE IS THE COURSE, NOT A CONSTANT ─────────────────────
-// STREAK_MIN_WIND above is a fact about WATER. Held as an ABSOLUTE gate it is also a
-// decision that a venue whose whole range sits under it gets no wind layer at all — and
-// that is what it did. Measured over Gatorgrass (2.7-6.0 kt across the course, 3.7 mean):
-// 5.3% of the water cleared the gate and the live streak count on screen was ZERO, on the
-// one venue whose entire identity is reading a fickle breeze.
-//
-// THREE THINGS COMPOUNDED, which is why it was invisible rather than merely faint:
-//   density  the gate rejected ~95% of spawn attempts outright
-//   length   the tail is a fixed 0.55 s window, so at 3.7 kt it drew 4 world units of track
-//   width    `abs` pinned at zero held every survivor at the wLight floor, ~1.8 units across
-// A four-unit speck at half width that almost never spawns is not a faint layer, it is no
-// layer — and each of the three was individually defensible, which is how it got here.
-//
-// So the FLOOR the layer measures from drops to the course's own light end when the course
-// is lighter than the glassy threshold, and the tail WINDOW stretches so a slow parcel
-// still draws a readable mark. Both are per-course, computed once beside the pressure
-// scale — the same question that already lives there ("18 knots is a hole on Glacier Sound
-// and a squall on Gatorgrass"). STREAK_MIN_WIND was the last global that never got the
-// treatment; on every venue already above it, `Math.min` leaves all of this untouched.
-//
-// WHAT DOES NOT CHANGE is the encoding. Within a race the lightest water is still the bare
-// end of the ramp, the windiest still marks up, and length still reports the LOCAL wind —
-// a fast parcel still draws a longer streak than a slow one beside it. And `span` stays
-// absolute, so a 4-knot Gatorgrass streak is still finer and shorter than a 16-knot
-// Bluewater one. The layer stops being uniform-bare; it does not start lying about knots.
-// ⚠️ 9 -> 12. This is the wind the fixed tail window was tuned around, and a course whose
-// median sits below it gets the window stretched so a slow parcel still draws a readable
-// mark. At 9 it barely engaged on Stillwater (median 7.5 -> a 1.2x stretch, leaving 6-knot
-// streaks 31 units long — shorter than a boat). At 12 that course gets 1.6x. A course
-// already at or above 12 knots gets `max(1, ...)` = exactly 1, so every fresh-breeze venue
-// keeps the window it has.
-const STREAK_REF_WIND = 12;       // knots the fixed tail window was tuned around
-const STREAK_TAIL_MAX = 2.5;      // most the window may stretch, so a lull cannot draw a comb
-// ⚠️ 0.6 -> 0.42. The floor is what `windiness` measures up from, and on a light course it
-// was sitting so close to the median that the whole light HALF of the water came out near
-// zero: Stillwater's 6-knot water scored 0.31 and drew 5 comets on screen. Six knots of
-// breeze puts real cat's-paws on real water — that is a patch a sailor reads, not a hole.
-//
-// ⚠️ IT CANNOT AFFECT A WINDY VENUE. The floor is `min(STREAK_MIN_WIND, med * this)`, so on
-// any course whose median is above ~13 knots the absolute 5.5 cap decides it and this value
-// is never consulted. Bluewater, Glacier Sound and Redrock are untouched.
-const STREAK_FLOOR_FRAC = 0.42;   // floor, as a fraction of the course's own median
-let _streakRef = { floor: STREAK_MIN_WIND, span: 9, tailStep: WIND_TAIL_STEP, fadeIn: WIND_FADE_IN };
-function computeStreakRef() {
-    const P = state.wind.pressure;
-    const med = (P && P.med > 0) ? P.med : (state.wind.baseSpeed || STREAK_REF_WIND);
-    // FROM THE MEDIAN, NOT THE p10. Reading the floor off the course's light end collapses
-    // on any venue that authors genuinely glassy water: Stillwater's 2-knot shore patches
-    // put its p10 at 0.09, which drove the floor to 0.08 and marked up the very glass the
-    // layer exists to leave bare. The median asks the right question — "is this COURSE
-    // lighter than the threshold" — and leaves within-course lulls to the ramp.
-    // Never ABOVE the glassy threshold, so every venue already windier keeps the physical
-    // rule untouched.
-    const floor = Math.min(STREAK_MIN_WIND, med * STREAK_FLOOR_FRAC);
-    const stretch = Math.min(STREAK_TAIL_MAX, Math.max(1, STREAK_REF_WIND / Math.max(1, med)));
-    // DENSITY SPANS THE COURSE, WIDTH SPANS KNOTS. Population is what makes a gradient
-    // readable at all — you cannot see where the pressure is from nineteen marks — so the
-    // course's own windy end has to reach the same density as any other course's windy end.
-    // Measured against a fixed 9-knot span, Gatorgrass sat at 19 streaks against 30-85
-    // elsewhere: not a light-air LOOK, just a thin sample of one. Spanning the course fixes
-    // that without weakening the bare-lull encoding, because the ramp still starts at zero
-    // at the course's own light end.
-    // Width deliberately does NOT get this treatment (see `abs` in streakChannels): it
-    // keeps measuring real knots, which is what keeps a 4-knot mark fine and a 20-knot one
-    // broad instead of making every venue look like a fresh breeze.
-    // CAPPED AT THE ABSOLUTE SPAN, never widened past it. Spanning the course outright
-    // fixed Gatorgrass (19 -> 33 streaks) but compressed Glacier Sound, whose 27-knot range
-    // then had to reach further for the same density: it fell 38 -> 20. `min` takes the
-    // narrower of the two, so a course narrower than the absolute ramp gets to use all of
-    // its own range and a wider one is left exactly as it was.
-    const span = Math.max(2, Math.min(9, ((P && P.hi > floor) ? P.hi : med * 1.3) - floor));
-    _streakRef = {
-        floor, span,
-        tailStep: WIND_TAIL_STEP * stretch,
-        // The fade-in is documented as "exactly the tail window" so a newborn stub is never
-        // seen at full strength; it has to stretch with it or that stops being true.
-        fadeIn: WIND_FADE_IN * stretch
-    };
-}
 
 // ── THE STREAM ──────────────────────────────────────────────────────────────
 // A current streak is the SAME IDEA as a wind comet and is built from the same parts: the
@@ -1767,17 +1690,55 @@ const CUR_HALO_A = 0.55;          // halo alpha, x the core
 // the very top, which is the figure the layer was already accepted at.
 const STREAK_MAX_ALPHA = 0.80;      // never opaque: boats, marks and labels stay on top
 const STREAK_MAX_HALFWIDTH = 2.3;   // world units, so ~4.6 px across the head at 1:1
-// ⚠️ THE CEILING WAS THE BINDING CONSTRAINT, not the ramp. At 0.20 per attempt with two
-// attempts a frame the layer tops out at ~24 spawns a second, which over a 4.5 s life is
-// ~108 alive and — since the spawn box is 1.35x the screen on each axis and only about a
-// third of it lands in view — barely 38 comets on screen AT MAXIMUM PRESSURE. Measured, the
-// actual population was 5 on Stillwater and 16 on Redrock (eval/_puff_read.js): far under
-// even that ceiling, on the two venues whose whole point is reading a patchy breeze.
+// ── THE COMET FIELD: a closed population, spread evenly over the VIEW ─────────────────
 //
-// A player cannot read a gradient off five marks. Raised so the windy end can reach a
-// readable population; the floor and the ramp below decide where it actually sits, and the
-// lull still goes bare because `windiness` gates it, not this.
-const STREAK_MAX_SPAWN = 0.50;      // per attempt, 2 attempts a frame — the density ceiling
+// Sep 13 2026 rework (owner's call): DENSITY IS NO LONGER A PRESSURE CUE. The layer's job
+// is to let the player read wind speed and direction anywhere on screen, at the same
+// coverage whether it is blowing 4 knots or 30, whichever way it blows, from the first
+// frame of the race and however the camera moves — and to stay sparse enough that the
+// water, the fleet and the marks underneath stay legible. Speed is carried by the three
+// channels that remain: LENGTH (the parcel's own track, absolute), WIDTH and COLOUR. Bare
+// water no longer means a lull; a field of short pale dashes does.
+//
+// WHAT THE OLD SPAWNER DID WRONG, measured (eval: comet_field.js, the 'base' rows):
+//   – it threw darts into an axis-aligned square 1.35x the screen's longer side, on a
+//     camera that ROTATES with the boat: about a third of the spawns landed in view, the
+//     rest was simulated for nothing, and the share depended on the window's aspect.
+//   – a comet drifts up to ~1000 units over its 4.5 s life, so the upwind side of the view
+//     was starved (its feed was born off-screen and mostly died on the way in) while the
+//     downwind side collected everything. The skew scaled with wind speed.
+//   – the spawn chance was gated on windiness and pressure, so a lull was bare and a fresh
+//     breeze a curtain — and every race began with an empty screen that filled in over the
+//     first life.
+//
+// HOW THIS ONE WORKS (updateCometField). The field is a rectangle in the CAMERA frame —
+// the view plus a margin — holding a fixed population sized by `COMET.spacing`: one comet
+// per spacing² of screen. Three rules keep it uniform:
+//   WRAP     a comet that leaves the field (blown out downwind, or left behind by the
+//            camera) re-enters on the opposite side with its age and its tail, as on a
+//            torus. Flux out equals flux in on every edge whichever way the wind or the
+//            camera moves, so no edge is ever starved. The margin puts the re-entry
+//            off-screen; it drifts into view like any other streak.
+//   REBIRTH  a comet that dies of age, or fades out on a shore, is replaced at the best of
+//            several random water spots — the one farthest from every comet alive
+//            (Mitchell's best-candidate). That is what turns "random" into "evenly placed":
+//            voids are filled first and clumps are not fed. It also self-corrects the one
+//            skew the wrap cannot: water in the lee of land, which nothing drifts into.
+//   SEED     when the field is empty, or the camera has cut, the whole population is laid
+//            down at once with RANDOM AGES and tails integrated back through the wind
+//            field, so frame one already looks like the steady state instead of a cohort
+//            of stubs all fading in together.
+// The steady state of those three rules is a uniform density with a uniform age
+// distribution — the wrap makes the field periodic, and births and deaths are then both
+// uniform in position and in age — which is the whole point.
+const COMET_FIELD_MARGIN = 96;    // units past each view edge; where wraps and seeds land unseen
+const COMET_CANDIDATES = 8;       // random water spots tried per birth; the emptiest wins
+const COMET_JUMP_FRAC = 0.35;     // camera moving this much of the view in one step is a cut
+const COMET_FLOOR_KT = 1.5;       // a seeded tail is walked back at no less than this, so
+                                  // dead calm still lays a dot with a stub, not a bare head
+let _cometField = { cx: 0, cy: 0 };
+const _cometPts = [];             // scratch: alive comets in the camera frame, for the candidate search
+let _cometN = 0;
 const WIND_BEACH_FADE = 0.35;     // seconds to fade out on reaching land — and the
                                   // look-ahead, so the fade finishes AT the shore
 
@@ -1901,25 +1862,21 @@ const COMET = {
     // ⚠️ HALVED Aug 2 2026 (was 1.8 / 2.1). The layer reads as pressure either way; at the
     // old width the streaks were competing with the boats for the eye rather than sitting
     // under them. STREAK_MAX_HALFWIDTH came down with them so the ceiling still bites.
-    w0: 0.9,  w1: 1.05,              // half-width, same
-    // ⚠️ 0.40 -> 0.62, and the reason the 0.40 was wrong is that the premise behind it was
-    // not true yet. It was set on the argument that density and length no longer collapse
-    // with width — but measured per wind band (eval/_comet_lowend.js), on Stillwater, where
-    // 72% of the water sits under 8 knots, all THREE still did: 31-43 units long, 0.39-0.56
-    // half-width, 5-14 comets on screen, against 100u / 1.2 / 36 in the 15-20 band. Three
-    // collapsing channels is the compounding failure computeStreakRef was written to stop,
-    // one rung further down the ramp than it was tuned for.
-    //
-    // ⚠️ THE TOP IS UNTOUCHED BY CONSTRUCTION, which is why this is the safe lever: the
-    // multiplier is `wLight + (1 - wLight) * abs`, and `abs` reaches 1 in a fresh breeze, so
-    // the value here cancels out entirely there. It moves the light end and nothing else.
-    wLight: 0.62,                    // width multiplier in the lightest air the layer draws
+    // Half-width at dead calm, and how much is added by STREAK_KT_MAX. Linear in knots, so
+    // 5 kt ~0.75, 10 ~0.95, 15 ~1.15, 20 ~1.35, 30 ~1.75 — the step between five and ten
+    // knots is ~25%, which is why the width jitter below is tighter than alpha's.
+    w0: 0.55, w1: 1.40,
     taper: 0.45,                     // body profile: 1 = straight cone, lower = holds width
-    // ⚠️ DENSITY IS THE PRESSURE CUE, and it was too thin to be one. `dens1` carries the
-    // spread and it was set when the ceiling above clipped everything anyway. The floor
-    // stays low on purpose: it is what keeps a lull sparse rather than merely dimmer, which
-    // is both what a sailor sees and the only encoding that survives on a dark palette.
-    dens0: 0.05, dens1: 0.55,        // spawn chance floor and pressure-weighted span
+    // THE ONLY DENSITY KNOB. One comet per `spacing` x `spacing` of screen, whatever the
+    // wind, the venue or the window: 1600x1000 -> ~62 on screen, 1920x1080 -> ~81. Below
+    // ~130 the field starts to read as a curtain over the fleet; above ~200 there are
+    // holes a mark or a boat can sit in with no wind reading beside it.
+    spacing: 160,
+    // Along-wind distance counts for this much less than across-wind when a birth picks
+    // its spot, so a new comet prefers to sit BESIDE its neighbours rather than nose-to-
+    // tail behind one. In a fresh breeze a tail is 150-200 units long, and at 1.0 (plain
+    // isotropic blue noise) along-wind neighbours chained into near-continuous lines.
+    aniso: 1.6,
     // ⚠️ THE WARM END GETS EXTRA ALPHA, keyed on ABSOLUTE knots — the same axis the colour
     // reads — because a warm stop at half alpha over blue water is grey (see
     // STREAK_MAX_ALPHA). Zero below `warmFrom`, so the white and ice end of the scale keeps
@@ -1933,25 +1890,26 @@ const COMET = {
 };
 const cometCfg = () => (typeof window !== 'undefined' && window.__COMET) ? Object.assign({}, COMET, window.__COMET) : COMET;
 
+// ── EVERY CHANNEL READS ABSOLUTE KNOTS ──────────────────────────────────────────────
+//   DRIFT   knots x 15 units/s x the comet's own 0.6-0.9 share        (updateParticles)
+//   LENGTH  that drift over a fixed 0.55 s window, ~6.2 units a knot  (the tail, streakSpine)
+//   WIDTH   linear in knots, w0 at calm to w0 + w1 at STREAK_KT_MAX   (here)
+//   ALPHA   a0 + a1 x s^aPow, plus the warm boost above warmFrom       (here)
+//   COLOUR  the ice -> white -> warm LUT, by knots                     (streakColorFor)
+// `s` is the one ramp all of them share, 0 at calm and 1 at STREAK_KT_MAX — the same span
+// the colour LUT is built on, so width, alpha and hue always move together.
+const ktNorm = (spd) => Math.max(0, Math.min(1, (spd || 0) / STREAK_KT_MAX));
 const _streakCh = { alpha: 0, halfWidth: 0, color: null };
-function streakChannels(t, jit, spd) {
-    // The cold end has to be a MARK on the water, not a hairline. Light air is already
-    // carried by there being fewer streaks and each one being shorter; if the survivors are
-    // invisible too then a lull and a broken renderer look identical, which is the failure
-    // the old layer had.
+// `_t` is IGNORED. It was the course-relative pressure and is kept in the signature only so
+// the older diagnostics that pass pressureAt(spd) first still run; every channel is derived
+// from `spd`. Writes into a scratch object: this runs per streak per frame.
+function streakChannels(_t, jit, spd) {
     const c = cometCfg();
-    // ±20% of per-streak scatter on top. Nine of the ten venues state ONE uniform wind
-    // region, so on those courses every streak carries an identical reading and the layer
-    // tiles into wallpaper without it (race-view.md §8: vary spacing and length). Width and
-    // alpha share `jit` deliberately — a heavier streak being both wider and brighter is
-    // coherent, where independent rolls just look noisy.
-    // WIDTH ANSWERS TO ABSOLUTE WIND AS WELL AS TO PRESSURE. `t` is relative to the
-    // course, so on its own it made a 6.5-knot Gatorgrass streak exactly as fat as a
-    // 16-knot Bluewater one — but length is absolute, so the light-air streak came out
-    // half as long at the same width and read stubby. Scaling width with the breeze too
-    // keeps a comet's SHAPE constant and lets its SIZE report the wind: fine, delicate
-    // marks in light air, broad ones in a fresh breeze, which is how the water looks.
-    const abs = Math.max(0, Math.min(1, (spd - _streakRef.floor) / 9));
+    const s = ktNorm(spd);
+    // Per-streak scatter, shared by width and alpha deliberately — a heavier streak being
+    // both wider and brighter is coherent, where independent rolls just look noisy. Width
+    // gets less of it (±12% against alpha's ±20%) so the step between five and ten knots
+    // is not swallowed by the roll.
     // ── THE CEILING IS A CLAMP, NOT A TUNING VALUE ──────────────────────────────
     // This layer is INFORMATION. It has to stay under the boats, the marks and the labels
     // (race-view.md §2, §8) no matter what a venue authors, and the arithmetic could reach
@@ -1966,8 +1924,8 @@ function streakChannels(t, jit, spd) {
     // accident, and STREAK_MAX_* are the numbers to argue about if it ever must move.
     // (With the warm boost the raw sum can reach 1.21; the ceiling is what it meets.)
     const warm = Math.max(0, Math.min(1, (spd - c.warmFrom) / c.warmSpan));
-    const rawAlpha = (c.a0 + c.a1 * Math.pow(t, c.aPow)) * (0.80 + jit * 0.40) + c.aWarm * warm;
-    const rawWidth = (c.w0 + c.w1 * t) * (c.wLight + (1 - c.wLight) * abs) * (0.80 + jit * 0.40);
+    const rawAlpha = (c.a0 + c.a1 * Math.pow(s, c.aPow)) * (0.80 + jit * 0.40) + c.aWarm * warm;
+    const rawWidth = (c.w0 + c.w1 * s) * (0.88 + jit * 0.24);
     _streakCh.alpha = Math.min(STREAK_MAX_ALPHA, rawAlpha);
     _streakCh.halfWidth = Math.min(STREAK_MAX_HALFWIDTH, rawWidth);
     _streakCh.color = streakColorFor(spd);
@@ -1994,7 +1952,7 @@ function streakChannels(t, jit, spd) {
 const _spine = [];
 for (let i = 0; i < Math.max(WIND_TAIL_PTS, CUR_TAIL_PTS) + 2; i++) _spine.push({ x: 0, y: 0, u: 0 });
 function streakSpine(p, step, pts) {
-    if (step === undefined) { step = _streakRef.tailStep; pts = WIND_TAIL_PTS; }
+    if (step === undefined) { step = WIND_TAIL_STEP; pts = WIND_TAIL_PTS; }
     const trail = p.trail, len = trail.length, frac = p.trailT;
     if (len < 2) return 0;
     const full = len > pts;
@@ -2017,6 +1975,171 @@ function streakSpine(p, step, pts) {
         s.x = a.x + (b.x - a.x) * f; s.y = a.y + (b.y - a.y) * f; s.u = 1;
     }
     return n;
+}
+
+// ── THE FIELD ────────────────────────────────────────────────────────────────────────
+// See the block above COMET_FIELD_MARGIN for the design. Called from update() after
+// updateParticles has moved everything, so a comet that was blown out this frame is wrapped
+// this frame and the births fill this frame's deaths.
+function cometTarget(viewW, viewH) {
+    const sp = Math.max(40, cometCfg().spacing || 160);
+    return Math.round((viewW + 2 * COMET_FIELD_MARGIN) * (viewH + 2 * COMET_FIELD_MARGIN) / (sp * sp));
+}
+function _cometPush(u, v) {
+    let o = _cometPts[_cometN];
+    if (!o) { o = { u: 0, v: 0 }; _cometPts[_cometN] = o; }
+    o.u = u; o.v = v; _cometN++;
+}
+// Lay a tail behind a comet as if it had been alive for `age` seconds, by walking its head
+// back through the wind field. Mirrors updateParticles exactly: the head is now, trail[0]
+// was sampled trailT seconds ago and each further sample one tail step before that, so a
+// seeded comet and a grown one are indistinguishable to streakSpine.
+function seedCometTail(p, age) {
+    const step = WIND_TAIL_STEP;
+    const whole = Math.floor(age / step);
+    const n = Math.min(WIND_TAIL_PTS + 1, 1 + whole);
+    p.trailT = age - whole * step;
+    p.trail = [];
+    let x = p.x, y = p.y, back = p.trailT;
+    for (let j = 0; j < n; j++) {
+        // Two sub-steps per sample keep the bend honest where the field curves.
+        for (let k = 0; k < 2; k++) {
+            const wnd = getWindAt(x, y);
+            const v = Math.max(COMET_FLOOR_KT, wnd.speed) * 15 * p.drift * back * 0.5;
+            x += Math.sin(wnd.direction) * v;
+            y -= Math.cos(wnd.direction) * v;
+        }
+        // A grown tail never crosses land (the comet would have faded on the shore first),
+        // so a seeded one must not either: stop at the shoreline. A shorter trail simply
+        // reads as a younger comet — streakSpine spans whatever track exists.
+        if (!Arena.contains(state.course.boundary, x, y, 0) || !inMaskWater(x, y)) break;
+        p.trail.push({ x, y });
+        back = step;
+    }
+}
+function bornComet(x, y, u, v, age) {
+    const p = {
+        x, y, type: 'wind',
+        life: 1 - age / WIND_LIFE,
+        jit: fxRand(),
+        // Each streak rides at its own share of the true wind, in the same 0.6-0.9 band the
+        // puff cells use — so a streak inside a cat's-paw travels WITH it instead of sliding
+        // through it. The spread is also the only source of streak-to-streak LENGTH variety,
+        // and it stays inside that physical band so length still READS as wind speed.
+        drift: 0.60 + fxRand() * 0.30,
+        trail: null, trailT: 0,
+        beach: 1,
+        waterT: fxRand() * WIND_WATER_RECHECK,
+        spd: getWindAt(x, y).speed
+    };
+    seedCometTail(p, age);
+    state.particles.push(p);
+    _cometPush(u, v);
+    return p;
+}
+// One birth: the emptiest of COMET_CANDIDATES random water spots in the field, "emptiest"
+// measured on the torus so a spot by one edge knows about the comets by the opposite one,
+// and in the local wind's frame so "beside" counts for more than "behind" (COMET.aniso).
+function spawnCometBest(F, age) {
+    const hw = F.w / 2, hh = F.h / 2;
+    const along = 1 / Math.max(1, cometCfg().aniso || 1);
+    let bu = 0, bv = 0, bx = 0, by = 0, bestD = -1;
+    for (let c = 0; c < COMET_CANDIDATES; c++) {
+        let u = 0, v = 0, x = 0, y = 0, ok = false;
+        // A comet is a mark on WATER. Resample a land hit a few times so the water keeps
+        // its density whatever the land fraction around it (Redrock's canyons are mostly
+        // rock); the visuals-only stream makes the extra draws free.
+        for (let r = 0; r < 4 && !ok; r++) {
+            u = (fxRand() - 0.5) * F.w; v = (fxRand() - 0.5) * F.h;
+            x = F.cx + u * F.cos - v * F.sin; y = F.cy + u * F.sin + v * F.cos;
+            ok = Arena.contains(state.course.boundary, x, y, 0) && inMaskWater(x, y);
+        }
+        if (!ok) continue;
+        // The direction this comet will travel, in the camera frame.
+        const wnd = getWindAt(x, y);
+        const wx = -Math.sin(wnd.direction), wy = Math.cos(wnd.direction);
+        const au = wx * F.cos + wy * F.sin, av = -wx * F.sin + wy * F.cos;
+        let d = Infinity;
+        for (let i = 0; i < _cometN; i++) {
+            const q = _cometPts[i];
+            let du = q.u - u, dv = q.v - v;
+            if (du > hw) du -= F.w; else if (du < -hw) du += F.w;
+            if (dv > hh) dv -= F.h; else if (dv < -hh) dv += F.h;
+            const a = (du * au + dv * av) * along, c = dv * au - du * av;
+            const dd = a * a + c * c;
+            if (dd < d) d = dd;
+        }
+        if (d > bestD) { bestD = d; bu = u; bv = v; bx = x; by = y; }
+    }
+    if (bestD < 0) return null;
+    return bornComet(bx, by, bu, bv, age);
+}
+function updateCometField(dt, viewW, viewH) {
+    if (!state.course || !state.course.boundary || typeof Arena === 'undefined') return;
+    const cam = state.camera;
+    const w = viewW + 2 * COMET_FIELD_MARGIN, h = viewH + 2 * COMET_FIELD_MARGIN;
+    const hw = w / 2, hh = h / 2;
+    const cos = Math.cos(cam.rotation), sin = Math.sin(cam.rotation);
+    const F = { cx: cam.x, cy: cam.y, w, h, cos, sin };
+    const target = cometTarget(viewW, viewH);
+    // A CUT — the camera moving more than a third of the view in one step (a new course,
+    // a snap to the start, a spectate switch) — drops the field and re-lays it below.
+    // Wrapping through a cut would carry every tail to water it never crossed. The lerped
+    // follow never moves anywhere near this fast.
+    const jump = Math.hypot(cam.x - _cometField.cx, cam.y - _cometField.cy) > COMET_JUMP_FRAC * Math.min(viewW, viewH);
+    _cometField.cx = cam.x; _cometField.cy = cam.y;
+
+    _cometN = 0;
+    let alive = 0, fading = 0;
+    const P = state.particles;
+    for (let i = P.length - 1; i >= 0; i--) {
+        const p = P[i];
+        if (p.type !== 'wind') continue;
+        if (jump) { P[i] = P[P.length - 1]; P.pop(); continue; }
+        const dx = p.x - cam.x, dy = p.y - cam.y;
+        let u = dx * cos + dy * sin, v = -dx * sin + dy * cos;
+        if (u < -hw || u >= hw || v < -hh || v >= hh) {
+            // ── WRAP: out one side, in the other, tail and all ──────────────────────
+            const u2 = u - Math.floor((u + hw) / w) * w;
+            const v2 = v - Math.floor((v + hh) / h) * h;
+            const ddu = u2 - u, ddv = v2 - v;
+            const wx = ddu * cos - ddv * sin, wy = ddu * sin + ddv * cos;
+            p.x += wx; p.y += wy;
+            const tr = p.trail;
+            if (tr) for (let k = 0; k < tr.length; k++) { tr[k].x += wx; tr[k].y += wy; }
+            // It may have landed on a shore: re-test at once, and let the shore fade take
+            // it (off-screen, in the margin) if so. A comet mid-fade that wraps gets its
+            // strength back for the same reason — where it is now is what counts.
+            p.beached = false; p.beach = 1; p.waterT = 0;
+            u = u2; v = v2;
+        }
+        _cometPush(u, v);
+        alive++;
+        if (p.beached) fading++;
+    }
+
+    const deficit = target - alive;
+    if (deficit > 0) {
+        // Natural churn — the deaths one frame of the steady state produces, plus one for
+        // rounding — is replaced by FRESH comets that grow out of their heads on screen, as
+        // ever. Anything beyond it is a cut, a reset or a bigger window, and is born
+        // pre-aged so it never shows as a cohort.
+        const churn = Math.ceil(target * dt / WIND_LIFE) + 1;
+        for (let k = 0; k < deficit; k++) {
+            const age = k < churn ? 0 : fxRand() * WIND_LIFE;
+            if (!spawnCometBest(F, age)) break;   // no water in the field at all — try next frame
+        }
+    } else if (deficit < 0) {
+        // Too many (the window shrank): retire the oldest through the shore fade rather
+        // than deleting them, which would blink. Those already fading are counted first.
+        let extra = -deficit - fading;
+        if (extra > 0) {
+            const cands = [];
+            for (const p of P) if (p.type === 'wind' && !p.beached) cands.push(p);
+            cands.sort((a, b) => a.life - b.life);
+            for (let k = 0; k < extra && k < cands.length; k++) cands[k].beached = true;
+        }
+    }
 }
 
 function drawParticles(ctx, layer) {
@@ -2123,14 +2246,17 @@ function drawParticles(ctx, layer) {
         // ── WIND COMETS ────────────────────────────────────────────────────────
         //
         // A bright head with a tapering tail laid along the parcel's OWN TRACK. The
-        // asymmetry gives direction; four channels give pressure, and every one of them
-        // reads off `pressureAt`, so they cannot disagree with each other or with the
+        // asymmetry gives direction; three channels give pressure, and every one of them
+        // reads the same local wind, so they cannot disagree with each other or with the
         // field the boats are sailing in:
         //
-        //   DENSITY  how many streaks exist here — decided at spawn, the strongest cue
         //   LENGTH   distance covered in a fixed window of time, i.e. wind speed exactly
-        //   WIDTH    the course's pressure ramp
-        //   COLOUR   the same ramp, cool -> warm, after LiveLine's pressure overlay
+        //   WIDTH    the course's pressure ramp, scaled by absolute knots
+        //   COLOUR   absolute knots, ice -> white -> warm, after SailGP's wind bar
+        //
+        // Density is deliberately NOT a channel any more: the field holds one comet per
+        // `COMET.spacing`² of screen everywhere, so the wind can be read at any point in
+        // view and a lull shows as short pale dashes, not bare water (see updateCometField).
         //
         // Direction and length are now facts rather than formulas: the comet is where the
         // air has been. The previous version drew a straight streak from a single sample
@@ -2150,16 +2276,15 @@ function drawParticles(ctx, layer) {
             // once on any venue (eval/_comet_sweep.js). Never set in play.
             let spd = p.spd || 0;
             if (window.__KT_SWEEP) spd = Math.max(0, Math.min(STREAK_KT_MAX, ((p.x - camX) / ctx.canvas.width + 0.5) * STREAK_KT_MAX));
-            const t = pressureAt(spd);
             // Streaks arrive and leave. The fade-in also covers the half second the tail
             // takes to form, so a newborn stub is never seen. (The old envelope was
             // min(life, 1) on a life that STARTED above 1 — every streak snapped on at
             // full strength and only the death was animated.)
             const age = (1 - p.life) * WIND_LIFE, left = p.life * WIND_LIFE;
-            const env = Math.min(1, age / _streakRef.fadeIn, left / WIND_FADE_OUT, p.beach);
+            const env = Math.min(1, age / WIND_FADE_IN, left / WIND_FADE_OUT, p.beach);
             if (env <= 0.02) continue;
 
-            const ch = streakChannels(t, p.jit || 0.5, spd);
+            const ch = streakChannels(null, p.jit || 0.5, spd);
             const alpha = env * ch.alpha, wH = ch.halfWidth, col = ch.color;
 
             const n = streakSpine(p);

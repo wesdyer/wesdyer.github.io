@@ -36,7 +36,7 @@ const SHOT = process.argv[3] || VENUE;
     for (const q of parts) {
       const truth = getWindAt(q.x, q.y);
       if (!Arena.contains(s.course.boundary, q.x, q.y, 0) || !inMaskWater(q.x, q.y)) offWater++;
-      if (truth.speed < STREAK_MIN_WIND) belowMin++;
+      if (truth.speed < 5.5) belowMin++;
       if (!q.trail || q.trail.length < 2) continue;
       // Drawn heading = most recent history point -> head (the way the air is going).
       const hx = q.x - q.trail[0].x, hy = q.y - q.trail[0].y;

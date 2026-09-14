@@ -44,11 +44,11 @@ function updateParticles(dt) {
              // point the wrong way, and its LENGTH reports wind speed for free — a fixed
              // window of time times the distance covered in it.
              p.trailT += dt;
-             if (p.trailT >= _streakRef.tailStep) {
+             if (p.trailT >= WIND_TAIL_STEP) {
                  // Carry the overshoot rather than zeroing it, so the window really is
                  // the tail step and not "the next frame after it" — otherwise every tail
                  // is a frame-time longer than the speed it claims to report.
-                 p.trailT -= _streakRef.tailStep;
+                 p.trailT -= WIND_TAIL_STEP;
                  p.trail.unshift({ x: p.x, y: p.y });
                  // ONE SPARE sample beyond the drawn window. The tail end is interpolated
                  // between the last two (see streakSpine), so dropping the oldest never

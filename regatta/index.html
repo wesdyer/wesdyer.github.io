@@ -276,6 +276,20 @@
             .ch-cup .ch-cup-name { font-size: 28px !important; }
             .ch-cup .ch-cup-blurb { font-size: 13px !important; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
         }
+        /* A ROW IS NEVER SHORTER THAN ITS TEXT. The three rows share the page (flex: 1 1 0 above),
+           and on a short window that used to squeeze the middle column: the blurb collapsed to
+           nothing, the name lost a third of its height and the state line ("Won · best 31 pts")
+           and button spilled past the row (Wes, Sep 13 2026). Now the row's floor is its own
+           content and the overlay scrolls instead; the name, state and button never shrink, and
+           only the blurb gives ground (clamped, never to zero). */
+        .ch-cup { min-height: max-content; }
+        /* ...where "its text" means the trophy and the middle column only: the venue pictures
+           have height:100% and would otherwise put their intrinsic height into that floor and
+           make every row 380px. Size containment keeps them out of the sum; they still fill
+           whatever height the row ends up with. */
+        .ch-cup-venues { contain: size; }
+        .ch-cup .ch-cup-name, .ch-cup .ch-cup-state, .ch-cup .ch-cup-cta { flex: none; }
+        .ch-cup .ch-cup-blurb { flex: 0 1 auto; min-height: 1.5em; }
         .ch-cup:hover { opacity: 1; }
         .ch-cup.sel { opacity: 1; box-shadow: 0 0 0 2px #5aa7ff, 0 6px 18px rgba(90,167,255,0.25); }
         .ch-len { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 22px 0; border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; background: transparent; color: #c4d2e6; cursor: pointer; }
@@ -288,10 +302,18 @@
            preferred widths (a 12-race table overran its box by ~16px at 2000 wide). */
         .ch-grid { display: grid; gap: 10px; align-items: center; grid-template-columns: 52px 40px 60px minmax(120px, 200px) repeat(var(--races, 4), minmax(46px, 72px)) minmax(70px, 100px); }
         .ch-row { padding: 5px 14px; border-radius: 12px; }
-        .ch-row.me { background: rgba(242,193,78,0.08); box-shadow: 0 0 0 2px #f2c14e; }
+        /* Your row is painted inline in your own boat colour, exactly as the results table
+           does it (border, tint, badge) — one treatment for "you" on both screens. */
+        .ch-row.me { background: rgba(255,255,255,0.04); }
         .ch-row.alt { background: rgba(255,255,255,0.025); }
         .pr-lock-pill { font-size: 10.5px; letter-spacing: 0.18em; color: #9fb2cc; border: 1px solid rgba(159,178,204,0.4); border-radius: 999px; padding: 3px 10px; margin-left: 10px; background: rgba(6,14,26,0.35); white-space: nowrap; }
         .pr-route-tile .pr-venue-shot { aspect-ratio: 2.6; }
+        /* The three states of a race in a cup or series, on both rails (briefing and standings):
+           DONE is greyed and carries your result, SEL (now / next) wears the blue ring the rest
+           of the game uses for "selected", UP is plain. Sailed used to be full-strength and the
+           races still to come were the dimmed ones, which read backwards. */
+        .pr-route-tile.done, .ch-fill-tile.done { opacity: 0.45; filter: saturate(0.55); }
+        .pr-route-tile.up, .ch-fill-tile.up { opacity: 0.85; }
         .pr-route-tile.dim { opacity: 0.5; }
         .pr-route-tag { position: absolute; top: 8px; left: 8px; font-size: 11px; color: #eef3fb; background: rgba(6,14,26,0.7); border-radius: 999px; padding: 3px 9px; }
 
@@ -1019,7 +1041,10 @@
                     <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
                     <div>
                         <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:31px; letter-spacing:-0.02em;">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
-                        <div class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;">FAIR WINDS &middot; SALTY RIVALS</div>
+                        <!-- Inside a cup or series this line says which one and which race (the same
+                             place the standings screen says it); a single race keeps the motto. It used
+                             to be a chip wedged between the Clubhouse and Start Race buttons. -->
+                        <div id="prerace-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;">FAIR WINDS &middot; SALTY RIVALS</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
@@ -1028,8 +1053,6 @@
                     <button id="prerace-back-btn" class="res-btn" style="display:flex; align-items:center; gap:8px; padding:14px 20px;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 19l-7-7 7-7"></path></svg>Clubhouse
                     </button>
-                    <!-- Inside a cup or series: which one, and which race. Hidden for a single race. -->
-                    <span id="prerace-series-chip" class="ch-chip hidden" style="color:#f2c14e; border:1px solid rgba(242,193,78,0.4); background:rgba(242,193,78,0.10); padding:9px 16px;"></span>
                     <button id="start-race-btn" class="res-btn res-btn-primary" style="font-size:18px; padding:14px 38px;">Start Race &rarr;</button>
                     <button id="prerace-settings-btn" class="res-btn" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center;">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

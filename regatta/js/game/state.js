@@ -34,6 +34,9 @@ const DEFAULT_SETTINGS = {
     // character defines one.
     telltaleColor: '#fbbf24',
     venue: 'bay',
+    // The Race door's preview: the last venue chosen on the RACE BOARD. Kept apart from
+    // `venue`, which a cup or series overwrites for every race it runs (Wes, Sep 13 2026).
+    lastRaceVenue: null,
 };
 
 let settings = { ...DEFAULT_SETTINGS };

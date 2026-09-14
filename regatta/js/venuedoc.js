@@ -2429,7 +2429,29 @@ const PROP_KINDS = {
     'pond-blackeyed-susan':    { label: 'Black-eyed Susans',  world:   44, plane: 'surface', contact: 'none', srcBox: [0.058, 0.257, 0.884, 0.486], motion: 'fixed' },
     'pond-dogwood-redosier':   { label: 'Red-osier dogwood',  world:   40, plane: 'surface', contact: 'none', motion: 'fixed' },
     'pond-raft-practice':      { label: 'Practice raft',      world:   37, plane: 'float',   contact: 'none', motion: 'fixed' },
-    'pond-holly-inkberry':     { label: 'Inkberry holly',     world:   26, plane: 'surface', contact: 'none', motion: 'fixed' }
+    'pond-holly-inkberry':     { label: 'Inkberry holly',     world:   26, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ── OTTER POINT'S PLANTS (2026-09-13) ─────────────────────────────────────
+    // The Monterey coast, one sprite at a time as the art lands (art-pipeline 6: slot, then art,
+    // then the kind). All `surface` scenery on land the fleet cannot reach, contact none — the
+    // same reasoning as Sockeye Run's seven plants — and world sizes as declared in the manifest.
+    // Ice plant in bloom: the venue's single colour accent (venue-art.md), a 3.9 m mat at 36u,
+    // honest size for a patch; several placed together make the card's carpet. Its green
+    // out-of-bloom twin (`otter-iceplant-green`) joins this block when it ships.
+    'otter-iceplant':          { label: 'Ice plant (in bloom)', world: 36, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // Monterey cypress: the venue's signature tree and the biggest crown of its three (128 / 96 / 72,
+    // the cove's 1.33x ladder). 128u = 13.9 m, honest for a mature open-grown specimen. Shipped
+    // round 3 as layered feathery pads in tiers — a sheltered-grove crown, roughly round in plan;
+    // the windswept lean the slot asked for did not survive generation and was let go on the
+    // owner's call. Surface plane, no contact: headland scenery the fleet cannot reach.
+    'otter-cypress-monterey':  { label: 'Monterey cypress',    world: 128, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // Coast live oak: the broadleaf of the three, on the gold meadow above the cliffs; 96u = 10.4 m,
+    // honest for an exposed-coast specimen. Shipped round 3 as a PLACEHOLDER — usable, but it carries a
+    // P2 `rework` block in art/manifest.json (seven flat billows read as balloons, biggest at the centre);
+    // a reroll lands under the same key and nothing here changes.
+    'otter-oak-live':          { label: 'Coast live oak',      world:  96, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // Monterey pine: the tallest tree here and the smallest footprint from above — 72u = 7.8 m of crown.
+    // Shipped round 3 as packed bristly needle tufts, the cove-pine-pitch family.
+    'otter-pine-monterey':     { label: 'Monterey pine',       world:  72, plane: 'surface', contact: 'none', motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
@@ -2704,6 +2726,22 @@ const SHAPE_KINDS = {
     // against the blue. HARD, with `isle`, `lakesand` and `desertsand`: every beach in the
     // game grounds you. A beach — no lee at all.
     blacksand: { motion: 'fixed', hard: true, look: 'blacksand', hidden: false, nav: true, height: 0 },   // a beach — no lee at all
+    // ── OTTER POINT'S FOUR GROUNDS (2026-09-13) ─────────────────────────────
+    // Monterey coast granite: the venue's PRIMARY ground — the headlands, the point, Otter
+    // Rock, every cliff and shelf. Pale warm jointed rock, the card's own. HARD, with every
+    // other rock: the whole venue is about how close you dare to a granite lee shore.
+    // Suggested height ~25 m for a headland when a designer wants the lee.
+    coastalgranite: { motion: 'fixed', hard: true, look: 'coastalgranite', hidden: false, nav: true, height: 0 },   // ~25 m of headland
+    // Coastal meadow: the OPEN ground — bluff tops, the grassland behind the cliffs where the
+    // live oaks and the scrub stand. September gold. HARD, with the other swards.
+    coastalmeadow:  { motion: 'fixed', hard: true, look: 'coastalmeadow',  hidden: false, nav: true, height: 0 },   // ~10 m of bluff
+    // Cypress floor: the SHELTERED ground under the cypress and pine groves in the lee of
+    // the headlands — the one place on this coast out of the wind. HARD, with the floors.
+    cypressfloor:   { motion: 'fixed', hard: true, look: 'cypressfloor',   hidden: false, nav: true, height: 0 },   // ~20 m with its cypresses
+    // Buff sand: the pocket beaches between the headlands, the one soft edge on a hard
+    // coast. HARD, with `isle`, `lakesand`, `desertsand` and `blacksand`: every beach in the
+    // game grounds you. A beach — no lee at all.
+    buffsand:       { motion: 'fixed', hard: true, look: 'buffsand',       hidden: false, nav: true, height: 0 },   // a beach — no lee at all
     // ── AND THE ONE GROUND THAT MOVES ───────────────────────────────────────
     // Lava. Molten flow under a cooled crust: dark plates riding an incandescent bed, the
     // seams between them glowing, the front where it meets the sea the hottest of all.
@@ -3849,6 +3887,57 @@ function courseSig(doc) {
     // v2: the algorithm grew the hard-prop list — every v1 sig is stale by construction.
     return 'v2-' + h.toString(16) + '-' + s.length.toString(36);
 }
+// ── THE RECORDS HASH: what a course record was set ON ─────────────────────────────────
+// A record belongs to a venue AS IT WAS when the record was set. Edit the venue — move a
+// mark, change the wind, add a floe — and the old times are for a course that no longer
+// exists, so they retire with it (owner's call, Sep 13 2026): both record stores key on
+// this hash, and a document whose hash changes starts a fresh book. Old entries stay in
+// storage under the old hash, so reverting the edit brings them back.
+//
+// What is hashed is everything that can change a race: the world and its boundary, every
+// shape (moving floes included — courseSig leaves them out because they do not move the
+// ruler, but they do move the fleet), the course, the wind, current, gusts, squalls, swell,
+// rapids, traffic, and every prop a hull can touch or a router prices. What is NOT: the
+// card copy, the note, the palette, the fx (snowfall, spindrift), the course description,
+// the saved paths (derived from what is already hashed), the provisional record itself,
+// props with contact:none (shore trees, buildings, ships on land) and any `_`-prefixed
+// field. So a replant or a retint keeps the book; a physics edit resets it.
+//
+// Canonical JSON (sorted keys at every level) so a re-save that reorders fields is not an
+// edit. Versioned: change WHAT is hashed and bump the prefix, so every book resets once
+// rather than half the venues silently keeping stale times.
+function canonJSON(x) {
+    if (x === null || typeof x !== 'object') return JSON.stringify(x === undefined ? null : x);
+    if (Array.isArray(x)) return '[' + x.map(canonJSON).join(',') + ']';
+    const keys = Object.keys(x).filter(k => k[0] !== '_' && x[k] !== undefined).sort();
+    return '{' + keys.map(k => JSON.stringify(k) + ':' + canonJSON(x[k])).join(',') + '}';
+}
+function recordsHash(doc) {
+    if (!doc) return 'r1-none';
+    const skipTop = { note: 1, card: 1, palette: 1, fx: 1, records: 1, props: 1, course: 1 };
+    const out = {};
+    for (const k of Object.keys(doc)) if (!skipTop[k]) out[k] = doc[k];
+    const c = doc.course || {}, course = {};
+    for (const k of Object.keys(c)) if (k !== 'description' && k !== 'paths') course[k] = c[k];
+    out.course = course;
+    const props = [];
+    for (const p of (doc.props || [])) {
+        if (!p || !PROP_KINDS[p.kind]) continue;
+        if (propTraits(p).contact === 'none') continue;
+        props.push(p);
+    }
+    out.props = props;
+    const s = canonJSON(out);
+    // Two independent 32-bit mixes (DJB2-xor and FNV-1a): 64 bits is plenty to tell one
+    // edit from another, and both are a few lines with no table.
+    let h1 = 5381, h2 = 0x811c9dc5;
+    for (let i = 0; i < s.length; i++) {
+        const ch = s.charCodeAt(i);
+        h1 = (Math.imul(h1, 33) ^ ch) >>> 0;
+        h2 = Math.imul(h2 ^ ch, 16777619) >>> 0;
+    }
+    return 'r1-' + h1.toString(16).padStart(8, '0') + h2.toString(16).padStart(8, '0');
+}
 // The saved paths as the game's `dmc` structure ({ legs: [{ pts, cum, length, base, roundSweep?,
 // roundZone? }], total }), or null when the document has none or they are stale.
 function savedCoursePaths(doc) {
@@ -3875,6 +3964,8 @@ window.VenueDoc = {
     // The course's leg polylines, saved by the editor — see courseSig / savedCoursePaths.
     courseSig,
     savedPaths: savedCoursePaths,
+    // What the record book is keyed on — see recordsHash.
+    recordsHash,
     // THE GAME'S ONE LENGTH CONVERSION, in the file both the game and the editor already
     // load. It was about to exist in three places at once — the editor's uToM/mToU, the
     // validator's rails, and the gust sizes in script.js — and three copies of "how long is

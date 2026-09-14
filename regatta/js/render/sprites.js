@@ -350,7 +350,27 @@ const LAND_TEXTURES = {
     // (1.80) and desertsand (3.45): the calm one of the set, as specced. The pebble drifts
     // run one diagonal, so the one thing to watch tiled is a direction; at 3 luma it does
     // not read. If the beach looks dead the move is UP (1.0 -> 4.49), never down.
-    blacksand:    { src: 'assets/images/terrain/volcanic/blacksand.png', tile: 128, alpha: 0.7 }
+    blacksand:    { src: 'assets/images/terrain/volcanic/blacksand.png', tile: 128, alpha: 0.7 },
+    // ── OTTER POINT'S FOUR GROUNDS (2026-09-13) ─────────────────────────────
+    // Every body in ISLAND_STYLES is the DELIVERED tile mean, so every alpha here is a pure
+    // contrast knob (the coralsand rule). On-screen sd = tile-scale luma sd x alpha; the
+    // set's accepted band is 1.38-6.66.
+    // Coastal granite: tile sd 11.04 at 256. 0.35 with coastalrock and slickrock lands 3.86,
+    // between bay-lane (3.63) and arctic granite (4.89) — the joints show, the plates read
+    // as one pale mass, which is a sunlit headland.
+    coastalgranite: { src: 'assets/images/terrain/otter/granite.png',      tile: 256, alpha: 0.35 },
+    // Coastal meadow: tile sd 21.17 at 128 — THE LOUDEST TILE IN THE LIBRARY, three times the
+    // granite's, because the delivery drew every tussock lit-against-shade (luma p5-p95
+    // 122-195 against a brief of ~20 points). Pre-registered 0.4 would land 8.5, above
+    // grass (6.66) at the top of the band; 0.30 lands 6.35, level with grass, the loud
+    // sward. If it still fights the props on the plates the move is DOWN to 0.25 (5.3).
+    coastalmeadow:  { src: 'assets/images/terrain/otter/meadow.png',       tile: 128, alpha: 0.30 },
+    // Cypress floor: tile sd 7.89 at 128. 0.60 lands 4.73, the quiet end of the floors
+    // (forestfloor measured UP to 0.70 from a 0.45 guess, so this one starts high).
+    cypressfloor:   { src: 'assets/images/terrain/otter/cypressfloor.png', tile: 128, alpha: 0.60 },
+    // Buff sand: tile sd 4.87 at 128. 0.7, the sands' usual, lands 3.41 — between blacksand
+    // (3.14) and desertsand (3.45), the calm one of the set, as specced.
+    buffsand:       { src: 'assets/images/terrain/otter/sand.png',         tile: 128, alpha: 0.70 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];

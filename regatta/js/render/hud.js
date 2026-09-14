@@ -974,6 +974,19 @@ const MINIMAP_ISLAND = {
     // Active lava charts a step yellower and brighter than the hardening tongue: of the
     // two it is the hazard, and the chart should say which is which.
     magma:     { body: '#F5901E', top: '#F5901E' },
+    // ── OTTER POINT, AND THE CHART AGREEING WITH THE GROUND ─────────────────
+    // All four take rows at their DELIVERED tile means, the river-meadow pattern: the chart
+    // water is a 0.9 wash of #268f97 (luma 113) and the grounds already sit where a chart
+    // wants them — granite and sand +61, meadow +47, and the cypress floor -30, inside the
+    // bayou note's -27..-50 band for a dark wood. Two rows are needed rather than
+    // inherited: `coastalmeadow` and `cypressfloor` carry trees: true, so without a row the
+    // chart would take their VEG tones (an olive and a moss) and the gold hills would chart
+    // as scrub. Granite and sand chart the same luma and separate on hue alone (dE 20, grey
+    // against gold); if that reads as one pale mass, the beach is the one to warm.
+    coastalgranite: { body: '#BBAC95', top: '#BBAC95' },
+    coastalmeadow:  { body: '#BAA24C', top: '#BAA24C' },
+    cypressfloor:   { body: '#5F5237', top: '#5F5237' },
+    buffsand:       { body: '#CCAB6C', top: '#CCAB6C' },
     // Fallback only. A bar's real chart colour is DERIVED per shape (shoalTintFor), so a
     // tan bar and a coral-white bar read differently here exactly as they do on the course.
     shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }
@@ -1850,7 +1863,9 @@ const BI_RIM = 'rgba(148,163,184,0.30)';
 
 // Everything the panel shows, in one place, because two of these numbers are not the raw
 // quantity they look like.
-function boatInstrumentData(player) {
+// `prev` is the last reading when the progress rate is NOT to be re-sampled this frame — see
+// boatInstruments. Everything else is read fresh every call.
+function boatInstrumentData(player, prev) {
     const w = getWindAt(player.x, player.y);
     // ⚠️ SOG, NOT BOAT SPEED, and on a tidal venue they are different numbers. `boat.speed`
     // is speed through the WATER — what a log reads — and it says nothing about whether the
@@ -1885,7 +1900,7 @@ function boatInstrumentData(player) {
     // this whole refactor exists to prevent. Projected on the wind axis, same convention the
     // physics uses (heading and wind both point the way they are going).
     const vmg = Math.abs(v.x * Math.sin(w.direction) - v.y * Math.cos(w.direction)) * 4;
-    const _dmc = dmcRate(player);
+    const _dmc = prev ? (prev.dmcNA ? null : prev.dmc) : dmcRate(player);
     return {
         sog, vmg, dmc: (_dmc == null ? 0 : _dmc), dmcNA: _dmc == null, tws: w.speed, twa, twsCol, sogCol, badAir,
         // In the no-sail zone: inside ~38° of the wind, where the polar runs out. Both faces
@@ -1901,8 +1916,9 @@ function boatInstrumentData(player) {
 // The two faces show one set of numbers computed once, so they cannot drift apart, and it is
 // how the rose's speed became SOG without a second definition of SOG existing anywhere.
 //
-// Transforms run every frame (they track the camera and would judder at 6 Hz); the text runs
-// at 6 Hz, as it always did, because a digit flickering at 60 Hz is unreadable.
+// Transforms and text both run every frame now (Sep 13 2026) — the text used to run at 6 Hz on
+// the argument that a digit flickering at 60 Hz is unreadable, but the signals are smooth
+// (measured wind-direction noise under 0.1°/frame) and the 6 Hz TWA stepped 5° at a time.
 function roseCue(id, cls, text, on) {
     let el = document.getElementById(id);
     if (!el && UI.speed && UI.speed.parentElement) {
@@ -1946,7 +1962,8 @@ function updateRoseHud(player, localWind) {
         }
     }
     if (UI.headingArrow) UI.headingArrow.style.transform = `rotate(${player.heading - state.camera.rotation}rad)`;
-    if (frameCount % 10 !== 0) return;
+    // Text every frame too, same reading as the boat panel (see boatInstruments): the 6 Hz
+    // gate that lived here made the rose's TWA step through a tack.
     const d = boatInstruments(player);
     // style.color rather than swapping Tailwind classes: the colour is already decided as a
     // hex by boatInstrumentData, and a class list that has to be scrubbed before every write
@@ -2047,11 +2064,17 @@ function dmcRate(player) {
     return h.rate;
 }
 
+// ⚠️ INSTANTANEOUS, EVERY FRAME (owner's call, Sep 13 2026). TWA, TWS, SOG and VMG are read
+// fresh each frame: this used to hand back one reading per 10 frames, and through a tack the
+// TWA digit stepped up to 5° at a time and lagged the boat by as much — which reads as a
+// WRONG number, not a slow one. Only the progress rate (DMC, "progress speed") keeps the
+// 10-frame sample its filter was tuned on: a rate off a one-frame progress delta is noise,
+// and it is allowed to be the slow one, like the goal chip.
 function boatInstruments(player) {
     const bucket = Math.floor(frameCount / 10);
-    if (_biCache && _biBucket === bucket && _biWho === player) return _biCache;
+    const keepDmc = !!(_biCache && _biBucket === bucket && _biWho === player);
     _biBucket = bucket; _biWho = player;
-    _biCache = boatInstrumentData(player);
+    _biCache = boatInstrumentData(player, keepDmc ? _biCache : null);
     return _biCache;
 }
 
