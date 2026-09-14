@@ -6,6 +6,7 @@
 // session to A/B against, not a before/after. Volcanic joins the set: human = 5 laps
 // 2026-09-13 (203.3/197.9/189.9/195.5/185.7 -> med 195.5), doc frozen b79ac315b9dfc104.
 //   node _em_close_table.js
+const fs = require('fs'); const path = require('path');
 const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8,
     ocean: 214.2, river: 187.4, glowtide: 204.4, redrock: 204.2,
     seatrials: 185.7, swamp: 173.3, volcanic: 195.5 };

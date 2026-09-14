@@ -387,6 +387,34 @@ five and was never worse than second; zero penalties, zero OCS.
 - Per-leg: +11.3 / +6.4 / +8.7 / +1.7 = +28.1 s on the medians; L1 (the start and the
   first beat, where the storm opens) carries the most.
 
+## THE VENUE TABLE ON THE EMBERFALL TREE — all eleven venues re-benched, ten-bot, em* (`_em_close_table.js`, 2026-09-13)
+Working tree at 5ef9d99 + the uncommitted Emberfall weather work (volcano.js; bots
+fried-as-information, dodging, plume-aware tack scoring; boil pricing). The previous
+anchors' JSONs were not on this machine, so every venue was re-run on this js: em* =
+8-seed sets at the standing seed0s (glowtide/lagoon/ocean/seatrials 16 @ 9400). The
+unchanged venues REPRODUCE the 2026-09-12 table — river, redrock, glowtide, ocean and
+seatrials byte-identical in every column; arctic/lake/lagoon within a second on
+different set widths — so this session's bot changes are sim-inert off Emberfall, as
+their `state.volcano` guards say. Volcanic joins the set (frozen b79ac315b9dfc104;
+human = his 5 laps of 2026-09-13, med 195.5). Sorted by ratio.
+| venue | human med (n) | bot med/mean/best | ratio | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat) | fins |
+| arctic | 209.4 (3) | 317/322.9/230 | **1.514** | 0.0 | 17 | 0 | 2.63/3.33/16.66/0.10/0.58 | 320/320 |
+| swamp | 173.3 (3) | 253/272.6/155 | **1.460** | 2.1 | 4 | 0 | 3.96/3.77/0.00/0.04/0.54 | 235/240 |
+| redrock | 204.2 (3) | 287/288.0/218 | **1.405** | 0.0 | 8 | 1 | 7.28/3.48/0.00/0.39/0.75 | 480/480 |
+| volcanic | 195.5 (5) | 240/241.3/162 | **1.228** | 0.0 | 1 | 0 | 0.15/1.99/0.00/0.13/0.34 | 240/240 |
+| river | 187.4 (3) | 228/243.7/172 | **1.217** | 3.7 | 31 | 1 | 87.67/5.38/0.00/0.15/0.77 | 231/240 |
+| lagoon | 174.7 (3) | 209/209.2/170 | **1.196** | 0.0 | 0 | 0 | 0.41/0.59/0.00/0.19/0.29 | 160/160 |
+| glowtide | 204.4 (4) | 230/230.8/172 | **1.125** | 0.0 | 6 | 0 | 10.51/2.37/0.00/0.40/0.57 | 160/160 |
+| bay | 239 (3) | 268/266.0/224 | **1.121** | 0.0 | 0 | 0 | 0.10/0.66/0.00/0.16/0.19 | 160/160 |
+| lake | 194.8 (3) | 217/215.6/168 | **1.114** | 0.0 | 0 | 0 | 0.26/0.60/0.00/0.07/0.19 | 160/160 |
+| ocean | 214.2 (3) | 224/223.2/194 | **1.046 ✅** | 0.0 | 0 | 0 | 0.06/0.47/0.00/0.09/0.16 | 160/160 |
+| seatrials | 185.7 (10) | 191/192.9/176 | **1.029 ✅** | 0.0 | 0 | 0 | 0.00/0.56/0.00/0.16/0.16 | 160/160 |
+Emberfall's ten-bot row (240 med) sits 44 s behind the human, third worst by ratio,
+between redrock and river; its dirt is clean (land 0.15, one collision per boat median,
+zero penalties median) — the gap is the weather, per the 9-bot A/B in the Emberfall
+section above (lightning −25 s med when removed; OCS 55% is the start layer, not the
+storm). Goal 2/10 unchanged; Emberfall is not yet a goal venue.
+
 ## Instrumentation TODO (to make the tables complete)
 
 DONE 2026-08-03 (a0c3633 + instr commit): items 1-3 — bay_bench/fleet_leg2
