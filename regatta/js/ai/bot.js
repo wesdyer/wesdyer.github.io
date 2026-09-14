@@ -216,6 +216,7 @@ class BotController {
         this.updateTimer -= dt;
         if (this.updateTimer > 0) return;
         this.updateTimer = 0.1; // 10Hz updates
+        this._tickN = (this._tickN || 0) + 1;
         // FRIED (volcano.js). A strike took the INSTRUMENTS, not the helm: the wind read
         // freezes (stale numbers, like a dead masthead unit), the plan freezes (no new
         // tack, gybe or route until the reboot) and the helm wanders a little — but eyes
@@ -225,7 +226,16 @@ class BotController {
         const fried = !!(state.volcano && window.Volcano && Volcano.isFried(this.boat));
         if (fried) {
             const f = Volcano.fryOf(this.boat);
-            if (this._friedOn !== f) { this._friedOn = f; this._friedIntent = this.prevDesired != null ? this.prevDesired : this.boat.heading; this._friedTicks = 0; }
+            if (this._friedOn !== f) {
+                this._friedOn = f; this._friedTicks = 0;
+                // The intent held through the outage is the RACING intent — the strategic
+                // heading of the last live tick, before any dodge bent it and before
+                // avoidance (which keeps running on top). `prevDesired` is last tick's
+                // FINAL heading: mid-dodge it latched the detour for the whole outage
+                // (census: fries after a dodge cost 2.3 s each, fries without one 0.1 s).
+                const fresh = this._raceIntent != null && this._raceIntentTick != null && (this._tickN - this._raceIntentTick) <= 2;
+                this._friedIntent = fresh ? this._raceIntent : (this.prevDesired != null ? this.prevDesired : this.boat.heading);
+            }
             this._friedTicks++;
         } else if (this._friedOn) { this._friedOn = null; }
         // ⚠️ THE BODY RUNS AT 10Hz BUT dt IS THE FRAME STEP (1/60), so a `± dt`
@@ -781,6 +791,7 @@ class BotController {
                 desiredHeading = normalizeAngle(this._friedIntent + 0.12 * Math.sin(state.volcano.t * 0.9 + ph));
             } else {
                 desiredHeading = this.getStrategicHeading(nav);
+                this._raceIntent = desiredHeading; this._raceIntentTick = this._tickN;
                 // THE DODGE: a strike marked on the water within reach, and this helm decided
                 // to answer it — bear away from the point for the tell. See strikeDodge.
                 const dodge = this.strikeDodge();
