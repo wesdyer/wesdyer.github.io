@@ -17648,3 +17648,11 @@ set's med differs from the pooled med by sampling only (swamp 268 vs 253, arctic
 Goal (≤1.1×) 3 of 11: ocean, seatrials, volcanic. Emberfall went from third-worst to
 third-best in one session: F3 −17.4 s mean, D1 −10.0 s mean; ⚠️ his reference laps faced
 the aimed striker at 3× a bot's draw, so the 1.084 flatters the fleet slightly.
+
+## GLOWTIDE ROWS (23:46, the last two benches): S2 +5.8 s mean (med +2), OCS-ever 56.3 → 59.4%
+## (the 5.29 kt set sweeps the fleet over; a margin does not help a current-driven OCS), boat
+## contacts 2.37 → 3.44 — a sixth loser for S2. B1 glowtide +4.6 mean (its route is identical in
+## length; the stale v3 signature routes at load and reshuffles the races) — B1 stays rejected.
+## S2's ledger, complete: winners swamp −33 / river −12 / arctic −7 / volcanic (OCS 52 → 2%) /
+## redrock 0; losers glowtide +5.8 / lagoon +3.5 / bay +3.2 / seatrials +2.6 / ocean +1.9 /
+## lake +1.8. Owner call, as recorded above.
