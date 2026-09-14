@@ -47,14 +47,14 @@ const OUT = process.env.OUT || '.';
   // place — that place is a finish that happened here, so it seeds the finish record.
   for (const legacy of ['243.1', '{"t":243.1,"pos":3}']) {
     console.log('legacy ' + legacy.padEnd(22), JSON.stringify(await p.evaluate((v) => {
-      localStorage.setItem('regatta_bests', `{"lagoon:4":${v}}`);
+      localStorage.setItem('regatta_bests', `{${JSON.stringify(venueBestKey('lagoon'))}:${v}}`);
       return bestForVenue();
     }, legacy)));
   }
 
   // The race-day board and the results hero, both drawn from a real history.
   await p.evaluate(() => {
-    localStorage.setItem('regatta_bests', JSON.stringify({ 'lagoon:4': { t: 271.743, bestPos: 2, bestPosT: 288.02 } }));
+    localStorage.setItem('regatta_bests', JSON.stringify({ [venueBestKey('lagoon')]: { t: 271.743, bestPos: 2, bestPosT: 288.02 } }));
     state.race.bestChecked = false;
     delete document.getElementById('res-hero').dataset.sig;
     showResults();

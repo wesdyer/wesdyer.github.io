@@ -14,7 +14,7 @@ const OUT = process.env.OUT || '/private/tmp/claude-501/-Users-wesdyer-Documents
     await p.waitForFunction(() => window.state && window.VENUE_DOC);
     await p.evaluate((v) => {
       localStorage.setItem('regatta_settings', JSON.stringify({ venue: v, character: 'Muninn' }));
-      localStorage.setItem('regatta_bests', JSON.stringify({ 'lagoon:4': { t: 252.1, pos: 2 } }));
+      localStorage.setItem('regatta_bests', JSON.stringify({ [venueBestKey('lagoon')]: { t: 252.1, pos: 2 } }));
       resetGame();
       selectCompetitor(state.boats[3].name);
     }, VENUE);

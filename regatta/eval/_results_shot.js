@@ -72,7 +72,7 @@ const OUT = process.env.OUT || '/private/tmp/claude-501/-Users-wesdyer-Documents
   // Re-render the finished race against a stored best it beats, then one it does not.
   for (const [label, prev, file] of [['BEAT', 999, 'results_best.png'], ['MISSED', 1, 'results_missed.png']]) {
     await p.evaluate((prevBest) => {
-      localStorage.setItem('regatta_bests', JSON.stringify({ [`${settings.venue}:${state.race.totalLegs}`]: prevBest }));
+      localStorage.setItem('regatta_bests', JSON.stringify({ [venueBestKey()]: prevBest }));
       state.race.bestChecked = false;
       delete document.getElementById('res-hero').dataset.sig;
       showResults();
