@@ -356,6 +356,16 @@ const LAND_TYPES = [
     // Active lava: swatch is ISLAND_STYLES.magma.body, the bed tile's own mean — here the
     // material you see IS the body, unlike lava's crust.
     { kind: 'magma',     label: 'Volcanic Magma',      swatch: '#EC6F09' },
+    // Otter Point's four grounds (2026-09-13), on the [VENUE] [TERRAIN] convention so the
+    // label sort files them together. Swatches track ISLAND_STYLES.<kind>.body, all four
+    // the DELIVERED tile means (2026-09-13). ⚠️ "Otter Coastal Granite" is NOT "Granite":
+    // one is pale warm Monterey headland rock, the other Glacier Sound's cold fjord rock —
+    // the venue's first cut was authored on the wrong one, and the label is what tells a
+    // designer which is which.
+    { kind: 'coastalgranite', label: 'Otter Coastal Granite', swatch: '#BBAC95' },
+    { kind: 'coastalmeadow',  label: 'Otter Coastal Meadow',  swatch: '#BAA24C' },
+    { kind: 'cypressfloor',   label: 'Otter Cypress Floor',   swatch: '#5F5237' },
+    { kind: 'buffsand',       label: 'Otter Coastal Sand',    swatch: '#CCAB6C' },
     // Stillwater Lake's three grounds. Swatches track ISLAND_STYLES.<kind>.body and are still
     // the tile SPEC means, so they move when the art is ingested and the bodies are reset.
     // ⚠️ "Glacial Granite" is NOT "Granite" — one is ice-SMOOTHED northern shelf rock, the
@@ -1948,7 +1958,11 @@ const KIND_FILL = {
     // shows the orange — the one dry-land fill here that is not dark, and the reason
     // lava's edge carries its ember instead (a solid orange blob next to a solid orange
     // blob would need a label to tell a lake from a tongue).
-    magma: '#EC6F09'
+    magma: '#EC6F09',
+    // Otter Point's four. All dry land, so all solid per this table's rule that only what
+    // you may sail over is translucent. Values are the DELIVERED tile means (2026-09-13),
+    // matching the chips.
+    coastalgranite: '#BBAC95', coastalmeadow: '#BAA24C', cypressfloor: '#5F5237', buffsand: '#CCAB6C'
 };
 const KIND_EDGE = {
     granite: '#c9c9c9', karst: '#aab0bb', redrock: '#8a4a26', reed: '#5c8438', lawn: '#597a22', swampgrass: '#7d7048',
@@ -1994,7 +2008,9 @@ const KIND_EDGE = {
     // than anywhere: on the schematic the edge is the only thing that says this dark
     // shape is the hot one.
     basalt: '#191A1D', cinder: '#291B18', blacksand: '#151514', lava: '#FF6A2A',
-    magma: '#FFC24A'
+    magma: '#FFC24A',
+    // Otter Point's four. Each is its own ISLAND_STYLES stroke — the body at ~0.72 luma.
+    coastalgranite: '#877C6B', coastalmeadow: '#867437', cypressfloor: '#443B28', buffsand: '#937B4E'
 };
 
 function drawLandLayer() {

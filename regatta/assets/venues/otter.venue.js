@@ -40,7 +40,7 @@ window.VENUE_DOC["otter"] = {
   "shapes": [
     {
       "id": "coast-granite",
-      "kind": "granite",
+      "kind": "coastalgranite",
       "outer": [
         [
           2758.5,
@@ -185,7 +185,7 @@ window.VENUE_DOC["otter"] = {
     },
     {
       "id": "coast-scrub",
-      "kind": "coastalscrub",
+      "kind": "coastalmeadow",
       "outer": [
         [
           3273,
@@ -330,7 +330,7 @@ window.VENUE_DOC["otter"] = {
     },
     {
       "id": "point-rock",
-      "kind": "granite",
+      "kind": "coastalgranite",
       "outer": [
         [
           2346.6,
@@ -391,7 +391,7 @@ window.VENUE_DOC["otter"] = {
     },
     {
       "id": "point-rock-2",
-      "kind": "granite",
+      "kind": "coastalgranite",
       "outer": [
         [
           1881.5,
@@ -440,7 +440,7 @@ window.VENUE_DOC["otter"] = {
     },
     {
       "id": "otter-rock",
-      "kind": "granite",
+      "kind": "coastalgranite",
       "outer": [
         [
           -2005.2,
@@ -509,7 +509,7 @@ window.VENUE_DOC["otter"] = {
     },
     {
       "id": "otter-rock-2",
-      "kind": "granite",
+      "kind": "coastalgranite",
       "outer": [
         [
           -3044,

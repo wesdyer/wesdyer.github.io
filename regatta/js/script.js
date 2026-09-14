@@ -361,79 +361,13 @@ function update(dt) {
         }
     }
 
-    // ── WIND STREAKS: where a streak is BORN is the primary pressure cue ────────
-    //
-    // Real water tells you this by presence and absence. Below about six knots the
-    // surface is glassy and there are no wind streaks at all; the along-wind lines
-    // (Langmuir streaks) start showing in a moderate breeze and cover the water in a
-    // fresh one. So a lull is drawn as BARE WATER, not as a dim streak — which is both
-    // what a sailor actually sees and the only encoding that survives on a dark palette,
-    // where "faint white" and "nothing" look identical anyway.
-    //
-    // Two independent gates, because they answer two different questions:
-    //   absolute (`windiness`) — is there enough breeze here to mark the water at all?
-    //   relative (`pressureAt`) — is this the windy side of THIS course?
-    // Absolute alone would make a light venue uniformly bare and a fresh one uniformly
-    // covered; relative alone would paint 7-knot swamp water like a squall.
-    //
-    // The old rule was `max(0.07, (rel - 0.85) * 1.6)` against the route-centroid wind.
-    // On nine of the ten venues the wind field is spatially uniform, so `rel` was exactly
-    // 1 everywhere and the floor was doing all the work: density was flat, and so was
-    // every other channel. This layer varied nothing on nine venues and read the tenth
-    // backwards.
-    const spawnTries = 2;
-    for (let s = 0; s < spawnTries; s++) {
-        const range = Math.max(canvas.width, canvas.height) * 1.35;
-        // A streak is a mark on the WATER. A single roll rejected on land used to be
-        // the whole story — which on open water changed nothing, but in Redrock's
-        // canyon maze most of the box IS land, so the layer thinned out exactly
-        // where the wind does its wildest work. Resample a few times instead: the
-        // WATER keeps its density whatever the land fraction around it. Extra
-        // draws are safe — fxRand is the visuals-only stream.
-        let sx = 0, sy = 0, onWater = false;
-        for (let r = 0; r < 6 && !onWater; r++) {
-            sx = state.camera.x + (fxRand() - 0.5) * range;
-            sy = state.camera.y + (fxRand() - 0.5) * range;
-            onWater = Arena.contains(state.course.boundary, sx, sy, 0) && inMaskWater(sx, sy);
-        }
-        if (!onWater) continue;
-        const spd = getWindAt(sx, sy).speed;
-        const windiness = Math.max(0, Math.min(1, (spd - _streakRef.floor) / _streakRef.span));
-        if (windiness <= 0) continue;                       // glassy: the water is not marked
-        const t = pressureAt(spd);
-        // Squared, so the windy side is unmistakably denser rather than slightly denser.
-        // Capped well below saturation: at the top of Glacier Sound's ramp the first
-        // tuning put ~300 streaks on screen and the fleet raced through a curtain. This
-        // layer is the water talking, and it stays under the boats and the labels
-        // (race-view.md §8) — ~2.5x the density of the light corner is plenty to read.
-        // Capped for the same reason the other two channels are: density is the strongest
-        // pressure cue AND the one that most easily becomes a curtain. The gradient below
-        // the ceiling is what carries the reading; the ceiling is what keeps it readable.
-        const _c = cometCfg();
-        // ⚠️ THE PRESSURE WEIGHT IS THE CONTRAST. The constant term is density you get for
-        // being on windy water at all; the t² term is density you get for being on the WINDY
-        // SIDE of this course. Measured puff:clear was 1.5-1.7 against the 2.5 this layer's
-        // own note claims to deliver, so the constant came down and the weighted term went up.
-        const chance = Math.min(STREAK_MAX_SPAWN, _c.dens0 + _c.dens1 * windiness * (0.18 + 0.82 * t * t));
-        if (fxRand() >= chance) continue;
-        createParticle(sx, sy, 'wind', {
-            life: 1.0,
-            jit: fxRand(),
-            // Each streak rides at its own share of the true wind, in the same 0.6-0.9
-            // band the puff cells use — so a streak inside a cat's-paw travels WITH it
-            // instead of sliding through it. The spread is also the only source of
-            // streak-to-streak LENGTH variety, and it stays inside that physical band:
-            // 1.5x of scatter against the 1.9x the wind varies across Glacier Sound and
-            // the 2.4x it varies between venues, so length still READS as wind speed
-            // rather than becoming decoration on top of one.
-            drift: 0.60 + fxRand() * 0.30,
-            trail: [{ x: sx, y: sy }],
-            trailT: 0,
-            beach: 1,
-            waterT: fxRand() * WIND_WATER_RECHECK
-        });
-    }
+    // ── WIND COMETS ──────────────────────────────────────────────────────────────
+    // A closed population spread evenly over the view — wrapped at the edges, reborn into
+    // the emptiest water, seeded pre-aged — so the wind can be read anywhere on screen at
+    // the same coverage whatever it is doing. Lives in wind.js with the rest of the layer;
+    // runs after updateParticles so this frame's drift is wrapped this frame.
     updateParticles(dt);
+    updateCometField(dt, canvas.width, canvas.height);
     updateWindWaves(dt);
     updateSurf(dt);
     // Sim-clocked since the leak fixes: these used to run from draw() on

@@ -315,61 +315,48 @@ The pressure overlay §6.4 asked for. A streak is one parcel of air, drawn along
 own track** over the last `WIND_TAIL_PTS × WIND_TAIL_STEP` seconds — so its direction
 and its length are measurements, not formulas, and it curves where the breeze bends.
 
-Four channels. **Three read off `pressureAt()`; colour reads absolute knots.** They answer
-two different questions and cannot contradict each other, because within a race both rise
-together:
+Three channels, and **every one of them reads absolute knots** (owner's call, Sep 13 2026):
+a comet is the same comet on every venue. Five knots on the bay draws exactly what five
+knots draws on the swamp — same drift, same length, same width, same colour — and fifteen
+knots is unmistakably a bigger mark than ten. A reading is only learnable if it means the
+same thing everywhere.
 
-| channel | carries | why |
+| channel | carries | how |
 |---|---|---|
-| **density** | pressure (strongest cue) | Real water is bare in light air and streaked in a fresh breeze. A lull is drawn as **absent streaks**, which is what a sailor sees and the only encoding that survives on a dark palette. |
-| **length** | wind speed, exactly | distance covered in a fixed window of time |
-| **width** | pressure **and absolute wind** | `t` alone made a 6.5 kt Gatorgrass streak as fat as a 16 kt Bluewater one at half the length — stubby. Scaling with the breeze too keeps a comet's *shape* constant and lets its *size* report the wind. Aspect ratio now sits at 12–17:1 on every venue. |
-| **colour** | **absolute knots, 0 → 35** | so a shade means the same wind on every venue |
+| **drift** | wind speed | knots × 15 units/s × the comet's own 0.6–0.9 share |
+| **length** | wind speed, exactly | that drift over a fixed 0.55 s window: ~6.2 units a knot — 31 at five, 62 at ten, 124 at twenty |
+| **width** | wind speed | linear, `w0` at calm to `w0 + w1` at 35 kt: half-width ~0.75 at five knots, ~0.95 at ten, ~1.35 at twenty |
+| **alpha** | wind speed | `a0 + a1·s^aPow` plus the warm boost above 14 kt, on the same 0–35 ramp |
+| **colour** | **absolute knots, 0 → 35** | ice → white → cream → gold → amber → red |
 
-**Density and width are anchored to the course** (`computeWindPressureScale`): p10/p90 of
-the mean field sampled over sailable water **inside the mark box**, averaged across one
-full oscillation cycle, widened to at least ±18% of the median. 18 knots is a hole on
-Glacier Sound and a squall on Gatorgrass, and several venues still state one uniform wind
-region, so without the widening `lo === hi` and the ramp has no denominator. This is what
-keeps *which side of this course is windy* readable even where the absolute range is too
-narrow to shift hue much.
+Until Sep 13 2026 width and alpha rode the course's own p10–p90 ramp (`pressureAt`) and the
+tail window was stretched up to 2.5× on light venues (`computeStreakRef`, now deleted), so a
+6-knot mark on Gatorgrass was as fat as a 16-knot one on Bluewater and 2.5× longer than a
+6-knot mark on the bay. The course-relative machinery (`computeWindPressureScale`) still
+exists for the puff tone; the comets no longer read it.
 
-**Colour is anchored to knots, and that is deliberate** — it reverses the original rule,
-which anchored every channel to the course. Reading the wind is the primary skill the game
-asks for, and a course-relative shade is only learnable *within* one race: the same colour
-was 5 kt on Gatorgrass and 30 on Glacier Sound, so the reading was wrong the moment the
-player changed venue. The original argument for relative anchoring was that nine of ten
-venues stated one uniform region and an absolute ramp would paint them flat — much less
-true now (Gatorgrass alone carries 27 regions), and even where it holds, gusts, lulls and
-island lees all move the *local* speed, so an absolute ramp still marks them, and marks
-them better for not already being pinned at the top of a narrow course ramp.
-
-**The floor the layer measures from is per-course too** (`computeStreakRef`).
-`STREAK_MIN_WIND` (5.5 kt) is a fact about water — below it the surface is glass and
-carries no Langmuir streaks — but held as an absolute gate it also decided that a venue
-whose whole range sits underneath it got **no layer at all**. Measured on Gatorgrass
-(2.7–6.0 kt): 5.3% of the water cleared the gate and the live streak count was **zero**, on
-the venue whose entire identity is reading a fickle breeze. Three things compounded —
-density (the gate rejected ~95% of spawns), length (a fixed 0.55 s tail window is 4 world
-units of track at 3.7 kt) and width (`abs` pinned at zero held every survivor at the
-`wLight` floor). A four-unit speck at half width that almost never spawns is not a faint
-layer, it is no layer.
-
-So the floor drops to a fraction of the **course median** when the course is lighter than
-the glassy threshold, and the tail window stretches so a slow parcel still draws a readable
-mark. `Math.min` leaves every venue already above 5.5 kt untouched. **From the median, not
-the p10** — Stillwater authors genuinely glassy 2-knot shore patches, which put its p10 at
-0.09 and would have driven the floor to 0.08, marking up the very glass the layer exists to
-leave bare.
+**Density is NOT a channel** (owner's call, Sep 13 2026 — it was, until then, "the strongest
+cue"). The field holds **one comet per `COMET.spacing`² of screen, everywhere in view**,
+whatever the wind, the venue, the window or the clock: the wind can be read at any point on
+screen, and a lull shows as short pale dashes rather than bare water. `updateCometField`
+keeps it uniform with three rules — a comet blown out of the field (the view plus a margin,
+in the camera frame) **wraps** to the opposite side with its tail, so no edge is starved
+whichever way the wind or the camera moves; a comet that dies is **reborn at the emptiest of
+several random water spots** (best-candidate), so voids fill first and clumps are not fed;
+and an empty field is **seeded pre-aged** with tails walked back through the wind, so frame
+one already looks like the steady state. The old dart spawner put a third of its comets in
+view, starved the upwind side by up to half the screen at 20 kt, and began every race bare —
+see the design note above `COMET_FIELD_MARGIN` and `eval/comet_field.js`.
 
 **This layer is information, never the subject of the frame.** Thickness and density are the
-two channels that turn a reading into a curtain, so both have **hard ceilings that are clamps,
-not coefficients** — `STREAK_MAX_ALPHA`, `STREAK_MAX_HALFWIDTH`, `STREAK_MAX_SPAWN`. A
+two channels that turn a reading into a curtain. Density is a fixed spacing, so it cannot
+creep; thickness and alpha have **hard ceilings that are clamps, not coefficients** —
+`STREAK_MAX_ALPHA`, `STREAK_MAX_HALFWIDTH`. A
 coefficient is a number someone later raises for a venue that "needs more", and the failure it
 produces is a wall of ink over a mark rounding. The arithmetic could otherwise reach alpha
-**1.008** — a fully opaque streak — and that is not a rare corner: `pressureAt` clamps at the
-course's p90 and a gust pushes local wind straight past it, so every channel pins to maximum
-exactly where the fleet is and exactly where the boats most need to be visible.
+**1.008** — a fully opaque streak — and the top of the ramp is not a rare corner: a squall or
+a Glacier Sound gust runs the local wind to 30+ knots exactly where the fleet is and exactly
+where the boats most need to be visible.
 
 Verified by forcing the whole view to the top of the ramp (`_comet_ceiling.js`), including
 with the config knobs deliberately abused: alpha holds at the ceiling, half-width at 4.6, and
@@ -384,7 +371,7 @@ Rules this layer must keep:
   near-white at the pivot). The *structure* transfers; the stops do not. The low end cannot
   be blue: rendered water runs OKLab L 0.22 (Glowtide) to 0.75 (Pearl Lagoon) and is blue
   or cyan on 12 of 15 venues, and SailGP's navy-to-cyan measured dE 0.01–0.05 on three of
-  them. So the cool end is a pale **ice** and light air is still carried by density and
+  them. So the cool end is a pale **ice** and light air is still carried by length and
   width. The middle is **white**, because venue medians sit at 8–18 kt on 13 of 15 venues
   and that band is what players look at most: the retired mint/green there composited to a
   water-like teal on blue venues, sat next to nav teal and the status green, and read as
@@ -411,12 +398,12 @@ Rules this layer must keep:
   two colours instead of following hue — a wide jump between distant hues passes through
   grey. A first pass went teal at 14 kt straight to gold at 20 and drew a dead olive at 17.
   Neighbouring stops must always be adjacent in hue.
-- **Light air is drawn FINE, not pale-and-fat.** `wLight` is the width multiplier at the
-  bottom of the ramp; at 0.50 a 4-knot streak read as a fresh-breeze streak that had merely
-  lost its colour. It is 0.40, which is only safe because density and length no longer
-  collapse at the same time.
-- **A streak is a mark on WATER.** Culled to the arena and off land at spawn, rechecked
-  every `WIND_WATER_RECHECK` seconds as it drifts.
+- **Light air is drawn FINE, not pale-and-fat.** Width is linear in knots from `w0` (0.55
+  half-width at calm), so a 4-knot streak is a fine short mark, and it is still one of many
+  because the field is uniform.
+- **A streak is a mark on WATER.** Born on water only, rechecked every
+  `WIND_WATER_RECHECK` seconds as it drifts; one that wraps onto a shore re-tests at once
+  and takes the shore fade in the off-screen margin.
 - **Nothing in this layer may disappear while visible.** Killing a beached streak outright
   made it blink out at full strength *against the shoreline* — the eye goes straight to a
   disappearance, so a cull meant to be invisible was the loudest thing the layer did. It
@@ -441,14 +428,15 @@ Rules this layer must keep:
   shadow and rain are the primary cue there, with comets 1.46× denser inside one. A single
   "spread" number cannot tell those apart; `eval/_wind_decomp.js` silences one source at a
   time and says which.
-- **There has to be a POPULATION to read a gradient off.** The ceiling, not the ramp, was
-  the binding constraint: `STREAK_MAX_SPAWN` at 0.20 capped the layer near 38 comets on
-  screen at maximum pressure, and the measured reality was **5 on Stillwater and 16 on
-  Redrock** — the two venues whose whole point is a patchy breeze. Nobody reads pressure off
-  five marks. Raised with the ramp; on-screen population is now 16–83 across the ten venues.
-- **The light end had all three size channels collapsing at once.** Density, length and width
-  each key off absolute wind, and on Stillwater — where **72% of the water sits under 8
-  knots** — they bottomed out together. Measured per band (`eval/_comet_lowend.js`):
+- **(History, superseded Sep 13 2026.)** Under the old dart spawner there had to be a
+  POPULATION to read a gradient off: `STREAK_MAX_SPAWN` at 0.20 capped the layer near 38
+  comets on screen at maximum pressure, and the measured reality was **5 on Stillwater and
+  16 on Redrock**. Raising it gave 16–83 across the ten venues, still varying with wind and
+  time. The field now holds 58–76 on a 1600×1000 view on every venue from the first frame
+  (`eval/comet_field.js`), so population is no longer a variable at all.
+- **(History, superseded Sep 13 2026.)** The light end once had all three size channels
+  collapsing at once on Stillwater — where **72% of the water sits under 8 knots**.
+  Measured per band (`eval/_comet_lowend.js`):
 
   | Stillwater | on screen | length | half-width |
   |---|---|---|---|
@@ -456,12 +444,11 @@ Rules this layer must keep:
   | 6–8 kt | 9 → **18** | 44 → **58 u** | 0.59 → **0.87** |
   | 8–11 kt | 18 → **46** | 63 → **84 u** | 1.10 → **1.36** |
 
-  Three levers, each chosen because it **cannot reach the top of the ramp**: `wLight` (the
-  width multiplier cancels out entirely once `abs` hits 1), `STREAK_REF_WIND` (the window
-  stretch is `max(1, ref/median)`, so a course at or above it gets exactly 1), and
-  `STREAK_FLOOR_FRAC` (the floor is `min(STREAK_MIN_WIND, med × frac)`, so above ~13 knots
-  median the absolute cap decides it). Verified: Redrock's 15–20 and 20+ bands come out
-  byte-identical in length and width.
+  The fix at the time was three per-course levers (`wLight`, `STREAK_REF_WIND`,
+  `STREAK_FLOOR_FRAC`) that widened and lengthened light-air marks on light venues only.
+  All three are deleted: they made a 6-knot comet a different size on different courses,
+  which is the opposite of what the layer is for. A light-air mark is now small and fine
+  everywhere, and legible because the field is uniform and dense enough to read as a field.
 - **The ramp is ice → white → cream → yellow → gold → amber → red-orange → red**
   (`STREAK_PALETTES.wind`, stops at 0/6/10/14/18/22/26/30/35 kt). The ramp that shipped
   Aug 2 – Sep 12 2026 (white → mint → green → gold → amber → crimson) is kept as `mint`, and

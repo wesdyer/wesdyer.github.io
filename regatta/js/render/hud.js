@@ -974,6 +974,19 @@ const MINIMAP_ISLAND = {
     // Active lava charts a step yellower and brighter than the hardening tongue: of the
     // two it is the hazard, and the chart should say which is which.
     magma:     { body: '#F5901E', top: '#F5901E' },
+    // ── OTTER POINT, AND THE CHART AGREEING WITH THE GROUND ─────────────────
+    // All four take rows at their DELIVERED tile means, the river-meadow pattern: the chart
+    // water is a 0.9 wash of #268f97 (luma 113) and the grounds already sit where a chart
+    // wants them — granite and sand +61, meadow +47, and the cypress floor -30, inside the
+    // bayou note's -27..-50 band for a dark wood. Two rows are needed rather than
+    // inherited: `coastalmeadow` and `cypressfloor` carry trees: true, so without a row the
+    // chart would take their VEG tones (an olive and a moss) and the gold hills would chart
+    // as scrub. Granite and sand chart the same luma and separate on hue alone (dE 20, grey
+    // against gold); if that reads as one pale mass, the beach is the one to warm.
+    coastalgranite: { body: '#BBAC95', top: '#BBAC95' },
+    coastalmeadow:  { body: '#BAA24C', top: '#BAA24C' },
+    cypressfloor:   { body: '#5F5237', top: '#5F5237' },
+    buffsand:       { body: '#CCAB6C', top: '#CCAB6C' },
     // Fallback only. A bar's real chart colour is DERIVED per shape (shoalTintFor), so a
     // tan bar and a coral-white bar read differently here exactly as they do on the course.
     shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }

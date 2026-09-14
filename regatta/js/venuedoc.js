@@ -2704,6 +2704,22 @@ const SHAPE_KINDS = {
     // against the blue. HARD, with `isle`, `lakesand` and `desertsand`: every beach in the
     // game grounds you. A beach — no lee at all.
     blacksand: { motion: 'fixed', hard: true, look: 'blacksand', hidden: false, nav: true, height: 0 },   // a beach — no lee at all
+    // ── OTTER POINT'S FOUR GROUNDS (2026-09-13) ─────────────────────────────
+    // Monterey coast granite: the venue's PRIMARY ground — the headlands, the point, Otter
+    // Rock, every cliff and shelf. Pale warm jointed rock, the card's own. HARD, with every
+    // other rock: the whole venue is about how close you dare to a granite lee shore.
+    // Suggested height ~25 m for a headland when a designer wants the lee.
+    coastalgranite: { motion: 'fixed', hard: true, look: 'coastalgranite', hidden: false, nav: true, height: 0 },   // ~25 m of headland
+    // Coastal meadow: the OPEN ground — bluff tops, the grassland behind the cliffs where the
+    // live oaks and the scrub stand. September gold. HARD, with the other swards.
+    coastalmeadow:  { motion: 'fixed', hard: true, look: 'coastalmeadow',  hidden: false, nav: true, height: 0 },   // ~10 m of bluff
+    // Cypress floor: the SHELTERED ground under the cypress and pine groves in the lee of
+    // the headlands — the one place on this coast out of the wind. HARD, with the floors.
+    cypressfloor:   { motion: 'fixed', hard: true, look: 'cypressfloor',   hidden: false, nav: true, height: 0 },   // ~20 m with its cypresses
+    // Buff sand: the pocket beaches between the headlands, the one soft edge on a hard
+    // coast. HARD, with `isle`, `lakesand`, `desertsand` and `blacksand`: every beach in the
+    // game grounds you. A beach — no lee at all.
+    buffsand:       { motion: 'fixed', hard: true, look: 'buffsand',       hidden: false, nav: true, height: 0 },   // a beach — no lee at all
     // ── AND THE ONE GROUND THAT MOVES ───────────────────────────────────────
     // Lava. Molten flow under a cooled crust: dark plates riding an incandescent bed, the
     // seams between them glowing, the front where it meets the sea the hottest of all.

@@ -1612,6 +1612,31 @@ const ISLAND_STYLES = {
     // the tile's hottest tongue tone: a lake's edge is brighter than a tongue's front.
     // drawMagma paints it; nothing draws this row flat.
     magma:     { body: '#EC6F09', stroke: '#FFC24A', veg: '#F58A1E', rock: '#8A1E06', trees: false },  // body = volcanic-lava-bed DELIVERED tile mean
+    // ── OTTER POINT'S FOUR GROUNDS (2026-09-13) ─────────────────────────────
+    // Monterey / Carmel / Point Lobos. All four bodies are the DELIVERED tile means (the
+    // coralsand rule), so LAND_TEXTURES' alpha is a pure contrast knob; strokes are the body
+    // at ~0.72 luma in its own hue. Measured against the venue's own water (#268f97, luma
+    // 113): granite +61, sand +61, meadow +47, cypress floor -30 — pale coast, gold hills,
+    // one dark wood, which is the California picture.
+    // Coastal granite: pale WARM grey with tan in it, L* 71, b* +14 — NOT `granite` below,
+    // which is the cold blue-grey fjord rock (L* 36) the venue's first cut was authored on,
+    // dE 39 away. A weathered, jointed, sunlit headland; the joints are the texture.
+    coastalgranite: { body: '#BBAC95', stroke: '#877C6B', veg: '#CBBFAA', rock: '#9A8F7C', trees: false },  // body = otter-granite DELIVERED tile mean
+    // Coastal meadow: September-gold annual grass with olive scrub lying through it, L* 67,
+    // chroma 47 — GOLD, not the green Cape Cod sward (`coastalscrub`, dE 15) it replaces
+    // here, and not the bayou's cured swampgrass (dE 15, greyer and 13 L* darker). veg is
+    // the tile's own olive scrub tone; rock is the coastal granite.
+    coastalmeadow:  { body: '#BAA24C', stroke: '#867437', veg: '#7E8047', rock: '#BBAC95', trees: true },   // body = otter-meadow DELIVERED tile mean
+    // Cypress floor: dark brown-olive duff under the cypress and pine groves, L* 35 — the
+    // darkest ground in the venue BY THE OWNER'S BRIEF, sitting only +9 L* above the cypress
+    // crown it carries. If the trees vanish into it, lift THIS (toward #66614A), not the
+    // trees; the lower bound is `mudflat` (#6e6449, dE 7, picker-only).
+    cypressfloor:   { body: '#5F5237', stroke: '#443B28', veg: '#626846', rock: '#9A8F7C', trees: true },   // body = otter-cypressfloor DELIVERED tile mean
+    // Buff sand: warm buff-gold pocket-beach sand, L* 72, b* +37 — darker and warmer than
+    // `tropical` (dE 13, the lakesand-vs-isle size of statement) and nothing like coralsand
+    // (dE 25). Nearest anywhere is `shoal` (dE 4), the bar FALLBACK look with no tile;
+    // honest — a sandbar and a beach are the same material.
+    buffsand:       { body: '#CCAB6C', stroke: '#937B4E', veg: '#7E8047', rock: '#BBAC95', trees: true },   // body = otter-sand DELIVERED tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
     // tracer pick below) because it is broken rock, not a rounded sandbank.
     granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false },
