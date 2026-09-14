@@ -56,3 +56,42 @@ Kill: a candidate that fails its own mechanism read (G3) is not landed on a lap 
   (vs vf3vo*); dirt lexicographic. G5: seatrials byte-identical (off = 0). G6: ocean moves
   (|off| 0.22 at commit) — bench 16 @ 9400 vs paoc; a loss there is a NAMED loser.
 - Kill: if OCS stays > 35% the geometry was not the lever and the margin (owner) is.
+
+## OUTCOMES (22:25 PT)
+- F3: G1 ✓ (med −14, mean −17.4, fins 240/240, pen/boat down, land flat), G2 ✓ (16/16),
+  G3 ✓ (dodged-fry 2.32 → 0.11 s). Goldens 30/30, 0 behaviour changes. COMMITTED 869acaa.
+- S1: OCS 52.5 → 24.6% ✓, crossing mean 19 → 7.4 ✓, lap med NOT improved (225 → 224,
+  paired +1/−0.45) ✗; G5 ✓; G6 ocean = loser (boat +91%, pen +44%, mean +2.0). REJECTED.
+- S1B (estimate only): same start win, same flat lap; ocean boat +94%, mean +2.8. REJECTED
+  — the ocean loss is the estimate. Start family on Emberfall closed at two shapes; the
+  margin is the remaining lever and it is universal ⇒ OWNER.
+- F4 (fried helm steers for the line on leg 0): lap flat (0/+0.03), boat contacts +71%,
+  pen +24%. REJECTED — a blind boat turning back turns into the fleet.
+- Dodge trees (attribution, not landing candidates): VND −23 vs base; VF3ND −10 vs F3;
+  VDT −5.5 vs F3 with pen up in all three sets. OWNER design item.
+
+## OWNER RULINGS (22:2x PT): 1 drop the dodge (D1) · 2 fix the cost-blind course path (B1) ·
+## 3 the honest timed run with a margin (S2), judged on OCS and dirt, lap non-regression.
+- D1 `treeVD1` == treeVF3ND byte-identical (8/8 on 9400) ⇒ f3nd* are D1's anchors:
+  vs F3 med −9 / mean −10, fins 240/240; pen 0.29→0.34, boat 1.60→1.72 (owner accepted).
+- B1 `treeVB1` = D1 + priced leg-path search (BFS order where unpriced) + exposure-aware
+  smoother + sig v3 on docs with priced water (8 venues route at load until re-saved).
+  G8: `_vo_route_boil` volcanic route inside boils falls from 1060 u; unpriced venues
+  (seatrials/redrock/arctic) byte-identical; every priced venue benched vs its fv*/pa*
+  anchor: fins not down, paired mean not worse than +3 s, dirt lexicographic.
+- S2 `treeVS2` = D1 + honest run (actual perpendicular distance, 1.0 s turn from a luff,
+  archetype adj kept) − 1.0 s margin. G7 (registered before any S2 output): on EVERY
+  venue fins not down, OCS-ever not up, boat contacts not up >20%, paired mean not
+  worse than +3 s; volcanic AND arctic OCS-ever at least halved. Goldens re-record on
+  acceptance (a universal start change).
+- S2 first six (22:48): volcanic OCS 52.5→1.7%, boat 1.72→0.32, pen 0.34→0.13, paired
+  mean −1.2 ✓; seatrials OCS 9.4→0, boat 0.56→0.17, mean +2.64 (ok, marginal); bay mean
+  +3.24 ✗ (8 seeds); ocean boat 0.47→0.61 (+30%) ✗, mean +1.9. ⇒ S2B = margin 0.5 s,
+  registered now, same gate G7. B1 volcanic: paired mean +4 (med +1) ✗ — the priced
+  detour costs more than the boils it avoids (price 4.2× at the core vs a measured
+  transit cost of ~0.85 s per 1.3 s crossing); lagoon −0.8 ok. Pending the other venues.
+- S2 (1.0 s): G7 FAILS on bay (+3.2 mean), ocean (boat +30%), lagoon (boat ×3, +3.5);
+  passes volcanic/seatrials/lake. S2B (0.5 s): volcanic OCS only 25% (+2.5), ocean boat
+  +47%. REJECTED, mechanism = unmodelled venue lateness + margin ⇒ start scrum.
+- B1: volcanic +4.0 mean ×3 sets (FAIL); B1B identical route, same loss. REJECTED.
+- D1: goldens verify pending at write time; commit on PASS.

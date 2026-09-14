@@ -17467,3 +17467,112 @@ does not cover the field) — an owner item; sized below the fry and the start
 - G4 (lap med must improve) NOT met; G5 seatrials byte-identical ✓; G6 ocean = loser.
   Not landed. Split in flight: **S1B** = the run estimate alone (aim unchanged), to
   see whether the OCS win survives without packing the fleet onto one tack.
+
+## ✅ F3 COMMITTED `869acaa` (local, unpushed): goldens verify PASS 30/30 with 0 behaviour
+## changes (a ten-venue proof of byte-inertness off Emberfall); npm test 36/36 after the
+## fried-intent assertion in test_volcano.js moved onto the new semantics.
+
+## ⛔ S1B — the run estimate alone (aim unchanged): REJECTED, and it names the ocean loser
+volcanic vs vf3vo\*: med 225 → 224, mean −0.5, paired −1 / −0.5 (121/109); OCS-ever
+52.5% → 24.6%, boat 1.60 → 0.91, pen 0.29 → 0.21 — the same start win as S1, the same
+flat lap. **ocean 16 vs paoc: med 224 → 226, mean +2.8, boat contacts 0.47 → 0.91
+(+94%), pen 0.16 → 0.21.** So the ocean loss was the ESTIMATE, not the aim: on a line
+0.22 rad off its wind the shorter angle-corrected run commits the fleet later and
+delivers it to the line together. The start family on Emberfall is now closed at two
+shapes: the OCS halves and does not convert, and every re-pricing of the run costs
+ocean. ⇒ the margin question (a deliberate 1 s behind the line, as he sails it) is the
+remaining lever and it is a universal design change — OWNER.
+
+## ⛔ F4 — a fried helm on leg 0 keeps steering for the line: REJECTED (dirt)
+vs vf3vo\*: med 225 → 224, mean 0.0, paired 0 / +0.03 (116/119) — no clock gain — and
+**boat contacts 1.60 → 2.74 (+71%), pen 0.29 → 0.36 (+24%)**, worst 297 → 309. A blind
+boat that turns back for the line turns back INTO the fleet crossing it; what it saves
+on the return it pays in contacts and turns. Mechanism read: the return is a traffic
+problem once the boat responds, and the held heading was keeping her out of it.
+
+## OWNER RULINGS (2026-09-13 22:2x PT): "1. Drop it 2. Fix it 3. Do your recommendation"
+- **D1 — the dodge dropped for bots** (`strikeDodge`/`dodgeChance` removed; test_volcano
+  now asserts a marked strike leaves the helm alone). treeVD1 is byte-identical to the
+  no-dodge attribution tree (8/8 on 9400), so f3nd\* are its anchors: vs F3 med −9 /
+  mean −10, fins 240/240, pen 0.29 → 0.34, boat 1.60 → 1.72 (accepted by the ruling).
+- **B1 — the priced leg-path search** (`SailCheck.pathPriced`: a hop into a cell costs its
+  shoal multiplier, ordered (cost, insertion) so an unpriced grid expands in exactly the
+  BFS's order; `CoursePath._pricedCost`: a string-pull shortcut is admitted only if it
+  crosses no more priced water than the polyline it replaces; `grid._shoalPriced`;
+  `courseSig` v3 lists awash-with-drag shapes and boil props, so ONLY documents with
+  priced water go stale — they route at load until re-saved, byte-identical elsewhere).
+  `_vo_priced_venues.js` (NEW tracked) — priced water is on EIGHT venues, not two:
+  | venue | priced cells | saved route in priced water → B1 route | route length |
+  |---|---|---|---|
+  | volcanic | 337 (max 4.18×) | 1370 → 780 u (legs 1-4 in-boil 250/160/460/190 → 100/200/260/0; leg-1 min mul 0.24 → 0.60) | 19383 → 19697 (+1.6%) |
+  | swamp | 10632 (max 10×) | 2720 → 2350 u | 8396 → 8581 |
+  | river | 4111 (4.66×) | 1390 → 310 u | 18586 → 18720 |
+  | lagoon | 3556 (3.31×) | 940 → 770 u | 16320 → **17541 (+7.5%)** — the bench decides |
+  | bay | 2584 (3.73×) | 200 → 0 u | 23198 → 23306 |
+  | glowtide / ocean / lake | 1802 / 11287 / 12 | 0 → 0 (identical routes) | unchanged, but stale sig ⇒ route at load |
+  | seatrials / redrock / arctic | 0 | — | v2 sig kept, byte-identical |
+  Shipping needs the owner to re-save `course.paths` on the eight (one editor pass) and
+  a re-freeze; until then the game routes at load with a console warning, exactly as
+  the candidate tree benches it.
+- **S2 — the honest timed run with a margin**: `tCross = turn(1.0 s from a luff, scaled by
+  how far from TWA 0.6 she is) + getApproachTime(actual perpendicular distance / cos 0.7)
+  + archetype adj − 1.0 s margin`; BUF (0.5) retired. Gates G7 in `_vo_gates.md`.
+
+## B1 FIRST READ — the priced route LOSES on Emberfall, and the price is why
+b1vo\* vs the D1 anchors (f3nd\*): paired med +1 / **mean +4.0**, med 212 → 218, fins
+240/240, boat 1.72 → 1.65, OCS unchanged. Lagoon −0.8 (ok). The route's boil exposure
+halved and its length grew 1.6% (+314 u ≈ 3.5 s at 90 u/s): the detour costs more than
+the crossings it avoids. **The router's price is not the transit the fleet pays**
+(`_vo_census.js` treeVF3, 385 natural boil crossings, priced on the clock):
+| boilMax | n | dur med | lost med | implied multiplier 1+lost/dur | router price (1/boilMul) |
+|---|---|---|---|---|---|
+| 0.1-0.3 | 86 | 0.9 s | 0.12 s | 1.11 | ~1.2× |
+| 0.3-0.5 | 182 | 1.3 | 0.36 | 1.27 | ~1.6× |
+| 0.5-0.7 | 104 | 1.8 | 0.88 | 1.44 | ~2.4× |
+| 0.7-1.0 | 13 | 3.7 | 2.32 | 1.65 | ~5.6× |
+The owner's 4× at the core was measured on an AXIAL crossing (~1050 u lost over ~430 u
+of rift, 3.4×) and is right for that geometry; the fleet's natural crossings are across
+the short axis (1.4 s med) and cost 1.3-1.65×. A per-cell price cannot carry the
+direction, so it must be set for the crossings the route actually makes. **B1B** =
+B1 + `price = 1 + turb` (rift core 1.64×, fissure 1.56×, mound 1.44×) — one line in
+buildCoursePaths, the shared field the bots' router reads too — in the bench now.
+
+## ⛔ S2 / S2B — THE HONEST TIMED RUN WITH A MARGIN: REJECTED on the ten-venue screen, mechanism named
+`_vo_screen.js` (candidate vs the standing anchors, same seeds; CAND − BASE):
+| venue | S2 (1.0 s) paired mean | OCS-ever | boat/boat | S2B (0.5 s) |
+|---|---|---|---|---|
+| volcanic | **−1.2** (med 0) | **52.5 → 1.7%** | **1.72 → 0.32** | +2.5, OCS 25%, boat 0.68 (1 set) |
+| seatrials | +2.6 | 9.4 → 0% | 0.56 → 0.17 | +0.5, OCS 0, boat 0.30 |
+| lake | +1.8 | 17.5 → 5% | 0.50 → 0.57 | — |
+| bay | **+3.2** | 0 → 0 | 0.78 → 0.85 | pending |
+| ocean | +1.9 | 2.5 → 0 | **0.47 → 0.61 (+30%)** | −0.4, boat **0.69 (+47%)** |
+| lagoon | **+3.5** | 0 → 0 | **0.60 → 1.79 (×3)** | — |
+The fast start ledgers (`_st_ledger2` FAST, 4 races, S2 vs the D1 control) name it:
+lagoon commit T−5.9 → T−5.35, at the gun 114 → 133 u behind at 3.1 → 2.3 kt, crossing
+2.9 → 5.5 s, **start-scrum contacts 0.20 → 1.20 per boat**; ocean 98 → 126 u behind,
+crossing 3.75 → 4.65 s, scrum 0.05 → 1.07. On volcanic the estimate is centred, so a
+margin is exactly right; on lagoon, ocean and bay the fleet is ALREADY late for
+physics the estimate does not model (the run trace shows the acceleration constant
+itself is right, ~5.6 s, and the missing turn is 1.0 s — yet lagoon crosses 2.4 s later
+than that predicts, ocean 3 s: swell, lee, light patches at the line), and a margin on
+top of unmodelled lateness holds the fleet at the stage until the neighbours
+accelerate through it. The two halves cannot be separated by a universal constant.
+The start fix Emberfall needs is real and is ONE line on that venue; the honest
+universal version needs an acceleration model that reads the venue (swell drag, the
+wind at the stage over the run) before a margin can be added to it. OWNER item, with
+the S2 numbers as the prize on Emberfall: OCS 52 → 2%, contacts −81%, penalties −62%.
+
+## ⛔ B1 / B1B — THE PRICED COURSE PATH: REJECTED on Emberfall, mechanism named
+b1vo\* vs f3nd\*: paired med +1 / mean +4.0 in all three sets (+4.3 / +1.5 / +6.2),
+med 212 → 218, worst 266 → 294, fins 240/240. B1B (price = 1 + turb, the transit the
+fleet pays) routes IDENTICALLY (the detour round a rift's short axis is 1-2 hops at any
+price above ~1.3×) and loses the same +4.0. Lagoon −0.8, lake +1.0 (land 0.25 → 0.57);
+river / swamp / bay / glowtide / ocean pending at the time of writing. The mechanism:
+the fleet's natural boil crossings cost 0.4 s each (`_vo_census`: 385 crossings, 1.3×
+transit), i.e. ~35 u — LESS than the one-hop detour (50-70 u) the priced search buys
+to avoid them, while the route grows 314 u (+1.6%, ≈3.5 s). The cost-blind BFS route
+was accidentally right for the crossings the fleet makes; only an AXIAL crossing of a
+rift (the owner's crossprobe, 3.4×) is expensive, and a per-cell price cannot tell the
+two apart. Not landed. The finding stands (the DMC never reads `_shoal`); the priced
+search (`pathPriced`, exposure-aware smoother, v3 signature) is kept in treeVB1 for a
+venue whose priced water the fleet must cross along its axis.
