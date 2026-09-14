@@ -17576,3 +17576,75 @@ rift (the owner's crossprobe, 3.4×) is expensive, and a per-cell price cannot t
 two apart. Not landed. The finding stands (the DMC never reads `_shoal`); the priced
 search (`pathPriced`, exposure-aware smoother, v3 signature) is kept in treeVB1 for a
 venue whose priced water the fleet must cross along its axis.
+
+## THE FULL S2 / B1 SCREENS (23:31; `_vo_screen.js`, CAND − BASE per venue vs the standing anchors)
+| venue | S2 paired mean | S2 OCS-ever | S2 boat/boat | B1 paired mean | B1 note |
+|---|---|---|---|---|---|
+| volcanic | −1.2 | 52.5 → 1.7% | 1.72 → 0.32 | **+4.0** | route +314 u, boil exposure halved |
+| seatrials | +2.6 | 9.4 → 0% | 0.56 → 0.17 | byte-identical | no priced water |
+| bay | +3.2 | 0 → 0 | 0.78 → 0.85 | −0.1 | ok |
+| ocean | +1.9 | 2.5 → 0% | 0.47 → 0.61 (+30%) | **+4.2** | route identical in length; stale sig ⇒ route at load |
+| lake | +1.8 | 17.5 → 5% | 0.50 → 0.57 | +1.0 | land 0.25 → 0.57 |
+| lagoon | +3.5 | 0 → 0 | 0.60 → 1.79 (×3) | −0.8 | ok |
+| river | **−12.3** | 8.8 → 2.5% | 6.13 → **21.16 (×3.5)**, land 77 → 87 | +1.3 | fins 77 → 76 |
+| redrock | −0.2 | 3.8 → 0% | 3.69 → 3.84 | (v2 sig kept) | byte-identical |
+| arctic | **−6.8** | 28.8 → 0% | 1.71 → 2.36 (+38%) | (v2 sig kept) | byte-identical |
+| swamp / glowtide | pending | | | pending | |
+S2 is a real lever — river −12 s and arctic −7 s on the lap with every OCS gone — and
+its cost is one thing everywhere it fails: a fleet held at the stage by the margin
+arrives at the line as a pack and rubs (river boat contacts ×3.5, lagoon ×3, arctic
++38%, ocean +30%). The next start push is a SPACED timed run (the stage lanes are
+already assigned; the run's timing must keep the lateral spacing they give), not a
+constant. B1 is rejected on the two venues whose routes it moves most (volcanic +4.0,
+ocean +4.2); the DMC-is-cost-blind finding stands, the price of fixing it does not pay
+on the crossings the fleet actually makes.
+
+## ⚖️ S2 IS A NON-UNIVERSAL WIN, NOT A LOSS — OWNER CALL (23:35; swamp landed after the screen above)
+| S2 vs anchor | paired mean | med | fins | OCS-ever | boat/boat | pen/boat |
+|---|---|---|---|---|---|---|
+| **swamp** | **−33.0** | **−29** (268 → 232) | 78 → **80** | 17.5 → 13.8% | 4.22 → 2.75 | 0.60 → 0.36 |
+| **river** | **−12.3** | +4 | 77 → 77 | 8.8 → 2.5% | 6.13 → 21.16 | 0.84 → 0.75 |
+| **arctic** | **−6.8** | −1 | 80 → 80 | 28.8 → 0% | 1.71 → 2.36 | 0.49 → 0.42 |
+| volcanic | −1.2 | 0 | 240 → 240 | 52.5 → 1.7% | 1.72 → 0.32 | 0.34 → 0.13 |
+| redrock | −0.2 | −2 | 80 → 80 | 3.8 → 0% | 3.69 → 3.84 | 0.90 → 0.81 |
+| lake | +1.8 | 0 | 80 → 80 | 17.5 → 5% | 0.50 → 0.57 | flat |
+| ocean | +1.9 | 0 | 160 → 160 | 2.5 → 0% | 0.47 → 0.61 | 0.16 → 0.19 |
+| seatrials | +2.6 | +1 | 160 → 160 | 9.4 → 0% | 0.56 → 0.17 | 0.16 → 0.19 |
+| bay | +3.2 | +3 | 80 → 80 | 0 → 0 | 0.78 → 0.85 | 0.14 → 0.24 |
+| lagoon | +3.5 | 0 | 80 → 80 | 0 → 0 | 0.60 → 1.79 | 0.31 → 0.39 |
+| glowtide | pending | | | | | |
+OCS falls on every venue; DNF falls (swamp +2 finishers); penalties fall on 7 of 10.
+The swamp win is the 2026-08-27 "+20.7 s start deficit that does not convert" —
+converting: with the honest run the swamp fleet no longer parks in irons at the stage.
+Losers: bay / lagoon / ocean / seatrials +1.9 to +3.5 s on the lap, and boat CONTACTS
+up on river (×3.5), lagoon (×3), arctic (+38%), ocean (+30%) — the start scrum a proper
+timed run produces where the fleet used to straggle. Per the owner ruling on
+non-universal wins (name the losers, put the call to him): **NOT landed by me;
+treeVS2 is ready.** If accepted: goldens re-record (a universal start change), the
+close table re-cut on all eleven, and the next push is the SPACED timed run that
+keeps the lanes' lateral separation through the run (the contacts are the whole
+cost). Swamp would move 1.460 → ~1.34, river 1.206 → ~1.14, arctic 1.48 → ~1.45,
+volcanic OCS 52 → 2%.
+
+## THE VENUE TABLE ON THE FINAL HEAD `37defe9` (F3 `869acaa` + D1) — `_vo_close_table.js`
+POST on the ten carried venues is one fresh set on the final HEAD and it is BYTE-IDENTICAL
+to the same set inside its pa*/wbsw* anchor (8/8 or 16/16 races; goldens verify 30/30 with
+0 behaviour changes twice), so their standing ratios are the pooled PRE ones; a single
+set's med differs from the pooled med by sampling only (swamp 268 vs 253, arctic 310 vs
+318, redrock 295 vs 287). Volcanic = f3ndvo* (three sets, == treeVD1).
+| venue | human med (n) | bot med/mean/best (standing) | ratio | DNF% | col med/boat | pen med/boat | fins |
+|---|---|---|---|---|---|---|---|
+| arctic | 209.4 (3) | 318/325.3/192 | **1.519** | 0.0 | 19 | 0 | 640/640 |
+| swamp | 173.3 (3) | 253/272.6/155 | **1.460** | 2.1 | 4 | 0 | 235/240 |
+| redrock | 204.2 (3) | 287/288.0/218 | **1.405** | 0.0 | 8 | 1 | 480/480 |
+| river | 187.4 (3) | 228/243.7/172 | **1.217** | 3.7 | 31 | 1 | 231/240 |
+| lagoon | 174.7 (3) | 210/210.4/170 | **1.202** | 0.0 | 0 | 0 | 80/80 |
+| glowtide | 204.4 (4) | 230/230.8/172 | **1.125** | 0.0 | 6 | 0 | 160/160 |
+| bay | 239.0 (3) | 268/266.6/224 | **1.121** | 0.0 | 0 | 0 | 400/400 |
+| lake | 194.8 (3) | 218/217.7/168 | **1.119** | 0.0 | 0 | 0 | 400/400 |
+| **volcanic** | 195.5 (5) | **240/241.3/162 → 212/214.0/162** | **1.228 → 1.084** | 0.0 | 1 | 0 | 240/240 |
+| ocean | 214.2 (3) | 224/223.2/194 | **1.046 ✅** | 0.0 | 0 | 0 | 160/160 |
+| seatrials | 185.7 (10) | 191/192.9/176 | **1.029 ✅** | 0.0 | 0 | 0 | 160/160 |
+Goal (≤1.1×) 3 of 11: ocean, seatrials, volcanic. Emberfall went from third-worst to
+third-best in one session: F3 −17.4 s mean, D1 −10.0 s mean; ⚠️ his reference laps faced
+the aimed striker at 3× a bot's draw, so the 1.084 flatters the fleet slightly.
