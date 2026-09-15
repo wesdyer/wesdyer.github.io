@@ -40,7 +40,7 @@ const GOLDEN = path.resolve(LEGS === 4
 // Every venue. seatrials is the eval anchor and is deliberately included: it is
 // the one that must never move.
 const ALL_VENUES = ['bay', 'lake', 'lagoon', 'swamp', 'river', 'ocean',
-                    'redrock', 'glowtide', 'arctic', 'seatrials'];
+                    'redrock', 'glowtide', 'arctic', 'volcanic', 'otter', 'seatrials'];
 
 function firstCheckpointDiff(a, b) {
     const n = Math.min(a.length, b.length);
