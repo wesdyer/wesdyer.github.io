@@ -1017,6 +1017,17 @@ function minimapIsland(style) {
     return { body: st.body, top: st.trees ? (st.veg || st.body) : st.body };
 }
 
+// A still layer of the chart: repainted only when `key` changes (see drawMinimap).
+const _mmLayers = {};
+function mmStaticLayer(name, key, w, h) {
+    let L = _mmLayers[name];
+    if (!L) { L = _mmLayers[name] = { key: null, cv: document.createElement('canvas'), g: null, course: null }; L.g = L.cv.getContext('2d'); }
+    const fresh = L.key !== key || L.course !== state.course || L.cv.width !== w || L.cv.height !== h;
+    if (fresh) { L.cv.width = w; L.cv.height = h; L.g.clearRect(0, 0, w, h); L.key = key; L.course = state.course; }
+    L.fresh = fresh;
+    return L;
+}
+
 function drawMinimap() {
     if (!minimapCtx) { const c = document.getElementById('minimap'); if(c) minimapCtx = c.getContext('2d'); }
     const ctx = minimapCtx;
@@ -1078,58 +1089,74 @@ function drawMinimap() {
     // bottom in the same derived tints the course draws it with — so the minimap is a
     // small true picture of the venue, not a diagram in chart-sand. Generated venues
     // keep the bare glass: they have no authored geography to show.
+    // ── THE CHART'S STILL LAYERS ARE CACHED ──────────────────────────────────
+    // A doc venue's chart shows the whole map, so its water, its painted zones and its
+    // land never move: they were being re-painted every frame — Otter's 115 polygons,
+    // ~75 fills — for a 160-px picture that changes only when the venue or the palette
+    // does. Two layers, because the gusts and squalls draw BETWEEN them (water below,
+    // land above): each is a canvas keyed on the course, the frame, the palette and the
+    // projection, repainted only when the key changes and blitted otherwise. Generated
+    // venues and the school's follow-the-boat chart keep the live path.
+    const mmKey = wholeMap ? [width, height, cx.toFixed(2), cy.toFixed(2), scale.toFixed(6),
+                              (window.WATER_CONFIG || {}).baseColor, (window.WATER_CONFIG || {}).heroColor].join('|') : null;
+    const L1 = mmKey ? mmStaticLayer('zones', mmKey, width, height) : null;
+    if (!L1 || L1.fresh) {
+    const mc = L1 ? L1.g : ctx;
     const mmPoly = (verts) => {
-        ctx.beginPath();
-        if (verts.length) {
-            const p0 = t(verts[0].x, verts[0].y);
-            ctx.moveTo(p0.x, p0.y);
-            for (let i = 1; i < verts.length; i++) { const p = t(verts[i].x, verts[i].y); ctx.lineTo(p.x, p.y); }
-        }
-        ctx.closePath();
-    };
-    if (state.course.doc && window.WATER_CONFIG) {
-        const rgbOf = (h, fb) => {
-            const s = String(h || '').replace('#', '');
-            return /^[0-9a-f]{6}$/i.test(s) ? [0, 2, 4].map(i => parseInt(s.substr(i, 2), 16)) : fb;
+            mc.beginPath();
+            if (verts.length) {
+                const p0 = t(verts[0].x, verts[0].y);
+                mc.moveTo(p0.x, p0.y);
+                for (let i = 1; i < verts.length; i++) { const p = t(verts[i].x, verts[i].y); mc.lineTo(p.x, p.y); }
+            }
+            mc.closePath();
         };
-        const base = rgbOf(window.WATER_CONFIG.baseColor, [14, 79, 134]);
-        // The WHOLE canvas, not the extent rect: the frame's spare margins show cropped
-        // scenery from beyond the arena, and that scenery must sit on sea, not on glass.
-        ctx.fillStyle = `rgba(${base[0]},${base[1]},${base[2]},0.9)`;
-        ctx.fillRect(0, 0, width, height);
-        // Painted zones, in document order: shallows in the hero water, meadows in the
-        // same submerged olive the course bakes.
-        const hero = rgbOf(window.WATER_CONFIG.heroColor || window.WATER_CONFIG.baseColor, base);
-        for (const isl of state.course.islands || []) {
-            if (!isl.paint || isl.hidden || !isl.vertices) continue;
-            mmPoly(isl.vertices);
-            // A vegetated zone shows in its own plant's darkest tone; a bare tint zone
-            // shows in the hero water. Reads the same VEG_STYLES row the bed itself
-            // bakes from, so the map and the world cannot drift apart.
-            const spec = isl.veg ? VEG_STYLES[isl.veg] : null;
-            ctx.fillStyle = spec
-                ? `rgba(${vegTone(spec.tones[0], spec).join(',')},0.55)`
-                : `rgba(${hero[0]},${hero[1]},${hero[2]},0.9)`;
-            ctx.fill('evenodd');
+        if (state.course.doc && window.WATER_CONFIG) {
+            const rgbOf = (h, fb) => {
+                const s = String(h || '').replace('#', '');
+                return /^[0-9a-f]{6}$/i.test(s) ? [0, 2, 4].map(i => parseInt(s.substr(i, 2), 16)) : fb;
+            };
+            const base = rgbOf(window.WATER_CONFIG.baseColor, [14, 79, 134]);
+            // The WHOLE canvas, not the extent rect: the frame's spare margins show cropped
+            // scenery from beyond the arena, and that scenery must sit on sea, not on glass.
+            mc.fillStyle = `rgba(${base[0]},${base[1]},${base[2]},0.9)`;
+            mc.fillRect(0, 0, width, height);
+            // Painted zones, in document order: shallows in the hero water, meadows in the
+            // same submerged olive the course bakes.
+            const hero = rgbOf(window.WATER_CONFIG.heroColor || window.WATER_CONFIG.baseColor, base);
+            for (const isl of state.course.islands || []) {
+                if (!isl.paint || isl.hidden || !isl.vertices) continue;
+                mmPoly(isl.vertices);
+                // A vegetated zone shows in its own plant's darkest tone; a bare tint zone
+                // shows in the hero water. Reads the same VEG_STYLES row the bed itself
+                // bakes from, so the map and the world cannot drift apart.
+                const spec = isl.veg ? VEG_STYLES[isl.veg] : null;
+                mc.fillStyle = spec
+                    ? `rgba(${vegTone(spec.tones[0], spec).join(',')},0.55)`
+                    : `rgba(${hero[0]},${hero[1]},${hero[2]},0.9)`;
+                mc.fill('evenodd');
+            }
         }
+    
+        // ── PUFFS: WATER, SO THEY GO UNDER THE LAND ─────────────────────────────
+        // Drawn here rather than after the islands, which is where they used to be — a puff
+        // whose centre sits on a berg painted a violet blob across the ice, and a patch of
+        // rough water on a glacier is not a thing. Land is painted next and covers them, the
+        // same way the main view already handles it.
+        //
+        // Tinted from the venue's own `palette.gusts` rather than a hardcoded navy/cyan, so a
+        // cat's-paw here is the same water it is out on the course (race-view.md §4, §8) — but
+        // the CHART under them is dark slate, not this venue's water, so the tint keeps its HUE
+        // and has its lightness floored to stay legible there. `gustDark` painted literally was
+        // invisible ink: ten gusts on Open Ocean's minimap and not one of them on screen.
+        //
+        // And the fill is the same radial falloff the course sprite bakes, not a flat disc. A
+        // hard-edged ellipse at one alpha read as a fog bank on Stillwater Lake, where a lull
+        // outgrows the arm of the lake it sits in — strong at the centre and gone at the rim is
+        // both how the course draws it and what keeps a big cell from swallowing the chart.
     }
+    if (L1) ctx.drawImage(L1.cv, 0, 0);
 
-    // ── PUFFS: WATER, SO THEY GO UNDER THE LAND ─────────────────────────────
-    // Drawn here rather than after the islands, which is where they used to be — a puff
-    // whose centre sits on a berg painted a violet blob across the ice, and a patch of
-    // rough water on a glacier is not a thing. Land is painted next and covers them, the
-    // same way the main view already handles it.
-    //
-    // Tinted from the venue's own `palette.gusts` rather than a hardcoded navy/cyan, so a
-    // cat's-paw here is the same water it is out on the course (race-view.md §4, §8) — but
-    // the CHART under them is dark slate, not this venue's water, so the tint keeps its HUE
-    // and has its lightness floored to stay legible there. `gustDark` painted literally was
-    // invisible ink: ten gusts on Open Ocean's minimap and not one of them on screen.
-    //
-    // And the fill is the same radial falloff the course sprite bakes, not a flat disc. A
-    // hard-edged ellipse at one alpha read as a fog bank on Stillwater Lake, where a lull
-    // outgrows the arm of the lake it sits in — strong at the centre and gone at the rim is
-    // both how the course draws it and what keeps a big cell from swallowing the chart.
     const _gc = (typeof activeGustColors !== 'undefined' && activeGustColors) || null;
     if (_gc) {
         const _lift = (c, floor) => {
@@ -1201,56 +1228,61 @@ function drawMinimap() {
         }
     }
 
+    const L2 = mmKey ? mmStaticLayer('land', mmKey, width, height) : null;
+    if (!L2 || L2.fresh) {
+    const mc = L2 ? L2.g : ctx;
     if (state.course.islands) {
-        // Body first. Shoals draw their body and are then skipped by the cap pass below:
-        // the cap is vegetation or snow, and a bar under water has neither. Paint zones
-        // are not islands at all — they were drawn with the water above.
-        //
-        // ⚠️ `hidden`, NOT `isBank` — see the note in drawIslands. isBank is "out of the
-        // router", which is a different question from "do not draw", and the chart has to
-        // agree with the water about what is there.
-        for (const isl of state.course.islands) {
-            if (isl.hidden || isl.paint) continue;
-            ctx.fillStyle = isl.reef
-                ? `rgba(${submergedTint(REEF_RUBBLE[1]).join(',')},0.6)`   // the band's own drowned khaki
-                : isl.awash
-                ? `rgba(${shoalTintFor(isl).join(',')},0.6)`
-                : isl.fromMask
-                ? minimapIsland(isl.style).top
-                : minimapIsland(isl.style).body;
-            ctx.beginPath();
-            if (isl.vertices.length > 0) {
-                const p0 = t(isl.vertices[0].x, isl.vertices[0].y);
-                ctx.moveTo(p0.x, p0.y);
-                for(let i=1; i<isl.vertices.length; i++) {
-                    const pi = t(isl.vertices[i].x, isl.vertices[i].y);
-                    ctx.lineTo(pi.x, pi.y);
+            // Body first. Shoals draw their body and are then skipped by the cap pass below:
+            // the cap is vegetation or snow, and a bar under water has neither. Paint zones
+            // are not islands at all — they were drawn with the water above.
+            //
+            // ⚠️ `hidden`, NOT `isBank` — see the note in drawIslands. isBank is "out of the
+            // router", which is a different question from "do not draw", and the chart has to
+            // agree with the water about what is there.
+            for (const isl of state.course.islands) {
+                if (isl.hidden || isl.paint) continue;
+                mc.fillStyle = isl.reef
+                    ? `rgba(${submergedTint(REEF_RUBBLE[1]).join(',')},0.6)`   // the band's own drowned khaki
+                    : isl.awash
+                    ? `rgba(${shoalTintFor(isl).join(',')},0.6)`
+                    : isl.fromMask
+                    ? minimapIsland(isl.style).top
+                    : minimapIsland(isl.style).body;
+                mc.beginPath();
+                if (isl.vertices.length > 0) {
+                    const p0 = t(isl.vertices[0].x, isl.vertices[0].y);
+                    mc.moveTo(p0.x, p0.y);
+                    for(let i=1; i<isl.vertices.length; i++) {
+                        const pi = t(isl.vertices[i].x, isl.vertices[i].y);
+                        mc.lineTo(pi.x, pi.y);
+                    }
                 }
+                mc.closePath();
+                // even-odd: mask rings are keyholed (the sound is a hole in the land)
+                mc.fill('evenodd');
             }
-            ctx.closePath();
-            // even-odd: mask rings are keyholed (the sound is a hole in the land)
-            ctx.fill('evenodd');
-        }
-        // Center cap (vegetation on land, snow on ice)
-        for (const isl of state.course.islands) {
-            if (isl.hidden || isl.awash) continue;
-            // Mask shapes are keyholed; an inset "cap" ring is meaningless and
-            // paints blobs across the water.
-            if (isl.fromMask) continue;
-            ctx.fillStyle = minimapIsland(isl.style).top;
-            ctx.beginPath();
-            if (isl.vegVertices.length > 0) {
-                const p0 = t(isl.vegVertices[0].x, isl.vegVertices[0].y);
-                ctx.moveTo(p0.x, p0.y);
-                for(let i=1; i<isl.vegVertices.length; i++) {
-                    const pi = t(isl.vegVertices[i].x, isl.vegVertices[i].y);
-                    ctx.lineTo(pi.x, pi.y);
+            // Center cap (vegetation on land, snow on ice)
+            for (const isl of state.course.islands) {
+                if (isl.hidden || isl.awash) continue;
+                // Mask shapes are keyholed; an inset "cap" ring is meaningless and
+                // paints blobs across the water.
+                if (isl.fromMask) continue;
+                mc.fillStyle = minimapIsland(isl.style).top;
+                mc.beginPath();
+                if (isl.vegVertices.length > 0) {
+                    const p0 = t(isl.vegVertices[0].x, isl.vegVertices[0].y);
+                    mc.moveTo(p0.x, p0.y);
+                    for(let i=1; i<isl.vegVertices.length; i++) {
+                        const pi = t(isl.vegVertices[i].x, isl.vegVertices[i].y);
+                        mc.lineTo(pi.x, pi.y);
+                    }
                 }
+                mc.closePath();
+                mc.fill();
             }
-            ctx.closePath();
-            ctx.fill();
         }
     }
+    if (L2) ctx.drawImage(L2.cv, 0, 0);
 
     // Trace (Player Only)
     if (player.raceState.trace.length) {

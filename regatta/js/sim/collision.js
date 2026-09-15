@@ -434,7 +434,121 @@ const HULL_R = 30;
 // {axis, overlap} shape satPolygonPolygon does, so the caller is unchanged.
 // Handles the boat being INSIDE the shape too, which happens if it is pushed
 // through by another boat — it escapes via the nearest edge rather than sticking.
+// ── EDGE GRID FOR BIG POLYGONS ──────────────────────────────────────────────
+// A hull disc against Otter's coast asked every one of its 276 edges, six discs a boat,
+// ten boats a frame, and the four venue-sized shapes (coast, apron, meadow, forest) pass
+// the bounding-circle broad phase EVERYWHERE, so the whole fleet paid ~70k edge tests a
+// frame — 3 ms. The polygon is static, so its edges are bucketed once into cells of
+// POLY_CELL units; a disc then asks only the edges in the cells its bbox touches.
+//
+// THE INSIDE TEST STAYS EXACT without walking the polygon: each cell records whether its
+// CENTRE is inside (one pointInPoly per cell at build time). For a point in that cell,
+// cast the short segment from the point to the cell centre — it never leaves the cell,
+// so only edges bucketed in that cell can cross it — and the parity of crossings against
+// the centre's answer is the point's answer. A cell with no edges is wholly one side.
+const POLY_CELL = 160;
+const POLY_GRID_MIN_EDGES = 48;      // small polygons are cheaper to walk than to index
+function polyGrid(verts) {
+    let g = verts._grid;
+    if (g && g.n === verts.length) return g;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const v of verts) { if (v.x < minX) minX = v.x; if (v.x > maxX) maxX = v.x; if (v.y < minY) minY = v.y; if (v.y > maxY) maxY = v.y; }
+    const cx0 = Math.floor(minX / POLY_CELL), cy0 = Math.floor(minY / POLY_CELL);
+    const cw = Math.floor(maxX / POLY_CELL) - cx0 + 1, ch = Math.floor(maxY / POLY_CELL) - cy0 + 1;
+    const cells = new Array(cw * ch).fill(null);
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+        const ax = verts[j].x, ay = verts[j].y, bx = verts[i].x, by = verts[i].y;
+        const x0 = Math.floor(Math.min(ax, bx) / POLY_CELL) - cx0, x1 = Math.floor(Math.max(ax, bx) / POLY_CELL) - cx0;
+        const y0 = Math.floor(Math.min(ay, by) / POLY_CELL) - cy0, y1 = Math.floor(Math.max(ay, by) / POLY_CELL) - cy0;
+        // every cell the edge's bbox covers (a superset of the cells it crosses — safe)
+        for (let cy = y0; cy <= y1; cy++) for (let cx = x0; cx <= x1; cx++) {
+            const k = cy * cw + cx; (cells[k] || (cells[k] = [])).push(j);
+        }
+    }
+    const inside = new Uint8Array(cw * ch);
+    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) {
+        inside[cy * cw + cx] = pointInPoly((cx0 + cx + 0.5) * POLY_CELL, (cy0 + cy + 0.5) * POLY_CELL, verts) ? 1 : 0;
+    }
+    g = { n: verts.length, cx0, cy0, cw, ch, cells, inside };
+    Object.defineProperty(verts, '_grid', { value: g, enumerable: false, writable: true, configurable: true });
+    return g;
+}
+function segCross(ax, ay, bx, by, cx, cy, dx, dy) {
+    // proper crossing of segments ab and cd (a shared endpoint counts once, by the half-open rule)
+    const d1 = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax), d2 = (bx - ax) * (dy - ay) - (by - ay) * (dx - ax);
+    const d3 = (dx - cx) * (ay - cy) - (dy - cy) * (ax - cx), d4 = (dx - cx) * (by - cy) - (dy - cy) * (bx - cx);
+    return ((d1 > 0) !== (d2 > 0)) && ((d3 > 0) !== (d4 > 0));
+}
+function circlePolyCollideGrid(cx, cy, r, verts, g) {
+    const gx = Math.floor(cx / POLY_CELL) - g.cx0, gy = Math.floor(cy / POLY_CELL) - g.cy0;
+    // the disc's cells (its bbox), clamped to the grid; off-grid means outside and clear
+    const x0 = Math.floor((cx - r) / POLY_CELL) - g.cx0, x1 = Math.floor((cx + r) / POLY_CELL) - g.cx0;
+    const y0 = Math.floor((cy - r) / POLY_CELL) - g.cy0, y1 = Math.floor((cy + r) / POLY_CELL) - g.cy0;
+    if (x1 < 0 || y1 < 0 || x0 >= g.cw || y0 >= g.ch) return null;
+    // inside: the centre's cell decides, corrected by crossings on the way to its centre
+    let inside = false;
+    if (gx >= 0 && gy >= 0 && gx < g.cw && gy < g.ch) {
+        const k = gy * g.cw + gx; inside = !!g.inside[k];
+        const E = g.cells[k];
+        if (E) {
+            const mx = (g.cx0 + gx + 0.5) * POLY_CELL, my = (g.cy0 + gy + 0.5) * POLY_CELL;
+            let cross = 0;
+            for (let e = 0; e < E.length; e++) { const j = E[e], i = (j + 1) % verts.length;
+                if (segCross(verts[j].x, verts[j].y, verts[i].x, verts[i].y, cx, cy, mx, my)) cross++; }
+            if (cross & 1) inside = !inside;
+        }
+    }
+    let bestD2 = Infinity, bx = 0, by = 0;
+    for (let gyy = Math.max(0, y0); gyy <= Math.min(g.ch - 1, y1); gyy++) for (let gxx = Math.max(0, x0); gxx <= Math.min(g.cw - 1, x1); gxx++) {
+        const E = g.cells[gyy * g.cw + gxx]; if (!E) continue;
+        for (let e = 0; e < E.length; e++) {
+            const j = E[e], i = (j + 1) % verts.length;
+            const ax = verts[j].x, ay = verts[j].y, bx2 = verts[i].x, by2 = verts[i].y;
+            const ex = bx2 - ax, ey = by2 - ay;
+            const len2 = ex * ex + ey * ey || 1;
+            let t = ((cx - ax) * ex + (cy - ay) * ey) / len2;
+            t = t < 0 ? 0 : t > 1 ? 1 : t;
+            const px = ax + ex * t, py = ay + ey * t;
+            const d2 = (cx - px) ** 2 + (cy - py) ** 2;
+            if (d2 < bestD2) { bestD2 = d2; bx = px; by = py; }
+        }
+    }
+    if (!inside && bestD2 >= r * r) return null;
+    // inside with no edge within reach (deep in land — a tunnel): fall back to the full walk
+    if (inside && bestD2 === Infinity) return circlePolyCollideSlow(cx, cy, r, verts);
+    const d = Math.sqrt(bestD2);
+    let nx = (cx - bx) / (d || 1), ny = (cy - by) / (d || 1);
+    if (inside) { nx = -nx; ny = -ny; }
+    return { axis: { x: -nx, y: -ny }, overlap: inside ? d + r : r - d };
+}
+// POINT-IN-POLYGON THROUGH THE SAME GRID: exact (cell-centre parity, corrected by the
+// crossings on the short segment to the centre) and O(edges in one cell) instead of O(n).
+// The surf's dry-edge tables probe every edge of every shape against the four venue-sized
+// polygons (coast, apron, meadow, forest — 700 vertices between them): building the coast's
+// own table was 200k vertex tests, a 20 ms hitch the first frame it came into view, and
+// every rock ring that followed it cost another few ms — the stutter along the headland.
+function pointInPolyFast(x, y, verts) {
+    if (verts.length < POLY_GRID_MIN_EDGES) return pointInPoly(x, y, verts);
+    const g = polyGrid(verts);
+    const gx = Math.floor(x / POLY_CELL) - g.cx0, gy = Math.floor(y / POLY_CELL) - g.cy0;
+    if (gx < 0 || gy < 0 || gx >= g.cw || gy >= g.ch) return false;
+    const k = gy * g.cw + gx; let inside = !!g.inside[k];
+    const E = g.cells[k];
+    if (E) {
+        const mx = (g.cx0 + gx + 0.5) * POLY_CELL, my = (g.cy0 + gy + 0.5) * POLY_CELL;
+        let cross = 0;
+        for (let e = 0; e < E.length; e++) { const j = E[e], i = (j + 1) % verts.length;
+            if (segCross(verts[j].x, verts[j].y, verts[i].x, verts[i].y, x, y, mx, my)) cross++; }
+        if (cross & 1) inside = !inside;
+    }
+    return inside;
+}
+if (typeof window !== 'undefined') window.pointInPolyFast = pointInPolyFast;
 function circlePolyCollide(cx, cy, r, verts) {
+    if (verts.length >= POLY_GRID_MIN_EDGES) return circlePolyCollideGrid(cx, cy, r, verts, polyGrid(verts));
+    return circlePolyCollideSlow(cx, cy, r, verts);
+}
+function circlePolyCollideSlow(cx, cy, r, verts) {
     let bestD2 = Infinity, bx = 0, by = 0;
     for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
         const ax = verts[j].x, ay = verts[j].y, bx2 = verts[i].x, by2 = verts[i].y;

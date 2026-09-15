@@ -198,7 +198,8 @@ function pointOnLand(x, y) {
         if (isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
         const dx = x - isl.x, dy = y - isl.y;
         if (dx * dx + dy * dy > isl.radius * isl.radius) continue;   // bounding circle first
-        if (!pointInVerts(x, y, isl.vertices)) continue;
+        // the grid-backed test for the venue-sized polygons (see collision.js pointInPolyFast)
+        if (!(typeof pointInPolyFast === 'function' ? pointInPolyFast(x, y, isl.vertices) : pointInVerts(x, y, isl.vertices))) continue;
         let inHole = false;
         for (const h of (isl.holes || [])) {
             if (h && h.length >= 3 && pointInVerts(x, y, h)) { inHole = true; break; }
@@ -2105,6 +2106,7 @@ function drawShallows(ctx) {
     const tint = (window.WATER_CONFIG && window.WATER_CONFIG.shallowColor) || '#38bdf8';
     const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
     const camX = state.camera.x, camY = state.camera.y;
+    const view = viewBoxWorld(ctx);
     let drawn = 0;
     for (const isl of state.course.islands) {
         // A vegetated zone is also `paint`, but it is drawVegetation's layer — it goes
@@ -2118,7 +2120,11 @@ function drawShallows(ctx) {
         // rebakes rather than leaving last venue's water painted on this one.
         if (!isl._shallowsSprite || isl._shallowsSprite.tint !== tint) bakeShallowsSprite(isl);
         const s = isl._shallowsSprite;
-        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+        // ⚠️ CLIPPED TO THE VIEW, never the whole sprite. Otter's unioned shallows have a
+        // radius of 15,000 units: drawn whole, the sprite was a 30,000-pixel square issued
+        // every frame — one drawImage costing ~19 ms of GPU, a third of the frame — for a
+        // viewport that saw a 3,000-pixel window of it. drawZoneSprite draws the window.
+        drawZoneSprite(ctx, s.canvas, isl.x, isl.y, s.r, view);
         drawn++;
     }
     return drawn;
@@ -3119,6 +3125,7 @@ function drawReefs(ctx) {
     const stoneKey = sunkenGround().join(',');
     const viewRadius = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.6;
     const camX = state.camera.x, camY = state.camera.y;
+    const view = viewBoxWorld(ctx);
     let drawn = 0;
     for (const isl of state.course.islands) {
         if (!isl.reef || isl.hidden) continue;
@@ -3130,7 +3137,7 @@ function drawReefs(ctx) {
         const s = isl._reefSprite;
         ctx.save();
         ctx.globalAlpha = isStone ? SUNKEN_ALPHA : REEF_ALPHA;
-        ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+        drawZoneSprite(ctx, s.canvas, isl.x, isl.y, s.r, view);   // the visible window only (see drawShallows)
         ctx.restore();
         drawn++;
     }
@@ -3257,15 +3264,20 @@ function drawZoneSprite(ctx, canvas, cx, cy, r, view) {
 // keeps the live path instead. eval/_water_motion.js is the smoothness gate.
 const WORLD_TILE_MARGIN = 400;
 
-function ensureWorldTile(tile, ctx, keyPart, bake) {
+function ensureWorldTile(tile, ctx, keyPart, bake, scale) {
     const cam = state.camera;
+    // `scale` is the tile's resolution in px per world unit: 1 for the soft strata (the
+    // seabed, the float layer), the camera's own device scale for the LAND, whose texture
+    // and shoreline stroke would go soft at half resolution on a 2x display.
+    scale = scale || 1;
     const rView = Math.ceil(Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.5);
-    const key = rView + '|' + keyPart;
+    const key = rView + '|' + scale.toFixed(3) + '|' + keyPart;
     const moved = (cam.x - tile.cx) ** 2 + (cam.y - tile.cy) ** 2
                 > (WORLD_TILE_MARGIN - 8) ** 2;
     const landed = tile.pending && tile.pending.length && tile.pending.some(i => i.complete);
     if (tile.course === state.course && tile.key === key && !moved && !landed) return;
-    const r = rView + WORLD_TILE_MARGIN, size = r * 2;
+    // rView is in device px already; the margin is world units, so it scales
+    const r = Math.ceil(rView + WORLD_TILE_MARGIN * scale), size = r * 2;
     if (!tile.cv || tile.cv.width !== size) {
         tile.cv = document.createElement('canvas');
         tile.cv.width = tile.cv.height = size;
@@ -3274,21 +3286,22 @@ function ensureWorldTile(tile, ctx, keyPart, bake) {
     const g = tile.g;
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.clearRect(0, 0, size, size);
-    g.setTransform(1, 0, 0, 1, r - cam.x, r - cam.y);   // world -> tile
+    g.setTransform(scale, 0, 0, scale, r - cam.x * scale, r - cam.y * scale);   // world -> tile
     tile.pending = [];
     window.__wtBakes = (window.__wtBakes || 0) + 1;   // probe hook: rebake thrash shows here
     const drew = bake(g, tile.pending);
     tile.content = drew === undefined || !!drew;
     tile.drawn = typeof drew === 'number' ? drew : -1;
     tile.course = state.course; tile.key = key;
-    tile.cx = cam.x; tile.cy = cam.y; tile.r = r;
+    tile.cx = cam.x; tile.cy = cam.y; tile.r = r; tile.scale = scale;
 }
 
 // Called with ctx in WORLD space (the camera transform applied), like the live layers.
 // One bilinear drawImage at the live transform — exact and smooth every frame.
 function blitWorldTile(tile, ctx) {
     if (!tile.content) return;
-    ctx.drawImage(tile.cv, tile.cx - tile.r, tile.cy - tile.r);
+    const k = tile.scale || 1, w = (tile.r * 2) / k;
+    ctx.drawImage(tile.cv, tile.cx - tile.r / k, tile.cy - tile.r / k, w, w);
 }
 
 // ── THE ADAPTIVE CHOOSER ────────────────────────────────────────────────────
@@ -3313,7 +3326,7 @@ function blitWorldTile(tile, ctx) {
 const STRATUM_FILL_ON = 2.6;    // smoothed screenfuls of zone fill to switch to blit
 const STRATUM_FILL_OFF = 2.0;   // ...and back to live (hysteresis)
 
-function adaptiveStratum(tile, ctx, keyPart, bakeFn, liveAllFn, liveDriftFn, fillFn) {
+function adaptiveStratum(tile, ctx, keyPart, bakeFn, liveAllFn, liveDriftFn, fillFn, scale) {
     const c = state.course;
     if (tile.calCourse !== c || tile.calKey !== keyPart) {
         tile.calCourse = c; tile.calKey = keyPart;
@@ -3324,7 +3337,7 @@ function adaptiveStratum(tile, ctx, keyPart, bakeFn, liveAllFn, liveDriftFn, fil
     if (tile.mode === 'live' && tile.fillAvg > STRATUM_FILL_ON) tile.mode = 'blit';
     else if (tile.mode === 'blit' && tile.fillAvg < STRATUM_FILL_OFF) tile.mode = 'live';
     if (tile.mode === 'live') { liveAllFn(ctx); return; }
-    ensureWorldTile(tile, ctx, keyPart, bakeFn);
+    ensureWorldTile(tile, ctx, keyPart, bakeFn, scale);
     blitWorldTile(tile, ctx);
     if (liveDriftFn) liveDriftFn(ctx);
 }
@@ -3393,8 +3406,44 @@ function drawSeabedUnderlay(ctx) {
 // fall back to flat color until theirs arrive).
 // Land, canopy and surface props draw LIVE — see the chooser's header for why their
 // area estimates could not be trusted. The wrappers stay so draw() reads as strata.
+// ── THE LAND IS A CACHED STRATUM ──────────────────────────────────────────
+// Otter's coast, apron, meadow and forest are venue-sized polygons — pattern-filled and
+// stroked EVERY FRAME they cost ~3.5 ms of GPU and 1.5 of CPU, and nothing about them
+// moves. So the static land goes through the same adaptive world tile the seabed uses:
+// baked once per WORLD_TILE_MARGIN of camera travel, one blit a frame. What moves stays
+// live — floes drift and spin, lava and magma animate — drawn over the tile each frame.
+// The tile is baked at the camera's DEVICE scale (see ensureWorldTile): the land's texture
+// and its 6-unit shoreline stroke are the crispest thing on the map and a half-resolution
+// tile on a 2x display was visibly soft. Small venues (few islands in view) stay live, as
+// the fill hysteresis decides, exactly as for the seabed.
+const _landTile = {};
+function landIsStatic(isl) { return !isl.isFloe && !isl.lava && !isl.magma; }
+function landViewFill(ctx) {
+    const c = state.course;
+    if (!c || !c.islands) return 0;
+    const S = ctx.canvas.width * ctx.canvas.height;
+    const viewR = Math.sqrt(ctx.canvas.width ** 2 + ctx.canvas.height ** 2) * 0.5;
+    const cam = state.camera;
+    let fill = 0;
+    for (const isl of c.islands) {
+        if (isl.hidden || isl.awash || isl.reef || !landIsStatic(isl)) continue;
+        const lim = viewR + isl.radius;
+        if ((isl.x - cam.x) ** 2 + (isl.y - cam.y) ** 2 > lim * lim) continue;
+        fill += Math.min(Math.PI * isl.radius * isl.radius, S) / S;
+    }
+    return fill;
+}
 function drawIslandsCached(ctx) {
-    drawIslands(ctx);
+    const c = state.course;
+    if (!c || !c.islands) return;
+    const T = ctx.getTransform();
+    const scale = Math.max(0.25, Math.min(4, Math.hypot(T.a, T.b)));   // device px per world unit
+    adaptiveStratum(_landTile, ctx, 'land',
+        (g, pending) => drawIslands(g, landIsStatic, pending),
+        (g) => drawIslands(g),
+        (g) => drawIslands(g, (isl) => !landIsStatic(isl)),
+        (g) => landViewFill(g),
+        scale);
 }
 
 // THE CANOPY draws live: canopyAlpha is player-relative and its range (20 hulls)
@@ -4308,7 +4357,7 @@ function drawMagma(ctx, isl) {
 // `which`: 'land' for static geometry, 'floe' for drifting ice, omitted for all.
 // The two are drawn in separate passes so the nav aids can sit BETWEEN them —
 // ladder lines and laylines are paint on the water, and ice floats over paint.
-function drawIslands(ctx) {
+function drawIslands(ctx, only, pending) {
     if (!state.course || !state.course.islands) return 0;
 
     // Viewport Culling
@@ -4334,6 +4383,7 @@ function drawIslands(ctx) {
         // village lanes invisible. Anything unrouted that should stay off the screen
         // says so with `hidden`.
         if (isl.hidden || isl.awash || isl.reef) continue;
+        if (only && !only(isl)) continue;
         const distSq = (isl.x - camX) ** 2 + (isl.y - camY) ** 2;
         const limit = viewRadius + isl.radius;
         if (distSq > limit ** 2) continue;
@@ -4359,6 +4409,8 @@ function drawIslands(ctx) {
             // A style with a LAND_TEXTURES entry gets the tiling surface; everything
             // else stays a flat fill. This is the FIXED-land path, so a floe never
             // reaches it — bergs keep their faceted sprite and underwater shelf.
+            // a texture still loading is drawn flat; the tile that baked it rebakes when it lands
+            if (pending) { const t = LAND_TEXTURES[isl.style]; if (t && t.img && !t.img.complete) pending.push(t.img); }
             ctx.fillStyle = getLandPattern(ctx, isl.style, st.body) || st.body;
             ctx.fill('evenodd');
             ctx.strokeStyle = st.stroke;
@@ -4373,6 +4425,7 @@ function drawIslands(ctx) {
         // no trees and their sprite is spin-canonical, so they never rebake —
         // a rebake would capture their current heading and double it on screen.
         if (!isl._sprite || (!isl.isFloe && !isl._sprite.baked && palmImg.complete && palmImg.naturalWidth > 0)) bakeIslandSprite(isl);
+        if (pending && !isl.isFloe && !palmImg.complete) pending.push(palmImg);
         const s = isl._sprite;
         if (isl.isFloe) {
             ctx.save();
@@ -4381,7 +4434,7 @@ function drawIslands(ctx) {
             ctx.drawImage(s.canvas, -s.r, -s.r, s.r * 2, s.r * 2);
             ctx.restore();
         } else {
-            ctx.drawImage(s.canvas, isl.x - s.r, isl.y - s.r, s.r * 2, s.r * 2);
+            drawZoneSprite(ctx, s.canvas, isl.x, isl.y, s.r, viewBoxWorld(ctx));   // the visible window only
         }
         drawn++;
     }

@@ -552,7 +552,14 @@ function getCurrentAt(x, y) {
 // World units the 0..1 mask spans. This is the venue's scale knob: doubling it
 // doubles every distance, so the start->island leg and the race length scale
 // with it. 25000 puts the leg around 14.7k units.
+// A CELL SAMPLES THE WIND EVERY FOURTH FRAME, staggered by cell. The grid is ~340 cells
+// and getWindAt is the dearest call in the sim (regions, gusts, every lee caster); the
+// field it reads changes over seconds, so a 67 ms stale reading moves no crest visibly.
+// Measured: updateWindWaves was 12 ms a frame on Otter, three quarters of it wind samples.
+const WIND_WAVE_REFRESH = 4;
+let _wwFrame = 0;
 function updateWindWaves(dt) {
+    _wwFrame++;
     const camX = state.camera.x;
     const camY = state.camera.y;
     const radius = Math.max(canvas.width, canvas.height) * 0.8;
@@ -587,7 +594,9 @@ function updateWindWaves(dt) {
                      y: by + oy,
                      dist: rand * gridSize,
                      angle: 0,
-                     speed: 0
+                     speed: 0,
+                     k: ((i * 7 + j * 13) % WIND_WAVE_REFRESH + WIND_WAVE_REFRESH) % WIND_WAVE_REFRESH,   // refresh phase
+                     wind: null
                  };
                  // Stitched-crest geometry (reference look): seeded zigzag
                  // polyline with dash gaps, optional echo line, family tilt.
@@ -605,7 +614,8 @@ function updateWindWaves(dt) {
                  state.waveStates.set(key, wave);
              }
 
-             const wind = getWindAt(wave.x, wave.y);
+             if (!wave.wind || (_wwFrame + wave.k) % WIND_WAVE_REFRESH === 0) wave.wind = getWindAt(wave.x, wave.y);
+             const wind = wave.wind;
 
              // Travel Speed: Proportional to wind speed
              const travelFactor = 3.0;
@@ -668,9 +678,11 @@ function drawWindWaves(ctx) {
         const dx = Math.sin(wave.angle) * wave.dist;
         const dy = -Math.cos(wave.angle) * wave.dist;
 
-        ctx.save();
-        ctx.translate(wave.x + dx, wave.y + dy);
-        ctx.rotate(wave.angle + (wave.tilt || 0));
+        // The crest's points are rotated by hand into world space: a save / translate /
+        // rotate / restore round each of ~300 crests a frame was most of this pass's CPU.
+        const ox = wave.x + dx, oy = wave.y + dy;
+        const ra = wave.angle + (wave.tilt || 0), ca = Math.cos(ra), sa = Math.sin(ra);
+        const X = (lx, ly) => ox + lx * ca - ly * sa, Y = (lx, ly) => oy + lx * sa + ly * ca;
 
         const w = Math.max(26, Math.min(84, size));
         const pts = wave.pts, gaps = wave.gaps;
@@ -699,8 +711,9 @@ function drawWindWaves(ctx) {
             let drew = false;
             for (let p = 0; p < gaps.length; p++) {
                 if (!gaps[p]) continue;
-                ctx.moveTo((pts[p].t - 0.5) * w, pts[p].y);
-                ctx.lineTo((pts[p + 1].t - 0.5) * w, pts[p + 1].y);
+                const ax = (pts[p].t - 0.5) * w, ay = pts[p].y, bx = (pts[p + 1].t - 0.5) * w, by = pts[p + 1].y;
+                ctx.moveTo(X(ax, ay), Y(ax, ay));
+                ctx.lineTo(X(bx, by), Y(bx, by));
                 drew = true;
             }
             if (drew) ctx.stroke();
@@ -708,13 +721,14 @@ function drawWindWaves(ctx) {
                 ctx.globalAlpha *= 0.45;
                 ctx.lineWidth *= 0.8;
                 ctx.beginPath();
-                ctx.moveTo((pts[1].t - 0.5) * w, pts[1].y + wave.echoOff);
-                ctx.lineTo((pts[pts.length - 2].t - 0.5) * w, pts[pts.length - 2].y + wave.echoOff);
+                const ex0 = (pts[1].t - 0.5) * w, ey0 = pts[1].y + wave.echoOff;
+                const ex1 = (pts[pts.length - 2].t - 0.5) * w, ey1 = pts[pts.length - 2].y + wave.echoOff;
+                ctx.moveTo(X(ex0, ey0), Y(ex0, ey0));
+                ctx.lineTo(X(ex1, ey1), Y(ex1, ey1));
                 ctx.stroke();
             }
         }
 
-        ctx.restore();
     }
     ctx.restore();
 }
@@ -982,11 +996,24 @@ function surfDryEdges(isl) {
         for (const o of others) {
             const dx = px - o.x, dy = py - o.y;
             if (dx * dx + dy * dy > o.radius * o.radius) continue;   // bounding reject first
-            if (pointInPoly(px, py, o.vertices)) { dry[i] = true; break; }
+            if (pointInPolyFast(px, py, o.vertices)) { dry[i] = true; break; }
         }
     }
     isl._surfDry = dry;
     return dry;
+}
+
+// TABLES ARE BUILT A FEW PER FRAME. Even through the grid a big shape's table is real work,
+// and along a coast a dozen rock rings can enter the surf's reach in one frame; a shape
+// whose table is not built yet simply throws no surf that frame — a beat late, never a hitch.
+const SURF_BUILDS_PER_FRAME = 3;
+let _surfBuilds = 0;
+function surfTablesReady(isl) {
+    if (isl._surfDry && isl._surfFocus) return true;
+    if (_surfBuilds >= SURF_BUILDS_PER_FRAME) return false;
+    _surfBuilds++;
+    surfDryEdges(isl); surfFocus(isl);
+    return true;
 }
 
 // ── FOAM LEFT BEHIND WHERE A CREST BREAKS ───────────────────────────────────
@@ -1003,6 +1030,7 @@ function surfDryEdges(isl) {
 // bookkeeping, and it cannot double-fire or miss.
 function updateSurf(dt) {
     if (!state.course.islands || settings.surf === false || dt <= 0) return;
+    _surfBuilds = 0;
     const camX = state.camera.x, camY = state.camera.y;
     const viewR = Math.max(canvas.width, canvas.height) * 0.7;
     const viewR2 = viewR * viewR;
@@ -1035,6 +1063,7 @@ function updateSurf(dt) {
         if ((isl.hidden && !isl.propSurf) || isl.isFloe || isl.awash || isl.reef || !isl.vertices || isl.vertices.length < 3) continue;
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
+        if (!surfTablesReady(isl)) continue;
         const sgn = surfOutwardSign(isl), V = isl.vertices;
         const dry = surfDryEdges(isl);
         const focus = surfFocus(isl);
@@ -1151,6 +1180,7 @@ function drawSurf(ctx) {
         if ((isl.hidden && !isl.propSurf) || isl.isFloe || isl.awash || !isl.vertices || isl.vertices.length < 3) continue;   // propSurf: see updateSurf
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
+        if (!isl._surfDry || !isl._surfFocus) continue;      // updateSurf builds the tables, a few a frame
         const sgn = surfOutwardSign(isl);
         const v = isl.vertices;
         const dry = surfDryEdges(isl);

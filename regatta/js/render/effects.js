@@ -27,7 +27,11 @@ function updateParticles(dt) {
         }
         else if (p.type === 'wind') {
              decay = 1 / (WIND_LIFE * 60);   // life 1 -> 0 over WIND_LIFE seconds
-             const local = getWindAt(p.x, p.y);
+             // A STREAK SAMPLES THE WIND TWENTY TIMES A SECOND, not every frame: 140 of them
+             // were 140 getWindAt calls a frame (regions, gusts, every lee caster), and the
+             // field they ride changes over seconds. Staggered by each particle's own phase.
+             if (!p.local || (p.windT = (p.windT || 0) - dt) <= 0) { p.local = getWindAt(p.x, p.y); p.windT = 0.05 + (p.trailT || 0) * 0.1; }
+             const local = p.local;
              // THE GAME'S ONE CONVERSION: units/second = knots * 15 (a knot is 0.25
              // units/frame at 60fps, which is what boat.speed and the current both use).
              // This used to be `speed / 10` per frame — units/s = knots * 6, i.e. 0.40x

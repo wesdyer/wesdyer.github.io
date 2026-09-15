@@ -394,10 +394,24 @@ const BANDS = [
     [0.66, 1.00, 0, 0.17]    // trough ahead
 ];
 
+// THE SWELL DRAWS AT HALF RESOLUTION. Two hundred screen-wide band fills a frame were
+// ~6 ms of GPU on a 2x canvas; the bands are soft translucent washes, so drawing them into
+// a half-size offscreen canvas under the same camera transform and blitting it up costs a
+// quarter of the fill and reads the same. The same trick the water pass plays.
+const SWELL_RS = 0.5;
+let _swellLow = null;
 function draw(ctx, state) {
     if (!TRAINS.length || !state) return;
     const cam = state.camera;
-    const R = Math.hypot(ctx.canvas.width, ctx.canvas.height) * 0.5 + 220;
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    const R = Math.hypot(W, H) * 0.5 + 220;
+    const lw = Math.max(1, Math.ceil(W * SWELL_RS)), lh = Math.max(1, Math.ceil(H * SWELL_RS));
+    if (!_swellLow) _swellLow = document.createElement('canvas');
+    if (_swellLow.width !== lw || _swellLow.height !== lh) { _swellLow.width = lw; _swellLow.height = lh; }
+    const g = _swellLow.getContext('2d');
+    const T = ctx.getTransform();
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, lw, lh);
+    g.setTransform(T.a * SWELL_RS, T.b * SWELL_RS, T.c * SWELL_RS, T.d * SWELL_RS, T.e * SWELL_RS, T.f * SWELL_RS);
 
     const pal = (window.WATER_CONFIG || {});
     const rgb = (hex) => {
@@ -411,9 +425,9 @@ function draw(ctx, state) {
         // to confuse which way "the waves" are running.
         const w8 = i === 0 ? 1 : 0.42;
 
-        ctx.save();
-        ctx.translate(cam.x, cam.y);
-        ctx.rotate(t.theta);
+        g.save();
+        g.translate(cam.x, cam.y);
+        g.rotate(t.theta);
         // After this rotate, local -Y is the direction the wave travels, so crests are
         // horizontal lines of constant local y and the profile varies along y alone.
         const sCam = cam.x * t.sx + cam.y * t.sy;
@@ -454,13 +468,13 @@ function draw(ctx, state) {
             for (const [u0, u1, tone, a0] of BANDS) {
                 const top = edgeAt(u0), bot = edgeAt(u1);
                 const C = TONE[tone];
-                ctx.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(a0 * w8).toFixed(3)})`;
-                ctx.beginPath();
-                ctx.moveTo(top[0][0], top[0][1]);
-                for (let q = 1; q < NODES; q++) ctx.lineTo(top[q][0], top[q][1]);
-                for (let q = NODES - 1; q >= 0; q--) ctx.lineTo(bot[q][0], bot[q][1]);
-                ctx.closePath();
-                ctx.fill();
+                g.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(a0 * w8).toFixed(3)})`;
+                g.beginPath();
+                g.moveTo(top[0][0], top[0][1]);
+                for (let q = 1; q < NODES; q++) g.lineTo(top[q][0], top[q][1]);
+                for (let q = NODES - 1; q >= 0; q--) g.lineTo(bot[q][0], bot[q][1]);
+                g.closePath();
+                g.fill();
             }
 
             // THE RIDGE, in angular shards rather than one ruled line. A swell crest from
@@ -475,14 +489,14 @@ function draw(ctx, state) {
                 const run = 1 + (pr() < 0.45 ? 1 : 0);
                 const q2 = Math.min(NODES - 1, q + run);
                 const th = (2 + pr() * 5) * w8;
-                ctx.fillStyle = `rgba(${C1[0]},${C1[1]},${C1[2]},${(0.34 * w8 * (0.55 + pr() * 0.45)).toFixed(3)})`;
-                ctx.beginPath();
-                ctx.moveTo(ridge[q][0], ridge[q][1] - th);
-                ctx.lineTo(ridge[q2][0], ridge[q2][1] - th);
-                ctx.lineTo(ridge[q2][0], ridge[q2][1] + th);
-                ctx.lineTo(ridge[q][0], ridge[q][1] + th);
-                ctx.closePath();
-                ctx.fill();
+                g.fillStyle = `rgba(${C1[0]},${C1[1]},${C1[2]},${(0.34 * w8 * (0.55 + pr() * 0.45)).toFixed(3)})`;
+                g.beginPath();
+                g.moveTo(ridge[q][0], ridge[q][1] - th);
+                g.lineTo(ridge[q2][0], ridge[q2][1] - th);
+                g.lineTo(ridge[q2][0], ridge[q2][1] + th);
+                g.lineTo(ridge[q][0], ridge[q][1] + th);
+                g.closePath();
+                g.fill();
                 q = q2 - 1;
             }
 
@@ -491,21 +505,25 @@ function draw(ctx, state) {
             // as surf. What you actually see from above is sun catching the odd facet where
             // the crest turns over: tiny, bright, and gone.
             if (i === 0) {
-                ctx.strokeStyle = 'rgba(255,255,255,0.42)';
-                ctx.lineWidth = 2.2;
-                ctx.lineCap = 'round';
+                g.strokeStyle = 'rgba(255,255,255,0.42)';
+                g.lineWidth = 2.2;
+                g.lineCap = 'round';
                 for (let q = 1; q < NODES - 1; q++) {
                     if (pr() > 0.09) continue;
                     const p0 = ridge[q];
-                    ctx.beginPath();
-                    ctx.moveTo(p0[0], p0[1] - 2);
-                    ctx.lineTo(p0[0] + STEP * (0.16 + pr() * 0.22), p0[1] - 2 + (pr() - 0.5) * 4);
-                    ctx.stroke();
+                    g.beginPath();
+                    g.moveTo(p0[0], p0[1] - 2);
+                    g.lineTo(p0[0] + STEP * (0.16 + pr() * 0.22), p0[1] - 2 + (pr() - 0.5) * 4);
+                    g.stroke();
                 }
             }
         }
-        ctx.restore();
+        g.restore();
     }
+
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.drawImage(_swellLow, 0, 0, W, H);
+    ctx.restore();
 }
 
 // HOW HIGH THIS POINT IS ON THE SEA, as -1 in the trough to +1 on the crest. Read by the

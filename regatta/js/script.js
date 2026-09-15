@@ -405,7 +405,7 @@ function goalChipRoute(grid, from, to, clr) {
     const SC = window.SailCheck;
     if (!grid || !SC) return [to];
     if (SC.segClearGeom(grid, from.x, from.y, to.x, to.y, clr)) return [to];
-    const raw = SC.pathBetween(grid, [from.x, from.y], [to.x, to.y], { tight: true });
+    const raw = SC.pathBetween(grid, [from.x, from.y], [to.x, to.y], { tight: true, astar: true });   // A*: see pathBetween
     if (!raw || raw.length < 2) return [to];
     const pts = raw.map(q => ({ x: q[0], y: q[1] }));
     pts[0] = { x: from.x, y: from.y }; pts[pts.length - 1] = { x: to.x, y: to.y };
@@ -418,17 +418,31 @@ function goalChipRoute(grid, from, to, clr) {
     // The same relaxation at the GOAL end: the final approach to a mark laid near a shore is
     // judged at the hull's radius, so the route ends on the mark and not on a cell beside it.
     const tight = Math.min(clr, SC.HULL_R - 4);
+    // STRING-PULL BY GALLOPING, not by scanning back from the far end. The scan asked
+    // segClearGeom for every j from the end down to the first clear one — ~1,200 calls a
+    // route on Otter's headland (146-point raw paths, ~10 corners), each call walking every
+    // edge of the coast — 20-80 ms twice a second, which was the stutter round the arch.
+    // Galloping (1, 2, 4, 8... ahead, then a binary search between the last clear and the
+    // first blocked) finds a far clear point in O(log n) calls per corner. It can settle a
+    // corner short of the farthest clear point when clearance is not monotone along the
+    // path, which only makes a route slightly less pulled, never unsafe: every kept segment
+    // was tested.
     const pull = (arr, fromBoat) => {
         const out = [arr[0]];
+        const last = arr.length - 1;
         let i = 0;
-        while (i < arr.length - 1) {
-            let j = arr.length - 1;
-            while (j > i + 1) {
-                const m = ((fromBoat && i === 0) || j === arr.length - 1) ? tight : clr;
-                if (SC.segClearGeom(grid, arr[i].x, arr[i].y, arr[j].x, arr[j].y, m)) break;
-                j--;
+        while (i < last) {
+            const clearTo = (j) => SC.segClearGeom(grid, arr[i].x, arr[i].y, arr[j].x, arr[j].y,
+                                                   ((fromBoat && i === 0) || j === last) ? tight : clr);
+            let hi = i + 1, step = 1;                    // adjacent cells are always taken
+            while (hi < last) {
+                const nj = Math.min(last, hi + step);
+                if (clearTo(nj)) { hi = nj; step *= 2; continue; }
+                let a = hi, b = nj;                          // clear at a, blocked at b
+                while (b - a > 1) { const mid = (a + b) >> 1; if (clearTo(mid)) a = mid; else b = mid; }
+                hi = a; break;
             }
-            out.push(arr[j]); i = j;
+            out.push(arr[hi]); i = hi;
         }
         return out;
     };
@@ -878,7 +892,10 @@ function draw() {
                 const cache = player._indRoutes || (player._indRoutes = {});
                 const c = cache[key];
                 if (c) { const pr = prunePassed(c.pts); if (pr !== c.pts) { c.pts = pr; c.len = routeLen({ x: player.x, y: player.y }, pr); } }
-                if (c && frameCount - c.f < 30 && Math.hypot(player.x - c.x, player.y - c.y) < 60) return c;
+                // Held for 90 frames / 120 units, not 30 / 60: prunePassed keeps a held route
+                // honest as corners fall astern, and a route to a mark kilometres away does
+                // not change shape in a second and a half. Halves the search cost again.
+                if (c && frameCount - c.f < 90 && Math.hypot(player.x - c.x, player.y - c.y) < 120) return c;
                 const here = { x: player.x, y: player.y }, goal = { x: gx, y: gy };
                 let fresh = canRoute ? goalChipRoute(grid, here, goal, CHIP_CLR) : [goal];
                 // A SAILOR DOES NOT TURN ROUND FOR A BOAT LENGTH. The shortest route from a boat

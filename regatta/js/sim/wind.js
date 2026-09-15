@@ -603,6 +603,15 @@ function shadowAt(x, y, dir, kind) {
         // answer — a reef awash blocks no breeze, and a designer may simply not want one here.
         const len = shadowLen(isl, kind);
         if (!(len > 0)) continue;
+        // BOUNDING REJECT NEXT, before the direction lookup and the silhouette. A plume
+        // starts at the obstacle's trailing edge (within `radius` of its centre), runs `len`
+        // downflow and is at most radius*(1+SHADOW_SPREAD) wide at its tail, so nothing
+        // farther than len + radius*(2+SHADOW_SPREAD) from the centre can be inside it.
+        // Otter has ~60 casters (every hard rock carries a height) and the wind-wave grid
+        // samples ~470 points a frame; without this every sample paid islandWindDir and
+        // shadowSil for all of them — 70 ms/s of the profile, most of updateWindWaves.
+        const rdx = x - isl.x, rdy = y - isl.y, reach = len + isl.radius * (2 + SHADOW_SPREAD);
+        if (rdx * rdx + rdy * rdy > reach * reach) continue;
         let flowX, flowY, key;
         if (isWind) {
             const d = islandWindDir(isl);

@@ -90,7 +90,23 @@ function segClearGeom(grid, ax, ay, bx, by, clr) {
         if (pointInRing(ax, ay, sh.outer) && !sh.holes.some(h => pointInRing(ax, ay, h))) return false;
         if (pointInRing(bx, by, sh.outer) && !sh.holes.some(h => pointInRing(bx, by, h))) return false;
         for (const ring of sh.rings) {
+            // Per-edge boxes, built once: a chip segment is a few hundred units and the
+            // coast ring is 276 edges, nearly all of them nowhere near it. Four compares
+            // per edge instead of a segment-distance, and the distance only where they touch.
+            let eb = ring._ebb;
+            if (!eb || eb.length !== ring.length * 4) {
+                eb = new Float64Array(ring.length * 4);
+                for (let e = 0; e < ring.length; e++) {
+                    const p = ring[e], q = ring[(e + 1) % ring.length];
+                    eb[e * 4] = Math.min(p[0], q[0]); eb[e * 4 + 1] = Math.min(p[1], q[1]);
+                    eb[e * 4 + 2] = Math.max(p[0], q[0]); eb[e * 4 + 3] = Math.max(p[1], q[1]);
+                }
+                Object.defineProperty(ring, '_ebb', { value: eb, enumerable: false, writable: true, configurable: true });
+            }
+            const sx0 = xlo - m, sy0 = ylo - m, sx1 = xhi + m, sy1 = yhi + m;
             for (let e = 0; e < ring.length; e++) {
+                const k = e * 4;
+                if (eb[k + 2] < sx0 || eb[k] > sx1 || eb[k + 3] < sy0 || eb[k + 1] > sy1) continue;
                 if (segSegDist(ax, ay, bx, by, ring[e], ring[(e + 1) % ring.length]) < m) return false;
             }
         }
@@ -436,8 +452,70 @@ function smoothPath(grid, pts) {
 // means a boat hugging a shore starts its route from its own cell instead of the nearest
 // comfortable one behind it (Sep 13 2026).
 function pathBetween(grid, from, to, opts) {
+    // `astar`: the goal chip's search. Breadth-first floods the whole navigable grid before
+    // it reaches a mark 8 km down the coast — Otter's is 408x408, and that flood cost 25 to
+    // 160 ms in the browser, twice a second, which read as a stutter round the headland.
+    // A* with an octile heuristic walks a corridor toward the goal instead. The BOTS stay
+    // on breadth-first on purpose: their raw paths feed smoothPath and the rating evals
+    // were run on those, and an equal-length path chosen differently is still a change.
+    if (opts && opts.astar) {
+        if (opts.tight && grid._tight) return pathPassAStar(grid, from, to, true);
+        return pathPassAStar(grid, from, to, false) || (grid._tight ? pathPassAStar(grid, from, to, true) : null);
+    }
     if (opts && opts.tight && grid._tight) return pathPass(grid, from, to, true);
     return pathPass(grid, from, to, false) || (grid._tight ? pathPass(grid, from, to, true) : null);
+}
+function pathPassAStar(grid, from, to, tight) {
+    const N = grid.n, T = tight ? grid._tight : null;
+    const at = (i, j) => grid.at(i, j) || !!(T && i >= 0 && j >= 0 && i < N && j < N && T[j * N + i]);
+    const s = nearestCell(grid, from[0], from[1], at);
+    const g = nearestCell(grid, to[0], to[1], at);
+    if (!s || !g) return null;
+    const si = s[1] * N + s[0], gi = g[1] * N + g[0];
+    const prev = new Int32Array(N * N).fill(-1);
+    const dist = new Float32Array(N * N).fill(Infinity);
+    // a binary heap of (f, id) pairs, flat
+    const hf = [], hi = [];
+    const push = (f, id) => {
+        hf.push(f); hi.push(id); let k = hf.length - 1;
+        while (k) { const p = (k - 1) >> 1; if (hf[p] <= hf[k]) break;
+            const tf = hf[p], ti = hi[p]; hf[p] = hf[k]; hi[p] = hi[k]; hf[k] = tf; hi[k] = ti; k = p; }
+    };
+    const pop = () => {
+        const f0 = hf[0], i0 = hi[0]; const lf = hf.pop(), li = hi.pop();
+        if (hf.length) { hf[0] = lf; hi[0] = li; let k = 0;
+            for (;;) { const l = 2 * k + 1, r = l + 1; let m = k;
+                if (l < hf.length && hf[l] < hf[m]) m = l; if (r < hf.length && hf[r] < hf[m]) m = r;
+                if (m === k) break; const tf = hf[m], ti = hi[m]; hf[m] = hf[k]; hi[m] = hi[k]; hf[k] = tf; hi[k] = ti; k = m; } }
+        return [f0, i0];
+    };
+    const gx = g[0], gy = g[1];
+    const h = (ci, cj) => { const dx = Math.abs(ci - gx), dy = Math.abs(cj - gy); return Math.max(dx, dy) + (Math.SQRT2 - 1) * Math.min(dx, dy); };
+    dist[si] = 0; prev[si] = si; push(h(s[0], s[1]), si);
+    while (hf.length) {
+        const [f, cur] = pop();
+        if (cur === gi) break;
+        const ci = cur % N, cj = (cur - ci) / N;
+        if (f > dist[cur] + h(ci, cj) + 1e-6) continue;          // a stale heap entry
+        for (const [di, dj] of NB) {
+            const a = ci + di, b = cj + dj;
+            if (!at(a, b)) continue;
+            if (di && dj) {
+                if (T && !grid.at(a, b)) { if (!at(ci + di, cj) || !at(ci, cj + dj)) continue; }
+                else if (!grid.at(ci + di, cj) || !grid.at(ci, cj + dj)) continue;
+            }
+            const nid = b * N + a;
+            const nd = dist[cur] + ((di && dj) ? Math.SQRT2 : 1);
+            if (nd < dist[nid]) { dist[nid] = nd; prev[nid] = cur; push(nd + h(a, b), nid); }
+        }
+    }
+    if (prev[gi] === -1) return null;
+    const out = [];
+    let cur = gi;
+    while (cur !== si) { const ci = cur % N; out.push(grid.world(ci, (cur - ci) / N)); cur = prev[cur]; }
+    out.push(grid.world(s[0], s[1]));
+    out.reverse();
+    return out;
 }
 function pathPass(grid, from, to, tight) {
     const N = grid.n, T = tight ? grid._tight : null;
