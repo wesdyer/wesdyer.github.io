@@ -370,7 +370,12 @@ const LAND_TEXTURES = {
     cypressfloor:   { src: 'assets/images/terrain/otter/cypressfloor.png', tile: 128, alpha: 0.60 },
     // Buff sand: tile sd 4.87 at 128. 0.7, the sands' usual, lands 3.41 — between blacksand
     // (3.14) and desertsand (3.45), the calm one of the set, as specced.
-    buffsand:       { src: 'assets/images/terrain/otter/sand.png',         tile: 128, alpha: 0.70 }
+    buffsand:       { src: 'assets/images/terrain/otter/sand.png',         tile: 128, alpha: 0.70 },
+    // Tidepool shelf: tile sd 21.85 at 256 — as loud as the meadow, because every pool is a
+    // hard-edged patch of blue on brown rock. The pre-registered 0.45 would land 9.8, far over
+    // the band; 0.28 lands 6.1, level with grass and the meadow. The pools still read at that,
+    // and a shelf is a thin band round exposed rock, never a whole landmass.
+    tidepool:       { src: 'assets/images/terrain/otter/tidepool.png',     tile: 256, alpha: 0.28 }
 };
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];

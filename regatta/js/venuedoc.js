@@ -2436,8 +2436,10 @@ const PROP_KINDS = {
     // same reasoning as Sockeye Run's seven plants — and world sizes as declared in the manifest.
     // Ice plant in bloom: the venue's single colour accent (venue-art.md), a 3.9 m mat at 36u,
     // honest size for a patch; several placed together make the card's carpet. Its green
-    // out-of-bloom twin (`otter-iceplant-green`) joins this block when it ships.
+    // out-of-bloom twin (`otter-iceplant-green`) follows it.
     'otter-iceplant':          { label: 'Ice plant (in bloom)', world: 36, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // Its green out-of-bloom twin, the same 3.9 m mat: what the cliff tops wear outside spring.
+    'otter-iceplant-green':    { label: 'Ice plant',            world: 36, plane: 'surface', contact: 'none', motion: 'fixed' },
     // Monterey cypress: the venue's signature tree and the biggest crown of its three (128 / 96 / 72,
     // the cove's 1.33x ladder). 128u = 13.9 m, honest for a mature open-grown specimen. Shipped
     // round 3 as layered feathery pads in tiers — a sheltered-grove crown, roughly round in plan;
@@ -2445,13 +2447,107 @@ const PROP_KINDS = {
     // owner's call. Surface plane, no contact: headland scenery the fleet cannot reach.
     'otter-cypress-monterey':  { label: 'Monterey cypress',    world: 128, plane: 'surface', contact: 'none', motion: 'fixed' },
     // Coast live oak: the broadleaf of the three, on the gold meadow above the cliffs; 96u = 10.4 m,
-    // honest for an exposed-coast specimen. Shipped round 3 as a PLACEHOLDER — usable, but it carries a
-    // P2 `rework` block in art/manifest.json (seven flat billows read as balloons, biggest at the centre);
-    // a reroll lands under the same key and nothing here changes.
+    // honest for an exposed-coast specimen. Shipped round 4 (2026-09-13) as a dome of eleven smooth
+    // leaf-grained billows, the biggest off centre — the cove-oak-black family, against the pine's tufts.
     'otter-oak-live':          { label: 'Coast live oak',      world:  96, plane: 'surface', contact: 'none', motion: 'fixed' },
     // Monterey pine: the tallest tree here and the smallest footprint from above — 72u = 7.8 m of crown.
     // Shipped round 3 as packed bristly needle tufts, the cove-pine-pitch family.
-    'otter-pine-monterey':     { label: 'Monterey pine',       world:  72, plane: 'surface', contact: 'none', motion: 'fixed' }
+    'otter-pine-monterey':     { label: 'Monterey pine',       world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // The scrub: coyote brush is the commonest plant on the coast (28u = 3 m, honest), coastal
+    // sage the smallest and palest (20u, 1.5x a real plant, declared in the manifest). Both surface
+    // scenery, contact none, like every plant here.
+    'otter-brush-coyote':      { label: 'Coyote brush',        world:  28, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-sage-coastal':      { label: 'Coastal sage',        world:  20, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ── OTTER POINT'S TIDEPOOL ROCKS (2026-09-14) ─────────────────────────────
+    // Five DIFFERENT intertidal structures (art/manifest.json `otter-tidepool-*`), so no
+    // two read as one asset at two sizes: a flat pitted platform, a sea stack, a low awash
+    // wash rock, a ring of blocks round one pool, and a long seaward finger. ALL HARD
+    // (2026-09-14, second pass): a hard prop now collides on its TRACED OUTLINE and takes
+    // surf, and `height` (metres, as a shape states it) gives it a lee — so the redrock
+    // tower rule ("lay a shape under a landmark") no longer applies to any of Otter's rocks;
+    // the prop IS the object. The reef keeps contactR 42 as its fallback circle.
+    'otter-tidepool-shelf':    { label: 'Tidepool shelf',      world: 300, plane: 'surface', contact: 'hard', height: 0, motion: 'fixed' },
+    'otter-tidepool-pinnacle': { label: 'Granite pinnacle',    world: 160, plane: 'surface', contact: 'hard', height: 17, motion: 'fixed' },
+    'otter-tidepool-reef':     { label: 'Wash rock',           world: 120, plane: 'surface', contact: 'hard', contactR: 42, height: 0, motion: 'fixed' },
+    'otter-tidepool-basin':    { label: 'Tidepool basin',      world: 140, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
+    'otter-tidepool-ridge':    { label: 'Granite ridge',       world: 240, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
+    // ── OTTER POINT'S TIDEPOOL LIFE (2026-09-14) ──────────────────────────────
+    // Five pools with the life in them (art/manifest.json `otter-tidepool-*`), each owned by
+    // one colour so they read apart at race scale — green anemones, purple urchins, orange
+    // stars, the green of surfgrass, and the garden with all three. The animals are drawn
+    // SMALL against the rock (a thirtieth of the formation for an anemone; round 1 came back
+    // at boat scale and was rerolled). All landmarks, contact none: they lie on the `tidepool`
+    // ground or on the shelf prop, and a shape underneath carries any collider or surf.
+    'otter-tidepool-anemones':  { label: 'Anemone pool',        world:  90, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-tidepool-urchins':   { label: 'Urchin pocket',       world:  70, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-tidepool-seastars':  { label: 'Sea-star ledge',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-tidepool-surfgrass': { label: 'Surfgrass channel',   world: 120, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-tidepool-garden':    { label: 'Tidepool garden',     world: 130, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // ── OTTER POINT'S CENTREPIECES (2026-09-14) ───────────────────────────────
+    // Four big composed props, each many structures in one, meant to be placed ONCE:
+    // the tidepool flats (a whole platform of pools), the surge channel (two ledges
+    // either side of a transparent slot the sea shows through), the cypress crag (the
+    // Lone Cypress on its knob, dry), and the arch point (a spur pinched to an isthmus
+    // with two stacks off its end). Landmarks, contact none — `coastalgranite` /
+    // `tidepool` shapes under the solid parts, never under the slot or the arch neck.
+    'otter-centre-tidepool-flats': { label: 'Tidepool flats',    world: 420, plane: 'surface', contact: 'hard', height: 0, motion: 'fixed' },
+    'otter-centre-surge-channel':  { label: 'Surge channel',     world: 380, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
+    'otter-centre-cypress-crag':   { label: 'Cypress crag',      world: 320, plane: 'surface', contact: 'hard', height: 12, motion: 'fixed' },
+    // THE ARCHES ARE COMPOSITES, like the bayou trees: `parts.surface` (the piers) is what the
+    // tracer turns into the collider and what draws under the fleet; `parts.canopy` (the span,
+    // the top of the arch) draws OVER the fleet, so a hull between the piers is under the arch.
+    // `opaque` keeps the span solid when the player is beneath it — a crown fades so you can
+    // see your hull, an arch is the point of not seeing it (Wes: "no transparency necessary").
+    // `part: true` rows are the halves: never placed on their own, kept out of the picker.
+    // art/archsplit.py cuts the bake; the passage is the neck run (arch point 24u x scale,
+    // sea arch 16u x scale — beam-wise, a hull sails through lengthwise).
+    'otter-centre-arch-point':     { label: 'Arch point',        world: 480, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed',
+                                parts: { surface: 'otter-centre-arch-point-piers', canopy: 'otter-centre-arch-point-span' }, opaque: true },
+    'otter-centre-arch-point-piers': { label: 'Arch point piers', world: 480, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed', part: true },
+    'otter-centre-arch-point-span': { label: 'Arch point span',  world: 480, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
+    // ── OTTER POINT'S DRY ROCKS (2026-09-14) ──────────────────────────────────
+    // The California rock set's land pieces (art/manifest.json `otter-boulder-*`,
+    // `otter-outcrop-*`): weathered Pacific Grove boulders and the bedrock knobs of the
+    // headland meadows — dry, lichen-spotted, no intertidal bands, scrub only in the
+    // joints. Landmarks, contact none: they stand on the meadow or the granite band; a
+    // `coastalgranite` shape goes under any that must stop a hull in the water.
+    'otter-boulder-egg':        { label: 'Granite boulder',     world:  44, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
+    'otter-boulder-pile':       { label: 'Boulder pile',        world: 110, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
+    'otter-outcrop-whaleback':  { label: 'Granite whaleback',   world: 120, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' },
+    'otter-outcrop-pavement':   { label: 'Granite pavement',    world: 160, plane: 'surface', contact: 'hard', height: 0, motion: 'fixed' },
+    'otter-outcrop-fin':        { label: 'Granite fin',         world: 140, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' },
+    // ── OTTER POINT'S SEA STACKS (2026-09-14) ─────────────────────────────────
+    // Standing in the water with the three intertidal bands round their feet: the thin
+    // blade and the flat-topped table plus the bird rock, and the sea arch.
+    // Landmarks, contact none — the redrock tower rule: a `coastalgranite` shape with a
+    // `height` at the footprint carries the collider, the surf and a real lee.
+    'otter-stack-blade':        { label: 'Blade stack',         world: 150, plane: 'surface', contact: 'hard', height: 12, motion: 'fixed' },
+    'otter-stack-table':        { label: 'Table stack',         world: 130, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
+    'otter-stack-bird-rock':    { label: 'Bird rock',           world: 220, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed' },
+    // the arch: a spur pinched to an isthmus with transparent notches either side of the
+    // neck — shapes under the two lobes only, never under the neck, so a dinghy can duck through
+    'otter-sea-arch':           { label: 'Sea arch',            world: 180, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed',
+                       parts: { surface: 'otter-sea-arch-piers', canopy: 'otter-sea-arch-span' }, opaque: true },
+    'otter-sea-arch-piers':         { label: 'Sea arch piers', world: 180, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed', part: true },
+    'otter-sea-arch-span':          { label: 'Sea arch span',  world: 180, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
+    // ── OTTER POINT'S SECOND VEGETATION SET, BEACH PROPS AND THE LIGHT (2026-09-14) ──
+    // What the California references showed the first seven plants did not: a yellow-
+    // flowered shrub (the meadow's second accent beside the magenta ice plant), the big
+    // dark thicket of the forest edge, the bleached ghost cypress, dune grass for the
+    // sand, and a merged cypress grove for coverage; a driftwood log and kelp wrack for the
+    // beaches; and the Point Pinos light — a keeper's cottage with the tower through its
+    // roof, told from Lighthouse Cove's tower at a glance. All contact none. The four small
+    // ones were raised after the at-size sheet (26/24/36/30 -> 40/34/54/40): at their briefed
+    // sizes they were a few pixels, and the yellow of the lizard tail did not carry at all.
+    'otter-bloom-lizardtail':   { label: 'Lizard tail',         world:  40, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-thicket-coastal':    { label: 'Coastal thicket',     world:  48, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-cypress-ghost':      { label: 'Ghost cypress',       world:  90, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-iceplant-red':       { label: 'Ice plant (red)',     world:  36, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-dunegrass':          { label: 'Dune grass',          world:  34, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-cypress-grove':      { label: 'Cypress grove',       world: 220, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-driftwood-log':      { label: 'Driftwood log',       world:  54, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-kelp-wrack':         { label: 'Kelp wrack',          world:  40, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-lighthouse-pinos':   { label: 'Point Pinos light',   world:  96, plane: 'surface', contact: 'hard', height: 12, motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
@@ -2477,6 +2573,40 @@ function propTraits(p) {
                              : (k.contactR != null ? +k.contactR : Math.round((k.world || 40) * 0.35))
                                * (p.scale != null ? +p.scale : 1))
     };
+}
+
+// ── WHERE A CONTACT PROP ACTUALLY IS ────────────────────────────────────────
+// A hard prop's collider used to be a 12-gon at contactR — a circle in the middle of a
+// 320-unit ferry terminal, a circle wider than the rock it stood for. It is now the prop's
+// OUTLINE: the silhouette of its bake (or of its srcBox), traced once by
+// art/prop_outlines.py into js/prop_outlines.js, and rotated, scaled and placed here, so a
+// pier stops a hull along its whole length and a boulder stops it at the boulder's edge
+// and nowhere else (Wes, 2026-09-14). Two things still get the circle, on purpose: a kind
+// with no traced outline (nothing shipped yet, or a trunk under a canopy whose srcBox is a
+// solid stand-in), and a placement that AUTHORED its own contactR, which is a designer's
+// word over the art's. Soft props are not routed through here at all — a shoal's drag is a
+// field, not an edge, and its circle stands.
+//
+// Rings come back in world coordinates, one per detached piece of the sprite (an arch and
+// its stacks are several), and `traced` says whether they came from the art or the circle.
+function propHitRings(p) {
+    const T = propTraits(p);
+    const k = PROP_KINDS[p.kind] || {};
+    const O = (typeof window !== 'undefined' && window.PROP_OUTLINES) ? window.PROP_OUTLINES[p.kind] : null;
+    const size = (k.world || 0) * (p.scale != null ? +p.scale : 1);
+    if (O && O.rings && O.rings.length && O.world > 0 && size > 0 && p.contactR == null) {
+        const f = size / O.world, c = Math.cos(p.heading || 0), sn = Math.sin(p.heading || 0);
+        return { traced: true, rings: O.rings.map(ring => ring.map(([x, y]) => {
+            const X = x * f, Y = y * f;
+            return [p.x + X * c - Y * sn, p.y + X * sn + Y * c];      // the draw's own rotate(heading), y down
+        })) };
+    }
+    const r = T.contactR, ring = [];
+    for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2;
+        ring.push([p.x + r * Math.sin(a), p.y - r * Math.cos(a)]);
+    }
+    return { traced: false, rings: [ring] };
 }
 
 const SHAPE_KINDS = {
@@ -2742,6 +2872,13 @@ const SHAPE_KINDS = {
     // coast. HARD, with `isle`, `lakesand`, `desertsand` and `blacksand`: every beach in the
     // game grounds you. A beach — no lee at all.
     buffsand:       { motion: 'fixed', hard: true, look: 'buffsand',       hidden: false, nav: true, height: 0 },   // a beach — no lee at all
+    // Tidepool shelf: the intertidal platform round every exposed point and offshore rock — the
+    // 'darker wet granite' band of the brief. HARD (a shelf grounds a hull as surely as the
+    // headland does) and drawn a boat length or two seaward of the granite, so the exposed
+    // rock reaches further into the water than the pale coast alone. height 0: a flat platform
+    // at the tide line shelters nothing; the granite behind it carries the lee. NOT awash, on
+    // purpose — an awash shape gets no surf pass, and surf on the shelf's edge is the picture.
+    tidepool:       { motion: 'fixed', hard: true, look: 'tidepool',       hidden: false, nav: true, height: 0 },   // a wet platform — no lee
     // ── AND THE ONE GROUND THAT MOVES ───────────────────────────────────────
     // Lava. Molten flow under a cooled crust: dark plates riding an incandescent bed, the
     // seams between them glowing, the front where it meets the sea the hottest of all.
@@ -2978,7 +3115,29 @@ const SHAPE_KINDS = {
     // stays open behind her, so this is the one shape in the game whose job is to show
     // you where the fleet has been. Priced at nothing by the router, correctly.
     duckweed: { motion: 'fixed', hard: false, look: 'shoal', hidden: false, nav: false, height: 0,
-               awash: true, drag: 0,    paint: true, veg: 'duckweed' }
+               awash: true, drag: 0,    paint: true, veg: 'duckweed' },
+
+    // ── OTTER POINT: GIANT KELP ──────────────────────────────────────────────
+    // Macrocystis. A canopy that floats ON the surface, rooted to the rock forty metres
+    // down — so it sits in the bayou's ladder between the hyacinth raft (free, a mass you
+    // plough) and the hydrilla bed (rooted, grows up, fouls the keel): rooted like the
+    // weedbed, on the surface like the mat. From this camera it is what the venue card
+    // paints — loose streaky bands of dark-olive and rust-brown mats with a few fronds
+    // trailing out and water showing between them — and that patchiness is drawn by the
+    // vegetation baker's holes rather than by the shape's outline, so a designer draws the
+    // BED and the painter supplies the mats.
+    //
+    // drag 0.65 — SEVERE, on the owner's call (Wes: 'the drag from the kelp should be pretty
+    // severe'), a step past hydrilla (0.6) and short of the hyacinth raft (0.75): giant kelp
+    // wraps a keel and rudder and the venue's brief is 'kelp beds flatten the swell and grab
+    // your keel'. It is a tax you CHOOSE — the beds sit on the inside lines and never in water
+    // every boat must use, which is the rule the first Otter Point race taught: a bed across
+    // the gate channel plus two rocks turned a 2:13 course into a fleet DNF. The router prices
+    // the same field, so the bots know what a bed costs before they commit to the inside. nav: true so the router
+    // prices it. NOT YET: the swell damping the card promises. Nothing in the swell path
+    // reads shapes today; when it does, this is the kind that asks for it.
+    kelp:     { motion: 'fixed', hard: false, look: 'shoal', hidden: false, nav: true, height: 0,
+               awash: true, drag: 0.65, paint: true, veg: 'kelp' }
 };
 
 // How far in from a shoal's rim the water is still deep enough not to matter, in units.
@@ -3164,14 +3323,30 @@ function compileVenueDoc(doc, light) {
         if (!PROP_KINDS[p.kind]) continue;
         const T = propTraits(p);
         if (T.contact === 'none' || T.motion !== 'fixed') continue;
-        const r = T.contactR, ring = [];
-        for (let i = 0; i < 12; i++) {
-            const a = (i / 12) * Math.PI * 2;
-            ring.push([p.x + r * Math.sin(a), p.y - r * Math.cos(a)]);
+        if (T.contact !== 'hard') {
+            const r = T.contactR, ring = [];
+            for (let i = 0; i < 12; i++) {
+                const a = (i / 12) * Math.PI * 2;
+                ring.push([p.x + r * Math.sin(a), p.y - r * Math.cos(a)]);
+            }
+            allShapes.push({ id: p.id + '.hit', kind: 'shoal', outer: ring, holes: [], hidden: true, drag: T.drag });
+            continue;
         }
-        allShapes.push(T.contact === 'hard'
-            ? { id: p.id + '.hit', kind: 'isle',  outer: ring, holes: [], hidden: true }
-            : { id: p.id + '.hit', kind: 'shoal', outer: ring, holes: [], hidden: true, drag: T.drag });
+        // HARD: the traced outline (see propHitRings), one hidden isle per piece. A hard
+        // prop standing on the water's surface gets SURF like any shore — a swell breaks on
+        // a pier's piles and on a rock's weather face — unless it carries its own `wash`
+        // (a buoy, a daybeacon: they draw their own water) or its outline is only the
+        // contactR circle (a trunk's stand-in has no edge to break on).
+        const hit = propHitRings(p);
+        const K = PROP_KINDS[p.kind];
+        // Traced outline or contactR circle alike: a rock is a rock to a swell. Only a prop
+        // that draws its own water (`wash`) or does not stand at the surface stays out.
+        const propSurf = T.plane === 'surface' && !K.wash;
+        hit.rings.forEach((ring, i) => allShapes.push(Object.assign(
+            { id: p.id + (i ? `.hit${i + 1}` : '.hit'), kind: 'isle', outer: ring, holes: [], hidden: true, propSurf },
+            // A kind that states a height casts a lee like a shape of that height; one that
+            // does not keeps whatever the isle kind gave it before, unchanged.
+            K.height != null ? { height: K.height } : {})));
     }
 
     for (const l of allShapes) {
@@ -3217,6 +3392,9 @@ function compileVenueDoc(doc, light) {
             fromMask: true,
             isRock: isBareRock,
             hidden: T.hidden,
+            // A hidden collider that still takes surf: a hard prop's traced outline on the
+            // water's surface. The renderer skips it like any hidden shape; the surf does not.
+            propSurf: !!l.propSurf,
             // ROUTER ONLY — "keep this shape out of the visibility graph", nothing more.
             // The name predates every unrouted kind that is not a river bank, and reading
             // it as "invisible" is what hid the cove's lanes for a release: unrouted and
@@ -3874,18 +4052,24 @@ function courseSig(doc) {
     // 2026-08-31 chasing test_sailable's phantom groundings). SOFT props stay out on
     // the same reasoning in reverse — the ruler is a geometric shortest path, and drag
     // prices the bots' router, never this polyline.
-    const props = [];
+    const props = []; let traced = false;
     for (const p of (doc.props || [])) {
         if (!PROP_KINDS[p.kind]) continue;
         const T = propTraits(p);
         if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
-        props.push([r(p.x), r(p.y), r(T.contactR)]);
+        const hit = propHitRings(p);
+        // A traced outline is an input to the route exactly as the circle was: the wall
+        // moved from a disc to a silhouette, so the paths routed round the disc are stale.
+        props.push(hit.traced ? [r(p.x), r(p.y), hit.rings.map(rg => rg.map(pt)).flat()] : [r(p.x), r(p.y), r(T.contactR)]);
+        if (hit.traced) traced = true;
     }
     const s = JSON.stringify([marks, c.lines || null, c.route || [], (doc.world && doc.world.boundary) || null, land, props]);
     let h = 5381;
     for (let i = 0; i < s.length; i++) h = (Math.imul(h, 33) ^ s.charCodeAt(i)) >>> 0;
     // v2: the algorithm grew the hard-prop list — every v1 sig is stale by construction.
-    return 'v2-' + h.toString(16) + '-' + s.length.toString(36);
+    // v3: hard props are their traced outlines, not circles — only a venue that HAS a traced
+    // prop moves to v3, so every other venue's sig is byte-identical across the change.
+    return (traced ? 'v3-' : 'v2-') + h.toString(16) + '-' + s.length.toString(36);
 }
 // ── THE RECORDS HASH: what a course record was set ON ─────────────────────────────────
 // A record belongs to a venue AS IT WAS when the record was set. Edit the venue — move a
@@ -3982,7 +4166,7 @@ window.VenueDoc = {
     KINDS: SHAPE_KINDS,
     MARK_KINDS: MARK_KINDS,
     PROP_KINDS: PROP_KINDS,
-    propTraits: propTraits,
+    propTraits: propTraits, propHitRings: propHitRings,
     // The depth read, on compiled islands. Shared so the boat, the router and the editor
     // price a shoal crossing identically — see shoalMulAt.
     shoalMul: shoalMulAt,

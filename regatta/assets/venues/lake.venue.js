@@ -4113,7 +4113,7 @@ window.VENUE_DOC["lake"] = {
     ],
     "cutoff": 480,
     "paths": {
-      "sig": "v2-cd8d9866-8pb",
+      "sig": "v3-aff9265d-eu0",
       "legs": [
         {
           "pts": []

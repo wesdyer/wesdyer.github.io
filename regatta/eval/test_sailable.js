@@ -81,12 +81,10 @@ const check = (name, cond, detail) => {
                 if (!window.VenueDoc.PROP_KINDS[p.kind]) continue;
                 const T = window.VenueDoc.propTraits(p);
                 if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
-                const rC = T.contactR, ringC = [];
-                for (let i = 0; i < 12; i++) {
-                    const a = (i / 12) * Math.PI * 2;
-                    ringC.push([p.x + rC * Math.sin(a), p.y - rC * Math.cos(a)]);
-                }
-                fixedShapes.push({ id: p.id + '.hit', kind: 'isle', outer: ringC, holes: [], hidden: true });
+                // The same rings the compile and the router emit — the traced outline where the
+                // kind has one (js/prop_outlines.js), the contactR 12-gon where it does not.
+                window.VenueDoc.propHitRings(p).rings.forEach((ringC, i) =>
+                    fixedShapes.push({ id: p.id + (i ? '.hit' + (i + 1) : '.hit'), kind: 'isle', outer: ringC, holes: [], hidden: true }));
             }
             const hasDrift = window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed');
             const grid = S.buildGrid(fixedShapes, state.course.boundary, null, hasDrift ? { noSubsample: true } : null);

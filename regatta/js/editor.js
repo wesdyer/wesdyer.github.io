@@ -366,6 +366,7 @@ const LAND_TYPES = [
     { kind: 'coastalmeadow',  label: 'Otter Coastal Meadow',  swatch: '#BAA24C' },
     { kind: 'cypressfloor',   label: 'Otter Cypress Floor',   swatch: '#5F5237' },
     { kind: 'buffsand',       label: 'Otter Coastal Sand',    swatch: '#CCAB6C' },
+    { kind: 'tidepool',       label: 'Otter Tidepool Shelf',  swatch: '#716350' },
     // Stillwater Lake's three grounds. Swatches track ISLAND_STYLES.<kind>.body and are still
     // the tile SPEC means, so they move when the art is ingested and the bodies are reset.
     // ⚠️ "Glacial Granite" is NOT "Granite" — one is ice-SMOOTHED northern shelf rock, the
@@ -434,6 +435,9 @@ const LAND_TYPES = [
     { kind: 'weedbed',     label: 'Weed Bed',         swatch: '#2a4428' },
     { kind: 'lilybed',     label: 'Lily Pads',        swatch: '#60803e' },
     { kind: 'weedmat',     label: 'Hyacinth Mat',     swatch: '#5c7e40' },
+    // Otter Point's giant kelp: an awash surface canopy on the [VENUE] [TERRAIN] convention.
+    // Swatch is the painter's mid tone; you may sail over it, so its fill is translucent.
+    { kind: 'kelp',        label: 'Otter Kelp Bed',   swatch: '#5c4a22' },
     { kind: 'duckweed',    label: 'Duckweed',         swatch: '#84a64c' }
 ];
 // The one place the order is decided, so both pickers inherit it and cannot disagree:
@@ -566,6 +570,17 @@ function recomputeEstimate() {
             const t = window.VenueDoc.traits(sh);
             return t.motion === 'fixed' && !t.awash;
         });
+        // HARD PROPS ARE WALLS HERE TOO — the same rings the compile, the bots' router and
+        // test_sailable put in their grids (a pier's traced outline, a boulder's edge), so
+        // the estimate prices the route a boat can really sail rather than one through a
+        // ferry terminal. Soft props stay out: their drag is priced, not walled.
+        for (const p of (doc.props || [])) {
+            if (!window.VenueDoc.PROP_KINDS[p.kind]) continue;
+            const T = window.VenueDoc.propTraits(p);
+            if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
+            window.VenueDoc.propHitRings(p).rings.forEach((ring, i) =>
+                solid.push({ id: p.id + (i ? `.hit${i + 1}` : '.hit'), kind: 'isle', outer: ring, holes: [], hidden: true }));
+        }
         const grid = window.SailCheck.buildGrid(solid, course.boundary, null,
             window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed') ? { noSubsample: true } : null);
         // Pass the real field, not one number: the wind varies across the course, and a
@@ -749,6 +764,7 @@ function loadDoc(src, handle) {
     clearRegSel(); selLine = -1; selRoute = -1;
     const label = $('venue-label');
     if (label) label.textContent = venueName(doc.venue);
+    buildKindPicker();   // the prop picker leads with THIS venue's props
     recompile(); info(); refreshChrome(); refreshInspector();
     marksInspector(); windRefresh(); currentRefresh();
     iceRefresh(); paletteRefresh();
@@ -1194,9 +1210,11 @@ function enhancePropPicker(sel) {
     const build = () => {
         const q = find.value.trim().toLowerCase();
         const opts = [...sel.options].map((o, i) => ({ o, i }))
-            .filter(({ o }) => !q || o.textContent.toLowerCase().includes(q));
-        grid.innerHTML = opts.length ? opts.map(({ o, i }) =>
-            `<button type="button" class="ed-prop-card${i === sel.selectedIndex ? ' on' : ''}" data-i="${i}">`
+            .filter(({ o }) => o.dataset.sep ? !q : (!q || o.textContent.toLowerCase().includes(q)));
+        const cards = opts.filter(({ o }) => !o.dataset.sep).length;
+        grid.innerHTML = cards ? opts.map(({ o, i }) => o.dataset.sep
+            ? `<div class="ed-prop-sep"><span>${o.textContent}</span></div>`
+            : `<button type="button" class="ed-prop-card${i === sel.selectedIndex ? ' on' : ''}" data-i="${i}">`
             + `<img src="${srcOf(o.value)}" alt="" draggable="false"><span>${o.textContent}</span></button>`).join('')
             : '<div class="ed-find-none">No props match</div>';
         grid.querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', () => pick(+el.dataset.i)));
@@ -1540,12 +1558,35 @@ function buildKindPicker() {
     // The prop picker rides along — same one-list rule, VenueDoc.PROP_KINDS is the
     // source — but built for a LIBRARY, not a handful: options land ALPHABETIZED by
     // label, and the dropdown is the searchable variant (enhancePropPicker).
+    // THE LOADED VENUE'S OWN PROPS COME FIRST (Wes, 2026-09-14: the library is past two
+    // hundred kinds and growing, and the ones you want are nearly always this venue's), then
+    // a divider, then the whole library exactly as before. A kind belongs to a venue by its
+    // key's prefix — `<venue>-<name>` is the bake path, so `otter-…` is Otter Point's — and a
+    // venue-neutral kind (`buoy-…`, `zodiac`) lives only in the library half. Rebuilt whenever
+    // a different venue is loaded; the filter box searches both halves as it always did.
     const pk = $('prop-kind');
-    if (pk && !pk.options.length && window.VenueDoc && window.VenueDoc.PROP_KINDS) {
-        pk.innerHTML = Object.entries(window.VenueDoc.PROP_KINDS)
-            .sort((a, b) => a[1].label.localeCompare(b[1].label))
-            .map(([k, v]) => `<option value="${k}">${v.label}</option>`).join('');
-        enhancePropPicker(pk);
+    if (pk && window.VenueDoc && window.VenueDoc.PROP_KINDS) {
+        const venue = (doc && doc.venue) || '';
+        if (pk.dataset.venue !== venue || !pk.options.length) {
+            const keep = pk.value;
+            // A `part` kind is one half of a composite (an arch's piers or its span) and is
+            // never placed on its own — the whole rock is the thing you place.
+            const all = Object.entries(window.VenueDoc.PROP_KINDS)
+                .filter(([, v]) => !v.part)
+                .sort((a, b) => a[1].label.localeCompare(b[1].label));
+            const own = venue ? all.filter(([k]) => k.startsWith(venue + '-')) : [];
+            const opt = ([k, v]) => `<option value="${k}">${v.label}</option>`;
+            pk.innerHTML = (own.length
+                ? own.map(opt).join('') + `<option disabled data-sep="1">── all props ──</option>`
+                : '') + all.map(opt).join('');
+            pk.dataset.venue = venue;
+            // Switching venue lands on the new venue's first prop, unless the current pick is
+            // already one of its own; the startup build (no venue yet) is the library alone.
+            if (keep && own.some(([k]) => k === keep)) pk.value = keep;
+            else pk.selectedIndex = 0;
+            enhancePropPicker(pk);
+            pk.dispatchEvent(new Event('change', { bubbles: true }));   // the button relabels itself
+        }
     }
     const el = $('new-kind');
     if (!el || el.options.length) return;
@@ -1914,6 +1955,9 @@ const KIND_FILL = {
     mudflat: 'rgba(110,100,73,0.42)',
     weedbed: 'rgba(42,68,40,0.38)', lilybed: 'rgba(96,128,62,0.46)',
     weedmat: 'rgba(92,126,64,0.62)', duckweed: 'rgba(132,166,76,0.55)',
+    // Kelp: translucent like the other beds you sail over, warm olive-brown so it reads
+    // as the dark streaks the card paints rather than as one more green weed.
+    kelp: 'rgba(92,74,34,0.55)',
     // ⚠️ LIGHTHOUSE COVE'S TWO GROUNDS, AND THE REASON THIS TABLE IS EASY TO FORGET.
     // A new land kind needs FIVE rows — SHAPE_KINDS, ISLAND_STYLES, LAND_TEXTURES,
     // LAND_TYPES and this — and only the miss here is silent. The fill lookup below is
@@ -1962,7 +2006,8 @@ const KIND_FILL = {
     // Otter Point's four. All dry land, so all solid per this table's rule that only what
     // you may sail over is translucent. Values are the DELIVERED tile means (2026-09-13),
     // matching the chips.
-    coastalgranite: '#BBAC95', coastalmeadow: '#BAA24C', cypressfloor: '#5F5237', buffsand: '#CCAB6C'
+    coastalgranite: '#BBAC95', coastalmeadow: '#BAA24C', cypressfloor: '#5F5237', buffsand: '#CCAB6C',
+    tidepool: '#716350'
 };
 const KIND_EDGE = {
     granite: '#c9c9c9', karst: '#aab0bb', redrock: '#8a4a26', reed: '#5c8438', lawn: '#597a22', swampgrass: '#7d7048',
@@ -1986,6 +2031,7 @@ const KIND_EDGE = {
     mudflat: 'rgba(110,100,73,0.8)',
     weedbed: 'rgba(74,112,74,0.85)', lilybed: 'rgba(140,176,100,0.9)',
     weedmat: 'rgba(150,182,110,0.9)', duckweed: 'rgba(178,208,120,0.9)',
+    kelp: 'rgba(122,92,44,0.9)',
     // Each is its own ISLAND_STYLES stroke, so the schematic outline is the same colour the
     // game draws the coastline in. Darker than the fill, with the earth and vegetation kinds
     // above rather than lighter with granite and karst: these two are neither bright enough
@@ -2010,7 +2056,8 @@ const KIND_EDGE = {
     basalt: '#191A1D', cinder: '#291B18', blacksand: '#151514', lava: '#FF6A2A',
     magma: '#FFC24A',
     // Otter Point's four. Each is its own ISLAND_STYLES stroke — the body at ~0.72 luma.
-    coastalgranite: '#877C6B', coastalmeadow: '#867437', cypressfloor: '#443B28', buffsand: '#937B4E'
+    coastalgranite: '#877C6B', coastalmeadow: '#867437', cypressfloor: '#443B28', buffsand: '#937B4E',
+    tidepool: '#514839'
 };
 
 function drawLandLayer() {
@@ -2500,11 +2547,45 @@ function drawPropsLayer() {
             ctx.beginPath(); ctx.arc(s.x, s.y, w / 2, 0, Math.PI * 2);
             ctx.fillStyle = 'rgba(132,204,22,0.35)'; ctx.fill();
         }
+        // THE COLLIDER, where the prop has one: the traced outline the game stops a hull at,
+        // dashed like every other hidden collider in this editor. It is what "this prop is
+        // hard" means, and the one thing about a prop that the sprite alone cannot show.
+        if (mode === 'props' && window.VenueDoc.propHitRings) {
+            const T = window.VenueDoc.propTraits(p);
+            if (T.contact === 'hard' && T.motion === 'fixed') {
+                ctx.save();
+                ctx.strokeStyle = 'rgba(248,113,113,0.9)'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+                for (const ring of window.VenueDoc.propHitRings(p).rings) {
+                    ctx.beginPath();
+                    ring.forEach((q, j) => { const t = toS(q[0], q[1]); j ? ctx.lineTo(t.x, t.y) : ctx.moveTo(t.x, t.y); });
+                    ctx.closePath(); ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
         if (mode === 'props' && (i === selProp || selProps.includes(i))) {
-            ctx.beginPath(); ctx.arc(s.x, s.y, w / 2 + 4, 0, Math.PI * 2);
+            // THE SELECTION IS THE PAINTED SILHOUETTE, not a circle round the sprite's square
+            // frame: a 480-unit arch point scaled 3.5x is a spur 580 wide and 1,550 long, and a
+            // ring at the frame's radius sat four hundred units off the rock on both sides and
+            // read as a collider it never was. The silhouette comes from js/prop_outlines.js
+            // (`paint`, traced from the bake); a kind with none keeps the circle.
             ctx.strokeStyle = '#38bdf8';
             ctx.lineWidth = i === selProp ? 2 : 1.2;   // the primary reads heavier
-            ctx.stroke();
+            const O = (window.PROP_OUTLINES || {})[p.kind];
+            if (O && O.paint && O.paint.length) {
+                const f = (k.world || 40) * (p.scale || 1) / O.world, c = Math.cos(p.heading || 0), sn = Math.sin(p.heading || 0);
+                for (const ring of O.paint) {
+                    ctx.beginPath();
+                    ring.forEach((q, j) => {
+                        const X = q[0] * f, Y = q[1] * f;
+                        const t = toS(p.x + X * c - Y * sn, p.y + X * sn + Y * c);
+                        j ? ctx.lineTo(t.x, t.y) : ctx.moveTo(t.x, t.y);
+                    });
+                    ctx.closePath(); ctx.stroke();
+                }
+            } else {
+                ctx.beginPath(); ctx.arc(s.x, s.y, w / 2 + 4, 0, Math.PI * 2); ctx.stroke();
+            }
         }
     }
 }

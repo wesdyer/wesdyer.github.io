@@ -255,10 +255,14 @@ console.log('\nleg count does not leak between venues');
                             //
                             // (No backticks in here: this whole block is inside an
                             // execFileSync template literal, so one would end the string.)
-                            const props = (d.props || []).filter(p => {
+                            // One hidden isle PER RING of the prop's traced outline (a
+                            // cluster of cypress knees is three), or one circle where the
+                            // kind has no outline — VenueDoc.propHitRings is the one source.
+                            const props = (d.props || []).reduce((n, p) => {
                                 const t = window.VenueDoc.propTraits(p);
-                                return t.motion === 'fixed' && t.contact === 'hard';
-                            }).length;
+                                return n + (t.motion === 'fixed' && t.contact === 'hard'
+                                            ? window.VenueDoc.propHitRings(p).rings.length : 0);
+                            }, 0);
                             return shapes + props;
                         })(),
                         // What the ROUTE asks for, so the check below can compare the

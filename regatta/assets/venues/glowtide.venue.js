@@ -6086,7 +6086,7 @@ window.VENUE_DOC["glowtide"] = {
     ],
     "cutoff": 360,
     "paths": {
-      "sig": "v2-2193d00b-aux",
+      "sig": "v3-23c828ce-dil",
       "legs": [
         {
           "pts": []

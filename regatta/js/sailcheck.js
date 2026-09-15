@@ -430,7 +430,13 @@ function smoothPath(grid, pts) {
 // (taxed, in planRoute), so when the stock water does not connect, the ruler follows the
 // same thread the boats do. Stock water still wins wherever it connects, so no venue
 // that routed before routes differently now.
-function pathBetween(grid, from, to) {
+// `opts.tight`: search the loose AND tight tiers from the start — every cell the hull can
+// pass, not only the bots' comfortable ones. The goal chip routes the PLAYER this way: the
+// slot a boat fits through is a shortcut, not a wall, and starting on the tight tier also
+// means a boat hugging a shore starts its route from its own cell instead of the nearest
+// comfortable one behind it (Sep 13 2026).
+function pathBetween(grid, from, to, opts) {
+    if (opts && opts.tight && grid._tight) return pathPass(grid, from, to, true);
     return pathPass(grid, from, to, false) || (grid._tight ? pathPass(grid, from, to, true) : null);
 }
 function pathPass(grid, from, to, tight) {

@@ -854,12 +854,10 @@ function buildCoursePaths() {
                 if (!window.VenueDoc.PROP_KINDS[p.kind]) continue;
                 const T = window.VenueDoc.propTraits(p);
                 if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
-                const rC = T.contactR, ringC = [];
-                for (let i = 0; i < 12; i++) {
-                    const a = (i / 12) * Math.PI * 2;
-                    ringC.push([p.x + rC * Math.sin(a), p.y - rC * Math.cos(a)]);
-                }
-                fixed.push({ id: p.id + '.hit', kind: 'isle', outer: ringC, holes: [], hidden: true });
+                // The same rings compileVenueDoc emits — the traced outline where the kind has
+                // one, the contactR 12-gon where it does not (VenueDoc.propHitRings).
+                window.VenueDoc.propHitRings(p).rings.forEach((ringC, i) =>
+                    fixed.push({ id: p.id + (i ? `.hit${i + 1}` : '.hit'), kind: 'isle', outer: ringC, holes: [], hidden: true }));
             }
             // Icy venues keep centre-sampled land: sub-cell shore threads are a
             // trap under floe drift, and every arctic margin constant was priced

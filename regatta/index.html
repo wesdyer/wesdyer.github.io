@@ -862,20 +862,20 @@
                     <div id="clubhouse-tally" class="t-mono" style="font-size:14.5px; color:#c4d2e6; letter-spacing:0.04em;"></div>
                 </div>
                 <div class="grid" style="grid-template-columns:repeat(4, minmax(0, 1fr)); gap:18px;">
-                    <button id="door-school" class="ch-door compact" style="--door-accent:#7ff0d4; --door-ink:#0c1322;">
-                        <div class="ch-door-pic"><img src="assets/images/venues/pond.png" alt="Duckling Pond"><span id="door-school-chip" class="ch-chip" style="position:absolute; top:12px; left:12px; background:#2f6bff; color:#fff;">Start here</span></div>
-                        <div class="ch-door-body">
-                            <div class="t-display ch-door-name">Sailing School</div>
-                            <div class="ch-door-blurb">Learn the ropes on Duckling Pond: three short lessons, then a graduation race.</div>
-                            <div class="ch-door-foot"><span id="door-school-state" class="t-label t-label-sm"></span><span id="door-school-cta" class="ch-cta">Start school <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
-                        </div>
-                    </button>
                     <button id="door-cup" class="ch-door compact" style="--door-accent:#f2c14e; --door-ink:#0c1322;">
                         <div id="door-cup-pic" class="ch-door-pic"></div>
                         <div class="ch-door-body">
                             <div class="t-display ch-door-name">Cup</div>
                             <div class="ch-door-blurb">Four races. One trophy. Choose the Commodore&rsquo;s, Explorer&rsquo;s, or Swirl Cup.</div>
                             <div class="ch-door-foot"><span id="door-cup-state" class="t-label t-label-sm"></span><span class="ch-cta">Choose a cup <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
+                        </div>
+                    </button>
+                    <button id="door-race" class="ch-door compact" style="--door-accent:#ff9a3c; --door-ink:#0c1322;">
+                        <div id="door-race-pic" class="ch-door-pic"></div>
+                        <div class="ch-door-body">
+                            <div class="t-display ch-door-name">Time Trials</div>
+                            <div class="ch-door-blurb">One race, any venue, against the clock. Set records and earn stars.</div>
+                            <div class="ch-door-foot"><span id="door-race-state" class="t-label t-label-sm"></span><span class="ch-cta">Pick a venue <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
                         </div>
                     </button>
                     <button id="door-series" class="ch-door compact" style="--door-accent:#5aa7ff; --door-ink:#0c1322;">
@@ -886,12 +886,12 @@
                             <div class="ch-door-foot"><span id="door-series-state" class="t-label t-label-sm"></span><span class="ch-cta">Draw a series <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
                         </div>
                     </button>
-                    <button id="door-race" class="ch-door compact" style="--door-accent:#ff9a3c; --door-ink:#0c1322;">
-                        <div id="door-race-pic" class="ch-door-pic"></div>
+                    <button id="door-school" class="ch-door compact" style="--door-accent:#7ff0d4; --door-ink:#0c1322;">
+                        <div class="ch-door-pic"><img src="assets/images/venues/pond.png" alt="Duckling Pond"><span id="door-school-chip" class="ch-chip" style="position:absolute; top:12px; left:12px; background:#2f6bff; color:#fff;">Start here</span></div>
                         <div class="ch-door-body">
-                            <div class="t-display ch-door-name">Race</div>
-                            <div class="ch-door-blurb">One race. Any venue. Just line up and go. Set a record.</div>
-                            <div class="ch-door-foot"><span id="door-race-state" class="t-label t-label-sm"></span><span class="ch-cta">Pick a venue <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
+                            <div class="t-display ch-door-name">Sailing School</div>
+                            <div class="ch-door-blurb">Learn the ropes on Duckling Pond: three short lessons, then a graduation race.</div>
+                            <div class="ch-door-foot"><span id="door-school-state" class="t-label t-label-sm"></span><span id="door-school-cta" class="ch-cta">Start school <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
                         </div>
                     </button>
                 </div>
@@ -1369,6 +1369,7 @@
     <!-- Baked venue geography (art/bake_mask.py). JS not JSON so it loads over
          file:// for the eval harness, where fetch() is blocked. -->
     <script src="js/arena.js"></script>
+<script src="js/prop_outlines.js"></script>
 <script src="js/venuedoc.js"></script>
     <!-- Every venue is a DOCUMENT. One tag each, in journey order; there is no
          directory listing over file://, so the set is stated here. -->

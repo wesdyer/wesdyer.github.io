@@ -2922,7 +2922,7 @@ window.VENUE_DOC["volcanic"] = {
     ],
     "cutoff": 360,
     "paths": {
-      "sig": "v2-d8bda755-7pq",
+      "sig": "v3-60c5b04f-dgt",
       "legs": [
         {
           "pts": []

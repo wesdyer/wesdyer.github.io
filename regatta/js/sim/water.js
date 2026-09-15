@@ -1009,7 +1009,14 @@ function updateSurf(dt) {
     const t = state.time;
     let budget = SURF_FOAM_BUDGET;          // per frame, so a long coastline cannot flood
 
-    for (const isl of state.course.islands) {
+    // HARD PROPS TAKE THEIR TURN FIRST. The compile appends their colliders after every
+    // authored shape, and this loop stops when the budget is spent — so with a long coast in
+    // view a rock standing in the water would be reached last and starved every frame. A
+    // prop's perimeter is a few edges; letting it spawn first costs the coast nothing it
+    // would notice.
+    const isls = state.course.islands;
+    const order = isls.some(i => i.propSurf) ? isls.filter(i => i.propSurf).concat(isls.filter(i => !i.propSurf)) : isls;
+    for (const isl of order) {
         if (budget <= 0) break;
         // NOT ON DRIFTING BERGS. A floe is a small object adrift on the water, not a coast:
         // surf round every one of Glacier Sound's 112 floes is fussy detail that fights the
@@ -1022,7 +1029,10 @@ function updateSurf(dt) {
         // would draw in the coastline the whole feature exists not to have. Breaking water
         // over a shoal is a different effect and wants building as one. (drawSurf skips
         // them on the same test, for the same reason.)
-        if (isl.hidden || isl.isFloe || isl.awash || isl.reef || !isl.vertices || isl.vertices.length < 3) continue;
+        // A HARD PROP'S OUTLINE TAKES SURF (`propSurf`): it is hidden from the land render
+        // and nothing else — a pier's piles and a rock's weather face break a swell exactly
+        // as a shore does. Every other hidden shape stays out, as before.
+        if ((isl.hidden && !isl.propSurf) || isl.isFloe || isl.awash || isl.reef || !isl.vertices || isl.vertices.length < 3) continue;
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl), V = isl.vertices;
@@ -1044,10 +1054,18 @@ function updateSurf(dt) {
             // thrown a beat off the crest that threw it is the whole failure this avoids.
             const sea = surfSeaAt(mx, my);
             if (!sea) continue;
+            // A HARD PROP'S SURF BREAKS ON THE FACES THAT MEET THE SEAS, and nowhere else.
+            // The refraction floor is a COAST's number: a swell wraps into bays and the back
+            // of a headland still sees white water. A rock standing in open sea has no bay
+            // for it to wrap into, and on a shape that small the floor (lifted further by
+            // surfFocus, which reads a 200-unit rock as all headland) put a crest on every
+            // edge at the same stand-off — a halo, which Wes read as "surf in a circle around
+            // the arch". Zero floor here is the wind venues' own rule, applied to the prop.
+            const fl = isl.propSurf ? 0 : sea.floor;
             const face = -(nx * sea.tx + ny * sea.ty);
-            if (face <= 0.02 && sea.floor <= 0) continue;
-            const expo = sea.floor + (1 - sea.floor) * Math.max(0, face) * Math.max(0, face);
-            const power = Math.min(1, expo * sea.power * (sea.floor > 0 ? focus[i] : 1));
+            if (face <= 0.02 && fl <= 0) continue;
+            const expo = fl + (1 - fl) * Math.max(0, face) * Math.max(0, face);
+            const power = Math.min(1, expo * sea.power * (fl > 0 ? focus[i] : 1));
             if (power < 0.25) continue;                 // a gentle shore does not throw foam
 
             const hash = (u, w2) => { const h = Math.sin(u * 12.9898 + w2 * 78.233) * 43758.5453; return h - Math.floor(h); };
@@ -1130,7 +1148,7 @@ function drawSurf(ctx) {
         //
         // The FOAM stays off them (updateSurfFoam still excludes reefs): foam is spawned to
         // run up a beach and die at a waterline, and a reef has none. Crests, not litter.
-        if (isl.hidden || isl.isFloe || isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
+        if ((isl.hidden && !isl.propSurf) || isl.isFloe || isl.awash || !isl.vertices || isl.vertices.length < 3) continue;   // propSurf: see updateSurf
         const dxi = isl.x - camX, dyi = isl.y - camY;
         if (dxi * dxi + dyi * dyi > (viewR + isl.radius) ** 2) continue;
         const sgn = surfOutwardSign(isl);
@@ -1155,15 +1173,23 @@ function drawSurf(ctx) {
             // recursion are not worth it here.)
             const sea = surfSeaAt(mx, my);
             if (!sea) continue;
+            // A HARD PROP'S SURF BREAKS ON THE FACES THAT MEET THE SEAS, and nowhere else.
+            // The refraction floor is a COAST's number: a swell wraps into bays and the back
+            // of a headland still sees white water. A rock standing in open sea has no bay
+            // for it to wrap into, and on a shape that small the floor (lifted further by
+            // surfFocus, which reads a 200-unit rock as all headland) put a crest on every
+            // edge at the same stand-off — a halo, which Wes read as "surf in a circle around
+            // the arch". Zero floor here is the wind venues' own rule, applied to the prop.
+            const fl = isl.propSurf ? 0 : sea.floor;
             // Facing the seas means the outward normal opposes their travel.
             const face = -(nx * sea.tx + ny * sea.ty);
-            if (face <= 0.02 && sea.floor <= 0) continue;
+            if (face <= 0.02 && fl <= 0) continue;
 
             // Squared, so the exposed shore is unmistakable and the shoulders fade out
             // instead of stopping dead at a corner — then lifted onto the refraction floor,
             // which is 0 on a wind venue and leaves that shape exactly as it was.
-            const expo = sea.floor + (1 - sea.floor) * Math.max(0, face) * Math.max(0, face);
-            const power = Math.min(1, expo * sea.power * (sea.floor > 0 ? focus[i] : 1));
+            const expo = fl + (1 - fl) * Math.max(0, face) * Math.max(0, face);
+            const power = Math.min(1, expo * sea.power * (fl > 0 ? focus[i] : 1));
             // ⚠️ SUBDIVIDED, not one dash per authored edge. Glacier Sound's coast is 88
             // vertices over 13 km — edges average 500 units, so a dash per edge put ONE
             // stroke on screen. Foam breaks at its own scale, not the coastline's.

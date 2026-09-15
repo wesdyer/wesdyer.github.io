@@ -975,18 +975,28 @@ const MINIMAP_ISLAND = {
     // two it is the hazard, and the chart should say which is which.
     magma:     { body: '#F5901E', top: '#F5901E' },
     // ── OTTER POINT, AND THE CHART AGREEING WITH THE GROUND ─────────────────
-    // All four take rows at their DELIVERED tile means, the river-meadow pattern: the chart
+    // Three take rows at their DELIVERED tile means, the river-meadow pattern: the chart
     // water is a 0.9 wash of #268f97 (luma 113) and the grounds already sit where a chart
-    // wants them — granite and sand +61, meadow +47, and the cypress floor -30, inside the
-    // bayou note's -27..-50 band for a dark wood. Two rows are needed rather than
+    // wants them — granite and sand +61, meadow +47. Two rows are needed rather than
     // inherited: `coastalmeadow` and `cypressfloor` carry trees: true, so without a row the
     // chart would take their VEG tones (an olive and a moss) and the gold hills would chart
     // as scrub. Granite and sand chart the same luma and separate on hue alone (dE 20, grey
     // against gold); if that reads as one pale mass, the beach is the one to warm.
+    //
+    // THE CYPRESS FLOOR CHARTS AS THE CYPRESS, not the floor — the humus rule (Wes,
+    // 2026-09-14: 'the color of the cypress leaves instead of the floor'). A wood seen from
+    // above is its canopy, and the floor tile (#5F5237, a dark brown) charted as bare dirt.
+    // #2F4633 is the shipped otter-cypress-grove sprite's measured mean — the coverage
+    // crown, 150 of them on the venue — and lands -52 luma against the chart water, at the
+    // dark end of the bayou band, which is where a dark wood belongs.
     coastalgranite: { body: '#BBAC95', top: '#BBAC95' },
     coastalmeadow:  { body: '#BAA24C', top: '#BAA24C' },
-    cypressfloor:   { body: '#5F5237', top: '#5F5237' },
+    cypressfloor:   { body: '#2F4633', top: '#2F4633' },
     buffsand:       { body: '#CCAB6C', top: '#CCAB6C' },
+    // The tidepool shelf charts a step DARKER than its tile (#716350, luma 100 — only -13 against
+    // the chart water's 113, the bayou note's 'seven is nothing' case): #5A5045 lands -33, inside
+    // the -27..-50 band, so the wet rock round a point reads as rock, not as a shade of sea.
+    tidepool:       { body: '#5A5045', top: '#5A5045' },
     // Fallback only. A bar's real chart colour is DERIVED per shape (shoalTintFor), so a
     // tan bar and a coral-white bar read differently here exactly as they do on the course.
     shoal:    { body: 'rgba(232,220,177,0.45)', top: 'rgba(232,220,177,0.45)' }

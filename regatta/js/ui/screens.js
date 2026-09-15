@@ -249,6 +249,7 @@ function renderVenuePicker() {
             btn.innerHTML = `
                 <div class="pr-venue-shot">
                     ${venueThumb(key, c.tag || key, 150)}
+                    <span class="pr-venue-stars" style="position:absolute; top:6px; right:6px; background:rgba(6,14,26,0.72); border-radius:999px; padding:2px 6px; display:none;"></span>
                     <span class="pr-venue-name t-display-8 uppercase">${c.name || c.tag || key}</span>
                 </div>`;
             btn.addEventListener('click', (e) => { e.preventDefault(); selectVenue(key); });
@@ -258,6 +259,9 @@ function renderVenuePicker() {
 
     for (const btn of UI.venuePicker.children) {
         btn.classList.toggle('sel', btn.dataset.venue === selected);
+        // Stars earned here, in the corner of the art — only once there are any.
+        const st = btn.querySelector('.pr-venue-stars');
+        if (st) { const b = bestForVenue(btn.dataset.venue); const n = b ? b.stars : 0; st.innerHTML = n ? starStrip(n, 10) : ''; st.style.display = n ? '' : 'none'; }
     }
     // The board's series dress: the picker gives way to the route, and the header names
     // the race. A single race shows neither.
@@ -273,7 +277,7 @@ function renderVenuePicker() {
     // The header's second line: which cup or series and which race, where the standings
     // screen says the same thing. A single race keeps the club motto.
     if (UI.preRaceCrumb) {
-        UI.preRaceCrumb.textContent = inSeries ? `${Series.active.name} · Race ${Series.raceNumber()} of ${Series.total()}`.toUpperCase() : 'FAIR WINDS · SALTY RIVALS';
+        UI.preRaceCrumb.textContent = inSeries ? `${Series.active.name} · Race ${Series.raceNumber()} of ${Series.total()}`.toUpperCase() : 'TIME TRIAL · ONE RACE, AGAINST THE CLOCK';
         UI.preRaceCrumb.style.color = inSeries ? '#f2c14e' : '#7787a0';
     }
     sizeRaceDayHero();
@@ -478,7 +482,8 @@ function renderVenueDetail(key) {
                                text-decoration:underline; text-underline-offset:3px; white-space:nowrap;">All records &rarr;</button>
             </div>
             <div class="t-mono pr-record-time" style="color:${rec.mine ? '#f2c14e' : '#ffffff'};">${rec.t != null ? formatBestTime(rec.t) : '&mdash;'}</div>
-            ${recordsEligible() ? '' : `<div class="t-label t-label-xs" style="color:#9fb2cc; margin-top:4px;">Records are set in single races</div>`}
+            ${best ? `<div class="flex items-center gap-2" style="margin-top:4px;">${starStrip(best.stars, 13)}<span class="t-label t-label-xs" style="color:#9fb2cc;">${best.stars >= 4 ? 'Four stars here' : best.stars > 0 ? `${best.stars} star${best.stars > 1 ? 's' : ''} here` : 'No stars here yet'}</span></div>` : ''}
+            ${recordsEligible() ? '' : `<div class="t-label t-label-xs" style="color:#9fb2cc; margin-top:4px;">Records are set in time trials</div>`}
         </div>`;
 
     UI.venueDetail.innerHTML = `
@@ -2381,38 +2386,42 @@ function venueBestKey(venue) { return `${venue || settings.venue}:${recordsVenue
 // That `pos` seeds `bestPos` — it is a real finish that really happened here.
 function bestForVenue(venue) {
     const rec = loadVenueBests()[venueBestKey(venue)];
-    if (typeof rec === 'number') return { t: rec, bestPos: 0, bestPosT: 0 };
+    if (typeof rec === 'number') return { t: rec, bestPos: 0, bestPosT: 0, stars: 0 };
     if (!rec || typeof rec.t !== 'number') return null;
     return {
         t: rec.t,
         bestPos: rec.bestPos || rec.pos || 0,
-        bestPosT: rec.bestPosT || (rec.bestPos ? 0 : rec.t) || 0
+        bestPosT: rec.bestPosT || (rec.bestPos ? 0 : rec.t) || 0,
+        stars: rec.stars || 0
     };
 }
 
 // Called once per race, from the first showResults() of that race — see `bestChecked`.
 // Returns what there was to beat on each record, and whether this race beat it.
-function recordVenueBest(seconds, pos) {
+function recordVenueBest(seconds, pos, stars) {
     if (!recordsEligible()) return null;   // a cup, series or school race: nothing to beat, nothing set
     const bests = loadVenueBests();
     const key = venueBestKey();
     const prev = bestForVenue();
     const previous = prev ? prev.t : null;
     const previousPos = (prev && prev.bestPos) ? prev.bestPos : null;
+    const previousStars = prev ? (prev.stars || 0) : 0;
 
     const isBest = previous === null || seconds < previous;
     const isBestPos = !!pos && (previousPos === null || pos < previousPos);
-    if (isBest || isBestPos) {
+    const isBestStars = (stars | 0) > previousStars;
+    if (isBest || isBestPos || isBestStars) {
         bests[key] = {
             t: isBest ? seconds : previous,
             bestPos: isBestPos ? pos : (previousPos || 0),
-            bestPosT: isBestPos ? seconds : (prev ? prev.bestPosT : 0)
+            bestPosT: isBestPos ? seconds : (prev ? prev.bestPosT : 0),
+            stars: Math.max(previousStars, stars | 0)
         };
         // Same reasoning as saveSettings: a storage failure must not take the screen with
         // it. Losing a personal best is a nuisance; throwing here would blank the results.
         try { localStorage.setItem(RESULT_BESTS_KEY, JSON.stringify(bests)); } catch (e) { /* no store */ }
     }
-    return { previous, isBest, previousPos, isBestPos };
+    return { previous, isBest, previousPos, isBestPos, previousStars, isBestStars };
 }
 
 // Distances are recorded in world units. 5 units = 1 metre (VenueDoc.U_PER_M), and a race
@@ -2838,10 +2847,11 @@ function renderResultsHero(sorted, player, leader) {
 
     // The venue best is decided ONCE per race, on the first render, and only by a boat
     // that actually finished the course.
+    const facts = (rs.finished && !rs.resultStatus) ? Series.raceFacts(rs, pos) : null;
     if (!state.race.bestChecked) {
         state.race.bestChecked = true;
         state.race.bestOutcome = (rs.finished && !rs.resultStatus)
-            ? recordVenueBest(rs.finishTime, pos) : null;
+            ? recordVenueBest(rs.finishTime, pos, facts ? facts.stars : 0) : null;
     }
     const best = state.race.bestOutcome;
 
@@ -2919,6 +2929,7 @@ function renderResultsHero(sorted, player, leader) {
                     </div>
                 </div>
                 <div class="flex gap-2" style="margin-top:10px;">${chips.join('')}</div>
+                ${facts ? `<div class="flex items-center gap-3" style="margin-top:10px;">${starStrip(facts.stars, 17)}<span style="font-size:13px; color:${facts.stars >= 4 ? '#f2c14e' : '#9fb2cc'};">${starSentence(facts.stars, facts.missed, 'race')}${best && best.isBestStars && facts.stars > 0 ? ' <span style="color:#f2c14e;">New best here.</span>' : ''}</span></div>` : ''}
             </div>
         </div>
         ${recordCard(best, rs)}`;
@@ -3319,6 +3330,46 @@ const TROPHY_TONES = {
     bronze: ['#c88a5a', 'rgba(200,138,90,0.16)'],
     none:   ['#7787a0', 'rgba(119,135,160,0.10)'],
 };
+// ── STARS ON SCREEN ───────────────────────────────────────────────────────────────────
+// Four slots, the earned ones gold — one glyph a rung, so it reads at a glance anywhere:
+// on a tile, under a trophy, in a state line. See Series.raceFacts for the rungs.
+function starStrip(n, size) {
+    n = Math.max(0, Math.min(4, n | 0));
+    let g = '';
+    for (let i = 0; i < 4; i++) g += `<span style="color:${i < n ? '#f2c14e' : 'rgba(255,255,255,0.22)'};">&#9733;</span>`;
+    return `<span class="t-mono" style="font-size:${size || 12}px; letter-spacing:1px; white-space:nowrap; line-height:1;">${g}</span>`;
+}
+const STAR_RUNGS = { race: ['Win', 'Clean win', 'Wire to wire', 'Wire to wire, on manual trim'],
+                     cup: ['Sweep', 'Clean sweep', 'Wire to wire', 'Wire to wire, on manual trim'] };
+// "Clean sweep. 3rd at mark 1 in race 2 was the third star." — what was earned, and the
+// first thing that was missed, in one line. That line is what makes the next attempt.
+function starSentence(stars, missed, kind) {
+    const names = STAR_RUNGS[kind] || STAR_RUNGS.race;
+    const nth = ['first', 'second', 'third', 'fourth'];
+    const head = stars > 0 ? names[stars - 1] + '.' : '';
+    let tail = '';
+    if (stars >= 4) tail = 'Four stars.';
+    else if (missed) {
+        const why = missed.why.charAt(0).toUpperCase() + missed.why.slice(1);
+        tail = `${why}${missed.race ? ` in race ${missed.race}` : ''} was the ${nth[missed.rung - 1]} star.`;
+    }
+    return [head, tail].filter(Boolean).join(' ');
+}
+
+// ── PENNANTS ─────────────────────────────────────────────────────────────────────────
+// A series pennant: a burgee-shaped flag with the series length on it, gold when that
+// length has been won, a faint outline otherwise. Drawn, not an asset, so it scales.
+function pennantHTML(n, won, w) {
+    w = w || 40; const h = Math.round(w * 0.62);
+    const fill = won ? '#f2c14e' : 'rgba(255,255,255,0.08)', stroke = won ? '#8a6a12' : 'rgba(255,255,255,0.28)', ink = won ? '#0c1322' : 'rgba(255,255,255,0.45)';
+    return `<svg width="${w}" height="${h}" viewBox="0 0 40 25" style="display:block; overflow:visible;${won ? ' filter:drop-shadow(0 2px 6px rgba(242,193,78,0.45));' : ''}">
+        <path d="M2 2 L37 12.5 L2 23 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.5" stroke-linejoin="round"/>
+        <text x="12" y="16.6" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="800" fill="${ink}" text-anchor="middle">${n}</text></svg>`;
+}
+function pennantRack(w, gap) {
+    return `<span style="display:inline-flex; align-items:center; gap:${gap == null ? 4 : gap}px;">${Series.pennants().map(p => pennantHTML(p.n, p.won, w)).join('')}</span>`;
+}
+
 function trophyState(cupId) {
     const t = Series.trophies()[cupId];
     if (!t) return 'none';
@@ -3352,7 +3403,7 @@ function trophyHTML(cup, size, state) {
 }
 
 // A venue tile as a picture of where you are going: thumb, name on the scrim, a tag.
-function _routeTile(key, cls, tag, aspect, cssPx) {
+function _routeTile(key, cls, tag, aspect, cssPx, extra) {
     // aspect: the tile's width/height (1 = square); the route strip passes its own.
     const name = venueDisplayName(key) || key;
     const sel = /\bsel\b/.test(cls || '');
@@ -3364,8 +3415,15 @@ function _routeTile(key, cls, tag, aspect, cssPx) {
         <div class="pr-venue-shot" style="${aspect ? `aspect-ratio:${aspect};` : ''}${sel ? 'box-shadow:0 0 0 2px #5aa7ff, 0 6px 18px rgba(90,167,255,0.35);' : ''}">
             ${venueThumb(key, escapeHTMLText(name), cssPx || 170)}
             ${tag ? `<span class="t-mono pr-route-tag" style="${tagStyle}">${tag}</span>` : ''}
+            ${extra ? `<span style="position:absolute; top:8px; right:8px; background:rgba(6,14,26,0.72); border-radius:999px; padding:3px 7px;">${extra}</span>` : ''}
             <span class="pr-venue-name t-display-8 uppercase">${escapeHTMLText(name)}</span>
         </div></div>`;
+}
+// The stars one race of the active cup earned, for its tile — null on a series or before it is sailed.
+function _raceStarsExtra(i) {
+    if (!Series.active || Series.active.kind !== 'cup') return '';
+    const r = Series.active.results[i]; const me = r && r.rows.find(q => q.isPlayer);
+    return me && me.facts ? starStrip(me.facts.stars, 11) : '';
 }
 // Your place in race i of the active cup or series, as the tile tag says it: "1st", "DNF".
 function _raceResultTag(i) {
@@ -3424,7 +3482,9 @@ function refreshClubhouse() {
         // The front door until you graduate; the last door after. Moving the element keeps
         // every handler and id, so nothing else has to know the order changed.
         const row = door.parentElement;
-        if (row) { if (grad && row.lastElementChild !== door) row.appendChild(door); else if (!grad && row.firstElementChild !== door) row.prepend(door); }
+        // The doors keep their markup order — Cup, Time Trials, Series, Sailing School (Wes,
+        // Sep 14 2026). The school used to jump to the front until graduation; the START HERE
+        // pill carries that now.
     }
     const chip = $('door-school-chip'); if (chip) chip.classList.toggle('hidden', grad);
     // Four dots, one per section, filled as each is completed (all four once graduated).
@@ -3452,15 +3512,26 @@ function refreshClubhouse() {
     const unwon = CUPS.map(c => ({ c, t: t[c.id] })).filter(x => x.t && x.t.sailed && !x.t.won && x.t.best);
     const bestUnwon = unwon.length ? unwon.reduce((a, b) => (b.t.best < a.t.best ? b : a)) : null;
     const bestTxt = bestUnwon ? `${_ordinal(bestUnwon.t.best)} in the ${bestUnwon.c.name.replace(/ Cup$/i, '')}` : '';
+    // With a starred cup the door shows the stars and which cup; the best unwon result
+    // otherwise. Both at once is too long for a door foot.
+    const starred = CUPS.map(c => ({ c, t: t[c.id] })).filter(x => x.t && x.t.won && x.t.stars > 0);
+    const topStar = starred.length ? starred.reduce((a, b) => (b.t.stars > a.t.stars ? b : a)) : null;
+    const starTxt = topStar ? `${'\u2605'.repeat(topStar.t.stars)} ${topStar.c.name.replace(/ Cup$/i, '')}` : '';
     const cupState = $('door-cup-state');
     if (cupState) {
-        cupState.textContent = won ? `${won} of ${CUPS.length} won${bestTxt ? ' · best ' + bestTxt : ''}`
+        cupState.textContent = won ? `${won} of ${CUPS.length} won${starTxt ? ' · ' + starTxt : bestTxt ? ' · best ' + bestTxt : ''}`
                              : bestTxt ? `No cup yet · best ${bestTxt}` : 'No cups sailed yet';
         cupState.style.color = won ? '#f2c14e' : bestTxt ? '#c4d2e6' : '#7f8ea9';
     }
     const cupPic = $('door-cup-pic'); if (cupPic) cupPic.innerHTML = `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:18px; background:radial-gradient(420px 160px at 50% 100%, rgba(242,193,78,0.14), transparent);">${CUPS.map(c => trophyHTML(c, 84, trophyState(c.id))).join('')}</div>`;
     const sb = t.series && t.series.best;
-    const seriesState = $('door-series-state'); if (seriesState) { seriesState.textContent = sb ? `Best: ${_ordinal(sb.rank)} · ${sb.n} races` : 'No series yet'; seriesState.style.color = sb && sb.rank === 1 ? '#f2c14e' : '#7f8ea9'; }
+    // Pennants won, else the best result — like the cup door.
+    const pens = Series.pennants(), pWon = pens.filter(p => p.won).length;
+    const seriesState = $('door-series-state');
+    if (seriesState) {
+        seriesState.textContent = pWon ? `${pWon} of ${pens.length} pennants` : sb ? `Best ${_ordinal(sb.rank)} · ${sb.n} races` : 'No series yet';
+        seriesState.style.color = pWon ? '#f2c14e' : sb ? '#c4d2e6' : '#7f8ea9';
+    }
     // THE DRAW AS A HAND OF CARDS (design 21a): three venue cards fanned on a graphite
     // stage, the outer two splayed and tilted, the middle one on top, all peeking up from
     // the bottom edge — a draw you could pick up. Dealt once per visit, not on every refresh.
@@ -3472,13 +3543,15 @@ function refreshClubhouse() {
             const shadow = i === 1 ? '0 10px 24px rgba(0,0,0,0.6)' : '0 8px 20px rgba(0,0,0,0.5)';
             return `<div class="ch-fan-card" style="position:absolute; left:50%; bottom:${i === 1 ? -20 : -28}px; width:110px; height:90px; border-radius:8px; border:2px solid #fff; overflow:hidden; box-shadow:${shadow}; transform:${tf}; z-index:${i === 1 ? 2 : 1};">${venueThumb(k, escapeHTMLText(venueDisplayName(k) || k), 110)}</div>`;
         };
-        seriesPic.innerHTML = `<div style="position:absolute; inset:0; background:radial-gradient(ellipse at 50% 110%, #2a3450, #111a2e 70%);">${[0, 2, 1].map(i => card(hand[i], i)).join('')}</div>`;
+        seriesPic.innerHTML = `<div style="position:absolute; inset:0; background:radial-gradient(ellipse at 50% 110%, #2a3450, #111a2e 70%);">${[0, 2, 1].map(i => card(hand[i], i)).join('')}</div><div id="door-series-rack" style="position:absolute; top:10px; left:12px; background:rgba(6,14,26,0.72); border-radius:999px; padding:5px 9px;"></div>`;
     }
+    // The pennant rack over the cards, refreshed on every visit (the cards are dealt once).
+    const rack = $('door-series-rack'); if (rack) rack.innerHTML = pennantRack(26, 3);
     // The door previews the last venue picked on the race board (settings.lastRaceVenue).
     // A profile from before that key existed falls back to `venue` once, until a pick.
     const last = VENUE_ORDER.includes(settings.lastRaceVenue) ? settings.lastRaceVenue
                : (settings.venue && VENUE_ORDER.includes(settings.venue)) ? settings.venue : 'bay';
-    const raceState = $('door-race-state'); if (raceState) raceState.textContent = `Last race · ${venueDisplayName(last) || last}`;
+    const raceState = $('door-race-state'); if (raceState) raceState.textContent = `Last trial · ${venueDisplayName(last) || last}`;
     const racePic = $('door-race-pic');
     if (racePic) {
         racePic.innerHTML = `<img src="assets/images/venues/${last}.png" alt="${escapeHTMLText(venueDisplayName(last) || last)}" draggable="false">`;
@@ -3489,7 +3562,7 @@ function refreshClubhouse() {
         const rec = best ? { label: 'Your best', t: best.t, mine: true } : (prov != null ? { label: 'Time to beat', t: prov, mine: false } : { label: 'No record yet', t: null, mine: false });
         // m:ss.s — the door is a glance, not the records book.
         const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
-        racePic.insertAdjacentHTML('beforeend', `<span class="ch-chip" style="position:absolute; right:12px; bottom:12px; display:inline-flex; align-items:center; gap:8px; background:rgba(6,14,26,0.8); color:${rec.mine ? '#f2c14e' : rec.t != null ? '#dbeafe' : '#9fb2cc'}; border:1px solid ${rec.mine ? 'rgba(242,193,78,0.5)' : 'rgba(255,255,255,0.22)'};">${rec.label}${rec.t != null ? ` <span class="t-mono" style="font-size:13px; letter-spacing:0; text-transform:none;">${fmt(rec.t)}</span>` : ''}</span>`);
+        racePic.insertAdjacentHTML('beforeend', `<span class="ch-chip" style="position:absolute; right:12px; bottom:12px; display:inline-flex; align-items:center; gap:8px; background:rgba(6,14,26,0.8); color:${rec.mine ? '#f2c14e' : rec.t != null ? '#dbeafe' : '#9fb2cc'}; border:1px solid ${rec.mine ? 'rgba(242,193,78,0.5)' : 'rgba(255,255,255,0.22)'};">${rec.label}${rec.t != null ? ` <span class="t-mono" style="font-size:13px; letter-spacing:0; text-transform:none;">${fmt(rec.t)}</span>` : ''}${best && best.stars ? ` ${starStrip(best.stars, 11)}` : ''}</span>`);
     }
     for (const id of ['hub-hero-img', 'hub-hero-bg']) { const el = $(id); if (el && HUB_HERO && el.getAttribute('src') !== HUB_HERO) el.src = HUB_HERO; }
     // Who you are, in the header. Locked mid-series, so the pill says so then.
@@ -3514,9 +3587,10 @@ function renderCupPicker() {
     if (!_cupSel) _cupSel = (CUPS.find(c => !(t[c.id] && t[c.id].won)) || CUPS[0]).id;
     list.innerHTML = CUPS.map(c => {
         const tr = t[c.id], won = !!(tr && tr.won), sel = c.id === _cupSel;
-        const stateText = won ? `Won · best ${tr.bestPts} pts` : (tr && tr.sailed) ? `Sailed · best ${_ordinal(tr.best)}` : 'Not yet sailed';
+        const cupStars = won ? (tr.stars || 0) : 0;
+        const stateText = won ? `Won${cupStars ? ' ' + '\u2605'.repeat(cupStars) : ''} · best ${tr.bestPts} pts` : (tr && tr.sailed) ? `Sailed · best ${_ordinal(tr.best)}` : 'Not yet sailed';
         return `<button type="button" class="ch-cup${sel ? ' sel' : ''}" data-cup="${c.id}">
-            <div class="flex items-center justify-center" style="position:relative;">${trophyHTML(c, 120, trophyState(c.id))}${
+            <div class="flex flex-col items-center justify-center" style="position:relative; gap:6px;">${trophyHTML(c, 120, trophyState(c.id))}${won ? starStrip(cupStars, 14) : ''}${
                 // A podium finish IS the trophy's metal. Anything worse shows the greyed cup with
                 // your best place over it, so a cup you have sailed never looks like one you haven't.
                 (tr && tr.sailed && !won && tr.best > 3)
@@ -3549,7 +3623,11 @@ function showSeriesPicker() { if (!_seriesDraw) _seriesDraw = Series.draw(_serie
 function renderSeriesPicker() {
     const lens = document.getElementById('series-lengths'), grid = document.getElementById('series-draw'), note = document.getElementById('series-draw-note');
     if (!lens || !grid || !_seriesDraw) return;
-    lens.innerHTML = Series.lengths().map(n => `<button type="button" class="ch-len${n === _seriesLen ? ' sel' : ''}" data-n="${n}"><span class="t-display n">${n}</span><span class="t-label t-label-sm" style="color:${n === _seriesLen ? '#dbeafe' : '#7f8ea9'};">races</span></button>`).join('')
+    const pens = Series.pennants();
+    lens.innerHTML = Series.lengths().map(n => { const p = pens.find(q => q.n === n) || {};
+        const line = p.won ? 'Pennant won' : p.best ? `Best ${_ordinal(p.best)}` : '';
+        return `<button type="button" class="ch-len${n === _seriesLen ? ' sel' : ''}" data-n="${n}"><span class="t-display n">${n}</span><span class="t-label t-label-sm" style="color:${n === _seriesLen ? '#dbeafe' : '#7f8ea9'};">races</span>`
+            + `<span style="margin-top:6px;">${pennantHTML(n, !!p.won, 34)}</span><span class="t-label t-label-xs" style="color:${p.won ? '#f2c14e' : '#7f8ea9'}; min-height:12px;">${line}</span></button>`; }).join('')
         + `<div class="flex items-center" style="padding:0 6px; font-size:13px; line-height:1.5; color:#9fb2cc;">Twelve is every venue, shuffled.</div>`;
     lens.querySelectorAll('.ch-len').forEach(b => b.addEventListener('click', () => { _seriesLen = +b.dataset.n; _seriesDraw = Series.draw(_seriesLen); renderSeriesPicker(); }));
     const n = _seriesDraw.length;
@@ -3584,7 +3662,7 @@ function showFleetPage(opts) {
     // Render AFTER un-hiding: the boat previews measure the band they sit in.
     selectedCompetitor = null;
     renderCompetitorGrid();
-    if (UI.fleetCrumb) UI.fleetCrumb.textContent = inS ? `${Series.active.name} · the fleet for all ${Series.total()} races`.toUpperCase() : 'THE FLEET · ONE RACE';
+    if (UI.fleetCrumb) UI.fleetCrumb.textContent = inS ? `${Series.active.name} · the fleet for all ${Series.total()} races`.toUpperCase() : 'THE FLEET · TIME TRIAL';
     const fromBoard = _fleetFrom === 'board';
     if (UI.fleetBackLabel) UI.fleetBackLabel.textContent = inS ? (fromBoard ? 'Briefing' : (Series.active.kind === 'cup' ? 'Cups' : 'Series')) : 'Venues';
     if (UI.fleetPrimaryBtn) UI.fleetPrimaryBtn.innerHTML = inS ? (fromBoard ? `Back to the briefing ${_CH_ARROW}` : `Race 1 briefing ${_CH_ARROW}`) : `Start Race ${_CH_ARROW}`;
@@ -3592,7 +3670,7 @@ function showFleetPage(opts) {
         const key = settings.venue, c = venueCard(key);
         const me = playerCharacter();
         UI.fleetContext.innerHTML = `
-            <div class="t-label t-label-sm" style="color:#dbeafe;">${inS ? 'Race 1 of ' + Series.total() : 'Race day'}</div>
+            <div class="t-label t-label-sm" style="color:#dbeafe;">${inS ? 'Race 1 of ' + Series.total() : 'Time trial'}</div>
             <div style="border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.09); background:#101a2e;">
                 <div class="pr-venue-shot" style="aspect-ratio:1.5; border-radius:0; box-shadow:none;">${venueThumb(key, escapeHTMLText(c.name || key), 400)}</div>
                 <div class="flex flex-col" style="padding:16px 20px 18px; gap:6px;">
@@ -3619,7 +3697,7 @@ function renderRouteStrip() {
     const twoCols = n > 6;
     UI.prRouteGrid.style.gridTemplateColumns = twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr';
     UI.prRouteGrid.innerHTML = s.venues.map((k, i) => { const sp = _raceTileSpec(i, cur, 'NOW');
-        return _routeTile(k, 'pr-route-tile ' + sp.cls, sp.tag, twoCols ? 2.0 : 2.6, twoCols ? 210 : 430); }).join('');
+        return _routeTile(k, 'pr-route-tile ' + sp.cls, sp.tag, twoCols ? 2.0 : 2.6, twoCols ? 210 : 430, _raceStarsExtra(i)); }).join('');
     if (UI.prRightTitle) UI.prRightTitle.innerHTML = `<span style="color:#f2c14e; font-size:14px; vertical-align:middle;">&#9679;</span> ${s.kind === 'cup' ? 'The cup, race by race' : 'The series, race by race'}`;
     if (UI.prRouteNote) UI.prRouteNote.textContent = cur === 0 ? 'Your skipper locks when you start race 1' : _standingsBlurb();
 }
@@ -3660,7 +3738,7 @@ function proceedToStandings() {
 function _routeList(s, n, nextIdx) {
     const twoCols = n > 6;
     const tiles = s.venues.map((k, i) => { const sp = _raceTileSpec(i, nextIdx, 'NEXT');
-        return _routeTile(k, `ch-fill-tile ${sp.cls}`, sp.tag, null, twoCols ? 200 : 420); }).join('');
+        return _routeTile(k, `ch-fill-tile ${sp.cls}`, sp.tag, null, twoCols ? 200 : 420, _raceStarsExtra(i)); }).join('');
     return `<div class="ch-route-list" style="grid-template-columns:${twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr'};">${tiles}</div>`;
 }
 
@@ -3674,7 +3752,9 @@ function renderStandings(final) {
     if (note) {
         const i = table.indexOf(me);
         const tied = (i > 0 && table[i - 1].total === me.total) || (i < table.length - 1 && table[i + 1].total === me.total);
-        note.textContent = tied ? 'Tied on points? The better place in the last race wins.' : `${done} of ${n} race${n === 1 ? '' : 's'} sailed · 10 for a win, down to 1`;
+        const cs = s.kind === 'cup' ? Series.cupStars(s) : null;
+        const starNote = cs ? (cs.stars > 0 ? ` · on course for ${'\u2605'.repeat(cs.stars)}` : ' · no stars this time') : '';
+        note.textContent = tied ? 'Tied on points? The better place in the last race wins.' : `${done} of ${n} race${n === 1 ? '' : 's'} sailed · 10 for a win, down to 1${final ? '' : starNote}`;
     }
     const cols = `--races:${n};`;
     // A race column's header is the venue's thumbnail with its race number: it reads at any
@@ -3713,6 +3793,8 @@ function renderStandings(final) {
                     <div class="t-label" style="color:#f2c14e;">${me.rank === 1 ? 'Winner' : 'Final result'}</div>
                     <div class="t-display uppercase" style="font-size:56px; line-height:0.95;">${me.rank === 1 ? `You take the ${escapeHTMLText(s.name)}` : `${escapeHTMLText(winner.name)} takes the ${escapeHTMLText(s.name)}`}</div>
                     <div style="font-size:15px; line-height:1.5; color:#d5ecf5; max-width:720px;">${me.rank === 1 ? `${me.total} points over ${n} races.` : `You finished ${_ordinal(me.rank)} on ${me.total} points, ${winner.total - me.total} behind.`}${cup ? (me.rank === 1 ? ' The trophy goes on the shelf.' : ' The trophy stays on the shelf, waiting.') : ''}</div>
+                    ${cup && me.rank === 1 ? (() => { const cs = Series.cupStars(s); return `<div class="flex items-center gap-3" style="margin-top:4px;">${starStrip(cs.stars, 20)}<span style="font-size:15px; color:${cs.stars >= 4 ? '#f2c14e' : '#d5ecf5'};">${starSentence(cs.stars, cs.missed, 'cup')}</span></div>`; })() : ''}
+                    ${!cup && me.rank === 1 ? (() => { const lf = Series.lastFinal || {}; return `<div class="flex items-center gap-3" style="margin-top:4px;">${pennantHTML(n, true, 44)}<span style="font-size:15px; color:#f2c14e;">${lf.firstPennant ? `The ${n}-race pennant is yours.` : `The ${n}-race pennant, again.`}</span></div>`; })() : ''}
                 </div>`;
         }
         if (side) side.innerHTML = `<div class="t-label t-label-sm shrink-0" style="color:#dbeafe;">The ${escapeHTMLText(s.kind)}, race by race</div>

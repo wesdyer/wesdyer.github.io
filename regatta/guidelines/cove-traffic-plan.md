@@ -288,6 +288,7 @@ physics step.
 Not a circle. The PROP_KINDS note already worked out why a circle fails these hulls:
 
 > the hidden collider compile emits is a CIRCLE, and these hulls are 4.3:1. Sized to the
+> *(2026-09-14: no longer true — a hard prop now collides on its traced outline, see `VenueDoc.propHitRings`; a moving vessel is still `contact: none` because traffic never enters the island list at all.)*
 > beam it leaves two thirds of the ship sailable-through; sized to the length it is an
 > invisible wall standing 100+ units off both sides in open water.
 

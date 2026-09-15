@@ -123,7 +123,9 @@ const Series = {
             const finished = !status;                            // a classified finisher, or still racing
             if (finished) place++;
             return { name: b.name, isPlayer: !!b.isPlayer, pos: finished ? place : null, status,
-                     time: (rs.finished && !status) ? rs.finishTime : null, pts: seriesPoints(place, finished) };
+                     time: (rs.finished && !status) ? rs.finishTime : null, pts: seriesPoints(place, finished),
+                     // The four star facts, for the player only (the bots' marks are not ranked).
+                     facts: b.isPlayer ? this.raceFacts(rs, finished ? place : null) : null };
         });
         const result = { venue: this.currentVenue(), index: this.active.index, rows };
         this.active.results[this.active.index] = result;
@@ -166,6 +168,44 @@ const Series = {
     },
     playerRow() { return this.standings().find(r => r.isPlayer) || null; },
 
+    // ── STARS ───────────────────────────────────────────────────────────────────
+    // Four rungs, CUMULATIVE (Wes, Sep 14 2026): a rung counts only if every rung below it
+    // does. For one race — WON it; CLEAN (no penalty flagged); led at EVERY MARK; on MANUAL
+    // trim throughout. For a cup, every race has to clear the rung, so the cup's stars are
+    // the fewest any of its races earned, and the first race to fall short says what to
+    // fix. Stars never go down: the record keeps the best ever earned, beside the cup.
+    RUNGS: ['win', 'clean', 'led', 'manual'],
+    raceFacts(rs, pos) {
+        rs = rs || {};
+        const won = pos === 1;
+        const clean = !(rs.totalPenalties > 0);
+        const ranks = rs.legRanks || [];
+        const led = ranks.length > 0 && ranks.every(r => r === 1);
+        const manual = !rs.usedAutoTrim;
+        const facts = [won, clean, led, manual];
+        let stars = 0;
+        while (stars < 4 && facts[stars]) stars++;
+        let missed = null;
+        if (stars === 0) missed = { rung: 1, why: pos ? `${_ordinalWord(pos)} place` : 'not finishing' };
+        else if (stars === 1) missed = { rung: 2, why: rs.totalPenalties > 1 ? `${rs.totalPenalties} penalties` : 'a penalty' };
+        else if (stars === 2) { const i = ranks.findIndex(r => r !== 1); missed = { rung: 3, why: `${_ordinalWord(ranks[i])} at mark ${i + 1}` }; }
+        else if (stars === 3) missed = { rung: 4, why: 'auto trim' };
+        return { won, clean, led, manual, stars, missed };
+    },
+    // The cup's stars so far: the fewest any sailed race earned (4 while nothing has been
+    // sailed), and the earliest race that set that ceiling, with its reason.
+    cupStars(s) {
+        s = s || this.active;
+        if (!s) return null;
+        const res = s.results.filter(Boolean);
+        const per = res.map(r => { const me = r.rows.find(q => q.isPlayer); return me && me.facts ? me.facts : null; });
+        let stars = 4;
+        for (const f of per) if (f && f.stars < stars) stars = f.stars;
+        let missed = null;
+        for (let i = 0; i < res.length; i++) { const f = per[i]; if (f && f.stars === stars && f.missed) { missed = { race: res[i].index + 1, rung: f.missed.rung, why: f.missed.why }; break; } }
+        return { stars, missed, sailed: res.length, total: s.venues.length };
+    },
+
     // ── the shelf ───────────────────────────────────────────────────────────
     // What survives: per cup, whether it has been won and the best finish; for series,
     // the best finish and at what length. Written once, when the last race is scored.
@@ -183,19 +223,39 @@ const Series = {
         const s = this.active;
         if (s.kind === 'cup') {
             const prev = t[s.id] || { sailed: 0 };
+            const cs = this.cupStars(s);
+            const stars = (me.rank === 1 && cs) ? cs.stars : 0;
             t[s.id] = { sailed: (prev.sailed || 0) + 1, won: !!prev.won || me.rank === 1,
                         best: prev.best ? Math.min(prev.best, me.rank) : me.rank,
-                        bestPts: Math.max(prev.bestPts || 0, me.total), last: new Date().toISOString() };
+                        bestPts: Math.max(prev.bestPts || 0, me.total),
+                        stars: Math.max(prev.stars || 0, stars), last: new Date().toISOString() };
         } else {
             const prev = t.series || { sailed: 0 };
             const better = !prev.best || me.rank < prev.best.rank || (me.rank === prev.best.rank && s.venues.length > prev.best.n);
-            t.series = { sailed: (prev.sailed || 0) + 1, best: better ? { rank: me.rank, n: s.venues.length, pts: me.total } : prev.best, last: new Date().toISOString() };
+            // A PENNANT PER LENGTH (Wes, Sep 14 2026). A series is a random draw, so it has no
+            // trophy of its own — but it has a length, and length is difficulty: twelve venues
+            // in a row is a different feat from four. One pennant per length, won once and kept,
+            // with the best result at that length beside it.
+            const n = s.venues.length;
+            const byLen = Object.assign({}, prev.byLen || {});
+            const pl = byLen[n] || { sailed: 0, won: false, best: null, pts: 0 };
+            this.lastFinal = { kind: 'series', n, won: me.rank === 1, firstPennant: me.rank === 1 && !pl.won };
+            byLen[n] = { sailed: pl.sailed + 1, won: pl.won || me.rank === 1, best: pl.best ? Math.min(pl.best, me.rank) : me.rank,
+                         pts: Math.max(pl.pts || 0, me.total), last: new Date().toISOString() };
+            t.series = { sailed: (prev.sailed || 0) + 1, best: better ? { rank: me.rank, n, pts: me.total } : prev.best, byLen, last: new Date().toISOString() };
         }
         this.saveTrophies(t);
         return t;
     },
     cupsWon() { const t = this.trophies(); return CUPS.filter(c => t[c.id] && t[c.id].won).length; },
+    // The pennant rack: one entry per series length, in order.
+    pennants() {
+        const by = (this.trophies().series || {}).byLen || {};
+        return SERIES_LENGTHS.map(n => { const p = by[n] || {}; return { n, won: !!p.won, best: p.best || null, pts: p.pts || 0, sailed: p.sailed || 0 }; });
+    },
 };
+
+function _ordinalWord(n) { n = n | 0; const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
 if (typeof window !== 'undefined') { window.Series = Series; window.CUPS = CUPS; window.seriesPoints = seriesPoints; }
 if (typeof module !== 'undefined' && module.exports) module.exports = { Series, CUPS, SERIES_LENGTHS, seriesPoints };

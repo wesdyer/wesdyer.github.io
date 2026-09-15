@@ -4593,7 +4593,7 @@ window.VENUE_DOC["redrock"] = {
     ],
     "cutoff": 360,
     "paths": {
-      "sig": "v2-b7ba00b0-b1f",
+      "sig": "v3-6912d2b6-e7n",
       "legs": [
         {
           "pts": []

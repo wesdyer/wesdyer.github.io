@@ -625,8 +625,11 @@ function drawProps(ctx, plane, filter, pending) {
         // ...and only a crown that OVERHANGS WATER fades at all: one standing wholly on land
         // cannot hide a hull, so it stays a solid tree. See crownOverWater.
         const kind = reg[p.kind] || {};
+        // ...and an `opaque` canopy never fades: an arch's span is drawn over the fleet so
+        // that a hull sailing under it DISAPPEARS, which is the one thing the crown fade
+        // exists to prevent. (crownOverWater is skipped too — it is a pointOnLand sweep.)
         const alpha = (PROP_PLANE_ALPHA[plane] || 1)
-                    * (plane === 'canopy' && crownOverWater(p, w)
+                    * (plane === 'canopy' && !kind.opaque && crownOverWater(p, w)
                        ? canopyAlpha(p, kind.fadeMin) : 1)
                     // A keyed seabed prop's ROCK fades back so its lava can carry the read.
                     * (plane === 'seabed' && kind.lava ? PROP_LAVA_STYLE.submergedRock : 1);
@@ -1637,6 +1640,12 @@ const ISLAND_STYLES = {
     // (dE 25). Nearest anywhere is `shoal` (dE 4), the bar FALLBACK look with no tile;
     // honest — a sandbar and a beach are the same material.
     buffsand:       { body: '#CCAB6C', stroke: '#937B4E', veg: '#7E8047', rock: '#BBAC95', trees: true },   // body = otter-sand DELIVERED tile mean
+    // Tidepool shelf: the wet intertidal granite between the pale headland and the shallows —
+    // the fourth band of the owner's shoreline progression. L* 43, 28 L* under `coastalgranite`,
+    // which is the whole statement: dry rock above, wet rock below, one granite. Hard, no lee
+    // (height 0 — a platform at the tide line shelters nothing); NOT awash, so surf breaks on
+    // its seaward edge, which is the picture. veg is a paler dry plate, rock the joint shadow.
+    tidepool:       { body: '#716350', stroke: '#514839', veg: '#8A7B66', rock: '#4A4036', trees: false },  // body = otter-tidepool DELIVERED tile mean
     // Bare granite: dark, cold and jagged. Traced angular like ice (see the
     // tracer pick below) because it is broken rock, not a rounded sandbank.
     granite:  { body: '#4b5563', stroke: '#1f2937', veg: '#5b6673', rock: '#374151', trees: false },
@@ -2271,6 +2280,256 @@ function clumpFleck(g, cx, cy, scale, rand, tones, alpha) {
     }
 }
 
+// Giant kelp canopy, from the aerial references (Monterey, 2026-09-13): a bed is HUNDREDS
+// OF SMALL COMMA-SHAPED MATS — each a knot of fronds with a tail streaming out behind it
+// — scattered on turquoise water with clear gaps between them, and every tail trailing
+// the SAME way, combed by the current. So a clump is a head plus a short tail of shrinking
+// ellipses along one shared direction (jittered a little per mat), never a rosette and
+// never a billow: the streak is what says kelp rather than weed. Warm brown-gold — the
+// photographs read as olive-brown knots with golden highlights on cold blue-green water.
+const KELP_STREAK = 2.35;   // radians; the bed's comb direction — the swell's, roughly
+// The baked stamp, for a style without `live`: the SAME plant kelpMat draws for the live
+// sheet (head and tail from one seed), so flipping a style between live and baked changes
+// how the bed moves and nothing about how it looks.
+function clumpKelp(g, cx, cy, scale, rand, tones, alpha) {
+    const ang = KELP_STREAK + (rand() - 0.5) * 0.7;         // ±20° jitter on the comb
+    let seed = Math.floor(rand() * 4294967295) >>> 0;
+    const mk = () => { let s0 = seed; return () => { s0 = (s0 * 1664525 + 1013904223) >>> 0; return s0 / 4294967296; }; };
+    g.save(); g.globalAlpha *= alpha; g.translate(cx, cy); g.scale(scale, scale);
+    kelpMat(g, 0, 0, ang, mk(), tones, 'tail');
+    kelpMat(g, 0, 0, ang, mk(), tones, 'head');
+    g.restore();
+}
+
+// ── KELP IN MOTION ──────────────────────────────────────────────────────────
+// Wes (2026-09-13): "make the kelp move a bit like real kelp does (especially with swell)
+// ... individual kelp should move, not the whole bed at once ... it shouldn't appear and
+// disappear with swell, it should just move around. And some kelp should look like it is
+// underwater." So a kelp bed is not one baked picture. The baker keeps the bed's faint mass
+// wash in its sprite and records the MATS; this pass draws every mat, every frame, from a
+// sprite sheet — and nothing about a mat's SHAPE changes from frame to frame, only where
+// it is:
+//
+//   1. SURGE. The canopy floats, tethered to the rock forty metres down, so each mat rides
+//      the swell's horizontal orbital motion AT ITS OWN POSITION — Swell.phaseAt for each
+//      train, displacement -A·sin(phase) along the train's travel vector (the integral of
+//      the orbital velocity sampleAt uses, so the mats and the hulls agree about which way
+//      the water is going). Neighbouring mats sit at different phases, so a crest visibly
+//      travels THROUGH the bed rather than the bed sliding as one.
+//   2. FRONDS. A mat is two cells, head and tail, drawn at the same origin. The tail is
+//      moved by the same field a little BEHIND the head in phase, so it trails and whips
+//      as the crest passes — continuous, never a swap between baked poses (the first
+//      version switched between bunched and streamed tails and read as mats blinking).
+//   3. DEPTH. About a third of the mats are SUBMERGED: the same shapes tinted toward the
+//      water, dimmer and softer (baked with a small blur), drawn under the surface mats
+//      and moving about half as far, because the orbital motion decays with depth. That
+//      is the aerial references' read: a bed is dark knots on the surface with paler,
+//      bluer ghosts of the canopy below them.
+//   4. STIR. Even with no swell (kelp on a venue without a `swell` block) a mat never sits
+//      still: a slow per-mat wobble, a unit or two, at its own period and phase.
+//
+// COST: two translated 1:1 drawImage calls per mat, no save/restore/rotate. A bed of the
+// Otter Point size carries ~340 mats at spacing 23; three in view is ~2000 blits. Mats
+// outside the view box are skipped.
+const KELP_VARIANTS = 8;
+const KELP_CELL = 96;                 // px per sheet cell, 1 unit per px — a mat is up to ~80 px tuft tip to streamer tip
+const KELP_SIZES = [0.95, 1.15, 1.4]; // size classes, baked into the sheet so every blit is 1:1
+const KELP_SURGE = 1.6;               // × the swell amplitude: a little exaggerated, so it reads at race scale
+const KELP_STIR = 1.6;                // units of idle wobble
+const KELP_LAG = 0.8;                 // radians the tail trails the head in the swell's phase
+const KELP_SUB_SHARE = 0.35;          // share of mats drawn as submerged canopy
+const KELP_SUB_MOTION = 0.55;         // how far a submerged mat moves, against a surface one
+let _kelpSheet = null;
+
+// One mat's head or tail into a cell: head at (cx, cy), the frond streaming along `ang`.
+//
+// A MAT IS A FROND, NOT A COMMA. The first version was a round head with a tail of
+// shrinking ellipses — a knot with a streamer, which is what the aerials show at a
+// kilometre — and at race scale a player read the bed as "sperm". At this scale (a unit
+// a pixel, a mat six metres) what the camera can see of giant kelp is the PLANT: a thin
+// stipe trailing downstream with BLADES along it, alternate sides, each swept back by
+// the water, a bulb (the gas float) where a blade meets the stipe, and at the head the
+// tuft where the fronds break the surface. So: stipe, blades, bulbs, tuft.
+//
+// The geometry is laid out FIRST, from one RNG sequence, and only then drawn — the head
+// cell and the tail cell are two calls with the same seed, so every draw is made in
+// both and the halves describe one plant. The tuft and the head bulbs are the HEAD (it
+// rides the swell at its own phase); the stipe, its blades and the bulbs along it are
+// the TAIL (it trails, see KELP_LAG).
+const KELP_BLADE_W = 1.25;            // half-width of a blade at its base, px at scale 1
+// A blade: a curved, tapering stroke from (x, y) along `dir`, bending by `bend` over its
+// length — four segments of shrinking width, round-capped, which is a leaf at this scale.
+function kelpLeaf(g, x, y, dir, L, w, bend) {
+    const n = 4; let px = x, py = y, a = dir;
+    g.lineCap = 'round';
+    for (let i = 0; i < n; i++) {
+        a += bend / n;
+        const nx = px + Math.cos(a) * L / n, ny = py + Math.sin(a) * L / n;
+        g.lineWidth = 2 * w * (1 - 0.72 * i / (n - 1));
+        g.beginPath(); g.moveTo(px, py); g.lineTo(nx, ny); g.stroke();
+        px = nx; py = ny;
+    }
+}
+function kelpMat(g, cx, cy, ang, rand, tones, part) {
+    const size = 0.9 + rand() * 0.35;                       // per-mat size on top of the class
+    const len = (14 + rand() * 12) * size;                  // stipe, head to tip
+    // olive-brown with gold highlights, the aerials' read: mostly the dark tone
+    const toneOf = () => { const t = rand(); return tones[t < 0.55 ? 0 : t < 0.85 ? 1 : 2]; };
+    const rgba = (t, a) => `rgba(${t[0]},${t[1]},${t[2]},${a})`;
+    // 1. the stipe: a gently wandering polyline downstream
+    const segs = 6, pts = [];
+    let a = ang, x = cx, y = cy;
+    for (let k = 0; k <= segs; k++) {
+        pts.push({ x, y, a });
+        a += (rand() - 0.5) * 0.36;
+        x += Math.cos(a) * len / segs; y += Math.sin(a) * len / segs;
+    }
+    // 2. the blades along it: alternate sides, swept back toward the tip, each curling
+    //    further back as it goes (the water combs them)
+    const blades = [];
+    const n = 7 + Math.floor(rand() * 5);
+    let side = rand() < 0.5 ? 1 : -1;
+    for (let i = 0; i < n; i++) {
+        const u = 0.08 + (i + rand() * 0.7) / n * 0.9;      // where on the stipe, 0 head .. 1 tip
+        const f = u * segs, j = Math.min(segs - 1, Math.floor(f)), t = f - j;
+        const bx = pts[j].x + (pts[j + 1].x - pts[j].x) * t, by = pts[j].y + (pts[j + 1].y - pts[j].y) * t;
+        const dir = pts[j].a + side * (0.55 + rand() * 0.5);
+        blades.push({ x: bx, y: by, dir, bend: -side * (0.3 + rand() * 0.6), L: (6 + rand() * 6) * size,
+                      w: KELP_BLADE_W * size * (0.8 + rand() * 0.45), tone: toneOf(), bulb: rand() < 0.35 });
+        side = -side;
+    }
+    // 3. the tuft at the head: the knot where the fronds break the surface — five to eight
+    //    longer fronds splayed round the head, most streaming back, a couple reaching forward,
+    //    over a small dark heart
+    //    The knot catches the light, so its fronds run lighter than the streamers'; and they
+    //    are splayed wide and unevenly — two matched sweeps read as a bird's wings.
+    const tuft = [];
+    const nt = 6 + Math.floor(rand() * 4);
+    const tuftTone = () => { const t = rand(); return tones[t < 0.4 ? 0 : t < 0.78 ? 1 : 2]; };
+    for (let i = 0; i < nt; i++) {
+        const back = rand() < 0.65;
+        const dir = ang + (back ? (rand() - 0.5) * 3.2 : Math.PI + (rand() - 0.5) * 2.4);
+        tuft.push({ dir, bend: (rand() - 0.5) * 1.6, L: (5 + rand() * 9) * size, w: KELP_BLADE_W * size * (0.8 + rand() * 0.5), tone: tuftTone() });
+    }
+    // 4. one or two long streamers off the head, beside the stipe — the fronds the water
+    //    has combed out straight; they trail with the tail
+    const streamers = [];
+    const ns = 1 + (rand() < 0.6 ? 1 : 0);
+    for (let i = 0; i < ns; i++) {
+        streamers.push({ dir: ang + (rand() - 0.5) * 0.9, bend: (rand() - 0.5) * 0.7, L: (14 + rand() * 9) * size, w: KELP_BLADE_W * size * 0.9, tone: toneOf() });
+    }
+    const heart = (2.2 + rand() * 1.2) * size;
+    const hl = tones[2];
+    const bulbTone = [Math.min(255, hl[0] + 18), Math.min(255, hl[1] + 16), Math.min(255, hl[2] + 8)];
+
+    if (part === 'tail') {
+        g.strokeStyle = rgba(tones[0], 1); g.lineWidth = 1.3 * size; g.lineCap = 'round'; g.lineJoin = 'round';
+        g.beginPath(); g.moveTo(pts[0].x, pts[0].y);
+        for (let k = 1; k <= segs; k++) g.lineTo(pts[k].x, pts[k].y);
+        g.stroke();
+        for (const st of streamers) { g.strokeStyle = rgba(st.tone, 1); kelpLeaf(g, cx, cy, st.dir, st.L, st.w, st.bend); }
+        for (const b of blades) { g.strokeStyle = rgba(b.tone, 1); kelpLeaf(g, b.x, b.y, b.dir, b.L, b.w, b.bend); }
+        g.fillStyle = rgba(bulbTone, 0.85);
+        for (const b of blades) if (b.bulb) { g.beginPath(); g.arc(b.x, b.y, 1.0 * size, 0, Math.PI * 2); g.fill(); }
+    } else {
+        g.fillStyle = rgba(tones[0], 0.9);
+        g.beginPath(); g.ellipse(cx, cy, heart, heart * 0.75, ang, 0, Math.PI * 2); g.fill();
+        for (const t of tuft) { g.strokeStyle = rgba(t.tone, 1); kelpLeaf(g, cx, cy, t.dir, t.L, t.w, t.bend); }
+        g.fillStyle = rgba(bulbTone, 0.85);
+        g.beginPath(); g.arc(cx + Math.cos(ang + 2.0) * 1.6 * size, cy + Math.sin(ang + 2.0) * 1.6 * size, 1.2 * size, 0, Math.PI * 2); g.fill();
+    }
+}
+
+// The sheet: KELP_VARIANTS columns; rows = (depth × size × part): depth 0 surface / 1
+// submerged, three size classes, head then tail. Baked once per (tones, water colour, comb
+// angle). Comb = the primary swell's travel direction when there is one, else KELP_STREAK;
+// each variant carries its own ±20° jitter on it, baked in, so the bed is not combed with
+// a ruler. Submerged cells take the surface tones mixed toward the water and darkened,
+// and are baked through a small blur — the canopy seen through a metre of sea.
+function kelpSheet(spec) {
+    const surf = spec.tones.map(t => t.slice());
+    const W = window.WATER_CONFIG || {};
+    const hex = String(W.heroColor || W.baseColor || '#218798').replace('#', '');
+    const water = [parseInt(hex.substr(0, 2), 16), parseInt(hex.substr(2, 2), 16), parseInt(hex.substr(4, 2), 16)];
+    const sub = surf.map(t => t.map((c, i) => Math.round((c * 0.85) * 0.5 + water[i] * 0.5)));
+    const P = window.Swell && window.Swell.active() ? window.Swell.primary() : null;
+    const comb = P ? Math.atan2(P.sy, P.sx) : KELP_STREAK;
+    const key = surf.map(t => t.join(',')).join('|') + '|' + hex + '|' + comb.toFixed(3);
+    if (_kelpSheet && _kelpSheet.key === key) return _kelpSheet;
+    const cv = document.createElement('canvas');
+    cv.width = KELP_CELL * KELP_VARIANTS; cv.height = KELP_CELL * 2 * KELP_SIZES.length * 2;
+    const g = cv.getContext('2d');
+    for (let depth = 0; depth < 2; depth++) for (let z = 0; z < KELP_SIZES.length; z++) for (let part = 0; part < 2; part++) {
+        for (let v = 0; v < KELP_VARIANTS; v++) {
+            // one RNG per variant, re-seeded per cell so every cell of a variant is the SAME mat
+            let seed = (2166136261 ^ (v * 2654435761)) >>> 0;
+            const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+            const jitter = (rand() - 0.5) * 0.7;
+            const row = (depth * KELP_SIZES.length + z) * 2 + part;
+            const cx = v * KELP_CELL + KELP_CELL * 0.5, cy = row * KELP_CELL + KELP_CELL * 0.5;
+            // the head sits a little back from the cell's centre so the tail stays inside it
+            const hx = cx - Math.cos(comb + jitter) * 16 * KELP_SIZES[z], hy = cy - Math.sin(comb + jitter) * 16 * KELP_SIZES[z];
+            g.save();
+            if (depth) { g.filter = 'blur(0.9px)'; g.globalAlpha = 0.62; }
+            g.translate(hx, hy); g.scale(KELP_SIZES[z], KELP_SIZES[z]);
+            kelpMat(g, 0, 0, comb + jitter, rand, depth ? sub : surf, part ? 'tail' : 'head');
+            g.restore();
+        }
+    }
+    _kelpSheet = { canvas: cv, key, comb };
+    return _kelpSheet;
+}
+
+function drawKelpLive(ctx) {
+    const c = state.course;
+    if (!c || !c._hasVeg) return 0;
+    const spec = VEG_STYLES.kelp;
+    const view = viewBoxWorld(ctx);
+    const camX = state.camera.x, camY = state.camera.y;
+    const viewRadius = cullRadius(ctx);
+    const S = window.Swell && window.Swell.active() ? window.Swell : null;
+    const P = S ? S.primary() : null, W = S ? S.windSea() : null;
+    const sea = W && W !== P ? W : null;
+    const now = state.time || 0;
+    const half = KELP_CELL / 2, rowsPerDepth = KELP_SIZES.length * 2;
+    let sheet = null, drawn = 0;
+    for (const isl of c.islands) {
+        if (isl.veg !== 'kelp' || isl.hidden) continue;
+        const limit = viewRadius + isl.radius;
+        if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
+        if (!isl._vegSprite) bakeVegSprite(isl, spec);       // records the mats too
+        const mats = isl._liveMats;
+        if (!mats || !mats.length) continue;
+        if (!sheet) { sheet = kelpSheet(spec); ctx.save(); ctx.globalAlpha = spec.layerAlpha; }
+        const cvs = sheet.canvas;
+        for (let i = 0; i < mats.length; i++) {                // submerged first: the list is sorted
+            const m = mats[i];
+            if (m.x < view.x0 - half || m.x > view.x1 + half || m.y < view.y0 - half || m.y > view.y1 + half) continue;
+            const k = m.sub ? KELP_SUB_MOTION : 1;
+            // 4. the idle stir — always; the tail's stir runs a little behind
+            let dx = Math.sin(now * m.f + m.ph) * KELP_STIR * k, dy = Math.cos(now * m.f * 0.8 + m.ph * 1.7) * KELP_STIR * k;
+            let tx = Math.sin(now * m.f + m.ph - 0.9) * KELP_STIR * k, ty = Math.cos(now * m.f * 0.8 + m.ph * 1.7 - 0.9) * KELP_STIR * k;
+            if (P) {
+                // 1. surge with the primary train at this mat's own phase; 2. the tail trails it
+                const ph = S.phaseAt(P, m.x, m.y);
+                const dh = -P.A * KELP_SURGE * k * Math.sin(ph), dt = -P.A * KELP_SURGE * k * Math.sin(ph - KELP_LAG);
+                dx += dh * P.sx; dy += dh * P.sy; tx += dt * P.sx; ty += dt * P.sy;
+                if (sea) {
+                    const ph2 = S.phaseAt(sea, m.x, m.y);
+                    const d2 = -sea.A * KELP_SURGE * 0.6 * k * Math.sin(ph2), d2t = -sea.A * KELP_SURGE * 0.6 * k * Math.sin(ph2 - KELP_LAG);
+                    dx += d2 * sea.sx; dy += d2 * sea.sy; tx += d2t * sea.sx; ty += d2t * sea.sy;
+                }
+            }
+            const sx = m.v * KELP_CELL, row0 = ((m.sub ? 1 : 0) * KELP_SIZES.length + m.z) * 2;
+            ctx.drawImage(cvs, sx, (row0 + 1) * KELP_CELL, KELP_CELL, KELP_CELL, m.x + tx - half, m.y + ty - half, KELP_CELL, KELP_CELL);
+            ctx.drawImage(cvs, sx, row0 * KELP_CELL, KELP_CELL, KELP_CELL, m.x + dx - half, m.y + dy - half, KELP_CELL, KELP_CELL);
+            drawn++;
+        }
+    }
+    if (sheet) ctx.restore();
+    return drawn;
+}
+
 // tones      dark / mid / light, PRE-submersion. A bottom plant's three greens go through
 //            submergedTint like the shoal's sand — grass and bar are the same bottom under
 //            the same light, so Pearl Lagoon shows bright olive through turquoise and a
@@ -2347,7 +2606,30 @@ const VEG_STYLES = {
                 tones: [[112, 146, 62], [132, 166, 76], [150, 182, 92]],
                 mass: { tone: [126, 160, 74], alpha: 0.8 },
                 wash: 0, layerAlpha: 0.82, clumpAlpha: 0.9,
-                spacing: 9, cover: 0.98, holeEvery: 260 }
+                spacing: 9, cover: 0.98, holeEvery: 260 },
+    // ── OTTER POINT'S GIANT KELP ────────────────────────────────────────────
+    // A SURFACE canopy: floating mats, so it draws over the finished water like the
+    // hyacinth raft, not on the shoal sand like hydrilla. clumpKelp draws the comma-shaped
+    // streaming mats the aerial references show (see its note) — in the photographs' own
+    // colours: olive-brown knots through rust to a golden highlight,
+    // deliberately WARM against the venue's cold teal water so the beds read as the dark
+    // brown streaks the aerial references show. Wide spacing and a low cover with the
+    // most frequent holes in the table: kelp is bands and gaps, never a carpet, and the
+    // water showing between mats is half of what says 'kelp' rather than 'weed'. The
+    // mass tone is thin — a hint of canopy between clumps — so the swell texture still
+    // reads through the bed.
+    // LIVE (`live: true`): the baker paints only the mass wash into the bed's sprite and
+    // records each mat's position instead of stamping it; drawKelpLive draws the mats every
+    // frame from a sprite sheet, each displaced by the swell's orbital motion at its own
+    // position and with its fronds swung by the flow — see the KELP IN MOTION note below.
+    kelp:     { plane: 'surface', clump: clumpKelp, live: true,
+                // sampled off the aerial references: knot, body, golden highlight
+                tones: [[74, 56, 26], [112, 84, 36], [150, 118, 52]],
+                mass: { tone: [88, 70, 34], alpha: 0.22 },
+                wash: 0.12, layerAlpha: 0.92, clumpAlpha: 0.9,
+                // spacing 23 rather than the weeds' 13-20: about half the mats of a tighter
+                // grid, drawn a size class larger, so a bed keeps its cover at half the blits
+                spacing: 23, cover: 0.9, holeEvery: 95 }
 };
 
 function vegTone(base, spec) {
@@ -2474,6 +2756,7 @@ function bakeVegSprite(isl, spec) {
     }
 
     // Jittered-grid scatter over the bbox: even coverage without Poisson bookkeeping.
+    const mats = [];
     const minX = isl.x - isl.radius, minY = isl.y - isl.radius;
     const cells = Math.max(1, Math.ceil((isl.radius * 2) / spec.spacing));
     for (let gy = 0; gy < cells; gy++) {
@@ -2488,11 +2771,21 @@ function bakeVegSprite(isl, spec) {
                 if (hd < h.r) p *= 0.12 + 0.88 * smooth(hd / h.r);
             }
             if (rand() >= p) continue;
+            if (spec.live) {
+                // A live plant: remember the mat, draw nothing. Four draws of the RNG keep
+                // the stream aligned with what a stamped clump would have consumed, so a
+                // bed's layout does not change when a style flips between live and baked.
+                mats.push({ x: wx, y: wy, v: Math.floor(rand() * KELP_VARIANTS),
+                            z: Math.floor(rand() * KELP_SIZES.length), ph: rand() * Math.PI * 2, f: 0.35 + rand() * 0.4,
+                            sub: rand() < KELP_SUB_SHARE });
+                continue;
+            }
             const cx = (wx - isl.x + R) * scale, cy = (wy - isl.y + R) * scale;
             spec.clump(g, cx, cy, scale, rand, tones, spec.clumpAlpha);
         }
     }
     isl._vegSprite = { canvas: cv, r: R, tint: tones[0].join(',') };
+    if (spec.live) { mats.sort((a, b) => (b.sub ? 1 : 0) - (a.sub ? 1 : 0)); isl._liveMats = mats; }   // submerged paint first
 }
 
 // ── CORAL REEF ──────────────────────────────────────────────────────────────
@@ -3124,12 +3417,14 @@ const _floatTile = {};
 function drawFloatStratumCached(ctx) {
     const c = state.course;
     if (!c || (!c._hasVeg && !(c.props && c.props.length))) return;
+    // Kelp mats draw LIVE in both modes — over the blitted tile (which carries only the
+    // beds' mass wash) and in the live-all path — because they move every frame.
     adaptiveStratum(_floatTile, ctx, 'float',
         (g, pending) =>
             (drawVegetation(g, 'surface') || 0)
             + drawProps(g, 'float', p => p.motion !== 'drift', pending),
-        (g) => { drawVegetation(g, 'surface'); drawProps(g, 'float'); },
-        (g) => drawProps(g, 'float', p => p.motion === 'drift'),
+        (g) => { drawVegetation(g, 'surface'); drawKelpLive(g); drawProps(g, 'float'); },
+        (g) => { drawKelpLive(g); drawProps(g, 'float', p => p.motion === 'drift'); },
         (g) => zoneViewFill(g, false));
 }
 
