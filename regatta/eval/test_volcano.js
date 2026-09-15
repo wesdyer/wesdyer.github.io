@@ -220,7 +220,12 @@ const check = (name, cond, detail) => {
             }
             bot.speed = 4; bot.heading = 1.0;
             ctrl.lowSpeedTimer = 0; ctrl.wiggleActive = false; ctrl.clearanceTimer = 0; ctrl.wiggleTimer = 0; ctrl.livenessState = 'normal';
-            ctrl.prevDesired = 1.0;
+            // The held intent is the RACING intent of the last live tick (bot.js F3, the
+            // volcano push 2026-09-13), not last tick's final heading: a dodge or an
+            // avoidance deflection in flight at the strike must not be held for the outage.
+            // So the live intent says 1.0 and the bent final heading says 2.0 — 1.0 is held.
+            ctrl._raceIntent = 1.0; ctrl._raceIntentTick = ctrl._tickN || 0;
+            ctrl.prevDesired = 2.0;
             V.fry.set(bot, { t0: V.t, dur: 6 }); bot.fried = V.fry.get(bot);
             const wt0 = ctrl.windTracker.meanDirection;
             for (let i = 0; i < 6; i++) tick();
@@ -229,22 +234,19 @@ const check = (name, cond, detail) => {
             out.friedWindFrozen = ctrl.windTracker.meanDirection === wt0;
             V.fry.delete(bot); bot.fried = null;
         }
-        // THE DODGE: a marked strike beside a crisp helm turns it away from the point.
+        // NO DODGE (owner, 2026-09-13): a marked strike beside a bot does NOT bend its helm.
+        // The dodge was dropped — the outage holds the racing intent and costs a bot ~0.1 s,
+        // while the detour cost the fleet 10 s/boat-race on Emberfall (treeVF3ND).
         {
             const ctrl = bot.controller;
-            bot.stats = Object.assign({}, bot.stats, { handling: 5 });
-            out.dodgeChanceCrisp = ctrl.dodgeChance();
-            bot.stats = Object.assign({}, bot.stats, { handling: -5 });
-            out.dodgeChanceSloppy = ctrl.dodgeChance();
-            bot.stats = Object.assign({}, bot.stats, { handling: 5 });
+            for (let i = 0; i < 12; i++) update(1 / 60);
+            const th0 = ctrl.targetHeading;
             const sx = bot.x + 220, sy = bot.y;
             aimed.pending = { ox: sx, oy: sy - 300, x: sx, y: sy, at: V.t + 2.8, seed: 12345, aimed: true, boat: bot };
-            ctrl._dodgeKey = 12345; ctrl._dodgeGo = true;
             for (let i = 0; i < 12; i++) update(1 / 60);
-            const th = ctrl.targetHeading;
-            const awayDot = Math.sin(th) * (bot.x - sx) / Math.hypot(bot.x - sx, bot.y - sy) + (-Math.cos(th)) * (bot.y - sy) / Math.hypot(bot.x - sx, bot.y - sy);
-            out.dodgeAway = awayDot;
-            aimed.pending = null; ctrl._dodgeKey = null;
+            out.noDodge = typeof ctrl.strikeDodge === 'undefined' && typeof ctrl.dodgeChance === 'undefined';
+            out.dodgeTurn = Math.abs(normalizeAngle(ctrl.targetHeading - th0));
+            aimed.pending = null;
         }
         // The cycle: over one full period the cone goes quiet and erupts once more.
         let sawQuiet = false, sawPeak = false;
@@ -302,8 +304,8 @@ const check = (name, cond, detail) => {
         check('the race clock is fried too', r.timerFried === true);
         check(`one outage, ${r.fryDur.toFixed(1)} s: at 62% rose ${r.midway[0]}, leaderboard ${r.midway[1]}`, r.midway[0] === true && r.midway[1] === true);
         check('everyone recovers', r.after === false);
-        check(`fried bot keeps sailing its held intent: ${r.friedTicks} body ticks, held ${r.friedHeld}, wind read frozen ${r.friedWindFrozen}`, r.friedTicks >= 4 && r.friedHeld && r.friedWindFrozen);
-        check(`dodge: crisp helm ${r.dodgeChanceCrisp.toFixed(2)} vs sloppy ${r.dodgeChanceSloppy.toFixed(2)}; steers away (cos ${r.dodgeAway.toFixed(2)})`, r.dodgeChanceCrisp > r.dodgeChanceSloppy + 0.3 && r.dodgeAway > 0.2);
+        check(`fried bot keeps sailing its held RACING intent (not the bent final heading): ${r.friedTicks} body ticks, held ${r.friedHeld}, wind read frozen ${r.friedWindFrozen}`, r.friedTicks >= 4 && r.friedHeld && r.friedWindFrozen);
+        check(`no dodge: a marked strike beside the bot leaves its helm alone (turned ${r.dodgeTurn.toFixed(2)} rad in 0.2 s; dodge methods gone ${r.noDodge})`, r.noDodge && r.dodgeTurn < 0.3);
         check('the cone goes quiet and erupts again over one period', r.cycle);
         check(`the storm holds behind the briefing: ${r.heldDeals} deals held, ${r.resumedDeals} on resume, tell held ${r.tellHeld}`, r.heldDeals === 0 && r.resumedDeals >= 3 && r.tellHeld === true);
         check('draw() survives the strike, the flash and the fried HUD', r.problems.length === 0, r.problems.slice(0, 3).join(' | '));

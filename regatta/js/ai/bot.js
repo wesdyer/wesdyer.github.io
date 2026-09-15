@@ -157,42 +157,11 @@ class BotController {
         this.finalTarget = null;
     }
 
-    // THE DODGE (volcano.js). A strike marked within the fry radius costs up to 15 s if
-    // you hold course and a couple of seconds of detour if you don't — so the price is
-    // clear, and the only question is whether THIS helm reads the omen in time. Decided
-    // ONCE per marked strike from the strike's own seed (no RNG stream touched), with a
-    // chance that rides the boat's handling: the crisp helms usually answer, the sloppy
-    // ones usually don't, and it reads as personality. The escape is straight away from
-    // the point, bent to the edge of the no-go cone if that is where away is.
-    dodgeChance() {
-        const st = this.boat.stats || {};
-        return Math.max(0.15, Math.min(0.9, 0.55 + 0.06 * (st.handling || 0)));
-    }
-    strikeDodge() {
-        const v = state.volcano;
-        if (!v || !v.strikers || !window.Volcano) return null;
-        let best = null, bd = Infinity;
-        for (const st of v.strikers) {
-            const s = st.pending;
-            if (!s) continue;
-            const d = Math.hypot(this.boat.x - s.x, this.boat.y - s.y);
-            if (d < bd) { bd = d; best = s; }
-        }
-        if (!best || bd > VOLCANO.fryR * 0.9) { this._dodgeKey = null; return null; }
-        if (this._dodgeKey !== best.seed) {
-            this._dodgeKey = best.seed;
-            let h = (best.seed + this.boat.name.length * 7919) | 0;
-            h = Math.imul(h ^ (h >>> 15), 2246822519); h = Math.imul(h ^ (h >>> 13), 3266489917); h ^= h >>> 16;
-            this._dodgeGo = ((h >>> 0) / 4294967296) < this.dodgeChance();
-        }
-        if (!this._dodgeGo) return null;
-        const dx = this.boat.x - best.x, dy = this.boat.y - best.y;
-        let away = bd > 1 ? Math.atan2(dx, -dy) : normalizeAngle(this.boat.heading + Math.PI / 2);
-        const wd = getWindAt(this.boat.x, this.boat.y).direction;
-        const twa = normalizeAngle(away - wd);
-        if (Math.abs(twa) < 0.75) away = normalizeAngle(wd + (twa >= 0 ? 0.75 : -0.75));
-        return away;
-    }
+    // THE DODGE (volcano.js) WAS DROPPED FOR BOTS (owner, 2026-09-13, the volcano push).
+    // A helm that bore away from a marked strike bought nothing once the outage held the
+    // racing intent (an outage costs a bot ~0.1 s) and paid its detour: −10 s/boat-race on
+    // Emberfall (treeVF3ND, 3×8, paired med −9 / mean −10), 29% of dodges tacking or
+    // gybing through the wind. The omens still show; the storm still finds the fleet.
 
     updateWindTracker() {
         const localWind = getWindAt(this.boat.x, this.boat.y);
@@ -216,6 +185,7 @@ class BotController {
         this.updateTimer -= dt;
         if (this.updateTimer > 0) return;
         this.updateTimer = 0.1; // 10Hz updates
+        this._tickN = (this._tickN || 0) + 1;
         // FRIED (volcano.js). A strike took the INSTRUMENTS, not the helm: the wind read
         // freezes (stale numbers, like a dead masthead unit), the plan freezes (no new
         // tack, gybe or route until the reboot) and the helm wanders a little — but eyes
@@ -225,7 +195,16 @@ class BotController {
         const fried = !!(state.volcano && window.Volcano && Volcano.isFried(this.boat));
         if (fried) {
             const f = Volcano.fryOf(this.boat);
-            if (this._friedOn !== f) { this._friedOn = f; this._friedIntent = this.prevDesired != null ? this.prevDesired : this.boat.heading; this._friedTicks = 0; }
+            if (this._friedOn !== f) {
+                this._friedOn = f; this._friedTicks = 0;
+                // The intent held through the outage is the RACING intent — the strategic
+                // heading of the last live tick, before any dodge bent it and before
+                // avoidance (which keeps running on top). `prevDesired` is last tick's
+                // FINAL heading: mid-dodge it latched the detour for the whole outage
+                // (census: fries after a dodge cost 2.3 s each, fries without one 0.1 s).
+                const fresh = this._raceIntent != null && this._raceIntentTick != null && (this._tickN - this._raceIntentTick) <= 2;
+                this._friedIntent = fresh ? this._raceIntent : (this.prevDesired != null ? this.prevDesired : this.boat.heading);
+            }
             this._friedTicks++;
         } else if (this._friedOn) { this._friedOn = null; }
         // ⚠️ THE BODY RUNS AT 10Hz BUT dt IS THE FRAME STEP (1/60), so a `± dt`
@@ -781,10 +760,7 @@ class BotController {
                 desiredHeading = normalizeAngle(this._friedIntent + 0.12 * Math.sin(state.volcano.t * 0.9 + ph));
             } else {
                 desiredHeading = this.getStrategicHeading(nav);
-                // THE DODGE: a strike marked on the water within reach, and this helm decided
-                // to answer it — bear away from the point for the tell. See strikeDodge.
-                const dodge = this.strikeDodge();
-                if (dodge != null) desiredHeading = dodge;
+                this._raceIntent = desiredHeading; this._raceIntentTick = this._tickN;
             }
         }
 

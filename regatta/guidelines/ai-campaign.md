@@ -17318,3 +17318,341 @@ retired docs; only wbsw* is comparable to anything benched from here on.
 Venue lengths by his median, shortest → longest: swamp 173 · lagoon 175 ·
 seatrials 186 · river 187 · lake 195 · redrock 204 · glowtide 204 · arctic 209 ·
 ocean 214 · bay 239.
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE VOLCANO PUSH — 2026-09-13 17:47 PT → (autonomous; owner: "Let's try to improve
+# performance on the volcano venue which we have never attempted before"). HEAD in:
+# 1a33a12 (owner's Emberfall weather + bot fried/dodge/plume work). Gates pre-registered
+# in `eval/rl/_vo_gates.md` before the first candidate ran.
+# ═══════════════════════════════════════════════════════════════════════
+
+## PHASE 0 — the baseline on THIS machine (the em* JSONs live on the owner's other clone)
+- `freeze_venues --check` 11/11 match; `_traj_fp.js volcanic`: all 5 laps stamp
+  4ac8c0e5:45501 == frozen == shipping. Human = 195.5 (n=5, best 185.7). No seed is
+  recorded in a lap, so his storm cannot be replayed; his boil exposure CAN be scored
+  offline (`_vo_human_boil.js`, NEW tracked: vents are fixed props, boilMul is pure).
+- **vo0vo9400/9500/9600** (ten-bot, treeVO0 == HEAD): med **240** / mean 241.3 / best 162,
+  fins 240/240, col med 1, pen med 0, dirt l/b/m/pen 0.15/1.99/0.13/0.34, OCS-ever 52.5%
+  — reproduces the owner's em* row to the digit. Per set: 9400 med 248, 9500 235, 9600
+  233 (winner med 210/193/207). **Ratio 1.228.**
+- vo0base (`volcanic_bench` 20 @ 9100, 9-bot parked player) reproduces the campaign
+  table exactly: 239.5 med, OCS 55%, 30.1 s fried, 9.7 s boil.
+- Control: vo0st == past on seatrials 16/16 races byte-identical (HEAD js inert off
+  Emberfall, as the em* note says).
+
+## THE ATTRIBUTION (all instruments NEW and tracked: `_vo_census.js` + `_vo_census_sum.js`)
+Per-leg MEANS (`_leg_matrix fp=…`): start **+12.0** (26%), L1 **+16.6** (36%), L2 +5.5,
+L3 +6.8, L4 +5.5 = +46.8 s. Distance atlas (`_leg_odo`, 8 races): L1 +17.3 = 9.6 s
+DISTANCE (7926 vs his 6832 u) + 7.0 s speed, fleet flips 6/leg vs his 2; L2 is speed
+(−0.8/+4.6); L3 is distance (+5.3/+1.0). His laps: never under 1 kt, 1-5 tacks on L4,
+L1 40-56% close-hauled + 36-49% reaching (a 41°-off fetch/beat).
+
+`_vo_census.js treeVO0 9400 + 9500` — ten-bot replay, **fins 16/16 validated** against
+the bench, episodes at 10 Hz, each priced on the clock = progress along the route
+polyline during the episode vs the boat's own rate over the 3 s before it:
+| episode | per boat-race | s/boat-race | clock lost s/boat-race | note |
+|---|---|---|---|---|
+| FRY | 5.35 | 31.1 | **8.3** | rate during/before 0.54; wind drift during a fry 0.03 rad med |
+| DODGE | 6.06 | 9.9 | **3.6** | ratePost/rate0 0.35; 57% fried anyway (4.4 s vs 6.6 s undodged) |
+| BOIL | 4.74 | 9.5 | **4.0** | entries at TWA 1.71 med (reaching/running); he: 0.7 s/lap |
+| DEAD AIR | 0.64 | 0.4 | 0.0 | — |
+- ⭐ **THE FRY SPLIT: fries preceded by a dodge (562) lose 2.32 s each; fries with no
+  dodge (294) lose 0.08 s.** `_friedIntent = prevDesired` is last tick's FINAL desired
+  heading — mid-dodge that is the DETOUR heading (bent to the no-go edge, away from
+  the strike point), and it is held for the whole outage (4.4 s med), with last tick's
+  avoidance deflection baked in and avoidance applied again on top. An undodged fry
+  holds the racing course and costs nothing. Deferred manoeuvre within 3 s of the
+  reboot: 54% (lost 2.5 s vs 0.41 without) — the return to course.
+- ⛔ DEAD PRE-BUILD: "a compass heading held in a shifting breeze" — the wind moves
+  0.03 rad med over a fry. Irons frames 10.6% (episodes touching irons lose 1.61 med
+  but sum only 2.1 of the 8.3 s).
+- **START: OCS at the gun 50.6%; OCS boats cross at 22.9 s med vs 1.57 s** — ≈21 s each,
+  which IS the +12 s leg-0 mean. At the gun the fleet is CENTRED on the line (behind
+  −1.7 u med, p25 −30 / p75 +49; speed 4.4 kt). OCS is ~50% in EVERY wind-offset bin
+  (|off| 0-0.15: 52%, 0.15-0.3: 56%, 0.3-0.45: 50%) and on both tacks (hdgOff1 <0.6:
+  47%, ≥0.6: 54%) ⇒ not an angle bias: a ZERO-MARGIN timed run (`tCross` aims at
+  gun+0.05 s) meeting a ±0.6 s error. `_st_ledger2`: commit T-6.0, est78 5.6 s, speed 0
+  kt / TWA 0.01 at commit (the luff), behind 162-171 u, blocked 0 (no traffic), 1.40
+  scrum contacts/boat in the first 30 s. He: 129 u behind at 7 kt at the gun, crosses
+  at 1.2 s, 0 OCS in 5.
+- Volcanic's wind is the gustiest timed run in the set: 16±4 kt at period 37 s
+  (gust rate 0.68 kt/s; ocean 0.51, arctic 0.37, glowtide 0.34, seatrials 0).
+
+## ✅ F3 — THE FRIED HELM HOLDS THE RACING INTENT (treeVF3; gates G1-G3 in `_vo_gates.md`)
+One mechanism: at the outage's onset `_friedIntent` is the last live tick's STRATEGIC
+heading (captured before the dodge override and before avoidance, which still runs on
+top), not `prevDesired` — last tick's FINAL heading, which mid-dodge is the detour
+bent to the no-go edge, and which carried last tick's avoidance deflection to be
+deflected again. Fallback to `prevDesired` when the last strategic tick is older than
+two ticks (wiggle/clearance branches). ~10 lines in bot.js, inside `if (fried)` plus a
+write-only capture — byte-inert off Emberfall by construction.
+- **volcanic 3×8 ten-bot vs vo0vo\*: med 239 → 225 (−14), mean 241.3 → 223.9 (−17.4),
+  paired med −14 / mean −17.4 (170 faster / 63 slower / 7 same), fins 240/240,
+  winner med 200 → 189; boat contacts 1.99 → 1.60, pen 0.34 → 0.29, land 0.15 → 0.15,
+  mark 0.13 → 0.10, OCS-ever unchanged 52.5%.** Ratio 1.228 → **1.151**. G1 ✓.
+- G2: seatrials 16 @ 9400 byte-identical to vo0st (full info arrays) ✓.
+- G3 mechanism read (`_vo_census.js treeVF3 9400`, fins 8/8): fries after a dodge lose
+  **2.32 → 0.11 s** med; fry clock lost **8.3 → 0.1 s/boat-race**; progress rate
+  during/before 0.54 → 1.06; deferred manoeuvres 54% → 37%. The outage itself is now
+  free on the clock, as the undodged half of the census predicted. ✓
+
+## THE DODGE, MEASURED UNDER F3 — OWNER DESIGN ITEM (not landed)
+The dodge was worth taking only while the outage it shortens was expensive. With F3
+an outage costs ~0.1 s, and the dodge still costs its detour (rate during 0.46,
+lost 4.7 s/boat-race by the rate method; 29% of dodges tack or gybe through the wind):
+| tree | vs F3 pooled 240 | dirt (boat / pen / land / mark per boat) |
+|---|---|---|
+| **treeVF3ND** F3 + no helm ever dodges (`dodgeChance` → 0) | **med −9 / mean −10.0**, 162 faster / 72 slower; lap med 212, winner 187 | 1.60→1.72 / 0.29→0.34 / 0.15→0.09 / 0.10→0.21 |
+| **treeVDT** F3 + a dodge never crosses the wind (declines when the escape lies on the other tack) | med −4 / mean −5.5, 141 / 93 | 1.60→1.66 / **0.29→0.33 (up in all three sets: .36→.39, .21→.26, .30→.34)** / 0.15→0.11 / flat |
+Removing the dodge is −10 s/boat-race on the mean (ratio would be ~1.08); the same-tack
+dodge keeps the theatre for half the price but its penalties rise consistently. The
+dodge is the owner's Sep 13 design ("reads as personality"), so the call is his:
+(a) keep as is, (b) same-tack only (treeVDT, ready), (c) drop the dodge for bots.
+Note the aimed striker weights the PLAYER 3×: in his races he draws 25% of aimed
+strikes and each bot 8%; in the bench (no player) each bot draws 10%.
+
+## ⚠️ THE COURSE PATH IS COST-BLIND — the boil price never reaches the route (finding)
+`_vo_route_boil.js` (NEW tracked): the saved `course.paths` == the live router's
+(`_pa_paths_eq` maxΔ 0) and it runs 250 / 160 / 460 / 190 u INSIDE boils on legs 1-4
+(leg 1 through a rift at 0.24×, 8 u off its axis) while the straight chords touch
+130 / 0 / 0 / 0 u. Cause, read in the code: `CoursePath._route` builds the DMC
+polyline with `SailCheck.pathBetween` — `pathPass`, a plain BFS over navigable cells
+that reads NO cost field — then string-pulls it on navigability alone. The priced
+A* (`pathSailable`, `base *= grid._shoal[nid]`) is the bots' own planner toward the
+carrot; the carrot sits on the BFS polyline, i.e. inside the rift. So the owner's
+boil price (and the shoal transit price on any venue) shapes only the last few
+hundred units, never the leg. A smoother that refuses to pull through priced cells
+(treeVSM) does not help: the raw BFS path already crosses (leg 3 → 640 u in boil).
+The fix is a priced search for the DMC (Dijkstra on `_shoal`, BFS-identical where no
+field exists) AND the owner re-saving `course.paths` in the editor (the saved sig
+does not cover the field) — an owner item; sized below the fry and the start
+(bots 4.0 s/boat-race in boils vs his 0.7 s/lap) and queued behind them.
+
+## THE START ESTIMATOR ACROSS VENUES (`_vo_census.js` start section, treeVO0, 8 races each,
+## fins-validated vs the pa*/vo0 anchors; the RUN TRACE compares the boat's own crossing
+## run with `getApproachTime`'s internal trajectory)
+| venue | wind | |off| at commit | behind@gun (u) | OCS@gun | cross med | clear→re-cross | model vs actual u closed at +5.6 s |
+|---|---|---|---|---|---|---|---|
+| volcanic | 16±4 | 0.28-0.31 | **−2** | **52%** | 14-15 s | 6.8 + **15.5 s** | 260 vs 145 |
+| arctic (9100) | 25±7 | 0.10 | 17 | 29% | 2.5 | 3.7 + 3.7 | 261 vs 139 |
+| seatrials | 13 | 0.00 | 38 | 6% | 1.0 | 6.4 + 3.3 | 249 vs 123 |
+| bay | 16±2 | 0.04 | 75 | 0% | 1.8 | — | 240 vs 116 |
+| ocean | 18±3 | 0.22 | 123 | 2.5% | 4.4 | 0.8 + 10 | 275 vs 97 |
+- **The model is ~2× optimistic on the run** everywhere (the boat spends 0.7-1.0 s
+  turning from head-to-wind to TWA 0.6 before it drives, then accelerates at roughly
+  half the modelled rate), and the nominal 261 u run overstates the real perpendicular
+  run (162-215 u). The two errors cancel on Emberfall (fleet centred on the line) and
+  leave an ACCIDENTAL margin of 17-123 u elsewhere. ⚠️ An "honest" estimator alone
+  would therefore REMOVE the margin on every venue; honesty needs an explicit margin,
+  which is what he sails (129 u behind at 7 kt, crossing at 1.2 s). Wind-speed trend
+  commit→gun does NOT predict OCS (ΔW med +0.1 OCS vs −0.1 not). Recorded, NOT built.
+- **Emberfall's OCS return is pathologically slow**: clear at 6.8 s, then 15.5 s med
+  (p25 4.6 / p75 27) to re-cross, against 3.3-3.7 s on seatrials/arctic. Profile
+  pending from the S1 census (irons / stalled / running shares).
+
+## ⛔ S1 — THE CROSSING RUN IN THE LINE'S FRAME (treeVS1 = F3 + aim across the lane on the
+## course-side normal + tCross run = STAGE·cos|off| / cos(0.7 − |off|)) — REJECTED, mechanism named
+- volcanic 3×8 vs vf3vo\*: **OCS-ever 52.5% → 24.6%, boat contacts 1.60 → 0.87 (−46%),
+  pen 0.29 → 0.21, col med 1 → 0, leg-0 mean 12.2 → 7.1 s (−5.1)** — the start half of
+  the mechanism works. **But the lap is flat**: med 225 → 224, mean −0.4, paired med
+  +1 / mean −0.45 (114 faster / 121 slower), per-set paired means −0.9 / +3.5 / −3.9.
+  The 5 s bought at the line leaks back over the legs (L1 +1.1, L2 +1.1, L4 +2.1 on
+  the means) — the swamp-start pattern (2026-08-27: "+20.7 s start deficit real but
+  does not convert") on a second venue: a fleet that starts together and legal
+  sails the first beat as a pack.
+- **Named loser: ocean 16 @ 9400 vs paoc — med 224 → 224, mean +2.0, paired 51
+  faster / 76 slower, boat contacts 0.47 → 0.90 (+91%), pen 0.16 → 0.23 (+44%)**;
+  ocean's line sits 0.22 rad off its wind, so the line-relative aim puts the whole
+  fleet on the lifted tack across the line and they meet there.
+- G4 (lap med must improve) NOT met; G5 seatrials byte-identical ✓; G6 ocean = loser.
+  Not landed. Split in flight: **S1B** = the run estimate alone (aim unchanged), to
+  see whether the OCS win survives without packing the fleet onto one tack.
+
+## ✅ F3 COMMITTED `869acaa` (local, unpushed): goldens verify PASS 30/30 with 0 behaviour
+## changes (a ten-venue proof of byte-inertness off Emberfall); npm test 36/36 after the
+## fried-intent assertion in test_volcano.js moved onto the new semantics.
+
+## ⛔ S1B — the run estimate alone (aim unchanged): REJECTED, and it names the ocean loser
+volcanic vs vf3vo\*: med 225 → 224, mean −0.5, paired −1 / −0.5 (121/109); OCS-ever
+52.5% → 24.6%, boat 1.60 → 0.91, pen 0.29 → 0.21 — the same start win as S1, the same
+flat lap. **ocean 16 vs paoc: med 224 → 226, mean +2.8, boat contacts 0.47 → 0.91
+(+94%), pen 0.16 → 0.21.** So the ocean loss was the ESTIMATE, not the aim: on a line
+0.22 rad off its wind the shorter angle-corrected run commits the fleet later and
+delivers it to the line together. The start family on Emberfall is now closed at two
+shapes: the OCS halves and does not convert, and every re-pricing of the run costs
+ocean. ⇒ the margin question (a deliberate 1 s behind the line, as he sails it) is the
+remaining lever and it is a universal design change — OWNER.
+
+## ⛔ F4 — a fried helm on leg 0 keeps steering for the line: REJECTED (dirt)
+vs vf3vo\*: med 225 → 224, mean 0.0, paired 0 / +0.03 (116/119) — no clock gain — and
+**boat contacts 1.60 → 2.74 (+71%), pen 0.29 → 0.36 (+24%)**, worst 297 → 309. A blind
+boat that turns back for the line turns back INTO the fleet crossing it; what it saves
+on the return it pays in contacts and turns. Mechanism read: the return is a traffic
+problem once the boat responds, and the held heading was keeping her out of it.
+
+## OWNER RULINGS (2026-09-13 22:2x PT): "1. Drop it 2. Fix it 3. Do your recommendation"
+- **D1 — the dodge dropped for bots** (`strikeDodge`/`dodgeChance` removed; test_volcano
+  now asserts a marked strike leaves the helm alone). treeVD1 is byte-identical to the
+  no-dodge attribution tree (8/8 on 9400), so f3nd\* are its anchors: vs F3 med −9 /
+  mean −10, fins 240/240, pen 0.29 → 0.34, boat 1.60 → 1.72 (accepted by the ruling).
+- **B1 — the priced leg-path search** (`SailCheck.pathPriced`: a hop into a cell costs its
+  shoal multiplier, ordered (cost, insertion) so an unpriced grid expands in exactly the
+  BFS's order; `CoursePath._pricedCost`: a string-pull shortcut is admitted only if it
+  crosses no more priced water than the polyline it replaces; `grid._shoalPriced`;
+  `courseSig` v3 lists awash-with-drag shapes and boil props, so ONLY documents with
+  priced water go stale — they route at load until re-saved, byte-identical elsewhere).
+  `_vo_priced_venues.js` (NEW tracked) — priced water is on EIGHT venues, not two:
+  | venue | priced cells | saved route in priced water → B1 route | route length |
+  |---|---|---|---|
+  | volcanic | 337 (max 4.18×) | 1370 → 780 u (legs 1-4 in-boil 250/160/460/190 → 100/200/260/0; leg-1 min mul 0.24 → 0.60) | 19383 → 19697 (+1.6%) |
+  | swamp | 10632 (max 10×) | 2720 → 2350 u | 8396 → 8581 |
+  | river | 4111 (4.66×) | 1390 → 310 u | 18586 → 18720 |
+  | lagoon | 3556 (3.31×) | 940 → 770 u | 16320 → **17541 (+7.5%)** — the bench decides |
+  | bay | 2584 (3.73×) | 200 → 0 u | 23198 → 23306 |
+  | glowtide / ocean / lake | 1802 / 11287 / 12 | 0 → 0 (identical routes) | unchanged, but stale sig ⇒ route at load |
+  | seatrials / redrock / arctic | 0 | — | v2 sig kept, byte-identical |
+  Shipping needs the owner to re-save `course.paths` on the eight (one editor pass) and
+  a re-freeze; until then the game routes at load with a console warning, exactly as
+  the candidate tree benches it.
+- **S2 — the honest timed run with a margin**: `tCross = turn(1.0 s from a luff, scaled by
+  how far from TWA 0.6 she is) + getApproachTime(actual perpendicular distance / cos 0.7)
+  + archetype adj − 1.0 s margin`; BUF (0.5) retired. Gates G7 in `_vo_gates.md`.
+
+## B1 FIRST READ — the priced route LOSES on Emberfall, and the price is why
+b1vo\* vs the D1 anchors (f3nd\*): paired med +1 / **mean +4.0**, med 212 → 218, fins
+240/240, boat 1.72 → 1.65, OCS unchanged. Lagoon −0.8 (ok). The route's boil exposure
+halved and its length grew 1.6% (+314 u ≈ 3.5 s at 90 u/s): the detour costs more than
+the crossings it avoids. **The router's price is not the transit the fleet pays**
+(`_vo_census.js` treeVF3, 385 natural boil crossings, priced on the clock):
+| boilMax | n | dur med | lost med | implied multiplier 1+lost/dur | router price (1/boilMul) |
+|---|---|---|---|---|---|
+| 0.1-0.3 | 86 | 0.9 s | 0.12 s | 1.11 | ~1.2× |
+| 0.3-0.5 | 182 | 1.3 | 0.36 | 1.27 | ~1.6× |
+| 0.5-0.7 | 104 | 1.8 | 0.88 | 1.44 | ~2.4× |
+| 0.7-1.0 | 13 | 3.7 | 2.32 | 1.65 | ~5.6× |
+The owner's 4× at the core was measured on an AXIAL crossing (~1050 u lost over ~430 u
+of rift, 3.4×) and is right for that geometry; the fleet's natural crossings are across
+the short axis (1.4 s med) and cost 1.3-1.65×. A per-cell price cannot carry the
+direction, so it must be set for the crossings the route actually makes. **B1B** =
+B1 + `price = 1 + turb` (rift core 1.64×, fissure 1.56×, mound 1.44×) — one line in
+buildCoursePaths, the shared field the bots' router reads too — in the bench now.
+
+## ⛔ S2 / S2B — THE HONEST TIMED RUN WITH A MARGIN: REJECTED on the ten-venue screen, mechanism named
+`_vo_screen.js` (candidate vs the standing anchors, same seeds; CAND − BASE):
+| venue | S2 (1.0 s) paired mean | OCS-ever | boat/boat | S2B (0.5 s) |
+|---|---|---|---|---|
+| volcanic | **−1.2** (med 0) | **52.5 → 1.7%** | **1.72 → 0.32** | +2.5, OCS 25%, boat 0.68 (1 set) |
+| seatrials | +2.6 | 9.4 → 0% | 0.56 → 0.17 | +0.5, OCS 0, boat 0.30 |
+| lake | +1.8 | 17.5 → 5% | 0.50 → 0.57 | — |
+| bay | **+3.2** | 0 → 0 | 0.78 → 0.85 | pending |
+| ocean | +1.9 | 2.5 → 0 | **0.47 → 0.61 (+30%)** | −0.4, boat **0.69 (+47%)** |
+| lagoon | **+3.5** | 0 → 0 | **0.60 → 1.79 (×3)** | — |
+The fast start ledgers (`_st_ledger2` FAST, 4 races, S2 vs the D1 control) name it:
+lagoon commit T−5.9 → T−5.35, at the gun 114 → 133 u behind at 3.1 → 2.3 kt, crossing
+2.9 → 5.5 s, **start-scrum contacts 0.20 → 1.20 per boat**; ocean 98 → 126 u behind,
+crossing 3.75 → 4.65 s, scrum 0.05 → 1.07. On volcanic the estimate is centred, so a
+margin is exactly right; on lagoon, ocean and bay the fleet is ALREADY late for
+physics the estimate does not model (the run trace shows the acceleration constant
+itself is right, ~5.6 s, and the missing turn is 1.0 s — yet lagoon crosses 2.4 s later
+than that predicts, ocean 3 s: swell, lee, light patches at the line), and a margin on
+top of unmodelled lateness holds the fleet at the stage until the neighbours
+accelerate through it. The two halves cannot be separated by a universal constant.
+The start fix Emberfall needs is real and is ONE line on that venue; the honest
+universal version needs an acceleration model that reads the venue (swell drag, the
+wind at the stage over the run) before a margin can be added to it. OWNER item, with
+the S2 numbers as the prize on Emberfall: OCS 52 → 2%, contacts −81%, penalties −62%.
+
+## ⛔ B1 / B1B — THE PRICED COURSE PATH: REJECTED on Emberfall, mechanism named
+b1vo\* vs f3nd\*: paired med +1 / mean +4.0 in all three sets (+4.3 / +1.5 / +6.2),
+med 212 → 218, worst 266 → 294, fins 240/240. B1B (price = 1 + turb, the transit the
+fleet pays) routes IDENTICALLY (the detour round a rift's short axis is 1-2 hops at any
+price above ~1.3×) and loses the same +4.0. Lagoon −0.8, lake +1.0 (land 0.25 → 0.57);
+river / swamp / bay / glowtide / ocean pending at the time of writing. The mechanism:
+the fleet's natural boil crossings cost 0.4 s each (`_vo_census`: 385 crossings, 1.3×
+transit), i.e. ~35 u — LESS than the one-hop detour (50-70 u) the priced search buys
+to avoid them, while the route grows 314 u (+1.6%, ≈3.5 s). The cost-blind BFS route
+was accidentally right for the crossings the fleet makes; only an AXIAL crossing of a
+rift (the owner's crossprobe, 3.4×) is expensive, and a per-cell price cannot tell the
+two apart. Not landed. The finding stands (the DMC never reads `_shoal`); the priced
+search (`pathPriced`, exposure-aware smoother, v3 signature) is kept in treeVB1 for a
+venue whose priced water the fleet must cross along its axis.
+
+## THE FULL S2 / B1 SCREENS (23:31; `_vo_screen.js`, CAND − BASE per venue vs the standing anchors)
+| venue | S2 paired mean | S2 OCS-ever | S2 boat/boat | B1 paired mean | B1 note |
+|---|---|---|---|---|---|
+| volcanic | −1.2 | 52.5 → 1.7% | 1.72 → 0.32 | **+4.0** | route +314 u, boil exposure halved |
+| seatrials | +2.6 | 9.4 → 0% | 0.56 → 0.17 | byte-identical | no priced water |
+| bay | +3.2 | 0 → 0 | 0.78 → 0.85 | −0.1 | ok |
+| ocean | +1.9 | 2.5 → 0% | 0.47 → 0.61 (+30%) | **+4.2** | route identical in length; stale sig ⇒ route at load |
+| lake | +1.8 | 17.5 → 5% | 0.50 → 0.57 | +1.0 | land 0.25 → 0.57 |
+| lagoon | +3.5 | 0 → 0 | 0.60 → 1.79 (×3) | −0.8 | ok |
+| river | **−12.3** | 8.8 → 2.5% | 6.13 → **21.16 (×3.5)**, land 77 → 87 | +1.3 | fins 77 → 76 |
+| redrock | −0.2 | 3.8 → 0% | 3.69 → 3.84 | (v2 sig kept) | byte-identical |
+| arctic | **−6.8** | 28.8 → 0% | 1.71 → 2.36 (+38%) | (v2 sig kept) | byte-identical |
+| swamp / glowtide | pending | | | pending | |
+S2 is a real lever — river −12 s and arctic −7 s on the lap with every OCS gone — and
+its cost is one thing everywhere it fails: a fleet held at the stage by the margin
+arrives at the line as a pack and rubs (river boat contacts ×3.5, lagoon ×3, arctic
++38%, ocean +30%). The next start push is a SPACED timed run (the stage lanes are
+already assigned; the run's timing must keep the lateral spacing they give), not a
+constant. B1 is rejected on the two venues whose routes it moves most (volcanic +4.0,
+ocean +4.2); the DMC-is-cost-blind finding stands, the price of fixing it does not pay
+on the crossings the fleet actually makes.
+
+## ⚖️ S2 IS A NON-UNIVERSAL WIN, NOT A LOSS — OWNER CALL (23:35; swamp landed after the screen above)
+| S2 vs anchor | paired mean | med | fins | OCS-ever | boat/boat | pen/boat |
+|---|---|---|---|---|---|---|
+| **swamp** | **−33.0** | **−29** (268 → 232) | 78 → **80** | 17.5 → 13.8% | 4.22 → 2.75 | 0.60 → 0.36 |
+| **river** | **−12.3** | +4 | 77 → 77 | 8.8 → 2.5% | 6.13 → 21.16 | 0.84 → 0.75 |
+| **arctic** | **−6.8** | −1 | 80 → 80 | 28.8 → 0% | 1.71 → 2.36 | 0.49 → 0.42 |
+| volcanic | −1.2 | 0 | 240 → 240 | 52.5 → 1.7% | 1.72 → 0.32 | 0.34 → 0.13 |
+| redrock | −0.2 | −2 | 80 → 80 | 3.8 → 0% | 3.69 → 3.84 | 0.90 → 0.81 |
+| lake | +1.8 | 0 | 80 → 80 | 17.5 → 5% | 0.50 → 0.57 | flat |
+| ocean | +1.9 | 0 | 160 → 160 | 2.5 → 0% | 0.47 → 0.61 | 0.16 → 0.19 |
+| seatrials | +2.6 | +1 | 160 → 160 | 9.4 → 0% | 0.56 → 0.17 | 0.16 → 0.19 |
+| bay | +3.2 | +3 | 80 → 80 | 0 → 0 | 0.78 → 0.85 | 0.14 → 0.24 |
+| lagoon | +3.5 | 0 | 80 → 80 | 0 → 0 | 0.60 → 1.79 | 0.31 → 0.39 |
+| glowtide | pending | | | | | |
+OCS falls on every venue; DNF falls (swamp +2 finishers); penalties fall on 7 of 10.
+The swamp win is the 2026-08-27 "+20.7 s start deficit that does not convert" —
+converting: with the honest run the swamp fleet no longer parks in irons at the stage.
+Losers: bay / lagoon / ocean / seatrials +1.9 to +3.5 s on the lap, and boat CONTACTS
+up on river (×3.5), lagoon (×3), arctic (+38%), ocean (+30%) — the start scrum a proper
+timed run produces where the fleet used to straggle. Per the owner ruling on
+non-universal wins (name the losers, put the call to him): **NOT landed by me;
+treeVS2 is ready.** If accepted: goldens re-record (a universal start change), the
+close table re-cut on all eleven, and the next push is the SPACED timed run that
+keeps the lanes' lateral separation through the run (the contacts are the whole
+cost). Swamp would move 1.460 → ~1.34, river 1.206 → ~1.14, arctic 1.48 → ~1.45,
+volcanic OCS 52 → 2%.
+
+## THE VENUE TABLE ON THE FINAL HEAD `37defe9` (F3 `869acaa` + D1) — `_vo_close_table.js`
+POST on the ten carried venues is one fresh set on the final HEAD and it is BYTE-IDENTICAL
+to the same set inside its pa*/wbsw* anchor (8/8 or 16/16 races; goldens verify 30/30 with
+0 behaviour changes twice), so their standing ratios are the pooled PRE ones; a single
+set's med differs from the pooled med by sampling only (swamp 268 vs 253, arctic 310 vs
+318, redrock 295 vs 287). Volcanic = f3ndvo* (three sets, == treeVD1).
+| venue | human med (n) | bot med/mean/best (standing) | ratio | DNF% | col med/boat | pen med/boat | fins |
+|---|---|---|---|---|---|---|---|
+| arctic | 209.4 (3) | 318/325.3/192 | **1.519** | 0.0 | 19 | 0 | 640/640 |
+| swamp | 173.3 (3) | 253/272.6/155 | **1.460** | 2.1 | 4 | 0 | 235/240 |
+| redrock | 204.2 (3) | 287/288.0/218 | **1.405** | 0.0 | 8 | 1 | 480/480 |
+| river | 187.4 (3) | 228/243.7/172 | **1.217** | 3.7 | 31 | 1 | 231/240 |
+| lagoon | 174.7 (3) | 210/210.4/170 | **1.202** | 0.0 | 0 | 0 | 80/80 |
+| glowtide | 204.4 (4) | 230/230.8/172 | **1.125** | 0.0 | 6 | 0 | 160/160 |
+| bay | 239.0 (3) | 268/266.6/224 | **1.121** | 0.0 | 0 | 0 | 400/400 |
+| lake | 194.8 (3) | 218/217.7/168 | **1.119** | 0.0 | 0 | 0 | 400/400 |
+| **volcanic** | 195.5 (5) | **240/241.3/162 → 212/214.0/162** | **1.228 → 1.084** | 0.0 | 1 | 0 | 240/240 |
+| ocean | 214.2 (3) | 224/223.2/194 | **1.046 ✅** | 0.0 | 0 | 0 | 160/160 |
+| seatrials | 185.7 (10) | 191/192.9/176 | **1.029 ✅** | 0.0 | 0 | 0 | 160/160 |
+Goal (≤1.1×) 3 of 11: ocean, seatrials, volcanic. Emberfall went from third-worst to
+third-best in one session: F3 −17.4 s mean, D1 −10.0 s mean; ⚠️ his reference laps faced
+the aimed striker at 3× a bot's draw, so the 1.084 flatters the fleet slightly.
+
+## GLOWTIDE ROWS (23:46, the last two benches): S2 +5.8 s mean (med +2), OCS-ever 56.3 → 59.4%
+## (the 5.29 kt set sweeps the fleet over; a margin does not help a current-driven OCS), boat
+## contacts 2.37 → 3.44 — a sixth loser for S2. B1 glowtide +4.6 mean (its route is identical in
+## length; the stale v3 signature routes at load and reshuffles the races) — B1 stays rejected.
+## S2's ledger, complete: winners swamp −33 / river −12 / arctic −7 / volcanic (OCS 52 → 2%) /
+## redrock 0; losers glowtide +5.8 / lagoon +3.5 / bay +3.2 / seatrials +2.6 / ocean +1.9 /
+## lake +1.8. Owner call, as recorded above.
