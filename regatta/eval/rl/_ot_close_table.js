@@ -1,27 +1,28 @@
 // OT CLOSE TABLE — THE OTTER PUSH (2026-09-14; derived from _vo_close_table.js).
 // PRE = ot0* (every venue re-benched on the owner's HEAD fc56ade after the courseSig-v3 re-freeze;
 // the old pa*/wbsw*/f3nd* anchors are RETIRED by that cut). POST = fo* on the FINAL HEAD.
-//   node _ot_close_table.js
+//   node _ot_close_table.js [postPrefix]   (default fo; the landed tree's benches are labelled otb3* / otf*)
 
 
 
 const fs = require('fs'); const path = require('path');
+const POST = process.argv[2] || 'fo';
 const HUMAN = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8, ocean: 214.2, river: 187.4,
     glowtide: 204.4, redrock: 204.2, seatrials: 185.7, swamp: 173.3, volcanic: 195.5, otter: 200.8 };
 const HUMAN_N = { arctic: 3, bay: 3, lagoon: 3, lake: 3, ocean: 3, river: 3, glowtide: 4, redrock: 3, seatrials: 10, swamp: 3, volcanic: 5, otter: 5 };
 const VENUES = {
-    arctic:   { base: ['ot0arc9100'], cand: ['foarc9100'], note: '8 @ 9100 both' },
-    swamp:    { base: ['ot0sw9400'], cand: ['fosw9400'], note: '8 @ 9400 both' },
-    redrock:  { base: ['ot0rr9400'], cand: ['forr9400'], note: '8 @ 9400 both' },
-    river:    { base: ['ot0riv9400'], cand: ['foriv9400'], note: '8 @ 9400 both' },
-    lagoon:   { base: ['ot0lag'], cand: ['folag'], note: '8 @ 9400 both' },
-    volcanic: { base: ['ot0vo9400','ot0vo9500','ot0vo9600'], cand: ['fovo9400','fovo9500','fovo9600'], note: '3×8 both' },
-    glowtide: { base: ['ot0glow'], cand: ['foglow'], note: '16 @ 9400 both' },
-    bay:      { base: ['ot0bay9400'], cand: ['fobay9400'], note: '8 @ 9400 both' },
-    lake:     { base: ['ot0lk6100'], cand: ['folk6100'], note: '8 @ 6100 both' },
-    ocean:    { base: ['ot0oc'], cand: ['fooc'], note: '16 @ 9400 both' },
-    seatrials:{ base: ['ot0st'], cand: ['fost'], note: '16 @ 9400 both' },
-    otter:    { base: ['ot0ot9400','ot0ot9500','ot0ot9600'], cand: ['foot9400','foot9500','foot9600'], note: 'NEW venue; 3×8 both; his 5 laps stamp the frozen doc' },
+    arctic:   { base: ['ot0arc9100'], cand: [POST + 'arc9100'], note: '8 @ 9100 both' },
+    swamp:    { base: ['ot0sw9400'], cand: [POST + 'sw9400'], note: '8 @ 9400 both' },
+    redrock:  { base: ['ot0rr9400'], cand: [POST + 'rr9400'], note: '8 @ 9400 both' },
+    river:    { base: ['ot0riv9400'], cand: [POST + 'riv9400'], note: '8 @ 9400 both' },
+    lagoon:   { base: ['ot0lag'], cand: [POST + 'lag'], note: '8 @ 9400 both' },
+    volcanic: { base: ['ot0vo9400','ot0vo9500','ot0vo9600'], cand: [POST + 'vo9400',POST + 'vo9500',POST + 'vo9600'], note: '3×8 both' },
+    glowtide: { base: ['ot0glow'], cand: [POST + 'glow'], note: '16 @ 9400 both' },
+    bay:      { base: ['ot0bay9400'], cand: [POST + 'bay9400'], note: '8 @ 9400 both' },
+    lake:     { base: ['ot0lk6100'], cand: [POST + 'lk6100'], note: '8 @ 6100 both' },
+    ocean:    { base: ['ot0oc'], cand: [POST + 'oc'], note: '16 @ 9400 both' },
+    seatrials:{ base: ['ot0st'], cand: [POST + 'st'], note: '16 @ 9400 both' },
+    otter:    { base: ['ot0ot9400','ot0ot9500','ot0ot9600'], cand: [POST + 'ot9400',POST + 'ot9500',POST + 'ot9600'], note: 'NEW venue; 3×8 both; his 5 laps stamp the frozen doc' },
 };
 const med = a => { const s = [...a].sort((x, y) => x - y); return s.length ? s[Math.floor(s.length / 2)] : NaN; };
 const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : NaN;

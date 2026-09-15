@@ -970,6 +970,9 @@ Object.assign(BotController.prototype, {
                 // would shift every race on every venue and retire the golden traces).
                 this.gridTimer = 2.0 + ((this.boat.id * 0.37) % 1);
             }
+            // OTB1 (2026-09-14, the otter push): remember the LEG's destination before the
+            // follower replaces it with a corridor carrot — the open-water beat below lays it.
+            const destFarX = destX, destFarY = destY;
             if (this.gridPath && this.gridPath.length) {
                 // PURE PURSUIT, not proximity pruning. Pruning-on-arrival goes stale
                 // the moment an escape manoeuvre throws the boat sideways: the old
@@ -1165,6 +1168,70 @@ Object.assign(BotController.prototype, {
                                 const sC = Math.min(sB + 160, sMax);
                                 const wx2 = eX + dxT * sC, wy2 = eY + dyT * sC;
                                 if (tightAt(wx2, wy2)) w = { x: wx2, y: wy2 };
+                            }
+                        }
+                    }
+                }
+                // OTB1 — THE OPEN-WATER BEAT LAYS THE FAR TARGET (2026-09-14, the otter push).
+                // The corridor carrot (LOOK <= 900 u on the router's line, shrunk further by
+                // cross-track) is the short-tacking engine: the board scorer prices boards
+                // toward a point on the line, so a boat can never get more than a few hundred
+                // units off it before the other board wins — Otter's 7.6 km beat: fleet 14
+                // tacks and a lane 700-950 u off the line, him 4 tacks and 1600-2400 u off it
+                // (eval/rl/_ot_lane.js; the owner's own pricer: the one-tack offshore board
+                // wins by ~24 s over every short-tacking lane — the tack count, not the wind).
+                // With no floes, the leg's destination far and dead upwind, and OPEN WATER
+                // AHEAD — three rays (the chord and ±26°) clear of land for the next 1800 u,
+                // awash water (shallows, kelp: soft cells) counting as water — the target IS
+                // the destination: the scorer's boards then tie until the mark bears ~13° off
+                // the wind axis, so the boat holds each board into a cone that narrows toward
+                // the mark (4-6 tacks on a long beat), and a lift/header or pressure ahead still
+                // breaks the tie. A corridor (a ray into land) keeps today's carrot. Not a
+                // price: which target the boards are scored on. (The first cut used the
+                // clearance field and SailCheck.losClear, which both read Otter's coast-hugging
+                // shallows apron as a wall: it never fired — eval/rl/_ot_open.js.)
+                if (!state.course._hasFloes && boat.raceState.leg >= 1) {
+                    // OTB3: THE CONE'S APEX SITS ON THE REQUIRED SIDE OF THE MARK. Aimed at the
+                    // ruler's tangent-in point (90 u from Otter Point) the cone's last board came
+                    // in from the SSE through the rock field with the mark to PORT — the whole
+                    // fleet on one board at once: boat contacts 0.44 → 1.92 and land 0.66 → 1.52
+                    // per boat-race, all of it inside 1000 u of the mark (_ot_rubs), and the
+                    // two-tack east-side rounding for 58% of the boats. His last board comes in
+                    // from the WSW. So on a rounding leg the far target is the point TWO ZONES
+                    // out on the tangent-in point's bearing — the required side by construction,
+                    // inside the ruler-mode radius, where the entrance hunt takes over.
+                    let farX = destFarX, farY = destFarY;
+                    {
+                        const rsF = boat.raceState;
+                        const eF = state.course.route && state.course.route[rsF.leg];
+                        const rmF = (eF && eF.kind === 'round') ? (legRoundMark(rsF.leg) || state.course.roundMark) : null;
+                        if (rmF && this._sEnterPt) {
+                            const ex = this._sEnterPt.x - rmF.x, ey = this._sEnterPt.y - rmF.y;
+                            const el = Math.hypot(ex, ey);
+                            if (el > 1) { farX = rmF.x + ex / el * rmF.zone * 2.0; farY = rmF.y + ey / el * rmF.zone * 2.0; }
+                        }
+                    }
+                    const dxF = farX - boat.x, dyF = farY - boat.y;
+                    const dF = Math.hypot(dxF, dyF);
+                    if (dF > 1200) {
+                        const wF = getWindAt(boat.x, boat.y);
+                        const brgF = Math.atan2(dxF, -dyF);
+                        const offF = Math.abs(normalizeAngle(brgF - wF.direction));
+                        const optF = getCharacterOptimalVMGAngle('upwind', wF.speed, boat.stats);
+                        if (offF < optF + 0.15) {
+                            const reach = Math.min(dF, 1800), stepF = botGrid.res * 0.5, nS = Math.ceil(reach / stepF);
+                            const soft = botGrid._soft;
+                            const rayClear = (ang) => {
+                                const sx = Math.sin(ang), sy = -Math.cos(ang);
+                                for (let k = 1; k <= nS; k++) {
+                                    const c = botGrid.cell(boat.x + sx * stepF * k, boat.y + sy * stepF * k);
+                                    if (c[0] < 0 || c[1] < 0 || c[0] >= botGrid.n || c[1] >= botGrid.n) return false;
+                                    if (!botGrid.at(c[0], c[1]) && !(soft && soft[c[1] * botGrid.n + c[0]] === 1)) return false;
+                                }
+                                return true;
+                            };
+                            if (rayClear(brgF) && rayClear(brgF + 0.45) && rayClear(brgF - 0.45)) {
+                                w = { x: farX, y: farY };
                             }
                         }
                     }

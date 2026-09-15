@@ -79,3 +79,9 @@ contacts ×2; a loser on two venues.
   (mark-approach rafting 82→2 in the 5-seed census). Tacks 14.1→4.8 (his 3.8), leg-1 105.9 s (his
   111.1). Transfer: ocean −3.0/−6, seatrials identical 160/160, lake +0.9/0, lagoon −0.4/−1,
   [bay/volcanic/glowtide/swamp/river/redrock/arctic: see the campaign log].
+- **CX1e TRANSFER (`otf*` = beat + corner, vs the landed beat `otb3*`)**: otter −1.6/−2 (240/240),
+  bay +0.7/+1, ocean −0.5/0, volcanic −0.8/−3 BUT one boat 194→426 (leg 2, a port gybe mark), lake
+  −0.3, lagoon identical, seatrials/redrock/arctic identical — and **RIVER fins 79 → 65 (14 DNF)**,
+  land 77→24 (the DNF boats never reach the land) ⇒ **KILL (G3 DNF).** The corner family in its safe
+  form still leaves a never-bank/late-bank class on river's and volcanic's roundings. NOT LANDED.
+  Landing set = OTB3 alone.
