@@ -86,7 +86,7 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 | 8 | Glowtide Strait | **Slalom** | do I follow the glow or trust my own line? | chasing a glowing wake through lit gates |
 | 9 | Glacier Sound | **Out & Back** | how close do I dare sail to the ice? | a calving that reshapes your return leg |
 | 10 | Clubhouse Point | **W/L — FROZEN** | — | — |
-| 11 | Spoonbill Flats | **Loop**, 2 channels | is the shortcut still open? | taking it one lap too late |
+| 11 | Spoonbill Flats | **One way**, tidal estuary | is there water on the sill yet? | reaching the sill as it dries |
 | 12 | Emberfall Isle | **Round the Cans** | round the cone now, or wait for the vent? | timing a rounding between eruptions |
 | 13 | Fallwater Fjord | **Out & Back** | take the downdraft or sail around it? | punching through the fall at speed |
 | 14 | Flamingo Reach | **Round the Cans** | where can I possibly pass? | the flock erupting across your bow |
@@ -991,77 +991,74 @@ meaningless.
 
 ---
 
-# 11. Spoonbill Flats `flats` — *first-cut document; card and track shipped Sep 2 2026*
+# 11. Spoonbill Flats `flats` — *BUILT Sep 16 2026: the tide is in; art tiles owed*
 
-**Proposed tagline** Ebb & Sandbar
+**Tagline** The Wantij
 
 > **Naming.** Specced as "Curlew Flats"; the art landed on spoon-billed
 > sandpipers and they're better. **Spoonbill Flats** follows the convention that
 > a venue is named for its witness (Sockeye Run/Slipstream, Gatorgrass/Chomp).
 
-**Description.** A wide estuary emptying itself. The tide falls all race: bars
-surface, channels narrow, and the water runs harder through what's left.
+**Description.** A wide estuary that fills and empties while you race it — a full tide
+every minute. The deep channel always goes round; the flats are the short way, for a
+while.
 
-**Character & narrative.** Big, quiet, slightly ominous — the sea leaving.
-Withies leaning in the mud, a stranded dinghy, sandpipers landing on ground that
-was underwater a minute ago. The story is *the clock*.
+**Character & narrative.** Big, quiet, slightly ominous — the sea leaving, and coming
+back. Withies leaning in the mud (owed), sandpipers landing on ground that was underwater
+a minute ago (owed). The story is *the clock*: HW eight seconds after the gun and every
+minute after, LW at :38, and everyone can read it on the gauge.
 
-**Traits.** Moderate steady breeze; the drama is entirely in the water. The wind
-must stay *quiet* so the tide reads as the thing that changed.
+**Traits.** Moderate onshore breeze (16.5 kt offshore, 15 in the lower basin, 13.5 up
+the estuary, ±8° shifts on a 43 s period); the drama is in the water.
 
-**Art.** Warm amber-gold sandbars with deep slate-blue channels and rust-red
-withies. Master measures 0.693 saturation — in range.
+**Art.** Warm amber-gold flats, slate-blue channel. Three tiles owed — saltmarsh turf,
+golden mudflat, rippled sand — prompts in `art/flats-prompts.md`; the flats draw as flat
+colour from `js/tide.js` until then.
 
-**Key mechanics.** **A single `tidePhase` drives both**, which is what makes this
-cheap and coherent:
-- **Depth falls** → bars emerge → the navigable map shrinks mid-race
-- **Flow builds** → the same water squeezes through fewer channels → current
-  accelerates as the race goes on
+**Key mechanics — all in `js/tide.js`, one clock.** The intertidal ground is an
+ELEVATION FIELD rasterised at load from the document's `flats-*` shapes (channel, pool,
+bar, shelf as anchors; marsh as the never-wet high anchor; every point between them at a
+height set by its normalised distance channel→marsh, plus noise for pans and tongues).
+`level(t) = sin` on the race clock; `depth = level − ground`. Draft 0.5 m, full speed
+with 0.5 m clearance, the mud taking speed below that, AGROUND under the draft: held,
+shoved toward the channel at 0.8 kt, refloated by the sine, with the seconds to the
+refloat on the HUD. Tidal streams (`current.regions[].tidal`) run in proportion to
+dLevel/dt — slack at HW and LW — flooding inland, ebbing back; the flats carry a
+cross-stream out of the channel while they fill. Bots: time-dependent A* (arrival-time
+pricing with a capped horizon margin, land-only clearance), a local map stamped every
+1.5 s, hold-in-deep-water when no route exists. Player: ground shaded by depth in three
+bands (sits / slows / free), the waterline and the amber draft contour drawn live, a
+tide gauge with the seconds to the turn, an echo sounder on the boat.
 
-Plus **wind-over-tide chop** and a **slack-water window** to race for.
+### Course — One way: beat, mouth, an S of three meanders, finish at the head
 
-**Cheaper than it looks.** Sockeye Run already ships a spatial current field; this
-adds a time axis rather than a new system. The AI needs no time-aware planner —
-if emerging bars join the hazard set, the periodic replan handles them
-reactively. `AI_STAT_BONUS` covers the resulting asymmetry.
+- **The beat.** 1200u to a rounding mark at sea (starboard), then bear away through the
+  mouth between two sand spits. ~40 s to the mouth.
+- **The Wantij** (first loop). A tidal creek leads from the mouth to a waiting pool (always
+  afloat), then a 1300u shelf (−0.8 m) crosses the divide to a sill (−0.45 m) at the
+  traverse. Open for a leader who reaches the pool as the water comes up; a boat 15–20 s
+  behind finds the sill closing and waits or turns back. Saves ~25 s.
+- **The point bar** (the west bend). The inside of the bend is a shelf at −0.95 m: the
+  higher the water, the tighter the cut. No gate — a radius that follows the tide.
+- **The flood creek** (the head). A shallower branch (−1.15 m) up the east side of the
+  head's meander with a 1.2 kt flood stream and a sill (−0.5 m) at its head; the ebb
+  channel round the outside never dries.
+- Finish inland after the creek rejoins, ~15 s of shared water.
 
-### Course — Loop through two channels, 4 laps
+**The question it asks.** *Is there water on the sill yet — and will there still be when
+I get there?*
 
-**This is the only course in the game that is a different racecourse on the last
-lap than it was on the first**, and everything should serve that.
+**Signature moment.** Watching the flood run across the sand toward you as you wait in
+the pool, and going the instant the gauge says so.
 
-- The **short channel** cuts the corner — shallow, tempting, and it *closes*
-  partway through the race as the bars dry.
-- The **long channel** is deep and always open — but as the tide drops, the same
-  volume of water squeezes through it, so its current builds against you.
-
-Neither option gets better. One disappears and the other gets harder, so the race
-tightens on everyone at once. The right answer changes lap by lap, and the player
-who read the tide chip at the start knew it was coming.
-
-**The question it asks.** *Is the shortcut still open — and is it still worth it?*
-
-**Course hazards.** **Drying sandbars** — the hazard that *arrives*. Soft
-grounding, and the bar that wasn't there last lap is the whole venue. **Withies**
-mark the deep water but sit close enough to clip. **Eddy lines** at the channel
-junction throw you off as flow builds. By the last lap the fast route may simply
-be gone.
-
-**Signature moment.** Taking the shortcut one lap too late and feeling the keel
-touch.
-
-**Key assets.** Withy marker (nav) · **drying sandbar (terrain, tide-phased)** ·
-drain runnel (terrain) · **spoon-billed sandpiper flock landing on newly dry
-sand** (ambient — *and the depth gauge; the witness IS the hazard readout*) ·
-eddy line (terrain) · stranded dinghy (ambient).
-
-**Status (Sep 2 2026).** `assets/venues/flats.venue.js` is a hand-laid first cut: a
-loop round a central sandbar, 2 laps — beat up the west channel, reach across the
-top, run down the east side where the inner lane past a spit is shoaled and slow
-and the outer lane is clear, reach home. The shoals are static; the tide (drying
-bars, building flow, the slack window) is unbuilt. Card: the Aug 2026 pass-4 master
-(0.693 saturation) ingested as `flats`. Track wired as `racing-flats`
-([music.md](music.md) §12.1). Cup: the Swirl Cup set.
+**Status (Sep 16 2026).** `art/build_flats.js` lays the venue (re-running it overwrites
+hand edits — edit the script or stop re-running it); `eval/_venue_bake.js` bakes the
+paths; `eval/_flats_race.js` races the fleet and reports groundings and routes;
+`eval/_flats_chart.js` draws the estuary at any state of the tide. Channel-only estimate
+3:11 / 4.91 km. Bots (3 seeds, 60 s period, HW +8 s): 27/27 finish, best 2:43 via the
+wantij, median 3:11, worst 4:14. Design study, ratings and the build log:
+[flats-design.md](flats-design.md). Card art: the Aug 2026 pass-4 master. Track
+`racing-flats`. Cup: the Swirl Cup set.
 
 ---
 

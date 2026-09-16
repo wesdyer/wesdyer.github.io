@@ -213,3 +213,93 @@ the current a *tactical* reading, and the one-clock rule keeps it all learnable.
 is a maze; the channels stay 5–8 lengths; the breeze stays 16 kt.
 
 (Build log follows.)
+
+---
+
+## 6. Build log (the night of Sep 15–16 2026)
+
+Everything below was measured with `eval/_flats_race.js` (nine bots, the player parked
+off the map, cutoff 900 s) unless it says otherwise. "wantij" in a route means the boat
+sailed the corridor; "+sill" that it crossed the sill rather than turning back.
+
+### 6.1 What was built
+
+- **`js/tide.js`** (new, ~700 lines): the field build (scanline raster of the document's
+  `flats-*` polygons, chamfer distance transforms, the channel→marsh interpolation with
+  γ, noise, per-shape channel beds composed deepest-wins, pools sunk, shelves set,
+  bars raised), the clock, depth → speed multiplier, aground/refloat with the
+  channel-ward push-off, the fill cross-stream, the bots' grid stamps and route pricing,
+  the wet/dry picture, the contours, the HUD info.
+- **Five shape kinds** in `venuedoc.js` (`flats-marsh` hard land with a `saltmarsh` look;
+  `flats-channel`, `flats-pool`, `flats-bar`, `flats-flat` as awash, paint, unrouted
+  field anchors with a `tide` tag) and a per-shape **`elev`** (metres) in `shapeTraits`,
+  passed through the compile. Editor rows: picker, fill, a "Tide" inspector field with
+  the afloat-and-free share of the cycle computed from the sine.
+- **Hooks**: `Tide.init()` on the document path of `initCourse` (with Volcano), a
+  multiplier at the shoal slot of `updateBoat` and `afterMove` after the integration,
+  `tidal` current regions + `addFill` in `getCurrentAt`, `stampGrid`/`safeGrid` in
+  `buildCoursePaths` (the chart path, the ruler and the goal fields run on the
+  always-there water), the editor's estimate on the safe grid too, `_tideDry` +
+  arrival-time pricing in `pathSailable`, `Tide.update` for the local map, the two draw
+  slots (wet under the moving surface, dry under the marsh), the rose readout and the
+  on-boat echo sounder.
+- **`art/build_flats.js`**: the estuary from centrelines (Catmull-Rom → ribbons →
+  hulls for the stream regions), the basin, the marsh islands that set the height of
+  the flats between the bends, the three choices, the course, wind and current.
+- **Tools**: `eval/_flats_chart.js` (the whole estuary at any clock, through the game's
+  own layer), `eval/_flats_race.js` (finish times, groundings, routes).
+- Golden traces: 24/24 unchanged on the other venues (the tide is inert without anchors).
+
+### 6.2 What the measurements said, in order
+
+| step | result |
+|---|---|
+| first cut, γ 1.15, 60 s, HW at gun | 18/18 finish 2:49–3:13, 2 groundings of 1 s — but everyone crossed the head's flats at will: the interior was too low |
+| γ 0.8 | 2:57–3:16; interior now mud most of the cycle; the corridor unused (its window shorter than its crossing) |
+| add router waiting (hold in a pool for a sill) | WORSE: every bot piled into the pool, 7:14 worst, 21 groundings for one boat — the wait made an unsailable corridor look cheap |
+| horizon-growing margin | no help while unbounded (see below) |
+| lead 5 s / margin 0.2 on the local map + skip replans on "wet on arrival" cells | WORSE (3:44–6:01): the local map called cells walls while the plan ran through them |
+| corridor rebuilt as creek (−2.4) + pool + 1300u shelf (−0.8) + sill (−0.45) | still bad — because **no bot could find any path** from the creek |
+| **the horizon margin was unbounded**: 155 s out it demanded 1.9 m of extra water and closed the *channel* at the finish | capped at 0.3 m → 2:57–3:57, one grounding |
+| **the clearance field read stamped-dry cells as walls**: a run through the corridor priced as a 60u canyon (~6× gybe tax), so no bot ever took the wantij | land-only clearance → the router takes the sill when it is open |
+| phase: HW at the gun → HW 8 s after the gun (`phase0 0.733`) | the sill opens as a well-sailed leader reaches it: 2:41 / 2:43 / 2:48 winners via the wantij across seeds |
+| min aground 1.5 s, refloat hysteresis 0.1 m, lead 3 s / margin 0.16 | churn gone (one boat had re-grounded 19 times in 7 s) |
+| **final, 60 s, 3 seeds** | **27/27 finish, best 2:43, median 3:11, worst 4:14**; 12 of 27 boats touched the mud (most for 0–3 s), the worst sat 42 s |
+| 90 s period, 2 seeds | 18/18, best 2:53, median 3:06, worst 4:37 — fewer touches, the wantij taken by 4 of 18 |
+| 45 s period, 2 seeds | 18/18, best 2:49, median 3:17, worst 4:03 — the windows shorter than the crossings again; more touches at the point bar |
+| channel-only estimate (editor, safe grid) | 3:11, 4.91 km |
+
+Bots at 1.15–1.2× the human estimate is this game's usual (Otter); here the bots' median
+sits ON the channel estimate because they take the point bar and the creek, and the
+winners beat it by 25–30 s with the wantij. A human who takes all three should land in
+Wes's 2:45–3:00; the channel alone is 3:11. Not measured: a human lap (the display was
+asleep, so Chrome's frame loop was stopped; the race was driven step-wise for the
+pictures).
+
+### 6.3 Decisions
+
+- **Period 60 s, HW 8 s after the gun** (`doc.tide`). 90 s tested: kinder to the bots,
+  the windows longer than any crossing, less drama; 45 s: harsher, no better. The knob is
+  one number in the document (`doc.tide.period`).
+- **The interior is high** (γ 0.8): the flats near a channel stay a sailable margin for
+  half the cycle (the continuous inside line), the middle is mud most of the time, and
+  the three authored corridors are the shortcuts. The first cut (γ 1.15) made the head a
+  highway at high water and the channel irrelevant.
+- **No waiting in the router.** The code is there (`maxWait`), measured worse, left at 0.
+  A bot that has no route holds in the deepest water it can reach and asks again.
+- **Chart path, ruler, ranking = the always-there water.** The shortcuts are the
+  sailor's discovery; the path line never draws you across a flat that will dry.
+
+### 6.4 Owed
+
+- The three tiles (`art/flats-prompts.md`), and the tile hook in the tide layer's dry pass.
+- Withies at the sills (props); spoonbills landing on the flat that just dried (ambient,
+  the witness); the stranded dinghy.
+- The minimap and the clubhouse chart draw the venue at one state; a live tide on the
+  minimap would be a small win.
+- The stream is modelled as a pure standing wave (slack at HW/LW); the research says the
+  strongest flow in a creek with big flats comes just before and after HW — a rate term
+  weighted by the area currently flooding would be the honest next step.
+- Bots still shave the point bar as it dries (the pursuit chord); ~1 in 3 touches the mud
+  once. Fair game for a venue whose card says so, but the helm could read the field.
+- A human lap, and the human-vs-bot ratio from it.
