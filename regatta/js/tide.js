@@ -492,17 +492,33 @@ const TIDE = {
     }
     // The router's per-step verdict: is this cell sailable at `tArr`, and at what price?
     // Returns 0 for "not at that time", else the time multiplier (≥ 1).
-    function routeMargin(tArr) {
+    function routeMargin(tArr, now) {
         const T = state.tide;
-        return T.botMargin + Math.min(T.horizonCap, T.horizonMargin * Math.max(0, tArr - clock()));
+        return T.botMargin + Math.min(T.horizonCap, T.horizonMargin * Math.max(0, tArr - (now == null ? clock() : now)));
     }
-    function routeCost(grid, nid, tArr) {
+    // The level from a table, for the router: an A* asks a hundred thousand times a
+    // replan, and sin() was more than the search itself (22 ms a replan against 10).
+    // 4096 samples over one period — under a millimetre of error at a metre of range.
+    let _lvlTab = null, _lvlPeriod = 0, _lvlPhase = 0, _lvlAmp = 0, _lvlMid = 0;
+    function levelFast(t) {
+        const T = state.tide;
+        if (!_lvlTab || _lvlPeriod !== T.period || _lvlPhase !== T.phase0 || _lvlAmp !== T.amp || _lvlMid !== T.mid) {
+            _lvlTab = new Float32Array(4096); _lvlPeriod = T.period; _lvlPhase = T.phase0; _lvlAmp = T.amp; _lvlMid = T.mid;
+            for (let i = 0; i < 4096; i++) _lvlTab[i] = T.mid + T.amp * Math.sin(2 * Math.PI * i / 4096 + T.phase0);
+        }
+        let u = (t / T.period) % 1; if (u < 0) u += 1;
+        return _lvlTab[(u * 4096) | 0];
+    }
+    function routeCost(grid, nid, tArr, now) {
         const T = state.tide;
         if (!T || !grid._elev) return 1;
-        const d = levelAt(tArr) - grid._elev[nid] - routeMargin(tArr);
+        const d = levelFast(tArr) - grid._elev[nid] - routeMargin(tArr, now);
         if (d < T.draft) return 0;
-        const m = mulForDepth(d);
-        return m > 0.01 ? 1 / m : 0;
+        const c = d - T.draft;
+        if (c >= T.free) return 1;
+        const s = c / T.free;
+        const m = T.minMul + (1 - T.minMul) * s * s * (3 - 2 * s);
+        return 1 / m;
     }
     // Seconds from `tArr` until this cell has draft (plus margins) over it, or null if never.
     function routeWait(grid, nid, tArr) {

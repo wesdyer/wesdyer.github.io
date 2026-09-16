@@ -1066,7 +1066,7 @@ function pathSailable(grid, from, to) {
             let tideMul = 1, tideWait = 0, tideWaitUntil = 0;
             if (tideOn) {
                 const tArr = tideNow + gScore[cur] * tideSec;
-                tideMul = Tide.routeCost(grid, nid, tArr);
+                tideMul = Tide.routeCost(grid, nid, tArr, tideNow);
                 if (tideMul <= 0) {
                     // Dry on arrival. Hold here for it, if here is always wet and the water
                     // comes soon enough; else this is not a step.
@@ -1075,7 +1075,7 @@ function pathSailable(grid, from, to) {
                     if (w == null || w > MAX_WAIT) continue;
                     tideWait = w / tideSec;                     // seconds → cost units
                     tideWaitUntil = tArr + w;
-                    tideMul = Tide.routeCost(grid, nid, tideWaitUntil + 0.5);
+                    tideMul = Tide.routeCost(grid, nid, tideWaitUntil + 0.5, tideNow);
                     if (tideMul <= 0) continue;
                 }
             }
