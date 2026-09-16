@@ -96,7 +96,10 @@ const TIDE = {
         const T = state.tide;
         return T.amp * (2 * Math.PI / T.period) * Math.cos(2 * Math.PI * t / T.period + T.phase0);
     }
-    function level() { return state.tide ? levelAt(clock()) : 0; }
+    // The editor pins the level to look at a state of the tide (LW, mean, HW) while editing.
+    let _override = null;
+    function setOverride(v) { _override = (v == null) ? null : +v; }
+    function level() { return _override != null ? _override : state.tide ? levelAt(clock()) : 0; }
     // −1..1: the rate as a share of its peak. Positive = flooding.
     function flow() {
         const T = state.tide;
@@ -942,7 +945,7 @@ const TIDE = {
 
     window.Tide = {
         CONST: TIDE, init, update, build,
-        clock, level, levelAt, rateAt, flow, nextReach, nextHigh, nextLow,
+        clock, level, levelAt, rateAt, flow, nextReach, nextHigh, nextLow, setOverride,
         groundAt, depthAt, mulAt, mulForDepth,
         speedMul, afterMove, refloatIn,
         addFill,

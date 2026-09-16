@@ -214,6 +214,10 @@ const activeReg = () => (isRegionMode(mode) && regSel(mode) >= 0) ? regsOf(mode)
 let marquee = null;
 let showField = false;         // wind-field preview
 let showCurField = false;      // current-field preview
+// THE TIDE'S GROUND (Spoonbill Flats): the field the flats-* polygons produce, drawn under
+// the polygons at a pinned level so a sill can be tuned by eye. T cycles off / LW / mean /
+// HW. Nothing on a venue without a tide. L cycles it (T is Traffic).
+let tideView = 1;
 // The ice layout is chosen per RACE by the game, so it is a property of the preview and
 // not of the venue. It used to be a bare "Seed" number box with no stated meaning.
 let previewSeed = 90210;
@@ -2080,6 +2084,24 @@ const KIND_EDGE = {
     tidepool: '#514839'
 };
 
+function drawTideLayer() {
+    if (!doc || !tideView || !state.tide || !window.Tide || !shown('land')) return;
+    const T = state.tide;
+    const lvl = [null, T.mid - T.amp, T.mid, T.mid + T.amp][tideView];
+    if (lvl == null) return;
+    // The layer draws in world space through the canvas transform, at a pixel size that
+    // suits the zoom (5u a pixel in the game is far too fine for a whole-venue view).
+    window.__TIDE = Object.assign({}, window.__TIDE || {}, { pxU: Math.max(5, Math.round(2.5 / view.scale)) });
+    Tide.setOverride(lvl);
+    ctx.save();
+    ctx.translate(W() / 2, H() / 2); ctx.scale(view.scale, view.scale); ctx.translate(-view.x, -view.y);
+    try { Tide.drawWet(ctx); Tide.drawDry(ctx); } finally { ctx.restore(); Tide.setOverride(null); }
+    ctx.save();
+    ctx.font = '600 11px Archivo, system-ui, sans-serif'; ctx.fillStyle = 'rgba(253,230,138,0.9)';
+    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+    ctx.fillText(`TIDE ${['', 'LOW WATER', 'MEAN', 'HIGH WATER'][tideView]}  ·  L to cycle`, 72, 12);
+    ctx.restore();
+}
 function drawLandLayer() {
     // EVERY shape, in the order the document stacks them — which is the order the game
     // paints them, so what you arrange here is what you get. It used to be two painters,
@@ -2511,6 +2533,7 @@ function drawBrushDisc() {
 const LAYER_STEPS = [
     ['arena',   () => drawArenaLayer()],
     ['venue',   () => drawDriftingFloes()],
+    ['land',    () => drawTideLayer()],
     ['land',    () => drawLandLayer()],
     // Props between the land and the course furniture — the game's own draw order.
     ['props',   () => { if (shown('props')) drawPropsLayer(); }],
@@ -8432,6 +8455,8 @@ window.addEventListener('keydown', (e) => {
     }
     if (e.key.toLowerCase() === 'w') { showField = !showField; syncFieldButtons(); fieldProbe(); draw(); return; }
     if (e.key.toLowerCase() === 'c' && !mod) { showCurField = !showCurField; syncFieldButtons(); fieldProbe(); draw(); return; }
+    // L for the tide's Level (T is Traffic): off / low water / mean / high water.
+    if (e.key.toLowerCase() === 'l' && !mod && state.tide) { tideView = (tideView + 1) % 4; draw(); return; }
     if (e.key === '[') { brush = Math.max(40, brush / 1.25); draw(); return; }
     if (e.key === ']') { brush = Math.min(4000, brush * 1.25); draw(); return; }
     // Shift+[ ] — the scale the brush works at, as distinct from how far it reaches. Two
