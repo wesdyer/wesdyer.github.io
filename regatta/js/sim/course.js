@@ -1156,6 +1156,10 @@ function buildCoursePaths() {
         const gfGrid = state.course._botGridStatic || grid;
         state.course.goalFields = window.GoalField
             ? window.GoalField.build((state.tide && window.Tide) ? Tide.safeGrid(gfGrid) : gfGrid, state.course.route, state.course.marks) : null;
+        // ...and a second set over ALL the water for the RANKING alone, so a boat crossing
+        // the flats is scored by where she is, not by the channel she left (getBoatProgress).
+        state.course.goalFieldsRank = (state.tide && window.Tide && window.GoalField)
+            ? window.GoalField.build(gfGrid, state.course.route, state.course.marks) : null;
     } catch (e) {
         console.warn('[dmc] course path build failed', e);
         state.course.dmc = null;

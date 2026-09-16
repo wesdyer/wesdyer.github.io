@@ -3300,6 +3300,12 @@ GameEvents.on('player-penalty', (info) => {
     const why = info && info.rule ? ` (${info.rule}${info.reason ? ' — ' + info.reason : ''})` : '';
     showRaceMessage(`PENALTY${why}! DO A 360° TURN TO CLEAR`, "text-red-500", "border-red-500/50");
 });
+// AGROUND on the flats (js/tide.js): the one message a stranded sailor needs is when the
+// water comes back, and the sine knows.
+GameEvents.on('player-aground', (info) => {
+    const r = window.Tide && info && info.boat ? Tide.refloatIn(info.boat) : null;
+    showRaceMessage(r == null ? 'AGROUND — THE CREW ARE PUSHING OFF' : `AGROUND — THE TIDE REFLOATS YOU IN ${Math.max(1, Math.ceil(r))}s`, "text-amber-400", "border-amber-500/50");
+});
 
 
 // ═══════════════════════════ THE CLUBHOUSE (Sep 2026 redesign) ═══════════════════════════

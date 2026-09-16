@@ -290,13 +290,23 @@ pictures).
 - **Chart path, ruler, ranking = the always-there water.** The shortcuts are the
   sailor's discovery; the path line never draws you across a flat that will dry.
 
-### 6.4 Owed
+### 6.4 Later the same night (03:15–04:30)
+
+- Pursuit carrot pulled in when its chord crosses stamped-dry mud: 27/27, best 2:43,
+  median 3:07, touches down to 1–3 s (one weak boat still sat 42 s).
+- The tide clock on the boat pill; withies (procedural, leaning with the stream, IALA
+  topmarks) at both sills, the creek's mouth, the wantij's mouth and down the shelf;
+  spoonbills on the band the ebb just uncovered; a soft mottle on the dry mud; sand seams
+  softened; the live tide on the minimap; a thump and a banner with the refloat seconds
+  when the player sits; the ranking field over all the water; the field build cached by
+  the anchors' signature (the editor recompiles on every edit); the router's level from a
+  table. Golden traces re-run: unchanged.
+
+### 6.5 Owed
 
 - The three tiles (`art/flats-prompts.md`), and the tile hook in the tide layer's dry pass.
-- Withies at the sills (props); spoonbills landing on the flat that just dried (ambient,
-  the witness); the stranded dinghy.
-- The minimap and the clubhouse chart draw the venue at one state; a live tide on the
-  minimap would be a small win.
+- The stranded dinghy, and any sound for the tide itself (the flats have no bed sound).
+- The clubhouse chart draws the venue at one state.
 - The stream is modelled as a pure standing wave (slack at HW/LW); the research says the
   strongest flow in a creek with big flats comes just before and after HW — a rate term
   weighted by the area currently flooding would be the honest next step.

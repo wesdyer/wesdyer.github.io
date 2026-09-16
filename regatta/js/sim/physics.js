@@ -1696,9 +1696,13 @@ function getBoatProgress(boat) {
     // the cone metric, priced as sailing distance, so equal upwind progress reads equal on a beat —
     // see js/sim/goalfield.js. The ruler projection below stays as the fallback for a boat off the
     // field, and for a course without one (a light build, a scenario).
-    if (GF && window.GoalField) {
-        const rem = window.GoalField.remaining(GF, rs.leg, boat.x, boat.y, rs);
-        if (rem != null) return GF.total - rem;
+    // On a tidal venue the RANKING field is the one over all the water (a boat halfway across
+    // the wantij is ahead, not "behind" as it would read on the channel-only field the path
+    // line uses) — see buildCoursePaths.
+    const GR = (state.course && state.course.goalFieldsRank) || GF;
+    if (GR && window.GoalField) {
+        const rem = window.GoalField.remaining(GR, rs.leg, boat.x, boat.y, rs);
+        if (rem != null) return GR.total - rem;
     }
 
     const path = dmc.legs[leg];

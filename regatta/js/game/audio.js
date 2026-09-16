@@ -556,6 +556,31 @@ const Sound = {
         this.playTone(150, 0.15, 'sawtooth', 0.2);
     },
 
+    // AGROUND (Spoonbill Flats): the keel taking the mud — a dull low thump with a short
+    // hiss of silt, nothing like the penalty's buzz. Fired from the tide's player-aground
+    // event, once per grounding.
+    playAground: function() {
+        if (!settings.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator(), g = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(90, now);
+        osc.frequency.exponentialRampToValueAtTime(38, now + 0.35);
+        g.gain.setValueAtTime(0.6, now);
+        g.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        osc.connect(g); g.connect(this.ctx.destination);
+        osc.start(now); osc.stop(now + 0.55);
+        const n = this.ctx.sampleRate * 0.6, buf = this.ctx.createBuffer(1, n, this.ctx.sampleRate);
+        this.fillNoise(buf.getChannelData(0));
+        const src = this.ctx.createBufferSource(); src.buffer = buf;
+        const f = this.ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.setValueAtTime(600, now); f.frequency.exponentialRampToValueAtTime(120, now + 0.5);
+        const ng = this.ctx.createGain(); ng.gain.setValueAtTime(0.25, now); ng.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        src.connect(f); f.connect(ng); ng.connect(this.ctx.destination);
+        src.start(now); src.stop(now + 0.65);
+    },
+
     playGateClear: function() {
         if (!settings.soundEnabled) return;
         this.init();
@@ -790,3 +815,4 @@ const Sound = {
 // Physics announces; audio answers. (Registered before ui/screens.js loads, so
 // the gun sounds before the banner writes — the order the old direct calls had.)
 GameEvents.on('player-penalty', () => Sound.playPenalty());
+GameEvents.on('player-aground', () => Sound.playAground());

@@ -1004,9 +1004,10 @@ every minute. The deep channel always goes round; the flats are the short way, f
 while.
 
 **Character & narrative.** Big, quiet, slightly ominous — the sea leaving, and coming
-back. Withies leaning in the mud (owed), sandpipers landing on ground that was underwater
-a minute ago (owed). The story is *the clock*: HW eight seconds after the gun and every
-minute after, LW at :38, and everyone can read it on the gauge.
+back. Withies leaning with the stream at the sills, spoonbills landing on the sand the
+ebb just uncovered (both procedural, js/tide.js). The story is *the clock*: HW eight
+seconds after the gun and every minute after, LW at :38, and everyone can read it on the
+gauge, the boat pill and the minimap.
 
 **Traits.** Moderate onshore breeze (16.5 kt offshore, 15 in the lower basin, 13.5 up
 the estuary, ±8° shifts on a 43 s period); the drama is in the water.
@@ -1026,9 +1027,12 @@ refloat on the HUD. Tidal streams (`current.regions[].tidal`) run in proportion 
 dLevel/dt — slack at HW and LW — flooding inland, ebbing back; the flats carry a
 cross-stream out of the channel while they fill. Bots: time-dependent A* (arrival-time
 pricing with a capped horizon margin, land-only clearance), a local map stamped every
-1.5 s, hold-in-deep-water when no route exists. Player: ground shaded by depth in three
-bands (sits / slows / free), the waterline and the amber draft contour drawn live, a
-tide gauge with the seconds to the turn, an echo sounder on the boat.
+1.5 s, a pursuit carrot pulled in off drying mud, hold-in-deep-water when no route
+exists. Player: ground shaded by depth in three bands (sits / slows / free), the
+waterline and the amber draft contour drawn live, the tide clock and an echo sounder on
+the boat pill (and the rose), the live tide on the minimap, a thump and a banner with the
+refloat time when she sits. Ranking runs on a field over all the water (a boat halfway
+across the wantij is ahead); the path line and the ruler on the channel only.
 
 ### Course — One way: beat, mouth, an S of three meanders, finish at the head
 
