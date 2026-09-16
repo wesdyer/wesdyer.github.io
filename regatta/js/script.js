@@ -394,63 +394,6 @@ function update(dt) {
 // BC warm-starts for crew/driver policies (see arctic-ai-campaign.md).
 let frameCount = 0;
 
-// ── THE GOAL CHIP'S ROUTE ────────────────────────────────────────────────────
-// The shortest way the HULL can take from `from` to `to`: a breadth-first walk over every
-// cell the boat fits through (the bots' comfortable tier plus the tight one), string-pulled
-// at the hull's own clearance so the corners are real corners. Returns the corners after
-// the start, ending on `to`; just [to] when the line is open or nothing can be found — the
-// straight line, which is at least the truth. The venue builder's CoursePath._route is the
-// same idea on the bots' wide tier; this one is for the player, whose margin is the hull.
-function goalChipRoute(grid, from, to, clr) {
-    const SC = window.SailCheck;
-    if (!grid || !SC) return [to];
-    if (SC.segClearGeom(grid, from.x, from.y, to.x, to.y, clr)) return [to];
-    const raw = SC.pathBetween(grid, [from.x, from.y], [to.x, to.y], { tight: true, astar: true });   // A*: see pathBetween
-    if (!raw || raw.length < 2) return [to];
-    const pts = raw.map(q => ({ x: q[0], y: q[1] }));
-    pts[0] = { x: from.x, y: from.y }; pts[pts.length - 1] = { x: to.x, y: to.y };
-    // Greedy pull from the boat: the farthest point still visible at hull clearance is the
-    // next corner. Two passes, as CoursePath._smooth does, so the far end straightens too.
-    // The boat itself may be INSIDE the clearance band (hugging a shore), where no segment
-    // from it clears at `clr` and the pull could not leave the first cell — which is what put
-    // the first corner behind the boat. A segment that starts at the boat is judged at the
-    // hull's own radius instead; everything after it at the full margin.
-    // The same relaxation at the GOAL end: the final approach to a mark laid near a shore is
-    // judged at the hull's radius, so the route ends on the mark and not on a cell beside it.
-    const tight = Math.min(clr, SC.HULL_R - 4);
-    // STRING-PULL BY GALLOPING, not by scanning back from the far end. The scan asked
-    // segClearGeom for every j from the end down to the first clear one — ~1,200 calls a
-    // route on Otter's headland (146-point raw paths, ~10 corners), each call walking every
-    // edge of the coast — 20-80 ms twice a second, which was the stutter round the arch.
-    // Galloping (1, 2, 4, 8... ahead, then a binary search between the last clear and the
-    // first blocked) finds a far clear point in O(log n) calls per corner. It can settle a
-    // corner short of the farthest clear point when clearance is not monotone along the
-    // path, which only makes a route slightly less pulled, never unsafe: every kept segment
-    // was tested.
-    const pull = (arr, fromBoat) => {
-        const out = [arr[0]];
-        const last = arr.length - 1;
-        let i = 0;
-        while (i < last) {
-            const clearTo = (j) => SC.segClearGeom(grid, arr[i].x, arr[i].y, arr[j].x, arr[j].y,
-                                                   ((fromBoat && i === 0) || j === last) ? tight : clr);
-            let hi = i + 1, step = 1;                    // adjacent cells are always taken
-            while (hi < last) {
-                const nj = Math.min(last, hi + step);
-                if (clearTo(nj)) { hi = nj; step *= 2; continue; }
-                let a = hi, b = nj;                          // clear at a, blocked at b
-                while (b - a > 1) { const mid = (a + b) >> 1; if (clearTo(mid)) a = mid; else b = mid; }
-                hi = a; break;
-            }
-            out.push(arr[hi]); i = hi;
-        }
-        return out;
-    };
-    const fwd = pull(pts, true);
-    const back = pull(fwd.slice().reverse(), false).reverse();
-    return back.slice(1);
-}
-
 // ── DISTANCE MADE ON COURSE ─────────────────────────────────────────────────
 // How far round the course a boat is, in world units, measured along the shared per-leg
 // path (CoursePath in planner.js). Finished legs contribute their whole length; the
@@ -629,6 +572,8 @@ function draw() {
     drawDisturbedAir(ctx);
     // Cached world tile on floe-free courses; the arctic (floes drift, spin, and may be
     // authored behind headlands) draws live in document order as before.
+    // The player's path line lies ON the water and BEHIND the land, so a headland hides the way round it.
+    if (window.GoalField) GoalField.drawPath(ctx, player);
     drawIslandsCached(ctx);
     // Surf sits ON the shore, so it goes over the land and under the air layer.
     drawSurf(ctx);
@@ -821,250 +766,47 @@ function draw() {
                 const t = (Math.abs(r0.x) > 0.1 || Math.abs(r0.y) > 0.1) ? Math.min(hw/Math.abs(r0.x), hh/Math.abs(r0.y)) : 1;
                 return { x: canvas.width/2 + r0.x*t, y: canvas.height/2 + r0.y*t };
             };
-            // Is the straight line from the boat to (gx, gy) clear of land? Judged at the
-            // HULL'S clearance (SailCheck.TIGHT_CLEAR, the slot a boat fits through), not the
-            // bots' wider comfort band: a gap you can sail is not an obstruction, and judging
-            // it one sent the chip the long way round the island — behind you (Wes, Sep 13
-            // 2026). With a hysteresis band: once open it stays open until the line is blocked
-            // even at a tighter margin, so a line grazing a headland does not flicker between
-            // "at the mark" and "round the point". Cached a quarter second per target.
-            const CHIP_CLR = window.SailCheck ? window.SailCheck.TIGHT_CLEAR : 35;
-            const lineClearTo = (gx, gy) => {
-                const grid = state.course.botGrid;
-                if (!grid || !window.SailCheck) return true;
-                const key = leg + ':' + (gx | 0) + ':' + (gy | 0);
-                const c = player._aimClear;
-                if (c && c.key === key && frameCount - c.f < 15) return c.ok;
-                // The last stretch to the goal is judged at the hull's radius, not the margin:
-                // a mark laid a boat length off a headland would otherwise never be "clear"
-                // from anywhere, and the chip would route to a grid cell beside it — the
-                // "somewhere on the rounding circle" that was so hard to read.
-                const seg = (m) => {
-                    const d = Math.hypot(gx - player.x, gy - player.y) || 1, cut = Math.min(120, d * 0.3);
-                    const ex = gx - (gx - player.x) / d * cut, ey = gy - (gy - player.y) / d * cut;
-                    return window.SailCheck.segClearGeom(grid, player.x, player.y, ex, ey, m)
-                        && window.SailCheck.segClearGeom(grid, ex, ey, gx, gy, Math.min(m, window.SailCheck.HULL_R - 4));
-                };
-                let ok = seg(CHIP_CLR);
-                if (!ok && c && c.key === key && c.ok) ok = seg(CHIP_CLR - 8);
-                player._aimClear = { key, f: frameCount, ok };
-                return ok;
-            };
-
-            // ── ROUTE-AWARE, FROM HERE (Sep 13 2026). When the straight line to the goal is
-            // blocked, the chip points along the shortest obstacle-free route from THE BOAT
-            // to the goal — the same grid router that builds the leg paths — and the number
-            // is that route's length. It used to point along the leg's SHARED path instead:
-            // project the boat onto the ruler, aim at a carrot 500u further along it. Sail
-            // round the other side of an island and the nearest point on the ruler is across
-            // the rock, so the chip pointed through land to get you back onto a line you had
-            // no reason to be on. Routing from here answers the question the chip is asked —
-            // "which way from where I am?" — and when no route is found the router hands back
-            // the straight line, which is at least the truth. Re-planned when the leg or the
-            // goal changes, every half second, or after 60 units of travel; a plan that is
-            // still clear and within 10% of the fresh one is kept, so at a genuine fork the
-            // arrow does not flicker between the two ways round. Measured 0.2-0.4 ms a plan,
-            // 10 ms worst (the river's 271² grid) — eval: scratch route_cost.js, Sep 13 2026.
-            const grid = state.course.botGrid;
-            const canRoute = !!(grid && window.SailCheck);
-            const routeLen = (from, pts) => { let L = 0, p = from; for (const q of pts) { L += Math.hypot(q.x - p.x, q.y - p.y); p = q; } return L; };
-            const TURN_PEN = 600;   // units a full about-turn is worth — two seconds of sailing
-            const turnCost = (pt) => Math.abs(normalizeAngle(Math.atan2(pt.x - player.x, -(pt.y - player.y)) - player.heading)) / Math.PI * TURN_PEN;
-            const effLen = (pts) => pts.length ? routeLen({ x: player.x, y: player.y }, pts) + turnCost(pts[0]) : Infinity;
-            if (player._indRoutesLeg !== leg) { player._indRoutes = {}; player._indRoutesLeg = leg; }
-            // A CORNER THE BOAT HAS PASSED IS NOT ON THE ROUTE ANY MORE. A plan is kept for
-            // up to half a second and 60 units, and a kept plan can be kept again while it is
-            // within a fifth of a fresh one — so its first corner could fall behind the boat
-            // and STAY there, and the carrot walk then started by going backwards to it. On a
-            // long route that held the chip behind the boat for seconds and then swept it
-            // across the screen when the plan finally lost out (Wes, Sep 13 2026). A corner is
-            // dropped as soon as the boat is past it on the way to the next.
-            const prunePassed = (pts) => {
-                let k = 0;
-                while (k < pts.length - 1) {
-                    const c = pts[k], nx = pts[k + 1];
-                    if ((c.x - player.x) * (nx.x - c.x) + (c.y - player.y) * (nx.y - c.y) < 0) k++; else break;
-                }
-                return k ? pts.slice(k) : pts;
-            };
-            const routeTo = (gx, gy) => {
-                const key = (gx | 0) + ':' + (gy | 0);
-                const cache = player._indRoutes || (player._indRoutes = {});
-                const c = cache[key];
-                if (c) { const pr = prunePassed(c.pts); if (pr !== c.pts) { c.pts = pr; c.len = routeLen({ x: player.x, y: player.y }, pr); } }
-                // Held for 90 frames / 120 units, not 30 / 60: prunePassed keeps a held route
-                // honest as corners fall astern, and a route to a mark kilometres away does
-                // not change shape in a second and a half. Halves the search cost again.
-                if (c && frameCount - c.f < 90 && Math.hypot(player.x - c.x, player.y - c.y) < 120) return c;
-                const here = { x: player.x, y: player.y }, goal = { x: gx, y: gy };
-                let fresh = canRoute ? goalChipRoute(grid, here, goal, CHIP_CLR) : [goal];
-                // A SAILOR DOES NOT TURN ROUND FOR A BOAT LENGTH. The shortest route from a boat
-                // that is off the ideal line often starts BEHIND it, and a plan that says "go
-                // back" one moment and "carry on" the next is what sent the chip sweeping. So a
-                // route's cost carries a turn penalty — TURN_PEN units for a full about-turn,
-                // pro rata — and when the shortest route does start behind, the route from a
-                // point ahead of the bow is tried too and wins unless turning is clearly shorter.
-                if (fresh.length && turnCost(fresh[0]) > TURN_PEN / 2) {
-                    const ahead = { x: here.x + Math.sin(player.heading) * 150, y: here.y - Math.cos(player.heading) * 150 };
-                    if (Arena.contains(state.course.boundary, ahead.x, ahead.y, 0) && inMaskWater(ahead.x, ahead.y)) {
-                        const alt = [ahead, ...goalChipRoute(grid, ahead, goal, CHIP_CLR)];
-                        if (effLen(alt) <= effLen(fresh)) fresh = alt;
-                    }
-                }
-                let pts = fresh;
-                // KEEP THE PLAN YOU HAVE unless the new one is clearly better: a fresh plan has
-                // to be a quarter cheaper to replace one whose first corner is still open. At a
-                // fork between two ways round an island the two are near-equal and a re-plan
-                // would otherwise flip the chip across the screen every half second.
-                if (c && c.pts.length > 1 && effLen(c.pts) <= effLen(fresh) * 1.25
-                    && window.SailCheck.segClearGeom(grid, here.x, here.y, c.pts[0].x, c.pts[0].y, CHIP_CLR)) pts = c.pts;
-                return (cache[key] = { f: frameCount, x: here.x, y: here.y, pts, len: routeLen(here, pts), cost: effLen(pts) });
-            };
-            // Where the chip points: a carrot AIM_AHEAD units along the route from the boat.
-            // Not the first corner — a corner is a point the aim would snap to and then snap
-            // off as it is passed, and the rose's waypoint arrow reads this same aim, so every
-            // snap was a visible lurch on the dial. A carrot slides through the corners the
-            // way the old ruler carrot did, and reaches the goal itself once it is close.
-            const AIM_AHEAD = 500;
-            const aimOf = (r) => {
-                let left = AIM_AHEAD, p = { x: player.x, y: player.y };
-                for (const q of r.pts) {
-                    const d = Math.hypot(q.x - p.x, q.y - p.y);
-                    if (d >= left) { const f = left / d; return { x: p.x + (q.x - p.x) * f, y: p.y + (q.y - p.y) * f }; }
-                    left -= d; p = q;
-                }
-                return r.pts[r.pts.length - 1];
-            };
+            // ── THE CHIP IS A BEARING (Sep 15 2026): where the goal IS — straight line, straight
+            // distance, whatever lies between — the way every shipped game's marker works. The WAY
+            // there is a separate, softer element: the path line on the water (GoalField.drawPath),
+            // so the arrow never has to be right about a route. See js/sim/goalfield.js.
             const metres = (u) => Math.round(u * 0.2) + 'm';
-            // A routed chip is drawn AFTER the aim angle is smoothed (below), so the chip and
-            // the rose arrow agree; a direct chip sits exactly on the goal's bearing and draws
-            // in its branch as before.
-            let routedChip = null;
-
+            const A = window.GoalField ? GoalField.playerAim(player, e, leg) : null;
             let goalAimPt = null;
-            if (e && e.kind === 'round' && e.mark) {
-                // A rounding mark: straight at it when the line is open, else along the route.
-                const rm = e.mark;
-                const direct = lineClearTo(rm.x, rm.y);
-                const r = direct ? null : routeTo(rm.x, rm.y);
-                const aim = direct ? { x: rm.x, y: rm.y } : aimOf(r);
-                goalAimPt = aim;
+            if (A && A.kind === 'mark') {
+                const rm = A.goal;
+                goalAimPt = A.aim;
                 const v = viewPos(rm.x, rm.y);
                 if (!v.inView || occluded(v.x, v.y)) {
-                    if (v.inView || direct) drawMarkEdgeIndicator(gctx, v.inView ? v.x : toScreen(rm.x, rm.y).x, v.inView ? v.y : toScreen(rm.x, rm.y).y,
-                                                                 metres(Math.hypot(rm.x - player.x, rm.y - player.y)), rm.side || null, rot);
-                    else routedChip = { label: metres(r.len), side: rm.side || null };
+                    const at = v.inView ? v : toScreen(rm.x, rm.y);
+                    drawMarkEdgeIndicator(gctx, at.x, at.y, metres(A.dist), rm.side || null, rot);
                 }
-            } else if (e && e.marks && marks) {
-                const isGate = e.kind === 'gate' && !e.finish && leg > 0 && leg < state.race.totalLegs;
-                let gateSideOf = null;
-                if (isGate) {
-                    const m1 = marks[e.marks[0]], m2 = marks[e.marks[1]];
-                    if (m1 && m2) {
-                        const gdx = m2.x - m1.x, gdy = m2.y - m1.y, gl = Math.hypot(gdx, gdy) || 1;
-                        const gs = (e.dir >= 0 ? 1 : -1);
-                        const nx = gs * gdy / gl, ny = -gs * gdx / gl;   // direction of travel through
-                        const grx = -ny, gry = nx;                       // right of travel
-                        const gmx = (m1.x + m2.x) / 2, gmy = (m1.y + m2.y) / 2;
-                        gateSideOf = (mk) => ((mk.x - gmx) * grx + (mk.y - gmy) * gry > 0) ? 'starboard' : 'port';
-                    }
+            } else if (A && (A.kind === 'gate' || A.kind === 'line')) {
+                goalAimPt = A.aim;
+                const chips = [];
+                for (const mk of A.ends) {
+                    const v = viewPos(mk.x, mk.y);
+                    if (v.inView && !occluded(v.x, v.y)) continue;
+                    const at = v.inView ? v : toScreen(mk.x, mk.y);
+                    chips.push({ x: at.x, y: at.y, label: metres(Math.hypot(mk.x - player.x, mk.y - player.y)), mi: A.gateSideOf ? A.gateSideOf(mk) : null });
                 }
-                const ends = e.marks.map(i => marks[i]).filter(Boolean);
-                // The nearer end decides whether the way is open. When it is not, BOTH ends
-                // are routed and the shorter way wins: the crow's nearer end is often the one
-                // behind the headland.
-                let near = null;
-                for (const mk of ends) { const d2 = (mk.x-player.x)**2 + (mk.y-player.y)**2; if (!near || d2 < near.d2) near = { mk, d2 }; }
-                const direct = !near || lineClearTo(near.mk.x, near.mk.y);
-                const offEnds = ends.filter(mk => !viewPos(mk.x, mk.y).inView);
-                if (!direct && offEnds.length) {
-                    // The shorter of the two ends wins — but the end you were already being
-                    // sent to keeps the job unless the other is a fifth shorter, or the chip
-                    // would flip between the ends of a gate every time the two routes traded
-                    // places by a boat length.
-                    let best = null;
-                    for (const mk of ends) { const r = routeTo(mk.x, mk.y); if (!best || r.cost < best.r.cost) best = { mk, r }; }
-                    const held = ends.find(mk => mk === player._indGateEnd);
-                    if (held && held !== best.mk) { const hr = routeTo(held.x, held.y); if (hr.cost <= best.r.cost * 1.25) best = { mk: held, r: hr }; }
-                    player._indGateEnd = best.mk;
-                    goalAimPt = aimOf(best.r);
-                    routedChip = { label: metres(best.r.len), side: gateSideOf ? gateSideOf(best.mk) : null };
-                } else {
-                    // THE CENTRE OF THE GATE FROM AFAR. The nearest point on the segment is the
-                    // right target once you are between the ends, but from outside that band it
-                    // is one END, and which end flips as you cross the gate's centreline — every
-                    // tack of a beat swung the arrow eighty degrees. Blend from the centre (far)
-                    // to the nearest point (within a gate-and-a-half).
-                    const wp = player.raceState.nextWaypoint;
-                    if (ends.length === 2) {
-                        const mx = (ends[0].x + ends[1].x) / 2, my = (ends[0].y + ends[1].y) / 2;
-                        const hwid = Math.hypot(ends[1].x - ends[0].x, ends[1].y - ends[0].y) / 2 || 1;
-                        const dist = Math.hypot(mx - player.x, my - player.y);
-                        const w = Math.max(0, Math.min(1, (3 * hwid - dist) / (1.5 * hwid)));   // 0 beyond 3 half-widths, 1 inside 1.5
-                        goalAimPt = { x: mx + (wp.x - mx) * w, y: my + (wp.y - my) * w };
-                    } else goalAimPt = { x: wp.x, y: wp.y };
-                    const chips = [];
-                    for (const mk of ends) {
-                        const v = viewPos(mk.x, mk.y);
-                        if (v.inView && !occluded(v.x, v.y)) continue;
-                        const at = v.inView ? v : toScreen(mk.x, mk.y);
-                        chips.push({ x: at.x, y: at.y, label: metres(Math.hypot(mk.x - player.x, mk.y - player.y)), mi: gateSideOf ? gateSideOf(mk) : null });
-                    }
-                    // Two ends that project to (nearly) the same edge point draw as one chip.
-                    if (chips.length === 2 && Math.hypot(chips[0].x - chips[1].x, chips[0].y - chips[1].y) < 48) {
-                        drawMarkEdgeIndicator(gctx, (chips[0].x + chips[1].x) / 2, (chips[0].y + chips[1].y) / 2, chips[0].label, null, rot);
-                    } else for (const ch of chips) drawMarkEdgeIndicator(gctx, ch.x, ch.y, ch.label, ch.mi, rot);
-                }
-            } else {
-                // No route entry to read (defensive): the single waypoint pip, routed the same way.
-                const wp = player.raceState.nextWaypoint;
-                const direct = lineClearTo(wp.x, wp.y);
-                const r = direct ? null : routeTo(wp.x, wp.y);
-                const aim = direct ? { x: wp.x, y: wp.y } : aimOf(r);
-                goalAimPt = aim;
+                // Two ends that project to (nearly) the same edge point draw as one chip.
+                if (chips.length === 2 && Math.hypot(chips[0].x - chips[1].x, chips[0].y - chips[1].y) < 48) {
+                    drawMarkEdgeIndicator(gctx, (chips[0].x + chips[1].x) / 2, (chips[0].y + chips[1].y) / 2, chips[0].label, null, rot);
+                } else for (const ch of chips) drawMarkEdgeIndicator(gctx, ch.x, ch.y, ch.label, ch.mi, rot);
+            } else if (A) {
+                // No route entry to read (defensive): the single waypoint pip.
+                const wp = A.goal;
+                goalAimPt = A.aim;
                 const v = viewPos(wp.x, wp.y);
                 if (!v.inView || occluded(v.x, v.y)) {
-                    if (v.inView || direct) drawMarkEdgeIndicator(gctx, v.inView ? v.x : toScreen(wp.x, wp.y).x, v.inView ? v.y : toScreen(wp.x, wp.y).y, Math.round(wp.dist) + 'm', null, rot);
-                    else routedChip = { label: metres(r.len), side: null };
+                    const at = v.inView ? v : toScreen(wp.x, wp.y);
+                    drawMarkEdgeIndicator(gctx, at.x, at.y, Math.round(wp.dist) + 'm', null, rot);
                 }
             }
-            // ── THE PUBLISHED AIM IS SLEW-LIMITED. A re-plan can move the carrot a cell's
-            // worth, and the switch between "straight at it" and "round the point" is a step
-            // too; at most 3° a frame (~180°/s) hides both without lagging a real turn — a
-            // headland at 500u takes seconds to swing the carrot 90°. Snaps on a new leg or
-            // after a gap, so a stale angle is never eased out of.
-            if (goalAimPt) {
-                const raw = Math.atan2(goalAimPt.x - player.x, -(goalAimPt.y - player.y));
-                const prev = window._goalAim;
-                let a = raw;
-                if (prev && prev.leg === leg && frameCount - prev.t <= 2) {
-                    // A BIG change of advice has to persist before the chip acts on it. A
-                    // re-plan that flips sides for a frame or two, or a line that opens and
-                    // closes again as a headland slides past, used to send the chip sweeping
-                    // across the screen and back. Now a change of more than 30° is held for a
-                    // third of a second (20 frames) and only then eased into; small changes
-                    // still track every frame.
-                    const BIG = 30 * Math.PI / 180, HOLD = 20, MAX = 3 * Math.PI / 180;
-                    let target = raw;
-                    if (Math.abs(normalizeAngle(raw - prev.a)) > BIG) {
-                        const pend = player._aimPend;
-                        if (pend && Math.abs(normalizeAngle(raw - pend.a)) < BIG / 2) {
-                            if (frameCount - pend.f < HOLD) target = prev.a;
-                        } else { player._aimPend = { a: raw, f: frameCount }; target = prev.a; }
-                    } else player._aimPend = null;
-                    const d = normalizeAngle(target - prev.a);
-                    a = prev.a + Math.max(-MAX, Math.min(MAX, d));
-                } else player._aimPend = null;
-                window._goalAim = { t: frameCount, a, leg };
-                if (routedChip) {
-                    // At the aim's own distance along the smoothed bearing: when the angle is
-                    // not slewing this IS the aim point, so the chip projects exactly where the
-                    // carrot (or the mark) is, not to some point beyond it seen from the camera.
-                    const dAim = Math.hypot(goalAimPt.x - player.x, goalAimPt.y - player.y) || 1;
-                    const at = edgeToward({ x: player.x + Math.sin(a) * dAim, y: player.y - Math.cos(a) * dAim });
-                    drawMarkEdgeIndicator(gctx, at.x, at.y, routedChip.label, routedChip.side, rot);
-                }
-            }
+            // The published aim — the goal's bearing — for the rose's waypoint arrow. A bearing is
+            // continuous in the boat's position, so it needs no easing.
+            if (goalAimPt) window._goalAim = { t: frameCount, a: Math.atan2(goalAimPt.x - player.x, -(goalAimPt.y - player.y)), leg };
             // One pulse on the chip when the leg changes — the moment the goal is new.
             if (state._goalLegSeen !== leg) { state._goalLegSeen = leg; state._goalPulseT = state.time; }
         }

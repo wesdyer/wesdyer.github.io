@@ -1275,9 +1275,11 @@
                             <div class="t-mono text-xl text-green-400 leading-none drop-shadow-md">
                                 <span id="hud-vmg">0.0</span>
                             </div>
-                            <!-- "Progress" for humans (it is DMC underneath — speed made good
-                                 along the course path, the ruler the leaderboard ranks by; a dash
-                                 in a rounding zone and through the prestart). -->
+                            <!-- "Progress" for humans: closing speed on the goal — ground speed
+                                 along the goal field's gradient, which is the mark's bearing in
+                                 open water (VMC) and the way round a headland behind it
+                                 (js/sim/goalfield.js); a dash in a rounding zone and through the
+                                 prestart. -->
                             <div class="t-label t-label-xs" style="color:#4ade80;">PROGRESS</div>
                         </div>
                     </div>
@@ -1409,6 +1411,7 @@
     <script src="js/sim/ice.js"></script>
     <script src="js/sim/physics.js"></script>
     <script src="js/sim/collision.js"></script>
+    <script src="js/sim/goalfield.js"></script>
     <script src="js/sim/course.js"></script>
     <script src="js/game/telemetry.js"></script>
     <script src="js/game/school.js"></script>

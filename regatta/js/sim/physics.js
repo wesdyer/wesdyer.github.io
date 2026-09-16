@@ -1661,10 +1661,11 @@ function getBoatProgress(boat) {
     const rs = boat.raceState;
     const dmc = state.course && state.course.dmc;
 
+    const GF = state.course && state.course.goalFields;
     if (rs.finished) {
         // Finished boats rank by TIME, above everyone still racing. Kept as one comparable
         // scalar so the sort has a single key.
-        const total = dmc ? dmc.total : (courseAxis() ? courseAxis().len * state.race.totalLegs : 1);
+        const total = (GF && GF.rankable) ? GF.total : dmc ? dmc.total : (courseAxis() ? courseAxis().len * state.race.totalLegs : 1);
         return total + (1000000 - rs.finishTime);
     }
 
@@ -1679,6 +1680,16 @@ function getBoatProgress(boat) {
     if (rs.leg === 0) {
         const m = legMid(0);
         return m ? -Math.hypot(boat.x - m.x, boat.y - m.y) : 0;
+    }
+
+    // THE GOAL FIELDS (Sep 14 2026): remaining = the current goal's field read at the boat plus the
+    // later legs' lengths; progress = the course total minus that. Geodesic round the land and, under
+    // the cone metric, priced as sailing distance, so equal upwind progress reads equal on a beat —
+    // see js/sim/goalfield.js. The ruler projection below stays as the fallback for a boat off the
+    // field, and for a course without one (a light build, a scenario).
+    if (GF && window.GoalField) {
+        const rem = window.GoalField.remaining(GF, rs.leg, boat.x, boat.y, rs);
+        if (rem != null) return GF.total - rem;
     }
 
     const path = dmc.legs[leg];

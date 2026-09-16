@@ -735,6 +735,7 @@ function initCourse(opts) {
         // The light build still gets the SAVED paths (see VenueDoc.savedPaths): reading a
         // polyline costs nothing, and the chart draws the legs the race will measure.
         if (light) state.course.dmc = (window.VenueDoc && window.VenueDoc.savedPaths) ? window.VenueDoc.savedPaths(doc) : null;
+        if (light) state.course.goalFields = null;      // a light build has no grid to field
         else buildCoursePaths();
         // Which build this is, and of what — startRace reads both to decide whether the
         // world is ready to race or needs the full load first.
@@ -811,6 +812,7 @@ function initCourse(opts) {
 // path per leg rather than one per boat, and why it avoids only static land.
 function buildCoursePaths() {
     state.course.dmc = null;
+    state.course.goalFields = null;
     // WHAT THIS COURSE REQUIRES OF EACH ROUNDING. Stamped here so the leg engine tests
     // against the geometry rather than a constant — see CoursePath.requiredSweep.
     if (typeof CoursePath !== 'undefined' && state.course.route) {
@@ -1135,9 +1137,16 @@ function buildCoursePaths() {
                                                 state.course.islands || [], state._dmcPlanner,
                                                 'dmc-' + (state.course.navVersion || 0), grid);
         }
+        // GOAL FIELDS (Sep 14 2026): one precomputed distance-and-direction field per goal, read by
+        // the off-screen chip, the progress dial and the leaderboard — see js/sim/goalfield.js. Built
+        // on the STATIC grid: floes drift, fields do not. Needs the wind stamp above for the cone
+        // metric, so it comes last.
+        state.course.goalFields = window.GoalField
+            ? window.GoalField.build(state.course._botGridStatic || grid, state.course.route, state.course.marks) : null;
     } catch (e) {
         console.warn('[dmc] course path build failed', e);
         state.course.dmc = null;
+        state.course.goalFields = null;
     }
 }
 

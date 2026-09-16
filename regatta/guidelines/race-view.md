@@ -233,7 +233,8 @@ References: `references/sailgp-*.jpg`. The code names this lineage directly —
 | Course boundary | white ring, 20px white glow, arc-culled to the visible span; suppressed on river venues where the shore *is* the boundary | `drawBoundary()` |
 | Competitor label | two-line dark rounded box 50px below the boat — `rank NAME` / `speed kn`, `bold 11px monospace`, `red-500` on penalty | `drawBoatIndicator()` |
 | Off-screen competitor | edge chevron with name and rank pip | `drawNpcEdgeIndicator()` |
-| Off-screen mark | edge chevron in `cyan-400` with distance | `drawMarkEdgeIndicator()` |
+| Off-screen mark | edge chevron in `cyan-400` with STRAIGHT distance on the goal's STRAIGHT bearing, whatever lies between (Sep 15 2026, owner's call: the marker says where the goal is, never which way to go). The WAY there is a separate element — the path line below. The rose's arrow reads the same bearing. | `drawMarkEdgeIndicator()` |
+| Path line | a faint dashed `cyan-400` line on the water ahead of the player (~520 m), fading and drifting toward the goal, drawn BEFORE the land so a headland hides the way behind it: gradient descent on the goal's fast-marching field (`js/sim/goalfield.js`), built on land and hard props only — floes are ignored for the player by design (they must know a way exists; finding it past the ice is their job). The PROGRESS dial reads the same gradient. Gated with the nav aids. | `GoalField.drawPath()` |
 
 Status colors (`green-400`, `yellow-300`, `amber-500`, `red-500`, `cyan-400`) mean
 the same thing here as everywhere — visual-style.md §4.3.

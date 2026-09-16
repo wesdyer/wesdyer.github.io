@@ -1455,7 +1455,8 @@ function updateLeaderboard() {
     // THE WHOLE COURSE, measured on the path DMC is read against — not `legs x axis length`,
     // which is the straight-line axis and understates any course with land on it. The
     // "distance to finish" delta has to be in the same units as the progress it subtracts.
-    const totalRaceDist = (state.course.dmc && state.course.dmc.total) || (state.race.totalLegs * len);
+    const totalRaceDist = (state.course.goalFields && state.course.goalFields.rankable && state.course.goalFields.total)
+        || (state.course.dmc && state.course.dmc.total) || (state.race.totalLegs * len);
 
 
     if (state.race.status === 'prestart' || (window.School && School.lesson())) {
@@ -2079,31 +2080,36 @@ function dmcNA(player) {
 }
 
 function dmcRate(player) {
-    if (dmcNA(player)) { player._dmcHud = null; return null; }
-    // In a school LESSON the venue's course is hidden and its ruler means nothing — the
-    // pond's own legs run somewhere else entirely, which is how heading straight for the
-    // first task mark read as NEGATIVE. There, DMC is the closing speed on the lesson's
-    // own goal (the task mark, the gate's middle, the ducklings).
-    let prog = null;
+    // ── PROGRESS SPEED: closing speed on the goal, in knots (Sep 14-15 2026) ──
+    // The component of the GROUND velocity along the way to the goal: the goal field's gradient
+    // where there is one (the mark's bearing in open water, the way round a headland behind it),
+    // else the straight bearing. It used to be the smoothed derivative of the boat's nearest point
+    // on the saved leg path, which fails exactly when you leave that path — on the outside of a
+    // bend the projection sticks at the corner and the number stalls, on the inside it jumps a
+    // segment, and on a genuine shortcut it credits progress along a line you are not sailing.
+    // Instantaneous and smooth (velocity already is), so it reads every frame like SOG. Negative
+    // when sailing away.
+    if (dmcNA(player)) return null;
+    const v = player.velocity || { x: 0, y: 0 };
+    let tgt = null;
     const lesson = window.School && School.active && School.lesson && School.lesson();
-    if (lesson) {
-        const tgt = School.dmcTarget ? School.dmcTarget() : null;
-        if (tgt) prog = -Math.hypot(tgt.x - player.x, tgt.y - player.y);
-    } else if (state.race.status === 'racing' && typeof getBoatProgress === 'function' && state.course.dmc) {
-        prog = getBoatProgress(player);
+    if (lesson) tgt = School.dmcTarget ? School.dmcTarget() : null;
+    else if (state.race.status === 'racing') {
+        if (window.GoalField) {
+            const dir = GoalField.progressDir(player);
+            if (dir) return (v.x * dir.x + v.y * dir.y) * 4;
+            if (typeof routeLeg === 'function') {
+                const leg = player.raceState.leg;
+                const a = GoalField.playerAim(player, routeLeg(Math.min(leg, state.race.totalLegs)), leg);
+                if (a) tgt = a.aim;
+            }
+        }
+        if (!tgt) tgt = player.raceState.nextWaypoint;
     }
-    if (prog == null) { player._dmcHud = null; return 0; }
-    // Clocked on RACE TIME, not state.time: progress accrues per update() step, and the
-    // race timer is the clock that ticks with it — state.time tracks the render loop.
-    const t = state.race.timer;
-    if (!player._dmcHud) { player._dmcHud = { p: prog, t, rate: 0 }; return 0; }
-    const h = player._dmcHud, dt = t - h.t;
-    if (dt <= 0) return h.rate;
-    const inst = (prog - h.p) / dt / 15;                 // units/s -> knots (15 u/s per kn)
-    // A leg change steps `base` under the reading — swallow the spike, keep the trend.
-    if (Math.abs(inst) < 40) h.rate += (inst - h.rate) * Math.min(1, dt * 3);
-    h.p = prog; h.t = t;
-    return h.rate;
+    if (!tgt) return 0;
+    const dx = tgt.x - player.x, dy = tgt.y - player.y, d = Math.hypot(dx, dy);
+    if (d < 1e-6) return 0;
+    return (v.x * dx + v.y * dy) / d * 4;      // ground velocity → knots, the factor SOG uses
 }
 
 // ⚠️ INSTANTANEOUS, EVERY FRAME (owner's call, Sep 13 2026). TWA, TWS, SOG and VMG are read
@@ -2116,7 +2122,10 @@ function boatInstruments(player) {
     const bucket = Math.floor(frameCount / 10);
     const keepDmc = !!(_biCache && _biBucket === bucket && _biWho === player);
     _biBucket = bucket; _biWho = player;
-    _biCache = boatInstrumentData(player, keepDmc ? _biCache : null);
+    // Progress speed is a projection of the velocity now (dmcRate), not a differentiated
+    // reading, so it no longer needs its 10-frame sample: everything is instantaneous.
+    void keepDmc;
+    _biCache = boatInstrumentData(player, null);
     return _biCache;
 }
 
