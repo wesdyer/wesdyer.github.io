@@ -713,12 +713,12 @@ const TIDE = {
             const hgt = z[k] - L;
             if (hgt < 0.04 || hgt > 0.34) continue;         // the wet band the water just left
             const h = hash2(i * 7 + 3, j * 13 + 5);
-            if (h > 0.045) continue;                          // one flock in ~22 cells of fresh sand
+            if (h > 0.028) continue;                          // one flock in ~36 cells of fresh sand
             // the flock fades in as the sand appears and out as it dries (they follow the edge)
             const a = Math.min(1, (hgt - 0.04) / 0.05) * Math.min(1, (0.34 - hgt) / 0.08);
             if (a <= 0) continue;
             const cx = F.x0 + (i + 0.5) * res, cy = F.y0 + (j + 0.5) * res;
-            const n = 3 + Math.floor(h * 100) % 4;
+            const n = 2 + Math.floor(h * 1000) % 4;
             ctx.globalAlpha = a;
             for (let b = 0; b < n; b++) {
                 const hb = hash2(i * 31 + b * 17, j * 29 + b * 11);
