@@ -839,6 +839,38 @@ const TIDE = {
         8: [[0, 3]], 9: [[0, 2]], 10: [[0, 1], [3, 2]], 11: [[0, 1]], 12: [[3, 1]], 13: [[2, 1]], 14: [[3, 2]]
     };
 
+    // ── the chart ───────────────────────────────────────────────────────────
+    // The minimap's tide: one pixel per chart pixel sampled off the field, refreshed when
+    // the level has moved a couple of centimetres or the projection changed. Dry ground in
+    // the flats' sand, the sits/slows bands as a pale wash, deep water left to the chart.
+    const mm = { cv: null, key: '', level: NaN };
+    function drawMinimap(ctx, cx, cy, scale, width, height) {
+        const T = state.tide, F = T.field;
+        const L = level();
+        const key = [width, height, cx.toFixed(1), cy.toFixed(1), scale.toFixed(6)].join('|');
+        if (!mm.cv || mm.key !== key || Math.abs(L - mm.level) > 0.02) {
+            if (!mm.cv) mm.cv = document.createElement('canvas');
+            if (mm.cv.width !== width || mm.cv.height !== height) { mm.cv.width = width; mm.cv.height = height; }
+            const g = mm.cv.getContext('2d');
+            const im = g.createImageData(width, height), A = im.data;
+            for (let py = 0; py < height; py++) for (let px = 0; px < width; px++) {
+                const wx = (px + 0.5 - width / 2) / scale + cx, wy = (py + 0.5 - height / 2) / scale + cy;
+                const o = (py * width + px) * 4;
+                const i = Math.floor((wx - F.x0) / F.res), j = Math.floor((wy - F.y0) / F.res);
+                if (i < 0 || j < 0 || i >= F.W || j >= F.H) { A[o + 3] = 0; continue; }
+                const k = j * F.W + i;
+                if (F.mMask[k]) { A[o + 3] = 0; continue; }
+                const d = L - F.z[k];
+                if (d <= 0) { const s = F.mat[k]; A[o] = 176 + 46 * s; A[o + 1] = 138 + 58 * s; A[o + 2] = 84 + 48 * s; A[o + 3] = 235; }
+                else if (d < T.draft + T.free) { const u = d / (T.draft + T.free); A[o] = 150; A[o + 1] = 170; A[o + 2] = 165; A[o + 3] = Math.round(190 * (1 - u)); }
+                else A[o + 3] = 0;
+            }
+            g.putImageData(im, 0, 0);
+            mm.key = key; mm.level = L;
+        }
+        ctx.drawImage(mm.cv, 0, 0);
+    }
+
     // ── the HUD ─────────────────────────────────────────────────────────────
     // What the instruments say: depth under the keel, the tide's state and the next turn.
     function hudInfo(boat) {
@@ -860,13 +892,32 @@ const TIDE = {
     }
 
     // ── lifecycle ───────────────────────────────────────────────────────────
+    // The field is a pure function of the anchors and the arena, and the editor recompiles
+    // the course on EVERY committed edit (a dragged mark, a wind knob): a 0.3–0.6 s raster
+    // each time would make the venue unpleasant to edit. Keyed on the anchors' geometry
+    // and heights, so only a change to the ground itself rebuilds.
+    let _built = null;
+    function fieldSig(doc) {
+        const VD = window.VenueDoc;
+        let sig = JSON.stringify((doc.world && doc.world.boundary) || null) + '|' + JSON.stringify(cfg());
+        for (const sh of VD.shapes(doc)) {
+            const T = VD.traits(sh);
+            if (!T.tide && T.kind !== 'flats-marsh') continue;
+            sig += `|${sh.id}:${T.kind}:${T.elev}:${sh.outer.length}:${sh.outer[0]}:${sh.outer[sh.outer.length >> 1]}:${(sh.holes || []).length}`;
+            let acc = 0; for (const p of sh.outer) acc += p[0] * 3 + p[1] * 7;
+            sig += ':' + Math.round(acc);
+        }
+        return sig;
+    }
     function init() {
         state.tide = null;
         const doc = state.course && state.course.doc;
         if (!doc) return;
         const C = cfg();
-        const field = build(doc);
+        const sig = fieldSig(doc);
+        const field = (_built && _built.sig === sig) ? _built.field : build(doc);
         if (!field) return;
+        _built = { sig, field };
         const tideDoc = doc.tide || {};
         state.tide = {
             period: tideDoc.period != null ? +tideDoc.period : C.period,
@@ -896,7 +947,7 @@ const TIDE = {
         speedMul, afterMove, refloatIn,
         addFill,
         stampGrid, safeGrid, refreshBotGrid, routeCost, routeWait,
-        drawWet, drawDry, hudInfo,
+        drawWet, drawDry, drawMinimap, hudInfo,
         _pic: pic
     };
 })();

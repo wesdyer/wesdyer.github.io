@@ -1156,6 +1156,10 @@ function drawMinimap() {
         // both how the course draws it and what keeps a big cell from swallowing the chart.
     }
     if (L1) ctx.drawImage(L1.cv, 0, 0);
+    // THE TIDE ON THE CHART (Spoonbill Flats): the flats as they are NOW — dry ground in
+    // sand, the shallows pale — over the still water and under the land, so the little map
+    // shows the estuary emptying and filling. Its own small cache; see Tide.drawMinimap.
+    if (window.Tide && state.tide && wholeMap) Tide.drawMinimap(ctx, cx, cy, scale, width, height);
 
     const _gc = (typeof activeGustColors !== 'undefined' && activeGustColors) || null;
     if (_gc) {
