@@ -42,7 +42,105 @@ window.VENUE_DOC["flats"] = {
     "amp": 1,
     "mid": 0,
     "phase0": 0.733,
-    "fillKt": 0.55
+    "fillKt": 0.55,
+    "withies": [
+      {
+        "x": 1018.7,
+        "y": 1719.5,
+        "hand": "port",
+        "id": "wantij-p5"
+      },
+      {
+        "x": 559.7,
+        "y": 1688.1,
+        "hand": "stbd",
+        "id": "wantij-s5"
+      },
+      {
+        "x": 987.5,
+        "y": 1244.7,
+        "hand": "port",
+        "id": "wantij-p9"
+      },
+      {
+        "x": 531.2,
+        "y": 1302.8,
+        "hand": "stbd",
+        "id": "wantij-s9"
+      },
+      {
+        "x": 895.5,
+        "y": 789.7,
+        "hand": "port",
+        "id": "wantij-p13"
+      },
+      {
+        "x": 450.8,
+        "y": 907.5,
+        "hand": "stbd",
+        "id": "wantij-s13"
+      },
+      {
+        "x": 736,
+        "y": 340.9,
+        "hand": "port",
+        "id": "wantij-p18"
+      },
+      {
+        "x": 304,
+        "y": 499.1,
+        "hand": "stbd",
+        "id": "wantij-s18"
+      },
+      {
+        "x": 320,
+        "y": 720,
+        "hand": "port",
+        "id": "sill-w"
+      },
+      {
+        "x": 800,
+        "y": 700,
+        "hand": "stbd",
+        "id": "sill-e"
+      },
+      {
+        "x": 900,
+        "y": -7130,
+        "hand": "port",
+        "id": "creek-sill-w"
+      },
+      {
+        "x": 1620,
+        "y": -7060,
+        "hand": "stbd",
+        "id": "creek-sill-e"
+      },
+      {
+        "x": 1300,
+        "y": -4200,
+        "hand": "port",
+        "id": "creek-in-w"
+      },
+      {
+        "x": 1600,
+        "y": -4300,
+        "hand": "stbd",
+        "id": "creek-in-e"
+      },
+      {
+        "x": 440,
+        "y": 4120,
+        "hand": "port",
+        "id": "wantij-in-w"
+      },
+      {
+        "x": 820,
+        "y": 4080,
+        "hand": "stbd",
+        "id": "wantij-in-e"
+      }
+    ]
   },
   "shapes": [
     {

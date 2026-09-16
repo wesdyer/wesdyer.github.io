@@ -2248,6 +2248,8 @@ function drawBoatInstruments(ctx, player) {
         const info = Tide.hudInfo(player);
         if (info) {
             const by = top + BI_H + 4 + ((dp > 0.001 && dp < 0.999) ? 9 : 0);
+            // Depth on the left, the tide's state on the right: "1.8 m · ▲HW 22s" — the two
+            // numbers this venue is sailed by, in the one place the eye already is.
             let txt, col;
             if (info.aground) { const r = info.refloatIn; txt = r == null ? 'AGROUND' : `AGROUND ${Math.max(1, Math.ceil(r))}s`; col = '#f87171'; }
             else {
@@ -2255,15 +2257,22 @@ function drawBoatInstruments(ctx, player) {
                 txt = `${dd.toFixed(1)} m`;
                 col = clr >= info.free ? '#bfdbfe' : clr > info.free * 0.4 ? '#fbbf24' : '#f87171';
             }
+            const tideTxt = `${info.rising ? '\u25b2' : '\u25bc'}${info.next} ${Math.max(0, Math.round(info.nextIn))}s`;
+            const tideCol = info.rising ? '#bae6fd' : '#fde68a';
             ctx.shadowBlur = 0;
-            const pw = info.aground ? BI_W + 44 : BI_W;
+            ctx.font = FONT.mono(12);
+            const wL = ctx.measureText(txt).width, wR = ctx.measureText(tideTxt).width;
+            const pw = Math.max(BI_W, wL + wR + 30);
             ctx.beginPath(); ctx.roundRect(sx - pw / 2, by, pw, BI_H - 4, 7);
             ctx.fillStyle = BI_BG; ctx.fill();
             ctx.strokeStyle = info.aground ? 'rgba(248,113,113,0.8)' : BI_RIM; ctx.lineWidth = 1; ctx.stroke();
             ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
-            ctx.font = FONT.mono(12);
-            ctx.fillStyle = col;
-            ctx.fillText(txt, sx, by + (BI_H - 4) / 2 + 0.5);
+            const cy = by + (BI_H - 4) / 2 + 0.5;
+            ctx.textAlign = 'left';
+            ctx.fillStyle = col; ctx.fillText(txt, sx - pw / 2 + 9, cy);
+            ctx.textAlign = 'right';
+            ctx.fillStyle = tideCol; ctx.fillText(tideTxt, sx + pw / 2 - 9, cy);
+            ctx.textAlign = 'center';
         }
     }
     ctx.restore();

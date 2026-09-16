@@ -1063,6 +1063,27 @@ Object.assign(BotController.prototype, {
                     j++;
                 }
                 let w = (j >= pts.length - 1) ? { x: destX, y: destY } : pts[j];
+                // THE CHORD MUST STAY ON THE WATER (Spoonbill Flats). Pure pursuit cuts the
+                // corner between here and the carrot, and on the flats the corner is mud the
+                // path went round: measured, a third of the fleet touched the mud once a race,
+                // nearly all of it at the point bar and the head as the tide fell. So when the
+                // chord crosses a cell the local map has closed (dry, or drying within the
+                // lead), pull the carrot in along the path until it does not — the plan
+                // itself is still followed, just more tightly.
+                if (state.tide && botGrid._tideDry && j > 0) {
+                    const chordDry = (tx, ty) => {
+                        const n = Math.max(2, Math.ceil(Math.hypot(tx - boat.x, ty - boat.y) / (botGrid.res * 0.7)));
+                        for (let s = 1; s <= n; s++) {
+                            const px = boat.x + (tx - boat.x) * s / n, py = boat.y + (ty - boat.y) * s / n;
+                            const cc = botGrid.cell(px, py);
+                            if (cc[0] < 0 || cc[1] < 0 || cc[0] >= botGrid.n || cc[1] >= botGrid.n) continue;
+                            if (botGrid._tideDry[cc[1] * botGrid.n + cc[0]]) return true;
+                        }
+                        return false;
+                    };
+                    let jj2 = j;
+                    while (jj2 > 1 && chordDry(w.x, w.y)) { jj2 = Math.max(1, Math.floor(jj2 * 0.6)); w = pts[jj2]; }
+                }
                 // Holding for the tide: the carrot is the hold point until the sill opens.
                 if (this.tideWait && state.tide && window.Tide && Tide.clock() < this.tideWait.until) {
                     w = { x: this.tideWait.x, y: this.tideWait.y };

@@ -78,7 +78,7 @@ a reject, and retiling cannot fix it: bay-sand's lesson); dE from the mud at lea
 
 ---
 
-Withies (the channel markers) are PROPS, not tiles: a single leaning birch bough lashed
-to a stake, 1.5 m above the water, dark bark with a tuft of twigs, drawn as a small
-top-down sprite with a short shadow. Not briefed yet — the venue reads its channel from
-the water's own shading today.
+Withies (the channel markers) and the spoonbills are drawn procedurally by js/tide.js
+(a stake with a twig tuft and an IALA topmark that leans with the stream; small birds
+feeding on the band the ebb just uncovered) — no art owed for either. If a painted withy
+is ever wanted it is a PROP kind, not a tile: one leaning birch bough on a stake, top-down.

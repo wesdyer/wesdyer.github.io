@@ -275,6 +275,32 @@ const current = { regions: [
  .concat(streamRegions(CREEK, 560, 1.2, 900, 'creek-stream', 180)) };
 current.regions[0].direction = 0;    // north: in through the mouth on the flood
 
+// ── WITHIES ──────────────────────────────────────────────────────────────────
+// Birch boughs on stakes, the Wadden way: they mark the EDGES of the timed water — either
+// end of each sill, and both sides of the wantij shelf every few hundred units — so the
+// sailor sees the gate before the depth shading tells them. Drawn by js/tide.js; they
+// lean with the stream. `hand` is which side the deep water is on (the topmark colour).
+const withies = [];
+const edgeWithies = (line, halfW, step, id) => {
+    let acc = 0;
+    for (let i = 1; i < line.length; i++) {
+        const a = line[i - 1], b = line[i];
+        const seg = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        acc += seg;
+        if (acc < step) continue;
+        acc = 0;
+        let tx = b[0] - a[0], ty = b[1] - a[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
+        const nx = -ty, ny = tx;
+        withies.push({ x: R(b[0] + nx * halfW), y: R(b[1] + ny * halfW), hand: 'port', id: `${id}-p${i}` });
+        withies.push({ x: R(b[0] - nx * halfW), y: R(b[1] - ny * halfW), hand: 'stbd', id: `${id}-s${i}` });
+    }
+};
+edgeWithies(CROSSING, 230, 420, 'wantij');
+withies.push({ x: 320, y: 720, hand: 'port', id: 'sill-w' }, { x: 800, y: 700, hand: 'stbd', id: 'sill-e' });
+withies.push({ x: 900, y: -7130, hand: 'port', id: 'creek-sill-w' }, { x: 1620, y: -7060, hand: 'stbd', id: 'creek-sill-e' });
+withies.push({ x: 1300, y: -4200, hand: 'port', id: 'creek-in-w' }, { x: 1600, y: -4300, hand: 'stbd', id: 'creek-in-e' });
+withies.push({ x: 440, y: 4120, hand: 'port', id: 'wantij-in-w' }, { x: 820, y: 4080, hand: 'stbd', id: 'wantij-in-e' });
+
 // ── THE DOCUMENT ─────────────────────────────────────────────────────────────
 const doc = {
     schema: 1,
@@ -291,7 +317,7 @@ const doc = {
         size: 16000,
         boundary: { poly: [[-3700, -8600], [3700, -8600], [3700, 8000], [-3700, 8000]], circle: null }
     },
-    tide: { period: 60, amp: 1.0, mid: 0, phase0: 0.733, fillKt: 0.55 },   // HW 8 s after the gun, then every minute: the sill is open when a well-sailed leader reaches it
+    tide: { period: 60, amp: 1.0, mid: 0, phase0: 0.733, fillKt: 0.55, withies },   // HW 8 s after the gun, then every minute: the sill is open when a well-sailed leader reaches it
     shapes,
     course: {
         description: 'Beat to the offshore mark, round to starboard, run in through the mouth and race the channel round the basin to the finish at the head — or cross the flats while the tide lets you.',

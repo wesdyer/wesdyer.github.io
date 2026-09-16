@@ -303,6 +303,22 @@ const TIDE = {
             const crest = b.elev != null ? b.elev : 0;
             for (let k = 0; k < W * H; k++) if (m[k]) { const s = sstep(din[k] * res / C.barFeather); z[k] = Math.max(z[k], z[k] + (crest - z[k]) * s); mat[k] = 1; }
         }
+        // The material softened: a bar's sand meets the mud over a few cells, not at a cell
+        // edge (a binary mask read as a staircase at race scale). Two passes of a 5-wide box.
+        for (let pass = 0; pass < 2; pass++) {
+            // separable: rows then columns (the box is the same; the work is a fifth)
+            const tmp = new Float32Array(W * H);
+            for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+                let acc = 0, cnt = 0;
+                for (let di = -2; di <= 2; di++) { const ii = i + di; if (ii < 0 || ii >= W) continue; acc += mat[j * W + ii]; cnt++; }
+                tmp[j * W + i] = acc / cnt;
+            }
+            for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+                let acc = 0, cnt = 0;
+                for (let dj = -2; dj <= 2; dj++) { const jj = j + dj; if (jj < 0 || jj >= H) continue; acc += tmp[jj * W + i]; cnt++; }
+                mat[j * W + i] = acc / cnt;
+            }
+        }
         // The fill direction: away from the nearest channel (the gradient of dCh), unit.
         const gx = new Float32Array(W * H), gy = new Float32Array(W * H);
         for (let j = 1; j < H - 1; j++) for (let i = 1; i < W - 1; i++) {
@@ -535,6 +551,28 @@ const TIDE = {
     // wind waves, so the water still moves over them) and the dry ground (over them — mud
     // has no waves on it), with the water's edge painted on the dry pass.
     const pic = { cvWet: null, cvDry: null, x0: 0, y0: 0, w: 0, h: 0, level: NaN, key: '' };
+    // A mottle for the mud — ±7% of value in soft blotches a few boat-lengths across — so the
+    // dry flat is not flat paint while its tile is owed. One 64² tile of fbm, indexed by the
+    // picture's world-aligned pixel, so it neither swims nor tiles visibly (the window's
+    // origin is a multiple of pxU).
+    const MOT = 256; let _mot = null;
+    function mottle() {
+        if (_mot) return _mot;
+        _mot = new Float32Array(MOT * MOT);
+        // two octaves of value noise on a lattice that wraps at the tile's edge (the lattice
+        // index is masked), so the tile is seamless and the blotches are blobs, not a weave
+        const lat = (x, y, cells, salt) => {
+            const fx = x / MOT * cells, fy = y / MOT * cells;
+            const i = Math.floor(fx), j = Math.floor(fy), tx = fx - i, ty = fy - j;
+            const sx = tx * tx * (3 - 2 * tx), sy = ty * ty * (3 - 2 * ty);
+            const m = cells - 1;
+            const a = hash2((i & m) + salt, (j & m) + salt * 3), b = hash2(((i + 1) & m) + salt, (j & m) + salt * 3);
+            const c = hash2((i & m) + salt, ((j + 1) & m) + salt * 3), d = hash2(((i + 1) & m) + salt, ((j + 1) & m) + salt * 3);
+            return (a + (b - a) * sx) * (1 - sy) + (c + (d - c) * sx) * sy - 0.5;
+        };
+        for (let j = 0; j < MOT; j++) for (let i = 0; i < MOT; i++) _mot[j * MOT + i] = lat(i, j, 8, 11) * 0.7 + lat(i, j, 32, 29) * 0.3;
+        return _mot;
+    }
     function hexRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
     const COL = {
         mud:      [176, 138, 84],    // golden mudflat, dry
@@ -583,6 +621,7 @@ const TIDE = {
         const shal = hexRgb(water.shallowColor || '#7aa6d4');
         const z = F.z, mat = F.mat, W = F.W, H = F.H, res = F.res;
         const see = C.seeThrough, wet = C.wetBand, DRAFT = T.draft, FREE = T.free;
+        const mot = mottle(), mx0 = Math.round(x0 / C.pxU), my0 = Math.round(y0 / C.pxU);
         for (let py = 0; py < ph; py++) {
             const wy = y0 + (py + 0.5) * C.pxU;
             const fy = (wy - F.y0) / res - 0.5, j = Math.floor(fy), ty = fy - j;
@@ -603,7 +642,8 @@ const TIDE = {
                     // exposed ground: dark and gleaming at the water's edge, paler with height
                     const hgt = -d;
                     const wf = 1 - sstep(hgt / wet);
-                    const pale = Math.min(0.14, hgt * 0.10);
+                    const mo = mot[((my0 + py) & (MOT - 1)) * MOT + ((mx0 + px) & (MOT - 1))];
+                    const pale = Math.min(0.14, hgt * 0.10) + mo * 0.16 * (1 - 0.5 * wf);
                     const r = (dry[0] + (wetc[0] - dry[0]) * wf) * (1 + pale), gg = (dry[1] + (wetc[1] - dry[1]) * wf) * (1 + pale), b = (dry[2] + (wetc[2] - dry[2]) * wf) * (1 + pale);
                     AD[o] = Math.min(255, r); AD[o + 1] = Math.min(255, gg); AD[o + 2] = Math.min(255, b); AD[o + 3] = 255;
                     AW[o] = AD[o]; AW[o + 1] = AD[o + 1]; AW[o + 2] = AD[o + 2]; AW[o + 3] = 255;
@@ -646,6 +686,111 @@ const TIDE = {
         // the flat — and, a draft inside it, the dashed line you must stay on the deep side of.
         drawIso(ctx, level(), 'rgba(236, 230, 210, 0.85)', 1.6, null);
         if (cfg().draftLine) drawDraftLine(ctx);
+        drawBirds(ctx);
+        drawWithies(ctx);
+    }
+    // THE WITNESS. Spoon-billed sandpipers land on the flat the moment the water leaves it
+    // and work the wet sand for as long as the ebb lasts — so a scatter of small birds IS the
+    // depth gauge: where they stand, the tide has just gone, and where they lift, it is
+    // coming back. Flocks sit on cells a hand's breadth above the water on a falling tide
+    // (a sparse hash of the cell picks which), each bird a dark speck with a pale breast,
+    // stepping and pecking on its own clock; on the flood they are simply not there. No RNG:
+    // cell hashes and state.time only.
+    function drawBirds(ctx) {
+        const T = state.tide, F = T.field;
+        if (Tide.flow() >= 0) return;                        // the flood: they have lifted
+        const [va, vb, vc, vd] = viewWindow(ctx);
+        const i0 = Math.max(1, Math.floor((va - F.x0) / F.res)), i1 = Math.min(F.W - 2, Math.ceil((vc - F.x0) / F.res));
+        const j0 = Math.max(1, Math.floor((vb - F.y0) / F.res)), j1 = Math.min(F.H - 2, Math.ceil((vd - F.y0) / F.res));
+        const L = level(), t = state.time || 0, z = F.z, W = F.W, res = F.res;
+        ctx.save();
+        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+            const k = j * W + i;
+            if (F.mMask[k] || F.chMask[k]) continue;
+            const hgt = z[k] - L;
+            if (hgt < 0.04 || hgt > 0.34) continue;         // the wet band the water just left
+            const h = hash2(i * 7 + 3, j * 13 + 5);
+            if (h > 0.045) continue;                          // one flock in ~22 cells of fresh sand
+            // the flock fades in as the sand appears and out as it dries (they follow the edge)
+            const a = Math.min(1, (hgt - 0.04) / 0.05) * Math.min(1, (0.34 - hgt) / 0.08);
+            if (a <= 0) continue;
+            const cx = F.x0 + (i + 0.5) * res, cy = F.y0 + (j + 0.5) * res;
+            const n = 3 + Math.floor(h * 100) % 4;
+            ctx.globalAlpha = a;
+            for (let b = 0; b < n; b++) {
+                const hb = hash2(i * 31 + b * 17, j * 29 + b * 11);
+                const hb2 = hash2(j * 23 + b * 5, i * 19 + b * 7);
+                const bx = cx + (hb - 0.5) * 46 + Math.sin(t * 1.3 + hb * 20) * 2.2;
+                const by = cy + (hb2 - 0.5) * 46 + Math.cos(t * 1.1 + hb2 * 20) * 2.2;
+                const face = hb * Math.PI * 2 + Math.sin(t * 0.7 + hb2 * 9) * 0.6;
+                const peck = Math.max(0, Math.sin(t * 4.5 + hb * 30)) * 1.6;   // the bill dips
+                // body: a small dark oval along the facing, pale breast toward the belly
+                ctx.fillStyle = '#4a3f33';
+                ctx.beginPath(); ctx.ellipse(bx, by, 3.2, 2.0, face, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#e9e2d3';
+                ctx.beginPath(); ctx.ellipse(bx - Math.sin(face) * 0.8, by + Math.cos(face) * 0.8, 1.9, 1.0, face, 0, Math.PI * 2); ctx.fill();
+                // the spoon bill: a short dark stroke ahead, dipping to peck
+                ctx.strokeStyle = '#2a2420'; ctx.lineWidth = 1.1;
+                ctx.beginPath(); ctx.moveTo(bx + Math.cos(face) * 3, by + Math.sin(face) * 3);
+                ctx.lineTo(bx + Math.cos(face) * (5.5 + peck), by + Math.sin(face) * (5.5 + peck)); ctx.stroke();
+            }
+        }
+        ctx.restore();
+    }
+    // WITHIES: birch boughs lashed to stakes in the mud, the Wadden Sea's channel marks —
+    // here at either end of each sill and down both sides of the wantij shelf (the
+    // document's `tide.withies`). From above a withy is a dark stake with a tuft of twigs,
+    // and the tuft LEANS with whatever the stream is doing, so a row of them reads the
+    // tide's direction before the gauge does. A pale ripple trails downstream of each when
+    // the water runs. The topmark says which hand the deep water is on: red to port, green
+    // to starboard, the IALA convention this game's marks already use.
+    function drawWithies(ctx) {
+        const T = state.tide, list = T.withies;
+        if (!list || !list.length) return;
+        const [va, vb, vc, vd] = viewWindow(ctx);
+        const t = state.time || 0;
+        ctx.save();
+        ctx.lineCap = 'round';
+        for (const w of list) {
+            if (w.x < va - 60 || w.x > vc + 60 || w.y < vb - 60 || w.y > vd + 60) continue;
+            const cur = (typeof getCurrentAt === 'function') ? getCurrentAt(w.x, w.y) : null;
+            const sp = cur ? cur.speed : 0, lean = Math.min(1, sp / 1.2);
+            const dx = cur && sp > 0.02 ? Math.sin(cur.direction) : 0, dy = cur && sp > 0.02 ? -Math.cos(cur.direction) : 0;
+            const depth = depthAt(w.x, w.y);
+            // the ripple: two short pale strokes opening downstream, only in water that moves
+            if (depth > 0.05 && sp > 0.25) {
+                ctx.strokeStyle = 'rgba(235, 240, 245, 0.55)';
+                ctx.lineWidth = 1.2;
+                const px = -dy, py = dx, L = 10 + 16 * lean;
+                ctx.beginPath();
+                ctx.moveTo(w.x + dx * 3, w.y + dy * 3); ctx.lineTo(w.x + dx * L + px * (4 + 3 * lean), w.y + dy * L + py * (4 + 3 * lean));
+                ctx.moveTo(w.x + dx * 3, w.y + dy * 3); ctx.lineTo(w.x + dx * L - px * (4 + 3 * lean), w.y + dy * L - py * (4 + 3 * lean));
+                ctx.stroke();
+            }
+            // the stake's shadow on the mud, then the stake
+            const tx = w.x + dx * 9 * lean, ty = w.y + dy * 9 * lean;   // where the tuft has leaned to
+            ctx.strokeStyle = 'rgba(40, 30, 16, 0.35)';
+            ctx.lineWidth = 4;
+            ctx.beginPath(); ctx.moveTo(w.x + 3, w.y + 4); ctx.lineTo(tx + 4, ty + 5); ctx.stroke();
+            ctx.strokeStyle = '#3a2a16';
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(w.x, w.y); ctx.lineTo(tx, ty); ctx.stroke();
+            // the tuft: five twigs round the tip, streamed a little downstream
+            ctx.strokeStyle = '#4b3a22';
+            ctx.lineWidth = 1.7;
+            ctx.beginPath();
+            for (let k = 0; k < 6; k++) {
+                const a = k * 1.0472 + t * 0.6 + (w.x * 0.01);
+                const len = 8 + 3 * Math.sin(t * 1.7 + k);
+                ctx.moveTo(tx, ty);
+                ctx.lineTo(tx + Math.cos(a) * len + dx * 3 * lean, ty + Math.sin(a) * len + dy * 3 * lean);
+            }
+            ctx.stroke();
+            // the topmark
+            ctx.fillStyle = w.hand === 'port' ? '#e0483a' : '#3fb36a';
+            ctx.beginPath(); ctx.arc(tx, ty, 3.6, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
     }
     // The AFLOAT contour — marching squares on the raster over the view, dashed: where the
     // water is exactly one draft deep now. Inside it you sail; outside it you sit.
@@ -732,6 +877,7 @@ const TIDE = {
             fillKt: tideDoc.fillKt != null ? +tideDoc.fillKt : C.fillKt, fillDepth: C.fillDepth, fillReach: C.fillReach,
             botMargin: C.botMargin, lead: C.lead, leadMargin: C.leadMargin, stampEvery: C.stampEvery, maxWait: C.maxWait, horizonMargin: C.horizonMargin, horizonCap: C.horizonCap,
             marshZ: C.marshZ,
+            withies: Array.isArray(tideDoc.withies) ? tideDoc.withies.filter(w => w && isFinite(+w.x) && isFinite(+w.y)) : [],
             field
         };
         pic.level = NaN; pic.cvWet = null; pic.cvDry = null;
