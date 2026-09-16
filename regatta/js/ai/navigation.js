@@ -719,6 +719,12 @@ Object.assign(BotController.prototype, {
                         const idT = pc[1] * botGrid.n + pc[0];
                         if (botGrid._soft && botGrid._soft[idT]) continue;
                         if (botGrid._tight && botGrid._tight[idT]) continue;
+                        // Mud on the thread (Spoonbill Flats) is a reason to replan NOW:
+                        // the tide moves a metre in fifteen seconds here, and the router
+                        // re-prices the whole way with the clock as it is. (Skipping the
+                        // replan for cells "still wet on arrival" was tried and measured
+                        // worse: the local map called them walls while the plan ran
+                        // through them, and the helm wandered between the two.)
                         needFull = true; break;
                     }
                 }
@@ -839,6 +845,10 @@ Object.assign(BotController.prototype, {
                     }
                 }
                 const seg = window.SailCheck.pathSailable(botGrid, [boat.x, boat.y], [destX, destY]);
+                // WAITING FOR THE TIDE (Spoonbill Flats): the route may hold in always-wet
+                // water for a sill to open — pathSailable says where and until when, and the
+                // carrot below stays on that point until the clock passes it.
+                this.tideWait = (seg && seg.wait) ? seg.wait : null;
                 if (seg && seg.length > 1) {
                     const pts = seg.map(q => ({ x: q[0], y: q[1] }));
                     pts[pts.length - 1] = { x: destX, y: destY };
@@ -964,6 +974,23 @@ Object.assign(BotController.prototype, {
                     // beats a straight line into the ice — keep the old one and
                     // retry next replan; the pocket moves.
                     if (!this.gridPath) this.gridPath = null;
+                    // ON THE FLATS there is a third state: the water is gone and no way is
+                    // open until it returns. A stale carrot then points across the mud (the
+                    // pursuit hands the far destination out once the path is spent) — so
+                    // hold in the deepest water within reach and ask again at the next
+                    // replan. The physics keeps a hull that is already sitting where it is.
+                    if (state.tide && window.Tide && state.course.botGrid && state.course.botGrid._elev) {
+                        const g = state.course.botGrid, c0 = g.cell(boat.x, boat.y);
+                        let bx = boat.x, by = boat.y, bz = Infinity;
+                        for (let dj = -6; dj <= 6; dj++) for (let di = -6; di <= 6; di++) {
+                            const i = c0[0] + di, j = c0[1] + dj;
+                            if (i < 0 || j < 0 || i >= g.n || j >= g.n) continue;
+                            const z = g._elev[j * g.n + i];
+                            if (z < bz) { bz = z; const [wx, wy] = g.world(i, j); bx = wx; by = wy; }
+                        }
+                        this.gridPath = [{ x: bx, y: by }];
+                        this.tideWait = { x: bx, y: by, until: Tide.clock() + 4 };
+                    }
                 }
                 // Deterministic jitter (spread replans across the fleet WITHOUT touching
                 // the seeded RNG stream — every venue is a document now, so a draw here
@@ -1036,6 +1063,10 @@ Object.assign(BotController.prototype, {
                     j++;
                 }
                 let w = (j >= pts.length - 1) ? { x: destX, y: destY } : pts[j];
+                // Holding for the tide: the carrot is the hold point until the sill opens.
+                if (this.tideWait && state.tide && window.Tide && Tide.clock() < this.tideWait.until) {
+                    w = { x: this.tideWait.x, y: this.tideWait.y };
+                } else if (this.tideWait) this.tideWait = null;
                 // FLOE-AWARE REJOIN (v8, ice-craft session 2, 2026-08-23).
                 // The entry attribution split the sub-78u contact mass: path
                 // shaves hit 0%, but boats DISPLACED off the plan (xtrack

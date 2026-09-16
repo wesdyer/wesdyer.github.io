@@ -1605,6 +1605,13 @@ const ISLAND_STYLES = {
     basalt:    { body: '#30333A', stroke: '#191A1D', veg: '#41454D', rock: '#4E535C', trees: false },  // body = volcanic-basalt DELIVERED tile mean
     cinder:    { body: '#3F2C29', stroke: '#291B18', veg: '#4F3331', rock: '#5F3B2F', trees: false },  // body = volcanic-cinder ROUND-TWO tile mean (2026-09-07), spec offsets carried
     blacksand: { body: '#212121', stroke: '#151514', veg: '#292A2B', rock: '#1A1A1A', trees: false },  // body = volcanic-blacksand DELIVERED tile mean
+    // ── SPOONBILL FLATS ──────────────────────────────────────────────────────
+    // Saltmarsh turf: muted olive and straw ground cover with brown soil patches — the only
+    // ground on this venue that never wets. Flat fill until its tile is delivered (the
+    // texture prompt is in art/flats-prompts.md); the body is the spec's mean. The mud and
+    // sand of the flats are NOT looks: they are painted by the tide layer from the
+    // elevation field (js/tide.js), which is where their colours live.
+    saltmarsh: { body: '#8f8f52', stroke: '#6b6a3c', veg: '#6f7a2e', rock: '#8a8a7a', trees: false },
     // Lava's body is the CRUST — the cooled plates drawLava lays over the bed — and its
     // stroke is the EMBER, because on this one kind the coastline is the hottest thing in
     // the picture, not the darkest: the flow front is where the sea boils. drawLava reads
@@ -2113,7 +2120,7 @@ function drawShallows(ctx) {
         // OVER the shoal sand (or over the finished water, if it floats), and this pass
         // runs under both. Keyed on `veg` rather than on the kind name, so a new plant
         // does not have to be remembered here.
-        if (!isl.paint || isl.hidden || isl.veg) continue;
+        if (!isl.paint || isl.hidden || isl.veg || isl.tide) continue;   // a tidal anchor is the tide layer's to draw
         const limit = viewRadius + isl.radius;
         if ((isl.x - camX) ** 2 + (isl.y - camY) ** 2 > limit ** 2) continue;
         // Keyed on the tint like the shoal bake: a venue swap or a live palette edit

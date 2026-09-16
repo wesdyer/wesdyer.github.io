@@ -1,0 +1,734 @@
+// ── TIDE ────────────────────────────────────────────────────────────────────
+// Spoonbill Flats' water: ONE CLOCK that floods and drains an estuary, and everything
+// that keys off it. A venue with no tidal anchors (the `flats-*` shape kinds, venuedoc.js)
+// gets none of this and pays nothing — state.tide stays null and every hook returns early.
+//
+// THE FIELD. The intertidal ground is a continuous ELEVATION FIELD in metres above mean
+// water, rasterised once at the full course build from the document's polygons, Wes's
+// way: the deep channels are the low anchor, the saltmarsh the high anchor, and every
+// point between them sits at a height set by its normalised distance between the two
+// (t = dChannel / (dChannel + dMarsh)), so the flats FILL FROM THE CHANNEL OUTWARD and
+// DRY FROM THE MARSH INWARD. A bar polygon lifts its crest, a pool sinks its bed, a
+// shelf sets its ground, and a little noise makes the water leave in tongues and pans
+// rather than in bands. Nothing else in the game reads polygons for depth: the physics,
+// the router, the picture and the instruments all read this one raster.
+//
+// THE CLOCK. level(t) = mid + amp · sin(2π t / period + phase0), t the race clock, so the
+// phase at the gun is phase0 for every boat and every restart — a race is LEARNABLE and a
+// replay is the same race. depth = level − ground. Draft-safe water sails free; under a
+// clearance margin the mud takes speed (a multiplier on the target, like a bar); below the
+// draft the boat is AGROUND: her way is gone, the crew shove her downhill at a walking
+// pace, and she refloats when the sine brings the water back. The refloat time is a
+// closed-form read off the sine, so the HUD can promise it.
+//
+// THE CURRENT. Everything flows because the level is changing: channel streams (current
+// regions flagged `tidal`) run in proportion to dLevel/dt — slack at high and low water,
+// strongest mid-tide, flooding inland and ebbing seaward along the authored regions — and
+// on the flats the water pours sideways out of the channel while they fill and drains back
+// while they empty, along the gradient of the distance-to-channel field. One clock, one
+// answer for the boats, the bots and the streaks.
+//
+// Nothing here touches the eval RNG: the field is a pure function of the document and the
+// level a pure function of the race clock.
+'use strict';
+
+const TIDE = {
+    period: 60,          // s per full cycle (rise + fall). The knob Wes asked for.
+    amp: 1.0,            // m — high water +amp, low water −amp about `mid`
+    mid: 0,              // m — mean water
+    phase0: 0.0,         // rad — the phase at the gun (0 = mean water, rising)
+    draft: 0.5,          // m — under this depth the hull sits on the mud
+    free: 0.5,           // m — clearance above the draft at which the water stops costing speed
+    minMul: 0.18,        // speed multiplier at zero clearance (just afloat)
+    refloat: 0.1,        // m — hysteresis above the draft before a grounded hull is free again
+    agroundMin: 1.5,     // s — a touch costs at least this: the crew get her off, they do not bounce
+    pushKt: 0.8,         // kt — the crew shoving a grounded hull toward the channel
+    // The field.
+    res: 16,             // world units per raster cell
+    rimZ: -1.6,          // m — the ground at a channel's edge (0.6 m of water at LW: afloat, slow)
+    marshZ: 1.4,         // m — the ground at the marsh edge (never wet: 0.4 m above HW)
+    bedFeather: 110,     // u — a channel drops from its rim to its bed over this
+    barFeather: 140,     // u — a bar rises from the surrounding flat to its crest over this
+    poolFeather: 90,     // u — a pool's bowl
+    gamma: 0.8,          // the shape of the flat between channel and marsh (<1 = rises fast off the channel, so the interior is mud most of the cycle)
+    noiseAmp: 0.16,      // m — pans and tongues
+    noiseScale: 620,     // u — their size
+    noiseFade: 260,      // u — noise is faded to nothing this close to a channel
+    // Flow.
+    flowRef: 1.0,        // a tidal region's `speed` is its knots at the peak rate
+    fillKt: 0.55,        // kt — the cross-stream over the flats at the peak rate
+    fillDepth: 1.2,      // m — the fill stream fades out below this depth of water
+    fillReach: 1800,     // u — and this far from a channel
+    // Bots.
+    botMargin: 0.12,     // m — the router's safety margin on top of the draft
+    lead: 3,             // s — the local map is stamped for this far ahead
+    leadMargin: 0.16,    // m — and with this much water over the draft
+    stampEvery: 1.5,     // s — between local map stamps
+    maxWait: 0,          // s — the longest the router will hold in a pool for a sill to open (0: never — measured worse, see flats-design.md)
+    // A prediction 40 s out is a guess: the boat sails slower than the polar (manoeuvres,
+    // the pack, the mud), so the margin GROWS with the horizon — at 0.012 m/s, half a
+    // metre of extra water is demanded of a cell 40 s ahead, a hand's breadth of one 5 s
+    // ahead. Measured before this (phase 0.5, 18 bots): 8 boats caught on flats they were
+    // priced across, 197 s aground for the worst; after: see flats-design.md.
+    horizonMargin: 0.012,
+    horizonCap: 0.3,     // m — and no more than this, or a far goal in a deep channel reads as closed (it did: no path to the finish from the creek)
+    // The picture.
+    seeThrough: 1.9,     // m — the bottom stops showing through the water at this depth
+    pxU: 5,              // world units per pixel of the ground image
+    wetBand: 0.22,       // m — freshly exposed ground stays dark this far above the water
+    draftLine: true      // draw the "afloat" contour as a warning line
+};
+
+(function () {
+    const cfg = () => Object.assign({}, TIDE, (typeof window !== 'undefined' && window.__TIDE) || {});
+
+    // ── the clock ───────────────────────────────────────────────────────────
+    // The RACE clock: negative in the prestart, so the phase at the gun is phase0 exactly.
+    function clock() {
+        const r = state.race;
+        return r.status === 'prestart' ? -r.timer : r.timer;
+    }
+    function levelAt(t) {
+        const T = state.tide;
+        return T.mid + T.amp * Math.sin(2 * Math.PI * t / T.period + T.phase0);
+    }
+    function rateAt(t) {          // m/s
+        const T = state.tide;
+        return T.amp * (2 * Math.PI / T.period) * Math.cos(2 * Math.PI * t / T.period + T.phase0);
+    }
+    function level() { return state.tide ? levelAt(clock()) : 0; }
+    // −1..1: the rate as a share of its peak. Positive = flooding.
+    function flow() {
+        const T = state.tide;
+        if (!T) return 0;
+        return Math.cos(2 * Math.PI * clock() / T.period + T.phase0);
+    }
+    // Seconds until the level next reaches `h` (rising or falling, whichever comes first),
+    // or null if it never does. Closed form on the sine.
+    function nextReach(h, from) {
+        const T = state.tide;
+        const r = (h - T.mid) / T.amp;
+        if (r > 1 || r < -1) return null;
+        const w = 2 * Math.PI / T.period;
+        const p = ((w * from + T.phase0) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+        const a = Math.asin(r);                       // rising solution
+        const sols = [a, Math.PI - a];                // and the falling one
+        let best = Infinity;
+        for (const s of sols) {
+            let d = s - p; while (d < 1e-6) d += 2 * Math.PI;
+            if (d < best) best = d;
+        }
+        return best / w;
+    }
+    function nextHigh(from) { const T = state.tide, w = 2 * Math.PI / T.period; let d = (Math.PI / 2 - (w * from + T.phase0)) % (2 * Math.PI); while (d < 0) d += 2 * Math.PI; return d / w; }
+    function nextLow(from)  { const T = state.tide, w = 2 * Math.PI / T.period; let d = (-Math.PI / 2 - (w * from + T.phase0)) % (2 * Math.PI); while (d < 0) d += 2 * Math.PI; return d / w; }
+
+    // ── the field ───────────────────────────────────────────────────────────
+    // Value noise, fixed seed: part of the venue, identical every session.
+    function hash2(i, j) {
+        let h = (i * 374761393 + j * 668265263) | 0;
+        h = Math.imul(h ^ (h >>> 13), 1274126177);
+        return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+    }
+    function vnoise(x, y) {
+        const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j;
+        const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+        const a = hash2(i, j), b = hash2(i + 1, j), c = hash2(i, j + 1), d = hash2(i + 1, j + 1);
+        return (a + (b - a) * sx) * (1 - sy) + (c + (d - c) * sx) * sy;
+    }
+    function fbm(x, y) {
+        return (vnoise(x, y) - 0.5) * 1.0 + (vnoise(x * 2.1 + 17.3, y * 2.1 + 9.1) - 0.5) * 0.5
+             + (vnoise(x * 4.3 + 3.7, y * 4.3 + 21.9) - 0.5) * 0.25;
+    }
+
+    function pointInRing(x, y, ring) {
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+            if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+        }
+        return inside;
+    }
+    function inShape(x, y, sh) {
+        if (!pointInRing(x, y, sh.outer)) return false;
+        for (const h of (sh.holes || [])) if (pointInRing(x, y, h)) return false;
+        return true;
+    }
+    function bboxOf(ring, bb) {
+        for (const p of ring) { if (p[0] < bb[0]) bb[0] = p[0]; if (p[1] < bb[1]) bb[1] = p[1]; if (p[0] > bb[2]) bb[2] = p[0]; if (p[1] > bb[3]) bb[3] = p[1]; }
+        return bb;
+    }
+    // Scanline rasterise a set of shapes into a mask (1 inside), restricted to their bboxes.
+    function rasterMask(shapes, F, into, value) {
+        const { W, H, x0, y0, res } = F;
+        for (const sh of shapes) {
+            const bb = bboxOf(sh.outer, [Infinity, Infinity, -Infinity, -Infinity]);
+            const i0 = Math.max(0, Math.floor((bb[0] - x0) / res)), i1 = Math.min(W - 1, Math.ceil((bb[2] - x0) / res));
+            const j0 = Math.max(0, Math.floor((bb[1] - y0) / res)), j1 = Math.min(H - 1, Math.ceil((bb[3] - y0) / res));
+            for (let j = j0; j <= j1; j++) {
+                const wy = y0 + (j + 0.5) * res;
+                // one scanline: crossings of the outer ring and every hole, even-odd
+                const xs = [];
+                const rings = [sh.outer].concat(sh.holes || []);
+                for (const ring of rings) {
+                    for (let a = 0, b = ring.length - 1; a < ring.length; b = a++) {
+                        const ya = ring[a][1], yb = ring[b][1];
+                        if ((ya > wy) === (yb > wy)) continue;
+                        xs.push(ring[b][0] + (wy - yb) * (ring[a][0] - ring[b][0]) / (ya - yb));
+                    }
+                }
+                xs.sort((p, q) => p - q);
+                for (let k = 0; k + 1 < xs.length; k += 2) {
+                    const ia = Math.max(i0, Math.ceil((xs[k] - x0) / res - 0.5)), ib = Math.min(i1, Math.floor((xs[k + 1] - x0) / res - 0.5));
+                    for (let i = ia; i <= ib; i++) into[j * W + i] = value;
+                }
+            }
+        }
+    }
+    // Two-pass chamfer distance (in cells) to the nearest cell where mask != 0.
+    function chamfer(mask, W, H) {
+        const d = new Float32Array(W * H);
+        for (let k = 0; k < W * H; k++) d[k] = mask[k] ? 0 : 1e9;
+        const S2 = Math.SQRT2;
+        for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+            const id = j * W + i; let v = d[id];
+            if (i > 0) v = Math.min(v, d[id - 1] + 1);
+            if (j > 0) { v = Math.min(v, d[id - W] + 1);
+                if (i > 0) v = Math.min(v, d[id - W - 1] + S2);
+                if (i < W - 1) v = Math.min(v, d[id - W + 1] + S2); }
+            d[id] = v;
+        }
+        for (let j = H - 1; j >= 0; j--) for (let i = W - 1; i >= 0; i--) {
+            const id = j * W + i; let v = d[id];
+            if (i < W - 1) v = Math.min(v, d[id + 1] + 1);
+            if (j < H - 1) { v = Math.min(v, d[id + W] + 1);
+                if (i < W - 1) v = Math.min(v, d[id + W + 1] + S2);
+                if (i > 0) v = Math.min(v, d[id + W - 1] + S2); }
+            d[id] = v;
+        }
+        return d;
+    }
+    const sstep = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
+
+    // Build the field from a document. Returns null when the document has no tidal anchors.
+    function build(doc) {
+        const VD = window.VenueDoc;
+        if (!doc || !VD) return null;
+        const C = cfg();
+        const shapes = VD.shapes(doc);
+        const anchors = { channel: [], pool: [], bar: [], flat: [] }, marsh = [];
+        for (const sh of shapes) {
+            const T = VD.traits(sh);
+            if (T.tide && anchors[T.tide]) anchors[T.tide].push({ outer: sh.outer, holes: sh.holes || [], elev: T.elev });
+            else if (T.kind === 'flats-marsh') marsh.push({ outer: sh.outer, holes: sh.holes || [], elev: T.elev });
+        }
+        if (!anchors.channel.length) return null;
+        // The raster covers the arena, padded: a boat can be anywhere inside it.
+        const bnd = (doc.world && doc.world.boundary) || {};
+        let bb = [Infinity, Infinity, -Infinity, -Infinity];
+        if (bnd.poly) bboxOf(bnd.poly, bb);
+        else if (bnd.circle) bb = [bnd.circle.x - bnd.circle.r, bnd.circle.y - bnd.circle.r, bnd.circle.x + bnd.circle.r, bnd.circle.y + bnd.circle.r];
+        else { const s = (doc.world && doc.world.size) || 13000; bb = [-s / 2, -s / 2, s / 2, s / 2]; }
+        const PAD = 600, res = C.res;
+        const x0 = bb[0] - PAD, y0 = bb[1] - PAD;
+        const W = Math.ceil((bb[2] + PAD - x0) / res), H = Math.ceil((bb[3] + PAD - y0) / res);
+        const F = { W, H, x0, y0, res, n: W * H };
+        const t0 = performance.now();
+        const chMask = new Uint8Array(W * H), mMask = new Uint8Array(W * H);
+        rasterMask(anchors.channel, F, chMask, 1);
+        rasterMask(marsh, F, mMask, 1);
+        // Outside the arena bbox proper (the pad) counts as marsh: the field must rise to
+        // land at the edge of the world, or a boat at the boundary sits in phantom deep water.
+        const dCh = chamfer(chMask, W, H);
+        const notCh = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) notCh[k] = chMask[k] ? 0 : 1;
+        const dChIn = chamfer(notCh, W, H);                 // distance INSIDE a channel from its rim
+        const dM = chamfer(mMask, W, H);
+        const z = new Float32Array(W * H), mat = new Float32Array(W * H);
+        for (let j = 0; j < H; j++) for (let i = 0; i < W; i++) {
+            const k = j * W + i;
+            const wx = x0 + (i + 0.5) * res, wy = y0 + (j + 0.5) * res;
+            let v;
+            if (chMask[k]) {
+                v = C.rimZ + (anchors.channel[0].elev != null ? anchors.channel[0].elev - C.rimZ : -1.4) * sstep(dChIn[k] * res / C.bedFeather);
+            } else if (mMask[k]) {
+                v = C.marshZ;
+            } else {
+                const dc = dCh[k] * res, dm = dM[k] * res;
+                const t = dc / Math.max(1e-3, dc + dm);
+                v = C.rimZ + (C.marshZ - C.rimZ) * Math.pow(t, C.gamma);
+                // noise: pans and tongues, faded out beside the channels so the deep water
+                // keeps a clean edge and never at the marsh
+                const nf = sstep(dc / C.noiseFade) * (1 - sstep((t - 0.7) / 0.3));
+                if (nf > 0) v += C.noiseAmp * nf * fbm(wx / C.noiseScale, wy / C.noiseScale) * 2;
+            }
+            z[k] = v;
+        }
+        // Per-shape channel beds: each channel is a trough dropped into the union, and where
+        // two overlap (a creek leaving the main channel) the DEEPER wins — a junction never
+        // shoals the channel it joins. The union's own pass above used the first shape's bed;
+        // this pass sets every channel's exact bed, deepest first so min() composes.
+        {
+            const beds = anchors.channel.map((ch, i) => ({ ch, i, bed: ch.elev != null ? ch.elev : -3.0 }));
+            for (let k = 0; k < W * H; k++) if (chMask[k]) z[k] = 1e9;
+            for (const { ch, bed } of beds) {
+                const m = new Uint8Array(W * H); rasterMask([ch], F, m, 1);
+                const inv = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) inv[k] = m[k] ? 0 : 1;
+                const din = chamfer(inv, W, H);
+                for (let k = 0; k < W * H; k++) if (m[k]) { const v = C.rimZ + (bed - C.rimZ) * sstep(din[k] * res / C.bedFeather); if (v < z[k]) z[k] = v; }
+            }
+            for (let k = 0; k < W * H; k++) if (chMask[k] && z[k] > 1e8) z[k] = C.rimZ;
+        }
+        // Pools: a bowl sunk into whatever the flat was.
+        for (const p of anchors.pool) {
+            const m = new Uint8Array(W * H); rasterMask([p], F, m, 1);
+            const inv = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) inv[k] = m[k] ? 0 : 1;
+            const din = chamfer(inv, W, H);
+            const bed = p.elev != null ? p.elev : -2.0;
+            for (let k = 0; k < W * H; k++) if (m[k]) { const s = sstep(din[k] * res / C.poolFeather); z[k] = Math.min(z[k], z[k] + (bed - z[k]) * s); }
+        }
+        // Shelves: the intertidal ground set outright, feathered in from the edge. Never a
+        // channel cell — a corridor drawn from bank to bank must not fill the channel it leaves.
+        for (const p of anchors.flat) {
+            const m = new Uint8Array(W * H); rasterMask([p], F, m, 1);
+            const inv = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) inv[k] = m[k] ? 0 : 1;
+            const din = chamfer(inv, W, H);
+            const g = p.elev != null ? p.elev : -0.5;
+            for (let k = 0; k < W * H; k++) if (m[k] && !chMask[k] && !mMask[k]) { const s = sstep(din[k] * res / C.barFeather); z[k] = z[k] + (g - z[k]) * s; }
+        }
+        // Bars: a crest raised out of the flat, and the ground turns to sand.
+        for (const b of anchors.bar) {
+            const m = new Uint8Array(W * H); rasterMask([b], F, m, 1);
+            const inv = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) inv[k] = m[k] ? 0 : 1;
+            const din = chamfer(inv, W, H);
+            const crest = b.elev != null ? b.elev : 0;
+            for (let k = 0; k < W * H; k++) if (m[k]) { const s = sstep(din[k] * res / C.barFeather); z[k] = Math.max(z[k], z[k] + (crest - z[k]) * s); mat[k] = 1; }
+        }
+        // The fill direction: away from the nearest channel (the gradient of dCh), unit.
+        const gx = new Float32Array(W * H), gy = new Float32Array(W * H);
+        for (let j = 1; j < H - 1; j++) for (let i = 1; i < W - 1; i++) {
+            const k = j * W + i;
+            let ax = dCh[k + 1] - dCh[k - 1], ay = dCh[k + W] - dCh[k - W];
+            const l = Math.hypot(ax, ay);
+            if (l > 1e-6) { gx[k] = ax / l; gy[k] = ay / l; }
+        }
+        const ms = performance.now() - t0;
+        return { W, H, x0, y0, res, z, mat, dCh, gx, gy, chMask, mMask, ms, cells: W * H };
+    }
+
+    // Bilinear ground height at a world point. Outside the raster: marsh (the world's edge).
+    function groundAt(x, y) {
+        const F = state.tide && state.tide.field;
+        if (!F) return -99;
+        const fx = (x - F.x0) / F.res - 0.5, fy = (y - F.y0) / F.res - 0.5;
+        const i = Math.floor(fx), j = Math.floor(fy);
+        if (i < 0 || j < 0 || i >= F.W - 1 || j >= F.H - 1) return state.tide.marshZ;
+        const tx = fx - i, ty = fy - j, k = j * F.W + i, z = F.z;
+        return (z[k] * (1 - tx) + z[k + 1] * tx) * (1 - ty) + (z[k + F.W] * (1 - tx) + z[k + F.W + 1] * tx) * ty;
+    }
+    function fieldAt(arr, x, y, dflt) {
+        const F = state.tide && state.tide.field;
+        if (!F) return dflt;
+        const i = Math.floor((x - F.x0) / F.res), j = Math.floor((y - F.y0) / F.res);
+        if (i < 0 || j < 0 || i >= F.W || j >= F.H) return dflt;
+        return arr[j * F.W + i];
+    }
+    function depthAt(x, y, t) { return (t == null ? level() : levelAt(t)) - groundAt(x, y); }
+    // Speed multiplier for a depth: 1 with `free` clearance, minMul just afloat, 0 aground.
+    function mulForDepth(d) {
+        const T = state.tide;
+        const c = d - T.draft;
+        if (c <= 0) return 0;
+        if (c >= T.free) return 1;
+        const s = c / T.free;
+        return T.minMul + (1 - T.minMul) * s * s * (3 - 2 * s);
+    }
+    function mulAt(x, y, t) { return state.tide ? mulForDepth(depthAt(x, y, t)) : 1; }
+
+    // ── the boat ────────────────────────────────────────────────────────────
+    // Called by updateBoat at the shoal slot: the target-speed multiplier, and the depth
+    // for the instruments. Aground handling is afterMove's.
+    function speedMul(boat) {
+        const T = state.tide;
+        if (!T) return 1;
+        boat.depth = depthAt(boat.x, boat.y);
+        boat.tideMul = boat.aground ? 0 : mulForDepth(boat.depth);
+        return boat.tideMul;
+    }
+    // After the position integrates: a hull in less than her draft is aground — put her
+    // back, take her way, and let the crew shove her downhill until the water returns.
+    function afterMove(boat, preX, preY, dt) {
+        const T = state.tide;
+        if (!T) return;
+        const d = depthAt(boat.x, boat.y);
+        if (!boat.aground) {
+            if (d < T.draft) {
+                boat.aground = true;
+                boat.agroundAt = clock();
+                boat.x = preX; boat.y = preY;
+                boat.speed = 0;
+                if (boat.ai) boat.ai.collisionData = { type: 'island', normal: { x: 0, y: 0 }, aground: true };
+                if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) window.onRaceEvent('aground', { boat });
+                if (boat.isPlayer && window.GameEvents) GameEvents.emit('player-aground', { boat });
+            }
+            return;
+        }
+        // Aground. Hold station (no sailing, no stream), and the crew shove her toward the
+        // nearest CHANNEL — downhill by the field's own gradient where it is steep, but
+        // always with a pull toward the deep water, because a pan in the noise is a local
+        // minimum a purely downhill shove sits in until the next spring tide.
+        boat.speed = 0;
+        boat.velocity.x = 0; boat.velocity.y = 0;
+        const F = T.field;
+        const eps = F.res;
+        const zx = groundAt(preX + eps, preY) - groundAt(preX - eps, preY);
+        const zy = groundAt(preX, preY + eps) - groundAt(preX, preY - eps);
+        const gl = Math.hypot(zx, zy);
+        const cgx = fieldAt(F.gx, preX, preY, 0), cgy = fieldAt(F.gy, preX, preY, 0);   // away from the channel
+        let dx = -cgx, dy = -cgy;
+        if (gl > 1e-6) { dx += -zx / gl; dy += -zy / gl; }
+        const dl = Math.hypot(dx, dy);
+        let nx = preX, ny = preY;
+        if (dl > 1e-6) {
+            const step = T.pushKt * 15 * dt;                 // kt → u/s is ×15 (0.25 u/frame per kt × 60)
+            nx = preX + dx / dl * step; ny = preY + dy / dl * step;
+        }
+        boat.x = nx; boat.y = ny;
+        const dNow = depthAt(nx, ny);
+        boat.depth = dNow;
+        if (dNow >= T.draft + T.refloat && clock() - boat.agroundAt >= T.agroundMin) {
+            boat.aground = false;
+            if (boat.ai) boat.ai.collisionData = null;
+        }
+    }
+    // Seconds until this boat floats again, for the HUD (null if the water is already there).
+    function refloatIn(boat) {
+        const T = state.tide;
+        if (!T || !boat.aground) return null;
+        const need = groundAt(boat.x, boat.y) + T.draft + T.refloat;
+        return nextReach(need, clock());
+    }
+
+    // ── the current ─────────────────────────────────────────────────────────
+    // The fill stream over the flats, added to whatever the regions said. Outside every
+    // channel, in water shallower than fillDepth: flood pours away from the channel, ebb
+    // drains back, at fillKt × |rate| fading with depth and with distance from the channel.
+    function addFill(x, y, out) {
+        const T = state.tide;
+        if (!T) return out;
+        const F = T.field;
+        const i = Math.floor((x - F.x0) / F.res), j = Math.floor((y - F.y0) / F.res);
+        if (i < 1 || j < 1 || i >= F.W - 1 || j >= F.H - 1) return out;
+        const k = j * F.W + i;
+        if (F.chMask[k] || F.mMask[k]) return out;
+        const f = flow();
+        if (Math.abs(f) < 0.02) return out;
+        const d = level() - F.z[k];
+        if (d <= 0) return out;
+        const wD = 1 - sstep(d / T.fillDepth);
+        const wR = 1 - sstep((F.dCh[k] * F.res) / T.fillReach);
+        const kt = T.fillKt * Math.abs(f) * wD * wR;
+        if (kt < 0.01) return out;
+        const sgn = f > 0 ? 1 : -1;
+        const vx = F.gx[k] * sgn * kt, vy = F.gy[k] * sgn * kt;
+        if (!out || !(out.speed > 0.001)) return { speed: kt, direction: Math.atan2(vx, -vy) };
+        const ox = Math.sin(out.direction) * out.speed, oy = -Math.cos(out.direction) * out.speed;
+        const sx = ox + vx, sy = oy + vy;
+        return { speed: Math.hypot(sx, sy), direction: Math.atan2(sx, -sy) };
+    }
+
+    // ── the bots ────────────────────────────────────────────────────────────
+    // Ground per nav cell, so the router can price a cell by the water it will find on
+    // ARRIVAL (pathSailable reads `_elev` with the arrival time).
+    function stampGrid(grid) {
+        if (!state.tide || !grid || grid._elev) return grid;
+        const N = grid.n, el = new Float32Array(N * N);
+        for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+            const [wx, wy] = grid.world(i, j);
+            el[j * N + i] = groundAt(wx, wy);
+        }
+        grid._elev = el;
+        return grid;
+    }
+    // A copy of the grid with every cell that is EVER too shallow closed: the chart path,
+    // the ruler and the ranking fields run on the water that is always there.
+    function safeGrid(grid) {
+        if (!state.tide || !grid) return grid;
+        stampGrid(grid);
+        const T = state.tide, N = grid.n;
+        const nav = grid.nav.slice();
+        const lim = T.mid - T.amp - T.draft - T.botMargin;
+        let closed = 0;
+        for (let k = 0; k < N * N; k++) if (nav[k] && grid._elev[k] > lim) { nav[k] = 0; closed++; }
+        const g = Object.assign({}, grid, { nav, _clear: null, _tight: null, _safe: true, _closed: closed });
+        g.at = (i, j) => (i < 0 || j < 0 || i >= N || j >= N) ? 0 : nav[j * N + i];
+        return g;
+    }
+    // The local map: cells that are dry (under the draft + margin) `lead` seconds from now
+    // are closed and remembered as `_tideDry`, so the probes and the clearance field see
+    // the mud, while the router may still cross one that will be wet on arrival.
+    function refreshBotGrid() {
+        const c = state.course, T = state.tide;
+        if (!T || !c || !c._botGridStatic) return;
+        const now = clock();
+        if (c._tideStampT != null && now - c._tideStampT < T.stampEvery) return;
+        c._tideStampT = now;
+        const base = c._botGridStatic;
+        stampGrid(base);
+        const N = base.n, nav = base.nav.slice(), dry = new Uint8Array(N * N);
+        // The lower of now and `lead` seconds on: a falling edge is closed before it dries,
+        // a rising one opens only when it is really there.
+        const L = Math.min(levelAt(now), levelAt(now + T.lead)), lim = T.draft + T.leadMargin;
+        for (let k = 0; k < N * N; k++) if (nav[k] && L - base._elev[k] < lim) { nav[k] = 0; dry[k] = 1; }
+        // CLEARANCE FROM THE LAND, NOT FROM THE MUD. Rebuilt from the stamped nav, the
+        // clearance field read every dry cell as a wall and priced a corridor across the
+        // flats as a 60-unit canyon — the router's slot tax for a run that needs gybes came
+        // to ~6×, and no bot ever took the wantij however open the sill was. The mud is
+        // priced by time (routeCost); only the land narrows the water.
+        if (!base._clear && window.SailCheck) base._clear = window.SailCheck.clearanceField(base);
+        const g = Object.assign({}, base, { nav, _clear: base._clear, _tideDry: dry });
+        g.at = (i, j) => (i < 0 || j < 0 || i >= N || j >= N) ? 0 : nav[j * N + i];
+        g._tight = base._tight;
+        c.botGrid = g;
+    }
+    // The router's per-step verdict: is this cell sailable at `tArr`, and at what price?
+    // Returns 0 for "not at that time", else the time multiplier (≥ 1).
+    function routeMargin(tArr) {
+        const T = state.tide;
+        return T.botMargin + Math.min(T.horizonCap, T.horizonMargin * Math.max(0, tArr - clock()));
+    }
+    function routeCost(grid, nid, tArr) {
+        const T = state.tide;
+        if (!T || !grid._elev) return 1;
+        const d = levelAt(tArr) - grid._elev[nid] - routeMargin(tArr);
+        if (d < T.draft) return 0;
+        const m = mulForDepth(d);
+        return m > 0.01 ? 1 / m : 0;
+    }
+    // Seconds from `tArr` until this cell has draft (plus margins) over it, or null if never.
+    function routeWait(grid, nid, tArr) {
+        const T = state.tide;
+        const need = grid._elev[nid] + T.draft + routeMargin(tArr) + 0.05;
+        return nextReach(need, tArr);
+    }
+
+    // ── the picture ─────────────────────────────────────────────────────────
+    // The flats are one image: every pixel reads the field and the level. Rendered in a
+    // WORLD-ALIGNED window that covers the view (padded, so a rotating or panning camera
+    // reuses it), at pxU world units a pixel, and refreshed when the level has moved or the
+    // view has left the window. Two passes from one computation: the wet flats (under the
+    // wind waves, so the water still moves over them) and the dry ground (over them — mud
+    // has no waves on it), with the water's edge painted on the dry pass.
+    const pic = { cvWet: null, cvDry: null, x0: 0, y0: 0, w: 0, h: 0, level: NaN, key: '' };
+    function hexRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+    const COL = {
+        mud:      [176, 138, 84],    // golden mudflat, dry
+        mudWet:   [112,  86, 52],    // just exposed, gleaming dark
+        sand:     [222, 196, 132],   // rippled sand, dry
+        sandWet:  [166, 140, 88],
+        shallow:  [158, 182, 160],   // the bottom seen through a hand of water
+        edge:     [232, 226, 206]    // the water's edge
+    };
+    function ensureCanvas(o, key, w, h) {
+        if (!o[key]) o[key] = document.createElement('canvas');
+        if (o[key].width !== w || o[key].height !== h) { o[key].width = w; o[key].height = h; }
+        return o[key];
+    }
+    function viewWindow(ctx) {
+        const Tm = ctx.getTransform();
+        const inv = Tm.inverse();
+        const cw = ctx.canvas.width, ch = ctx.canvas.height;
+        let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
+        for (const [sx, sy] of [[0, 0], [cw, 0], [0, ch], [cw, ch]]) {
+            const p = inv.transformPoint(new DOMPoint(sx, sy));
+            if (p.x < a) a = p.x; if (p.y < b) b = p.y; if (p.x > c) c = p.x; if (p.y > d) d = p.y;
+        }
+        return [a, b, c, d];
+    }
+    function refreshPicture(ctx) {
+        const T = state.tide, F = T.field;
+        const C = cfg();
+        const [va, vb, vc, vd] = viewWindow(ctx);
+        const L = level();
+        const inside = pic.cvWet && va >= pic.x0 && vb >= pic.y0 && vc <= pic.x0 + pic.w && vd <= pic.y0 + pic.h;
+        const water = window.WATER_CONFIG || {};
+        const key = (water.baseColor || '') + '|' + (water.shallowColor || '');
+        if (inside && Math.abs(L - pic.level) < 0.008 && key === pic.key) return;
+        const PAD = 400;
+        const x0 = inside ? pic.x0 : Math.floor((va - PAD) / C.pxU) * C.pxU;
+        const y0 = inside ? pic.y0 : Math.floor((vb - PAD) / C.pxU) * C.pxU;
+        const w  = inside ? pic.w  : Math.ceil((vc + PAD - x0) / C.pxU) * C.pxU;
+        const h  = inside ? pic.h  : Math.ceil((vd + PAD - y0) / C.pxU) * C.pxU;
+        const pw = Math.max(1, Math.round(w / C.pxU)), ph = Math.max(1, Math.round(h / C.pxU));
+        const cvW = ensureCanvas(pic, 'cvWet', pw, ph), cvD = ensureCanvas(pic, 'cvDry', pw, ph);
+        const gW = cvW.getContext('2d'), gD = cvD.getContext('2d');
+        const imW = gW.createImageData(pw, ph), imD = gD.createImageData(pw, ph);
+        const AW = imW.data, AD = imD.data;
+        const base = hexRgb(water.baseColor || '#3a6394');
+        const shal = hexRgb(water.shallowColor || '#7aa6d4');
+        const z = F.z, mat = F.mat, W = F.W, H = F.H, res = F.res;
+        const see = C.seeThrough, wet = C.wetBand, DRAFT = T.draft, FREE = T.free;
+        for (let py = 0; py < ph; py++) {
+            const wy = y0 + (py + 0.5) * C.pxU;
+            const fy = (wy - F.y0) / res - 0.5, j = Math.floor(fy), ty = fy - j;
+            for (let px = 0; px < pw; px++) {
+                const wx = x0 + (px + 0.5) * C.pxU;
+                const fx = (wx - F.x0) / res - 0.5, i = Math.floor(fx), tx = fx - i;
+                const o = (py * pw + px) * 4;
+                if (i < 0 || j < 0 || i >= W - 1 || j >= H - 1) { AW[o + 3] = 0; AD[o + 3] = 0; continue; }
+                const k = j * W + i;
+                const g = (z[k] * (1 - tx) + z[k + 1] * tx) * (1 - ty) + (z[k + W] * (1 - tx) + z[k + W + 1] * tx) * ty;
+                const d = L - g;
+                if (F.mMask[k] && F.mMask[k + 1] && F.mMask[k + W] && F.mMask[k + W + 1]) { AW[o + 3] = 0; AD[o + 3] = 0; continue; }
+                // the material, blended like the height so sand and mud meet in a soft seam
+                const sf = (mat[k] * (1 - tx) + mat[k + 1] * tx) * (1 - ty) + (mat[k + W] * (1 - tx) + mat[k + W + 1] * tx) * ty;
+                const dry = [COL.mud[0] + (COL.sand[0] - COL.mud[0]) * sf, COL.mud[1] + (COL.sand[1] - COL.mud[1]) * sf, COL.mud[2] + (COL.sand[2] - COL.mud[2]) * sf];
+                const wetc = [COL.mudWet[0] + (COL.sandWet[0] - COL.mudWet[0]) * sf, COL.mudWet[1] + (COL.sandWet[1] - COL.mudWet[1]) * sf, COL.mudWet[2] + (COL.sandWet[2] - COL.mudWet[2]) * sf];
+                if (d <= 0) {
+                    // exposed ground: dark and gleaming at the water's edge, paler with height
+                    const hgt = -d;
+                    const wf = 1 - sstep(hgt / wet);
+                    const pale = Math.min(0.14, hgt * 0.10);
+                    const r = (dry[0] + (wetc[0] - dry[0]) * wf) * (1 + pale), gg = (dry[1] + (wetc[1] - dry[1]) * wf) * (1 + pale), b = (dry[2] + (wetc[2] - dry[2]) * wf) * (1 + pale);
+                    // the water's edge itself: a pale line a few units wide
+                    const edge = hgt < 0.035 ? 1 : 0;
+                    AD[o] = edge ? COL.edge[0] : Math.min(255, r); AD[o + 1] = edge ? COL.edge[1] : Math.min(255, gg); AD[o + 2] = edge ? COL.edge[2] : Math.min(255, b); AD[o + 3] = 255;
+                    AW[o] = AD[o]; AW[o + 1] = AD[o + 1]; AW[o + 2] = AD[o + 2]; AW[o + 3] = 255;
+                } else if (d < see) {
+                    // THE BOTTOM THROUGH THE WATER, in the bands a sailor needs to tell apart:
+                    // under the draft the mud all but shows (you would sit on it), in the drag
+                    // band the bottom is plainly there under a skin of pale water, and above
+                    // it the tint thins to the open water — so "will it take my speed" is a
+                    // colour, not a guess. The dashed line marks the draft exactly.
+                    const bottom = [ dry[0] * 0.6 + COL.shallow[0] * 0.4, dry[1] * 0.6 + COL.shallow[1] * 0.4, dry[2] * 0.6 + COL.shallow[2] * 0.4 ];
+                    const pale = [ (shal[0] + bottom[0]) / 2, (shal[1] + bottom[1]) / 2, (shal[2] + bottom[2]) / 2 ];
+                    let c, a;
+                    if (d < DRAFT) { const u = d / DRAFT; c = [ wetc[0] + (bottom[0] - wetc[0]) * u, wetc[1] + (bottom[1] - wetc[1]) * u, wetc[2] + (bottom[2] - wetc[2]) * u ]; a = 0.96 - 0.16 * u; }
+                    else if (d < DRAFT + FREE) { const u = (d - DRAFT) / FREE; c = [ bottom[0] + (pale[0] - bottom[0]) * u, bottom[1] + (pale[1] - bottom[1]) * u, bottom[2] + (pale[2] - bottom[2]) * u ]; a = 0.8 - 0.25 * u; }
+                    else { const u = Math.min(1, (d - DRAFT - FREE) / (see - DRAFT - FREE)); const s = (1 - u) * (1 - u); c = [ base[0] + (pale[0] - base[0]) * s, base[1] + (pale[1] - base[1]) * s, base[2] + (pale[2] - base[2]) * s ]; a = 0.55 * s; }
+                    AW[o] = c[0]; AW[o + 1] = c[1]; AW[o + 2] = c[2]; AW[o + 3] = Math.round(255 * a);
+                    AD[o + 3] = 0;
+                } else { AW[o + 3] = 0; AD[o + 3] = 0; }
+            }
+        }
+        gW.putImageData(imW, 0, 0); gD.putImageData(imD, 0, 0);
+        pic.x0 = x0; pic.y0 = y0; pic.w = w; pic.h = h; pic.level = L; pic.key = key;
+    }
+    function drawWet(ctx) {
+        if (!state.tide) return;
+        refreshPicture(ctx);
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(pic.cvWet, pic.x0, pic.y0, pic.w, pic.h);
+        ctx.restore();
+    }
+    function drawDry(ctx) {
+        if (!state.tide) return;
+        refreshPicture(ctx);
+        ctx.save();
+        ctx.imageSmoothingEnabled = true;
+        ctx.drawImage(pic.cvDry, pic.x0, pic.y0, pic.w, pic.h);
+        ctx.restore();
+        if (cfg().draftLine) drawDraftLine(ctx);
+    }
+    // The AFLOAT contour — marching squares on the raster over the view, dashed: where the
+    // water is exactly one draft deep now. Inside it you sail; outside it you sit.
+    function drawDraftLine(ctx) {
+        const T = state.tide, F = T.field;
+        const [va, vb, vc, vd] = viewWindow(ctx);
+        const i0 = Math.max(0, Math.floor((va - F.x0) / F.res) - 1), i1 = Math.min(F.W - 2, Math.ceil((vc - F.x0) / F.res) + 1);
+        const j0 = Math.max(0, Math.floor((vb - F.y0) / F.res) - 1), j1 = Math.min(F.H - 2, Math.ceil((vd - F.y0) / F.res) + 1);
+        const iso = level() - T.draft;             // ground height where depth == draft
+        const z = F.z, W = F.W, res = F.res;
+        ctx.save();
+        ctx.lineWidth = 2.2;
+        ctx.setLineDash([14, 10]);
+        ctx.strokeStyle = 'rgba(255, 196, 92, 0.85)';
+        ctx.beginPath();
+        const px = (i) => F.x0 + (i + 0.5) * res, py = (j) => F.y0 + (j + 0.5) * res;
+        for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
+            const k = j * W + i;
+            const a = z[k], b = z[k + 1], c = z[k + W + 1], d = z[k + W];
+            const ca = a > iso ? 8 : 0, cb = b > iso ? 4 : 0, cc = c > iso ? 2 : 0, cd = d > iso ? 1 : 0;
+            const code = ca | cb | cc | cd;
+            if (code === 0 || code === 15) continue;
+            // edge midpoints with linear interpolation
+            const lerp = (p, q, vp, vq) => p + (q - p) * ((iso - vp) / ((vq - vp) || 1e-9));
+            const top = [lerp(px(i), px(i + 1), a, b), py(j)];
+            const right = [px(i + 1), lerp(py(j), py(j + 1), b, c)];
+            const bottom = [lerp(px(i), px(i + 1), d, c), py(j + 1)];
+            const left = [px(i), lerp(py(j), py(j + 1), a, d)];
+            const segs = MS[code];
+            for (const [e0, e1] of segs) {
+                const p = [top, right, bottom, left][e0], q = [top, right, bottom, left][e1];
+                ctx.moveTo(p[0], p[1]); ctx.lineTo(q[0], q[1]);
+            }
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+    // marching-squares lookup: edges 0 top, 1 right, 2 bottom, 3 left; bits a(8) b(4) c(2) d(1)
+    const MS = {
+        1: [[3, 2]], 2: [[2, 1]], 3: [[3, 1]], 4: [[0, 1]], 5: [[0, 3], [1, 2]], 6: [[0, 2]], 7: [[0, 3]],
+        8: [[0, 3]], 9: [[0, 2]], 10: [[0, 1], [3, 2]], 11: [[0, 1]], 12: [[3, 1]], 13: [[2, 1]], 14: [[3, 2]]
+    };
+
+    // ── the HUD ─────────────────────────────────────────────────────────────
+    // What the instruments say: depth under the keel, the tide's state and the next turn.
+    function hudInfo(boat) {
+        const T = state.tide;
+        if (!T) return null;
+        const t = clock();
+        const L = levelAt(t), f = flow();
+        const toHigh = nextHigh(t), toLow = nextLow(t);
+        const rising = f >= 0;
+        return {
+            level: L, amp: T.amp, mid: T.mid, rising, flow: f,
+            frac: (L - (T.mid - T.amp)) / (2 * T.amp),           // 0 at LW, 1 at HW
+            next: rising ? 'HW' : 'LW', nextIn: rising ? toHigh : toLow,
+            depth: boat ? (boat.depth != null ? boat.depth : depthAt(boat.x, boat.y)) : null,
+            aground: !!(boat && boat.aground),
+            refloatIn: boat ? refloatIn(boat) : null,
+            draft: T.draft, free: T.free
+        };
+    }
+
+    // ── lifecycle ───────────────────────────────────────────────────────────
+    function init() {
+        state.tide = null;
+        const doc = state.course && state.course.doc;
+        if (!doc) return;
+        const C = cfg();
+        const field = build(doc);
+        if (!field) return;
+        const tideDoc = doc.tide || {};
+        state.tide = {
+            period: tideDoc.period != null ? +tideDoc.period : C.period,
+            amp: tideDoc.amp != null ? +tideDoc.amp : C.amp,
+            mid: tideDoc.mid != null ? +tideDoc.mid : C.mid,
+            phase0: tideDoc.phase0 != null ? +tideDoc.phase0 : C.phase0,
+            draft: C.draft, free: C.free, minMul: C.minMul, refloat: C.refloat, agroundMin: C.agroundMin, pushKt: C.pushKt,
+            fillKt: tideDoc.fillKt != null ? +tideDoc.fillKt : C.fillKt, fillDepth: C.fillDepth, fillReach: C.fillReach,
+            botMargin: C.botMargin, lead: C.lead, leadMargin: C.leadMargin, stampEvery: C.stampEvery, maxWait: C.maxWait, horizonMargin: C.horizonMargin, horizonCap: C.horizonCap,
+            marshZ: C.marshZ,
+            field
+        };
+        pic.level = NaN; pic.cvWet = null; pic.cvDry = null;
+        if (state.course) state.course._tideStampT = null;
+        for (const b of (state.boats || [])) { b.aground = false; b.depth = null; b.tideMul = 1; }
+    }
+    function update(dt) {
+        if (!state.tide) return;
+        refreshBotGrid();
+    }
+
+    window.Tide = {
+        CONST: TIDE, init, update, build,
+        clock, level, levelAt, rateAt, flow, nextReach, nextHigh, nextLow,
+        groundAt, depthAt, mulAt, mulForDepth,
+        speedMul, afterMove, refloatIn,
+        addFill,
+        stampGrid, safeGrid, refreshBotGrid, routeCost, routeWait,
+        drawWet, drawDry, hudInfo,
+        _pic: pic
+    };
+})();

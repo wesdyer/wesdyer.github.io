@@ -862,6 +862,11 @@ function updateBoat(boat, dt) {
     } else if (boat.shoalMul !== 1) {
         boat.shoalMul = 1;
     }
+    // THE TIDE (Spoonbill Flats). The same kind of multiplier, read off depth rather than
+    // off a polygon: full speed with a hand of clearance, the mud taking more as the water
+    // goes, nothing at all aground — see js/tide.js. Only ever set on a tidal venue, so no
+    // other venue's boats grow the fields (the golden traces hash every primitive).
+    if (state.tide && window.Tide) targetKnots *= Tide.speedMul(boat);
 
     // RAPIDS. Turbulence only — a rapid authors no flow; whatever stream runs through
     // it is the Current layer's and arrives through getCurrentAt below. Broken water
@@ -1059,8 +1064,12 @@ function updateBoat(boat, dt) {
         boat.velocity.y += swell.driftY / 60;
     }
 
+    const preTideX = boat.x, preTideY = boat.y;
     boat.x += boat.velocity.x * timeScale;
     boat.y += boat.velocity.y * timeScale;
+    // AGROUND on the flats: a hull in less than her draft goes back where she was, loses
+    // her way, and is shoved downhill until the tide returns. See js/tide.js.
+    if (state.tide && window.Tide) Tide.afterMove(boat, preTideX, preTideY, dt);
 
     // Boundary Check
     if (state.course.riverCorridor) {

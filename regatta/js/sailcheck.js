@@ -978,6 +978,26 @@ function pathSailable(grid, from, to) {
     const g = snap(to[0], to[1]);
     if (!s || !g) return null;
     const N = grid.n, size = N * N;
+    // THE TIDE (Spoonbill Flats). A cell on the flats is priced by the water it will have
+    // WHEN THE BOAT GETS THERE, not now: gScore is sailing time in cells-at-10-kt (the
+    // wind table's unit; 1 per cell when there is no table), so the arrival time is the
+    // clock plus gScore × res / 150 u/s. A cell that is dry then is not a step; a cell that
+    // is shallow then costs its speed multiplier, exactly as the physics will levy it. A
+    // cell the local map has closed (`_tideDry`, dry within the stamp's lead) is still a
+    // step if it will be wet on arrival — that is what lets a route aim for a bar that is
+    // opening. The FIFO caveat: a route that arrives too early at a sill is priced as
+    // blocked and goes round rather than waiting, which is what a bot should do.
+    const tideOn = !!(grid._elev && typeof state !== 'undefined' && state.tide && window.Tide);
+    const tideNow = tideOn ? Tide.clock() : 0, tideSec = tideOn ? grid.res / 150 : 0;
+    const tideDry = tideOn ? grid._tideDry : null;
+    // WAITING FOR THE TIDE. A step onto a cell that is dry on arrival may still be the best
+    // route if the water is coming: from a cell that is ALWAYS wet (a pool, the channel) the
+    // boat can hold station until the sill opens, and the wait is priced as time like every
+    // other cost. `waitUntil[nid]` remembers the clock the step was taken at, so the path
+    // can tell the helm where to hold and until when (Tide.routeWait).
+    const waitUntil = tideOn ? new Float32Array(size) : null;
+    const alwaysWet = tideOn ? (id) => grid._elev[id] < state.tide.mid - state.tide.amp - state.tide.draft - state.tide.botMargin : null;
+    const MAX_WAIT = tideOn ? state.tide.maxWait : 0;
     // Float64, and improvements must clear an epsilon: storing float64 candidates
     // into a float32 table let two cells "improve" each other by rounding noise
     // forever — an unbounded heap and a 4GB OOM in about a minute.
@@ -1040,12 +1060,29 @@ function pathSailable(grid, from, to) {
                 (soft && ai >= 0 && bi >= 0 && ai < N && bi < N && soft(bi * N + ai));
             const passable = (ai, bi) => passStock(ai, bi) ||
                 (ai >= 0 && bi >= 0 && ai < N && bi < N &&
-                    grid._tight && grid._tight[bi * N + ai]);
+                    (grid._tight && grid._tight[bi * N + ai] || (tideDry && tideDry[bi * N + ai])));
             if (!passable(a, b)) continue;
             const nid = b * N + a;
+            let tideMul = 1, tideWait = 0, tideWaitUntil = 0;
+            if (tideOn) {
+                const tArr = tideNow + gScore[cur] * tideSec;
+                tideMul = Tide.routeCost(grid, nid, tArr);
+                if (tideMul <= 0) {
+                    // Dry on arrival. Hold here for it, if here is always wet and the water
+                    // comes soon enough; else this is not a step.
+                    if (!alwaysWet(cur)) continue;
+                    const w = Tide.routeWait(grid, nid, tArr);
+                    if (w == null || w > MAX_WAIT) continue;
+                    tideWait = w / tideSec;                     // seconds → cost units
+                    tideWaitUntil = tArr + w;
+                    tideMul = Tide.routeCost(grid, nid, tideWaitUntil + 0.5);
+                    if (tideMul <= 0) continue;
+                }
+            }
             const nonNav = !grid.at(a, b);
             const isSoft = nonNav && !!(grid._soft && grid._soft[nid] > 0);
-            const isTight = nonNav && !isSoft;
+            const isTideDry = nonNav && !isSoft && !!(tideDry && tideDry[nid]);
+            const isTight = nonNav && !isSoft && !isTideDry;
             // ⚠️ THE CORNER RULE MUST NOT RELAX FOR FREE. Counting tight cells
             // as "passable" in the diagonal corner test let every route cut
             // diagonals past corners whose orthogonal neighbour is a 21-44u
@@ -1107,6 +1144,8 @@ function pathSailable(grid, from, to) {
             // Admissible: the field is >= 1 everywhere, so no step gets cheaper than
             // _tfMin and the heuristic still never overestimates.
             if (grid._shoal) base *= grid._shoal[nid];
+            // The tide's price on the same footing as the bar's: time, literally.
+            if (tideMul !== 1) base *= tideMul;
             // ⚠️ REMAINING WEIGHTS ARE ROUTE HINTS, NOT WALLS — bounded, so the
             // worst hint-driven detour stays small (the 7x-wall-cost cove loop
             // lives in memory as the cautionary tale).
@@ -1136,21 +1175,28 @@ function pathSailable(grid, from, to) {
             // stamp site in script.js). Bounded like _soft's multipliers so the
             // worst jam detour stays comparable to a floe-plug detour.
             if (grid._jam && grid._jam[nid]) w *= Math.min(6, 1.5 + 1.5 * grid._jam[nid]);
-            const step = (di && dj ? Math.SQRT2 : 1) * w;
+            const step = (di && dj ? Math.SQRT2 : 1) * w + tideWait;
             const cand = gScore[cur] + step;
             if (cand < gScore[nid] - 1e-4) {
                 gScore[nid] = cand;
                 prev[nid] = cur;
+                if (waitUntil) waitUntil[nid] = tideWaitUntil;
                 push(cand + h(nid), nid);
             }
         }
     }
     if (prev[gi] === -1 && gi !== si) return null;
     const out = [];
-    let cur = gi;
-    while (cur !== si) { const ci = cur % N; out.push(grid.world(ci, (cur - ci) / N)); cur = prev[cur]; }
+    let cur = gi, wait = null;
+    while (cur !== si) {
+        const ci = cur % N; out.push(grid.world(ci, (cur - ci) / N));
+        // The LAST wait on the way back is the FIRST on the way out: where the helm holds.
+        if (waitUntil && waitUntil[cur] > 0) { const pc = prev[cur], pi = pc % N; wait = { x: grid.world(pi, (pc - pi) / N), until: waitUntil[cur] }; }
+        cur = prev[cur];
+    }
     out.push(grid.world(s[0], s[1]));
     out.reverse();
+    if (wait) out.wait = { x: wait.x[0], y: wait.x[1], until: wait.until };
     return out;
 }
 

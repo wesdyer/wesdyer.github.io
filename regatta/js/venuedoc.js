@@ -3137,7 +3137,41 @@ const SHAPE_KINDS = {
     // prices it. NOT YET: the swell damping the card promises. Nothing in the swell path
     // reads shapes today; when it does, this is the kind that asks for it.
     kelp:     { motion: 'fixed', hard: false, look: 'shoal', hidden: false, nav: true, height: 0,
-               awash: true, drag: 0.65, paint: true, veg: 'kelp' }
+               awash: true, drag: 0.65, paint: true, veg: 'kelp' },
+
+    // ── SPOONBILL FLATS: THE TIDAL ESTUARY (Sep 16 2026) ─────────────────────
+    // The flats are not shapes with a drag — they are a continuous ELEVATION FIELD that the
+    // tide (js/tide.js) floods and drains on a clock. The kinds below are how a designer
+    // AUTHORS that field, Wes's way: lay down the deep channels, pick the ground that never
+    // wets, and the intertidal ground between them fills from the channel outward. The
+    // runtime rasterises the field from these polygons at load (Tide.build); nothing here
+    // is a collider or a drag zone of its own.
+    //
+    //   flats-marsh    saltmarsh turf — NEVER wet. Real land: hard, routed, drawn by
+    //                  drawIslands with its own look. The high anchor of the field.
+    //   flats-channel  the deep water: sea, main channel, creeks. The low anchor. `elev`
+    //                  is the bed (default −3 m), always draft-safe at low water.
+    //   flats-pool     a deep pocket in the flats: `elev` bed (default −2 m). Always wet.
+    //   flats-bar      a sand bar / the wantij crest: `elev` is the CREST (default 0 m) —
+    //                  the sill height that decides for how much of the cycle it opens.
+    //                  Drawn as rippled sand rather than mud.
+    //   flats-flat     an intertidal ground override: `elev` sets the whole polygon's
+    //                  height (mud). For a shelf or a pan the distance rule would not give.
+    //
+    // The four field kinds are `awash` (never a collider, never an obstacle for the router,
+    // no lee), `paint` (they draw their own picture — the tide layer's, which drawShallows
+    // skips via `tide`) and `nav: false` (the router prices the FIELD per cell, not the
+    // polygons). drag 0: the tide layer levies the speed cost from depth, not the shoal
+    // field. `elev` is the per-shape height in METRES the field reads (shapeTraits).
+    'flats-marsh':   { motion: 'fixed', hard: true,  look: 'saltmarsh', hidden: false, nav: true, height: 0, elev: 1.4 },  // ~1 m of turf — no lee
+    'flats-channel': { motion: 'fixed', hard: false, look: 'shoal',     hidden: false, nav: false, height: 0,
+                       awash: true, drag: 0, paint: true, tide: 'channel', elev: -3.0 },
+    'flats-pool':    { motion: 'fixed', hard: false, look: 'shoal',     hidden: false, nav: false, height: 0,
+                       awash: true, drag: 0, paint: true, tide: 'pool',    elev: -2.0 },
+    'flats-bar':     { motion: 'fixed', hard: false, look: 'shoal',     hidden: false, nav: false, height: 0,
+                       awash: true, drag: 0, paint: true, tide: 'bar',     elev: 0.0 },
+    'flats-flat':    { motion: 'fixed', hard: false, look: 'shoal',     hidden: false, nav: false, height: 0,
+                       awash: true, drag: 0, paint: true, tide: 'flat',    elev: -0.5 }
 };
 
 // How far in from a shoal's rim the water is still deep enough not to matter, in units.
@@ -3250,7 +3284,15 @@ function shapeTraits(s) {
         // Clamped rather than trusted: `drag: 1` is a shape that stops a boat dead in water
         // it is floating over, with no collision to explain why, and every escape from it
         // is upwind of nothing. 0.9 leaves a knot to crawl out on.
-        drag:   Math.max(0, Math.min(0.9, s.drag !== undefined ? +s.drag : (k.drag || 0)))
+        drag:   Math.max(0, Math.min(0.9, s.drag !== undefined ? +s.drag : (k.drag || 0))),
+        // THE TIDAL FIELD (Spoonbill Flats). `tide` names which anchor of the elevation
+        // field this polygon is (channel / pool / bar / flat), kind-level like `paint`;
+        // `elev` is its height in metres above mean water — a bar's crest, a pool's bed,
+        // a channel's bed — per shape, so one bar can sit higher than the next. Null on
+        // every kind that is not part of a tidal field.
+        tide:   k.tide || null,
+        elev:   (s.elev !== undefined && s.elev !== null && isFinite(+s.elev)) ? +s.elev
+                : (k.elev !== undefined ? k.elev : null)
     };
 }
 
@@ -3414,6 +3456,10 @@ function compileVenueDoc(doc, light) {
             // What is growing here, for the renderer. Null on bare ground, which is
             // every shape that existed before the bayou.
             veg: T.veg,
+            // The tidal field's anchors (js/tide.js): which one, and how high. Null off
+            // Spoonbill Flats. drawShallows skips a `tide` shape — the tide layer draws it.
+            tide: T.tide,
+            elev: T.elev,
             shoalMul: T.awash ? 1 - T.drag : 1,
             // The kind's own feather now, not the global — mud shelves nothing like
             // sand does. Still clamped to half the radius for the same reason as
@@ -3616,7 +3662,11 @@ function compileVenueDoc(doc, light) {
             speedVar: r.speedVar != null ? r.speedVar : 0,
             dirVar: r.dirVar != null ? r.dirVar : 0,
             period: r.period != null ? r.period : 45,
-            phase: (i * 2.399963) % (Math.PI * 2)
+            phase: (i * 2.399963) % (Math.PI * 2),
+            // A TIDAL stream (Spoonbill Flats): `speed` is the knots at the peak rate and the
+            // tide's clock scales and reverses it — flood along `direction`, ebb back. The
+            // oscillation fields above are ignored for one; see getCurrentAt.
+            tidal: !!r.tidal
         };
     }).filter(r => r.poly.length >= 3);
 

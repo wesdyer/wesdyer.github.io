@@ -30,6 +30,8 @@ function update(dt) {
     updateGusts(dt);
     updateSqualls(dt);
     if (window.Volcano) Volcano.update(dt);
+    // The tide's local map for the bots (the level itself is a pure function of the race clock).
+    if (window.Tide) Tide.update(dt);
     // No dt: every vessel is evaluated straight from the race clock, so it cannot drift
     // with the frame rate the way an integrated position would.
     updateTraffic();
@@ -436,6 +438,9 @@ function draw() {
     // composite: static content that was five full-screen passes a frame. See
     // drawSeabedUnderlay. Every layer of the moving surface runs across it all.
     drawSeabedUnderlay(ctx);
+    // The tidal flats under the water: the bottom seen through it, and the ground it has
+    // left. Under every moving surface layer, like the shoals. No-op off Spoonbill Flats.
+    if (window.Tide && state.tide) Tide.drawWet(ctx);
     // Jellyfish bodies ride with the seabed layer so the water draws over them — that is
     // what sells the depth they are rising and falling through. Their light comes later.
     drawJellyDrifts(ctx);
@@ -574,6 +579,9 @@ function draw() {
     // authored behind headlands) draws live in document order as before.
     // The player's path line lies ON the water and BEHIND the land, so a headland hides the way round it.
     if (window.GoalField) GoalField.drawPath(ctx, player);
+    // The DRY flats over the wind waves (mud has no waves on it), with the water's edge and
+    // the afloat line — and UNDER the marsh, so real land's polygon edge covers the raster's.
+    if (window.Tide && state.tide) Tide.drawDry(ctx);
     drawIslandsCached(ctx);
     // Surf sits ON the shore, so it goes over the land and under the air layer.
     drawSurf(ctx);

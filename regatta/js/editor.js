@@ -438,7 +438,15 @@ const LAND_TYPES = [
     // Otter Point's giant kelp: an awash surface canopy on the [VENUE] [TERRAIN] convention.
     // Swatch is the painter's mid tone; you may sail over it, so its fill is translucent.
     { kind: 'kelp',        label: 'Otter Kelp Bed',   swatch: '#5c4a22' },
-    { kind: 'duckweed',    label: 'Duckweed',         swatch: '#84a64c' }
+    { kind: 'duckweed',    label: 'Duckweed',         swatch: '#84a64c' },
+    // Spoonbill Flats' tidal field (js/tide.js). The marsh is land; the other four are the
+    // anchors of the elevation field the tide floods and drains — you may sail over every
+    // one of them when the water is up, so all four fill translucent.
+    { kind: 'flats-marsh',   label: 'Flats Saltmarsh',    swatch: '#8f8f52' },
+    { kind: 'flats-channel', label: 'Flats Deep Channel', swatch: '#274a72' },
+    { kind: 'flats-pool',    label: 'Flats Deep Pool',    swatch: '#355d8a' },
+    { kind: 'flats-bar',     label: 'Flats Sand Bar',     swatch: '#d9b86a' },
+    { kind: 'flats-flat',    label: 'Flats Mud Shelf',    swatch: '#a8874c' }
 ];
 // The one place the order is decided, so both pickers inherit it and cannot disagree:
 // the toolbar's `new-kind` (what the next gesture makes) and the inspector's `in-mat`
@@ -581,8 +589,13 @@ function recomputeEstimate() {
             window.VenueDoc.propHitRings(p).rings.forEach((ring, i) =>
                 solid.push({ id: p.id + (i ? `.hit${i + 1}` : '.hit'), kind: 'isle', outer: ring, holes: [], hidden: true }));
         }
-        const grid = window.SailCheck.buildGrid(solid, course.boundary, null,
+        let grid = window.SailCheck.buildGrid(solid, course.boundary, null,
             window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed') ? { noSubsample: true } : null);
+        // THE TIDE'S SAFE WATER (Spoonbill Flats): the estimate is the channel route — the
+        // water that is always there — exactly as the game's own chart path is. The flats
+        // are a field the tide opens and closes, not a polygon, so they are closed HERE
+        // rather than in `solid`; the shortcuts are what a sailor beats this number with.
+        if (state.tide && window.Tide) grid = window.Tide.safeGrid(window.Tide.stampGrid(grid));
         // Pass the real field, not one number: the wind varies across the course, and a
         // patch with no region over it has no wind at all.
         estimate = window.SailCheck.routeEstimate(grid, course.marks, course.route,
@@ -656,9 +669,10 @@ function livePathRefresh() {
     }
     try {
         if (!state._dmcPlanner && typeof RoutePlanner === 'function') state._dmcPlanner = new RoutePlanner();
+        const dmcGrid = course._botGridStatic || course.botGrid || null;
         course.dmc = CoursePath.build(course.marks, course.route, course.islands || [],
                                       state._dmcPlanner, 'dmc-' + (course.navVersion || 0),
-                                      course._botGridStatic || course.botGrid || null);
+                                      (dmcGrid && state.tide && window.Tide) ? window.Tide.safeGrid(dmcGrid) : dmcGrid);
     } catch (err) { /* an unroutable mid-drag position keeps the last good path */ }
 }
 
@@ -1998,6 +2012,12 @@ const KIND_FILL = {
     // painter shows it — a flow is dark with a hot front — and is also the one legible
     // arrangement on a schematic, where a solid orange blob would read as a mark zone.
     basalt: '#30333A', cinder: '#3F2C29', blacksand: '#212121', lava: '#241A18',
+    // Spoonbill Flats. The marsh is dry land, so solid; the field anchors are all water you
+    // may sail over at some state of the tide, so translucent — the channel and pool as
+    // deep blue, the bar and shelf as the sand and mud they dry to.
+    'flats-marsh': '#8f8f52',
+    'flats-channel': 'rgba(39,74,114,0.55)', 'flats-pool': 'rgba(53,93,138,0.5)',
+    'flats-bar': 'rgba(217,184,106,0.5)', 'flats-flat': 'rgba(168,135,76,0.42)',
     // Magma fills as the bed itself: it has no crust to hide behind, so the schematic
     // shows the orange — the one dry-land fill here that is not dark, and the reason
     // lava's edge carries its ember instead (a solid orange blob next to a solid orange
@@ -4232,6 +4252,17 @@ function curPh(l) {
 // zero by the compiler, so three boxes that cannot be made to do anything is three boxes
 // that teach the wrong thing. Depth replaces it, and says the number in the terms the
 // designer is actually choosing: what a boat keeps, and how wide the ramp is.
+// What a tidal-field anchor does, in the tide's own words: for how much of the cycle a
+// crest is under enough water to sail, read off the venue's tide constants (js/tide.js).
+function tideSays(T) {
+    const TD = (window.Tide && window.Tide.CONST) || { amp: 1, draft: 0.5, free: 0.5 };
+    const h = T.elev;
+    if (T.tide === 'channel') return `deep water — the low anchor of the field · bed ${h} m`;
+    if (T.tide === 'pool') return `always wet pocket · bed ${h} m`;
+    const openFrac = (sill) => { const r = (sill - 0) / TD.amp; if (r >= 1) return 0; if (r <= -1) return 1; return Math.acos(r) / Math.PI; };
+    const afloat = openFrac(h + TD.draft), free = openFrac(h + TD.draft + TD.free);
+    return `${T.tide === 'bar' ? 'crest' : 'ground'} ${h} m · afloat ${Math.round(afloat * 100)}% of the cycle · full speed ${Math.round(free * 100)}%`;
+}
 function shoalSays(T) {
     // "Shallowest part" was right while every awash shape was a sandbar and wrong the
     // moment one could be a weed mat, where the cost is thickness rather than depth.
@@ -4315,7 +4346,12 @@ function inspLand(l) {
     `<option value="${i}"${i === t ? ' selected' : ''}>${x.label}</option>`).join('')}</select>
   <div class="in-sub" id="in-kindsays">${says}</div>
 </div>
-${T.awash ? `<div class="in-sect"><span class="k">Depth</span>
+${T.tide ? `<div class="in-sect"><span class="k">Tide</span>
+  <div class="in-grid">
+    ${numF(T.tide === 'bar' ? 'Crest' : 'Bed', 'shape.elev', l.elev != null ? f1(l.elev) : '', 'm', false, f1(T.elev))}
+  </div>
+  <div class="in-sub">${tideSays(T)}</div>
+</div>` : T.awash ? `<div class="in-sect"><span class="k">Depth</span>
   <div class="in-grid">
     ${numF('Drag', 'shape.drag', f1(T.drag * 100), '%', false, '50')}
     ${numF('Ramp', 'shape.fth', l.feather != null ? f1(uToM(l.feather)) : '', 'm', false, f1(uToM(T.feather)))}
@@ -4986,6 +5022,25 @@ function numEdit(el) {
             l.feather = mToU(v);
         }
         afterEdit(true, 'shoal ramp');
+        return;
+    }
+
+    // THE TIDAL FIELD'S HEIGHT (Spoonbill Flats): a bar's crest, a pool's or channel's bed,
+    // in metres above mean water. Blank inherits the kind's default. The field rebuilds on
+    // the next race load (Tide.build reads the document), so the schematic's chip updates
+    // now and the water answers at the next Play.
+    if (what === 'shape' && key === 'elev') {
+        const l = shapeById(sel.shape); if (!l) return;
+        if (el.value.trim() === '') delete l.elev;
+        else {
+            const v = parseFloat(el.value);
+            if (!isFinite(v) || v < -6 || v > 6) {
+                toast('Height is -6 to +6 m above mean water — the tide only swings about a metre either way', true);
+                inspectorRefresh(); return;
+            }
+            l.elev = v;
+        }
+        afterEdit(true, 'tide height');
         return;
     }
 

@@ -2024,8 +2024,48 @@ function updateRoseHud(player, localWind) {
         if (ico && typeof streakColorFor === 'function') { const c = streakColorFor(d.tws); ico.style.color = `rgb(${c[0]},${c[1]},${c[2]})`; }
     }
     if (UI.windAngle) { UI.windAngle.textContent = `${d.twa}\u00b0`; UI.windAngle.style.color = d.noGo ? '#f87171' : ''; }
+    drawTideReadout(player);
     roseCue('hud-planing-label', 'absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-cyan-400 hidden', 'PLANING', d.planing);
     roseCue('hud-surfing-label', 'absolute -top-9 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-amber-300 hidden', 'SURFING', d.surfing);
+}
+
+// ── THE TIDE READOUT (Spoonbill Flats) ──────────────────────────────────────
+// The rose's fourth row: a gauge of the water's height between LW and HW with the flood
+// or ebb arrow and the seconds to the turn, and the echo sounder. Colour is the warning:
+// blue with clearance, amber while the mud is taking speed, red just afloat, and AGROUND
+// with the refloat countdown when she sits. Hidden on every other venue.
+function drawTideReadout(player) {
+    if (!UI.tideRow) return;
+    const info = (window.Tide && state.tide) ? Tide.hudInfo(player) : null;
+    if (!info) { if (!UI.tideRow.classList.contains('hidden')) UI.tideRow.classList.add('hidden'); return; }
+    UI.tideRow.classList.remove('hidden');
+    const g = UI.tideGauge;
+    if (g) {
+        const gc = g.getContext('2d');
+        gc.clearRect(0, 0, g.width, g.height);
+        gc.fillStyle = 'rgba(148,163,184,0.25)';
+        gc.beginPath(); gc.roundRect(0, 2, g.width, g.height - 4, 3); gc.fill();
+        const w = Math.max(2, Math.round((g.width - 2) * Math.max(0, Math.min(1, info.frac))));
+        gc.fillStyle = info.rising ? '#7dd3fc' : '#fbbf24';
+        gc.beginPath(); gc.roundRect(1, 3, w, g.height - 6, 2); gc.fill();
+    }
+    if (UI.tideText) {
+        const s = Math.max(0, Math.round(info.nextIn));
+        UI.tideText.textContent = `${info.rising ? '\u25b2' : '\u25bc'} ${info.next} ${s}s`;
+        UI.tideText.style.color = info.rising ? '#bae6fd' : '#fde68a';
+    }
+    if (UI.depth) {
+        if (info.aground) {
+            const r = info.refloatIn;
+            UI.depth.textContent = r == null ? 'AGROUND' : `AGROUND ${Math.max(1, Math.ceil(r))}s`;
+            UI.depth.style.color = '#f87171';
+        } else {
+            const dd = info.depth == null ? 0 : info.depth;
+            const clr = dd - info.draft;
+            UI.depth.textContent = `${Math.max(0, dd).toFixed(1)}m`;
+            UI.depth.style.color = clr >= info.free ? '#bfdbfe' : clr > info.free * 0.4 ? '#fbbf24' : '#f87171';
+        }
+    }
 }
 
 // Show the chosen face and hide the others. The chart moves rather than being toggled: it is
@@ -2197,6 +2237,33 @@ function drawBoatInstruments(ctx, player) {
             ctx.beginPath(); ctx.roundRect(left, by, Math.max(bh, BI_W * dp), bh, r);
             ctx.fillStyle = (player.colors && player.colors.spinnaker) || '#f2c14e';
             ctx.fill();
+        }
+    }
+    // ── THE ECHO SOUNDER (Spoonbill Flats) ──────────────────────────────────
+    // The one other number that steers the boat continuously on this venue, so it earns
+    // the same place: a second pill under the TWA with the depth under the hull, blue with
+    // clearance, amber as the mud takes speed, red just afloat — and AGROUND with the
+    // seconds to the refloat when she sits. Nothing off a tidal venue.
+    if (window.Tide && state.tide) {
+        const info = Tide.hudInfo(player);
+        if (info) {
+            const by = top + BI_H + 4 + ((dp > 0.001 && dp < 0.999) ? 9 : 0);
+            let txt, col;
+            if (info.aground) { const r = info.refloatIn; txt = r == null ? 'AGROUND' : `AGROUND ${Math.max(1, Math.ceil(r))}s`; col = '#f87171'; }
+            else {
+                const dd = Math.max(0, info.depth == null ? 0 : info.depth), clr = dd - info.draft;
+                txt = `${dd.toFixed(1)} m`;
+                col = clr >= info.free ? '#bfdbfe' : clr > info.free * 0.4 ? '#fbbf24' : '#f87171';
+            }
+            ctx.shadowBlur = 0;
+            const pw = info.aground ? BI_W + 44 : BI_W;
+            ctx.beginPath(); ctx.roundRect(sx - pw / 2, by, pw, BI_H - 4, 7);
+            ctx.fillStyle = BI_BG; ctx.fill();
+            ctx.strokeStyle = info.aground ? 'rgba(248,113,113,0.8)' : BI_RIM; ctx.lineWidth = 1; ctx.stroke();
+            ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
+            ctx.font = FONT.mono(12);
+            ctx.fillStyle = col;
+            ctx.fillText(txt, sx, by + (BI_H - 4) / 2 + 0.5);
         }
     }
     ctx.restore();

@@ -505,18 +505,34 @@ function getCurrentAt(x, y) {
         const sd = Arena.signedDist(r, x, y);
         const w = VenueDoc.regionWeight(sd, r.falloff);
         if (w <= 0) continue;
-        const osc = r.period > 0 ? Math.sin((state.time / r.period) * Math.PI * 2 + r.phase) : 0;
-        const dir = r.direction + r.dirVar * osc;
+        let dir, sp;
+        if (r.tidal && state.tide && window.Tide) {
+            // A TIDAL STREAM: its knots are the peak rate's, scaled by how fast the level is
+            // moving now, flooding along the authored direction and ebbing straight back.
+            // Slack at high and low water, by construction. See js/tide.js.
+            const f = Tide.flow();
+            dir = r.direction + (f < 0 ? Math.PI : 0);
+            sp = r.speed * Math.abs(f);
+        } else {
+            const osc = r.period > 0 ? Math.sin((state.time / r.period) * Math.PI * 2 + r.phase) : 0;
+            dir = r.direction + r.dirVar * osc;
+            sp = Math.max(0, r.speed + r.speedVar * osc);
+        }
         ux += Math.sin(dir) * w;
         uy += -Math.cos(dir) * w;
-        sacc += Math.max(0, r.speed + r.speedVar * osc) * w;
+        sacc += sp * w;
         wsum += w;
     }
     if (wsum <= 0) {
-        // Outside every region the water is the ambient stream, shaded like any flow.
-        if (!base || !(base.speed > 0.001)) return base;
-        const f = shadowAt(x, y, base.direction, 'current');
-        return f === 1 ? base : { speed: base.speed * f, direction: base.direction };
+        // Outside every region the water is the ambient stream, shaded like any flow —
+        // plus, on the flats, the water pouring over the ground as the tide fills and
+        // drains it (Tide.addFill; nothing off a tidal venue).
+        let outB = base;
+        if (base && base.speed > 0.001) {
+            const f = shadowAt(x, y, base.direction, 'current');
+            outB = f === 1 ? base : { speed: base.speed * f, direction: base.direction };
+        }
+        return (state.tide && window.Tide) ? Tide.addFill(x, y, outB) : outB;
     }
     // The leftover weight is the ambient stream's share — a region's soft edge fades
     // into whatever the water was already doing, which is slack on most venues.
@@ -532,7 +548,7 @@ function getCurrentAt(x, y) {
     // shelters you from is whatever is actually flowing there — ambient stream and authored
     // regions together — not one contribution to it.
     if (out.speed > 0.001) out.speed *= shadowAt(x, y, out.direction, 'current');
-    return out;
+    return (state.tide && window.Tide) ? Tide.addFill(x, y, out) : out;
 }
 
 

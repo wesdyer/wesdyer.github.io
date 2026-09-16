@@ -689,7 +689,7 @@ function initCourse(opts) {
         // Awash WITH DRAG — a painted shallows zone is awash too, but it must not switch
         // on the per-boat shoalField sampling (it can never change the answer).
         state.course._hasShoals = state.course.islands.some(i => i.awash && i.shoalMul < 1);
-        state.course._hasShallows = state.course.islands.some(i => i.paint && !i.veg);
+        state.course._hasShallows = state.course.islands.some(i => i.paint && !i.veg && !i.tide);
         state.course._hasVeg = state.course.islands.some(i => i.veg);
         state.course._hasReefs = state.course.islands.some(i => i.reef);
         orientCourseMarks();
@@ -709,6 +709,9 @@ function initCourse(opts) {
         // The eruption cycle, the same way and for the same reasons: it keys on the race
         // seed and on the placed props, and every door into a race passes through here.
         if (window.Volcano) Volcano.init();
+        // The tide, the same way: the field is built from the document here, on the one path
+        // every race takes, and its clock is the race clock so nothing needs resetting.
+        if (window.Tide) Tide.init();
         // Traffic, on the same path and for a simpler reason: it needs state.course.doc,
         // and every door into a race passes through here. Its vessels are pure functions
         // of the race clock, so this only compiles the path tables — there is no live
@@ -1051,9 +1054,14 @@ function buildCoursePaths() {
         // The bots route on this same grid. Their visibility planner cannot inflate a
         // keyholed coastline (see RoutePlanner.updateIslands), so on a designed venue
         // static land belongs to the grid and only drifting floes stay in the graph.
+        // The tide's ground per cell, so the router can price a cell by the water it will
+        // find on arrival (Tide.routeCost in pathSailable). Before the wind stamp: the
+        // safe grid below copies whatever is on the object.
+        if (state.tide && window.Tide) Tide.stampGrid(grid);
         state.course.botGrid = grid;
         state.course._botGridStatic = grid;
         state.course._botGridT = null;
+        state.course._tideStampT = null;
         // LEE-SHORE MASK for the bots' sailable router. A cell with blocked water a
         // few cells DOWNWIND is a place the breeze sets a boat onto the rocks; tax
         // it so routes run along windward shores and channel spines instead. Uses
@@ -1135,14 +1143,19 @@ function buildCoursePaths() {
             if (doc) console.warn('[dmc] ' + settings.venue + ': no current course.paths in the document — routing at load; Save it in editor.html');
             state.course.dmc = CoursePath.build(state.course.marks, state.course.route,
                                                 state.course.islands || [], state._dmcPlanner,
-                                                'dmc-' + (state.course.navVersion || 0), grid);
+                                                'dmc-' + (state.course.navVersion || 0),
+                                                (state.tide && window.Tide) ? Tide.safeGrid(grid) : grid);
         }
         // GOAL FIELDS (Sep 14 2026): one precomputed distance-and-direction field per goal, read by
         // the off-screen chip, the progress dial and the leaderboard — see js/sim/goalfield.js. Built
         // on the STATIC grid: floes drift, fields do not. Needs the wind stamp above for the cone
         // metric, so it comes last.
+        // ON THE TIDE'S SAFE GRID where there is one: the path line, the progress dial and the
+        // ranking run on the water that is always there — the channel — and the shortcuts
+        // across the flats are the player's own discovery (the floe rule, applied to mud).
+        const gfGrid = state.course._botGridStatic || grid;
         state.course.goalFields = window.GoalField
-            ? window.GoalField.build(state.course._botGridStatic || grid, state.course.route, state.course.marks) : null;
+            ? window.GoalField.build((state.tide && window.Tide) ? Tide.safeGrid(gfGrid) : gfGrid, state.course.route, state.course.marks) : null;
     } catch (e) {
         console.warn('[dmc] course path build failed', e);
         state.course.dmc = null;

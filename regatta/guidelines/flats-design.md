@@ -1,0 +1,215 @@
+# Spoonbill Flats — design study and build log (Sep 16 2026)
+
+Wes's brief (night of Sep 15): a short windward start, then a wide estuary mouth into a
+braided basin with three ground types — deep channel, intertidal, never-wet — where the
+deep water runs mostly round the outside with deep pockets inside, the intertidal zone
+connects them as temporary shortcuts, and a tide that cycles every ~30–60 s fills and
+empties the flats *from the channels toward the never-wet ground* on a sine. Cyclic
+currents for the first time. Human best 2:45–3:00, bots ~1.3×, high variance because a
+boat that ignores the warnings can be stranded. "Above all it should be fun." Everything
+else — including the coding brief from the other AI — is a suggestion.
+
+This document is the research, the twenty proposals, the axes, the ratings, the pick,
+and then the build log with measurements. Later sections are appended as the night goes.
+
+---
+
+## 1. Research
+
+### 1.1 Real estuaries (what the ground actually does)
+
+- **Wantij / Wattenhoch — the tidal divide.** In the Wadden Sea each island shelters a
+  basin fed from its own sea gate; where the flood from two gates meets, water and
+  sediment move slowly, silt settles, and the divide is the *shallowest* ground in the
+  system. Deep-draft boats cross it "only a few hours" around high water, longer on
+  springs. It is the last place to flood and the first to dry, and the crossing is a
+  planned, timed act. ([Waddenvereniging](https://waddenvereniging.nl/wadweten/7951-over-het-wantij/),
+  [YACHT](https://www.yacht.de/en/sailing-knowledge/navigation/education-watt-is-dat-dat-is-watt/))
+- **Mutually evasive ebb and flood channels.** Tidal bars are not river bars. A flood
+  channel is deep at its seaward end and shoals inland into a bar (a "flood shield"); an
+  ebb channel is the reverse. The two evade each other around diamond-shaped bars, so
+  the fair-current channel on the flood is the one that *ends in a sill*, and the ebb
+  channel is the mirror. ([Kleinhans et al., ADGEO 2014](https://adgeo.copernicus.org/articles/39/21/2014/))
+- **Flats fill sideways.** Once the water tops the channel banks it spills *across* the
+  flats, perpendicular to the channel; on the ebb it drains back through runnels. In creeks
+  with big intertidal areas the strongest currents come shortly before and after high
+  water, when the flats are filling and emptying — not at mid-tide as the textbook
+  standing wave says. ([Sciencedirect: tidal current asymmetry](https://www.sciencedirect.com/science/article/abs/pii/S0278434302000353),
+  [NOAA FAQ](https://tidesandcurrents.noaa.gov/faq.html))
+- **Slack water.** Standing-wave estuaries run fastest at mid-tide and go slack at HW and
+  LW; the further inland, the more progressive the wave and the later the slack.
+- **Materials.** Mud (silt) stands steep and holds a boat; sand shelves and lets a hull
+  graze. The Wadden boats are flat-bottomed precisely so they can dry out on purpose.
+
+### 1.2 Real tidal racing (what sailors actually do)
+
+- **Cheat the foul tide** in the shallows along the edge, **ride the fair tide** in the
+  channel's middle. The whole tactical game of a tidal race is where the stream is weakest
+  when it is against you and strongest when it is with you.
+- **Tide gates.** Round the Island at Hurst, the Fastnet at Portland: get there before
+  the stream turns or lose the race waiting. A gate is a *deadline*, and a deadline is the
+  strongest pacing device a course can have.
+- **Drying heights.** Chart datum, height of tide, draft — every tidal sailor does the
+  sum `depth = tide height − drying height`, and the echo sounder is the instrument they
+  watch. Depth under the keel is a number, not a colour.
+- **Wadden crossing of the divide** is a *planned* window: arrive early and wait, or
+  arrive late and take the long way round the island. Waiting is sometimes right.
+
+### 1.3 Games (what has worked on a screen)
+
+- **Cyclic worlds you learn:** Outer Wilds' sand columns bury and reveal on a fixed
+  22-minute clock; Wind Waker's Tower of the Gods raises and lowers its water on a timer
+  and the level is *about* reading that rhythm. The lesson: a deterministic clock is
+  content — the second race knows what the first one saw (the Emberfall cycle already
+  follows this).
+- **Risk/reward shortcuts** (Hydro Thunder, Mario Kart): the game must *show* you the
+  shortcut you failed to take, so you resign yourself to taking it next time; hidden
+  shortcuts are for exploration games, not races. ([Vector Unit on Hydro Thunder](https://www.vectorunit.com/blog-posts/2017/2/24/hydro-heritage-evolution-of-an-arcade-racer))
+- **Readability first:** if the player cannot instantly tell what is traversable,
+  threatening, or decorative, nothing else lands. Teach → practice → test.
+  ([gtstu level design principles](https://gtstu.com/game-level-design-principles/))
+- **Track rhythm:** a great circuit has more than one rhythm — vary the demands, put a
+  technical section after a fast one, give the route splits real consequences and use
+  them to spread the field. ([Magnopus](https://www.magnopus.com/blog/the-art-of-designing-a-memorable-race-track))
+- **Meaningful choice** (Meier): the interesting decision is the one whose answer
+  changes with the situation. A shortcut that is always right is a corridor.
+
+### 1.4 What this game's own venues say
+
+Wes's ranking (Sep 15): Arctic > Volcano > Bluewater > Clubhouse > Cove > Otter > Pearl >
+Glowtide > Stillwater > Sockeye > Redrock > Bayou. The top is *a mechanic you learn*
+(floes, lightning, surfing) plus *route choice* plus *atmosphere*; the bottom is *mazes
+in light wind* (Bayou), *samey narrow* (Redrock) and *rafting, not sailing* (Sockeye).
+So for Flats: keep the breeze honest (16 kt, mild gradient), keep channels 5–8 boat
+lengths so it is sailing and not threading, keep the current under ~1.5 kt so the wind
+is the engine, and make the tide the thing you learn.
+
+---
+
+## 2. Twenty proposals
+
+Each is a whole venue concept, not a feature. C = cross-cutting (a layer for any of them).
+
+| # | Name | The idea in one breath |
+|---|---|---|
+| 1 | **The Wantij Dash** | Point-to-point: beat, round, run into a braided basin with ONE big timed divide crossing across the interior; the deep channel always goes round. Sine tide. |
+| 2 | **Three Gates, Three Heights** | The coding brief: a timed crossing, a continuously adjustable inside line, and a competing creek — three sills at three heights, so each opens for a different share of the cycle. |
+| 3 | **Ebb & Flood Channels** | Two braids round a diamond bar: a flood channel (deep seaward, sill inland) and an ebb channel (the mirror). Reversing current makes the better channel flip every half cycle. |
+| 4 | **Rising Water Only** | Start at LW in narrow channels; the tide rises all race and the map grows. One flood, no cycle. |
+| 5 | **Falling Tide** (the original card) | Laps round a bar; the map shrinks, the shortcut closes, the current builds. "One lap too late." |
+| 6 | **Out on the Flood, Back on the Ebb** | Out-and-back: ride the flood to a mark at the head, ride the ebb home; the cycle is tuned so a well-sailed boat catches both. |
+| 7 | **The Sill Lap** | Loop round one central bar, 3 laps; the bar's crest crossing is open on some laps and not others. |
+| 8 | **Pockets & Traps** | Deep pockets in the interior joined by shallow saddles; hop pocket to pocket at HW, get trapped in one when the saddle dries. |
+| 9 | **Runnel Maze** | The flat is threaded by narrow drainage creeks that are the only way across at mid-tide; a maze at LW, irrelevant at HW. |
+| 10 | **The Conveyor** | Current-forward: 1.5–2 kt in the channels, slack on the flats; the race is cheating foul tide on the edge and riding fair tide in the middle. |
+| 11 | **Sandpiper Signals** (C) | The information layer: depth shading, drying contour, echo-sounder depth readout, tide dial with rise/fall, withies leaning with the stream, spoonbills landing on the flat that is about to dry. |
+| 12 | **Slack-Window Sprint** | A narrow mouth that runs 2.5 kt at mid-tide (unbeatable upwind) and goes slack for ~10 s at HW/LW: time the gate or wait. |
+| 13 | **Ladder of Bars** | A run up the estuary across a staircase of transverse bars at rising heights; each opens for a shorter window; an early gain changes when you reach the next. |
+| 14 | **Mud vs Sand** (C) | Two intertidal materials: sand shelves and lets you graze; mud is steep and grabs. Same depth, different price. |
+| 15 | **Two Basins, One Divide** | Two basins joined by a wantij; the course runs basin to basin; at HW you cross, at LW you go round by the sea. The Dash with bigger stakes. |
+| 16 | **Meander Cutoffs** | A chain of big meanders, each with a shelving point bar inside; the higher the water the tighter you cut. Continuous, no gates — "a race with a radius knob." |
+| 17 | **Gate-Forced Detours** | Route gates placed in the channel so that at LW the fleet must sail the gate and at HW the direct line is open; the rules do the routing. |
+| 18 | **Withy Slalom** | The LW channel is 3 boat lengths wide between withies you can clip for a penalty; the withies lean with the stream. |
+| 19 | **Springs and Neaps** (C) | Tidal range dealt per race (spring/neap) so which shortcuts open at all varies between races. |
+| 20 | **The Grounding Economy** (C) | Stranding is soft and legible: a mud drag zone before the stop, a refloat countdown computed from the sine, and a crew push-off downhill at 1 kt. |
+
+---
+
+## 3. Axes (researched, then weighted)
+
+| Axis | What it measures | Source | Weight |
+|---|---|---|---|
+| Fun | Moment-to-moment feel; are there "chef's kiss" moments? | Wes's ranking; Koster (fun = learning) | 3 |
+| Meaningful choice | Decisions whose answer changes with the situation; no dominant route | Meier; Mario Kart / Hydro Thunder shortcut design | 2 |
+| Mastery | Does repetition pay? Deterministic clock, learnable windows | Outer Wilds / Wind Waker; Emberfall's own rule | 2 |
+| Readability | Can the player see the state and the consequence seconds ahead? | Level-design canon; SailGP broadcast graphics | 2 |
+| Feels like sailing | Breeze honest, real points of sail, room to manoeuvre, current a factor not the engine | Wes's bottom three | 2 |
+| Uniqueness | Distinct from the twelve shipped venues (Glowtide has a tide, Sockeye a current, Bayou a maze) | The venue table | 1.5 |
+| Variance | Fair drama: a leader can lose it, a trailer can win it | Wes's brief | 1 |
+| Fits the numbers | 2:45–3:00 human, bots ~1.3×, AI can sail it, replayable | Wes's brief | 1.5 |
+| Buildable tonight | Engine seams exist; risk of a half-built venue at 9 AM | This repo | 1.5 |
+| Spectacle | The sea leaving; the flood front; the witness | Venue card; venues.md §11 | 1 |
+
+Scores are 1–5. Weighted total out of 85.
+
+## 4. Ratings
+
+| # | Proposal | Fun | Choice | Mastery | Read | Sailing | Unique | Var | Numbers | Build | Spect | **Total** |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | Wantij Dash | 4 | 4 | 5 | 4 | 4 | 4 | 4 | 4 | 4 | 4 | **70.5** |
+| 2 | Three Gates | 4 | 5 | 4 | 3 | 4 | 4 | 4 | 4 | 3 | 4 | **68.5** |
+| 3 | Ebb & Flood Channels | 4 | 5 | 4 | 3 | 4 | 5 | 3 | 4 | 3 | 4 | **68.0** |
+| 4 | Rising Water Only | 3 | 3 | 3 | 4 | 4 | 3 | 2 | 4 | 4 | 4 | 57.5 |
+| 5 | Falling Tide | 3 | 3 | 4 | 4 | 3 | 3 | 3 | 3 | 4 | 4 | 58.0 |
+| 6 | Out on Flood, Back on Ebb | 4 | 3 | 4 | 3 | 3 | 4 | 3 | 2 | 3 | 3 | 56.5 |
+| 7 | The Sill Lap | 3 | 3 | 4 | 4 | 3 | 2 | 3 | 4 | 4 | 3 | 56.0 |
+| 8 | Pockets & Traps | 4 | 4 | 3 | 2 | 3 | 5 | 5 | 3 | 3 | 3 | 60.5 |
+| 9 | Runnel Maze | 2 | 3 | 3 | 2 | 1 | 3 | 4 | 3 | 3 | 3 | 43.5 |
+| 10 | The Conveyor | 3 | 4 | 3 | 3 | 2 | 2 | 3 | 3 | 4 | 2 | 50.5 |
+| 11 | Sandpiper Signals (C) | 4 | 3 | 4 | 5 | 4 | 4 | 2 | 4 | 3 | 5 | 66.0 |
+| 12 | Slack-Window Sprint | 3 | 2 | 4 | 3 | 2 | 4 | 4 | 2 | 3 | 3 | 50.5 |
+| 13 | Ladder of Bars | 4 | 4 | 4 | 4 | 3 | 4 | 4 | 4 | 4 | 3 | **65.5** |
+| 14 | Mud vs Sand (C) | 3 | 3 | 3 | 2 | 4 | 3 | 2 | 4 | 4 | 3 | 52.5 |
+| 15 | Two Basins, One Divide | 4 | 3 | 5 | 4 | 4 | 4 | 5 | 3 | 3 | 4 | 66.0 |
+| 16 | Meander Cutoffs | 4 | 4 | 4 | 4 | 5 | 3 | 2 | 4 | 4 | 3 | **65.5** |
+| 17 | Gate-Forced Detours | 2 | 2 | 3 | 4 | 3 | 2 | 2 | 4 | 4 | 2 | 46.5 |
+| 18 | Withy Slalom | 3 | 2 | 3 | 4 | 2 | 1 | 3 | 4 | 4 | 3 | 48.5 |
+| 19 | Springs and Neaps (C) | 3 | 3 | 2 | 3 | 3 | 3 | 4 | 3 | 5 | 2 | 50.0 |
+| 20 | Grounding Economy (C) | 4 | 3 | 4 | 5 | 4 | 3 | 3 | 5 | 4 | 3 | **64.5** |
+
+Reading the table: the top standalone concepts are the **Wantij Dash**, the brief's
+**Three Gates**, and **Ebb & Flood Channels**, with **Meander Cutoffs** and the **Ladder** just
+behind — and they are not rivals, they are *layers of one estuary*. The cross-cutting
+**Signals** and **Grounding Economy** score high because without them none of the others
+is readable or fair. The bottom of the table is everything that turns the venue into a
+maze, a slalom, or a river.
+
+## 5. The pick — "The Wantij" (1 + 2 + 3 + 16, wearing 11 and 20)
+
+**Course.** One-way. Short beat offshore to a rounding mark (the fleet spreads), bear away
+through a wide mouth between two spits, then a braided basin whose deep channel runs
+round the outside in an S, with deep pockets inside. Finish inland after a final merge
+with 10–15 s of shared water.
+
+**Ground.** Three flats materials: *golden mudflat* (most of the intertidal), *rippled
+sand* (bars and crests), *saltmarsh turf* (never wet — the outer shore and a few islands).
+The intertidal zone is a continuous **elevation field** built at load from the authored
+polygons: the channels are the low anchors, the marsh the high anchors, and every point
+between them sits at a height set by its normalised distance between the two, with a bar
+crest or a pool bed where one is drawn, and a little noise so it dries in tongues and
+pans rather than in bands. That is precisely Wes's authoring model: *lay down the deep
+channels, pick the areas that never fill, and the flats fill from the channel outward.*
+
+**Tide.** One clock. `level(t) = mid + amp · sin(2π t / period + φ0)`, fixed phase at the
+gun, period a knob (60 s to start; 30/90 tested). `depth = level − ground`. Draft-safe
+water sails free; under a clearance margin the mud takes speed; below the draft the boat
+is **aground** — held until the sine refloats her, with the refloat countdown on screen.
+Bots and player use the same field.
+
+**Current.** Everything flows *because the level is changing*: channel streams run in
+proportion to `dLevel/dt` (slack at HW and LW, strongest mid-tide), flood inland, ebb
+seaward, along the authored channel regions (the build script cuts a region per channel
+segment so bends carry the stream round). On the flats the water pours sideways from the
+channel while they fill and drains back while they empty — a weak cross-stream that is
+the most legible tell of all: you can *see* the flood coming across the sand.
+
+**The three choices** (the brief's three, now with real geometry and one clock):
+1. **The Wantij** — the divide crossing across the interior, saves the big loop, open for
+   roughly a third of the cycle with a *sill at the exit* so late boats are caught.
+2. **The point bar** — a shelving inside at the big bend: the higher the water the tighter
+   the cut; no gate, just a radius that grows with the tide.
+3. **The flood creek** — a competing branch round a diamond bar that carries fair stream
+   on the flood and ends in a bar; the outside channel is the ebb channel and never dries.
+
+**Signals.** Ground shaded by depth (dry crests pale, wet mud dark, shallow water going
+pale over sand), the drying line as a moving contour, an echo-sounder **DEPTH** readout in
+the instruments that goes amber then red, a **tide dial** with rising/falling arrow and
+the seconds to HW/LW, and warning marks (withies) at the sills.
+
+**Why this over the others.** The Dash gives the signature moment (the Wadden crossing —
+"is it still open, and is it still worth it?"), the point bar gives continuous skill
+expression on every lap of the tide rather than one binary gate, the flood creek gives
+the current a *tactical* reading, and the one-clock rule keeps it all learnable. Nothing
+is a maze; the channels stay 5–8 lengths; the breeze stays 16 kt.
+
+(Build log follows.)
