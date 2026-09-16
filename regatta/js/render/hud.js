@@ -2051,7 +2051,7 @@ function drawTideReadout(player) {
     }
     if (UI.tideText) {
         const s = Math.max(0, Math.round(info.nextIn));
-        UI.tideText.textContent = `${info.rising ? '\u25b2' : '\u25bc'} ${info.next} ${s}s`;
+        UI.tideText.textContent = `${info.rising ? '\u25b2' : '\u25bc'}${info.next} ${s}s`;
         UI.tideText.style.color = info.rising ? '#bae6fd' : '#fde68a';
     }
     if (UI.depth) {

@@ -187,7 +187,10 @@ const BASIN = spline([
 // the south is open water, with the spits and the two points laid in front of the coast.
 // One simple ring rather than a rect with a hole: the coast runs in from the world's edge,
 // up round the basin, and back out — no keyhole for the compiler to cut.
-const SHORE = [[-6000, -10000], [6000, -10000], [6000, 4700]].concat(BASIN.slice().reverse()).concat([[-6000, 4700]]);
+// The open coast either side of the mouth is a wavering line, not a ruler's edge.
+const coastE = spline([[6000, 4650], [5200, 4780], [4400, 4620], [3600, 4760], [2900, 4640], [2300, 4720], [1700, 4700]], 4);
+const coastW = spline([[-1000, 4700], [-1600, 4760], [-2300, 4620], [-3000, 4780], [-3800, 4640], [-4600, 4760], [-5300, 4660], [-6000, 4720]], 4);
+const SHORE = [[-6000, -10000], [6000, -10000]].concat(coastE.slice(0, -1)).concat(BASIN.slice().reverse()).concat(coastW.slice(1)).map(p => [R(p[0]), R(p[1])]);
 add('flats-marsh', SHORE, { id: 'marsh-shore', name: 'The shore' });
 
 // The sea: deep everywhere south of the mouth, and the main channel through the basin.

@@ -589,9 +589,7 @@ const TIDE = {
                     const wf = 1 - sstep(hgt / wet);
                     const pale = Math.min(0.14, hgt * 0.10);
                     const r = (dry[0] + (wetc[0] - dry[0]) * wf) * (1 + pale), gg = (dry[1] + (wetc[1] - dry[1]) * wf) * (1 + pale), b = (dry[2] + (wetc[2] - dry[2]) * wf) * (1 + pale);
-                    // the water's edge itself: a pale line a few units wide
-                    const edge = hgt < 0.035 ? 1 : 0;
-                    AD[o] = edge ? COL.edge[0] : Math.min(255, r); AD[o + 1] = edge ? COL.edge[1] : Math.min(255, gg); AD[o + 2] = edge ? COL.edge[2] : Math.min(255, b); AD[o + 3] = 255;
+                    AD[o] = Math.min(255, r); AD[o + 1] = Math.min(255, gg); AD[o + 2] = Math.min(255, b); AD[o + 3] = 255;
                     AW[o] = AD[o]; AW[o + 1] = AD[o + 1]; AW[o + 2] = AD[o + 2]; AW[o + 3] = 255;
                 } else if (d < see) {
                     // THE BOTTOM THROUGH THE WATER, in the bands a sailor needs to tell apart:
@@ -628,25 +626,33 @@ const TIDE = {
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(pic.cvDry, pic.x0, pic.y0, pic.w, pic.h);
         ctx.restore();
+        // The water's edge: a thin pale line where the level meets the ground — the wet lip of
+        // the flat — and, a draft inside it, the dashed line you must stay on the deep side of.
+        drawIso(ctx, level(), 'rgba(236, 230, 210, 0.85)', 1.6, null);
         if (cfg().draftLine) drawDraftLine(ctx);
     }
     // The AFLOAT contour — marching squares on the raster over the view, dashed: where the
     // water is exactly one draft deep now. Inside it you sail; outside it you sit.
     function drawDraftLine(ctx) {
+        drawIso(ctx, level() - state.tide.draft, 'rgba(255, 196, 92, 0.85)', 2.2, [14, 10]);
+    }
+    // A contour of the ground at height `iso`, marching squares over the visible raster.
+    function drawIso(ctx, iso, stroke, width, dash) {
         const T = state.tide, F = T.field;
         const [va, vb, vc, vd] = viewWindow(ctx);
         const i0 = Math.max(0, Math.floor((va - F.x0) / F.res) - 1), i1 = Math.min(F.W - 2, Math.ceil((vc - F.x0) / F.res) + 1);
         const j0 = Math.max(0, Math.floor((vb - F.y0) / F.res) - 1), j1 = Math.min(F.H - 2, Math.ceil((vd - F.y0) / F.res) + 1);
-        const iso = level() - T.draft;             // ground height where depth == draft
-        const z = F.z, W = F.W, res = F.res;
+        const z = F.z, W = F.W, res = F.res, mM = F.mMask;
         ctx.save();
-        ctx.lineWidth = 2.2;
-        ctx.setLineDash([14, 10]);
-        ctx.strokeStyle = 'rgba(255, 196, 92, 0.85)';
+        ctx.lineWidth = width;
+        ctx.setLineDash(dash || []);
+        ctx.strokeStyle = stroke;
+        ctx.lineJoin = 'round';
         ctx.beginPath();
         const px = (i) => F.x0 + (i + 0.5) * res, py = (j) => F.y0 + (j + 0.5) * res;
         for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) {
             const k = j * W + i;
+            if (mM[k] || mM[k + 1] || mM[k + W] || mM[k + W + 1]) continue;   // the marsh has its own edge
             const a = z[k], b = z[k + 1], c = z[k + W + 1], d = z[k + W];
             const ca = a > iso ? 8 : 0, cb = b > iso ? 4 : 0, cc = c > iso ? 2 : 0, cd = d > iso ? 1 : 0;
             const code = ca | cb | cc | cd;
