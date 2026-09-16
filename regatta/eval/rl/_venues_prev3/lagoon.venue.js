@@ -4107,7 +4107,7 @@ window.VENUE_DOC["lagoon"] = {
       }
     ],
     "paths": {
-      "sig": "v3-deae0f2f-em4",
+      "sig": "v2-6ead67e2-5rp",
       "legs": [
         {
           "pts": []
@@ -4303,7 +4303,7 @@ window.VENUE_DOC["lagoon"] = {
               -3.2
             ],
             [
-              1174.3,
+              1124.3,
               173.7
             ],
             [

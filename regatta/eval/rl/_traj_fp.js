@@ -59,17 +59,29 @@ const docFp = (p, v) => {
 // eval/rl/_venues_prewind/), so on the new-wind doc his laps read ⛔ RETIRED —
 // which is the truth until he re-sails it.
 const PATHS_WHY = 'course.paths added only — every other key byte-identical (2026-08-30 paths intake)';
+// ⭐ THE V3 RE-SAVE (2026-09-14, the otter intake): the owner's courseSig v3 (hard props are
+// their TRACED OUTLINES, not contactR discs) re-saved course.paths on eight docs — sig-only
+// on river/redrock/lake/glowtide/volcanic, polylines re-routed on bay/lagoon/swamp — and all
+// eleven were re-frozen. By-key diff old-frozen (eval/rl/_venues_prev3/) vs new: course.paths
+// is the ONLY key that moved on every one of the eight; marks, lines, route, shapes, wind,
+// current, world, props byte-identical. Nothing he sails against moved in the DOCUMENT, so
+// the prior adjudications carry with `on` re-pointed at the new frozen stamps, and a lap
+// stamped on the old frozen doc itself is valid by the same proof. ⚠️ The js side of that cut
+// (prop colliders as silhouettes) is a SIM change the stamp cannot see; the bot column was
+// re-benched on it (ot0* anchors), the human column is a recording and stands.
+const V3_WHY = '; course.paths re-saved only (2026-09-14 courseSig v3 re-freeze, by-key proof)';
 const ADJUDICATED = {
-    bay: { stamps: ['a331fe02:13481', '915b07e4:1019761'], on: 'c48f3aae:1021110', why: 'boundary-only change, tracks re-verified inside the new arena; ' + PATHS_WHY },
+    bay: { stamps: ['a331fe02:13481', '915b07e4:1019761', 'c48f3aae:1021110'], on: '7f6cf2f6:1020959', why: 'boundary-only change, tracks re-verified inside the new arena; ' + PATHS_WHY + V3_WHY },
     arctic:    { stamps: ['86fc97f4:97975'],   on: 'b0074f92:98492', why: PATHS_WHY },
-    glowtide:  { stamps: ['3fbd12b1:514566'],  on: '10b0f94a:515467', why: PATHS_WHY },
-    lagoon:    { stamps: ['3acc77de:61737'],   on: 'ebd9cc79:62851', why: PATHS_WHY },
-    lake:      { stamps: ['84140c1f:1000622'], on: '4ac9dd20:1001243', why: PATHS_WHY },
+    glowtide:  { stamps: ['3fbd12b1:514566', '10b0f94a:515467'],  on: '34e647ff:515467', why: PATHS_WHY + V3_WHY },
+    lagoon:    { stamps: ['3acc77de:61737', 'ebd9cc79:62851'],   on: '54f1a9d1:62851', why: PATHS_WHY + V3_WHY },
+    lake:      { stamps: ['84140c1f:1000622', '4ac9dd20:1001243'], on: '6d3363c:1001243', why: PATHS_WHY + V3_WHY },
     ocean:     { stamps: ['1b1a7101:564735'],  on: '46475464:565174', why: PATHS_WHY },
-    redrock:   { stamps: ['60f2a5ec:63791'],   on: 'a6530aaa:65152', why: PATHS_WHY },
-    river:     { stamps: ['76659ee5:1786811'], on: 'd5e773f6:1787917', why: PATHS_WHY },
+    redrock:   { stamps: ['60f2a5ec:63791', 'a6530aaa:65152'],   on: '18d5c8a8:65152', why: PATHS_WHY + V3_WHY },
+    river:     { stamps: ['76659ee5:1786811', 'd5e773f6:1787917'], on: '90856445:1787917', why: PATHS_WHY + V3_WHY },
     seatrials: { stamps: ['ae1026bc:1595'],    on: 'ad2dd96f:1751', why: PATHS_WHY },
-    swamp:     { stamps: ['c351353c:335590'],  on: '34a25f9f:335920', why: PATHS_WHY },
+    swamp:     { stamps: ['59f2931b:335924'],  on: 'f6ac8c39:335942', why: 'his +0.75 kt laps (2026-09-08) were stamped ON the old frozen doc' + V3_WHY },
+    volcanic:  { stamps: ['4ac8c0e5:45501'],   on: '46ebdb19:45501', why: 'his five laps (2026-09-13) were stamped ON the old frozen doc' + V3_WHY },
 };
 
 const TD = path.join(__dirname, 'traj');
