@@ -82,6 +82,17 @@ const ADJUDICATED = {
     seatrials: { stamps: ['ae1026bc:1595'],    on: 'ad2dd96f:1751', why: PATHS_WHY },
     swamp:     { stamps: ['59f2931b:335924'],  on: 'f6ac8c39:335942', why: 'his +0.75 kt laps (2026-09-08) were stamped ON the old frozen doc' + V3_WHY },
     volcanic:  { stamps: ['4ac8c0e5:45501'],   on: '46ebdb19:45501', why: 'his five laps (2026-09-13) were stamped ON the old frozen doc' + V3_WHY },
+    // ⭐ SPOONBILL FLATS (2026-09-16, the flats intake): his three laps stamp 8eb84e74:38655, a
+    // doc 33 bytes short of the committed 431d683 (144108a1:38688) that matches NO commit — the
+    // page he sailed on was loaded before the last ladder save (the editor's save() re-bakes
+    // course.paths on write; the live stamp on the shipping page equals the file's, checked with
+    // _flats_livefp.js). Adjudicated by the two-step check, in the tidal form: (1) the lap's own
+    // course block — marks, lines, legLens 1480/26116, zone 165, reqSweep 3.165 — is identical
+    // to the frozen doc's; (2) _flats_replay.js ran every racing sample through the FROZEN
+    // field's depthAt(x, y, t) on the race clock: 0 aground samples of 5002 (min depth 0.64 m
+    // vs a 0.5 m draft), every passage he took open at the level he took it. The water he sailed
+    // is the water the benched doc has.
+    flats:     { stamps: ['8eb84e74:38655'],   on: '144108a1:38688', why: 'course block identical; tracks replayed afloat through the frozen tide field (0 aground of 5002 samples, min depth 0.64 m vs draft 0.5) — _flats_replay.js' },
 };
 
 const TD = path.join(__dirname, 'traj');

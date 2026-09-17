@@ -439,8 +439,15 @@ const TIDE = {
         const zy = groundAt(preX, preY + eps) - groundAt(preX, preY - eps);
         const gl = Math.hypot(zx, zy);
         const cgx = fieldAt(F.gx, preX, preY, 0), cgy = fieldAt(F.gy, preX, preY, 0);   // away from the channel
-        let dx = -cgx, dy = -cgy;
-        if (gl > 1e-6) { dx += -zx / gl; dy += -zy / gl; }
+        // FE1 (2026-09-16, the flats push): TWO REGIMES, never a sum. Summing the channel-ward
+        // pull and the downhill unit vector cancelled to |0.012| on the neck's west lip — a bar
+        // between two deep waters, where the channel lies uphill one way and the cut downhill
+        // the other — and a grounded hull sat there for 768 s (eval/rl/_fl_push.js). Where the
+        // ground is steep the crew shove her DOWNHILL (the nearest water is at the bottom of
+        // the slope); where it is flat — a pan in the noise, a local minimum — toward the channel.
+        let dx, dy;
+        if (gl > 0.05) { dx = -zx / gl; dy = -zy / gl; }
+        else { dx = -cgx; dy = -cgy; }
         const dl = Math.hypot(dx, dy);
         let nx = preX, ny = preY;
         if (dl > 1e-6) {

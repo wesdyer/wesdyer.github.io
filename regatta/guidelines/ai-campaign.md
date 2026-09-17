@@ -17734,3 +17734,84 @@ notes:
   otter: NEW venue; 3×8 both; his 5 laps stamp the frozen doc
   ocean: 16 @ 9400 both
 
+
+# ═══════════════════════════════════════════════════════════════════════
+# THE FLATS PUSH — 2026-09-16 (autonomous; owner: "We have the first cut of the flats venue. It will change some still, but it's ready for the first AI push. (We'll rebench when we make changes). Please freeze the venue. Ingest the trajectories. Benchmark the AI. Then push hard to improve the AI on this venue. Then print the full table.")
+
+HEAD in: `765accd` (owner's Spoonbill Flats commits: `js/tide.js`, the ladder of cuts, the nerve trait; the last commit UI-only). Gates pre-registered in `eval/rl/_fl_gates.md` (21:23 PT, before any candidate output).
+
+## INTAKE — flats added as the thirteenth benchmark venue; nothing else moved
+- Goldens on HEAD before anything: **PASS 36/36, 0 behaviour changes** — the tide hooks in updateBoat/afterMove/getCurrentAt/pathSailable are sim-inert off a tidal venue, so **the otb3\* anchors stand as PRE on the other twelve**. `freeze_venues --check` clean 12/12; **flats frozen `e1a2b607cdd48216`** (doc stamp `144108a1:38688`). Validators: `test:venue` PASS, `check:venues` flats 0 err / 57 warn (baked centroids; the start line packs ten boats at a hull-width gap), `check_raceable flats` run.
+- ⚠️ HIS LAPS STAMP `8eb84e74:38655`, a document 33 bytes short of the committed `431d683` that matches NO commit (the page he raced on was loaded before the last ladder save — the editor's `save()` re-bakes `course.paths` on write). `_flats_livefp.js` (NEW) shows the shipping page's runtime stamp equals the file's, so the gap is a real doc difference, not migration. **ADJUDICATED** by the two-step check in its tidal form: (1) the lap's own course block — marks, lines, legLens 1480/26116, zone 165, reqSweep 3.165 — is identical to the frozen doc's; (2) `_flats_replay.js` (NEW) ran every racing sample through the FROZEN field's `Tide.depthAt(x, y, t)` on the race clock: **0 aground of 5002 samples, min depth 0.64 m against a 0.5 m draft**, every passage he took open at the level he took it. Entry added to `_traj_fp.js`.
+- Included laps = the three on his Desktop: **172.8 med / 173.8 mean / 172.1 best (n=3)** (176.4, 172.8, 172.1; every one wantij → point bar → head cut or creek). A fourth on the same doc (214.2, his first) and six on the retired three-meander doc were left in ~/Downloads and ~/.Trash — not references. (⚠ ~/Downloads also holds un-ingested otter/bay/lake/ocean/volcanic/arctic/redrock laps from 09-14/15.)
+- Goldens re-recorded on the landed HEAD with `flats` added to `run_traces.js ALL_VENUES`: **39 traces**.
+
+## THE VENUE — Spoonbill Flats (`flats`, The Wantij)
+One way. A 1200 u beat at sea (wind FROM 195°, the mark due south of the line: **one starboard board from the PIN END lays the mark — his laps 1-2; from the boat end two boards and +5 s**), a starboard rounding (zone 165, reqSweep 181°: beat → run), then a 26 km run up a braided estuary under a 60 s tide (HW at +8 s and every 60 s, LW at :38; draft 0.5, refloat draft+0.1) with six timed passages carrying rungs (`tide.passages` risk 1-3: wantij r2, gamble r3, neck r2, head cut r3, creek r2, delta r1) and four rung-1 point bars. Bots carry `nerve` (roster.js): bully/gambler 3, shift/corner 2, rocket/freight/leech/metronome 1. Cutoff 480.
+
+## PRE (fl0fl9400/9500/9600, ten-bot, treeFL0 == HEAD): med 224 / mean 218.1 / best 173, fins 238/240, dirt l/b/m/pen 0.00/0.89/0.12/0.22, OCS 0.8% ⇒ **ratio 1.296**
+⚠️ The bench's `land` column reads 0.00 because **a grounding is not a `collision_island` event** — `_fl_census.js` (NEW) counts them. `_leg_matrix` MEANS: start +4.2 (9%), L1 beat +7.3 (16%), **L2 estuary +33.0 (74%)** of +44.4 s.
+
+## THE CENSUS (instruments NEW and tracked: `_fl_census.js` per-boat nerve / passages with the level at entry and exit / grounding episodes and seconds / mud-slowed seconds / tide holds / ground distance / manoeuvres, split BY NERVE; `_fl_chart.js` the field with his laps and bot tracks; `_fl_start.js` start end / speed at the gun / beat tacks / time-in-band; `_fl_tacks.js` beat tack ownership — ⚠ `boat.controller` is created lazily on the first `update`, wrap it after that, never after `startRace`; `_fl_route.js` the router's wantij/channel decision with a sill counterfactual; `_fl_sections.js` estuary section splits; `_fl_ground.js`, `_fl_push.js`, `_fl_beat_trace.js`, `_fl_far.js`)
+- **THE LADDER IS THE FLEET'S SHAPE.** Sixteen-seed fleet: 95 of 160 boats are nerve 1 (59%), 39 nerve 2, 26 nerve 3. Medians by nerve: **nerve-1 227, nerve-2 212, nerve-3 213**; the fleet median 224.7 IS a channel sailor by roster composition, and the channel-only polar estimate is 218 (3:38). His line is a rung-3 line (24.2-25.0 k u; nerve-1 boats sail 30.3 k). ⇒ the headline ratio cannot approach 1.1 on this venue without an owner decision on the roster's nerve mix — the by-nerve table is the honest scoreboard beside it.
+- **NERVE 3 IS EXECUTION-BOUND, NOT PERMISSION-BOUND.** All-nerve-3 fleet (treeFLN3, 80 boats): med 211.2 / mean 211.1, 79/80 fins, **aground 10.8 s/boat**, distance 28.2 k vs his 24.6 k; **the wantij is taken by 25%** (≥4 s on the shelf; he 3/3): takers med **184.5** (aground 1.0 s, dist 25.5 k) vs non-takers **219.5** (aground 14.1 s, dist 28.5 k). **THE WANTIJ IS A TIMING GATE**: rounding banked before 27 s ⇒ taken 47-67%; after 30 s ⇒ 4-5%. `_fl_route`: the router prices the sill by arrival time and is RIGHT to refuse after ~27 s (the −0.45 sill is at speed for level > 0.39 — until ~79 s on the second high water; his shelf passes are 55-68 s). Its first plan after a late rounding says CHANNEL (east loop, +35 s), and its polar clock runs ~8 s slow through the mouth (the flood stream is not in it) so a second plan at ~44-47 s sometimes flips to WANTIJ in time. The same gate repeats at the HEAD CUT: takers arriving by ~120 s finish 172-176 (= him); later arrivals detour the west channel (+13 s) or crawl the next flood and ground (Popper 9405: entered at L −0.53, aground, head section 34 s vs 27 round).
+- **THE BEAT IS THE LEVER** (`_fl_start` 8@9400, 80 boats): line crossing med 3.2 / mean 6.5 s (his 0.7-1.4), speed at the gun med 4.9 kt (his 6.7-7.6), **line→bank med 24.1 / mean 24.9 (his 15.7-20.9)**; by tack count 0-1 tacks 18.2 s (= his), 2-3 21.8, 4+ 30.4; **tacks/boat 3.08 (his 1)**; contacts in the first 40 s 5.1 raw events/boat. **NAV owns 80%** of the beat's tacks (avoid 15%), 54% inside 400 u of the mark, 42% of inter-tack gaps under 6 s. **TIME-IN-BAND: the close-hauled band matches him exactly (13.3 vs 13.6 s); the whole +7.3 s is OUT of band — irons +2.4, reach +2.6, run +2.6 — and 5.9 s/boat of the beat is sailed under an avoidance deviation > 0.3 rad**, on a 20 s leg. The Pebble trace (`_fl_beat_trace`): a boat-end starter sails the port board, tacks ON the layline at 14.7 s (correct), then sits 3 s head-to-wind under a 1.6 rad avoidance deviation (a rival; the irons tax is waived for a slow boat by design), overstands, reaches the last 550 u at TWA 75. The start scrum converts one-for-one into missing the wantij window.
+- **THE NECK DNF CLASS**: 768 / 777 / 39 s aground at (−1340..−1357, −2256..−2544) — 5 u outside the neck-n flat's west edge, ground **+0.43 m: depth at HW 0.57 < draft + refloat 0.60 ⇒ never refloats**; and `Tide.afterMove` SUMMED the channel-ward pull (−0.71, −0.71) with the downhill unit vector (0.72, 0.70): **|sum| 0.012 ⇒ ~0.1 u/s — she never moved** (`_fl_push.js`). The router had hugged the polygon edge because `routeCost`'s edge tax counts only neighbours DRY ON ARRIVAL (el > 0.38 at HW) — a +0.43 lip is "wet" at HW but lethal to a hull that touches it.
+- Rounding-craft at the top mark: ring 7.6 vs 5.7 s mean, excess sweep 100° vs 57°, beyond-mark 139 vs 68 u, ring tax 2.0 s/lap. OTB3's apex sits two zones EAST of this mark at its own latitude, so every boat reaches a point 330 u east and reaches west to the mark (his line passes 50 u east) — a 2-3 s geometry cost on a beat-to-run rounding; not touched (OTB3's transfer on otter).
+
+## CANDIDATES AND VERDICTS (flats 3×8 vs fl0fl\*, `_vo_pool.js`, CAND − BASE)
+- ⛔ **FB1 `treeFLB1` — OTB1's far target admitted at dF > 400 u instead of 1200 (the flats beat never cleared 1200: the far point is two zones short of the mark, ~900 u from the line)**: flats 3×8 med 224 → 216, paired −1.9 mean, fins 240/240, mark 0.12 → 0.05, wantij takers 25 → 39%; but the sets disagree in sign (+3.4 / −7.5 / −1.5) and SIX sets pooled read paired **−0.87 mean / −1 med** (480 boats, fins 480/480); mechanism gate missed (tacks 3.08 → 2.80, beat 24.1 → 22.5, r2 30.5 → 28.6) — the far target fires for ~8 s of the beat and the tacks are elsewhere. **KILLED ON TRANSFER: bay +3.0 paired mean with boat contacts 0.68 → 1.02 (+50%) and land 0.03 → 0.36; river fins 79 → 77 (land +22%); lagoon +1.4 (land +80%, worst 382); lake −2.0 (land 0.46 → 0.11)** — the 400 u gate lets the far target fire on short land-bound legs where the ray test now checks too little water.
+- ⛔ **FB2 = FB1 + the land-feasibility projection clipped at the rounding mark** (the 2.5× five-second projection reaches ~1400 u and lands in the arena wall's clearance band 850 u south of the mark; score gaps of 2.8 at the tacks): flats ≡ FB1 (paired +0.1 between them), tacks 2.94 — no mechanism. Dropped.
+- ⛔ **FN1 `treeFLN1x` — a neighbour above the refloat line is `bad` for the edge tax at any level**: BYTE-IDENTICAL on flats 3×8 and on the all-nerve-3 census (the same Torch 768 s). The route already ran one cell inside the polygon; the hull's lateral error is what reaches the lip — rule 17 (fix the displacement, not the map). Dropped.
+- ✅ **FE1 `treeFLE1` — ENGINE (`js/tide.js` afterMove): the crew's shove uses the DOWNHILL direction where the ground is steep (|∇z| over 2·res > 0.05 m) and the channel-ward pull where it is flat (a pan), never their sum.** All-nerve-3 census 8@9400: **aground 10.8 → 1.8 s/boat, 79 → 80 fins**, worst grounding 768 → 31.7 s; sixteen-seed fleet mix: **aground 6.51 → 1.28 s/boat, 159 → 160 fins, no grounding ≥ 20 s (was 39 s and 777 s)**, med 224.7 → 222.5. Flats 3×8 bench: med 224 (identical), paired −0.08 mean (81 same, ±1-2 s reshuffle from the touches' exit direction), fins 238 → 239/240, boat 0.89 → 0.99 (reshuffle). Byte-inert off tidal venues by construction (the function returns without `state.tide`; goldens 36/36 unchanged). ⚠ This is a PHYSICS fix, not an AI change — it strands the PLAYER too (a hull on ground between +0.40 and +1.40 m never refloats; the shove is her only way off).
+
+## OWNER ITEMS (design, not candidates)
+1. **The roster's nerve mix sets the venue's ratio floor**: with four of eight archetypes at nerve 1 the fleet median is a channel sailor (~224-227 vs his 172.8 ⇒ ~1.3) however well the bots execute. Either the venue's scoreboard reads by rung (nerve-3 takers are at 184.5 med today, 172-176 when they make both gates), or the draw changes.
+2. **The start scrum IS the wantij gate here**: 5.9 s/boat of the 20 s beat under avoidance, irons 3.3 vs his 0.9 s, speed at the gun 4.9 vs his 7 kt. The pending S2 / SPACED timed run is the lever for this venue's rungs 2-3.
+3. **Ground between the refloat line (+0.40 m) and the marsh (+1.40) is a trap** for any hull that touches it — never refloats, the player included; FE1 makes the crew walk her off it, but the refloat rule (draft + 0.1 against a 1.0 m HW) is the owner's to revisit.
+4. The router's clock is polar-only: it runs ~8 s slow through the mouth under the flood, so the first plan after the rounding refuses a wantij the boat could have made; and a head-cut entry on the next flood arrived ~2 s before the water (Popper 9405). `earlyPrice` is the design's answer and was left alone (rule 1).
+
+## THE VENUE TABLE ON THE FINAL HEAD (`_fl_close_table.js fp`; PRE = otb3* on the otter landing HEAD (byte-checked against this session's starting HEAD 765accd: goldens 36/36 unchanged, lake 8/8, glowtide 16/16) + fl0fl* for flats on 765accd; POST = fp* on 765accd + FE1; byte-check = races identical to PRE — identical wherever the tide is not live)
+| venue | human med (n) | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| arctic | 209.4 (3) | 306/306.5/236 | 306/306.5/236 | 1.461 → **1.461** | 0.0 | 14 | 0 | 2.26/2.95/13.29/0.01/0.47 | 80/80 | 8/8 vs otb3arc9100 |
+| swamp | 173.3 (3) | 251/267.7/162 | 251/267.7/162 | 1.448 → **1.448** | 0.0 | 4 | 1 | 4.92/3.49/0.00/0.04/0.65 | 80/80 | 8/8 vs otb3sw9400 |
+| redrock | 204.2 (3) | 285/288.5/222 | 285/288.5/222 | 1.396 → **1.396** | 0.0 | 9 | 1 | 7.11/3.04/0.00/0.56/0.81 | 80/80 | 8/8 vs otb3rr9400 |
+| flats | 172.8 (3) | 224/218.1/173 | 224/218.1/173 | 1.296 → **1.296** | 0.4 | 0 | 0 | 0.00/0.99/0.00/0.12/0.25 | 239/240 | 0/8 vs fl0fl9400 |
+| river | 187.4 (3) | 227/239.6/173 | 227/239.6/173 | 1.211 → **1.211** | 1.2 | 30 | 1 | 76.55/9.76/0.00/0.06/0.70 | 79/80 | 8/8 vs otb3riv9400 |
+| lagoon | 174.7 (3) | 205/208.3/170 | 205/208.3/170 | 1.173 → **1.173** | 0.0 | 0 | 0 | 0.30/0.69/0.00/0.09/0.20 | 80/80 | 8/8 vs otb3lag |
+| glowtide | 204.4 (4) | 232/229.9/171 | 232/229.9/171 | 1.135 → **1.135** | 0.0 | 8 | 1 | 7.56/3.46/0.00/0.44/0.68 | 160/160 | 16/16 vs otb3glow |
+| bay | 239 (3) | 269/264.9/221 | 269/264.9/221 | 1.126 → **1.126** | 0.0 | 0 | 0 | 0.03/0.68/0.00/0.09/0.11 | 80/80 | 8/8 vs otb3bay9400 |
+| lake | 194.8 (3) | 219/217.6/179 | 219/217.6/179 | 1.124 → **1.124** | 0.0 | 0 | 0 | 0.46/0.80/0.00/0.04/0.15 | 80/80 | 8/8 vs otb3lk6100 |
+| volcanic | 195.5 (5) | 210/212.4/162 | 210/212.4/162 | 1.074 → **1.074** | 0.0 | 1 | 0 | 0.07/1.68/0.00/0.21/0.35 | 240/240 | 8/8 vs otb3vo9400 |
+| seatrials | 185.7 (10) | 191/192.9/176 | 191/192.9/176 | 1.029 → **1.029 ✅** | 0.0 | 0 | 0 | 0.00/0.56/0.00/0.16/0.16 | 160/160 | 16/16 vs otb3st |
+| otter | 200.8 (5) | 206/208.8/180 | 206/208.8/180 | 1.026 → **1.026 ✅** | 0.0 | 0 | 0 | 1.13/0.55/0.00/0.00/0.13 | 240/240 | 8/8 vs otb3ot9400 |
+| ocean | 214.2 (3) | 219/220.2/188 | 219/220.2/188 | 1.022 → **1.022 ✅** | 0.0 | 0 | 0 | 0.00/0.71/0.00/0.06/0.19 | 160/160 | 16/16 vs otb3oc |
+
+notes:
+  arctic: 8 @ 9100 both
+  swamp: 8 @ 9400 both
+  redrock: 8 @ 9400 both
+  flats: NEW venue; 3×8 both; his 3 laps adjudicated onto the frozen doc (_flats_replay.js)
+  river: 8 @ 9400 both
+  lagoon: 8 @ 9400 both
+  glowtide: 16 @ 9400 both
+  bay: 8 @ 9400 both
+  lake: 8 @ 6100 both
+  volcanic: 3×8 both
+  seatrials: 16 @ 9400 both
+  otter: 3×8 both
+  ocean: 16 @ 9400 both
+
+**At goal (≤ 1.1): ocean 1.022, otter 1.026, seatrials 1.029, volcanic 1.074 = 4 of 13.** Flats 1.296 at intake (the ladder's floor with a 59% nerve-1 draw; nerve-3 boats that make both gates finish 172-176 = him). FE1 is byte-inert on every non-tidal venue (12 of 12 venues 8/8 or 16/16 after the two process-noise re-runs); on flats it moved 0/8 races byte-wise with identical medians (224/218.1/173 → 224/218.1/173) and one more finisher (238 → 239/240), the DNF class gone in the 16-seed fleet (159 → 160, aground 6.5 → 1.3 s/boat).
+
+`npm test` (37 suites): every suite PASS except two that fail on the clean starting HEAD too (verified in a worktree at 765accd): `test_series.js` CRASHES (`standings-abandon-btn` null at test_series.js:73 — the owner's UI) and `test_path_estimate.js` (bay estimate 23743 u vs taut 23021 — pre-existing since the v3 re-save, noted in the otter push). `test_editor.js` failed once under the full-suite load ("scatter still drives how many Place drops") and passes standalone on the landed HEAD. Goldens on the landed HEAD: PASS 39/39 with `flats` added.
+
+## FLATS BY RUNG ON THE FINAL HEAD (`_fl_census.js 16 9400 treeFLE1` = HEAD + FE1, 160 boats; his laps 172.8 med)
+| rung (nerve) | boats | fin med / mean | aground s/boat | mud-slowed s | ground dist med | wantij / head cut taken (per boat) |
+|---|---|---|---|---|---|---|
+| 1 (rocket/freight/leech/metronome) | 95 (59%) | 225.6 / 222.8 | 0.9 | 2.6 | 30.2 k | — / — (point bars 0.82) |
+| 2 (shift/corner) | 39 (24%) | 211.8 / 213.1 | 1.7 | 7.8 | 27.9 k | wantij 0.4 / creek 0.46, neck 1.05 |
+| 3 (bully/gambler) | 26 (16%) | 213.0 / 206.5 | 2.0 | 8.7 | 27.2 k | wantij 0.46 / head cut 0.96 |
+| all-nerve-3 fleet (treeFLN3E1, 80) | 80 | 211.9 / 210.7 | 1.8 | 8.1 | 27.9 k | wantij takers 25% → med 184.3; non-takers 217.6 |
+| him | 3 | 172.8 / 173.8 | 0 | 2.4-4.6 | 24.6 k | wantij 3/3, head cut 2/3 + creek 1/3 |
