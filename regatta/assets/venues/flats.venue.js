@@ -42,7 +42,8 @@ window.VENUE_DOC["flats"] = {
     "amp": 1,
     "mid": 0,
     "phase0": 0.733,
-    "fillKt": 0.55,
+    "fillKt": 0.7,
+    "ebb": 0.8,
     "withies": [
       {
         "x": 1018.7,
@@ -6288,7 +6289,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 900,
         "direction": 0,
-        "speed": 0.35,
+        "speed": 0.5,
         "tidal": true
       },
       {
@@ -6321,7 +6322,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -0.0049,
-        "speed": 0.8,
+        "speed": 1.6,
         "tidal": true
       },
       {
@@ -6354,7 +6355,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.2131,
-        "speed": 0.8,
+        "speed": 2.2,
         "tidal": true
       },
       {
@@ -6387,7 +6388,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.9829,
-        "speed": 0.8,
+        "speed": 1.8,
         "tidal": true
       },
       {
@@ -6420,7 +6421,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.667,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6453,7 +6454,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.0099,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6486,7 +6487,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -0.8757,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6515,7 +6516,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -1.3733,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6548,7 +6549,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -1.4047,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6577,7 +6578,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -1.2474,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6610,7 +6611,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -0.7348,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6643,7 +6644,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.0483,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6676,7 +6677,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.7045,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6705,7 +6706,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 1.2178,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6738,7 +6739,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 1.4519,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6771,7 +6772,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 1.068,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6804,7 +6805,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -0.3489,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6837,7 +6838,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -1.2403,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6870,7 +6871,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -0.9908,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6911,7 +6912,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.7362,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6944,7 +6945,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 1.2406,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -6977,7 +6978,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.441,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7010,7 +7011,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -0.9554,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7043,7 +7044,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -1.0801,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7076,7 +7077,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.0229,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7109,7 +7110,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.4074,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7142,7 +7143,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.6081,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7175,7 +7176,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -0.5844,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7212,7 +7213,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": -0.5669,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7245,7 +7246,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.6827,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7278,7 +7279,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 220,
         "direction": 0.371,
-        "speed": 0.8,
+        "speed": 1.4,
         "tidal": true
       },
       {
@@ -7327,7 +7328,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 180,
         "direction": 0.4976,
-        "speed": 1.2,
+        "speed": 1.5,
         "tidal": true
       },
       {
@@ -7380,7 +7381,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 180,
         "direction": 0.0298,
-        "speed": 1.2,
+        "speed": 1.5,
         "tidal": true
       },
       {
@@ -7437,7 +7438,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 180,
         "direction": -0.4769,
-        "speed": 1.2,
+        "speed": 1.5,
         "tidal": true
       },
       {
@@ -7486,7 +7487,7 @@ window.VENUE_DOC["flats"] = {
         ],
         "falloff": 180,
         "direction": -0.5619,
-        "speed": 1.2,
+        "speed": 1.5,
         "tidal": true
       }
     ]

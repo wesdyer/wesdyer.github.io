@@ -52,7 +52,7 @@ function update(dt) {
             // Density is one of the three speed channels, so it leans on local speed harder
             // than it used to and runs denser overall — a lane has to be several streaks
             // wide before it reads as a lane rather than as scattered marks.
-            const spawnChance = (0.10 + (local.speed / 3.0) * 0.9) * 0.75;
+            const spawnChance = (0.10 + (local.speed / 3.0) * 0.9) * 0.75 * (state.tide ? 2.2 : 1);   // a tidal stream draws its lanes denser (see the tidal note in drawParticles)
             if (fxRand() < spawnChance) {
                 createParticle(px, py, 'current', {
                     trail: [{ x: px, y: py }], trailT: 0, spd: local.speed,
@@ -841,6 +841,7 @@ function draw() {
     const localWind = getWindAt(player.x, player.y);
 
     if (hudShowsRose()) updateRoseHud(player, localWind);
+    if (typeof drawTideReadout === 'function') drawTideReadout(player);   // the tide panel, bottom right, whatever face the HUD wears
     if (window.Volcano && state.volcano) Volcano.applyHudClasses();
 
 

@@ -90,3 +90,40 @@ Withies (the channel markers) and the spoonbills are drawn procedurally by js/ti
 (a stake with a twig tuft and an IALA topmark that leans with the stream; small birds
 feeding on the band the ebb just uncovered) — no art owed for either. If a painted withy
 is ever wanted it is a PROP kind, not a tile: one leaning birch bough on a stake, top-down.
+
+---
+
+## Props (registered Sep 16 2026, night — eighteen `open` slots in art/manifest.json)
+
+    python3 regatta/art/prompt.py <key>          # the brief
+    # save the master as regatta/art/inbox/<key>.png, then
+    python3 regatta/art/ingest.py <key> [<key> ...]
+
+The venue has no placed props yet; withies, spoonbill sandpipers, the waterline and the
+draft contour are procedural. Eighteen slots, in the order they earn their place:
+
+| key | role | world | contact | what it is for |
+|---|---|---|---|---|
+| `flats-stranded-dinghy` | ambient | 48 | none | the warning: a hull the tide left, on the bars a racer passes |
+| `flats-kaap` | landmark | 56 | hard, h15 | the mouth's timber daymark, one on each spit |
+| `flats-perch-beacon` | nav | 44 | hard, h8 | the throat and the creek junctions; red to port (green derived) |
+| `flats-wreck-hull` | landmark | 100 | hard, h3 | a derelict smack on the ebb delta and the head's bar |
+| `flats-oyster-trestles` | hazard | 150 | hard, h1 | rows you must not sail through, on the low flats |
+| `flats-fish-weir` | hazard | 200 | hard, h2 | a stake net, mouth downstream |
+| `flats-fishing-boat` | hazard | 64 | hard, h3 | on moorings in the pools and the channel's edges |
+| `flats-houseboat` | landmark | 120 | hard, h5 | one, against the marsh at the traverse |
+| `flats-oyster-shed` | landmark | 100 | hard, h6 | one, where the wantij creek leaves the channel |
+| `flats-tide-mill` | landmark | 240 | hard, h10 | THE centrepiece, placed once at the head beside the finish |
+| `flats-stone-bridge` | landmark | 300 | none | scenery across the river beyond the finish |
+| `flats-spoonbill-roost` | ambient | 64 | none | the witness, standing; creek banks and pool edges |
+| `flats-seal-haulout` | ambient | 110 | none | the swash bars |
+| `flats-driftwood-tree` | ambient | 100 | none | the high bars and the spit's back |
+| `flats-shell-bank` | ambient | 150 | none | the bright line a bar wears |
+| `flats-eelgrass-bed` | ambient | 175 | none, seabed | the low flats beside the channels, under the water |
+| `flats-sea-lavender` | ambient | 72 | none | colour on the marsh |
+| `flats-brent-geese` | ambient | 100 | none | winter on the eelgrass |
+
+On ingest each gets its PROP_KINDS row (label, plane, contact, height) and the hard ones a
+traced collider (art/prop_outlines.py); placement is Wes's in editor.html. One engine item
+before placing: a prop on ground that dries needs to draw UNDER the tide's water when it is
+covered (the seabed plane under the wet pass) — the eelgrass bed and the dinghy want that.

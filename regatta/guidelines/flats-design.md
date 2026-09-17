@@ -509,3 +509,27 @@ ground plans off it and not across it), a grounding that refloats and is shoved 
 the channel, the drawing at three states of the tide; `--race` adds one fleet race. Sailed
 in Chrome: a hand-steered dead run at 5 kt through the neck from HW−21 clears the sill
 with 1.3 m and reaches the channel at HW+24.
+
+### 7.6 The stream you can feel (Sep 16, night — "let's do the bump")
+
+The channel stream was 0.8 kt everywhere, a tenth of boat speed: it did flood and ebb
+(measured: 0.80 at mid-flood and mid-ebb, 0.04 at the turns, reversed) but read as a steady
+set, and the slack lasted four seconds nobody saw. Real inlets run 1–1.5 kt inside and 2–3
+in the throat against boats doing 5–7 — a fifth to a third of boat speed.
+
+**Now** (`doc.current.regions` speeds from `mainStream` in the builder; `doc.tide.ebb`):
+sea 0.5, the delta channel 1.6, the throat 2.2, the reach inside it 1.8, the estuary 1.4,
+the flood creek 1.5, the fill over the flats 0.7 — and the ebb at 80% of the flood
+(`state.tide.ebbMul`, applied in getCurrentAt), so the tide reads as "the flood carries you
+in". Measured at the traverse: 1.40 kt at peak flood, 1.12 at peak ebb, 0.07 at slack. On
+the rose: 9.2 kt SOG on the flood, 8.1 at slack, 7.0 on the ebb, same boat, same wind.
+
+**Seen.** The current lanes were tuned for the river's 3–4 kt: at 1.4 kt they were three
+faint slivers under the wind waves. On a tidal venue (gated on `state.tide`, every other
+venue byte-identical) the lanes draw at full weight from 1.5 kt (`CUR_TIDAL_REF_KT`),
+twice as dark (`CUR_TIDAL_MAX_ALPHA` 0.40) and 2.2× as dense — the channel visibly runs
+at mid-tide, along the flow, and stills at slack.
+
+**Fleet, 3 seeds:** 27/27, best 3:05, median 3:44, worst 4:02, no boat aground more than
+three times — six seconds slower at the median than before the bump (the router does not
+price current; the ebb costs a bot that does not plan round it), the pack's shape the same.

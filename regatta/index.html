@@ -1300,18 +1300,6 @@
                             <span id="hud-wind-angle" class="t-mono text-xs text-blue-200">0</span>
                         </div>
                     </div>
-                    <!-- THE TIDE (Spoonbill Flats only; hidden elsewhere). The gauge is the water's
-                         height between low and high water; the arrow says which way it is going and
-                         the seconds say when it turns. DEPTH is the echo sounder: metres under the hull,
-                         amber when the mud is taking speed, red when she is about to sit. -->
-                    <div id="hud-tide" class="hidden mt-1 flex justify-center">
-                        <div class="flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-full border border-slate-600/50" style="white-space:nowrap">
-                            <canvas id="hud-tide-gauge" width="34" height="8" style="width:34px;height:8px"></canvas>
-                            <span id="hud-tide-text" class="t-mono text-blue-200" style="font-size:10px">▲HW 30s</span>
-                            <span class="t-label t-label-xs" style="opacity:0.6">·</span>
-                            <span id="hud-depth" class="t-mono text-blue-200" style="font-size:10px">2.0m</span>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -1338,11 +1326,19 @@
              </div>
         </div>
 
-        <!-- Bottom Right: leg splits. Right-aligned, so the chip accent moves to
-             the right edge (border-r) to keep a clean line against the margin as
-             the stack grows through the race. -->
-        <div id="hud-leg-times" class="absolute bottom-4 right-4 flex flex-col gap-1 items-end pointer-events-none z-10">
-             <!-- Times will be injected here -->
+        <!-- Bottom Right: the tide, then the leg splits under it. Right-aligned, so the
+             chip accent moves to the right edge (border-r) to keep a clean line against the
+             margin as the stack grows through the race. -->
+        <div id="hud-bottom-right" class="absolute bottom-4 right-4 flex flex-col gap-2 items-end pointer-events-none z-10">
+            <!-- THE TIDE (Spoonbill Flats only; hidden elsewhere; Wes, Sep 16 2026: the curve
+                 and the point, with the height as a number — in place of the rose row and the
+                 pill under the boat). Drawn by drawTideReadout in js/render/hud.js. -->
+            <div id="hud-tide" class="hidden bg-slate-900/70 backdrop-blur-sm rounded-lg border border-slate-400/30 shadow-2xl overflow-hidden">
+                <canvas id="hud-tide-canvas" width="250" height="84" style="width:250px;height:84px;display:block"></canvas>
+            </div>
+            <div id="hud-leg-times" class="flex flex-col gap-1 items-end">
+                 <!-- Times will be injected here -->
+            </div>
         </div>
 
         <!-- AI Sayings Overlay -->
