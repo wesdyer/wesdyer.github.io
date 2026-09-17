@@ -1,18 +1,26 @@
 # Spoonbill Flats — texture prompts (Sep 16 2026)
 
 Three ground tiles for the tidal estuary, on the [VENUE] [TERRAIN] convention (Wes: a new
-venue's grounds are its own kinds even where they repeat a material). Prepend the base
-prompt from `guidelines/venue-art.md` §"Base prompt" to each. Every tile is a seamless
-square seen from directly overhead in flat even light, no water, no waves, no boats, no
-shadows with direction, no vignette, no text.
+venue's grounds are its own kinds even where they repeat a material). They are REGISTERED
+in `art/manifest.json` as texture slots — the pipeline addresses them by key:
+
+    python3 regatta/art/prompt.py flats-saltmarsh
+    python3 regatta/art/prompt.py flats-mudflat
+    python3 regatta/art/prompt.py flats-sand
+    # save each master as regatta/art/inbox/<key>.png, then
+    python3 regatta/art/ingest.py flats-saltmarsh flats-mudflat flats-sand
+
+(`prompt.py` prepends the base and texture clauses itself; the subjects below are what it
+carries.) Every tile is a seamless square seen from directly overhead in flat even light,
+no water, no waves, no boats, no shadows with direction, no vignette, no text.
 
 How they are used, so the briefs are honest about what the camera resolves:
 
 | kind | where it draws | tileWorld | code row on ingest |
 |---|---|---|---|
 | `flats-marsh` (look `saltmarsh`) | the never-wet ground: the shore and the islands. Drawn by drawIslands like any land. | 128 | `LAND_TEXTURES.saltmarsh` in js/render/sprites.js (src, tile 128, alpha ~0.6); reset `ISLAND_STYLES.saltmarsh.body` to the delivered mean |
-| flats mud (`flats-mudflat`) | the intertidal ground the tide layer paints (js/tide.js `COL.mud`) — most of the exposed flat at low water | 128 | a pattern fill multiplied into the tide layer's DRY pass (not yet written: `Tide` draws flat colour today — add a `TIDE_TILES` map and `createPattern` the way getLandPattern does) |
-| flats sand (`flats-sand`) | bars and crests: the wantij sill, the creek sill, the two spits (`COL.sand`) | 128 | same hook, blended by the field's material raster |
+| flats mud (`flats-mudflat`) | the intertidal ground the tide layer paints (js/tide.js `COL.mud`) — most of the exposed flat at low water | 128 | set `TIDE.tiles.mud` in js/tide.js to `assets/images/terrain/flats/mudflat.png` (the hook is written: the tile's luma about its mean modulates the dry pass at `TIDE.tileMix`); reset `COL.mud` to the delivered mean |
+| flats sand (`flats-sand`) | bars and crests: every sill, the two spits (`COL.sand`) | 128 | `TIDE.tiles.sand`, same hook, blended by the field's material raster; reset `COL.sand` |
 
 The tide layer already darkens freshly exposed ground and pales it with height, so the
 tiles carry TEXTURE, not wetness: "wetness is a rendering treatment of the same material,

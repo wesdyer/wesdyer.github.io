@@ -77,7 +77,14 @@ const TIDE = {
     seeThrough: 1.9,     // m — the bottom stops showing through the water at this depth
     pxU: 5,              // world units per pixel of the ground image
     wetBand: 0.22,       // m — freshly exposed ground stays dark this far above the water
-    draftLine: true      // draw the "afloat" contour as a warning line
+    draftLine: true,     // draw the "afloat" contour as a warning line
+    // THE TILES (art/manifest.json: flats-mudflat, flats-sand). Null until delivered — a
+    // missing image is a 404 on every load — then the path, e.g.
+    // 'assets/images/terrain/flats/mudflat.png'. The tile's luma modulates the dry ground
+    // (and, fainter, the bottom seen through shallow water); COL.* stays the mean colour.
+    tiles: { mud: null, sand: null },
+    tileWorld: 128,      // world units a tile covers, as the manifest says
+    tileMix: 0.6         // how much of the tile's luma variation shows (0 flat, 1 all of it)
 };
 
 (function () {
@@ -566,6 +573,29 @@ const TIDE = {
     // dry flat is not flat paint while its tile is owed. One 64² tile of fbm, indexed by the
     // picture's world-aligned pixel, so it neither swims nor tiles visibly (the window's
     // origin is a multiple of pxU).
+    // The delivered tiles as luma rasters, loaded once when a path is set (TIDE.tiles).
+    const _tile = { mud: null, sand: null, loading: {} };
+    function tileLuma(which) {
+        const C = TIDE;
+        if (_tile[which]) return _tile[which];
+        const src = C.tiles && C.tiles[which];
+        if (!src || _tile.loading[which] || typeof Image === 'undefined') return null;
+        _tile.loading[which] = true;
+        const img = new Image();
+        img.onload = () => {
+            const n = 256, cv = document.createElement('canvas'); cv.width = cv.height = n;
+            const g = cv.getContext('2d'); g.drawImage(img, 0, 0, n, n);
+            const d = g.getImageData(0, 0, n, n).data, L = new Float32Array(n * n);
+            let mean = 0;
+            for (let k = 0; k < n * n; k++) { L[k] = (d[k * 4] * 0.299 + d[k * 4 + 1] * 0.587 + d[k * 4 + 2] * 0.114); mean += L[k]; }
+            mean /= n * n;
+            for (let k = 0; k < n * n; k++) L[k] = L[k] / Math.max(1, mean);   // 1 = the tile's mean
+            _tile[which] = { L, n };
+            pic.level = NaN;                      // repaint with the texture
+        };
+        img.src = src;
+        return null;
+    }
     const MOT = 256; let _mot = null;
     function mottle() {
         if (_mot) return _mot;
@@ -633,6 +663,7 @@ const TIDE = {
         const z = F.z, mat = F.mat, W = F.W, H = F.H, res = F.res;
         const see = C.seeThrough, wet = C.wetBand, DRAFT = T.draft, FREE = T.free;
         const mot = mottle(), mx0 = Math.round(x0 / C.pxU), my0 = Math.round(y0 / C.pxU);
+        const tMud = tileLuma('mud'), tSand = tileLuma('sand'), tw = C.tileWorld || 128, tmix = C.tileMix;
         for (let py = 0; py < ph; py++) {
             const wy = y0 + (py + 0.5) * C.pxU;
             const fy = (wy - F.y0) / res - 0.5, j = Math.floor(fy), ty = fy - j;
@@ -654,7 +685,15 @@ const TIDE = {
                     const hgt = -d;
                     const wf = 1 - sstep(hgt / wet);
                     const mo = mot[((my0 + py) & (MOT - 1)) * MOT + ((mx0 + px) & (MOT - 1))];
-                    const pale = Math.min(0.14, hgt * 0.10) + mo * 0.16 * (1 - 0.5 * wf);
+                    let pale = Math.min(0.14, hgt * 0.10) + mo * 0.16 * (1 - 0.5 * wf);
+                    // the delivered tile, where there is one: its luma about its mean, by material
+                    if (tMud || tSand) {
+                        const u = (((wx % tw) + tw) % tw) / tw, v = (((wy % tw) + tw) % tw) / tw;
+                        let lum = 1, wsum = 0;
+                        if (tMud) { const q = tMud.L[((v * tMud.n) | 0) * tMud.n + ((u * tMud.n) | 0)]; lum += (q - 1) * (1 - sf); wsum += 1 - sf; }
+                        if (tSand) { const q = tSand.L[((v * tSand.n) | 0) * tSand.n + ((u * tSand.n) | 0)]; lum += (q - 1) * sf; wsum += sf; }
+                        pale += (lum - 1) * tmix * (1 - 0.4 * wf);
+                    }
                     const r = (dry[0] + (wetc[0] - dry[0]) * wf) * (1 + pale), gg = (dry[1] + (wetc[1] - dry[1]) * wf) * (1 + pale), b = (dry[2] + (wetc[2] - dry[2]) * wf) * (1 + pale);
                     AD[o] = Math.min(255, r); AD[o + 1] = Math.min(255, gg); AD[o + 2] = Math.min(255, b); AD[o + 3] = 255;
                     AW[o] = AD[o]; AW[o + 1] = AD[o + 1]; AW[o + 2] = AD[o + 2]; AW[o + 3] = 255;
