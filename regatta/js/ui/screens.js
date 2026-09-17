@@ -141,6 +141,7 @@ const UI = {
     settingMusic: document.getElementById('setting-music'),
     settingPenalties: document.getElementById('setting-penalties'),
     settingNavAids: document.getElementById('setting-navaids'),
+    settingClockMillis: document.getElementById('setting-clock-millis'),
     settingTrim: document.getElementById('setting-trim'),
     settingCameraMode: document.getElementById('setting-camera-mode'),
     settingHudMode: document.getElementById('setting-hud-mode'),
@@ -2061,6 +2062,7 @@ function applySettings() {
     if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
     if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
+    if (UI.settingClockMillis) UI.settingClockMillis.checked = !!settings.clockMillis;
     if (UI.settingTrim) UI.settingTrim.checked = settings.autoTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
     if (UI.settingHudMode) UI.settingHudMode.value = settings.hudMode || 'boat';
@@ -2315,6 +2317,7 @@ if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { set
 if (UI.settingMusic) UI.settingMusic.addEventListener('change', (e) => { settings.musicEnabled = e.target.checked; saveSettings(); Sound.init(); });
 if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => { settings.penaltiesEnabled = e.target.checked; saveSettings(); });
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
+if (UI.settingClockMillis) UI.settingClockMillis.addEventListener('change', (e) => { settings.clockMillis = e.target.checked; saveSettings(); });
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.autoTrim = e.target.checked; saveSettings(); });
 if (UI.settingCameraMode) UI.settingCameraMode.addEventListener('change', (e) => { settings.cameraMode = e.target.value; saveSettings(); });
 if (UI.settingHudMode) UI.settingHudMode.addEventListener('change', (e) => { settings.hudMode = e.target.value; applyHudMode(); saveSettings(); });

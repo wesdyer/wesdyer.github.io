@@ -903,7 +903,8 @@ function draw() {
 
             // Fried electronics (volcano.js): the clock goes to static with the rest of them.
             const timerFried = !!(state.volcano && window.Volcano && Volcano.hudFried('timer'));
-            UI.timer.textContent = timerFried ? Volcano.garble(formatTime(displayTime), 1) : formatTime(displayTime);
+            const clock = settings.clockMillis ? formatClockTime(displayTime) : formatTime(displayTime);
+            UI.timer.textContent = timerFried ? Volcano.garble(clock, 1) : clock;
             UI.timer.className = `t-mono text-4xl tracking-widest drop-shadow-md ${timerFried ? 'text-rose-400 fried' : timerClass}`;
         }
 

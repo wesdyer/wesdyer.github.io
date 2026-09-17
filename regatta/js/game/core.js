@@ -161,6 +161,17 @@ function formatTime(s) {
     return `${s < 0 ? "-" : ""}${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
 }
 
+// THE RACE CLOCK at the top of the screen: MM:SS.mmm (owner's call, Sep 16 2026). Same
+// millisecond-first arithmetic as formatSplitTime below, with two-digit minutes and the sign
+// the prestart countdown carries. `formatTime` (to the second) stays for the leaderboard's and
+// the school's finish times.
+function formatClockTime(s) {
+    const total = Math.round(Math.abs(s) * 1000);
+    const m = Math.floor(total / 60000);
+    const sec = Math.floor((total % 60000) / 1000);
+    return `${s < 0 ? "-" : ""}${m.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}.${(total % 1000).toString().padStart(3, '0')}`;
+}
+
 // ⚠️ ROUNDED TO THE MILLISECOND, AND DERIVED FROM IT. Truncating `(s % 1) * 1000` printed a
 // 271.743s record as 4:31.742, because 271.743 is really 271.74299999… in binary — the
 // display was showing float noise as a lost thousandth. Taking whole milliseconds first and

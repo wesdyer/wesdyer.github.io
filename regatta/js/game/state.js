@@ -8,6 +8,9 @@
 // Settings
 const DEFAULT_SETTINGS = {
     navAids: true,
+    // The race clock at the top of the screen reads MM:SS by default; this adds .mmm
+    // (owner's call, Sep 16 2026: the wide string did not look good as the default).
+    clockMillis: false,
     // Stored in the polarity the Settings toggle shows. The boat carries the
     // inverse (boat.manualTrim) because the physics reads more naturally that way.
     autoTrim: true,
