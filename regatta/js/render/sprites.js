@@ -351,6 +351,13 @@ const LAND_TEXTURES = {
     // run one diagonal, so the one thing to watch tiled is a direction; at 3 luma it does
     // not read. If the beach looks dead the move is UP (1.0 -> 4.49), never down.
     blacksand:    { src: 'assets/images/terrain/volcanic/blacksand.png', tile: 128, alpha: 0.7 },
+    // SPOONBILL FLATS' saltmarsh turf (delivered 2026-09-16): tile-scale luma sd 14.1 at 128,
+    // the busiest of the swards, so the alpha sits at the low end — the turf's tufts must
+    // stay quieter than the birds and the withies drawn over it. 256 rather than the swards'
+    // 128: the tile's five soil pans are its landmark, and at 128 a 1100u island showed them
+    // as a nine-across grid; at 256 they are four across and 28 m apart, which reads as
+    // ground. Body = the delivered mean.
+    saltmarsh:    { src: 'assets/images/terrain/flats/saltmarsh.png',    tile: 256, alpha: 0.45 },
     // ── OTTER POINT'S FOUR GROUNDS (2026-09-13) ─────────────────────────────
     // Every body in ISLAND_STYLES is the DELIVERED tile mean, so every alpha here is a pure
     // contrast knob (the coralsand rule). On-screen sd = tile-scale luma sd x alpha; the

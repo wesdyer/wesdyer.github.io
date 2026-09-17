@@ -82,9 +82,9 @@ const TIDE = {
     // missing image is a 404 on every load — then the path, e.g.
     // 'assets/images/terrain/flats/mudflat.png'. The tile's luma modulates the dry ground
     // (and, fainter, the bottom seen through shallow water); COL.* stays the mean colour.
-    tiles: { mud: null, sand: null },
-    tileWorld: 128,      // world units a tile covers, as the manifest says
-    tileMix: 0.6         // how much of the tile's luma variation shows (0 flat, 1 all of it)
+    tiles: { mud: 'assets/images/terrain/flats/mudflat.png', sand: 'assets/images/terrain/flats/sand.png' },   // delivered 2026-09-16
+    tileWorld: { mud: 256, sand: 128 },   // world units a tile covers: the mud's runnel net at 256 so it repeats half as often; the sand's ripples are right at the manifest's 128
+    tileMix: 0.85        // how much of the tile's luma variation shows (0 flat, 1 all of it)
 };
 
 (function () {
@@ -583,14 +583,23 @@ const TIDE = {
         _tile.loading[which] = true;
         const img = new Image();
         img.onload = () => {
-            const n = 256, cv = document.createElement('canvas'); cv.width = cv.height = n;
+            // The tile as a GREY about its own mean (128 = the mean), so an 'overlay'
+            // composite at the tile's screen size leaves the flat's colour where the tile is
+            // average and pushes it lighter or darker where the tile is — the runnels and
+            // the tufts at full resolution, the colour still the tide layer's own.
+            const n = 512, cv = document.createElement('canvas'); cv.width = cv.height = n;
             const g = cv.getContext('2d'); g.drawImage(img, 0, 0, n, n);
-            const d = g.getImageData(0, 0, n, n).data, L = new Float32Array(n * n);
+            const im = g.getImageData(0, 0, n, n), d = im.data;
             let mean = 0;
-            for (let k = 0; k < n * n; k++) { L[k] = (d[k * 4] * 0.299 + d[k * 4 + 1] * 0.587 + d[k * 4 + 2] * 0.114); mean += L[k]; }
+            for (let k = 0; k < n * n; k++) mean += d[k * 4] * 0.299 + d[k * 4 + 1] * 0.587 + d[k * 4 + 2] * 0.114;
             mean /= n * n;
-            for (let k = 0; k < n * n; k++) L[k] = L[k] / Math.max(1, mean);   // 1 = the tile's mean
-            _tile[which] = { L, n };
+            for (let k = 0; k < n * n; k++) {
+                const l = (d[k * 4] * 0.299 + d[k * 4 + 1] * 0.587 + d[k * 4 + 2] * 0.114) / Math.max(1, mean);
+                const v = Math.max(0, Math.min(255, Math.round(128 * l)));
+                d[k * 4] = d[k * 4 + 1] = d[k * 4 + 2] = v; d[k * 4 + 3] = 255;
+            }
+            g.putImageData(im, 0, 0);
+            _tile[which] = { cv, n };
             pic.level = NaN;                      // repaint with the texture
         };
         img.src = src;
@@ -615,11 +624,13 @@ const TIDE = {
         return _mot;
     }
     function hexRgb(h) { return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]; }
+    // The dry colours are the DELIVERED tiles' means (2026-09-16: flats-mudflat #a9834d,
+    // flats-sand #d9b879), so the tile's luma modulates about the colour the flat already is.
     const COL = {
-        mud:      [176, 138, 84],    // golden mudflat, dry
-        mudWet:   [112,  86, 52],    // just exposed, gleaming dark
-        sand:     [222, 196, 132],   // rippled sand, dry
-        sandWet:  [166, 140, 88],
+        mud:      [169, 131, 77],    // golden mudflat, dry
+        mudWet:   [108,  82, 48],    // just exposed, gleaming dark
+        sand:     [217, 184, 121],   // rippled sand, dry
+        sandWet:  [163, 135, 82],
         shallow:  [158, 182, 160],   // the bottom seen through a hand of water
         edge:     [232, 226, 206]    // the water's edge
     };
@@ -663,7 +674,9 @@ const TIDE = {
         const z = F.z, mat = F.mat, W = F.W, H = F.H, res = F.res;
         const see = C.seeThrough, wet = C.wetBand, DRAFT = T.draft, FREE = T.free;
         const mot = mottle(), mx0 = Math.round(x0 / C.pxU), my0 = Math.round(y0 / C.pxU);
-        const tMud = tileLuma('mud'), tSand = tileLuma('sand'), tw = C.tileWorld || 128, tmix = C.tileMix;
+        tileLuma('mud'); tileLuma('sand');                       // kick the loads
+        const cvS = ensureCanvas(pic, 'cvSand', pw, ph), gS = cvS.getContext('2d');
+        const imS = gS.createImageData(pw, ph), AS = imS.data;
         for (let py = 0; py < ph; py++) {
             const wy = y0 + (py + 0.5) * C.pxU;
             const fy = (wy - F.y0) / res - 0.5, j = Math.floor(fy), ty = fy - j;
@@ -685,15 +698,9 @@ const TIDE = {
                     const hgt = -d;
                     const wf = 1 - sstep(hgt / wet);
                     const mo = mot[((my0 + py) & (MOT - 1)) * MOT + ((mx0 + px) & (MOT - 1))];
-                    let pale = Math.min(0.14, hgt * 0.10) + mo * 0.16 * (1 - 0.5 * wf);
-                    // the delivered tile, where there is one: its luma about its mean, by material
-                    if (tMud || tSand) {
-                        const u = (((wx % tw) + tw) % tw) / tw, v = (((wy % tw) + tw) % tw) / tw;
-                        let lum = 1, wsum = 0;
-                        if (tMud) { const q = tMud.L[((v * tMud.n) | 0) * tMud.n + ((u * tMud.n) | 0)]; lum += (q - 1) * (1 - sf); wsum += 1 - sf; }
-                        if (tSand) { const q = tSand.L[((v * tSand.n) | 0) * tSand.n + ((u * tSand.n) | 0)]; lum += (q - 1) * sf; wsum += sf; }
-                        pale += (lum - 1) * tmix * (1 - 0.4 * wf);
-                    }
+                    const pale = Math.min(0.14, hgt * 0.10) + mo * 0.10 * (1 - 0.5 * wf);
+                    // the sand mask for the tile overlay: how much of this pixel is sand
+                    AS[o + 3] = Math.round(255 * sf);
                     const r = (dry[0] + (wetc[0] - dry[0]) * wf) * (1 + pale), gg = (dry[1] + (wetc[1] - dry[1]) * wf) * (1 + pale), b = (dry[2] + (wetc[2] - dry[2]) * wf) * (1 + pale);
                     AD[o] = Math.min(255, r); AD[o + 1] = Math.min(255, gg); AD[o + 2] = Math.min(255, b); AD[o + 3] = 255;
                     AW[o] = AD[o]; AW[o + 1] = AD[o + 1]; AW[o + 2] = AD[o + 2]; AW[o + 3] = 255;
@@ -714,7 +721,7 @@ const TIDE = {
                 } else { AW[o + 3] = 0; AD[o + 3] = 0; }
             }
         }
-        gW.putImageData(imW, 0, 0); gD.putImageData(imD, 0, 0);
+        gW.putImageData(imW, 0, 0); gD.putImageData(imD, 0, 0); gS.putImageData(imS, 0, 0);
         pic.x0 = x0; pic.y0 = y0; pic.w = w; pic.h = h; pic.level = L; pic.key = key;
     }
     function drawWet(ctx) {
@@ -732,6 +739,7 @@ const TIDE = {
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(pic.cvDry, pic.x0, pic.y0, pic.w, pic.h);
         ctx.restore();
+        drawTileOverlay(ctx);
         // The water's edge: a thin pale line where the level meets the ground — the wet lip of
         // the flat — and, a draft inside it, the dashed line you must stay on the deep side of.
         drawIso(ctx, level(), 'rgba(236, 230, 210, 0.85)', 1.6, null);
@@ -840,6 +848,62 @@ const TIDE = {
             ctx.fillStyle = w.hand === 'port' ? '#e0483a' : '#3fb36a';
             ctx.beginPath(); ctx.arc(tx, ty, 3.6, 0, Math.PI * 2); ctx.fill();
         }
+        ctx.restore();
+    }
+    // THE TILES OVER THE DRY GROUND, at screen resolution: the mud tile everywhere the flat is
+    // exposed, the sand tile where the material raster says sand, each a world-anchored
+    // pattern of the tile's grey-about-its-mean, masked by the dry pass and composited with
+    // 'overlay' so the colour stays the flat's own. Three composites a frame on one
+    // viewport-sized scratch canvas; nothing until a tile has loaded.
+    const ov = { cv: null, cv2: null, pat: {} };
+    function drawTileOverlay(ctx) {
+        const C = cfg();
+        const twFor = (which) => (typeof C.tileWorld === 'object' ? C.tileWorld[which] : C.tileWorld) || 128;
+        const mud = _tile.mud, sand = _tile.sand;
+        if (!mud && !sand) return;
+        const cw = ctx.canvas.width, ch = ctx.canvas.height;
+        if (!ov.cv) { ov.cv = document.createElement('canvas'); ov.cv2 = document.createElement('canvas'); }
+        if (ov.cv.width !== cw || ov.cv.height !== ch) { ov.cv.width = ov.cv2.width = cw; ov.cv.height = ov.cv2.height = ch; ov.pat = {}; }
+        const g = ov.cv.getContext('2d'), g2 = ov.cv2.getContext('2d');
+        const Tm = ctx.getTransform();
+        const [va, vb, vc, vd] = viewWindow(ctx);
+        const patFor = (which, t, gg) => {
+            if (!ov.pat[which]) ov.pat[which] = gg.createPattern(t.cv, 'repeat');
+            return ov.pat[which];
+        };
+        // the mud everywhere dry (the sand mask later replaces where it is sand)
+        g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+        g.clearRect(0, 0, cw, ch);
+        g.setTransform(Tm);
+        const drawPat = (gg, t, which) => {
+            const tw = twFor(which);
+            gg.save();
+            gg.scale(tw / t.n, tw / t.n);                       // the tile spans tileWorld units
+            gg.fillStyle = patFor(which, t, gg);
+            gg.fillRect(va * t.n / tw, vb * t.n / tw, (vc - va) * t.n / tw, (vd - vb) * t.n / tw);
+            gg.restore();
+        };
+        if (mud) drawPat(g, mud, 'mud');
+        if (sand && pic.cvSand) {
+            // the sand pattern, masked by the sand share, over the mud
+            g2.setTransform(1, 0, 0, 1, 0, 0); g2.globalCompositeOperation = 'source-over'; g2.globalAlpha = 1;
+            g2.clearRect(0, 0, cw, ch);
+            g2.setTransform(Tm);
+            drawPat(g2, sand, 'sand');
+            g2.globalCompositeOperation = 'destination-in';
+            g2.drawImage(pic.cvSand, pic.x0, pic.y0, pic.w, pic.h);
+            g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over';
+            g.drawImage(ov.cv2, 0, 0);
+        }
+        // keep only the dry ground
+        g.setTransform(Tm); g.globalCompositeOperation = 'destination-in';
+        g.drawImage(pic.cvDry, pic.x0, pic.y0, pic.w, pic.h);
+        // and lay it on the world
+        ctx.save();
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.globalCompositeOperation = 'overlay';
+        ctx.globalAlpha = C.tileMix;
+        ctx.drawImage(ov.cv, 0, 0);
         ctx.restore();
     }
     // The AFLOAT contour — marching squares on the raster over the view, dashed: where the

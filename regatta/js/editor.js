@@ -446,7 +446,7 @@ const LAND_TYPES = [
     // Spoonbill Flats' tidal field (js/tide.js). The marsh is land; the other four are the
     // anchors of the elevation field the tide floods and drains — you may sail over every
     // one of them when the water is up, so all four fill translucent.
-    { kind: 'flats-marsh',   label: 'Flats Saltmarsh',    swatch: '#8f8f52' },
+    { kind: 'flats-marsh',   label: 'Flats Saltmarsh',    swatch: '#857e40' },
     { kind: 'flats-channel', label: 'Flats Deep Channel', swatch: '#274a72' },
     { kind: 'flats-pool',    label: 'Flats Deep Pool',    swatch: '#355d8a' },
     { kind: 'flats-bar',     label: 'Flats Sand Bar',     swatch: '#d9b86a' },
@@ -2019,7 +2019,7 @@ const KIND_FILL = {
     // Spoonbill Flats. The marsh is dry land, so solid; the field anchors are all water you
     // may sail over at some state of the tide, so translucent — the channel and pool as
     // deep blue, the bar and shelf as the sand and mud they dry to.
-    'flats-marsh': '#8f8f52',
+    'flats-marsh': '#857e40',
     'flats-channel': 'rgba(39,74,114,0.55)', 'flats-pool': 'rgba(53,93,138,0.5)',
     'flats-bar': 'rgba(217,184,106,0.5)', 'flats-flat': 'rgba(168,135,76,0.42)',
     // Magma fills as the bed itself: it has no crust to hide behind, so the schematic

@@ -1611,7 +1611,7 @@ const ISLAND_STYLES = {
     // texture prompt is in art/flats-prompts.md); the body is the spec's mean. The mud and
     // sand of the flats are NOT looks: they are painted by the tide layer from the
     // elevation field (js/tide.js), which is where their colours live.
-    saltmarsh: { body: '#8f8f52', stroke: '#6b6a3c', veg: '#6f7a2e', rock: '#8a8a7a', trees: false },
+    saltmarsh: { body: '#857e40', stroke: '#5f5a2c', veg: '#6f7a2e', rock: '#8a8a7a', trees: false },   // body = flats-saltmarsh DELIVERED tile mean (2026-09-16)
     // Lava's body is the CRUST — the cooled plates drawLava lays over the bed — and its
     // stroke is the EMBER, because on this one kind the coastline is the hottest thing in
     // the picture, not the darkest: the flow front is where the sea boils. drawLava reads
