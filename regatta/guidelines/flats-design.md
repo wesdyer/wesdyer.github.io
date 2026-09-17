@@ -313,3 +313,35 @@ pictures).
 - Bots still shave the point bar as it dries (the pursuit chord); ~1 in 3 touches the mud
   once. Fair game for a venue whose card says so, but the helm could read the field.
 - A human lap, and the human-vs-bot ratio from it.
+
+## 7. Wes's laps and the fourth section (Sep 16, afternoon–evening)
+
+Five laps on the three-meander layout: **3:13, 2:28, 2:45, 2:27, 2:44**. Every lap went
+creek → pool → sill through the wantij and cut the point bar; the two 2:27s then went
+nearly straight across the head's flats to the finish at high water; nobody used the east
+creek. His verdict: distinct, compelling, the corner-cutting gamble on a rising tide is the
+thing to build on, the course is too short, and "more passages would be good". Asked for
+the estuary to be extended rather than scaled ("more to sail, not just a larger area of
+the same stuff").
+
+Built:
+- **A fourth section** at the head: the channel continues past the old finish into a
+  meander that bulges east round a delta bar and swings back to a finish ~4000u further
+  up. Channel-only 3:11 → 3:38 (4.91 → 5.61 km).
+- **Three more passages**, each with a different key: the **west gamble** (the other way
+  across the first loop, a long shelf you take at the top of the tide, for boats that reach
+  the mouth after the leaders), the **neck** (across the west bend, a pool by Curlew flat),
+  the **head cut** (Wes's own line made a marked passage with a sill), and the **delta
+  cut** in the new section. With the point bar and the creek that is six, plus
+  stepping-stone pools in the flats.
+- Router: the tide's clock is now **polar sailing time only** — priced off gScore it
+  carried the corridor-gybing and stand-off hints, "arrived" at the neck's sill 35 s late,
+  and found it open on the *next* tide while the boats reached it at low water — and a
+  cell is priced at the shallower of its arrival water and the water 8 s before it, with
+  the horizon margin at 0.02 m/s (cap 0.42). Groundings went from a third of the fleet
+  sitting ~25 s to touches; the wantij came back into the bots' repertoire.
+- A 1.15× whole-venue scale was built and measured (bots 3:02–3:38) and set aside on
+  Wes's call; the knob stays in the script at 1.0.
+
+Bots on the extended venue (3 seeds): 27/27, best 3:06, median 3:37, worst 4:31.
+Projected from Wes's 2:27 plus the extension, his best should land ~2:50.

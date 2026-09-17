@@ -1034,7 +1034,7 @@ the boat pill (and the rose), the live tide on the minimap, a thump and a banner
 refloat time when she sits. Ranking runs on a field over all the water (a boat halfway
 across the wantij is ahead); the path line and the ruler on the channel only.
 
-### Course — One way: beat, mouth, an S of three meanders, finish at the head
+### Course — One way: beat, mouth, four meanders, finish at the head
 
 - **The beat.** 1200u to a rounding mark at sea (starboard), then bear away through the
   mouth between two sand spits. ~40 s to the mouth.
@@ -1044,10 +1044,22 @@ across the wantij is ahead); the path line and the ruler on the channel only.
   behind finds the sill closing and waits or turns back. Saves ~25 s.
 - **The point bar** (the west bend). The inside of the bend is a shelf at −0.95 m: the
   higher the water, the tighter the cut. No gate — a radius that follows the tide.
-- **The flood creek** (the head). A shallower branch (−1.15 m) up the east side of the
-  head's meander with a 1.2 kt flood stream and a sill (−0.5 m) at its head; the ebb
-  channel round the outside never dries.
-- Finish inland after the creek rejoins, ~15 s of shared water.
+- **The west gamble** (first loop, the other key). A creek from the mouth's west side to
+  the roost pool, a long shelf (−0.6 m) north past Heron flat to the middle pool, and a
+  high sill (−0.25 m) onto the traverse: the crossing you take AT the top of the tide and
+  wait in the middle pool for — for the boat that reaches the mouth after the leaders.
+- **The neck** (the west bend). From the traverse north across the bend's interior past
+  Curlew flat, a pool to wait in, a sill (−0.45 m) onto the upper leg.
+- **The head cut / the flood creek** (the third meander). Wes's own line west of the
+  diamond island through the head pool to a sill (−0.5 m), or the shallower creek
+  (−1.15 m) up the east side with a 1.2 kt flood stream and its own sill: two keys to one
+  lock.
+- **The delta cut** (the fourth section, Sep 16 evening — "more to sail"). The channel
+  bulges east round the delta bar; a short shelf goes straight up its west side with a
+  pool halfway and a sill at the top. The smallest saving, and the last chance.
+- Finish at the head, ~4000u past where it first was.
+- Stepping-stone pools (always afloat) sit in the flats between passages: places to be
+  caught near.
 
 **The question it asks.** *Is there water on the sill yet — and will there still be when
 I get there?*
@@ -1055,14 +1067,16 @@ I get there?*
 **Signature moment.** Watching the flood run across the sand toward you as you wait in
 the pool, and going the instant the gauge says so.
 
-**Status (Sep 16 2026).** `art/build_flats.js` lays the venue (re-running it overwrites
-hand edits — edit the script or stop re-running it); `eval/_venue_bake.js` bakes the
-paths; `eval/_flats_race.js` races the fleet and reports groundings and routes;
-`eval/_flats_chart.js` draws the estuary at any state of the tide. Channel-only estimate
-3:11 / 4.91 km. Bots (3 seeds, 60 s period, HW +8 s): 27/27 finish, best 2:43 via the
-wantij, median 3:11, worst 4:14. Design study, ratings and the build log:
-[flats-design.md](flats-design.md). Card art: the Aug 2026 pass-4 master. Track
-`racing-flats`. Cup: the Swirl Cup set.
+**Status (Sep 16 2026, evening).** `art/build_flats.js` lays the venue (re-running it
+overwrites hand edits — edit the script or stop re-running it); `eval/_venue_bake.js`
+bakes the paths; `eval/_flats_race.js` races the fleet and reports groundings and routes;
+`eval/_flats_chart.js` draws the estuary at any state of the tide. Wes's five laps on the
+first (three-meander) layout: 3:13, 2:28, 2:45, 2:27, 2:44 — every one through the
+wantij and the point bar, the fast ones straight across the head's flats at high water.
+Extended on his call. Channel-only estimate now 3:38 / 5.61 km. Bots (3 seeds, 60 s
+period, HW +8 s): 27/27 finish, best 3:06, median 3:37, worst 4:31, groundings down to
+touches. Design study, ratings and the build log: [flats-design.md](flats-design.md).
+Card art: the Aug 2026 pass-4 master. Track `racing-flats`. Cup: the Swirl Cup set.
 
 ---
 
