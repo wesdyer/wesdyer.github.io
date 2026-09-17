@@ -414,3 +414,98 @@ exit and the delta cut already ARE the inside line there, and the first loop's i
 the wantij island with no water between it and the channel. Each bar is free for 28–31 s
 and afloat 38–41 s of the 60 s cycle (probe), so the inside line is there most of the
 time and gone for the twenty seconds either side of low water.
+
+### 7.5 The ladder — every cut priced for its length (Sep 16, night)
+
+Wes: the neck was never sailable. His diagnosis was the design rule: "these are very big
+short cuts, so they can be open only for a brief time — enough time to traverse at speed,
+but little more." And the pack he wants: "sailing the deep channel only will get you a
+reliable score in the back third of the pack but finishing with them. Cutting the corners
+should get you above the middle. Sailing cuts will move you further up, but done wrong
+could land you at the back (unless you catch up with another gamble). Easier cuts should
+be sailable by many; the most extreme gambles may require high speeds and perfect timing;
+and there is the in between."
+
+**What was wrong.** Two things, both invisible to the fill probe (§7.1 measured whether a
+passage FILLS; nobody had measured whether a boat gets OUT before it drains):
+
+- A sill shallower than the cut's body at its EXIT. The neck ran 3 km at −0.9 m with a
+  −0.45 m bar at the far end: the body is at speed for 31 s of the cycle, the bar for 21,
+  and the traverse takes 29 — so the only way through was to enter before the cut had
+  flooded and arrive as the bar opened. A 6-second entry slot, all of it before the
+  entrance looked open. The gamble was worse (a −0.25 bar after 3.6 km at −0.6: no
+  at-speed entry at all).
+- The wrong speed. The first pricing used 140 u/s, the fleet's median over the course;
+  every big cut here is a RUN (the wind is from the SSW and the race goes up the estuary),
+  and a boat gybing at VMG angles makes ~108–110 down a cut. At 140 the neck read as
+  sailable and no one could sail it.
+
+**The rule, now in the builder** (`cutDepth` in art/build_flats.js). A cut of ONE depth
+z is at speed when the level passes z + 0.84 m (draft plus the drag band's 0.85 point)
+and closes when it drops back through it — a window of 2w about high water. Enter the
+moment it floods and you are out with 2w − T to spare, so 2w = T + slack, T the traverse
+at 110 u/s and the slack the rung: corners 12 s, cuts 8 s, gambles 6 s. z = cos(π(T +
+slack)/period) − 0.84. Exit bars stay (sand, a marker) at the body's depth — a bar at the
+same elevation changes the material and nothing else. Depths that fell out of it: the
+neck −1.35, the gamble −1.45, the head cut −0.78 with its sill, the creek sill at the
+creek's own −1.15, the delta sill −0.81. The wantij keeps its own pattern (creek, pool, a
+700u shelf and a −0.45 sill: its timed part is short, so the sill's 21 s window IS the
+slack) and the point bars are short enough that any shelf depth is generous.
+
+**Measured** (`eval/_flats_windows.js`, which sails every passage from every entry second
+at 110 u/s and prices the channel it bypasses with the router):
+
+| cut | rung | saves | at-speed entry window | the earliest fast boat reaches the entrance |
+|---|---|---|---|---|
+| head cut | 3 | 24 s | 7 s | 5 s after it floods at speed |
+| west gamble | 3 | 21 s | 10.5 s (entered from the mouth around LOW water) | 0.4 s |
+| wantij | 2 | 17 s | 13 s | 6 s (the pool is the wait) |
+| flood creek | 2 | 17 s | 13.5 s | 2 s |
+| neck | 2 | 10 s | 14 s | 2 s |
+| delta cut | 1 | 9 s | 17.5 s | 4 s |
+| point bars ×4 | 1 | 1–3 s each | 16–25 s | 0–5 s |
+
+The gamble's window wraps through low water: the creek from the mouth takes 12 s, so the
+boat that commits when the shelf ahead is bone dry reaches it as it floods and is out
+before it drains. That is the rung-3 feel — a gamble on the timing, not a puzzle.
+
+**Two field bugs found on the way.** A bar (flats-bar, max-composed) raised the CHANNEL
+cells it overlapped: the head sill's west end reached 20u into the channel ribbon and put
+−0.8 m inside the channel's own width — a channel sailor dried out on it at the bend.
+Bars now leave channel cells alone unless the shape says `overChannel` (the creek sill,
+laid across the creek on purpose). And where two channels meet (the gamble creek at the
+mouth) the two rims' feathers crossed and left a −1.75 bar at the junction; the creek now
+starts 170u inside the main channel.
+
+**The pack: a nerve for the bots.** Each passage carries `risk` 1–3 in the document; the
+grid stamp (`Tide.riskStamp`) labels every cell that ever dries with the rung of the
+passage it lies in (2 for the open flats), and a bot's `nerve` trait (roster.js; metronome,
+freight, rocket and leech 1; shift and corner 2; bully and gambler 3) is the highest rung
+its router will step on — set per plan (`Tide.setNerve`), with an escape allowance for a
+boat the pursuit chord has already carried onto ground above its nerve (as far as the
+nearest allowed cell, taxed ×3, or it held for "the deepest water within reach" — a pool
+off the channel ringed with mud — and sat there through the ebb, 43 touches). The
+pursuit chord treats ground above the nerve like mud (pull the carrot in). Two more bot
+fixes the fleet needed: the router's `edgeTax` (×2.5 beside a cell that is dry on arrival
+or above the nerve, ×1.75 two cells off — a plan that skimmed the finish bar's edge at low
+water was clipped by the pursuit, the carrot pulled in behind her, and she tacked into
+irons for a ten-second loop), and a grounding's contact normal is now the way OFF the mud
+(the field's gradient) — it was (0, 0), and the reflex's atan2(0, −0) sent every grounded
+bot south. The stuck timer no longer accrues while the shoal drag is what is slowing her.
+
+**Fleet, 4 seeds** (`eval/_flats_race.js`): 36/36 finish, best 2:56, median 3:38, worst
+4:01, no boat aground more than four times. The shape Wes asked for: rung-3 winners at
+2:56–3:13 (wantij + head cut), the wantij/delta boats 3:11–3:38, corners 3:19–3:44, the
+channel sailors 3:44–4:01, and a failed gamble at the back (a 4:24 with 29 s aground in
+one earlier run). A human sailing the channel alone (~3:44 at 1.03× the polar 3:38) lands
+6th–8th of ten, among the channel bots; corners and the delta (~3:25) 4th–5th; the cuts
+(~3:00) first or second.
+
+**Tests.** `eval/test_flats.js` (in `run_all`): the field (bars leave the channel alone,
+the marsh never wets, the baked path is always afloat), every passage's windows against
+its rung and the "go as it floods" rule, the ladder's savings by rung, the nerve gate
+(nerve 0 stays in always-wet water, nerve 3 finds the head cut at HW−15, a boat on rung-3
+ground plans off it and not across it), a grounding that refloats and is shoved toward
+the channel, the drawing at three states of the tide; `--race` adds one fleet race. Sailed
+in Chrome: a hand-steered dead run at 5 kt through the neck from HW−21 clears the sill
+with 1.3 m and reaches the channel at HW+24.

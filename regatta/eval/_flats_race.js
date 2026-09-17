@@ -14,6 +14,7 @@ const RACES = +(ARGS.find(a => /^\d+$/.test(a)) || 2);
 const SEED0 = +(ARGS.filter(a => /^\d+$/.test(a))[1] || 9100);
 const PERIOD = flag('--period') ? +flag('--period') : null;
 const PHASE = flag('--phase') ? +flag('--phase') : null;
+const NERVE = flag('--nerve') != null ? +flag('--nerve') : null;   // override every bot's nerve (0 channel, 1 point bars, 2 cuts, 3 everything)
 const mmss = (s) => s == null ? '  DNF' : `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
 
 (async () => {
@@ -26,18 +27,24 @@ const mmss = (s) => s == null ? '  DNF' : `${Math.floor(s / 60)}:${String(Math.f
     await page.waitForTimeout(400);
     const all = [];
     for (let i = 0; i < RACES; i++) {
-        const r = await page.evaluate(async ([seed, period, phase]) => {
+        const r = await page.evaluate(async ([seed, period, phase, nerve]) => {
             localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'flats' }));
             window.evalHarness.seed = seed;
             window.resetGame(); window.startRace();
             if (period) state.tide.period = period;
             if (phase != null) state.tide.phase0 = phase;
+            if (nerve != null) for (const b of state.boats) if (b.traits) b.traits.nerve = nerve;
             const doc = state.course.doc;
             const shapeOf = (id) => doc.shapes.find(s => s.id === id);
             const pir = (x, y, ring) => { let ins = false; for (let a = 0, b = ring.length - 1; a < ring.length; b = a++) { const xi = ring[a][0], yi = ring[a][1], xj = ring[b][0], yj = ring[b][1]; if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) ins = !ins; } return ins; };
-            const zones = { wantij: shapeOf('wantij-corridor'), sill: shapeOf('wantij-sill'), gamble: shapeOf('gamble-shelf'), gsill: shapeOf('gamble-sill'),
-                            pointbar: shapeOf('point-bar'), neck: shapeOf('neck-n'), nsill: shapeOf('neck-sill'), headcut: shapeOf('head-cut'), hsill: shapeOf('head-sill'),
-                            creek: shapeOf('creek-flood'), creeksill: shapeOf('creek-sill') };
+            // A passage is TAKEN when the boat is on ground that EVER DRIES (the grid's
+            // risk stamp, Tide.riskAt > 0) within 320u of the passage's line — the shapes'
+            // polygons and the lines' middle thirds both overlap the channel and counted
+            // every boat that sailed past.
+            const PS = doc.tide.passages || [];
+            const distToLine = (x, y, pts) => { let d = 1e9; for (let i = 1; i < pts.length; i++) { const ax = pts[i-1][0], ay = pts[i-1][1], bx = pts[i][0], by = pts[i][1]; const vx = bx-ax, vy = by-ay, L2 = vx*vx+vy*vy||1; let u = ((x-ax)*vx+(y-ay)*vy)/L2; u = Math.max(0, Math.min(1, u)); d = Math.min(d, Math.hypot(x-ax-u*vx, y-ay-u*vy)); } return d; };
+            // ...ground above -1.3 m (a shelf or a bar; the channel's rim is -1.6 and dries too), for three seconds or more
+            const takenAt = (x, y) => { if (Tide.groundAt(x, y) <= -1.3) return null; let best = null, bd = 320; for (const p of PS) { const d = distToLine(x, y, p.pts); if (d < bd) { bd = d; best = p.id; } } return best; };
             const events = [];
             const inner = window.onRaceEvent;
             window.onRaceEvent = (ty, d) => {
@@ -64,21 +71,19 @@ const mmss = (s) => s == null ? '  DNF' : `${Math.floor(s / 60)}:${String(Math.f
                     lastAg[k] = !!b.aground;
                     if (frame % 60 === 0) {
                         track[k].push([Math.round(b.x), Math.round(b.y), Math.round(state.race.timer), b.aground ? 1 : 0]);
-                        for (const z in zones) if (zones[z] && pir(b.x, b.y, zones[z].outer)) visits[k][z] = (visits[k][z] || 0) + 1;
+                        { const tk = takenAt(b.x, b.y); if (tk) visits[k][tk] = (visits[k][tk] || 0) + 1; }
                     }
                 }
                 if (fin.every(f => f != null)) break;
             }
-            return { period: state.tide.period, phase0: state.tide.phase0, boats: bots.map((b, k) => ({ name: b.name, fin: fin[k], agroundS: Math.round(agroundS[k]), agroundN: agroundN[k], visits: visits[k], leg: b.raceState.leg })), events, track };
-        }, [SEED0 + i, PERIOD, PHASE]);
+            return { period: state.tide.period, phase0: state.tide.phase0, boats: bots.map((b, k) => ({ name: b.name, nerve: b.traits && b.traits.nerve, fin: fin[k], agroundS: Math.round(agroundS[k]), agroundN: agroundN[k], visits: visits[k], leg: b.raceState.leg })), events, track };
+        }, [SEED0 + i, PERIOD, PHASE, NERVE]);
         all.push(r);
         console.log(`\nrace ${i + 1} seed ${SEED0 + i}  period ${r.period}s phase0 ${r.phase0.toFixed(2)}`);
         const sorted = r.boats.slice().sort((a, b) => (a.fin == null ? 1e9 : a.fin) - (b.fin == null ? 1e9 : b.fin));
         for (const b of sorted) {
-            const v = b.visits;
-            const route = [v.wantij ? `wantij${v.sill ? '+' : ''}` : '', v.gamble ? `gamble${v.gsill ? '+' : ''}` : '', v.pointbar ? 'pbar' : '', v.neck ? `neck${v.nsill ? '+' : ''}` : '',
-                           v.headcut ? `headcut${v.hsill ? '+' : ''}` : '', v.creek ? `creek${v.creeksill ? '+' : ''}` : ''].filter(Boolean).join(' ') || 'channel';
-            console.log(`  ${mmss(b.fin).padStart(6)}  ${b.name.padEnd(10)} aground ${String(b.agroundN).padStart(2)}x ${String(b.agroundS).padStart(3)}s  leg ${b.leg}  ${route}`);
+            const route = Object.keys(b.visits).filter(k => b.visits[k] >= 3).join(' ') || 'channel';
+            console.log(`  ${mmss(b.fin).padStart(6)}  ${b.name.padEnd(10)} nerve ${b.nerve}  aground ${String(b.agroundN).padStart(2)}x ${String(b.agroundS).padStart(3)}s  leg ${b.leg}  ${route}`);
         }
         const ag = r.events.filter(e => e.ty === 'aground');
         if (ag.length) console.log('  groundings: ' + ag.slice(0, 14).map(e => `${e.boat}@${e.t}s(${e.x},${e.y})`).join(' '));

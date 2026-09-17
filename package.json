@@ -30,7 +30,8 @@
     "test:contact": "node regatta/eval/test_contact.js",
     "test:dmc": "node regatta/eval/test_dmc.js",
     "test:rounding": "node regatta/eval/test_rounding.js",
-    "test:apparent": "node regatta/eval/test_apparent.js"
+    "test:apparent": "node regatta/eval/test_apparent.js",
+    "test:flats": "node regatta/eval/test_flats.js"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",

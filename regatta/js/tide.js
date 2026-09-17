@@ -62,7 +62,11 @@ const TIDE = {
     fillDepth: 1.2,      // m — the fill stream fades out below this depth of water
     fillReach: 1800,     // u — and this far from a channel
     // Bots.
-    botMargin: 0.12,     // m — the router's safety margin on top of the draft
+    botMargin: 0.12,     // m — the router's safety margin on top of the draft (0.3 closed the wantij to every bot; the drying edges are priced by edgeTax instead)
+    riskHalfW: 300,      // u — a marked passage's cells lie within this of its line (the ladder's rungs, riskStamp)
+    escapeR: 260,        // u — how far a boat may plan over ground above its nerve to get off it (500 let a channel sailor carry on over the head sill and dry out on it)
+    escapeTax: 3,        // × — and what those steps cost, so the way off is the shortest one
+    edgeTax: 2.5,        // × — a router step beside a cell that is dry on arrival (routeCost)
     lead: 3,             // s — the local map is stamped for this far ahead
     leadMargin: 0.16,    // m — and with this much water over the draft
     stampEvery: 1.5,     // s — between local map stamps
@@ -232,7 +236,7 @@ const TIDE = {
         const anchors = { channel: [], pool: [], bar: [], flat: [] }, marsh = [];
         for (const sh of shapes) {
             const T = VD.traits(sh);
-            if (T.tide && anchors[T.tide]) anchors[T.tide].push({ outer: sh.outer, holes: sh.holes || [], elev: T.elev, feather: (sh.feather != null && isFinite(+sh.feather)) ? +sh.feather : null });
+            if (T.tide && anchors[T.tide]) anchors[T.tide].push({ outer: sh.outer, holes: sh.holes || [], elev: T.elev, feather: (sh.feather != null && isFinite(+sh.feather)) ? +sh.feather : null, over: !!sh.overChannel });
             else if (T.kind === 'flats-marsh') marsh.push({ outer: sh.outer, holes: sh.holes || [], elev: T.elev });
         }
         if (!anchors.channel.length) return null;
@@ -319,14 +323,18 @@ const TIDE = {
             const g = p.elev != null ? p.elev : -0.5;
             for (let k = 0; k < W * H; k++) if (m[k] && !chMask[k] && !mMask[k]) { const s = sstep(din[k] * res / C.shelfFeather); z[k] = z[k] + (g - z[k]) * s; }
         }
-        // Bars: a crest raised out of the flat, and the ground turns to sand.
+        // Bars: a crest raised out of the flat, and the ground turns to sand. Never a channel
+        // cell unless the shape says so (`overChannel`: the creek's sill, laid across the
+        // creek itself) — a sill whose end reached into the channel's margin raised it to
+        // −0.8 m, a shoal inside the channel's own width that dried a channel sailor out
+        // on the ebb at the head's bend.
         for (const b of anchors.bar) {
             const m = new Uint8Array(W * H); rasterMask([b], F, m, 1);
             const inv = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) inv[k] = m[k] ? 0 : 1;
             const din = chamfer(inv, W, H);
             const crest = b.elev != null ? b.elev : 0;
             const bf = b.feather || C.barFeather;                // a bar may author its own ramp (a swash bar is narrow and steep)
-            for (let k = 0; k < W * H; k++) if (m[k]) { const s = sstep(din[k] * res / bf); z[k] = Math.max(z[k], z[k] + (crest - z[k]) * s); mat[k] = 1; }
+            for (let k = 0; k < W * H; k++) if (m[k] && (b.over || !chMask[k])) { const s = sstep(din[k] * res / bf); z[k] = Math.max(z[k], z[k] + (crest - z[k]) * s); mat[k] = 1; }
         }
         // The material softened: a bar's sand meets the mud over a few cells, not at a cell
         // edge (a binary mask read as a staircase at race scale). Two passes of a 5-wide box.
@@ -407,7 +415,13 @@ const TIDE = {
                 boat.agroundAt = clock();
                 boat.x = preX; boat.y = preY;
                 boat.speed = 0;
-                if (boat.ai) boat.ai.collisionData = { type: 'island', normal: { x: 0, y: 0 }, aground: true };
+                // The contact normal the bots' reflex escapes along is the way OFF the mud:
+                // away from the channel is the field's own gradient, so the normal points
+                // that way and the reflex (minus normal) heads for deep water. A zero normal
+                // was atan2(0, -0) = south, whatever the mud lay: a full loop at the finish
+                // bar, ten seconds, for a channel sailor that brushed its edge at low water.
+                const F = T.field, gx = fieldAt(F.gx, preX, preY, 0), gy = fieldAt(F.gy, preX, preY, 0), gl = Math.hypot(gx, gy) || 1;
+                if (boat.ai) boat.ai.collisionData = { type: 'island', normal: { x: gx / gl, y: gy / gl }, aground: true };
                 if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) window.onRaceEvent('aground', { boat });
                 if (boat.isPlayer && window.GameEvents) GameEvents.emit('player-aground', { boat });
             }
@@ -488,7 +502,72 @@ const TIDE = {
             el[j * N + i] = groundAt(wx, wy);
         }
         grid._elev = el;
+        grid._risk = riskStamp(grid, el);
         return grid;
+    }
+    // THE LADDER'S RUNGS ON THE GRID. Every cell that ever dries carries the rung of the
+    // marked passage it lies in (`risk` 1..3 from the document, within `riskHalfW` of the
+    // passage's line), or 2 — the unmarked flats, the inside line along a bend — where it
+    // lies in none. Always-wet water is 0. A bot's `nerve` is the highest rung its router
+    // will step on (routeCost), which is how a fleet gets its steady channel sailors, its
+    // corner cutters and its gamblers (Wes's ladder, art/build_flats.js).
+    function riskStamp(grid, el) {
+        const T = state.tide, N = grid.n, risk = new Uint8Array(N * N);
+        const wetLim = T.mid - T.amp - T.draft - T.botMargin;
+        for (let k = 0; k < N * N; k++) risk[k] = el[k] > wetLim ? 2 : 0;
+        const P = T.passages || [], hw = TIDE.riskHalfW;
+        for (const p of P) {
+            const r = Math.max(1, Math.min(3, (p.risk | 0) || 2));
+            for (let i = 1; i < p.pts.length; i++) {
+                const ax = p.pts[i - 1][0], ay = p.pts[i - 1][1], bx = p.pts[i][0], by = p.pts[i][1];
+                const [i0, j0] = grid.cell(Math.min(ax, bx) - hw, Math.min(ay, by) - hw), [i1, j1] = grid.cell(Math.max(ax, bx) + hw, Math.max(ay, by) + hw);
+                const vx = bx - ax, vy = by - ay, L2 = vx * vx + vy * vy || 1;
+                for (let j = Math.max(0, j0); j <= Math.min(N - 1, j1); j++) for (let ii = Math.max(0, i0); ii <= Math.min(N - 1, i1); ii++) {
+                    const k = j * N + ii;
+                    if (!risk[k]) continue;
+                    const [wx, wy] = grid.world(ii, j);
+                    let u = ((wx - ax) * vx + (wy - ay) * vy) / L2; u = u < 0 ? 0 : u > 1 ? 1 : u;
+                    const dx = wx - ax - u * vx, dy = wy - ay - u * vy;
+                    if (dx * dx + dy * dy <= hw * hw) risk[k] = r;   // a marked passage names its cells, whichever rung
+                }
+            }
+        }
+        return risk;
+    }
+    // The router's nerve: set by the helm before each plan from the boat's trait, read by
+    // routeCost. 3 takes everything, 1 the point bars alone, 0 the channel only.
+    // A boat already standing on ground above its nerve (the pursuit chord put it there at
+    // high water) may step on that ground to get OFF it — within `escapeR` of where it is —
+    // and no further: letting it plan at the ground's rung took a freight sailor that had
+    // brushed the head cut's entrance through the whole cut (four touches).
+    let _nerve = 3, _escX = 0, _escY = 0, _escRisk = 0, _escR = 0;
+    function setNerve(n, x, y, standingRisk, escapeR) {
+        _nerve = n == null ? 3 : Math.max(0, Math.min(3, n | 0));
+        _escX = x || 0; _escY = y || 0; _escRisk = standingRisk | 0;
+        _escR = escapeR > 0 ? escapeR : TIDE.escapeR;
+    }
+    // How far the nearest cell at or under `nerve` is from (x, y): the escape radius a boat
+    // needs to get off the ground it stands on (a boat in the middle of a 460u shelf needs
+    // more than a fixed 260u, or it has no path at all and holds where it is).
+    function escapeReach(grid, x, y, nerve) {
+        if (!grid || !grid._risk) return TIDE.escapeR;
+        const c = grid.cell(x, y), N = grid.n, rk = grid._risk;
+        for (let r = 1; r <= 18; r++) {
+            for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+                if (Math.max(Math.abs(di), Math.abs(dj)) !== r) continue;
+                const i = c[0] + di, j = c[1] + dj;
+                if (i < 0 || j < 0 || i >= N || j >= N) continue;
+                const k = j * N + i;
+                if (grid.nav[k] && rk[k] <= nerve) return Math.max(TIDE.escapeR, r * grid.res * 1.5 + 120);
+            }
+        }
+        return TIDE.escapeR;
+    }
+    function riskAt(grid, x, y) {
+        if (!grid || !grid._risk) return 0;
+        const c = grid.cell(x, y);
+        if (c[0] < 0 || c[1] < 0 || c[0] >= grid.n || c[1] >= grid.n) return 0;
+        return grid._risk[c[1] * grid.n + c[0]];
     }
     // A copy of the grid with every cell that is EVER too shallow closed: the chart path,
     // the ruler and the ranking fields run on the water that is always there.
@@ -553,20 +632,48 @@ const TIDE = {
     function routeCost(grid, nid, tArr, now) {
         const T = state.tide;
         if (!T || !grid._elev) return 1;
+        let tax = 1;
+        const rk = grid._risk;
+        if (rk && rk[nid] > _nerve) {                             // above this boat's rung on the ladder...
+            if (rk[nid] > _escRisk) return 0;
+            const N = grid.n, ci = nid % N, cj = (nid - ci) / N, [wx, wy] = grid.world(ci, cj);
+            if ((wx - _escX) * (wx - _escX) + (wy - _escY) * (wy - _escY) > _escR * _escR) return 0;   // ...unless it is the way off the ground the boat stands on
+            tax = TIDE.escapeTax;                                 // ...and then the shortest way off it
+        }
         const z = grid._elev[nid];
-        const d = levelFast(tArr) - z - routeMargin(tArr, now);
+        const L = levelFast(tArr), mg = routeMargin(tArr, now);
+        const d = L - z - mg;
         if (d < T.draft) return 0;
+        // THE EDGE TAX. A cell beside one that is dry on arrival — or beside ground above
+        // the boat's nerve — is priced at `edgeTax`: a plan that skims a drying bar is a
+        // plan the pursuit will clip (the hull is wider than the line, the carrot pulls in
+        // behind her, she tacks into irons — measured at the finish bar at low water, a
+        // full loop and ten seconds), and a channel sailor whose plan runs along a cut's
+        // shoulder is carried onto it at a bend. A cell further off costs a few units more.
+        // Never the whole flats (that was the canyon, see refreshBotGrid) — only the edge.
+        if (T.edgeTax > tax) {
+            const N = grid.n, ci = nid % N, cj = (nid - ci) / N, el = grid._elev, lim = L - mg - T.draft;
+            const bad = (k) => el[k] > lim || (rk && rk[k] > _nerve);
+            if ((ci > 0 && bad(nid - 1)) || (ci < N - 1 && bad(nid + 1)) || (cj > 0 && bad(nid - N)) || (cj < N - 1 && bad(nid + N))) tax = T.edgeTax;
+            else if (ci > 1 && cj > 1 && ci < N - 2 && cj < N - 2) {
+                // the next ring out, at a lower price: the pursuit's lateral error at a bend is
+                // two cells, and a channel sailor hugging the inside of the head's turn at low
+                // water sat on the rim band for ten seconds
+                const N2 = 2 * N;
+                if (bad(nid - 2) || bad(nid + 2) || bad(nid - N2) || bad(nid + N2) || bad(nid - N - 1) || bad(nid - N + 1) || bad(nid + N - 1) || bad(nid + N + 1)) tax = 1 + (T.edgeTax - 1) * 0.5;
+            }
+        }
         // The price is the SLOWER of the water on arrival and the water `earlyPrice` seconds
         // before it: the boat spends its last seconds before a cell in that water, and a
         // route that reaches a shelf the moment it floods is priced as the crawl it will be
         // (the clock is 5–10 s optimistic on a shelf; a metre of tide at this period).
-        const dEarly = levelFast(Math.max(now == null ? clock() : now, tArr - T.earlyPrice)) - z - routeMargin(tArr, now);
+        const dEarly = levelFast(Math.max(now == null ? clock() : now, tArr - T.earlyPrice)) - z - mg;
         const dd = Math.min(d, Math.max(T.draft, dEarly));
         const c = dd - T.draft;
-        if (c >= T.free) return 1;
+        if (c >= T.free) return tax;
         const s = c / T.free;
         const m = T.minMul + (1 - T.minMul) * s * s * (3 - 2 * s);
-        return 1 / m;
+        return tax / m;
     }
     // Seconds from `tArr` until this cell has draft (plus margins) over it, or null if never.
     function routeWait(grid, nid, tArr) {
@@ -603,7 +710,16 @@ const TIDE = {
             // the tufts at full resolution, the colour still the tide layer's own.
             const n = 512, cv = document.createElement('canvas'); cv.width = cv.height = n;
             const g = cv.getContext('2d'); g.drawImage(img, 0, 0, n, n);
-            const im = g.getImageData(0, 0, n, n), d = im.data;
+            let im;
+            try { im = g.getImageData(0, 0, n, n); }
+            catch (e) {
+                // Over file:// every image is cross-origin and the canvas is tainted: the flat
+                // keeps its mottle and no texture, and the page keeps its frame loop.
+                _tile.loading[which] = 'tainted';
+                if (!_tile.warned) { _tile.warned = true; console.warn('tide: the flats tiles cannot be read over file:// (serve the game over http for the textures)'); }
+                return;
+            }
+            const d = im.data;
             let mean = 0;
             for (let k = 0; k < n * n; k++) mean += d[k * 4] * 0.299 + d[k * 4 + 1] * 0.587 + d[k * 4 + 2] * 0.114;
             mean /= n * n;
@@ -1031,7 +1147,7 @@ const TIDE = {
         for (const sh of VD.shapes(doc)) {
             const T = VD.traits(sh);
             if (!T.tide && T.kind !== 'flats-marsh') continue;
-            sig += `|${sh.id}:${T.kind}:${T.elev}:${sh.outer.length}:${sh.outer[0]}:${sh.outer[sh.outer.length >> 1]}:${(sh.holes || []).length}`;
+            sig += `|${sh.id}:${T.kind}:${T.elev}:${sh.feather || ''}:${sh.overChannel ? 'o' : ''}:${sh.outer.length}:${sh.outer[0]}:${sh.outer[sh.outer.length >> 1]}:${(sh.holes || []).length}`;
             let acc = 0; for (const p of sh.outer) acc += p[0] * 3 + p[1] * 7;
             sig += ':' + Math.round(acc);
         }
@@ -1054,9 +1170,12 @@ const TIDE = {
             phase0: tideDoc.phase0 != null ? +tideDoc.phase0 : C.phase0,
             draft: C.draft, free: C.free, minMul: C.minMul, refloat: C.refloat, agroundMin: C.agroundMin, pushKt: C.pushKt,
             fillKt: tideDoc.fillKt != null ? +tideDoc.fillKt : C.fillKt, fillDepth: C.fillDepth, fillReach: C.fillReach,
-            botMargin: C.botMargin, lead: C.lead, leadMargin: C.leadMargin, stampEvery: C.stampEvery, maxWait: C.maxWait, horizonMargin: C.horizonMargin, horizonCap: C.horizonCap, earlyPrice: C.earlyPrice,
+            botMargin: C.botMargin, edgeTax: C.edgeTax, lead: C.lead, leadMargin: C.leadMargin, stampEvery: C.stampEvery, maxWait: C.maxWait, horizonMargin: C.horizonMargin, horizonCap: C.horizonCap, earlyPrice: C.earlyPrice,
             marshZ: C.marshZ,
             withies: Array.isArray(tideDoc.withies) ? tideDoc.withies.filter(w => w && isFinite(+w.x) && isFinite(+w.y)) : [],
+            // The marked passages with their rung on the ladder (`risk` 1..3, see
+            // art/build_flats.js): the bots' nerve is read against it.
+            passages: Array.isArray(tideDoc.passages) ? tideDoc.passages.filter(p => p && Array.isArray(p.pts) && p.pts.length > 1) : [],
             field
         };
         pic.level = NaN; pic.cvWet = null; pic.cvDry = null;
@@ -1074,7 +1193,7 @@ const TIDE = {
         groundAt, depthAt, mulAt, mulForDepth,
         speedMul, afterMove, refloatIn,
         addFill,
-        stampGrid, safeGrid, refreshBotGrid, routeCost, routeWait,
+        stampGrid, safeGrid, refreshBotGrid, routeCost, routeWait, setNerve, riskAt, escapeReach,
         drawWet, drawDry, drawMinimap, hudInfo,
         _pic: pic
     };

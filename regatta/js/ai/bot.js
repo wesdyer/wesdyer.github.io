@@ -268,8 +268,16 @@ class BotController {
                 ? state.course._stuckResetBar : 0.625;
             const accelBar = (wMed !== null && state.course._stuckAccelBar != null)
                 ? state.course._stuckAccelBar : 0.25;
-            if (this.boat.speed < accelBar) {
+            // ON THE FLATS (Spoonbill) a boat in the shoal band is making all the speed the
+            // water allows — it is not stuck, and a wiggle only turns it in a circle (measured:
+            // a channel sailor crossing the finish bar's edge at low water, 13 u/s for two
+            // seconds, then a full loop in three metres of water, ten seconds gone). The
+            // physics' push-off handles a hull that is aground; the timer bleeds instead.
+            const tideSlow = !!(state.tide && (this.boat.aground || (this.boat.tideMul != null && this.boat.tideMul < 0.7)));
+            if (this.boat.speed < accelBar && !tideSlow) {
                 this.lowSpeedTimer += TICK;
+            } else if (tideSlow) {
+                this.lowSpeedTimer = Math.max(0, this.lowSpeedTimer - TICK * 0.5);
             } else if (this.boat.speed > resetBar) { // Only reset if truly moving fast
                 this.lowSpeedTimer = 0;
             } else if (resetBar < 0.625) {
@@ -990,7 +998,7 @@ class BotController {
                  const reHit = !!this._reflexReHit;
                  let outVX = -col.normal.x, outVY = -col.normal.y;
                  const gW = state.course.botGrid;
-                 if (reHit && !col.isFloe
+                 if (reHit && !col.isFloe && !col.aground     // mud is not a wall: the clearance field knows only the land
                      && gW && window.SailCheck && window.SailCheck.clearanceField) {
                      if (!gW._clear) gW._clear = window.SailCheck.clearanceField(gW);
                      const cB = gW.cell(this.boat.x, this.boat.y);

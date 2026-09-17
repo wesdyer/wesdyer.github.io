@@ -844,6 +844,17 @@ Object.assign(BotController.prototype, {
                         }
                     }
                 }
+                // THE LADDER (Spoonbill Flats): the router takes no passage above this boat's
+                // nerve — the trait is the archetype's appetite for the mud (roster.js). A boat
+                // that is already on ground above its nerve (the pursuit chord put it there at
+                // high water) may cross that ground to get off it (Tide.escapeR), or it would
+                // have no way out: a freight sailor held for 'the deepest water within reach'
+                // — a pool off the channel, ringed with mud — and sat there through the ebb.
+                if (state.tide && window.Tide) {
+                    const nv = boat.traits && boat.traits.nerve != null ? boat.traits.nerve : 2;
+                    const standing = Tide.riskAt(botGrid, boat.x, boat.y);
+                    Tide.setNerve(nv, boat.x, boat.y, standing, standing > nv ? Tide.escapeReach(botGrid, boat.x, boat.y, nv) : 0);
+                }
                 const seg = window.SailCheck.pathSailable(botGrid, [boat.x, boat.y], [destX, destY]);
                 // WAITING FOR THE TIDE (Spoonbill Flats): the route may hold in always-wet
                 // water for a sill to open — pathSailable says where and until when, and the
@@ -1071,13 +1082,21 @@ Object.assign(BotController.prototype, {
                 // lead), pull the carrot in along the path until it does not — the plan
                 // itself is still followed, just more tightly.
                 if (state.tide && botGrid._tideDry && j > 0) {
+                    // ...and off ground above the boat's nerve: at high water the mud is wet
+                    // and the chord would take a channel sailor across the inside of a bend
+                    // the plan went round, onto flats it will not plan across (see the nerve
+                    // note at the replan above).
+                    const nvC = boat.traits && boat.traits.nerve != null ? boat.traits.nerve : 2;
+                    const riskC = botGrid._risk;
                     const chordDry = (tx, ty) => {
                         const n = Math.max(2, Math.ceil(Math.hypot(tx - boat.x, ty - boat.y) / (botGrid.res * 0.7)));
                         for (let s = 1; s <= n; s++) {
                             const px = boat.x + (tx - boat.x) * s / n, py = boat.y + (ty - boat.y) * s / n;
                             const cc = botGrid.cell(px, py);
                             if (cc[0] < 0 || cc[1] < 0 || cc[0] >= botGrid.n || cc[1] >= botGrid.n) continue;
-                            if (botGrid._tideDry[cc[1] * botGrid.n + cc[0]]) return true;
+                            const idC = cc[1] * botGrid.n + cc[0];
+                            if (botGrid._tideDry[idC]) return true;
+                            if (riskC && riskC[idC] > nvC) return true;
                         }
                         return false;
                     };

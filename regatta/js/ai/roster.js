@@ -28,6 +28,11 @@
 //   laylineTight x      multiplier on the layline trigger window (<1 = calls it later/closer)
 //   overTack     x      divisor on tack stickiness (>1 = tacks more, pays the manoeuvre)
 //   roundTurn    u|null  override of the rounding carve pull (fleet default 80)
+//   nerve        0..3   the highest rung of a tidal venue's ladder the router will take
+//                       (Spoonbill Flats: 1 the point bars, 2 the marked cuts, 3 the
+//                       extreme gambles too; 0 never leaves the channel). Wes's pack:
+//                       steady channel sailors at the back, corner cutters above the
+//                       middle, gamblers at the front — or the back, when it goes wrong.
 //
 // speedScale (a flat boatspeed multiplier, used only by shift at 0.97) was REMOVED.
 // Measured over 1200 paired seeds it cost the archetype 4.68s +/-0.94 while every
@@ -35,20 +40,20 @@
 // from the reading traits. A flat multiplier is the bluntest possible nerf — it
 // taxes every second of the race whether or not the advantage is expressing — so
 // shift's weakness is now situational instead (see overTack). guidelines/skills.md 3.3.
-const DEFAULT_TRAITS = { aggro: 0, startBufAdj: 0, shiftSense: 1.0, windFast: 1.0, pressureSense: 1.0, cornerScale: 1.0, cornerRound: 1.0, sideCommit: 0, cover: 0, laylineTight: 1.0, overTack: 1.0, roundTurn: null };
+const DEFAULT_TRAITS = { aggro: 0, startBufAdj: 0, shiftSense: 1.0, windFast: 1.0, pressureSense: 1.0, cornerScale: 1.0, cornerRound: 1.0, sideCommit: 0, cover: 0, laylineTight: 1.0, overTack: 1.0, roundTurn: null, nerve: 2 };
 
 const ARCHETYPES = {
     bully: {
         label: 'Line Bully',
         threat: 'Crowds rivals into flinching first — gives you no room at the start or in traffic.',
         weakness: 'Runs hot: the fights cost penalties and pace. Stay clean and sail past the wreckage.',
-        traits: { aggro: 0.7 },
+        traits: { aggro: 0.7, nerve: 3 },
     },
     rocket: {
         label: 'Rocket Start',
         threat: 'First off the line almost every race and gone with clear air.',
         weakness: 'Fades once the fleet reaches full speed — reel them in mid-leg and hold your lane.',
-        traits: { startBufAdj: -0.1 },
+        traits: { startBufAdj: -0.1, nerve: 1 },
     },
     shift: {
         label: 'Shift Whisperer',
@@ -60,7 +65,7 @@ const ARCHETYPES = {
         label: 'Freight Train',
         threat: 'Carries speed nothing can stop — never cross them late.',
         weakness: 'Wide, lumbering roundings — attack at every mark.',
-        traits: { cornerScale: 1.25, cornerRound: 1.25, laylineTight: 1.1 },
+        traits: { cornerScale: 1.25, cornerRound: 1.25, laylineTight: 1.1, nerve: 1 },
     },
     corner: {
         label: 'Corner Artist',
@@ -72,19 +77,19 @@ const ARCHETYPES = {
         label: 'Corner Gambler',
         threat: 'Bangs a corner of the course. When the shift favors them, they come back untouchable.',
         weakness: 'Ignores the wind to get there — most days the corner buries them.',
-        traits: { sideCommit: 1, shiftSense: 0.4 },
+        traits: { sideCommit: 1, shiftSense: 0.4, nerve: 3 },
     },
     leech: {
         label: 'The Leech',
         threat: 'Locks onto the nearest rival and matches every tack, sitting on their wind.',
         weakness: 'Loses time shadowing — split hard and stretch them past their patience.',
-        traits: { cover: 0.8 },
+        traits: { cover: 0.8, nerve: 1 },
     },
     metronome: {
         label: 'Metronome',
         threat: 'Never blinks, never blunders — always in the hunt at the finish.',
         weakness: 'No spikes: one well-timed risk is worth more than their whole race.',
-        traits: { laylineTight: 0.85, startBufAdj: -0.05 },
+        traits: { laylineTight: 0.85, startBufAdj: -0.05, nerve: 1 },
     },
 };
 

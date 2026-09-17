@@ -78,6 +78,30 @@ function blob(cx, cy, rx, ry, n = 14, rough = 0.18, rot = 0) {
     }
     return out;
 }
+
+// THE BIG CUTS' DEPTH IS A FORMULA (Wes, Sep 16 evening, after the neck stranded him every
+// time): "these are very big short cuts, so they can be open only for a brief time — enough
+// time to traverse at speed, but little more". A cut of one depth z opens (at speed) when
+// the level passes z + draft + 0.34 m (the drag band's 0.85 point) and closes when it drops
+// back through it: a window of 2w about high water. Enter the moment it floods and you are
+// out with w×2 − T to spare, so the window is set to the traverse time plus a few seconds:
+// z = cos(π(T + slack)/period) − 0.84. What KILLED the neck and the gamble was an exit
+// sill shallower than the body: it cut the window below the traverse time, so the only
+// way through was to enter before the cut had even flooded — no one does that twice.
+// The exit bars stay (sand, a marker) but at the body's depth. The wantij keeps its own
+// pattern (a creek, a pool, and a SHORT shelf: the timing lives in 700u, not 3000).
+// V is the speed a boat makes DOWN a cut, and every big cut here is a run (the wind is from
+// the SSW, the race goes up the estuary): a bot gybing at VMG angles makes ~108 u/s through
+// the neck (tracks, Sep 16), a hand-steered dead run 85–95. The fleet's median over the
+// whole course is 134 (reaches included) — at that V the neck read as sailable and no one
+// could sail it. The slack is the rung: corners are forgiving, gambles are not.
+const CUT_V = 110;          // u/s — downwind, VMG-gybing
+const CUT_SLACK = { 1: 12, 2: 8, 3: 6 };   // s — entry slack by rung: how much longer than the traverse the cut stays at speed (the field's noise and feathers eat a second or two of it)
+const polyLen = (pts) => { let L = 0; for (let i = 1; i < pts.length; i++) L += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]); return L; };
+function cutDepth(timedU, risk) {
+    const T = timedU / CUT_V, half = Math.min(29.9, (T + CUT_SLACK[risk]) / 2);
+    return R(Math.cos(Math.PI * half / 30) - 0.84, 2);         // period 60 s, amp 1, mid 0: the level is cos(2π·dt/60) about HW
+}
 const rect = (x0, y0, x1, y1) => [[x0, y0], [x1, y0], [x1, y1], [x0, y1]];
 // Andrew's monotone chain.
 function hull(pts) {
@@ -288,7 +312,7 @@ add('flats-flat', spline([[-50, -9550], [350, -9750], [300, -10150], [0, -10550]
 
 // The creek's sill at its head, and a mud tongue across its middle so it costs something
 // near slack water.
-add('flats-bar', ribbon(spline([[900, -7100], [1250, -7150], [1600, -7050]], 4), 280), { id: 'creek-sill', name: 'Creek sill', elev: -0.5 });
+add('flats-bar', ribbon(spline([[900, -7100], [1250, -7150], [1600, -7050]], 4), 280), { id: 'creek-sill', name: 'Creek sill', elev: Math.max(cutDepth(polyLen(CREEK), 2), -1.15), overChannel: true });   // the whole creek dries, so the formula prices its length: −1.33, deeper than the creek, so the sill is the creek's own depth — a sand patch at its head, no choke; laid across the creek itself (bars otherwise leave channel cells alone)
 
 // Deep pockets in the flats: places to be, and to be caught between.
 add('flats-pool', blob(-350, 1150, 300, 220, 12, 0.2, 0.4), { id: 'pool-mid', name: 'Middle pool', elev: -2.0 });
@@ -299,34 +323,40 @@ add('flats-pool', blob(-1200, 3600, 280, 200, 12, 0.2), { id: 'pool-sw', name: '
 // ── MORE PASSAGES (Wes, Sep 16 after five laps: "more passages would be good") ──────
 // Each is a pool to reach and wait in, a shelf, and a sill — but with a different KEY.
 //
+//
 // THE WEST GAMBLE: the other way across the first loop, for a boat that reaches the mouth
-// later than the leaders. A creek from the mouth's west side to the roost pool, a long
-// shelf north past Heron flat to the middle pool, and a high sill onto the traverse: the
-// shelf floods later and drains sooner than the wantij's, so this is the crossing you take
-// AT the top of the tide, and wait in the middle pool for.
-const GAMBLE_IN = spline([[20, 4150], [-250, 3700], [-700, 3540], [-1150, 3580]], 6);   // north of the spit's recurve (it ran through the hook once: +0.25 m in the creek)
+// later than the leaders. A creek from the mouth's west side to the roost pool, then one
+// long shelf north past Heron flat and out onto the traverse. Bigger than the neck, so it
+// is deeper: it floods at HW−17 and a boat that goes then is out with eight seconds to spare.
+const GAMBLE_IN = spline([[190, 4260], [-250, 3700], [-700, 3540], [-1150, 3580]], 6);   // north of the spit's recurve (it ran through the hook once: +0.25 m in the creek); it starts 170u inside the main channel, or the two rims' feathers cross at the mouth and leave a −1.75 m bar there (0.75 m at low water: a crawl)
 const GAMBLE = spline([[-1200, 3600], [-1150, 2900], [-900, 2100], [-500, 1500], [-350, 1150]], 6);
-const GAMBLE_OUT = spline([[-350, 1150], [-450, 750], [-550, 350]], 6);
+const GAMBLE_OUT = spline([[-350, 1150], [-450, 750], [-550, 350], [-600, 120]], 6);   // into the traverse channel: it stopped 100u short once, and the flats between were the strand
 add('flats-channel', ribbon(GAMBLE_IN, 380, 0.1), { id: 'gamble-creek', name: 'Roost creek', elev: -2.2 });
-add('flats-flat', ribbon(GAMBLE, 480, 0.08), { id: 'gamble-shelf', name: 'The west gamble', elev: -0.6 });
-add('flats-flat', ribbon(GAMBLE_OUT, 440, 0.08), { id: 'gamble-out', name: 'Gamble exit', elev: -0.75 });
-add('flats-bar', ribbon(spline([[-800, 420], [-550, 470], [-300, 430]], 4), 240), { id: 'gamble-sill', name: 'Gamble sill', elev: -0.25 });
+const GAMBLE_Z = cutDepth(polyLen(GAMBLE) + polyLen(GAMBLE_OUT) + 300, 3);  // the shelf, the exit and the bar: about −1.4 (rung 3: four seconds of slack)
+add('flats-flat', ribbon(GAMBLE, 480, 0.08), { id: 'gamble-shelf', name: 'The west gamble', elev: GAMBLE_Z });
+add('flats-flat', ribbon(GAMBLE_OUT, 440, 0.08), { id: 'gamble-out', name: 'Gamble exit', elev: GAMBLE_Z });
+add('flats-bar', ribbon(spline([[-800, 420], [-550, 470], [-300, 430]], 4), 240), { id: 'gamble-sill', name: 'Gamble sill', elev: GAMBLE_Z });   // sand at the exit (a bar at the body's depth changes the material, not the ground), not a choke
 
 // THE NECK: across the west bend's interior, from the traverse north to the upper leg,
-// with a pool beside Curlew flat to wait in. Saves the bend; opens for a third of the cycle.
+// with a pool beside Curlew flat to wait in. Saves the bend. One depth end to end (the
+// formula above): it floods at speed at HW−21 and a boat that goes then clears the north
+// end with eight seconds to spare; a boat that waits for it to look deep is stranded at
+// the exit.
 const NECK_S = spline([[-1150, -250], [-1250, -700], [-1300, -1150]], 6);
 const NECK_N = spline([[-1300, -1150], [-1200, -1700], [-1100, -2400], [-1000, -3000], [-950, -3450]], 6);
+const NECK_Z = cutDepth(polyLen(NECK_S) + polyLen(NECK_N) + 300, 2);       // about −1.4 (rung 2: eight seconds of slack)
 add('flats-pool', blob(-1300, -1200, 260, 240, 12, 0.18), { id: 'pool-neck', name: 'Neck pool', elev: -2.0 });
-add('flats-flat', ribbon(NECK_S, 440, 0.08), { id: 'neck-s', name: 'The neck (south)', elev: -0.9 });
-add('flats-flat', ribbon(NECK_N, 460, 0.08), { id: 'neck-n', name: 'The neck (north)', elev: -0.85 });
-add('flats-bar', ribbon(spline([[-1200, -3300], [-950, -3340], [-700, -3280]], 4), 250), { id: 'neck-sill', name: 'Neck sill', elev: -0.45 });
+add('flats-flat', ribbon(NECK_S, 440, 0.08), { id: 'neck-s', name: 'The neck (south)', elev: NECK_Z });
+add('flats-flat', ribbon(NECK_N, 460, 0.08), { id: 'neck-n', name: 'The neck (north)', elev: NECK_Z });
+add('flats-bar', ribbon(spline([[-1200, -3300], [-950, -3340], [-700, -3280]], 4), 250), { id: 'neck-sill', name: 'Neck sill', elev: NECK_Z });   // sand at the exit, not a choke
 
 // THE HEAD CUT: Wes's own line across the head's meander, made a marked passage — west of
 // the diamond island through the head pool, a sill onto the last turn. The creek up the
 // east side is the other key to the same lock.
 const HEADCUT = spline([[-750, -4050], [-750, -4700], [-700, -5300], [-550, -5900], [-400, -6450]], 6);
-add('flats-flat', ribbon(HEADCUT, 460, 0.08), { id: 'head-cut', name: 'The head cut', elev: -0.9 });
-add('flats-bar', ribbon(spline([[-650, -6700], [-400, -6740], [-150, -6680]], 4), 250), { id: 'head-sill', name: 'Head sill', elev: -0.5 });
+const HEAD_Z = cutDepth(polyLen(HEADCUT) + 300, 3);                          // about −0.7, one depth with its sill: the gamble (four seconds of slack)
+add('flats-flat', ribbon(HEADCUT, 460, 0.08), { id: 'head-cut', name: 'The head cut', elev: HEAD_Z });
+add('flats-bar', ribbon(spline([[-650, -6700], [-400, -6740], [-150, -6680]], 4), 250), { id: 'head-sill', name: 'Head sill', elev: HEAD_Z });
 
 // THE DELTA CUT (the fourth section): the channel bulges east round the delta bar; a short
 // shelf goes straight up its west side from the turn to the head reach, with a pool in the
@@ -335,7 +365,7 @@ add('flats-marsh', blob(950, -8450, 300, 330, 12, 0.2, 0.4), { id: 'isle-delta',
 const DELTA = spline([[350, -7550], [250, -8100], [150, -8650], [200, -9150]], 6);
 add('flats-pool', blob(180, -8400, 220, 200, 12, 0.2), { id: 'pool-delta', name: 'Delta pool', elev: -1.9 });
 add('flats-flat', ribbon(DELTA, 420, 0.08), { id: 'delta-cut', name: 'The delta cut', elev: -0.85 });
-add('flats-bar', ribbon(spline([[-50, -9150], [200, -9190], [450, -9130]], 4), 240), { id: 'delta-sill', name: 'Delta sill', elev: -0.45 });
+add('flats-bar', ribbon(spline([[-50, -9150], [200, -9190], [450, -9130]], 4), 240), { id: 'delta-sill', name: 'Delta sill', elev: cutDepth(polyLen(DELTA) + 300, 1) });   // about −0.65: a corner, twelve seconds of slack
 add('flats-marsh', blob(-1100, -9300, 380, 300, 12, 0.2, 0.2), { id: 'isle-head-w', name: 'Head marsh' });
 add('flats-pool', blob(1900, -9600, 230, 200, 12, 0.2), { id: 'pool-delta-e', name: 'East delta pool', elev: -1.8 });
 
@@ -425,18 +455,32 @@ edgeWithies(HEADCUT, 210, 700, 'headcut');
 // ── THE PASSAGES, AS LINES ───────────────────────────────────────────────────
 // Every marked passage's centreline, entrance to exit, into the document: what a probe
 // measures the fill along (eval/_flats_passages.js) and what a future HUD could name.
+// THE LADDER (Wes, Sep 16 evening): "sailing the deep channel only will get you a reliable
+// score in the back third of the pack but finishing with them. Cutting the corners should
+// get you above the middle. Sailing cuts moves you further up, but done wrong could land you
+// at the back (unless you catch up with another gamble). Easier cuts should be sailable by
+// many; the most extreme gambles may require high speeds and perfect timing; and there is
+// the in between." Each passage carries its rung as `risk` — 1 the corners: the point
+// bars (a few seconds each, open twenty seconds and more) and the delta cut (nine seconds,
+// a sixteen-second window, forgiving); 2 the cuts: the wantij, the creek and the neck (ten
+// to seventeen seconds, windows of twelve to fifteen, all wanting an entry BEFORE high
+// water); 3 the gambles: the head cut and the west gamble (twenty-four seconds for an
+// eight-second window). The bots read it: a boat's `nerve` trait is the highest rung its
+// router will take (Tide.routeCost), so the fleet has its steady channel sailors, its
+// corner cutters and its gamblers. Measured by eval/_flats_windows.js (the ladder table at
+// the end) and eval/_flats_race.js --nerve N (a whole fleet at one rung).
 const passages = [
-    { id: 'wantij',   name: 'The wantij',      pts: CREEK_IN.concat(CROSSING.slice(1)).concat([[520, 300], [520, 150]]) },
-    { id: 'gamble',   name: 'The west gamble', pts: GAMBLE_IN.concat(GAMBLE.slice(1)).concat(GAMBLE_OUT.slice(1)).concat([[-600, 150], [-650, -50]]) },
-    { id: 'pointbar', name: 'The point bar',   pts: [[-1400, -400], [-1650, -650], [-1900, -1000], [-2050, -1400], [-2100, -1900], [-2150, -2300], [-2300, -2600]] },
-    { id: 'pb-traverse', name: 'Traverse point bar', pts: [[2450, 1650], [2300, 1350], [2050, 1050], [1750, 900], [1400, 850], [1150, 650]] },
-    { id: 'pb-diamond',  name: 'Diamond point bar',  pts: [[500, -4150], [900, -4400], [1100, -4700], [1050, -5100], [900, -5400], [650, -5600], [400, -5750]] },
-    { id: 'pb-finish',   name: 'Finish point bar',   pts: [[100, -9450], [200, -9800], [150, -10150], [-100, -10500], [-350, -10800], [-500, -11000]] },
-    { id: 'neck',     name: 'The neck',        pts: [[-1100, 100]].concat(NECK_S).concat(NECK_N.slice(1)).concat([[-940, -3700], [-930, -3950]]) },
-    { id: 'headcut',  name: 'The head cut',    pts: [[-750, -3850]].concat(HEADCUT).concat([[-350, -6800], [-300, -7100]]) },
-    { id: 'creek',    name: 'The flood creek', pts: CREEK.concat([[1000, -7500]]) },
-    { id: 'delta',    name: 'The delta cut',   pts: [[400, -7350]].concat(DELTA).concat([[150, -9400], [0, -9600]]) }
-].map(P => ({ id: P.id, name: P.name, pts: P.pts.map(q => [R(q[0]), R(q[1])]) }));
+    { id: 'wantij',   name: 'The wantij',      risk: 2, pts: CREEK_IN.concat(CROSSING.slice(1)).concat([[520, 300], [520, 150]]) },
+    { id: 'gamble',   name: 'The west gamble', risk: 3, pts: GAMBLE_IN.concat(GAMBLE.slice(1)).concat(GAMBLE_OUT.slice(1)).concat([[-600, 150], [-650, -50]]) },
+    { id: 'pointbar', name: 'The point bar',   risk: 1, pts: [[-1400, -400], [-1650, -650], [-1900, -1000], [-2050, -1400], [-2100, -1900], [-2150, -2300], [-2300, -2600]] },
+    { id: 'pb-traverse', name: 'Traverse point bar', risk: 1, pts: [[2450, 1650], [2300, 1350], [2050, 1050], [1750, 900], [1400, 850], [1150, 650]] },
+    { id: 'pb-diamond',  name: 'Diamond point bar',  risk: 1, pts: [[500, -4150], [900, -4400], [1100, -4700], [1050, -5100], [900, -5400], [650, -5600], [400, -5750]] },
+    { id: 'pb-finish',   name: 'Finish point bar',   risk: 1, pts: [[100, -9450], [200, -9800], [150, -10150], [-100, -10500], [-350, -10800], [-500, -11000]] },
+    { id: 'neck',     name: 'The neck',        risk: 2, pts: [[-1100, 100]].concat(NECK_S).concat(NECK_N.slice(1)).concat([[-940, -3700], [-930, -3950]]) },
+    { id: 'headcut',  name: 'The head cut',    risk: 3, pts: [[-750, -3850]].concat(HEADCUT).concat([[-350, -6800], [-300, -7100]]) },
+    { id: 'creek',    name: 'The flood creek', risk: 2, pts: CREEK.concat([[1000, -7500]]) },
+    { id: 'delta',    name: 'The delta cut',   risk: 1, pts: [[400, -7350]].concat(DELTA).concat([[150, -9400], [0, -9600]]) }
+].map(P => ({ id: P.id, name: P.name, risk: P.risk, pts: P.pts.map(q => [R(q[0]), R(q[1])]) }));
 
 // ── SIMPLIFY ─────────────────────────────────────────────────────────────────
 // Douglas–Peucker on every ring at 14u (about a pixel at race zoom, Otter's rule): the

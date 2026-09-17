@@ -1047,19 +1047,31 @@ across the wantij is ahead); the path line and the ruler on the channel only.
   shelf (−0.9 to −1.05 m): the west bend, the turn onto the traverse, the diamond bulge,
   the last turn before the finish. The higher the water, the tighter the cut; no gate —
   a radius that follows the tide, gone for twenty seconds either side of low water.
-- **The west gamble** (first loop, the other key). A creek from the mouth's west side to
-  the roost pool, a long shelf (−0.6 m) north past Heron flat to the middle pool, and a
-  high sill (−0.25 m) onto the traverse: the crossing you take AT the top of the tide and
-  wait in the middle pool for — for the boat that reaches the mouth after the leaders.
-- **The neck** (the west bend). From the traverse north across the bend's interior past
-  Curlew flat, a pool to wait in, a sill (−0.45 m) onto the upper leg.
+- **The west gamble** (first loop, the other key; rung 3). A creek from the mouth's west
+  side to the roost pool and one long shelf (−1.45 m, one depth to its sand exit) north
+  past Heron flat onto the traverse: you commit at the mouth around LOW water with the
+  shelf bone dry ahead, reach it as it floods, and are out before it drains. Saves ~21 s
+  for a ten-second window.
+- **The neck** (the west bend; rung 2). From the traverse north across the bend's interior
+  past Curlew flat, a pool to wait in, one depth (−1.35 m) to a sand exit onto the upper
+  leg. Go as it floods (HW−21) and you are out with eight seconds to spare; wait for it to
+  look deep and the far end strands you. Saves ~10 s.
 - **The head cut / the flood creek** (the third meander). Wes's own line west of the
-  diamond island through the head pool to a sill (−0.5 m), or the shallower creek
-  (−1.15 m) up the east side with a 1.2 kt flood stream and its own sill: two keys to one
-  lock.
-- **The delta cut** (the fourth section, Sep 16 evening — "more to sail"). The channel
-  bulges east round the delta bar; a short shelf goes straight up its west side with a
-  pool halfway and a sill at the top. The smallest saving, and the last chance.
+  diamond island through the head pool (−0.78 m, its sill the same; rung 3: 24 s for a
+  seven-second window), or the creek (−1.15 m) up the east side with a 1.2 kt flood stream
+  (rung 2: 17 s, a 13-second window): two keys to one lock.
+- **The delta cut** (the fourth section, Sep 16 evening — "more to sail"; rung 1). The
+  channel bulges east round the delta bar; a short shelf goes straight up its west side
+  with a pool halfway and a sand sill (−0.81 m) at the top. Nine seconds, forgiving, and
+  the last chance.
+- **The ladder** (Wes, Sep 16 night). Every cut is priced for its length — one depth end
+  to end, open at speed for its traverse plus a slack that is the rung (corners 12 s, cuts
+  8, gambles 6; `cutDepth` in art/build_flats.js, measured by eval/_flats_windows.js) —
+  and each carries its rung as `risk` in the document. The bots read it as a `nerve`
+  (roster.js): the steady archetypes take corners, most take the cuts, bullies and
+  gamblers everything. The pack that gives: channel alone ~3:44 and 6th–8th of ten,
+  corners ~3:25 and 4th–5th, the cuts ~3:00 and the front — or the back, when a gamble
+  goes wrong.
 - Finish at the head, ~4000u past where it first was.
 - Stepping-stone pools (always afloat) sit in the flats between passages: places to be
   caught near.
@@ -1076,9 +1088,10 @@ bakes the paths; `eval/_flats_race.js` races the fleet and reports groundings an
 `eval/_flats_chart.js` draws the estuary at any state of the tide. Wes's five laps on the
 first (three-meander) layout: 3:13, 2:28, 2:45, 2:27, 2:44 — every one through the
 wantij and the point bar, the fast ones straight across the head's flats at high water.
-Extended on his call. Channel-only estimate now 3:38 / 5.61 km. Bots (3 seeds, 60 s
-period, HW +8 s): 27/27 finish, best 3:06, median 3:37, worst 4:31, groundings down to
-touches. Design study, ratings and the build log: [flats-design.md](flats-design.md).
+Extended on his call. Channel-only estimate now 3:38 / 5.61 km. Bots (4 seeds, 60 s
+period, HW +8 s, the nerve ladder): 36/36 finish, best 2:56, median 3:38, worst 4:01, no
+boat aground more than four times. Suite: `eval/test_flats.js`. Design study, ratings and
+the build log: [flats-design.md](flats-design.md) (§7.5 is the ladder).
 Card art: the Aug 2026 pass-4 master. Track `racing-flats`. Cup: the Swirl Cup set.
 
 ---
