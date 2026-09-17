@@ -841,6 +841,7 @@ function draw() {
     const localWind = getWindAt(player.x, player.y);
 
     if (hudShowsRose()) updateRoseHud(player, localWind);
+    if (typeof drawTideReadout === 'function') drawTideReadout(player);   // the tide panel, bottom right, whatever face the HUD wears
     if (window.Volcano && state.volcano) Volcano.applyHudClasses();
 
 

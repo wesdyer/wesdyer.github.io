@@ -2028,48 +2028,91 @@ function updateRoseHud(player, localWind) {
         if (ico && typeof streakColorFor === 'function') { const c = streakColorFor(d.tws); ico.style.color = `rgb(${c[0]},${c[1]},${c[2]})`; }
     }
     if (UI.windAngle) { UI.windAngle.textContent = `${d.twa}\u00b0`; UI.windAngle.style.color = d.noGo ? '#f87171' : ''; }
-    drawTideReadout(player);
     roseCue('hud-planing-label', 'absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-cyan-400 hidden', 'PLANING', d.planing);
     roseCue('hud-surfing-label', 'absolute -top-9 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-amber-300 hidden', 'SURFING', d.surfing);
 }
 
 // ── THE TIDE READOUT (Spoonbill Flats) ──────────────────────────────────────
-// The rose's fourth row: a gauge of the water's height between LW and HW with the flood
-// or ebb arrow and the seconds to the turn, and the echo sounder. Colour is the warning:
-// blue with clearance, amber while the mud is taking speed, red just afloat, and AGROUND
-// with the refloat countdown when she sits. Hidden on every other venue.
+// The bottom-right panel (Wes, Sep 16 2026: "show the sinusoidal curve and the current
+// point of tidal height, and a numeric current tidal height" — in place of the rose's
+// gauge row and the pill under the boat). A minute of the curve scrolls under a fixed
+// NOW line — the last fifteen seconds dim on the left, the next forty-five on the right —
+// with the water filled under it, HW and LW named at the crests with the seconds to each,
+// the point riding the curve, and the height above chart datum (0 at low water) as the
+// number. Under it, small, the echo sounder — blue with clearance, amber while the mud is
+// taking speed, red just afloat, AGROUND with the refloat countdown when she sits.
+// Hidden on every other venue.
 function drawTideReadout(player) {
-    if (!UI.tideRow) return;
+    if (!UI.tideRow || !UI.tideCanvas) return;
     const info = (window.Tide && state.tide) ? Tide.hudInfo(player) : null;
     if (!info) { if (!UI.tideRow.classList.contains('hidden')) UI.tideRow.classList.add('hidden'); return; }
     UI.tideRow.classList.remove('hidden');
-    const g = UI.tideGauge;
-    if (g) {
-        const gc = g.getContext('2d');
-        gc.clearRect(0, 0, g.width, g.height);
-        gc.fillStyle = 'rgba(148,163,184,0.25)';
-        gc.beginPath(); gc.roundRect(0, 2, g.width, g.height - 4, 3); gc.fill();
-        const w = Math.max(2, Math.round((g.width - 2) * Math.max(0, Math.min(1, info.frac))));
-        gc.fillStyle = info.rising ? '#7dd3fc' : '#fbbf24';
-        gc.beginPath(); gc.roundRect(1, 3, w, g.height - 6, 2); gc.fill();
+    const cv = UI.tideCanvas, T = state.tide;
+    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const W = 250, H = 84;
+    if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+    const g = cv.getContext('2d');
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, W, H);
+    // the window of time: t0 in the past, t1 ahead; the level is a function of the race clock
+    const now = Tide.clock(), past = T.period * 0.25, ahead = T.period * 0.75;
+    const t0 = now - past, t1 = now + ahead;
+    const L = 10, R = 132, top = 12, bot = 52;                  // the plot; the number lives to the right of R
+    const px = (t) => L + (t - t0) / (t1 - t0) * (R - L);
+    const lo = T.mid - T.amp, hi = T.mid + T.amp;
+    const py = (lv) => bot - (lv - lo) / (hi - lo) * (bot - top);
+    const xNow = px(now);
+    // the water under the curve, dim in the past
+    const path = (from, to) => { g.beginPath(); g.moveTo(px(from), bot); for (let t = from; t <= to + 1e-6; t += (t1 - t0) / 60) g.lineTo(px(t), py(Tide.levelAt(t))); g.lineTo(px(to), bot); g.closePath(); };
+    path(t0, now); g.fillStyle = 'rgba(56,132,196,0.22)'; g.fill();
+    path(now, t1); g.fillStyle = 'rgba(56,132,196,0.40)'; g.fill();
+    // datum and mean
+    g.strokeStyle = 'rgba(148,163,184,0.35)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(L, bot + 0.5); g.lineTo(R, bot + 0.5); g.stroke();
+    g.setLineDash([2, 3]); g.beginPath(); g.moveTo(L, py(T.mid) + 0.5); g.lineTo(R, py(T.mid) + 0.5); g.stroke(); g.setLineDash([]);
+    // the curve itself: past dim, future bright
+    const curve = (from, to, col, w) => { g.beginPath(); let first = true; for (let t = from; t <= to + 1e-6; t += (t1 - t0) / 90) { const x = px(t), y = py(Tide.levelAt(t)); if (first) { g.moveTo(x, y); first = false; } else g.lineTo(x, y); } g.strokeStyle = col; g.lineWidth = w; g.stroke(); };
+    curve(t0, now, 'rgba(186,230,253,0.45)', 1.5);
+    curve(now, t1, '#bae6fd', 2);
+    // the crests ahead, named, with the seconds to each
+    g.font = FONT.mono(9); g.textAlign = 'center'; g.textBaseline = 'middle';
+    const toHigh = Tide.nextHigh(now), toLow = Tide.nextLow(now);
+    const crest = (dt, label, lv, col) => {
+        if (dt > ahead) return;
+        const x = px(now + dt), y = py(lv);
+        g.fillStyle = col; g.beginPath(); g.arc(x, y, 1.6, 0, Math.PI * 2); g.fill();
+        g.fillStyle = col; g.fillText(`${label} ${Math.max(0, Math.round(dt))}s`, Math.max(L + 16, Math.min(R - 16, x)), lv > T.mid ? y - 7 : y + 8);
+    };
+    crest(toHigh, 'HW', hi, '#bae6fd');
+    crest(toLow, 'LW', lo, '#fde68a');
+    // NOW: the line and the point
+    g.strokeStyle = 'rgba(255,255,255,0.35)'; g.lineWidth = 1;
+    g.beginPath(); g.moveTo(xNow + 0.5, top - 4); g.lineTo(xNow + 0.5, bot + 4); g.stroke();
+    const yNow = py(info.level);
+    g.fillStyle = info.rising ? '#7dd3fc' : '#fbbf24';
+    g.beginPath(); g.arc(xNow, yNow, 3.5, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = '#0f172a'; g.lineWidth = 1; g.stroke();
+    // THE NUMBER: height above chart datum (low water is 0), with the flood/ebb arrow
+    const height = info.level - lo;
+    g.textAlign = 'right'; g.textBaseline = 'alphabetic';
+    g.font = FONT.mono(22); g.fillStyle = '#e2e8f0';
+    g.fillText(`${height.toFixed(2)}`, W - 30, 40);
+    g.font = FONT.mono(11); g.fillStyle = '#94a3b8';
+    g.fillText('m', W - 12, 40);
+    g.font = FONT.label(9); g.fillStyle = info.rising ? '#7dd3fc' : '#fbbf24';
+    g.fillText(`${info.rising ? '▲ FLOOD' : '▼ EBB'}`, W - 12, 16);
+    g.font = FONT.label(8); g.fillStyle = 'rgba(148,163,184,0.8)';
+    g.fillText('TIDE', W - 12, 54);
+    // the echo sounder, small, along the bottom
+    g.font = FONT.mono(10); g.textAlign = 'left';
+    let txt, col;
+    if (info.aground) { const r = info.refloatIn; txt = r == null ? 'AGROUND' : `AGROUND · refloats in ${Math.max(1, Math.ceil(r))}s`; col = '#f87171'; }
+    else {
+        const dd = Math.max(0, info.depth == null ? 0 : info.depth), clr = dd - info.draft;
+        txt = `${dd.toFixed(1)} m under the keel`;
+        col = clr >= info.free ? 'rgba(191,219,254,0.85)' : clr > info.free * 0.4 ? '#fbbf24' : '#f87171';
     }
-    if (UI.tideText) {
-        const s = Math.max(0, Math.round(info.nextIn));
-        UI.tideText.textContent = `${info.rising ? '\u25b2' : '\u25bc'}${info.next} ${s}s`;
-        UI.tideText.style.color = info.rising ? '#bae6fd' : '#fde68a';
-    }
-    if (UI.depth) {
-        if (info.aground) {
-            const r = info.refloatIn;
-            UI.depth.textContent = r == null ? 'AGROUND' : `AGROUND ${Math.max(1, Math.ceil(r))}s`;
-            UI.depth.style.color = '#f87171';
-        } else {
-            const dd = info.depth == null ? 0 : info.depth;
-            const clr = dd - info.draft;
-            UI.depth.textContent = `${Math.max(0, dd).toFixed(1)}m`;
-            UI.depth.style.color = clr >= info.free ? '#bfdbfe' : clr > info.free * 0.4 ? '#fbbf24' : '#f87171';
-        }
-    }
+    g.fillStyle = col; g.fillText(txt, L, H - 11);
 }
 
 // Show the chosen face and hide the others. The chart moves rather than being toggled: it is
@@ -2241,42 +2284,6 @@ function drawBoatInstruments(ctx, player) {
             ctx.beginPath(); ctx.roundRect(left, by, Math.max(bh, BI_W * dp), bh, r);
             ctx.fillStyle = (player.colors && player.colors.spinnaker) || '#f2c14e';
             ctx.fill();
-        }
-    }
-    // ── THE ECHO SOUNDER (Spoonbill Flats) ──────────────────────────────────
-    // The one other number that steers the boat continuously on this venue, so it earns
-    // the same place: a second pill under the TWA with the depth under the hull, blue with
-    // clearance, amber as the mud takes speed, red just afloat — and AGROUND with the
-    // seconds to the refloat when she sits. Nothing off a tidal venue.
-    if (window.Tide && state.tide) {
-        const info = Tide.hudInfo(player);
-        if (info) {
-            const by = top + BI_H + 4 + ((dp > 0.001 && dp < 0.999) ? 9 : 0);
-            // Depth on the left, the tide's state on the right: "1.8 m · ▲HW 22s" — the two
-            // numbers this venue is sailed by, in the one place the eye already is.
-            let txt, col;
-            if (info.aground) { const r = info.refloatIn; txt = r == null ? 'AGROUND' : `AGROUND ${Math.max(1, Math.ceil(r))}s`; col = '#f87171'; }
-            else {
-                const dd = Math.max(0, info.depth == null ? 0 : info.depth), clr = dd - info.draft;
-                txt = `${dd.toFixed(1)} m`;
-                col = clr >= info.free ? '#bfdbfe' : clr > info.free * 0.4 ? '#fbbf24' : '#f87171';
-            }
-            const tideTxt = `${info.rising ? '\u25b2' : '\u25bc'}${info.next} ${Math.max(0, Math.round(info.nextIn))}s`;
-            const tideCol = info.rising ? '#bae6fd' : '#fde68a';
-            ctx.shadowBlur = 0;
-            ctx.font = FONT.mono(12);
-            const wL = ctx.measureText(txt).width, wR = ctx.measureText(tideTxt).width;
-            const pw = Math.max(BI_W, wL + wR + 30);
-            ctx.beginPath(); ctx.roundRect(sx - pw / 2, by, pw, BI_H - 4, 7);
-            ctx.fillStyle = BI_BG; ctx.fill();
-            ctx.strokeStyle = info.aground ? 'rgba(248,113,113,0.8)' : BI_RIM; ctx.lineWidth = 1; ctx.stroke();
-            ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 4;
-            const cy = by + (BI_H - 4) / 2 + 0.5;
-            ctx.textAlign = 'left';
-            ctx.fillStyle = col; ctx.fillText(txt, sx - pw / 2 + 9, cy);
-            ctx.textAlign = 'right';
-            ctx.fillStyle = tideCol; ctx.fillText(tideTxt, sx + pw / 2 - 9, cy);
-            ctx.textAlign = 'center';
         }
     }
     ctx.restore();
