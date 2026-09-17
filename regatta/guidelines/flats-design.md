@@ -345,3 +345,26 @@ Built:
 
 Bots on the extended venue (3 seeds): 27/27, best 3:06, median 3:37, worst 4:31.
 Projected from Wes's 2:27 plus the extension, his best should land ~2:50.
+
+### 7.1 "Make sure all passages actually fill" (Sep 16, evening)
+
+Measured with `eval/_flats_passages.js` (the ground along every passage's centreline from
+the document's `tide.passages`, the whole-line afloat/free windows on the sine, and the
+filled width across the middle at high water). Two did not: the **neck** ran through the
+Curlew flat marsh island (+1.4 m in its middle — the shelf skips marsh cells, so the
+corridor had a wall in it; the bots were skirting it on the shelf's edge) and the **point
+bar** stopped 350u short of the channel on a lip of +0.5 m flats. Curlew flat moved east,
+the point bar's polygon extended to the channel. And the shelves had the bar's 140u ramp
+from their edges, so a 420u corridor was at its depth along a 140u stripe — shelves now
+ramp over 50u (`TIDE.shelfFeather`). After: every passage is free along its whole length
+for 15–29 s a cycle and 420–820u wide at high water.
+
+| passage | high point | free (s/cycle) | afloat (s/cycle) | free width @HW |
+|---|---|---|---|---|
+| wantij | −0.46 (sill) | 19 | 29 | 680u |
+| west gamble | −0.28 (sill) | 15 | 26 | 420u |
+| point bar | −0.95 | 29 | 39 | 820u |
+| neck | −0.46 (sill) | 19 | 29 | 440u |
+| head cut | −0.54 (sill) | 21 | 31 | 680u |
+| flood creek | −0.50 (sill) | 20 | 30 | 680u |
+| delta cut | −0.56 (sill) | 21 | 31 | 420u |

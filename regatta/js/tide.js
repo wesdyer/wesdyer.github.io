@@ -49,6 +49,7 @@ const TIDE = {
     marshZ: 1.4,         // m — the ground at the marsh edge (never wet: 0.4 m above HW)
     bedFeather: 110,     // u — a channel drops from its rim to its bed over this
     barFeather: 140,     // u — a bar rises from the surrounding flat to its crest over this
+    shelfFeather: 50,    // u — a shelf (a marked corridor) is at its depth nearly wall to wall: with the bar's 140 a 420u corridor filled along a 140u stripe
     poolFeather: 90,     // u — a pool's bowl
     gamma: 0.8,          // the shape of the flat between channel and marsh (<1 = rises fast off the channel, so the interior is mud most of the cycle)
     noiseAmp: 0.16,      // m — pans and tongues
@@ -304,7 +305,7 @@ const TIDE = {
             const inv = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) inv[k] = m[k] ? 0 : 1;
             const din = chamfer(inv, W, H);
             const g = p.elev != null ? p.elev : -0.5;
-            for (let k = 0; k < W * H; k++) if (m[k] && !chMask[k] && !mMask[k]) { const s = sstep(din[k] * res / C.barFeather); z[k] = z[k] + (g - z[k]) * s; }
+            for (let k = 0; k < W * H; k++) if (m[k] && !chMask[k] && !mMask[k]) { const s = sstep(din[k] * res / C.shelfFeather); z[k] = z[k] + (g - z[k]) * s; }
         }
         // Bars: a crest raised out of the flat, and the ground turns to sand.
         for (const b of anchors.bar) {

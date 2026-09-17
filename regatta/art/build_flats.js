@@ -221,7 +221,7 @@ add('flats-marsh', blob(1650, 2150, 520, 640, 16, 0.22, 0.3), { id: 'isle-wantij
 add('flats-marsh', blob(-1500, 1700, 720, 520, 16, 0.2, -0.2), { id: 'isle-west-flat', name: 'Heron flat' });
 add('flats-marsh', blob(-2300, 3300, 420, 380, 12, 0.2), { id: 'isle-sw', name: 'Spoonbill roost' });
 add('flats-marsh', blob(2500, -900, 380, 300, 12, 0.2), { id: 'isle-east', name: 'East hummock' });
-add('flats-marsh', blob(-800, -2100, 560, 380, 14, 0.2, 0.5), { id: 'isle-upper', name: 'Curlew flat' });
+add('flats-marsh', blob(-450, -2150, 460, 360, 14, 0.2, 0.5), { id: 'isle-upper', name: 'Curlew flat' });   // east of the neck's line (it sat ON it: the corridor had a wall in its middle)
 add('flats-marsh', blob(1000, -1500, 460, 360, 12, 0.2, 0.2), { id: 'isle-mid', name: 'Egret flat' });
 add('flats-marsh', blob(300, -5050, 520, 400, 14, 0.2, 0.3), { id: 'isle-diamond', name: 'Diamond bar top' });
 add('flats-marsh', blob(-1300, -4900, 360, 300, 12, 0.2, 0.6), { id: 'isle-nw', name: 'Head island' });
@@ -234,7 +234,7 @@ add('flats-flat', ribbon(CROSSING, 520, 0.08), { id: 'wantij-corridor', name: 'T
 add('flats-bar', ribbon(spline([[300, 700], [560, 740], [820, 680]], 4), 260), { id: 'wantij-sill', name: 'The sill', elev: -0.45 });
 
 // The POINT BAR: a shelving inside at the west bend, so the higher water cuts tighter.
-add('flats-flat', spline([[-1500, -300], [-2000, -700], [-2250, -1250], [-2250, -1900], [-1900, -2050], [-1600, -1500], [-1500, -900], [-1400, -400]], 4), { id: 'point-bar', name: 'Point bar', elev: -0.95 });
+add('flats-flat', spline([[-1500, -300], [-2000, -700], [-2250, -1250], [-2350, -1900], [-2250, -2450], [-1950, -2500], [-1750, -2100], [-1600, -1500], [-1500, -900], [-1400, -400]], 4), { id: 'point-bar', name: 'Point bar', elev: -0.95 });   // reaches the channel at its north end (it stopped 350u short on a lip of +0.5 m flats)
 
 // The creek's sill at its head, and a mud tongue across its middle so it costs something
 // near slack water.
@@ -367,6 +367,19 @@ edgeWithies(GAMBLE, 220, 700, 'gamble');
 edgeWithies(NECK_N, 210, 700, 'neck');
 edgeWithies(HEADCUT, 210, 700, 'headcut');
 
+// ── THE PASSAGES, AS LINES ───────────────────────────────────────────────────
+// Every marked passage's centreline, entrance to exit, into the document: what a probe
+// measures the fill along (eval/_flats_passages.js) and what a future HUD could name.
+const passages = [
+    { id: 'wantij',   name: 'The wantij',      pts: CREEK_IN.concat(CROSSING.slice(1)).concat([[520, 300], [520, 150]]) },
+    { id: 'gamble',   name: 'The west gamble', pts: GAMBLE_IN.concat(GAMBLE.slice(1)).concat(GAMBLE_OUT.slice(1)).concat([[-600, 150], [-650, -50]]) },
+    { id: 'pointbar', name: 'The point bar',   pts: [[-1400, -400], [-1650, -650], [-1900, -1000], [-2050, -1400], [-2100, -1900], [-2150, -2300], [-2300, -2600]] },
+    { id: 'neck',     name: 'The neck',        pts: [[-1100, 100]].concat(NECK_S).concat(NECK_N.slice(1)).concat([[-940, -3700], [-930, -3950]]) },
+    { id: 'headcut',  name: 'The head cut',    pts: [[-750, -3850]].concat(HEADCUT).concat([[-350, -6800], [-300, -7100]]) },
+    { id: 'creek',    name: 'The flood creek', pts: CREEK.concat([[1000, -7500]]) },
+    { id: 'delta',    name: 'The delta cut',   pts: [[400, -7350]].concat(DELTA).concat([[150, -9400], [0, -9600]]) }
+].map(P => ({ id: P.id, name: P.name, pts: P.pts.map(q => [R(q[0]), R(q[1])]) }));
+
 // ── THE SCALE ────────────────────────────────────────────────────────────────
 // A whole-venue scale, applied to the geometry at emit (author in base units). Tried at
 // 1.15 after Wes's five laps (best 2:27.6 against a 2:45–3:00 target) and set aside on his
@@ -377,6 +390,7 @@ const sc = (p) => [R(p[0] * SCALE), R(p[1] * SCALE)];
 for (const sh of shapes) { sh.outer = sh.outer.map(sc); sh.holes = (sh.holes || []).map(h => h.map(sc)); }
 for (const m of marks) { m.x = R(m.x * SCALE); m.y = R(m.y * SCALE); }
 for (const w of withies) { w.x = R(w.x * SCALE); w.y = R(w.y * SCALE); }
+for (const P of passages) P.pts = P.pts.map(sc);
 
 // ── THE DOCUMENT ─────────────────────────────────────────────────────────────
 const doc = {
@@ -394,7 +408,7 @@ const doc = {
         size: 20000,
         boundary: { poly: [[-3700, -11600], [3700, -11600], [3700, 8000], [-3700, 8000]].map(sc), circle: null }
     },
-    tide: { period: 60, amp: 1.0, mid: 0, phase0: 0.733, fillKt: 0.55, withies },   // HW 8 s after the gun, then every minute: the sill is open when a well-sailed leader reaches it
+    tide: { period: 60, amp: 1.0, mid: 0, phase0: 0.733, fillKt: 0.55, withies, passages },   // HW 8 s after the gun, then every minute: the sill is open when a well-sailed leader reaches it
     shapes,
     course: {
         description: 'Beat to the offshore mark, round to starboard, run in through the mouth and race the channel round the basin to the finish at the head — or cross the flats while the tide lets you.',
