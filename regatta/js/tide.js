@@ -70,8 +70,9 @@ const TIDE = {
     // metre of extra water is demanded of a cell 40 s ahead, a hand's breadth of one 5 s
     // ahead. Measured before this (phase 0.5, 18 bots): 8 boats caught on flats they were
     // priced across, 197 s aground for the worst; after: see flats-design.md.
-    horizonMargin: 0.012,
-    horizonCap: 0.3,     // m — and no more than this, or a far goal in a deep channel reads as closed (it did: no path to the finish from the creek)
+    horizonMargin: 0.02,
+    earlyPrice: 8,       // s — a cell is priced at the shallower of its arrival water and the water this long before
+    horizonCap: 0.42,    // m — and no more than this, or a far goal in a deep channel reads as closed (it did: no path to the finish from the creek)
     // The picture.
     seeThrough: 1.9,     // m — the bottom stops showing through the water at this depth
     pxU: 5,              // world units per pixel of the ground image
@@ -531,9 +532,16 @@ const TIDE = {
     function routeCost(grid, nid, tArr, now) {
         const T = state.tide;
         if (!T || !grid._elev) return 1;
-        const d = levelFast(tArr) - grid._elev[nid] - routeMargin(tArr, now);
+        const z = grid._elev[nid];
+        const d = levelFast(tArr) - z - routeMargin(tArr, now);
         if (d < T.draft) return 0;
-        const c = d - T.draft;
+        // The price is the SLOWER of the water on arrival and the water `earlyPrice` seconds
+        // before it: the boat spends its last seconds before a cell in that water, and a
+        // route that reaches a shelf the moment it floods is priced as the crawl it will be
+        // (the clock is 5–10 s optimistic on a shelf; a metre of tide at this period).
+        const dEarly = levelFast(Math.max(now == null ? clock() : now, tArr - T.earlyPrice)) - z - routeMargin(tArr, now);
+        const dd = Math.min(d, Math.max(T.draft, dEarly));
+        const c = dd - T.draft;
         if (c >= T.free) return 1;
         const s = c / T.free;
         const m = T.minMul + (1 - T.minMul) * s * s * (3 - 2 * s);
@@ -929,7 +937,7 @@ const TIDE = {
             phase0: tideDoc.phase0 != null ? +tideDoc.phase0 : C.phase0,
             draft: C.draft, free: C.free, minMul: C.minMul, refloat: C.refloat, agroundMin: C.agroundMin, pushKt: C.pushKt,
             fillKt: tideDoc.fillKt != null ? +tideDoc.fillKt : C.fillKt, fillDepth: C.fillDepth, fillReach: C.fillReach,
-            botMargin: C.botMargin, lead: C.lead, leadMargin: C.leadMargin, stampEvery: C.stampEvery, maxWait: C.maxWait, horizonMargin: C.horizonMargin, horizonCap: C.horizonCap,
+            botMargin: C.botMargin, lead: C.lead, leadMargin: C.leadMargin, stampEvery: C.stampEvery, maxWait: C.maxWait, horizonMargin: C.horizonMargin, horizonCap: C.horizonCap, earlyPrice: C.earlyPrice,
             marshZ: C.marshZ,
             withies: Array.isArray(tideDoc.withies) ? tideDoc.withies.filter(w => w && isFinite(+w.x) && isFinite(+w.y)) : [],
             field

@@ -996,6 +996,12 @@ function pathSailable(grid, from, to) {
     // other cost. `waitUntil[nid]` remembers the clock the step was taken at, so the path
     // can tell the helm where to hold and until when (Tide.routeWait).
     const waitUntil = tideOn ? new Float32Array(size) : null;
+    // THE CLOCK THE TIDE IS READ AGAINST is sailing time alone — the polar's step cost and
+    // the water's own multipliers — never the route HINTS (stand-off-walls, lee shore, jams)
+    // that also live in gScore. Priced off gScore, a run up a 460u corridor between two
+    // marsh islands "arrived" 35 s late, the router found the sill open on the NEXT tide,
+    // and a third of the fleet reached it at low water and sat there (Sep 16, the neck).
+    const tAcc = tideOn ? new Float64Array(size) : null;
     const alwaysWet = tideOn ? (id) => grid._elev[id] < state.tide.mid - state.tide.amp - state.tide.draft - state.tide.botMargin : null;
     const MAX_WAIT = tideOn ? state.tide.maxWait : 0;
     // Float64, and improvements must clear an epsilon: storing float64 candidates
@@ -1065,7 +1071,7 @@ function pathSailable(grid, from, to) {
             const nid = b * N + a;
             let tideMul = 1, tideWait = 0, tideWaitUntil = 0;
             if (tideOn) {
-                const tArr = tideNow + gScore[cur] * tideSec;
+                const tArr = tideNow + tAcc[cur];
                 tideMul = Tide.routeCost(grid, nid, tArr, tideNow);
                 if (tideMul <= 0) {
                     // Dry on arrival. Hold here for it, if here is always wet and the water
@@ -1102,6 +1108,8 @@ function pathSailable(grid, from, to) {
             // itself (VMG), reaches are cheap, and time is a true objective — unlike
             // hint weights it cannot invert the topology.
             let base = TF ? TF[wbin[nid] * 8 + k] : 1;
+            // the polar's own time for this step, before the corridor model — the tide's clock
+            const tBase = base;
             // CORRIDOR-AWARE UPWIND COST: in water narrower than PAD cells the best
             // achievable speed toward an unsailable bearing degrades by W/(W+L) —
             // measured, not derived (see buildTimeCost). Gated to c < PAD so open
@@ -1181,15 +1189,21 @@ function pathSailable(grid, from, to) {
                 gScore[nid] = cand;
                 prev[nid] = cur;
                 if (waitUntil) waitUntil[nid] = tideWaitUntil;
+                // seconds of sailing to here: the polar's step and the water's multipliers, no
+                // hints and no corridor model (measured: bots transit the neck in 33 s where the
+                // corridor-taxed step said 62)
+                if (tAcc) tAcc[nid] = tAcc[cur] + (di && dj ? Math.SQRT2 : 1) * tBase * (grid._shoal ? grid._shoal[nid] : 1) * tideMul * tideSec + (tideWait ? tideWait * tideSec : 0);
                 push(cand + h(nid), nid);
             }
         }
     }
     if (prev[gi] === -1 && gi !== si) return null;
     const out = [];
+    const times = tAcc ? [] : null;
     let cur = gi, wait = null;
     while (cur !== si) {
         const ci = cur % N; out.push(grid.world(ci, (cur - ci) / N));
+        if (times) times.push(tAcc[cur]);
         // The LAST wait on the way back is the FIRST on the way out: where the helm holds.
         if (waitUntil && waitUntil[cur] > 0) { const pc = prev[cur], pi = pc % N; wait = { x: grid.world(pi, (pc - pi) / N), until: waitUntil[cur] }; }
         cur = prev[cur];
@@ -1197,6 +1211,8 @@ function pathSailable(grid, from, to) {
     out.push(grid.world(s[0], s[1]));
     out.reverse();
     if (wait) out.wait = { x: wait.x[0], y: wait.x[1], until: wait.until };
+    // the tide clock along the path (seconds from now), for probes and the helm's hold
+    if (times) { times.push(0); times.reverse(); out.times = times; }
     return out;
 }
 

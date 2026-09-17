@@ -135,13 +135,18 @@ const MAIN = spline([
     [1300, -5350],   // and back west round the head's meander
     [300, -5750],
     [-700, -6150],
-    [-800, -6900],   // the last turn north
+    [-800, -6900],   // the turn north
     [100, -7350],
-    [1100, -7600],   // the finish approach
-    [1500, -8200]    // and the water beyond the line: deep to the head
-], 7);
+    [1000, -7650],   // THE FOURTH SECTION (Sep 16, "more to sail"): the channel bulges east
+    [1500, -8300],   // round the delta bar
+    [1150, -9000],
+    [300, -9350],    // and swings back north-west to the head
+    [-500, -9800],
+    [-700, -10500],  // the finish approach
+    [-300, -11200]   // and the water beyond the line: deep to the head
+], 6);
 // The channel's rim-to-rim width along the main line: a wide mouth, 5–8 hulls elsewhere.
-const mainWidth = (s) => s < 0.05 ? 1500 : s < 0.09 ? 1500 - (s - 0.05) / 0.04 * 800 : s < 0.7 ? 700 : s < 0.95 ? 600 : 600 + (s - 0.95) / 0.05 * 500;
+const mainWidth = (s) => s < 0.045 ? 1500 : s < 0.08 ? 1500 - (s - 0.045) / 0.035 * 800 : s < 0.62 ? 700 : s < 0.96 ? 580 : 580 + (s - 0.96) / 0.04 * 500;
 
 // The flood creek: leaves the main channel just past the west bend and rejoins before the
 // finish approach, inside the big turn — shorter, shallower, its own stream, and a sill.
@@ -180,9 +185,10 @@ const add = (kind, outer, extra = {}) => { shapes.push(Object.assign({ id: `${ki
 const BASIN = spline([
     [-1000, 4700], [-1800, 4200], [-2900, 3500], [-3300, 2500], [-3100, 1500], [-3300, 400],
     [-3500, -900], [-3400, -2100], [-3000, -3300], [-2400, -4300], [-2000, -5400], [-1900, -6600],
-    [-1300, -7600], [-200, -8300], [1200, -8500], [2400, -8100], [2900, -7000], [3000, -5800], [2900, -4700], [2700, -3600], [2700, -2900], [3100, -1800],
+    [-1800, -7700], [-2000, -8800], [-1800, -9900], [-1400, -10900], [-500, -11600], [500, -11500], [1100, -10700],
+    [1500, -9800], [2500, -9100], [2900, -8000], [3000, -7000], [3000, -5800], [2900, -4700], [2700, -3600], [2700, -2900], [3100, -1800],
     [3300, -600], [3400, 800], [3300, 2200], [3000, 3200], [2600, 3900], [1700, 4700]
-], 5).map(p => [R(p[0]), R(p[1])]);   // OPEN: from the west side of the mouth round the head to the east side
+], 4).map(p => [R(p[0]), R(p[1])]);   // OPEN: from the west side of the mouth round the head to the east side
 // The shore is the land NORTH of the coast (y ≤ 4700) with the basin as a hole; the sea to
 // the south is open water, with the spits and the two points laid in front of the coast.
 // One simple ring rather than a rect with a hole: the coast runs in from the world's edge,
@@ -190,7 +196,7 @@ const BASIN = spline([
 // The open coast either side of the mouth is a wavering line, not a ruler's edge.
 const coastE = spline([[6000, 4650], [5200, 4780], [4400, 4620], [3600, 4760], [2900, 4640], [2300, 4720], [1700, 4700]], 4);
 const coastW = spline([[-1000, 4700], [-1600, 4760], [-2300, 4620], [-3000, 4780], [-3800, 4640], [-4600, 4760], [-5300, 4660], [-6000, 4720]], 4);
-const SHORE = [[-6000, -10000], [6000, -10000]].concat(coastE.slice(0, -1)).concat(BASIN.slice().reverse()).concat(coastW.slice(1)).map(p => [R(p[0]), R(p[1])]);
+const SHORE = [[-6000, -13000], [6000, -13000]].concat(coastE.slice(0, -1)).concat(BASIN.slice().reverse()).concat(coastW.slice(1)).map(p => [R(p[0]), R(p[1])]);
 add('flats-marsh', SHORE, { id: 'marsh-shore', name: 'The shore' });
 
 // The sea: deep everywhere south of the mouth, and the main channel through the basin.
@@ -240,13 +246,62 @@ add('flats-pool', blob(1700, -3100, 260, 200, 12, 0.2), { id: 'pool-east', name:
 add('flats-pool', blob(-700, -5300, 240, 200, 12, 0.2), { id: 'pool-head', name: 'Head pool', elev: -1.8 });
 add('flats-pool', blob(-1200, 3600, 280, 200, 12, 0.2), { id: 'pool-sw', name: 'Roost pool', elev: -1.8 });
 
+// ── MORE PASSAGES (Wes, Sep 16 after five laps: "more passages would be good") ──────
+// Each is a pool to reach and wait in, a shelf, and a sill — but with a different KEY.
+//
+// THE WEST GAMBLE: the other way across the first loop, for a boat that reaches the mouth
+// later than the leaders. A creek from the mouth's west side to the roost pool, a long
+// shelf north past Heron flat to the middle pool, and a high sill onto the traverse: the
+// shelf floods later and drains sooner than the wantij's, so this is the crossing you take
+// AT the top of the tide, and wait in the middle pool for.
+const GAMBLE_IN = spline([[-150, 4350], [-600, 4050], [-1000, 3750], [-1200, 3600]], 6);
+const GAMBLE = spline([[-1200, 3600], [-1150, 2900], [-900, 2100], [-500, 1500], [-350, 1150]], 6);
+const GAMBLE_OUT = spline([[-350, 1150], [-450, 750], [-550, 350]], 6);
+add('flats-channel', ribbon(GAMBLE_IN, 380, 0.1), { id: 'gamble-creek', name: 'Roost creek', elev: -2.2 });
+add('flats-flat', ribbon(GAMBLE, 480, 0.08), { id: 'gamble-shelf', name: 'The west gamble', elev: -0.6 });
+add('flats-flat', ribbon(GAMBLE_OUT, 440, 0.08), { id: 'gamble-out', name: 'Gamble exit', elev: -0.75 });
+add('flats-bar', ribbon(spline([[-800, 420], [-550, 470], [-300, 430]], 4), 240), { id: 'gamble-sill', name: 'Gamble sill', elev: -0.25 });
+
+// THE NECK: across the west bend's interior, from the traverse north to the upper leg,
+// with a pool beside Curlew flat to wait in. Saves the bend; opens for a third of the cycle.
+const NECK_S = spline([[-1150, -250], [-1250, -700], [-1300, -1150]], 6);
+const NECK_N = spline([[-1300, -1150], [-1200, -1700], [-1100, -2400], [-1000, -3000], [-950, -3450]], 6);
+add('flats-pool', blob(-1300, -1200, 260, 240, 12, 0.18), { id: 'pool-neck', name: 'Neck pool', elev: -2.0 });
+add('flats-flat', ribbon(NECK_S, 440, 0.08), { id: 'neck-s', name: 'The neck (south)', elev: -0.9 });
+add('flats-flat', ribbon(NECK_N, 460, 0.08), { id: 'neck-n', name: 'The neck (north)', elev: -0.85 });
+add('flats-bar', ribbon(spline([[-1200, -3300], [-950, -3340], [-700, -3280]], 4), 250), { id: 'neck-sill', name: 'Neck sill', elev: -0.45 });
+
+// THE HEAD CUT: Wes's own line across the head's meander, made a marked passage — west of
+// the diamond island through the head pool, a sill onto the last turn. The creek up the
+// east side is the other key to the same lock.
+const HEADCUT = spline([[-750, -4050], [-750, -4700], [-700, -5300], [-550, -5900], [-400, -6450]], 6);
+add('flats-flat', ribbon(HEADCUT, 460, 0.08), { id: 'head-cut', name: 'The head cut', elev: -0.9 });
+add('flats-bar', ribbon(spline([[-650, -6700], [-400, -6740], [-150, -6680]], 4), 250), { id: 'head-sill', name: 'Head sill', elev: -0.5 });
+
+// THE DELTA CUT (the fourth section): the channel bulges east round the delta bar; a short
+// shelf goes straight up its west side from the turn to the head reach, with a pool in the
+// middle and a sill at the top. The smallest saving of the six, and the last chance.
+add('flats-marsh', blob(950, -8450, 300, 330, 12, 0.2, 0.4), { id: 'isle-delta', name: 'Delta bar' });
+const DELTA = spline([[350, -7550], [250, -8100], [150, -8650], [200, -9150]], 6);
+add('flats-pool', blob(180, -8400, 220, 200, 12, 0.2), { id: 'pool-delta', name: 'Delta pool', elev: -1.9 });
+add('flats-flat', ribbon(DELTA, 420, 0.08), { id: 'delta-cut', name: 'The delta cut', elev: -0.85 });
+add('flats-bar', ribbon(spline([[-50, -9150], [200, -9190], [450, -9130]], 4), 240), { id: 'delta-sill', name: 'Delta sill', elev: -0.45 });
+add('flats-marsh', blob(-1100, -9300, 380, 300, 12, 0.2, 0.2), { id: 'isle-head-w', name: 'Head marsh' });
+add('flats-pool', blob(1900, -9600, 230, 200, 12, 0.2), { id: 'pool-delta-e', name: 'East delta pool', elev: -1.8 });
+
+// Stepping stones: pools a boat caught on the flats can reach and sit out the ebb in.
+add('flats-pool', blob(1900, 2900, 220, 180, 12, 0.2, 0.3), { id: 'pool-loop1-e', name: 'East loop pool', elev: -1.8 });
+add('flats-pool', blob(-2000, 700, 230, 200, 12, 0.2), { id: 'pool-heron', name: 'Heron pool', elev: -1.8 });
+add('flats-pool', blob(1200, -2400, 240, 200, 12, 0.2, 0.5), { id: 'pool-egret', name: 'Egret pool', elev: -1.8 });
+add('flats-pool', blob(-1700, -4300, 220, 200, 12, 0.2), { id: 'pool-nw', name: 'Head-island pool', elev: -1.8 });
+
 // ── THE COURSE ───────────────────────────────────────────────────────────────
 const marks = [
     { id: 'start-pin',  x: -80,  y: 5950, kind: 'inflatable' },
     { id: 'start-boat', x: 920,  y: 5950, kind: 'inflatable' },
     { id: 'mark-top',   x: 420,  y: 7150, kind: 'inflatable' },
-    { id: 'fin-a',      x: 1750, y: -7850, kind: 'inflatable' },
-    { id: 'fin-b',      x: 1050, y: -7850, kind: 'inflatable' }
+    { id: 'fin-a',      x: -250, y: -10750, kind: 'inflatable' },
+    { id: 'fin-b',      x: -950, y: -10750, kind: 'inflatable' }
 ];
 const lines = [{ id: 'start', marks: ['start-pin', 'start-boat'] }, { id: 'finish', marks: ['fin-a', 'fin-b'] }];
 const route = [
@@ -262,7 +317,7 @@ const WIND_DIR = 195 * Math.PI / 180;
 const wind = { regions: [
     { id: 'wind-sea',   name: 'Offshore',       poly: rect(-7000, 4000, 7000, 9000),  falloff: 1400, direction: WIND_DIR, dirVar: 0.14, speed: 16.5, speedVar: 1.5, period: 43 },
     { id: 'wind-lower', name: 'Lower estuary',  poly: rect(-7000, -1500, 7000, 4000), falloff: 1400, direction: WIND_DIR, dirVar: 0.16, speed: 15, speedVar: 1.5, period: 43 },
-    { id: 'wind-upper', name: 'Upper estuary',  poly: rect(-7000, -11000, 7000, -1500), falloff: 1400, direction: WIND_DIR + 0.05, dirVar: 0.18, speed: 13.5, speedVar: 1.5, period: 43 }
+    { id: 'wind-upper', name: 'Upper estuary',  poly: rect(-7000, -14000, 7000, -1500), falloff: 1400, direction: WIND_DIR + 0.05, dirVar: 0.18, speed: 13.5, speedVar: 1.5, period: 43 }
 ] };
 
 // ── CURRENT ──────────────────────────────────────────────────────────────────
@@ -300,6 +355,28 @@ withies.push({ x: 320, y: 720, hand: 'port', id: 'sill-w' }, { x: 800, y: 700, h
 withies.push({ x: 900, y: -7130, hand: 'port', id: 'creek-sill-w' }, { x: 1620, y: -7060, hand: 'stbd', id: 'creek-sill-e' });
 withies.push({ x: 1300, y: -4200, hand: 'port', id: 'creek-in-w' }, { x: 1600, y: -4300, hand: 'stbd', id: 'creek-in-e' });
 withies.push({ x: 440, y: 4120, hand: 'port', id: 'wantij-in-w' }, { x: 820, y: 4080, hand: 'stbd', id: 'wantij-in-e' });
+withies.push({ x: -820, y: 440, hand: 'port', id: 'gamble-sill-w' }, { x: -280, y: 420, hand: 'stbd', id: 'gamble-sill-e' });
+withies.push({ x: -1220, y: -3320, hand: 'port', id: 'neck-sill-w' }, { x: -680, y: -3300, hand: 'stbd', id: 'neck-sill-e' });
+withies.push({ x: -1380, y: -260, hand: 'port', id: 'neck-in-w' }, { x: -920, y: -240, hand: 'stbd', id: 'neck-in-e' });
+withies.push({ x: -670, y: -6720, hand: 'port', id: 'head-sill-w' }, { x: -130, y: -6660, hand: 'stbd', id: 'head-sill-e' });
+withies.push({ x: -990, y: -4040, hand: 'port', id: 'head-in-w' }, { x: -510, y: -4060, hand: 'stbd', id: 'head-in-e' });
+withies.push({ x: -420, y: 4180, hand: 'port', id: 'gamble-in-w' }, { x: 60, y: 4340, hand: 'stbd', id: 'gamble-in-e' });
+withies.push({ x: -70, y: -9170, hand: 'port', id: 'delta-sill-w' }, { x: 470, y: -9110, hand: 'stbd', id: 'delta-sill-e' });
+withies.push({ x: 120, y: -7500, hand: 'port', id: 'delta-in-w' }, { x: 580, y: -7560, hand: 'stbd', id: 'delta-in-e' });
+edgeWithies(GAMBLE, 220, 700, 'gamble');
+edgeWithies(NECK_N, 210, 700, 'neck');
+edgeWithies(HEADCUT, 210, 700, 'headcut');
+
+// ── THE SCALE ────────────────────────────────────────────────────────────────
+// A whole-venue scale, applied to the geometry at emit (author in base units). Tried at
+// 1.15 after Wes's five laps (best 2:27.6 against a 2:45–3:00 target) and set aside on his
+// call — "extend it a bit so there is more to sail, not just a larger area of the same
+// stuff" — for the head's fourth section. Kept as a knob.
+const SCALE = 1.0;   // Wes: extend the estuary rather than inflate it — the fourth section below is the length
+const sc = (p) => [R(p[0] * SCALE), R(p[1] * SCALE)];
+for (const sh of shapes) { sh.outer = sh.outer.map(sc); sh.holes = (sh.holes || []).map(h => h.map(sc)); }
+for (const m of marks) { m.x = R(m.x * SCALE); m.y = R(m.y * SCALE); }
+for (const w of withies) { w.x = R(w.x * SCALE); w.y = R(w.y * SCALE); }
 
 // ── THE DOCUMENT ─────────────────────────────────────────────────────────────
 const doc = {
@@ -314,8 +391,8 @@ const doc = {
         hazards: 'Drying flats, the sill, the stream'
     },
     world: {
-        size: 16000,
-        boundary: { poly: [[-3700, -8600], [3700, -8600], [3700, 8000], [-3700, 8000]], circle: null }
+        size: 20000,
+        boundary: { poly: [[-3700, -11600], [3700, -11600], [3700, 8000], [-3700, 8000]].map(sc), circle: null }
     },
     tide: { period: 60, amp: 1.0, mid: 0, phase0: 0.733, fillKt: 0.55, withies },   // HW 8 s after the gun, then every minute: the sill is open when a well-sailed leader reaches it
     shapes,
@@ -323,7 +400,8 @@ const doc = {
         description: 'Beat to the offshore mark, round to starboard, run in through the mouth and race the channel round the basin to the finish at the head — or cross the flats while the tide lets you.',
         marks, lines, route, cutoff: 480
     },
-    wind, current,
+    wind: { regions: wind.regions.map(r => Object.assign({}, r, { poly: r.poly.map(sc) })) },
+    current: { regions: current.regions.map(r => Object.assign({}, r, { poly: r.poly.map(sc), falloff: R(r.falloff * SCALE) })) },
     palette: { baseColor: '#3a6394', deepColor: '#274a72', shallowColor: '#7aa6d4', shorelineColor: '#e0b866' },
     props: []
 };

@@ -35,7 +35,9 @@ const mmss = (s) => s == null ? '  DNF' : `${Math.floor(s / 60)}:${String(Math.f
             const doc = state.course.doc;
             const shapeOf = (id) => doc.shapes.find(s => s.id === id);
             const pir = (x, y, ring) => { let ins = false; for (let a = 0, b = ring.length - 1; a < ring.length; b = a++) { const xi = ring[a][0], yi = ring[a][1], xj = ring[b][0], yj = ring[b][1]; if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) ins = !ins; } return ins; };
-            const zones = { wantij: shapeOf('wantij-corridor'), pointbar: shapeOf('point-bar'), creek: shapeOf('creek-flood'), sill: shapeOf('wantij-sill'), creeksill: shapeOf('creek-sill') };
+            const zones = { wantij: shapeOf('wantij-corridor'), sill: shapeOf('wantij-sill'), gamble: shapeOf('gamble-shelf'), gsill: shapeOf('gamble-sill'),
+                            pointbar: shapeOf('point-bar'), neck: shapeOf('neck-n'), nsill: shapeOf('neck-sill'), headcut: shapeOf('head-cut'), hsill: shapeOf('head-sill'),
+                            creek: shapeOf('creek-flood'), creeksill: shapeOf('creek-sill') };
             const events = [];
             const inner = window.onRaceEvent;
             window.onRaceEvent = (ty, d) => {
@@ -74,7 +76,8 @@ const mmss = (s) => s == null ? '  DNF' : `${Math.floor(s / 60)}:${String(Math.f
         const sorted = r.boats.slice().sort((a, b) => (a.fin == null ? 1e9 : a.fin) - (b.fin == null ? 1e9 : b.fin));
         for (const b of sorted) {
             const v = b.visits;
-            const route = [v.wantij ? `wantij${v.sill ? '+sill' : ''}` : '', v.pointbar ? 'pointbar' : '', v.creek ? `creek${v.creeksill ? '+sill' : ''}` : ''].filter(Boolean).join(' ') || 'channel';
+            const route = [v.wantij ? `wantij${v.sill ? '+' : ''}` : '', v.gamble ? `gamble${v.gsill ? '+' : ''}` : '', v.pointbar ? 'pbar' : '', v.neck ? `neck${v.nsill ? '+' : ''}` : '',
+                           v.headcut ? `headcut${v.hsill ? '+' : ''}` : '', v.creek ? `creek${v.creeksill ? '+' : ''}` : ''].filter(Boolean).join(' ') || 'channel';
             console.log(`  ${mmss(b.fin).padStart(6)}  ${b.name.padEnd(10)} aground ${String(b.agroundN).padStart(2)}x ${String(b.agroundS).padStart(3)}s  leg ${b.leg}  ${route}`);
         }
         const ag = r.events.filter(e => e.ty === 'aground');
