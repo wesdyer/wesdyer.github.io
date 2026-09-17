@@ -277,6 +277,15 @@ add('flats-bar', ribbon(spline([[300, 700], [560, 740], [820, 680]], 4), 260), {
 // The POINT BAR: a shelving inside at the west bend, so the higher water cuts tighter.
 add('flats-flat', spline([[-1500, -300], [-2000, -700], [-2250, -1250], [-2350, -1900], [-2250, -2450], [-1950, -2500], [-1750, -2100], [-1600, -1500], [-1500, -900], [-1400, -400]], 4), { id: 'point-bar', name: 'Point bar', elev: -0.95 });   // reaches the channel at its north end (it stopped 350u short on a lip of +0.5 m flats)
 
+// MORE POINT BARS (Wes, Sep 16 evening: "add point bars at the edge of each of the river
+// bends"). Every meander deposits one on its inside, so every bend whose inside is not
+// already a passage's sill gets a shelf: the turn onto the traverse at the top of the first
+// loop, the head meander's bulge round the diamond island, and the last turn before the
+// finish. Slightly different heights, so their windows differ; each reaches the channel.
+add('flats-flat', spline([[1350, 780], [1750, 780], [2100, 900], [2350, 1150], [2400, 1450], [2150, 1520], [1850, 1330], [1550, 1120], [1300, 950]], 3), { id: 'point-bar-traverse', name: 'Traverse point bar', elev: -1.0 });
+add('flats-flat', spline([[550, -4250], [950, -4350], [1250, -4650], [1200, -5100], [1000, -5450], [700, -5600], [520, -5500], [750, -5250], [880, -4950], [800, -4680], [600, -4480]], 3), { id: 'point-bar-diamond', name: 'Diamond point bar', elev: -0.9 });
+add('flats-flat', spline([[-50, -9550], [350, -9750], [300, -10150], [0, -10550], [-300, -10900], [-550, -10700], [-450, -10300], [-250, -9950]], 3), { id: 'point-bar-finish', name: 'Finish point bar', elev: -1.05 });
+
 // The creek's sill at its head, and a mud tongue across its middle so it costs something
 // near slack water.
 add('flats-bar', ribbon(spline([[900, -7100], [1250, -7150], [1600, -7050]], 4), 280), { id: 'creek-sill', name: 'Creek sill', elev: -0.5 });
@@ -420,6 +429,9 @@ const passages = [
     { id: 'wantij',   name: 'The wantij',      pts: CREEK_IN.concat(CROSSING.slice(1)).concat([[520, 300], [520, 150]]) },
     { id: 'gamble',   name: 'The west gamble', pts: GAMBLE_IN.concat(GAMBLE.slice(1)).concat(GAMBLE_OUT.slice(1)).concat([[-600, 150], [-650, -50]]) },
     { id: 'pointbar', name: 'The point bar',   pts: [[-1400, -400], [-1650, -650], [-1900, -1000], [-2050, -1400], [-2100, -1900], [-2150, -2300], [-2300, -2600]] },
+    { id: 'pb-traverse', name: 'Traverse point bar', pts: [[2450, 1650], [2300, 1350], [2050, 1050], [1750, 900], [1400, 850], [1150, 650]] },
+    { id: 'pb-diamond',  name: 'Diamond point bar',  pts: [[500, -4150], [900, -4400], [1100, -4700], [1050, -5100], [900, -5400], [650, -5600], [400, -5750]] },
+    { id: 'pb-finish',   name: 'Finish point bar',   pts: [[100, -9450], [200, -9800], [150, -10150], [-100, -10500], [-350, -10800], [-500, -11000]] },
     { id: 'neck',     name: 'The neck',        pts: [[-1100, 100]].concat(NECK_S).concat(NECK_N.slice(1)).concat([[-940, -3700], [-930, -3950]]) },
     { id: 'headcut',  name: 'The head cut',    pts: [[-750, -3850]].concat(HEADCUT).concat([[-350, -6800], [-300, -7100]]) },
     { id: 'creek',    name: 'The flood creek', pts: CREEK.concat([[1000, -7500]]) },

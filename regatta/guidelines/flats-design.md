@@ -402,3 +402,15 @@ rasterised 1100u past the arena (the view's diagonal plus the camera look-ahead 
 boat on the limit), so the river's water and banks are the tide's own, not the marsh
 fallback. Every ring is Douglas–Peucker simplified at 14u at emit — 2026 → 953 vertices
 — under the ~1.5k budget with the river in.
+
+### 7.4 Point bars on every free bend (Sep 16, evening)
+
+Wes: the point bar is the mechanic he likes most — cut the corner, risk the mud — so every
+bend whose inside is not already a passage's sill now has one: the turn onto the traverse
+at the top of the first loop (−1.0 m), the head meander's bulge round the diamond island
+(−0.9), and the last turn before the finish (−1.05), beside the original west bend
+(−0.95). Bends left alone, on purpose: the wantij's sill, the neck's exit, the head cut's
+exit and the delta cut already ARE the inside line there, and the first loop's inside is
+the wantij island with no water between it and the channel. Each bar is free for 28–31 s
+and afloat 38–41 s of the 60 s cycle (probe), so the inside line is there most of the
+time and gone for the twenty seconds either side of low water.

@@ -1043,8 +1043,10 @@ across the wantij is ahead); the path line and the ruler on the channel only.
   afloat), then a 1300u shelf (−0.8 m) crosses the divide to a sill (−0.45 m) at the
   traverse. Open for a leader who reaches the pool as the water comes up; a boat 15–20 s
   behind finds the sill closing and waits or turns back. Saves ~25 s.
-- **The point bar** (the west bend). The inside of the bend is a shelf at −0.95 m: the
-  higher the water, the tighter the cut. No gate — a radius that follows the tide.
+- **The point bars.** The inside of every bend that is not already a passage's sill is a
+  shelf (−0.9 to −1.05 m): the west bend, the turn onto the traverse, the diamond bulge,
+  the last turn before the finish. The higher the water, the tighter the cut; no gate —
+  a radius that follows the tide, gone for twenty seconds either side of low water.
 - **The west gamble** (first loop, the other key). A creek from the mouth's west side to
   the roost pool, a long shelf (−0.6 m) north past Heron flat to the middle pool, and a
   high sill (−0.25 m) onto the traverse: the crossing you take AT the top of the tide and
