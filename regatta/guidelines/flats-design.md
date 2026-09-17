@@ -388,3 +388,17 @@ the throat) is under deep water; bars carry their own ramp (`feather`, in the do
 so a narrow bar reaches its crest even rising out of −4 m; beaches taper to nothing.
 The west gamble's creek moved north of the recurve (the hook had landed on its entrance).
 Every passage still fills (probe: gamble free 14.6 s, width 460u).
+
+### 7.3 The world beyond the arena (Sep 16, evening)
+
+Wes: "all visible areas should look right and not be the end of the world." Two things
+were: the estuary stopped dead at the head, and the minimap — which fits the arena's long
+axis into its frame, so its width margins reach ±9800u — showed the shore polygon's edge
+at ±6000 as an island in open sea. Now: the channel continues past the finish as a river
+(narrowing 1080 → 300u) that winds ~5000u beyond the sailing limit through a marsh valley
+with an island and two pools (scenery: the arena ends at −11600); the shore reaches
+±11000 and −24000, the sea to +16000, the wind regions with them; and the tide field is
+rasterised 1100u past the arena (the view's diagonal plus the camera look-ahead from a
+boat on the limit), so the river's water and banks are the tide's own, not the marsh
+fallback. Every ring is Douglas–Peucker simplified at 14u at emit — 2026 → 953 vertices
+— under the ~1.5k budget with the river in.

@@ -45,6 +45,7 @@ const TIDE = {
     pushKt: 0.8,         // kt — the crew shoving a grounded hull toward the channel
     // The field.
     res: 16,             // world units per raster cell
+    rasterPad: 1100,     // u — the raster reaches this far past the arena: the view's diagonal plus the camera's look-ahead from a boat on the limit
     rimZ: -1.6,          // m — the ground at a channel's edge (0.6 m of water at LW: afloat, slow)
     marshZ: 1.4,         // m — the ground at the marsh edge (never wet: 0.4 m above HW)
     bedFeather: 110,     // u — a channel drops from its rim to its bed over this
@@ -241,7 +242,9 @@ const TIDE = {
         if (bnd.poly) bboxOf(bnd.poly, bb);
         else if (bnd.circle) bb = [bnd.circle.x - bnd.circle.r, bnd.circle.y - bnd.circle.r, bnd.circle.x + bnd.circle.r, bnd.circle.y + bnd.circle.r];
         else { const s = (doc.world && doc.world.size) || 13000; bb = [-s / 2, -s / 2, s / 2, s / 2]; }
-        const PAD = 600, res = C.res;
+        // Padded well past the arena: the player at the finish looks straight up the river,
+        // and the tide's ground has to be real there too (the marsh polygon covers the rest).
+        const PAD = C.rasterPad, res = C.res;
         const x0 = bb[0] - PAD, y0 = bb[1] - PAD;
         const W = Math.ceil((bb[2] + PAD - x0) / res), H = Math.ceil((bb[3] + PAD - y0) / res);
         const F = { W, H, x0, y0, res, n: W * H };
