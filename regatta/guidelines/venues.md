@@ -1079,6 +1079,10 @@ across the wantij is ahead); the path line and the ruler on the channel only.
 **The question it asks.** *Is there water on the sill yet — and will there still be when
 I get there?*
 
+- **The stream** (Sep 16 night). 1.4 kt along the channel, 2.2 in the throat, 1.5 up the
+  flood creek, 0.5 at sea; flooding up the estuary, ebbing back at 80%, slack at the turns.
+  A tenth of boat speed and more, felt on the SOG and seen in the lanes on the water.
+
 **Signature moment.** Watching the flood run across the sand toward you as you wait in
 the pool, and going the instant the gauge says so.
 

@@ -59,6 +59,7 @@ const TIDE = {
     // Flow.
     flowRef: 1.0,        // a tidal region's `speed` is its knots at the peak rate
     fillKt: 0.55,        // kt — the cross-stream over the flats at the peak rate
+    ebbMul: 1.0,         // the ebb streams' share of the flood's (`doc.tide.ebb`): estuaries flood hard and ebb long
     fillDepth: 1.2,      // m — the fill stream fades out below this depth of water
     fillReach: 1800,     // u — and this far from a channel
     // Bots.
@@ -1170,6 +1171,7 @@ const TIDE = {
             phase0: tideDoc.phase0 != null ? +tideDoc.phase0 : C.phase0,
             draft: C.draft, free: C.free, minMul: C.minMul, refloat: C.refloat, agroundMin: C.agroundMin, pushKt: C.pushKt,
             fillKt: tideDoc.fillKt != null ? +tideDoc.fillKt : C.fillKt, fillDepth: C.fillDepth, fillReach: C.fillReach,
+            ebbMul: tideDoc.ebb != null ? +tideDoc.ebb : C.ebbMul,
             botMargin: C.botMargin, edgeTax: C.edgeTax, lead: C.lead, leadMargin: C.leadMargin, stampEvery: C.stampEvery, maxWait: C.maxWait, horizonMargin: C.horizonMargin, horizonCap: C.horizonCap, earlyPrice: C.earlyPrice,
             marshZ: C.marshZ,
             withies: Array.isArray(tideDoc.withies) ? tideDoc.withies.filter(w => w && isFinite(+w.x) && isFinite(+w.y)) : [],

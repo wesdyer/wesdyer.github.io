@@ -1670,6 +1670,8 @@ const CUR_ASPECT = 13.0;          // length : full width
 const CUR_HALFWIDTH_MIN = 1.1;    // world units — below this the halo has nothing to soften
 const CUR_HALFWIDTH_MAX = 4.2;    // and above it, a lane starts competing with the boats
 const CUR_REF_KT = 3.0;           // the speed at which a lane draws at full alpha
+const CUR_TIDAL_REF_KT = 1.5;     // ...on a tidal venue, whose streams are the story at a third of the river's speed
+const CUR_TIDAL_MAX_ALPHA = 0.40; // and drawn darker there, under the wind waves
 // Flattens the lens. sin() alone puts the whole mark on a taper and only its middle has any
 // body; raising it to a fraction holds the width across the belly and pinches only near the
 // two ends, which is the difference between a lane of water and a dart.
@@ -2168,6 +2170,12 @@ function drawParticles(ctx, layer) {
         // The darkest version of this venue's own water — see currentTintFrom. One fill per
         // streak, no stroke: the outline IS the shape, so width can vary along it.
         const col = activeCurrentColor;
+        // ON A TIDAL VENUE the stream IS the story, and it runs at 1–2 kt where the river
+        // runs at 3–4: the lanes draw at full weight from 1.5 kt and twice as dark, so the
+        // channel visibly runs at mid-tide and stills at slack (Spoonbill Flats: at the
+        // river's tuning a 1.4 kt flood was three faint slivers under the wind waves).
+        // Gated on state.tide so every other venue is byte-identical.
+        const refKt = state.tide ? CUR_TIDAL_REF_KT : CUR_REF_KT, maxAlpha = state.tide ? CUR_TIDAL_MAX_ALPHA : CUR_MAX_ALPHA;
         for (const p of state.particles) {
             if (p.type !== 'current') continue;
             if (!onScreen(p)) continue;
@@ -2180,9 +2188,9 @@ function drawParticles(ctx, layer) {
 
             // Speed drives weight as well as length: a 4 kt lane should look like one next
             // to half a knot of drift, not merely be a longer mark of the same value.
-            const f = Math.min(1, (p.spd || 0) / CUR_REF_KT);
+            const f = Math.min(1, (p.spd || 0) / refKt);
             if (f <= 0.02) continue;
-            const alpha = env * CUR_MAX_ALPHA * (0.35 + 0.65 * f) * (p.jit || 1);
+            const alpha = env * maxAlpha * (0.35 + 0.65 * f) * (p.jit || 1);
 
             const n = streakSpine(p, CUR_TAIL_STEP, CUR_TAIL_PTS);
             if (n < 2) continue;

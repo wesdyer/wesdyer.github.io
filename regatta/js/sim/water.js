@@ -512,7 +512,7 @@ function getCurrentAt(x, y) {
             // Slack at high and low water, by construction. See js/tide.js.
             const f = Tide.flow();
             dir = r.direction + (f < 0 ? Math.PI : 0);
-            sp = r.speed * Math.abs(f);
+            sp = r.speed * Math.abs(f) * (f < 0 ? (state.tide.ebbMul != null ? state.tide.ebbMul : 1) : 1);   // the ebb runs weaker than the flood (doc.tide.ebb)
         } else {
             const osc = r.period > 0 ? Math.sin((state.time / r.period) * Math.PI * 2 + r.phase) : 0;
             dir = r.direction + r.dirVar * osc;

@@ -125,7 +125,9 @@ function streamRegions(line, width, speed, step, idPrefix, falloff) {
         const dir = Math.atan2(b[0] - a[0], -(b[1] - a[1]));   // forward = (sin, -cos): the engine's bearing
         // The hull of the ribbon: a stream region is a soft-edged blend, so a convex patch
         // is right, and a ribbon folded at a tight bend is not a polygon the compiler takes.
-        regs.push({ id: `${idPrefix}-${regs.length + 1}`, poly: hull(ribbon(acc, width)), falloff, direction: R(dir, 4), speed, tidal: true });
+        const mid = acc[acc.length >> 1];
+        const sp = typeof speed === 'function' ? speed(mid[0], mid[1]) : speed;   // a stream may run harder in one reach (the throat)
+        regs.push({ id: `${idPrefix}-${regs.length + 1}`, poly: hull(ribbon(acc, width)), falloff, direction: R(dir, 4), speed: R(sp, 2), tidal: true });
         acc = [b]; accLen = 0;
     };
     for (let i = 1; i < line.length; i++) {
@@ -409,10 +411,19 @@ const wind = { regions: [
 // Tidal streams: `speed` is the knots at the peak rate, flooding along `direction`, ebbing
 // back; the tide's clock scales them (js/tide.js). The main channel carries 0.8 kt, the creek
 // 1.2 (a flood channel), the sea a gentle set through the mouth.
+// THE STREAM'S STRENGTH (Wes, Sep 16 night — "let's do the bump"): the first cut ran 0.8 kt
+// everywhere, a tenth of boat speed, and read as a steady set that changed sign while no
+// one was looking. Real inlets run 1–1.5 kt inside and 2–3 in the throat against boats
+// doing 5–7: a fifth to a third of boat speed. So: 1.4 kt along the channel, 2.2 in the
+// throat with 1.6–1.8 either side of it, 1.5 up the flood creek, 0.5 at sea, and the ebb
+// at 80% of the flood (`tide.ebb`): the flood carries you in. A half-cycle of flood against
+// a half-cycle of ebb is now worth ~9 s over a reach — a rung-2 cut's order — so WHEN you
+// meet each reach matters as well as which cut you take.
+const mainStream = (x, y) => y > 5150 ? 1.6 : y > 3900 ? 2.2 : y > 3200 ? 1.8 : 1.4;   // the delta channel, the throat, the reach inside it, the estuary
 const current = { regions: [
-    { id: 'sea-stream', poly: rect(-4500, 4300, 4500, 8000), falloff: 900, direction: Math.atan2(0, -(-1)) , speed: 0.35, tidal: true }
-].concat(streamRegions(MAIN, (s) => mainWidth(s) + 160, 0.8, 1100, 'main-stream', 220))
- .concat(streamRegions(CREEK, 560, 1.2, 900, 'creek-stream', 180)) };
+    { id: 'sea-stream', poly: rect(-4500, 4300, 4500, 8000), falloff: 900, direction: Math.atan2(0, -(-1)) , speed: 0.5, tidal: true }
+].concat(streamRegions(MAIN, (s) => mainWidth(s) + 160, mainStream, 1100, 'main-stream', 220))
+ .concat(streamRegions(CREEK, 560, 1.5, 900, 'creek-stream', 180)) };
 current.regions[0].direction = 0;    // north: in through the mouth on the flood
 
 // ── WITHIES ──────────────────────────────────────────────────────────────────
@@ -532,7 +543,7 @@ const doc = {
         size: 24000,
         boundary: { poly: [[-3700, -11600], [3700, -11600], [3700, 8000], [-3700, 8000]].map(sc), circle: null }
     },
-    tide: { period: 60, amp: 1.0, mid: 0, phase0: 0.733, fillKt: 0.55, withies, passages },   // HW 8 s after the gun, then every minute: the sill is open when a well-sailed leader reaches it
+    tide: { period: 60, amp: 1.0, mid: 0, phase0: 0.733, fillKt: 0.7, ebb: 0.8, withies, passages },   // HW 8 s after the gun, then every minute: the sill is open when a well-sailed leader reaches it; the ebb streams run at 80% of the flood's
     shapes,
     course: {
         description: 'Beat to the offshore mark, round to starboard, run in through the mouth and race the channel round the basin to the finish at the head — or cross the flats while the tide lets you.',
