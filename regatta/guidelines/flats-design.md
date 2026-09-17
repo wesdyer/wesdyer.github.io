@@ -368,3 +368,23 @@ for 15–29 s a cycle and 420–820u wide at high water.
 | head cut | −0.54 (sill) | 21 | 31 | 680u |
 | flood creek | −0.50 (sill) | 20 | 30 | 680u |
 | delta cut | −0.56 (sill) | 21 | 31 | 420u |
+
+### 7.2 The mouth (Sep 16, evening — "it doesn't look like an estuary")
+
+It didn't: a ruler-straight coast, two sausage-shaped bars and a rectangle of sea whose
+edge ran through the flats. Rebuilt on the shape real inlets share (East Head at
+Chichester Harbour, Dawlish Warren on the Exe, the Wadden inlets):
+- a long **recurved sand spit** on the updrift (west, the wind is SSW) side, dune-topped
+  marsh with a tapered beach on its seaward face, whose tip **hooks into the mouth** as a
+  lower sandy recurve awash near high water;
+- a low **marsh-backed east shore** with a short spit of its own and a narrow beach;
+- the **throat** between them, where the channel narrows to ~900u and is deepest;
+- outside, an **ebb-tidal delta**: the sea's edge bows out round the mouth, crescent
+  **swash bars** flank the channel (steep-sided, awash at low water, a hand under at high),
+  and **marginal flood channels** run between the beach and the bars on either side —
+  the thin lanes of water a flood runs in along the shore.
+The channel ribbon now starts well inside the sea, so its end cap (a straight seam across
+the throat) is under deep water; bars carry their own ramp (`feather`, in the document)
+so a narrow bar reaches its crest even rising out of −4 m; beaches taper to nothing.
+The west gamble's creek moved north of the recurve (the hook had landed on its entrance).
+Every passage still fills (probe: gamble free 14.6 s, width 460u).

@@ -116,8 +116,9 @@ function streamRegions(line, width, speed, step, idPrefix, falloff) {
 // ── THE LINES ────────────────────────────────────────────────────────────────
 // y is DOWN. The sea is south (+y), the head of the estuary north (−y). Wind from 195°.
 const MAIN = spline([
-    [420, 5200],     // in the sea, off the mouth
-    [420, 4500],     // the mouth
+    [420, 6300],     // well inside the sea, so the ribbon's end cap is under deep water
+    [420, 5300],     // the delta channel
+    [420, 4500],     // the throat
     [780, 3850],
     [1750, 3250],    // north-east up the east side
     [2450, 2450],
@@ -144,9 +145,9 @@ const MAIN = spline([
     [-500, -9800],
     [-700, -10500],  // the finish approach
     [-300, -11200]   // and the water beyond the line: deep to the head
-], 6);
+], 5);
 // The channel's rim-to-rim width along the main line: a wide mouth, 5–8 hulls elsewhere.
-const mainWidth = (s) => s < 0.045 ? 1500 : s < 0.08 ? 1500 - (s - 0.045) / 0.035 * 800 : s < 0.62 ? 700 : s < 0.96 ? 580 : 580 + (s - 0.96) / 0.04 * 500;
+const mainWidth = (s) => s < 0.04 ? 1300 : s < 0.075 ? 1300 - (s - 0.04) / 0.035 * 400 : s < 0.11 ? 900 - (s - 0.075) / 0.035 * 200 : s < 0.62 ? 700 : s < 0.96 ? 580 : 580 + (s - 0.96) / 0.04 * 500;   // a broad approach, a 900u throat, the channel
 
 // The flood creek: leaves the main channel just past the west bend and rejoins before the
 // finish approach, inside the big turn — shorter, shallower, its own stream, and a sill.
@@ -182,37 +183,66 @@ let n = 0;
 const add = (kind, outer, extra = {}) => { shapes.push(Object.assign({ id: `${kind.replace('flats-', '')}-${++n}`, kind, outer, holes: [] }, extra)); };
 
 // The basin: the high-water shoreline. The marsh is the whole world with this as a hole.
+// Its two ends at the mouth are the ROOTS of the shore either side: the west spit's inner
+// face and the low east shore (see THE MOUTH below).
 const BASIN = spline([
-    [-1000, 4700], [-1800, 4200], [-2900, 3500], [-3300, 2500], [-3100, 1500], [-3300, 400],
+    [-2800, 4380], [-3050, 3700], [-3300, 2500], [-3100, 1500], [-3300, 400],
     [-3500, -900], [-3400, -2100], [-3000, -3300], [-2400, -4300], [-2000, -5400], [-1900, -6600],
     [-1800, -7700], [-2000, -8800], [-1800, -9900], [-1400, -10900], [-500, -11600], [500, -11500], [1100, -10700],
     [1500, -9800], [2500, -9100], [2900, -8000], [3000, -7000], [3000, -5800], [2900, -4700], [2700, -3600], [2700, -2900], [3100, -1800],
-    [3300, -600], [3400, 800], [3300, 2200], [3000, 3200], [2600, 3900], [1700, 4700]
-], 4).map(p => [R(p[0]), R(p[1])]);   // OPEN: from the west side of the mouth round the head to the east side
-// The shore is the land NORTH of the coast (y ≤ 4700) with the basin as a hole; the sea to
-// the south is open water, with the spits and the two points laid in front of the coast.
-// One simple ring rather than a rect with a hole: the coast runs in from the world's edge,
-// up round the basin, and back out — no keyhole for the compiler to cut.
-// The open coast either side of the mouth is a wavering line, not a ruler's edge.
-const coastE = spline([[6000, 4650], [5200, 4780], [4400, 4620], [3600, 4760], [2900, 4640], [2300, 4720], [1700, 4700]], 4);
-const coastW = spline([[-1000, 4700], [-1600, 4760], [-2300, 4620], [-3000, 4780], [-3800, 4640], [-4600, 4760], [-5300, 4660], [-6000, 4720]], 4);
+    [3300, -600], [3400, 800], [3300, 2200], [3000, 3200], [2700, 3800], [2350, 4150], [2000, 4400]
+], 3).map(p => [R(p[0]), R(p[1])]);   // OPEN: from the west spit's root round the head to the east shore
+
+// ── THE MOUTH (reworked Sep 16 evening — "it doesn't look like an estuary") ──────────
+// The shape every real inlet has (East Head at Chichester, Dawlish Warren on the Exe, the
+// Wadden inlets): on the updrift side a long RECURVED SAND SPIT, dune-topped, whose tip
+// hooks INTO the estuary; opposite it a low, marsh-backed shore with a short spit of its
+// own; between them the THROAT, where the channel is narrowest and deepest; and outside,
+// an EBB-TIDAL DELTA — crescent swash bars either side of the channel, awash at low water,
+// the sea shelving over them. The wind here is from the south-south-west, so the drift
+// runs east and the big spit grows from the west.
+//
+// The spit is part of the SHORE polygon (a peninsula, not an island): the shore's west
+// coast runs in along the spit's outer face to the tip, back along its inner face to the
+// root, then up the basin's west side. The east shore does the same in little.
+const SPIT_OUTER = [[-6000, 4720], [-5300, 4660], [-4600, 4760], [-3800, 4680], [-3000, 4740], [-2300, 4790], [-1600, 4830], [-1050, 4820], [-650, 4700], [-450, 4480], [-480, 4280]];
+const SPIT_INNER = [[-620, 4150], [-820, 4130], [-1150, 4240], [-1600, 4320], [-2150, 4370], [-2800, 4380]];
+const coastW = spline(SPIT_INNER.slice().reverse().concat([[-520, 4200]]).concat(SPIT_OUTER.slice().reverse()), 6);   // root -> tip -> outer face -> west
+const coastE = spline([[6000, 4650], [5200, 4760], [4400, 4640], [3700, 4750], [3100, 4660], [2700, 4560], [2450, 4500], [2200, 4560], [1950, 4520], [1750, 4400], [1900, 4300], [2000, 4400]], 6);   // west along the coast to a short marsh spit, and the basin's east root
 const SHORE = [[-6000, -13000], [6000, -13000]].concat(coastE.slice(0, -1)).concat(BASIN.slice().reverse()).concat(coastW.slice(1)).map(p => [R(p[0]), R(p[1])]);
 add('flats-marsh', SHORE, { id: 'marsh-shore', name: 'The shore' });
 
-// The sea: deep everywhere south of the mouth, and the main channel through the basin.
-add('flats-channel', rect(-6200, 4300, 6200, 8800), { id: 'sea', name: 'The sea', elev: -4 });
+// The sea: deep everywhere south of the mouth, with an edge that wanders along the outer
+// coast (a rectangle's edge was a ruler line through the flats) and the channel through
+// the throat; the delta's flats lie between.
+// The sea's edge hugs the open coast (a narrow foreshore) and bows out round the mouth
+// where the ebb delta's fan lies — the bars stand in that bulge, out of deep water.
+const SEA_EDGE = spline([[-6200, 5020], [-5000, 5080], [-3800, 5000], [-3000, 5100], [-2400, 5250], [-1800, 5500], [-1100, 5620], [-400, 5600], [300, 5560], [1000, 5620], [1700, 5580], [2400, 5400], [3000, 5200], [3700, 5080], [4500, 5040], [5300, 5100], [6200, 5020]], 4);
+add('flats-channel', SEA_EDGE.concat([[6200, 8800], [-6200, 8800]]).map(p => [R(p[0]), R(p[1])]), { id: 'sea', name: 'The sea', elev: -4 });
 add('flats-channel', ribbon(MAIN, mainWidth, 0.10), { id: 'channel-main', name: 'Main channel', elev: -3.0 });
 add('flats-channel', ribbon(CREEK, 420, 0.10), { id: 'creek-flood', name: 'Flood creek', elev: -1.15 });
 
-// The spits at the mouth: sand, high, with marsh behind. The bar polygons overlap the sea so
-// the spit rises out of deep water.
-// The spits: sand hooks growing from the coast's corners into the sea, curving toward the
-// mouth as an ebb delta's do, with a marsh headland at each root. They flank the run in
-// from the mark and give the mouth its gate.
-add('flats-marsh', spline([[-3200, 4650], [-2500, 4700], [-1900, 4900], [-1700, 5250], [-2200, 5500], [-2900, 5400], [-3300, 5100]], 4), { id: 'marsh-sw', name: 'West point' });
-add('flats-marsh', spline([[2400, 4650], [3000, 4700], [3300, 5100], [3000, 5450], [2500, 5450], [2200, 5150], [2200, 4850]], 4), { id: 'marsh-se', name: 'East point' });
-add('flats-bar', spline([[-2000, 5100], [-1400, 5250], [-800, 5400], [-350, 5550], [-250, 5750], [-600, 5850], [-1200, 5700], [-1800, 5550], [-2100, 5350]], 4), { id: 'spit-west', name: 'West spit', elev: 0.9 });
-add('flats-bar', spline([[2450, 5300], [2000, 5550], [1600, 5750], [1350, 5900], [1500, 6100], [1900, 6000], [2300, 5850], [2600, 5600]], 4), { id: 'spit-east', name: 'East spit', elev: 0.9 });
+// The spit's BEACH: a sand apron along its outer face and round the tip, high (dry but for
+// the top of springs), and the tip's RECURVE — the hook of lower sand that curls into the
+// mouth and covers near high water. The east shore has a small beach of its own. Sand
+// bars laid over marsh and sea alike: the bar raises the ground where the marsh is not,
+// and the marsh stays marsh where it is.
+// Beaches taper to nothing at their ends (a square-cut band reads as a road) and the
+// recurve is a hooked ribbon curling into the mouth, not a lump.
+const taper = (w, ends = 0.25) => (s) => 40 + (w - 40) * Math.min(1, Math.min(s, 1 - s) / ends);
+add('flats-bar', ribbon(spline([[-3600, 4860], [-2800, 4920], [-2000, 4960], [-1300, 4980], [-800, 4900], [-500, 4720], [-380, 4480], [-420, 4230]], 5), taper(240, 0.2), 0.14), { id: 'spit-beach', name: 'Spit beach', elev: 0.7, feather: 90 });
+add('flats-bar', ribbon(spline([[-430, 4230], [-330, 4060], [-380, 3900], [-560, 3840], [-720, 3930]], 5), taper(200, 0.3), 0.12), { id: 'spit-recurve', name: 'The recurve', elev: 0.25, feather: 60 });
+add('flats-bar', ribbon(spline([[3400, 4780], [2800, 4740], [2300, 4710], [1950, 4650], [1720, 4520], [1650, 4380]], 4), taper(200, 0.25), 0.14), { id: 'east-beach', name: 'East beach', elev: 0.6, feather: 80 });
+// THE EBB DELTA: crescent swash bars either side of the channel outside the throat, awash
+// at low water and a hand under the surface at high — the fleet runs in between them.
+// Steep-sided (their own short ramp), so the crest is reached even where they rise out of
+// the deep sea.
+// MARGINAL FLOOD CHANNELS: the troughs between the beach and the bars, where the flood
+// runs in along the shore — a thin lane of water at low tide separating beach from bar.
+add('flats-channel', ribbon(spline([[-2500, 5150], [-1800, 5200], [-1100, 5170], [-600, 5020], [-300, 4760]], 5), 200, 0.1), { id: 'flood-margin-w', name: 'West marginal channel', elev: -2.0 });
+add('flats-channel', ribbon(spline([[2900, 5060], [2200, 5150], [1600, 5130], [1250, 4980], [1100, 4700]], 5), 200, 0.1), { id: 'flood-margin-e', name: 'East marginal channel', elev: -2.0 });
+add('flats-bar', ribbon(spline([[-2100, 5300], [-1500, 5420], [-950, 5480], [-450, 5440], [-200, 5300]], 5), taper(320, 0.2), 0.15), { id: 'delta-bar-w', name: 'West swash bar', elev: -0.15, feather: 60 });
+add('flats-bar', ribbon(spline([[1000, 5350], [1500, 5480], [2050, 5470], [2500, 5330], [2800, 5180]], 5), taper(320, 0.2), 0.15), { id: 'delta-bar-e', name: 'East swash bar', elev: -0.15, feather: 60 });
 
 // High ground inside the first loop: the wantij's own island, so the interior rises to it
 // and only the corridor stays low. Two more marsh islands set the height of the flats
@@ -254,7 +284,7 @@ add('flats-pool', blob(-1200, 3600, 280, 200, 12, 0.2), { id: 'pool-sw', name: '
 // shelf north past Heron flat to the middle pool, and a high sill onto the traverse: the
 // shelf floods later and drains sooner than the wantij's, so this is the crossing you take
 // AT the top of the tide, and wait in the middle pool for.
-const GAMBLE_IN = spline([[-150, 4350], [-600, 4050], [-1000, 3750], [-1200, 3600]], 6);
+const GAMBLE_IN = spline([[20, 4150], [-250, 3700], [-700, 3540], [-1150, 3580]], 6);   // north of the spit's recurve (it ran through the hook once: +0.25 m in the creek)
 const GAMBLE = spline([[-1200, 3600], [-1150, 2900], [-900, 2100], [-500, 1500], [-350, 1150]], 6);
 const GAMBLE_OUT = spline([[-350, 1150], [-450, 750], [-550, 350]], 6);
 add('flats-channel', ribbon(GAMBLE_IN, 380, 0.1), { id: 'gamble-creek', name: 'Roost creek', elev: -2.2 });
@@ -360,7 +390,7 @@ withies.push({ x: -1220, y: -3320, hand: 'port', id: 'neck-sill-w' }, { x: -680,
 withies.push({ x: -1380, y: -260, hand: 'port', id: 'neck-in-w' }, { x: -920, y: -240, hand: 'stbd', id: 'neck-in-e' });
 withies.push({ x: -670, y: -6720, hand: 'port', id: 'head-sill-w' }, { x: -130, y: -6660, hand: 'stbd', id: 'head-sill-e' });
 withies.push({ x: -990, y: -4040, hand: 'port', id: 'head-in-w' }, { x: -510, y: -4060, hand: 'stbd', id: 'head-in-e' });
-withies.push({ x: -420, y: 4180, hand: 'port', id: 'gamble-in-w' }, { x: 60, y: 4340, hand: 'stbd', id: 'gamble-in-e' });
+withies.push({ x: -420, y: 3560, hand: 'port', id: 'gamble-in-w' }, { x: -60, y: 3900, hand: 'stbd', id: 'gamble-in-e' });
 withies.push({ x: -70, y: -9170, hand: 'port', id: 'delta-sill-w' }, { x: 470, y: -9110, hand: 'stbd', id: 'delta-sill-e' });
 withies.push({ x: 120, y: -7500, hand: 'port', id: 'delta-in-w' }, { x: 580, y: -7560, hand: 'stbd', id: 'delta-in-e' });
 edgeWithies(GAMBLE, 220, 700, 'gamble');

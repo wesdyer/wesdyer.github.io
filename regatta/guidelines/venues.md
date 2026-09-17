@@ -1036,8 +1036,9 @@ across the wantij is ahead); the path line and the ruler on the channel only.
 
 ### Course — One way: beat, mouth, four meanders, finish at the head
 
-- **The beat.** 1200u to a rounding mark at sea (starboard), then bear away through the
-  mouth between two sand spits. ~40 s to the mouth.
+- **The beat.** 1200u to a rounding mark at sea (starboard), then bear away in through
+  the ebb delta — swash bars either side, marginal channels along the shores — and the
+  throat between the recurved west spit and the low east shore. ~40 s to the mouth.
 - **The Wantij** (first loop). A tidal creek leads from the mouth to a waiting pool (always
   afloat), then a 1300u shelf (−0.8 m) crosses the divide to a sill (−0.45 m) at the
   traverse. Open for a leader who reaches the pool as the water comes up; a boat 15–20 s

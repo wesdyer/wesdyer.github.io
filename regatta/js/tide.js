@@ -231,7 +231,7 @@ const TIDE = {
         const anchors = { channel: [], pool: [], bar: [], flat: [] }, marsh = [];
         for (const sh of shapes) {
             const T = VD.traits(sh);
-            if (T.tide && anchors[T.tide]) anchors[T.tide].push({ outer: sh.outer, holes: sh.holes || [], elev: T.elev });
+            if (T.tide && anchors[T.tide]) anchors[T.tide].push({ outer: sh.outer, holes: sh.holes || [], elev: T.elev, feather: (sh.feather != null && isFinite(+sh.feather)) ? +sh.feather : null });
             else if (T.kind === 'flats-marsh') marsh.push({ outer: sh.outer, holes: sh.holes || [], elev: T.elev });
         }
         if (!anchors.channel.length) return null;
@@ -313,7 +313,8 @@ const TIDE = {
             const inv = new Uint8Array(W * H); for (let k = 0; k < W * H; k++) inv[k] = m[k] ? 0 : 1;
             const din = chamfer(inv, W, H);
             const crest = b.elev != null ? b.elev : 0;
-            for (let k = 0; k < W * H; k++) if (m[k]) { const s = sstep(din[k] * res / C.barFeather); z[k] = Math.max(z[k], z[k] + (crest - z[k]) * s); mat[k] = 1; }
+            const bf = b.feather || C.barFeather;                // a bar may author its own ramp (a swash bar is narrow and steep)
+            for (let k = 0; k < W * H; k++) if (m[k]) { const s = sstep(din[k] * res / bf); z[k] = Math.max(z[k], z[k] + (crest - z[k]) * s); mat[k] = 1; }
         }
         // The material softened: a bar's sand meets the mud over a few cells, not at a cell
         // edge (a binary mask read as a staircase at race scale). Two passes of a 5-wide box.
