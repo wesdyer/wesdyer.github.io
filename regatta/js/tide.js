@@ -244,6 +244,15 @@ const TIDE = {
         else { const s = (doc.world && doc.world.size) || 13000; bb = [-s / 2, -s / 2, s / 2, s / 2]; }
         // Padded well past the arena: the player at the finish looks straight up the river,
         // and the tide's ground has to be real there too (the marsh polygon covers the rest).
+        // And the raster takes in every anchor that is scenery beyond the arena — the river
+        // past the head, a pool up the valley — but not the sea, which is bigger than the
+        // arena and would quadruple the field for water nobody sees.
+        const arenaArea = (bb[2] - bb[0]) * (bb[3] - bb[1]);
+        for (const list of [anchors.channel, anchors.pool, anchors.bar, anchors.flat]) for (const a of list) {
+            const b2 = bboxOf(a.outer, [Infinity, Infinity, -Infinity, -Infinity]);
+            if ((b2[2] - b2[0]) * (b2[3] - b2[1]) >= arenaArea) continue;
+            bb = [Math.min(bb[0], b2[0]), Math.min(bb[1], b2[1]), Math.max(bb[2], b2[2]), Math.max(bb[3], b2[3])];
+        }
         const PAD = C.rasterPad, res = C.res;
         const x0 = bb[0] - PAD, y0 = bb[1] - PAD;
         const W = Math.ceil((bb[2] + PAD - x0) / res), H = Math.ceil((bb[3] + PAD - y0) / res);

@@ -674,8 +674,14 @@ function drawWindWaves(ctx) {
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
     ctx.lineCap = 'round';
 
+    // ON THE TIDE'S GROUND, ONLY THE WATER CARRIES A CREST (Spoonbill Flats). Land covers
+    // the waves everywhere else because land is drawn after them; the flats are a field,
+    // and beyond the field's raster and past the sailing limit there is no polygon to do
+    // the covering — the exposed mud was showing wind waves. One depth read per crest.
+    const tideOn = !!(state.tide && window.Tide);
     for (const wave of state.waveStates.values()) {
         if (wave.windSpeed < 2) continue;
+        if (tideOn && Tide.depthAt(wave.x, wave.y) <= 0.03) continue;
 
         const gridSize = 150;
         const cycle = wave.dist / gridSize;
