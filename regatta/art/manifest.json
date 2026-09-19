@@ -7132,11 +7132,16 @@
       "venue": "flats",
       "world": 44,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A CHANNEL BEACON — a tripod of three driven timber piles with a small square platform on top and a cage topmark of iron rods above it — seen from DIRECTLY ABOVE and ALONE, so that it is a FLAT DIAGRAM OF ITS OWN PLAN: the three PILE HEADS are three round dark dots at the corners of a small triangle, each the cut end of a pile with its rings of grain; the cross-braces between them are three straight bars joining the dots; the platform is a small square of planks in the middle of the triangle; and the cage topmark, being looked down INTO, is a RING of iron rods — a circle with six or eight spokes meeting at the centre — with the solid RED DISC at its middle covering the hub. Nothing converges upward, no leg runs off toward a point, no rung of a ladder shows, no side of the platform shows: the piles are dots, the braces are lines, the cage is a circle. The timber a dark grey-brown near #4A4038 with pale weathered pile tops near #A79E8E, the ironwork rust near #7A3E2C, the disc a strong RED near #C8362B. THE SILHOUETTE IS ROUGHLY ROUND and must be AS TALL AS IT IS WIDE. No water, no birds, no ground. The light comes from the UPPER LEFT of the frame; there is no cast shadow on the ground. NO GROUND IS PAINTED. The subject is alone on a transparent background",
-      "note": "A bigger brother to the procedural withies for the throat and the two junctions where creeks leave the main channel: red to port. Contact HARD (a small collider, the piles), height 8, surface plane. A green-topmark twin is the same brief with the disc near #2E8B57 if wanted (derive on ingest rather than a second generation). ROUND 1 (2026-09-17) REJECTED: delivered as an ELEVATION — the tripod's legs converging up to the platform, the ladder's rungs and the cage seen from the side. The brief now spells out the plan as a diagram (dots, lines, a ring) so the generator has nothing to tilt.",
+      "note": "A bigger brother to the procedural withies for the throat and the two junctions where creeks leave the main channel: red to port. Contact HARD (a small collider, the piles), height 8, surface plane. A green-topmark twin is the same brief with the disc near #2E8B57 if wanted (derive on ingest rather than a second generation). ROUND 1 (2026-09-17) REJECTED: delivered as an ELEVATION — the tripod's legs converging up to the platform, the ladder's rungs and the cage seen from the side. The brief now spells out the plan as a diagram (dots, lines, a ring) so the generator has nothing to tilt. ROUND 2 (2026-09-18) ACCEPTED: the plan as a diagram — three pile heads as rings of grain at the corners of a triangle, braces as bars, the platform's planks in the middle, the cage as a ring with six spokes and the red disc at the hub. The 1.14 bbox ratio is the triangle's base, not a tilt.",
       "planRound": true,
-      "fillTo": 0.86
+      "fillTo": 0.86,
+      "master": 1241,
+      "anchorPx": [
+        0.5,
+        0.5
+      ]
     },
     {
       "key": "flats-oyster-shed",
@@ -7264,11 +7269,16 @@
       "venue": "flats",
       "world": 72,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A PATCH OF SEA LAVENDER IN BLOOM on a saltmarsh — a loose drift of purple flowers over the low grey-green marsh plants, seen from straight above and ALONE. From above it is a soft-edged irregular patch, roughly round, made of many small flower heads drawn as clusters of tiny purple dots near #8A6FB0 and a paler lilac near #B39DD1 over a base of grey-green foliage near #6E7A5E, denser in two or three places and thinning at the edges to scattered single heads over nothing; a few sprigs of yellow near #C9B24A and a dark twist of a creek edge across one side. THE PATCH'S SILHOUETTE IS ROUGHLY ROUND and must be AS TALL AS IT IS WIDE. No water, no mud, no ground painted under the thinning edge. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
-      "note": "The marsh's colour: eight to twelve patches on the marsh islands and the shore where the camera reaches, larger than life. Contact none, surface plane. It is an accent over the saltmarsh tile, not coverage.",
+      "note": "The marsh's colour: eight to twelve patches on the marsh islands and the shore where the camera reaches, larger than life. Contact none, surface plane. It is an accent over the saltmarsh tile, not coverage. DELIVERED 2026-09-18 (round 1) ACCEPTED: purple heads in three dense drifts over grey-green foliage thinning to scattered heads, yellow sprigs, a dark creek edge across one side; the 1.17 ratio is the lobed patch, the heads read top-down.",
       "planRound": true,
-      "fillTo": 0.86
+      "fillTo": 0.86,
+      "master": 1814,
+      "anchorPx": [
+        0.5,
+        0.4997
+      ]
     },
     {
       "key": "flats-brent-geese",
@@ -7282,6 +7292,24 @@
       "note": "Winter on the flats: three or four flocks on the eelgrass beds and the marsh edges where the camera passes. Contact none, surface plane. Each goose ~6u at world 100 — twice life size.",
       "planRound": true,
       "fillTo": 0.86
+    },
+    {
+      "key": "flats-perch-beacon-green",
+      "class": "world-prop",
+      "role": "nav",
+      "venue": "flats",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A CHANNEL BEACON — a tripod of three driven timber piles with a small square platform on top and a cage topmark of iron rods above it — seen from DIRECTLY ABOVE and ALONE, so that it is a FLAT DIAGRAM OF ITS OWN PLAN: the three PILE HEADS are three round dark dots at the corners of a small triangle, each the cut end of a pile with its rings of grain; the cross-braces between them are three straight bars joining the dots; the platform is a small square of planks in the middle of the triangle; and the cage topmark, being looked down INTO, is a RING of iron rods — a circle with six or eight spokes meeting at the centre — with the solid RED DISC at its middle covering the hub. Nothing converges upward, no leg runs off toward a point, no rung of a ladder shows, no side of the platform shows: the piles are dots, the braces are lines, the cage is a circle. The timber a dark grey-brown near #4A4038 with pale weathered pile tops near #A79E8E, the ironwork rust near #7A3E2C, the disc a strong RED near #C8362B. THE SILHOUETTE IS ROUGHLY ROUND and must be AS TALL AS IT IS WIDE. No water, no birds, no ground. The light comes from the UPPER LEFT of the frame; there is no cast shadow on the ground. NO GROUND IS PAINTED. The subject is alone on a transparent background",
+      "note": "THE GREEN TWIN of flats-perch-beacon: the same master with the topmark disc's red mapped to green (#2E8B57 family) on the day the red one was accepted — never generated. Starboard-hand: deep water to starboard. Made 2026-09-18 from the accepted red master: 98,591 disc pixels hue-mapped to green at 85% of the saturation.",
+      "planRound": true,
+      "fillTo": 0.86,
+      "master": 1241,
+      "anchorPx": [
+        0.5,
+        0.5
+      ]
     }
   ],
   "scale": {

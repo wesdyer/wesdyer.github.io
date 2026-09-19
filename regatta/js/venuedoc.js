@@ -2567,7 +2567,11 @@ const PROP_KINDS = {
     // the centrepiece (round 2, a roof plan): placed ONCE at the head, the tail-race toward the finish reach
     'flats-tide-mill':          { label: 'Tide mill',           world: 240, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed' },
     // on a swinging mooring, bow to the flood; the buoy ahead is in the sprite, so the collider covers boat, line and buoy
-    'flats-fishing-boat':       { label: 'Fishing boat',        world:  80, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' }
+    'flats-fishing-boat':       { label: 'Fishing boat',        world:  80, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
+    // the channel beacons (round 2, a plan): red to port, green to starboard — the green is the red master recoloured
+    'flats-perch-beacon':       { label: 'Beacon (red, port)',  world:  44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
+    'flats-perch-beacon-green': { label: 'Beacon (green, stbd)', world: 44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
+    'flats-sea-lavender':       { label: 'Sea lavender',        world:  72, plane: 'surface', contact: 'none', motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
