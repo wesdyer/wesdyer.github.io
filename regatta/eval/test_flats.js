@@ -149,6 +149,23 @@ const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart
         out.shovedDeeper = Tide.groundAt(me.x, me.y) < out.groundZ;
         out.hud = Tide.hudInfo ? Tide.hudInfo(me) : null;
 
+        // ── the eelgrass: beds in the document, tufts scattered, drawn in the pass their cell is in ──
+        const beds = c.islands.filter(i => i.veg === 'eelgrass');
+        out.eelBeds = beds.length;
+        if (beds.length) {
+            const b0 = beds[0];
+            state.race.status = 'racing';
+            state.race.timer = tHW;                          // high water: the bed is under water
+            state.camera.x = b0.x; state.camera.y = b0.y; state.camera.fx = b0.x; state.camera.fy = b0.y;
+            const g = canvas.getContext('2d');
+            try { draw(); } catch (e) { out.problems.push('draw@bed: ' + e.message); }
+            const mats = b0._liveMats || [];
+            out.eelTufts = mats.length;
+            out.eelWetAtHW = mats.filter(m => Tide.depthAt(m.x, m.y) > 0.03).length;
+            state.race.timer = tHW + T.period / 2;           // low water: the bed dries (it lies at about -1 m)
+            out.eelWetAtLW = mats.filter(m => Tide.depthAt(m.x, m.y) > 0.03).length;
+            out.eelMul = b0.shoalMul;                        // the drag inverted: the speed multiplier at the bed's heart
+        }
         // ── drawing: the wet and dry passes, the minimap, at three states of the tide ──
         for (const tt of [tHW, tHW + T.period / 4, tHW + T.period / 2]) {
             state.race.timer = tt;
@@ -198,6 +215,13 @@ const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart
     check('nerve 1 touches nothing above rung 1', nr[1] && nr[1].maxRisk <= 1, JSON.stringify(nr[1]));
     check('nerve 3 finds a faster way at HW-15 (the head cut)', nr[3] && nr[0] && nr[3].t < nr[0].t - 8, `nerve 3 ${nr[3] && nr[3].t}s vs nerve 0 ${nr[0] && nr[0].t}s`);
     check('a boat on rung-3 ground plans off it, not across it', r.escape && r.escape.n > 1 && r.escape.r3cells <= 20 && r.escape.r3tail === 0, JSON.stringify(r.escape));
+
+    console.log('the eelgrass');
+    check('beds in the document', r.eelBeds >= 4, `${r.eelBeds}`);
+    check('a bed scatters tufts', r.eelTufts > 100, `${r.eelTufts}`);
+    check('the bed is under water at high water', r.eelWetAtHW === r.eelTufts, `${r.eelWetAtHW} of ${r.eelTufts}`);
+    check('and the water leaves part of it at low water', r.eelWetAtLW < r.eelTufts * 0.9, `${r.eelWetAtLW} of ${r.eelTufts} still wet`);
+    check('a light tax at its heart (a leaf round the centreboard)', r.eelMul != null && r.eelMul >= 0.8 && r.eelMul < 1, `shoalMul ${r.eelMul}`);
 
     console.log('a grounding');
     check('the flats interior is intertidal', r.groundZ > -1.0 && r.groundZ < 1.0, `${r.groundZ} m`);

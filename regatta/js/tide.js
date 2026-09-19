@@ -869,6 +869,133 @@ const TIDE = {
         ctx.imageSmoothingEnabled = true;
         ctx.drawImage(pic.cvWet, pic.x0, pic.y0, pic.w, pic.h);
         ctx.restore();
+        drawEelgrass(ctx, true);                   // the beds under the water, before the waves run over them
+    }
+    // ── EELGRASS ────────────────────────────────────────────────────────────
+    // Zostera on the low flats (the `flats-eelgrass` kind; Wes, Sep 18 2026: procedural, not
+    // a prop). The vegetation baker scatters a bed's TUFTS (VEG_STYLES.eelgrass, live: a
+    // jittered grid with rim thinning and a few open holes, seeded from the shape's id) and
+    // this draws them every frame from a sheet: DIRS comb directions × LEANS lean classes ×
+    // VARS variants, wet and dry. A tuft is a root with five to eight ribbon leaves; standing
+    // (slack water) they fan out short, and the harder the stream runs the longer and the
+    // more aligned they lie — so a bed reads the tide's direction and strength at a glance,
+    // the way the withies do, and reverses with it. Under the water (the wet pass) the tones
+    // are mixed toward the water and the tuft stirs a little; on the mud (the dry pass) the
+    // leaves lie flat the way the ebb left them, toward the channel, and do not move. One
+    // of the variants is a scrap of brown wrack, the reference's. Each tuft samples the
+    // stream every EEL_REFRESH seconds on its own stagger, never all at once.
+    const EEL = { cell: 44, dirs: 16, leans: 4, vars: 4, refresh: 0.6, fullKt: 0.9, stir: 1.3, wrackEvery: 67 };
+    let _eelSheet = null;
+    function eelTuft(g, lean, dir, variant, rand, tones, wet) {
+        const n = 5 + Math.floor(rand() * 4);
+        const spread = 2.4 * (1 - lean) + 0.55 * lean;              // radians of fan: wide standing, tight combed
+        const back = lean * 6;                                       // the root sits back so the combed leaves stay in the cell
+        const rx = -Math.sin(dir) * back, ry = Math.cos(dir) * back;
+        g.lineCap = 'round';
+        if (variant === 3) {                                         // wrack: a scrap of brown weed lying on the bed
+            g.fillStyle = wet ? 'rgba(70,58,36,0.8)' : 'rgba(92,74,42,0.95)';
+            for (let i = 0; i < 3; i++) { g.beginPath(); g.ellipse(rx + (rand() - 0.5) * 6, ry + (rand() - 0.5) * 5, 3 + rand() * 3, 1.6 + rand() * 1.4, rand() * Math.PI, 0, Math.PI * 2); g.fill(); }
+            return;
+        }
+        for (let i = 0; i < n; i++) {
+            const a = dir + (rand() - 0.5) * spread;
+            const L = (9 + rand() * 7) * (0.7 + 0.3 * lean);
+            const bend = (rand() - 0.5) * 0.9 * (1 - lean * 0.6);
+            const t = rand(), tone = tones[t < 0.45 ? 0 : t < 0.85 ? 1 : 2];
+            g.strokeStyle = `rgba(${tone[0]},${tone[1]},${tone[2]},${wet ? 0.82 : 0.95})`;
+            g.lineWidth = 1.3 + rand() * 0.9;
+            // the engine's bearing: forward is (sin a, -cos a)
+            const ex = rx + Math.sin(a) * L, ey = ry - Math.cos(a) * L;
+            const cx = rx + Math.sin(a + bend) * L * 0.55, cy = ry - Math.cos(a + bend) * L * 0.55;
+            g.beginPath(); g.moveTo(rx, ry); g.quadraticCurveTo(cx, cy, ex, ey); g.stroke();
+        }
+    }
+    function eelSheet() {
+        const spec = (typeof VEG_STYLES !== 'undefined') ? VEG_STYLES.eelgrass : null;   // a top-level const in world.js: by name, never off window
+        if (!spec) return null;
+        const Wc = window.WATER_CONFIG || {};
+        const hex = String(Wc.heroColor || Wc.baseColor || '#3a6a8a').replace('#', '');
+        if (_eelSheet && _eelSheet.key === hex) return _eelSheet;
+        const water = [parseInt(hex.substr(0, 2), 16), parseInt(hex.substr(2, 2), 16), parseInt(hex.substr(4, 2), 16)];
+        const dry = spec.tones.map(t => t.slice());
+        const wetT = dry.map(t => t.map((c, i) => Math.round((c * 0.72 + water[i] * 0.28) * 0.9)));   // seen through the water: darker, a little of the water in it
+        const C = EEL.cell, cv = document.createElement('canvas');
+        cv.width = C * EEL.dirs; cv.height = C * EEL.leans * EEL.vars * 2;
+        const g = cv.getContext('2d');
+        for (let wet = 0; wet < 2; wet++) for (let v = 0; v < EEL.vars; v++) for (let ln = 0; ln < EEL.leans; ln++) {
+            const row = (wet * EEL.vars + v) * EEL.leans + ln;
+            for (let d = 0; d < EEL.dirs; d++) {
+                let seed = (2166136261 ^ (v * 2654435761) ^ (ln * 40503)) >>> 0;   // the same tuft at every direction and lean
+                const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+                g.save();
+                g.translate(d * C + C / 2, row * C + C / 2);
+                if (wet) { g.filter = 'blur(0.6px)'; }
+                eelTuft(g, ln / (EEL.leans - 1), d / EEL.dirs * Math.PI * 2, v, rand, wet ? wetT : dry, !!wet);
+                g.restore();
+            }
+        }
+        _eelSheet = { canvas: cv, key: hex };
+        return _eelSheet;
+    }
+    function drawEelgrass(ctx, wetPass) {
+        const c = state.course;
+        if (!c || !c._hasVeg || !state.tide || typeof VEG_STYLES === 'undefined' || !VEG_STYLES.eelgrass) return;
+        const spec = VEG_STYLES.eelgrass, F = state.tide.field;
+        const [va, vb, vc, vd] = viewWindow(ctx);
+        const C = EEL.cell, H = C / 2, now = state.time || 0;
+        let sheet = null, count = 0;
+        for (const isl of c.islands) {
+            if (isl.veg !== 'eelgrass' || isl.hidden) continue;
+            if (isl.x + isl.radius < va || isl.x - isl.radius > vc || isl.y + isl.radius < vb || isl.y - isl.radius > vd) continue;
+            if (!isl._vegSprite && typeof bakeVegSprite === 'function') bakeVegSprite(isl, spec);
+            const mats = isl._liveMats;
+            if (!mats || !mats.length) continue;
+            if (!sheet) { sheet = eelSheet(); if (!sheet) return; ctx.save(); }
+            for (let i = 0; i < mats.length; i++) {
+                const m = mats[i];
+                if (m.x < va - H || m.x > vc + H || m.y < vb - H || m.y > vd + H) continue;
+                const wet = depthAt(m.x, m.y) > 0.03;
+                if (wet !== wetPass) continue;
+                // the stream, on this tuft's own clock
+                if (m.eelT == null || now - m.eelT > EEL.refresh) {
+                    m.eelT = now - (m.eelT == null ? (i % 37) / 37 * EEL.refresh : 0);
+                    if (wet) {
+                        // the stream where the sim has one; else the tide's own comb — up the
+                        // field's gradient (toward the marsh) on the flood, down it on the ebb,
+                        // leaning with the rate — because the water over a flat moves with the
+                        // tide everywhere, and the sim's fill only runs at the front
+                        const cur = (typeof getCurrentAt === 'function') ? getCurrentAt(m.x, m.y) : null;
+                        const f = flow();
+                        const gx = fieldAt(F.gx, m.x, m.y, 0), gy = fieldAt(F.gy, m.x, m.y, 0);
+                        const comb = f >= 0 ? Math.atan2(gx, -gy) : Math.atan2(-gx, gy);
+                        // never fully splayed: a slack-water tuft still lies over a little (a star of leaves read as confetti)
+                        if (cur && cur.speed > 0.08) { m.eelDir = cur.direction; m.eelLean = Math.max(0.3, Math.min(1, cur.speed / EEL.fullKt), Math.abs(f) * 0.6); }
+                        else { m.eelDir = Math.abs(f) > 0.08 ? comb : (m.eelDir != null ? m.eelDir : m.ph); m.eelLean = Math.max(0.3, Math.abs(f) * 0.6); }
+                    } else {
+                        // lying the way the ebb left it: toward the channel, which is down the field's gradient
+                        const gx = fieldAt(F.gx, m.x, m.y, 0), gy = fieldAt(F.gy, m.x, m.y, 0);
+                        m.eelDir = Math.atan2(-gx, gy);          // bearing of (−gx, −gy): forward = (sin, −cos)
+                        m.eelLean = 1;
+                    }
+                }
+                const v = (i % EEL.wrackEvery) === 5 ? 3 : m.v % 3;   // one tuft in ~67 a scrap of wrack
+                let dir = m.eelDir, dx = 0, dy = 0;
+                if (wet) {
+                    // slack water: the tuft stands and drifts; a stream: it stirs a little on the leaf's own phase
+                    const k = 1 - m.eelLean;
+                    dir += Math.sin(now * m.f + m.ph) * 0.35 * k;
+                    dx = Math.sin(now * m.f * 0.9 + m.ph) * EEL.stir; dy = Math.cos(now * m.f * 0.7 + m.ph * 1.3) * EEL.stir;
+                }
+                let di = Math.round(dir / (Math.PI * 2) * EEL.dirs) % EEL.dirs; if (di < 0) di += EEL.dirs;
+                const li = Math.round(m.eelLean * (EEL.leans - 1));
+                const row = ((wet ? 1 : 0) * EEL.vars + v) * EEL.leans + li;
+                const sz = 0.8 + m.z * 0.25;                          // three size classes, like the kelp's
+                ctx.drawImage(sheet.canvas, di * C, row * C, C, C, m.x + dx - H * sz, m.y + dy - H * sz, C * sz, C * sz);
+                count++;
+            }
+        }
+        if (sheet) ctx.restore();
+        return count;
     }
     function drawDry(ctx) {
         if (!state.tide) return;
@@ -880,6 +1007,7 @@ const TIDE = {
         drawTileOverlay(ctx);
         // The water's edge: a thin pale line where the level meets the ground — the wet lip of
         // the flat — and, a draft inside it, the dashed line you must stay on the deep side of.
+        drawEelgrass(ctx, false);                  // the beds the tide has left, flat on the mud
         drawIso(ctx, level(), 'rgba(236, 230, 210, 0.85)', 1.6, null);
         if (cfg().draftLine) drawDraftLine(ctx);
         drawBirds(ctx);
@@ -1203,7 +1331,7 @@ const TIDE = {
         speedMul, afterMove, refloatIn,
         addFill,
         stampGrid, safeGrid, refreshBotGrid, routeCost, routeWait, setNerve, riskAt, escapeReach,
-        drawWet, drawDry, drawMinimap, hudInfo,
+        drawWet, drawDry, drawEelgrass, drawMinimap, hudInfo,
         _pic: pic
     };
 })();

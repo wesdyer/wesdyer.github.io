@@ -2566,6 +2566,21 @@ function drawKelpLive(ctx) {
 //            no channels — that is what makes it a mat and what makes ploughing one cost
 //            three-quarters of your speed. Same device the reef mass uses, same reason.
 const VEG_STYLES = {
+    // ── SPOONBILL FLATS' EELGRASS (Sep 18 2026) ──────────────────────────────
+    // Zostera on the low flats. LIVE like the kelp — the baker only scatters the tufts
+    // (rim thinning, open holes, the reference's bare openings) and paints nothing; the
+    // tufts are drawn every frame by js/tide.js (Tide.drawEelgrass) from its own sheet,
+    // combed by the tide's stream and split between the wet pass (under the water) and
+    // the dry pass (flat on the mud), which is why they cannot live in this file's layers.
+    // Tones are the exposed bed's: a dark olive heart, the leaf, the pale streak the last
+    // ebb combed into it; tide.js mixes them toward the water for the submerged cells.
+    eelgrass: { plane: 'bottom', clump: null, live: true,
+                tones: [[47, 58, 34], [79, 97, 53], [113, 138, 72]],
+                // the bed's dark heart under the tufts (drawn with the seabed, under the
+                // tide's water; the dry pass covers it, so an exposed bed is tufts on mud)
+                mass: { tone: [40, 54, 30], alpha: 0.5 },
+                wash: 0, layerAlpha: 1, clumpAlpha: 1,
+                spacing: 12, cover: 0.96, holeEvery: 90 },   // ~330 tufts in a 260u bed: measured 2.5 ms a frame with one bed in view on a software canvas
     // Pearl Lagoon's meadow. Every number here is the one the seagrass bake shipped with.
     seagrass: { plane: 'bottom', clump: clumpTussock,
                 tones: [[43, 74, 45], [58, 94, 52], [74, 112, 58]],

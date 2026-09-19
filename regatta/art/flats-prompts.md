@@ -119,7 +119,7 @@ draft contour are procedural. Eighteen slots, in the order they earn their place
 | `flats-seal-haulout` | ambient | 110 | none | the swash bars |
 | `flats-driftwood-tree` | ambient | 100 | none | the high bars and the spit's back |
 | `flats-shell-bank` | ambient | 150 | none | the bright line a bar wears |
-| `flats-eelgrass-bed` | ambient | 175 | none, seabed | the low flats beside the channels, under the water |
+| ~~`flats-eelgrass-bed`~~ | — | — | — | SUPERSEDED by the `flats-eelgrass` shape kind (procedural, combed by the stream) |
 | `flats-sea-lavender` | ambient | 72 | none | colour on the marsh |
 | `flats-brent-geese` | ambient | 100 | none | winter on the eelgrass |
 
@@ -143,3 +143,11 @@ tightened briefs (say what a tilt cannot produce: roofs fill footprints, rims ar
 surface is a flat shape) — ingested and registered. Eight of eighteen shipped. The lesson
 for the rest: the generator tilts anything with a building or a hull in it; the flat
 subjects (weir, trestles, bridge, kaap, the wreck) held the plan first time.
+
+**Round 3 (Sep 18):** the fishing boat (a plan first time; world 64 → 80 for the buoy's
+line), the perch beacon (a plan diagram on the rewritten brief; red, plus a green twin made
+by recolouring the disc), the sea lavender. **The eelgrass is a KIND now, not a prop**
+(Wes's call): `flats-eelgrass` — draw a bed as a polygon in the editor; tide.js draws the
+tufts live, combed by the stream, under the water or flat on the mud. Six beds are laid by
+the builder. Twelve of seventeen slots shipped; left: the oyster shed, the spoonbill roost,
+the seals, the driftwood tree, the shell bank, the brent geese.

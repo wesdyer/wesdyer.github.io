@@ -533,3 +533,25 @@ at mid-tide, along the flow, and stills at slack.
 **Fleet, 3 seeds:** 27/27, best 3:05, median 3:44, worst 4:02, no boat aground more than
 three times — six seconds slower at the median than before the bump (the router does not
 price current; the ebb costs a bot that does not plan round it), the pack's shape the same.
+
+### 7.7 Props, and the eelgrass as a kind (Sep 17–18)
+
+Twelve of the eighteen prop slots are art (art/flats-prompts.md has the rounds). The
+generator holds the plan for flat subjects (weir, trestles, bridge, kaap, the wreck) and
+tilts anything with a building or a hull in it; the fix that worked every time was to say
+what a tilt cannot produce — the roof fills the footprint, the rim is the same width both
+sides, the pile heads are dots and the cage a ring. `art/prep_master.py` squares a Desktop
+delivery (specks, crop, rotate, pad at 0.86, record `master`).
+
+**The eelgrass is a kind** (`flats-eelgrass`, Wes: procedural rather than a prop), because
+a kind can do what a sprite cannot: the bed's tufts are combed by the tide's stream every
+frame — they lean with the knots, the flood's way or the ebb's, and stand at slack — and
+they are drawn under the water where the cell is wet (the wet pass, mixed toward the water)
+and flat on the mud in the ebb's direction where it is dry (the dry pass). The vegetation
+baker scatters the tufts (VEG_STYLES.eelgrass, live: rim thinning, open holes, a dark mass
+under the bed); `Tide.drawEelgrass` draws them from a sheet of 16 directions × 4 leans × 4
+variants, wet and dry. Where the sim has no stream (the fill fades once the water is over
+1.2 m) the comb is the tide's own: up the field's gradient on the flood, down it on the ebb,
+lean from |flow|. A light tax (drag 0.12, priced by the router). Six beds on the low flats
+beside the channels, never on a cut. Measured: ~2.5 ms a frame with a bed in view on a
+software canvas.

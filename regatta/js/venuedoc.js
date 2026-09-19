@@ -3195,7 +3195,15 @@ const SHAPE_KINDS = {
     'flats-bar':     { motion: 'fixed', hard: false, look: 'shoal',     hidden: false, nav: false, height: 0,
                        awash: true, drag: 0, paint: true, tide: 'bar',     elev: 0.0 },
     'flats-flat':    { motion: 'fixed', hard: false, look: 'shoal',     hidden: false, nav: false, height: 0,
-                       awash: true, drag: 0, paint: true, tide: 'flat',    elev: -0.5 }
+                       awash: true, drag: 0, paint: true, tide: 'flat',    elev: -0.5 },
+    // EELGRASS (Sep 18 2026, Wes: procedural rather than a prop, "we should create a kind").
+    // Zostera on the low flats beside the channels — NOT a field anchor (the ground under it
+    // is whatever the field says), a VEGETATED zone whose tufts js/tide.js draws live: combed
+    // by the stream each frame (lean with the knots, the way of the flood or the ebb), under
+    // the water where the cell is wet, lying flat on the mud in the ebb's direction where it
+    // is dry. A light tax (a leaf round the centreboard), priced by the router.
+    'flats-eelgrass': { motion: 'fixed', hard: false, look: 'shoal',    hidden: false, nav: true, height: 0,
+                       awash: true, drag: 0.12, paint: true, veg: 'eelgrass' }
 };
 
 // How far in from a shoal's rim the water is still deep enough not to matter, in units.

@@ -463,6 +463,19 @@ edgeWithies(GAMBLE, 220, 700, 'gamble');
 edgeWithies(NECK_N, 210, 700, 'neck');
 edgeWithies(HEADCUT, 210, 700, 'headcut');
 
+// ── EELGRASS (Sep 18 2026) ───────────────────────────────────────────────────
+// Zostera beds on the LOW flats beside the channels — never on a marked cut (a boat reads a
+// dark patch as deep water). A vegetated zone, not a field anchor: js/tide.js draws the
+// tufts live, combed by the stream. Six beds, on ground the probe read at −0.8 to −1.2 m
+// and at least 450u from every passage line: the lower loop's inside (the flats south of
+// the traverse), the upper basin's east flat, the head's east flat, the delta reach.
+add('flats-eelgrass', blob(-350, -500, 260, 200, 12, 0.22, 0.3), { id: 'eel-traverse', name: 'Traverse eelgrass' });
+add('flats-eelgrass', blob(-2350, -100, 220, 300, 12, 0.22, 0.1), { id: 'eel-west', name: 'West bend eelgrass' });
+add('flats-eelgrass', blob(1000, -3500, 300, 190, 12, 0.24, 0.05), { id: 'eel-basin', name: 'Upper basin eelgrass' });
+add('flats-eelgrass', blob(500, -6900, 320, 170, 12, 0.22, 0.02), { id: 'eel-head', name: 'Head eelgrass' });
+add('flats-eelgrass', blob(1800, -7900, 200, 240, 12, 0.24, 0.4), { id: 'eel-east', name: 'East creek eelgrass' });
+add('flats-eelgrass', blob(-100, 3100, 240, 200, 12, 0.22, 0.15), { id: 'eel-lower', name: 'Lower loop eelgrass' });
+
 // ── THE PASSAGES, AS LINES ───────────────────────────────────────────────────
 // Every marked passage's centreline, entrance to exit, into the document: what a probe
 // measures the fill along (eval/_flats_passages.js) and what a future HUD could name.

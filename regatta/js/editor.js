@@ -450,7 +450,8 @@ const LAND_TYPES = [
     { kind: 'flats-channel', label: 'Flats Deep Channel', swatch: '#274a72' },
     { kind: 'flats-pool',    label: 'Flats Deep Pool',    swatch: '#355d8a' },
     { kind: 'flats-bar',     label: 'Flats Sand Bar',     swatch: '#d9b86a' },
-    { kind: 'flats-flat',    label: 'Flats Mud Shelf',    swatch: '#a8874c' }
+    { kind: 'flats-flat',    label: 'Flats Mud Shelf',    swatch: '#a8874c' },
+    { kind: 'flats-eelgrass', label: 'Flats Eelgrass Bed', swatch: '#4f6135' }   // a vegetated zone, not a field anchor (js/tide.js draws it live)
 ];
 // The one place the order is decided, so both pickers inherit it and cannot disagree:
 // the toolbar's `new-kind` (what the next gesture makes) and the inspector's `in-mat`
@@ -2022,6 +2023,7 @@ const KIND_FILL = {
     'flats-marsh': '#857e40',
     'flats-channel': 'rgba(39,74,114,0.55)', 'flats-pool': 'rgba(53,93,138,0.5)',
     'flats-bar': 'rgba(217,184,106,0.5)', 'flats-flat': 'rgba(168,135,76,0.42)',
+    'flats-eelgrass': 'rgba(79,97,53,0.5)',
     // Magma fills as the bed itself: it has no crust to hide behind, so the schematic
     // shows the orange — the one dry-land fill here that is not dark, and the reason
     // lava's edge carries its ember instead (a solid orange blob next to a solid orange
@@ -2056,6 +2058,7 @@ const KIND_EDGE = {
     weedbed: 'rgba(74,112,74,0.85)', lilybed: 'rgba(140,176,100,0.9)',
     weedmat: 'rgba(150,182,110,0.9)', duckweed: 'rgba(178,208,120,0.9)',
     kelp: 'rgba(122,92,44,0.9)',
+    'flats-eelgrass': 'rgba(113,138,72,0.9)',
     // Each is its own ISLAND_STYLES stroke, so the schematic outline is the same colour the
     // game draws the coastline in. Darker than the fill, with the earth and vegetation kinds
     // above rather than lighter with granite and karst: these two are neither bright enough
