@@ -7000,28 +7000,37 @@
       "class": "world-prop",
       "role": "ambient",
       "venue": "flats",
-      "world": 48,
+      "world": 64,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A SMALL SAILING DINGHY STRANDED ON A MUDFLAT — a three-and-a-half-metre clinker dinghy the tide left behind, heeled hard over on her side with her mast down along the mud, seen from straight above and ALONE. THE SHAPE IS LONG: the hull about three times as long as it is wide, drawn lengthways up the frame, bow to the top; because she lies on her bilge you see the whole inside of one side of the hull and the top of the other gunwale, the thwarts and a floorboard, a coiled sheet, and the pale mast with its furled sail lying out along the mud beyond the low gunwale; from the bow a thin anchor line runs away up the frame to a small kedge anchor a boat-length ahead. Clinker planks drawn as a few long parallel lines, a hull painted a faded blue-grey near #6F8494 with a white boot-top and a varnished-wood interior near #A8783F, the sail a dirty cream near #E4DCC4, the anchor line dark. Hard-edged simplified shapes; no water, no birds, no people. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
-      "note": "THE WARNING (owed since the first night): a hull the tide left. Place three or four on the bars a racer sails past — the wantij shelf's edge, the neck's exit, the gamble shelf, the delta bar — always on ground that dries, never in a channel. Contact none, surface plane, motion fixed. At world 48 the hull is 9u wide: larger than life on purpose (the venue's rule for small things), so it reads at race zoom.",
+      "note": "THE WARNING (owed since the first night): a hull the tide left. Place three or four on the bars a racer sails past — the wantij shelf's edge, the neck's exit, the gamble shelf, the delta bar — always on ground that dries, never in a channel. Contact none, surface plane, motion fixed. At world 48 the hull is 9u wide: larger than life on purpose (the venue's rule for small things), so it reads at race zoom. DELIVERED 2026-09-17: the anchor line and kedge take the top half of the frame, so world 48 -> 64 to keep the hull itself about 25u (a five-metre dinghy, larger than life).",
       "planRound": false,
-      "fillTo": 0.86
+      "fillTo": 0.86,
+      "master": 1545,
+      "anchorPx": [
+        0.4997,
+        0.5
+      ]
     },
     {
       "key": "flats-wreck-hull",
       "class": "world-prop",
       "role": "landmark",
       "venue": "flats",
-      "world": 100,
+      "world": 130,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A DERELICT WOODEN FISHING SMACK on a sandbar — a sixteen-metre hull abandoned decades ago, sunk to her waterline in the sand, decks gone, seen from straight above and ALONE. THE SHAPE IS LONG: about three times as long as it is wide, drawn lengthways up the frame with the bow to the top, the two long sides parallel for most of the length and rounding only at the stem and the transom. From above she is an open shell: the sheer line of the gunwales as a dark rim, the FRAMES (ribs) showing as a ladder of curved dark timbers across the hull where the planking has gone, the keelson down the middle, a stump of mast forward with a rusted iron band, a patch of surviving deck at the stern with a hatch, sand and a few pools of standing water drawn inside her between the frames. Weathered silver-grey timber near #B9B0A0 with darker rot near #6E6355, the iron a rust red-brown near #7E4A2E, the sand inside her a warm ochre near #C9A468. No masts standing, no rigging, no water outside the hull, no birds. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
-      "note": "A big hazard-landmark: one on the ebb delta's east swash bar (visible from the mouth's approach) and one on the head reach's bar. Contact HARD (the outline is traced at ingest), height 3, surface plane. At high water her gunwales still show: the tide layer draws water round her, not over her, so she is an obstacle at every state of the tide.",
+      "note": "A big hazard-landmark: one on the ebb delta's east swash bar (visible from the mouth's approach) and one on the head reach's bar. Contact HARD (the outline is traced at ingest), height 3, surface plane. At high water her gunwales still show: the tide layer draws water round her, not over her, so she is an obstacle at every state of the tide. DELIVERED 2026-09-17 (bow to the left; rotated 90° clockwise on prep so the bow is sprite-up): frames, keelson, mast stub, stern deck and hatch, sand and standing water inside her, exactly as briefed. At world 100 she was a race hull's length and read as one more boat on the at-size sheet; world 130 (a 22 m hull) so the wreck reads as a wreck.",
       "planRound": false,
       "fillTo": 0.86,
-      "master": 1024,
-      "bake": 3
+      "master": 2974,
+      "bake": 3,
+      "anchorPx": [
+        0.4998,
+        0.5
+      ]
     },
     {
       "key": "flats-oyster-trestles",
@@ -7030,13 +7039,17 @@
       "venue": "flats",
       "world": 150,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. AN OYSTER FARM'S TRESTLES on an intertidal flat — a block of steel trestles standing knee-high off the sand with black mesh oyster bags lashed along them, the working rows of a Brittany or Chichester oyster park, seen from straight above and ALONE. THE SHAPE IS LONG: a rectangle about one and two-thirds times as long as it is wide, drawn lengthways up the frame, made of FOUR PARALLEL ROWS of trestles with a walkway of bare ground between each pair; each row is a line of six to eight trestles end to end, each trestle a rectangle of black mesh bags lying side by side across it, so every row reads as a long dark ribbed bar; one or two bags missing, one row a bag shorter than the others, a few loose bags and a rope lying in a walkway. The bags a near-black green-grey near #2E3430 with a faint mesh texture, the galvanised trestle legs and rails a pale grey near #A9ADAE where they show at the row ends, the rope a faded orange. No people, no boats, no water, no ground drawn between the rows. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
       "note": "The estuary's industry, and a hazard: rows you must not sail through. Place two or three blocks on the low flats near the channel's edge in the second and third meanders (the fill covers them at high water; a hull that crosses them touches). Contact HARD, height 1, surface plane. The four rows are the read at race zoom; the bags' mesh is texture only.",
       "planRound": false,
       "fillTo": 0.86,
-      "master": 1024,
-      "bake": 3
+      "master": 2876,
+      "bake": 3,
+      "anchorPx": [
+        0.4998,
+        0.4998
+      ]
     },
     {
       "key": "flats-fish-weir",
@@ -7045,13 +7058,17 @@
       "venue": "flats",
       "world": 200,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A FISH WEIR ON THE SAND — a stake-net trap of the kind fished on the Wadden Sea and the Severn: a long fence of driven timber stakes with net strung between them, running in a shallow V that funnels to a circular pound at the point, seen from straight above and ALONE. THE SHAPE IS LONG: the V about twice as long as it is wide, drawn with the open mouth of the V at the BOTTOM of the frame and the point with its round pound at the top. From above each arm of the V is a line of dark stakes, spaced a stride apart, joined by the net as a faint grey line with the net's shadow-lace between; the two arms are not the same length and neither is straight; at the apex the stakes close into a ring three or four stakes across, tightly spaced, with a coil of net inside it and a single taller marker stake with a rag. Dark tarred stakes near #3A3128, the net a pale grey near #B8BAB4 with the ground showing through it, the rag a faded red. No water, no fish, no ground painted between the arms. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
       "note": "One or two on the flats in the first loop and at the head, mouth downstream (the flood brings the fish). Contact HARD along the stakes (the traced outline; the open interior of the V stays sailable), height 2, surface plane. Draw the stakes big enough to count at race zoom — the net between them is a hint, not a wall.",
       "planRound": false,
       "fillTo": 0.86,
-      "master": 1024,
-      "bake": 2
+      "master": 3048,
+      "bake": 2,
+      "anchorPx": [
+        0.4998,
+        0.5
+      ]
     },
     {
       "key": "flats-fishing-boat",
@@ -7088,11 +7105,16 @@
       "venue": "flats",
       "world": 56,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A KAAP — the Wadden Sea's timber daymark: a tall open lattice pyramid of dark tarred beams on four legs, fifteen metres high, carrying a big flat topmark shape at its peak, standing on a sand spit, seen from straight above and ALONE. From directly above a pyramid is a SQUARE seen through its own frame: the four legs at the corners of the square base, the diagonal braces crossing between them, the whole lattice converging to the peak at the centre where the topmark — a large flat open TRIANGLE of white-painted boards — sits pointing up the frame; the lattice is open, so the ground (transparent) shows between every beam. The near-black tarred timber near #2B2521, the topmark white near #F0EDE6 with a red band near #B8362A, a few pale bird droppings on the peak. THE SILHOUETTE IS ROUGHLY SQUARE and must be AS TALL AS IT IS WIDE. No ground, no sea, no birds. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
       "note": "The mouth's daymark: one on the spit's tip and one on the east shore's spit, where the fleet lines them up coming in from the sea. Contact HARD (the four legs), height 15, surface plane. The lattice is the read; the topmark is the venue's red-and-white.",
       "planRound": true,
-      "fillTo": 0.86
+      "fillTo": 0.86,
+      "master": 1603,
+      "anchorPx": [
+        0.5,
+        0.4997
+      ]
     },
     {
       "key": "flats-perch-beacon",
@@ -7102,8 +7124,8 @@
       "world": 44,
       "anchor": "center",
       "status": "open",
-      "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A CHANNEL BEACON — a tripod of three driven timber piles braced together with a small square platform at the top and a cage topmark of iron rods above it, marking the edge of a deep channel, seen from straight above and ALONE. From directly above: the three pile heads as the corners of a triangle, cross-braces between them, the little platform at the centre with a ladder rung or two, and the cage topmark as a ring of rods with a solid disc at its centre painted the mark's colour. The timber a dark grey-brown near #4A4038 with pale weathered tops near #A79E8E, the ironwork rust near #7A3E2C, the topmark disc a strong RED near #C8362B. THE SILHOUETTE IS ROUGHLY ROUND and must be AS TALL AS IT IS WIDE. No water, no birds, no ground. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
-      "note": "A bigger brother to the procedural withies for the throat and the two junctions where creeks leave the main channel: red to port. Contact HARD (a small collider, the piles), height 8, surface plane. A green-topmark twin is the same brief with the disc near #2E8B57 if wanted (derive on ingest rather than a second generation).",
+      "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A CHANNEL BEACON — a tripod of three driven timber piles with a small square platform on top and a cage topmark of iron rods above it — seen from DIRECTLY ABOVE and ALONE, so that it is a FLAT DIAGRAM OF ITS OWN PLAN: the three PILE HEADS are three round dark dots at the corners of a small triangle, each the cut end of a pile with its rings of grain; the cross-braces between them are three straight bars joining the dots; the platform is a small square of planks in the middle of the triangle; and the cage topmark, being looked down INTO, is a RING of iron rods — a circle with six or eight spokes meeting at the centre — with the solid RED DISC at its middle covering the hub. Nothing converges upward, no leg runs off toward a point, no rung of a ladder shows, no side of the platform shows: the piles are dots, the braces are lines, the cage is a circle. The timber a dark grey-brown near #4A4038 with pale weathered pile tops near #A79E8E, the ironwork rust near #7A3E2C, the disc a strong RED near #C8362B. THE SILHOUETTE IS ROUGHLY ROUND and must be AS TALL AS IT IS WIDE. No water, no birds, no ground. The light comes from the UPPER LEFT of the frame; there is no cast shadow on the ground. NO GROUND IS PAINTED. The subject is alone on a transparent background",
+      "note": "A bigger brother to the procedural withies for the throat and the two junctions where creeks leave the main channel: red to port. Contact HARD (a small collider, the piles), height 8, surface plane. A green-topmark twin is the same brief with the disc near #2E8B57 if wanted (derive on ingest rather than a second generation). ROUND 1 (2026-09-17) REJECTED: delivered as an ELEVATION — the tripod's legs converging up to the platform, the ladder's rungs and the cage seen from the side. The brief now spells out the plan as a diagram (dots, lines, a ring) so the generator has nothing to tilt.",
       "planRound": true,
       "fillTo": 0.86
     },
@@ -7144,13 +7166,17 @@
       "venue": "flats",
       "world": 300,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A THREE-ARCH STONE BRIDGE over a small river — a hump-backed medieval bridge of grey stone, sixty metres bank to bank, seen from straight above and ALONE. THE SHAPE IS LONG: about six times as long as it is wide, drawn ACROSS the frame from left to right (it spans the river, which runs up the frame under it), its two long parapet edges parallel for the whole length. From above: the roadway between two parapet walls, its surface a worn stone near #A9A399 with a faint cart-rutted centre; the parapets a darker grey near #6F6A62; the three ARCHES do not show as arches from above — what shows is the two CUTWATERS on each pier, pointed stone prows standing out from each side of the bridge between the arches, the upstream ones sharp and the downstream ones blunter; at each end the parapet flares out into a short curved wing wall; a little moss near #5F6B3F along the parapet tops; the spaces where the river passes under are TRANSPARENT, so the game's river shows through. No water, no banks, no people. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
       "note": "Scenery beyond the finish: one, across the river 600–900u past the line where the camera at the finish still sees it, the world's own end-of-the-course sign. Contact none (nothing sails there). Surface plane. bake 2.",
       "planRound": false,
       "fillTo": 0.86,
-      "master": 1024,
-      "bake": 2
+      "master": 3035,
+      "bake": 2,
+      "anchorPx": [
+        0.4998,
+        0.5
+      ]
     },
     {
       "key": "flats-spoonbill-roost",

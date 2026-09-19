@@ -127,3 +127,13 @@ On ingest each gets its PROP_KINDS row (label, plane, contact, height) and the h
 traced collider (art/prop_outlines.py); placement is Wes's in editor.html. One engine item
 before placing: a prop on ground that dries needs to draw UNDER the tide's water when it is
 covered (the seabed plane under the wet pass) — the eelgrass bed and the dinghy want that.
+
+**Delivered Sep 17 2026 (round 1):** the dinghy, the kaap, the wreck, the fish weir, the
+oyster trestles and the bridge — ingested (`art/prep_master.py` squares a Desktop delivery
+and records its `master`; the wreck and the trestles were rotated 90° clockwise so the bow /
+the rows are sprite-up), registered in PROP_KINDS, colliders traced (the weir's ring is the
+V's two arms, not the triangle between them; the trestles are four rows). The wreck went
+world 100 → 130: at 100 it was a race hull's length on the at-size sheet. **Rejected:** the
+perch beacon — an elevation (legs converging up, ladder rungs, the cage from the side); its
+brief now spells the plan out as a diagram (dots, lines, a ring). Re-run
+`python3 regatta/art/prompt.py flats-perch-beacon`.

@@ -2547,7 +2547,21 @@ const PROP_KINDS = {
     'otter-cypress-grove':      { label: 'Cypress grove',       world: 220, plane: 'surface', contact: 'none', motion: 'fixed' },
     'otter-driftwood-log':      { label: 'Driftwood log',       world:  54, plane: 'surface', contact: 'none', motion: 'fixed' },
     'otter-kelp-wrack':         { label: 'Kelp wrack',          world:  40, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'otter-lighthouse-pinos':   { label: 'Point Pinos light',   world:  96, plane: 'surface', contact: 'hard', height: 12, motion: 'fixed' }
+    'otter-lighthouse-pinos':   { label: 'Point Pinos light',   world:  96, plane: 'surface', contact: 'hard', height: 12, motion: 'fixed' },
+    // ── SPOONBILL FLATS (2026-09-17, the first six of eighteen; art/flats-prompts.md) ──
+    // The estuary's own things: the dinghy the tide left (the warning, contact none — it
+    // lies on ground that dries), the kaap and the wreck as hard landmarks, the fish weir
+    // and the oyster trestles as hazards a hull must not sail through (traced outlines —
+    // the weir's open V stays sailable, only its stakes stop a hull), and the bridge as
+    // scenery beyond the finish. Heights are the lee they cast: a 15 m timber pyramid, a
+    // hull on her side, knee-high trestles. A prop on ground that dries is still drawn on
+    // the surface plane over the tide's water — the seabed plane under the wet pass is owed.
+    'flats-stranded-dinghy':    { label: 'Stranded dinghy',     world:  64, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'flats-kaap':               { label: 'Kaap (daymark)',      world:  56, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed' },
+    'flats-wreck-hull':         { label: 'Wreck',               world: 130, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
+    'flats-fish-weir':          { label: 'Fish weir',           world: 200, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
+    'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed' },
+    'flats-stone-bridge':       { label: 'Stone bridge',        world: 300, plane: 'surface', contact: 'none', motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
