@@ -7075,13 +7075,18 @@
       "class": "world-prop",
       "role": "hazard",
       "venue": "flats",
-      "world": 64,
+      "world": 80,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A SMALL FISHING BOAT ON A SWINGING MOORING — a nine-metre clinker fishing boat with a small wheelhouse aft, lying head to the tide, seen from straight above and ALONE. THE SHAPE IS LONG: the hull about three times as long as it is wide, drawn lengthways up the frame with the bow to the top; ahead of the bow a taut mooring line runs up the frame to a round mooring buoy a third of a hull-length ahead. From above: the wheelhouse roof a small rectangle in the after third, a short mast with a boom just forward of it, a foredeck with a winch, the open working deck between with a couple of fish boxes and a coil of rope, fenders along one gunwale, a pot buoy lashed on the roof. Hull a deep green near #2F5A48 with a cream rubbing strake near #E5DDC6, the wheelhouse roof white near #EDEAE0, the deck a grey-brown near #7F7563, the mooring buoy orange near #E07A2C. No wake, no water, no people. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
-      "note": "Estuary traffic that does not move: three or four on moorings in the pools and along the channel's edges (never in the channel's middle). Contact HARD, height 3, surface plane, motion fixed — she lies head to the flood by convention (the engine rotates the sprite; sprite-up is the bow).",
+      "note": "Estuary traffic that does not move: three or four on moorings in the pools and along the channel's edges (never in the channel's middle). Contact HARD, height 3, surface plane, motion fixed — she lies head to the flood by convention (the engine rotates the sprite; sprite-up is the bow). DELIVERED 2026-09-17 (round 1, a plan, bow-up): the buoy on its line ahead takes the top 40% of the frame, so world 64 -> 80 to keep the hull about 46u — a nine-metre boat a shade larger than life. Fenders to port, pot buoy on the wheelhouse roof, winch forward, boxes and rope on deck.",
       "planRound": false,
-      "fillTo": 0.86
+      "fillTo": 0.86,
+      "master": 1619,
+      "anchorPx": [
+        0.5,
+        0.4997
+      ]
     },
     {
       "key": "flats-houseboat",

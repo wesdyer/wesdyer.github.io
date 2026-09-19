@@ -2565,7 +2565,9 @@ const PROP_KINDS = {
     // round 2 (2026-09-17): the houseboat came back as a plan; the gangway is on her port side, so place her with that side to the marsh
     'flats-houseboat':          { label: 'Houseboat',           world: 120, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' },
     // the centrepiece (round 2, a roof plan): placed ONCE at the head, the tail-race toward the finish reach
-    'flats-tide-mill':          { label: 'Tide mill',           world: 240, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed' }
+    'flats-tide-mill':          { label: 'Tide mill',           world: 240, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed' },
+    // on a swinging mooring, bow to the flood; the buoy ahead is in the sprite, so the collider covers boat, line and buoy
+    'flats-fishing-boat':       { label: 'Fishing boat',        world:  80, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
