@@ -2563,7 +2563,9 @@ const PROP_KINDS = {
     'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed' },
     'flats-stone-bridge':       { label: 'Stone bridge',        world: 300, plane: 'surface', contact: 'none', motion: 'fixed' },
     // round 2 (2026-09-17): the houseboat came back as a plan; the gangway is on her port side, so place her with that side to the marsh
-    'flats-houseboat':          { label: 'Houseboat',           world: 120, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' }
+    'flats-houseboat':          { label: 'Houseboat',           world: 120, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' },
+    // the centrepiece (round 2, a roof plan): placed ONCE at the head, the tail-race toward the finish reach
+    'flats-tide-mill':          { label: 'Tide mill',           world: 240, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like

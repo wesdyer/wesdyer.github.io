@@ -137,3 +137,9 @@ world 100 → 130: at 100 it was a race hull's length on the at-size sheet. **Re
 perch beacon — an elevation (legs converging up, ladder rungs, the cage from the side); its
 brief now spells the plan out as a diagram (dots, lines, a ring). Re-run
 `python3 regatta/art/prompt.py flats-perch-beacon`.
+
+**Round 2 (Sep 17):** the houseboat and the tide mill both came back as plans on the
+tightened briefs (say what a tilt cannot produce: roofs fill footprints, rims are even, every
+surface is a flat shape) — ingested and registered. Eight of eighteen shipped. The lesson
+for the rest: the generator tilts anything with a building or a hull in it; the flat
+subjects (weir, trestles, bridge, kaap, the wreck) held the plan first time.
