@@ -151,3 +151,8 @@ by recolouring the disc), the sea lavender. **The eelgrass is a KIND now, not a 
 tufts live, combed by the stream, under the water or flat on the mud. Six beds are laid by
 the builder. Twelve of seventeen slots shipped; left: the oyster shed, the spoonbill roost,
 the seals, the driftwood tree, the shell bank, the brent geese.
+
+**Round 4 (Sep 19):** the shell bank (a plan first time) and the driftwood tree (round 2, a
+fallen log — round 1 came back standing). **Deferred** (Wes): the spoonbill roost, the seal
+haul-out and the brent geese wait for a wildlife pass across every venue; not owed here.
+Fourteen slots are art; the oyster shed is the one still open.
