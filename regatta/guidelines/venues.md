@@ -1004,7 +1004,7 @@ every minute. The deep channel always goes round; the flats are the short way, f
 while.
 
 **Character & narrative.** Big, quiet, slightly ominous — the sea leaving, and coming
-back. Withies leaning with the stream at the sills, spoonbills landing on the sand the
+back. (The withies at the sills and the spoonbills on the sand were removed Sep 19 2026 — the marks for good, the birds until the wildlife pass.) Spoonbills once landed on the sand the
 ebb just uncovered (both procedural, js/tide.js). The story is *the clock*: HW eight
 seconds after the gun and every minute after, LW at :38, and everyone can read it on the
 gauge, the boat pill and the minimap.

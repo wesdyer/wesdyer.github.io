@@ -431,42 +431,10 @@ const current = { regions: [
  .concat(streamRegions(CREEK, 560, 1.5, 900, 'creek-stream', 180)) };
 current.regions[0].direction = 0;    // north: in through the mouth on the flood
 
-// ── WITHIES ──────────────────────────────────────────────────────────────────
-// Birch boughs on stakes, the Wadden way: they mark the EDGES of the timed water — either
-// end of each sill, and both sides of the wantij shelf every few hundred units — so the
-// sailor sees the gate before the depth shading tells them. Drawn by js/tide.js; they
-// lean with the stream. `hand` is which side the deep water is on (the topmark colour).
+// (The withies — the channel marks at every sill and down the long cuts — were removed on
+// Sep 19 2026 on Wes's call, and not replaced: the cuts are read off the ground shading,
+// the waterline and the draft contour. `tide.withies` is emitted empty.)
 const withies = [];
-const edgeWithies = (line, halfW, step, id) => {
-    let acc = 0;
-    for (let i = 1; i < line.length; i++) {
-        const a = line[i - 1], b = line[i];
-        const seg = Math.hypot(b[0] - a[0], b[1] - a[1]);
-        acc += seg;
-        if (acc < step) continue;
-        acc = 0;
-        let tx = b[0] - a[0], ty = b[1] - a[1]; const tl = Math.hypot(tx, ty) || 1; tx /= tl; ty /= tl;
-        const nx = -ty, ny = tx;
-        withies.push({ x: R(b[0] + nx * halfW), y: R(b[1] + ny * halfW), hand: 'port', id: `${id}-p${i}` });
-        withies.push({ x: R(b[0] - nx * halfW), y: R(b[1] - ny * halfW), hand: 'stbd', id: `${id}-s${i}` });
-    }
-};
-edgeWithies(CROSSING, 230, 420, 'wantij');
-withies.push({ x: 320, y: 720, hand: 'port', id: 'sill-w' }, { x: 800, y: 700, hand: 'stbd', id: 'sill-e' });
-withies.push({ x: 900, y: -7130, hand: 'port', id: 'creek-sill-w' }, { x: 1620, y: -7060, hand: 'stbd', id: 'creek-sill-e' });
-withies.push({ x: 1300, y: -4200, hand: 'port', id: 'creek-in-w' }, { x: 1600, y: -4300, hand: 'stbd', id: 'creek-in-e' });
-withies.push({ x: 440, y: 4120, hand: 'port', id: 'wantij-in-w' }, { x: 820, y: 4080, hand: 'stbd', id: 'wantij-in-e' });
-withies.push({ x: -820, y: 440, hand: 'port', id: 'gamble-sill-w' }, { x: -280, y: 420, hand: 'stbd', id: 'gamble-sill-e' });
-withies.push({ x: -1220, y: -3320, hand: 'port', id: 'neck-sill-w' }, { x: -680, y: -3300, hand: 'stbd', id: 'neck-sill-e' });
-withies.push({ x: -1380, y: -260, hand: 'port', id: 'neck-in-w' }, { x: -920, y: -240, hand: 'stbd', id: 'neck-in-e' });
-withies.push({ x: -670, y: -6720, hand: 'port', id: 'head-sill-w' }, { x: -130, y: -6660, hand: 'stbd', id: 'head-sill-e' });
-withies.push({ x: -990, y: -4040, hand: 'port', id: 'head-in-w' }, { x: -510, y: -4060, hand: 'stbd', id: 'head-in-e' });
-withies.push({ x: -420, y: 3560, hand: 'port', id: 'gamble-in-w' }, { x: -60, y: 3900, hand: 'stbd', id: 'gamble-in-e' });
-withies.push({ x: -70, y: -9170, hand: 'port', id: 'delta-sill-w' }, { x: 470, y: -9110, hand: 'stbd', id: 'delta-sill-e' });
-withies.push({ x: 120, y: -7500, hand: 'port', id: 'delta-in-w' }, { x: 580, y: -7560, hand: 'stbd', id: 'delta-in-e' });
-edgeWithies(GAMBLE, 220, 700, 'gamble');
-edgeWithies(NECK_N, 210, 700, 'neck');
-edgeWithies(HEADCUT, 210, 700, 'headcut');
 
 // ── EELGRASS (Sep 18 2026) ───────────────────────────────────────────────────
 // Zostera beds on the LOW flats beside the channels — never on a marked cut (a boat reads a

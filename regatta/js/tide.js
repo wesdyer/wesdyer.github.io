@@ -880,7 +880,7 @@ const TIDE = {
     // VARS variants, wet and dry. A tuft is a root with five to eight ribbon leaves; standing
     // (slack water) they fan out short, and the harder the stream runs the longer and the
     // more aligned they lie — so a bed reads the tide's direction and strength at a glance,
-    // the way the withies do, and reverses with it. Under the water (the wet pass) the tones
+    // and reverses with it. Under the water (the wet pass) the tones
     // are mixed toward the water and the tuft stirs a little; on the mud (the dry pass) the
     // leaves lie flat the way the ebb left them, toward the channel, and do not move. One
     // of the variants is a scrap of brown wrack, the reference's. Each tuft samples the
@@ -1012,7 +1012,6 @@ const TIDE = {
         drawIso(ctx, level(), 'rgba(236, 230, 210, 0.85)', 1.6, null);
         if (cfg().draftLine) drawDraftLine(ctx);
         if (cfg().birds) drawBirds(ctx);       // off (Wes, Sep 19 2026): the wildlife comes as props, across every venue, later
-        drawWithies(ctx);
     }
     // THE WITNESS. Spoon-billed sandpipers land on the flat the moment the water leaves it
     // and work the wet sand for as long as the ebb lasts — so a scatter of small birds IS the
@@ -1062,61 +1061,9 @@ const TIDE = {
         }
         ctx.restore();
     }
-    // WITHIES: birch boughs lashed to stakes in the mud, the Wadden Sea's channel marks —
-    // here at either end of each sill and down both sides of the wantij shelf (the
-    // document's `tide.withies`). From above a withy is a dark stake with a tuft of twigs,
-    // and the tuft LEANS with whatever the stream is doing, so a row of them reads the
-    // tide's direction before the gauge does. A pale ripple trails downstream of each when
-    // the water runs. The topmark says which hand the deep water is on: red to port, green
-    // to starboard, the IALA convention this game's marks already use.
-    function drawWithies(ctx) {
-        const T = state.tide, list = T.withies;
-        if (!list || !list.length) return;
-        const [va, vb, vc, vd] = viewWindow(ctx);
-        const t = state.time || 0;
-        ctx.save();
-        ctx.lineCap = 'round';
-        for (const w of list) {
-            if (w.x < va - 60 || w.x > vc + 60 || w.y < vb - 60 || w.y > vd + 60) continue;
-            const cur = (typeof getCurrentAt === 'function') ? getCurrentAt(w.x, w.y) : null;
-            const sp = cur ? cur.speed : 0, lean = Math.min(1, sp / 1.2);
-            const dx = cur && sp > 0.02 ? Math.sin(cur.direction) : 0, dy = cur && sp > 0.02 ? -Math.cos(cur.direction) : 0;
-            const depth = depthAt(w.x, w.y);
-            // the ripple: two short pale strokes opening downstream, only in water that moves
-            if (depth > 0.05 && sp > 0.25) {
-                ctx.strokeStyle = 'rgba(235, 240, 245, 0.55)';
-                ctx.lineWidth = 1.2;
-                const px = -dy, py = dx, L = 10 + 16 * lean;
-                ctx.beginPath();
-                ctx.moveTo(w.x + dx * 3, w.y + dy * 3); ctx.lineTo(w.x + dx * L + px * (4 + 3 * lean), w.y + dy * L + py * (4 + 3 * lean));
-                ctx.moveTo(w.x + dx * 3, w.y + dy * 3); ctx.lineTo(w.x + dx * L - px * (4 + 3 * lean), w.y + dy * L - py * (4 + 3 * lean));
-                ctx.stroke();
-            }
-            // the stake's shadow on the mud, then the stake
-            const tx = w.x + dx * 9 * lean, ty = w.y + dy * 9 * lean;   // where the tuft has leaned to
-            ctx.strokeStyle = 'rgba(40, 30, 16, 0.35)';
-            ctx.lineWidth = 4;
-            ctx.beginPath(); ctx.moveTo(w.x + 3, w.y + 4); ctx.lineTo(tx + 4, ty + 5); ctx.stroke();
-            ctx.strokeStyle = '#3a2a16';
-            ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(w.x, w.y); ctx.lineTo(tx, ty); ctx.stroke();
-            // the tuft: five twigs round the tip, streamed a little downstream
-            ctx.strokeStyle = '#4b3a22';
-            ctx.lineWidth = 1.7;
-            ctx.beginPath();
-            for (let k = 0; k < 6; k++) {
-                const a = k * 1.0472 + t * 0.6 + (w.x * 0.01);
-                const len = 8 + 3 * Math.sin(t * 1.7 + k);
-                ctx.moveTo(tx, ty);
-                ctx.lineTo(tx + Math.cos(a) * len + dx * 3 * lean, ty + Math.sin(a) * len + dy * 3 * lean);
-            }
-            ctx.stroke();
-            // the topmark
-            ctx.fillStyle = w.hand === 'port' ? '#e0483a' : '#3fb36a';
-            ctx.beginPath(); ctx.arc(tx, ty, 3.6, 0, Math.PI * 2); ctx.fill();
-        }
-        ctx.restore();
-    }
+    // (The channel marks — withies, then perches — were removed on Sep 19 2026, Wes: 'remove
+    // the withies and don't replace them'. The cuts are read off the ground shading, the
+    // waterline and the draft contour; `tide.withies` is still parsed, and ignored.)
     // THE TILES OVER THE DRY GROUND, at screen resolution: the mud tile everywhere the flat is
     // exposed, the sand tile where the material raster says sand, each a world-anchored
     // pattern of the tile's grey-about-its-mean, masked by the dry pass and composited with

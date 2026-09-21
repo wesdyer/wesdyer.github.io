@@ -586,3 +586,13 @@ Tall things (a wreck's gunwales, a beacon, the mill) stay on the surface plane.
 over the spline's last 17%), a lake no bridge could span. `mainWidth` now narrows from the
 line's own arc fraction (`sFinish`): 1080 → 380 within ~800u, then on toward 300. Nothing
 sails there. Channel-only estimate unchanged at 3:37 / 5.63 km.
+
+### 7.9 No channel marks (Sep 19, evening)
+
+The withies (50 procedural birch-bough marks at every sill and down the long cuts, leaning
+with the stream) are gone, on Wes's call, and not replaced: a painted withy came back as a
+radial snowflake and there are no references to brief from; a perch would have been a dot
+with a coloured disc. The cuts are read off the ground shading, the waterline and the draft
+contour — the tide's own picture — and the two tripod beacons at the throat and the creek's
+mouth are the only marks. The sandpipers are off as well (`TIDE.birds`) until the wildlife
+pass brings every venue's animals as props.

@@ -165,3 +165,15 @@ tuft on a stake, seen from above as a starburst of bare twigs round the stake's 
 delivery the drawer swaps the procedural stake-and-tuft for the sprite at the same 50
 positions, leaning with the stream, the topmark disc and the ripple still drawn by code.
 `python3 regatta/art/prompt.py flats-withy`.
+
+**Sep 19, last:** `flats-withy` superseded — round 1 came back a radial snowflake, and with
+no references to be had the channel marks are PERCHES now (Wes: "should we just use day
+marks?"): a pole's top with the IALA topmark over it, drawn by tide.js at the same 50
+positions, leaning with the stream. Nothing to generate. The withy line in the table is
+history.
+
+**Sep 19, last:** the withies are GONE (Wes: "remove the withies and don't replace them") —
+round 1 of `flats-withy` came back a radial snowflake and there are no references to brief
+from; the slot is superseded and the procedural marks are removed from the document and the
+drawer. The cuts are read off the ground shading, the waterline and the draft contour; the
+tripod beacons at the throat and the creek's mouth are the only channel marks.
