@@ -65,6 +65,7 @@ const TIDE = {
     // Bots.
     botMargin: 0.12,     // m — the router's safety margin on top of the draft (0.3 closed the wantij to every bot; the drying edges are priced by edgeTax instead)
     riskHalfW: 300,      // u — a marked passage's cells lie within this of its line (the ladder's rungs, riskStamp)
+    birds: false,        // the procedural sandpipers on the ebb-uncovered band (drawBirds): off until the wildlife pass gives every venue its animals as props (Wes, Sep 19 2026)
     escapeR: 260,        // u — how far a boat may plan over ground above its nerve to get off it (500 let a channel sailor carry on over the head sill and dry out on it)
     escapeTax: 3,        // × — and what those steps cost, so the way off is the shortest one
     edgeTax: 2.5,        // × — a router step beside a cell that is dry on arrival (routeCost)
@@ -1010,7 +1011,7 @@ const TIDE = {
         drawEelgrass(ctx, false);                  // the beds the tide has left, flat on the mud
         drawIso(ctx, level(), 'rgba(236, 230, 210, 0.85)', 1.6, null);
         if (cfg().draftLine) drawDraftLine(ctx);
-        drawBirds(ctx);
+        if (cfg().birds) drawBirds(ctx);       // off (Wes, Sep 19 2026): the wildlife comes as props, across every venue, later
         drawWithies(ctx);
     }
     // THE WITNESS. Spoon-billed sandpipers land on the flat the moment the water leaves it

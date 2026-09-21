@@ -156,3 +156,12 @@ the seals, the driftwood tree, the shell bank, the brent geese.
 fallen log — round 1 came back standing). **Deferred** (Wes): the spoonbill roost, the seal
 haul-out and the brent geese wait for a wildlife pass across every venue; not owed here.
 Fifteen slots are art (the oyster shed came back as a plan first time — round 5, Sep 19). Every slot that was not deferred or superseded is shipped.
+
+**Sep 19, later:** the procedural sandpipers are OFF (`TIDE.birds`) — Wes: the wildlife comes as
+props later, across every venue; the spoonbill / seal / goose slots carry the note, and the
+sandpipers should come back as a fourth (a feeding flock of small waders keyed to the ebb, the
+way the code was). **`flats-withy`** is a new slot: the channel mark as art — a birch bough's
+tuft on a stake, seen from above as a starburst of bare twigs round the stake's cut top. On
+delivery the drawer swaps the procedural stake-and-tuft for the sprite at the same 50
+positions, leaning with the stream, the topmark disc and the ripple still drawn by code.
+`python3 regatta/art/prompt.py flats-withy`.
