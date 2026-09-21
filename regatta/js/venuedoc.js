@@ -2554,13 +2554,14 @@ const PROP_KINDS = {
     // and the oyster trestles as hazards a hull must not sail through (traced outlines —
     // the weir's open V stays sailable, only its stakes stop a hull), and the bridge as
     // scenery beyond the finish. Heights are the lee they cast: a 15 m timber pyramid, a
-    // hull on her side, knee-high trestles. A prop on ground that dries is still drawn on
-    // the surface plane over the tide's water — the seabed plane under the wet pass is owed.
-    'flats-stranded-dinghy':    { label: 'Stranded dinghy',     world:  64, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // hull on her side, knee-high trestles. `tidal` marks the low things the tide covers:
+    // drawn under the water while their cell is wet (propSpriteFor's 'tidal' pass) and on
+    // the mud once it has left; the tall ones stand out of the water on the surface plane.
+    'flats-stranded-dinghy':    { label: 'Stranded dinghy',     world:  64, plane: 'surface', contact: 'none', motion: 'fixed', tidal: true },
     'flats-kaap':               { label: 'Kaap (daymark)',      world:  56, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed' },
     'flats-wreck-hull':         { label: 'Wreck',               world: 130, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
-    'flats-fish-weir':          { label: 'Fish weir',           world: 200, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
-    'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed' },
+    'flats-fish-weir':          { label: 'Fish weir',           world: 200, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed', tidal: true },
+    'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed', tidal: true },
     'flats-stone-bridge':       { label: 'Stone bridge',        world: 300, plane: 'surface', contact: 'none', motion: 'fixed' },
     // round 2 (2026-09-17): the houseboat came back as a plan; the gangway is on her port side, so place her with that side to the marsh
     'flats-houseboat':          { label: 'Houseboat',           world: 120, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' },
@@ -2572,8 +2573,8 @@ const PROP_KINDS = {
     'flats-perch-beacon':       { label: 'Beacon (red, port)',  world:  44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
     'flats-perch-beacon-green': { label: 'Beacon (green, stbd)', world: 44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
     'flats-sea-lavender':       { label: 'Sea lavender',        world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'flats-shell-bank':         { label: 'Shell bank',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'flats-driftwood-tree':     { label: 'Driftwood tree',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'flats-shell-bank':         { label: 'Shell bank',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed', tidal: true },
+    'flats-driftwood-tree':     { label: 'Driftwood tree',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed', tidal: true },
     // the last of the set: the working harbour, where the wantij creek leaves the channel; the stage is to the left of the ridge, so that side faces the water
     'flats-oyster-shed':        { label: 'Oyster shed',         world: 130, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' }
 };

@@ -181,7 +181,12 @@ const MAIN = spline([
     [300, -16300]
 ], 5);
 // The channel's rim-to-rim width along the main line: a wide mouth, 5–8 hulls elsewhere.
-const mainWidth = (s) => s < 0.035 ? 1300 : s < 0.065 ? 1300 - (s - 0.035) / 0.03 * 400 : s < 0.095 ? 900 - (s - 0.065) / 0.03 * 200 : s < 0.53 ? 700 : s < 0.78 ? 580 : s < 0.83 ? 580 + (s - 0.78) / 0.05 * 500 : 1080 - (s - 0.83) / 0.17 * 780;   // a broad approach, a 900u throat, the channel, the wide finish reach, then the river narrowing to 300
+// s of the finish line on MAIN (its arc fraction at y = −10750), so the river can narrow
+// FROM THE LINE: the old ramp ran over the spline's last 17% and the water 1000u past the
+// finish was still 900 wide — a lake with a bridge that could not span it.
+const sFinish = (() => { let acc = 0, best = 0, bd = 1e9; for (let i = 1; i < MAIN.length; i++) { acc += Math.hypot(MAIN[i][0] - MAIN[i-1][0], MAIN[i][1] - MAIN[i-1][1]); const d = Math.abs(MAIN[i][1] + 10750); if (d < bd) { bd = d; best = acc; } } let tot = 0; for (let i = 1; i < MAIN.length; i++) tot += Math.hypot(MAIN[i][0] - MAIN[i-1][0], MAIN[i][1] - MAIN[i-1][1]); return best / tot; })();
+const mainWidth = (s) => s < 0.035 ? 1300 : s < 0.065 ? 1300 - (s - 0.035) / 0.03 * 400 : s < 0.095 ? 900 - (s - 0.065) / 0.03 * 200 : s < 0.53 ? 700 : s < 0.78 ? 580 : s < 0.83 ? 580 + (s - 0.78) / 0.05 * 500
+    : s < sFinish ? 1080 : s < sFinish + 0.035 ? 1080 - (s - sFinish) / 0.035 * 700 : 380 - Math.min(80, (s - sFinish - 0.035) / 0.1 * 80);   // a broad approach, a 900u throat, the channel, the wide finish reach; past the line the river narrows to 380 within ~800u and on to 300
 
 // The flood creek: leaves the main channel just past the west bend and rejoins before the
 // finish approach, inside the big turn — shorter, shallower, its own stream, and a sill.
@@ -476,6 +481,63 @@ add('flats-eelgrass', blob(500, -6900, 320, 170, 12, 0.22, 0.02), { id: 'eel-hea
 add('flats-eelgrass', blob(1800, -7900, 200, 240, 12, 0.24, 0.4), { id: 'eel-east', name: 'East creek eelgrass' });
 add('flats-eelgrass', blob(-100, 3100, 240, 200, 12, 0.22, 0.15), { id: 'eel-lower', name: 'Lower loop eelgrass' });
 
+// ── THE PROPS (Sep 19 2026, a first layout for Wes to adjust in editor.html) ─────────
+// Headings are radians, sprite-up = 0 = north (−y), clockwise positive: to point a sprite's
+// top along (dx, dy) use hdg(dx, dy). Every hard prop keeps clear of the channel ribbon
+// and every marked cut (eval checks: ground under it, distance to the passage lines).
+// ⚠️ Once Wes has moved these in the editor, this block is stale — sync it or stop re-running.
+const hdg = (dx, dy) => R(Math.atan2(dx, -dy), 3);
+const props = [];
+let propN = 0;
+const prop = (kind, x, y, heading = 0, scale = 1) => props.push({ id: `${kind.replace('flats-', '')}-${++propN}`, kind, x: R(x), y: R(y), heading: R(heading, 3), scale });
+// the mouth: a kaap on each spit, beacons at the throat in the rim shallows just outside the deep
+// ribbon (red to port, green to starboard, going in), and a green at the flood creek's mouth
+prop('flats-kaap', -900, 4500, 0);
+prop('flats-kaap', 1900, 4380, 0);
+prop('flats-perch-beacon', -230, 4520, 0);
+prop('flats-perch-beacon-green', 1080, 4470, 0);
+prop('flats-perch-beacon-green', 2010, -4580, 0);
+// wrecks: the ebb delta's east swash bar, and the fourth section's east flat
+prop('flats-wreck-hull', 1750, 5470, hdg(1, -0.15));
+prop('flats-wreck-hull', 2050, -8200, hdg(0.3, -1));
+// fish weirs, the pound up the frame and the mouth toward where the flood comes from
+prop('flats-fish-weir', -100, 3050, 0);                     // the first loop's flats: the flood comes from the south
+prop('flats-fish-weir', -100, -3150, Math.PI);              // the upper basin: the flood comes from the channel to the north
+// oyster trestles on the low flats near the channel's edge, rows along the stream
+prop('flats-oyster-trestles', -2450, -150, hdg(-0.5, -1));
+prop('flats-oyster-trestles', 1600, -3750, hdg(1, -0.3));
+prop('flats-oyster-trestles', 1850, -7650, hdg(0.2, -1));
+// fishing boats on moorings: the interior pools (never a passage's pool) and the east marginal channel at the mouth, bow to the flood
+prop('flats-fishing-boat', -2000, 700, hdg(-1, -0.4));
+prop('flats-fishing-boat', 1200, -2400, hdg(0.2, -1));
+prop('flats-fishing-boat', -1700, -4300, hdg(0.8, -1));
+prop('flats-fishing-boat', 1450, 5050, hdg(-0.6, -1));
+// the houseboat on the flats under the east shore where the channel runs close to it, gangway (port) to the bank
+prop('flats-houseboat', 3150, 1600, Math.PI);
+// the oyster shed on stilts over the flats inside the mouth's east side, the stage (port) reaching toward the channel
+prop('flats-oyster-shed', 1800, 4080, 0);
+// the mill on the east bank beyond the finish, the tail-race (sprite-down) toward the river
+prop('flats-tide-mill', 560, -11320, Math.PI / 2);
+// the bridge across the river beyond the line, where it has narrowed: sprite-up is the river's direction
+prop('flats-stone-bridge', -190, -11800, hdg(0.29, -1), 1.8);
+// the dinghies the tide left, on ground that dries for a good share of the cycle beside the cuts: contact none, a warning
+prop('flats-stranded-dinghy', 1000, 950, 2.5);               // beside the wantij's sill
+prop('flats-stranded-dinghy', -600, -3200, 4.0);             // the neck's exit, east of the sill
+prop('flats-stranded-dinghy', -650, 2600, 1.2);              // beside the gamble shelf
+prop('flats-stranded-dinghy', 650, -8050, 5.5);              // the delta bar
+prop('flats-stranded-dinghy', -1700, -1900, 0.7);            // the point bar's inside
+// driftwood and shell banks on the beaches, the swash bar and the flood line of the west shore
+prop('flats-driftwood-tree', -2400, 4880, hdg(1, 0.2));
+prop('flats-driftwood-tree', 2050, 4650, hdg(-1, 0.3));
+prop('flats-driftwood-tree', -3200, -1500, hdg(0.6, -1));
+prop('flats-shell-bank', -1300, 4930, hdg(1, 0));
+prop('flats-shell-bank', -1000, 5440, hdg(1, 0.1));
+prop('flats-shell-bank', 2450, 4720, hdg(-1, 0.1));
+// sea lavender on the marsh islands and the shore
+for (const [x, y, h] of [[-1300, 1500, 0.4], [-1750, 1900, 2.1], [1500, 1900, 1.1], [1850, 2500, 3.9], [-350, -2000, 0.7], [1100, -1350, 2.6],
+                         [400, -4900, 1.9], [-1250, -4800, 5.2], [2250, -6350, 0.2], [1000, -8300, 3.1], [-1050, -9200, 1.5], [2450, -800, 4.4]])
+    prop('flats-sea-lavender', x, y, h);
+
 // ── THE PASSAGES, AS LINES ───────────────────────────────────────────────────
 // Every marked passage's centreline, entrance to exit, into the document: what a probe
 // measures the fill along (eval/_flats_passages.js) and what a future HUD could name.
@@ -565,7 +627,7 @@ const doc = {
     wind: { regions: wind.regions.map(r => Object.assign({}, r, { poly: r.poly.map(sc) })) },
     current: { regions: current.regions.map(r => Object.assign({}, r, { poly: r.poly.map(sc), falloff: R(r.falloff * SCALE) })) },
     palette: { baseColor: '#3a6394', deepColor: '#274a72', shallowColor: '#7aa6d4', shorelineColor: '#e0b866' },
-    props: []
+    props: props.map(p => Object.assign({}, p, { x: R(p.x * SCALE), y: R(p.y * SCALE) }))
 };
 
 // ── summary ──────────────────────────────────────────────────────────────────

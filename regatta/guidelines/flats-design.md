@@ -555,3 +555,34 @@ variants, wet and dry. Where the sim has no stream (the fill fades once the wate
 lean from |flow|. A light tax (drag 0.12, priced by the router). Six beds on the low flats
 beside the channels, never on a cut. Measured: ~2.5 ms a frame with a bed in view on a
 software canvas.
+
+### 7.8 The props placed, and the river narrowed (Sep 19)
+
+A first layout of 44 props in `art/build_flats.js` (the `prop(...)` block — once Wes has
+moved them in editor.html the block is stale: sync it or stop re-running the builder).
+Every placement was probed (eval: ground under it, distance to the channel ribbon and to
+each cut's line, marsh under the lavender) and the fleet raced three seeds with no prop
+contact: kaaps on the two spits; beacons in the rim shallows at the throat (red to port
+going in, green to starboard) and a green at the flood creek's mouth; wrecks on the ebb
+delta's east swash bar and the fourth section's east flat; weirs on the first loop's flats
+and the upper basin (mouth toward where the flood comes from); trestles on the low flats by
+the channel in the west bend, the upper basin and the fourth section; fishing boats in the
+three interior pools that are no cut's pool and in the east marginal channel at the mouth;
+the houseboat under the east shore where the channel runs close, gangway to the bank; the
+shed on stilts over the flats inside the mouth's east side, stage toward the channel; the
+mill on the east flats beyond the finish, tail-race to the river; the bridge across the
+river beyond the arena's edge; five dinghies on drying ground beside the cuts (the wantij's
+sill, the neck's exit, the gamble shelf, the delta bar, the point bar's inside); driftwood
+and shell banks on the beaches, the swash bar and the west shore's flood line; lavender on
+every marsh island.
+
+**The tidal pass.** A low prop the tide covers (`tidal: true` on the kind: dinghy, weir,
+trestles, driftwood, shell bank) is drawn under the water while its cell is wet — a
+'tidal' plane between the seabed and the wet flats, tinted like a seabed prop — and on the
+mud, in the surface pass, once the water has left it. Read every frame from Tide.depthAt.
+Tall things (a wreck's gunwales, a beacon, the mill) stay on the surface plane.
+
+**The river.** Past the finish the channel was still 900–1000u wide (the old ramp ran
+over the spline's last 17%), a lake no bridge could span. `mainWidth` now narrows from the
+line's own arc fraction (`sFinish`): 1080 → 380 within ~800u, then on toward 300. Nothing
+sails there. Channel-only estimate unchanged at 3:37 / 5.63 km.

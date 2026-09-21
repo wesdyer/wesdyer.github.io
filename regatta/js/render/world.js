@@ -254,9 +254,24 @@ function crownOverWater(p, worldW) {
 // a bare snag with no crown, or a crown reaching in from a tree rooted off the map.
 function propSpriteFor(p, plane) {
     const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
-    const parts = (reg[p.kind] || {}).parts;
+    const kind = reg[p.kind] || {};
+    const parts = kind.parts;
     if (parts) return parts[plane] ? propSprite(parts[plane]) : null;
-    return (p.plane || 'surface') === plane ? propSprite(p.kind) : null;
+    const own = p.plane || 'surface';
+    // SPOONBILL FLATS: a surface prop on ground the tide covers (the kind says `tidal`: a
+    // stranded dinghy, oyster trestles, a fish weir) is drawn UNDER the water while its
+    // cell is wet — the 'tidal' pass, between the seabed and the wet flats, tinted like a
+    // seabed prop — and on the mud, in the surface pass, once the tide has left it. Read
+    // every frame: the water comes and goes in seconds here. Anything tall (a wreck's
+    // gunwales, a beacon) stays a surface prop and stands out of the water.
+    if (kind.tidal && own === 'surface' && state.tide && window.Tide) {
+        const wet = Tide.depthAt(p.x, p.y) > 0.03;
+        if (plane === 'tidal') return wet ? propSprite(p.kind) : null;
+        if (plane === 'surface') return wet ? null : propSprite(p.kind);
+        return null;
+    }
+    if (plane === 'tidal') return null;
+    return own === plane ? propSprite(p.kind) : null;
 }
 
 // THE EXACT CULL RADIUS IS HALF THE DIAGONAL, not 0.6 of it. The camera rotates, so the
@@ -643,7 +658,7 @@ function drawProps(ctx, plane, filter, pending) {
         ctx.globalAlpha = alpha;
         ctx.translate(x, y);
         if (p.heading) ctx.rotate(p.heading);
-        drawSpriteBoxed(ctx, plane === 'seabed' ? submergedSprite(s) : s.img, s, w);
+        drawSpriteBoxed(ctx, (plane === 'seabed' || plane === 'tidal') ? submergedSprite(s) : s.img, s, w);
         ctx.restore();
         if (lavaHere) drawPropLavaGlow(ctx, p, w, kind, x, y, plane === 'seabed');
         drawn++;
