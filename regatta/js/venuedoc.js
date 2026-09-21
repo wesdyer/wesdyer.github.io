@@ -2572,7 +2572,8 @@ const PROP_KINDS = {
     'flats-perch-beacon':       { label: 'Beacon (red, port)',  world:  44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
     'flats-perch-beacon-green': { label: 'Beacon (green, stbd)', world: 44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
     'flats-sea-lavender':       { label: 'Sea lavender',        world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'flats-shell-bank':         { label: 'Shell bank',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed' }
+    'flats-shell-bank':         { label: 'Shell bank',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'flats-driftwood-tree':     { label: 'Driftwood tree',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like

@@ -7229,11 +7229,16 @@
       "venue": "flats",
       "world": 100,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. A WHOLE DRIFTWOOD TREE — a dead oak, bleached silver, roots and all — LYING FLAT ON ITS SIDE on a sandbar, the way the flood left it, seen from DIRECTLY ABOVE and ALONE. THE TREE IS NOT STANDING: it has fallen, it lies on the ground along its whole length, trunk and every limb touching the sand, and the drone looks down at it as at a log. THE SHAPE IS LONG, about two and a half times as long as it is wide, laid lengthways UP the frame: the ROOT PLATE at the BOTTOM of the frame — the broken disc of roots seen FLAT and FACE-ON like a splayed hand, a ragged circle of root stubs plainly wider than the trunk, with dark mud still in it — the trunk running up the frame from the plate's centre, and at the TOP the crown as five or six main limbs branching at different heights and angles, each ending in broken stubs, no fine twigs, no leaves; the limbs fan across the frame in the plane of the ground, so between them the ground (transparent) shows. Because it lies on its side, the light along the trunk and each limb is a lit crest line down the middle with the shaded side to the lower right: silver-grey near #D3CCBF, the crest near #E8E3D8, the shade near #948B7E, a few dark cracks and a knot; the root plate darker and browner near #6E5B48. NOTHING IS UPRIGHT: no ground plane under a standing trunk, no patch of earth at its foot, no shadow pooled around a base, no root spreading INTO the ground — the roots are a flat disc at one END of the log. No bark, no green, no barnacles, no water. The light comes from the UPPER LEFT of the frame; there is no cast shadow on the ground. NO GROUND IS PAINTED. The subject is alone on a TRANSPARENT background — a real alpha channel, PNG, never white",
-      "note": "Two or three on the high bars and the spit's back where the flood line leaves things. Contact none, surface plane (a hull passes over a drowned trunk at high water; at low water the ground it lies on is already dry). ROUND 1 (2026-09-19) REJECTED: a STANDING dead tree in elevation — trunk vertical, crown at the top, the root plate become a patch of ground at its foot. The brief now says it three ways: the tree has fallen and lies along its whole length; the root plate is a flat face-on disc at one END of the log; nothing is upright, no ground at its foot.",
+      "note": "Two or three on the high bars and the spit's back where the flood line leaves things. Contact none, surface plane (a hull passes over a drowned trunk at high water; at low water the ground it lies on is already dry). ROUND 1 (2026-09-19) REJECTED: a STANDING dead tree in elevation — trunk vertical, crown at the top, the root plate become a patch of ground at its foot. The brief now says it three ways: the tree has fallen and lies along its whole length; the root plate is a flat face-on disc at one END of the log; nothing is upright, no ground at its foot. ROUND 2 (2026-09-19) ACCEPTED: a fallen log seen from above — the root plate a face-on disc with mud in it at one end, the trunk with a knot and cracks, six limbs fanning in the ground's plane with broken stubs and the ground showing between them. Delivered roots-left, crown-right; rotated 90° anticlockwise (--rotate -90) so the crown is sprite-up and the root plate at the foot (the hulls were the other case: bow-left needs +90).",
       "planRound": false,
-      "fillTo": 0.86
+      "fillTo": 0.86,
+      "master": 2970,
+      "anchorPx": [
+        0.4998,
+        0.5
+      ]
     },
     {
       "key": "flats-shell-bank",
