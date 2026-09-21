@@ -7148,15 +7148,19 @@
       "class": "world-prop",
       "role": "landmark",
       "venue": "flats",
-      "world": 100,
+      "world": 130,
       "anchor": "center",
-      "status": "open",
+      "status": "art",
       "subject": "THE PICTURE IS A DRONE PHOTOGRAPH SHOT STRAIGHT DOWN FROM WELL ABOVE, the geometry of an orthophoto. You are looking at the TOP of the subject and nothing else — no side of anything. AN OYSTER SHED ON STILTS at the edge of a saltmarsh — a black tarred timber shed standing on piles over the mud, with a plank landing stage along one side and a wooden slipway running down from its door, seen from straight above and ALONE. THE SHAPE IS LONG: the shed's pitched roof a rectangle about twice as long as it is wide, drawn lengthways up the frame, the ridge line down its middle, the two roof planes a shade apart; along one long side the landing stage — a narrow plank deck on piles, half the roof's length — with a stack of oyster bags, a few crates and a coil of rope on it; from the shed's end a slipway of planks runs a short way up the frame; a small open-topped barge is tied at the stage. The roof of corrugated iron rusted to a red-brown near #7B4A32 with a pale ridge, the tarred walls where they show under the eaves near #2E2A26, the stage's planks a grey near #8E877A, the bags near-black. No water, no mud, no people. The light comes from the UPPER LEFT of the frame and the flank away from it is the shaded one; there is no cast shadow on the ground. NO GROUND IS PAINTED: no mud, no sand, no grass, no water around it — the game draws what it stands on. The subject is alone on a transparent background",
-      "note": "One, at the marsh edge of the first loop where the wantij creek leaves the channel — the working harbour of the estuary. Contact HARD, height 6, surface plane; place the stage side to the water.",
+      "note": "One, at the marsh edge of the first loop where the wantij creek leaves the channel — the working harbour of the estuary. Contact HARD, height 6, surface plane; place the stage side to the water. DELIVERED 2026-09-19 (round 1) ACCEPTED — the one building that came back as a plan first time: two roof planes split at the ridge, the plank stage with its pile heads, bags, crates and a coil of rope on it, the barge tied alongside, the slipway off the end. Delivered ridge-across with the stage below; rotated 90° clockwise so the ridge runs sprite-up and the stage is to port. World 100 -> 130: the stage and barge are half the frame, so the shed itself stays a working shed and not a hut.",
       "planRound": false,
       "fillTo": 0.86,
-      "master": 1024,
-      "bake": 3
+      "master": 2577,
+      "bake": 3,
+      "anchorPx": [
+        0.5,
+        0.4998
+      ]
     },
     {
       "key": "flats-tide-mill",

@@ -155,4 +155,4 @@ the seals, the driftwood tree, the shell bank, the brent geese.
 **Round 4 (Sep 19):** the shell bank (a plan first time) and the driftwood tree (round 2, a
 fallen log — round 1 came back standing). **Deferred** (Wes): the spoonbill roost, the seal
 haul-out and the brent geese wait for a wildlife pass across every venue; not owed here.
-Fourteen slots are art; the oyster shed is the one still open.
+Fifteen slots are art (the oyster shed came back as a plan first time — round 5, Sep 19). Every slot that was not deferred or superseded is shipped.

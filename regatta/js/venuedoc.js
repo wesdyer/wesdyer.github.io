@@ -2573,7 +2573,9 @@ const PROP_KINDS = {
     'flats-perch-beacon-green': { label: 'Beacon (green, stbd)', world: 44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
     'flats-sea-lavender':       { label: 'Sea lavender',        world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
     'flats-shell-bank':         { label: 'Shell bank',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'flats-driftwood-tree':     { label: 'Driftwood tree',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed' }
+    'flats-driftwood-tree':     { label: 'Driftwood tree',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed' },
+    // the last of the set: the working harbour, where the wantij creek leaves the channel; the stage is to the left of the ridge, so that side faces the water
+    'flats-oyster-shed':        { label: 'Oyster shed',         world: 130, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
