@@ -604,6 +604,26 @@ console.log(`shapes ${shapes.length}, vertices ${verts}, current regions ${curre
 console.log(`main channel ${Math.round(len(MAIN))}u, creek ${Math.round(len(CREEK))}u, crossing ${Math.round(len(CROSSING))}u`);
 const beat = Math.hypot(420 - 420, 7150 - 5950);
 console.log(`beat ${Math.round(beat)}u, mark→mouth ${Math.round(7150 - 4500)}u, channel route ≈ ${Math.round(beat + 2650 + len(MAIN) - 700)}u`);
+// ── THE GUARD (Sep 21 2026) ──────────────────────────────────────────────────
+// Wes edits this venue in editor.html, which writes the file directly. On Sep 21 a re-run of
+// this script overwrote five minutes of his placements. So: the script remembers a hash of
+// what IT last wrote (art/.flats_build_stamp — the document without course.paths, which the
+// bake rewrites), and refuses to write over a file that differs from it, because that file
+// is somebody's work. `--force` overrides, knowingly. A first run with no stamp writes.
+const STAMP = path.resolve(__dirname, '.flats_build_stamp');
+const docHash = (d) => { const c = JSON.parse(JSON.stringify(d)); if (c.course) delete c.course.paths; return require('crypto').createHash('sha1').update(JSON.stringify(c)).digest('hex'); };
+if (!DRY && fs.existsSync(OUT) && fs.existsSync(STAMP) && !process.argv.includes('--force')) {
+    try {
+        const src = fs.readFileSync(OUT, 'utf8');
+        const m = src.match(/window\.VENUE_DOC\["flats"\] = (\{[\s\S]*\});\s*$/);
+        const onDisk = m ? docHash(JSON.parse(m[1])) : null;
+        const stamped = fs.readFileSync(STAMP, 'utf8').trim();
+        if (onDisk !== stamped) {
+            console.error(`REFUSING to overwrite ${OUT}: it is not the file this script last wrote (edited in editor.html?). Merge the change into the builder or re-run with --force to discard it.`);
+            process.exit(2);
+        }
+    } catch (e) { console.error('guard: could not read the venue on disk (' + e.message + '); refusing. --force to override.'); process.exit(2); }
+}
 if (!DRY) {
     const text = '// BUILT by art/build_flats.js — re-run the script rather than hand-editing, or stop re-running it.\n'
         + '// Emitted as JS, not JSON: the eval harness loads over file://, where fetch is blocked.\n'
@@ -611,5 +631,6 @@ if (!DRY) {
         + 'window.VENUE_DOC = window.VENUE_DOC || {};\n'
         + `window.VENUE_DOC["flats"] = ${JSON.stringify(doc, null, 2)};\n`;
     fs.writeFileSync(OUT, text);
+    fs.writeFileSync(STAMP, docHash(doc) + '\n');
     console.log('wrote', OUT);
 }
