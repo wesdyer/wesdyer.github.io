@@ -5966,7 +5966,7 @@ window.VENUE_DOC["flats"] = {
     ],
     "cutoff": 480,
     "paths": {
-      "sig": "v3-82b6e26-8d9",
+      "sig": "v3-f0dcbc01-8cc",
       "legs": [
         {
           "pts": []
@@ -7501,8 +7501,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "fish-weir-8",
       "kind": "flats-fish-weir",
-      "x": -100,
-      "y": 3050,
+      "x": -700,
+      "y": 2900,
       "heading": 0,
       "scale": 1
     },
@@ -7517,9 +7517,9 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "oyster-trestles-10",
       "kind": "flats-oyster-trestles",
-      "x": -2450,
+      "x": 1700,
       "y": -150,
-      "heading": -0.464,
+      "heading": 1.571,
       "scale": 1
     },
     {
@@ -7533,8 +7533,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "oyster-trestles-12",
       "kind": "flats-oyster-trestles",
-      "x": 1850,
-      "y": -7650,
+      "x": 1700,
+      "y": -7250,
       "heading": 0.197,
       "scale": 1
     },

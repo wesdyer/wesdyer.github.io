@@ -2554,27 +2554,33 @@ const PROP_KINDS = {
     // and the oyster trestles as hazards a hull must not sail through (traced outlines —
     // the weir's open V stays sailable, only its stakes stop a hull), and the bridge as
     // scenery beyond the finish. Heights are the lee they cast: a 15 m timber pyramid, a
-    // hull on her side, knee-high trestles. `tidal` marks the low things the tide covers:
-    // drawn under the water while their cell is wet (propSpriteFor's 'tidal' pass) and on
-    // the mud once it has left; the tall ones stand out of the water on the surface plane.
-    'flats-stranded-dinghy':    { label: 'Stranded dinghy',     world:  64, plane: 'surface', contact: 'none', motion: 'fixed', tidal: true },
+    // hull on her side, knee-high trestles. `tidal` marks the low FIXED things the tide
+    // covers: they EMERGE as the water falls (Tide.propFrame — the plane of the water
+    // against the ground under each pixel and the object's height there), `tideH` the
+    // object's height in metres and `tideRef` the width in world units that counts as full
+    // height (a stake 3u thick is as tall as a weir gets). `floats` (Wes, Sep 21: boats
+    // stay on top) marks the things the water LIFTS rather than covers — a dinghy, a moored
+    // boat, a log: on the surface plane always, and with `swing` [px, py] (the pivot in the
+    // frame: the kedge, the mooring buoy) they turn to lie to the stream while afloat and
+    // stay where they settled when the water leaves them (drawProps, Tide.propSwing).
+    'flats-stranded-dinghy':    { label: 'Stranded dinghy',     world:  64, plane: 'surface', contact: 'none', motion: 'fixed', floats: 0.2, swing: [0.5, 0.06] },   // afloat with 0.2 m under her, swinging to the stream about the kedge at the top of the frame; on the mud below that
     'flats-kaap':               { label: 'Kaap (daymark)',      world:  56, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed' },
     'flats-wreck-hull':         { label: 'Wreck',               world: 130, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
-    'flats-fish-weir':          { label: 'Fish weir',           world: 200, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed', tidal: true },
-    'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed', tidal: true },
+    'flats-fish-weir':          { label: 'Fish weir',           world: 200, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed', tidal: true, tideH: 1.2, tideRef: 3 },
+    'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed', tidal: true, tideH: 0.7, tideRef: 5 },
     'flats-stone-bridge':       { label: 'Stone bridge',        world: 300, plane: 'surface', contact: 'none', motion: 'fixed' },
     // round 2 (2026-09-17): the houseboat came back as a plan; the gangway is on her port side, so place her with that side to the marsh
     'flats-houseboat':          { label: 'Houseboat',           world: 120, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' },
     // the centrepiece (round 2, a roof plan): placed ONCE at the head, the tail-race toward the finish reach
     'flats-tide-mill':          { label: 'Tide mill',           world: 240, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed' },
     // on a swinging mooring, bow to the flood; the buoy ahead is in the sprite, so the collider covers boat, line and buoy
-    'flats-fishing-boat':       { label: 'Fishing boat',        world:  80, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
+    'flats-fishing-boat':       { label: 'Fishing boat',        world:  80, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed', floats: 0.35, swing: [0.5, 0.06] },   // on her mooring: swings to the stream about the buoy at the top of the frame,
     // the channel beacons (round 2, a plan): red to port, green to starboard — the green is the red master recoloured
     'flats-perch-beacon':       { label: 'Beacon (red, port)',  world:  44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
     'flats-perch-beacon-green': { label: 'Beacon (green, stbd)', world: 44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
     'flats-sea-lavender':       { label: 'Sea lavender',        world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'flats-shell-bank':         { label: 'Shell bank',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed', tidal: true },
-    'flats-driftwood-tree':     { label: 'Driftwood tree',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed', tidal: true },
+    'flats-shell-bank':         { label: 'Shell bank',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed', tidal: true, tideH: 0.35, tideRef: 30 },
+    'flats-driftwood-tree':     { label: 'Driftwood tree',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed', floats: 0.3 },   // a log lifts off the sand when the tide reaches it; no swing (it lies where it is)
     // the last of the set: the working harbour, where the wantij creek leaves the channel; the stage is to the left of the ridge, so that side faces the water
     'flats-oyster-shed':        { label: 'Oyster shed',         world: 130, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' }
 };

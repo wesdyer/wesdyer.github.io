@@ -627,3 +627,36 @@ target (a 180° turn at the flood's arrival takes ~3 s). ~2–3 ms a frame for t
 
 Also: the finish point bar's passage line now ends AT the finish (it ran 250u into the
 river, which narrows past the line since §7.8, and its measured saving fell to 0.6 s).
+
+### 7.11 Props in the intertidal: emergence, and the things that float (Sep 21)
+
+Wes: a prop the tide covers should not appear and disappear — it should slowly appear, with
+parts under water. Five approaches were weighed (a depth crossfade; a waterline mask from the
+tide's own picture; height-graded levels baked per kind; a water-plane overlay; stamping the
+prop into the field) and the build is the hybrid: **per pixel, `level − ground(pixel) <
+height(pixel)`**, the ground sampled on a 7×7 grid over the (rotated) footprint and
+interpolated, the height a chamfer distance-to-edge of the sprite's alpha (far from an edge
+= high: a stake's core, a bag, a bank's crest; thin things low) scaled to the kind's `tideH`
+metres and `tideRef` (the width in world units that counts as full height). Composed into
+two canvases per prop at 2 px/u — UNDER (drawn in the tidal pass: over the wet flats' paint,
+under the waves, washed toward the water and faded with depth) and OVER (the surface pass, on
+the mud, with a pale waterline where the plane just cuts it) — recomposed every ~0.35 s on a
+stagger and only while the plane is in the object and the level has moved (a weir is 2 ms,
+a dinghy 0.24); wholly dry is the plain sprite, wholly under a cached deepest composition.
+The pixel read happens once per kind and is refused under file:// — there the prop keeps the
+old whole-sprite flip (`Tide.propFrame`; the test suite runs there and checks the fallback).
+
+**What floats stays on top** (Wes): a boat is not something the water rises over, it lifts.
+`floats` (the draft) replaces `tidal` on the dinghy, the fishing boat and the driftwood: on
+the surface plane always, and with `swing` [px, py] (the pivot in the frame — the kedge, the
+mooring buoy) a boat with that much water under her **swings to lie bow-into the stream**
+about the pivot, eased (a half turn in 3–8 s by the stream's strength), and stays where she
+settled once the water has gone (`Tide.propSwing`; drawProps rotates about the pivot, which
+stays where the document put it). In a deep pool off the channel there is no stream and she
+does not swing — correct. Clips on Wes's Desktop: `dinghy-emerging.gif` (the delta bar
+dinghy, before it floated: a ghost at 0.5 m, the hull at 0.35, the mast and lines last) and
+`mooring-swing.gif` (the marginal-channel boat swinging through high water).
+
+Placements fixed along the way: the lower-loop weir and the west-bend trestles sat on
+eelgrass beds (moved west and to the traverse's east flat); the third trestle block sat on
+the east-creek bed (moved north).

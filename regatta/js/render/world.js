@@ -265,11 +265,15 @@ function propSpriteFor(p, plane) {
     // every frame: the water comes and goes in seconds here. Anything tall (a wreck's
     // gunwales, a beacon) stays a surface prop and stands out of the water.
     if (kind.tidal && own === 'surface' && state.tide && window.Tide) {
-        const wet = Tide.depthAt(p.x, p.y) > 0.03;
-        if (plane === 'tidal') return wet ? propSprite(p.kind) : null;
-        if (plane === 'surface') return wet ? null : propSprite(p.kind);
-        return null;
+        if (plane !== 'tidal' && plane !== 'surface') return null;
+        const base = propSprite(p.kind);
+        if (!base) return null;
+        // the emergence: two composed canvases, or the whole sprite where it is wholly
+        // under / wholly dry / the pixels cannot be read (Tide.propFrame)
+        return Tide.propFrame(p, base, kind, plane);
     }
+    // a floating prop stays on top (the surface pass) and swings to the stream while afloat
+    if (kind.floats != null && own === 'surface' && state.tide && window.Tide && plane === 'surface') Tide.propSwing(p, kind);
     if (plane === 'tidal') return null;
     return own === plane ? propSprite(p.kind) : null;
 }
@@ -621,7 +625,7 @@ function drawProps(ctx, plane, filter, pending) {
         if ((reg[p.kind] || {}).scatter) continue;
         const s = propSpriteFor(p, plane);
         if (!s) continue;
-        if (!s.img.complete || !s.img.naturalWidth) {
+        if (!s.composed && (!s.img.complete || !s.img.naturalWidth)) {   // a composed canvas (the tide's emergence) is always ready
             // ⚠️ Only a STILL-LOADING image goes on the tile's pending list. A failed load
             // is complete=true/naturalWidth=0, and pending-listing one made `landed` true
             // every frame — the tile rebaked its ~5 screens of fill per frame, and the
@@ -657,8 +661,17 @@ function drawProps(ctx, plane, filter, pending) {
         ctx.save();
         ctx.globalAlpha = alpha;
         ctx.translate(x, y);
-        if (p.heading) ctx.rotate(p.heading);
-        drawSpriteBoxed(ctx, (plane === 'seabed' || plane === 'tidal') ? submergedSprite(s) : s.img, s, w);
+        if (p._hdg != null && kind.swing && p._hdg !== p.heading) {
+            // a swung boat turns about her pivot (the kedge, the buoy), which stays where the
+            // document put it: the frame at the DOCUMENT heading gives the pivot's world
+            // offset; the frame is then drawn at the LIVE heading about that point
+            const px = (kind.swing[0] - 0.5) * w, py = (kind.swing[1] - 0.5) * w;
+            const c0 = Math.cos(p.heading || 0), s0 = Math.sin(p.heading || 0);
+            ctx.translate(px * c0 - py * s0, px * s0 + py * c0);   // to the pivot, in the world
+            ctx.rotate(p._hdg);
+            ctx.translate(-px, -py);                                  // back to the frame's centre, in the live frame
+        } else if (p.heading) ctx.rotate(p.heading);
+        drawSpriteBoxed(ctx, (plane === 'seabed' || (plane === 'tidal' && !s.composed)) ? submergedSprite(s) : s.img, s, w);
         ctx.restore();
         if (lavaHere) drawPropLavaGlow(ctx, p, w, kind, x, y, plane === 'seabed');
         drawn++;

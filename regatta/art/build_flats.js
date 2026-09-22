@@ -469,12 +469,12 @@ prop('flats-perch-beacon-green', 2010, -4580, 0);
 prop('flats-wreck-hull', 1750, 5470, hdg(1, -0.15));
 prop('flats-wreck-hull', 2050, -8200, hdg(0.3, -1));
 // fish weirs, the pound up the frame and the mouth toward where the flood comes from
-prop('flats-fish-weir', -100, 3050, 0);                     // the first loop's flats: the flood comes from the south
+prop('flats-fish-weir', -700, 2900, 0);                     // the first loop's flats west of the lower eelgrass bed: the flood comes from the south
 prop('flats-fish-weir', -100, -3150, Math.PI);              // the upper basin: the flood comes from the channel to the north
 // oyster trestles on the low flats near the channel's edge, rows along the stream
-prop('flats-oyster-trestles', -2450, -150, hdg(-0.5, -1));
+prop('flats-oyster-trestles', 1700, -150, hdg(1, 0));       // the traverse's east flat, rows along the stream (the west bend's flat is the eelgrass bed's)
 prop('flats-oyster-trestles', 1600, -3750, hdg(1, -0.3));
-prop('flats-oyster-trestles', 1850, -7650, hdg(0.2, -1));
+prop('flats-oyster-trestles', 1700, -7250, hdg(0.2, -1));   // north of the east-creek eelgrass bed
 // fishing boats on moorings: the interior pools (never a passage's pool) and the east marginal channel at the mouth, bow to the flood
 prop('flats-fishing-boat', -2000, 700, hdg(-1, -0.4));
 prop('flats-fishing-boat', 1200, -2400, hdg(0.2, -1));

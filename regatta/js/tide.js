@@ -691,6 +691,174 @@ const TIDE = {
         return nextReach(need, tArr);
     }
 
+    // ── PROPS IN THE INTERTIDAL: EMERGENCE ──────────────────────────────────
+    // A low prop on ground the tide covers (the kind's `tidal`) used to flip between its
+    // submerged and dry looks the instant the water at its centre passed the draft's
+    // margin. Wes (Sep 21 2026): they should slowly appear, with parts under water. Two
+    // things make an object emerge: the GROUND varies under a long one (the weir's high end
+    // dries first), and the object has HEIGHT (a gunwale breaks the surface before the
+    // bilge, the stakes before the net). So each tidal prop is composed into two small
+    // canvases — UNDER (drawn in the tidal pass, beneath the wet flats and the waves) and
+    // OVER (drawn in the surface pass, on the mud) — by a per-pixel test:
+    //     level − ground(pixel)  <  height(pixel)
+    // the ground sampled on a coarse grid over the footprint and interpolated, the height
+    // from a distance transform of the sprite's alpha (far from an edge = high: a hull's
+    // body, a stake's core; thin things low) scaled to the kind's `tideH` metres and its
+    // `tideRef` (the width in world units that counts as full height; `tideProfile: 'flat'`
+    // makes the whole object one height). Pixels under the plane take the water's colour
+    // in proportion to how deep they lie and fade; pixels just above it get the pale
+    // waterline. Recomposed only while the plane is somewhere in the object (every ~0.35 s,
+    // staggered, and only when the level has moved) — a prop wholly under or wholly dry
+    // costs nothing. The pixel read happens once per kind; under file:// it is refused (a
+    // cross-origin image taints the canvas), and the prop keeps the old whole-sprite flip.
+    const PROPT = { pxPerU: 2, minPx: 64, maxPx: 480, grid: 7, refresh: 0.35, minMove: 0.015, wash: 0.72, fade: 0.5, deep: 0.7, line: 0.035 };   // the under look is drawn OVER the wet flats' paint, so the wash and fade here are the whole depth cue
+    const _propPix = {};                                     // per kind: the sprite's pixels and heights at composition resolution
+    function propPixels(kind, base, reg) {
+        let P = _propPix[kind];
+        if (P) return P.ok ? P : null;
+        const img = base.img;
+        if (!img || !img.complete || !img.naturalWidth) return null;   // not loaded yet: try again next frame
+        const world = base.world || 40;
+        const N = Math.max(PROPT.minPx, Math.min(PROPT.maxPx, Math.round(world * PROPT.pxPerU)));
+        P = _propPix[kind] = { ok: false, N };
+        try {
+            const cv = document.createElement('canvas'); cv.width = cv.height = N;
+            const g = cv.getContext('2d');
+            g.drawImage(img, 0, 0, N, N);
+            const data = g.getImageData(0, 0, N, N).data;
+            // the height: a chamfer distance-to-edge over the alpha mask, in pixels
+            const INF = 1e6, d = new Float32Array(N * N);
+            for (let k = 0; k < N * N; k++) d[k] = data[k * 4 + 3] > 40 ? INF : 0;
+            for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) { const k = j * N + i; if (!d[k]) continue; let v = d[k];
+                if (i > 0) v = Math.min(v, d[k - 1] + 1); if (j > 0) v = Math.min(v, d[k - N] + 1);
+                if (i > 0 && j > 0) v = Math.min(v, d[k - N - 1] + 1.4); if (i < N - 1 && j > 0) v = Math.min(v, d[k - N + 1] + 1.4); d[k] = v; }
+            for (let j = N - 1; j >= 0; j--) for (let i = N - 1; i >= 0; i--) { const k = j * N + i; if (!d[k]) continue; let v = d[k];
+                if (i < N - 1) v = Math.min(v, d[k + 1] + 1); if (j < N - 1) v = Math.min(v, d[k + N] + 1);
+                if (i < N - 1 && j < N - 1) v = Math.min(v, d[k + N + 1] + 1.4); if (i > 0 && j < N - 1) v = Math.min(v, d[k + N - 1] + 1.4); d[k] = v; }
+            const tideH = reg.tideH != null ? reg.tideH : 0.5;
+            const refPx = (reg.tideRef != null ? reg.tideRef : world / 8) * (N / world) / 2;   // half-width in px that counts as full height
+            const flat = reg.tideProfile === 'flat';
+            const h = new Float32Array(N * N);
+            for (let k = 0; k < N * N; k++) { if (data[k * 4 + 3] <= 40) continue; h[k] = flat ? tideH : tideH * Math.pow(Math.min(1, d[k] / refPx), 0.8); }
+            P.data = data; P.height = h; P.tideH = tideH; P.ok = true;
+        } catch (e) {
+            P.ok = false;                                    // file://: the read is refused; the prop keeps the whole-sprite flip
+            if (!_propPix._warned) { _propPix._warned = true; console.warn('tide: prop emergence needs the sprites over http (' + e.message.split('.')[0] + ')'); }
+            return null;
+        }
+        return P;
+    }
+    // The ground under a prop's frame: a grid of samples in world space (the frame rotated
+    // by the heading), cached per prop with the frame it was sampled for.
+    function propGround(p, w) {
+        const G = PROPT.grid;
+        if (p._tg && p._tg.w === w && p._tg.x === p.x && p._tg.y === p.y && p._tg.h === p.heading) return p._tg;
+        const c = Math.cos(p.heading || 0), sn = Math.sin(p.heading || 0);
+        const z = new Float32Array(G * G); let lo = Infinity, hi = -Infinity;
+        for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) {
+            const u = ((i + 0.5) / G - 0.5) * w, v = ((j + 0.5) / G - 0.5) * w;
+            const zz = groundAt(p.x + u * c - v * sn, p.y + u * sn + v * c);
+            z[j * G + i] = zz; if (zz < lo) lo = zz; if (zz > hi) hi = zz;
+        }
+        p._tg = { w, x: p.x, y: p.y, h: p.heading, z, lo, hi };
+        return p._tg;
+    }
+    // Compose the two canvases for the level now.
+    function propCompose(p, P, tg, L) {
+        const N = P.N, G = PROPT.grid, data = P.data, hgt = P.height;
+        let T = p._tide;
+        if (!T) {
+            T = p._tide = { under: document.createElement('canvas'), over: document.createElement('canvas'), level: NaN, t: -1e9 };
+            T.under.width = T.under.height = T.over.width = T.over.height = N;
+            T.gu = T.under.getContext('2d'); T.go = T.over.getContext('2d');
+            T.iu = T.gu.createImageData(N, N); T.io = T.go.createImageData(N, N);
+        }
+        const U = T.iu.data, O = T.io.data;
+        const Wc = window.WATER_CONFIG || {}, hex = String(Wc.heroColor || Wc.baseColor || '#3a6a8a').replace('#', '');
+        const wr = parseInt(hex.substr(0, 2), 16), wg = parseInt(hex.substr(2, 2), 16), wb = parseInt(hex.substr(4, 2), 16);
+        const gz = tg.z, gs = (G - 1) / N;
+        for (let j = 0; j < N; j++) {
+            const gy = Math.min(G - 1.001, j * gs), j0 = gy | 0, fy = gy - j0;
+            for (let i = 0; i < N; i++) {
+                const k = j * N + i, o = k * 4, a = data[o + 3];
+                if (a <= 40) { U[o + 3] = 0; O[o + 3] = 0; continue; }
+                const gx = Math.min(G - 1.001, i * gs), i0 = gx | 0, fx = gx - i0;
+                const g00 = gz[j0 * G + i0], g10 = gz[j0 * G + i0 + 1], g01 = gz[(j0 + 1) * G + i0], g11 = gz[(j0 + 1) * G + i0 + 1];
+                const ground = (g00 * (1 - fx) + g10 * fx) * (1 - fy) + (g01 * (1 - fx) + g11 * fx) * fy;
+                const sub = (L - ground) - hgt[k];               // metres of water over this pixel of the object
+                if (sub > 0) {
+                    // under: washed toward the water with depth, fading; the wet flats and the waves finish the job
+                    const kk = Math.min(1, sub / PROPT.deep), m = PROPT.wash * (0.3 + 0.7 * kk);
+                    U[o] = data[o] * (1 - m) + wr * m; U[o + 1] = data[o + 1] * (1 - m) + wg * m; U[o + 2] = data[o + 2] * (1 - m) + wb * m;
+                    U[o + 3] = a * (1 - PROPT.fade * kk);
+                    O[o + 3] = 0;
+                } else {
+                    // over: the object as painted, with the pale waterline where the plane just cuts it
+                    const lw = -sub < PROPT.line ? 1 - (-sub / PROPT.line) : 0;
+                    O[o] = data[o] + (238 - data[o]) * 0.6 * lw; O[o + 1] = data[o + 1] + (242 - data[o + 1]) * 0.6 * lw; O[o + 2] = data[o + 2] + (246 - data[o + 2]) * 0.6 * lw;
+                    O[o + 3] = a;
+                    U[o + 3] = 0;
+                }
+            }
+        }
+        T.gu.putImageData(T.iu, 0, 0); T.go.putImageData(T.io, 0, 0);
+        T.level = L; T.t = state.time || 0;
+    }
+    // A FLOATING prop (the kind's `floats`: its draft in metres) lies to the stream while
+    // there is that much water under it — bow into the flow, about the pivot the kind names
+    // (the kedge, the mooring buoy) — and stays where it settled once the water has gone.
+    // The live heading is eased (a boat swings, it does not snap) and is read by drawProps
+    // as p._hdg. Once per frame per prop.
+    function propSwing(p, reg) {
+        const now = state.time || 0;
+        if (p._swingT === now) return;
+        p._swingT = now;
+        if (p._hdg == null) p._hdg = p.heading || 0;
+        const afloat = depthAt(p.x, p.y) > reg.floats;
+        p._afloat = afloat;
+        if (!afloat || !reg.swing) return;
+        const cur = (typeof getCurrentAt === 'function') ? getCurrentAt(p.x, p.y) : null;
+        if (!cur || cur.speed < 0.08) return;                 // slack: she keeps lying as she was
+        const want = cur.direction + Math.PI;                 // bow into the stream
+        let d = want - p._hdg; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
+        const dt = p._swingDt != null ? Math.min(0.1, now - p._swingDt) : 0.016; p._swingDt = now;
+        const rate = Math.min(1, dt * (0.35 + 0.9 * Math.min(1, cur.speed / 1.2)));   // faster in a stronger stream, ~3–8 s for a half turn
+        p._hdg += d * rate;
+    }
+    // The sprite record drawProps should draw for a tidal prop on `plane` ('tidal' or
+    // 'surface'), or null for nothing on that plane. `base` is the kind's own sprite.
+    function propFrame(p, base, reg, plane) {
+        const idx = Math.abs(Math.round(p.x * 0.37 + p.y * 0.11));   // the refresh stagger: a prop's own number
+        const P = propPixels(p.kind, base, reg);
+        const L = level();
+        if (!P) {
+            // the old whole-sprite flip (the pixels are not readable, or not loaded yet)
+            const wet = depthAt(p.x, p.y) > 0.03;
+            return plane === 'tidal' ? (wet ? base : null) : (wet ? null : base);
+        }
+        const w = (base.world || 40) * (p.scale || 1);
+        const tg = propGround(p, w);
+        // wholly dry: the plain sprite on the surface. Wholly under: the composition's own
+        // deepest look (every pixel at full wash and fade), made once and kept, so the object
+        // sinking out of its band does not jump to a different picture of itself.
+        if (L - tg.lo <= 0) return plane === 'surface' ? base : null;
+        if (L - tg.hi >= P.tideH + 0.05) {
+            if (plane !== 'tidal') return null;
+            if (!p._tideDeep || p._tideDeep.N !== P.N) {
+                const keep = p._tide; p._tide = null;
+                propCompose(p, P, tg, tg.hi + P.tideH + PROPT.deep + 0.01);
+                p._tideDeep = { N: P.N, canvas: p._tide.under };
+                p._tide = keep;
+            }
+            return { img: p._tideDeep.canvas, world: base.world, box: null, composed: true };
+        }
+        const now = state.time || 0, T = p._tide;
+        const stale = !T || (now - T.t > PROPT.refresh + ((idx || 0) % 7) * 0.03 && Math.abs(L - T.level) > PROPT.minMove);
+        if (stale) propCompose(p, P, tg, L);
+        const cv = plane === 'tidal' ? p._tide.under : plane === 'surface' ? p._tide.over : null;
+        return cv ? { img: cv, world: base.world, box: null, composed: true } : null;
+    }
+
     // ── the picture ─────────────────────────────────────────────────────────
     // The flats are one image: every pixel reads the field and the level. Rendered in a
     // WORLD-ALIGNED window that covers the view (padded, so a rotating or panning camera
@@ -1365,7 +1533,7 @@ const TIDE = {
         speedMul, afterMove, refloatIn,
         addFill,
         stampGrid, safeGrid, refreshBotGrid, routeCost, routeWait, setNerve, riskAt, escapeReach,
-        drawWet, drawDry, drawEelgrass, drawMinimap, hudInfo,
+        drawWet, drawDry, drawEelgrass, drawMinimap, hudInfo, propFrame, propSwing,
         _pic: pic
     };
 })();

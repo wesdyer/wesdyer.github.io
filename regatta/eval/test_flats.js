@@ -166,6 +166,37 @@ const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart
             out.eelWetAtLW = mats.filter(m => Tide.depthAt(m.x, m.y) > 0.03).length;
             out.eelMul = b0.shoalMul;                        // the drag inverted: the speed multiplier at the bed's heart
         }
+        // ── the props in the intertidal: emergence and floating (Tide.propFrame / propSwing) ──
+        // Over file:// the sprite's pixels cannot be read, so propFrame must fall back to the
+        // whole-sprite flip without error; the band logic and the swing are tested directly.
+        state.race.status = 'racing';
+        const reg = VenueDoc.PROP_KINDS;
+        const tidalKinds = Object.keys(reg).filter(k => k.startsWith('flats-') && reg[k].tidal);
+        const floatKinds = Object.keys(reg).filter(k => k.startsWith('flats-') && reg[k].floats != null);
+        out.tidalKinds = tidalKinds; out.floatKinds = floatKinds;
+        const weir = c.props.find(q => q.kind === 'flats-fish-weir');
+        out.propFrame = null;
+        if (weir) {
+            const base = propSprite(weir.kind);
+            // wait is not possible here; the image may not be loaded — the frame must still be defined
+            const gz = Tide.groundAt(weir.x, weir.y);
+            const at = (lvl, plane) => { state.race.timer = tHW; T.mid = lvl - T.amp; const f = Tide.propFrame(weir, base, reg[weir.kind], plane); T.mid = keep.mid; return f ? (f.composed ? 'composed' : 'base') : null; };
+            out.propFrame = { dryS: at(gz - 0.3, 'surface'), dryT: at(gz - 0.3, 'tidal'), deepS: at(gz + 3, 'surface'), deepT: at(gz + 3, 'tidal'), midS: at(gz + 0.5, 'surface'), midT: at(gz + 0.5, 'tidal') };
+        }
+        // a floating boat in a stream swings her bow into it about her pivot
+        const fb = c.props.find(q => q.kind === 'flats-fishing-boat');
+        out.swing = null;
+        if (fb) {
+            const k = reg[fb.kind]; const h0 = fb.heading;
+            fb._hdg = null; fb._swingT = null; fb._swingDt = null;
+            state.race.timer = tHW - 15;                       // mid-flood
+            const cur = getCurrentAt(fb.x, fb.y);
+            // give her a stream if her pool has none: a fake current region is heavier than pricing the swing directly
+            const want = cur && cur.speed > 0.08 ? cur.direction + Math.PI : null;
+            for (let i = 0; i < 60 * 12; i++) { state.time = (state.time || 0) + 1 / 60; Tide.propSwing(fb, k); }
+            const turned = want != null ? Math.abs(((fb._hdg - want + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI) : null;
+            out.swing = { hadStream: want != null, afloat: fb._afloat, offBowDeg: turned == null ? null : +(turned * 180 / Math.PI).toFixed(0), movedDeg: +(Math.abs(fb._hdg - h0) * 180 / Math.PI).toFixed(0), pivot: k.swing };
+        }
         // ── drawing: the wet and dry passes, the minimap, at three states of the tide ──
         for (const tt of [tHW, tHW + T.period / 4, tHW + T.period / 2]) {
             state.race.timer = tt;
@@ -222,6 +253,17 @@ const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart
     check('the bed is under water at high water', r.eelWetAtHW === r.eelTufts, `${r.eelWetAtHW} of ${r.eelTufts}`);
     check('and the water leaves part of it at low water', r.eelWetAtLW < r.eelTufts * 0.9, `${r.eelWetAtLW} of ${r.eelTufts} still wet`);
     check('a light tax at its heart (a leaf round the centreboard)', r.eelMul != null && r.eelMul >= 0.8 && r.eelMul < 1, `shoalMul ${r.eelMul}`);
+
+    console.log('props in the intertidal');
+    check('the fixed low kinds are tidal (trestles, weir, shell bank)', r.tidalKinds && r.tidalKinds.length === 3 && r.tidalKinds.includes('flats-fish-weir') && !r.tidalKinds.includes('flats-stranded-dinghy'), JSON.stringify(r.tidalKinds));
+    check('the boats and the log float (stay on top)', r.floatKinds && r.floatKinds.includes('flats-stranded-dinghy') && r.floatKinds.includes('flats-fishing-boat') && r.floatKinds.includes('flats-driftwood-tree'), JSON.stringify(r.floatKinds));
+    if (r.propFrame) {
+        const f = r.propFrame;
+        check('a dry weir is on the surface, nothing under', f.dryS === 'base' && f.dryT === null, JSON.stringify(f));
+        check('a drowned weir is under, nothing on the surface', f.deepS === null && (f.deepT === 'base' || f.deepT === 'composed'), JSON.stringify(f));
+        check('half-drowned: something on both planes (composed over http, the flip over file://)', (f.midS !== null) !== (f.midT !== null) || (f.midS === 'composed' && f.midT === 'composed'), JSON.stringify(f));
+    }
+    if (r.swing) check('a moored boat swings her bow into the stream while afloat', !r.swing.hadStream || (r.swing.afloat && r.swing.offBowDeg < 25), JSON.stringify(r.swing));
 
     console.log('a grounding');
     check('the flats interior is intertidal', r.groundZ > -1.0 && r.groundZ < 1.0, `${r.groundZ} m`);

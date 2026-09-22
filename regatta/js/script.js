@@ -440,8 +440,9 @@ function draw() {
     drawSeabedUnderlay(ctx);
     // The tidal flats under the water: the bottom seen through it, and the ground it has
     // left. Under every moving surface layer, like the shoals. No-op off Spoonbill Flats.
-    // The props the tide has covered go under it too (propSpriteFor's 'tidal' pass).
-    if (window.Tide && state.tide) { drawProps(ctx, 'tidal'); Tide.drawWet(ctx); }
+    // The props the tide has covered lie IN it: over the wet flats' paint (their own depth
+    // wash says how deep they are — Tide.propFrame) and under the waves (the 'tidal' pass).
+    if (window.Tide && state.tide) { Tide.drawWet(ctx); drawProps(ctx, 'tidal'); }
     // Jellyfish bodies ride with the seabed layer so the water draws over them — that is
     // what sells the depth they are rising and falling through. Their light comes later.
     drawJellyDrifts(ctx);
