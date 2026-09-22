@@ -2590,12 +2590,15 @@ const VEG_STYLES = {
     // Tones are the exposed bed's: a dark olive heart, the leaf, the pale streak the last
     // ebb combed into it; tide.js mixes them toward the water for the submerged cells.
     eelgrass: { plane: 'bottom', clump: null, live: true,
-                tones: [[47, 58, 34], [79, 97, 53], [113, 138, 72]],
-                // the bed's dark heart under the tufts (drawn with the seabed, under the
-                // tide's water; the dry pass covers it, so an exposed bed is tufts on mud)
-                mass: { tone: [40, 54, 30], alpha: 0.5 },
+                // Wes's references (Sep 20 2026): bright yellow-green ribbons, a dark olive heart
+                // where they pile, a pale highlight where a blade catches the light — four tones,
+                // the fourth the highlight (js/tide.js eelTuft)
+                tones: [[58, 88, 30], [104, 146, 48], [150, 190, 62], [204, 222, 124]],
+                // the meadow's green under the leaves (drawn with the seabed, under the tide's
+                // water; the dry pass covers it and draws its own wash — Tide.drawEelgrass)
+                mass: { tone: [72, 104, 38], alpha: 0.55 },
                 wash: 0, layerAlpha: 1, clumpAlpha: 1,
-                spacing: 12, cover: 0.96, holeEvery: 90 },   // ~330 tufts in a 260u bed: measured 2.5 ms a frame with one bed in view on a software canvas
+                spacing: 17, cover: 0.96, holeEvery: 80, holeR: 1.7 },   // the sandy openings between clumps the drone shots show; 17 with 12–17 leaves a tuft: ~2 ms a frame for the biggest bed
     // Pearl Lagoon's meadow. Every number here is the one the seagrass bake shipped with.
     seagrass: { plane: 'bottom', clump: clumpTussock,
                 tones: [[43, 74, 45], [58, 94, 52], [74, 112, 58]],
@@ -2753,10 +2756,11 @@ function bakeVegSprite(isl, spec) {
     // are what keep a big bed from reading as one stamped carpet.
     const holeN = Math.max(2, Math.round(isl.radius / spec.holeEvery));
     const holes = [];
+    const holeR = spec.holeR || 1;                 // a style may ask for bigger openings (the eelgrass: its long leaves cover the default ones)
     for (let i = 0; i < holeN; i++) {
         holes.push({ x: isl.x + (rand() * 2 - 1) * isl.radius * 0.7,
                      y: isl.y + (rand() * 2 - 1) * isl.radius * 0.7,
-                     r: isl.radius * (0.12 + rand() * 0.14) });
+                     r: isl.radius * (0.12 + rand() * 0.14) * holeR });
     }
     const smooth = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
     const feather = isl.shoalFeather || 120;

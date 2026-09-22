@@ -3208,7 +3208,7 @@ const SHAPE_KINDS = {
     // the water where the cell is wet, lying flat on the mud in the ebb's direction where it
     // is dry. A light tax (a leaf round the centreboard), priced by the router.
     'flats-eelgrass': { motion: 'fixed', hard: false, look: 'shoal',    hidden: false, nav: true, height: 0,
-                       awash: true, drag: 0.12, paint: true, veg: 'eelgrass' }
+                       awash: true, drag: 0.12, paint: true, veg: 'eelgrass', feather: 50 }   // a bed is leaves to within a few strides of its rim (the shoal's 120 left a bare band round every bed)
 };
 
 // How far in from a shoal's rim the water is still deep enough not to matter, in units.

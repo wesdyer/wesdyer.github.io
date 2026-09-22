@@ -529,7 +529,7 @@ const passages = [
     { id: 'pointbar', name: 'The point bar',   risk: 1, pts: [[-1400, -400], [-1650, -650], [-1900, -1000], [-2050, -1400], [-2100, -1900], [-2150, -2300], [-2300, -2600]] },
     { id: 'pb-traverse', name: 'Traverse point bar', risk: 1, pts: [[2450, 1650], [2300, 1350], [2050, 1050], [1750, 900], [1400, 850], [1150, 650]] },
     { id: 'pb-diamond',  name: 'Diamond point bar',  risk: 1, pts: [[500, -4150], [900, -4400], [1100, -4700], [1050, -5100], [900, -5400], [650, -5600], [400, -5750]] },
-    { id: 'pb-finish',   name: 'Finish point bar',   risk: 1, pts: [[100, -9450], [200, -9800], [150, -10150], [-100, -10500], [-350, -10800], [-500, -11000]] },
+    { id: 'pb-finish',   name: 'Finish point bar',   risk: 1, pts: [[100, -9450], [200, -9800], [150, -10150], [-100, -10500], [-300, -10750]] },   // ends AT the line: past it the river narrows and nothing is raced
     { id: 'neck',     name: 'The neck',        risk: 2, pts: [[-1100, 100]].concat(NECK_S).concat(NECK_N.slice(1)).concat([[-940, -3700], [-930, -3950]]) },
     { id: 'headcut',  name: 'The head cut',    risk: 3, pts: [[-750, -3850]].concat(HEADCUT).concat([[-350, -6800], [-300, -7100]]) },
     { id: 'creek',    name: 'The flood creek', risk: 2, pts: CREEK.concat([[1000, -7500]]) },

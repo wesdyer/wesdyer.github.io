@@ -596,3 +596,34 @@ with a coloured disc. The cuts are read off the ground shading, the waterline an
 contour — the tide's own picture — and the two tripod beacons at the throat and the creek's
 mouth are the only marks. The sandpipers are off as well (`TIDE.birds`) until the wildlife
 pass brings every venue's animals as props.
+
+### 7.10 The eelgrass, redrawn to the references (Sep 20)
+
+Wes's references (Zostera at low water, from a drone, and under water) against the first
+draw: eelgrass is not tufts — it is LONG RIBBON LEAVES, thirty to fifty times longer than
+wide, every one combed the same way, so dense they read as a flowing striped sheet; bright
+yellow-green with a pale highlight where a blade catches the light, a dark olive heart where
+they pile, brown-olive patches of older leaf, sandy openings between clumps. So a 'tuft' is
+now a bundle of twelve to seventeen such ribbons from one root (S-curved, near-parallel when
+the stream runs, fanning only at slack) with a soft green blotch under it — overlapping tufts
+build the mat, and the blotch is what makes an exposed bed green edge to edge on the mud.
+Spacing 17 with fuller tufts (the first draw's 13 was a 40× overdraw); the kind's own
+`feather: 50` (the shoal's 120 left a bare band round every bed); bigger openings (`holeR`).
+
+**Under the water unless the tide is all the way out** (Wes): five states in the sheet —
+exposed, then four depths (steps at 0.25 / 0.55 / 0.95 m), each mixed further toward the
+water's colour, darker, fainter and more blurred, so a bed grades from clear green at its
+shallow edge into the water where it lies deep; the exposed look only where the cell is dry.
+
+**Waving** (Wes): the sheet holds one direction and every tuft is rotated to its own comb as
+it is drawn (measured: 400 rotated draws ~1.8 ms on the software raster — the rotation is
+not the cost). A wave travels along the comb (1.15 rad/s, 170u, its crest bent across the
+bed): the leaves sway ±11° either side of the comb (more at slack), lift and lie again (the
+lean pulses across the sheet's rows), surge 5u along it, and shimmer as the blades turn to
+the light. 92% of a bed's leaf pixels change in half a second. A bed's grain is one: each
+tuft's direction is blended toward the bed's mean (a third local) and eased toward its
+target (a 180° turn at the flood's arrival takes ~3 s). ~2–3 ms a frame for the biggest bed.
+`eelgrass-waving.gif` on Wes's Desktop is a 2 s clip of the head bed mid-ebb.
+
+Also: the finish point bar's passage line now ends AT the finish (it ran 250u into the
+river, which narrows past the line since §7.8, and its measured saving fell to 0.6 s).
