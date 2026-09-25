@@ -45,7 +45,7 @@ not where the Aug 5 doc assumed.
 | Stillwater Lake | **Lunker** largemouth bass | *Diver* common loon | *Timber* moose | **Gasket** beaver | **Torpedo** northern pike (+12) | 2 |
 | Pearl Lagoon | ↦**Pearl** pearl oyster† | **Nimbus** spotted eagle ray | **Ribbon** sea krait | **Jester** clownfish | **Puff** mandarin dragonet (+15) | 0 |
 | Gatorgrass Bayou | **Chomp** crocodile† | **Croak** bullfrog | *Flit* dragonfly | **Etienne** red swamp crayfish | *Beau* alligator† | 2 |
-| Sockeye Run | **Slipstream** sockeye | **Snag** hellbender† | *Grizzle* brown bear | **Riffle** American dipper | **Seam** rainbow trout (+6) | 1 |
+| Sockeye Run | **Slipstream** sockeye | **Snag** hellbender† | **Grizzle** brown bear | **Riffle** American dipper | **Seam** rainbow trout (+6) | 1 |
 | Bluewater Bonanza | **Spar** blue marlin | **Finley** yellowfin | *Sound* humpback | *Roam* blue shark | **Torrent** swordfish (+5) | 2 |
 | Redrock Reservoir | **Chisel** humpback chub | *Sawbill* merganser | *Echo* canyon bat | *Ridge* razorback sucker | **Talon** bald eagle (+15) | 3 |
 | Glowtide Strait | **Lure** black seadevil | **Veil** vampire squid | **Bloom** man-of-war | **Drift** sea nettle | **Prism** maxima clam (+5) | 0 |
@@ -104,7 +104,7 @@ game; each is a question of whether to relabel, re-home or accept.
    **anhinga** (*Quill*, once planned for Flamingo Reach) is a true bayou bird.
 2. **Snag — hellbender, on an Alaska salmon river.** Hellbenders are Appalachian and
    Ozark. The Pacific Northwest's own giant is the **coastal giant salamander**, and
-   relabelling Snag as one keeps the "older than the river" story.
+   relabelling Snag as one keeps the "older than the river" story. *Decided Sep 25 2026 (Wes): Snag stays a hellbender — "it's unique".*
 3. **Petal — roseate spoonbill, on the Wadden Sea.** Roseates are American. The Wadden
    holds over a quarter of Europe's **Eurasian spoonbills** — but they are white, and
    Petal's pink is her identity. Either accept a pink visitor, or recolour.
@@ -276,8 +276,13 @@ the families are otherwise unchanged) · Paddle at the Sailing School · 3 witho
 
 - **Nothing is hidden.** Every objective says exactly what to do — on the locked silhouette,
   on the venue card's objectives list and on the unlock card. (Splat and Knot were un-hidden.)
-- **Three animal types per venue** (js/wildlife.js), each a scenery system that an objective
-  can use. A venue may carry more than five characters when its animals earn them.
+- **Four animal types per venue, except the Sailing School's pond** (js/wildlife.js), each a
+  scenery system that an objective can use (Wes, Sep 25 2026; it was three until then). A
+  venue may carry more than five characters when its animals earn them. As of Sep 25:
+  - **Cove:** gulls, porpoises, pelicans, harbour seals.
+  - **Lake:** loons, moose, beavers, jumping bass.
+  - **Lagoon:** green turtles, eagle rays, blacktip sharks, tangs.
+  - **Bayou:** alligators, egrets, anhingas, bullfrogs.
 - **Target time** = the mean of Wes's recorded trajectories at the venue × 1.1, rounded UP
   to the next 5 s — `node regatta/eval/set_venue_targets.js [trajDir] --write`. A venue whose
   trajectories don't match today's course (leg count, or a mean outside 0.95–1.45× the
@@ -488,3 +493,119 @@ beacons. Hull colours:
 
 Tests: `eval/test_swamp.js`, which replays two of Wes's races through the passage check, and
 the Bayou section of `eval/test_unlocks.js`.
+
+## Sockeye Run, as built (Sep 25 2026)
+
+**The stream runs toward the finish,** so the leg down to mark 3 fights it and the long run
+home rides it (up to ~5 kn in the gorge). The upstream leg barely separates anyone (50–70 s
+for Wes and the fleet alike); **the race is decided on the run home**: Wes 73–105 s, the fleet
+86–220 s (`eval/_river_legs.js`). Rapids cover the whole gorge, so every line spends 36–60+ s
+in white water; what costs time is the bow being shoved onto rocks. The finish island has two
+arms, and **the fleet never takes the east one** (the chute through rapid R9, 0 of 50), while
+Wes took it in 6 of 9 races, ~5 s faster from the split (`eval/_river_gorge.js`).
+
+| Rung | Character | Objective |
+|---|---|---|
+| First win | **Slipstream** (sockeye) | Win at Sockeye Run. |
+| Mechanic | **Snag** (hellbender — Wes kept him: "it's unique") | *Run the Gorge Clean:* sail the run home without touching a rock, a log or the bank, then finish. Fleet 2 of 50, Wes 5 of 9. |
+| Explorer | **Grizzle** (brown bear, shipped Sep 25) | *Shoot the Chute:* finish down the east arm round the finish island, past the bear on the gravel bar. Fleet 0 of 50, Wes 6 of 9. |
+| Target time | **Riffle** (dipper) | Beat 3:15 in Time Trials. |
+| Four stars | **Seam** (rainbow trout, +6) | Four stars in one race here. |
+
+No Wildlife rung (Wes agreed; all five characters were mapped).
+
+**How they are judged** (`RIVER_RUN` / `checkRiverRun` in `js/sim/course.js`):
+- **The chute** is a gate line land to land across the east arm (5420,−6150)→(6560,−6150),
+  counted on the last leg only. Replaying Wes's nine races through it gives six E, three W,
+  matching the tracks.
+- **A scrape** is the new `player-contact` event that `js/sim/collision.js` emits beside the
+  eval hook (player only, racing, not finished; an event, no state). On the last leg it
+  becomes the feat `river:scraped`, and Snag's row asks for a finish **without** it.
+
+**Animals** (`js/wildlife.js`, four new kits), researched on 20 reference sheets (drone and
+overhead first):
+- **Brown bears (FISHERS).** One stands in the island shallows at the head of the chute,
+  one on the eddy's gravel bar. Each faces upstream, waist-deep: the flanks are dimmed under
+  the water, the back and hump dry, foam heaps on the upstream shoulder, and a V wake runs
+  downstream. It lunges for fish and sometimes eats one. It rears up to look at a boat
+  within 240 u and never runs.
+- **The sockeye run (RUNS, and LEAPERS in `rapids` mode).** Comet-shaped streams of 28–40
+  red, green-headed fish hold in slack water beside the rapids, nosed upstream. They scatter
+  from a boat and drift back. Salmon also leap upstream wherever the player is in white
+  water (turbulence ≥ 0.3).
+- **Bald eagles (SOARERS).** Three circle at ~105 u, each within a stoop of a run. Now and
+  then one stoops, snatches a salmon with a splash, and climbs away with it in its talons.
+- **River otters (ROMPERS).** A family of four lies up side by side on each logjam (both
+  jams sit on the gravel bank). The family slides in and swims the bank a body length
+  apart, porpoising, and dives together from a boat.
+
+**A second pass against the references the same day** (Wes asked for "more jumping salmon",
+then asked for the wildlife and the salmon's colouring to be checked closely against the refs;
+comparison boards made with `eval/_refcells.py`):
+- **Salmon leaps:** now roughly 3 a second where the player is in white water, in bunches of
+  3–6. Holding runs in view throw the odd jumper.
+- **Sockeye colouring** (the `SOCKEYE` palette): a vivid crimson body; a light yellowish
+  olive-green head from snout to gill, darker on top, with the pale hooked jaw; olive tail.
+  About a fifth are fresh silver-grey. Leapers have a dark rim so they stand off the foam.
+- **Bear:** foam only as strong as the stream where it stands (a slack pool gets calm rings),
+  a golden face on a darker body, and a dark saddle down the spine.
+- **Otters:** the whole brown body shows under clear water, with a crescent bow wave. On
+  the log, no stripe.
+- **Eagle,** redrawn against 40+ soaring shots after Wes asked for the wings and shape to be
+  checked:
+  - a broad inner wing, widest across the secondaries, with a softly scalloped trailing
+    edge (not a sawtooth);
+  - six separate slotted fingers at the tip;
+  - the white head as a wedge thrust forward, with a heavy hooked yellow bill;
+  - a rounded white fan tail and paler inner coverts.
+
+  The shadow repeats the shape, at ~16% opacity and at most ~30 u off. `eval/_eagle_big.js`
+  draws it large.
+- **Bear,** redrawn against straight-down shots after Wes asked:
+  - the body a broad egg (0.55 as wide as long), never a capsule;
+  - the head a rounded wedge straight on the shoulders, with big round ears on its back
+    corners, a paler blunt muzzle and barely-visible eyes;
+  - golden grizzle over the hump and a dark saddle behind it;
+  - the whole body shown standing in the shallows, with a clean V wake in current (no bead
+    column).
+
+  `eval/_bear_big.js` draws it large.
+
+  Third check (Wes: "triple check"), measured against a straight-down photo of a brown bear
+  standing in shallow water:
+  - **Outline:** the photo is 0.73 wide to its length and tapers steadily from the haunches
+    to the head, with no pinch at the neck. The drawing had a waist behind the head; it now
+    tapers smoothly and is 0.6 wide.
+  - **Colours sampled off the photo:** body #5d3c2e, spine #3c180b, crown #d18b4e. The coat
+    is now dark red-brown with a golden cape over the neck and shoulders, and a long dark
+    streak down the spine fading toward the rump.
+  - ~~Head: small (~0.4 of the body's width)~~ superseded by the fourth check below.
+
+  Fourth check (Wes: "the head should be broader and the hind quarters a bit narrower for
+  grizzlies specifically"). The grizzly references agree: an ID chart marks the shoulder
+  hump, the rump lower than the shoulders, short rounded ears and a dished face; front-on
+  portraits show a broad flat head with a flaring cheek ruff.
+  - The outline is now widest over the shoulders, with the haunches 0.86 of that, and the
+    head is 0.68 of the shoulders. Measure with `eval/_bear_profile.js`.
+  - ⚠️ The "dry back" used to be a clip ellipse, widest mid-body, which trimmed the shoulders
+    into the water tint. The visible bear stayed egg-shaped whatever the outline said, until
+    the silhouette was measured. It is now a wet rim following the outline.
+
+Tests: `eval/test_river.js`, and the Sockeye Run section of `eval/test_unlocks.js`. Probes:
+`eval/_venue_map.js` (generic), `_river_legs.js`, `_river_gorge.js`, `_river_spots.js`,
+`_river_bench.js`, `_river_scene.js`.
+
+## Fourth animals (Sep 25 2026, Wes's request)
+
+Scenery only, no objectives:
+- **Bayou bullfrogs.** Three to each drift log that is out in the open (four of the seven;
+  the rest are under tree crowns, where nobody would see them) and on three mud banks by the
+  Cut and East. They hop in from a boat, swim with only their eyes up, and climb back when
+  it's quiet. The BASKERS kit, extended with `all`, `openOnly` and `banks`.
+- **Lake bass jumping.** Every 4–9 s somewhere 180–650 u from the player on open water, a
+  bass arcs clear with its shadow under it, throws a fish-sized splash going out and coming
+  in, then rings. The LEAPERS kit.
+- **Lagoon tangs.** Two schools of yellow and one of blue circle three coral heads by the
+  course: the staghorn by mark 3, the pillar on the 3→4 leg, the brain coral on the leg
+  home. They scatter from a boat and regroup. The SHOALS kit. The first cut was "way too
+  fast"; they now cruise at under ~12 u/s.

@@ -1758,5 +1758,21 @@ const AI_QUOTES = {
     "prestart": "Holding very still.",
     "start_planing": "Now I'm up and away.",
     "random": "Lovely day to sit in the sun."
+  },
+  "Grizzle": {
+    "player_passes_them": "Go on, then. I'll catch up.",
+    "they_pass_player": "Excuse me. Bear coming through.",
+    "they_hit_player": "You were in my river.",
+    "they_were_hit": "Hrmph. Felt that in the fur.",
+    "narrowly_avoided_collision": "Easy now.",
+    "player_narrowly_avoided_collision": "Quick paws.",
+    "moved_into_first": "My stretch of water.",
+    "moved_into_last": "Plenty of river left.",
+    "rounded_mark": "Round it and on downstream.",
+    "first_across_start": "Early bear gets the fish.",
+    "finished_race": "Now, lunch.",
+    "prestart": "Waiting. Bears are good at waiting.",
+    "start_planing": "Now we're moving!",
+    "random": "Smells like salmon out here."
   }
 };

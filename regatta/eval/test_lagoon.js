@@ -49,6 +49,19 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
           out.dryIsSand = pointInPoly(x, y, V) && d.cruisers[0].dry(x, y); }
         const L = byId.rays.fish[0];
         out.formationTight = byId.rays.fish.slice(1).every(f => Math.hypot(f.x - L.x, f.y - L.y) < 400);
+        // Tangs: three schools round their coral heads, in the water, scattering from a boat.
+        out.shoals = d.shoals.map(G => G.cfg.kind + ':' + G.fish.length).join(',');
+        out.shoalsHome = d.shoals.every(G => Math.hypot(G.cx - G.hx, G.cy - G.hy) < 200 && G.fish.every(f => !G.dry(f.x, f.y)));
+        // A tang cruises a body length or two a second: no fish of a calm school faster than ~13 u/s.
+        // (measured with the fleet cleared away and ten quiet seconds, so no school is still
+        //  slowing from a scatter — the race seed is not pinned, so the fleet varies)
+        { const parked = state.boats.map(b => [b.x, b.y]); for (const b of state.boats) { b.x = 1e5; b.y = 1e5; }
+          for (let i = 0; i < 300; i++) Wildlife.update(1 / 30);
+          out.tangSpeed = Math.max(...d.shoals.flatMap(G => G.fish.map(f => f.spd || 0)));
+          state.boats.forEach((b, i) => { b.x = parked[i][0]; b.y = parked[i][1]; }); }
+        out.shoalMoves = d.shoals.some(G => Math.hypot(G.cx - G.hx, G.cy - G.hy) > 20);
+        { const G = d.shoals[0], bt = state.boats[1]; bt.x = G.cx + 60; bt.y = G.cy; Wildlife.update(1 / 30);
+          out.shoalScatters = G.flee > 0; for (let i = 0; i < 20; i++) Wildlife.update(1 / 30); out.shoalSpread = G.spread > 1.4; bt.x = 1e5; bt.y = 1e5; }
 
         // A boat right beside a turtle sends it off, deeper.
         const me = state.boats[0], mate = state.boats[1];
@@ -119,6 +132,11 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.allInWater, 'a minute on, every cruiser is still in the water (off the sand; over reef is fine)');
     ok(r.dryIsSand, 'the swimmers\' dry-land test knows a sand cay is dry');
     ok(r.formationTight, 'the rays keep formation');
+    ok(r.shoals === 'yellowtang:26,bluetang:20,yellowtang:22', `three schools of tangs (${r.shoals})`);
+    ok(r.shoalsHome, 'a minute on, the schools are still round their coral heads, in the water');
+    ok(r.shoalMoves, 'the schools circle their coral heads (the reef they sit on is water to a fish)');
+    ok(r.tangSpeed <= 14, `calm tangs cruise slowly (fastest ${r.tangSpeed.toFixed(1)} u/s)`);
+    ok(r.shoalScatters && r.shoalSpread, 'a boat sends a school scattering');
     ok(r.turtleFled, 'a boat alongside sends a turtle off, deeper');
     ok(r.zoneFront === 'front' && r.zoneWake === 'wake', `squallZoneAt names the front and the wake (${r.zoneFront}, ${r.zoneWake})`);
     ok(!r.ridePrestart, 'no ride counts before the gun');

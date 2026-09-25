@@ -44,6 +44,19 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         out.randomCalls = calls;
 
         const me = state.boats[0], bot = state.boats[1];
+        // ── harbour seals: heads up to look about, a gliding shape under the water between ──
+        const seals = Wildlife.debug().poppers;
+        out.seals = seals.length;
+        out.sealsOnWater = seals.every(s => !pointOnLand(s.x, s.y));
+        const parked = state.boats.map(b => [b.x, b.y]); for (const b of state.boats) { b.x = 1e5; b.y = 1e5; }   // the fleet sits by the start seals
+        { const s = seals[0]; s.mode = 'up'; s.t = 20; s.vis = 1; s.h = 0;
+          bot.x = s.x + 200; bot.y = s.y; for (let i = 0; i < 60; i++) Wildlife.update(1 / 30);
+          out.sealLooks = Math.abs(normalizeAngle(s.h - Math.PI / 2)) < 0.3;          // facing the boat, due east
+          bot.x = s.x + 40; Wildlife.update(1 / 30); out.sealDives = s.mode === 'sink';
+          bot.x = 1e5; bot.y = 1e5;
+          let up = false; for (let i = 0; i < 30 * 30 && !up; i++) { Wildlife.update(1 / 30); up = s.mode === 'up'; }
+          out.sealResurfaces = up; }
+        state.boats.forEach((b, i) => { b.x = parked[i][0]; b.y = parked[i][1]; });
         const g0 = col.birds[0];
         // A bot puts them up: no feat.
         state.race.status = 'racing';
@@ -89,6 +102,10 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         return out;
     });
 
+    ok(r.seals === 5 && r.sealsOnWater, `five harbour seals, all in the water (${r.seals})`);
+    ok(r.sealLooks, 'a seal with its head up turns to watch a passing boat');
+    ok(r.sealDives, 'a boat too close puts it straight down');
+    ok(r.sealResurfaces, 'and it comes up again somewhere nearby');
     ok(r.colonyCount === 18, `18 gulls on the rock (${r.colonyCount})`);
     ok(r.allOnRock, 'every gull perches inside shape-36');
     ok(r.clearOfProps, 'no gull sits under a planted prop');

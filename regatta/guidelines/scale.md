@@ -48,6 +48,19 @@ for play.
    water than a slim shark of the same length, and read as big as one. At ~2× (26 long, 32
    across) the Lagoon's order matches life: turtle < shark < ray. A slim animal (shark,
    porpoise, loon) or a thin-winged one (gull) can use the full 3×.
+7. **Below the floor, on purpose, when the animal reads as a GROUP or by its SPLASH.**
+   The 20-unit floor is for an animal that has to read on its own. Three don't:
+   - **Bayou bullfrogs, ~10:** three to a drift log. The log and the hop read.
+   - **A Lake bass jumping, ~14:** in the air for half a second. Its fish-sized splash and
+     rings are the read.
+   - **Lagoon tangs, ~10:** a school of twenty-odd is the shape.
+
+   A 20-unit frog would be a two-metre frog on an eight-metre log.
+8. **Speed is sized too: a body length or two a second.** Wes, Sep 25: the first tangs moved
+   "way too fast". A tang darted at up to 28 u/s and bolted at 160; it now cruises at up to
+   ~12 u/s (measured ~7) and scatters at ~45. An animal's cruise speed is about 1–2 of its
+   drawn body lengths per second. Its effects follow the same rule: the jumping bass throws a
+   fish-sized splash, not the beaver's slap (which is five times the fish).
 6. **Count the whole animal, tail included.** Wes, the same day: the eagle ray looked "huge
    tip to tail". It had been sized by body and disc, and its whip tail added ~70 units, making
    it nearly two hulls from snout to tip. The eye reads a thin tail as part of the animal, so
@@ -82,6 +95,14 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | American alligator (nose to tail tip) | Bayou | 3.5 m | 35 | ~48 (≈1.4×: broad, and a boat-sized gator reads as a monster) | 50 | ✓ Sep 25 |
 | Great egret (standing; span) | Bayou | 1 m; 1.5 m | 10; 15 | ~28; ~42 | 22; 42 | ✓ Sep 25 |
 | Anhinga (wings spread to dry) | Bayou | 1.15 m span | 11.5 | ~32 | 30 | ✓ Sep 25 |
+| American bullfrog | Bayou | 0.15 m | 1.5 | ~10 (group, rule 7) | ~10 | ✓ Sep 25 |
+| Bass, jumping | Lake | 0.4 m | 4 | ~14 (splash, rule 7) | 14 | ✓ Sep 25 |
+| Yellow / blue tang | Lagoon | 0.2 m | 2 | ~10 (school, rule 7) | ~10 | ✓ Sep 25 |
+| Harbour seal (head up; body under water) | Cove | 0.2 m head; 1.6 m | 2; 16 | head ~12 (rule 7, read by its ring); body ~30 | ~12; ~30 | ✓ Sep 25 |
+| Brown bear (nose to rump) | River | 2.2 m | 22 | ~46 (≈2×: broad; at 58 it stood as long as the hull) | 43 (26 across the shoulders; haunches 0.86 of that, head 0.68 — a grizzly's build) | ✓ Sep 25 |
+| Sockeye salmon | River | 0.6 m | 6 | ~18 (a run, rule 7) | 17 | ✓ Sep 25 |
+| Bald eagle (span × body) | River | 2 m; 0.9 m | 20; 9 | ~58; ~27 | 58; 29 (span 2× body, per the soaring refs) | ✓ Sep 25 |
+| River otter (with tail) | River | 1.1 m | 11 | ~32 | 36 | ✓ Sep 25 |
 
 The four resized animals were all from the pond and lake round, the one Wes said looked worse
 than the Cove. They had been iterated at 3× on the bench with no length target and ran 1.5–2×

@@ -58,8 +58,8 @@ general families of Part 1 as the source for non-venue rows. First Season (A) is
    - **The template bends where a venue can't hold a rung.** The Sailing School forces auto
      trim, so its fifth rung is a clean report card (Wisp). School objectives are judged
      from the school's own events and can be re-earned on a replay.
-4. **Three animal types at every venue** (`js/wildlife.js`), and at least one carries an
-   objective.
+4. **Four animal types at every venue except the Sailing School's pond** (`js/wildlife.js`;
+   three until Wes raised it on Sep 25), and at least one carries an objective.
    - Base case 2 still holds for the GRANT: it is decided once, from the results page.
    - But feats are caught live while racing, as GameEvents `'player-feat'`: only for the
      player, only before they finish.

@@ -141,6 +141,30 @@ const ACHIEVEMENTS = [
       hint: 'Sail the West bayou and put up the anhingas drying their wings on the dead snags, then finish the race.',
       test: (r) => r.venue === 'swamp' && r.finished && r.feats.includes('swamp:anhingas') },
 
+    // ── Sockeye Run `river` (designed Sep 25 2026) ───────────────────────────────────
+    // The stream runs toward the finish, and the race is decided on the run home down the
+    // gorge: rapids cover the whole channel and shove the bow onto the rocks (Snag), and the
+    // finish island has a second arm — the chute through the last rapid — that no bot takes
+    // and Wes takes most (Grizzle). Both judged in sim/course.js (RIVER_RUN). Animals
+    // (js/wildlife.js): a brown bear fishing the chute, the sockeye run leaping the rapids,
+    // bald eagles, river otters. Snag stays a hellbender (Wes: "it's unique"). Grizzle
+    // shipped Sep 25 2026.
+    { char: 'Slipstream', venue: 'river', rung: 'first-win', title: 'Homecoming',
+      hint: 'Win a race at Sockeye Run.',
+      test: (r) => r.venue === 'river' && r.won },
+    { char: 'Snag', venue: 'river', rung: 'mechanic', title: 'Run the Gorge Clean',
+      hint: 'Sail the run home — down the gorge from the start line to the finish — without touching a rock, a log or the bank, then finish the race.',
+      test: (r) => r.venue === 'river' && r.finished && !r.feats.includes('river:scraped') },
+    { char: 'Grizzle', venue: 'river', rung: 'explorer', title: 'Shoot the Chute',
+      hint: 'On the run home, take the chute: the east arm round the finish island, through the white water past the bear on the gravel bar. Then finish the race.',
+      test: (r) => r.venue === 'river' && r.finished && r.feats.includes('river:chute') },
+    { char: 'Riffle', venue: 'river', rung: 'target', title: 'White Water',
+      hint: (t) => t ? `Beat Sockeye Run's target time of ${fmtTarget(t)} in Time Trials.` : "Beat Sockeye Run's target time in Time Trials (target coming).",
+      test: (r) => r.venue === 'river' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
+    { char: 'Seam', venue: 'river', rung: 'four-stars', title: 'Reads the Seam',
+      hint: 'Earn four stars in one race at Sockeye Run: win, no penalties, lead at every mark, and sail on manual trim.',
+      test: (r) => r.venue === 'river' && r.stars === 4 },
+
     // ── Pearl Lagoon `lagoon` (designed Sep 25 2026) ─────────────────────────────────
     // The squalls are the venue: Wes made them 25% larger and 50% slower the same day so a
     // front can be ridden. Animals (js/wildlife.js): green sea turtles on the seagrass,

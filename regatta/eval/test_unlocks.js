@@ -279,6 +279,33 @@ console.log('Gatorgrass Bayou');
     ok(!((c2.venues.swamp || {}).routes || []).length, 'an unfinished race adds no passage');
 }
 
+console.log('Sockeye Run');
+{
+    const w = world(); w.__UNLOCKS = 'on'; w.settings.venue = 'river';
+    w.window.VenueDoc = { get: () => ({ records: {} }) };
+    w.recordsEligible = () => false;
+    w.Series = { raceFacts: () => ({ stars: 1 }) };
+    const river = w.Unlocks.forVenue('river').map(a => a.char).join(',');
+    ok(river === 'Slipstream,Snag,Grizzle,Riffle,Seam', 'five Sockeye Run objectives: ' + river);
+    const race = (emits, me = { me: true, time: 240 }) => {
+        newRace(w);
+        for (const e of emits) w.GameEvents.emit('player-feat', e);
+        const order = fleet(w, [['Bruce', {}], ['Bixby', me]]);
+        w.state.race.timer = 999;
+        return w.Unlocks.poll(order);
+    };
+    const r1 = race([{ id: 'river:scraped' }, { id: 'river:chute' }]);
+    ok(!r1.includes('Snag'), 'a scrape on the run home is not Snag');
+    ok(r1.includes('Grizzle'), 'finishing down the chute earns Grizzle');
+    const r2 = race([]);
+    ok(r2.includes('Snag'), 'a clean run home earns Snag');
+    const w2 = world(); w2.__UNLOCKS = 'on'; w2.settings.venue = 'river'; w2.window.VenueDoc = { get: () => ({ records: {} }) };
+    newRace(w2); w2.GameEvents.emit('player-feat', { id: 'river:chute' });
+    const o = fleet(w2, [['Bruce', {}], ['Bixby', { me: true, finished: false }]]); w2.state.race.status = 'finished'; w2.state.race.timer = 999;
+    w2.Unlocks.flush(o); const g = w2.Unlocks.poll(o);
+    ok(!g.includes('Snag') && !g.includes('Grizzle'), 'an unfinished race earns neither');
+}
+
 console.log('Sailing School');
 {
     const w = world(); w.__UNLOCKS = 'on';

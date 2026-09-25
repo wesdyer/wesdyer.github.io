@@ -75,6 +75,17 @@ const EAST = track('traj_swamp_1788850706135.json'), CUT = track('traj_swamp_178
         const a1 = d.perchers[1]; me.x = a1.px + 60; me.y = a1.py; Wildlife.update(1 / 30);
         out.playerAnhinga = feats.some(e => e.id === 'swamp:anhingas'); away(me);
 
+        // ── bullfrogs: a group on each open drift log and on three banks; they hop in from a boat ──
+        out.frogGroups = d.baskers.filter(b => b.cfg.kind === 'frog').length;
+        const K = VenueDoc.PROP_KINDS;
+        const crowned = (x, y) => state.course.props.some(t => K[t.kind] && K[t.kind].parts && K[t.kind].parts.canopy && Math.hypot(t.x - x, t.y - y) < (K[t.kind].world || 100) * (t.scale || 1) * 0.5 + 10);
+        out.frogsInOpen = d.baskers.every(b => !crowned(b.log.x, b.log.y));
+        const fg = d.baskers[0]; for (const t of fg.turtles) { t.mode = 'bask'; t.t = 0; }
+        bot.x = fg.log.x + 40; bot.y = fg.log.y;
+        for (let i = 0; i < 45; i++) Wildlife.update(1 / 30);
+        out.frogsHopped = fg.turtles.every(t => t.mode === 'slide' || t.mode === 'under');
+        away(bot);
+
         // ── the passages ──
         const routeOf = (pts) => {
             const n0 = feats.length; me.x = pts[0][0]; me.y = pts[0][1]; checkSwampRoute();
@@ -107,6 +118,9 @@ const EAST = track('traj_swamp_1788850706135.json'), CUT = track('traj_swamp_178
     ok(r.egretFlew, 'an egret flies off from a boat');
     ok(r.anhingaDropped && !r.botAnhinga, 'a bot drops the anhingas into the water, and earns nobody anything');
     ok(r.playerAnhinga, 'the player putting them up earns swamp:anhingas');
+    ok(r.frogGroups === 7, `bullfrogs on the four open drift logs and three banks (${r.frogGroups} groups)`);
+    ok(r.frogsInOpen, 'no frog group sits under a tree crown');
+    ok(r.frogsHopped, 'a boat alongside sends the frogs hopping in');
     ok(r.gates === 'cut:cut east:east west:west longway:longway', `each gate names its passage (${r.gates})`);
     ok(r.lastWins.endsWith('cut>east') || r.lastWins === 'cut>east', `the last passage crossed is the one that counts (${r.lastWins})`);
     ok(r.prestartRoute === '', 'no passage before the gun');

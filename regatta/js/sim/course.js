@@ -210,7 +210,13 @@ const ROUTE_GATES = { swamp: { feat: 'swamp:route', gates: {
     longway: { a: { x: 976,   y: 5051 }, b: { x: 802,   y: 2557 } },
 } } };
 let _route = null;
-function segCross(p, q, a, b) {
+// ⚠️ PRIVATE ON PURPOSE. This was a top-level `function segCross(p, q, a, b)` until Sep 25
+// 2026, and in these classic scripts a top-level function is a GLOBAL: it silently replaced
+// collision.js's own segCross(ax, ay, bx, by, cx, cy, dx, dy) — the crossing test behind every
+// point-in-shape check — and boats hit phantom walls everywhere (Sockeye Run's golden traces
+// went from 8 finishers to 0, Lake and Redrock lost most of theirs). Never add a top-level
+// helper with a generic name here; check `grep -rn "function NAME" js` first.
+function _routeGateCrossed(p, q, a, b) {
     const o = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
     return (o(a, b, p) > 0) !== (o(a, b, q) > 0) && (o(p, q, a) > 0) !== (o(p, q, b) > 0);
 }
@@ -221,13 +227,48 @@ function checkSwampRoute() {
     const here = { x: me.x, y: me.y };
     if (_route && Math.hypot(here.x - _route.x, here.y - _route.y) < 400) {
         for (const [name, gate] of Object.entries(g.gates)) {
-            if (segCross(_route, here, gate.a, gate.b) && typeof GameEvents !== 'undefined') {
+            if (_routeGateCrossed(_route, here, gate.a, gate.b) && typeof GameEvents !== 'undefined') {
                 GameEvents.emit('player-feat', { id: g.feat, value: name });
             }
         }
     }
     _route = here;
 }
+// SOCKEYE RUN — two objectives on the run home (the last leg, gate-1 down the gorge to the
+// finish gate). Designed Sep 25 2026 from Wes's races against the fleet's (eval/_river_gorge.js):
+//   river:scraped  the player touched a rock, a log or the bank on the run home. Snag's
+//                  "Run the Gorge Clean" is a finish WITHOUT it. The rapids shove the bow
+//                  (physics.js RAPIDS_YAW), and the fleet brushes something 48 races in 50;
+//                  Wes ran clean in 5 of 9.
+//   river:chute    the player went down the chute — the east arm round the finish island,
+//                  through rapid R9, past the bear on the gravel bar (Grizzle). The fleet
+//                  never takes it (0 of 50); Wes did 6 of 9, and it is ~5 s faster from the
+//                  split. The gate runs land to land across the east arm only (island shore
+//                  x 5260-5520, east bank from 6480 at y -6150; the west arm is 4780-5260).
+const RIVER_RUN = { venue: 'river', chute: { a: { x: 5420, y: -6150 }, b: { x: 6560, y: -6150 } } };
+let _riverRun = null;   // { last: {x,y}, chute, scraped } for the race in progress
+function _riverOnLastLeg(me) { return me.raceState.leg === ((state.course.route || []).length - 1); }
+function checkRiverRun() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== RIVER_RUN.venue || !me || !me.isPlayer
+        || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _riverRun = null; return; }
+    if (!_riverRun) _riverRun = { last: null, chute: false, scraped: false };
+    const here = { x: me.x, y: me.y };
+    if (!_riverRun.chute && _riverRun.last && _riverOnLastLeg(me)
+        && _routeGateCrossed(_riverRun.last, here, RIVER_RUN.chute.a, RIVER_RUN.chute.b) && typeof GameEvents !== 'undefined') {
+        _riverRun.chute = true;
+        GameEvents.emit('player-feat', { id: 'river:chute' });
+    }
+    _riverRun.last = here;
+}
+if (typeof GameEvents !== 'undefined') GameEvents.on('player-contact', (e) => {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== RIVER_RUN.venue || !me || e.isFloe || !_riverOnLastLeg(me)) return;
+    if (!_riverRun) _riverRun = { last: null, chute: false, scraped: false };
+    if (_riverRun.scraped) return;
+    _riverRun.scraped = true;
+    GameEvents.emit('player-feat', { id: 'river:scraped' });
+});
 const _bowSide = new Map();
 function checkBowCrossing(list) {
     const me = state.boats && state.boats[0];

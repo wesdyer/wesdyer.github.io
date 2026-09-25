@@ -24,6 +24,27 @@
 //               dart off deeper when a boat comes close; `formation` flies a squadron behind
 //               a leader (eagle rays, which now and then leap); `breathe` brings one up so
 //               only its head breaks the surface (sea turtles).
+//   · POPPERS   animals that live under the water and pop their heads up to look about — the
+//               Cove's harbour seals "bottling" — then sink and glide off under the surface,
+//               a dim seal-shaped shape you can follow, to surface again nearby. A head turns
+//               to watch the nearest boat; a boat too close puts it straight down.
+//   · LEAPERS   fish that jump clear somewhere in view now and then and splash back (the
+//               Lake's bass); nothing to catch, it just says the water is alive.
+//   · SHOALS    schools of small reef fish (the Lagoon's tangs) that drift round a coral head
+//               in a loose cloud and scatter from a boat, regrouping after.
+//   · FISHERS   a big animal standing in the shallows at the edge of fast water, facing
+//               upstream, that lunges for fish and sometimes comes up with one; a boat close
+//               by makes it rear up to look (Sockeye Run's brown bears). It does not run.
+//   · RUNS      fish holding station in slack water beside the stream, all nosed upstream,
+//               that dart off from a boat and drift back (the sockeye run). LEAPERS with
+//               `rapids` puts the leaping ones in the white water, jumping upstream.
+//   · SOARERS   big raptors circling high over the water that now and then stoop on a run of
+//               fish, snatch one and climb away with it (Sockeye Run's bald eagles).
+//   · ROMPERS   a family that rests on a logjam, slides in and swims the bank in a line,
+//               porpoising, dives together from a boat and surfaces further off (river otters).
+//   BASKERS also carries the Bayou's bullfrogs: `all` puts a group on every matching log
+//   that is not under a crown, `banks` adds groups on the mud at the water's edge, and a
+//   frog HOPS in where a turtle slides.
 //   · LURKERS   big animals lying still at the water's edge that sink out of sight when a boat
 //               comes close and surface a little way off (Gatorgrass Bayou's alligators).
 //               The player's count of the ones they put down is a feat VALUE.
@@ -65,6 +86,11 @@
             pods: { ships: /cargo-ship/, perShip: 3, resident: 3 },
             // Scoop's pelicans and their bait boils.
             feeders: { kind: 'pelican', count: 5, feat: 'bay:bait-boil' },
+            // Harbour seals, the Cove's fourth animal (Sep 25 2026, Wes — every venue has four
+            // but the pond; Roll, the Cove's first-win character, is one): two round the rocks
+            // off the east island by the start, two off the west island on the leg to mark 3,
+            // one by the rocks near mark 1. [cx, cy, r] each.
+            poppers: { kind: 'seal', reactR: 55, lookR: 350, at: [[2350, 1300, 300], [2600, 1450, 300], [-450, -450, 280], [-700, -700, 280], [900, -1500, 260]] },
         },
         // Duckling Pond (Sailing School). The ducklings are school.js's own; these are the
         // other two animals. The log is whichever drift log Wes places in the pond's water.
@@ -78,6 +104,8 @@
         // Wes may add a beaver dam later).
         lake: {
             waders: [{ id: 'moose', shape: 'shape-39', kind: 'moose', flushR: 170, feat: 'lake:moose' }],
+            // Bass jumping clear and splashing back in, somewhere near the player (Sep 25 2026, Wes).
+            leapers: { kind: 'bass', every: [4, 9], near: [180, 650] },
             divers: [{ kind: 'loon', count: 2, cx: 1500, cy: -300, r: 650, reactR: 150, pair: true },
                      { kind: 'beaver', count: 2, cx: 2250, cy: 250, r: 320, reactR: 130 }],
         },
@@ -99,6 +127,11 @@
             // channel is a cypress swamp, and a bird under a crown is a bird nobody sees. 100 u
             // off the West route's line, so sailing the West puts them up.
             perchers: { kind: 'anhinga', at: [[-2640, 1160], [-2560, 220], [-2600, -200]], flushR: 150, feat: 'swamp:anhingas' },
+            // Bullfrogs (Sep 25 2026, Wes): a few on every drift log out in the open (four of
+            // the seven; the rest are under crowns) and on the mud at three banks by the Cut and
+            // East. They hop in when a boat comes close and climb back out when it is quiet.
+            baskers: [{ id: 'frogs', kind: 'frog', prop: /swamp-driftlog/, all: true, openOnly: true, count: 3, flushR: 70,
+                        banks: [[-977, 652, 6.48], [-637, -101, 6.68], [71, 1075, 7.26]] }],
         },
         // Pearl Lagoon (designed Sep 25 2026). Three scenery animals, all seen through clear
         // shallow water: green sea turtles grazing the two seagrass beds the course crosses,
@@ -111,6 +144,35 @@
                 { id: 'sharks-3', kind: 'reefshark', count: 3, over: ['shape-34'], pad: 120, reactR: 130 },
                 { id: 'sharks-45', kind: 'reefshark', count: 2, over: ['shape-10'], pad: 120, reactR: 130 },
             ],
+            // Schools of tangs round three coral heads by the course (Sep 25 2026, Wes): yellow
+            // at the staghorn by mark 3 and the brain coral on the leg home, blue at the pillar
+            // on the 3->4 leg. A cloud of bright slivers — a tang is flat, so from above it is a
+            // thin fleck — that scatters from a boat and gathers again.
+            shoals: [{ kind: 'yellowtang', count: 26, prop: 'prop-43', reactR: 110 },
+                     { kind: 'bluetang', count: 20, prop: 'prop-34', reactR: 110 },
+                     { kind: 'yellowtang', count: 22, prop: 'prop-8', reactR: 110 }],
+        },
+        // Sockeye Run (designed Sep 25 2026). The stream runs toward the finish; the salmon
+        // run the other way. Placed by eval/_river_spots.js in the shallows 20-60 u off the bank.
+        //   · Brown bears fishing: one on the island shore at the head of the CHUTE (the east arm
+        //     round the finish island, 80 u above its gate — Grizzle's objective sails past it,
+        //     the west arm is 250 u off), one on the slack gravel bar of the north eddy on the
+        //     run home (190-330 u off everyone's line). [x, y] each.
+        //   · The sockeye run holding in slack water beside the rapids — by the chute bear, in
+        //     the eddy, below the first logjam, above the rock garden — and leaping up the white
+        //     water wherever the player is in it.
+        //   · Bald eagles circling over the lower gorge, the eddy and the finish arms — each
+        //     within a stoop (900 u) of a run, which it now and then takes. [cx, cy, r] each.
+        //   · River otters: a family of four on each logjam.
+        river: {
+            fishers: { kind: 'bear', lookR: 240, at: [[5500, -6070], [2320, -4300]] },
+            runs: { kind: 'sockeye', reactR: 95, at: [[5575, -6190, 34], [2330, -4335, 40], [1180, -1050, 32], [4740, -4990, 28]] },
+            // Wes, Sep 25: "more jumping salmon!" — a leap every second or so wherever the player
+            // is in white water, two to four at a time one after another (they jump a rapid in
+            // bunches), and now and then one out of a holding run in view.
+            leapers: { kind: 'salmon', every: [0.5, 1.3], near: [120, 620], rapids: 0.3, burst: [3, 6], fromRuns: [1.5, 4] },
+            soarers: { kind: 'eagle', at: [[1350, -1500, 260], [2700, -4000, 300], [5250, -5850, 250]] },
+            rompers: { kind: 'otter', count: 4, reactR: 120, homes: ['prop-5', 'prop-6'] },
         },
     };
 
@@ -129,7 +191,26 @@
     // 1.4x: a broad animal, and one the size of the boat would read as a monster); great egret
     // 1 m -> ~28 standing, ~42 across the wings; anhinga 0.85 m -> ~24, ~32 with wings spread.
     const GATOR_SCALE = 1.5, EGRET_SCALE = 1.45, ANHINGA_SCALE = 1.35;
+    // Under the 20-unit floor on purpose (scale.md's floor is for an animal that must read on
+    // its own; these read as a group, or by their splash): bullfrog 15 cm -> ~10 on its log;
+    // a jumping bass 40 cm -> ~14 in the air; a tang 20 cm -> ~8 in a school of twenty-odd.
+    const FROG_SCALE = 1.4, BASS_LEN = 14, TANG_SCALE = 1.25;
+    // A harbour seal: the head that pops up is 0.2 m (under the floor on purpose — it reads by
+    // its ring and its watching), ~10 across; the body gliding under the water is 1.6 m, ~28
+    // long (about 2x, a broad animal). It swims ~20 u/s under water, under a body length a second.
+    const SEAL_HEAD = 2.1, SEAL_BODY = 1.6, SEAL_SWIM = 20;
     const SEATURTLE_SCALE = 1.05, RAY_SCALE = 1.05, SHARK_SCALE = 1.4;
+    // Sockeye Run's (scale.md): brown bear 2.2 m -> ~46 nose to rump (about 2x: a broad
+    // animal — at 58 it stood as long as the hull and read as a monster); sockeye 0.6 m -> ~18 (a run reads as a group, rule
+    // 7); bald eagle 0.9 m long, 2 m across -> ~27 and ~58 (the pelican's span); river otter
+    // 1.1 m with its tail -> ~32. Swimming at one to two body lengths a second.
+    const BEAR_SCALE = 1.85, SOCKEYE_LEN = 18, EAGLE_SCALE = 1.8, OTTER_SCALE = 2.0;
+    const OTTER_SWIM = 30, EAGLE_SOAR = 32;
+    // Spawning sockeye (close-up references, Sep 25): a vivid crimson body, the head a light
+    // yellowish olive-green from snout to gill, darker on top, the hooked jaw pale cream; olive
+    // tail and fins. Fresh-run fish not yet turned are silver-grey with a grey-green head.
+    const SOCKEYE = { body: '#d8232f', head: '#8a9a45', crown: '#5f6f2e', jaw: '#e9e2c6', tail: '#6a7236',
+                      silver: '#a7aca6', silverHead: '#70796a', silverTail: '#6c716a' };
     // The ray's whip tail, native units from the tail base. Counted in its size: Wes found the
     // first ray 'huge tip to tail' (46 native x 1.45 = ~100 u, nearly two hulls, Sep 25).
     const RAY_TAIL = 32;
@@ -138,8 +219,9 @@
     const BOIL_R = 75;
 
     let cfg = null, rnd = null, T = 0;
-    let colonies = [], followers = [], pods = [], resident = null, flight = null, boil = null, baskers = [], divers = [], waders = [], cruisers = [], lurkers = [], stalkers = [], perchers = [];
-    let lurkWoken = new Set();
+    let colonies = [], followers = [], pods = [], resident = null, flight = null, boil = null, baskers = [], divers = [], waders = [], cruisers = [], lurkers = [], stalkers = [], perchers = [], leaps = [], shoals = [], poppers = [];
+    let fishers = [], runs = [], soarers = [], rompers = [];
+    let lurkWoken = new Set(), nextLeap = 0, nextRunLeap = 0;
     let nextBoil = 0, feats = new Set(), lastRaceSig = null;
 
     function mulberry(seed) {
@@ -154,6 +236,14 @@
     const R = (a, b) => a + rnd() * (b - a);
     const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
     const onLand = (x, y) => (typeof pointOnLand === 'function') ? pointOnLand(x, y) : false;
+    // Is (x, y) under a tree's crown? An animal there is drawn under the canopy and nobody sees it.
+    function underCrown(x, y) {
+        const K = (window.VenueDoc && VenueDoc.PROP_KINDS) || {};
+        // a tree is a trunk on the surface plane with a CROWN part drawn over everything
+        const crowned = (k) => k && (k.plane === 'canopy' || (k.parts && k.parts.canopy));
+        return ((state.course && state.course.props) || []).some(t => crowned(K[t.kind])
+            && Math.hypot(t.x - x, t.y - y) < (K[t.kind].world || 100) * (t.scale || 1) * 0.5 + 10);
+    }
 
     function venueKey() { return (state.course && state.course.venueKey) || (typeof settings !== 'undefined' ? settings.venue : null); }
 
@@ -161,7 +251,8 @@
     function init() {
         const key = venueKey();
         cfg = WILDLIFE[key] || null;
-        colonies = []; followers = []; pods = []; resident = null; flight = null; boil = null; baskers = []; divers = []; waders = []; cruisers = []; lurkers = []; stalkers = []; perchers = []; lurkWoken = new Set();
+        colonies = []; followers = []; pods = []; resident = null; flight = null; boil = null; baskers = []; divers = []; waders = []; cruisers = []; lurkers = []; stalkers = []; perchers = []; leaps = []; shoals = []; poppers = []; lurkWoken = new Set(); nextLeap = 0; nextRunLeap = 0;
+        fishers = []; runs = []; soarers = []; rompers = [];
         feats = new Set(); T = 0;
         if (!cfg) return;
         rnd = mulberry(hashStr('wildlife:' + key));
@@ -181,8 +272,20 @@
             nextBoil = R(25, 40);
         }
         for (const c of cfg.baskers || []) {
-            const log = ((state.course && state.course.props) || []).find(p => c.prop.test(p.kind));
-            if (log) baskers.push(makeBaskers(c, log));
+            const props = (state.course && state.course.props) || [];
+            const logs = c.all ? props.filter(p => c.prop.test(p.kind)) : [props.find(p => c.prop.test(p.kind))].filter(Boolean);
+            for (const log of logs) if (!c.openOnly || !underCrown(log.x, log.y)) baskers.push(makeBaskers(c, log));
+            // a bank: a short stretch of mud at the water's edge, laid along heading h
+            for (const [x, y, h] of c.banks || []) baskers.push(makeBaskers(c, { x, y, heading: h, kind: 'bank', scale: 0.55 }));
+        }
+        if (cfg.leapers) nextLeap = R(2, 5);
+        if (cfg.poppers) poppers = cfg.poppers.at.map(([cx, cy, r], i) => {
+            const p = popSpot(cx, cy, r) || { x: cx, y: cy };
+            return { i, cx, cy, r, x: p.x, y: p.y, h: R(0, 7), look: R(0, 7), mode: i % 2 ? 'up' : 'under', t: R(1, 6), tx: p.x, ty: p.y, vis: i % 2 ? 1 : 0, bob: R(0, 7), ring: 0, ring2: 0, vx: 0, vy: 0 };
+        });
+        for (const c of cfg.shoals || []) {
+            const pr = ((state.course && state.course.props) || []).find(q => q.id === c.prop);
+            if (pr) shoals.push(makeShoal(c, pr));
         }
         for (const d of cfg.divers || []) divers.push(makeDivers(d));
         for (const w of cfg.waders || []) {
@@ -192,6 +295,10 @@
         for (const c of cfg.cruisers || []) { const G = makeCruisers(c); if (G) cruisers.push(G); }
         if (cfg.lurkers) lurkers = cfg.lurkers.at.map(([x, y, h], i) => ({ i, hx: x, hy: y, x, y, h: h + R(-0.3, 0.3), mode: 'float', t: R(4, 12), sink: 0, ring: 0, bob: R(0, 7), trail: [], trailT: 0 }));
         if (cfg.stalkers) stalkers = cfg.stalkers.at.map(([x, y], i) => ({ i, x, y, h: R(0, 7), mode: 'stand', t: R(2, 6), z: 0, flap: 0, neck: 0, tx: x, ty: y, bob: R(0, 7) }));
+        if (cfg.fishers) fishers = cfg.fishers.at.map(([x, y], i) => { const up = upstream(x, y); return { i, hx: x, hy: y, x, y, up, h: up, mode: 'watch', t: R(2, 6), look: 0, lunge: 0, splash: 0, fish: 0, bob: R(0, 7), rear: 0 }; });
+        if (cfg.runs) runs = cfg.runs.at.map(([x, y, n]) => makeRun(cfg.runs, x, y, n));
+        if (cfg.soarers) soarers = cfg.soarers.at.map(([cx, cy, r], i) => ({ i, cx, cy, r, a: R(0, 7), dir: i % 2 ? -1 : 1, z: R(90, 120), x: cx, y: cy, h: 0, flap: R(0, 7), mode: 'soar', t: R(15, 35), fish: 0, tx: 0, ty: 0, splash: 0, sx: 0, sy: 0 }));
+        if (cfg.rompers) for (const id of cfg.rompers.homes) { const pr = ((state.course && state.course.props) || []).find(q => q.id === id); if (pr) { const F = makeRompers(cfg.rompers, pr); if (F) rompers.push(F); } }
         if (cfg.perchers) for (const [px, py] of cfg.perchers.at) {
             perchers.push({ px, py, x: px, y: py, h: R(0, 7), ph: R(-0.8, 0.8), snag: R(0, 7), mode: 'dry', t: 0, flap: R(0, 7), sink: 0, splash: 0, trail: [], trailT: 0 });
         }
@@ -211,7 +318,7 @@
             // how every photograph of basking turtles has them — in a spread of sizes.
             const side = i % 2 ? 1 : -1, lat = side * R(0, 1.5);
             const hx = log.x + ax * t * len * 0.8 - ay * lat, hy = log.y + ay * t * len * 0.8 + ax * lat;
-            turtles.push({ hx, hy, h: (log.heading || 0) + (i === 4 ? Math.PI : 0) + side * R(0, 0.18), size: R(0.72, 1.0),
+            turtles.push({ hx, hy, h: (log.heading || 0) + (i === 4 ? Math.PI : 0) + side * R(0, 0.18) + (c.kind === 'frog' ? (side > 0 ? Math.PI / 2 : -Math.PI / 2) + R(-0.5, 0.5) : 0), size: R(0.72, 1.0),
                            side, i, mode: 'bask', t: 0, delay: 0, ox: 0, oy: 0, ux: 0, uy: 0, wet: 0, peek: 0, look: R(0, 7) });
         }
         return { cfg: c, log, ax, ay, turtles };
@@ -361,6 +468,143 @@
         if (lurkers.length) updateLurkers(dt, me);
         if (stalkers.length) updateStalkers(dt);
         if (perchers.length) updatePerchers(dt, me);
+        if (cfg.leapers) { updateLeapers(dt); if (cfg.leapers.fromRuns) updateRunLeaps(dt); }
+        for (const G of shoals) updateShoal(G, dt);
+        if (poppers.length) updatePoppers(dt);
+        if (fishers.length) updateFishers(dt);
+        for (const G of runs) updateRun(G, dt);
+        if (soarers.length) updateSoarers(dt);
+        for (const F of rompers) updateRompers(F, dt);
+    }
+
+    // ── POPPERS: harbour seals ──────────────────────────────────────────────────────────
+    function popSpot(cx, cy, r) {
+        for (let k = 0; k < 30; k++) { const a = R(0, Math.PI * 2), d = Math.sqrt(rnd()) * r, x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
+            if (!onLand(x, y) && !onLand(x + 25, y) && !onLand(x - 25, y) && !onLand(x, y + 25) && !onLand(x, y - 25)) return { x, y }; }
+        return null;
+    }
+    function updatePoppers(dt) {
+        const c = cfg.poppers;
+        for (const s of poppers) {
+            s.t -= dt; s.bob += dt; s.ring = Math.max(0, s.ring - dt * 0.8); s.ring2 = Math.max(0, s.ring2 - dt * 0.6);
+            const close = boatNear(s.x, s.y, c.reactR);
+            if (s.mode === 'up') {
+                // curious: the head turns to watch the nearest boat in sight
+                const b = boatNear(s.x, s.y, c.lookR);
+                const want = b ? Math.atan2(b.x - s.x, -(b.y - s.y)) : s.look + Math.sin(s.bob * 0.4) * 1.2;
+                s.h += angDiff(want, s.h) * Math.min(1, dt * 1.6);
+                if (close || s.t <= 0) { s.mode = 'sink'; s.t = close ? 0.35 : 0.7; s.ring = 1; if (close) s.away = close; }
+            } else if (s.mode === 'sink') {
+                s.vis = Math.max(0, s.vis - dt / (s.t > 0.4 ? 0.7 : 0.35));
+                if (s.t <= 0) {
+                    s.mode = 'under'; s.vis = 0; s.t = R(7, 14);
+                    // off to a new spot — away from the boat that put it down
+                    let p = null;
+                    if (s.away) { const a = Math.atan2(s.x - s.away.x, -(s.y - s.away.y)); const x = s.x + Math.sin(a) * 160, y = s.y - Math.cos(a) * 160; if (!onLand(x, y)) p = { x, y }; s.away = null; }
+                    p = p || popSpot(s.cx, s.cy, s.r) || { x: s.x, y: s.y };
+                    s.tx = p.x; s.ty = p.y;
+                }
+            } else if (s.mode === 'under') {
+                // gliding under the surface: a velocity eased toward the new spot, capped
+                const dx = s.tx - s.x, dy = s.ty - s.y, d = Math.hypot(dx, dy);
+                let wx = d > 1 ? dx / d * Math.min(SEAL_SWIM, d * 0.8) : 0, wy = d > 1 ? dy / d * Math.min(SEAL_SWIM, d * 0.8) : 0;
+                const k = Math.min(1, dt * 1.5); s.vx += (wx - s.vx) * k; s.vy += (wy - s.vy) * k;
+                const nx = s.x + s.vx * dt, ny = s.y + s.vy * dt;
+                if (!onLand(nx, ny)) { s.x = nx; s.y = ny; } else { s.tx = s.cx; s.ty = s.cy; }
+                const sp = Math.hypot(s.vx, s.vy); if (sp > 2) s.h += angDiff(Math.atan2(s.vx, -s.vy), s.h) * Math.min(1, dt * 3);
+                s.spd = sp;
+                if ((s.t <= 0 && d < 30) || s.t < -6) { if (!boatNear(s.x, s.y, c.reactR * 2)) { s.mode = 'rise'; s.t = 0.7; s.ring2 = 1; } else s.t = 1; }
+            } else if (s.mode === 'rise') {
+                s.vis = Math.min(1, s.vis + dt / 0.7);
+                s.vx *= 0.9; s.vy *= 0.9;
+                if (s.t <= 0) { s.mode = 'up'; s.vis = 1; s.t = R(4, 10); s.look = s.h; }
+            }
+        }
+    }
+
+    // ── LEAPERS: a bass jumps clear somewhere near the player and splashes back ────────
+    function updateLeapers(dt) {
+        const c = cfg.leapers;
+        for (const L of leaps) L.t += dt;
+        leaps = leaps.filter(L => L.t < L.dur + 2.2);
+        nextLeap -= dt;
+        const me = state.boats && state.boats.find(b => b.isPlayer);
+        if (nextLeap > 0 || !me) return;
+        nextLeap = R(c.every[0], c.every[1]);
+        for (let k = 0; k < 12; k++) {
+            const a = R(0, Math.PI * 2), d = R(c.near[0], c.near[1]), x = me.x + Math.cos(a) * d, y = me.y + Math.sin(a) * d;
+            if (onLand(x, y) || onLand(x + 20, y) || onLand(x - 20, y)) continue;
+            if ((state.boats || []).some(b => Math.hypot(b.x - x, b.y - y) < 90)) continue;
+            // salmon leap only in the white water, and always upstream, against it
+            if (c.rapids && !(typeof rapidsTurbAt === 'function' && rapidsTurbAt(x, y) >= c.rapids)) continue;
+            const h = c.rapids ? upstream(x, y) + R(-0.35, 0.35) : R(0, Math.PI * 2);
+            const n = c.burst ? Math.round(R(c.burst[0], c.burst[1])) : 1;
+            for (let j = 0; j < n; j++) {
+                // a bunch: each a little way off the first, starting a beat after the one before
+                const ox = j ? R(-35, 35) : 0, oy = j ? R(-35, 35) : 0;
+                if (j && (onLand(x + ox, y + oy) || (c.rapids && rapidsTurbAt(x + ox, y + oy) < c.rapids))) continue;
+                leaps.push({ kind: c.kind, silver: rnd() < 0.3, x: x + ox, y: y + oy, h: h + (j ? R(-0.2, 0.2) : 0), t: -j * R(0.2, 0.5), dur: R(0.55, 0.8), size: R(0.85, 1.15), hop: R(14, 22) });
+            }
+            break;
+        }
+    }
+    // A salmon out of a holding run the player can see: one clears the water and drops back.
+    function updateRunLeaps(dt) {
+        const c = cfg.leapers;
+        nextRunLeap -= dt;
+        const me = state.boats && state.boats.find(b => b.isPlayer);
+        if (nextRunLeap > 0 || !me || !runs.length) return;
+        nextRunLeap = R(c.fromRuns[0], c.fromRuns[1]);
+        const seen = runs.filter(G => Math.hypot(G.hx - me.x, G.hy - me.y) < 900);
+        const G = seen[Math.floor(rnd() * seen.length)];
+        if (!G || G.flee > 0) return;
+        const f = G.fish[Math.floor(rnd() * G.fish.length)];
+        leaps.push({ kind: c.kind, fromRun: true, silver: !!f.dull, x: f.x, y: f.y, h: G.up + R(-0.5, 0.5), t: 0, dur: R(0.5, 0.7), size: f.size, hop: R(10, 16) });
+    }
+
+    // ── SHOALS: tangs round a coral head ──────────────────────────────────────────────
+    function makeShoal(c, pr) {
+        const G = { cfg: c, hx: pr.x, hy: pr.y, cx: pr.x, cy: pr.y, a: R(0, 7), spread: 1, flee: 0, fx: 0, fy: 0, fish: [] };
+        // Reef is water to a fish (the coral head sits on it); only sand and scrub are dry.
+        // A coral head's own collider (a prop's `.hit` ring) is a wall to a boat, not to the fish
+        // that live on it — the school starts inside it.
+        G.dry = (x, y) => (state.course.islands || []).some(s => { if (/\.hit$/.test(s.id)) return false; const k = VenueDoc.traits ? VenueDoc.traits(s) : {}; return k.hard && !k.reef && pointInPoly(x, y, s.vertices); });
+        for (let i = 0; i < c.count; i++) G.fish.push({ x: pr.x + R(-40, 40), y: pr.y + R(-40, 40), vx: 0, vy: 0, h: R(0, 7), ox: R(-1, 1), oy: R(-1, 1), ph: R(0, 7), sp: R(0.85, 1.15), size: R(0.8, 1.1) });
+        return G;
+    }
+    function updateShoal(G, dt) {
+        const c = G.cfg;
+        // The school's centre circles its coral head, 40-90 u out, drifting in and out — slowly:
+        // a tang cruises one or two body lengths a second (Wes, Sep 25: the first cut was
+        // "way too fast"), so the school moves at ~4 u/s and each fish at up to ~12.
+        G.a += dt * 0.05;
+        let tx = G.hx + Math.cos(G.a) * (60 + 30 * Math.sin(G.a * 1.7)), ty = G.hy + Math.sin(G.a) * (60 + 30 * Math.sin(G.a * 1.3));
+        const b = (state.boats || []).find(bt => Math.hypot(bt.x - G.cx, bt.y - G.cy) < c.reactR + 40);
+        if (b) { G.flee = 1.6; const d = Math.hypot(G.cx - b.x, G.cy - b.y) || 1; G.fx = (G.cx - b.x) / d; G.fy = (G.cy - b.y) / d; }
+        G.flee = Math.max(0, G.flee - dt);
+        if (G.flee > 0) { tx = G.cx + G.fx * 90; ty = G.cy + G.fy * 90; }
+        G.spread += ((G.flee > 0 ? 1.8 : 1) - G.spread) * Math.min(1, dt * (G.flee > 0 ? 2 : 0.4));
+        // the centre moves toward its target at a capped speed: ~4 u/s cruising, ~30 fleeing
+        const cdx = tx - G.cx, cdy = ty - G.cy, cd = Math.hypot(cdx, cdy), cv = Math.min(cd, (G.flee > 0 ? 30 : 4) * dt);
+        if (cd > 0.01) { const nx = G.cx + cdx / cd * cv, ny = G.cy + cdy / cd * cv; if (!G.dry(nx, ny)) { G.cx = nx; G.cy = ny; } }
+        const vmax = G.flee > 0 ? 45 : 12;
+        for (const f of G.fish) {
+            f.ph += dt * 2 * f.sp;
+            // each keeps its own place in the cloud, which wanders slowly
+            f.ox += Math.sin(f.ph * 0.23 + f.size * 9) * dt * 0.08; f.oy += Math.cos(f.ph * 0.19 + f.size * 7) * dt * 0.08;
+            const L = Math.hypot(f.ox, f.oy); if (L > 1) { f.ox /= L; f.oy /= L; }
+            const px = G.cx + f.ox * 38 * G.spread, py = G.cy + f.oy * 26 * G.spread;
+            // steer the VELOCITY toward the place (a spring, capped), eased — no darting
+            let wx = (px - f.x) * 0.9, wy = (py - f.y) * 0.9; const w = Math.hypot(wx, wy), cap = vmax * f.sp;
+            if (w > cap) { wx *= cap / w; wy *= cap / w; }
+            const k = Math.min(1, dt * (G.flee > 0 ? 3 : 1.2));
+            f.vx += (wx - f.vx) * k; f.vy += (wy - f.vy) * k;
+            const nx = f.x + f.vx * dt, ny = f.y + f.vy * dt;
+            if (!G.dry(nx, ny)) { f.x = nx; f.y = ny; }
+            const spd = Math.hypot(f.vx, f.vy);
+            if (spd > 1.5) f.h += angDiff(Math.atan2(f.vx, -f.vy), f.h) * Math.min(1, dt * 3);
+            f.spd = spd;
+        }
     }
 
     // The nearest boat inside r of (x, y), or null.
@@ -475,6 +719,204 @@
                 if (a.t >= 0.8) { a.mode = 'dry'; a.t = 0; a.x = a.px; a.y = a.py; }
             }
         }
+    }
+
+    // The way upstream at (x, y): against the current layer's stream there (which runs TO its
+    // `direction`, in the sin/-cos heading convention every animal here uses).
+    function upstream(x, y) {
+        const c = (typeof getCurrentAt === 'function') ? getCurrentAt(x, y) : null;
+        return (c && c.speed > 0.05 ? c.direction : 0) + Math.PI;
+    }
+    const fwd = (h) => [Math.sin(h), -Math.cos(h)];
+
+    // ── FISHERS: brown bears in the shallows ──────────────────────────────────────────
+    // Stands facing upstream at the edge of the fast water, head swinging as it watches; lunges
+    // a body length forward with a splash, and about half the time comes up with a salmon it
+    // stands and eats; then steps back to its spot. A boat close by makes it rear up on its hind
+    // legs to look (head turned to the boat) — it never runs.
+    function updateFishers(dt) {
+        const c = cfg.fishers;
+        for (const B of fishers) {
+            B.t -= dt; B.bob += dt; B.splash = Math.max(0, B.splash - dt * 1.1);
+            const b = boatNear(B.x, B.y, c.lookR);
+            B.rear += ((b && B.mode !== 'lunge' ? 1 : 0) - B.rear) * Math.min(1, dt * (b ? 2.5 : 1.2));
+            if (b) B.look += angDiff(angDiff(Math.atan2(b.x - B.x, -(b.y - B.y)), B.h), B.look) * Math.min(1, dt * 3);
+            else B.look += (Math.sin(B.bob * 0.5) * 0.6 - B.look) * Math.min(1, dt * 1.5);
+            B.look = Math.max(-1.2, Math.min(1.2, B.look));
+            if (B.mode === 'watch') {
+                // drift back to its spot, facing upstream
+                const dx = B.hx - B.x, dy = B.hy - B.y, d = Math.hypot(dx, dy);
+                if (d > 1) { const v = Math.min(d, 8 * dt); B.x += dx / d * v; B.y += dy / d * v; }
+                B.h += angDiff(B.up, B.h) * Math.min(1, dt * 1.2);
+                if (B.t <= 0 && B.rear < 0.2) { B.mode = 'lunge'; B.t = 0.55; B.lunge = 0; }
+                else if (B.t <= 0) B.t = 1;
+            } else if (B.mode === 'lunge') {
+                B.lunge = Math.min(1, B.lunge + dt / 0.55);
+                const [fx, fy] = fwd(B.h), v = 34 * Math.sin(Math.PI * B.lunge);
+                const nx = B.x + fx * v * dt, ny = B.y + fy * v * dt;
+                if (!onLand(nx, ny)) { B.x = nx; B.y = ny; }
+                if (B.t <= 0) {
+                    B.splash = 1; B.lunge = 0;
+                    if (rnd() < 0.5) { B.mode = 'eat'; B.fish = 1; B.t = R(5, 9); } else { B.mode = 'watch'; B.t = R(4, 10); }
+                }
+            } else if (B.mode === 'eat') {
+                if (B.t <= 0) { B.mode = 'watch'; B.fish = 0; B.t = R(5, 11); }
+            }
+        }
+    }
+
+    // ── RUNS: sockeye holding in slack water ───────────────────────────────────────────
+    function makeRun(c, x, y, n) {
+        const G = { cfg: c, hx: x, hy: y, up: upstream(x, y), flee: 0, fx: 0, fy: 0, fish: [] };
+        for (let i = 0; i < n; i++) {
+            // a comet strung out along the stream (drone references): packed and wide at its
+            // upstream head, thinning into a ragged tail behind
+            const u = Math.pow(rnd(), 1.6), along = 40 - u * 110, across = R(-1, 1) * (20 - u * 12);
+            const [ux, uy] = fwd(G.up);
+            G.fish.push({ dull: rnd() < 0.2, oa: along, oc: across, x: x + ux * along - uy * across, y: y + uy * along + ux * across, vx: 0, vy: 0, h: G.up, ph: R(0, 7), size: R(0.85, 1.12) });
+        }
+        return G;
+    }
+    function updateRun(G, dt) {
+        const c = G.cfg;
+        const b = boatNear(G.hx, G.hy, c.reactR + 50);
+        if (b) { G.flee = 1.4; const d = Math.hypot(G.hx - b.x, G.hy - b.y) || 1; G.fx = (G.hx - b.x) / d; G.fy = (G.hy - b.y) / d; }
+        G.flee = Math.max(0, G.flee - dt);
+        const [ux, uy] = fwd(G.up);
+        for (const f of G.fish) {
+            f.ph += dt * (G.flee > 0 ? 9 : 3.2);
+            // hold station: a spring to its place, weaving a little across the stream
+            const wob = Math.sin(f.ph * 0.35 + f.size * 5) * 5;
+            let px = G.hx + ux * f.oa - uy * (f.oc + wob), py = G.hy + uy * f.oa + ux * (f.oc + wob);
+            if (G.flee > 0) { px += G.fx * 110; py += G.fy * 110; }
+            let wx = (px - f.x) * 0.8, wy = (py - f.y) * 0.8; const w = Math.hypot(wx, wy), cap = G.flee > 0 ? 55 : 14;
+            if (w > cap) { wx *= cap / w; wy *= cap / w; }
+            const k = Math.min(1, dt * (G.flee > 0 ? 4 : 1.2));
+            f.vx += (wx - f.vx) * k; f.vy += (wy - f.vy) * k;
+            const nx = f.x + f.vx * dt, ny = f.y + f.vy * dt;
+            if (!onLand(nx, ny)) { f.x = nx; f.y = ny; }
+            // nosed upstream while holding; turned the way it swims when it bolts
+            const spd = Math.hypot(f.vx, f.vy);
+            const want = G.flee > 0 && spd > 8 ? Math.atan2(f.vx, -f.vy) : G.up + Math.sin(f.ph * 0.5) * 0.12;
+            f.h += angDiff(want, f.h) * Math.min(1, dt * 4);
+            f.spd = spd;
+        }
+    }
+
+    // ── SOARERS: bald eagles ──────────────────────────────────────────────────────────
+    function updateSoarers(dt) {
+        for (const E of soarers) {
+            E.t -= dt; E.flap += dt * (E.mode === 'climb' ? 6 : 1.2); E.splash = Math.max(0, E.splash - dt * 1.2);
+            if (E.mode === 'soar') {
+                E.a += E.dir * EAGLE_SOAR / E.r * dt;
+                const x = E.cx + Math.cos(E.a) * E.r, y = E.cy + Math.sin(E.a) * E.r;
+                if (Math.hypot(x - E.x, y - E.y) > 0.01) E.h = Math.atan2(x - E.x, -(y - E.y));
+                E.x = x; E.y = y; E.z += (105 - E.z) * Math.min(1, dt * 0.3);
+                if (E.fish > 0) { E.fish -= dt / 18; if (E.fish < 0) E.fish = 0; }
+                if (E.t <= 0) {
+                    // stoop on the nearest run in reach, if nobody is on top of it
+                    let best = null, bd = 900;
+                    for (const G of runs) { const d = Math.hypot(G.hx - E.x, G.hy - E.y); if (d < bd && !boatNear(G.hx, G.hy, 160)) { bd = d; best = G; } }
+                    if (best) { E.mode = 'stoop'; const f = best.fish[Math.floor(rnd() * best.fish.length)]; E.tx = f.x; E.ty = f.y; E.z0 = E.z; E.d0 = Math.max(1, bd); E.fish = 0; }
+                    else E.t = R(8, 15);
+                }
+            } else if (E.mode === 'stoop') {
+                const d = Math.hypot(E.tx - E.x, E.ty - E.y);
+                steer(E, E.tx, E.ty, 75, 2.2, dt);
+                E.z = Math.max(2, E.z0 * Math.min(1, d / E.d0));
+                if (d < 10) { E.mode = 'grab'; E.t = 0.45; E.splash = 1; E.sx = E.x; E.sy = E.y; }
+            } else if (E.mode === 'grab') {
+                E.z = 2;
+                if (E.t <= 0) { E.mode = 'climb'; E.fish = 1; E.t = 0; }
+            } else if (E.mode === 'climb') {
+                // back up to its circle, labouring, the salmon in its talons
+                const x = E.cx + Math.cos(E.a) * E.r, y = E.cy + Math.sin(E.a) * E.r;
+                steer(E, x, y, 42, 1.6, dt);
+                E.z = Math.min(105, E.z + dt * 16);
+                if (Math.hypot(x - E.x, y - E.y) < 30 && E.z > 80) { E.mode = 'soar'; E.a = Math.atan2(E.y - E.cy, E.x - E.cx); E.t = R(30, 60); }
+            }
+        }
+    }
+
+    // ── ROMPERS: river otters ─────────────────────────────────────────────────────────
+    // A family's home is a logjam: they lie up on it, then slide in and swim the banks near it
+    // in a line behind the leader — porpoising, one then the next — and come back to rest.
+    // A boat close by puts them all under; they swim off below and surface further along.
+    function makeRompers(c, jam) {
+        const kinds = (window.VenueDoc && VenueDoc.PROP_KINDS) || {};
+        const len = ((kinds[jam.kind] && kinds[jam.kind].world) || 130) * (jam.scale || 1);
+        const ax = Math.cos(jam.heading || 0), ay = Math.sin(jam.heading || 0);   // the jam's long axis (x in its own frame)
+        // the bank water round the jam: 20-70 u from land, within 420 u of it
+        const spots = [];
+        for (let k = 0; k < 400 && spots.length < 24; k++) {
+            const a = R(0, Math.PI * 2), d = R(len * 0.4, 420), x = jam.x + Math.cos(a) * d, y = jam.y + Math.sin(a) * d;
+            if (onLand(x, y)) continue;
+            let near = 999; for (let r = 20; r <= 70 && near > 70; r += 10) for (let q = 0; q < 12; q++) if (onLand(x + Math.cos(q / 12 * 6.283) * r, y + Math.sin(q / 12 * 6.283) * r)) { near = r; break; }
+            if (near >= 20 && near <= 70) spots.push({ x, y });
+        }
+        if (!spots.length) return null;
+        // where they slide in: the bank water nearest the jam
+        const entry = spots.reduce((a, b) => Math.hypot(a.x - jam.x, a.y - jam.y) < Math.hypot(b.x - jam.x, b.y - jam.y) ? a : b);
+        const F = { cfg: c, jam, len, ax, ay, spots, entry, mode: 'rest', t: R(6, 20), lead: null, crumbs: [], under: 0, ux: 0, uy: 0, members: [] };
+        for (let i = 0; i < c.count; i++) {
+            // lying along the top of the jam, spread over its middle half
+            // side by side across the jam's middle, all lying along it the same way, touching
+            const s = (i - (c.count - 1) / 2) * 7.5, t = R(-4, 4);
+            const rx = jam.x - ay * s + ax * t, ry = jam.y + ax * s + ay * t;
+            F.members.push({ i, rx, ry, rh: (jam.heading || 0) + Math.PI / 2 + R(-0.2, 0.2), x: rx, y: ry, h: R(0, 7), dip: 0, dipT: R(1, 4), ring: 0, trail: [], trailT: 0, curl: R(0, 0.35), size: i === 0 ? 1.08 : R(0.85, 1) });
+        }
+        return F;
+    }
+    function updateRompers(F, dt) {
+        const c = F.cfg, M = F.members;
+        F.t -= dt;
+        for (const m of M) { m.ring = Math.max(0, m.ring - dt * 1.1); m.dipT -= dt; }
+        if (F.mode === 'rest') {
+            if (F.t <= 0 && !boatNear(F.jam.x, F.jam.y, c.reactR * 2)) {
+                F.mode = 'swim'; F.t = R(25, 45); F.crumbs = [];
+                F.goal = F.spots[Math.floor(rnd() * F.spots.length)];
+                for (const m of M) { m.x = F.entry.x + R(-8, 8); m.y = F.entry.y + R(-8, 8); m.ring = 1; m.trail = []; m.h = Math.atan2(F.goal.x - m.x, -(F.goal.y - m.y)); }
+            }
+            return;
+        }
+        const lead = M[0];
+        const threat = M.map(m => boatNear(m.x, m.y, c.reactR)).find(Boolean);
+        if (threat && F.mode === 'swim') { F.mode = 'under'; F.under = R(2.5, 4); const d = Math.hypot(lead.x - threat.x, lead.y - threat.y) || 1; F.ux = (lead.x - threat.x) / d; F.uy = (lead.y - threat.y) / d; for (const m of M) m.ring = 1; }
+        if (F.mode === 'under') {
+            F.under -= dt;
+            for (const m of M) {
+                const nx = m.x + F.ux * 45 * dt, ny = m.y + F.uy * 45 * dt;
+                if (!onLand(nx, ny)) { m.x = nx; m.y = ny; m.h += angDiff(Math.atan2(F.ux, -F.uy), m.h) * Math.min(1, dt * 4); }
+                recordTrail(m, dt, false);
+            }
+            if (F.under <= 0 && !boatNear(lead.x, lead.y, c.reactR * 1.3)) { F.mode = 'swim'; F.crumbs = []; for (const m of M) { m.ring = 1; m.trail = []; } F.goal = F.spots[Math.floor(rnd() * F.spots.length)]; }
+            else if (F.under <= 0) F.under = 0.8;
+            return;
+        }
+        // swimming: the leader heads for a bank spot (then another); the rest follow its track
+        const home = F.t <= 0;
+        const goal = home ? F.entry : F.goal;
+        const gd = Math.hypot(goal.x - lead.x, goal.y - lead.y);
+        if (!home && gd < 25) F.goal = F.spots[Math.floor(rnd() * F.spots.length)];
+        const nx = lead.x + Math.sin(lead.h) * OTTER_SWIM * dt, ny = lead.y - Math.cos(lead.h) * OTTER_SWIM * dt;
+        if (onLand(nx, ny)) lead.h += 2.5 * dt * (lead.i % 2 ? 1 : -1); else steer(lead, goal.x, goal.y, OTTER_SWIM, 1.8, dt);
+        F.crumbs.unshift({ x: lead.x, y: lead.y, h: lead.h }); if (F.crumbs.length > 400) F.crumbs.pop();
+        for (let j = 1; j < M.length; j++) {
+            // each a body length and a bit behind the one ahead, a little off its line — the
+            // references show separate heads, each with its own V, never nose to tail
+            const m = M[j]; let acc = 0, want = j * 30, p = F.crumbs[0];
+            for (let q = 1; q < F.crumbs.length; q++) { const a = F.crumbs[q - 1], b = F.crumbs[q]; acc += Math.hypot(a.x - b.x, a.y - b.y); p = b; if (acc >= want) break; }
+            const side = (j % 2 ? 1 : -1) * 9, px = p.x - Math.cos(p.h) * side, py = p.y - Math.sin(p.h) * side;
+            const dx = px - m.x, dy = py - m.y, d = Math.hypot(dx, dy);
+            if (d > 0.3) { const v = Math.min(d, OTTER_SWIM * 1.4 * dt); m.x += dx / d * v; m.y += dy / d * v; m.h += angDiff(Math.atan2(dx, -dy), m.h) * Math.min(1, dt * 5); }
+        }
+        for (const m of M) {
+            recordTrail(m, dt, true);
+            // porpoising: now and then an arc under and up again
+            if (m.dipT <= 0 && m.dip <= 0) { m.dip = 1; m.dipT = R(2.5, 6); }
+            if (m.dip > 0) { m.dip = Math.max(0, m.dip - dt / 0.9); if (m.dip === 0) m.ring = 0.8; }
+        }
+        if (home && gd < 20) { F.mode = 'rest'; F.t = R(20, 45); for (const m of M) { m.x = m.rx; m.y = m.ry; m.ring = 0; m.trail = []; } }
     }
 
     // ── CRUISERS ─────────────────────────────────────────────────────────────────────────
@@ -1683,7 +2125,13 @@
     // On the water, under land and hulls: porpoises and the boil (and a pelican sitting on it).
     function drawWater(ctx) {
         if (!cfg) return;
+        for (const G of shoals) drawShoal(ctx, G);
+        for (const s of poppers) drawSeal(ctx, s);
         for (const G of cruisers) for (const f of G.fish) if (f.mode !== 'leap') drawCruiser(ctx, f);
+        for (const b of baskers) if (b.cfg.kind === 'frog') drawFrogGroup(ctx, b, 'water');
+        for (const G of runs) drawRun(ctx, G);
+        for (const F of rompers) if (F.mode !== 'rest') for (const m of F.members) { if (F.mode === 'swim' && (m.dip || 0) < 0.3) drawWakeTrail(ctx, m, 3.6, 1.2, 0.65); drawOtter(ctx, m, false); }
+        for (const L of leaps) drawLeap(ctx, L);
         for (const g of lurkers) {
             if (g.mode === 'swim' && g.trail.length > 2) drawWakeTrail(ctx, g, 4.5, 1.2, 0.35);
             drawGator(ctx, g);
@@ -1712,6 +2160,7 @@
         }
         // Turtles in the water: going in, under (a dim shape, a head now and then), coming out.
         for (const b of baskers) for (const t of b.turtles) {
+            if (b.cfg.kind === 'frog') continue;
             if (t.mode === 'under') drawTurtleUnder(ctx, t);
             else if (t.mode === 'slide') drawTurtle(ctx, t.hx + t.ox, t.hy + t.oy, t.h, 1 - 0.85 * (t.t / 0.55), 1, t.size);
             else if (t.mode === 'climb') {
@@ -1735,7 +2184,10 @@
     function drawPerched(ctx) {
         if (!cfg) return;
         for (const c of colonies) for (const g of c.birds) if (g.mode === 'perched') drawGullPerched(ctx, g.x, g.y, g.h);
-        for (const b of baskers) for (const t of b.turtles) if (t.mode === 'bask' || t.mode === 'wait') drawTurtle(ctx, t.hx, t.hy, t.h, 1, t.wet, t.size);
+        for (const b of baskers) {
+            if (b.cfg.kind === 'frog') { drawFrogGroup(ctx, b, 'perched'); continue; }
+            for (const t of b.turtles) if (t.mode === 'bask' || t.mode === 'wait') drawTurtle(ctx, t.hx, t.hy, t.h, 1, t.wet, t.size);
+        }
         // The moose stands in the shallows or walks up the bank, so it draws OVER the land (and
         // under the tree crowns, which is where it disappears into the forest).
         for (const w of waders) if (w.mode !== 'gone') drawMoose(ctx, w);
@@ -1743,6 +2195,9 @@
         for (const e of stalkers) if (e.mode !== 'fly') drawEgret(ctx, e);
         for (const a of perchers) drawSnag(ctx, a);
         for (const a of perchers) if (a.mode !== 'swim') drawAnhinga(ctx, a);
+        // otters lying up on their logjam; the bears standing in the shallows
+        for (const F of rompers) if (F.mode === 'rest') for (const m of F.members) drawOtter(ctx, m, true);
+        for (const B of fishers) drawBear(ctx, B);
     }
     // In the air, over the fleet.
     function drawAir(ctx) {
@@ -1758,6 +2213,7 @@
             }
         }
         if (flight) for (const b of flight.birds) if (b.mode === 'fly' || b.mode === 'dive') drawPelicanFlying(ctx, b.x, b.y, b.h, b.z, b.flap, b.mode === 'dive');
+        for (const E of soarers) drawEagle(ctx, E);
     }
 
     // ── CRUISERS, drawn: under the surface, seen through it (race-view.md §10.6) ──────────
@@ -2158,6 +2614,214 @@
         if (a.splash > 0) drawSlap(ctx, a.x, a.y, a.splash * 0.7);
     }
 
+    // AMERICAN BULLFROG from above: an olive-green pear of a body with darker mottling, a broad
+    // head with the eyes raised in bumps and the round eardrum behind each, the long hind legs
+    // folded in a Z along the flanks. In the water only the eyes and the top of the head show.
+    function drawFrog(ctx, x, y, h, size, mode, k) {
+        const s = FROG_SCALE * (size || 1);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(s, s);
+        if (mode === 'swim') {
+            ctx.fillStyle = 'rgba(60,80,40,0.35)'; ctx.beginPath(); ctx.ellipse(0, 0.8, 2.3, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#5b7438'; ctx.beginPath(); ctx.ellipse(0, -2.4, 1.9, 1.1, 0, 0, Math.PI * 2); ctx.fill();
+            for (const sd of [-1, 1]) { ctx.fillStyle = '#6d8a41'; ctx.beginPath(); ctx.arc(sd * 1.1, -2.6, 0.75, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#d8b33a'; ctx.beginPath(); ctx.arc(sd * 1.15, -2.7, 0.3, 0, Math.PI * 2); ctx.fill(); }
+            ctx.restore(); return;
+        }
+        const stretch = mode === 'hop' ? k : 0;              // legs trailing straight back mid-hop
+        ctx.fillStyle = '#4c6331';
+        for (const sd of [-1, 1]) {
+            ctx.beginPath();
+            if (stretch > 0.3) { ctx.moveTo(sd * 1.4, 2.4); ctx.lineTo(sd * 1.9, 6.5); ctx.lineTo(sd * 2.6, 8.4); ctx.lineTo(sd * 1.2, 7.2); ctx.lineTo(sd * 0.6, 3); }
+            else { ctx.moveTo(sd * 1.6, 2.6); ctx.lineTo(sd * 3.1, 0.2); ctx.lineTo(sd * 3.4, 3.4); ctx.lineTo(sd * 2.6, 5.2); ctx.lineTo(sd * 3.6, 5.8); ctx.lineTo(sd * 2.2, 6.2); ctx.lineTo(sd * 1.2, 3.6); }
+            ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(sd * 1.3, -1.4); ctx.lineTo(sd * 2.5, -0.4); ctx.lineTo(sd * 1.5, -0.2); ctx.closePath(); ctx.fill();
+        }
+        ctx.beginPath(); ctx.moveTo(0, -4.4);
+        ctx.bezierCurveTo(2.6, -4.3, 2.6, -1.2, 2.3, 1); ctx.bezierCurveTo(2.1, 3.4, 0.9, 4, 0, 4);
+        ctx.bezierCurveTo(-0.9, 4, -2.1, 3.4, -2.3, 1); ctx.bezierCurveTo(-2.6, -1.2, -2.6, -4.3, 0, -4.4); ctx.closePath();
+        ctx.fillStyle = '#6a8a3f'; ctx.fill(); ctx.strokeStyle = 'rgba(30,40,18,0.6)'; ctx.lineWidth = 0.35; ctx.stroke();
+        ctx.fillStyle = 'rgba(52,70,32,0.7)';
+        for (const [mx, my, r] of [[-0.8, 0.6, 0.5], [0.9, 1.5, 0.45], [0.2, 2.8, 0.4], [-1.2, 2.2, 0.35]]) { ctx.beginPath(); ctx.arc(mx, my, r, 0, Math.PI * 2); ctx.fill(); }
+        for (const sd of [-1, 1]) {
+            ctx.fillStyle = '#7d9c4c'; ctx.beginPath(); ctx.arc(sd * 1.25, -3.1, 0.8, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#d8b33a'; ctx.beginPath(); ctx.arc(sd * 1.3, -3.2, 0.34, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = 'rgba(60,70,40,0.8)'; ctx.beginPath(); ctx.arc(sd * 1.7, -1.9, 0.45, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+    }
+    function drawFrogGroup(ctx, b, layer) {
+        const nx = -b.ay, ny = b.ax;
+        for (const t of b.turtles) {
+            if (layer === 'perched') {
+                if (t.mode === 'bask' || t.mode === 'wait') {
+                    ctx.save(); ctx.fillStyle = 'rgba(10,20,15,0.28)'; ctx.beginPath(); ctx.ellipse(t.hx + 1.2, t.hy + 1.8, 4 * (t.size || 1), 5 * (t.size || 1), t.h, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                    drawFrog(ctx, t.hx, t.hy, t.h, t.size, 'sit');
+                }
+                continue;
+            }
+            // In the air: an arc out to the water, its shadow on the water under it.
+            if (t.mode === 'slide' || t.mode === 'climb') {
+                const k = t.mode === 'slide' ? t.t / 0.55 : 1 - Math.min(1, t.t / 1.6);
+                const z = Math.sin(Math.PI * Math.min(1, k)) * 9, x = t.hx + t.ox, y = t.hy + t.oy;
+                const hh = Math.atan2(t.side * nx, -(t.side * ny)) + (t.mode === 'slide' ? 0 : Math.PI);   // out to the water, or back to the log
+                ctx.save(); ctx.fillStyle = 'rgba(10,20,15,0.25)'; ctx.beginPath(); ctx.ellipse(x + z * 0.35, y + z * 0.55, 3.5, 5, hh, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                drawFrog(ctx, x, y, hh, (t.size || 1) * (1 + z * 0.02), 'hop', k);
+            } else if (t.mode === 'under') {
+                drawFrog(ctx, t.ux, t.uy, t.uh, t.size, 'swim');
+                const q = (T * 0.5 + t.i * 0.3) % 1; drawRing(ctx, t.ux, t.uy - 1, 1 - q, 4, 6, 0.3);
+            }
+            if (t.plop > 0) { drawRing(ctx, t.ux, t.uy, t.plop, 3, 12, 0.7); drawRing(ctx, t.ux, t.uy, Math.max(0, t.plop - 0.3), 2, 8, 0.5); }
+        }
+    }
+
+    // A LAKE BASS JUMPING from above: silver-olive with a dark lateral stripe, arcing clear —
+    // its shadow on the water dropping away with height — a crown of spray as it leaves and
+    // another as it goes back in, then rings spreading from the entry.
+    function drawLeap(ctx, L) {
+        if (L.t < 0) return;   // one of a bunch, not off yet
+        const p = Math.min(1, L.t / L.dur), z = Math.sin(Math.PI * p) * L.hop;
+        const x = L.x + Math.sin(L.h) * (p - 0.5) * 26, y = L.y - Math.cos(L.h) * (p - 0.5) * 26;
+        const x0 = L.x - Math.sin(L.h) * 13, y0 = L.y + Math.cos(L.h) * 13, x1 = L.x + Math.sin(L.h) * 13, y1 = L.y - Math.cos(L.h) * 13;
+        if (L.t < L.dur) {
+            const len = (L.kind === 'salmon' ? SOCKEYE_LEN : BASS_LEN) * L.size, pitch = Math.cos(Math.PI * p);    // nose up, then down: foreshortened at the top
+            const body = (fill, sx, sy) => {
+                ctx.save(); ctx.translate(sx, sy); ctx.rotate(L.h + Math.sin(L.t * 14) * 0.15);
+                const l = len * (0.75 + 0.25 * Math.abs(pitch));
+                ctx.fillStyle = fill; ctx.beginPath(); ctx.ellipse(0, 0, l * 0.18, l * 0.5, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.moveTo(0, l * 0.42); ctx.lineTo(-l * 0.2, l * 0.68); ctx.lineTo(0, l * 0.56); ctx.lineTo(l * 0.2, l * 0.68); ctx.closePath(); ctx.fill();
+                ctx.restore();
+            };
+            body('rgba(10,25,40,0.22)', x + z * 0.35, y + z * 0.55);
+            const salmon = L.kind === 'salmon';
+            // a salmon clears white water, so it gets a dark rim to stand off the foam
+            if (salmon) { ctx.save(); ctx.globalAlpha *= 0.55; body('#2a1a18', x, y); ctx.restore(); ctx.save(); ctx.translate(x, y); ctx.scale(0.88, 0.94); ctx.translate(-x, -y); body(L.silver ? SOCKEYE.silver : SOCKEYE.body, x, y); ctx.restore(); }
+            else body('#8f9e6c', x, y);
+            ctx.save(); ctx.translate(x, y); ctx.rotate(L.h + Math.sin(L.t * 14) * 0.15);
+            if (salmon) {
+                // the sockeye's green head, a hooked jaw, and the white water streaming off it
+                // the head: the front quarter of the body, tapering to the snout — never wider than it
+                ctx.fillStyle = L.silver ? SOCKEYE.silverHead : SOCKEYE.head; ctx.beginPath(); ctx.moveTo(0, -len * 0.5); ctx.quadraticCurveTo(len * 0.15, -len * 0.4, len * 0.14, -len * 0.25); ctx.quadraticCurveTo(0, -len * 0.21, -len * 0.14, -len * 0.25); ctx.quadraticCurveTo(-len * 0.15, -len * 0.4, 0, -len * 0.5); ctx.fill();
+                ctx.fillStyle = SOCKEYE.jaw; ctx.beginPath(); ctx.ellipse(0, -len * 0.47, len * 0.05, len * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = 'rgba(255,255,255,0.55)'; ctx.beginPath(); ctx.ellipse(0, len * 0.1, len * 0.05, len * 0.3, 0, 0, Math.PI * 2); ctx.fill();
+            } else {
+                ctx.strokeStyle = 'rgba(40,50,30,0.8)'; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(0, -len * 0.38); ctx.lineTo(0, len * 0.4); ctx.stroke();
+                ctx.fillStyle = 'rgba(235,240,220,0.7)'; ctx.beginPath(); ctx.ellipse(0, -len * 0.1, len * 0.06, len * 0.25, 0, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+        }
+        const out = 1 - Math.min(1, L.t / 0.45); if (out > 0) drawFishSplash(ctx, x0, y0, out, L.size, 1);
+        const inT = L.t - L.dur;
+        if (inT >= 0) {
+            const k = 1 - Math.min(1, inT / 0.5); if (k > 0) drawFishSplash(ctx, x1, y1, k, L.size, 7);
+            for (let r = 0; r < 3; r++) { const q = 1 - Math.min(1, (inT - r * 0.3) / 1.4); if (q > 0 && q < 1) drawRing(ctx, x1, y1, q, 3 + r * 1.5, 12, 0.45); }
+        }
+    }
+
+    // A fish-sized splash (a beaver's slap is five times the animal): a small white burst and a
+    // few uneven droplets thrown out, then gone. `seed` varies the droplets between splashes.
+    function drawFishSplash(ctx, x, y, k, size, seed) {
+        const r = (3 + (1 - k) * 6) * (size || 1);
+        ctx.save();
+        const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+        g.addColorStop(0, `rgba(255,255,255,${0.85 * k})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = `rgba(255,255,255,${0.9 * k})`;
+        for (let i = 0; i < 7; i++) {
+            const j = Math.abs(Math.sin((i + 1) * 12.9898 + seed * 78.233) * 43758.5453) % 1;
+            const a = (i + j) / 7 * Math.PI * 2, d = r * (0.8 + j * 0.9);
+            ctx.beginPath(); ctx.arc(x + Math.cos(a) * d, y + Math.sin(a) * d, 0.6 + j * 0.6, 0, Math.PI * 2); ctx.fill();
+        }
+        ctx.restore();
+    }
+    // TANGS from above: a tang is flat side to side, so from above it is a thin bright sliver —
+    // yellow, or royal blue with a yellow tail — and a school is a cloud of them, all facing the
+    // way it moves, a shade of shadow on the sand under each.
+    function drawShoal(ctx, G) {
+        const blue = G.cfg.kind === 'bluetang';
+        const tint = waterTint();
+        for (const f of G.fish) {
+            const s = TANG_SCALE * f.size, w = Math.sin(f.ph * 3) * 0.12 * Math.min(1, 0.3 + (f.spd || 0) / 12);
+            ctx.save(); ctx.translate(f.x + 2.2, f.y + 3.4); ctx.rotate(f.h); ctx.scale(s, s);
+            ctx.fillStyle = 'rgba(10,25,40,0.16)'; ctx.beginPath(); ctx.ellipse(0, 0, 1.1, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+            ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(s, s);
+            ctx.globalAlpha *= 0.9;
+            ctx.fillStyle = blue ? '#2f63ee' : '#ffd21f';
+            ctx.beginPath(); ctx.moveTo(0, -3.8); ctx.quadraticCurveTo(1.35, -1.2, 0.9, 2.2); ctx.lineTo(0, 2.6); ctx.lineTo(-0.9, 2.2); ctx.quadraticCurveTo(-1.35, -1.2, 0, -3.8); ctx.fill();
+            ctx.fillStyle = blue ? '#ffd21f' : '#f5c400';
+            ctx.beginPath(); ctx.moveTo(0, 2.3); ctx.lineTo(-1.3 + w, 4.4); ctx.lineTo(0, 3.7); ctx.lineTo(1.3 + w, 4.4); ctx.closePath(); ctx.fill();
+            ctx.globalAlpha *= 0.3; ctx.fillStyle = `rgb(${tint})`;
+            ctx.beginPath(); ctx.moveTo(0, -3.8); ctx.quadraticCurveTo(1.35, -1.2, 0.9, 2.2); ctx.lineTo(-0.9, 2.2); ctx.quadraticCurveTo(-1.35, -1.2, 0, -3.8); ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // HARBOUR SEAL from above (references, Sep 25): "bottling" — upright in the water with only
+    // the head up: a round spotted grey crown, the big dark eyes on its front corners, a paler
+    // whiskered muzzle, the V of the nostrils; a ring of water round the neck. Under the water
+    // between pop-ups: a dim plump seal-shaped shape, front flippers out, hind flippers
+    // together, gliding — the shadow Wes asked for, so you can follow one.
+    function drawSealUnder(ctx, s, a) {
+        if (a <= 0.02) return;
+        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h); ctx.scale(SEAL_BODY, SEAL_BODY);
+        ctx.globalAlpha *= a;
+        const u = Math.sin(s.bob * 4) * 0.5 * Math.min(1, (s.spd || 0) / 10);
+        ctx.fillStyle = 'rgba(32,44,52,0.42)';
+        // a cigar: round head on a narrower neck, widest at the chest, tapering to the hips
+        ctx.beginPath(); ctx.moveTo(0, -9.4);
+        ctx.bezierCurveTo(1.3, -9.3, 1.6, -7.6, 1.3, -6.4);            // the round head
+        ctx.quadraticCurveTo(1.2, -5.6, 1.7, -4.6);                    // the neck
+        ctx.bezierCurveTo(2.6, -3.4, 2.7, -0.5, 2.3, 1.6);             // chest to belly
+        ctx.bezierCurveTo(1.9, 3.8, 1.1, 5.2, 0.6 + u, 6.2);           // hips
+        ctx.lineTo(-0.6 + u, 6.2);
+        ctx.bezierCurveTo(-1.1, 5.2, -1.9, 3.8, -2.3, 1.6);
+        ctx.bezierCurveTo(-2.7, -0.5, -2.6, -3.4, -1.7, -4.6);
+        ctx.quadraticCurveTo(-1.2, -5.6, -1.3, -6.4);
+        ctx.bezierCurveTo(-1.6, -7.6, -1.3, -9.3, 0, -9.4); ctx.fill();
+        // the two hind flippers held together behind, fanning a little as it swims
+        for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 0.3 + u, 6); ctx.quadraticCurveTo(sd * 1.6 + u * 1.5, 7.6, sd * 1.4 + u * 2, 9.4); ctx.lineTo(u * 1.6, 8.6); ctx.closePath(); ctx.fill(); }
+        // the fore flippers, small, held back along the chest
+        for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 2.5, -2.2, 0.55, 1.5, sd * 0.5, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+    }
+    function drawSealHead(ctx, s, a) {
+        if (a <= 0.02) return;
+        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h); ctx.scale(SEAL_HEAD, SEAL_HEAD);
+        ctx.globalAlpha *= a;
+        const bob = Math.sin(s.bob * 1.8) * 0.15;
+        // the neck in the water: the ring the head sits in, broken, drifting out
+        const q = (T * 0.4 + s.i * 0.3) % 1;
+        ctx.strokeStyle = `rgba(255,255,255,${0.45 * (1 - q)})`; ctx.lineWidth = 0.35;
+        for (const [a0, a1] of [[0.2, 1.5], [1.9, 3.0], [3.4, 4.5], [4.9, 6.0]]) { ctx.beginPath(); ctx.arc(0, 0.6, 3.6 + q * 3, a0, a1); ctx.stroke(); }
+        ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 0.4; ctx.beginPath(); ctx.ellipse(0, 0.6, 3.3, 3.1, 0, 0, Math.PI * 2); ctx.stroke();
+        // a little of the body just below, dark through the water
+        ctx.fillStyle = 'rgba(32,44,52,0.35)'; ctx.beginPath(); ctx.ellipse(0, 2.4, 2.6, 2.6, 0, 0, Math.PI * 2); ctx.fill();
+        // the crown, and the muzzle standing forward of it (which way it is looking)
+        ctx.translate(0, bob);
+        ctx.fillStyle = '#8c949a';
+        ctx.beginPath(); ctx.moveTo(0, -3.6);
+        ctx.bezierCurveTo(1.3, -3.6, 1.7, -2.6, 2.3, -1.4); ctx.bezierCurveTo(2.9, 0, 2.8, 2.6, 1.6, 3.3);
+        ctx.quadraticCurveTo(0, 3.9, -1.6, 3.3); ctx.bezierCurveTo(-2.8, 2.6, -2.9, 0, -2.3, -1.4); ctx.bezierCurveTo(-1.7, -2.6, -1.3, -3.6, 0, -3.6); ctx.fill();
+        ctx.strokeStyle = 'rgba(40,46,52,0.6)'; ctx.lineWidth = 0.3; ctx.stroke();
+        ctx.fillStyle = 'rgba(60,68,74,0.8)';
+        for (const [x, y, r] of [[-1, 1.3, 0.28], [0.9, 1.9, 0.24], [0.2, 0.2, 0.22], [-1.6, -0.2, 0.2], [1.5, 0.3, 0.2], [0, 2.6, 0.22]]) { ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+        ctx.fillStyle = '#c3c7c2'; ctx.beginPath(); ctx.ellipse(0, -2.5, 1.35, 1.25, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#16191c';
+        for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 1.55, -0.9, 0.55, 0.65, 0, 0, Math.PI * 2); ctx.fill(); }
+        ctx.strokeStyle = '#2a2e32'; ctx.lineWidth = 0.28; ctx.beginPath(); ctx.moveTo(-0.45, -3.3); ctx.lineTo(0, -2.8); ctx.lineTo(0.45, -3.3); ctx.stroke();
+        ctx.strokeStyle = 'rgba(240,240,236,0.6)'; ctx.lineWidth = 0.14;
+        for (const sd of [-1, 1]) for (let w = 0; w < 3; w++) { ctx.beginPath(); ctx.moveTo(sd * 0.9, -2.2 + w * 0.3); ctx.lineTo(sd * (2.4 + w * 0.2), -2.7 + w * 0.5); ctx.stroke(); }
+        ctx.restore();
+    }
+    function drawSeal(ctx, s) {
+        // the gliding shape fades out as the head comes up, and back in as it slips under
+        if (s.mode === 'under') drawSealUnder(ctx, s, 1);
+        else if (s.mode === 'rise') { drawSealUnder(ctx, s, 1 - s.vis); drawSealHead(ctx, s, s.vis); }
+        else if (s.mode === 'sink') { drawSealUnder(ctx, s, 1 - s.vis); drawSealHead(ctx, s, s.vis); }
+        else drawSealHead(ctx, s, 1);
+        if (s.ring > 0) drawRing(ctx, s.x, s.y, s.ring, 5, 16, 0.55);
+        if (s.ring2 > 0) drawRing(ctx, s.x, s.y, s.ring2, 4, 12, 0.45);
+    }
+
     // MALLARD DUCKLINGS — the Sailing School's line. js/game/school.js moves them; this draws
     // them. From the drone shots: not rubber-duck yellow but a ball of down, dark olive-brown
     // down the back with the four pale yellow spots (two on the wing stubs, two on the rump),
@@ -2257,16 +2921,372 @@
         ctx.restore();
     }
 
+    // ── Sockeye Run, drawn ───────────────────────────────────────────────────────────
+    // BROWN BEAR from above (references, re-checked Sep 25 against straight-down shots — bears
+    // walking away across tundra, one standing in shallow water, one photographed from a
+    // slope above, the Katmai fishers): a broad EGG, ~0.6 as wide as it is long, the round
+    // haunches the widest part and the shoulders only a little narrower — never a capsule.
+    // The head sits straight on the shoulders on a thick neck: a rounded wedge, broad across
+    // the big round ears on its back corners, narrowing to a paler blunt muzzle; the eyes
+    // barely show from above. Reddish-brown, grizzled golden over the shoulder hump and the
+    // head, a darker saddle behind the hump. Standing in the river its flanks are under
+    // (dimmed and washed with the water) and only the back is dry. Rearing, from above, it
+    // foreshortens to a rounder, shorter shape with its forepaws out and a longer shadow.
+    function bearShape(ctx, L) {
+        // A GRIZZLY (Wes, Sep 25: "the head should be broader and the hind quarters a bit
+        // narrower for grizzlies specifically" — and the ID references agree): the shoulder hump
+        // is the heaviest, widest part; the body tapers back to haunches ~0.85 of it; the neck
+        // runs out of the shoulders broad and short.
+        ctx.beginPath();
+        ctx.moveTo(-3.4, -8.0 * L); ctx.quadraticCurveTo(0, -8.6 * L, 3.4, -8.0 * L);   // the broad short neck
+        ctx.bezierCurveTo(5.8, -7.4 * L, 7.1, -6.0 * L, 7.1, -3.8 * L);       // out over the shoulder hump
+        ctx.bezierCurveTo(7.1, -1.4 * L, 6.0, 1.0 * L, 5.7, 3.6 * L);         // tapering back along the flank
+        ctx.bezierCurveTo(5.5, 7.6 * L, 3.3, 9.6 * L, 0, 9.6 * L);            // the lower, smaller rump
+        ctx.bezierCurveTo(-3.3, 9.6 * L, -5.5, 7.6 * L, -5.7, 3.6 * L);
+        ctx.bezierCurveTo(-6.0, 1.0 * L, -7.1, -1.4 * L, -7.1, -3.8 * L);
+        ctx.bezierCurveTo(-7.1, -6.0 * L, -5.8, -7.4 * L, -3.4, -8.0 * L);
+        ctx.closePath();
+    }
+    function bearHead(ctx, detail) {
+        // A grizzly's head from above: BROAD — ~0.55 of the shoulders — flat across the crown,
+        // the cheek ruff flaring out at the sides; short rounded ears on the outer back
+        // corners; the face dishes in to a short blunt muzzle; the eyes barely show.
+        ctx.fillStyle = '#b07440';
+        ctx.beginPath(); ctx.moveTo(0, 2.5);
+        ctx.bezierCurveTo(2.6, 2.6, 3.9, 1.8, 3.9, 0.2);                          // the flat back of the skull, out to the ruff
+        ctx.bezierCurveTo(3.9, -1.2, 2.9, -1.9, 1.7, -2.4);                       // the cheek ruff, dishing in
+        ctx.quadraticCurveTo(1.3, -2.7, 1.2, -3.0);
+        ctx.lineTo(-1.2, -3.0); ctx.quadraticCurveTo(-1.3, -2.7, -1.7, -2.4);
+        ctx.bezierCurveTo(-2.9, -1.9, -3.9, -1.2, -3.9, 0.2);
+        ctx.bezierCurveTo(-3.9, 1.8, -2.6, 2.6, 0, 2.5); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#bd8550'; ctx.beginPath(); ctx.moveTo(-1.3, -2.4); ctx.quadraticCurveTo(-1.35, -4.0, 0, -4.2); ctx.quadraticCurveTo(1.35, -4.0, 1.3, -2.4); ctx.closePath(); ctx.fill();
+        // the ears, short and round, standing on the skull's back corners (on top of the ruff)
+        for (const sd of [-1, 1]) {
+            ctx.fillStyle = '#6e4626'; ctx.beginPath(); ctx.arc(sd * 2.75, 2.0, 0.9, 0, Math.PI * 2); ctx.fill();
+            if (detail) { ctx.fillStyle = 'rgba(47,32,22,0.55)'; ctx.beginPath(); ctx.ellipse(sd * 2.7, 1.75, 0.45, 0.3, 0, 0, Math.PI * 2); ctx.fill(); }
+        }
+        if (!detail) return;
+        // the grizzled crown and the paler tips of the ruff
+        const crown = ctx.createRadialGradient(0, 0.5, 0.2, 0, 0.5, 3.4);
+        crown.addColorStop(0, 'rgba(225,160,95,0.65)'); crown.addColorStop(1, 'rgba(225,160,95,0)');
+        ctx.fillStyle = crown; ctx.beginPath(); ctx.arc(0, 0.5, 3.4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = 'rgba(215,170,120,0.45)'; ctx.lineWidth = 0.25; ctx.lineCap = 'round';
+        for (const sd of [-1, 1]) for (const [y, d] of [[-0.9, 0.5], [0, 0.6], [0.9, 0.5]]) { ctx.beginPath(); ctx.moveTo(sd * 3.5, y); ctx.lineTo(sd * (3.5 + d), y + 0.3); ctx.stroke(); }
+        ctx.fillStyle = '#2a1d15'; ctx.beginPath(); ctx.ellipse(0, -3.95, 0.5, 0.3, 0, 0, Math.PI * 2); ctx.fill();
+        for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 1.35, -1.6, 0.22, 0.16, 0, 0, Math.PI * 2); ctx.fill(); }
+    }
+    function drawBear(ctx, B) {
+        const rear = B.rear, lunge = B.mode === 'lunge' ? Math.sin(Math.PI * B.lunge) : 0;
+        const L = 1 - rear * 0.36 + lunge * 0.1;
+        const k = BEAR_SCALE;
+        // How hard the stream runs here decides the water round it (references: a bear in the
+        // current throws white; one fishing a slack pool sits in calm rings, no foam at all).
+        if (B.kn === undefined) { const c = (typeof getCurrentAt === 'function') ? getCurrentAt(B.hx, B.hy) : null; B.kn = c ? c.speed : 0; }
+        const flow = Math.max(0, Math.min(1, (B.kn - 0.8) / 2));
+        // In the stream's own frame (downstream is +y): the wash off its legs — a soft fading
+        // sheet, the two arms of the V peeling off the haunches, short crests drifting down.
+        if (flow > 0.05) {
+            ctx.save(); ctx.translate(B.x, B.y); ctx.rotate(B.up); ctx.scale(k, k);
+            const g = ctx.createLinearGradient(0, 6, 0, 28);
+            g.addColorStop(0, `rgba(255,255,255,${0.2 * flow})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(-6, 6); ctx.lineTo(6, 6); ctx.lineTo(11, 28); ctx.lineTo(-11, 28); ctx.closePath(); ctx.fill();
+            ctx.lineCap = 'round';
+            for (const sd of [-1, 1]) for (let i = 0; i < 8; i++) {
+                const q0 = i / 8, q1 = (i + 1) / 8, pt = (q) => [sd * (6.4 + 1.8 * q + 2.8 * q * q), 5 + 22 * q];
+                const [x0, y0] = pt(q0), [x1, y1] = pt(q1), f = 1 - q0;
+                ctx.strokeStyle = `rgba(255,255,255,${0.16 * flow * f})`; ctx.lineWidth = 2.6; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+                ctx.strokeStyle = `rgba(255,255,255,${0.55 * flow * f * f})`; ctx.lineWidth = 0.9; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+            }
+            for (let r = 0; r < 3; r++) {
+                const u = (T * 0.8 + r / 3 + B.i * 0.2) % 1, y = 11 + u * 13, w = 3.5 + u * 5;
+                ctx.strokeStyle = `rgba(255,255,255,${0.35 * flow * (1 - u)})`; ctx.lineWidth = 0.7;
+                ctx.beginPath(); ctx.moveTo(-w, y + 1.4); ctx.quadraticCurveTo(0, y - 1, w, y + 1.4); ctx.stroke();
+            }
+            ctx.restore();
+        }
+        // slow rings breathing out from where it stands, broken and uneven
+        for (let r = 0; r < 3; r++) {
+            const u = (T * 0.22 + r / 3 + B.i * 0.3) % 1;
+            ctx.strokeStyle = `rgba(255,255,255,${0.32 * (1 - u) * (1 - flow * 0.6)})`; ctx.lineWidth = 1.1;
+            for (const [a0, a1] of [[0.2, 1.3], [1.7, 2.9], [3.3, 4.4], [4.8, 6.0]]) { ctx.beginPath(); ctx.ellipse(B.x, B.y, (15 + u * 22) * k * 0.5, (17 + u * 24) * k * 0.5, B.h, a0, a1); ctx.stroke(); }
+        }
+        // its shadow, down-right; longer when it stands up
+        const sh = 2.5 + rear * 7;
+        ctx.save(); ctx.translate(B.x + sh * 0.35 * k, B.y + sh * 0.55 * k); ctx.rotate(B.h); ctx.scale(k, k);
+        ctx.fillStyle = 'rgba(10,25,30,0.22)'; bearShape(ctx, L); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, -8.3 * L - 1.4, 3.8, 3.2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        ctx.save(); ctx.translate(B.x, B.y); ctx.rotate(B.h); ctx.scale(k, k);
+        // forepaws: out in front when it rears, reaching when it lunges
+        if (rear > 0.15 || lunge > 0.1) {
+            ctx.fillStyle = '#4e3421';
+            const py = -8.2 * L - 0.8 - lunge * 2.6, spread = 3.9 + rear * 0.6;
+            for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * spread, py, 1.4, 1.8, sd * 0.2, 0, Math.PI * 2); ctx.fill(); }
+            ctx.strokeStyle = 'rgba(235,225,200,0.8)'; ctx.lineWidth = 0.25;
+            for (const sd of [-1, 1]) for (let c2 = -1; c2 <= 1; c2++) { ctx.beginPath(); ctx.moveTo(sd * spread + c2 * 0.55, py - 1.5); ctx.lineTo(sd * spread + c2 * 0.6, py - 2.2); ctx.stroke(); }
+        }
+        // Standing in the shallows (the reference standing in shallow water shows the whole body
+        // plainly): the body out of the water, only a rim along its sides dimmed where the
+        // water laps its flanks.
+        // ⚠️ No clip ellipse for the "dry back": an ellipse is widest mid-body, so it trimmed the
+        // shoulders into the water and turned the grizzly back into an egg, whatever the outline
+        // said (found by measuring the silhouette, Sep 25). The wet line is a rim that follows
+        // the outline itself, drawn after the coat.
+        ctx.save(); bearShape(ctx, L); ctx.clip();
+        // (colours sampled off the overhead reference: body #5d3c2e, the spine #3c180b, the
+        // crown #d18b4e) — a dark red-brown coat, grizzled a little lighter on the flanks
+        bearShape(ctx, L); ctx.fillStyle = '#5b3826'; ctx.fill();
+        const flank = ctx.createRadialGradient(0, 3 * L, 2, 0, 3 * L, 8);
+        flank.addColorStop(0, 'rgba(120,80,56,0)'); flank.addColorStop(1, 'rgba(120,80,56,0.35)');
+        ctx.fillStyle = flank; bearShape(ctx, L); ctx.fill();
+        // the golden cape: over the neck and the fronts of the shoulders, fading back
+        const cape = ctx.createRadialGradient(0, -6.5 * L, 0.5, 0, -4.5 * L, 7);
+        cape.addColorStop(0, 'rgba(206,140,78,0.95)'); cape.addColorStop(0.55, 'rgba(180,118,64,0.55)'); cape.addColorStop(1, 'rgba(160,100,56,0)');
+        ctx.fillStyle = cape; bearShape(ctx, L); ctx.fill();
+        // the long dark streak down the spine, from behind the shoulders to the rump
+        // (soft-edged: a radial falloff stretched along the spine, darkest at the withers)
+        ctx.save(); ctx.translate(0, -1.2 * L); ctx.scale(1, 3.2 * L);
+        const spine = ctx.createRadialGradient(0, 0.2, 0.1, 0, 0.5, 2.4);
+        spine.addColorStop(0, 'rgba(46,20,10,0.7)'); spine.addColorStop(0.5, 'rgba(46,20,10,0.32)'); spine.addColorStop(1, 'rgba(46,20,10,0)');
+        ctx.fillStyle = spine; ctx.beginPath(); ctx.arc(0, 0.5, 2.4, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+        // the wet line: where the water laps its flanks, a soft darker, water-washed rim
+        ctx.save(); ctx.globalAlpha *= 0.4 * (1 - rear); ctx.strokeStyle = `rgb(${waterTint()})`; ctx.lineWidth = 1.6; bearShape(ctx, L); ctx.stroke(); ctx.restore();
+        // grizzled: pale fur tips scattered over the coat, lying back along the body
+        ctx.strokeStyle = 'rgba(190,140,95,0.2)'; ctx.lineWidth = 0.26; ctx.lineCap = 'round';
+        const hsh = (n) => { const t = Math.sin(n * 127.1) * 43758.5453; return t - Math.floor(t); };   // independent per axis, so no rows
+        for (let i = 0; i < 26; i++) {
+            const u = hsh(i + 1.3) * 2 - 1, v = hsh(i * 3.7 + 9.1);
+            const y = (-4 + v * 13) * L, x = u * (4.2 + 2.2 * Math.min(1, (y + 4) / 8));
+            ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + u * 0.25, y + 0.9); ctx.stroke();
+        }
+        ctx.restore();
+        // foam where the water meets its sides — as much as the stream makes: heaped on the
+        // upstream shoulder in current, a clean thin waterline in a slack pool
+        ctx.save(); ctx.globalAlpha *= (1 - rear) * (0.35 + 0.65 * flow); ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(0, -0.8, 6.9, 8.4 * L, 0, Math.PI * 1.22, Math.PI * 1.78); ctx.stroke();
+        for (const sd of [-1, 1]) for (const [y0, y1, a] of [[-3.2, 0.8, 0.5], [2, 5, 0.35], [6.2, 8.6, 0.22]]) {
+            const w = (T * 1.3 + y0 * 0.3 + sd) % 1;
+            ctx.strokeStyle = `rgba(255,255,255,${a * (0.7 + 0.3 * Math.sin(w * 6.283))})`; ctx.lineWidth = 0.8;
+            ctx.beginPath(); ctx.moveTo(sd * (6.0 + (y0 + 4) * 0.1), y0 * L); ctx.quadraticCurveTo(sd * 7.3, (y0 + y1) / 2 * L, sd * (6.8 + (y1 + 4) * 0.05), y1 * L); ctx.stroke();
+        }
+        ctx.restore();
+        // the head, straight on the shoulders, turned to whatever it watches; down to eat
+        ctx.save(); ctx.translate(0, -8.3 * L - (B.mode === 'eat' ? 0.2 : 0.9)); ctx.rotate(B.look * (1 - lunge));
+        if (B.fish > 0) {
+            // a sockeye held crosswise in its jaws, drawn FIRST so the snout lies over its middle
+            // (Wes, Sep 25): the olive head out one side, the tail flapping out the other
+            ctx.save(); ctx.translate(0, -3.0); ctx.rotate(Math.PI / 2 + Math.sin(T * 9) * 0.15);
+            ctx.fillStyle = SOCKEYE.body; ctx.beginPath(); ctx.ellipse(0, 0, 0.9, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = SOCKEYE.head; ctx.beginPath(); ctx.ellipse(0, -2.6, 0.8, 1.1, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = SOCKEYE.tail; ctx.beginPath(); ctx.moveTo(0, 3); ctx.lineTo(-1, 4.4 + Math.sin(T * 12) * 0.4); ctx.lineTo(1, 4.4 - Math.sin(T * 12) * 0.4); ctx.closePath(); ctx.fill();
+            ctx.restore();
+        }
+        bearHead(ctx, true);
+        ctx.restore();
+        ctx.restore();
+        // the lunge's splash, thrown out ahead of it
+        if (B.splash > 0) {
+            const [fx, fy] = fwd(B.h), d = 18 * k;
+            drawFishSplash(ctx, B.x + fx * d, B.y + fy * d, B.splash, 1.1, B.i + 3);
+        }
+    }
+
+    // SOCKEYE from above (references): bright red spindles with olive-green heads and darker
+    // forked tails, strung out along the stream and all nosed into it; seen through the water,
+    // so washed with its colour, each with a faint shadow on the gravel under it.
+    function sockeyeShape(ctx) {
+        ctx.beginPath(); ctx.moveTo(0, -4.6); ctx.quadraticCurveTo(1.35, -2.6, 1.1, 1.2); ctx.quadraticCurveTo(0.8, 3.2, 0, 3.6); ctx.quadraticCurveTo(-0.8, 3.2, -1.1, 1.2); ctx.quadraticCurveTo(-1.35, -2.6, 0, -4.6); ctx.closePath();
+    }
+    function drawSockeye(ctx, x, y, h, size, w, veil, dull) {
+        const s = SOCKEYE_LEN / 10 * size;
+        ctx.save(); ctx.translate(x + 2.4, y + 3.6); ctx.rotate(h); ctx.scale(s, s);
+        ctx.fillStyle = 'rgba(10,20,20,0.18)'; sockeyeShape(ctx); ctx.fill();
+        ctx.restore();
+        ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(s, s);
+        // (references: most flushed red, a few still dull olive-grey, all with the dark head)
+        ctx.fillStyle = dull ? SOCKEYE.silver : SOCKEYE.body; sockeyeShape(ctx); ctx.fill();
+        // the head, gill to snout, with the darker crown down its middle and the pale jaw tip
+        ctx.fillStyle = dull ? SOCKEYE.silverHead : SOCKEYE.head; ctx.beginPath(); ctx.moveTo(0, -4.6); ctx.quadraticCurveTo(1.25, -3, 1.1, -1.7); ctx.quadraticCurveTo(0, -1.2, -1.1, -1.7); ctx.quadraticCurveTo(-1.25, -3, 0, -4.6); ctx.fill();
+        if (!dull) { ctx.fillStyle = SOCKEYE.crown; ctx.beginPath(); ctx.ellipse(0, -2.9, 0.45, 1.3, 0, 0, Math.PI * 2); ctx.fill(); }
+        ctx.fillStyle = SOCKEYE.jaw; ctx.beginPath(); ctx.ellipse(0, -4.35, 0.32, 0.3, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = dull ? SOCKEYE.silverTail : SOCKEYE.tail; ctx.beginPath(); ctx.moveTo(0, 3.2); ctx.lineTo(-1.3 + w, 5.4); ctx.lineTo(0, 4.6); ctx.lineTo(1.3 + w, 5.4); ctx.closePath(); ctx.fill();
+        if (veil > 0) { ctx.globalAlpha *= veil; ctx.fillStyle = `rgb(${waterTint()})`; sockeyeShape(ctx); ctx.fill(); }
+        ctx.restore();
+    }
+    function drawRun(ctx, G) {
+        for (const f of G.fish) drawSockeye(ctx, f.x, f.y, f.h, f.size, Math.sin(f.ph * 3) * 0.3, 0.28, f.dull);
+    }
+
+    // BALD EAGLE from above (references, re-checked Sep 25 against 40+ soaring shots): a long
+    // broad wing, widest across the secondaries a third of the way out, with a softly scalloped
+    // trailing edge; SIX separate primaries at the tip, slotted, fanning from pointing forward
+    // to swept back; the white head a wedge thrust well forward on its neck, carrying a heavy
+    // hooked yellow bill; a broad, rounded white tail fan about as long as the head projects;
+    // dark chocolate flight feathers with the inner wing's coverts a shade paler. Stooping,
+    // the wings fold back; climbing with a fish, it beats hard, the salmon in its yellow feet.
+    // Its shadow on the water is this same shape.
+    function eagleWing(ctx, sd, fold, beat) {
+        const S = 17.5 * (1 - fold * 0.45) * (1 - beat * 0.12), sw = fold * 5 + beat * 1.2;
+        const Y = (x, y) => y + sw * (x / S);                                     // fold sweeps the wing back
+        const P = (x, y) => [sd * x, Y(x, y)];
+        // the arm and the hand, as one outline: leading edge out to the finger bases, the
+        // finger bases down the tip, then the trailing edge home in soft scallops
+        ctx.beginPath();
+        ctx.moveTo(...P(1.3, -1.9));
+        ctx.quadraticCurveTo(...P(S * 0.4, -3.1), ...P(S * 0.5, -3.0));           // up to the wrist
+        ctx.quadraticCurveTo(...P(S * 0.66, -2.9), ...P(S * 0.76, -2.4));         // the hand's leading edge
+        ctx.lineTo(...P(S * 0.75, 1.9));                                          // the finger bases
+        const n = 8;
+        for (let i = 1; i <= n; i++) {                                            // the secondaries, scalloped
+            const q = i / n, x = S * 0.75 + (1.4 - S * 0.75) * q;
+            const bulge = Math.sin(Math.min(1, q * 1.25) * Math.PI) * 1.6;        // broadest a third of the way out
+            const y = 1.9 + (2.6 - 1.9) * q + bulge;
+            const xm = x + (S * 0.75 - 1.4) / n * 0.5, ym = y + 0.15;
+            ctx.quadraticCurveTo(...P(xm, ym), ...P(x, y));
+        }
+        ctx.closePath(); ctx.fill();
+        // the six fingers: tapered, separate, fanning
+        for (let f = 0; f < 6; f++) {
+            const q = f / 5, bx = S * (0.76 - q * 0.02), by = -2.2 + q * 3.9;
+            const a = (-0.32 + q * 0.62) + fold * 0.5, L = S * (0.2 + 0.05 * Math.sin(q * Math.PI)) * (1 - fold * 0.35);
+            const tx = bx + Math.cos(a) * L, ty = by + Math.sin(a) * L, w = 0.34;
+            const nx = -Math.sin(a) * w, ny = Math.cos(a) * w;
+            ctx.beginPath(); ctx.moveTo(...P(bx - nx * 1.3, by - ny * 1.3)); ctx.lineTo(...P(tx, ty)); ctx.lineTo(...P(bx + nx * 1.3, by + ny * 1.3)); ctx.closePath(); ctx.fill();
+        }
+        return { S, sw, P };
+    }
+    function eagleShape(ctx, fold, beat, detail) {
+        const fill = ctx.fillStyle;
+        for (const sd of [-1, 1]) {
+            ctx.fillStyle = fill; const W = eagleWing(ctx, sd, fold, beat);
+            if (detail) {
+                // the paler coverts over the inner wing's leading half
+                ctx.fillStyle = 'rgba(120,88,58,0.45)';
+                ctx.beginPath(); ctx.moveTo(...W.P(1.4, -1.6)); ctx.quadraticCurveTo(...W.P(W.S * 0.4, -2.8), ...W.P(W.S * 0.5, -2.7));
+                ctx.quadraticCurveTo(...W.P(W.S * 0.45, -0.6), ...W.P(W.S * 0.25, 0.4)); ctx.quadraticCurveTo(...W.P(W.S * 0.1, 0.6), ...W.P(1.4, 0.6)); ctx.closePath(); ctx.fill();
+                // a few feather lines across the flight feathers
+                ctx.strokeStyle = 'rgba(20,12,6,0.35)'; ctx.lineWidth = 0.18;
+                for (let i = 1; i < 7; i++) { const x = 1.4 + (W.S * 0.72 - 1.4) * i / 7; ctx.beginPath(); ctx.moveTo(...W.P(x, 0.5)); ctx.lineTo(...W.P(x + 0.15 * sd, 2.4 + Math.sin(i / 7 * Math.PI) * 1.2)); ctx.stroke(); }
+            }
+        }
+        ctx.fillStyle = fill;
+        ctx.beginPath(); ctx.ellipse(0, 0.6, 1.95, 4.6, 0, 0, Math.PI * 2); ctx.fill();                   // body
+        // neck and head, thrust forward
+        ctx.beginPath(); ctx.moveTo(-1.25, -2.8); ctx.quadraticCurveTo(-1.35, -5.4, -0.6, -6.3); ctx.quadraticCurveTo(0, -6.7, 0.6, -6.3); ctx.quadraticCurveTo(1.35, -5.4, 1.25, -2.8); ctx.closePath(); ctx.fill();
+        // the tail: a broad rounded fan
+        ctx.beginPath(); ctx.moveTo(-1.1, 4); ctx.lineTo(-2.7, 8.2); ctx.quadraticCurveTo(0, 9.6, 2.7, 8.2); ctx.lineTo(1.1, 4); ctx.closePath(); ctx.fill();
+    }
+    function drawEagle(ctx, E) {
+        const k = EAGLE_SCALE, fold = E.mode === 'stoop' ? 1 : E.mode === 'grab' ? 0.4 : 0;
+        const beat = E.mode === 'climb' || E.mode === 'grab' ? Math.max(0, Math.sin(E.flap)) : Math.max(0, Math.sin(E.flap)) * 0.15;
+        // Its shadow on the water (Wes, Sep 25: "make sure the eagle casts a shadow"): its own
+        // silhouette, down-right. Height pushes it out, but only so far — at a true 105 u it
+        // fell 60 u off and at 7% was never seen — and it stays dark enough to read: ~16% at
+        // soaring height, ~24% as it comes down to the water.
+        const z = E.z, zo = Math.min(z, 55);
+        ctx.save(); ctx.translate(E.x + zo * 0.35, E.y + zo * 0.55); ctx.rotate(E.h); ctx.scale(k * 0.97, k * 0.97);
+        ctx.fillStyle = `rgba(10,22,26,${0.16 + 0.08 * Math.max(0, 1 - z / 105)})`; eagleShape(ctx, fold, beat, false);
+        ctx.restore();
+        if (E.splash > 0) { drawFishSplash(ctx, E.sx, E.sy, E.splash, 2.4, E.i + 11); drawRing(ctx, E.sx, E.sy, E.splash, 6, 24, 0.55); }
+        ctx.save(); ctx.translate(E.x, E.y); ctx.rotate(E.h); ctx.scale(k, k);
+        if (E.fish > 0) {
+            // the salmon hangs head-first under the body, gripped in its yellow feet
+            ctx.save(); ctx.translate(0, 3.2); ctx.rotate(Math.sin(T * 5) * 0.12); ctx.globalAlpha *= Math.min(1, E.fish * 4);
+            ctx.fillStyle = SOCKEYE.body; ctx.beginPath(); ctx.ellipse(0, 1.5, 0.75, 2.8, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = SOCKEYE.head; ctx.beginPath(); ctx.ellipse(0, -0.8, 0.6, 0.9, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#e8b930'; for (const [fx, fy] of [[-0.55, 0.2], [0.55, 2.4]]) { ctx.beginPath(); ctx.ellipse(fx, fy, 0.55, 0.45, 0, 0, Math.PI * 2); ctx.fill(); }
+            ctx.restore();
+        }
+        ctx.fillStyle = '#3a2718'; eagleShape(ctx, fold, beat, true);
+        // the white head and neck, the heavy hooked yellow bill
+        ctx.fillStyle = '#f5f3ec';
+        ctx.beginPath(); ctx.moveTo(-1.2, -3.4); ctx.quadraticCurveTo(-1.3, -5.4, -0.6, -6.3); ctx.quadraticCurveTo(0, -6.7, 0.6, -6.3); ctx.quadraticCurveTo(1.3, -5.4, 1.2, -3.4); ctx.quadraticCurveTo(0, -2.7, -1.2, -3.4); ctx.fill();
+        ctx.fillStyle = '#efbf2e'; ctx.beginPath(); ctx.moveTo(-0.5, -6.1); ctx.quadraticCurveTo(-0.45, -7.4, 0, -7.9); ctx.quadraticCurveTo(0.45, -7.4, 0.5, -6.1); ctx.closePath(); ctx.fill();
+        // the white tail fan, feathers just marked
+        ctx.fillStyle = '#f5f3ec'; ctx.beginPath(); ctx.moveTo(-1.05, 4.6); ctx.lineTo(-2.6, 8.2); ctx.quadraticCurveTo(0, 9.5, 2.6, 8.2); ctx.lineTo(1.05, 4.6); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(150,140,120,0.5)'; ctx.lineWidth = 0.15;
+        for (const t of [-0.6, 0, 0.6]) { ctx.beginPath(); ctx.moveTo(t * 1.2, 4.9); ctx.lineTo(t * 3.4, 8.6 + (1 - Math.abs(t)) * 0.4); ctx.stroke(); }
+        ctx.restore();
+    }
+
+    // RIVER OTTER from above (references): long and low, dark brown and wet-sleek, a small flat
+    // head with a paler muzzle, the thick tail tapering to a point. Swimming, only the head and
+    // a line of back are out — the rest a dim shape under — with a bow wave off the chin and a
+    // V behind; porpoising, it arcs under and comes up again. Lying up on the logjam, it is a
+    // loose curl in the sun.
+    function otterShape(ctx, bend, curl) {
+        // the spine as a curve; curl bends it round (0 straight .. 1 a loose C)
+        const pts = [];
+        for (let i = 0; i <= 10; i++) {
+            const s = i / 10, a = (s - 0.35) * (bend + curl * 1.2);
+            pts.push({ x: Math.sin(a) * (s - 0.35) * 6 * (0.3 + curl), y: -7 + s * 16 });
+        }
+        // a thick neck straight into a long, heavy body; the tail thick at the root, tapering
+        // (references, from above: head barely narrower than the body, the body an even tube, the
+        // thick tail tapering over its last third)
+        const wAt = (s) => s < 0.1 ? 2.1 + s * 4 : s < 0.64 ? 2.5 : Math.max(0.3, 2.1 * (1 - (s - 0.64) / 0.36) + 0.3);
+        ctx.beginPath();
+        for (let i = 0; i <= 10; i++) ctx.lineTo(pts[i].x + wAt(i / 10), pts[i].y);
+        for (let i = 10; i >= 0; i--) ctx.lineTo(pts[i].x - wAt(i / 10), pts[i].y);
+        ctx.closePath();
+        return pts;
+    }
+    function drawOtter(ctx, m, onJam) {
+        const k = OTTER_SCALE * m.size;
+        const bend = onJam ? 0 : Math.sin((m.trailT + m.i) * 3) * 0.25, curl = onJam ? m.curl : 0;
+        const under = onJam ? 0 : Math.sin(Math.PI * (m.dip || 0));
+        ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(onJam ? m.rh : m.h); ctx.scale(k, k);
+        if (onJam) { ctx.fillStyle = 'rgba(10,20,15,0.25)'; ctx.save(); ctx.translate(0.8, 1.2); otterShape(ctx, 0, curl); ctx.fill(); ctx.restore(); }
+        // under the water: the whole animal as one dim shape
+        ctx.globalAlpha *= onJam ? 1 : 0.62 + 0.25 * (1 - under);
+        ctx.fillStyle = onJam ? '#5a3d2a' : '#5b4331';
+        const pts = otterShape(ctx, bend, curl); ctx.fill();
+        if (!onJam) { ctx.save(); ctx.globalAlpha *= 0.3; ctx.fillStyle = `rgb(${waterTint()})`; otterShape(ctx, bend, curl); ctx.fill(); ctx.restore(); }
+        ctx.globalAlpha = onJam ? ctx.globalAlpha : ctx.globalAlpha / (0.62 + 0.25 * (1 - under)) * (1 - under * 0.85);
+        // out of the water (or on the jam): the head and the line of the back, crisp and wet
+        if (onJam) {
+            // lying up: the four short legs out at the sides
+            ctx.fillStyle = '#3e2a1d';
+            for (const [i, sd] of [[2, -1], [2, 1], [6, -1], [6, 1]]) { ctx.beginPath(); ctx.ellipse(pts[i].x + sd * 2.6, pts[i].y + 0.3, 0.75, 0.55, sd * 0.4, 0, Math.PI * 2); ctx.fill(); }
+        }
+        ctx.fillStyle = '#5e4330';
+        ctx.beginPath(); ctx.ellipse(pts[0].x, -6.4, 2.15, 2.2, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#8c7862'; ctx.beginPath(); ctx.ellipse(pts[0].x, -7.9, 1.25, 0.9, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#1b1410'; ctx.beginPath(); ctx.ellipse(pts[0].x, -8.55, 0.45, 0.32, 0, 0, Math.PI * 2); ctx.fill();
+        for (const sd of [-1, 1]) { ctx.beginPath(); ctx.arc(pts[0].x + sd * 1.05, -6.9, 0.28, 0, Math.PI * 2); ctx.fill(); }
+        ctx.fillStyle = '#5a3f2c'; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.arc(pts[0].x + sd * 1.85, -5.5, 0.45, 0, Math.PI * 2); ctx.fill(); }
+        // (references: plain wet brown fur — on the log dull and dry-looking, paler at the face;
+        // swimming, a short glint where the back breaks the surface)
+        if (!onJam) { ctx.strokeStyle = 'rgba(225,238,240,0.45)'; ctx.lineWidth = 0.5; ctx.lineCap = 'round';
+            ctx.beginPath(); for (let i = 2; i <= 4; i++) ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke(); }
+        else { ctx.fillStyle = 'rgba(40,26,16,0.28)'; ctx.beginPath(); for (let i = 1; i <= 7; i++) ctx.lineTo(pts[i].x - 0.8, pts[i].y); for (let i = 7; i >= 1; i--) ctx.lineTo(pts[i].x + 0.8, pts[i].y); ctx.fill(); }
+        ctx.restore();
+        if (!onJam && under < 0.6) {
+            // the bow wave off its chin
+            const [fx, fy] = fwd(m.h), hx = m.x + fx * 7 * k, hy = m.y + fy * 7 * k;
+            ctx.save(); ctx.translate(hx, hy); ctx.rotate(m.h);
+            // the crescent pushed up ahead of the chin, then the two arms of the V off it
+            ctx.strokeStyle = `rgba(255,255,255,${0.7 * (1 - under)})`; ctx.lineWidth = 1.2;
+            ctx.beginPath(); ctx.arc(0, 3, 4.6, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+            ctx.strokeStyle = `rgba(255,255,255,${0.3 * (1 - under)})`; ctx.lineWidth = 2.4;
+            ctx.beginPath(); ctx.arc(0, 3.4, 5.4, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+            ctx.restore();
+        }
+        if (m.ring > 0) drawRing(ctx, m.x, m.y, m.ring, 5, 16, 0.5);
+    }
+
     window.Wildlife = {
         WILDLIFE, init, update, drawWater, drawPerched, drawAir,
         // The Sailing School's ducklings (school.js owns their motion).
         drawDucklings,
         // For tests and the venue card.
-        debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, woken: [...lurkWoken], feats: [...feats] }),
+        debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, leaps, shoals, poppers, fishers, runs, soarers, rompers, woken: [...lurkWoken], feats: [...feats] }),
         forceBoil: (x, y) => { boil = { x, y, t: 0, life: 45, seed: 1 }; if (flight) flight.mode = 'transit'; },
         // The drawing functions, for a look-bench (eval/_wildlife_bench.js) — not used by the game.
         art: { drawBoilAt: (ctx, x, y, t) => { const o = boil, oT = T; boil = { x, y, t: 10, life: 60, seed: 3 }; T = t; drawBoil(ctx); boil = o; T = oT; }, drawGullFlying, drawGullPerched, drawPelicanFlying, drawPelicanSitting, drawPorpoise,
                drawTurtle, drawTurtleUnder, drawGrebe, drawLoon, drawBeaver, drawMoose, drawSlap, drawWakeTrail, drawDuckling, drawDucklings,
-               drawCruiser, seaTurtleShape, eagleRayShape, reefSharkShape, drawGator, drawEgret, drawAnhinga },
+               drawCruiser, seaTurtleShape, eagleRayShape, reefSharkShape, drawGator, drawEgret, drawAnhinga, drawFrog, drawLeap, drawShoal, drawSeal, drawSealHead, drawSealUnder, drawBear, drawSockeye, drawEagle, drawOtter },
     };
 })();

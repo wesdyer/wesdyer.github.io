@@ -29,6 +29,10 @@ const { chromium } = require('playwright'); const path = require('path');
       'egret standing': g => A.drawEgret(g, { x: 0, y: 0, h: 0, mode: 'stand', bob: 0, neck: 0 }),
       'egret flying (span)': g => A.drawEgret(g, { x: 0, y: 0, h: Math.PI / 2, mode: 'fly', flap: 0, z: 0 }),
       'anhinga drying (span)': g => A.drawAnhinga(g, { px: 0, py: 0, x: 0, y: 0, ph: 0, mode: 'dry', flap: 0, t: 0, sink: 0, splash: 0 }),
+      'brown bear (nose to rump)': g => A.drawBear(g, { i: 0, x: 0, y: 0, h: 0, up: 0, mode: 'watch', rear: 0, lunge: 0, look: 0, splash: 0, fish: 0 }),
+      'sockeye': g => A.drawSockeye(g, 0, 0, 0, 1, 0, 0),
+      'bald eagle (span)': g => A.drawEagle(g, { i: 0, x: 0, y: 0, h: Math.PI / 2, z: 0, mode: 'soar', flap: 0, fish: 0, splash: 0 }),
+      'river otter (with tail)': g => A.drawOtter(g, { i: 0, x: 0, y: 0, h: 0, rh: 0, size: 1, dip: 0, ring: 0, trail: [], trailT: 0, curl: 0 }, true),
     };
     const out = {};
     for (const [k, fn] of Object.entries(items)) {

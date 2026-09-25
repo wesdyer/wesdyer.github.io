@@ -20,7 +20,18 @@ and were never checked at game scale against the Cove set.
   WADERS (the moose: bed → open bank → forest → back), CRUISERS (under the surface, seen
   through it: `depth` drives the veil and the bottom-shadow offset; `formation`, `breathe`,
   leaps — the Lagoon's turtles, eagle rays and reef sharks). Reuse a kit before writing a new
-  one. Swimmers treat reef as water: their dry-land test is `VenueDoc.traits(s).hard && !reef`.
+  one. Swimmers treat reef as water: their dry-land test is `VenueDoc.traits(s).hard && !reef`,
+  and it also skips prop colliders (`s.id` ending `.hit`). A coral head's collider is a wall to
+  a boat, but the tangs started inside it and never moved. Also: LEAPERS (a fish jumps near the
+  player now and then), SHOALS (tang schools round a coral head), and BASKERS with
+  `all`/`openOnly`/`banks` (the Bayou's bullfrogs;
+  POPPERS = the Cove's harbour seals bottling, head up and turning to watch the nearest boat,
+  gliding off as a dim seal shape under the water between — Wes asked for that underwater
+  shadow; `underCrown()` skips logs under a tree —
+  trees mark their crown as `parts.canopy`, not the canopy plane).
+- **Speed is sized like size: about 1–2 drawn body lengths a second.** Tangs "way too fast"
+  at 28 u/s; now capped ~12. Steer VELOCITY toward the target (a capped spring, eased), never
+  snap the heading at a target right beside the animal, which makes it dart.
 - **Draw layers:**
   - `drawWater`: under land, after SeaFX. Swimmers and underwater shapes.
   - `drawPerched`: above land and props, below the canopy. Anything that walks on land.
@@ -44,6 +55,17 @@ splashes must shrink with it.
 
 ## 2. Reference research (a research task, not a glance)
 
+Wes, Sep 25 2026: "find many reference images and use them (especially orthographic, aerial
+or drone imagery)". Aim for 3–5 sheets per animal. Run the slugs in parallel (a `while read`
+loop with `&` and `wait`) and write down what each sheet changed. At Sockeye Run the
+second round changed four drawings:
+- **Bear:** a peanut from above, with a small head, ears on its back corners and huge
+  haunches. Fishing, it stands half-submerged.
+- **Otter family:** separate heads a body length apart, each with its own V. On a log they
+  lie side by side, never nose to tail.
+- **Sockeye:** comet-shaped streams of dozens, not a dozen scattered fish.
+- **Eagle:** it carries its fish head-first under the body.
+
 Collect several overhead references per subject, drone or orthographic if possible:
 
 ```sh
@@ -61,6 +83,21 @@ Write down what the references say before drawing. Examples that changed a drawi
 - **Mallard ducklings:** a brown back with four yellow spots, not yellow birds.
 - **Swimming beaver:** a bow-wave "moustache" and a many-line V wake.
 - **Moose:** palmate antlers that stay above water when the head dips.
+
+**Then compare, feature by feature.** Build a board of the 6–8 best cells:
+
+```sh
+REFDIR=<dir> python3 regatta/eval/_refcells.py out.jpg sheet:row:col ...
+```
+
+Set it beside the bench render at 3× and go through each feature: outline and proportions,
+the colour of each part (head, body, tail, face), what shows above and below the water, and
+how the water responds. Wes asked for exactly this on Sep 25 ("look closely at reference
+images … make sure the salmon look right (head and body coloring)"). A glance at a sheet had
+missed the sockeye's yellow-olive head, the bear's calm rings in slack water, and the
+eagle's wing length. Put shared colours in a named palette (`SOCKEYE`) so every drawing of
+that animal agrees: the leaper, the one in the bear's jaws, and the one in the eagle's
+talons.
 
 ## 3. Draw in the house style
 
@@ -101,7 +138,19 @@ needs its own effect, sized to the drawn body.
 **Never:** perfect ellipses or rings (read as UI), particle dashes for foam or spray (read
 as rain; white water is connected sheets), effects pulsing in lockstep across a group.
 
+- **An animal standing IN a stream** (the bear) takes the stream's wake. Lay a trail
+  DOWNSTREAM along the current (not along its heading) and hand it to `drawWakeTrail`. Dim
+  the submerged flanks with `waterTint()`, keep the back dry, and heap foam on the upstream
+  side. Straight parallel white lines off its sides read as spider legs, and a dashed outline
+  reads as a sticker rim.
+
 ## 5. Look at it, at game scale, then in the scene
+
+`eval/_river_bench.js` (a headless bench PNG with the hull and the Cove references) and
+`eval/_river_scene.js` (the real canvas, stepped, the boat parked by each animal) are
+templates; copy them per venue. Park the camera boat OUTSIDE an animal's reaction radius,
+or you are only photographing its reaction.
+
 
 1. **Bench:** serve the repo over http (`python3 -m http.server <port>` from the repo root;
    use a new port if the cache bites). In the page:
