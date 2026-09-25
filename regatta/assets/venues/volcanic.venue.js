@@ -2920,7 +2920,7 @@ window.VENUE_DOC["volcanic"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 360,
+    "cutoff": 600,
     "paths": {
       "sig": "v3-60c5b04f-dgt",
       "legs": [
@@ -3928,5 +3928,8 @@ window.VENUE_DOC["volcanic"] = {
       "heading": 4.647970847047146,
       "scale": 2
     }
-  ]
+  ],
+  "records": {
+    "provisional": 215
+  }
 };

@@ -4,6 +4,16 @@
 is the initial fleet; 11–100 is ordered by how much a player will want each one, which
 is exactly the order that matters when deciding what an achievement is worth.*
 
+> **Sep 25 2026.** The ranking still orders desirability, but *how* each character is
+> earned is now set elsewhere:
+> - the general families: [achievements.md](achievements.md), whose opening section, "the
+>   approach as built", supersedes its venue template;
+> - the venue characters: [venue-roster.md](venue-roster.md), venue by venue (First win ·
+>   Mechanic · Explorer · Target time · Four stars, nothing hidden).
+>
+> The roster is 107: seven were added Sep 25 (Wake, Fuzz, Oar, Bask, Wisp, Diver, Timber),
+> and Bask replaced the unused Puddle.
+
 ## What this ranking optimizes
 
 A character is just a name, a face, a species, a swatch and a boat — no stats for the
@@ -165,7 +175,7 @@ characters ARE their venues; earning them anywhere else would be a continuity er
     upstream slog he was named for.
 28. **Petal (Roseate Spoonbill, corner)** — Spoonbill Flats' witness; the flats'
     tide-gate race earns her.
-29. **Pearl (Pacific Oyster, leech)** — Pearl Lagoon's namesake. Lagoon mastery
+29. **Pearl (Black-lip Pearl Oyster, leech; relabelled from Pacific oyster Sep 25 2026)** — Pearl Lagoon's namesake. Lagoon mastery
     unlock.
 30. **Ember (Firefish, rocket)** — Emberfall Isle's namesake; time a rounding
     between eruptions.

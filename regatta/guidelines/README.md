@@ -16,6 +16,9 @@ implements it.
 | [roster.md](roster.md) | All 100 characters: intended tier (hand-edited), measured tier and rating, stat lines, beat lines, and the budget arithmetic for widening the spread | generated — `node eval/gen_roster.js` |
 | [roster-ranking.md](roster-ranking.md) | Desirability order 1–100, the starting ten, unlock waves, the bench and the 48-character expansion. **Merchandising, not balance** | current |
 | [tutorial.md](tutorial.md) | Sailing School at Duckling Pond: the seven-minute onboarding, what it teaches and what it refuses to, and why the simulation's lessons differ from the sport's | **v0.1** — proposal |
+| [achievements.md](achievements.md) | How characters are earned: the starting ten, the general families (Part 1), the Aug 5 venue sketches. **Its opening section, 'the approach as built', supersedes the rest** | Aug 5 design + Sep 25 as-built |
+| [venue-roster.md](venue-roster.md) | Venue by venue: which characters live where, the standing rules (nothing hidden, three animals, target times, 10:00), the lessons, and what each venue got as built | current — Cove, School, Lake done |
+| [scale.md](scale.md) | The world ruler: an 18 ft boat, 1 unit = 10 cm; what is drawn true, what is gameplay-sized, how animals are sized (3×, floor 20) | current |
 | [debt.md](debt.md) | The single register of verified visual defects, across all three | current |
 
 **Planned.** `gameplay.md` (course design, venue mechanics, difficulty, feel) ·

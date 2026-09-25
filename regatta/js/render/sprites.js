@@ -807,6 +807,16 @@ const SPIN_LOOKS = {
     Riffle: 'stripes',
     Chisel: 'gores',
     Chroma: 'halves',
+    Wake: 'chevron',
+    Fuzz: 'halves',
+    Oar: 'stripes',
+    Bask: 'crosshalves',
+    Wisp: 'gores',
+    Diver: 'crosshalves',
+    Timber: 'solid',
+    Beau: 'thirds',
+    Flit: 'rays',
+    Quill: 'fiverays',
 };
 // colorC is OPTIONAL and falls back to colorB, so every pattern authored before the
 // third colour existed renders byte-identically. A region is either a bare function

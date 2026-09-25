@@ -735,6 +735,79 @@ neither was taken unilaterally.
 - Per-venue wildlife is often **character kin** (Sockeye Run ← Slipstream, Gatorgrass ←
   Chomp, Glacier Sound ← Pebble). Keep that thread.
 
+### 10.6 Venue wildlife on the water — **Rule** (Sep 25 2026, `js/wildlife.js`)
+
+Wes judges an animal as much by how it meets the water as by the animal: the Cove's gulls,
+pelicans and porpoises were approved as a set with their shadows, wakes and splashes, and the
+first pond and lake animals were sent back as much for their water as for their drawing.
+The workflow (overhead references, the look-bench, in-scene checks) is the `venue-wildlife`
+skill; the sizes are [scale.md](scale.md) (true size ×3, floor 20 units).
+
+**Layers.** Swimmers and anything under the surface draw in `drawWater`: after the sea
+effects, under the land. Anything that walks onto land draws in `drawPerched`: over land and
+props, under the canopy (the moose). Flyers draw in `drawAir`, over the canopy.
+
+**Light comes from the upper left, so cast shadows fall down and to the right**, matching the
+props (lit on their upper-left flank, no baked drop shadow). Every shadow is a dark tint, never
+black: `rgba(10,25,40,a)` on water, `rgba(20,16,8,a)` on ground.
+
+**Shadows by kind:**
+
+- **Flying:** the bird's own silhouette (wings in the same pose), not an ellipse, offset by
+  altitude `z` to `(x + 0.35z, y + 0.55z)` at 0.95 scale. Alpha is `0.2 × max(0.3, 1 − z/120)`:
+  it fades with height but never vanishes. The offset carries the height; a bird without a
+  shadow reads as a sticker on the glass.
+- **Sitting on the water:** a soft contact shade just under and behind the body, about
+  `rgba(8,24,30,0.28)` (duckling). It says "in the water", not "on it".
+- **Under the surface:** the part below the water is drawn as a **faint, flat, darker shape**,
+  alpha 0.3–0.5, no outline. Every overhead reference shows it:
+  - the porpoise's whole spindle, flippers and flukes beyond the part that breaks water;
+  - the beaver's long body and flat tail trailing behind its head;
+  - a turtle that slid in, a dim shape with a head that peeks now and then;
+  - the moose's legs through the shallows.
+  A diver going under **shrinks and fades** (`sink`) rather than blinking out.
+- **Wading and on land:** the moose's shadow sits on the shallow bottom in water, and is cast on
+  the ground once `onLand` says it is ashore. There its legs show and the water rings stop.
+- **On a prop:** a basking turtle casts a small shade on its log.
+
+**Water interaction by event.** Each effect is sized to the DRAWN body (scale.md), or it reads
+as belonging to something else.
+
+- **Swimming → a V wake**, via `drawWakeTrail`: a soft disturbed band down the middle, two
+  arms each drawn as a halo plus a crisp crest, and fine chevrons inside the V.
+  - The arms start at the drawn shoulders.
+  - They open at about the Kelvin half-angle (~19°); arms that stay parallel read as ladder
+    rails.
+  - Trail points are recorded only while the animal is moving, and they age out, so a
+    stopped animal's wake runs off behind it. A stationary trail draws bars.
+  - A line of animals: draw all the wakes first, then the bodies, so a wake never crosses
+    the animal ahead. The Vs braid into one wake, as in the drone shots of a brood.
+- **Pushing water → a bow ripple:**
+  - short arcs curling back off the chest (duckling), or a white "moustache" (beaver);
+  - never a ring around the head, which reads as a halo.
+- **At rest → a slow ring breathing out**, faint (about 0.3 alpha), phased per animal so a
+  group doesn't pulse in time.
+- **Diving → a ring**: the dive ring where it went down, a rise ring where it comes up.
+- **Entering from a height → a splash:**
+  - a white crown of spray, then a spreading ring (the pelican's plunge, the turtle's plop);
+  - the spray is irregular, with uneven angles and lengths;
+  - a regular sunburst reads as an icon.
+- **Rising from the water → drips** off the lifted head and a ring (the moose's head coming
+  up).
+- **Leaving → a slick:** a smooth pale patch where a porpoise went down, fading.
+- **Feeding fish → a bait boil:**
+  - dark fish swirling UNDER the water, as soft overlapping shadows with a few glints;
+  - the surface boiling over it;
+  - spray crowns where birds hit.
+  - Never a hard-edged disc.
+
+**What never works** (all tried and rejected):
+- perfect ellipses or rings, which read as UI;
+- particle dashes for foam or spray, which read as rain; white water is connected sheets
+  and ribbons;
+- effects that loop in lockstep across a group;
+- anything drawn from `Math.random`: the module has its own seeded PRNG.
+
 ---
 
 ## 11. Review checklist — **Rule**
@@ -751,3 +824,5 @@ Race-view specific. The full asset rubric is visual-style.md §13.
       screen (visual-style.md §6.10)
 - [ ] Anything baked stays baked; no new per-frame procedural detail
 - [ ] Render code touches no RNG that the eval harness depends on (§3)
+- [ ] Wildlife: sized by scale.md, shadow down-right by height, wake only while moving, every
+      water effect sized to the drawn body (§10.6)

@@ -12,6 +12,33 @@
 > trainer dinghy; graduated flag only — unlocks and achievements come later; flat water
 > now, venue art later. Not yet built: Wobble's scripted cross (§8), the optional
 > manual-trim lesson (§11), jump-to-unit on re-entry (§12), Paddle's portrait re-roll.
+>
+> **Sep 25 2026: the school has objectives and animals.**
+> - **Objectives.** "Graduated flag only" is superseded: five characters are earned here,
+>   judged from the school's own events (`Unlocks.schoolEvent`) and re-earnable on a replay.
+>   - **Paddle:** win the graduation race.
+>   - **Fuzz:** finish every lesson.
+>   - **Oar:** start practice, crossing within 2 s of the gun and not early.
+>   - **Bask:** send the turtles off their log, then finish.
+>   - **Wisp:** a clean report card. Four stars can't apply, because the school runs on auto
+>     trim.
+>
+>   See [venue-roster.md](venue-roster.md).
+> - **The ducklings are mallard ducklings.** Drone references show a brown back with four
+>   yellow spots, yellow cheeks and an eye line, not rubber-duck yellow.
+>   - **Drawn by** `Wildlife.drawDucklings` in `js/wildlife.js`; `school.js` only moves
+>     them.
+>   - **Size:** about 23 units bill to tail, `DUCK_GAP` 32 apart, so a little water shows
+>     between them.
+>   - **In the water:** each pushes its own small V only while swimming, and the Vs braid
+>     behind the line. At rest each shows a slow ring. Headings ease and only change on
+>     real movement; a stationary duck used to flip south.
+> - **The pond's other animals** (in `js/wildlife.js`):
+>   - painted turtles in single file on the drift log Wes placed;
+>   - a pair of great crested grebes that dive and dance.
+>
+>   Both are sized by [scale.md](scale.md), and their water follows
+>   [race-view.md §10.6](race-view.md).
 
 Companion to [venues.md](venues.md) §15 (the venue and its standing constraints),
 [music.md](music.md) §12.4 (the cue brief, already written),

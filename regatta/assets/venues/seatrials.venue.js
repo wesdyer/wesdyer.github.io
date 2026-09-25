@@ -115,7 +115,7 @@ window.VENUE_DOC["seatrials"] = {
         "dir": -1
       }
     ],
-    "cutoff": 360,
+    "cutoff": 600,
     "paths": {
       "sig": "v2-82f72dc-eu",
       "legs": [
@@ -204,5 +204,8 @@ window.VENUE_DOC["seatrials"] = {
         "period": 30
       }
     ]
+  },
+  "records": {
+    "provisional": 210
   }
 };

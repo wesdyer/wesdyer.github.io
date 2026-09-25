@@ -87,6 +87,162 @@ function updateTraffic() {
         v.windDir = (typeof regionWindAt === 'function') ? regionWindAt(p.x, p.y).direction
                                                         : (state.wind ? state.wind.direction : 0);
     }
+    checkBowCrossing(list);
+}
+
+// CROSSING A SHIP'S BOW — Lighthouse Cove's mechanic objective (Wake, the harbour porpoise):
+// pass across a moving cargo ship's track within 3 boat lengths ahead of its bow. Judged in
+// the ship's own frame: the player's side of its centreline is remembered each frame, and a
+// change of side with the player between the bow and 3 lengths ahead of it is a crossing.
+// Read-only — it announces a feat and changes nothing (the per-ship memory lives here, not on
+// the boat or the vessel, both of which the golden traces hash).
+const BOW_CROSS_LENGTHS = 3, BOW_CROSS_HULL = 55;   // rules.js HULL_LENGTH
+
+// THROUGH THE GLASS — Stillwater Lake's mechanic objective (Diver, the loon). Mark 3 sits
+// inside the NW calm (wind region 'wind-shore-bay', 2 kn). One pass = entering the region's
+// polygon to leaving it; the feat is a pass that includes the mark-3 rounding with the
+// player's boat speed never below GLASS_MIN_KN. Measured Sep 25 2026 (eval/_lake_glass.js):
+// the fleet's minimum through the calm runs 0.7-4.9 kn, the autopilot's 3.4-4.3 — so 2 kn
+// (the first idea) came free with any finish, and 4.5 asks for a clean, fast rounding.
+// Read-only; the pass memory lives here, never on the boat (golden traces hash raceState).
+const GLASS = { lake: { region: 'wind-shore-bay', mark: 'mark-3', minKn: 4.5, feat: 'lake:glass' } };
+let _glass = null;
+function checkGlassPass() {
+    const g = state.course && GLASS[state.course.venueKey];
+    const me = state.boats && state.boats[0];
+    if (!g || !me || !me.isPlayer || state.race.status !== 'racing' || me.raceState.finished) { _glass = null; return; }
+    if (!_glass || _glass.doc !== state.course.doc) {
+        const d = state.course.doc || (window.VenueDoc && VenueDoc.get(state.course.venueKey));
+        const reg = d && d.wind && (d.wind.regions || []).find(r => r.id === g.region);
+        if (!reg) return;
+        const ri = (d.course.route || []).findIndex(e => e.markId === g.mark);
+        _glass = { doc: state.course.doc, poly: reg.poly.map(q => ({ x: q[0] !== undefined ? q[0] : q.x, y: q[1] !== undefined ? q[1] : q.y })),
+                   legAfter: ri, inside: false, min: 99, legIn: 0 };
+    }
+    const G = _glass, rs = me.raceState;
+    const inside = pointInPoly(me.x, me.y, G.poly);
+    if (inside) {
+        if (!G.inside) { G.inside = true; G.min = 99; G.legIn = rs.leg; }
+        G.min = Math.min(G.min, me.speed / 0.25);
+    } else if (G.inside) {
+        G.inside = false;
+        // The mark was rounded during this pass: the leg count moved past it while inside.
+        const rounded = G.legAfter > 0 && G.legIn < G.legAfter + 1 && rs.leg >= G.legAfter + 1;
+        if (rounded && G.min >= g.minKn && typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: g.feat, min: G.min });
+    }
+}
+// RIDE THE CELL — Pearl Lagoon's mechanic objective (Nimbus, the spotted eagle ray). Stay
+// on a squall's gust front (squallZoneAt === 'front', wind.js) for RIDE_SECS in a row. Wes set
+// the squalls 25% larger and 50% slower on Sep 25 2026 so a front can be sat on; measured then
+// (eval/_lagoon_squall.js, 6 seeds): the autopilot's longest ride is 1.6–15.5 s, typically 4,
+// and ~10% of the fleet's boat-races pass 15 s by accident — Wes's call: 15 s. Timed on the
+// sim clock; the ride memory lives here, never on the boat (golden traces hash raceState).
+const SQUALL_RIDE = { lagoon: { secs: 15, feat: 'lagoon:squall-ride' } };
+let _ride = null;
+function checkSquallRide() {
+    const g = state.course && SQUALL_RIDE[state.course.venueKey];
+    const me = state.boats && state.boats[0];
+    if (!g || !me || !me.isPlayer || state.race.status !== 'racing' || me.raceState.finished
+        || typeof squallZoneAt !== 'function') { _ride = null; return; }
+    if (!_ride || state.time < _ride.last) _ride = { since: null, paid: false, last: state.time };
+    _ride.last = state.time;
+    if (squallZoneAt(me.x, me.y) !== 'front') { _ride.since = null; return; }
+    if (_ride.since === null) _ride.since = state.time;
+    if (!_ride.paid && state.time - _ride.since >= g.secs && typeof GameEvents !== 'undefined') {
+        _ride.paid = true;
+        GameEvents.emit('player-feat', { id: g.feat, secs: state.time - _ride.since });
+    }
+}
+
+// LANDFALL — Pearl Lagoon's explorer objective (Ribbon, the sea krait: the reef snake that
+// comes ashore on sand cays). Sail round the lagoon side of the cay, reef to reef: the
+// player's bearing from its centre must sweep `sweep` degrees, either way, without straying
+// beyond `r` of it (straying resets the count: one deliberate rounding, not a season of
+// passing by). The cay is a motu on the atoll rim — the southern barrier reef (shape-4) closes
+// its far side, so a full loop cannot be sailed; measured (eval/_lagoon_ring_probe.js) the open
+// water hugging it spans ~250-280 degrees at 430-490 u, ~200 at 600-850. A straight pass at
+// ring distance sweeps at most ~115 degrees, and the course passes ~1000 u off, outside `r`.
+// Wes chose shape-5 over shape-20 (abeam of the leeward mark, a reach out and a reach home,
+// where shape-20 sits dead downwind with a 1000-unit beat back) and reef-to-reef over moving
+// to a free-standing cay (Sep 25 2026).
+const LANDFALL = { lagoon: { shape: 'shape-5', r: 800, sweep: 200, feat: 'lagoon:landfall' } };
+let _landfall = null;
+function checkLandfall() {
+    const g = state.course && LANDFALL[state.course.venueKey];
+    const me = state.boats && state.boats[0];
+    if (!g || !me || !me.isPlayer || state.race.status !== 'racing' || me.raceState.finished) { _landfall = null; return; }
+    if (!_landfall || _landfall.course !== state.course) {
+        const isl = (state.course.islands || []).find(s => s.id === g.shape);
+        if (!isl) return;
+        let cx = 0, cy = 0; for (const v of isl.vertices) { cx += v.x; cy += v.y; }
+        _landfall = { course: state.course, cx: cx / isl.vertices.length, cy: cy / isl.vertices.length, a: null, sum: 0, paid: false };
+    }
+    const L = _landfall;
+    if (L.paid) return;
+    const dx = me.x - L.cx, dy = me.y - L.cy;
+    if (Math.hypot(dx, dy) > g.r) { L.a = null; L.sum = 0; return; }
+    const a = Math.atan2(dy, dx);
+    if (L.a !== null) L.sum += normalizeAngle(a - L.a);
+    L.a = a;
+    if (Math.abs(L.sum) >= g.sweep * Math.PI / 180 && typeof GameEvents !== 'undefined') {
+        L.paid = true;
+        GameEvents.emit('player-feat', { id: g.feat });
+    }
+}
+// KNOW THE BAYOU — Gatorgrass Bayou's mechanic objective (Croak, the bullfrog). The bayou
+// is a maze: four passages lead from the start to the windward gate, and every way through
+// crosses exactly one of these gate lines — each drawn wall to wall across its passage's
+// narrowest gap (mud is the only wall; weed and mud bars are sailable). Found and verified by
+// eval/_swamp_gates.py (re-run it if the ridges are edited). Verified Sep 25 2026 on the grid: with all four blocked the gate cannot be reached, and each alone reconnects
+// it; every one of Wes's 15 recorded races and 60 fleet races crosses exactly one.
+//   cut      over the mud bar at the elbow, up between the two long central ridges — the
+//            whole fleet's way (60 of 60), and the bar is where it grinds
+//   east     round the south tip of the long central ridge and up the east channel —
+//            Wes's own way (10 of 15, and all his fastest: 2:43-3:04 on this layout)
+//   west     up the western basin and across the top — nobody has sailed it
+//   longway  round the far south end of the south-eastern ridge — one run, 4:36
+// Each crossing emits the passage as a feat VALUE; the last one before the finish is the
+// race's route, and unlocks.js adds it to the venue's set in the career. Read-only.
+const ROUTE_GATES = { swamp: { feat: 'swamp:route', gates: {
+    cut:     { a: { x: -774,  y: 479 },  b: { x: -290,  y: 263 } },
+    east:    { a: { x: 343,   y: 1766 }, b: { x: 656,   y: 1224 } },
+    west:    { a: { x: -3611, y: 1288 }, b: { x: -2409, y: -366 } },
+    longway: { a: { x: 976,   y: 5051 }, b: { x: 802,   y: 2557 } },
+} } };
+let _route = null;
+function segCross(p, q, a, b) {
+    const o = (a, b, c) => (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+    return (o(a, b, p) > 0) !== (o(a, b, q) > 0) && (o(p, q, a) > 0) !== (o(p, q, b) > 0);
+}
+function checkSwampRoute() {
+    const g = state.course && ROUTE_GATES[state.course.venueKey];
+    const me = state.boats && state.boats[0];
+    if (!g || !me || !me.isPlayer || state.race.status !== 'racing' || me.raceState.finished) { _route = null; return; }
+    const here = { x: me.x, y: me.y };
+    if (_route && Math.hypot(here.x - _route.x, here.y - _route.y) < 400) {
+        for (const [name, gate] of Object.entries(g.gates)) {
+            if (segCross(_route, here, gate.a, gate.b) && typeof GameEvents !== 'undefined') {
+                GameEvents.emit('player-feat', { id: g.feat, value: name });
+            }
+        }
+    }
+    _route = here;
+}
+const _bowSide = new Map();
+function checkBowCrossing(list) {
+    const me = state.boats && state.boats[0];
+    if (!me || !me.isPlayer || state.race.status !== 'racing' || me.raceState.finished) { _bowSide.clear(); return; }
+    for (const v of list) {
+        if (!v.active || !/cargo-ship/.test(v.kind) || !(v.knots > 0.5)) { _bowSide.delete(v.id); continue; }
+        const fx = Math.sin(v.heading), fy = -Math.cos(v.heading);
+        const dx = me.x - v.x, dy = me.y - v.y;
+        const ahead = dx * fx + dy * fy - v.hullLen / 2;   // distance forward of the bow
+        const side = Math.sign(dx * -fy + dy * fx) || 1;   // which side of the centreline
+        const was = _bowSide.get(v.id);
+        _bowSide.set(v.id, side);
+        if (was !== undefined && was !== side && ahead >= 0 && ahead <= BOW_CROSS_LENGTHS * BOW_CROSS_HULL
+            && typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'bay:bow-cross', ship: v.id, ahead });
+    }
 }
 
 // ── THE KELVIN WAKE ──────────────────────────────────────────────────────────────────
@@ -717,6 +873,9 @@ function initCourse(opts) {
         // of the race clock, so this only compiles the path tables — there is no live
         // position to reset and restarting re-runs the same schedule identically.
         initTraffic();
+        // The venue's animals, after traffic (porpoises run with the ships) and the islands
+        // (the gulls perch on a named shape).
+        if (window.Wildlife) Wildlife.init();
         // Same reason, and the same trap: this is the path every venue takes. It samples
         // the mean wind over sailable WATER, so it needs the boundary and every land shape
         // — floes included — already settled. The LIGHT build substitutes a spread read

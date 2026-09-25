@@ -4591,7 +4591,7 @@ window.VENUE_DOC["redrock"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 360,
+    "cutoff": 600,
     "paths": {
       "sig": "v3-6912d2b6-e7n",
       "legs": [

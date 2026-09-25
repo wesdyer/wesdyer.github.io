@@ -6808,7 +6808,7 @@ window.VENUE_DOC["river"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 360,
+    "cutoff": 600,
     "paths": {
       "sig": "v3-8f6209da-j4f",
       "legs": [
@@ -150562,5 +150562,8 @@ window.VENUE_DOC["river"] = {
       "heading": 0.4810887585578607,
       "scale": 2.469
     }
-  ]
+  ],
+  "records": {
+    "provisional": 195
+  }
 };

@@ -375,6 +375,80 @@
            beat"), which stands until somebody beats it. */
         .pr-record { margin-top: 18px; padding: 13px 18px 15px; }
         .pr-record .t-label { white-space: nowrap; }
+        /* ── The briefing's two strips fit the PANEL, not the window (Sep 25 2026) ──
+           The record line and the objectives strip used to be sized by viewport media
+           queries alone, and on a mid-size window the briefing panel (not the window) ran
+           out of width first: the stars line spilled past the frame and the Objectives link
+           sat on top of the faces. #venue-detail is a size container now; each strip is a
+           wrapping flex whose parts drop to a second line when the panel is too narrow, and
+           the container queries below pick the layout by the panel's own width. Nothing
+           spills at any size eval/_preview_fit.js tries. */
+        /* A SIZE container (both axes): the hero's height is set by JS and the panel is a
+           stretched flex item, so its height never depends on its own content. */
+        #venue-detail { container-type: size; container-name: brief; }
+        /* Its padding scales with the window: a fixed 24/28px took a sixth of the smallest
+           panel (322x268 at 1024x768). */
+        #venue-detail { padding: clamp(12px, 2.6vh, 24px) clamp(16px, 2.2vw, 28px); }
+        .pr-rec-short { display: none; }
+        .pr-record-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; column-gap: 16px; row-gap: 2px; }
+        .pr-record-body { display: flex; flex-direction: column; }
+        .pr-record-stars { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; margin-top: 4px; }
+        .pr-objectives { display: flex; align-items: center; flex-wrap: wrap; column-gap: 12px; row-gap: 6px; }
+        .pr-obj-faces { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; min-width: 0; }
+        .pr-obj-link { margin-left: auto; }
+        /* Too narrow for one row: the label and the link share the top line, the faces
+           take the second. (Six faces plus both labels need ~560px of panel.) */
+        @container brief (max-width: 620px) {
+            .pr-obj-label { order: 1; }
+            .pr-obj-link { order: 2; }
+            .pr-obj-faces { order: 3; flex-basis: 100%; }
+        }
+        /* The words beside the stars are the first thing to go; the stars say it. */
+        @container brief (max-width: 480px) {
+            .pr-record-stars-text { display: none; }
+        }
+        /* Too narrow for "Your best time" and "All records" side by side: the link shortens. */
+        @container brief (max-width: 330px) {
+            .pr-rec-long { display: none; }
+            .pr-rec-short { display: inline; }
+        }
+        /* THE PANEL'S HEIGHT LADDER. The facts never give way; everything above them does,
+           in this order, as the briefing panel gets shorter (its own height — a 1024x768
+           window leaves it 268px). The blurb goes first, then the chips, the big title and
+           the padding, then the row of faces (the strip keeps its one line — Earn here · n/m,
+           Objectives — and still opens the full list), and last the facts pair up in two
+           columns. */
+        @container brief (max-height: 440px) {
+            .pr-blurb { display: none; }
+        }
+        @container brief (max-height: 400px) {
+            .pr-chips { display: none !important; }
+            .pr-venue-title { margin-top: 0; font-size: 24px; }
+            .pr-venue-title.long { font-size: 21px; }
+            .pr-record { margin-top: 6px; padding: 5px 12px; }
+            .pr-objectives { padding: 5px 12px !important; }
+            .pr-bottom { padding-top: 6px; }
+            .pr-row { padding: 3px 10px; }
+            .pr-facts { gap: 4px !important; }
+        }
+        /* The faces are the strip's point, so they are the LAST thing above the facts to go. */
+        @container brief (max-height: 300px) {
+            .pr-obj-faces { display: none; }
+            .pr-obj-label, .pr-obj-link { order: 0; }
+        }
+        @container brief (max-height: 320px) {
+            .pr-row { padding: 3px 9px; column-gap: 8px !important; }
+            .pr-row * { font-size: 11.5px !important; }
+            /* The facts pair up in two columns; a long value spans both. */
+            .pr-facts { display: grid !important; grid-template-columns: 1fr 1fr; grid-auto-flow: dense; gap: 3px !important; min-width: 0 !important; }
+            .pr-row-wide { grid-column: 1 / -1; }
+            .pr-row .t-label { white-space: nowrap; }
+            /* 10:00 at every venue (Wes, Sep 25 2026): the least news on the card, so on the
+               shortest panel it is the one fact that gives way. */
+            .pr-row-limit { display: none !important; }
+            .pr-facts { gap: 3px !important; }
+            .pr-record-time { font-size: 15px; }
+        }
         /* Narrow desktop (≤1180px viewport): the fleet column gives some width, and
            the HERO caps its height — the square art is as wide as the hero is
            tall, so an uncapped hero starves the briefing beside it. The facts
@@ -387,7 +461,6 @@
                and scales its square image inside — smaller, never cropped. */
             #venue-art { aspect-ratio: auto !important; width: 40%; min-width: 180px; }
             .pr-facts { min-width: 200px !important; }
-            .pr-record { gap: 8px; flex-wrap: wrap; }
         }
         .pr-record-time { font-size: 32px; font-weight: 900; line-height: 1; margin-top: 7px; }
         /* ⚠️ A 800px-tall window gives the hero about 300px, and the briefing wants 365 —
@@ -405,8 +478,15 @@
             .pr-venue-title.long { font-size: 29px; }
             .pr-blurb { margin-top: 8px; font-size: 13px; -webkit-line-clamp: 2; }
             .pr-row { padding: 5px 12px; }
-            .pr-record { display: flex; align-items: center; gap: 14px; margin-top: 10px; padding: 7px 14px; }
-            .pr-record > div:first-child { flex: 1 1 auto; }
+            /* The record folds to one line — label and link, then time and stars — and
+               WRAPS the time and stars to a second line when the panel is too narrow. */
+            .pr-record { display: flex; align-items: center; flex-wrap: wrap; column-gap: 14px; row-gap: 3px; margin-top: 10px; padding: 7px 14px; }
+            /* the head keeps its width (label and link together); the time and stars are
+               what drop to the second line — and the head wraps inside only if the panel is
+               narrower than the two labels themselves */
+            .pr-record-head { flex: 1 0 auto; max-width: 100%; }
+            .pr-record-body { flex-direction: row; align-items: center; flex-wrap: wrap; column-gap: 12px; row-gap: 2px; }
+            .pr-record-stars { margin-top: 0; }
             .pr-record-time { font-size: 17px; margin-top: 0; }
         }
         /* ≤780px — a 1366×768 laptop leaves ~650px of viewport. */
@@ -791,6 +871,43 @@
                     <span class="ov-title" style="font-size: 14px; letter-spacing: .04em;">DONE</span>
                     <span class="ov-kbd">ESC</span>
                 </button>
+                <!-- Last, small and red: nobody should hit it on the way to DONE. It only opens
+                     the confirm below; nothing is erased from this button. -->
+                <button id="new-game-button" class="ov-row ov-row-danger" style="margin-top: 8px; padding: 10px 18px;">
+                    <span style="font-size: 12px; font-weight: 800; letter-spacing: .04em; color: #ff8a75;">START A NEW GAME</span>
+                    <span style="font-size: 11px; color: #66748c;">Erase progress</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- New-game confirm — over Settings (z-70), so it sits at z-80. Keeping your game is
+             the default and ESC. What goes is listed plainly; what stays is said too, so the
+             player knows their sound and camera choices survive. -->
+        <div id="new-game-screen" class="hidden absolute inset-0 bg-slate-900/70 backdrop-blur z-[80] flex flex-col items-center justify-center p-4 pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 360px; padding: 26px; border-color: rgba(236,48,19,.45);">
+                <div class="flex items-center gap-2.5">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt="" class="w-7 h-auto">
+                    <span class="ov-title" style="font-size: 22px;">Start a new game?</span>
+                </div>
+                <div style="margin-top: 12px; font-size: 13px; line-height: 1.5; color: #9fb2cc; text-wrap: pretty;">
+                    This erases everything you have earned, for good:
+                    <ul style="margin: 8px 0 0 18px; list-style: disc; color: #dce6f2;">
+                        <li>Every character you have earned</li>
+                        <li>Sailing School graduation and sections</li>
+                        <li>Cup trophies, series pennants and stars</li>
+                        <li>Personal bests and course records</li>
+                    </ul>
+                    <div style="margin-top: 8px;">You go back to sailing as Bixby. Sound, camera and other settings are kept.</div>
+                </div>
+                <div class="flex flex-col gap-2 mt-5">
+                    <button id="new-game-keep" class="ov-row ov-primary">
+                        <span class="ov-title" style="font-size: 14px; letter-spacing: .04em;">KEEP MY GAME</span>
+                        <span class="ov-kbd">ESC</span>
+                    </button>
+                    <button id="new-game-confirm" class="ov-row ov-danger-fill">
+                        <span style="font-size: 13px; font-weight: 800; letter-spacing: .04em;">ERASE AND START OVER</span>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -1075,7 +1192,7 @@
                 <div class="flex flex-col gap-3" style="min-width:0; min-height:0;">
                     <div id="venue-hero" class="flex overflow-hidden shrink-0" style="border-radius:16px; min-height:220px;">
                         <div id="venue-art" class="relative shrink-0" style="height:100%; aspect-ratio:1;"></div>
-                        <div id="venue-detail" class="flex flex-col" style="flex:1 1 auto; min-width:0; padding:24px 28px;"></div>
+                        <div id="venue-detail" class="flex flex-col" style="flex:1 1 auto; min-width:0; overflow-y:auto; scrollbar-width:thin;"></div>
                     </div>
                     <!-- The chart gets the whole width and whatever height the hero leaves — the
                          SHAPE of the course is the thing a preview should show big. -->
@@ -1171,6 +1288,28 @@
                 </div>
             </div>
           </div>
+        </div>
+
+        <!-- Unlock ceremony — a character earned. Over the results page (z-50), the standings and
+             the clubhouse; under nothing. One card per character, weakest first; the queue and
+             its copy live in screens.js (presentUnlocks). -->
+        <div id="unlock-screen" class="hidden absolute inset-0 bg-slate-900/75 backdrop-blur z-[66] flex flex-col items-center justify-center p-4 pointer-events-auto">
+            <div class="ov-card w-full" style="max-width: 420px; padding: 22px 26px 22px; text-align: center; border-color: rgba(242,193,78,.45);">
+                <div class="flex items-center justify-between">
+                    <span class="t-label" style="font-size: 11px; letter-spacing: .24em; color: #f2c14e;">&#10022; New character</span>
+                    <span id="unlock-count" class="t-mono" style="font-size: 11px; color: #66748c;"></span>
+                </div>
+                <div id="unlock-body"></div>
+                <div class="flex flex-col gap-2" style="margin-top: 20px;">
+                    <button id="unlock-next" class="ov-row ov-primary">
+                        <span class="ov-title" style="font-size: 14px; letter-spacing: .04em;">NEXT</span>
+                        <span class="ov-kbd">ENTER</span>
+                    </button>
+                    <button id="unlock-see" class="ov-row hidden">
+                        <span style="font-size: 13px; font-weight: 800; letter-spacing: .04em;">SEE THEM IN THE PICKER</span>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Top Center Timer -->
@@ -1411,6 +1550,7 @@
     <script src="js/volcano.js"></script>
     <script src="js/tide.js"></script>
     <script src="js/traffic.js"></script>
+    <script src="js/wildlife.js"></script>
     <script src="js/planner.js"></script>
     <!-- Grid pathing: the course-path ruler needs it for keyholed land (see CoursePath). -->
     <script src="js/sailcheck.js"></script>
@@ -1418,6 +1558,7 @@
     <script src="js/game/core.js"></script>
     <script src="js/game/state.js"></script>
     <script src="js/game/series.js"></script>
+    <script src="js/game/unlocks.js"></script>
     <script src="js/game/audio.js"></script>
     <script src="js/sim/wind.js"></script>
     <script src="js/sim/water.js"></script>

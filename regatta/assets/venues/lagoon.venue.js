@@ -4367,7 +4367,8 @@ window.VENUE_DOC["lagoon"] = {
           ]
         }
       ]
-    }
+    },
+    "cutoff": 600
   },
   "wind": {
     "regions": [
@@ -4402,7 +4403,11 @@ window.VENUE_DOC["lagoon"] = {
   },
   "squalls": {
     "_note": "The card’s promised mechanic: cells march down the trades at 1.10x the speed the breeze carries a puff (speedFactor, lowered from 1.45 on 2026-08-09 — 25% slower buys dwell, not weather: same exposure, longer encounters; see SQUALL_DEFAULTS), gust front on the leading edge, dead-air wake trailing. Count is the only required field; rx/ry/sizeVar/speedFactor/courseJitter override the engine defaults (SQUALL_DEFAULTS, script.js). COUNT IS 2, NOT 3, because the cells are now dealt across the RACECOURSE rather than the arena (squallField, script.js) and three of them left the fleet in cell-affected water 36% of the race — measured 8 seeds: count 1/2/3 gives 18/27/36% exposure and 6/9/12 encounters per boat. Two keeps clear water the baseline and the cell the event.",
-    "count": 2
+    "count": 2,
+    "_scale": "Wes, 2026-09-25: squalls 25% LARGER and 50% SLOWER than the engine defaults (SQUALL_DEFAULTS rx 850 / ry 550 / speedFactor 1.10). At 0.55 a cell now drifts SLOWER than the breeze carries a puff, so a boat can overtake it and sit on its front rather than being swept past; the wake still trails it.",
+    "rx": 1063,
+    "ry": 688,
+    "speedFactor": 0.55
   },
   "palette": {
     "_note": "Water split for the shallows work: baseColor is the OPEN OCEAN outside the reef (deep Caribbean azure, deepColor its vignette partner), and shallowColor is what a `shallows` zone lays over it at alpha 0.72 — picked so the blend lands on bright lagoon turquoise (~#3bd5e4), not to be used straight. heroColor IS that blend result, stated literally: the picker's detail panel shows it instead of baseColor, because this venue's signature water is the lagoon inside, not the approaches — keep it equal to 0.72*shallowColor + 0.28*baseColor if either of those moves. Gusts deliberately un-authored: the old block was derived from the retired teal base, and absent here they re-derive from this water automatically (applyVenuePalette).",
@@ -5633,5 +5638,8 @@ window.VENUE_DOC["lagoon"] = {
         "veer": 15
       }
     ]
+  },
+  "records": {
+    "provisional": 190
   }
 };

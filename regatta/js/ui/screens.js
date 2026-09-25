@@ -129,6 +129,10 @@ const UI = {
     settingsButton: document.getElementById('settings-button'),
     closeSettings: document.getElementById('close-settings'),
     saveSettings: document.getElementById('save-settings'),
+    newGameButton: document.getElementById('new-game-button'),
+    newGameScreen: document.getElementById('new-game-screen'),
+    newGameKeep: document.getElementById('new-game-keep'),
+    newGameConfirm: document.getElementById('new-game-confirm'),
     abandonScreen: document.getElementById('abandon-screen'),
     abandonButton: document.getElementById('abandon-button'),
     abandonKeep: document.getElementById('abandon-keep'),
@@ -448,8 +452,11 @@ function renderVenueDetail(key) {
         }
     }
 
+    // A long value (Hazards, usually) is marked wide: on the shortest panels the facts pair up
+    // in two columns and a wide one takes both.
+    const wide = (v) => String(v).replace(/&[a-z]+;/g, 'x').replace(/<[^>]+>/g, '').length > 11;
     const row = (label, value, gold) => `
-        <div class="pr-row flex items-center justify-between gap-5"
+        <div class="pr-row${wide(value) ? ' pr-row-wide' : ''}${label === 'Time Limit' ? ' pr-row-limit' : ''} flex items-center justify-between gap-5"
              style="background:${gold ? 'rgba(242,193,78,0.14)' : 'rgba(6,14,26,0.45)'};
                     border:1px solid ${gold ? 'rgba(242,193,78,0.4)' : 'transparent'};">
             <span class="t-label t-label-sm" style="color:${gold ? '#f2c14e' : '#9fd3dd'};">${label}</span>
@@ -478,14 +485,16 @@ function renderVenueDetail(key) {
     const recordBlock = `
         <div class="pr-record shrink-0" style="background:rgba(6,14,26,0.4); border-radius:14px;
                     border:1px solid ${rec.mine ? 'rgba(242,193,78,0.4)' : 'rgba(255,255,255,0.18)'};">
-            <div class="flex items-center justify-between gap-4">
+            <div class="pr-record-head">
                 <span class="t-label t-label-sm" style="color:${rec.mine ? '#f2c14e' : '#dbeafe'};">${rec.label}</span>
                 <button class="t-label t-label-sm" onclick="openRecordsOverlay()"
                         style="background:none; border:none; padding:0; cursor:pointer; color:#8fd8d0;
-                               text-decoration:underline; text-underline-offset:3px; white-space:nowrap;">All records &rarr;</button>
+                               text-decoration:underline; text-underline-offset:3px; white-space:nowrap;"><span class="pr-rec-long">All records</span><span class="pr-rec-short">Records</span> &rarr;</button>
             </div>
-            <div class="t-mono pr-record-time" style="color:${rec.mine ? '#f2c14e' : '#ffffff'};">${rec.t != null ? formatBestTime(rec.t) : '&mdash;'}</div>
-            ${best ? `<div class="flex items-center gap-2" style="margin-top:4px;">${starStrip(best.stars, 13)}<span class="t-label t-label-xs" style="color:#9fb2cc;">${best.stars >= 4 ? 'Four stars here' : best.stars > 0 ? `${best.stars} star${best.stars > 1 ? 's' : ''} here` : 'No stars here yet'}</span></div>` : ''}
+            <div class="pr-record-body">
+                <div class="t-mono pr-record-time" style="color:${rec.mine ? '#f2c14e' : '#ffffff'};">${rec.t != null ? formatBestTime(rec.t) : '&mdash;'}</div>
+                ${best ? `<div class="pr-record-stars">${starStrip(best.stars, 13)}<span class="t-label t-label-xs pr-record-stars-text" style="color:#9fb2cc;">${best.stars >= 4 ? 'Four stars here' : best.stars > 0 ? `${best.stars} star${best.stars > 1 ? 's' : ''} here` : 'No stars here yet'}</span></div>` : ''}
+            </div>
             ${recordsEligible() ? '' : `<div class="t-label t-label-xs" style="color:#9fb2cc; margin-top:4px;">Records are set in time trials</div>`}
         </div>`;
 
@@ -497,6 +506,7 @@ function renderVenueDetail(key) {
         <div class="t-display uppercase pr-venue-title${longName}">${c.name || c.tag || key}</div>
         <div class="pr-blurb">${c.blurb || ''}</div>
         ${recordBlock}
+        ${venueObjectivesStrip(key)}
         <!-- CHART LEFT, FACTS RIGHT (design 9a). The chart is the picture and gets
              the room: this row takes ALL the slack the briefing leaves (flex-grow,
              not margin-top:auto), so the chart scales up into it — as big as the
@@ -518,6 +528,77 @@ function renderVenueDetail(key) {
         </div>`;
     layoutVenueCourseMap(pending);
 }
+
+// ── The venue's objectives ──────────────────────────────────────────────────
+// Every character earned at a venue, on its card: a face per objective (a silhouette until
+// earned, a "?" for one whose art has not shipped) and a button to the full list. Nothing is
+// hidden — the list spells every objective out (Wes, Sep 25 2026). One compact row, because
+// the race-day board does not scroll.
+function venueObjectivesStrip(key) {
+    if (!window.Unlocks || !Unlocks.enforced()) return '';
+    const list = Unlocks.forVenue(key);
+    if (!list.length) return '';
+    const got = list.filter(a => Unlocks.isEarned(a.char)).length;
+    const faces = list.map(a => venueObjectiveFace(a, 30)).join('');
+    return `
+        <button type="button" class="pr-objectives shrink-0" onclick="openVenueObjectives('${key}')"
+                style="background:rgba(6,14,26,0.4); border:1px solid rgba(255,255,255,0.14); border-radius:12px; padding:7px 12px; cursor:pointer; text-align:left;">
+            <span class="t-label t-label-sm pr-obj-label" style="color:#dbeafe; white-space:nowrap;">Earn here &middot; ${got}/${list.length}</span>
+            <span class="pr-obj-faces">${faces}</span>
+            <span class="t-label t-label-sm pr-obj-link" style="color:#8fd8d0; white-space:nowrap; text-decoration:underline; text-underline-offset:3px;">Objectives &rarr;</span>
+        </button>`;
+}
+function venueObjectiveFace(a, size) {
+    const earned = Unlocks.isEarned(a.char);
+    if (!Unlocks.shipped(a.char)) {
+        return `<span title="Coming soon" style="width:${size}px;height:${size}px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08);color:#7787a0;font-weight:800;font-size:${Math.round(size * 0.45)}px;">?</span>`;
+    }
+    return `<img src="assets/images/competitors/${a.char.toLowerCase()}.png" alt="" draggable="false"
+                 style="width:${size}px;height:${size}px;border-radius:50%;background:${earned ? 'rgba(242,193,78,0.18)' : 'rgba(255,255,255,0.06)'};
+                        ${earned ? 'box-shadow:0 0 0 2px #f2c14e;' : 'filter:brightness(0) opacity(0.55);'}">`;
+}
+const _RUNG_LABEL = { 'first-win': 'First win', mechanic: 'Mechanic', explorer: 'Explorer', target: 'Target time', 'four-stars': 'Four stars', wildlife: 'Wildlife', lessons: 'Every lesson', start: 'The start', report: 'Report card' };
+function openVenueObjectives(key) {
+    let host = document.getElementById('venue-objectives');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'venue-objectives';
+        host.className = 'absolute inset-0 bg-slate-900/75 backdrop-blur z-[75] flex flex-col items-center justify-center p-4 pointer-events-auto';
+        host.addEventListener('click', (e) => { if (e.target === host) closeVenueObjectives(); });
+        (UI.preRaceOverlay ? UI.preRaceOverlay.parentElement : document.body).appendChild(host);
+    }
+    const d = window.VenueDoc && VenueDoc.get(key);
+    const name = key === 'pond' ? 'Sailing School' : ((d && d.card && d.card.name) || key);
+    const rows = Unlocks.forVenue(key).map(a => {
+        const earned = Unlocks.isEarned(a.char), shipped = Unlocks.shipped(a.char);
+        const who = earned || !shipped ? a.char : '';
+        return `
+            <div class="flex items-center gap-3" style="padding:10px 0; border-bottom:1px solid rgba(255,255,255,0.07);">
+                ${venueObjectiveFace(a, 46)}
+                <div style="min-width:0; flex:1;">
+                    <div class="flex items-center gap-2">
+                        <span class="t-label t-label-xs" style="color:#8fd8d0;">${_RUNG_LABEL[a.rung] || ''}</span>
+                        ${who ? `<span class="t-label t-label-xs" style="color:${earned ? '#f2c14e' : '#7787a0'};">${who}${!shipped ? ' &middot; coming soon' : ''}</span>` : ''}
+                    </div>
+                    <div class="t-display uppercase" style="font-size:17px; line-height:1.15; color:${earned ? '#f2c14e' : '#eef3fb'};">${a.title}</div>
+                    <div style="font-size:13px; font-weight:700; color:#9fb2cc; margin-top:2px;">${Unlocks.hintOf(a)}</div>
+                </div>
+                <span style="font-size:18px; color:${earned ? '#34d399' : 'transparent'};">&#10003;</span>
+            </div>`;
+    }).join('');
+    host.innerHTML = `
+        <div class="ov-card w-full" style="max-width:520px; padding:20px 24px; max-height:86vh; overflow-y:auto;">
+            <div class="flex items-center justify-between">
+                <span class="ov-title" style="font-size:22px;">${name}</span>
+                <button type="button" onclick="closeVenueObjectives()" style="font-size:15px; color:#66748c;" class="hover:text-white transition-colors">&#10005;</button>
+            </div>
+            <div class="t-label t-label-sm" style="color:#9fb2cc; margin-top:4px;">Characters to earn here</div>
+            <div style="margin-top:6px;">${rows}</div>
+        </div>`;
+    host.classList.remove('hidden');
+}
+function closeVenueObjectives() { const h = document.getElementById('venue-objectives'); if (h) h.classList.add('hidden'); }
+function venueObjectivesOpen() { const h = document.getElementById('venue-objectives'); return !!(h && !h.classList.contains('hidden')); }
 
 // ── The course chart ────────────────────────────────────────────────────────
 // "4 legs" says almost nothing about a race; the SHAPE of the course says how to sail
@@ -1593,7 +1674,12 @@ function openCharacterPicker() {
     // grid measures zero — which would shrink every boat to the 104px floor.
     UI.characterPicker.classList.remove('hidden');
     grid.innerHTML = '';
-    for (const cfg of charactersAlphabetical()) {
+    // Yours first, A to Z; then every character with a written achievement you have not
+    // earned yet, as a silhouette. Characters with no achievement yet are not on the board.
+    const all = charactersAlphabetical();
+    const open = window.Unlocks ? all.filter(c => Unlocks.isUnlocked(c.name)) : all;
+    const toEarn = window.Unlocks ? all.filter(c => !Unlocks.isUnlocked(c.name) && Unlocks.gated(c.name)) : [];   // all from AI_CONFIG, so shipped
+    for (const cfg of open) {
         const cell = document.createElement('button');
         cell.type = 'button';
         cell.dataset.char = cfg.name;
@@ -1620,7 +1706,119 @@ function openCharacterPicker() {
             renderProfileBoat(canvas, cfg);   // sprites still loading; it will retry itself
         }
     }
+    if (toEarn.length) {
+        const head = document.createElement('div');
+        head.style.cssText = 'grid-column:1/-1; margin-top:14px;';
+        head.innerHTML = `<div class="t-label" style="font-size:11px; letter-spacing:0.22em; color:#8fa3bd;">Still to earn · ${toEarn.length}</div>`;
+        grid.appendChild(head);
+        const career = Unlocks.career();
+        for (const cfg of toEarn) {
+            const cell = document.createElement('div');
+            cell.dataset.char = cfg.name;
+            cell.dataset.locked = '1';
+            cell.innerHTML = lockedBandHTML(Unlocks.achievementFor(cfg.name), cfg, career);
+            grid.appendChild(cell);
+        }
+    }
 }
+
+// A character you have not earned: their portrait as a silhouette, the achievement's title
+// where the name goes, and the way to earn it. No boat, no colours — the livery is part of
+// the reveal.
+function lockedBandHTML(ach, cfg, career) {
+    const prog = ach.progress ? ach.progress(career) : null;
+    const progLine = prog ? `<span class="t-mono" style="color:#f2c14e; margin-left:8px;">${Math.min(prog[0], prog[1])} / ${prog[1]}</span>` : '';
+    return `
+        <div class="rounded-xl overflow-hidden border border-white/10 relative" style="background:linear-gradient(105deg, #1c2638 0%, #141d2d 60%, rgba(15,23,42,0.92) 100%);">
+            <div class="flex items-center relative" style="gap:20px;">
+                <img src="assets/images/competitors/${cfg.name.toLowerCase()}.png" alt="" class="object-cover shrink-0" draggable="false"
+                     style="width:128px; height:128px; filter:brightness(0) opacity(0.55);">
+                <div style="padding:16px 16px 16px 0; min-width:0;">
+                    <div class="t-label" style="font-size:10.5px; letter-spacing:0.22em; color:#66748c;">&#128274; Locked</div>
+                    <div class="t-display uppercase leading-tight" style="font-size:26px; color:#c4d2e6; margin-top:2px;">${ach.title}</div>
+                    <div style="font-size:14px; font-weight:700; color:#9fb2cc; margin-top:4px;">${Unlocks.hintOf(ach)}${progLine}</div>
+                </div>
+            </div>
+        </div>`;
+}
+
+// ── THE UNLOCK CEREMONY ─────────────────────────────────────────────────────────
+// Every unlock is granted the moment it is earned (Unlocks.poll); the cards present one at
+// a time, weakest to strongest, over whatever screen is up. Past four in one go, the weakest
+// collapse into one "+N more" card that goes first, and the last card offers the picker.
+const UNLOCK_CARDS_MAX = 4;
+let _unlockQueue = null;
+function presentUnlocks() {
+    if (!window.Unlocks || _unlockQueue) return;
+    const names = Unlocks.unseen();
+    if (!names.length) return;
+    const shown = names.length > UNLOCK_CARDS_MAX + 1 ? names.slice(-UNLOCK_CARDS_MAX) : names;
+    const rest = names.filter(n => !shown.includes(n));
+    // The strongest go last; the "+N more" card collects the weakest, and sits before them.
+    _unlockQueue = { cards: rest.length ? [{ more: rest }, ...shown.map(n => ({ name: n }))] : shown.map(n => ({ name: n })), i: 0 };
+    renderUnlockCard();
+}
+function renderUnlockCard() {
+    const host = document.getElementById('unlock-screen');
+    if (!host || !_unlockQueue) return;
+    const q = _unlockQueue, card = q.cards[q.i];
+    const total = q.cards.length, last = q.i === total - 1;
+    const body = document.getElementById('unlock-body');
+    const btn = document.getElementById('unlock-next');
+    const count = document.getElementById('unlock-count');
+    if (count) count.textContent = total > 1 ? `${q.i + 1} of ${total}` : '';
+    const seeBtn = document.getElementById('unlock-see');
+    if (card.more) {
+        const faces = card.more.map(n => `<img src="assets/images/competitors/${n.toLowerCase()}.png" alt="${n}" title="${n}" style="width:64px;height:64px;border-radius:12px;background:rgba(255,255,255,0.06);">`).join('');
+        body.innerHTML = `
+            <div class="flex flex-wrap justify-center" style="gap:8px; margin-top:14px;">${faces}</div>
+            <div class="t-display uppercase" style="font-size:32px; margin-top:14px;">+${card.more.length} more</div>
+            <div style="font-size:14px; color:#9fb2cc; margin-top:6px;">${card.more.join(', ')} also joined the club.</div>`;
+    } else {
+        const cfg = AI_CONFIG.find(c => c.name === card.name);
+        const ach = Unlocks.achievementFor(card.name);
+        const band = cfg ? bandColorFor(cfg.hull, cfg.spinnaker) : '#1c2638';
+        body.innerHTML = `
+            <div class="rounded-xl" style="margin-top:14px; padding:14px 0 6px; background:linear-gradient(180deg, ${band} 0%, ${band}55 60%, transparent 100%);">
+                <img src="assets/images/competitors/${card.name.toLowerCase()}.png" alt="${card.name}" draggable="false" style="width:190px;height:190px;margin:0 auto;display:block;">
+            </div>
+            <div class="t-display uppercase" style="font-size:40px; line-height:1; margin-top:8px;">${card.name}</div>
+            ${cfg ? `<div class="t-mono" style="font-size:13px; color:#9fb2cc; margin-top:4px;">${cfg.creature}</div>` : ''}
+            ${ach ? `<div class="t-display italic uppercase" style="font-size:19px; color:#f2c14e; margin-top:16px;">${ach.title}</div>
+            <div style="font-size:14px; font-weight:700; color:#dce6f2; margin-top:4px;">${Unlocks.hintOf(ach)}</div>` : ''}
+            <div style="font-size:12.5px; color:#7787a0; margin-top:12px;">Now in the picker, and racing against you from your next race.</div>`;
+    }
+    // The picker is offered once, on the last card of a pile — never earlier, where it would
+    // skip the cards still to come.
+    if (seeBtn) seeBtn.classList.toggle('hidden', !(last && total > 1));
+    if (btn) btn.querySelector('span').textContent = last ? 'CONTINUE' : 'NEXT';
+    host.classList.remove('hidden');
+    if (window.confetti && !card.more) {
+        try { confetti({ particleCount: 90, spread: 75, startVelocity: 38, origin: { y: 0.3 }, zIndex: 90 }); } catch (e) {}
+    }
+}
+function advanceUnlockCard(openPicker) {
+    const q = _unlockQueue;
+    if (!q) return;
+    const card = q.cards[q.i];
+    Unlocks.markSeen(card.more ? card.more : [card.name]);
+    q.i++;
+    if (openPicker || q.i >= q.cards.length) {
+        _unlockQueue = null;
+        document.getElementById('unlock-screen').classList.add('hidden');
+        if (openPicker) openCharacterPicker();
+        return;
+    }
+    renderUnlockCard();
+}
+function unlockCeremonyOpen() { return !!_unlockQueue; }
+(() => {
+    const next = document.getElementById('unlock-next');
+    if (next) next.addEventListener('click', (e) => { e.preventDefault(); advanceUnlockCard(false); });
+    const see = document.getElementById('unlock-see');
+    if (see) see.addEventListener('click', (e) => { e.preventDefault(); advanceUnlockCard(true); });
+})();
+
 function closeCharacterPicker() {
     if (UI.characterPicker) UI.characterPicker.classList.add('hidden');
 }
@@ -1942,6 +2140,9 @@ function beginRace() {
     if (window.Series && Series.active && !Series.locked()) {
         Series.lockFleet(state.boats.filter(b => !b.isPlayer).map(b => b.name), settings.character);
     }
+    // A new rival's promised races are spent here, at the gun — not when the fleet was drawn,
+    // which also happens every time a venue is merely browsed.
+    if (window.Unlocks && !(window.School && School.active)) Unlocks.onRaceStart(state.boats);
     UI.leaderboard.classList.remove('hidden'); // Or hidden if prestart logic handles it
     // Prestart logic usually hides leaderboard until start? No, updateLeaderboard logic: if 'prestart' UI.leaderboard.classList.add('hidden');
 
@@ -1984,6 +2185,11 @@ function loadSettings() {
         settings.autoTrim = !parsed.manualTrim;
     }
     delete settings.manualTrim;
+    // A character you have not earned (a save from before unlocks, or a new game) falls
+    // back to the default skipper — or the first starter, if the default is ever earned too.
+    if (window.Unlocks && !Unlocks.isUnlocked(settings.character)) {
+        settings.character = Unlocks.isUnlocked(DEFAULT_SETTINGS.character) ? DEFAULT_SETTINGS.character : STARTING_TEN[0];
+    }
     applySettings();
 }
 
@@ -2201,9 +2407,35 @@ function toggleSettings(show) {
         if (UI.abandonScreen) UI.abandonScreen.classList.add('hidden');
     } else {
         UI.settingsScreen.classList.add('hidden');
+        toggleNewGame(false);
         state.paused = false;
         lastTime = 0;
     }
+}
+
+// NEW GAME. The confirm stacks over Settings; keeping your game is the default (and ESC).
+function toggleNewGame(show) {
+    if (!UI.newGameScreen) return;
+    UI.newGameScreen.classList.toggle('hidden', !show);
+}
+
+// Everything a player EARNS lives under these keys; erasing them is a new game. Settings are
+// preferences and stay — except who you sail as and which venue is up, which belong to the
+// game you are leaving. Editor/scenario stores and the dev `regatta_record` flag are not
+// the player's and are never touched.
+// ⚠️ A NEW PERSISTED PROGRESS KEY MUST BE ADDED HERE, or it survives a new game.
+function startNewGame() {
+    const keys = [SCHOOL_PROGRESS_KEY, TROPHIES_KEY, RESULT_BESTS_KEY, RECORDS_KEY, 'regatta_venue_stats',
+                  UNLOCKS_KEY, CAREER_KEY];
+    for (const k of keys) { try { localStorage.removeItem(k); } catch (e) {} }
+    settings.character = window.Unlocks ? STARTING_TEN[0] : DEFAULT_SETTINGS.character;
+    settings.venue = DEFAULT_SETTINGS.venue;
+    settings.lastRaceVenue = DEFAULT_SETTINGS.lastRaceVenue;
+    try { localStorage.setItem('regatta_settings', JSON.stringify(settings)); } catch (e) {}
+    // Reload rather than unwind: the school, the shelf, the record book, the venue stats
+    // and any cup in progress all hold in-memory copies, and a fresh page is the only
+    // state that is certainly the same as a first visit.
+    location.reload();
 }
 
 // Event Listeners
@@ -2224,6 +2456,9 @@ if (UI.settingsButton) UI.settingsButton.addEventListener('click', (e) => { e.pr
 if (UI.preRaceSettingsBtn) UI.preRaceSettingsBtn.addEventListener('click', (e) => { e.preventDefault(); toggleSettings(true); UI.preRaceSettingsBtn.blur(); });
 if (UI.closeSettings) UI.closeSettings.addEventListener('click', () => toggleSettings(false));
 if (UI.saveSettings) UI.saveSettings.addEventListener('click', () => toggleSettings(false));
+if (UI.newGameButton) UI.newGameButton.addEventListener('click', (e) => { e.preventDefault(); UI.newGameButton.blur(); toggleNewGame(true); });
+if (UI.newGameKeep) UI.newGameKeep.addEventListener('click', (e) => { e.preventDefault(); toggleNewGame(false); });
+if (UI.newGameConfirm) UI.newGameConfirm.addEventListener('click', (e) => { e.preventDefault(); startNewGame(); });
 // Segments/swatches write through the hidden controls so the existing change/
 // input listeners (and anything else watching them) keep working unchanged.
 document.querySelectorAll('#camera-segs .ov-seg').forEach(b => b.addEventListener('click', () => {
@@ -2750,6 +2985,8 @@ function showResults() {
     renderResultsRows(sorted, leader, fleetExtremes(), gapScale);
     renderResultsFootnote(leader);
     styleResultsButtons();
+    // Achievements: counted once the player's place is final, then the cards.
+    if (window.Unlocks) { Unlocks.poll(sorted); presentUnlocks(); }
 }
 
 // Venue, breeze, fleet size — and whether the race is actually over, which it often is
@@ -3481,6 +3718,7 @@ function showClubhouse() {
     if (!UI.clubhouse) return;
     refreshClubhouse();
     _chShow(UI.clubhouse);
+    if (typeof presentUnlocks === 'function') presentUnlocks();   // anything earned on the way out
 }
 // Every door shows its state; the school keeps the primary dress until you graduate.
 function refreshClubhouse() {
@@ -3514,6 +3752,26 @@ function refreshClubhouse() {
         }
     }
     const st = $('door-school-state'); if (st) { st.textContent = grad ? 'Graduated' : 'Not yet graduated'; st.style.color = grad ? '#7f8ea9' : '#7ff0d4'; }
+    // The school's characters to earn, under the blurb — its own "venue card", since the
+    // pond never goes through the race board. A click opens the list, not the school.
+    if (door && window.Unlocks && Unlocks.enforced()) {
+        const body = door.querySelector('.ch-door-body');
+        let strip = body && body.querySelector('.ch-earn');
+        if (body && !strip) {
+            strip = document.createElement('div'); strip.className = 'ch-earn';
+            strip.style.cssText = 'display:flex; align-items:center; gap:8px; margin-top:8px; cursor:pointer;';
+            strip.addEventListener('click', (e) => { e.stopPropagation(); openVenueObjectives('pond'); });
+            const blurb = body.querySelector('.ch-door-blurb');
+            if (blurb) blurb.after(strip); else body.appendChild(strip);
+        }
+        if (strip) {
+            const list = Unlocks.forVenue('pond');
+            const got = list.filter(a => Unlocks.isEarned(a.char)).length;
+            strip.innerHTML = `<span class="t-label t-label-xs" style="color:#dbeafe; white-space:nowrap;">Earn here &middot; ${got}/${list.length}</span>`
+                + `<span style="display:flex; gap:3px;">${list.map(a => venueObjectiveFace(a, 22)).join('')}</span>`
+                + `<span class="t-label t-label-xs" style="color:#8fd8d0; text-decoration:underline; text-underline-offset:3px; white-space:nowrap;">Objectives &rarr;</span>`;
+        }
+    }
     const cta = $('door-school-cta'); if (cta) cta.innerHTML = (grad ? 'Sail again ' : 'Start school ') + _CH_ARROW;
     const t = Series.trophies();
     const won = Series.cupsWon();
@@ -3739,6 +3997,7 @@ function styleResultsButtons() {
 function proceedToStandings() {
     if (!window.Series || !Series.active) return;
     if (!Series.active.results[Series.active.index]) Series.recordRace(finishOrder());
+    if (window.Unlocks) { Unlocks.flush(finishOrder()); presentUnlocks(); }
     const final = Series.finished();
     if (final) Series.recordFinal();
     renderStandings(final);

@@ -1621,6 +1621,9 @@ function updateBoatRaceState(boat, dt) {
 
         if (Math.abs(rs.penaltyRot) >= Math.PI * 2) {
             rs.penaltyTurnsOwed--;
+            // A turn actually sailed — achievements count it (Wiggle). An event, not a
+            // raceState field: every raceState primitive is in the golden traces' hash.
+            if (boat.isPlayer) GameEvents.emit('player-penalty-served');
             rs.penaltyRot = 0;
             if (rs.penaltyTurnsOwed <= 0) {
                 rs.penalty = false;

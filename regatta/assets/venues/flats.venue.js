@@ -8618,7 +8618,7 @@ window.VENUE_DOC["flats"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 480,
+    "cutoff": 600,
     "paths": {
       "sig": "v3-6ea9151e-ck3",
       "legs": [

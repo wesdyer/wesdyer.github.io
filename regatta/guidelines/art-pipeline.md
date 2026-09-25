@@ -34,7 +34,8 @@ no zoom (`state.camera` in `script.js` has `x`/`y` and nothing else), so at
 `deviceScaleFactor: 1` **one world unit is exactly one screen pixel**. A prop declared
 `"world": 70` occupies 70px on screen. Boat parts set the convention the sprite track
 follows: a 1024 master, baked at 4× display size, drawn down from the bake
-(`BOAT_SPRITE_SCALE = 16`, `BOAT_SPRITE_BAKE = 4` — a boat's box is 64 units).
+(`BOAT_SPRITE_SCALE = 16`, `BOAT_SPRITE_BAKE = 4` — a boat's box is 64 units). What a unit *means* in the real world (10 cm; the boat is 18 ft) is set in
+[scale.md](scale.md).
 
 ## 2. Roles are a design contract, not a taxonomy — **Rule**
 

@@ -106,6 +106,12 @@ async function saveScreenshot() {
 }
 
 window.addEventListener('keydown', (e) => {
+    // An unlock card owns the keyboard: Enter, Space or Esc moves to the next card, and
+    // nothing leaks through to pause a race or leave the results page underneath it.
+    if (typeof unlockCeremonyOpen === 'function' && unlockCeremonyOpen()) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); advanceUnlockCard(false); }
+        return;
+    }
     if (state.race.status === 'waiting') {
         // Settings and the record book are reachable from the clubhouse, so their
         // keys work there too; everything else on this handler is race-only and
@@ -113,6 +119,9 @@ window.addEventListener('keydown', (e) => {
         const settingsOpen = UI.settingsScreen && !UI.settingsScreen.classList.contains('hidden');
         const recordsEl = document.getElementById('records-overlay');
         const recordsOpen = recordsEl && !recordsEl.classList.contains('hidden');
+        const newGameOpen = UI.newGameScreen && !UI.newGameScreen.classList.contains('hidden');
+        if (newGameOpen) { if (e.key === 'Escape') toggleNewGame(false); return; }   // the confirm owns the keys
+        if (typeof venueObjectivesOpen === 'function' && venueObjectivesOpen()) { if (e.key === 'Escape') closeVenueObjectives(); return; }
         if (e.key === 'F2') { e.preventDefault(); toggleSettings(); }
         else if (e.key === 'Escape' && settingsOpen) toggleSettings(false);
         else if (e.key === 'Escape' && recordsOpen) closeRecordsOverlay();
@@ -123,6 +132,13 @@ window.addEventListener('keydown', (e) => {
             if (UI.abandonScreen && !UI.abandonScreen.classList.contains('hidden')) { toggleAbandon(false); togglePause(false); return; }
             if (typeof clubhouseBack === 'function' && clubhouseBack()) e.preventDefault();
         }
+        return;
+    }
+
+    // The new-game confirm owns the keyboard while it is up: ESC keeps your game, and
+    // nothing leaks through to steer a paused boat or close the Settings under it.
+    if (UI.newGameScreen && !UI.newGameScreen.classList.contains('hidden')) {
+        if (e.key === 'Escape') toggleNewGame(false);
         return;
     }
 

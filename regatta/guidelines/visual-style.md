@@ -665,6 +665,16 @@ three-quarter portrait, transparent background, expressive face, strong dark out
 outline, simplified interior linework, wearing a distinctive modern life jacket with
 zipper and belt, clean cel shading, readable at 64 px, no scenery.
 
+*In practice (Sep 25 2026):* the working prompt for a competitor is never hand-written from
+this text. It is assembled by `python3 art/prompt.py <key>` from the character's `portrait`
+entry in `art/manifest.json`, whose subject carries the vest colours (the proposed hull and
+spinnaker) and the species signature; a character without an entry has no prompt (Bask's
+`KeyError`). Ask for the **dark outline straight onto transparency**: a light halo or sticker
+rim reads as a cut-out on the navy profile band (Wake's had one and was peeled by hand). Ship
+a delivery with `python3 art/ship_portrait.py <key>`. It refuses a light rim unless given
+`--peel`, frames the portrait like the rest of the roster, measures the vest, and writes a
+sheet at picker sizes. The whole checklist is the `ship-character` skill.
+
 **Gameplay sprite add-on** — Strict top-down orthographic game sprite, transparent
 background, heading immediately readable, simplified geometric construction, strong
 outer silhouette, limited shading, no perspective, no water, no cast scenery,

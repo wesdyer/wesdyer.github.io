@@ -6456,7 +6456,7 @@ window.VENUE_DOC["otter"] = {
         }
       ]
     },
-    "cutoff": 420
+    "cutoff": 600
   },
   "wind": {
     "regions": [
@@ -13580,5 +13580,8 @@ window.VENUE_DOC["otter"] = {
       "heading": 2.1115389243549054,
       "scale": 1.85
     }
-  ]
+  ],
+  "records": {
+    "provisional": 225
+  }
 };

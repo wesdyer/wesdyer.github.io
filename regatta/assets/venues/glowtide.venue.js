@@ -6084,7 +6084,7 @@ window.VENUE_DOC["glowtide"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 360,
+    "cutoff": 600,
     "paths": {
       "sig": "v3-23c828ce-dil",
       "legs": [
@@ -43729,5 +43729,8 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 0,
       "scale": 2.3368143996606845
     }
-  ]
+  ],
+  "records": {
+    "provisional": 220
+  }
 };

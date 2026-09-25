@@ -1292,6 +1292,24 @@ function drawSquallShadows(ctx) {
 // is long fast diagonal strokes plus a faint washing veil; every streak is deterministic
 // from its own index (render must not touch the eval RNG stream). Drawn over the whole
 // frame in screen space: rain falls past the CAMERA, not past any one patch of water.
+// WHICH PART OF A SQUALL is (x, y) in: 'front' (inside the cell and more than a quarter of
+// its depth ahead of centre — the boosted leading strip), 'core' (the rest of the cell),
+// 'wake' (the deep middle of the dead-air ellipse behind it), or null. Read-only; the same
+// geometry as getWindAt's squall block. Pearl Lagoon's Ride the Cell objective reads it
+// (checkSquallRide, course.js), and eval/_lagoon_squall.js measured with it.
+function squallZoneAt(x, y) {
+    if (!state.squalls || !state.squalls.length) return null;
+    let z = null;
+    for (const q of state.squalls) {
+        const ux = -Math.sin(q.course), uy = Math.cos(q.course), dx = x - q.x, dy = y - q.y;
+        const along = dx * ux + dy * uy, across = dx * uy - dy * ux;
+        const d2 = along * along / (q.ry * q.ry) + across * across / (q.rx * q.rx);
+        if (d2 < 1) { if (along > 0.25 * q.ry) return 'front'; z = 'core'; continue; }
+        const wa = along + q.ry * 1.6, wd2 = wa * wa / (q.ry * q.ry * 1.69) + across * across / (q.rx * q.rx * 0.81);
+        if (wd2 < 0.5 && !z) z = 'wake';
+    }
+    return z;
+}
 function squallRainAt(x, y) {
     let best = 0;
     if (!state.squalls) return 0;

@@ -35,6 +35,11 @@ function update(dt) {
     // No dt: every vessel is evaluated straight from the race clock, so it cannot drift
     // with the frame rate the way an integrated position would.
     updateTraffic();
+    // Venue feats read off the player's own sailing (sim/course.js) — read-only.
+    checkGlassPass();
+    checkSquallRide();
+    checkLandfall();
+    checkSwampRoute();
     // The swell's own clock. Advanced from dt like everything else, so it pauses with the
     // race and is identical for a given seed — a wave field is pure trigonometry and must
     // never reach for the RNG stream. No-op off the ocean.
@@ -378,6 +383,9 @@ function update(dt) {
     // Both are RNG-free and purely visual (drifting props force contact:none).
     updateDriftingProps(dt);
     updateJellyDrifts(dt);
+    // The venue's animals (wildlife.js): own PRNG, touches no boat — sim-clocked only so the
+    // birds the player sees are where a wildlife objective is judged.
+    if (window.Wildlife) Wildlife.update(dt);
     // WHITECAPS, SURF SPRAY AND THE BOW UPWIND. After the boats, because two of the three
     // read `boat.swell` and it is written in updateBoat. Its own particle arrays and its
     // own PRNG, so it can neither be seen by the sim nor perturb it. No-op off the ocean.
@@ -468,6 +476,8 @@ function draw() {
     // over the cat's-paw tints, because foam floats on whatever colour the water is. Still
     // UNDER the fleet: the hull silhouette stays clean (race-view.md §7).
     if (window.SeaFX) window.SeaFX.draw(ctx, state);
+    // Porpoises rolling and bait boils: in the water, under the land and the fleet.
+    if (window.Wildlife) Wildlife.drawWater(ctx);
 
     // ...but a fin cutting the surface and the bubbles behind it are ON the
     // water, so they go over the crests the body sits beneath.
@@ -594,6 +604,8 @@ function draw() {
     // above, which is for a thing the WATER holds up and which the land therefore covers.
     // Cached world tile; drifters draw live — see drawSurfacePropsCached.
     drawSurfacePropsCached(ctx);
+    // Birds sitting on a rock stand on the land, like a surface prop.
+    if (window.Wildlife) Wildlife.drawPerched(ctx);
     drawTraffic(ctx);
     if (!soloSail) {
         drawMarkShadows(ctx);
@@ -629,6 +641,8 @@ function draw() {
     // under the air layer, because a wind comet passes over a treetop too. Split by
     // what can fade: on-land crowns from a cached world tile, over-water crowns live.
     drawCanopyCached(ctx);
+    // Birds in the air pass over the fleet and the treetops.
+    if (window.Wildlife) Wildlife.drawAir(ctx);
 
     // Spindrift is AIR — wind-torn snow streaming off the ice, so it passes over hulls
     // and sails like the comets do (owner's call: over the boats). Gated on
@@ -1032,6 +1046,9 @@ function loop(timestamp) {
 }
 
 function resetGame() {
+    // Leaving a race whose place never settled on the results page (Rematch straight away,
+    // with a penalty's +15s still pending) still counts it — with the order as it stands.
+    if (window.Unlocks && state.boats.length && typeof finishOrder === 'function') Unlocks.flush(finishOrder());
     // The compile cache exists so ONE reset's many compile consumers (the editor's
     // checks, stats and inspectors) pay for one compile. A new reset may follow a
     // document edited in place — the editor's, or a test's — so the cache dies here,
@@ -1132,6 +1149,8 @@ function resetGame() {
         if (el) delete el.dataset.sig;
     }
     state.race.bestChecked = false;
+    // Achievements: this race counts into the career once (Unlocks.poll), never in school.
+    state.race.unlocks = { counted: false, pending: null, eligible: !(window.School && School.active) };
     state.race.legRecordsSet = [];
     state.race.recordResults = null;
     state.race.bestOutcome = null;
@@ -1154,7 +1173,11 @@ function resetGame() {
     // NEVER RACE YOURSELF. Two boats with one name and one face makes the leaderboard
     // unreadable and the edge indicators ambiguous. The draw count is unchanged at 9, so
     // the rng stream is the same length; only which nine come out differs.
-    const available = AI_CONFIG.filter(c => c.name !== settings.character);
+    // CHARACTERS ARE EARNED: a single race draws from the characters you have unlocked
+    // (Unlocks.fleetPool), and a newly earned one is owed a place in its first races. Both
+    // are no-ops under the eval harness — the pool is this same array and nobody is owed.
+    let available = AI_CONFIG.filter(c => c.name !== settings.character);
+    if (window.Unlocks && !school) available = Unlocks.fleetPool(available);
     if (school) {
         opponents.push(...School.classmateConfigs());   // three classmates, no rng
     } else if (window.Series && Series.active && Series.active.fleet) {
@@ -1164,10 +1187,14 @@ function resetGame() {
             const c = AI_CONFIG.find(a => a.name === n);
             if (c && c.name !== settings.character) opponents.push(c);
         }
-    } else for (let i = 0; i < fleetOpponents() && available.length > 0; i++) {
-        const idx = Math.floor(Math.random() * available.length);
-        opponents.push(available[idx]);
-        available.splice(idx, 1);
+    } else {
+        const owed = window.Unlocks ? Unlocks.rivalsFor(available).slice(0, fleetOpponents()) : [];
+        for (const c of owed) { opponents.push(c); available.splice(available.indexOf(c), 1); }
+        for (let i = owed.length; i < fleetOpponents() && available.length > 0; i++) {
+            const idx = Math.floor(Math.random() * available.length);
+            opponents.push(available[idx]);
+            available.splice(idx, 1);
+        }
     }
 
     // Determine favored end for start positioning bias

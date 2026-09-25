@@ -2819,7 +2819,7 @@ window.VENUE_DOC["ocean"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 360,
+    "cutoff": 600,
     "paths": {
       "sig": "v2-8f41ab0f-4wi",
       "legs": [

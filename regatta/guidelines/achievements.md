@@ -17,6 +17,72 @@ weak, duplicated another, or was mathematically unreachable at its own venue.
 
 ---
 
+## Sep 24–25 2026 — the approach as built (read this first)
+
+Everything below this section is the Aug 5 design. The character layer was **built** on
+Sep 24–25, and building it changed the design in the ways listed here. **Where this section
+and the rest of the file disagree, this section wins.** The per-venue character map, and what
+each venue actually got, now live in [venue-roster.md](venue-roster.md). The code is
+`js/game/unlocks.js`.
+
+**What holds from the Aug 5 design:** the starting ten, one achievement per character, earned
+characters joining your fleet, several unlocks in one race granted together (a queued
+ceremony, at most two new rivals guaranteed per race), the species rule, and the
+general families of Part 1 as the source for non-venue rows. First Season (A) is built.
+
+**What changed:**
+
+1. **Only the starting ten are free (Wes, Sep 24).** Everyone else is locked. A character is
+   on the board, shown in the picker as a silhouette with its objective, only once its row
+   exists in `unlocks.js`. Characters with no row yet are absent from the picker and the
+   fleet draw. A fresh game sails as Bixby.
+2. **Nothing is hidden (Wes, Sep 25).** Every objective is spelled out in player words: on
+   the silhouette, the venue card's objectives strip, and the ceremony. This replaces base
+   case 6's "secrets show nothing", rung 4's "zero hint text", the `?` slot, and the
+   **Hidden** tags on Splat, Knot, Skip and Lateen. Discovery now comes from going and
+   doing, not from finding out what to do.
+3. **The venue template is now First win · Mechanic · Explorer · Target time · Four stars**,
+   plus an optional **Wildlife** rung:
+   - **Explorer** replaces *Secret*. It keeps the idea (a costed detour off the fastest
+     line, found by looking) but is published, and it is usually built on one of the
+     venue's animals: put up the gulls, startle the moose.
+   - **Target time** replaces the auto-board record: beat the venue's target time in
+     **Time Trials**, the only mode where records count (`recordsEligible`).
+     - The target is the mean of Wes's recorded trajectories × 1.1, rounded UP to the next
+       5 s (`eval/set_venue_targets.js`).
+     - Every course has a 10:00 time limit (`course.cutoff: 600`).
+     - Wes records the trajectories after all the achievements are designed.
+   - **Four stars** replaces the manual-board record: one race with all four stars (win, no
+     penalties, lead at every mark, manual trim). The venue's four-star character must be a
+     +3 boat or better.
+   - **The template bends where a venue can't hold a rung.** The Sailing School forces auto
+     trim, so its fifth rung is a clean report card (Wisp). School objectives are judged
+     from the school's own events and can be re-earned on a replay.
+4. **Three animal types at every venue** (`js/wildlife.js`), and at least one carries an
+   objective.
+   - Base case 2 still holds for the GRANT: it is decided once, from the results page.
+   - But feats are caught live while racing, as GameEvents `'player-feat'`: only for the
+     player, only before they finish.
+   - This is the "ambient events" row of the dependency list, now built.
+5. **Design each venue with Wes first, then build.**
+   - Measure any threshold against the autopilot and the fleet before proposing it. At the
+     Lake, 2 kn through the glass was free (the autopilot never drops below 3.4 kn), so
+     the objective is 4.5 kn.
+   - At the Cove, crossing a ship's bow within 3 lengths was never free (the autopilot
+     comes no closer than 211 units).
+6. **Characters can be earned before their art ships** (`Unlocks.shipped`): the earn is kept
+   and the ceremony waits for the portrait.
+7. **Two engineering rules:**
+   - Evals never see any of this (`Unlocks.enforced()` is false under the harness).
+   - Nothing is ever added to `raceState`: every primitive there is in the golden-trace
+     hash, so achievement data travels on GameEvents or `state.race.unlocks`.
+
+**Built so far:** First Season; Lighthouse Cove, Sailing School and Stillwater Lake.
+**Workflow:** the `venue-objectives`, `venue-wildlife` and `ship-character` skills
+(`.claude/skills/` at the repo root).
+
+---
+
 ## The Starting Ten — free from race one
 
 Unchanged. Chosen in `roster-ranking.md` for personality coverage, ten distinct
@@ -53,7 +119,7 @@ the elder you out-sail to earn Snap.
    raced. Pending rivals get fleet-draw priority; a newly unlocked character is
    guaranteed a slot for its next 3 races — the game introduces your new rival.
 5. **Several unlocks in one race: grant them all.** See below.
-6. **Visible but not spoiled.** The picker shows earned characters plus
+6. *(Superseded Sep 25: nothing is hidden. See the top.)* **Visible but not spoiled.** The picker shows earned characters plus
    silhouettes with hint text for the next few achievable. Venue rungs 1–3 and 5
    appear on the venue card. **Venue secrets and gag unlocks show nothing at
    all** — not a silhouette, not a hint. Discovery is the entire reward.
@@ -90,6 +156,9 @@ Two things need designing so the pile-up doesn't turn into noise:
 ---
 
 ## The venue template — five rungs, every venue
+
+*(Superseded Sep 25 by First win · Mechanic · Explorer · Target time · Four stars. See the
+top. The reasoning about records below still describes the record system accurately.)*
 
 Ordered by typical difficulty, which is also the order a player meets them:
 
@@ -145,7 +214,7 @@ floes of penguins off the ice*. So:
   tax on racing rather than a reason to wander.
 - **Costed, not free.** Most secrets below cost you distance and still require a
   good result. "Detour and win anyway" is the shape.
-- **Zero hint text.** Rung 4 is the only rung with no silhouette in the picker.
+- ~~**Zero hint text.**~~ *(Superseded: every objective is published.)* Rung 4 is the only rung with no silhouette in the picker.
   It shows up in the venue's card as a blank slot with a "?" and nothing else.
 - **Discoverable by curiosity, not by grinding.** If the only way to find it is
   to race the venue fifty times, it's a burgee, not a secret.
@@ -192,17 +261,17 @@ which is the whole charm.
 
 ## A · First Season — general milestones, earnable anywhere (9)
 
-| Character | Title | Earned by |
-|---|---|---|
-| **Ripple** (Dolphin) | Welcome Aboard | Finish your first race. The day-one gift. |
-| **Wiggle** (Axolotl) | Everything Grows Back | Serve a penalty turn and clear it. Deliberately easy: your first penalty is the game's worst moment, and the animal that regrows anything arrives to flip it into a gift. Weak boat (−2), so the gift never bites back. |
-| **Scuttle** (Hermit Crab) | Clean Hands | Finish a race with zero penalties. |
-| **Skim** (Flying Fish) | Airborne | Hit 10 knots of boatspeed — the planing threshold. The moment the boat leaves the water is the moment you earn the fish that leaves the water. |
-| **Zing** (Flying Squirrel) | The Comeback | Win after rounding the **first mark** dead last. |
-| **Splat** (Blobfish) | Still Afloat | **Finish last for the first time.** *(was: 5 times)* Hidden. The first-failure gift, and the most reliable pattern in the whole research pass: the moment a player has their worst race, the meme legend turns up and says *me too*. Making them earn it five times over turns a consolation into a punishment. Last-place tiers live on as the Wooden Spoon burgee. |
-| **Snap** (Snapping Turtle) | Respect Your Elders | Finish directly ahead of Whiskers (a starter, so always available). |
-| **Hug** (Sea Star) | Ironclad | Finish 25 races. |
-| **Knot** (Nautilus) | Dead Reckoning | Finish exactly 5th, **three races in a row.** *(was: 3 times, ever)* Wes is right that the loose version happens by accident if you play enough — and an accident is a terrible way to meet the roster's cerebral planner. Consecutive makes it deliberate: you have to *aim* at 5th, three times running, which is a genuinely strange and funny thing to do on purpose. Hidden. |
+| Character                  | Title                 | Earned by                                                                                                                                                                                                                                                                                                                                                                         |
+| -------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Ripple** (Dolphin)       | Welcome Aboard        | Finish your first race. The day-one gift.                                                                                                                                                                                                                                                                                                                                         |
+| **Wiggle** (Axolotl)       | Everything Grows Back | Serve a penalty turn and clear it. Deliberately easy: your first penalty is the game's worst moment, and the animal that regrows anything arrives to flip it into a gift. Weak boat (−2), so the gift never bites back.                                                                                                                                                           |
+| **Scuttle** (Hermit Crab)  | Clean Hands           | Finish a race with zero penalties.                                                                                                                                                                                                                                                                                                                                                |
+| **Skim** (Flying Fish)     | Airborne              | Hit 10 knots of boatspeed — the planing threshold. The moment the boat leaves the water is the moment you earn the fish that leaves the water.                                                                                                                                                                                                                                    |
+| **Zing** (Flying Squirrel) | The Comeback          | Win after rounding the **first mark** dead last.                                                                                                                                                                                                                                                                                                                                  |
+| **Splat** (Blobfish)       | Still Afloat          | **Finish last for the first time.** *(was: 5 times)* Hidden. The first-failure gift, and the most reliable pattern in the whole research pass: the moment a player has their worst race, the meme legend turns up and says *me too*. Making them earn it five times over turns a consolation into a punishment. Last-place tiers live on as the Wooden Spoon burgee.              |
+| **Snap** (Snapping Turtle) | Respect Your Elders   | Finish directly ahead of Whiskers (a starter, so always available).                                                                                                                                                                                                                                                                                                               |
+| **Hug** (Sea Star)         | Ironclad              | Finish 25 races.                                                                                                                                                                                                                                                                                                                                                                  |
+| **Knot** (Nautilus)        | Dead Reckoning        | Finish exactly 5th, **three races in a row.** *(was: 3 times, ever)* Wes is right that the loose version happens by accident if you play enough — and an accident is a terrible way to meet the roster's cerebral planner. Consecutive makes it deliberate: you have to *aim* at 5th, three times running, which is a genuinely strange and funny thing to do on purpose. Hidden. |
 
 **On Zing vs Dozer.** Wes floated giving Zing "win after being last over the
 line" instead. That feat is already Dozer's (start last → podium), and the two
@@ -387,7 +456,9 @@ against an unwritten spec. **Duckling Pond** is the tutorial venue and sits
 outside the sixteen — it still carries a light track, because Paddle lives there.
 
 Legend: **1** witness · **2** mechanic · **3** record · **4** secret · **5** trim
-master. `NEW` = character to be built. `bench` = already sketched in
+master. *(These tracks are the Aug 5 sketches. The venues as designed and built, under the
+new template, are in [venue-roster.md](venue-roster.md), which supersedes this part venue by
+venue: the Cove, the School and the Lake so far.)* `NEW` = character to be built. `bench` = already sketched in
 `roster-ranking.md`.
 
 ## 1 · Lighthouse Cove `bay` — the front door
@@ -626,6 +697,10 @@ the whole thing is a Round the Cans course you could hold in your hands.
 
 ## Duckling Pond `pond` — the tutorial (outside the sixteen)
 
+*(As built Sep 25: Paddle wins the graduation race, Fuzz finishes every lesson, Oar crosses
+within 2 s of the gun in start practice, Bask sends the turtles off their log, Wisp graduates
+with a clean report card. Puddle was replaced by Bask. See venue-roster.md.)*
+
 | # | Character | Title | Earned by |
 |---|---|---|---|
 | 1 | **Paddle** (Mallard Drake) | Graduation | Complete the sailing school. The voice of the whole tutorial and its closing unlock — see `tutorial.md` §13. |
@@ -827,7 +902,7 @@ identified as "you won the race" at 9.
   before they ship. Tiny's old ≤7 kn at the windiest venue in the game is the
   cautionary tale, and Saffron (≤8 kn at the lagoon) and Croak (≤6 kn at the
   bayou) need the same check when wind regions are tuned.
-- **Hidden count.** Now 8 gag/hidden characters (Splat, Knot, Skip, Lateen, plus
+- ~~**Hidden count.**~~ *(Moot since Sep 25: nothing is hidden.)* Now 8 gag/hidden characters (Splat, Knot, Skip, Lateen, plus
   the four gag-adjacent secrets) on top of 16 venue secrets. The venue secrets
   are a *system* with its own affordance — a "?" slot on the venue card — so
   they don't dilute the hidden gags. But the gag count should not grow past 8.

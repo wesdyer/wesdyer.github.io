@@ -8898,7 +8898,7 @@ window.VENUE_DOC["arctic"] = {
         "lineId": "sf"
       }
     ],
-    "cutoff": 420,
+    "cutoff": 600,
     "paths": {
       "sig": "v2-c1390a9e-3tz",
       "legs": [
@@ -9790,5 +9790,8 @@ window.VENUE_DOC["arctic"] = {
       "heading": 1.771028758467148,
       "scale": 1.5
     }
-  ]
+  ],
+  "records": {
+    "provisional": 245
+  }
 };

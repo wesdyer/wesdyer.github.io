@@ -56,6 +56,7 @@ const School = {
     completeUnit(n) {
         const p = this.progress();
         this.saveProgress({ units: Object.assign({}, p.units || {}, { [n]: true }) });
+        if (window.Unlocks) Unlocks.schoolEvent('unit', { n });
     },
     unitsDone() {
         const p = this.progress(), u = p.units || {};
@@ -77,6 +78,7 @@ const School = {
         }
         this.active = true;
         this.unit = unit;
+        if (window.Unlocks) Unlocks.schoolSection();   // this section's feats start clean
         this._fade = null; this._handoff = null;   // a Skip/Restart mid-fade must not fire the old section's callback
         this._hint = null; this._tip = null; this._lines = [];   // the card starts each section clean
         this._deploy = null; this._deployKey = null;
@@ -459,8 +461,9 @@ const School = {
             d.station = this.snakeStation(d.k);
             const before = { x: d.x, y: d.y };
             const moving = this.swim(d, d.station, this.DUCK_SWIM, dt);
-            if (moving) d.h = this.headingOf(d.x - before.x, d.y - before.y);
-            else d.h = normalizeAngle(Math.atan2(d.x - p.x, -(d.y - p.y)));   // holding: facing away from the boat
+            const want = moving ? this.headingOf(d.x - before.x, d.y - before.y)
+                                : normalizeAngle(Math.atan2(d.x - p.x, -(d.y - p.y)));   // holding: facing away from the boat
+            d.h = normalizeAngle(d.h + normalizeAngle(want - d.h) * Math.min(1, dt * 8));
         }
     },
     tickUpwind(s, r) {
@@ -985,6 +988,7 @@ const School = {
                     : late <= 1.5 ? 'Great start! Right on the gun.'
                     : 'Nice start! You crossed right after the gun.';
                 this.goal(null);
+                if (window.Unlocks) Unlocks.schoolEvent('start', { late, ocs: !!s.ocsAtGun });
                 this.completeUnit(3);
                 this.fadeThen(() => { this.start(4); this.screen('D'); });
             }
@@ -1070,6 +1074,7 @@ const School = {
                 const late = rs.startTimeDisplay;
                 const wasOcs = !!s.said.ocs;
                 s.results.push({ run: s.run, late: +late.toFixed(1), ocs: wasOcs });
+                if (window.Unlocks) Unlocks.schoolEvent('start', { late, ocs: wasOcs });
                 s.phase = 'done'; s.doneT = 0;
                 if (wasOcs) this.say('Back in the race. Now once more, on time.');
                 else if (late > 4) this.say(`${Math.round(late)} seconds late. That's a boat length a second, gone.`);
@@ -1261,6 +1266,10 @@ const School = {
         s.finishRank = sorted.indexOf(player) + 1;
         const graduated = player.raceState.finished && !player.raceState.resultStatus;
         if (graduated) { this.saveProgress({ graduated: true, graduatedAt: new Date().toISOString(), rank: s.finishRank }); this.completeUnit(4); }
+        if (window.Unlocks) Unlocks.schoolEvent('race', {
+            won: graduated && s.finishRank === 1,
+            clean: graduated && this.reportCard(player).clean,
+        });
         console.log('[school] run', JSON.stringify({ log: this.log, race: { rank: s.finishRank, ocs: s.ocsAtGun, pinchT: +s.pinchT.toFixed(1), beatT: +s.beatT.toFixed(1), kiteUpwindT: +s.kiteUpwindT.toFixed(1), penalties: player.raceState.totalPenalties } }));
         this.hideCard();
         this._lastRace = { graduated, rank: s.finishRank, player, sorted, lines: this.debriefLines(graduated, s.finishRank, player) };
@@ -1275,6 +1284,22 @@ const School = {
             return getBoatProgress(b) - getBoatProgress(a);
         });
     },
+    // THE REPORT CARD — the debrief's four judgements, in one place so the lines Paddle says
+    // and Wisp's objective ("a clean report card") can never disagree.
+    reportCard(player) {
+        const s = this.s, rs = player.raceState;
+        const pinchFrac = s.beatT > 5 ? s.pinchT / s.beatT : 0;
+        const card = {
+            started: rs.leg > 0,
+            onTime: rs.leg > 0 && !s.ocsAtGun && !(rs.startLegDuration != null && rs.startLegDuration > 5),
+            pinched: pinchFrac > 0.25,
+            kiteLate: s.kiteUpwindT > 6,
+            penalties: rs.totalPenalties || 0,
+        };
+        card.pinchFrac = pinchFrac;
+        card.clean = card.onTime && !card.pinched && !card.kiteLate && card.penalties === 0;
+        return card;
+    },
     debriefLines(graduated, rank, player) {
         const s = this.s, rs = player.raceState;
         const lines = [];
@@ -1285,18 +1310,21 @@ const School = {
         else lines.push(rs.startLegDuration != null && rs.startLegDuration > 5 ? `You started ${Math.round(rs.startLegDuration)} seconds after the gun. Next time, be closer to the line at zero.` : 'Great start — you crossed just after the gun.');
         // The sailing itself, plain and actionable. A boat that never started has no leg to
         // judge, so it gets only what its prestart showed (a penalty), or nothing more.
-        const pinchFrac = s.beatT > 5 ? s.pinchT / s.beatT : 0;
-        if (pinchFrac > 0.25) lines.push('You sailed too close to the wind. Give the red no-sail zone a little more room.');
-        else if (s.kiteUpwindT > 6) lines.push('Your spinnaker stayed up too long. When it starts flapping, lower it.');
+        const card = this.reportCard(player);
+        if (card.pinched) lines.push('You sailed too close to the wind. Give the red no-sail zone a little more room.');
+        else if (card.kiteLate) lines.push('Your spinnaker stayed up too long. When it starts flapping, lower it.');
         else if (rs.totalPenalties > 0) lines.push(rs.totalPenalties === 1 ? 'You took a penalty turn. When your marker is red, you need to give way.' : `You took ${rs.totalPenalties} penalty turns. When your marker is red, you need to give way.`);
         else if (rs.leg > 0) lines.push('Nice sailing — clean upwind leg, and the spinnaker came down on time.');
         return lines;
     },
 
     // ── the companions: the launch and the ducklings ──────────────────────────
+    // Spacing down the line, centre to centre: a duckling (~23 units bill to tail) and about half a
+    // body of water between, as in the drone shots of a brood in file.
+    DUCK_GAP: 32,
     makeDucks(at) {
         const d = [];
-        for (let i = 0; i < 5; i++) d.push({ x: at.x - i * 24, y: at.y + (i % 2 ? 8 : -8), h: 0 });
+        for (let i = 0; i < 5; i++) d.push({ x: at.x - i * this.DUCK_GAP, y: at.y + (i % 2 ? 8 : -8), h: 0 });
         return d;
     },
     pathPoint(path, dist) {
@@ -1385,10 +1413,13 @@ const School = {
         let prev = lead;
         for (const d of s.ducks) {
             const dx = prev.x - d.x, dy = prev.y - d.y, dd = Math.hypot(dx, dy);
-            if (dd > 22) {
+            if (dd > this.DUCK_GAP) {
                 const before = { x: d.x, y: d.y };
-                this.swim(d, { x: prev.x - dx / dd * 22, y: prev.y - dy / dd * 22 }, this.DUCK_SWIM * 1.15, dt);
-                if (!faceAway) d.h = this.headingOf(d.x - before.x, d.y - before.y);
+                this.swim(d, { x: prev.x - dx / dd * this.DUCK_GAP, y: prev.y - dy / dd * this.DUCK_GAP }, this.DUCK_SWIM * 1.15, dt);
+                // Turn only on a real step (a zero step reads as heading pi — the duck flipped
+                // south whenever it held station), and ease it: a duckling turns, never flicks.
+                const mx = d.x - before.x, my = d.y - before.y;
+                if (!faceAway && mx * mx + my * my > 0.01) d.h = normalizeAngle(d.h + normalizeAngle(this.headingOf(mx, my) - d.h) * Math.min(1, dt * 10));
             }
             prev = d;
         }
@@ -1560,7 +1591,8 @@ const School = {
         ctx.save();
         if (this._fade) ctx.globalAlpha *= Math.max(0, Math.min(1, state.boats[0].opacity == null ? 1 : state.boats[0].opacity));
         if (s.kind === 'sail' && s.launch) this.drawLaunch(ctx, s.launch);
-        for (const d of s.ducks) this.drawDuck(ctx, d);
+        // The ducklings are drawn by js/wildlife.js (the venue animals' art); this file only moves them.
+        if (window.Wildlife && Wildlife.drawDucklings) Wildlife.drawDucklings(ctx, s.ducks);
         ctx.restore();
     },
 
@@ -1878,38 +1910,6 @@ const School = {
         ctx.fillStyle = '#6B4A2A'; ctx.fillRect(-9, 2, 18, 14);             // cockpit
         ctx.fillStyle = '#2FAE5C'; ctx.beginPath(); ctx.arc(0, 9, 5, 0, Math.PI * 2); ctx.fill();   // Paddle
         ctx.fillStyle = '#F5C518'; ctx.beginPath(); ctx.arc(0, 4, 2, 0, Math.PI * 2); ctx.fill();   // the bill
-        ctx.restore();
-    },
-
-    // The duckling sprite: art/elements/pond/duckling.png through ingest.py, baked at 56px for a
-    // 14px display (manifest `pond-duckling`, world 14). Loaded once, lazily; the vector bird
-    // below only shows until the image arrives.
-    // Larger than life (manifest world 14): a 14px bird is a dot at race scale, and these are
-    // the thing the first card tells the player to follow.
-    DUCK_WORLD: 22,
-    duckSprite() {
-        if (!this._duckImg) { this._duckImg = new Image(); this._duckImg.src = 'assets/images/props/pond/duckling.png'; }
-        return this._duckImg.complete && this._duckImg.naturalWidth ? this._duckImg : null;
-    },
-    drawDuck(ctx, d) {
-        const img = this.duckSprite();
-        if (img) {
-            const W = this.DUCK_WORLD;
-            ctx.save();
-            ctx.translate(d.x, d.y);
-            ctx.rotate(d.h);
-            ctx.drawImage(img, -W / 2, -W / 2, W, W);
-            ctx.restore();
-            return;
-        }
-        ctx.save();
-        ctx.translate(d.x, d.y);
-        ctx.rotate(d.h);
-        ctx.fillStyle = '#F5C518';
-        ctx.beginPath(); ctx.ellipse(0, 1, 5, 7, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(0, -6, 4, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#E36B1E';
-        ctx.beginPath(); ctx.moveTo(-2, -9); ctx.lineTo(2, -9); ctx.lineTo(0, -12); ctx.closePath(); ctx.fill();
         ctx.restore();
     },
 

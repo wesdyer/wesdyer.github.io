@@ -5448,7 +5448,8 @@ window.VENUE_DOC["bay"] = {
           ]
         }
       ]
-    }
+    },
+    "cutoff": 600
   },
   "wind": {
     "regions": [
@@ -81051,5 +81052,8 @@ window.VENUE_DOC["bay"] = {
     "baseColor": "#1684bb",
     "deepColor": "#065884",
     "shallowColor": "#2396c7"
+  },
+  "records": {
+    "provisional": 255
   }
 };

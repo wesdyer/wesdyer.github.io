@@ -739,7 +739,7 @@ window.VENUE_DOC["pond"] = {
     "startTime": 30,
     "cutoff": 600,
     "paths": {
-      "sig": "v2-10d9458c-113",
+      "sig": "v3-b3ad3aff-1nv",
       "legs": [
         {
           "pts": []
@@ -1667,6 +1667,14 @@ window.VENUE_DOC["pond"] = {
       "y": 634.6625051936966,
       "heading": 2.219182363511294,
       "scale": 3.5
+    },
+    {
+      "id": "prop-108",
+      "kind": "swamp-driftlog",
+      "x": 557.8606711476331,
+      "y": -1813.46913150325,
+      "heading": 5.699314911517458,
+      "scale": 1.5
     }
   ]
 };
