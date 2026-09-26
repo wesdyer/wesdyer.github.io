@@ -6232,6 +6232,26 @@
     const inKelp = (x, y) => kelpBeds.some(K => Math.hypot(x - K.x, y - K.y) < (K.radius || 1e9) && pointInPoly(x, y, K.vertices));
     function nearestKelp(x, y) { let best = null, bd = 1e9; for (const K of kelpBeds) for (const v of K.vertices) { const d = Math.hypot(v.x - x, v.y - y); if (d < bd) { bd = d; best = { x: v.x + (K.x - v.x) * 0.25, y: v.y + (K.y - v.y) * 0.25 }; } } return best; }
     // swimming on its belly across open water: forward along its heading, round any rock
+    // A boat bearing down on (x, y): the boat whose track over the next `horizon` seconds (at its real
+    // velocity — boat.speed is units per 60 Hz frame) passes within R of the point. Returns the boat,
+    // the time to its closest approach, and which side of its track the point lies on (+1 starboard).
+    // Wes, Sep 26: animals in the water should get out of the way — at 130 u/s a 110 u radius left them
+    // under a second, so they react to where the boat is GOING.
+    function boatThreat(x, y, horizon, R) {
+        let best = null;
+        for (const b of state.boats || []) {
+            if (b.opacity !== undefined && b.opacity < 0.2) continue;
+            const vx = b.velocity ? b.velocity.x * 60 : Math.sin(b.heading || 0) * (b.speed || 0) * 60, vy = b.velocity ? b.velocity.y * 60 : -Math.cos(b.heading || 0) * (b.speed || 0) * 60;
+            const dx = x - b.x, dy = y - b.y, v2 = vx * vx + vy * vy;
+            if (dx * dx + dy * dy > (R + Math.sqrt(v2) * horizon) ** 2) continue;
+            const tc = v2 > 1 ? Math.max(0, Math.min(horizon, (dx * vx + dy * vy) / v2)) : 0;
+            const d = Math.hypot(dx - vx * tc, dy - vy * tc);
+            if (d < R && (!best || tc < best.t)) best = { b, t: tc, d, side: Math.sign(vx * dy - vy * dx) || 1, vx, vy, spd: Math.sqrt(v2) };
+        }
+        return best;
+    }
+    // the way out of a boat's path: square off its track, on the side the animal is already on
+    function dodgeDir(th) { const L = th.spd || 1; return th.spd > 5 ? { x: -th.vy / L * th.side, y: th.vx / L * th.side } : null; }
     function otterSwim(m, tx, ty, v, dt) {
         const want = Math.atan2(tx - m.x, -(ty - m.y));
         for (const da of [0, 0.5, -0.5, 1, -1, 1.6, -1.6]) { const h = want + da, nh = m.h + Math.max(-3 * dt, Math.min(3 * dt, angDiff(h, m.h)));
@@ -6256,12 +6276,17 @@
             const wantLook = b && bd < c.lookR && (m.mode === 'float' || m.mode === 'eat');
             m.look += ((wantLook ? 1 : 0) - m.look) * Math.min(1, dt * 3);
             if (wantLook) m.h += angDiff(Math.atan2(b.x - m.x, -(b.y - m.y)), m.h) * Math.min(1, dt * 1.5);
-            // TOO CLOSE: half go straight down, half roll over and swim off on their bellies
-            if (b && bd < c.reactR && (m.mode === 'float' || m.mode === 'eat' || m.mode === 'back')) {
-                const away = Math.atan2(m.x - b.x, -(m.y - b.y));
+            // IN ITS PATH (the boat's track over the next 2.5 s passes within 70 u), or simply too close:
+            // resting ones go down or swim off square to the boat's line; moving ones veer out of it
+            const th = m.mode !== 'under' && m.mode !== 'dive' && m.mode !== 'roll' ? boatThreat(m.x, m.y, 2.5, 70) : null;
+            if (th && (m.mode === 'travel' || m.mode === 'bolt' || m.mode === 'swim' || (m.mode === 'back' && m.t <= 0))) {
+                const dd = dodgeDir(th); if (dd && !(m.shoveT > 0)) { m.shoveT = 1.2; m.svx = dd.x * 55; m.svy = dd.y * 55; m.ring2 = 1; }
+            }
+            if ((th || (b && bd < c.reactR)) && (m.mode === 'float' || m.mode === 'eat' || m.mode === 'back')) {
+                const dd = th && dodgeDir(th), away = dd ? Math.atan2(dd.x, -dd.y) : Math.atan2(m.x - b.x, -(m.y - b.y));
                 if (m.pup) { m.mode = 'back'; m.t = 0; m.fleeTo = { x: m.x + Math.sin(away) * 130, y: m.y - Math.cos(away) * 130 }; if (m.pupAlone) m.fleeTo = null; }
                 else if ((m.i + Math.floor(T / 30)) % 2) { m.mode = 'dive'; m.t = 0.7; m.quick = true; const q = kelpSpot(G, m.x + Math.sin(away) * 140, m.y - Math.cos(away) * 140, 60); m.tx = q.x; m.ty = q.y; }
-                else { m.mode = 'swim'; m.t = R(3, 5); m.tx = m.x + Math.sin(away) * 150; m.ty = m.y - Math.cos(away) * 150; m.ring2 = 1; }
+                else { m.mode = 'swim'; m.t = R(3, 5); m.tx = m.x + Math.sin(away) * 170; m.ty = m.y - Math.cos(away) * 170; m.ring2 = 1; m.fast = !!th; }
                 m.paws = 'rest'; m.food = null;
             }
             if (m.mode === 'float' || m.mode === 'eat') {
@@ -6315,9 +6340,9 @@
                 // on its belly, head up, swimming off with a wake — then it rolls back over
                 const d = Math.hypot(m.tx - m.x, m.ty - m.y), w = Math.atan2(m.tx - m.x, -(m.ty - m.y));
                 m.h += angDiff(w, m.h) * Math.min(1, dt * 3);
-                const v = 34, nx = m.x + Math.sin(m.h) * v * dt, ny = m.y - Math.cos(m.h) * v * dt;
+                const v = m.fast ? 50 : 34, nx = m.x + Math.sin(m.h) * v * dt, ny = m.y - Math.cos(m.h) * v * dt;
                 if (!onLand(nx, ny)) { m.x = nx; m.y = ny; }
-                if (d < 15 || m.t <= 0) { m.mode = 'back'; m.t = R(6, 12); m.ring2 = 1; m.tx = m.hx; m.ty = m.hy; }
+                if (d < 15 || m.t <= 0) { m.mode = 'back'; m.fast = false; m.t = R(6, 12); m.ring2 = 1; m.tx = m.hx; m.ty = m.hy; }
             } else if (m.mode === 'back') {
                 // BACKSTROKE home: on its back, feet first, kicking with the hind flippers
                 if (m.t > 0 && !m.pup) { /* a rest before it heads home */ }
@@ -6328,6 +6353,8 @@
                         const v = Math.min(d, 14 * dt); m.x += (tx - m.x) / d * v; m.y += (ty - m.y) / d * v; }
                 }
             }
+            // the sideways dash out of a boat's path, on top of whatever it was doing
+            if (m.shoveT > 0) { m.shoveT -= dt; const nx = m.x + m.svx * dt, ny = m.y + m.svy * dt; if (!solidAt(nx, ny, null, true)) { m.x = nx; m.y = ny; m.h += angDiff(Math.atan2(m.svx, -m.svy), m.h) * Math.min(1, dt * 4); } }
             recordTrail(m, dt, m.mode === 'swim' || m.mode === 'travel' || m.mode === 'bolt' || (m.mode === 'back' && m.t <= 0));
             if (m.mode !== 'roll') m.roll = 0;
         }
@@ -6627,11 +6654,11 @@
                     const S = whites.find(W2 => (W2.mode === 'patrol' || W2.mode === 'fin') && Math.hypot(W2.x - G.x, W2.y - G.y) < 360);
                     if (S && rnd() < 0.07) { G.mode = 'inspect'; G.shark = S; G.t = R(10, 18); } } }
             // a boat sailing into a raft: they go, porpoising off to one side, and settle again beyond
-            if ((G.mode === 'raft' || G.mode === 'loiter' || G.mode === 'travel')) { const b = boatNear(G.x, G.y, 130) || (G.mode !== 'travel' ? null : null);
+            if ((G.mode === 'raft' || G.mode === 'loiter' || G.mode === 'travel')) { const th = boatThreat(G.x, G.y, 3, 150), b = th ? th.b : boatNear(G.x, G.y, 130);
                 // a shark's fin close by puts them to flight too
                 const sk = whites.find(W => W.depth < 0.3 && W.mode !== 'shadow' && Math.hypot(W.x - G.x, W.y - G.y) < 230);
                 if (sk && !b) { const a = Math.atan2(G.x - sk.x, -(G.y - sk.y)); G.mode = 'flee'; G.aim = snapOpen(G.x + Math.sin(a) * 450, G.y - Math.cos(a) * 450, 80); G.t = R(30, 50); }
-                if (b && G.mode !== 'travel') { const a = Math.atan2(G.x - b.x, -(G.y - b.y)); G.mode = 'flee'; G.aim = snapWater(G.x + Math.sin(a) * 280, G.y - Math.cos(a) * 280, 50); G.t = R(20, 35); } }
+                if (b && G.mode !== 'travel') { const dd = th && dodgeDir(th); if (dd) { G.mode = 'flee'; G.aim = snapOpen(G.x + dd.x * 320, G.y + dd.y * 320, 50); G.t = R(20, 35); } else { const a = Math.atan2(G.x - b.x, -(G.y - b.y)); G.mode = 'flee'; G.aim = snapWater(G.x + Math.sin(a) * 280, G.y - Math.cos(a) * 280, 50); G.t = R(20, 35); } } }
             const L = G.members[0];
             if (G.mode === 'flee' || G.mode === 'travel') {
                 // porpoising to the raft spot
@@ -6689,6 +6716,11 @@
                     for (const dh of [0, 0.5, -0.5, 1.1, -1.1]) { const nh = nh0 + dh, nx = q.x + Math.sin(nh) * v * dt, ny = q.y - Math.cos(nh) * v * dt;
                         if (!slBlocked(nx, ny, nh)) { q.x = nx; q.y = ny; q.h = nh; break; } } }
                 else if (!moving) q.h += angDiff(G.h + q.ox * 0.02, q.h) * Math.min(1, dt * 0.5);
+                // OUT OF THE WAY: one in a boat's path (its track over 1.6 s within 45 u) leaps clear sideways,
+                // square to the boat's line, and drops back into its place in the group after
+                if (!(q.dodgeT > 0) && q.leap === 0) { const th = boatThreat(q.x, q.y, 1.6, 45), dd = th && dodgeDir(th);
+                    if (dd) { q.dodgeT = 0.9; q.dvx = dd.x * 110; q.dvy = dd.y * 110; q.leap = 0.001; q.splash = 1; q.sx = q.x; q.sy = q.y; q.h = Math.atan2(dd.x, -dd.y); } }
+                if (q.dodgeT > 0) { q.dodgeT -= dt; const nx = q.x + q.dvx * dt, ny = q.y + q.dvy * dt; if (!slBlocked(nx, ny, q.h)) { q.x = nx; q.y = ny; } }
                 // PORPOISING: travelling, each one leaps clear every few seconds — an arc out and back
                 if (moving) {
                     q.leapT -= dt;

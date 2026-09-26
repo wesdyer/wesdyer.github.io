@@ -84,6 +84,19 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
           const W = d.whites[0], a = Math.atan2(sp.x - G.cx, -(sp.y - G.cy)); W.x = m.x + Math.sin(a) * 250; W.y = m.y - Math.cos(a) * 250; W.mode = 'chaseOtter'; W.otter = m; W.t = 12; W.depth = 0.05;
           let bolted = false, n = 0; while (n++ < 30 * 30 && (W.mode === 'chaseOtter' || W.mode === 'breach')) { Wildlife.update(1 / 30); if (m.mode === 'bolt') bolted = true; }
           out.otterBolt = bolted; out.otterSafe = G.members.includes(m) && !m.gone; }
+        // GET OUT OF THE WAY: a boat at racing speed (130 u/s) driven straight through an otter raft and
+        // through a travelling sea-lion group — count the frames anything at the surface is under the hull
+        { const me = state.boats[0]; me.opacity = 1;
+          const drive = (x, y, h) => { let under = 0; me.heading = h; me.speed = 130 / 60; me.velocity = { x: Math.sin(h) * me.speed, y: -Math.cos(h) * me.speed }; me.x = x - Math.sin(h) * 500; me.y = y + Math.cos(h) * 500;
+            const fx = Math.sin(h), fy = -Math.cos(h), hit = (px, py) => { const dx = px - me.x, dy = py - me.y, a = Math.max(-27, Math.min(27, dx * fx + dy * fy)); return Math.hypot(dx - fx * a, dy - fy * a) < 14; };
+            for (let i = 0; i < 30 * 8; i++) { me.x += me.velocity.x * 60 / 30; me.y += me.velocity.y * 60 / 30; Wildlife.update(1 / 30); const D = Wildlife.debug();
+              for (const G of D.seaOtterRafts) for (const m of G.members) if (m.mode !== 'under' && m.mode !== 'dive' && hit(m.x, m.y)) under++;
+              for (const G of D.slGroups) for (const q of G.members) if (!q.gone && !(q.z > 0.15) && !(q.flung > 0) && hit(q.x, q.y)) under++; }
+            me.x = 1e6; me.y = 1e6; me.velocity = { x: 0, y: 0 }; return under; };
+          const G = d.seaOtterRafts[3], m0 = G.members.find(q => q.mode === 'float' || q.mode === 'eat') || G.members[0];
+          out.underOtter = drive(m0.x, m0.y, 1.1);
+          const L = Wildlife.debug().slGroups.find(G2 => G2.members.length >= 4 && G2.mode !== 'inspect'); const q0 = L.members[0];
+          out.underLion = drive(q0.x, q0.y, L.h + Math.PI / 2); }
         // the sailing objectives (sim/course.js OTTER_RUN), on scripted paths through checkOtterRun
         { const me = state.boats[0]; const ids = () => feats.filter(e => /^otter:(inside|tip|arch)/.test(e.id)).map(e => e.id + (e.value != null ? '=' + e.value : ''));
           const fresh = () => { state.race.status = 'finished'; checkOtterRun(); state.race.status = 'racing'; me.raceState.finished = false; feats.length = 0; };
@@ -129,6 +142,8 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(+r.back.split('/')[0] >= +r.back.split('/')[1] - 1, `and they haul out again (${r.back} of them back on the rock; a shark may take one)`);
     ok(r.breach && r.foam >= 1, `a great white sprints in and strikes: foam (${r.outcome}; ${r.modes})`);
     ok(r.shadow >= 3 && r.shadowNear < 200, `a great white shadows the player's boat (${r.shadow.toFixed(1)} s, closest ${r.shadowNear} u)`);
+    ok(r.underOtter <= 3, `otters get out of a boat's way (${r.underOtter} frames under the hull)`);
+    ok(r.underLion <= 3, `sea lions get out of a boat's way (${r.underLion} frames under the hull)`);
     ok(r.insideTwo === 'otter:inside=1 otter:inside=2', `Inside the Kelp Line counts each bed passed on the inside (${r.insideTwo})`);
     ok(r.outsideKelp === '' && r.preGun === '', 'nothing for the offshore line, nothing before the gun');
     ok(r.tipArch === 'otter:tip otter:arch', `Tip and Arch: round the tip, then the arch (${r.tipArch})`);

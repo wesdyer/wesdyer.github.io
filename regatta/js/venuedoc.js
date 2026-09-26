@@ -1010,6 +1010,8 @@ const PROP_KINDS = {
     // it. This is the exact case the harbour block's note predicted for any bay key that
     // already begins with `bay-`; every other cove asset is keyed `cove-*` to avoid it.
     'bay-bay-cove-bridge-truss': { label: 'Truss bridge',   world: 870, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    // The truss's foil — the red suspension span, San Francisco's own pairing. Same rules.
+    'bay-bay-cove-bridge-suspension': { label: 'Suspension bridge', world: 920, plane: 'canopy', contact: 'none', motion: 'fixed' },
     // THE FLEET'S HOME, and the only object in the game that carries the SaltyCritter Yacht
     // Club's own burgee — painted flat on the seaward roof slope, which is why it survives a
     // camera that deletes anything vertical. LANDMARK: venue identity, on land, never an

@@ -866,6 +866,16 @@ kelp is on (`swell.kelp { floor 0.15, reach 450 }` in the venue doc). Grotto (wo
 record but no rung here — he is free for another venue. Checks: sim/course.js OTTER_RUN / checkOtterRun;
 test eval/test_otter.js.
 
+### Getting out of a boat's way (Sep 26 2026, Wes)
+
+At 130 u/s a fixed 110 u reaction radius gave the animals under a second. Now they react to where a
+boat is GOING (`boatThreat`: its track over the next few seconds at its real velocity): an otter at
+the surface within 70 u of a boat's next 2.5 s dives or swims off square to its line (travelling ones
+veer aside); a sea-lion raft within 150 u of the next 3 s scatters sideways; a swimming sea lion within
+45 u of the next 1.6 s leaps clear sideways and drops back into formation. A boat driven straight
+through at racing speed: 79 frames with an otter under the hull and 156 with a sea lion when the
+animals can't see it coming, 0 and 1 now (eval/_otter_dodge.js films it; test_otter checks it).
+
 ### The hunt, redesigned from Wes's drone videos (Sep 26 2026)
 
 Overhead, a kill is a SPRINT and a STRIKE, not a breach: stalk deep → sprint 1.6 s (3× cruise, the shape
