@@ -6,8 +6,8 @@ description: Design, then build, one regatta venue's character objectives and it
 # Venue objectives — design first, then build
 
 Done so far: Lighthouse Cove (`bay`), Sailing School (`pond`), Stillwater Lake (`lake`),
-Pearl Lagoon (`lagoon`), Gatorgrass Bayou (`swamp`), Sockeye Run (`river`). Remaining:
-ocean, redrock, glowtide, arctic, otter, flats, volcanic.
+Pearl Lagoon (`lagoon`), Gatorgrass Bayou (`swamp`), Sockeye Run (`river`), Bluewater
+Bonanza (`ocean`), Redrock Reservoir (`redrock`). Remaining: glowtide, arctic, otter, flats, volcanic.
 The recommended character map for every venue is in `regatta/guidelines/venue-roster.md`
 (the audit plus the "as built" sections). Read that venue's row and the latest "as built"
 section before proposing anything.

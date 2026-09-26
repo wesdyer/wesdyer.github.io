@@ -174,7 +174,12 @@ or you are only photographing its reaction.
    - Sailing School reading gates freeze the sim clock. `update()` still steps it.
    - After re-laying a lesson, steer the boat along its path (at `s.B1`), or the lead point
      never moves.
-4. **Know your own artifacts.** Spawning animals far away makes them swim sideways into
+4. **Land walkers must never step onto water.** A straight walk between two land spots cuts
+   across coves: at Redrock the coyotes stood in the lake 600 frames in ten minutes until
+   `moveTo(..., land=true)` refused the step and the caller picked again. Test it (frames off
+   land = 0). And a probe that parks a boat on land gets pushed off by collision, so put it on
+   the nearest water.
+5. **Know your own artifacts.** Spawning animals far away makes them swim sideways into
    place. A zero-length step gives `atan2(0, -0) = π` headings, so turn only on real motion,
    and ease the turn.
 

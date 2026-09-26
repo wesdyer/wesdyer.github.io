@@ -41,6 +41,8 @@ function update(dt) {
     checkLandfall();
     checkSwampRoute();
     checkRiverRun();
+    checkOceanRun();
+    checkRedrockRun();
     // The swell's own clock. Advanced from dt like everything else, so it pauses with the
     // race and is identical for a given seed — a wave field is pure trigonometry and must
     // never reach for the RNG stream. No-op off the ocean.
@@ -219,6 +221,7 @@ function update(dt) {
     // here for a stronger reason: a bow can shove a boat clean into a beach, and if land
     // resolved first that boat would spend a frame inside the shore.
     checkTrafficCollisions(dt);
+    checkWhaleContact(dt);
     checkIslandCollisions(dt);
     checkNearMisses(dt);
 

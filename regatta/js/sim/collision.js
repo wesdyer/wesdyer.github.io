@@ -761,6 +761,70 @@ function updateRule19Ledger() {
     }
 }
 
+// WHALES ARE HARD CONTACT — AT THE SURFACE (Bluewater Bonanza; Wes, Sep 25 2026). A humpback at
+// the surface is thirty-odd tonnes; sail into one and you stop. Its body is a capsule (from
+// Wildlife.surfacedWhales, which only returns whales breathing, rolling out on a dive or out of
+// the water in a display — one cruising below is passed over). The hull's bow, middle and stern
+// are tested against it; contact pushes the boat clear and takes almost all its speed, and the
+// whale throws white water and goes down. Deterministic: whale motion runs on the sim clock off
+// the wildlife module's own seeded stream, never the race RNG.
+function checkWhaleContact(dt) {
+    if (!window.Wildlife || !Wildlife.surfacedWhales) return;
+    const bodies = Wildlife.surfacedWhales();
+    if (!bodies.length) return;
+    for (const boat of state.boats) {
+        if (boat.raceState && boat.raceState.finished) continue;
+        const hx = Math.sin(boat.heading), hy = -Math.cos(boat.heading);
+        for (const B of bodies) {
+            if (Math.hypot(boat.x - B.ax, boat.y - B.ay) > B.r + 200 && Math.hypot(boat.x - B.bx, boat.y - B.by) > B.r + 200) continue;
+            const vx = B.bx - B.ax, vy = B.by - B.ay, vv = vx * vx + vy * vy;
+            let hit = null;
+            for (const s of [-24, 0, 24]) {
+                const px = boat.x + hx * s, py = boat.y + hy * s;
+                const u = Math.max(0, Math.min(1, ((px - B.ax) * vx + (py - B.ay) * vy) / vv));
+                const cx = B.ax + vx * u, cy = B.ay + vy * u, dx = px - cx, dy = py - cy, d = Math.hypot(dx, dy);
+                const pad = B.r + 5;                                   // half a hull's beam
+                if (d < pad && (!hit || pad - d > hit.over)) hit = { over: pad - d, nx: d > 0.01 ? dx / d : -hy, ny: d > 0.01 ? dy / d : hx, cx, cy };
+            }
+            if (!hit) continue;
+            boat.x += hit.nx * hit.over; boat.y += hit.ny * hit.over;
+            boat.speed *= 0.15;                                       // it stops you
+            if (boat.ai) boat.ai.collisionData = { type: 'island', normal: { x: -hit.nx, y: -hit.ny }, isFloe: false };
+            if (!boat._whaleT || state.time - boat._whaleT > 1.5) {
+                boat._whaleT = state.time;
+                Wildlife.startleWhale(B.m, hit.cx, hit.cy);
+                if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat, isFloe: false, whale: true });
+                if (boat.isPlayer && state.race.status === 'racing' && typeof GameEvents !== 'undefined') GameEvents.emit('player-contact', { leg: boat.raceState.leg, isFloe: false, whale: true });
+            }
+        }
+    }
+}
+
+// The bots' eye for whales: if the line ahead (out to ~4 s at this speed, at least 220 u) passes
+// within a hull's reach of a surfaced whale's body, bear off to the side the whale is NOT on,
+// by as much as it takes (up to ~50°). Read by updateAI (ai/bot.js). Pure; touches no state.
+function whaleDodgeHeading(boat, heading) {
+    if (!window.Wildlife || !Wildlife.surfacedWhales || typeof heading !== 'number') return heading;
+    const bodies = Wildlife.surfacedWhales();
+    if (!bodies.length) return heading;
+    const look = Math.max(220, (boat.speed || 0) * 60 * 4);
+    let best = null;
+    for (const B of bodies) {
+        const cx = (B.ax + B.bx) / 2, cy = (B.ay + B.by) / 2;
+        if (Math.hypot(cx - boat.x, cy - boat.y) > look + 120) continue;
+        for (let d = 20; d <= look; d += 20) {
+            const px = boat.x + Math.sin(heading) * d, py = boat.y - Math.cos(heading) * d;
+            const vx = B.bx - B.ax, vy = B.by - B.ay, u = Math.max(0, Math.min(1, ((px - B.ax) * vx + (py - B.ay) * vy) / (vx * vx + vy * vy)));
+            const qx = B.ax + vx * u, qy = B.ay + vy * u;
+            if (Math.hypot(px - qx, py - qy) < B.r + 30) { if (!best || d < best.d) best = { d, qx, qy }; break; }
+        }
+    }
+    if (!best) return heading;
+    // which side of our line is the whale on? steer to the other, harder the closer it is
+    const side = Math.sign(Math.sin(heading) * (best.qy - boat.y) - -Math.cos(heading) * (best.qx - boat.x)) || 1;
+    return normalizeAngle(heading - side * (0.35 + 0.5 * (1 - best.d / look)));
+}
+
 function checkIslandCollisions(dt) {
     if (!state.course || !state.course.islands) return;
     updateRule19Ledger();

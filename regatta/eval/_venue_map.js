@@ -3,7 +3,7 @@
 // fleet's tracks from `_venue_survey.js` (TRACKS dumps, thin orange) and Wes's own recorded races
 // (eval/rl/traj/traj_<venue>_*.json, red; only the current layout's fingerprint unless ALL=1).
 //   node regatta/eval/_venue_map.js <venue> <out.png> [tracks.json ...]   (from the repo root)
-// Env: FP=<fp,fp> picks Wes's races by fingerprint; PROPS=<regex> labels matching prop kinds; BOX=x0,y0,x1,y1 crops to a world box.
+// Env: WIND=1 (WMIN, WMAX kt) shades by mean wind; FP=<fp,fp> picks Wes's races by fingerprint; PROPS=<regex> labels matching prop kinds; BOX=x0,y0,x1,y1 crops to a world box.
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
@@ -15,7 +15,7 @@ const fs = require('fs');
     const b = await chromium.launch(); const p = await b.newPage();
     await p.goto('file://' + path.resolve('regatta/index.html'));
     await p.waitForFunction(() => window.state && window.VenueDoc && typeof resetGame === 'function');
-    const png = await p.evaluate(({ venue, fleet, wes, all, propRe, box, fps }) => {
+    const png = await p.evaluate(({ venue, fleet, wes, all, propRe, box, fps, windShade }) => {
         localStorage.setItem('regatta_settings', JSON.stringify({ venue, soundEnabled: false, musicEnabled: false, bgSoundEnabled: false }));
         resetGame();
         const fp = (typeof VenueDoc.fingerprint === 'function') ? VenueDoc.fingerprint(VENUE_DOC[venue]) : null;
@@ -34,8 +34,11 @@ const fs = require('fs');
         for (let py = 0; py < H; py += step) for (let px = 0; px < W; px += step) {
             const wx = x0 + px / sc, wy = y0 + py / sc;
             if (pointOnLand(wx, wy)) { g.fillStyle = '#9a9a92'; g.fillRect(px, py, step, step); continue; }
-            const c = getCurrentAt(wx, wy), v = c ? c.speed : 0;
-            const k = Math.min(1, v / 5);
+            // WIND=1 shades by the day's mean wind speed (regions + lees, no puffs) instead of current:
+            // light = light air, dark = strong (WMIN..WMAX knots)
+            let k;
+            if (windShade) { const prev = WIND_MEAN_FIELD; WIND_MEAN_FIELD = true; const w = getWindAt(wx, wy).speed; WIND_MEAN_FIELD = prev; k = Math.max(0, Math.min(1, (w - windShade[0]) / (windShade[1] - windShade[0]))); }
+            else { const c = getCurrentAt(wx, wy), v = c ? c.speed : 0; k = Math.min(1, v / 5); }
             g.fillStyle = `rgb(${Math.round(225 - 190 * k)},${Math.round(238 - 150 * k)},${Math.round(250 - 60 * k)})`; g.fillRect(px, py, step, step);
             const tv = turb(wx, wy), rv = typeof tv === 'number' ? tv : (tv && tv.turb) || 0;
             if (rv > 0.2 && ((px + py) / step) % 3 === 0) { g.fillStyle = 'rgba(255,255,255,0.85)'; g.fillRect(px, py, step, step); }
@@ -44,7 +47,7 @@ const fs = require('fs');
         g.strokeStyle = 'rgba(10,40,90,0.55)'; g.lineWidth = 1.2;
         for (let py = 20; py < H; py += 60) for (let px = 20; px < W; px += 60) {
             const wx = x0 + px / sc, wy = y0 + py / sc; if (pointOnLand(wx, wy)) continue;
-            const c = getCurrentAt(wx, wy); if (!c || c.speed < 0.3) continue;
+            const c = windShade ? (() => { const w = getWindAt(wx, wy); return { speed: w.speed / 4, direction: w.direction + Math.PI }; })() : getCurrentAt(wx, wy); if (!c || c.speed < 0.3) continue;
             const L = 6 + c.speed * 5, dx = Math.sin(c.direction), dy = -Math.cos(c.direction);
             g.beginPath(); g.moveTo(px - dx * L / 2, py - dy * L / 2); g.lineTo(px + dx * L / 2, py + dy * L / 2); g.stroke();
             g.beginPath(); g.arc(px + dx * L / 2, py + dy * L / 2, 2, 0, 7); g.fillStyle = 'rgba(10,40,90,0.7)'; g.fill();
@@ -65,7 +68,7 @@ const fs = require('fs');
         g.fillStyle = '#000'; g.font = '13px sans-serif';
         g.fillText(`${venue}  x ${Math.round(x0)}..${Math.round(x1)}  y ${Math.round(y0)}..${Math.round(y1)}  1px=${(1 / sc).toFixed(1)}u  Wes races ${useRaces.length} (fp ${fp})  fleet tracks ${fleet.length}`, 10, 18);
         return cv.toDataURL('image/png');
-    }, { venue, fleet, wes, all: !!process.env.ALL, propRe: process.env.PROPS || '', box: process.env.BOX ? process.env.BOX.split(',').map(Number) : null, fps: process.env.FP ? process.env.FP.split(',') : null });
+    }, { venue, fleet, wes, all: !!process.env.ALL, propRe: process.env.PROPS || '', box: process.env.BOX ? process.env.BOX.split(',').map(Number) : null, fps: process.env.FP ? process.env.FP.split(',') : null, windShade: process.env.WIND ? [+(process.env.WMIN || 8), +(process.env.WMAX || 18)] : null });
     fs.writeFileSync(out, Buffer.from(png.split(',')[1], 'base64'));
     await b.close();
     console.log('wrote', out);

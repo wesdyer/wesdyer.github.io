@@ -165,6 +165,61 @@ const ACHIEVEMENTS = [
       hint: 'Earn four stars in one race at Sockeye Run: win, no penalties, lead at every mark, and sail on manual trim.',
       test: (r) => r.venue === 'river' && r.stars === 4 },
 
+    // ── Bluewater Bonanza `ocean` (designed Sep 25 2026) ─────────────────────────────
+    // The run home is the race: a ground swell in SETS running 30° off the course, a slower
+    // crossing wind swell, a cape jet under the island and the island's swell shadow — so the
+    // skill is catching and LINKING rides and choosing a lane (inshore / offshore / direct).
+    // Checks in sim/course.js (OCEAN_RUN) and js/wildlife.js (the whales). Animals: humpback
+    // pods with a mother and calf (Song), spinner dolphins, flying fish, Laysan albatross.
+    // Mola, Song and Roam shipped Sep 25 2026 (Song was "Sound" — renamed by Wes; Roam's first
+    // delivery read as a marlin and was redone from Wes's blue-shark references).
+    { char: 'Spar', venue: 'ocean', rung: 'first-win', title: 'Arrives at Speed',
+      hint: 'Win a race at Bluewater Bonanza.',
+      test: (r) => r.venue === 'ocean' && r.won },
+    { char: 'Finley', venue: 'ocean', rung: 'mechanic', title: 'Link the Swells',
+      hint: 'On the run home, hold 15 knots or more for 30 seconds straight — ride one wave onto the next — then finish the race.',
+      test: (r) => r.venue === 'ocean' && r.finished && r.feats.includes('ocean:linked') },
+    { char: 'Mola', venue: 'ocean', rung: 'explorer', title: 'The Far Island',
+      hint: 'On the run home, sail all the way round the offshore island to the south, then finish the race.',
+      test: (r) => r.venue === 'ocean' && r.finished && r.feats.includes('ocean:far-island') },
+    { char: 'Roam', venue: 'ocean', rung: 'target', title: 'Blue Water',
+      hint: (t) => t ? `Beat Bluewater Bonanza's target time of ${fmtTarget(t)} in Time Trials.` : "Beat Bluewater Bonanza's target time in Time Trials (target coming).",
+      test: (r) => r.venue === 'ocean' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
+    { char: 'Torrent', venue: 'ocean', rung: 'four-stars', title: 'Straight Line',
+      hint: 'Earn four stars in one race at Bluewater Bonanza: win, no penalties, lead at every mark, and sail on manual trim.',
+      test: (r) => r.venue === 'ocean' && r.stars === 4 },
+    { char: 'Song', venue: 'ocean', rung: 'wildlife', title: 'Mother and Calf',
+      hint: 'Shoot the gap between the island\'s south point and the coral rock, and sail alongside the humpback mother and calf resting in the lee just past it, then finish the race.',
+      test: (r) => r.venue === 'ocean' && r.finished && r.feats.includes('ocean:calf') },
+
+    // ── Redrock Reservoir `redrock` (designed Sep 25 2026) ───────────────────────────
+    // The traffic venue: every leg crosses the mark-3 junction and legs 2 and 3 meet head-on
+    // in the M6 arm, so the skill is holding your right of way where the fleet meets itself.
+    // Checks in sim/course.js (REDROCK_RUN) and js/wildlife.js (the striper boils). Animals:
+    // desert bighorn on the ledges, coyotes on the shelves, striper boils (Linesider), and
+    // California condors roosting on the north-west butte (Trek). Freshwater-fish heavy on
+    // purpose (Wes). Trek replaced Echo the canyon bat — no bats at Redrock. Boil Chaser is THREE:
+    // the autopilot sails through 2+ in 3 races of 8 by accident, 3 in 1 (eval/_redrock_boils.js).
+    // All six shipped Sep 25 2026 (Chisel and Talon were already in the roster).
+    { char: 'Chisel', venue: 'redrock', rung: 'first-win', title: 'Canyon Endemic',
+      hint: 'Win a race at Redrock Reservoir.',
+      test: (r) => r.venue === 'redrock' && r.won },
+    { char: 'Sawbill', venue: 'redrock', rung: 'mechanic', title: 'Right of Way',
+      hint: 'In one race, make three different rivals give way to you in the junction round mark 3, and finish with sailing rules on and no penalties.',
+      test: (r) => r.venue === 'redrock' && r.finished && r.rulesOn && r.penalties === 0 && ((r.vals || {})['redrock:gave-way'] || 0) >= 3 },
+    { char: 'Trek', venue: 'redrock', rung: 'explorer', title: 'Condor Butte',
+      hint: 'Sail all the way round the butte island in the north-west basin, where the condors roost, then finish the race.',
+      test: (r) => r.venue === 'redrock' && r.finished && r.feats.includes('redrock:butte') },
+    { char: 'Ridge', venue: 'redrock', rung: 'target', title: 'Canyon Record',
+      hint: (t) => t ? `Beat Redrock Reservoir's target time of ${fmtTarget(t)} in Time Trials.` : "Beat Redrock Reservoir's target time in Time Trials (target coming).",
+      test: (r) => r.venue === 'redrock' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
+    { char: 'Talon', venue: 'redrock', rung: 'four-stars', title: 'Owns the Canyon',
+      hint: 'Earn four stars in one race at Redrock Reservoir: win, no penalties, lead at every mark, and sail on manual trim.',
+      test: (r) => r.venue === 'redrock' && r.stars === 4 },
+    { char: 'Linesider', venue: 'redrock', rung: 'wildlife', title: 'Boil Chaser',
+      hint: 'In one race, sail through three striper boils — the patches of white water where striped bass drive shad to the surface — then finish.',
+      test: (r) => r.venue === 'redrock' && r.finished && ((r.vals || {})['redrock:boils'] || 0) >= 3 },
+
     // ── Pearl Lagoon `lagoon` (designed Sep 25 2026) ─────────────────────────────────
     // The squalls are the venue: Wes made them 25% larger and 50% slower the same day so a
     // front can be ridden. Animals (js/wildlife.js): green sea turtles on the seagrass,

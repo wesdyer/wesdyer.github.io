@@ -74,7 +74,9 @@ console.log('the rulebook');
     ok(w.Unlocks.ACHIEVEMENTS.every(a => a.hidden === undefined), 'no objective is hidden');
     ok(w.Unlocks.ACHIEVEMENTS.every(a => typeof w.Unlocks.hintOf(a) === 'string' && w.Unlocks.hintOf(a).length > 10), 'every objective is spelled out');
     for (const n of w.Unlocks.STARTING_TEN) ok(!w.Unlocks.gated(n), `${n} (starter) is never gated`);
-    ok(!w.Unlocks.isUnlocked('Finley') && !w.Unlocks.gated('Finley'), 'a character with no achievement yet is locked, and not on the board');
+    // any roster character with no objective yet (it was Finley until the Ocean gave him one)
+    const bare = w.AI_CONFIG.map(c => c.name).find(n => !w.Unlocks.STARTING_TEN.includes(n) && !w.Unlocks.ACHIEVEMENTS.some(a => a.char === n));
+    ok(bare && !w.Unlocks.isUnlocked(bare) && !w.Unlocks.gated(bare), `a character with no achievement yet is locked, and not on the board (${bare})`);
     ok(!w.Unlocks.isUnlocked('Ripple'), 'Ripple starts locked');
     const pool = w.Unlocks.fleetPool(w.AI_CONFIG);
     ok(!pool.some(c => c.name === 'Ripple') && pool.some(c => c.name === 'Bixby'), 'the pool drops the locked, keeps the free');

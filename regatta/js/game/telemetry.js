@@ -92,7 +92,7 @@ function recordTrajectory(dt) {
                          'leg', 'sweep', 'armed', 'ringSect16', 'rivals',
                          'legProg', 'floes', 'giveWayN', 'ocs', 'penaltyTurnsOwed',
                          'awa', 'aws', 'playerTack', 'rivalsX', 'current',
-                         'fried', 'boil', 'windMul'],
+                         'fried', 'boil', 'windMul', 'swell'],
                 formatNotes: {
                     ringSect16: '0clear 3closing 5lead 8plug 10hard, scalar 0 when >3 zones from the round mark',
                     rivals: 'unfinished rivals as [x,y,hdg,spd,tack(1=stbd,-1=port)]',
@@ -105,6 +105,7 @@ function recordTrajectory(dt) {
                     fried: 'seconds of electronics outage left on the player (volcano.js), 0 when none',
                     boil: 'broken water under the player from a vent boil, 0..1 (volcano.js)',
                     windMul: 'the plume dead-air multiplier at the player, 1 in clear air (volcano.js)',
+                    swell: 'the sea at the player (swell.js; null off the ocean): [swell clock s, set strength, surf01, withWave 0/1] — the clock lets a race be replayed against the exact sea',
                 },
                 samples: [], acc: 0,
             };
@@ -212,6 +213,8 @@ function recordTrajectory(dt) {
                 (() => { try { const f = state.volcano && window.Volcano && Volcano.fryOf(player); return f ? +Math.max(0, f.t0 + f.dur - state.volcano.t).toFixed(1) : 0; } catch (e) { return 0; } })(),
                 +((player.boil || 0).toFixed(2)),
                 (() => { try { return (state.volcano && window.Volcano) ? +Volcano.windMul(player.x, player.y).toFixed(2) : 1; } catch (e) { return 1; } })(),
+                (() => { try { if (!(window.Swell && Swell.active())) return null; const sw = player.swell || {};
+                    return [+Swell.now().toFixed(3), +Swell.setAt(Swell.primary(), player.x, player.y).toFixed(2), +(sw.surf01 || 0).toFixed(2), sw.withWave ? 1 : 0]; } catch (e) { return null; } })(),
             ]);
         } else if (recTraj && recTraj.samples.length > 50) {
             const t = recTraj; recTraj = null;

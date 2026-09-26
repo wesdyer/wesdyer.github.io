@@ -1494,7 +1494,9 @@ function updateAI(boat, dt) {
 
     // Apply Output
     const timeScale = dt * 60;
-    const target = boat.controller.targetHeading;
+    // A whale at the surface ahead (Bluewater Bonanza — hard contact; sim/collision.js) is steered
+    // round, as a sailor would: only ever a nudge off the controller's own heading.
+    const target = (typeof whaleDodgeHeading === 'function') ? whaleDodgeHeading(boat, boat.controller.targetHeading) : boat.controller.targetHeading;
     const speedLimit = boat.controller.speedLimit;
 
     // Smooth turn

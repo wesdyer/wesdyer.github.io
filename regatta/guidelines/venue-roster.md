@@ -46,8 +46,8 @@ not where the Aug 5 doc assumed.
 | Pearl Lagoon | ↦**Pearl** pearl oyster† | **Nimbus** spotted eagle ray | **Ribbon** sea krait | **Jester** clownfish | **Puff** mandarin dragonet (+15) | 0 |
 | Gatorgrass Bayou | **Chomp** crocodile† | **Croak** bullfrog | *Flit* dragonfly | **Etienne** red swamp crayfish | *Beau* alligator† | 2 |
 | Sockeye Run | **Slipstream** sockeye | **Snag** hellbender† | **Grizzle** brown bear | **Riffle** American dipper | **Seam** rainbow trout (+6) | 1 |
-| Bluewater Bonanza | **Spar** blue marlin | **Finley** yellowfin | *Sound* humpback | *Roam* blue shark | **Torrent** swordfish (+5) | 2 |
-| Redrock Reservoir | **Chisel** humpback chub | *Sawbill* merganser | *Echo* canyon bat | *Ridge* razorback sucker | **Talon** bald eagle (+15) | 3 |
+| Bluewater Bonanza | **Spar** blue marlin | **Finley** yellowfin | **Mola** sunfish (explorer) · **Song** humpback (wildlife) | **Roam** blue shark | **Torrent** swordfish (+5) | 2 |
+| Redrock Reservoir | **Chisel** humpback chub | **Sawbill** merganser | **Trek** Colorado pikeminnow (was Echo, canyon bat) | **Ridge** razorback sucker | **Talon** bald eagle (+15) · **Linesider** striped bass (Wildlife) | 3 |
 | Glowtide Strait | **Lure** black seadevil | **Veil** vampire squid | **Bloom** man-of-war | **Drift** sea nettle | **Prism** maxima clam (+5) | 0 |
 | Glacier Sound | **Bluff** polar bear | **Tiny** krill | ↦**Skerry** Atlantic puffin | **Pebble** Adélie penguin | **Fathom** orca (+23) | 1 |
 | Otter Point | *open* (Scoop went to the Cove) | *Loom* kelp greenling | ↦**Breeze** nudibranch | *Freckle* leopard shark | *Azure* blue whale | 3 |
@@ -142,9 +142,9 @@ New England birds.
 | River | 3 | **Grizzle** — brown bear | the bear on the gravel bar |
 | Ocean | 3 | **Sound** — humpback | the venue's whale blow |
 | Ocean | 4 | **Roam** — blue shark | shark pack |
-| Redrock | 2 | **Sawbill** — common merganser | |
-| Redrock | 3 | **Echo** — canyon bat | drinks on the wing off the reservoir |
-| Redrock | 4 | **Ridge** — razorback sucker | Colorado endemic |
+| Redrock | 2 | **Sawbill** — common merganser | ✓ shipped Sep 25 |
+| Redrock | 3 | **Trek** — Colorado pikeminnow | ✓ shipped Sep 25 (replaced Echo — no bats at Redrock) |
+| Redrock | 4 | **Ridge** — razorback sucker | Colorado endemic · ✓ shipped Sep 25 |
 | Arctic | 3 | **Chime** — beluga | |
 | Otter | 2 | **Loom** — kelp greenling | a kelp-forest fish for the kelp mechanic |
 | Otter | 4 | **Freckle** — leopard shark | shark pack; schools in the Monterey shallows |
@@ -594,6 +594,110 @@ comparison boards made with `eval/_refcells.py`):
 Tests: `eval/test_river.js`, and the Sockeye Run section of `eval/test_unlocks.js`. Probes:
 `eval/_venue_map.js` (generic), `_river_legs.js`, `_river_gorge.js`, `_river_spots.js`,
 `_river_bench.js`, `_river_scene.js`.
+
+## Bluewater Bonanza, as built (Sep 25 2026)
+
+**The sea was rebuilt first** (see memory `regatta-ocean-swell-sets` and `js/swell.js`):
+- Ground swell in finite SETS, running 30° off the course, with `surfGain` 1.2.
+- A slower crossing wind swell that grows with the wind.
+- A cape jet under the island, and the island's swell shadow.
+
+The run is the race. The skill is heating up and bearing away to catch rides, linking them across sets and trains, and choosing a lane: inshore wins in about half the seas, offshore in about a third, direct rarely.
+
+| Rung | Character | Objective |
+|---|---|---|
+| First win | **Spar** (blue marlin) | Win at Bluewater Bonanza. |
+| Mechanic | **Finley** (yellowfin tuna) | *Link the Swells:* 15 kn or more for 30 s straight on the run. Bots 9%; Wes 34.8 s and 34.0 s. |
+| Explorer | **Mola** (ocean sunfish, shipped Sep 25) | *The Far Island:* round shape-4, the offshore island, on the run. Pure exploration (+~47 s round the west side). The gate runs from inside the island south past the arena edge. |
+| Target time | **Roam** (blue shark, shipped Sep 25 — the second delivery, from a subject rewritten on Wes's blue-shark references) | Time Trials target, coming. |
+| Four stars | **Torrent** (swordfish, +5) | Four stars in one race here. |
+| Wildlife | **Song** (humpback, shipped Sep 25; Wes renamed her from Sound) | *Mother and Calf:* shoot the gap between the south point and the coral rock and sail within 250 u of the mother and calf resting in the lee just past it. A run through the gap meets them 16/16; the open route south of the rock never comes within 850 u. |
+
+**Animals** (`js/wildlife.js`), researched on 16 reference sheets plus Wes's own drone set:
+- **Humpbacks, revised the same day (Wes; tuned to his "1-3 pods a race" — now seven: the mother and calf, groups of 5, 2, 2, 2, 1 and 3; each of his seven recorded races meets 1–3, every run still ≥1).** Were ten pods, sized as Hawaiian surveys find them: the mother and calf, groups of 1, 1, 1, 2, 2, 2, 3 and 3, and a competitive group of 5. Their routes run along and across every leg, and every run meets at least one pod on any route (24/24 inshore, direct and offshore; `eval/_ocean_runwhales.js`).
+  - They cruise at 3–6 kn with short dives. About one surfacing in eight brings a display, and the competitive group more often.
+  - Each stroke of the flukes foreshortens and flexes the tail, and the flippers scull.
+  - **Hard contact AT THE SURFACE only** (`checkWhaleContact`, sim/collision.js): contact stops the boat and the whale sounds. A whale won't surface under a boat, and dives rather than swim into one.
+  - Bots steer round surfaced whales (`whaleDodgeHeading`): about 1 contact in 3 fleet races.
+- **Humpbacks (WHALES).** Four pods, one of them the mother and calf, which drift a slow circuit in the calm lee inside the point, by the gap between the point and the coral rock.
+  - They mostly travel, surfacing three or four times with a blow and diving fluke-up.
+  - About one surfacing in three brings a breach, a lobtail (tail slaps), a pec slap (rolled on the side, flipper raised) or a feeding lunge (head up through a boil of bait).
+  - Drawn at TRUE size (132 u): the flippers stand out from the body and glow turquoise under water (Wes's drone refs), the flukes are big and notched, and splashes are churned-water blobs, not rings.
+- **Mahi-mahi (HUNTERS, part of the flying-fish scene).** Packs of 2–3 in about 40% of the 14 flying-fish patches (Wes: "2-3 hunts a race" — measured 2–3 on each of his seven tracks, `eval/_ocean_fishsight.js`). Patches sit ON every lane, including the far-island route, and show as nervous water. They patrol deep at ~5 kn. Every 25–50 s a pack near the player rushes the school, or a fast boat puts the fish up, and they chase just under the surface at 29–33 kn with wakes, leaping now and then. About one flying fish in nine is taken as it drops back in.
+- **Motion checked against the real animals** (`eval/_ocean_motion.js`; game knots are the boats' own scale, and rhythms run about 3× compressed):
+
+  | Animal | Speed |
+  |---|---|
+  | Whale | 3.7 kn |
+  | Mother and calf, resting | 1 kn |
+  | Dolphins riding | at the boat's speed |
+  | Dolphins, resident school | 3.7 kn |
+  | Flying fish | 25–27 kn |
+  | Mahi | 29–33 kn chasing, 5 kn patrolling |
+  | Albatross | 25–35 kn |
+
+  - Whale fluke stroke ~3 s; blows every 7–11 s.
+  - Dolphins breathe every 4–8 s; albatross arcs every ~7 s.
+  - Flying fish sometimes skip into a second glide.
+- **Spinner dolphins (RIDERS).** Four schools join any boat doing 12 kn or more near the player and ride its bow; a resident school circles mark 3.
+- **Flying fish (FLYERS).** Bursts of 3–8 from under fast bows, gliding clear with a shadow and a plop.
+- **Laysan albatross (GLIDERS).** Three dynamic-soar in long banked arcs low over the swell, sometimes quartering round the player.
+
+Tests: `eval/test_ocean.js`, and the unlock rows (Roam listed as unshipped). Probes:
+`_ocean_objectives.js`, `_ocean_island.js`, `_ocean_run.js`, `_ocean_sets.js`, `_ocean_replay.js`, `_ocean_bench.js`, `_ocean_scene.js`.
+
+## Redrock Reservoir, as built (Sep 25 2026)
+
+**The traffic venue.** Every leg crosses the mark-3 junction, and legs 2 and 3 meet head-on
+in the M6 arm. There is no wind funnel: Wes's faster leg 4 was a windier day (12.7 kn in one
+race, 17 in another; `eval/_redrock_wind.js`). The fleet loses 10–60 s a leg in the traffic
+Wes never meets, leading from the gun.
+
+| Rung | Character | Objective |
+|---|---|---|
+| First win | **Chisel** (humpback chub) | Win at Redrock Reservoir. |
+| Mechanic | **Sawbill** (common merganser, shipped Sep 25) | *Right of Way:* three different rivals give way to you within 700 u of mark 3 in one race, sailing rules on, no penalties. A rival gives way when its own avoidance holds GIVE_WAY against you at HIGH/IMMINENT risk, more than 0.35 rad off its course for 0.8 s (bot.js's no-contact foul test from the other side). Three in the junction by accident: 1 in 80 boat-races; anywhere on the course it was 1 in 4, hence the junction (`eval/_redrock_giveway.js`). |
+| Explorer | **Trek** (Colorado pikeminnow, shipped Sep 25; replaced Echo the canyon bat, since Redrock has no bats) | *Condor Butte:* sail all the way round shape-12, the butte island in the north-west basin where the condors roost. Two gates run out from inside the island, west and north, and both must be crossed. Clear 180 u out all round; +60 s clockwise, +90 s anticlockwise (`eval/_redrock_butte.js`). |
+| Target time | **Ridge** (razorback sucker, shipped Sep 25) | Time Trials target: *coming*. Wes's three races on today's course average 196.7 s → 3:40, but set_venue_targets pools older-course runs and refuses (1.58× path best), so the target waits for new recordings. |
+| Four stars | **Talon** (bald eagle, +15; kept, since bald eagles winter on Lake Powell) | Four stars in one race here. |
+| Wildlife | **Linesider** (striped bass, shipped Sep 25) | *Boil Chaser:* sail through three striper boils in one race. The autopilot sails through 2+ in 3 races of 8 and 3 in 1 of 8, and that one was a slow race (`eval/_redrock_boils.js`). |
+
+Wes likes the venue freshwater-fish heavy: four of the six are fish.
+
+**Animals** (`js/wildlife.js`; Wes chose the four). Researched on about 25 reference sheets:
+bighorn drone shots, Zion and Grand Canyon overlooks, condors on the Grand Canyon rim, vultures
+from above, Lake Mead stripers, and drone boils.
+- **Striper boils.** Two at a time in seven open-water zones on and beside the course,
+  weighted toward the player. Each drifts with its school at 1 m/s, turns off the shore, and
+  lasts 40–70 s. Drawn as lobed foam sheets over the dark bait, with stripers rolling up
+  (black pinstripes on silver) and leaving flat swirls, shad fanning out ahead, and a soft slick
+  behind.
+- **California condors.** Three circle the butte on the thermal: flat plank wings, seven
+  fingers, a broad pale panel on the inner upper wing, a short square tail, and a bare orange
+  head. The first glides out over the course every 60–110 s and goes home. They bank into
+  the turn, their shadow falls on the water, and they never flap.
+- **Desert bighorn.** Four bands of 3–6 at the foot of the talus and towers (prop-64,
+  prop-23, prop-22, prop-20), within 50 u of the water. A ram or two, ewes and a lamb, with the
+  white rump and curled horns. They graze, watch a boat inside 340 u, and bound 70–110 u up
+  the rock, away from the water, from a boat inside 150 u, then look back.
+- **Coyotes.** A pair on shape-17 (by mark 7), singles on shape-19 (by the start) and on
+  shape-18 (the hub). They trot, stop, sit, go to the water's edge to drink, stare at a boat
+  inside 280 u, and lope off from one inside 110 u. They never step onto water.
+- **Common carp jumping** (added the same day; Wes: "we need a jumping fish type"). The
+  LEAPERS kit with `shore` (each jump on water within 30–170 u of land: near the walls and in
+  the coves) and `repeat` (a second jump from the same spot 1.6–3.2 s later, 35% of the time).
+  About one every 6–12 s near the player, 20 in two minutes in the test. From the references:
+  it goes up nearly vertically (short, foreshortened from above) out of a column of white,
+  tips over, and falls back flat on its side, showing the brass-gold flank with its big
+  scales and the orange-red tail and fins. Then a torn sheet of white the length of the fish,
+  and broken rings. 21 u (`_redrock_carp.js` is the frame strip).
+- **Motion,** in drawn body lengths a second like the others: bighorn walk 16 u/s at a ~1 Hz
+  stride and bound 85 u/s at ~2.5 Hz; coyotes trot 45 u/s at ~2.5 Hz and lope 110 u/s; condors
+  circle at 38 u/s (the eagle's convention) and glide at 70; boils drift 7–13 u/s.
+
+Tests: `eval/test_redrock.js`. Probes: `_redrock_giveway.js`, `_redrock_butte.js`,
+`_redrock_boils.js`, `_redrock_bench.js`, `_redrock_zoom.js`, `_redrock_scene.js`,
+`_redrock_spots.js`, `_redrock_wind.js`.
 
 ## Fourth animals (Sep 25 2026, Wes's request)
 

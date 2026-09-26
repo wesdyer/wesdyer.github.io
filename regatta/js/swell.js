@@ -126,6 +126,9 @@ let CFG = null;
 let POWER = 0;                 // Σ A·k over the trains, normalised by REF_POWER
 let AMP_TOTAL = 0;             // Σ A, units — the crest-to-mean height of the whole sea
 let TIME = 0;
+let WIND_GRID = new Map();     // cell -> mean wind speed, for trains with windScale (see windMul)
+let SHADOW_GRID = new Map();   // train|cell -> exposure 0..1, for trains with shadow (see shadowMul)
+const WIND_CELL = 400;
 
 const norm = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
 
@@ -155,13 +158,24 @@ function configure(doc, windFrom) {
     // never moved TIME and stayed byte-reproducible). A race's sea starts at
     // its own phase zero.
     TIME = 0;
-    TRAINS = []; SEA = null; CFG = null; POWER = 0; AMP_TOTAL = 0;
+    TRAINS = []; SEA = null; CFG = null; POWER = 0; AMP_TOTAL = 0; WIND_GRID = new Map(); SHADOW_GRID = new Map();
     const S = doc && doc.swell;
     if (!S || !Array.isArray(S.trains) || !S.trains.length) return;
 
-    CFG = { strength: S.strength != null ? S.strength : 1 };
+    CFG = { strength: S.strength != null ? S.strength : 1, catchPow: S.catchPow != null ? +S.catchPow : 1,
+            // How hard a face grabs a hull, on its own (Wes, Sep 25: "slightly easier to catch
+            // waves, but since they don't last as long then it works out"). `strength` would do it
+            // too, but it also scales the pounding and the set to leeward on the beat.
+            surfGain: S.surfGain != null ? +S.surfGain : 1 };
     const base = (typeof windFrom === 'number' && isFinite(windFrom)) ? windFrom : 0;
 
+    // EACH RACE ITS OWN SEA (Wes, Sep 25 2026: players learn "the techniques that pay", not a
+    // frame-for-frame replay). The set pattern is dealt from the race's wind-region phases —
+    // already random per race (initCourse) — so no extra draw touches the seeded stream, a race
+    // is still reproducible from its seed, and the next race brings different sets.
+    let raceSeed = 0;
+    for (const r of ((typeof state !== 'undefined' && state.course && state.course.windRegions) || [])) raceSeed += (r.phase || 0) * 97.13;
+    raceSeed = raceSeed % 1000;
     let acc = 0;
     S.trains.forEach((t, i) => {
         const T = Math.max(2, +t.periodS || 9);
@@ -182,9 +196,53 @@ function configure(doc, windFrom) {
         // which reads as chatter rather than as a sea. The picture keeps it; the hull mostly
         // does not. The swell you ride is the one that moves you.
         const force = t.force != null ? Math.max(0, +t.force) : 1;
+        // SETS (Wes, Sep 25 2026: "fix swells so that instead of lasting forever, being uniform
+        // and moving at exactly the same rate, they will be variable which will make it key to
+        // connect them, ride well and be strategic"). A train with a `sets` block comes in WAVE
+        // GROUPS, as real swell does: a set of big crests, a lull, another set — each set its
+        // own height and length, dealt from a hash of the set's index (never RNG). The groups
+        // travel at a fraction of the crest speed (deep water: half), so every crest is born
+        // small at the BACK of its set, grows through the middle and dies at the FRONT. A ride
+        // on one crest therefore ends when the crest runs out of set, and the run is won by
+        // linking rides: carrying speed through the lull and catching a crest in the next set.
+        //   waves        a set's slot, in wavelengths (set + lull)
+        //   width        [lo, hi] share of the slot the set fills
+        //   height       [lo, hi] a set's peak, as a fraction of the train's authored height
+        //   lull         the floor between sets, same units
+        //   groupSpeed   the groups' speed as a fraction of the crest speed
+        const S2 = t.sets;
+        const sets = S2 ? {
+            Lg: Math.max(1, +S2.waves || 7) * L,
+            cg: c * (S2.groupSpeed != null ? +S2.groupSpeed : 0.5),
+            wLo: (S2.width || [0.55, 0.8])[0], wHi: (S2.width || [0.55, 0.8])[1],
+            hLo: (S2.height || [0.5, 1.35])[0], hHi: (S2.height || [0.5, 1.35])[1],
+            lull: S2.lull != null ? +S2.lull : 0.15,
+            // ACROSS: a crest is not infinitely long (Wes, Sep 25). A set's height also varies
+            // ALONG its crests, cell by cell `across` wavelengths wide, blended smoothly — strong
+            // in one stretch, fading toward the lull in another — so a set is a PATCH of sea,
+            // and where you are across the course decides which sets you get. `patchy` is the
+            // share of cells a set barely reaches.
+            Lw: Math.max(1, +S2.across || 4) * L,
+            patchy: S2.patchy != null ? +S2.patchy : 0.35,
+            seed: (i + 1) * 17.23 + raceSeed
+        } : null;
         TRAINS.push({
             id: t.id || ('train-' + i),
-            theta, L, c, k, A, w, force,
+            theta, L, c, k, A, w, force, sets,
+            // How strongly the picture draws this train (1 for the primary, 0.42 for others).
+            show: t.show != null ? +t.show : null,
+            // A WIND SEA GROWS WITH THE WIND (Wes, Sep 25 2026: a real choice to go inshore
+            // into the compression). `windScale: { power, ref, max }` scales this train's
+            // height by (local mean wind / ref) ^ power, clamped to [1/max, max] — so where the
+            // breeze is up, so are the bumps. Read off the day's MEAN field (no puffs, no
+            // oscillation), cached on a grid, so it is the same every race.
+            windScale: t.windScale ? { p: +t.windScale.power || 1.5, ref: +t.windScale.ref || 20, max: +t.windScale.max || 1.6 } : null,
+            // AN ISLAND SHADOWS A SWELL (Wes, Sep 25 2026: real route choices). `shadow: { reach,
+            // floor }` — water with land up-wave of it (within `reach` units, looking back along
+            // the way the train comes from) gets a smaller swell, down to `floor` right behind the
+            // land and recovering with distance as the swell wraps back in. So the lee of an
+            // island trades the big ground swell for whatever else is there.
+            shadow: t.shadow ? { reach: +t.shadow.reach || 7000, floor: t.shadow.floor != null ? +t.shadow.floor : 0.35 } : null,
             sx: Math.sin(theta), sy: -Math.cos(theta),   // unit vector the wave travels along
             // Fixed per-train phase so two trains never start stacked crest-on-crest.
             // Derived from the index by the same golden-angle walk the wind regions use —
@@ -211,20 +269,132 @@ function update(dt) { if (TRAINS.length) TIME += dt; }
 // backward in the trough. That single fact is what makes the crest push a running boat along
 // and the trough hold it back, and it is why a boat beating into a sea gets set to leeward:
 // the water it is sitting in is going the way the wave is, which is downwind.
+// The mean wind speed at a grid node — the day's mean field (wind.js WIND_MEAN_FIELD), so no
+// puff or oscillation can make it depend on when a cell was first asked for.
+function _meanWind(i, j) {
+    const key = i * 100003 + j;
+    let v = WIND_GRID.get(key);
+    if (v === undefined) {
+        v = 0;
+        // (wind.js loads after this file and not on every page — guard both names)
+        if (typeof regionWindAt === 'function' && typeof WIND_MEAN_FIELD !== 'undefined') {
+            const prev = WIND_MEAN_FIELD; WIND_MEAN_FIELD = true;
+            try { v = regionWindAt(i * WIND_CELL, j * WIND_CELL).speed || 0; } finally { WIND_MEAN_FIELD = prev; }
+        }
+        WIND_GRID.set(key, v);
+    }
+    return v;
+}
+// How much this train's height is scaled by the local breeze (1 without windScale).
+function windMul(t, x, y) {
+    const W = t.windScale;
+    if (!W) return 1;
+    const gx = x / WIND_CELL, gy = y / WIND_CELL, i = Math.floor(gx), j = Math.floor(gy), fx = gx - i, fy = gy - j;
+    const v = (_meanWind(i, j) * (1 - fx) + _meanWind(i + 1, j) * fx) * (1 - fy) + (_meanWind(i, j + 1) * (1 - fx) + _meanWind(i + 1, j + 1) * fx) * fy;
+    if (!(v > 0)) return 1;
+    return Math.max(1 / W.max, Math.min(W.max, Math.pow(v / W.ref, W.p)));
+}
+
+// How exposed a grid node is to a train: 1 in the open, down to `floor` right behind land.
+// March back up the way the waves come from; the nearest land within `reach` sets the shade,
+// fading back to full exposure by the far end (the swell wraps round and fills back in).
+function _exposure(t, ti, i, j) {
+    const key = ti * 1e10 + i * 100003 + j;
+    let v = SHADOW_GRID.get(key);
+    if (v === undefined) {
+        v = 1;
+        const S = t.shadow, x0 = i * WIND_CELL, y0 = j * WIND_CELL;
+        if (typeof pointOnLand === 'function' && !pointOnLand(x0, y0)) {
+            for (let d = 200; d <= S.reach; d += 200) {
+                if (pointOnLand(x0 - t.sx * d, y0 - t.sy * d)) { v = S.floor + (1 - S.floor) * (d / S.reach); break; }
+            }
+        }
+        SHADOW_GRID.set(key, v);
+    }
+    return v;
+}
+function shadowMul(t, x, y) {
+    if (!t.shadow) return 1;
+    const ti = TRAINS.indexOf(t);
+    const gx = x / WIND_CELL, gy = y / WIND_CELL, i = Math.floor(gx), j = Math.floor(gy), fx = gx - i, fy = gy - j;
+    return (_exposure(t, ti, i, j) * (1 - fx) + _exposure(t, ti, i + 1, j) * fx) * (1 - fy) + (_exposure(t, ti, i, j + 1) * (1 - fx) + _exposure(t, ti, i + 1, j + 1) * fx) * fy;
+}
+
+// A SET'S ENVELOPE at distance s along a train's travel: [amplitude multiplier, its
+// derivative along s]. 1 everywhere on a train with no `sets`. Deterministic in (s, TIME).
+const _setHash = (n, seed, j) => { const v = Math.sin(n * 12.9898 + seed * 78.233 + j * 37.719) * 43758.5453; return v - Math.floor(v); };
+// A set's peak at lateral position q: cell heights blended with a smoothstep.
+function _setPeak(G, n, q) {
+    const c = q / G.Lw + 0.5 * _setHash(n, G.seed, 5), m = Math.floor(c), f = c - m, sm = f * f * (3 - 2 * f);
+    const cell = (j) => {
+        const base = G.hLo + (G.hHi - G.hLo) * _setHash(n * 131 + j, G.seed, 1);
+        return _setHash(n * 131 + j, G.seed, 4) < G.patchy ? G.lull + (base - G.lull) * 0.25 : base;
+    };
+    return cell(m) + (cell(m + 1) - cell(m)) * sm;
+}
+// q is the position ACROSS the train (along its crests); omitted, the set is uniform across.
+function envelope(t, s, q) {
+    const G = t.sets;
+    if (!G) { if (q == null) return [1, 0]; const px = s * t.sx - q * t.sy, py = s * t.sy + q * t.sx; return [(t.windScale ? windMul(t, px, py) : 1) * (t.shadow ? shadowMul(t, px, py) : 1), 0]; }
+    const g = (s - G.cg * TIME) / G.Lg + 0.37;
+    const n = Math.floor(g), u = g - n;
+    const H = q == null ? G.hLo + (G.hHi - G.hLo) * _setHash(n, G.seed, 1) : _setPeak(G, n, q);
+    // the breeze here (windScale trains): back from (s, q) to (x, y)
+    const px = s * t.sx - q * t.sy, py = s * t.sy + q * t.sx;
+    const wm = q != null ? (t.windScale ? windMul(t, px, py) : 1) * (t.shadow ? shadowMul(t, px, py) : 1) : 1;
+    const W = G.wLo + (G.wHi - G.wLo) * _setHash(n, G.seed, 2);
+    const off = (1 - W) * _setHash(n, G.seed, 3);
+    const v = (u - off) / W;
+    if (v <= 0 || v >= 1) return [G.lull * wm, 0];
+    const sn = Math.sin(Math.PI * v);
+    const b = sn * sn, db = Math.PI * Math.sin(2 * Math.PI * v);       // d b / d v
+    const top = Math.max(G.lull, H);
+    return [(G.lull + (top - G.lull) * b) * wm, (top - G.lull) * db / (W * G.Lg) * wm];
+}
+
 function sampleAt(x, y) {
     let elev = 0, gx = 0, gy = 0, ox = 0, oy = 0;
     for (let i = 0; i < TRAINS.length; i++) {
         const t = TRAINS[i];
-        const A = t.A * t.force;                     // what the HULL feels — see `force`
-        const ph = t.k * (x * t.sx + y * t.sy) - t.w * TIME + t.phase0;
+        const s = x * t.sx + y * t.sy, q = -x * t.sy + y * t.sx;
+        const [e, de] = envelope(t, s, q);
+        const A = t.A * t.force * e;                 // what the HULL feels — see `force` — in this set
+        const ph = t.k * s - t.w * TIME + t.phase0;
         const cs = Math.cos(ph), sn = Math.sin(ph);
         elev += A * cs;
-        const g = -A * t.k * sn;                     // d(elev)/ds along the travel direction
+        // d(elev)/ds along the travel direction, including the set's own rise and fall
+        const g = -A * t.k * sn + t.A * t.force * de * cs;
         gx += g * t.sx; gy += g * t.sy;
         const u = A * t.w * cs;                      // units/s along the travel direction
         ox += u * t.sx; oy += u * t.sy;
     }
     return { elev, gx, gy, ox, oy };
+}
+
+// ONE TRAIN'S slope along its own travel direction at (x, y), including its set envelope and
+// the hull's `force` — the term sampleAt() sums, kept apart so the surf push can be judged per
+// train (see trim: each face rewards pointing down ITS OWN direction).
+function trainSlope(t, x, y) {
+    const s = x * t.sx + y * t.sy, q = -x * t.sy + y * t.sx;
+    const [e, de] = envelope(t, s, q);
+    const ph = t.k * s - t.w * TIME + t.phase0;
+    return -t.A * t.force * e * t.k * Math.sin(ph) + t.A * t.force * de * Math.cos(ph);
+}
+// The push a boat heading `heading` would feel from the sea at (x, y) right now, knots/second —
+// the same sum trim() applies. Exported for the tuning harness and for any pilot that reads the
+// sea (it is what a sailor feels through the seat of the pants).
+function surfPushAt(x, y, heading, only) {
+    const hx = Math.sin(heading), hy = -Math.cos(heading);
+    let kt = 0;
+    for (let i = 0; i < TRAINS.length; i++) {
+        if (only != null && i !== only) continue;           // one train alone (tuning/replay)
+        const t = TRAINS[i], cos = hx * t.sx + hy * t.sy;
+        const along = trainSlope(t, x, y) * cos;                   // this train's slope along the track
+        const al = Math.max(0, cos);
+        const asym = along < 0 ? (1 + K.faceGain * Math.pow(al, CFG.catchPow || 1)) : (1 + K.troughWall * al);
+        kt += -along * K.surfKtPerSlope * asym;
+    }
+    return kt * (CFG.strength || 1) * (CFG.surfGain || 1);
 }
 
 // The train a sailor reads and steers to: the biggest one. The cross swell is real in the
@@ -291,8 +461,19 @@ function trim(boat, windFrom) {
     //    crests fastest and would collect the bonus several times a second.
     const alongSlope = f.gx * hx + f.gy * hy;
     const align = Math.max(0, cosPsi);
-    const asym = alongSlope < 0 ? (1 + K.faceGain * align) : (1 + K.troughWall * align);
-    const surfKt = -alongSlope * K.surfKtPerSlope * asym * (CFG.strength || 1);
+    // CATCHING TAKES POINTING DOWN THE WAVE (Wes, Sep 25 2026: "it's absolutely key that it
+    // takes skill to both start a surf, but also connect surfs"). With the face's extra shove
+    // linear in cos ψ, a boat 30° off the wave got 92% of it — the run's usual VMG angle
+    // surfed as well as bearing away did, so steering was no lever and once on, you stayed on.
+    // `catchPow` sharpens it: the face lifts you properly only when you point down it, so the
+    // move is to bear away onto the face as it comes under the stern and head back up to
+    // your angle between waves. 1 = the old behaviour.
+    //
+    // PER TRAIN (Sep 25 2026, the crossing wind swell). With a second rideable train from a
+    // different direction, "aligned with the waves" has two answers, and a face from the wind
+    // swell must reward pointing down the WIND SWELL. So the ride is summed train by train,
+    // each with its own alignment. On a one-train sea this is exactly the old expression.
+    const surfKt = surfPushAt(boat.x, boat.y, boat.heading);
 
     // 2. ORBITAL DRIFT. Applied to velocity, not to speed — the water is carrying the hull,
     //    which moves it over the ground without the log ever knowing.
@@ -423,7 +604,7 @@ function draw(ctx, state) {
         const t = TRAINS[i];
         // Secondary trains are scenery: present, readable as a cross sea, never loud enough
         // to confuse which way "the waves" are running.
-        const w8 = i === 0 ? 1 : 0.42;
+        const w8 = t.show != null ? t.show : (i === 0 ? 1 : 0.42);
 
         g.save();
         g.translate(cam.x, cam.y);
@@ -444,6 +625,15 @@ function draw(ctx, state) {
         for (let n = nLo; n <= nHi; n++) {
             const yc = sCam - ((Math.PI * 2 * n) / t.k) - (phaseOff * Math.PI * 2) / t.k;
             if (yc < -R - t.L || yc > R + t.L) continue;
+            // The crest is drawn as big as the set it is in (local -y is the travel direction,
+            // so this crest sits at s = sCam - yc): a set reads as a run of bold crests, the
+            // lull between as faint ones — which is what a sailor watches for astern.
+            // …and, since a set is a patch and not an endless band, as big as it is at each
+            // point ALONG the crest (local x runs along it; world q = qCam + x).
+            const qCam = -cam.x * t.sy + cam.y * t.sx;
+            const evAt = (xl) => t.sets ? Math.min(1.4, envelope(t, sCam - yc, qCam + xl)[0]) : 1;
+            const ev = t.sets ? Math.max(evAt(-R * 0.6), evAt(0), evAt(R * 0.6)) : 1;
+            if (ev < 0.03) continue;
 
             // One jagged boundary per profile fraction, built once and SHARED by the bands on
             // either side of it — that is what keeps the facets watertight instead of leaving
@@ -465,16 +655,25 @@ function draw(ctx, state) {
                 return pts;
             };
 
+            // Drawn in runs of a few facets, each as strong as the set is there. Neighbouring
+            // runs share their boundary nodes, so the strip stays watertight.
+            const RUN = t.sets ? 3 : NODES;
+            const runEv = [];
+            for (let a = 0; a < NODES - 1; a += RUN) runEv.push(evAt(-R + (a + RUN / 2) * STEP));
             for (const [u0, u1, tone, a0] of BANDS) {
                 const top = edgeAt(u0), bot = edgeAt(u1);
                 const C = TONE[tone];
-                g.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(a0 * w8).toFixed(3)})`;
-                g.beginPath();
-                g.moveTo(top[0][0], top[0][1]);
-                for (let q = 1; q < NODES; q++) g.lineTo(top[q][0], top[q][1]);
-                for (let q = NODES - 1; q >= 0; q--) g.lineTo(bot[q][0], bot[q][1]);
-                g.closePath();
-                g.fill();
+                for (let a = 0, r = 0; a < NODES - 1; a += RUN, r++) {
+                    const bEnd = Math.min(NODES - 1, a + RUN), e = runEv[r];
+                    if (e < 0.03) continue;
+                    g.fillStyle = `rgba(${C[0]},${C[1]},${C[2]},${(a0 * w8 * e).toFixed(3)})`;
+                    g.beginPath();
+                    g.moveTo(top[a][0], top[a][1]);
+                    for (let q = a + 1; q <= bEnd; q++) g.lineTo(top[q][0], top[q][1]);
+                    for (let q = bEnd; q >= a; q--) g.lineTo(bot[q][0], bot[q][1]);
+                    g.closePath();
+                    g.fill();
+                }
             }
 
             // THE RIDGE, in angular shards rather than one ruled line. A swell crest from
@@ -489,7 +688,7 @@ function draw(ctx, state) {
                 const run = 1 + (pr() < 0.45 ? 1 : 0);
                 const q2 = Math.min(NODES - 1, q + run);
                 const th = (2 + pr() * 5) * w8;
-                g.fillStyle = `rgba(${C1[0]},${C1[1]},${C1[2]},${(0.34 * w8 * (0.55 + pr() * 0.45)).toFixed(3)})`;
+                g.fillStyle = `rgba(${C1[0]},${C1[1]},${C1[2]},${(0.34 * w8 * evAt(ridge[q][0]) * (0.55 + pr() * 0.45)).toFixed(3)})`;
                 g.beginPath();
                 g.moveTo(ridge[q][0], ridge[q][1] - th);
                 g.lineTo(ridge[q2][0], ridge[q2][1] - th);
@@ -504,13 +703,14 @@ function draw(ctx, state) {
             // this layer draws breaking water it stops reading as a swell and starts reading
             // as surf. What you actually see from above is sun catching the odd facet where
             // the crest turns over: tiny, bright, and gone.
-            if (i === 0) {
+            if (i === 0 && ev > 0.5) {
                 g.strokeStyle = 'rgba(255,255,255,0.42)';
                 g.lineWidth = 2.2;
                 g.lineCap = 'round';
                 for (let q = 1; q < NODES - 1; q++) {
                     if (pr() > 0.09) continue;
                     const p0 = ridge[q];
+                    if (evAt(p0[0]) < 0.7) continue;          // glints only where the set is big
                     g.beginPath();
                     g.moveTo(p0[0], p0[1] - 2);
                     g.lineTo(p0[0] + STEP * (0.16 + pr() * 0.22), p0[1] - 2 + (pr() - 0.5) * 4);
@@ -536,8 +736,8 @@ function lift(x, y) {
     // whether or not that crest is one the physics leans on.
     let e = 0;
     for (let i = 0; i < TRAINS.length; i++) {
-        const t = TRAINS[i];
-        e += t.A * Math.cos(t.k * (x * t.sx + y * t.sy) - t.w * TIME + t.phase0);
+        const t = TRAINS[i], s = x * t.sx + y * t.sy, q = -x * t.sy + y * t.sx;
+        e += t.A * envelope(t, s, q)[0] * Math.cos(t.k * s - t.w * TIME + t.phase0);
     }
     return Math.max(-1, Math.min(1, e / AMP_TOTAL));
 }
@@ -558,7 +758,9 @@ window.Swell = {
     configure, active, update, trim, draw, hud, sampleAt, lift,
     // Read by the effects layer (seafx.js) so whitecaps sit on the crest lines the physics
     // actually has, and so a bow knows where in the wave it is. All read-only.
-    primary, windSea, phaseAt, now: () => TIME,
+    primary, windSea, phaseAt, now: () => TIME, surfPushAt, trains: () => TRAINS,
+    // How big the set is here, 0..~1.4 of the train's authored height (1 with no sets).
+    setAt: (t, x, y) => t ? envelope(t, x * t.sx + y * t.sy, -x * t.sy + y * t.sx)[0] : 1,
     // Read by the tuning harness in eval/, so the numbers in a report are the numbers the
     // game uses rather than a second copy of the formulas.
     debug: () => ({ trains: TRAINS.map(t => ({

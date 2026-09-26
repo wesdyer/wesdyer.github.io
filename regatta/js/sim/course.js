@@ -269,6 +269,77 @@ if (typeof GameEvents !== 'undefined') GameEvents.on('player-contact', (e) => {
     _riverRun.scraped = true;
     GameEvents.emit('player-feat', { id: 'river:scraped' });
 });
+// BLUEWATER BONANZA — two objectives on the run home (designed Sep 25 2026, on the swell with
+// sets, the crossing wind swell and the cape jet — see js/swell.js):
+//   ocean:linked      Finley's "Link the Swells": 15 kn or more for 30 s straight on the run.
+//                     A crest dies in ~25 s, so a stretch that long means rides LINKED across
+//                     sets and trains. Bots 9% of runs; Wes 34.8 s and 34.0 s (eval/_ocean_objectives.js).
+//   ocean:far-island  Mola's "The Far Island": round the offshore island (shape-4, the southern
+//                     one) on the run. Pure exploration, +~47 s (eval/_ocean_island.js). The gate
+//                     runs from inside the island's hard sand straight south past the arena's
+//                     edge, so the only way across it is round the island's south side.
+const OCEAN_RUN = { venue: 'ocean', linkKt: 15, linkSecs: 30, island: { a: { x: 3300, y: 7000 }, b: { x: 3300, y: 12500 } } };
+let _oceanRun = null;   // { last: {x,y}, t, fast, linked, island } for the race in progress
+function checkOceanRun() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== OCEAN_RUN.venue || !me || !me.isPlayer
+        || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _oceanRun = null; return; }
+    if (!_oceanRun) _oceanRun = { last: null, t: state.race.timer, fast: 0, linked: false, island: false };
+    const O = _oceanRun, here = { x: me.x, y: me.y }, dt = Math.max(0, state.race.timer - O.t);
+    O.t = state.race.timer;
+    const onRun = me.raceState.leg === ((state.course.route || []).length - 1);
+    if (onRun && me.speed * 4 >= OCEAN_RUN.linkKt) O.fast += dt; else O.fast = 0;
+    if (!O.linked && O.fast >= OCEAN_RUN.linkSecs && typeof GameEvents !== 'undefined') {
+        O.linked = true;
+        GameEvents.emit('player-feat', { id: 'ocean:linked' });
+    }
+    if (!O.island && onRun && O.last && _routeGateCrossed(O.last, here, OCEAN_RUN.island.a, OCEAN_RUN.island.b) && typeof GameEvents !== 'undefined') {
+        O.island = true;
+        GameEvents.emit('player-feat', { id: 'ocean:far-island' });
+    }
+    O.last = here;
+}
+// REDROCK RESERVOIR — the traffic venue (designed Sep 25 2026): every leg crosses the mark-3
+// junction and legs 2 and 3 meet head-on in the M6 arm.
+//   redrock:gave-way   Sawbill's "Right of Way": value = how many DIFFERENT rivals gave way
+//                      to the player in the junction (within hubR of mark 3). A rival gives way
+//                      when its own avoidance holds the GIVE_WAY role against the player at
+//                      HIGH/IMMINENT risk and turns it more than dev rad off its course for hold
+//                      seconds — bot.js's no-contact foul test, seen from the other side. Three
+//                      happened once in 80 boat-races by accident (eval/_redrock_giveway.js).
+//   redrock:butte      Trek's "Condor Butte": round the north-west butte island (shape-12).
+//                      Two gates run out from inside the island — west to beyond the arena
+//                      edge, and north — so crossing both means sailing its west AND north
+//                      shores: all the way round, either way (eval/_redrock_butte.js).
+const REDROCK_RUN = { venue: 'redrock', hubMark: 'mark-3', hubR: 700, dev: 0.35, hold: 0.8,
+    butte: { w: { a: { x: -2330, y: -1500 }, b: { x: -3400, y: -1500 } }, n: { a: { x: -2330, y: -1500 }, b: { x: -2330, y: -2700 } } } };
+let _redrockRun = null;   // { last, timers: Map(boat id → s), gave: Set(boat id), west, north, butte }
+function checkRedrockRun() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== REDROCK_RUN.venue || !me || !me.isPlayer
+        || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _redrockRun = null; return; }
+    if (!_redrockRun) _redrockRun = { last: null, timers: new Map(), gave: new Set(), west: false, north: false, butte: false };
+    const R = _redrockRun, C = REDROCK_RUN, dt = 1 / 30;
+    const hub = (state.course.marks || []).find(m => m.id === C.hubMark);
+    const inHub = hub && Math.hypot(me.x - hub.x, me.y - hub.y) < C.hubR;
+    for (const rv of state.boats) {
+        const c = rv.controller; if (rv === me || !c || rv.raceState.finished) continue;
+        const on = c.threatBoat === me && c.avoidanceRole === 'GIVE_WAY' && (c.riskState === 'HIGH' || c.riskState === 'IMMINENT') && c.lastAvoidDeviation > C.dev;
+        const v = on ? (R.timers.get(rv.id) || 0) + dt : Math.max(0, (R.timers.get(rv.id) || 0) - dt / 2);
+        R.timers.set(rv.id, v);
+        if (on && v >= C.hold && inHub && !R.gave.has(rv.id)) {
+            R.gave.add(rv.id);
+            if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'redrock:gave-way', value: R.gave.size });
+        }
+    }
+    const here = { x: me.x, y: me.y };
+    if (R.last && !R.butte) {
+        if (_routeGateCrossed(R.last, here, C.butte.w.a, C.butte.w.b)) R.west = true;
+        if (_routeGateCrossed(R.last, here, C.butte.n.a, C.butte.n.b)) R.north = true;
+        if (R.west && R.north) { R.butte = true; if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'redrock:butte' }); }
+    }
+    R.last = here;
+}
 const _bowSide = new Map();
 function checkBowCrossing(list) {
     const me = state.boats && state.boats[0];
