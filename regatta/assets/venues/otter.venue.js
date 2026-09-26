@@ -8334,6 +8334,10 @@ window.VENUE_DOC["otter"] = {
   },
   "swell": {
     "strength": 0.85,
+    "kelp": {
+      "floor": 0.15,
+      "reach": 450
+    },
     "trains": [
       {
         "id": "primary",

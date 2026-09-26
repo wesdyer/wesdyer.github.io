@@ -112,6 +112,19 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Coyote (nose to tail tip) | Redrock | 1.6 m | 16 | ~32 (≈2×) | 32 | ✓ Sep 25 |
 | Striped bass, in a boil | Redrock | 0.8 m | 8 | ~18 (a school, rule 7) | 18 | ✓ Sep 25 |
 | Common carp, jumping | Redrock | 0.7 m | 7 | ~21 (bigger than the Lake's bass 14 and the salmon 17) | 21 | ✓ Sep 25 |
+| Orca (male; female; calf) | Glacier | 7.6 m; 6 m; 3.2 m | 76; 60; 32 | **true size**, like the humpbacks | 76; 60; 32 (were 72; 66; 36 — the female was over life) | ✓ Sep 25 |
+| Emperor; gentoo; macaroni; Adélie penguin | Glacier | 1.15; 0.8; 0.7; 0.7 m | 12; 8; 7; 7 | floor 20 + ~15% rank steps: 30; 24; 21; 20 | 30; 24; 21; 20 (were 22; 16; 17; 15 — under the floor) | ✓ Sep 25 |
+| Leopard seal | Glacier | 3.2 m | 32 | ~64 (broad, ~2×) | 60 (was 44) | ✓ Sep 25 |
+| Antarctic tern (bill to tail; span) | Glacier | 0.4 m; 0.8 m | 4; 8 | floor 20; span ~2× the body, as a tern's is | 20; 38 (was 15; 24, then 32) | ✓ Sep 26 |
+| Golden jellyfish (bell) | Glowtide | 0.1-0.2 m | 1-2 | ~9 across (a bloom, rule 7) | 5-11 | ✓ Sep 26 |
+| Manta ray (span) | Glowtide | 4.5 m | 45 | ~70 (broad, ~1.5×) | 70 | ✓ Sep 26 |
+| Palau flying fox (span) | Glowtide | 1.1 m | 11 | ~33 (×3) | 36 | ✓ Sep 26 |
+| Hawksbill turtle | Glowtide | 0.8 m | 8 | ~24 (broad) | 24 | ✓ Sep 26 |
+| Dugong (calf) | Glowtide | 2.7 m (1.5 m) | 27 | ~54 (broad, ~2×) | 52 (29) | ✓ Sep 26 |
+| Sea otter (on its back) | Otter Point | 1.3 m | 13 | ~30 (broad floater, ~2.3×) | 32 | ✓ Sep 26 |
+| California sea lion (cow / bull) | Otter Point | 1.9 m (2.4 m) | 19 (24) | ~38 (2×: about half the white shark, Wes's refs; slim, a quarter as wide as long) | ~39 (~49) | ✓ Sep 26 |
+| Great white shark | Otter Point | 5 m | 50 | ~76 (1.5×: bigger than a hull ON PURPOSE — the venue's showpiece) | 76 | ✓ Sep 26 |
+| Blue whale | Otter Point | 25 m | 250 | 360 (~1.45×: at true size it read too small beside the 1.5-2.3× animals — Wes, Sep 26) | ~345 | ✓ Sep 26 |
 
 The four resized animals were all from the pond and lake round, the one Wes said looked worse
 than the Cove. They had been iterated at 3× on the bench with no length target and ran 1.5–2×

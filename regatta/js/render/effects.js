@@ -715,6 +715,40 @@ function drawJellyGlow(ctx) {
     ctx.restore();
 }
 
+// A layer the size of the screen for drawNightOverlayLift, reused frame to frame.
+let _liftCanvas = null;
+function drawNightOverlayLift(ctx, drawOverlays, drawCovers) {
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    if (!_liftCanvas) _liftCanvas = document.createElement('canvas');
+    if (_liftCanvas.width !== W || _liftCanvas.height !== H) { _liftCanvas.width = W; _liftCanvas.height = H; }
+    const g = _liftCanvas.getContext('2d'), m = ctx.getTransform();
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H);
+    g.setTransform(m);
+    drawOverlays(g);
+    // cut out what stands over the water: every hard shape (land, karst, floes — awash bars,
+    // reefs and hidden colliders are water here, as for the crests), then every visible hull
+    // and its rig. destination-out, so overlapping shapes simply erase twice.
+    g.save(); g.globalCompositeOperation = 'destination-out'; g.fillStyle = '#000';
+    const cam = state.camera, half = Math.hypot(W, H) * 0.5 + 200;
+    for (const isl of (state.course && state.course.islands) || []) {
+        if (isl.awash || isl.reef || isl.hidden || !isl.vertices || isl.vertices.length < 3) continue;
+        if (Math.abs(isl.x - cam.x) > half + (isl.radius || 0) || Math.abs(isl.y - cam.y) > half + (isl.radius || 0)) continue;
+        g.beginPath(); g.moveTo(isl.vertices[0].x, isl.vertices[0].y); for (let k = 1; k < isl.vertices.length; k++) g.lineTo(isl.vertices[k].x, isl.vertices[k].y); g.closePath(); g.fill();
+    }
+    for (const b of state.boats) {
+        if (b.opacity !== undefined && b.opacity <= 0.1) continue;
+        if (Math.abs(b.x - cam.x) > half || Math.abs(b.y - cam.y) > half) continue;
+        const poly = getHullPolygon(b);
+        g.beginPath(); g.moveTo(poly[0].x, poly[0].y); for (let k = 1; k < poly.length; k++) g.lineTo(poly[k].x, poly[k].y); g.closePath(); g.fill();
+    }
+    // and whatever else was drawn OVER the overlays in the main pass (the marks: a line runs to
+    // the committee boat and the pin, not across them) — drawn here in destination-out, so each
+    // erases exactly its own silhouette
+    if (drawCovers) drawCovers(g);
+    g.restore();
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(_liftCanvas, 0, 0); ctx.restore();
+}
+
 function drawNightWash(ctx) {
     const n = nightAmt();
     if (n <= 0) return;
@@ -814,6 +848,9 @@ function drawNightGlow(ctx) {
         }
     }
     ctx.clip(hullMask, 'evenodd');
+    // Animals that stir the bioluminescence or catch the moon (Glowtide's jellies, mantas and
+    // dugongs; wildlife.js) — inside the hull mask, so their light never lands on a boat.
+    if (window.Wildlife && Wildlife.drawGlow) Wildlife.drawGlow(ctx, n);
     for (const boat of state.boats) {
         if (boat.opacity !== undefined && boat.opacity <= 0.1) continue;
         const bio = boat.bioTrail;

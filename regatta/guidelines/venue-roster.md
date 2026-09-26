@@ -49,7 +49,7 @@ not where the Aug 5 doc assumed.
 | Bluewater Bonanza | **Spar** blue marlin | **Finley** yellowfin | **Mola** sunfish (explorer) · **Song** humpback (wildlife) | **Roam** blue shark | **Torrent** swordfish (+5) | 2 |
 | Redrock Reservoir | **Chisel** humpback chub | **Sawbill** merganser | **Trek** Colorado pikeminnow (was Echo, canyon bat) | **Ridge** razorback sucker | **Talon** bald eagle (+15) · **Linesider** striped bass (Wildlife) | 3 |
 | Glowtide Strait | **Lure** black seadevil | **Veil** vampire squid | **Bloom** man-of-war | **Drift** sea nettle | **Prism** maxima clam (+5) | 0 |
-| Glacier Sound | **Bluff** polar bear | **Tiny** krill | ↦**Skerry** Atlantic puffin | **Pebble** Adélie penguin | **Fathom** orca (+23) | 1 |
+| Glacier Sound | **Bluff** polar bear | **Tiny** krill | **Spike** narwhal (Skerry parked) | **Pebble** Adélie penguin | **Fathom** orca (+23) · **Grin** leopard seal (Wildlife) | 1 |
 | Otter Point | *open* (Scoop went to the Cove) | *Loom* kelp greenling | ↦**Breeze** nudibranch | *Freckle* leopard shark | *Azure* blue whale | 3 |
 | Spoonbill Flats | **Petal** spoonbill† | **Skitter** mudskipper† | *a Wadden species* (was Wink, fiddler crab) | *Curl* Eurasian curlew | *Rake* Eurasian oystercatcher | 3 |
 | Emberfall Isle | **Ember** firefish† | **Torch** fire salamander† | *Vent* yeti crab | *Basalt* marine iguana | *Soot* sooty tern | 3 |
@@ -698,6 +698,286 @@ from above, Lake Mead stripers, and drone boils.
 Tests: `eval/test_redrock.js`. Probes: `_redrock_giveway.js`, `_redrock_butte.js`,
 `_redrock_boils.js`, `_redrock_bench.js`, `_redrock_zoom.js`, `_redrock_scene.js`,
 `_redrock_spots.js`, `_redrock_wind.js`.
+
+## Glacier Sound, as built (Sep 25 2026)
+
+**The pack ice is the race.** An out-and-back up the hooked fjord round the north ice field,
+through 112 drifting floes. The skill is threading them clean: Wes finished with no floe
+contact in 20 of his 38 recorded races, the fleet in 6 of 40 (`eval/_arctic_ice.js`).
+
+Wes made the **wildlife Antarctic** and kept both poles in the cast: Bluff (polar bear) and
+Spike (narwhal) stay. Skerry (Atlantic puffin) is parked for another home, and Chime (beluga)
+is dropped.
+
+| Rung | Character | Objective |
+|---|---|---|
+| First win | **Bluff** (polar bear) | Win at Glacier Sound. |
+| Mechanic | **Tiny** (krill) | *Untouched:* finish without touching any ice: floe, ice island or glacier shore (style `ice`; granite doesn't count). `collision.js` now tags `player-contact` with `ice`. |
+| Explorer | **Spike** (narwhal; narwhals gather at glacier fronts) | *The Calving Face:* within 350 u of the north glacier front (props 57–61), in the bay past the rounding island. No track comes within 1,100 u; a bot's detour costs about 100 s (`eval/_arctic_face.js`). |
+| Target time | **Pebble** (Adélie penguin) | 4:05 (38 races). |
+| Four stars | **Fathom** (orca, +23) | Four stars in one race here. |
+| Wildlife | **Grin** (leopard seal, shipped Sep 25) | *Four Colonies:* pass all four penguin colonies in one race. Wes's tracks come within 350 u of the gentoos in 29/38 races, the macaronis in 12/38, and the emperors in 5/38, so it takes a deliberate trip to the emperors. |
+
+**Animals** (`js/wildlife.js`; the painted top-down sprites from the August art pass in
+`assets/images/props/arctic`, the tern drawn in code). Researched on 15 reference sheets:
+orca pods and killer-whale drone shots, porpoising penguins, penguins on floes, gentoo and
+emperor colonies from the air, leopard seals on floes, terns hovering and diving.
+- **Orcas:** three pods of 3–5, with calves, travelling their loops at ~5 kn in a loose
+  side-by-side formation. The pod surfaces together, a little out of step, every 18–30 s: the
+  back rolls through head to tail with white water off it and a short bushy blow downwind.
+  Between surfacings each whale is a dim shape under the water, flukes beating. Look-ahead
+  steering plus a no-step-onto-land rule keeps them off the shore, and they pass under floes.
+- **Penguins,** one species per place:
+  - 18 emperors huddle on isle-4's fast ice.
+  - Gentoos (7 and 6) on the two granite skerries by the rounding.
+  - 18 macaronis on the rounding island's rock.
+  - Adélie groups of 3–6 ride seven floes near the lane.
+  - Colonies send small groups porpoising out to sea and back. Adélies toboggan off their
+    floe from a boat within 110 u, porpoise away, and climb onto another floe.
+- **Leopard seals:** three, hauled out alone on floes near the lane. Now and then, or from a
+  close boat, one slides in, cruises under the water with its head coming up in a ring, and
+  hauls out on another floe.
+- **Antarctic terns:** five flocks of 5–9 over the lane and at the glacier face. They hover
+  bill-into-wind on a fast wingbeat, shift about, and plunge-dive folded, with a splash,
+  then climb back.
+
+**Reference review, the same day** (Wes: "match their colour, shape, motion, movement and
+behaviour"). 30 sheets, plus field notes on killer-whale respiration, penguin porpoising and
+leopard-seal foraging. What changed:
+- **Orcas:**
+  - The tall black dorsal fin, with its long shadow. A male's is 1.8 m; females and calves have
+    a shorter, curved fin.
+  - Breathing in bouts: 3–5 surfacings 7–11 s apart, then a 35–60 s dive. One breath per
+    surfacing, ~1.6 breaths a minute when travelling, compressed about 3×.
+  - A bow wave where the head breaks and a smooth slick behind, replacing two white rails
+    along the body.
+- **Penguins, species by species:**
+  - Parties go to sea from each colony in SINGLE FILE and come back the same way.
+  - Emperors and Adélies TOBOGGAN on ice; gentoos and macaronis walk the rock.
+  - Adélies rush to the floe edge on their bellies and go in one after another, then leap
+    out onto another floe.
+  - Gentoos, Adélies and macaronis PORPOISE in their own markings; gentoos are the fastest.
+    Emperors swim low and never porpoise.
+  - The emperor huddle is packed tight and slowly rolls.
+- **Leopard seals:** each keeps a station off a penguin colony's way to the sea, patrolling
+  awash with a low V off the head, and hauls out alone on the nearest floe.
+- **Second pass (Wes: "I didn't see the leopard seal … didn't see the orcas surface … the terns
+  didn't cast shadows"; double-check the scale).**
+  - Every animal re-sized to scale.md; the penguins had been under the floor.
+  - Four leopard seals: two off the rounding colonies, two on the pack edge the course threads.
+    They haul out longer (60–120 s) on floes chosen beside the lane.
+  - Orcas surface more often (bouts of 4–6 breaths 6–9 s apart, 20–32 s down), and their
+    route runs through the narrows and north pack. At the surface they show a solid black
+    back, the dorsal fin's lit edge, a bow wave peeling off both sides and a bigger blow.
+  - Tern shadows are darker and scaled with the bird.
+  - Replaying Wes's six latest races (`eval/_arctic_sightings.js`), a leopard seal is in view
+    20–58 s a race (was 0–18) and surfacing orcas 13–33 s.
+- **Third pass (Wes: nothing under rock or ice; no penguins on a seal's floe; the blows; the
+  motion).**
+  - `swimTo` in wildlife.js checks the whole body (nose to tail) against every hard shape,
+    and floes where they will be in 0.9 s, since they drift AND spin. A swimmer squeezed
+    anyway slips out to the nearest reachable open water.
+  - Orcas dive UNDER the floes (Wes) but never under rock or the fixed ice. They surface
+    only where the water above is open, and go down if a floe drifts over them.
+  - Penguins never take a floe a leopard seal is on or making for, and a seal never takes
+    one with penguins on it, arriving or leaving.
+  - The blow goes as the blowhole breaks the surface and hangs where it was blown: a dense
+    core, then a ragged cloud of lobes drifting downwind, with its shadow on the water.
+    Adult males blow biggest.
+  - Gaits in body lengths a second:
+    - Emperors walk a stately 0.6 with a slow roll.
+    - Adélies bustle on a quick roll.
+    - Gentoos stride.
+    - Macaronis hop feet-together on rock.
+    - Tobogganing is about twice walking.
+    - Porpoisers swim ~3 (gentoos fastest, leaping highest); emperors cruise low.
+    - Swimming groups weave.
+- **Leopard seals on and off the ice (Wes: "they should porpoise off, splash, then swim away … becoming a shadow as they descend").**
+  - Leaving: the seal pivots slowly to face open water. It humps to the edge heave by heave, the body bunching and stretching. Then it arcs off head first (0.8 s, shadow under it) into a splash: a torn crown of white, spray thrown ahead, broken rings.
+  - It bursts away, slows to a cruise and sinks: the sprite hands over to a dark seal-shaped shadow that curves away, shrinks a little and fades out over ~3.5 s. Deep, it swims back under the pack and surfaces later with a ring.
+  - The leap only goes where the whole arc and landing are clear of rock and other floes.
+  - Hauling out: it heaves up over the edge where it touched (a splash), then humps a body length in, instead of appearing mid-floe.
+  - `eval/_arctic_sealdive.js` films it (HAUL=1 for hauling out). It stops the page's own animation loop, or the frames are not evenly spaced.
+- **Full review, Sep 26** (every animal against the reference sheets and field notes, at scale, in motion):
+  - Orcas, the four penguins and their gaits, and the scale table all held up.
+  - **Leopard seal colour and shape corrected.** From above it is a long, slim, dark slate animal with the spotting on the pale throat. The August sprite was a stout pale seal blotched white all over, which reads as a harbour seal. It is now drawn slimmer (0.82 across), with its back darkened to slate.
+  - **Tern upper parts corrected:** a pale grey mantle with a white rump and tail. The body had been drawn all white, which is the underside.
+  - **Tern wingstroke redrawn** (Sep 26, Wes: "make sure the terns' wing movement looks right"). The old flap only bent the wingtips. Now each wing swings through a real stroke, and from above that foreshortens it: full span as it passes level, short at the top and bottom. The downstroke is spread and, when hovering, sweeps forward; on the upstroke the wrist flexes and the long hand sweeps back. The wings are long and narrow (span ~2× the body) with dark outer primaries, and the tail fans when hovering. The beat is ~4.8 Hz hovering and ~3.5 Hz cruising (measured common tern: 3.1–3.7 Hz). `eval/_arctic_ternstroke.js` films one beat.
+  - **Terns roost on floes** between fishing bouts (they do this at the ice edge): about a fifth of the birds at any time, standing into the wind, and lifting off from a boat, a seal or the end of the rest.
+  - `test_arctic` asserts all of it over ten minutes with the pack drifting.
+  - `eval/_arctic_motion.js` draws film strips of every gait and the blow.
+
+Tests: `eval/test_arctic.js`. Probes: `_arctic_ice.js`, `_arctic_face.js`, `_arctic_scene.js`, `_arctic_bench.js`.
+
+## Glowtide Strait, as built (Sep 26 2026)
+
+A Palau-like karst strait by moonlight. Every wake glows for 9 s, and the venue asks
+"follow the glow, or trust your own line?". The tide doesn't separate Wes from the fleet (both
+ride ~1.3 kn fair up the beat), but the glow is everywhere: boats spend 20–100 s a race in
+someone else's (`eval/_glowtide_wakes.js`).
+
+| Rung | Character | Objective |
+|---|---|---|
+| First win | **Lure** (black seadevil) | Win at Glowtide Strait. |
+| Mechanic | **Veil** (vampire squid) | *Trust Your Own Line:* win having spent no more than 5 s in any other boat's glowing wake, **start included** (Wes). `glowtide:glow` counts from the gun (within 14 u of another boat's bioTrail more than 0.4 s old). |
+| Explorer | **Bloom** (man-of-war) | *Find the Bloom:* sail into the golden jellyfish bloom in the north-west lagoon (within 300 u of -2350,-2550), then finish. Nobody's track goes there. |
+| Target time | **Drift** (sea nettle) | 3:40 (16 races). |
+| Four stars | **Prism** (maxima clam) | Four stars in one race here. |
+
+**Animals** (`js/wildlife.js`; Wes chose five), from 31 reference sheets:
+- **Golden jellyfish** (*Mastigias*, Palau's Jellyfish Lake). About 520 in a dense bloom in the north-west lagoon, each an amber bell with cream spots and the pale rosette of its oral arms showing through. They pulse ~2 Hz and swim slowly. Near the surface they are bigger and brighter; deeper, smaller and bluer. Moonlight catches the near-surface bells. They mix with the lagoon's existing moon-jelly drifts, as in the real lake.
+- **Manta rays.** Three in the channels, drawn black with white shoulder patches, cephalic fins and a short tail, 70 u across. They cruise on a slow ~0.4 Hz wingbeat and in bouts somersault in place, showing the white spotted belly with gill slits. The plankton they stir flickers blue-green.
+- **Palau flying foxes.** Loose streams cross the strait between the islands on slow rowing beats (~2.2 Hz). Drawn with broad dark membrane wings over finger bones, scalloped trailing edges, a golden mantle and a fox face; 36 u span, with shadows.
+- **Hawksbill turtles.** Three swim the reef rocks with a slow flipper stroke and come up to breathe. Two nest: each hauls up a beach in lurches, digs a body pit flinging sand, then crawls back. The tracks are the hawksbill's staggered alternating gait, and they stay on the sand. Drawn with the hooked beak and amber overlapping tortoiseshell with a serrated rear edge.
+- **Dugongs.** Three on the seagrass shallows (one with a calf at its side). They graze head-down leaving a feeding trail and silt, and rise every ~minute to breathe with a ring. Drawn with a whale-like crescent fluke and a broad muzzle disc, 52 u; the plankton glows faintly round them.
+
+**Second pass (Wes, Sep 26):**
+- The jellies' moonlight painted over boats. `Wildlife.drawGlow` now runs inside the hull mask in `drawNightGlow`.
+- Mantas travel: each has a circuit of four feeding spots. It feeds for 25–45 s at each (circles plus bouts of backflips), then swims on at ~2 kn.
+- Flying foxes: three flocks, each commuting back and forth on its own line between the islands, circling over the far island's trees before heading back. Always one stream on each line.
+- **Manta movement redone** (Wes: "research manta ray movement especially when feeding"). From Fish et al. 2018 (JEB) and the Manta Trust's feeding notes:
+  - A slow ~0.3 Hz stroke (halved in game) with deep amplitude, drawn as a travelling wave so the hooked wingtips lag the root. Travelling mantas also glide.
+  - Cruising, the cephalic fins are rolled into horns; feeding, they unfurl into forward paddles either side of a gaping white-rimmed mouth.
+  - Feeding circles run anticlockwise from above, as cyclone feeding does.
+  - Bouts of somersault feeding. Surface-feeding wingtips break the water with splashes and rings.
+  - Reef-manta Y shoulder patches.
+- **Flying fox flight redone** (Wes: "research how the bats fly … make it look right"). It follows the bat-flight kinematics literature (Riskin et al. 2012) and the reference sheets. The wing is built from two key poses:
+  - **Downstroke:** fully spread and sweeping forward. The wrist is half-way out and ahead of the shoulder; the long hand-wing is swept back to a pointed tip, with the trailing edge deeply scalloped between the finger tips and running back to the ankle.
+  - **Upstroke:** the wrist flexes and the hand-wing folds back alongside the arm into a short crescent.
+  - From above, the span also foreshortens as the wing rises and falls.
+  - Steady rowing beats at ~2.5–2.9 Hz, with short glides now and then (wings held spread), and legs trailing. `eval/_glowtide_batstroke.js` films one beat.
+- Hawksbills: seven swimmers, on and beside the course, drawn more opaque. They surface every ~35 s, and their flipper strokes stir the plankton.
+
+Tests: `eval/test_glowtide.js`. Probes: `_glowtide_legs.js`, `_glowtide_wakes.js`, `_glowtide_bench.js`, `_glowtide_scene.js`.
+
+## Otter Point, as built (Sep 26 2026)
+
+| Rung | Character | Objective | Judged | Measured |
+|---|---|---|---|---|
+| First win | **Barker** (California sea lion) | King of the Rock: win | `r.won` | — |
+| Mechanic | **Ruby** (vermilion rockfish) | Inside the Kelp Line: inside 3 of the 5 north-coast kelp beds, no rock touched | `otter:inside` ≥ 3, no `otter:scraped` | the fleet runs ~1 km offshore; the bot steered inside (A*, `eval/_otter_feats.js inside`) passed 4 of 5 in 277 s vs 235 s plain, scraping once — a ~40 s tax that takes careful helming |
+| Explorer | **Gilt** (garibaldi) | Tip and Arch: round the outside of the NW tip (west of the blade stacks, north of the islet), then through the arch | gates `tipW` + `tipN`, then `arch` (x −1855, the 80-140 u channel under the arch point's span) | bot 490 s vs 235 s (`_otter_feats.js tip`); the arch channel is tight |
+| Target | **Freckle** (leopard shark) | Point to Point: beat 3:45 in Time Trials | target rung | Wes's 5 runs, mean 201 s |
+| Four stars | **Maw** (lingcod) | Boss of the Reef | `r.stars === 4` | — |
+| Wildlife | **Azure** (blue whale) | Witness the Hunt: a SUCCESSFUL hunt with any of it on the player's screen — the sprint, the strike, or the blood for 45 s after (Wes). A shark shadowing a boat doesn't hunt, so the player hangs back near a shark rather than crowding it | `otter:hunt` (js/wildlife.js onPlayerScreen, W.sawSprint / W.killT) | 1 in 6 plain autopilot races; kills 47% of ambushes (Seal Island), 30% of chases; hang round the rafts |
+
+The rock between kelp-c1 and kelp-c2 shuts the inside: the way through is the arch. Swell damping over
+kelp is on (`swell.kelp { floor 0.15, reach 450 }` in the venue doc). Grotto (wolf eel) shipped with a
+record but no rung here — he is free for another venue. Checks: sim/course.js OTTER_RUN / checkOtterRun;
+test eval/test_otter.js.
+
+### The hunt, redesigned from Wes's drone videos (Sep 26 2026)
+
+Overhead, a kill is a SPRINT and a STRIKE, not a breach: stalk deep → sprint 1.6 s (3× cruise, the shape
+firming up, no fin) → strike (an eruption of white foam ~1.5 lengths, the shark rolled, belly flashing) →
+thrash 3-4 s in the churn (head shaking, pink in the foam) → the foam opens into a torn lacy ring that
+drifts wider for ~20 s, a patchy red-brown cloud blooms, and the shark feeds, circling through its plume.
+Misses (about half) end in the sea lions porpoising off, jinking. The breach survives as 1 strike in 8
+(never after a surface chase). Kills stay abstract: foam and blood, no prey drawn. Probes:
+eval/_otter_moments.js (the hunt frame by frame).
+
+## Otter Point, wildlife as built (Sep 26 2026)
+
+Wes chose the four: sea otters in the kelp, California sea lions on the rocks and beaches and swimming
+to and from the sea, great whites patrolling the kelp edge and rocky coast ("one of the highlights of
+the whole game"), blue whales offshore. All in `js/wildlife.js` (the OTTER POINT section), config
+`WILDLIFE.otter`; test `eval/test_otter.js`; probes `eval/_otter_bench.js` (every pose beside a hull),
+`eval/_otter_scene.js`, `eval/_otter_moments.js` (the breach frame by frame, the shadowing, a stampede,
+the lunge), `eval/_otter_race_wild.js` (what a sailor sees in a race).
+
+- **Sea otters** — ten rafts in the kelp beds (43 otters), drawn ON the kelp canopy (drawPerched: the
+  float stratum paints before it). On their backs: pale head, dark body awash, big webbed hind feet
+  splayed up, paws on the chest; many with a strand of kelp across the belly; two mothers with a pup on
+  the chest. They groom (paws at the face, a quick roll), and the foragers (~40%) dive head-first with a
+  flick of the feet and come up with an urchin, crab or clam they pound on their chests. A boat at 300 u:
+  they sit up and watch it (periscoping); at 110 u half dive, half roll over and swim off, then backstroke
+  home. A mother never dives with her pup: she backstrokes away with it, and when she forages the pup
+  floats alone until she comes back to it.
+- **Sea lions** — nine haul-outs (64): the four north stacks, the two bird rocks, a whaleback by the
+  islet, the cove beach. They lie huddled in clumps on the collider (drone refs), golden cows, dark
+  bulls with a pale crest, wet ones dark and shining; heads up and barking at a boat within 420 u; within
+  170 u the ones near the water galumph in and porpoise off together, raft offshore and later haul out
+  onto the same spots. Five commuting groups raft (flippers up in the air) at each rock's sea spot — the
+  fleet's line passes 30-40 u from the north stacks' rafts — and go in to loiter off the rock and back.
+  A boat sailing into a raft scatters it.
+- **Great whites** — four, each patrolling the water where a haul-out's sea lions raft (the head and
+  bird rock, the west stacks, the east stacks, the islet and the big bird rock). A slate-grey torpedo
+  under the water (the veil keeps it DARK: the shadow that says shark), heavy pectorals, lamnid
+  swimming (stiff body, the tail stock working). Every 12-28 s it comes up FINNING: a dark swept dorsal
+  standing out of the water with its shadow, white water at its leading edge, the tail tip slicing
+  behind. CURIOUS: when the player comes within 650 u it comes up and shadows the boat off the quarter,
+  fin up, for 9-14 s (60-100 s between). HUNTING: a sea lion swimming in its water and in the player's
+  view (70-120 s between hunts, venue-wide): it sinks out of sight, stalks under, rushes up and BREACHES
+  — out nearly vertical, much nearer the camera, rolling to show the white belly, jaws gaping pink round
+  the teeth, a crown of torn white water; the crash; the sea lion thrown clear (65%) or taken (a thrash
+  at the surface and a slick). Measured on the autopilot's line (3 seeds): a shark in view ~47 s a race,
+  finning ~30 s, three shadowing passes and one breach in view every race.
+- **Blue whales** — four (a pair off the north lane, singles outside the beat and off the far corner),
+  550-700 u outside the fleet's line: a blow at the edge of the screen now and then. Pale aqua through
+  the water, mottled; the long surfacing roll (head and splash guard first, the tiny dorsal at the very
+  end), a tall column of a blow, flukes up on a third of the terminal dives, and a side LUNGE through a
+  red krill swarm with the pleated throat ballooned out. Blue Water (`otter:blue-water`) is the player
+  within 260 u of a whale's middle while racing; the autopilot never earns it.
+
+### Otter Point wildlife, second pass (Sep 26 2026, Wes's notes)
+
+- **Fin orthographic:** from straight down a vertical fin is only its top edge — a narrow raked blade
+  along the spine — and its height shows only in the shadow it throws down-right (turned into the
+  shark's frame); the tail's upper lobe the same.
+- **Sharks and rocks:** patrols re-laid in open water (`eval/_otter_solidmap.js` maps what is solid,
+  `eval/_otter_clear.js` reports each path's clearance); the head patrol is there-and-back (`pingpong`);
+  steering pads the nose and flanks; a hunt only ever targets a sea lion in open water (110 u clear).
+- **Sharks chase what is close:** a sea lion swimming in open water within 700 u and on screen is
+  hunted (25-45 s apart venue-wide): half the time an ambush from below (the breach), half — when close —
+  a CHASE at the surface, fin up, the group porpoising flat out, ending in a lunge (a smaller breach). A
+  finning shark within 230 u scatters a raft. A SEA OTTER caught out of the kelp (the new travellers
+  that cross between beds) is chased too: it bolts for the nearest bed, the shark won't follow into
+  the kelp, and a lunge that reaches it only sends it under — the otter always gets away.
+- **Following boats:** only once a boat is within FIVE BOAT LENGTHS (275 u; Wes) — the player first, or any
+  boat in view — and that comes before any hunt; it keeps up (to 280 u/s), 12-18 s, 25-45 s apart. On the
+  autopilot's line that is 0-2 follows a race.
+- **The lunge (third pass):** the whale makes for a krill swarm ahead of it and lunges when its head
+  reaches the swarm (150 u), so its open mouth drives through the middle; it ROLLS in gradually (1.5 s),
+  gapes, the pouch balloons, it all but stops, the jaws close, the pouch drains and it rolls back. The
+  swarm thins as it is engulfed; a new one appears (fading in) further along the pod's way.
+  `eval/_otter_lunge.js` films it with the head-to-krill distance.
+- **Blue whale shape and colour (from Wes's five aerial shots):** a slim SPINDLE — widest ~a tenth of its
+  length just behind the flippers, the rounded snout about half that, one long taper to a thin tail
+  stock; slender pointed flippers ~0.14 L at 0.28 from the snout, pale turquoise under water; delta
+  flukes with swept-back points. PALE silvery lavender-grey, never humpback-dark: a sunlit pale ridge
+  along the back with the flanks shading bluer, 150 fine pale/dark flecks of dapple, a pale snout and
+  rostrum ridge, a pale splash guard and a black V of blowholes. Surfacing white water is one sheet, not
+  dashes. `eval/_blue_bench.js` draws it large beside references. Krill by the rocks is scenery (no
+  whale steers for a swarm without 300 u of open water round it); the west loop moved out.
+- **Sea lions never under rock:** members keep a body's clearance (nose, flanks, tail) with the
+  solid test, not the centre point; the water's edge off each spot is the NEAREST open water in any
+  direction (beaches back onto land); they splash the instant they leave the rock. Bug found: the
+  splash position was stored in the spot's own `sx/sy`, and each return overwrote the entry point.
+- **More traffic:** every haul-out sends two to four to sea every 25-55 s (up to two groups out),
+  they raft at the sea spot and swim home to their own spots (in the water, then hauling out).
+- **Blue whales:** 360 long (was 240, true size — too small beside the rest); they SWIM — forward
+  along their own heading, turning no tighter than 1.5 body lengths, chasing a point ahead of their
+  place in the pod (never turning on the spot) — and look ahead to keep their length off the rocks;
+  the west whale's loop moved out past the stacks, the corner whale's east. The fluke stroke is a slow
+  up-and-down (5.5 s): the flukes foreshorten through it, rise clearer at the top and flash their pale
+  undersides; fluke prints on the surface behind. The blow: an explosive burst, a dense core, lumps of
+  mist leaning off downwind, the column's long shadow down-right, and a fall-out patch on the water.
+  Blue Water nearR 250 (the autopilot must not earn it: 0 in 4 seeds).
+
+### Otter Point wildlife, from Wes's videos (Sep 26 2026)
+
+Video study tools: `python3 -m yt_dlp` + `imageio_ffmpeg` (pip --user); frames tiled with ffmpeg
+`fps=…,scale=…,tile=4x3`. Storyboards (no download) via the page's playerStoryboardSpecRenderer.
+- The KILL (drone hunt): the strike's foam swirl opens into a lacy ring that lingers (~9 s); after a take
+  the shark thrashes, then FEEDS ~40 s — circling slowly through a red-brown blood plume it trails
+  (soft puffs from its mouth, spreading and fading ~30 s), surfacing on the carcass (a pink patch in
+  white water) every 9-15 s.
+- TAIL-RIDING (two videos): sea lion groups near a patrolling shark sometimes go and keep station just
+  behind its tail for 10-18 s; the shark never hunts a group doing it.
+- Rafts are tight packs (a jittered grid, all facing one way) — the big bird rock's is 16, bird rock's 10.
+- Haul-outs packed (the Oregon short): 30 on the big bird rock, 22 on bird rock, 9-12 on the stacks;
+  the ones at the waterline stay dark and wet, the dry ones up top golden.
+- Swimming sea lions from above read mid tan-grey (#6e5c4b), not dark brown; no ring round a rafter.
 
 ## Fourth animals (Sep 25 2026, Wes's request)
 

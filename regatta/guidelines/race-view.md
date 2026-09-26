@@ -826,3 +826,26 @@ Race-view specific. The full asset rubric is visual-style.md §13.
 - [ ] Render code touches no RNG that the eval harness depends on (§3)
 - [ ] Wildlife: sized by scale.md, shadow down-right by height, wake only while moving, every
       water effect sized to the drawn body (§10.6)
+
+### Wingbeats (Sep 26 2026, Wes: "check their flight and wing movement")
+
+Every flapping bird now uses `wingStroke(ph, amp)` in wildlife.js, or the tern's `ternWing`.
+From straight above, a wing swinging up and down FORESHORTENS: it is full span only as it
+passes level. The downstroke is spread; on the upstroke the wrist flexes and the hand sweeps
+back. Rates are the real birds' cruising wingbeats (Pennycuick), not the game's 3× clock:
+
+| Bird | Rate | Notes |
+|---|---|---|
+| Herring gull | ~3.2 Hz | Was 1.4. Gulls following a ship mostly glide, with a few beats now and then. |
+| Brown pelican | ~2.2 Hz | Was 0.7. Flaps in bouts and glides between. |
+| Great egret | ~2.6 Hz | Was 0.8. Deep, bowed beats. |
+| Bald eagle | ~2.4 Hz | Deep, labouring beats climbing with a fish. It no longer flaps at all while soaring; before it had a slow wobble. |
+| Antarctic tern | ~4.8 Hz hovering, ~3.5 Hz cruising | |
+
+The albatross and condor glide only. `eval/_wingstrokes.js` films one beat of each.
+
+**All of these run at HALF the real rate** (`WING_TIME = 0.5` in wildlife.js, Wes, Sep 26 2026).
+At the game's ~3× clock the real rates read too fast. It covers every wing and flipper beat:
+birds, the flying foxes, the eagle ray's and manta's wings, and the turtles' flippers. Fish
+tail beats, whale and dugong flukes, the jellies' pulse and walking gaits are left alone.
+

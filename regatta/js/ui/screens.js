@@ -1679,6 +1679,10 @@ function openCharacterPicker() {
     const all = charactersAlphabetical();
     const open = window.Unlocks ? all.filter(c => Unlocks.isUnlocked(c.name)) : all;
     const toEarn = window.Unlocks ? all.filter(c => !Unlocks.isUnlocked(c.name) && Unlocks.gated(c.name)) : [];   // all from AI_CONFIG, so shipped
+    // Both halves of the board carry a count, so it reads as N yours and M still to earn.
+    const labelRow = (text, top) => { const head = document.createElement('div'); head.style.cssText = `grid-column:1/-1; margin-top:${top}px;`;
+        head.innerHTML = `<div class="t-label" style="font-size:11px; letter-spacing:0.22em; color:#8fa3bd;">${text}</div>`; grid.appendChild(head); };
+    labelRow(`Yours · ${open.length}`, 0);
     for (const cfg of open) {
         const cell = document.createElement('button');
         cell.type = 'button';
@@ -1707,10 +1711,7 @@ function openCharacterPicker() {
         }
     }
     if (toEarn.length) {
-        const head = document.createElement('div');
-        head.style.cssText = 'grid-column:1/-1; margin-top:14px;';
-        head.innerHTML = `<div class="t-label" style="font-size:11px; letter-spacing:0.22em; color:#8fa3bd;">Still to earn · ${toEarn.length}</div>`;
-        grid.appendChild(head);
+        labelRow(`Still to earn · ${toEarn.length}`, 14);
         const career = Unlocks.career();
         for (const cfg of toEarn) {
             const cell = document.createElement('div');

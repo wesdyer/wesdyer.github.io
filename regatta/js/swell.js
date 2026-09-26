@@ -127,7 +127,8 @@ let POWER = 0;                 // Σ A·k over the trains, normalised by REF_POW
 let AMP_TOTAL = 0;             // Σ A, units — the crest-to-mean height of the whole sea
 let TIME = 0;
 let WIND_GRID = new Map();     // cell -> mean wind speed, for trains with windScale (see windMul)
-let SHADOW_GRID = new Map();   // train|cell -> exposure 0..1, for trains with shadow (see shadowMul)
+let SHADOW_GRID = new Map();
+let KELP_GRID = new Map(), KELP = null;   // train|cell -> exposure behind kelp; the kelp shapes (lazy)   // train|cell -> exposure 0..1, for trains with shadow (see shadowMul)
 const WIND_CELL = 400;
 
 const norm = (a) => { while (a > Math.PI) a -= 2 * Math.PI; while (a < -Math.PI) a += 2 * Math.PI; return a; };
@@ -158,7 +159,7 @@ function configure(doc, windFrom) {
     // never moved TIME and stayed byte-reproducible). A race's sea starts at
     // its own phase zero.
     TIME = 0;
-    TRAINS = []; SEA = null; CFG = null; POWER = 0; AMP_TOTAL = 0; WIND_GRID = new Map(); SHADOW_GRID = new Map();
+    TRAINS = []; SEA = null; CFG = null; POWER = 0; AMP_TOTAL = 0; WIND_GRID = new Map(); SHADOW_GRID = new Map(); KELP_GRID = new Map(); KELP = null;
     const S = doc && doc.swell;
     if (!S || !Array.isArray(S.trains) || !S.trains.length) return;
 
@@ -166,7 +167,9 @@ function configure(doc, windFrom) {
             // How hard a face grabs a hull, on its own (Wes, Sep 25: "slightly easier to catch
             // waves, but since they don't last as long then it works out"). `strength` would do it
             // too, but it also scales the pounding and the set to leeward on the beat.
-            surfGain: S.surfGain != null ? +S.surfGain : 1 };
+            surfGain: S.surfGain != null ? +S.surfGain : 1,
+            // KELP FLATTENS THE SWELL (Wes, Sep 26 2026, Otter Point): see kelpMul.
+            kelp: S.kelp ? { floor: S.kelp.floor != null ? +S.kelp.floor : 0.15, reach: +S.kelp.reach || 450 } : null };
     const base = (typeof windFrom === 'number' && isFinite(windFrom)) ? windFrom : 0;
 
     // EACH RACE ITS OWN SEA (Wes, Sep 25 2026: players learn "the techniques that pay", not a
@@ -313,6 +316,39 @@ function _exposure(t, ti, i, j) {
     }
     return v;
 }
+// KELP FLATTENS THE SWELL (Wes, Sep 26 2026 — Otter Point's brief: "kelp beds flatten the swell
+// and grab your keel"). A giant-kelp canopy damps the waves passing through it, so inside a bed
+// and in its lee — shoreward, down the way the swell runs — the water is nearly flat, recovering
+// over `reach`. That is what makes the inside line a choice: calm, short water between the beds
+// and the shore (and the drag if you touch a bed), against surf rides in the swell outside.
+// Cells of KELP_CELL; lazy, cached per race like the island shadow.
+const KELP_CELL = 60;
+function _kelpShapes() {
+    if (KELP && KELP.length) return KELP;
+    KELP = ((typeof state !== 'undefined' && state.course && state.course.islands) || []).filter(s => /kelp/.test(s.kind || '') && s.vertices && s.vertices.length > 2);
+    return KELP;
+}
+function _inKelp(x, y) { for (const s of _kelpShapes()) { const r = s.radius || 1e9; if (Math.abs(x - s.x) > r || Math.abs(y - s.y) > r) continue; if (typeof pointInPoly === 'function' && pointInPoly(x, y, s.vertices)) return true; } return false; }
+function _kelpExposure(t, ti, i, j) {
+    const key = ti * 1e10 + i * 100003 + j;
+    let v = KELP_GRID.get(key);
+    if (v === undefined) {
+        const K2 = CFG.kelp, x0 = i * KELP_CELL, y0 = j * KELP_CELL;
+        v = 1;
+        if (_kelpShapes().length) {
+            if (_inKelp(x0, y0)) v = K2.floor;
+            else for (let d = 40; d <= K2.reach; d += 40) if (_inKelp(x0 - t.sx * d, y0 - t.sy * d)) { v = K2.floor + (1 - K2.floor) * (d / K2.reach); break; }
+        }
+        KELP_GRID.set(key, v);
+    }
+    return v;
+}
+function kelpMul(t, x, y) {
+    if (!CFG || !CFG.kelp) return 1;
+    const ti = TRAINS.indexOf(t);
+    const gx = x / KELP_CELL, gy = y / KELP_CELL, i = Math.floor(gx), j = Math.floor(gy), fx = gx - i, fy = gy - j;
+    return (_kelpExposure(t, ti, i, j) * (1 - fx) + _kelpExposure(t, ti, i + 1, j) * fx) * (1 - fy) + (_kelpExposure(t, ti, i, j + 1) * (1 - fx) + _kelpExposure(t, ti, i + 1, j + 1) * fx) * fy;
+}
 function shadowMul(t, x, y) {
     if (!t.shadow) return 1;
     const ti = TRAINS.indexOf(t);
@@ -335,13 +371,13 @@ function _setPeak(G, n, q) {
 // q is the position ACROSS the train (along its crests); omitted, the set is uniform across.
 function envelope(t, s, q) {
     const G = t.sets;
-    if (!G) { if (q == null) return [1, 0]; const px = s * t.sx - q * t.sy, py = s * t.sy + q * t.sx; return [(t.windScale ? windMul(t, px, py) : 1) * (t.shadow ? shadowMul(t, px, py) : 1), 0]; }
+    if (!G) { if (q == null) return [1, 0]; const px = s * t.sx - q * t.sy, py = s * t.sy + q * t.sx; return [(t.windScale ? windMul(t, px, py) : 1) * (t.shadow ? shadowMul(t, px, py) : 1) * kelpMul(t, px, py), 0]; }
     const g = (s - G.cg * TIME) / G.Lg + 0.37;
     const n = Math.floor(g), u = g - n;
     const H = q == null ? G.hLo + (G.hHi - G.hLo) * _setHash(n, G.seed, 1) : _setPeak(G, n, q);
     // the breeze here (windScale trains): back from (s, q) to (x, y)
     const px = s * t.sx - q * t.sy, py = s * t.sy + q * t.sx;
-    const wm = q != null ? (t.windScale ? windMul(t, px, py) : 1) * (t.shadow ? shadowMul(t, px, py) : 1) : 1;
+    const wm = q != null ? (t.windScale ? windMul(t, px, py) : 1) * (t.shadow ? shadowMul(t, px, py) : 1) * kelpMul(t, px, py) : 1;
     const W = G.wLo + (G.wHi - G.wLo) * _setHash(n, G.seed, 2);
     const off = (1 - W) * _setHash(n, G.seed, 3);
     const v = (u - off) / W;

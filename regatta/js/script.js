@@ -43,6 +43,9 @@ function update(dt) {
     checkRiverRun();
     checkOceanRun();
     checkRedrockRun();
+    checkArcticRun();
+    checkGlowRun(dt);
+    checkOtterRun();
     // The swell's own clock. Advanced from dt like everything else, so it pauses with the
     // race and is identical for a given seed — a wave field is pure trigonometry and must
     // never reach for the RNG stream. No-op off the ocean.
@@ -682,6 +685,18 @@ function draw() {
     // and unlike the two passes above it runs on every venue, because a fire burns at noon.
     // drawFireGlow scales itself by nightAmt() rather than returning early on it.
     drawFireGlow(ctx);
+    // THE COURSE OVERLAYS COME BACK UP (Wes, Sep 26 2026: the night "dulls the lines for marks
+    // and start lines and precedence arrows"). They are information, not scenery, so the
+    // moonlight must not multiply them down — but they belong UNDER the land and the hulls.
+    // So at night they are drawn a second time, into their own layer, with the land and the
+    // boats cut out of it, and that layer goes on top of the wash (effects.js).
+    if (nightAmt() > 0 && !soloSail) drawNightOverlayLift(ctx, (g) => {
+        drawActiveGateLine(g);
+        if (state.course.type !== 'islandRound' && !(window.School && School.startPractice())) drawLadderLines(g);
+        drawLayLines(g); drawMarkZones(g); drawRoundingArrows(g);
+        if (window.GoalField) GoalField.drawPath(g, player);
+        drawRulesOverlay(g);
+    }, (g) => { drawMarkBodies(g); });
 
     // Draw Indicators. Not on the First Sail: the classmates are scenery there, and a name
     // tag pointing off-screen is one more thing for a beginner to wonder about.

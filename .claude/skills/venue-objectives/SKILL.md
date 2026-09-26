@@ -7,7 +7,7 @@ description: Design, then build, one regatta venue's character objectives and it
 
 Done so far: Lighthouse Cove (`bay`), Sailing School (`pond`), Stillwater Lake (`lake`),
 Pearl Lagoon (`lagoon`), Gatorgrass Bayou (`swamp`), Sockeye Run (`river`), Bluewater
-Bonanza (`ocean`), Redrock Reservoir (`redrock`). Remaining: glowtide, arctic, otter, flats, volcanic.
+Bonanza (`ocean`), Redrock Reservoir (`redrock`), Glacier Sound (`arctic`), Glowtide Strait (`glowtide`). Remaining: otter, flats, volcanic.
 The recommended character map for every venue is in `regatta/guidelines/venue-roster.md`
 (the audit plus the "as built" sections). Read that venue's row and the latest "as built"
 section before proposing anything.
@@ -110,6 +110,11 @@ section before proposing anything.
    decisions Wes made.
 
 ## Pitfalls seen
+
+- **wildlife.js is one scope, and its config and debug keys are shared too.** At Glacier Sound a
+  second `drawSeal`, a `colonies` config key (the Cove's gulls) and a `debug().colonies` field
+  each collided with an existing one; the page failed to load or test_cove broke. Grep the
+  file for every new function, config key and debug field.
 
 - Stale browser cache made working code look broken. Reload with cache bypass, or serve
   on a fresh port.

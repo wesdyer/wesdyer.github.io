@@ -340,6 +340,101 @@ function checkRedrockRun() {
     }
     R.last = here;
 }
+// GLACIER SOUND — two objectives (designed Sep 25 2026; the wildlife went Antarctic, Wes):
+//   arctic:iced   Tiny's "Untouched" is a finish WITHOUT it: any contact with ice — a floe, an
+//                 ice island or the glacier shore (style 'ice'; granite does not count). The
+//                 fleet finishes floe-free 6 times in 40, Wes 20 in 38 (eval/_arctic_ice.js).
+//   arctic:face   Spike's "The Calving Face": within faceR of the north glacier front (props
+//                 57-61) — the north-east bay past the rounding island, where no track goes
+//                 (closest 1,100 u; a bot's detour costs ~100 s, eval/_arctic_face.js).
+const ARCTIC_RUN = { venue: 'arctic', face: ['prop-57', 'prop-58', 'prop-59', 'prop-60', 'prop-61'], faceR: 350 };
+let _arcticRun = null;   // { iced, face } for the race in progress
+function checkArcticRun() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== ARCTIC_RUN.venue || !me || !me.isPlayer
+        || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _arcticRun = null; return; }
+    if (!_arcticRun) _arcticRun = { iced: false, face: false };
+    if (_arcticRun.face) return;
+    for (const pr of state.course.props || []) {
+        if (!ARCTIC_RUN.face.includes(pr.id) || Math.hypot(me.x - pr.x, me.y - pr.y) > ARCTIC_RUN.faceR) continue;
+        _arcticRun.face = true;
+        if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'arctic:face' });
+        break;
+    }
+}
+if (typeof GameEvents !== 'undefined') GameEvents.on('player-contact', (e) => {
+    if (!state.course || state.course.venueKey !== ARCTIC_RUN.venue || !e || !e.ice) return;
+    if (!_arcticRun) _arcticRun = { iced: false, face: false };
+    if (_arcticRun.iced) return;
+    _arcticRun.iced = true;
+    GameEvents.emit('player-feat', { id: 'arctic:iced' });
+});
+// OTTER POINT (designed Sep 26 2026, Wes) — two objectives on the water:
+//   otter:inside   Ruby's "Inside the Kelp Line": the count of the five north-coast kelp beds
+//                  (kelp-c1..c5) passed on the INSIDE — through the 320-550 u of water between the
+//                  bed and the shore (gates straight south from each bed to the first rock or
+//                  land, eval/_otter_kelpgates.js). The fleet runs a kilometre offshore of them.
+//   otter:scraped  the player touched rock anywhere in the race (the inside is full of it).
+//   otter:tip      the player went round the furthest north-west tip — outside every stack
+//                  and islet (west of the blade stacks, then north of the islet) — and
+//   otter:arch     ...after that, shot the arch: under the span of the arch point, through the
+//                  80-140 u channel between its two halves (Gilt's "Tip and Arch").
+const OTTER_RUN = { venue: 'otter',
+    inside: [['kelp-c1', -2348, -3199, -2875], ['kelp-c2', -591, -4136, -3746], ['kelp-c3', 1063, -4746, -4200], ['kelp-c4', 2796, -4980, -4626], ['kelp-c5', 4499, -5171, -4685]]
+        .map(([id, x, y0, y1]) => ({ id, a: { x, y: y0 }, b: { x, y: y1 } })),
+    tipW: { a: { x: -5700, y: -2400 }, b: { x: -7900, y: -2400 } },
+    tipN: { a: { x: -4800, y: -3420 }, b: { x: -4800, y: -6700 } },
+    arch: { a: { x: -1855, y: -4960 }, b: { x: -1855, y: -4820 } } };
+let _otterRun = null;   // { last, inside:Set, scraped, w, n, tip, arch } for the race in progress
+function checkOtterRun() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== OTTER_RUN.venue || !me || !me.isPlayer
+        || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _otterRun = null; return; }
+    if (!_otterRun) _otterRun = { last: null, inside: new Set(), scraped: false, w: false, n: false, tip: false, arch: false };
+    const R = _otterRun, here = { x: me.x, y: me.y }, emit = (id, value) => { if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', value === undefined ? { id } : { id, value }); };
+    if (R.last) {
+        for (const g of OTTER_RUN.inside) if (!R.inside.has(g.id) && _routeGateCrossed(R.last, here, g.a, g.b)) { R.inside.add(g.id); emit('otter:inside', R.inside.size); }
+        if (!R.w && _routeGateCrossed(R.last, here, OTTER_RUN.tipW.a, OTTER_RUN.tipW.b)) R.w = true;
+        if (!R.n && _routeGateCrossed(R.last, here, OTTER_RUN.tipN.a, OTTER_RUN.tipN.b)) R.n = true;
+        if (!R.tip && R.w && R.n) { R.tip = true; emit('otter:tip'); }
+        if (R.tip && !R.arch && _routeGateCrossed(R.last, here, OTTER_RUN.arch.a, OTTER_RUN.arch.b)) { R.arch = true; emit('otter:arch'); }
+    }
+    R.last = here;
+}
+if (typeof GameEvents !== 'undefined') GameEvents.on('player-contact', (e) => {
+    if (!state.course || state.course.venueKey !== OTTER_RUN.venue || !e || e.isFloe || e.whale) return;
+    if (!_otterRun) _otterRun = { last: null, inside: new Set(), scraped: false, w: false, n: false, tip: false, arch: false };
+    if (_otterRun.scraped) return;
+    _otterRun.scraped = true;
+    GameEvents.emit('player-feat', { id: 'otter:scraped' });
+});
+// GLOWTIDE STRAIT (designed Sep 26 2026) — the venue's question is "follow the glow, or trust
+// your own line?", and Veil's objective is the answer:
+//   glowtide:glow   value = seconds the player has sailed in ANOTHER boat's glowing wake (within
+//                   14 u of a live point of its bioTrail more than 0.4 s old), counted from the
+//                   gun, start included (Wes). "Trust Your Own Line" is a win with 5 s or less.
+//                   Every boat spends 20-100 s in the fleet's glow; the best winning bot of six,
+//                   2 s after the first 20 s (eval/_glowtide_wakes.js).
+//   glowtide:bloom  Bloom's "Find the Bloom": into the golden jellyfish bloom in the north-west
+//                   lagoon (js/wildlife.js GLOWTIDE bloom; nobody's track goes within 1,500 u).
+const GLOW_RUN = { venue: 'glowtide', r: 14, minAge: 0.4, bloom: { x: -2350, y: -2550, r: 300 } };
+let _glowRun = null;   // { secs, sent, bloom } for the race in progress
+function checkGlowRun(dt) {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== GLOW_RUN.venue || !me || !me.isPlayer
+        || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _glowRun = null; return; }
+    if (!_glowRun) _glowRun = { secs: 0, sent: 0, bloom: false };
+    const G = _glowRun;
+    let inWake = false;
+    for (const o of state.boats) {
+        if (o === me || !o.bioTrail || !o.bioTrail.length || Math.hypot(o.x - me.x, o.y - me.y) > 700) continue;
+        for (const q of o.bioTrail) if (q.age > GLOW_RUN.minAge && Math.abs(q.x - me.x) < GLOW_RUN.r && Math.abs(q.y - me.y) < GLOW_RUN.r && Math.hypot(q.x - me.x, q.y - me.y) < GLOW_RUN.r) { inWake = true; break; }
+        if (inWake) break;
+    }
+    if (inWake) G.secs += dt;
+    if (G.secs - G.sent >= 0.1 && typeof GameEvents !== 'undefined') { G.sent = Math.round(G.secs * 10) / 10; GameEvents.emit('player-feat', { id: 'glowtide:glow', value: G.sent }); }
+    if (!G.bloom && Math.hypot(me.x - GLOW_RUN.bloom.x, me.y - GLOW_RUN.bloom.y) < GLOW_RUN.bloom.r && typeof GameEvents !== 'undefined') { G.bloom = true; GameEvents.emit('player-feat', { id: 'glowtide:bloom' }); }
+}
 const _bowSide = new Map();
 function checkBowCrossing(list) {
     const me = state.boats && state.boats[0];

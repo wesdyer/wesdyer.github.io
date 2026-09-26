@@ -220,6 +220,81 @@ const ACHIEVEMENTS = [
       hint: 'In one race, sail through three striper boils — the patches of white water where striped bass drive shad to the surface — then finish.',
       test: (r) => r.venue === 'redrock' && r.finished && ((r.vals || {})['redrock:boils'] || 0) >= 3 },
 
+    // ── Glacier Sound `arctic` (designed Sep 25 2026) ────────────────────────────────
+    // The pack ice is the race: 112 drifting floes on an out-and-back up the hooked fjord, and
+    // the skill is threading them clean. Wes made the WILDLIFE Antarctic (orcas; emperor, Adélie,
+    // gentoo and macaroni penguins; leopard seals; Antarctic terns) but kept both poles in the
+    // cast: Bluff the polar bear stays, and Spike the narwhal — narwhals gather at glacier fronts
+    // and in ice leads — takes the explorer rung. Checks in sim/course.js (ARCTIC_RUN) and
+    // js/wildlife.js (the colonies). Grin is unshipped until Wes delivers the portrait.
+    { char: 'Bluff', venue: 'arctic', rung: 'first-win', title: 'The Witness',
+      hint: 'Win a race at Glacier Sound.',
+      test: (r) => r.venue === 'arctic' && r.won },
+    { char: 'Tiny', venue: 'arctic', rung: 'mechanic', title: 'Untouched',
+      hint: 'Finish a race at Glacier Sound without touching any ice — no floe, no ice island, no glacier shore.',
+      test: (r) => r.venue === 'arctic' && r.finished && !r.feats.includes('arctic:iced') },
+    { char: 'Spike', venue: 'arctic', rung: 'explorer', title: 'The Calving Face',
+      hint: 'Sail into the bay beyond the rounding island and come within 350 units of the glacier face, then finish the race.',
+      test: (r) => r.venue === 'arctic' && r.finished && r.feats.includes('arctic:face') },
+    { char: 'Pebble', venue: 'arctic', rung: 'target', title: 'Precision',
+      hint: (t) => t ? `Beat Glacier Sound's target time of ${fmtTarget(t)} in Time Trials.` : "Beat Glacier Sound's target time in Time Trials (target coming).",
+      test: (r) => r.venue === 'arctic' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
+    { char: 'Fathom', venue: 'arctic', rung: 'four-stars', title: 'Deep Water',
+      hint: 'Earn four stars in one race at Glacier Sound: win, no penalties, lead at every mark, and sail on manual trim.',
+      test: (r) => r.venue === 'arctic' && r.stars === 4 },
+    { char: 'Grin', venue: 'arctic', rung: 'wildlife', title: 'Four Colonies',
+      hint: 'In one race, sail past all four penguin colonies — the emperors, the Adélies riding the floes, the gentoos and the macaronis — then finish.',
+      test: (r) => r.venue === 'arctic' && r.finished && ((r.vals || {})['arctic:colonies'] || 0) >= 4 },
+
+    // ── Glowtide Strait `glowtide` (designed Sep 26 2026) ────────────────────────────
+    // A Palau-like karst strait by moonlight: every wake glows for 9 s, and the venue asks
+    // "follow the glow, or trust your own line?". Checks in sim/course.js (GLOW_RUN). Animals
+    // (js/wildlife.js): the golden jellyfish bloom (Bloom's), manta rays feeding in the glowing
+    // plankton, Palau flying foxes crossing the strait, hawksbill turtles (nesting on the
+    // beaches, swimming the reefs), dugongs grazing the seagrass shallows. All five characters
+    // were already in the roster.
+    { char: 'Lure', venue: 'glowtide', rung: 'first-win', title: 'First Light',
+      hint: 'Win a race at Glowtide Strait.',
+      test: (r) => r.venue === 'glowtide' && r.won },
+    { char: 'Veil', venue: 'glowtide', rung: 'mechanic', title: 'Trust Your Own Line',
+      hint: "Win a race at Glowtide Strait having spent no more than 5 seconds in any other boat's glowing wake, start included.",
+      test: (r) => r.venue === 'glowtide' && r.won && ((r.vals || {})['glowtide:glow'] || 0) <= 5 },
+    { char: 'Bloom', venue: 'glowtide', rung: 'explorer', title: 'Find the Bloom',
+      hint: 'Sail into the golden jellyfish bloom in the north-west lagoon, off the course, then finish the race.',
+      test: (r) => r.venue === 'glowtide' && r.finished && r.feats.includes('glowtide:bloom') },
+    { char: 'Drift', venue: 'glowtide', rung: 'target', title: 'Night Passage',
+      hint: (t) => t ? `Beat Glowtide Strait's target time of ${fmtTarget(t)} in Time Trials.` : "Beat Glowtide Strait's target time in Time Trials (target coming).",
+      test: (r) => r.venue === 'glowtide' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
+    { char: 'Prism', venue: 'glowtide', rung: 'four-stars', title: 'Every Colour',
+      hint: 'Earn four stars in one race at Glowtide Strait: win, no penalties, lead at every mark, and sail on manual trim.',
+      test: (r) => r.venue === 'glowtide' && r.stars === 4 },
+
+    // ── Otter Point `otter` (designed Sep 26 2026) ────────────────────────────────────────
+    // Monterey's kelp coast: the fleet runs a kilometre offshore of the north-coast kelp beds, and
+    // the water inside them is rock and otters. Checks in sim/course.js (OTTER_RUN) and the hunt in
+    // js/wildlife.js. Animals: sea otters rafting in the kelp, California sea lions on the stacks
+    // and bird rocks (commuting, rafting, riding a shark's tail), great whites patrolling and
+    // hunting them, blue whales offshore. Barker, Gilt, Grotto, Azure, Freckle, Maw and Ruby all
+    // shipped Sep 26; Grotto (the wolf eel) has no rung here yet.
+    { char: 'Barker', venue: 'otter', rung: 'first-win', title: 'King of the Rock',
+      hint: 'Win a race at Otter Point.',
+      test: (r) => r.venue === 'otter' && r.won },
+    { char: 'Ruby', venue: 'otter', rung: 'mechanic', title: 'Inside the Kelp Line',
+      hint: 'At Otter Point, sail inside three of the five kelp beds along the north coast — between the kelp and the shore — and finish without touching a rock.',
+      test: (r) => r.venue === 'otter' && r.finished && ((r.vals || {})['otter:inside'] || 0) >= 3 && !r.feats.includes('otter:scraped') },
+    { char: 'Gilt', venue: 'otter', rung: 'explorer', title: 'Tip and Arch',
+      hint: 'At Otter Point, sail round the outside of the furthest north-west tip — west of the blade stacks and north of the islet — then shoot through the arch at the arch point, and finish.',
+      test: (r) => r.venue === 'otter' && r.finished && r.feats.includes('otter:arch') },
+    { char: 'Freckle', venue: 'otter', rung: 'target', title: 'Point to Point',
+      hint: (t) => t ? `Beat Otter Point's target time of ${fmtTarget(t)} in Time Trials.` : "Beat Otter Point's target time in Time Trials (target coming).",
+      test: (r) => r.venue === 'otter' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
+    { char: 'Maw', venue: 'otter', rung: 'four-stars', title: 'Boss of the Reef',
+      hint: 'Earn four stars in one race at Otter Point: win, no penalties, lead at every mark, and sail on manual trim.',
+      test: (r) => r.venue === 'otter' && r.stars === 4 },
+    { char: 'Azure', venue: 'otter', rung: 'wildlife', title: 'Witness the Hunt',
+      hint: 'At Otter Point, witness a great white take a sea lion — the sprint, the strike, or the blood after it, on your screen — then finish the race. Stay near a shark, but not so close it comes to follow your boat.',
+      test: (r) => r.venue === 'otter' && r.finished && r.feats.includes('otter:hunt') },
+
     // ── Pearl Lagoon `lagoon` (designed Sep 25 2026) ─────────────────────────────────
     // The squalls are the venue: Wes made them 25% larger and 50% slower the same day so a
     // front can be ridden. Animals (js/wildlife.js): green sea turtles on the seagrass,

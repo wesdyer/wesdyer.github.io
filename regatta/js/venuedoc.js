@@ -3169,8 +3169,9 @@ const SHAPE_KINDS = {
     // every boat must use, which is the rule the first Otter Point race taught: a bed across
     // the gate channel plus two rocks turned a 2:13 course into a fleet DNF. The router prices
     // the same field, so the bots know what a bed costs before they commit to the inside. nav: true so the router
-    // prices it. NOT YET: the swell damping the card promises. Nothing in the swell path
-    // reads shapes today; when it does, this is the kind that asks for it.
+    // prices it. The swell damping the card promises is in swell.js (kelpMul): a venue's
+    // `swell.kelp { floor, reach }` flattens the swell over and in the lee of every kelp bed —
+    // on at Otter Point since Sep 26 2026 (floor 0.15, reach 450).
     kelp:     { motion: 'fixed', hard: false, look: 'shoal', hidden: false, nav: true, height: 0,
                awash: true, drag: 0.65, paint: true, veg: 'kelp' },
 

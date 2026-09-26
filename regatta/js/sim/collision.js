@@ -886,7 +886,7 @@ function checkIslandCollisions(dt) {
                  // The player's own contacts, for venue objectives that ask for a clean run
                  // (Sockeye Run's gorge — sim/course.js). An event only: no state, no RNG.
                  if (boat.isPlayer && state.race.status === 'racing' && !boat.raceState.finished && typeof GameEvents !== 'undefined') {
-                     GameEvents.emit('player-contact', { leg: boat.raceState.leg, isFloe: !!isl.isFloe });
+                     GameEvents.emit('player-contact', { leg: boat.raceState.leg, isFloe: !!isl.isFloe, ice: isl.style === 'ice' });
                  }
 
                  // RRS 19 (Room at an Obstruction): if an overlapped boat sat
