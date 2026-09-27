@@ -1017,6 +1017,73 @@ function minimapIsland(style) {
     return { body: st.body, top: st.trees ? (st.veg || st.body) : st.body };
 }
 
+// ── THE PROPS THE CHART HAS TO SHOW ─────────────────────────────────────────
+// A hard prop is compiled into a HIDDEN isle, so the land pass above skips it, and a sea stack
+// standing in open water (Otter Point's stacks, arches and pinnacles) was missing from the one
+// map you plan a route on. Wes, Sep 26 2026: the chart shows the bridges, abstracted, and the
+// large hard props in the water. Two rules:
+//   · a kind with `chartSpan` (a bridge) draws as its deck — a line down the sprite-up axis in
+//     that colour — with its towers (the collider rings) as solid blocks on it;
+//   · any other fixed hard prop at least MM_PROP_MIN across whose outline is mostly OFF the
+//     visible land draws as its collider outline in stone. One already standing on a charted
+//     shape (a whaleback on the meadow) is on the map already and stays off.
+// The list is built once per course; the shapes go into the cached land layer.
+const MM_PROP_MIN = 120;          // world units; ~1 px on Otter's chart, 2 on the Cove's
+const MM_PROP_STONE = '#B9AE9C';  // Otter's charted granite, a step cooler — rock or pier alike
+function minimapProps() {
+    const c = state.course;
+    if (c._mmProps) return c._mmProps;
+    const out = c._mmProps = [];
+    const doc = c.doc, VD = window.VenueDoc;
+    if (!doc || !VD || !VD.propHitRings) return out;
+    const vis = (c.islands || []).filter(i => !i.hidden && !i.awash && !i.paint && i.vertices && i.vertices.length > 2);
+    const onVis = (x, y) => vis.some(i => {
+        const dx = x - i.x, dy = y - i.y;
+        return dx * dx + dy * dy <= i.radius * i.radius && pointInVerts(x, y, i.vertices);
+    });
+    for (const p of doc.props || []) {
+        const K = VD.PROP_KINDS[p.kind];
+        if (!K) continue;
+        const T = VD.propTraits(p);
+        if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
+        const w = K.world * (p.scale || 1);
+        const rings = VD.propHitRings(p).rings || [];
+        if (K.chartSpan) { out.push({ span: true, p, w, rings, color: K.chartSpan }); continue; }
+        if (w < MM_PROP_MIN || !rings.length) continue;
+        let n = 0, on = 0;
+        for (const r of rings) for (const v of r) { n++; if (onVis(v[0], v[1])) on++; }
+        if (on > n * 0.5) continue;
+        out.push({ span: false, p, w, rings });
+    }
+    return out;
+}
+function drawMinimapProps(mc, t, scale) {
+    const ringPath = (r) => {
+        mc.beginPath();
+        r.forEach((v, i) => { const q = t(v[0], v[1]); i ? mc.lineTo(q.x, q.y) : mc.moveTo(q.x, q.y); });
+        mc.closePath();
+    };
+    for (const m of minimapProps()) {
+        if (!m.span) {
+            mc.fillStyle = MM_PROP_STONE;
+            for (const r of m.rings) { ringPath(r); mc.fill(); }
+            continue;
+        }
+        // THE DECK: end to end along sprite-up (0.46 of the drawn size each way — the bakes'
+        // 92% fill), on a dark casing so a pale bridge still reads over pale water.
+        const h = m.p.heading || 0, ux = Math.sin(h), uy = -Math.cos(h), L = 0.46 * m.w;
+        const a = t(m.p.x - ux * L, m.p.y - uy * L), b = t(m.p.x + ux * L, m.p.y + uy * L);
+        const lw = Math.max(2, 0.08 * m.w * scale);
+        mc.lineCap = 'butt';
+        mc.beginPath(); mc.moveTo(a.x, a.y); mc.lineTo(b.x, b.y);
+        mc.strokeStyle = 'rgba(10,20,30,0.45)'; mc.lineWidth = lw + 1.5; mc.stroke();
+        mc.strokeStyle = m.color; mc.lineWidth = lw; mc.stroke();
+        // THE TOWERS, solid on the deck — the only parts that stop a hull or the wind.
+        mc.fillStyle = m.color; mc.strokeStyle = 'rgba(10,20,30,0.45)'; mc.lineWidth = 1;
+        for (const r of m.rings) { ringPath(r); mc.fill(); mc.stroke(); }
+    }
+}
+
 // A still layer of the chart: repainted only when `key` changes (see drawMinimap).
 const _mmLayers = {};
 function mmStaticLayer(name, key, w, h) {
@@ -1285,6 +1352,7 @@ function drawMinimap() {
                 mc.fill();
             }
         }
+    if (state.course.doc) drawMinimapProps(mc, t, scale);
     }
     if (L2) ctx.drawImage(L2.cv, 0, 0);
 

@@ -121,6 +121,11 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Palau flying fox (span) | Glowtide | 1.1 m | 11 | ~33 (×3) | 36 | ✓ Sep 26 |
 | Hawksbill turtle | Glowtide | 0.8 m | 8 | ~24 (broad) | 24 | ✓ Sep 26 |
 | Dugong (calf) | Glowtide | 2.7 m (1.5 m) | 27 | ~54 (broad, ~2×) | 52 (29) | ✓ Sep 26 |
+| Marine iguana (with tail) | Emberfall | 1.2 m | 12 | ~36 (×3) | ~36 | ✓ Sep 26 |
+| Sally Lightfoot crab (legs) | Emberfall | 8 cm | 1 | ~7 (a scatter of red, rule 7) | ~7 | ✓ Sep 26 |
+| Blue-footed booby (span) | Emberfall | 1.5 m | 15 | ~44 (×3) | 44 | ✓ Sep 26 |
+| Great frigatebird (span) | Emberfall | 2.2 m | 22 | ~64 (the albatross's) | 64 | ✓ Sep 26 |
+| Scalloped hammerhead | Emberfall | 2.3 m (Galápagos schooling adults) | 30 | ~70 (×3; size 0.8–1.12) | ~70 | ✓ Sep 26 (re-drawn) |
 | Sea otter (on its back) | Otter Point | 1.3 m | 13 | ~30 (broad floater, ~2.3×) | 32 | ✓ Sep 26 |
 | California sea lion (cow / bull) | Otter Point | 1.9 m (2.4 m) | 19 (24) | ~38 (2×: about half the white shark, Wes's refs; slim, a quarter as wide as long) | ~39 (~49) | ✓ Sep 26 |
 | Great white shark | Otter Point | 5 m | 50 | ~76 (1.5×: bigger than a hull ON PURPOSE — the venue's showpiece) | 76 | ✓ Sep 26 |

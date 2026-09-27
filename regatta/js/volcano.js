@@ -43,14 +43,18 @@
 // stream (race seed + 91), consumed in a fixed order; visuals hash time and index.
 
 const VOLCANO = {
-    period: [96, 150],        // s per cycle, dealt per cone from the seed
-    build: 14, peak: 26, wane: 12,
+    // (Wes, Sep 26 2026: "the ash plumes should do more" — the fleet spent 0-2 s a race in dead air
+    // and 0.2% of his own lines ever sat under a plume. Now: eruptions more often and longer at the
+    // peak, the ash lives twice as long and spreads wider, so a plume from a southern cone lies across
+    // the southern legs; and overlapping ash COMPOUNDS — see windMul.)
+    period: [80, 120],        // s per cycle, dealt per cone from the seed
+    build: 12, peak: 36, wane: 14,
     emitEvery: 0.55,          // s between parcels
-    ashLife: 22, steamLife: 9,
+    ashLife: 42, steamLife: 9,
     // Units per second per knot. A puff is carried at 0.18 u/frame/kn (see SQUALL_DRIFT);
     // the ash cloud rides at 85% of that — it is higher and heavier than a gust.
     drift: 0.18 * 60 * 0.85,
-    r0: 90, spread: 15,       // parcel radius at birth, growth per second
+    r0: 90, spread: 17,       // parcel radius at birth, growth per second
     deadMax: 0.8,             // share of the wind an erupting plume kills at its core
     steamDead: 0.35,          // the islet's fixed hole
     quietDensity: 0.3,        // the wisp: pale, and readable as a wind sock
@@ -67,6 +71,7 @@ const VOLCANO = {
     // and a fry shorter than fryLeast is not worth having. Sailing away during the tell
     // pays directly in seconds.
     fryR: 640, fryMax: 15, fryLeast: 0.8,
+    dodgeR: 450,              // an aimed bolt landing this far from its boat was DODGED (Outrun the Bolt)
     boilR: 0.42,              // boil radius as a share of the vent's box (a vent with no boilShape)
     boilMargin: 48,           // foam and broken water reach this far beyond the lava's own extent
     boilMinHalf: 34,          // a crack thinner than this still boils this wide
@@ -218,6 +223,7 @@ const VOLCANO = {
     // Fades in over the first 0.6 s (a parcel is born at the crater, not on it) and thins
     // to nothing over its life — which is what "dissipates with distance" is.
     const fadeOf = (q) => Math.min(1, q.age / 0.6) * Math.pow(1 - q.age / q.life, 1.3);
+    const deadFadeOf = (q) => Math.min(1, q.age / 0.6) * Math.pow(1 - q.age / q.life, 0.6);
 
     function update(dt) {
         const v = V();
@@ -424,6 +430,14 @@ const VOLCANO = {
         const strike = { x: s.x, y: s.y, ox: s.ox, oy: s.oy, t0: v.t, seed: s.seed, f: forks(s.ox, s.oy, s.x, s.y, s.seed) };
         v.strikes.push(strike);
         v.flashT = v.t;
+        // TORCH'S "OUTRUN THE BOLT" (Sep 26 2026): a bolt AIMED at the racing player that lands 8 or more
+        // hull lengths (450 u) from her — she saw the mark and got clear. Holding course it lands a
+        // median 217 u off and never past 295 (eval/_volc_dodge.js). The count is a feat value.
+        if (s.aimed && s.boat && s.boat.isPlayer && state.race && state.race.status === 'racing' && !(s.boat.raceState && s.boat.raceState.finished)
+            && Math.hypot(s.boat.x - s.x, s.boat.y - s.y) >= VOLCANO.dodgeR) {
+            v.dodges = (v.dodges || 0) + 1;
+            if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'volcanic:dodge', value: v.dodges });
+        }
         let playerD = null;
         for (const boat of state.boats) {
             const d = Math.hypot(boat.x - s.x, boat.y - s.y);
@@ -451,7 +465,7 @@ const VOLCANO = {
     function windMul(x, y) {
         const v = V();
         if (!v) return 1;
-        let mul = 1;
+        let mul = 1, prod = 1;
         const lists = v.cones;
         for (let k = 0; k < lists.length; k++) {
             const ps = lists[k].parcels;
@@ -462,11 +476,14 @@ const VOLCANO = {
                 const dx = x - q.x, dy = y - q.y, d2 = dx * dx + dy * dy;
                 if (d2 >= r * r) continue;
                 const s = smooth(1 - Math.sqrt(d2) / r);
-                const m = 1 - q.dead * fadeOf(q) * s;
-                if (m < mul) mul = m;
+                // the ash thins more slowly than it looks, and overlapping ash compounds: a dense
+                // plume is dead air all through, not just at the one strongest parcel
+                const f = q.dead * deadFadeOf(q) * s;
+                prod *= 1 - f * 0.35;
+                if (1 - f < mul) mul = 1 - f;       // the core: the strongest single parcel, as before
             }
         }
-        return Math.max(0.12, mul);
+        return Math.max(0.12, Math.min(mul, prod));
     }
 
     // A vent's boil is an ELLIPSE along its lava (the mask's own axis): 0 outside, 1 at the

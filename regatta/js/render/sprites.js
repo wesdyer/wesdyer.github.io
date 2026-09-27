@@ -833,6 +833,9 @@ const SPIN_LOOKS = {
     Freckle: 'crosshalves',
     Maw: 'sunburst',
     Ruby: 'thirds',
+    Vent: 'rays',
+    Basalt: 'fiverays',
+    Soot: 'tricolour',
 };
 // colorC is OPTIONAL and falls back to colorB, so every pattern authored before the
 // third colour existed renders byte-identically. A region is either a bare function

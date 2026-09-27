@@ -269,6 +269,32 @@ const ACHIEVEMENTS = [
       hint: 'Earn four stars in one race at Glowtide Strait: win, no penalties, lead at every mark, and sail on manual trim.',
       test: (r) => r.venue === 'glowtide' && r.stars === 4 },
 
+    // ── Emberfall Isle `volcanic` (designed Sep 26 2026) ─────────────────────────────────
+    // Galápagos (Wes). The lightning is the venue: one bolt in four is AIMED at a boat (the player
+    // weighted 3:1), marked on the water 2.8 s before it lands; the ash plumes (made heavier Sep 26)
+    // kill the wind downwind of an erupting cone. Checks in js/volcano.js (the dodge) and
+    // sim/course.js (VOLC_RUN, the outside loop); the booby plunge in js/wildlife.js. Animals: marine
+    // iguanas, blue-footed boobies, great frigatebirds, Sally Lightfoot crabs, scalloped hammerheads.
+    // All six in the roster (Vent, Basalt and Soot shipped Sep 26 2026).
+    { char: 'Ember', venue: 'volcanic', rung: 'first-win', title: 'Trial by Fire',
+      hint: 'Win a race at Emberfall Isle.',
+      test: (r) => r.venue === 'volcanic' && r.won },
+    { char: 'Torch', venue: 'volcanic', rung: 'mechanic', title: 'Outrun the Bolt',
+      hint: 'At Emberfall Isle, lightning aimed at you is marked on the water before it strikes: three times in one race, be at least 8 boat lengths clear when it lands, then finish.',
+      test: (r) => r.venue === 'volcanic' && r.finished && ((r.vals || {})['volcanic:dodge'] || 0) >= 3 },
+    { char: 'Vent', venue: 'volcanic', rung: 'explorer', title: 'Round the Archipelago',
+      hint: 'At Emberfall Isle, sail the whole outside loop — outside every island of the archipelago — and finish.',
+      test: (r) => r.venue === 'volcanic' && r.finished && r.feats.includes('volcanic:outer') },
+    { char: 'Basalt', venue: 'volcanic', rung: 'target', title: 'Cooled Lava',
+      hint: (t) => t ? `Beat Emberfall Isle's target time of ${fmtTarget(t)} in Time Trials.` : "Beat Emberfall Isle's target time in Time Trials (target coming).",
+      test: (r) => r.venue === 'volcanic' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
+    { char: 'Stomp', venue: 'volcanic', rung: 'four-stars', title: 'Blue Feet, Black Rock',
+      hint: 'Earn four stars in one race at Emberfall Isle: win, no penalties, lead at every mark, and sail on manual trim.',
+      test: (r) => r.venue === 'volcanic' && r.stars === 4 },
+    { char: 'Soot', venue: 'volcanic', rung: 'wildlife', title: 'Booby Shower',
+      hint: 'At Emberfall Isle, be under a flock of blue-footed boobies as they plunge-dive together, then finish the race.',
+      test: (r) => r.venue === 'volcanic' && r.finished && r.feats.includes('volcanic:boobies') },
+
     // ── Otter Point `otter` (designed Sep 26 2026) ────────────────────────────────────────
     // Monterey's kelp coast: the fleet runs a kilometre offshore of the north-coast kelp beds, and
     // the water inside them is rock and otters. Checks in sim/course.js (OTTER_RUN) and the hunt in

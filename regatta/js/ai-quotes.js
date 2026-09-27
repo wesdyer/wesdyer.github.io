@@ -2014,5 +2014,53 @@ const AI_QUOTES = {
     "prestart": "Hiding in the kelp. Mostly.",
     "start_planing": "Out from the rocks!",
     "random": "Red is a very good colour underwater."
+  },
+  "Vent": {
+    "player_passes_them": "Mm. You feel quick.",
+    "they_pass_player": "Just following the warm water.",
+    "they_hit_player": "Oh — was that you?",
+    "they_were_hit": "I felt that one.",
+    "narrowly_avoided_collision": "Close. I think.",
+    "player_narrowly_avoided_collision": "You found me by feel too.",
+    "moved_into_first": "It's warm up here.",
+    "moved_into_last": "Plenty of room at the bottom.",
+    "rounded_mark": "Round the chimney we go.",
+    "first_across_start": "Was that the gun? Lovely.",
+    "finished_race": "All the way round, and content.",
+    "prestart": "Waving my arms for the bacteria.",
+    "start_planing": "Ooh, a current.",
+    "random": "No eyes, no worries."
+  },
+  "Basalt": {
+    "player_passes_them": "Enjoy the warm-up.",
+    "they_pass_player": "I've been here since the lava cooled.",
+    "they_hit_player": "Rock wins.",
+    "they_were_hit": "Didn't feel it.",
+    "narrowly_avoided_collision": "Hm.",
+    "player_narrowly_avoided_collision": "Lucky. Rocks don't move.",
+    "moved_into_first": "Warm now.",
+    "moved_into_last": "Still basking.",
+    "rounded_mark": "Slow and certain.",
+    "first_across_start": "Even a rock gets a start.",
+    "finished_race": "As expected.",
+    "prestart": "Sun first. Racing later.",
+    "start_planing": "Now I'm warm.",
+    "random": "*sneezes salt*"
+  },
+  "Soot": {
+    "player_passes_them": "Wait wait wait — no!",
+    "they_pass_player": "Wide-awake! Wide-awake!",
+    "they_hit_player": "Sorry! Sorry! Moving!",
+    "they_were_hit": "Hey! Feathers!",
+    "narrowly_avoided_collision": "Swerve!",
+    "player_narrowly_avoided_collision": "Too slow to catch me!",
+    "moved_into_first": "Up here! Up here!",
+    "moved_into_last": "Just circling. Circling!",
+    "rounded_mark": "Dip and away!",
+    "first_across_start": "First! Always first!",
+    "finished_race": "Again! Again!",
+    "prestart": "Can't sit still. Won't sit still.",
+    "start_planing": "Skimming!",
+    "random": "I haven't landed in years."
   }
 };

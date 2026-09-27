@@ -46,6 +46,7 @@ function update(dt) {
     checkArcticRun();
     checkGlowRun(dt);
     checkOtterRun();
+    checkVolcanicRun();
     // The swell's own clock. Advanced from dt like everything else, so it pauses with the
     // race and is identical for a given seed — a wave field is pure trigonometry and must
     // never reach for the RNG stream. No-op off the ocean.

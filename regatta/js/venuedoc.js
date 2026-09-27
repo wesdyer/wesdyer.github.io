@@ -1009,9 +1009,28 @@ const PROP_KINDS = {
     // props/bay/bay-cove-bridge-truss.png, and only the id `bay-bay-cove-bridge-truss` finds
     // it. This is the exact case the harbour block's note predicted for any bay key that
     // already begins with `bay-`; every other cove asset is keyed `cove-*` to avoid it.
-    'bay-bay-cove-bridge-truss': { label: 'Truss bridge',   world: 870, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    //
+    // THE BRIDGES ARE COMPOSITES, like the Otter arches (Wes, Sep 26 2026): `parts.surface` is
+    // the TOWERS — each portal with its corner blocks and legs, the pier under it — the
+    // collider (prop_outlines.py traces it) and the lee (`height`); `parts.canopy` is the DECK,
+    // drawn over the fleet. `opaque`: the deck does not fade over the player's hull — a fading
+    // deck was tried first and Wes found the bridge harder to navigate with it. Only the towers
+    // block wind or hulls; the deck does neither. art/bridgesplit.py cuts the bake.
+    // `chartSpan` is the paint the minimap draws it in, abstracted: deck line + tower blocks.
+    'bay-bay-cove-bridge-truss': { label: 'Truss bridge',   world: 870, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed',
+                                   parts: { surface: 'bay-bay-cove-bridge-truss-towers', canopy: 'bay-bay-cove-bridge-truss-deck' }, opaque: true, chartSpan: '#9AA3AB' },
+    'bay-bay-cove-bridge-truss-towers': { label: 'Truss bridge towers', world: 870, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed', part: true },
+    'bay-bay-cove-bridge-truss-deck':   { label: 'Truss bridge deck',   world: 870, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // The truss's foil — the red suspension span, San Francisco's own pairing. Same rules.
-    'bay-bay-cove-bridge-suspension': { label: 'Suspension bridge', world: 920, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'bay-bay-cove-bridge-suspension': { label: 'Suspension bridge', world: 920, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed',
+                                   parts: { surface: 'bay-bay-cove-bridge-suspension-towers', canopy: 'bay-bay-cove-bridge-suspension-deck' }, opaque: true, chartSpan: '#C0362C' },
+    'bay-bay-cove-bridge-suspension-towers': { label: 'Suspension bridge towers', world: 920, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed', part: true },
+    'bay-bay-cove-bridge-suspension-deck':   { label: 'Suspension bridge deck',   world: 920, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
+    // The Bay Bridge's silver-grey with X-braced towers (the manifest's `skyway`). Same rules.
+    'bay-bay-cove-bridge-skyway': { label: 'Bay bridge', world: 900, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed',
+                                   parts: { surface: 'bay-bay-cove-bridge-skyway-towers', canopy: 'bay-bay-cove-bridge-skyway-deck' }, opaque: true, chartSpan: '#B4BCC2' },
+    'bay-bay-cove-bridge-skyway-towers': { label: 'Bay bridge towers', world: 900, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed', part: true },
+    'bay-bay-cove-bridge-skyway-deck':   { label: 'Bay bridge deck',   world: 900, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // THE FLEET'S HOME, and the only object in the game that carries the SaltyCritter Yacht
     // Club's own burgee — painted flat on the seaward roof slope, which is why it survives a
     // camera that deletes anything vertical. LANDMARK: venue identity, on land, never an

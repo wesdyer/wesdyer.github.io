@@ -2230,7 +2230,7 @@ const School = {
             case 'A': return {
                 kicker: 'Sailing School · Section 1 of 4', title: 'Your first sail',
                 body: 'Learn to read the wind, steer the boat, and sail upwind and downwind.',
-                media: null, buttons: btns(next(), skip, club) };
+                media: (host) => S.objectivesPreview(host), buttons: btns(next(), skip, club) };
             case 'B': return {
                 kicker: 'Duckling Pond · Section 2 of 4', title: "Now let's sail a course.",
                 body: "You'll learn to round marks and sail through gates. No racing yet — just follow the course.",
@@ -2283,6 +2283,24 @@ const School = {
         img.onerror = () => { img.remove(); this.chartPreview(host, true, size); };
         img.src = `assets/images/venues/${this.venueKey}.png`;
         host.appendChild(img);
+    },
+    // The school's characters to earn, listed in full on the first screen — they moved here
+    // off the hub door (Wes, Sep 26 2026), where the faces distracted and the link could not
+    // really be clicked. The objectives overlay's own rows (screens.js), so the two agree.
+    // ONLY ONCE GRADUATED (Wes, same day): a first-timer's first screen is about starting
+    // school, and five objectives before the first lesson would overwhelm it.
+    objectivesPreview(host) {
+        if (!this.graduated()) return;
+        if (!(window.Unlocks && Unlocks.enforced()) || typeof venueObjectiveRowsHTML !== 'function') return;
+        const list = Unlocks.forVenue('pond');
+        const got = list.filter(a => Unlocks.isEarned(a.char)).length;
+        const box = document.createElement('div');
+        box.style.cssText = 'width:min(560px, 100%); padding:6px 20px 4px; border-radius:14px; background:rgba(11,28,43,0.75); border:2px solid rgba(148,163,184,0.25);';
+        box.innerHTML = `<div class="t-label t-label-sm" style="color:#8fd8d0; margin-top:10px;">Characters to earn here &middot; ${got}/${list.length}</div>`
+            + `<div style="margin-top:2px;">${venueObjectiveRowsHTML('pond')}</div>`;
+        const rows = box.lastElementChild.children;
+        if (rows.length) rows[rows.length - 1].style.borderBottom = 'none';
+        host.appendChild(box);
     },
     // A start line, drawn plainly: the pin, the coach boat, the line, and you below it.
     startLinePreview(host) {

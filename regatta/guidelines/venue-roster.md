@@ -52,7 +52,7 @@ not where the Aug 5 doc assumed.
 | Glacier Sound | **Bluff** polar bear | **Tiny** krill | **Spike** narwhal (Skerry parked) | **Pebble** Adélie penguin | **Fathom** orca (+23) · **Grin** leopard seal (Wildlife) | 1 |
 | Otter Point | *open* (Scoop went to the Cove) | *Loom* kelp greenling | ↦**Breeze** nudibranch | *Freckle* leopard shark | *Azure* blue whale | 3 |
 | Spoonbill Flats | **Petal** spoonbill† | **Skitter** mudskipper† | *a Wadden species* (was Wink, fiddler crab) | *Curl* Eurasian curlew | *Rake* Eurasian oystercatcher | 3 |
-| Emberfall Isle | **Ember** firefish† | **Torch** fire salamander† | *Vent* yeti crab | *Basalt* marine iguana | *Soot* sooty tern | 3 |
+| Emberfall Isle | **Ember** firefish† | **Torch** fire salamander† | **Vent** yeti crab | **Basalt** marine iguana | **Soot** sooty tern | 3 |
 
 **40 of 60 slots are filled from the roster; 20 characters to build** (the Aug 5 map
 needed 25 — the five saved are Cove ×3 and Otter ×2, filled by characters who had lost
@@ -849,6 +849,110 @@ someone else's (`eval/_glowtide_wakes.js`).
 - Hawksbills: seven swimmers, on and beside the course, drawn more opaque. They surface every ~35 s, and their flipper strokes stir the plankton.
 
 Tests: `eval/test_glowtide.js`. Probes: `_glowtide_legs.js`, `_glowtide_wakes.js`, `_glowtide_bench.js`, `_glowtide_scene.js`.
+
+## Emberfall Isle, as built (Sep 26 2026)
+
+Galápagos (Wes). The mechanic is the lightning: one bolt in four is AIMED at a boat (the player
+weighted 3:1), marked on the water 2.8 s ahead; it fries anything within 640 u, 15 s at the strike
+falling to nothing at the edge. Measured (eval/_volc_dodge.js): holding course, an aimed bolt lands a
+median 217 u off (never past 295); a helm that turns away gets a median 425, max 642.
+
+| Rung | Character | Objective | Judged |
+|---|---|---|---|
+| First win | **Ember** (firefish) | Trial by Fire: win | `r.won` |
+| Mechanic | **Torch** (fire salamander) | Outrun the Bolt: three times, be 8+ boat lengths (450 u) off when a bolt aimed at you lands | `volcanic:dodge` value ≥ 3 (js/volcano.js fire) |
+| Explorer | **Vent** (yeti crab) | Round the Archipelago: the whole outside loop, outside every island | `volcanic:outer` — a gate on the bearing through every island's outermost point + 12 even bearings, each from the outermost land to the limit (50 gates); none of Wes's 5 races (29-38 of 50); ~28.7k u vs his ~22.7k races, ~300-330 s with the marks; the bot did the loop by 465 s |
+| Target | **Basalt** (marine iguana) | Cooled Lava: beat 3:35 | target rung (set from Wes's runs under the old plumes) |
+| Four stars | **Stomp** (blue-footed booby, S tier, +13) | Blue Feet, Black Rock | `r.stars === 4` |
+| Wildlife | **Soot** (sooty tern) | Booby Shower: under a flock as it plunges (4 splashes within 180 u) | `volcanic:boobies`; the plain autopilot 1 in 8 |
+
+Ember and Torch stay for their names though neither is Galápagos (Wes). **Ash plumes made heavier
+(Wes: "should do more")**: eruptions every 80-120 s with a 36 s peak (was 96-150, 26), ash lives 42 s
+(was 22) and spreads 17 u/s (was 15); overlapping ash compounds (windMul takes the lower of the old
+strongest-parcel core and a product over parcels at 0.35 each) and the dead air fades more slowly
+than it looks. Fleet time in dead air (wind < 75%): median 1 s → 20 s, max 65 s; the autopilot's race
+~30 s slower. Records and the 3:35 target were set under the old plumes. Probes:
+eval/_volc_plumemap.js, _volc_plumeprofile.js, _volc_survey.js.
+
+Wildlife (js/wildlife.js EMBERFALL section, config `WILDLIFE.volcanic`; eval/_volc_bench.js,
+_volc_scene.js; test eval/test_emberfall.js): **marine iguanas** in heaps on five black shores (bask,
+waddle to the water, swim with the tail sculling, dive and graze, haul out; a swimmer dives from a
+boat); **Sally Lightfoot crabs** in five beds at the waterline (scuttle up from waves and boats);
+**blue-footed boobies**, four flocks over fish on the legs (circle, then plunge together every 20-34 s,
+sit, lift off); **great frigatebirds** soaring the main cone's and the SE islet's thermals, swooping at
+the boobies after a plunge; **scalloped hammerheads**, four schools circling the vents nearest the
+lines, sinking deeper when a boat passes over.
+
+### Emberfall wildlife, second pass (Sep 26 2026, Wes)
+
+- **Crabs** (Wes: "so small, but their colours call attention — emphasise claws and crab movement;
+  scurry away from the water; spread them out"): bigger (9 u), chunky claws held forward picking at
+  the rock one at a time, SIDEWAYS jerky bursts with the legs rippling; within ~250 u of a boat they
+  scurry up the rock away from the water and drift back; each bed strung along ~600 u of true
+  waterline (edges with open water beside them), 24-30 crabs a bed.
+- **Hammerheads**: each swims its own orbit (180-480 u, an open hole over the vent) with its own speed,
+  steering and turning — the school mills; the body wave grows toward the tail, the head yaws against
+  it, the body curves into the turn; 24-30 a school; they bear away from shore.
+- **Boobies**: flap-and-glide — bursts of stiff beats at 3.4 Hz real (WING_TIME) and glides on straight
+  wings, longer while hanging over the fish; the wing redrawn as a long narrow blade with a straight
+  leading edge bent at the wrist (it read as a crescent). eval/_volc_boobystroke.js films the stroke.
+- **Spread out** (Wes: "seems a bit empty with localized clumps … and where are the sooty birds?"):
+  iguana heaps every ~1300 u and crab beds every ~650 u along every hard black shore's true waterline
+  (45 heaps / ~280 iguanas, 84 beds / ~1200 crabs); hammer schools over the 800 u-spaced open vents
+  (11 schools, ~255); booby flocks on a ring round the archipelago (8); **sooty terns** (black above,
+  white forehead, long forked tail) in flocks over every booby flock plus roaming flocks, 13 flocks /
+  ~260 birds — they DIP at the surface, never sit. Update ~0.7 ms/frame.
+- **Never in the lava** (Wes): lava/magma shapes are never a shore (no heaps, beds or waterline spots
+  on them, 60 u clear); crab bursts and iguana waddles refuse a step into lava; an iguana back from a
+  swim snaps to its own spot (it basked 2 u out in the water); terns dip and boobies plunge only over
+  open water. test_emberfall samples every animal against every lava shape.
+- **Iguanas redrawn from Wes's references** (singles on lava/sand from above, Cabo Douglas drone shots,
+  the red Española morph): tail ~60% and laid in a curve, sausage trunk pinched at the pelvis, blunt
+  jowly head with a dusty salt crust (no white cap), long sprawled jointed legs with fans of clawed
+  toes, pale crest zigzag; morphs grey (76%), red-blotched on black (16%), rust (8%); juveniles mixed
+  in. Wet = black, drying to ash grey over ~90 s basking. Heaps of 12-26, packed, most facing up-sun;
+  up to two come and go at once. Fine detail (crest, salt) fades with screen size — at race scale it
+  had turned every animal pale. Bench: eval/_volc_iguana_bench.js.
+- **Crabs redrawn from Wes's references**: round flattened disc, yellow-orange middle deepening to an
+  orange-red rim, curved side ridges (faded at race scale), fine brown speckle at the front, eyes on the
+  front corners; the LEGS carry it — long, broad and flat, red, jointed (front pairs reaching forward,
+  hind back) with yellow-orange tips; claws small red knobs on pale blue-white arms tucked under the
+  front edge (they were chunky and held forward); a fifth are dark purple-black juveniles flecked yellow.
+  Picking claw over claw at ~1 Hz. **Cleaners**: ~12% of basking iguanas carry a crab picking at their
+  back (it shuffles along, hops off when the iguana gets up or a boat comes, and scuttles back aboard).
+  Bench: eval/_volc_crab_bench.js.
+- **Boobies redrawn from Wes's references**: a cigar pointed at both ends (neck, head and dagger bill well ahead
+  of the wings, wedge tail well behind; length ~0.55 of the span, was 0.4); chocolate wings, darker hands, the
+  arm's coverts fringed buff (scaly), brown back flecked white, white hindneck patch and rump, pale streaked
+  neck and head, blue-grey bill, blue feet either side of the tail (dangling as it comes off the water).
+  Wing = anchors blended glide → upstroke → the plunge's W (arms forward as narrow struts, hands swept back
+  and in past the tail), then closed to an arrow and foreshortened head-down. Splash: lobed white sheets
+  leaning off the light, a spreading foam patch, broken ring arcs. Sitting: folded wings crossed over the
+  tail, neck up. **Commuting lines**: every 50-110 s a flock sends 3-7 birds in a loose echelon low over the
+  sea (lifting over land) to one of its two nearest flocks. Bench: eval/_volc_booby_bench.js.
+- **Sooty terns redrawn from Wes's references**: sooty black above, long narrow sickle wings, a forked tail
+  whose streamers spread in a V edged white (they had hung straight like legs), black cap with a white
+  forehead and a sliver of white cheek, slender black bill; SOOTY_SCALE 1.1 (span ~30 u vs the booby's 44 —
+  it was ~43). Behaviour: they barely settle on the sea, so they WHEEL in loose loops on long glides between
+  slow deep beats (2.6 Hz x WING_TIME) and SWOOP in a shallow arc to snatch at the surface — no hover, no
+  plunge; never onto land. Bench: eval/_volc_tern_bench.js.
+- **Frigatebirds redrawn from Wes's references**: the flat crooked M — the arm angled forward to a sharp
+  wrist, the long near-straight hand swept back to a point (was a gull crescent); long forked tail shut as
+  a spike and snapped open with the turn rate; small body and head, long grey hooked bill; black with a
+  purple-green gloss on the back and a faint brownish bar across the arm; the male's pouch a thin red
+  sliver at the throat (the round red dots read as eyes); a fifth are white-headed juveniles. PIRACY: after
+  a plunge one chases a booby (which jinks, flapping flat out), harries it into dropping its fish, and
+  swoops to snatch it falling — the fish turns over as it drops, and splashes if missed (eval/_volc_pirate.js:
+  6 chases, 4 drops, 3 caught). Bench: eval/_volc_frigate_bench.js.
+- **Hammerheads redrawn from Wes's references**: the hammer a T ~a quarter of the body across with real depth
+  (arched, scalloped front with a centre notch, squared lobes, eyes at the tips) blending into a slim
+  olive-bronze body (was a thin bar nearly half the length on a fat body); swept sickle pectorals, the
+  dorsal a dark ridge, small pelvics, a long upper tail lobe curling to one side; the hammer sweeps side to
+  side; one path per shark (overlapping translucent parts made dark seams); HAMMER_LEN 70. Schools are
+  POLARIZED CONVEYORS (every school reference): 22-34 sharks in an oval along a shared heading, each holding
+  a place by velocity (the school's creep + a gentle pull), stacked at depths; one reaching the front
+  peels off, runs back down the outside deeper and rejoins at the rear. The oval is turned/shrunk until it
+  is clear of the shore. Bench: eval/_volc_hammer_bench.js.
 
 ## Otter Point, as built (Sep 26 2026)
 

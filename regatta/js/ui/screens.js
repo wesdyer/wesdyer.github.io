@@ -558,18 +558,11 @@ function venueObjectiveFace(a, size) {
                         ${earned ? 'box-shadow:0 0 0 2px #f2c14e;' : 'filter:brightness(0) opacity(0.55);'}">`;
 }
 const _RUNG_LABEL = { 'first-win': 'First win', mechanic: 'Mechanic', explorer: 'Explorer', target: 'Target time', 'four-stars': 'Four stars', wildlife: 'Wildlife', lessons: 'Every lesson', start: 'The start', report: 'Report card' };
-function openVenueObjectives(key) {
-    let host = document.getElementById('venue-objectives');
-    if (!host) {
-        host = document.createElement('div');
-        host.id = 'venue-objectives';
-        host.className = 'absolute inset-0 bg-slate-900/75 backdrop-blur z-[75] flex flex-col items-center justify-center p-4 pointer-events-auto';
-        host.addEventListener('click', (e) => { if (e.target === host) closeVenueObjectives(); });
-        (UI.preRaceOverlay ? UI.preRaceOverlay.parentElement : document.body).appendChild(host);
-    }
-    const d = window.VenueDoc && VenueDoc.get(key);
-    const name = key === 'pond' ? 'Sailing School' : ((d && d.card && d.card.name) || key);
-    const rows = Unlocks.forVenue(key).map(a => {
+// One row per objective — face, rung, who, title, hint, a tick once earned. The venue's
+// objectives overlay uses it, and so does the Sailing School's first screen (school.js),
+// where the pond's list stands in for the strip the hub door no longer carries.
+function venueObjectiveRowsHTML(key) {
+    return Unlocks.forVenue(key).map(a => {
         const earned = Unlocks.isEarned(a.char), shipped = Unlocks.shipped(a.char);
         const who = earned || !shipped ? a.char : '';
         return `
@@ -586,6 +579,19 @@ function openVenueObjectives(key) {
                 <span style="font-size:18px; color:${earned ? '#34d399' : 'transparent'};">&#10003;</span>
             </div>`;
     }).join('');
+}
+function openVenueObjectives(key) {
+    let host = document.getElementById('venue-objectives');
+    if (!host) {
+        host = document.createElement('div');
+        host.id = 'venue-objectives';
+        host.className = 'absolute inset-0 bg-slate-900/75 backdrop-blur z-[75] flex flex-col items-center justify-center p-4 pointer-events-auto';
+        host.addEventListener('click', (e) => { if (e.target === host) closeVenueObjectives(); });
+        (UI.preRaceOverlay ? UI.preRaceOverlay.parentElement : document.body).appendChild(host);
+    }
+    const d = window.VenueDoc && VenueDoc.get(key);
+    const name = key === 'pond' ? 'Sailing School' : ((d && d.card && d.card.name) || key);
+    const rows = venueObjectiveRowsHTML(key);
     host.innerHTML = `
         <div class="ov-card w-full" style="max-width:520px; padding:20px 24px; max-height:86vh; overflow-y:auto;">
             <div class="flex items-center justify-between">
@@ -3753,26 +3759,10 @@ function refreshClubhouse() {
         }
     }
     const st = $('door-school-state'); if (st) { st.textContent = grad ? 'Graduated' : 'Not yet graduated'; st.style.color = grad ? '#7f8ea9' : '#7ff0d4'; }
-    // The school's characters to earn, under the blurb — its own "venue card", since the
-    // pond never goes through the race board. A click opens the list, not the school.
-    if (door && window.Unlocks && Unlocks.enforced()) {
-        const body = door.querySelector('.ch-door-body');
-        let strip = body && body.querySelector('.ch-earn');
-        if (body && !strip) {
-            strip = document.createElement('div'); strip.className = 'ch-earn';
-            strip.style.cssText = 'display:flex; align-items:center; gap:8px; margin-top:8px; cursor:pointer;';
-            strip.addEventListener('click', (e) => { e.stopPropagation(); openVenueObjectives('pond'); });
-            const blurb = body.querySelector('.ch-door-blurb');
-            if (blurb) blurb.after(strip); else body.appendChild(strip);
-        }
-        if (strip) {
-            const list = Unlocks.forVenue('pond');
-            const got = list.filter(a => Unlocks.isEarned(a.char)).length;
-            strip.innerHTML = `<span class="t-label t-label-xs" style="color:#dbeafe; white-space:nowrap;">Earn here &middot; ${got}/${list.length}</span>`
-                + `<span style="display:flex; gap:3px;">${list.map(a => venueObjectiveFace(a, 22)).join('')}</span>`
-                + `<span class="t-label t-label-xs" style="color:#8fd8d0; text-decoration:underline; text-underline-offset:3px; white-space:nowrap;">Objectives &rarr;</span>`;
-        }
-    }
+    // No "Earn here" strip on the school door (Wes, Sep 26 2026: the faces distract and the
+    // link cannot really be clicked from a door). The pond's objectives are listed on the
+    // school's own first screen instead — School.screenContent('A').
+    if (door) { const old = door.querySelector('.ch-earn'); if (old) old.remove(); }
     const cta = $('door-school-cta'); if (cta) cta.innerHTML = (grad ? 'Sail again ' : 'Start school ') + _CH_ARROW;
     const t = Series.trophies();
     const won = Series.cupsWon();

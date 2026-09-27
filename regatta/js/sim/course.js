@@ -408,6 +408,45 @@ if (typeof GameEvents !== 'undefined') GameEvents.on('player-contact', (e) => {
     _otterRun.scraped = true;
     GameEvents.emit('player-feat', { id: 'otter:scraped' });
 });
+// EMBERFALL ISLE (designed Sep 26 2026, Wes) — the Explorer rung:
+//   volcanic:outer  Vent's "Round the Archipelago": the whole outside loop, outside EVERY island.
+//                   A gate on the bearing (from the archipelago's centre) through each island's
+//                   outermost point, plus twelve even bearings, each running from the outermost
+//                   land on that bearing out to the sailing limit; a race through all of them has
+//                   been round everything. Built from the geometry at the start of each race, so
+//                   Wes's edits carry it. None of his five races did it (29-38 of 50 gates).
+//   (volcanic:dodge, Torch's "Outrun the Bolt", is counted where the bolt lands — js/volcano.js.)
+const VOLC_RUN = { venue: 'volcanic', margin: 30 };
+let _volcRun = null;   // { gates, hit:Set, last, done } for the race in progress
+function _volcOuterGates() {
+    const B = state.course.doc && state.course.doc.world && state.course.doc.world.boundary;
+    const poly = B && B.poly ? B.poly.map(([x, y]) => ({ x, y })) : null;
+    const inB = (x, y) => poly ? pointInPoly(x, y, poly) : Math.hypot(x, y) < ((B && B.circle && B.circle.r) || 8000);
+    const hard = (state.course.islands || []).filter(q => !q.awash && q.vertices && q.vertices.length > 2 && VenueDoc.traits(q).hard);
+    let cx = 0, cy = 0, n = 0; for (const q of hard) for (const v of q.vertices) { cx += v.x; cy += v.y; n++; } if (!n) return [];
+    cx /= n; cy /= n;
+    const solid = (x, y) => hard.some(q => Math.hypot(x - q.x, y - q.y) < (q.radius || 1e9) && pointInPoly(x, y, q.vertices));
+    const angs = [...Array(12)].map((_, k) => k / 12 * Math.PI * 2);
+    for (const q of hard) { let bv = null, bd = -1; for (const v of q.vertices) { const d = Math.hypot(v.x - cx, v.y - cy); if (d > bd) { bd = d; bv = v; } }
+        const a = Math.atan2(bv.x - cx, -(bv.y - cy)); if (!angs.some(u => Math.abs(Math.atan2(Math.sin(u - a), Math.cos(u - a))) < 0.03)) angs.push(a); }
+    const gates = [];
+    for (const a of angs) { const dx = Math.sin(a), dy = -Math.cos(a); let far = 0, edge = 0;
+        for (let d = 0; d < 12000; d += 20) { const x = cx + dx * d, y = cy + dy * d; if (!inB(x, y)) { edge = d; break; } if (solid(x, y)) far = d; }
+        if (edge > far) gates.push({ a: { x: cx + dx * (far + VOLC_RUN.margin), y: cy + dy * (far + VOLC_RUN.margin) }, b: { x: cx + dx * (edge + 80), y: cy + dy * (edge + 80) } }); }
+    return gates;
+}
+function checkVolcanicRun() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== VOLC_RUN.venue || !me || !me.isPlayer
+        || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _volcRun = null; return; }
+    if (!_volcRun) _volcRun = { gates: _volcOuterGates(), hit: new Set(), last: null, done: false };
+    const R = _volcRun, here = { x: me.x, y: me.y };
+    if (R.last && !R.done) {
+        R.gates.forEach((g, i) => { if (!R.hit.has(i) && _routeGateCrossed(R.last, here, g.a, g.b)) R.hit.add(i); });
+        if (R.gates.length && R.hit.size === R.gates.length) { R.done = true; if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'volcanic:outer' }); }
+    }
+    R.last = here;
+}
 // GLOWTIDE STRAIT (designed Sep 26 2026) — the venue's question is "follow the glow, or trust
 // your own line?", and Veil's objective is the answer:
 //   glowtide:glow   value = seconds the player has sailed in ANOTHER boat's glowing wake (within
