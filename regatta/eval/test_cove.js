@@ -99,6 +99,42 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         out.cross5Lengths = cross(5 * 55);
         out.cross2Lengths = cross(2 * 55);
         out.crossAstern = (() => { const before = feats.length; for (let x = -120; x <= 120; x += 20) { me.x = x; me.y = 500; checkBowCrossing([ship]); } return feats.length > before; })();
+
+        // ── the three bridges (Scoop's objective, checkCoveBridges) ──
+        const gates = _coveBridgeGates();
+        out.bridgeCount = gates.length;
+        const under = (g, off) => {        // sail square across the deck line at `off` along it from the middle
+            const mx = (g.a.x + g.b.x) / 2, my = (g.a.y + g.b.y) / 2, L = Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y);
+            const ux = (g.b.x - g.a.x) / L, uy = (g.b.y - g.a.y) / L, nx = -uy, ny = ux;
+            me.x = mx + ux * off - nx * 150; me.y = my + uy * off - ny * 150; checkCoveBridges();
+            me.x = mx + ux * off + nx * 150; me.y = my + uy * off + ny * 150; checkCoveBridges();
+        };
+        const fresh = () => { state.race.status = 'prestart'; checkCoveBridges(); state.race.status = 'racing'; };
+        const count = () => feats.filter(f => f === 'bay:bridges').length;
+        // water both sides of every deck, at mid-span: the objective is sailable
+        out.bridgesOverWater = gates.every(g => { const mx = (g.a.x + g.b.x) / 2, my = (g.a.y + g.b.y) / 2;
+            const L = Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y), nx = -(g.b.y - g.a.y) / L, ny = (g.b.x - g.a.x) / L;
+            return !pointOnLand(mx + nx * 200, my + ny * 200) && !pointOnLand(mx - nx * 200, my - ny * 200); });
+        // before the gun: nothing
+        state.race.status = 'prestart'; const c0 = count();
+        for (const g of gates) under(g, 0);
+        out.bridgesPrestart = count() > c0;
+        // racing, two of three: nothing yet; the third pays
+        fresh(); const c1 = count();
+        under(gates[0], 0); under(gates[1], 0);
+        out.bridgesTwo = count() > c1;
+        under(gates[2], 0);
+        out.bridgesThree = count() === c1 + 1;
+        // the same bridge three times is one bridge
+        fresh(); const c2 = count();
+        for (let i = 0; i < 3; i++) under(gates[0], 0);
+        out.bridgesSameThrice = count() > c2;
+        // past the end of a deck is not under it
+        fresh(); const c3 = count();
+        const len = (g) => Math.hypot(g.b.x - g.a.x, g.b.y - g.a.y);
+        under(gates[0], 0); under(gates[1], 0); under(gates[2], len(gates[2]) / 2 + 150);
+        out.bridgesPastEnd = count() > c3;
+        state.race.status = 'prestart'; checkCoveBridges();
         return out;
     });
 
@@ -118,6 +154,13 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(!r.cross5Lengths, 'crossing 5 lengths ahead of the bow does not count');
     ok(r.cross2Lengths, 'crossing 2 lengths ahead of the bow counts');
     ok(!r.crossAstern, 'crossing astern does not count');
+    ok(r.bridgeCount === 3, `three bridges read off the placed props (${r.bridgeCount})`);
+    ok(r.bridgesOverWater, 'open water either side of every deck at mid-span');
+    ok(!r.bridgesPrestart, 'no bridge feat before the gun');
+    ok(!r.bridgesTwo, 'two bridges of three is not yet bay:bridges');
+    ok(r.bridgesThree, 'the third bridge pays bay:bridges, once');
+    ok(!r.bridgesSameThrice, 'one bridge three times is still one bridge');
+    ok(!r.bridgesPastEnd, 'sailing past the end of a deck is not under it');
     ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs[0] : ''));
     await b.close();
     console.log(fails ? `\nFAIL — ${fails} failure(s)` : '\nPASS — 0 failure(s)');

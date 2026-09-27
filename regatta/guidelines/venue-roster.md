@@ -41,7 +41,7 @@ not where the Aug 5 doc assumed.
 
 | Venue | 1 · First win | 2 · Mechanic | 3 · Explorer | 4 · Target time | 5 · Four stars | New |
 |---|---|---|---|---|---|---|
-| Lighthouse Cove | **Roll** harbor seal | *Wake* harbour porpoise | ↦**Zeffir** herring gull | ↦**Plunge** northern gannet | **Piper** sanderling (+7) | 1 |
+| Lighthouse Cove | **Roll** harbor seal | **Wake** harbour porpoise | **Scoop** brown pelican (Sep 26; Zeffir → Wildlife) | ↦**Plunge** northern gannet | **Piper** sanderling (+7) | 1 |
 | Stillwater Lake | **Lunker** largemouth bass | *Diver* common loon | *Timber* moose | **Gasket** beaver | **Torpedo** northern pike (+12) | 2 |
 | Pearl Lagoon | ↦**Pearl** pearl oyster† | **Nimbus** spotted eagle ray | **Ribbon** sea krait | **Jester** clownfish | **Puff** mandarin dragonet (+15) | 0 |
 | Gatorgrass Bayou | **Chomp** crocodile† | **Croak** bullfrog | *Flit* dragonfly | **Etienne** red swamp crayfish | *Beau* alligator† | 2 |
@@ -51,7 +51,7 @@ not where the Aug 5 doc assumed.
 | Glowtide Strait | **Lure** black seadevil | **Veil** vampire squid | **Bloom** man-of-war | **Drift** sea nettle | **Prism** maxima clam (+5) | 0 |
 | Glacier Sound | **Bluff** polar bear | **Tiny** krill | **Spike** narwhal (Skerry parked) | **Pebble** Adélie penguin | **Fathom** orca (+23) · **Grin** leopard seal (Wildlife) | 1 |
 | Otter Point | *open* (Scoop went to the Cove) | *Loom* kelp greenling | ↦**Breeze** nudibranch | *Freckle* leopard shark | *Azure* blue whale | 3 |
-| Spoonbill Flats | **Petal** spoonbill† | **Skitter** mudskipper† | *a Wadden species* (was Wink, fiddler crab) | *Curl* Eurasian curlew | *Rake* Eurasian oystercatcher | 3 |
+| Spoonbill Flats | **Petal** spoonbill† | **Skitter** mudskipper† | **Scythe** pied avocet | *Curl* Eurasian curlew | *Rake* Eurasian oystercatcher | 3 (+ **Zee** grey seal, Wildlife) |
 | Emberfall Isle | **Ember** firefish† | **Torch** fire salamander† | **Vent** yeti crab | **Basalt** marine iguana | **Soot** sooty tern | 3 |
 
 **40 of 60 slots are filled from the roster; 20 characters to build** (the Aug 5 map
@@ -330,10 +330,26 @@ the trawler), **porpoises** (a pod ahead of each cargo ship's bow, one resident 
 |---|---|---|
 | First win | **Roll** | Win a race at Lighthouse Cove. |
 | Mechanic | **Wake** (to build — `art/character-prompts/wake.md`) | Cross a cargo ship's bow within 3 boat lengths, then finish. |
-| Explorer | **Zeffir** | Put up the gulls on the rock east of the lighthouse island, then finish. |
+| Explorer | **Scoop** | *Under the Bridges:* sail under all three of the Cove's bridges in one race, then finish. (Sep 26) |
 | Target time | **Plunge** | Beat the Cove's target (4:15) in Time Trials. |
 | Four stars | **Piper** | Win, no penalties, lead at every mark, manual trim — one race. |
-| Wildlife | **Scoop** | Sail through a bait boil while the pelicans are diving, then finish. |
+| Wildlife | **Zeffir** | Put up the gulls on the rock east of the lighthouse island, then finish. (Sep 26: was Explorer) |
+
+**Reworked Sep 26 2026 (Wes).** The Explorer rung is the three bridges and the gull rock
+moved to the Wildlife rung, so Zeffir the gull keeps his own birds and Scoop takes the
+bridges. The pelicans' bait boil is scenery now: `bay:bait-boil` still fires and no row
+reads it. The Cove's fourth animal is the harbour seal (Roll's species).
+- **How it's judged:** `checkCoveBridges` in `js/sim/course.js`. A bridge is any placed kind
+  with `chartSpan`, so a bridge added later joins the set. Its gate is the deck's
+  centreline, end to end (0.46 of the drawn size each way). All of them crossed in one race,
+  racing and not yet finished, emits `bay:bridges` once. Only the towers are hard, so
+  crossing the line anywhere a hull can reach is passing under.
+- **Measured:** Wes's 25 recorded Cove races crossed 0–2 bridges (the Golden Gate `prop-121`
+  8 times, the truss `prop-122` 3) and never the north one, `prop-123`, 580 u past mark 1.
+  All three is a deliberate detour.
+- **Tests:** `test_cove.js` checks for no feat before the gun, two of three is not enough,
+  one bridge three times is one bridge, past a deck's end doesn't count, and open water
+  either side of every deck.
 
 Measured: in four autopilot races the player crossed a ship's track ahead of the bow at
 211–1,795 u, never inside 165 u — racing normally does not earn Wake; timing it does.
@@ -953,6 +969,136 @@ lines, sinking deeper when a boat passes over.
   a place by velocity (the school's creep + a gentle pull), stacked at depths; one reaching the front
   peels off, runs back down the outside deeper and rejoins at the rear. The oval is turned/shrunk until it
   is clear of the shore. Bench: eval/_volc_hammer_bench.js.
+
+## Clubhouse Point, as built (Sep 26 2026)
+
+The eval anchor (venues.md §10): course, wind and conditions NEVER change. Wes's calls: picture-only wildlife
+("nothing should disturb the time trial racing"), birds on the marks are fine, the basking shark stays out (a
+thing that looks hittable), Gape saved for the fjords, Grip saved for something else; a North Atlantic club off
+a rocky point. All six characters were already drawn (orphans with no rung).
+
+| Rung | Character | Objective | Judged |
+|---|---|---|---|
+| First win | **Sable** (great cormorant) | The Regular: win at the Point | `r.won` |
+| Mechanic | **Latch** (remora) | Same Every Week: three Point finishes in a row within 3.0 s | `career.venues.seatrials.recent` (last three results, a DNF is a null); Wes's best three-in-a-row spread in 27 laps: 4.1 s |
+| Explorer | **Lateen** (by-the-wind sailor) | Every Can: in one race round both top marks and use both halves of the bottom line (start, lap-one gate, finish) | `seatrials:everycan` (sim/course.js SEA_RUN: gate-line crossings within 900 u, side by sign); 6 of Wes's 27 laps |
+| Target | **Flash** (mackerel) | The Number: beat 3:30 | `records.provisional` 210 (unchanged) |
+| Four stars | **Skerry** (Atlantic puffin, +6) | Clean Sheet: four stars | `r.stars === 4` |
+| Wildlife | **Flicker** (arctic tern) | Under the Birds: within 110 u of a working mackerel boil with 3+ terns over it, then finish | `seatrials:birds` (js/wildlife.js); the autopilot's closest pass 133–720 u, never earned |
+
+Wildlife (js/wildlife.js CLUBHOUSE POINT, `WILDLIFE.seatrials`; bench eval/_seatrials_bench.js; test
+eval/test_seatrials.js): **great cormorants** ON THE WATER (Wes, Sep 26: not on the marks — it hid them): 5 groups of 2–4
+riding low out on the flanks, diving for 8–18 s and surfacing elsewhere, and now and then pattering off to fly
+low to another spot (mostly along their flank, one flight in five across the course); **by-the-wind sailors** in
+18 loose, snaking, clumped windrows across the whole course (flanks only at first; Wes, Sep 27: 'they can be on the
+course, they don't affect anything') (Wes: the first lines were 'weirdly geometric … in front of
+the start line'), drifting dead downwind — redrawn from Wes's references (Sep 27) as GLASSY floats: a clear pale oval
+with a frilly deeper-blue skirt and faint rings, the silvery sail-crest with a white glint, a faint meniscus ring;
+loosely scattered, mostly small;
+**mackerel boils** (two at a time, 22–34 s each) out on the flanks beyond the laylines but inside the sailing area (±2,550–2,950; the boundary is ±3,150) or just past a gate's
+middle — the bottom gate only after 90 s of racing (Wes: never during the start); **arctic terns** hover and
+plunge on the working boil. **Herring gulls** (Wes, Sep 27): 7 loose rafts of 3–7 loafing on the water — redrawn afloat from
+his references (drawGullFloat: riding low and boat-shaped, white head and breast, pale grey back with a white edge,
+black tips crossed and cocked past the tail, spotted white, yellow bill with the red spot; a third are mottled
+grey-brown JUVENILES with dark bills, also in flight with a dark tail band), bobbing, heads swinging into the wind, preening; a boat within five boat lengths (275 u — real gulls
+flush at 20–50 m) puts the raft up one by one, low flaps and glides, and they settle 300–700 u away, mostly
+downwind, never within 250 u of a mark. PICTURE ONLY, proven: a seeded race with and without the wildlife is identical
+(eval/_seatrials_neutral.js, and test_seatrials). The golden traces here drift from the roster additions, not the
+wildlife (identical failure with it switched off).
+
+## Spoonbill Flats, as built (Sep 26 2026)
+
+The Wadden, and the tide is the venue (js/tide.js: a 60 s sine on the race clock over an elevation
+field; the marked passages over the flats in `doc.tide.passages`, risk rungs 1–3). Wes's calls: roseate
+spoonbills (pink, like Petal), grey seals, shore crabs, pied avocets; running aground costs the CLEAN star;
+Petal (roseate) and Skitter (mudskipper) stay as drawn; a new avocet Scythe and a grey seal Zee ("for the
+Zealand reference" — not a harbour seal, Roll is one); target 3:15 from his Sep 16 laps for now.
+
+| Rung | Character | Objective | Judged |
+|---|---|---|---|
+| First win | **Petal** (roseate spoonbill) | Pink on the Flats: win | `r.won` |
+| Mechanic | **Skitter** (mudskipper) | Mud Runner: 50 s over the flats in one race, never aground | `flats:mud` value ≥ 50 and no `flats:aground` (sim/course.js FLATS_RUN). "The flats" = ground a boat sits aground on at low water (z > LW − draft = −1.5 m: the dredged cuts at −1.35 count, the channel's rim at −1.6 does not). Wes's laps 39–41 s; bots 2 of 54 clean at 50+ (eval/_flats_fleet_feats.js) |
+| Explorer | **Scythe** (pied avocet) | Chart the Flats: sail all six passages across races — wantij, west gamble, neck, flood creek, head cut, delta cut | `flats:route:<id>` feats → `career.venues.flats.routes` (several a race); a passage counts after 4 s afloat on its FLAT (drying ground whose nearest marked line is that passage's, within 450 u) — the lines are where the cuts are, not lanes: Wes crossed the first flat diagonally between the wantij and gamble lines. Named in a banner as you sail onto one (`flats-passage`, js/ui/screens.js) and labelled on the minimap (Tide.drawMinimapLabels) — what you see is what counts. Progress N of 6 |
+| Target | *Curl* (curlew) | Beat the Tide: 3:15 | `records.provisional` 195 (Wes's Sep 16 laps 2:56/2:53/2:52 ×1.1; set by hand — set_venue_targets.js skips it because the cuts beat the channel-only path) |
+| Four stars | *Rake* (oystercatcher) | Full Tide: four stars | `r.stars === 4`; clean now also means never aground (Tide.touches, a WeakMap on raceState — never a raceState field) |
+| Wildlife | **Zee** (grey seal) | Keep Your Distance: at low water stand off a hauled-out colony (within 400 u of its centre) for 3 s without flushing a seal (flush 160 u), then finish | `flats:seals` (js/wildlife.js); the fleet never comes within 490 u of a hauled colony (eval/_flats_seal_watch.js) |
+
+Found on the way: `player-aground` had NEVER fired — tide.js tested `window.GameEvents`, but GameEvents is
+a top-level const — so the AGROUND banner and thump built on Sep 16 were silent until now.
+
+Wildlife (js/wildlife.js SPOONBILL FLATS section, `WILDLIFE.flats`; bench eval/_flats_bench.js, scene
+eval/_flats_scene.js, survey eval/_flats_wild_survey.js; placed off the tide field within the racing stretch):
+**grey seals** — four colonies on sandbanks beside the deep channel (z −0.5..0.2), 9–15 each, mottled
+(dark bulls, silver and cream cows), a loose strip; they haul out as the bank dries, slide down to the water
+as it floods, bottle in the channel watching boats, climb back as it dries; any boat within 170 u flushes
+them. **Roseate spoonbills** (5 flocks of 5–9) and **pied avocets** (5 flocks of 10–20) wade the shallow edge
+(0.05–0.3 m / 0.02–0.18 m), sweeping and scything, re-reading the water every ~2 s and aiming ahead of the tide
+(shallow end on the flood, deep end on the ebb); the edge runs ~50 u/s over the flats, so they LEAPFROG in short
+low flights, and a bird caught deep hops; at high water with no shallows they fly to a HIGH-TIDE ROOST on the
+saltmarsh, packed, facing the wind; a boat within 230/200 u flushes a flock. **Shore crabs** — 40 beds of 4–8
+keep to the water's edge (−0.05..0.3 m), sidling after it as it drains, buried (a hump and two eyes) when left
+high, dimmed and blued under water, lost from view deeper than 0.7 m.
+
+**Grey seals redrawn from Wes's references (Sep 26):** a LOOSE colony (spread 210 u, 48 u apart — two to five
+body lengths, never a heap), only on bank the flood covers; plump (a quarter as wide as long) along a curved
+spine; two in three lie on their SIDE in the banana, which from above is a C with the pale belly along one
+edge; fine irregular mottle (faded at race scale); coats sandy grey-tan, silver and cream cows, dark and brown
+bulls; white pups beside a quarter of the cows; a fore flipper waved now and then. Keep Your Distance now
+watchR 400 / flushR 160 / ringR 560, and a flush on the way into the ring counts (it was reset the same frame —
+sailing straight in could earn it). Bench eval/_flats_bench.js.
+
+**Roseate spoonbills redrawn from Wes's references (Sep 26):** standing — plump, white at the neck and upper back
+grading to pink behind, pale pink folded wings crossed over the orange-buff tail, the vivid carmine shoulder
+patch; buff-green bald head with the black nape band; the long grey-green bill ending in a round spoon. Resting
+at the roost the bill lies back along the back. Flying — neck dead straight, dark red legs trailing past the
+tail, BROAD ROUNDED wings with five finger-tips (they were narrow and pointed), pale pink deepening to the
+trailing edge, the carmine bar along the inner leading edge, a carmine rump; flocks travel in a loose
+diagonal line.
+
+**Pied avocets redrawn from Wes's references (Sep 26):** flying — narrow pointed white wings crossed by three
+blacks: the outer hand black to the tip (was a square-cut block), a bar slanting from the back stripes out to
+the wrist (was a floating rectangle), and the black stripes down the back; the neck out with the black cap down
+the nape; the long blue-grey legs trailing well past the white tail. Standing — the black scapular bands, a
+black bar on each folded wing, the black primaries crossed past a white tail, the cap running down the nape.
+
+**Shore crabs redrawn from Wes's references (Sep 26; of the species he sent, the Wadden's own Carcinus maenas):**
+a broad trapezoid shell, widest at the front, five sharp teeth down each front edge and three lobes between the
+stalked eyes, mottled with the pale H of its regions; three colour phases — green (olive-khaki shell, tan legs),
+khaki, and the red phase (orange all over), a few crusted with barnacles; long jointed orange-tan legs fanned
+radially (front pairs forward, back pairs back), ~2.2× the shell; stout orange claws with dark fingers. A boat
+within 140 u makes it REAR — claws spread wide and open, the shell tipped up — then it edges sideways into deeper
+water in short bursts while the boat stays (a 6–10 s calm before it rears again). SCRAB_SPAN 9 (was 8).
+
+**Placed where boats sail (Wes's lap Sep 26: "only saw one colony… not many spoonbills and avocets on the
+course"):** colonies and flocks had been placed anywhere on the estuary's banks — 3 of 4 colonies 800–3600 u off his
+line. Now scored by distance to FLATS_LINE (Wes's four recorded laps thinned to a point every ~180 u, baked into
+wildlife.js): seal colonies 7 at 300–520 u from the line (off it, so a boat doesn't flush them just by passing),
+spoonbill and avocet flocks 7 each within 420 u. On that lap 5/7 colonies, 5/7 spoonbill and 6/7 avocet flocks now
+lie within ~700 u (the view is ±760×520); the rest lie on his other laps' lines. Probe eval/_flats_seen.js <traj>.
+Then (his outside-channel lap: "mostly later in the course"): FLATS_LINE rebuilt from all six laps (cuts and the
+full outside channel), and placement BANDED along the course — the racing stretch split into as many bands as
+there are colonies/flocks, the best spot taken in each — so the first half gets its share. 8 seal colonies, 9
+spoonbill and 9 avocet flocks (spacing 1100–1200). On both of his Sep 26 laps ~5 of 8 colonies and 5–6 of 9 of
+each wader lie within ~700 u, start to finish. 0.10 ms/frame.
+
+**With the tide (Sep 26, researched; Wes: "they shouldn't suddenly disappear"):**
+- *Shore crabs* — Carcinus migrates UP the shore with the flood to forage on the newly covered flats and back down with
+  the ebb; small ones stay and bury. Movers now want 0.15–0.55 m on the flood, 0.05–0.4 on the ebb (slower under water);
+  stayers (35%) keep to the edge and bury as it dries. Burial is gradual (q.bur over ~2.5 s: legs fade, a mud hump and two
+  eyes remain; ~1.2 s to dig out), and under water a crab fades smoothly with depth (smoothstep, gone by ~0.85 m) — the old
+  cut at 0.7 m and the one-frame burial are gone.
+- *Grey seals* — they lie on as the flood laps round them (each leaves at its own 0.10–0.32 m; a water film creeps over the
+  body and small broken ripples lap its edge), then hump off; lying <-> swimming is a ~1 s CROSSFADE, never a swap.
+- *Pied avocets* — webbed feet: in 0.2–0.6 m they SWIM and now and then UPEND (head and neck under, a small ring), the flock
+  staying until its patch passes 0.45 m; spoonbills sweep only in water under 0.25 m.
+- *Waders never vanish in flight* (Wes saw spoonbills disappear): a 14 s flight timeout used to TELEPORT each bird onto its
+  spot (and sometimes onto the marsh); now they turn straight in inside 60 u (no orbiting the spot) and, on a long flight,
+  settle wherever they are over water once low; a bird whose own spot is on the marsh aims for the flock's centre.
+- test_flats_objectives: nothing pops over a whole tide (largest one-frame change: crab visibility 0.05, seal crossfade 0.10);
+  no wader moves more than top flight speed in a frame (the old teleport measured 131 u); no aground thump after the finish.
+
+**Post-race thump (Wes):** the AGROUND banner and thump fired behind the debrief — the boat drifts on up the narrowing river
+past the line. player-aground now only while racing and before your finish (collisions have no sound; this was the one).
 
 ## Otter Point, as built (Sep 26 2026)
 

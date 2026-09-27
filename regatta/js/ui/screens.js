@@ -3545,6 +3545,15 @@ GameEvents.on('player-penalty', (info) => {
     const why = info && info.rule ? ` (${info.rule}${info.reason ? ' — ' + info.reason : ''})` : '';
     showRaceMessage(`PENALTY${why}! DO A 360° TURN TO CLEAR`, "text-red-500", "border-red-500/50");
 });
+// A PASSAGE over the flats, named as you sail onto it (sim/course.js FLATS_RUN) — Wes, Sep 26 2026:
+// Scythe's objective collects them, so the player has to be told where they are. Never over another
+// message (a penalty, aground); gone after two seconds unless something replaced it.
+GameEvents.on('flats-passage', (info) => {
+    if (!info || !UI.message || !UI.message.classList.contains('hidden')) return;
+    const text = (info.name || '').toUpperCase() + (info.sailed ? '' : ' — A PASSAGE OVER THE FLATS');
+    showRaceMessage(text, "text-teal-300", "border-teal-400/50");
+    setTimeout(() => { if (UI.message && UI.message.textContent === text) hideRaceMessage(); }, 2200);
+});
 // AGROUND on the flats (js/tide.js): the one message a stranded sailor needs is when the
 // water comes back, and the sine knows.
 GameEvents.on('player-aground', (info) => {

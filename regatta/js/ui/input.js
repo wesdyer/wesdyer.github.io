@@ -190,8 +190,10 @@ window.addEventListener('keydown', (e) => {
         else togglePause();
     }
 
-    // Audio
-    if (e.key.toLowerCase() === 'm') {
+    // Map: M enlarges the minimap 3x (and back), as a click on it does (Wes, Sep 26 2026).
+    if (e.key.toLowerCase() === 'm') toggleMinimapSize();
+    // Audio: V for volume, Shift+V for music (moved off M, which is the map now).
+    if (e.key.toLowerCase() === 'v') {
         if (e.shiftKey) {
             settings.musicEnabled = !settings.musicEnabled;
             saveSettings();

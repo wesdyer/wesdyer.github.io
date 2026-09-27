@@ -7,7 +7,7 @@ description: Design, then build, one regatta venue's character objectives and it
 
 Done so far: Lighthouse Cove (`bay`), Sailing School (`pond`), Stillwater Lake (`lake`),
 Pearl Lagoon (`lagoon`), Gatorgrass Bayou (`swamp`), Sockeye Run (`river`), Bluewater
-Bonanza (`ocean`), Redrock Reservoir (`redrock`), Glacier Sound (`arctic`), Glowtide Strait (`glowtide`). Remaining: otter, flats, volcanic.
+Bonanza (`ocean`), Redrock Reservoir (`redrock`), Glacier Sound (`arctic`), Glowtide Strait (`glowtide`), Otter Point (`otter`), Emberfall Isle (`volcanic`), Spoonbill Flats (`flats`), Clubhouse Point (`seatrials`, the eval anchor — wildlife picture only) — all fourteen (Sep 26 2026). A new venue starts here. Before inventing characters, list the roster ones with no rung (~50 orphans, already drawn).
 The recommended character map for every venue is in `regatta/guidelines/venue-roster.md`
 (the audit plus the "as built" sections). Read that venue's row and the latest "as built"
 section before proposing anything.

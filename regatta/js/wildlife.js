@@ -296,6 +296,21 @@
         // eval/_volc_spots.js against Wes's recorded lines: iguana heaps and crab beds on the black
         // shores 140-300 u off the lines, hammerhead schools over the vents nearest them, a booby flock
         // working a fish school on each leg, frigatebirds on the main cone's and the SE islet's thermals.
+        // Clubhouse Point (Sep 26 2026, Wes): the eval anchor — PICTURE ONLY, nothing touches a boat.
+        seatrials: {
+            cormorants: { groups: 5, n: [2, 4], flyChance: 0.18 },
+            velella: { fleets: 18, n: [35, 70] },
+            mackerel: { boils: 2, fish: 34, boil: [22, 34], rest: [6, 14], bottomAfter: 90 },
+            clubTerns: { n: 10, nearR: 110, feat: 'seatrials:birds' },
+            gulls: { rafts: 7, n: [3, 7], flushR: 275 },   // (Wes, Sep 27: five boat lengths)
+        },
+        flats: {
+            // Spoonbill Flats (Sep 26 2026, Wes): all four ride the tide (js/tide.js)
+            greySeals: { colonies: 8, spacing: 1200, lineMin: 300, lineMax: 520, n: [10, 16], spread: 210, gap: 48, pups: 0.25, flushR: 160, watchR: 400, ringR: 560, watchS: 3, feat: 'flats:seals' },
+            spoonbills: { flocks: 9, spacing: 1100, lineMax: 420, n: [5, 9], spread: 34, depth: [0.05, 0.3], flushR: 230, walk: 7, fly: 60, alt: 45, sweepHz: 1.2, flapHz: 2.6 },
+            avocets: { flocks: 9, spacing: 1100, lineMax: 420, n: [10, 20], spread: 26, depth: [0.02, 0.18], flushR: 200, walk: 9, fly: 75, alt: 30, sweepHz: 2.0, flapHz: 4.2 },
+            shoreCrabs: { beds: 40, spacing: 700, n: [4, 8], depth: [-0.05, 0.3], threatR: 140 },
+        },
         volcanic: {
             // (Wes, Sep 26: "more wildlife spread around — it seems a bit empty with localized clumps; and
             // where are the sooty terns?") Shore animals are laid along EVERY shore at intervals, the flocks
@@ -430,6 +445,8 @@
         orcaPods = []; colonies2 = []; floeGroups = []; swimmers = []; treks = []; jellyBloom = null; mantas = []; foxFlocks = []; nextFox = 0; hawksbills = []; dugongs = []; lseals = []; ternFlocks = []; visited = new Set();
         whalePods = []; blows = []; splashes = []; riders = []; flyfish = []; gliders = []; nextFly = 0; prints = []; flyPatches = [];
         igHeaps = []; crabBeds = []; boobyFlocks = []; boobyLines = []; frigates = []; frigFish = []; hammerSchools = [];
+        gsealCols = []; spoonFlocks = []; avoFlocks = []; scrabBeds = [];
+        clubCorms = []; velFleets = []; mackBoils = []; clubTerns = []; clubGulls = []; clubTernHome = { x: 2700, y: -2000 };
         foams = []; blood = []; seaOtterRafts = []; slHauls = []; slGroups = []; whites = []; bluePods = []; blueBlows = []; krill = []; huntCool = 8;
         feats = new Set(); T = 0;
         if (!cfg) return;
@@ -508,6 +525,15 @@
         if (cfg.foxes) foxFlocks = cfg.foxes.paths.map((P, k) => makeFoxFlock(cfg.foxes, P, k));
         if (cfg.hawksbills) hawksbills = makeHawksbills(cfg.hawksbills);
         if (cfg.dugongs) dugongs = makeDugongs(cfg.dugongs);
+        if (cfg.cormorants) clubCorms = makeClubCorms(cfg.cormorants);
+        if (cfg.velella) velFleets = makeVelella(cfg.velella);
+        if (cfg.mackerel) mackBoils = makeMack(cfg.mackerel);
+        if (cfg.clubTerns) clubTerns = makeClubTerns(cfg.clubTerns);
+        if (cfg.gulls) clubGulls = makeClubGulls(cfg.gulls);
+        if (cfg.greySeals && tideReady()) gsealCols = makeGreySeals(cfg.greySeals);
+        if (cfg.spoonbills && tideReady()) spoonFlocks = makeFlatsWaders(cfg.spoonbills, 'spoon');
+        if (cfg.avocets && tideReady()) avoFlocks = makeFlatsWaders(cfg.avocets, 'avo');
+        if (cfg.shoreCrabs && tideReady()) scrabBeds = makeShoreCrabs(cfg.shoreCrabs);
         if (cfg.iguanas) igHeaps = makeIguanas(cfg.iguanas);
         if (cfg.crabs) crabBeds = makeCrabs(cfg.crabs);
         // CLEANERS (Wes's references + the Galápagos staple): a few crabs ride the basking iguanas, picking
@@ -723,6 +749,15 @@
         if (hawksbills.length) updateHawksbills(dt);
         if (dugongs.length) updateDugongs(dt);
         if (igHeaps.length) updateIguanas(dt);
+        if (clubCorms.length) updateClubCorms(dt);
+        if (velFleets.length) updateVelella(dt);
+        if (mackBoils.length) updateMack(dt);
+        if (clubTerns.length) updateClubTerns(dt, me);
+        if (clubGulls.length) updateClubGulls(dt);
+        if (gsealCols.length) updateGreySeals(dt, me);
+        if (spoonFlocks.length) updateFlatsWaders(spoonFlocks, cfg.spoonbills, dt);
+        if (avoFlocks.length) updateFlatsWaders(avoFlocks, cfg.avocets, dt);
+        if (scrabBeds.length) updateShoreCrabs(dt);
         if (crabBeds.length) updateCrabs(dt);
         if (boobyFlocks.length) updateBoobies(dt, me);
         if (frigates.length) updateFrigates(dt);
@@ -3106,7 +3141,7 @@
         ctx.closePath();
         return { wx, wy, tx, ty };
     }
-    function drawGullFlying(ctx, x, y, h, z, flap, glide) {
+    function drawGullFlying(ctx, x, y, h, z, flap, glide, juv) {
         // a gull flaps, and glides in between (a follower mostly glides behind the ship)
         const W = glide ? GLIDE : wingStroke(flap, 0.85), beat = W.flex;
         const s = (1 + z * 0.004) * 1.2;
@@ -3120,11 +3155,13 @@
         ctx.lineJoin = 'round'; ctx.lineWidth = 0.9; ctx.strokeStyle = 'rgba(40,46,56,0.6)';
         // tail fan
         ctx.beginPath(); ctx.moveTo(-1.6, 4.5); ctx.lineTo(-2.6, 9.4); ctx.quadraticCurveTo(0, 10.4, 2.6, 9.4); ctx.lineTo(1.6, 4.5); ctx.closePath();
-        ctx.fillStyle = '#f7f8f9'; ctx.fill(); ctx.stroke();
+        ctx.fillStyle = juv ? '#cbbfae' : '#f7f8f9'; ctx.fill(); ctx.stroke();
+        if (juv) { ctx.save(); ctx.clip(); ctx.fillStyle = '#4a3c30'; ctx.fillRect(-3, 7.6, 6, 2.2); ctx.restore(); }   // the juvenile's dark tail band
         ctx.save(); ctx.scale(W.pf, 1);
         for (const sd of [-1, 1]) {
             const w = gullWingPath(ctx, sd, beat);
-            ctx.fillStyle = '#c3ccd5'; ctx.fill(); ctx.stroke();
+            ctx.fillStyle = juv ? '#9c8b77' : '#c3ccd5'; ctx.fill(); ctx.stroke();
+            if (juv) { ctx.save(); ctx.clip(); ctx.fillStyle = 'rgba(70,55,42,0.5)'; for (let k = 0; k < 10; k++) { ctx.beginPath(); ctx.ellipse(sd * (2 + k * 1.3), -1 + (k % 3) * 1.4, 0.7, 0.35, 0.3, 0, 6.283); ctx.fill(); } ctx.restore(); }
             // white trailing edge along the arm
             ctx.strokeStyle = 'rgba(250,251,252,0.95)'; ctx.lineWidth = 0.8;
             ctx.beginPath(); ctx.moveTo(sd * 2, 2.2); ctx.quadraticCurveTo(sd * 4.5, 2.4, sd * (w.wx + 0.8), w.wy + 3.4); ctx.stroke();
@@ -3140,10 +3177,10 @@
         }
         ctx.restore();
         // body: grey mantle on a white bird
-        ctx.beginPath(); ctx.ellipse(0, 0.5, 2.5, 7.2, 0, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.ellipse(0, 1, 1.6, 3.8, 0, 0, Math.PI * 2); ctx.fillStyle = '#c3ccd5'; ctx.fill();
-        ctx.beginPath(); ctx.ellipse(0, -5.8, 1.6, 1.9, 0, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.fill();
-        ctx.fillStyle = '#f2c14e'; ctx.beginPath(); ctx.moveTo(-0.55, -7.4); ctx.lineTo(0, -9.8); ctx.lineTo(0.55, -7.4); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, 0.5, 2.5, 7.2, 0, 0, Math.PI * 2); ctx.fillStyle = juv ? '#c2b5a3' : '#ffffff'; ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(0, 1, 1.6, 3.8, 0, 0, Math.PI * 2); ctx.fillStyle = juv ? '#9c8b77' : '#c3ccd5'; ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, -5.8, 1.6, 1.9, 0, 0, Math.PI * 2); ctx.fillStyle = juv ? '#cdc1b1' : '#ffffff'; ctx.fill();
+        ctx.fillStyle = juv ? '#2c2622' : '#f2c14e'; ctx.beginPath(); ctx.moveTo(-0.55, -7.4); ctx.lineTo(0, -9.8); ctx.lineTo(0.55, -7.4); ctx.closePath(); ctx.fill();
         ctx.restore();
     }
     // Sitting: a white head forward, the grey folded wings making the back, black wingtips
@@ -3806,6 +3843,10 @@
 
     // On the water, under land and hulls: porpoises and the boil (and a pelican sitting on it).
     function drawWater(ctx) {
+        for (const F of velFleets) drawVelellaFleet(ctx, F);
+        for (const B of mackBoils) drawMackBoil(ctx, B);
+        for (const b of clubCorms) if ((b.mode === 'swim' || b.mode === 'under') && onCam(b.x, b.y, 40)) drawCormorant(ctx, b);
+        for (const F of clubGulls) for (const b of F.birds) if (b.mode === 'float' && onCam(b.x, b.y, 40)) drawGullFloat(ctx, b);
         if (!cfg) return;
         for (const G of shoals) drawShoal(ctx, G);
         for (const s of poppers) drawSeal(ctx, s);
@@ -3922,6 +3963,7 @@
         for (const F of ternFlocks) for (const b of F.birds) if (b.mode === 'roost') drawTern(ctx, b);
         // Otter Point: otters float ON the kelp canopy (the float stratum draws before this layer),
         // sea lions lie on their rocks; a leaping sea lion and a breaching shark are over it all
+        if (gsealCols.length || spoonFlocks.length || avoFlocks.length || scrabBeds.length) drawFlatsLand(ctx);
         for (const B of crabBeds) if (!B.cleaners && onCam(B.p0.x, B.p0.y, 450)) for (const c of B.crabs) drawCrab(ctx, c);
         for (const G of igHeaps) if (onCam(G.p0.x, G.p0.y, 200)) for (const m of G.members) if (m.mode === 'bask' || m.mode === 'walk' || m.mode === 'climb') drawIguana(ctx, m, true);
         for (const B of crabBeds) if (B.cleaners && onCam(B.p0.x, B.p0.y, 250)) for (const c of B.crabs) drawCrab(ctx, c);   // the cleaners ride on top
@@ -3955,6 +3997,10 @@
         for (const B of blueBlows) drawBlueBlow(ctx, B);
         for (const F of boobyFlocks) for (const b of F.birds) if (b.mode !== 'sit' && onCam(b.x, b.y, 100)) drawBooby(ctx, b);
         for (const L of boobyLines) for (const b of L.birds) if (onCam(b.x, b.y, 100)) drawBooby(ctx, b);
+        if (spoonFlocks.length || avoFlocks.length) drawFlatsAir(ctx);
+        for (const b of clubCorms) if ((b.mode === 'fly' || b.mode === 'takeoff') && onCam(b.x, b.y, 60)) drawCormorant(ctx, b);
+        for (const b of clubTerns) if (onCam(b.x, b.y, 60)) drawTern(ctx, b);
+        for (const F of clubGulls) for (const b of F.birds) if (b.mode !== 'float' && onCam(b.x, b.y, 60)) { drawGullFlying(ctx, b.x, b.y, b.h, b.z, b.flap, b.glide && b.mode === 'fly', b.juv); if (b.splash > 0) drawRing(ctx, b.sx, b.sy, b.splash, 4, 12, 0.5); }
         for (const q of frigFish) if (onCam(q.x, q.y, 60)) drawFrigFish(ctx, q);
         for (const f of frigates) if (onCam(f.x, f.y, 150)) drawFrigate(ctx, f);
     }
@@ -7019,6 +7065,1011 @@
         ctx.restore();
     }
 
+    // ══ CLUBHOUSE POINT (Sep 26 2026; Wes) ═══════════════════════════════════════════════════
+    // The eval anchor: its course, wind and conditions never change, so everything here is PICTURE ONLY —
+    // nothing touches a boat, nothing makes a sound, nothing reads the game's RNG. A North Atlantic club off
+    // a rocky point on a Wednesday evening: GREAT CORMORANTS stand on the cans with their wings hung out to
+    // dry, drop off and fly low round the course when a boat rounds, and come back to their can; FLEETS OF
+    // BY-THE-WIND SAILORS (Velella) drift dead downwind in windrows on the flanks; MACKEREL drive the fry to
+    // the surface in BOILS out on the flanks or just past a gate's middle (never the bottom gate before the
+    // start is well away), and ARCTIC TERNS hover and plunge on them.
+    //
+    // SIZES (guidelines/scale.md): great cormorant 0.9 m (span 1.4 m) -> 26 (span 40); by-the-wind sailor 7 cm
+    // -> ~5, a mass in windrows (rule 7); mackerel 35 cm -> ~9 in a ball of dozens; arctic tern as at the Sound.
+    const GULL_FLOAT = 1.0;   // (bill to wingtips ~21 u: a herring gull 0.6 m x3, afloat)
+    const CORM_LEN = 26, CORM = { black: '#17191c', bronze: '#3f3b31', face: '#ece6d8', gular: '#e4a52f', bill: '#9a9c94', thigh: '#f1efe9' };
+    const VEL = { rim: '#1f4fb8', disc: '#3f86d8', sail: 'rgba(225,240,250,0.55)' };
+    const MACK = { back: '#2f5b58', bar: '#101c1c', belly: '#d7dde0' };
+    let clubCorms = [], velFleets = [], mackBoils = [], clubTerns = [], clubGulls = [], clubTernHome = { x: 2700, y: -2000 };
+    // a can's own bob and sway (world.js drawMarkBodies), so a bird on it rides it
+    function canPos(m) { const ph = m.x * 0.013 + m.y * 0.007, t = state.time || 0; return { x: m.x + Math.sin(t * 4.1 + ph) * 2.2, y: m.y + Math.cos(t * 3.4 + ph * 1.7) * 2.2 }; }
+
+    // ── cormorants on the water ─────────────────────────────────────────────────────────
+    // (Wes, Sep 26: not on the marks — it hides them.) Small groups ride low in the water out on the flanks,
+    // dive for fish and come up somewhere else a moment later, and now and then patter off the water and fly
+    // low across the course to another spot.
+    function corSpot() { const side = rnd() < 0.5 ? -1 : 1; return { x: side * R(2500, 3000), y: R(-5200, 1100) }; }
+    function makeClubCorms(c) {
+        const out = [];
+        for (let g = 0; g < c.groups; g++) { const S = corSpot(), n = Math.round(R(c.n[0], c.n[1]));
+            for (let j = 0; j < n; j++) out.push({ g, j, cx: S.x, cy: S.y, x: S.x + R(-40, 40), y: S.y + R(-40, 40), h: R(0, 6.283), z: 0, mode: 'swim', t: R(3, 15), sp: 0, flap: R(0, 7), lx: 0, ly: 0, ring: 0, vis: 1, trail: [], trailT: 0 }); }
+        return out;
+    }
+    function updateClubCorms(dt) {
+        const c = cfg.cormorants;
+        for (const b of clubCorms) {
+            b.t -= dt; b.ring = Math.max(0, b.ring - dt / 1.3);
+            if (b.mode === 'swim') {
+                // paddling slowly about its group's spot, low in the water; then a dive, or (rarely) off to another spot
+                const tx = b.cx + Math.sin(b.t * 0.2 + b.j) * 30, ty = b.cy + Math.cos(b.t * 0.17 + b.j * 2) * 30;
+                steer(b, tx, ty, 6, 0.8, dt); b.vis = Math.min(1, b.vis + dt / 0.8);
+                if (b.t <= 0) { if (rnd() < c.flyChance) { const S = rnd() < 0.2 ? corSpot() : { x: Math.sign(b.cx) * R(2500, 3000), y: Math.max(-5200, Math.min(1100, b.cy + (rnd() < 0.5 ? -1 : 1) * R(500, 1400))) }; b.lx = S.x; b.ly = S.y;   // (mostly a hop along its own flank; now and then across the course)
+                    b.mode = 'takeoff'; b.t = 1.4; b.flap = 0; b.ring = 0.8; }
+                    else { b.mode = 'under'; b.t = R(8, 18); b.ring = 1; } }
+            } else if (b.mode === 'under') {
+                // under for a while (cormorants hunt 20-40 s), a dim shape moving off, up again 15-40 u away
+                b.vis = Math.max(0, b.vis - dt / 0.6); steer(b, b.cx + Math.sin(b.j * 3 + b.t) * 40, b.cy + Math.cos(b.j + b.t) * 40, 9, 1.5, dt);
+                if (b.t <= 0) { b.mode = 'swim'; b.t = R(5, 18); b.ring = 1; }
+            } else if (b.mode === 'takeoff') {
+                // the heavy takeoff: pattering along the surface, flapping hard, into the air low
+                b.flap += dt * 3.4 * WING_TIME * 6.283; steer(b, b.lx, b.ly, 20 + (1.4 - b.t) * 25, 1.2, dt); b.z = Math.max(0, (1.4 - b.t) * 8);
+                if (b.t <= 0) b.mode = 'fly';
+            } else if (b.mode === 'fly') {
+                b.flap += dt * 3.2 * WING_TIME * 6.283; const d = Math.hypot(b.lx - b.x, b.ly - b.y);
+                steer(b, b.lx, b.ly, d < 60 ? Math.max(15, d) : 50, d < 80 ? 5 : 1.4, dt); b.z += ((d < 60 ? 0 : 14) - b.z) * Math.min(1, dt * 1.2);
+                if (d < 6) { b.mode = 'swim'; b.cx = b.lx; b.cy = b.ly; b.z = 0; b.t = R(6, 20); b.ring = 1; }   // down in a splash onto the water
+            }
+            recordTrail(b, dt, b.mode === 'swim');
+        }
+    }
+    // GREAT CORMORANT (Wes's references, Sep 26 2026: from below and above in flight, swimming, drying, perched).
+    // Black, the back and the upper wing SCALED — each feather dark in the middle with a bronze-grey edge; a
+    // white cheek and throat round yellow-orange bare skin at the base of a long hooked grey bill; a white thigh
+    // patch in breeding dress. Flying: a heavy body, the long neck stretched well ahead of the wings, long broad
+    // wings with a rounded hand and five or six separated finger-tips, a long rounded tail fanned behind.
+    // Swimming: it rides very low, the back barely awash, the neck up in a gentle S and the bill tilted up.
+    function cormBody(ctx) {
+        // (flying) from the bill's base at y -9.5 down the long neck to a heavy body and the rounded tail at +11
+        ctx.beginPath(); ctx.moveTo(0, -12.8); ctx.quadraticCurveTo(0.95, -12.5, 0.8, -11.2); ctx.lineTo(0.7, -5.6); ctx.quadraticCurveTo(2.5, -3.6, 2.4, 0.3);
+        ctx.quadraticCurveTo(2.2, 3.4, 1.1, 5.2); ctx.lineTo(-1.1, 5.2); ctx.quadraticCurveTo(-2.2, 3.4, -2.4, 0.3); ctx.quadraticCurveTo(-2.5, -3.6, -0.7, -5.6); ctx.lineTo(-0.8, -11.2); ctx.quadraticCurveTo(-0.95, -12.5, 0, -12.8); ctx.closePath();
+    }
+    function cormTail(ctx, fan) {
+        ctx.beginPath(); ctx.moveTo(-1.1, 4.6); for (let i = 0; i <= 8; i++) { const a = -0.5 * fan + i / 8 * fan, r = 6.4 + (i % 2) * 0.5; ctx.lineTo(Math.sin(a) * r, 4.6 + Math.cos(a) * r); } ctx.lineTo(1.1, 4.6); ctx.closePath();
+    }
+    function cormWing(ctx, sd, open, pf) {
+        // a long broad wing: the arm out to the wrist, the rounded hand, then the fingers fanned round its end
+        const sp = 20 * pf, sw = (1 - open) * 4;
+        ctx.beginPath(); ctx.moveTo(sd * 1.9, -3.4);
+        ctx.quadraticCurveTo(sd * sp * 0.28, -4.6, sd * sp * 0.52, -4.1 + sw * 0.3);                 // arm to the wrist
+        ctx.quadraticCurveTo(sd * sp * 0.74, -3.6 + sw * 0.5, sd * sp * 0.84, -2.9 + sw);              // the hand's leading edge
+        for (let f = 0; f < 6; f++) { const t = f / 5, a = -0.7 + t * 1.5, cx = sp * 0.76, cy = -1.4 + sw, R0 = sp * 0.24;
+            ctx.lineTo(sd * (cx + Math.cos(a) * R0), cy + Math.sin(a) * R0 * 1.25);                       // a finger-tip
+            if (f < 5) { const a2 = a + 0.15; ctx.lineTo(sd * (cx + Math.cos(a2) * R0 * 0.8), cy + Math.sin(a2) * R0 * 1.25 * 0.8); } }   // the gap
+        ctx.quadraticCurveTo(sd * sp * 0.55, 4.6 + sw * 0.5, sd * sp * 0.3, 3.8);                       // the broad trailing edge
+        ctx.quadraticCurveTo(sd * sp * 0.12, 3.4, sd * 1.9, 2.8); ctx.closePath();
+    }
+    // the scaled feathers: rows of small dark-centred, bronze-edged scallops over a region (clipped by the caller)
+    function cormScales(ctx, x0, x1, y0, y1, step, lod) {
+        if (lod <= 0) return;
+        ctx.save(); ctx.globalAlpha *= lod * 0.7;
+        for (let y = y0, r = 0; y < y1; y += step * 0.8, r++) for (let x = x0 + (r % 2) * step * 0.5; x < x1; x += step) {
+            ctx.fillStyle = CORM.bronze; ctx.beginPath(); ctx.ellipse(x, y, step * 0.48, step * 0.36, 0, 0, 6.283); ctx.fill();
+            ctx.fillStyle = CORM.black; ctx.beginPath(); ctx.ellipse(x, y - step * 0.08, step * 0.3, step * 0.22, 0, 0, 6.283); ctx.fill(); }
+        ctx.restore();
+    }
+    function cormHead(ctx) {
+        // (at the neck's tip, pointing -y) the dark head, the white cheek and throat, the yellow-orange skin, the long hooked bill
+        ctx.fillStyle = CORM.black; ctx.beginPath(); ctx.ellipse(0, 0, 1.15, 1.45, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = CORM.face; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 0.72, -0.2, 0.42, 0.85, sd * 0.2, 0, 6.283); ctx.fill(); }
+        ctx.fillStyle = CORM.gular; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 0.55, -0.95, 0.33, 0.5, 0, 0, 6.283); ctx.fill(); }
+        ctx.fillStyle = CORM.bill; ctx.beginPath(); ctx.moveTo(-0.38, -1.2); ctx.lineTo(-0.22, -4.3); ctx.quadraticCurveTo(0, -4.9, 0.26, -4.25); ctx.lineTo(0.38, -1.2); ctx.closePath(); ctx.fill();
+    }
+    function drawCormorantSwim(ctx, b) {
+        const k = CORM_LEN / 18, T0 = ctx.getTransform(), lod = Math.max(0, Math.min(1, (Math.hypot(T0.a, T0.b) * k - 1) / 2));
+        if (b.trail && b.trail.length > 2 && b.vis > 0.5) drawWakeTrail(ctx, b, 1.8, 0.8, 0.4 * b.vis);
+        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.h); ctx.scale(k, k); ctx.lineJoin = 'round';
+        if (b.vis < 0.99) { ctx.fillStyle = 'rgba(12,24,32,0.3)'; ctx.globalAlpha *= 1 - b.vis; ctx.beginPath(); ctx.ellipse(0, 1, 2.2, 5.5, 0, 0, 6.283); ctx.fill(); ctx.globalAlpha /= Math.max(0.01, 1 - b.vis); }   // the dim shape under the water
+        ctx.globalAlpha *= b.vis;
+        // the back just awash: a long low hull of black, scaled, its rear end under the water
+        ctx.fillStyle = 'rgba(8,24,30,0.28)'; ctx.beginPath(); ctx.ellipse(0.4, 1.5, 2.7, 6.2, 0, 0, 6.283); ctx.fill();
+        const hull = () => { ctx.beginPath(); ctx.moveTo(0, -3.3); ctx.quadraticCurveTo(2.4, -2.4, 2.2, 1.2); ctx.quadraticCurveTo(1.8, 5, 0, 7); ctx.quadraticCurveTo(-1.8, 5, -2.2, 1.2); ctx.quadraticCurveTo(-2.4, -2.4, 0, -3.3); ctx.closePath(); };
+        ctx.fillStyle = CORM.black; hull(); ctx.fill();
+        ctx.save(); hull(); ctx.clip(); cormScales(ctx, -2.2, 2.3, -2, 3, 1.05, lod); ctx.fillStyle = `rgba(${waterTint()},0.28)`; ctx.fillRect(-3, 3.5, 6, 5); ctx.restore();   // the tail end awash
+        // the neck up in an S, the head, the bill tilted up and forward
+        const sw = Math.sin(b.t * 0.7 + b.j) * 0.15;
+        ctx.strokeStyle = CORM.black; ctx.lineWidth = 1.5; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(0, -2.6); ctx.quadraticCurveTo(0.8 + sw, -4.8, 0, -6.4); ctx.stroke();
+        ctx.save(); ctx.translate(0, -6.6); ctx.rotate(sw); ctx.scale(0.85, 0.85); cormHead(ctx); ctx.restore();
+        ctx.fillStyle = 'rgba(235,245,248,0.35)'; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 1.7, -2.4, 0.5, 1.1, sd * 0.5, 0, 6.283); ctx.fill(); }   // the water pushed up at the breast
+        ctx.restore();
+        if (b.ring > 0) drawRing(ctx, b.x, b.y, b.ring, 4, 12, 0.45);
+    }
+    function drawCormorant(ctx, b) {
+        if (b.mode === 'swim' || b.mode === 'under') return drawCormorantSwim(ctx, b);
+        const k = CORM_LEN / 26, w = wingStroke(b.flap, 0.85), pf = w.pf, open = 1 - w.flex * 0.6, sc = k * (1 + b.z / 400);
+        const T0 = ctx.getTransform(), lod = Math.max(0, Math.min(1, (Math.hypot(T0.a, T0.b) * k - 1) / 2));
+        ctx.save(); ctx.translate(b.x + b.z * 0.35, b.y + b.z * 0.55); ctx.rotate(b.h); ctx.scale(sc * 0.95, sc * 0.95); ctx.fillStyle = `rgba(10,25,40,${0.2 * Math.max(0.3, 1 - b.z / 120)})`;
+        for (const sd of [-1, 1]) { cormWing(ctx, sd, open, pf); ctx.fill(); } cormBody(ctx); ctx.fill(); cormTail(ctx, 0.9); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.h); ctx.scale(sc, sc); ctx.lineJoin = 'round';
+        ctx.fillStyle = CORM.black; cormTail(ctx, b.mode === 'takeoff' ? 1.2 : 0.9); ctx.fill();
+        for (const sd of [-1, 1]) {
+            ctx.fillStyle = CORM.black; cormWing(ctx, sd, open, pf); ctx.fill();
+            // the upper wing's coverts scaled over the arm; the flight feathers plain and dark
+            ctx.save(); cormWing(ctx, sd, open, pf); ctx.clip(); cormScales(ctx, sd > 0 ? 2 : -20 * pf * 0.6, sd > 0 ? 20 * pf * 0.6 : -2, -4.2, -0.6, 1.1, lod); ctx.restore();
+        }
+        ctx.fillStyle = CORM.black; cormBody(ctx); ctx.fill();
+        ctx.save(); cormBody(ctx); ctx.clip(); cormScales(ctx, -2.4, 2.5, -4, 3.5, 1.05, lod); ctx.restore();   // the scaled back
+        ctx.fillStyle = CORM.thigh; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 2.1, 3.2, 0.45, 0.8, 0, 0, 6.283); ctx.fill(); }   // the white thigh patches
+        ctx.save(); ctx.translate(0, -11.6); cormHead(ctx); ctx.restore();
+        ctx.restore();
+        if (b.ring > 0) drawRing(ctx, b.x, b.y, b.ring, 5, 14, 0.4);
+    }
+
+    // ── herring gulls loafing on the water (Wes, Sep 27) ─────────────────────────────────
+    // Loose rafts of a few gulls sit lazily on the sea, bobbing, turning to face the wind, preening now and then.
+    // A boat within five boat lengths (~275 u; real gulls flush at 20-50 m) puts the raft up: they run a step
+    // and lift off one after another, fly low with a few flaps and long glides, and settle on a new patch of water
+    // 300-700 u away, mostly downwind, each in a little splash. Never on a mark (Wes).
+    function gullSpot(fromX, fromY) {
+        const marks = state.course.marks || [], wd = state.wind ? state.wind.direction : 0;
+        for (let k = 0; k < 30; k++) {
+            let x, y;
+            if (fromX == null) { x = R(-2900, 2900); y = R(-5400, 1300); }
+            else { const a = wd + Math.PI + R(-1.3, 1.3), d = R(300, 700); x = fromX + Math.sin(a) * d; y = fromY - Math.cos(a) * d; }
+            if (Math.abs(x) > 2950 || y < -5500 || y > 1400) continue;
+            if (marks.some(m => Math.hypot(m.x - x, m.y - y) < 250) || boatNear(x, y, 400)) continue;
+            return { x, y };
+        }
+        return { x: R(-2900, 2900), y: R(-5400, 1300) };
+    }
+    function makeClubGulls(c) {
+        const out = [];
+        for (let g = 0; g < c.rafts; g++) { const S = gullSpot(), n = Math.round(R(c.n[0], c.n[1])), raft = { g, cx: S.x, cy: S.y, birds: [] };
+            for (let j = 0; j < n; j++) raft.birds.push({ j, juv: rnd() < 0.33, x: S.x + R(-28, 28), y: S.y + R(-28, 28), h: R(0, 6.283), z: 0, mode: 'float', t: R(2, 10), flap: R(0, 7), glide: false, gT: 0, delay: 0, tx: 0, ty: 0, bob: R(0, 7), preen: 0, splash: 0, sx: 0, sy: 0 });
+            out.push(raft); }
+        return out;
+    }
+    function updateClubGulls(dt) {
+        const c = cfg.gulls, wd = state.wind ? state.wind.direction : 0;
+        for (const F of clubGulls) {
+            // a boat close: the whole raft goes up, one after another
+            if (F.birds.every(b => b.mode === 'float') && boatNear(F.cx, F.cy, c.flushR)) {
+                const S = gullSpot(F.cx, F.cy); F.cx = S.x; F.cy = S.y;
+                F.birds.forEach((b, i) => { b.mode = 'up'; b.delay = i * R(0.1, 0.35); b.tx = S.x + R(-28, 28); b.ty = S.y + R(-28, 28); b.flap = 0; b.splash = 0.7; b.sx = b.x; b.sy = b.y; });
+            }
+            for (const b of F.birds) {
+                b.bob += dt; b.splash = Math.max(0, b.splash - dt / 0.9);
+                if (b.mode === 'float') {
+                    // lazing: drifting a touch, swinging slowly to head into the wind, now and then a preen
+                    b.t -= dt; b.h += angDiff(wd + Math.sin(b.bob * 0.1 + b.j) * 0.6, b.h) * Math.min(1, dt * 0.3);
+                    b.x += Math.sin(wd + Math.PI) * 1.2 * dt; b.y -= Math.cos(wd + Math.PI) * 1.2 * dt;
+                    if (b.t <= 0) { b.preen = b.preen ? 0 : 1; b.t = b.preen ? R(1, 3) : R(5, 15); }
+                    continue;
+                }
+                b.delay -= dt; if (b.delay > 0) continue;
+                // the takeoff: into the wind, a few hard beats, then low flaps and glides to the new spot
+                b.gT -= dt; if (b.gT <= 0) { b.glide = !b.glide; b.gT = b.glide ? R(1, 2.5) : R(0.6, 1.2); }
+                if (!b.glide || b.mode === 'up') b.flap += dt * 3.2 * WING_TIME * 6.283;
+                const d = Math.hypot(b.tx - b.x, b.ty - b.y);
+                steer(b, b.tx, b.ty, d < 60 ? Math.max(10, d * 0.9) : 55, d < 90 ? 6 : 2, dt);
+                b.z += ((b.mode === 'up' ? 18 : d > 70 ? 24 : 0) - b.z) * Math.min(1, dt * 1.3);
+                if (b.mode === 'up' && b.z > 10) b.mode = 'fly';
+                if (b.mode === 'fly' && d < 5) { b.mode = 'float'; b.z = 0; b.t = R(4, 12); b.splash = 1; b.sx = b.x; b.sy = b.y; }
+            }
+        }
+    }
+    // HERRING GULL AFLOAT (Wes's references, Sep 27 2026: rafts on the sea, singles close up). It rides low and
+    // boat-shaped: the white head, neck and breast up front, the pale grey folded wings making the back with a white
+    // edge, the black wingtips crossed past the tail and cocked up, spotted white; a yellow bill with the red spot.
+    // A third of any raft are JUVENILES — mottled grey-brown all over, a dark bill, dark wingtips.
+    function drawGullFloat(ctx, b) {
+        ctx.save(); ctx.translate(b.x, b.y);
+        const q = (b.bob * 0.35 + b.j * 0.3) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.3 * (1 - q)})`; ctx.lineWidth = 0.6;
+        for (const [a0, a1] of [[0.3, 1.4], [2.0, 3.0], [3.6, 4.6], [5.0, 5.9]]) { ctx.beginPath(); ctx.arc(0, 1, 7 + q * 6, a0, a1); ctx.stroke(); }
+        ctx.rotate(b.h + (b.preen ? Math.sin(b.bob * 2) * 0.15 : 0) + Math.sin(b.bob * 1.3 + b.j) * 0.04); ctx.scale(GULL_FLOAT, GULL_FLOAT); ctx.lineJoin = 'round';
+        const J = b.juv, body = J ? '#b9aa96' : '#fbfbf9', back = J ? '#8f7f6c' : '#b4bec8', tip = J ? '#3c3129' : '#16181c', edge = 'rgba(60,56,52,0.55)';
+        // the contact shade, the body riding low (the rear half awash)
+        ctx.fillStyle = 'rgba(8,24,30,0.3)'; ctx.beginPath(); ctx.ellipse(0.5, 1.6, 4.4, 8.4, 0, 0, 6.283); ctx.fill();
+        const hull = () => { ctx.beginPath(); ctx.moveTo(0, -5.2); ctx.quadraticCurveTo(4.3, -4.2, 4, 1.6); ctx.quadraticCurveTo(3.4, 6.4, 0, 7.6); ctx.quadraticCurveTo(-3.4, 6.4, -4, 1.6); ctx.quadraticCurveTo(-4.3, -4.2, 0, -5.2); ctx.closePath(); };
+        ctx.fillStyle = body; hull(); ctx.fill(); ctx.strokeStyle = edge; ctx.lineWidth = 0.35; ctx.stroke();
+        // the folded wings: the grey back with its white trailing edge, then the black primaries crossed past the tail, cocked up
+        ctx.fillStyle = J ? '#f0eadf' : '#ffffff'; ctx.beginPath(); ctx.moveTo(-3.3, -1.8); ctx.quadraticCurveTo(-3.7, 4.2, -0.9, 7.2); ctx.lineTo(0.9, 7.2); ctx.quadraticCurveTo(3.7, 4.2, 3.3, -1.8); ctx.quadraticCurveTo(0, -3.4, -3.3, -1.8); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = back; ctx.beginPath(); ctx.moveTo(-3.1, -2); ctx.quadraticCurveTo(-3.3, 3.6, -0.8, 6.2); ctx.lineTo(0.8, 6.2); ctx.quadraticCurveTo(3.3, 3.6, 3.1, -2); ctx.quadraticCurveTo(0, -3.5, -3.1, -2); ctx.closePath(); ctx.fill();
+        if (J) { ctx.fillStyle = 'rgba(70,55,42,0.55)'; for (let k = 0; k < 14; k++) { ctx.beginPath(); ctx.ellipse(((k * 37) % 5 - 2) * 1.1, -1.5 + (k % 7) * 1.1, 0.5, 0.3, 0.4, 0, 6.283); ctx.fill(); } }   // the juvenile's mottle
+        ctx.fillStyle = tip; ctx.beginPath(); ctx.moveTo(-1.5, 5.2); ctx.lineTo(0.7, 11.2); ctx.lineTo(0.2, 11.4); ctx.lineTo(-0.3, 6.2); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(1.5, 5.2); ctx.lineTo(-0.7, 11.2); ctx.lineTo(-0.2, 11.4); ctx.lineTo(0.3, 6.2); ctx.closePath(); ctx.fill();
+        if (!J) { ctx.fillStyle = '#ffffff'; for (const [x, y] of [[0.3, 10.1], [-0.3, 10.1], [0.05, 8.6]]) { ctx.beginPath(); ctx.arc(x, y, 0.28, 0, 6.283); ctx.fill(); } }   // the white spots in the tips
+        // the head and neck up front, the yellow bill with the red spot (a juvenile's dark)
+        ctx.fillStyle = J ? '#c9bcab' : '#ffffff'; ctx.beginPath(); ctx.ellipse(0, -5.4, 2.2, 2.6, 0, 0, 6.283); ctx.fill(); ctx.strokeStyle = edge; ctx.lineWidth = 0.3; ctx.stroke();
+        if (J) { ctx.fillStyle = 'rgba(90,72,56,0.4)'; ctx.beginPath(); ctx.ellipse(0, -5.2, 1.3, 1.6, 0, 0, 6.283); ctx.fill(); }
+        ctx.fillStyle = J ? '#2c2622' : '#f0c23a'; ctx.beginPath(); ctx.moveTo(-0.6, -7.6); ctx.lineTo(-0.35, -10.3); ctx.quadraticCurveTo(0, -10.8, 0.35, -10.3); ctx.lineTo(0.6, -7.6); ctx.closePath(); ctx.fill();
+        if (!J) { ctx.fillStyle = '#d9412b'; ctx.fillRect(-0.4, -9.8, 0.8, 0.7); }
+        ctx.fillStyle = '#1a1a1a'; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.arc(sd * 1.35, -6.2, 0.28, 0, 6.283); ctx.fill(); }
+        ctx.restore();
+        if (b.splash > 0) drawRing(ctx, b.sx, b.sy, b.splash, 4, 12, 0.5);
+    }
+
+    // ── by-the-wind sailors ─────────────────────────────────────────────────────────────
+    function makeVelella(c) {
+        // (Wes, Sep 26: 'weirdly geometric lines just in front of the start line'.) Only on the flanks, outside the
+        // racing lane; each windrow a loose, wavering band — the float of each sailor scattered across it, bunched
+        // in clumps with gaps between, the band itself snaking.
+        const out = [], W = state.wind ? state.wind.direction : 0, dx = -Math.sin(W), dy = Math.cos(W);   // downwind
+        for (let f = 0; f < c.fleets; f++) {
+            const lane = R(-2850, 2850), y0 = R(-5600, 1400)   /* (Wes, Sep 27: on the course too — picture only, they touch nothing) */, n = Math.round(R(c.n[0], c.n[1]));
+            const L = R(260, 700), ang = R(-0.5, 0.5), wav = R(20, 55), wl = R(0.004, 0.012), ph = R(0, 6.283);
+            const clumps = Array.from({ length: Math.round(R(3, 6)) }, () => R(-0.5, 0.5));
+            const items = Array.from({ length: n }, () => { const u = clumps[Math.floor(rnd() * clumps.length)] + R(-0.12, 0.12) + (rnd() < 0.35 ? R(-0.5, 0.5) : 0);
+                return { u: Math.max(-0.55, Math.min(0.55, u)), sp: (rnd() + rnd() + rnd() - 1.5) * 40, s: 0.5 + rnd() * rnd() * 0.9, h: R(0, 6.283), bob: R(0, 7) }; });   // (loosely scattered; mostly small, a few big)
+            out.push({ cx: lane, cy: y0, L, ang, wav, wl, ph, dx, dy, v: R(2.5, 4), items, sparse: false });
+        }
+        return out;
+    }
+    function updateVelella(dt) {
+        for (const F of velFleets) { F.cx += F.dx * F.v * dt; F.cy += F.dy * F.v * dt; if (F.cy > 1900) F.cy -= 7800; if (F.cy < -5900) F.cy += 7800; for (const q of F.items) q.bob += dt; }   // (round again within the sailing area)
+    }
+    // BY-THE-WIND SAILOR (Wes's references, Sep 27 2026: afloat from above and from the waterline, one in the hand):
+    // GLASSY, not a blue blot — an oval float of clear pale blue with a frilly, slightly deeper blue skirt at its rim
+    // and faint concentric rings in the middle; standing diagonally across it, the clear crest of the sail, the
+    // brightest thing about it — a silvery leaf with a white glint where it catches the light; a faint meniscus
+    // ring on the water round it. Loosely scattered in their windrows, big ones and small.
+    function drawVelellaFleet(ctx, F) {
+        const ca = Math.cos(F.ang), sa = Math.sin(F.ang);
+        for (const q of F.items) {
+            const along = q.u * F.L, off = q.sp + Math.sin(along * F.wl * 6.283 + F.ph) * F.wav, x = F.cx + along * ca - off * sa, y = F.cy + along * sa + off * ca;
+            if (!onCam(x, y, 20)) continue;
+            ctx.save(); ctx.translate(x, y); ctx.rotate(q.h + Math.sin(q.bob * 0.8) * 0.08); ctx.scale(q.s, q.s);
+            // the meniscus: a faint pale ring on the water
+            ctx.strokeStyle = 'rgba(220,238,250,0.22)'; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.ellipse(0, 0, 3.6, 2.8, 0, 0.3, 5.9); ctx.stroke();
+            // the skirt: a frilly rim, deeper blue, half see-through
+            ctx.fillStyle = 'rgba(40,90,190,0.42)'; ctx.beginPath();
+            for (let i = 0; i <= 16; i++) { const t = i / 16 * 6.283, r = 1 + 0.07 * Math.sin(t * 7 + q.bob * 0.3); ctx.lineTo(Math.cos(t) * 3.1 * r, Math.sin(t) * 2.2 * r); } ctx.closePath(); ctx.fill();
+            // the float: clearer and paler inside, faint concentric rings
+            ctx.fillStyle = 'rgba(150,200,240,0.35)'; ctx.beginPath(); ctx.ellipse(0, 0, 2.2, 1.5, 0, 0, 6.283); ctx.fill();
+            ctx.strokeStyle = 'rgba(210,235,255,0.3)'; ctx.lineWidth = 0.15; for (const r of [0.6, 1.1, 1.6]) { ctx.beginPath(); ctx.ellipse(0.3, 0.1, r, r * 0.68, 0, 0, 6.283); ctx.stroke(); }
+            // the sail: a glassy leaf standing diagonally across the float, its shadow on the water beside it, a white glint
+            ctx.fillStyle = 'rgba(20,50,90,0.22)'; ctx.beginPath(); ctx.moveTo(-2.3, 1.2); ctx.quadraticCurveTo(0.2, 1.3, 2.3, -1.2); ctx.quadraticCurveTo(0.6, 0.3, -2.3, 1.2); ctx.fill();
+            ctx.fillStyle = 'rgba(232,244,252,0.7)'; ctx.beginPath(); ctx.moveTo(-2.3, 1.2); ctx.quadraticCurveTo(-0.6, -0.9, 2.3, -1.2); ctx.quadraticCurveTo(0.3, 0.1, -2.3, 1.2); ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.95)'; ctx.beginPath(); ctx.ellipse(0.1, -0.35, 0.55, 0.22, -0.55, 0, 6.283); ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    // ── mackerel boils and the terns ────────────────────────────────────────────────────
+    // Where a boil may come up: out on either flank beyond the laylines (Wes's laps reach ~±2,300, the fleet
+    // ±2,400) but inside the sailing area (±3,150), or just past the middle of a gate where the boats turn back before they get to; the bottom gate
+    // only once the start is well away (Wes: 'don't put them there during the start').
+    function mackSite(c) {
+        const racing = state.race && state.race.status === 'racing', late = racing && (state.race.timer || 0) > c.bottomAfter;
+        for (let k = 0; k < 20; k++) {
+            const r = rnd(); let x, y;
+            if (r < 0.55) { x = (rnd() < 0.5 ? -1 : 1) * R(2550, 2950); y = R(-3700, -400); }   // (inside the boundary, ±3150)
+            else if (r < 0.8 || !late) { x = R(-140, 140); y = -4000 - R(170, 320); }
+            else { x = R(-140, 140); y = R(170, 320); }
+            if (!boatNear(x, y, 220) && mackBoils.every(B => Math.hypot(B.x - x, B.y - y) > 800)) return { x, y };
+        }
+        return null;
+    }
+    function makeMack(c) {
+        const out = [];
+        for (let i = 0; i < c.boils; i++) out.push({ i, x: 0, y: 0, mode: 'rest', t: R(2, 10), k: 0, a: R(0, 6.283), fish: Array.from({ length: c.fish }, () => ({ r: R(8, 42), a: R(0, 6.283), v: R(0.8, 1.6) * (rnd() < 0.5 ? 1 : -1), s: R(0.8, 1.15) })), leaps: [], pops: [] });
+        return out;
+    }
+    function updateMack(dt) {
+        const c = cfg.mackerel;
+        for (const B of mackBoils) {
+            B.t -= dt; B.a += dt * 0.3;
+            if (B.mode === 'rest') { B.k = Math.max(0, B.k - dt / 3); if (B.t <= 0) { const S = mackSite(c); if (S) { B.x = S.x; B.y = S.y; B.mode = 'boil'; B.t = R(c.boil[0], c.boil[1]); } else B.t = 3; } }
+            else { B.k = Math.min(1, B.k + dt / 2); if (B.t <= 0) { B.mode = 'rest'; B.t = R(c.rest[0], c.rest[1]); } }
+            for (const f of B.fish) f.a += f.v * dt * (1 + B.k);
+            // the surface breaking: white bursts where the shoal drives the fry up, and a mackerel clear of the water now and then
+            if (B.mode === 'boil') { if (rnd() < dt * 5) B.pops.push({ x: R(-38, 38), y: R(-38, 38), k: 1, s: R(0.7, 1.4), seed: rnd() * 9 }); if (rnd() < dt * 0.9) B.leaps.push({ x: R(-30, 30), y: R(-30, 30), h: R(0, 6.283), t: 0 }); }
+            for (const p of B.pops) p.k -= dt / 0.9; B.pops = B.pops.filter(p => p.k > 0);
+            for (const l of B.leaps) l.t += dt / 0.7; B.leaps = B.leaps.filter(l => l.t < 1.6);
+        }
+    }
+    // the mackerel ball under the surface: dark barred backs flickering round, silver when they turn
+    function drawMackBoil(ctx, B) {
+        if (B.k <= 0.01 || !onCam(B.x, B.y, 80)) return;
+        ctx.save(); ctx.translate(B.x, B.y); ctx.globalAlpha *= B.k;
+        { const g = ctx.createRadialGradient(0, 0, 4, 0, 0, 52); g.addColorStop(0, 'rgba(10,28,36,0.32)'); g.addColorStop(0.6, 'rgba(10,28,36,0.18)'); g.addColorStop(1, 'rgba(10,28,36,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 52, 0, 6.283); ctx.fill(); }   // the dark of the shoal, soft-edged
+        for (const f of B.fish) { const x = Math.cos(f.a) * f.r, y = Math.sin(f.a) * f.r * 0.85, h = f.a + (f.v > 0 ? Math.PI : 0);
+            ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(f.s, f.s); const flash = Math.max(0, Math.sin(f.a * 3));
+            ctx.fillStyle = flash > 0.8 ? MACK.belly : '#123032'; ctx.globalAlpha *= 0.85; ctx.beginPath(); ctx.moveTo(0, -4.5); ctx.quadraticCurveTo(1.1, 0, 0, 3.6); ctx.lineTo(1, 4.6); ctx.lineTo(-1, 4.6); ctx.lineTo(0, 3.6); ctx.quadraticCurveTo(-1.1, 0, 0, -4.5); ctx.fill(); ctx.restore(); }
+        // the surface: white water bursting in connected sheets, and the rings they leave
+        for (const p of B.pops) { const a = 0.85 * p.k; ctx.fillStyle = `rgba(245,250,252,${a})`; ctx.beginPath();
+            for (let i = 0; i <= 10; i++) { const q = i / 10 * 6.283, r = (2.5 + (1 - p.k) * 5) * p.s * (0.7 + 0.4 * Math.abs(Math.sin(q * 2.5 + p.seed))); ctx.lineTo(p.x + Math.cos(q) * r, p.y + Math.sin(q) * r * 0.85); } ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = `rgba(235,245,248,${0.5 * p.k})`; ctx.lineWidth = 0.7; ctx.beginPath(); ctx.arc(p.x, p.y, (3 + (1 - p.k) * 9) * p.s, 0.3 + p.seed, 4.6 + p.seed); ctx.stroke(); }
+        // a mackerel thrown clear: a silver arc over the water, a splash where it falls back
+        for (const l of B.leaps) { if (l.t <= 1) { const z = Math.sin(l.t * Math.PI) * 6; ctx.save(); ctx.translate(l.x + Math.sin(l.h) * l.t * 10, l.y - Math.cos(l.h) * l.t * 10 - z * 0.3); ctx.rotate(l.h + (l.t - 0.5) * 1.2);
+                ctx.fillStyle = MACK.back; ctx.beginPath(); ctx.moveTo(0, -4.6); ctx.quadraticCurveTo(1.2, 0, 0, 3.6); ctx.lineTo(1.1, 4.7); ctx.lineTo(-1.1, 4.7); ctx.lineTo(0, 3.6); ctx.quadraticCurveTo(-1.2, 0, 0, -4.6); ctx.fill();
+                ctx.strokeStyle = MACK.bar; ctx.lineWidth = 0.25; for (let q = 0; q < 4; q++) { ctx.beginPath(); ctx.moveTo(-0.5, -2.5 + q * 1.3); ctx.quadraticCurveTo(0, -2.1 + q * 1.3, 0.5, -2.6 + q * 1.3); ctx.stroke(); }
+                ctx.fillStyle = MACK.belly; ctx.fillRect(-0.9, -0.5, 0.35, 2.5); ctx.restore(); }
+            else drawFishSplash(ctx, l.x + Math.sin(l.h) * 10, l.y - Math.cos(l.h) * 10, 1 - (l.t - 1) / 0.6, 0.7, l.h * 5); }
+        ctx.restore();
+    }
+    function makeClubTerns(c) {
+        return Array.from({ length: c.n }, (_, j) => ({ j, x: R(-3000, 3000), y: R(-4000, 0), h: R(0, 6.283), z: R(30, 45), zh: R(30, 45), flap: R(0, 7), mode: 'shift', t: R(0, 3), a: R(0, 6.283), d: R(15, 55), drift: R(-0.4, 0.4), splash: 0, sx: 0, sy: 0 }));
+    }
+    function updateClubTerns(dt, me) {
+        const c = cfg.clubTerns, wd = state.wind ? state.wind.direction : 0;
+        const B = mackBoils.filter(q => q.mode === 'boil').sort((p, q) => q.k - p.k)[0] || null;
+        // between boils they loaf about where the last one was (never a jump to a default spot)
+        if (B) { clubTernHome.x = B.x; clubTernHome.y = B.y; }
+        let over = 0;
+        for (const b of clubTerns) {
+            b.t -= dt; b.splash = Math.max(0, b.splash - dt / 0.9); b.a += b.drift * dt;
+            const cx = clubTernHome.x, cy = clubTernHome.y, tx = cx + Math.cos(b.a) * (B ? b.d : b.d * 3), ty = cy + Math.sin(b.a) * (B ? b.d : b.d * 3);
+            if (B && Math.hypot(b.x - B.x, b.y - B.y) < 90) over++;
+            if (b.mode === 'hover') { b.flap += dt * 30 * WING_TIME;
+                // (Wes, Sep 27: terns shot sideways off the screen — the hover closed a FRACTION of the gap a second, so a
+                // new boil 3,000 u away meant a 1,800 u/s slide. Now a hover drifts at most 10 u/s; far off, it flies.)
+                { const d = Math.hypot(tx - b.x, ty - b.y); if (d > 120) { b.mode = 'shift'; b.t = 3; } else if (d > 0.5) { const v = Math.min(d * 0.6, 10) * dt; b.x += (tx - b.x) / d * v; b.y += (ty - b.y) / d * v; } } b.h += angDiff(wd, b.h) * Math.min(1, dt * 2); b.z += (b.zh - b.z) * Math.min(1, dt);
+                if (b.t <= 0) { if (B && Math.hypot(b.x - B.x, b.y - B.y) < 60 && rnd() < 0.5) { b.mode = 'dive'; b.t = 0.35; } else { b.mode = 'shift'; b.t = R(1, 2.5); b.a += R(-0.8, 0.8); } } }
+            else if (b.mode === 'shift') { b.flap += dt * 22 * WING_TIME; steer(b, tx, ty, Math.hypot(tx - b.x, ty - b.y) > 200 ? 38 : 26, 2.2, dt); /* (a tern cruises ~9 m/s: no faster than it reads) */ b.z += (b.zh - b.z) * Math.min(1, dt); if (b.t <= 0 && (!B || Math.hypot(tx - b.x, ty - b.y) < 100)) { b.mode = 'hover'; b.t = R(1.5, 4); } else if (b.t <= 0) b.t = 1; }
+            else if (b.mode === 'dive') { b.z = Math.max(0, b.z - dt * 140); if (b.z <= 0) { b.mode = 'sit'; b.t = R(0.4, 0.8); b.splash = 1; b.sx = b.x; b.sy = b.y; } }
+            else if (b.mode === 'sit') { if (b.t <= 0) { b.mode = 'climb'; b.t = 1.2; } }
+            else if (b.mode === 'climb') { b.flap += dt * 26 * WING_TIME; b.z = Math.min(b.zh, b.z + dt * 40); b.x += Math.sin(b.h) * 12 * dt; b.y -= Math.cos(b.h) * 12 * dt; if (b.t <= 0) { b.mode = 'hover'; b.t = R(1.5, 4); } }
+        }
+        // UNDER THE BIRDS (Flicker): the player right under the terns working a boil
+        if (me && c.feat && B && B.k > 0.6 && over >= 3 && Math.hypot(me.x - B.x, me.y - B.y) < c.nearR) feat(c.feat);
+    }
+
+    // ══ SPOONBILL FLATS (Sep 26 2026; Wes chose the four) ════════════════════════════════════
+    // The Wadden, where everything the animals do is set by the TIDE (js/tide.js: a 60 s sine on the
+    // race clock over an elevation field). GREY SEALS haul out in a loose strip on the sandbanks beside
+    // the deep channel as they dry, slide back in as the flood covers them, and bob in the channel,
+    // heads up, until the bank dries again; a boat close flushes them. ROSEATE SPOONBILLS (Wes: pink,
+    // like Petal) wade the shallow edge in small groups sweeping their spoon bills side to side,
+    // following the water as it comes and goes, and fly off necks-out from a boat. PIED AVOCETS work the
+    // shallowest water in tight flocks, scything, and wheel away flashing black and white. SHORE CRABS
+    // sidle along the edge, seen through the shallows, olive-green, hurrying after the water as it drains.
+    //
+    // SIZES (guidelines/scale.md): grey seal ~2.3 m -> 46 (broad, ~2x; bulls to ~56); roseate spoonbill
+    // 0.8 m -> 26 (span ~40); pied avocet 0.44 m -> 20 (the floor; span ~34); shore crab 15 cm legspan
+    // -> 8 (as the Sally Lightfoot, Wes).
+    const GSEAL_LEN = 46, SPOON_LEN = 26, SPOON_SPAN = 40, AVOCET_LEN = 20, AVOCET_SPAN = 34, SCRAB_SPAN = 9;
+    // Grey seal coats (the Blasket colony from the air): bulls dark charcoal with pale mottling, cows
+    // silver-grey to cream-tan with dark blotches; all of them dark and glossy when wet.
+    // (Wes's references, Sep 26 2026: the Wadden from the air, Helgoland/Donna Nook on the beach.) Sandy
+    // grey-tan dominates from the air; pale cream and silver cows, a few dark bulls, finely mottled, the
+    // belly paler; the winter pups white.
+    const GSEAL = [
+        { base: '#4b4c4f', blot: '#2e2f32', pale: '#86888b', belly: '#7b7d80' },   // dark bull
+        { base: '#5f5c58', blot: '#3b3936', pale: '#9a958f', belly: '#8d8983' },   // brown bull
+        { base: '#9ea1a4', blot: '#65686b', pale: '#c8c9ca', belly: '#d8d7d2' },   // silver cow
+        { base: '#c1b8a7', blot: '#7f7566', pale: '#dcd3c3', belly: '#e6dfd2' },   // cream cow
+        { base: '#a69b88', blot: '#6b6254', pale: '#c6bba7', belly: '#d5cbb9' },   // sandy cow
+        { base: '#ebe7dc', blot: '#d3ccbd', pale: '#f7f4ec', belly: '#f3efe5' },   // white pup
+    ];
+    const SPOON = { pink: '#f0a0bb', pale: '#f7d3df', deep: '#e0708f', carmine: '#d6214a', neck: '#f6f3ee', head: '#cfc38c', bill: '#8d9884', tail: '#eba24f', leg: '#c83a4e', legDark: '#6e2a2c' };
+    const AVO = { white: '#f6f6f3', black: '#16171a', leg: '#7fa2bb', bill: '#111214' };
+    const SCRAB = [   // the green phase (olive-khaki shell, tan legs) and the red phase (orange all over)
+        { shell: '#6f6a3c', mottle: '#474326', pale: '#b3a877', leg: '#d08a45', legDark: '#6e4420', claw: '#d9894a', finger: '#2f2518' },
+        { shell: '#8c7a45', mottle: '#5c4c28', pale: '#c9b27a', leg: '#df7f35', legDark: '#733b17', claw: '#e2803c', finger: '#2f2518' },
+        { shell: '#b0652e', mottle: '#7a4119', pale: '#dca06a', leg: '#e8742a', legDark: '#7a3613', claw: '#ee7a32', finger: '#2a1d14' },
+    ];
+    let gsealCols = [], spoonFlocks = [], avoFlocks = [], scrabBeds = [];
+    const tideReady = () => typeof Tide !== 'undefined' && state.tide && state.tide.field;
+    const depthAtT = (x, y) => Tide.depthAt(x, y);
+
+    // Spots off the tide's field: every `step` u, those passing `test(x, y, z)`, thinned to `spacing`
+    // apart (best `score` first, the seeded PRNG breaking ties) and capped at `max`.
+    function flatsSpots(test, spacing, max, step, score) {
+        // only the racing stretch: from just past the finish to just behind the start, and within the
+        // course's width (the estuary runs on beyond both, where nobody sails)
+        const F = state.tide.field, cand = [], M = state.course.marks || [];
+        const ys = M.map(m => m.y), xs = M.map(m => m.x), yLo = Math.min(...ys) - 700, yHi = Math.max(...ys) + 900, xLo = Math.min(...xs) - 3200, xHi = Math.max(...xs) + 3200;
+        for (let y = Math.max(F.y0 + 80, yLo); y < Math.min(F.y0 + F.H * F.res - 80, yHi); y += step) for (let x = Math.max(F.x0 + 80, xLo); x < Math.min(F.x0 + F.W * F.res - 80, xHi); x += step) {
+            const z = Tide.groundAt(x, y); if (z > 1.5 || !test(x, y, z) || onLand(x, y)) continue;   // the cheap tests first
+            cand.push({ x, y, z, s: (score ? score(x, y, z) : 0) + rnd() * 0.5 });
+        }
+        cand.sort((a, b) => b.s - a.s);
+        const out = [];
+        // spread along the course: the race runs up the estuary, so split its length into `max` bands and take the
+        // best spot in each (Wes: 'saw them mostly later in the course'), then top up from anywhere
+        const b0 = Math.max(F.y0 + 80, yLo), b1 = Math.min(F.y0 + F.H * F.res - 80, yHi), bh = (b1 - b0) / max;
+        for (let k = 0; k < max; k++) { const c = cand.find(q => q.y >= b0 + k * bh && q.y < b0 + (k + 1) * bh && out.every(o => Math.hypot(o.x - q.x, o.y - q.y) > spacing)); if (c) out.push(c); }
+        for (const c of cand) { if (out.length >= max) break; if (out.every(o => Math.hypot(o.x - c.x, o.y - c.y) > spacing)) out.push(c); }
+        return out;
+    }
+    // how far a point is from where boats sail (Wes's lap, Sep 26: 'only saw one colony' — they were placed
+    // anywhere on the estuary's banks; now within sight of the racing line)
+    // (the line itself: Wes's recorded laps — the cuts AND the full outside channel — thinned to a point every ~180 u — eval/rl/traj/traj_flats_*, Sep 16 + 26 2026)
+    const FLATS_LINE = [[714,5539],[535,5505],[356,5458],[175,5418],[67,5563],[-108,5628],[-285,5678],[-453,5754],[-153,5804],[24,5869],[193,5934],[317,6072],[415,6228],[512,6387],[609,6550],[705,6713],[800,6874],[750,7050],[590,7152],[409,7201],[237,7145],[107,7007],[3,6858],[-104,6705],[-212,6549],[-315,6401],[-419,6251],[-526,6089],[-48,5422],[1,5247],[70,5070],[160,4905],[250,4738],[336,4580],[421,4419],[512,4248],[597,4087],[687,3923],[782,3761],[806,3581],[784,3396],[761,3212],[731,3030],[695,2850],[659,2670],[624,2489],[616,2298],[630,2109],[643,1928],[657,1746],[646,1552],[620,1372],[565,1198],[460,1043],[325,909],[168,794],[23,687],[-123,578],[-280,460],[-425,350],[-568,240],[-722,121],[-844,-28],[-964,-178],[-1090,-327],[-1235,-449],[-1403,-542],[-1577,-618],[-1740,-696],[-1901,-798],[-2048,-922],[-2166,-1078],[-2274,-1238],[-2354,-1417],[-2416,-1597],[-2478,-1781],[-2536,-1954],[-2507,-2134],[-2410,-2300],[-2316,-2462],[-2224,-2622],[-2132,-2777],[-2030,-2936],[-1904,-3074],[-1772,-3212],[-1626,-3341],[-1468,-3435],[-1298,-3516],[-1135,-3594],[-986,-3722],[-859,-3866],[-772,-4037],[-706,-4217],[-699,-4401],[-725,-4592],[-757,-4770],[-790,-4948],[-823,-5131],[-838,-5314],[-764,-5481],[-686,-5658],[-608,-5834],[-528,-6011],[-445,-6184],[-361,-6354],[-278,-6521],[-205,-6686],[-178,-6875],[-115,-7044],[-24,-7211],[92,-7359],[243,-7471],[401,-7573],[570,-7660],[741,-7721],[915,-7786],[1066,-7901],[1197,-8032],[1297,-8191],[1361,-8366],[1341,-8555],[1228,-8713],[1101,-8857],[981,-8992],[855,-9134],[729,-9274],[574,-9392],[427,-9498],[275,-9605],[152,-9742],[37,-9882],[-86,-10027],[-177,-10194],[-232,-10373],[-275,-10557],[-636,5740],[-221,5364],[40,6057],[120,6224],[196,6389],[271,6560],[346,6733],[416,6900],[-5,6553],[-87,6390],[-166,6227],[-208,6042],[242,5126],[351,4980],[461,4830],[572,4677],[683,4525],[796,4368],[901,4220],[1007,4073],[1039,3889],[966,3710],[-1366,-724],[-1472,-874],[-1628,-986],[-1803,-1062],[-2539,-2431],[-2560,-2616],[-2447,-2758],[-724,-3740],[-541,-3792],[-353,-3846],[-177,-3921],[-14,-4020],[157,-4106],[330,-4187],[501,-4276],[649,-4392],[794,-4508],[922,-4642],[1015,-4810],[1102,-4975],[1192,-5146],[1308,-5302],[1439,-5426],[1550,-5584],[1575,-5772],[1600,-5962],[1627,-6146],[1660,-6329],[1695,-6512],[1707,-6693],[1697,-6873],[1666,-7062],[1554,-7206],[1435,-7344],[1312,-7484],[1238,-7654],[-114,-9781],[-267,-9888],[-359,-10054],[-363,-10242],[-422,-10669],[875,5628],[769,5776],[843,5943],[930,6104],[1009,6272],[1084,6440],[1159,6609],[1087,6778],[190,4469],[190,4282],[197,4095],[296,3936],[393,3778],[450,3594],[494,3411],[517,3229],[531,3043],[-2236,-2927],[-2108,-3102],[-1323,-3696],[-1164,-3799],[-739,-5959],[-675,-6141],[6,-6844],[132,-6982],[270,-7116],[417,-7223],[570,-7342],[718,-7465],[1163,-9027],[1036,-9170],[-407,-10427],[-818,5748],[-871,5921],[-686,5943],[-420,5939],[599,6931],[14,4226],[-77,4065],[-175,3903],[-331,3791],[-508,3709],[-686,3636],[-834,3510],[-941,3352],[-1040,3198],[-1104,3029],[-1132,2840],[-1140,2654],[-1046,2488],[-952,2326],[-861,2168],[-770,2010],[-677,1851],[-586,1694],[-495,1535],[-432,1356],[-486,1183],[-559,1005],[-639,843],[-730,681],[-837,526],[-936,367],[-1024,205],[-1111,39],[-1196,-125],[-428,-5853],[-299,-5991],[-173,-6120],[-39,-6254],[101,-6390],[241,-6524],[381,-6658],[537,-6749],[693,-6840],[860,-6937],[1017,-7028],[1187,-7105],[1288,-7829],[1050,5698],[1230,5729],[1394,5819],[1408,6001],[1240,5935],[597,5860],[1152,3664],[1318,3579],[1491,3490],[1658,3403],[1824,3314],[1971,3203],[2110,3078],[2242,2950],[2352,2801],[2438,2642],[2437,2449],[2424,2260],[2402,2080],[2376,1890],[2336,1705],[2266,1530],[2176,1367],[2083,1208],[1961,1062],[1834,922],[1706,783],[1575,639],[1446,498],[1301,372],[1151,250],[1002,132],[852,12],[690,-89],[525,-165],[350,-236],[161,-280],[-23,-288],[-208,-277],[-400,-268],[-589,-292],[-770,-315],[-1951,-2748],[-1792,-2850],[-1616,-2920],[-1428,-2964],[-1244,-3008],[-1062,-3050],[-878,-3091],[-685,-3098],[-492,-3104],[-299,-3109],[-116,-3092],[66,-3075],[254,-3115],[421,-3206],[566,-3316],[681,-3470],[766,-3642],[891,-3777],[1017,-3909],[1152,-4035],[1275,-4177],[1400,-4317],[1528,-4454],[1644,-4599],[1579,-4773],[1468,-4932],[1083,-5291],[936,-5401],[784,-5514],[625,-5629],[464,-5715],[288,-5788],[113,-5860],[-61,-5935],[-622,-6325],[-666,-6505],[-671,-6692],[-570,-6848],[-440,-6984],[-313,-7118]];
+    function flatsLineDist(x, y) {
+        let best = 1e9; for (const [px, py] of FLATS_LINE) { const d = (px - x) * (px - x) + (py - y) * (py - y); if (d < best) best = d; } return Math.sqrt(best);
+    }
+    // the deep channel within `r` u of a point (the fleet sails the channel)
+    function deepNear(x, y, r) { for (let a = 0; a < 12; a++) for (const d of [r * 0.4, r * 0.7, r]) if (Tide.groundAt(x + Math.cos(a / 12 * 6.283) * d, y + Math.sin(a / 12 * 6.283) * d) < -2) return true; return false; }
+    // the best nearby point for a wanted water depth (for a wader, a crab): of `n` samples within `r`
+    function bestDepthSpot(x, y, r, want, n) {
+        let best = null, bs = 1e9;
+        for (let k = 0; k < n; k++) { const a = R(0, 6.283), d = Math.sqrt(rnd()) * r, px = x + Math.cos(a) * d, py = y + Math.sin(a) * d;
+            if (onLand(px, py)) continue; const s = Math.abs(depthAtT(px, py) - want); if (s < bs) { bs = s; best = { x: px, y: py, err: s }; } }
+        return best;
+    }
+
+    // ── GREY SEALS ──────────────────────────────────────────────────────────────────────
+    function makeGreySeals(c) {
+        // banks of sand that dry for a third to a half of the cycle (z -0.5..0.2), the deep channel beside
+        const spots = flatsSpots((x, y, z) => z > -0.5 && z < 0.2 && deepNear(x, y, 240) && (() => { const L = flatsLineDist(x, y); return L > c.lineMin && L < c.lineMax; })(), c.spacing, c.colonies, 90, (x, y, z) => z * 2 - flatsLineDist(x, y) / 400);
+        return spots.map((S, ci) => {
+            const n = Math.round(R(c.n[0], c.n[1])), seals = [];
+            // the haul-out strip: ground within the bank's top 0.35 m, around the colony's centre
+            // (the aerials: a LOOSE colony — two to five body lengths apart over a wide bank, never a heap)
+            const mk = (hx, hy, pup) => { const bull = !pup && rnd() < 0.25, pal = pup ? 5 : bull ? (rnd() < 0.5 ? 0 : 1) : 2 + Math.floor(rnd() * 3);
+                // most lie on their side in the 'banana' — head and tail flippers raised — which from above is a C with the pale belly on one edge
+                const side = rnd() < 0.65 ? (rnd() < 0.5 ? 1 : -1) : 0;
+                return { i: seals.length, ci, hx, hy, x: hx, y: hy, h: R(0, 6.283), mode: 'haul', t: R(2, 8), bob: R(0, 7), size: pup ? R(0.45, 0.55) : bull ? R(1.05, 1.2) : R(0.82, 1.0), pal, pup, wet: 0, ring: 0,
+                    side, curl: side ? side * R(0.45, 1) : R(-0.25, 0.25), flip: 0, flipT: R(5, 25),
+                    lift: 0, liftT: R(3, 12), spots: Array.from({ length: 34 }, (_, q) => [R(-2.6, 2.6), R(0.12, 0.84), q < 5 ? R(0.45, 0.8) : R(0.12, 0.35), R(0, 3)]), tx: hx, ty: hy, vis: 1 }; };
+            for (let tries = 0; seals.length < n && tries < 600; tries++) {
+                const a = R(0, 6.283), d = Math.sqrt(rnd()) * c.spread, hx = S.x + Math.cos(a) * d, hy = S.y + Math.sin(a) * d;
+                const gz = Tide.groundAt(hx, hy); if (onLand(hx, hy) || gz < S.z - 0.4 || gz > 0.3 || seals.some(q => Math.hypot(q.hx - hx, q.hy - hy) < c.gap)) continue;   // (and a bank the flood covers)
+                seals.push(mk(hx, hy, false));
+                // a white pup beside a cow now and then (the winter pupping)
+                const cow = seals[seals.length - 1];
+                if (cow.pal >= 2 && rnd() < c.pups) { const pa = R(0, 6.283), px = hx + Math.cos(pa) * 22, py = hy + Math.sin(pa) * 22; if (!onLand(px, py) && Tide.groundAt(px, py) >= S.z - 0.4 && Tide.groundAt(px, py) <= 0.3) { const p = mk(px, py, true); p.h = cow.h + R(-0.6, 0.6); seals.push(p); } }
+            }
+            return { ci, cx: S.x, cy: S.y, z: S.z, seals, watch: 0, inRing: false, flushedByPlayer: false };
+        });
+    }
+    // the way down to the water from a point: the lowest of eight directions, 40 u out
+    function flatsDownhill(x, y) { let best = 0, bz = 1e9; for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283, z = Tide.groundAt(x + Math.sin(a) * 40, y - Math.cos(a) * 40); if (z < bz) { bz = z; best = a; } } return best; }
+    function updateGreySeals(dt, me) {
+        const c = cfg.greySeals;
+        for (const C of gsealCols) {
+            let hauled = 0;
+            // entering the colony's ring starts a clean watch — BEFORE the seals react this frame, so a flush on the way in counts
+            if (me && c.feat) { const d0 = Math.hypot(me.x - C.cx, me.y - C.cy); if (d0 > c.ringR) { C.inRing = false; C.watch = 0; } else if (!C.inRing) { C.inRing = true; C.flushedByPlayer = false; C.watch = 0; } }
+            for (const s of C.seals) {
+                s.t -= dt; s.bob += dt; s.ring = Math.max(0, s.ring - dt / 1.6);
+                // lying <-> swimming is a crossfade over about a second, never a swap
+                s.blend = (s.blend || 0) + (((s.mode === 'swim') ? 1 : 0) - (s.blend || 0)) * Math.min(1, dt * 1.6);
+                const dSpot = depthAtT(s.hx, s.hy), boat = boatNear(s.x, s.y, c.flushR);
+                if (s.mode === 'haul') {
+                    hauled++;
+                    s.wet = Math.max(0, s.wet - dt / 60);
+                    // now and then the head comes up and looks about, and goes down again (the "banana")
+                    s.liftT -= dt; if (s.liftT <= 0) { s.lift = s.lift ? 0 : 1; s.liftT = s.lift ? R(1.5, 4) : R(5, 16); }
+                    // a fore flipper lifted and waved, or scratching (the references), now and then
+                    s.flipT -= dt; if (s.flipT <= 0) { s.flip = s.flip ? 0 : 1; s.flipT = s.flip ? R(1.5, 3) : R(8, 30); }
+                    // (the research: they lie on as the flood laps round them — some go early, some wait to be floated off)
+                    if (s.floatAt == null) s.floatAt = R(0.1, 0.32);
+                    if (dSpot > s.floatAt || boat) {
+                        if (boat && boat.isPlayer) C.flushedByPlayer = true;
+                        s.mode = 'slide'; s.h = flatsDownhill(s.x, s.y); s.t = 8;
+                    }
+                } else if (s.mode === 'slide' || s.mode === 'climb') {
+                    // the hump-along: a galumph down to the water (or up to its place), body rippling
+                    const up = s.mode === 'climb';
+                    if (up) { const d = Math.hypot(s.hx - s.x, s.hy - s.y); if (d < 3) { s.mode = 'haul'; s.t = R(4, 10); continue; } s.h += angDiff(Math.atan2(s.hx - s.x, -(s.hy - s.y)), s.h) * Math.min(1, dt * 3); }
+                    else s.h += angDiff(flatsDownhill(s.x, s.y), s.h) * Math.min(1, dt * 2);
+                    const v = up ? 10 : 26; s.x += Math.sin(s.h) * v * dt; s.y -= Math.cos(s.h) * v * dt;
+                    if (!up && (depthAtT(s.x, s.y) > 0.35 || s.t <= 0)) { s.mode = 'swim'; s.t = R(6, 12); s.ring = 1; s.wet = 1; s.vis = 1; const a = R(0, 6.283); s.tx = s.x + Math.cos(a) * 60; s.ty = s.y + Math.sin(a) * 60; }
+                    if (up && (dSpot > 0.05 || boat)) { s.mode = 'slide'; s.t = 6; }
+                } else if (depthAtT(s.x, s.y) < 0.1) {
+                    // the ebb has left it: up to its place if that is dry, otherwise down the sand after the water
+                    if (dSpot < -0.05 && !boat) { s.mode = 'climb'; } else { s.mode = 'slide'; s.h = flatsDownhill(s.x, s.y); s.t = 6; }
+                } else {
+                    // in the water: bottling, head up and turning to watch the nearest boat, then under and away a little
+                    const d = Math.hypot(s.tx - s.x, s.ty - s.y);
+                    if (d > 3) { const a = Math.atan2(s.tx - s.x, -(s.ty - s.y)); s.h += angDiff(a, s.h) * Math.min(1, dt * 1.5); const v = Math.min(d, 8) * dt; if (depthAtT(s.x + Math.sin(s.h) * 6, s.y - Math.cos(s.h) * 6) > 0.3) { s.x += Math.sin(s.h) * v; s.y -= Math.cos(s.h) * v; } else { s.tx = s.x; s.ty = s.y; } }
+                    const nb = boatNear(s.x, s.y, 500); if (nb && d <= 3) s.h += angDiff(Math.atan2(nb.x - s.x, -(nb.y - s.y)), s.h) * Math.min(1, dt * 1.2);
+                    s.vis += ((Math.sin(s.bob * 0.5 + s.i) > -0.6 ? 1 : 0) - s.vis) * Math.min(1, dt * 1.5);   // under now and then
+                    if (s.t <= 0) {
+                        s.t = R(5, 11);
+                        // its place is dry again and no boat about: back up the bank
+                        if (dSpot < -0.05 && !boatNear(s.hx, s.hy, c.flushR * 1.5)) { s.mode = 'climb'; s.ring = 1; }
+                        else { const q = bestDepthSpot(C.cx, C.cy, 220, 1.2, 8); if (q) { s.tx = q.x; s.ty = q.y; } }
+                    }
+                }
+            }
+            // KEEP YOUR DISTANCE (Zee): within watchR of a colony with three or more hauled out, for 3 s,
+            // and not one of them flushed by the player since coming within 450 u
+            if (me && c.feat) {
+                const d = Math.hypot(me.x - C.cx, me.y - C.cy);
+                if (C.inRing && d < c.watchR && hauled >= 3 && !C.flushedByPlayer) { C.watch += dt; if (C.watch >= c.watchS) feat(c.feat); }
+            }
+        }
+    }
+    // GREY SEAL from above (references: the Great Blasket colony from a drone, Ameland's sandbank): a long
+    // teardrop — the head rounded but with the long straight Roman nose, the neck thick, widest at the
+    // chest, tapering to the hind flippers held together in a small fan; the fore flippers small at the
+    // sides. Coats mottled — dark bulls, silver and cream cows, blotched; dark and glossy when wet.
+    function gsealBody(ctx, u) {
+        ctx.beginPath(); ctx.moveTo(0, -10.2);
+        ctx.bezierCurveTo(0.9, -10.2, 1.3, -9, 1.35, -7.8);                // the long muzzle
+        ctx.bezierCurveTo(1.9, -7, 2.1, -6, 2.0, -5.2);                    // the crown and thick neck
+        ctx.bezierCurveTo(3.1, -3.4, 3.2, 0, 2.7, 2.4);                    // chest to belly
+        ctx.bezierCurveTo(2.2, 4.8, 1.3, 6.4, 0.7 + u, 7.4);               // hips
+        ctx.lineTo(-0.7 + u, 7.4);
+        ctx.bezierCurveTo(-1.3, 6.4, -2.2, 4.8, -2.7, 2.4);
+        ctx.bezierCurveTo(-3.2, 0, -3.1, -3.4, -2.0, -5.2);
+        ctx.bezierCurveTo(-2.1, -6, -1.9, -7, -1.35, -7.8);
+        ctx.bezierCurveTo(-1.3, -9, -0.9, -10.2, 0, -10.2); ctx.closePath();
+    }
+    // the hauled-out body along a curved spine: s 0 = nose .. 1 = the hind flippers' tips (y = -10 + 20 s)
+    const GS_W = [[0, 0.35], [0.04, 0.95], [0.1, 1.45], [0.16, 1.7], [0.25, 2.7], [0.38, 3.25], [0.52, 3.15], [0.65, 2.5], [0.77, 1.45], [0.85, 0.8]];   // plump: a quarter as wide as long
+    function gsealSpine(s, lift) {
+        // the C of a seal on its side (its banana), a straight one belly-down; the head swings further when it lifts
+        return (u) => s.curl * 4.2 * ((2 * u - 1) * (2 * u - 1) - 0.35) + (u < 0.2 ? lift * (0.2 - u) * 8 * (s.side || 1) : 0);
+    }
+    function gsealPath(ctx, off, wm) {
+        ctx.beginPath(); GS_W.forEach(([u, w], i) => { const y = -10 + 20 * u; i ? ctx.lineTo(off(u) + w * wm, y) : ctx.moveTo(off(u) + w * wm, y); });
+        for (let i = GS_W.length - 1; i >= 0; i--) { const [u, w] = GS_W[i]; ctx.lineTo(off(u) - w * wm, -10 + 20 * u); } ctx.closePath();
+    }
+    function drawGreySeal(ctx, s) {
+        const k = GSEAL_LEN / 20 * s.size, P = GSEAL[s.pal], move = s.mode === 'slide' || s.mode === 'climb';
+        const u0 = move ? Math.sin(s.bob * 7) * 0.9 : 0, wet = s.wet || 0;
+        const lift = s.lift ? 0.6 + Math.sin(s.bob * 0.7) * 0.25 : 0;
+        const sd = move ? 0 : s.side, spine = move ? ((u) => (u > 0.6 ? u0 * (u - 0.6) * 2.5 : 0)) : gsealSpine(s, lift), wm = sd ? 0.92 : 1;
+        const T0 = ctx.getTransform(), lod = Math.max(0, Math.min(1, (Math.hypot(T0.a, T0.b) * k - 1) / 2));
+        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h); ctx.scale(k, k); ctx.lineJoin = 'round';
+        // shadow on the sand (the side-lying banana throws a longer one)
+        ctx.save(); ctx.translate(0.9 + (sd ? 0.5 : 0), 1.2); ctx.fillStyle = 'rgba(40,32,20,0.3)'; gsealPath(ctx, spine, wm * 1.05); ctx.fill(); ctx.restore();
+        // the hind flippers: a fan held together (raised in the banana: shorter from above)
+        const tx = spine(0.86), fl = sd ? 0.7 : 1;
+        ctx.fillStyle = P.blot; for (const q of [-1, 1]) { ctx.beginPath(); ctx.moveTo(tx + q * 0.35, 6.9); ctx.quadraticCurveTo(tx + q * 1.9, 6.9 + 1.6 * fl, tx + q * 1.6 + spine(1) - tx, 6.9 + 3.3 * fl); ctx.lineTo(tx + (spine(1) - tx) * 0.8, 6.9 + 2.4 * fl); ctx.closePath(); ctx.fill(); }
+        // the fore flippers: small, at the sides; on its side the upper one lies on the flank, waved now and then
+        const fy = -10 + 20 * 0.3, fx = spine(0.3), wave = (s.flip && !move) ? Math.sin(s.bob * 5) * 0.8 : 0, pad = move ? Math.sin(s.bob * 7) * 0.6 : 0;
+        for (const q of [-1, 1]) { if (sd && q === -sd) continue; ctx.beginPath(); ctx.ellipse(fx + q * 2.8 * wm, fy + pad * q, 0.6, 1.7, q * (0.55 + wave), 0, 6.283); ctx.fill(); }
+        ctx.fillStyle = P.base; gsealPath(ctx, spine, wm); ctx.fill();
+        ctx.save(); gsealPath(ctx, spine, wm); ctx.clip();
+        // the pale belly: along the lower flank of a seal on its side (a band down the edge), hidden on one lying flat
+        if (sd) { ctx.fillStyle = P.belly; ctx.beginPath(); GS_W.forEach(([u, w], i) => { const y = -10 + 20 * u; i ? ctx.lineTo(spine(u) - sd * w * wm, y) : ctx.moveTo(spine(u) - sd * w * wm, y); });
+            for (let i = GS_W.length - 1; i >= 0; i--) { const [u, w] = GS_W[i]; ctx.lineTo(spine(u) - sd * w * wm * 0.35, -10 + 20 * u); } ctx.closePath(); ctx.fill(); }
+        // the mottle: fine irregular blotches (a few larger), dark on the pale cows, pale on the dark bulls; faded at race scale
+        if (!s.pup) { ctx.fillStyle = s.pal < 2 ? P.pale : P.blot; ctx.globalAlpha *= 0.5 * (0.35 + 0.65 * lod);
+            for (const [x, u, r, rot] of s.spots) { const y = -10 + 20 * u; ctx.beginPath(); ctx.ellipse(spine(u) + x * wm, y, r * 1.4, r * 0.75, rot, 0, 6.283); ctx.fill(); }
+            ctx.globalAlpha /= 0.5 * (0.35 + 0.65 * lod); }
+        // the back catches the light along the spine; wet, dark and glossy all over
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 2.2; ctx.beginPath(); for (let u = 0.2; u <= 0.75; u += 0.05) { const y = -10 + 20 * u; u === 0.2 ? ctx.moveTo(spine(u) + sd * 0.6, y) : ctx.lineTo(spine(u) + sd * 0.6, y); } ctx.stroke();
+        if (wet > 0.02) { ctx.fillStyle = `rgba(30,34,40,${0.45 * wet})`; ctx.fillRect(-8, -11, 16, 22); ctx.fillStyle = `rgba(255,255,255,${0.18 * wet})`; ctx.beginPath(); ctx.ellipse(spine(0.4) - 0.8, -2, 0.7, 4, 0, 0, 6.283); ctx.fill(); }
+        ctx.restore();
+        // the head: the long straight Roman nose, eyes set back, the nostrils at its tip
+        const hx = spine(0.12), ang = Math.atan2(spine(0.2) - spine(0.04), 3.2);
+        ctx.save(); ctx.translate(hx, -7.6); ctx.rotate(-ang);
+        ctx.fillStyle = '#15171a'; for (const q of [-1, 1]) { if (sd && q === -sd) continue; ctx.beginPath(); ctx.ellipse(q * 0.95 * wm, -0.4, 0.3, 0.38, 0, 0, 6.283); ctx.fill(); }
+        ctx.strokeStyle = 'rgba(20,20,22,0.75)'; ctx.lineWidth = 0.2; for (const q of [-1, 1]) { ctx.beginPath(); ctx.moveTo(q * 0.3, -2.2); ctx.lineTo(q * 0.26, -1.8); ctx.stroke(); }
+        ctx.restore();
+        ctx.strokeStyle = SOFT; ctx.lineWidth = 0.25; gsealPath(ctx, spine, wm); ctx.stroke();
+        // AWASH: the flood lapping round it — the water film creeps over the body and small broken ripples lap its edge
+        const aw = s.awashOv != null ? s.awashOv : (typeof Tide !== 'undefined' && state.tide ? Tide.depthAt(s.x, s.y) : 0);
+        if (aw > 0.005) { const f = Math.min(1, aw / 0.3);
+            ctx.save(); gsealPath(ctx, spine, wm); ctx.clip(); ctx.fillStyle = `rgba(${waterTint()},${0.55 * f})`; ctx.fillRect(-8, -11 + (1 - f) * 12, 16, 22); ctx.restore();
+            const q = (T * 0.5 + s.i * 0.37) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.4 * (1 - q) * Math.min(1, f * 3)})`; ctx.lineWidth = 0.3;
+            for (const [a0, a1] of [[0.2, 1.2], [1.8, 2.7], [3.4, 4.3], [4.9, 5.8]]) { ctx.beginPath(); ctx.ellipse(spine(0.45), 0, 3.6 + q * 1.5, 10.5 + q * 1.5, 0, a0, a1); ctx.stroke(); } }
+        ctx.restore();
+        if (s.ring > 0) drawRing(ctx, s.x, s.y, s.ring, 5, 18, 0.5);
+    }
+    // in the water: the head up (bottling), the long nose pointing at what it watches; the body a dim
+    // shape below; gone under, only the dim shape
+    function drawGreySealSwim(ctx, s) {
+        const k = GSEAL_LEN / 20 * s.size, P = GSEAL[s.pal];
+        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h); ctx.scale(k, k);
+        ctx.fillStyle = 'rgba(28,38,46,0.4)'; ctx.globalAlpha *= 0.55 + 0.45 * (1 - s.vis); gsealBody(ctx, 0); ctx.fill(); ctx.globalAlpha /= 0.55 + 0.45 * (1 - s.vis);
+        if (s.vis > 0.05) {
+            ctx.globalAlpha *= s.vis;
+            const q = (T * 0.4 + s.i * 0.3) % 1;
+            ctx.strokeStyle = `rgba(255,255,255,${0.45 * (1 - q)})`; ctx.lineWidth = 0.28;
+            for (const [a0, a1] of [[0.2, 1.5], [1.9, 3.0], [3.4, 4.5], [4.9, 6.0]]) { ctx.beginPath(); ctx.arc(0, -6.2, 2.6 + q * 2.6, a0, a1); ctx.stroke(); }
+            ctx.fillStyle = P.base; ctx.beginPath(); ctx.moveTo(0, -10.2); ctx.bezierCurveTo(1, -10.2, 1.4, -8.8, 1.5, -7.6); ctx.bezierCurveTo(2.2, -6.6, 2.1, -5, 1.2, -4.4); ctx.quadraticCurveTo(0, -4, -1.2, -4.4); ctx.bezierCurveTo(-2.1, -5, -2.2, -6.6, -1.5, -7.6); ctx.bezierCurveTo(-1.4, -8.8, -1, -10.2, 0, -10.2); ctx.fill();
+            ctx.fillStyle = 'rgba(30,34,40,0.45)'; ctx.fill();   // wet
+            ctx.fillStyle = '#15171a'; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 1.1, -7.2, 0.35, 0.42, 0, 0, 6.283); ctx.fill(); }
+            ctx.strokeStyle = 'rgba(240,240,236,0.5)'; ctx.lineWidth = 0.12; for (const sd of [-1, 1]) for (let w = 0; w < 3; w++) { ctx.beginPath(); ctx.moveTo(sd * 0.7, -9.2 + w * 0.3); ctx.lineTo(sd * (2.1 + w * 0.2), -9.6 + w * 0.5); ctx.stroke(); }
+        }
+        ctx.restore();
+        if (s.ring > 0) drawRing(ctx, s.x, s.y, s.ring, 5, 18, 0.5);
+    }
+
+    // ── WADERS: roseate spoonbills and pied avocets ────────────────────────────────────────
+    // A flock holds a patch of water of the depth it likes, re-read every few seconds as the tide moves;
+    // the birds walk to their places about it, heads sweeping; the patch moves with the edge. When the
+    // water there goes wrong (too deep, or dry) the flock walks — or, far, flies — to a better patch.
+    // A boat close and it flies, low, to a new patch.
+    function makeFlatsWaders(c, kind) {
+        const spots = flatsSpots((x, y, z) => z > -1.3 && z < 0.6 && deepNear(x, y, 500) && flatsLineDist(x, y) < c.lineMax, c.spacing, c.flocks, 120, (x, y) => -flatsLineDist(x, y) / 500);
+        return spots.map((S, fi) => {
+            const n = Math.round(R(c.n[0], c.n[1]));
+            const F = { kind, fi, hx: S.x, hy: S.y, cx: S.x, cy: S.y, mode: 'feed', t: R(1, 4), birds: [], roosting: false, roost: null };
+            // the high-tide roost: the nearest saltmarsh, a little way in from its edge
+            for (let r = 100; r <= 1600 && !F.roost; r += 60) for (let k = 0; k < 24 && !F.roost; k++) { const a = k / 24 * 6.283, x = S.x + Math.cos(a) * r, y = S.y + Math.sin(a) * r;
+                if (onLand(x, y) && onLand(x + Math.cos(a) * 50, y + Math.sin(a) * 50)) F.roost = { x: x + Math.cos(a) * 30, y: y + Math.sin(a) * 30 }; }
+            for (let j = 0; j < n; j++) { const a = R(0, 6.283), d = Math.sqrt(rnd()) * c.spread;
+                F.birds.push({ j, ox: Math.cos(a) * d, oy: Math.sin(a) * d, x: S.x + Math.cos(a) * d, y: S.y + Math.sin(a) * d, h: R(0, 6.283), sw: R(0, 7), swR: R(0.8, 1.2), step: R(0, 7), z: 0, flap: R(0, 7), mode: 'wade', ring: 0, delay: 0 }); }
+            return F;
+        });
+    }
+    function updateFlatsWaders(list, c, dt) {
+        for (const F of list) {
+            F.t -= dt;
+            if (F.mode === 'feed') {
+                const threat = boatNear(F.cx, F.cy, c.flushR);
+                if (threat || F.t <= 0) {
+                    // (the tide here runs a metre in ~15 s, so they look often, and ahead: on the flood they
+                    // want the shallow end of their depth, on the ebb the deep end)
+                    F.t = R(1.2, 2.2);
+                    const rising = Tide.levelAt(Tide.clock() + 2) > Tide.level(), want = rising ? c.depth[0] : c.depth[1];
+                    const here = depthAtT(F.cx, F.cy), bad = F.roosting ? !!bestDepthSpot(F.hx, F.hy, 900, want, 12) && bestDepthSpot(F.hx, F.hy, 900, want, 12).err < 0.08 : (here < c.depth[0] - 0.05 || here > (F.kind === 'avo' ? 0.45 : c.depth[1] + 0.08));   // (avocets swim a while before they move on)
+                    if (threat || bad) {
+                        // near first; if nothing near will do (or a boat), fly to a patch further off
+                        const near = !threat && !F.roosting && bestDepthSpot(F.cx, F.cy, 260, want, 16);
+                        let q = near && near.err < 0.1 ? near : null, fly = false;
+                        if (!q) { q = bestDepthSpot(F.hx, F.hy, 900, want, 24); fly = true; }
+                        // high water, and no shallows anywhere near: off to the roost on the marsh, packed
+                        // together, until the ebb uncovers the flats (the Wadden's high-tide roost)
+                        F.roosting = !!(q && q.err > 0.18 && F.roost);
+                        if (F.roosting) q = { x: F.roost.x, y: F.roost.y, err: 0 };
+                        if (q && threat && Math.hypot(q.x - threat.x, q.y - threat.y) < c.flushR * 2) q = bestDepthSpot(F.cx + (F.cx - threat.x), F.cy + (F.cy - threat.y), 500, want, 20) || q;
+                        if (q) { F.tx = q.x; F.ty = q.y;
+                            if (fly || Math.hypot(q.x - F.cx, q.y - F.cy) > 90) { F.mode = 'fly';   // (the edge runs ~50 u/s over the flats: they leapfrog ahead of it, as waders do
+                                F.flyT = 0; F.birds.forEach((b, i) => { b.mode = 'up'; b.delay = i * R(0.04, 0.12) + (threat ? 0 : 0.5); }); }
+                            else { F.gx = q.x; F.gy = q.y; } }
+                    }
+                }
+            }
+            // walking: the patch moves at wading pace, never jumps (the birds keep their places about it)
+            if (F.mode === 'feed' && F.gx != null) { const d = Math.hypot(F.gx - F.cx, F.gy - F.cy); if (d > 1) { const v = Math.min(d, c.walk * 0.9 * dt); F.cx += (F.gx - F.cx) / d * v; F.cy += (F.gy - F.cy) / d * v; } }
+            if (F.mode === 'fly') F.flyT = (F.flyT || 0) + dt;
+            let landed = 0;
+            for (const b of F.birds) {
+                b.ring = Math.max(0, b.ring - dt / 1.2);
+                if (b.mode === 'wade') {
+                    landed++;
+                    // caught too deep by the flood: a short low hop back to the flock's shallows
+                    // (avocets have webbed feet: in 0.2-0.6 m they SWIM, upending like a duck — the research; only deeper than
+                    // that, or a spoonbill in any water past its knees, hops back to the shallows)
+                    const dh = depthAtT(b.x, b.y), swimOK = F.kind === 'avo' && dh < 0.6;
+                    b.swim = Math.max(0, Math.min(1, (b.swim || 0) + (F.kind === 'avo' && dh > 0.2 && !F.roosting ? 1 : -1) * dt * 1.5));
+                    if (b.swim > 0.5) { b.upT = (b.upT == null ? R(2, 6) : b.upT) - dt; if (b.upT <= 0) { b.up = b.up ? 0 : 1; b.upT = b.up ? R(1, 2.2) : R(3, 8); if (b.up) b.ring = 0.7; } } else b.up = 0;
+                    b.upV = (b.upV || 0) + ((b.up ? 1 : 0) - (b.upV || 0)) * Math.min(1, dt * 4);
+                    if (!F.roosting && F.mode === 'feed' && dh > c.depth[1] + 0.25 && !swimOK) { b.mode = 'up'; b.delay = 0; b.hop = true; continue; }
+                    // to its place about the patch, a slow wading walk, the head sweeping as it goes
+                    const pk = F.roosting ? 0.55 : 1, tx = F.cx + b.ox * pk, ty = F.cy + b.oy * pk, d = Math.hypot(tx - b.x, ty - b.y);
+                    b.roost = F.roosting;
+                    if (!F.roosting && (F.kind !== 'spoon' || depthAtT(b.x, b.y) < 0.25)) b.sw += dt * c.sweepHz * 6.283 * b.swR; else b.sw *= 0.9;   // (a spoonbill sweeps only in shallow water)
+                    if (d > 2) { const a = Math.atan2(tx - b.x, -(ty - b.y)); b.h += angDiff(a, b.h) * Math.min(1, dt * 2); const v = Math.min(d, c.walk) * dt, nx = b.x + Math.sin(b.h) * v, ny = b.y - Math.cos(b.h) * v;
+                        if (F.roosting || !onLand(nx, ny)) { b.x = nx; b.y = ny; } else { b.mode = 'up'; b.delay = 0; b.hop = true; continue; }   // the marsh in the way: hop it
+                        b.step += dt * 6; }
+                    else if (!F.roosting) { b.h += Math.sin(b.sw * 0.13 + b.j) * dt * 0.4; const nx = b.x + Math.sin(b.h) * c.walk * 0.25 * dt, ny = b.y - Math.cos(b.h) * c.walk * 0.25 * dt; if (!onLand(nx, ny)) { b.x = nx; b.y = ny; } b.step += dt * 2; }   // feeding forward slowly
+                    else { const wd = state.wind ? state.wind.direction : 0; b.h += angDiff(wd, b.h) * Math.min(1, dt * 0.8); }   // roosting: all facing into the wind
+                } else {
+                    b.delay -= dt; if (b.delay > 0) continue;
+                    b.flap += dt * c.flapHz * 6.283 * WING_TIME;
+                    // (spoonbills travel in a loose diagonal line — the flock references — until close to the new patch)
+                    let ex = 0, ey = 0;
+                    if (F.kind === 'spoon' && !b.hop && F.tx != null) { const fh = Math.atan2(F.tx - F.cx, -(F.ty - F.cy)), far = Math.min(1, Math.max(0, (Math.hypot(F.tx - b.x, F.ty - b.y) - 80) / 150)), back = b.j * 13 * far, side = b.j * 9 * far * (F.fi % 2 ? 1 : -1);
+                        ex = -Math.sin(fh) * back + Math.cos(fh) * side; ey = Math.cos(fh) * back + Math.sin(fh) * side; }
+                    let tx = ex + (b.hop ? (F.gx != null ? F.gx : F.cx) + b.ox : (F.tx != null ? F.tx : F.cx) + b.ox * 1.5); let ty = ey + (b.hop ? (F.gy != null ? F.gy : F.cy) + b.oy : (F.ty != null ? F.ty : F.cy) + b.oy * 1.5);
+                    if (onLand(tx, ty)) { tx = b.hop ? (F.gx != null ? F.gx : F.cx) : (F.tx != null ? F.tx : F.cx); ty = b.hop ? (F.gy != null ? F.gy : F.cy) : (F.ty != null ? F.ty : F.cy); }   // (its own spot on the marsh: the flock's centre)
+                    const d = Math.hypot(tx - b.x, ty - b.y), a = Math.atan2(tx - b.x, -(ty - b.y));
+                    // on final approach (inside 60 u) it turns straight in — never orbits its spot
+                    b.h += angDiff(a, b.h) * Math.min(1, dt * (d < 60 ? 8 : 1.8));
+                    // in: slowing onto the spot (legs down, a few flaps), never circling it
+                    const v = d < 50 ? Math.max(5, d * 1.4) : Math.min(c.fly, 20 + d * 1.2); b.x += Math.sin(b.h) * v * dt; b.y -= Math.cos(b.h) * v * dt;
+                    b.z += ((b.hop ? Math.min(8, d * 0.2) : d > 60 ? c.alt : 0) - b.z) * Math.min(1, dt * 1.5);
+                    if (b.mode === 'up' && (b.z > 5 || d < 60)) b.mode = 'fly';
+                    // down: at its spot — or, a long flight, wherever it is over water once it is low (never a jump; Wes saw
+                    // birds vanish mid-air when a 14 s timeout put them on their spot)
+                    if (b.mode === 'fly' && ((d < 10 && b.z < 3) || (b.hop && d < 10) || (F.flyT > 14 && d < 80 && b.z < 3 && !onLand(b.x, b.y)))) { b.mode = 'wade'; b.z = 0; b.ring = 1; b.hop = false; }
+                }
+            }
+            if (F.mode === 'fly' && F.birds.every(b => b.mode === 'wade')) { F.mode = 'feed'; F.cx = F.gx = F.tx; F.cy = F.gy = F.ty; F.t = R(1, 2); }
+        }
+    }
+    // ROSEATE SPOONBILL (Wes's references, Sep 26 2026: wading, standing, landing, a flock and singles in
+    // flight). Standing, from above: a plump body, white at the neck and upper back and pinker toward the
+    // tail, the folded wing pale pink with a vivid CARMINE patch at the shoulder, the orange-buff tail tip;
+    // a white S-neck, the bald buff-green head with a black band at the nape, and the long grey-green bill
+    // ending in a round SPOON. Feeding it walks on with the head low, sweeping the spoon side to side.
+    // Resting (the roost) the bill is laid back along the back. Flying: the long neck dead straight, the
+    // legs trailing dark red past the orange tail, broad ROUNDED wings with separated finger-tips, pale
+    // pink with the carmine bar along the leading edge of the inner wing and a carmine rump.
+    // the water at a wader's legs: two or three short arcs spreading from where it steps, broken, faint
+    function legRipple(ctx, ph, r, a) {
+        const q = ph % 1, rr = r * (0.5 + q * 1.4);
+        ctx.strokeStyle = `rgba(255,255,255,${a * (1 - q)})`; ctx.lineWidth = 0.6;
+        for (const [a0, a1] of [[0.3, 1.3], [2.0, 2.9], [3.6, 4.5], [5.0, 5.8]]) { ctx.beginPath(); ctx.arc(0, 1.5, rr, a0 + ph * 0.3, a1 + ph * 0.3); ctx.stroke(); }
+    }
+    function spoonBill(ctx, len) {
+        // the bill from its base at y = 0 to the spoon's tip at y = -len
+        ctx.fillStyle = SPOON.bill; ctx.beginPath(); ctx.moveTo(-0.34, 0); ctx.lineTo(-0.22, -len + 1.3);
+        ctx.quadraticCurveTo(-1.0, -len + 1.0, -0.95, -len + 0.25); ctx.quadraticCurveTo(0, -len - 0.7, 0.95, -len + 0.25); ctx.quadraticCurveTo(1.0, -len + 1.0, 0.22, -len + 1.3); ctx.lineTo(0.34, 0); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = 'rgba(40,50,40,0.35)'; ctx.beginPath(); ctx.ellipse(0, -len + 0.3, 0.55, 0.45, 0, 0, 6.283); ctx.fill();   // the spoon's darker tip
+    }
+    function spoonHead(ctx) {
+        ctx.fillStyle = SPOON.head; ctx.beginPath(); ctx.ellipse(0, -0.2, 0.9, 1.1, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = '#1d1d1a'; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.moveTo(-0.85, 0.55); ctx.quadraticCurveTo(0, 0.95, 0.85, 0.55); ctx.stroke();   // the black band at the nape
+    }
+    function drawSpoonbill(ctx, b) {
+        const k = SPOON_LEN / 26, fly = b.mode === 'up' || b.mode === 'fly';
+        if (fly) return drawSpoonbillFly(ctx, b);
+        ctx.save(); ctx.translate(b.x, b.y);
+        if (!b.roost) legRipple(ctx, b.step * 0.3 + b.j * 0.21, 3.5, 0.3);
+        ctx.rotate(b.h); ctx.scale(k, k); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+        ctx.fillStyle = 'rgba(8,24,30,0.25)'; ctx.beginPath(); ctx.ellipse(0.9, 2.4, 3.8, 6.2, 0, 0, 6.283); ctx.fill();   // shade
+        // the tail, orange-buff, under the wingtips
+        ctx.fillStyle = SPOON.tail; ctx.beginPath(); ctx.moveTo(-1.3, 5.4); ctx.quadraticCurveTo(0, 8.2, 1.3, 5.4); ctx.fill();
+        // the body: white at the shoulders, pink behind (a gradient down the back)
+        const g = ctx.createLinearGradient(0, -3, 0, 6); g.addColorStop(0, SPOON.neck); g.addColorStop(0.35, SPOON.pale); g.addColorStop(1, SPOON.pink);
+        ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 1.6, 3.3, 5.2, 0, 0, 6.283); ctx.fill();
+        // the folded wings: pale pink, their tips crossed over the tail, the carmine shoulder patch
+        for (const sd of [-1, 1]) {
+            ctx.fillStyle = SPOON.pink; ctx.beginPath(); ctx.moveTo(sd * 2.9, -0.8); ctx.quadraticCurveTo(sd * 3.1, 3.6, sd * 0.6, 7.2); ctx.lineTo(sd * 0.9, 1.6); ctx.closePath(); ctx.fill();
+            ctx.fillStyle = SPOON.carmine; ctx.beginPath(); ctx.moveTo(sd * 3.0, -0.9); ctx.quadraticCurveTo(sd * 3.2, 0.9, sd * 2.4, 2.2); ctx.quadraticCurveTo(sd * 1.6, 0.6, sd * 1.8, -1.1); ctx.closePath(); ctx.fill();
+        }
+        ctx.strokeStyle = SOFT; ctx.lineWidth = 0.25; ctx.beginPath(); ctx.ellipse(0, 1.6, 3.3, 5.2, 0, 0, 6.283); ctx.stroke();
+        if (b.roost) {
+            // resting: the head laid back on the shoulders, the bill along the back
+            ctx.save(); ctx.translate(0.3, -2.2); ctx.rotate(Math.PI - 0.25);
+            ctx.save(); ctx.translate(0, -0.2); spoonBill(ctx, 6.5); ctx.restore();
+            ctx.fillStyle = SPOON.neck; ctx.beginPath(); ctx.ellipse(0, 1.2, 1.3, 1.5, 0, 0, 6.283); ctx.fill();
+            ctx.rotate(Math.PI); spoonHead(ctx); ctx.restore();
+            ctx.restore(); if (b.ring > 0) drawRing(ctx, b.x, b.y, b.ring, 4, 12, 0.4); return;
+        }
+        // the white neck, stretched forward and low, swinging with the sweep; the head and the long spoon ahead
+        const sw = Math.sin(b.sw) * 0.55;
+        ctx.save(); ctx.translate(0, -2.8); ctx.rotate(sw * 0.35);
+        ctx.fillStyle = SPOON.neck; ctx.beginPath(); ctx.moveTo(-1.4, 0.6); ctx.quadraticCurveTo(-1.0, -3.2, -0.6, -6); ctx.lineTo(0.6, -6); ctx.quadraticCurveTo(1.0, -3.2, 1.4, 0.6); ctx.closePath(); ctx.fill();
+        ctx.translate(0, -6.3); ctx.rotate(sw * 0.6);
+        ctx.save(); ctx.translate(0, -0.9); spoonBill(ctx, 7.6); ctx.restore();
+        spoonHead(ctx);
+        // the spoon's ripple, a short arc in the water it sweeps
+        ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.3; ctx.beginPath(); ctx.arc(0, -8, 1.8, Math.PI * (0.1 + (sw > 0 ? 0.2 : 0)), Math.PI * (0.7 + (sw > 0 ? 0.2 : 0))); ctx.stroke();
+        ctx.restore();
+        ctx.restore();
+        if (b.ring > 0) drawRing(ctx, b.x, b.y, b.ring, 4, 12, 0.4);
+    }
+    // the broad rounded wing, fingered: its outline for one side (sd), `pf` the span factor, `flex` the upstroke's fold
+    function spoonWing(ctx, sd, pf, flex) {
+        // a broad paddle: the leading edge out to the wrist and on to a ROUNDED hand, five finger-tips fanned
+        // round its end, a broad trailing edge back to the body; on the upstroke the hand sweeps back
+        const sp = 20 * pf, sw = flex * 3.5;
+        ctx.moveTo(sd * 1.6, -2.8);
+        ctx.quadraticCurveTo(sd * sp * 0.25, -4.3, sd * sp * 0.48, -4.2 + sw * 0.3);                  // arm, to the wrist
+        ctx.quadraticCurveTo(sd * sp * 0.72, -4.0 + sw * 0.6, sd * sp * 0.86, -3.2 + sw);             // the hand's leading edge
+        for (let f = 0; f < 5; f++) {                                                                  // the fingers round the tip
+            const t = f / 4, ang = -0.75 + t * 1.4, cx = sp * 0.78, cy = -1.2 + sw, R0 = sp * 0.22;
+            const ox = cx + Math.cos(ang) * R0, oy = cy + Math.sin(ang) * R0 * 1.3;
+            ctx.lineTo(sd * ox, oy);
+            const ang2 = ang + 0.2, ix = cx + Math.cos(ang2) * R0 * 0.88, iy = cy + Math.sin(ang2) * R0 * 1.3 * 0.88;
+            if (f < 4) ctx.lineTo(sd * ix, iy);
+        }
+        ctx.quadraticCurveTo(sd * sp * 0.6, 4.6 + sw * 0.6, sd * sp * 0.35, 4.2 + sw * 0.3);           // the broad trailing edge
+        ctx.quadraticCurveTo(sd * sp * 0.15, 3.8, sd * 1.6, 3.2); ctx.closePath();
+    }
+    function drawSpoonbillFly(ctx, b) {
+        const k = SPOON_SPAN / 40, w = wingStroke(b.flap, 0.9), sc = k * (1 + b.z / 400), flex = w.flex * 1.6;
+        const wings = () => { ctx.beginPath(); for (const sd of [-1, 1]) spoonWing(ctx, sd, w.pf, flex); };
+        ctx.save(); ctx.translate(b.x + b.z * 0.35, b.y + b.z * 0.55); ctx.rotate(b.h); ctx.scale(sc * 0.95, sc * 0.95); ctx.fillStyle = `rgba(10,25,40,${0.18 * Math.max(0.3, 1 - b.z / 120)})`;
+        wings(); ctx.fill(); ctx.beginPath(); ctx.ellipse(0, -2, 1.3, 11, 0, 0, 6.283); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.h); ctx.scale(sc, sc); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        // the legs trailing dark red past the tail
+        ctx.strokeStyle = SPOON.legDark; ctx.lineWidth = 0.55; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 0.35, 4); ctx.lineTo(sd * 0.45, 10.5); ctx.stroke(); }
+        ctx.fillStyle = SPOON.pale; wings(); ctx.fill();
+        // pinker toward the trailing edge and the tips; the carmine bar along the inner leading edge
+        ctx.save(); wings(); ctx.clip(); { const g = ctx.createLinearGradient(0, -4, 0, 5); g.addColorStop(0, 'rgba(240,160,187,0)'); g.addColorStop(1, 'rgba(236,140,172,0.85)'); ctx.fillStyle = g; ctx.fillRect(-30, -6, 60, 14); }
+        ctx.strokeStyle = SPOON.carmine; ctx.lineWidth = 1.3; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 2, -2.7); ctx.quadraticCurveTo(sd * 20 * w.pf * 0.25, -3.8 + flex * 0.5, sd * 20 * w.pf * 0.43, -3.5 + flex); ctx.stroke(); }
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(160,60,90,0.45)'; ctx.lineWidth = 0.25; wings(); ctx.stroke();
+        // body: pink, the carmine rump, the orange tail
+        ctx.fillStyle = SPOON.pink; ctx.beginPath(); ctx.ellipse(0, 1, 1.9, 3.8, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = SPOON.carmine; ctx.beginPath(); ctx.ellipse(0, 3.4, 1.2, 1.1, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = SPOON.tail; ctx.beginPath(); ctx.moveTo(-1, 4.2); ctx.quadraticCurveTo(0, 6.6, 1, 4.2); ctx.fill();
+        // the long white neck dead straight, the head and spoon
+        ctx.fillStyle = SPOON.neck; ctx.beginPath(); ctx.moveTo(-0.8, -2.5); ctx.lineTo(-0.55, -10); ctx.lineTo(0.55, -10); ctx.lineTo(0.8, -2.5); ctx.closePath(); ctx.fill();
+        ctx.save(); ctx.translate(0, -10.5); spoonHead(ctx); ctx.translate(0, -0.9); spoonBill(ctx, 6.8); ctx.restore();
+        ctx.restore();
+    }
+    // PIED AVOCET (Wes's references, Sep 26 2026: flocks flying low over the water, singles from above and
+    // the side, one wading). Standing, from above: a white body; a black band down each side of the back
+    // (the scapulars) and a black bar on the folded wing, the black primaries crossed past the white tail;
+    // the black cap from the forehead down the back of the neck; the fine black bill curving UP. Feeding it
+    // scythes the bill side to side through the shallowest water, fast, walking on. Flying: narrow pointed
+    // white wings crossed by THREE blacks — the whole outer hand black to the tip, a bar across the inner
+    // wing from the shoulder toward the wrist, and the black stripes down the back — the neck out, and the
+    // long blue-grey legs trailing well past the tail. A tight flock flashes black and white as it turns.
+    function drawAvocet(ctx, b) {
+        const k = AVOCET_LEN / 20, fly = b.mode === 'up' || b.mode === 'fly';
+        if (fly) return drawAvocetFly(ctx, b);
+        ctx.save(); ctx.translate(b.x, b.y);
+        const swim = b.swim || 0, upend = b.upV || 0;
+        if (!b.roost) legRipple(ctx, b.step * 0.35 + b.j * 0.13, 2.5 + swim * 1.5, 0.25 + swim * 0.15);
+        ctx.rotate(b.h); ctx.scale(k, k); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        ctx.fillStyle = `rgba(8,24,30,${0.22 + swim * 0.08})`; ctx.beginPath(); ctx.ellipse(0.6 * (1 - swim), 1.8 - swim * 0.6, 2.5, 4.6, 0, 0, 6.283); ctx.fill();   // (afloat, the shade hugs the body)
+        // upending: the head and neck go under — it foreshortens to the white stern and the crossed black tips
+        if (upend > 0.01) ctx.translate(0, upend * 1.2);
+        // the crossed black primaries past the white tail
+        ctx.fillStyle = AVO.black; ctx.beginPath(); ctx.moveTo(-1.3, 3.2); ctx.lineTo(0.35, 6.9); ctx.lineTo(1.3, 3.2); ctx.lineTo(-0.35, 6.9); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = AVO.white; ctx.beginPath(); ctx.moveTo(-0.7, 4.2); ctx.quadraticCurveTo(0, 6.3, 0.7, 4.2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, 1.2, 2.3, 4.2, 0, 0, 6.283); ctx.fill();
+        // the black scapular band down each side, and the black bar on each folded wing below it
+        ctx.fillStyle = AVO.black;
+        for (const sd of [-1, 1]) {
+            ctx.beginPath(); ctx.moveTo(sd * 0.5, -1.9); ctx.quadraticCurveTo(sd * 1.7, 0.2, sd * 1.5, 3.4); ctx.lineTo(sd * 1.0, 3.3); ctx.quadraticCurveTo(sd * 1.1, 0.4, sd * 0.1, -1.6); ctx.closePath(); ctx.fill();
+            ctx.beginPath(); ctx.moveTo(sd * 2.2, 0.2); ctx.quadraticCurveTo(sd * 2.3, 1.6, sd * 1.9, 2.8); ctx.lineTo(sd * 1.65, 2.6); ctx.quadraticCurveTo(sd * 1.95, 1.4, sd * 1.8, 0.3); ctx.closePath(); ctx.fill();
+        }
+        // the neck and head, scything: the black cap over the crown and down the nape (gone under when it upends)
+        const sw = Math.sin(b.sw) * 0.7, rs = b.roost ? 0.2 : 1;
+        ctx.save(); ctx.globalAlpha *= 1 - upend * 0.9; ctx.translate(0, -2.8); ctx.rotate(sw * 0.45 * rs);
+        ctx.fillStyle = AVO.white; ctx.beginPath(); ctx.ellipse(0, -1.2, 0.8, 1.8, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = AVO.black; ctx.fillRect(-0.28, -1.8, 0.56, 2.1);   // the black down the back of the neck
+        ctx.translate(0, -2.8); ctx.rotate(sw * 0.6 * rs);
+        ctx.fillStyle = AVO.white; ctx.beginPath(); ctx.ellipse(0, 0, 0.9, 1.05, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = AVO.black; ctx.beginPath(); ctx.ellipse(0, 0.2, 0.85, 0.95, 0, Math.PI * 1.05, Math.PI * 1.95 + Math.PI, false); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(0, 0.25, 0.82, 0.8, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = AVO.bill; ctx.lineWidth = 0.28; ctx.beginPath(); ctx.moveTo(0, -0.9); ctx.quadraticCurveTo(0.1, -3.2, 0.7, -4.5); ctx.stroke();   // the fine bill, upcurved
+        ctx.restore();
+        ctx.strokeStyle = SOFT; ctx.lineWidth = 0.2; ctx.beginPath(); ctx.ellipse(0, 1.2, 2.3, 4.2, 0, 0, 6.283); ctx.stroke();
+        ctx.restore();
+        if (b.ring > 0) drawRing(ctx, b.x, b.y, b.ring, 3, 9, 0.4);
+    }
+    // a narrow pointed wing, one side: leading edge to the wrist, the hand to a sharp tip, the trailing edge back
+    function avoWingPath(ctx, sd, pf, flex) {
+        const sp = 17 * pf, sw = flex * 4.5;
+        ctx.moveTo(sd * 1.1, -2.3); ctx.quadraticCurveTo(sd * sp * 0.25, -3.1, sd * sp * 0.45, -3.0 + sw * 0.25);
+        ctx.quadraticCurveTo(sd * sp * 0.75, -2.7 + sw * 0.6, sd * sp, -1.2 + sw);                 // to the tip
+        ctx.quadraticCurveTo(sd * sp * 0.72, 0.6 + sw * 0.7, sd * sp * 0.45, 1.3 + sw * 0.35);      // the hand's trailing edge
+        ctx.quadraticCurveTo(sd * sp * 0.2, 1.9, sd * 1.1, 2.0); ctx.closePath();
+    }
+    function drawAvocetFly(ctx, b) {
+        const k = AVOCET_SPAN / 34, w = wingStroke(b.flap, 0.9), sc = k * (1 + b.z / 400), flex = w.flex * 1.6, sp = 17 * w.pf;
+        const wings = () => { ctx.beginPath(); for (const sd of [-1, 1]) avoWingPath(ctx, sd, w.pf, flex); };
+        ctx.save(); ctx.translate(b.x + b.z * 0.35, b.y + b.z * 0.55); ctx.rotate(b.h); ctx.scale(sc * 0.95, sc * 0.95); ctx.fillStyle = `rgba(10,25,40,${0.18 * Math.max(0.3, 1 - b.z / 120)})`; wings(); ctx.fill(); ctx.beginPath(); ctx.ellipse(0, 0, 1.2, 5, 0, 0, 6.283); ctx.fill(); ctx.restore();
+        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.h); ctx.scale(sc, sc); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        // the long blue-grey legs, trailing well past the tail
+        ctx.strokeStyle = AVO.leg; ctx.lineWidth = 0.45; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(sd * 0.3, 3.4); ctx.lineTo(sd * 0.35, 9.6); ctx.stroke(); }
+        ctx.fillStyle = AVO.white; wings(); ctx.fill();
+        ctx.save(); wings(); ctx.clip(); ctx.fillStyle = AVO.black;
+        for (const sd of [-1, 1]) {
+            // the outer hand, black to the tip (a wedge from the leading edge beyond the wrist)
+            ctx.beginPath(); ctx.moveTo(sd * sp * 0.55, -4); ctx.lineTo(sd * (sp + 2), -4 + flex * 4.5); ctx.lineTo(sd * (sp + 2), 3 + flex * 4.5); ctx.lineTo(sd * sp * 0.7, 2 + flex * 3); ctx.closePath(); ctx.fill();
+            // the bar across the inner wing, from the shoulder toward the wrist
+            ctx.beginPath(); ctx.moveTo(sd * 0.9, -0.6); ctx.lineTo(sd * sp * 0.46, -3.3 + flex * 1.2); ctx.lineTo(sd * sp * 0.44, -2.0 + flex * 1.2); ctx.lineTo(sd * 0.9, 0.9); ctx.closePath(); ctx.fill();   // slanting from the back stripes out to the wrist
+        }
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(40,40,44,0.35)'; ctx.lineWidth = 0.2; wings(); ctx.stroke();
+        // the body: white, the black stripes down the back, the white tail
+        ctx.fillStyle = AVO.white; ctx.beginPath(); ctx.ellipse(0, 0.5, 1.35, 3.9, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = AVO.black; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 0.72, 0.1, 0.36, 2.5, sd * 0.08, 0, 6.283); ctx.fill(); }
+        // the neck out, the black cap down the nape, the fine upcurved bill
+        ctx.fillStyle = AVO.white; ctx.beginPath(); ctx.ellipse(0, -4.4, 0.8, 1.7, 0, 0, 6.283); ctx.fill();
+        ctx.fillStyle = AVO.black; ctx.fillRect(-0.25, -5.2, 0.5, 2.0); ctx.beginPath(); ctx.ellipse(0, -5.6, 0.72, 0.85, 0, 0, 6.283); ctx.fill();
+        ctx.strokeStyle = AVO.bill; ctx.lineWidth = 0.25; ctx.beginPath(); ctx.moveTo(0, -6.3); ctx.quadraticCurveTo(0.1, -8.5, 0.55, -9.5); ctx.stroke();
+        ctx.restore();
+    }
+
+    // ── SHORE CRABS ─────────────────────────────────────────────────────────────────────
+    // Beds strung about the flats beside the channels. Each crab keeps to the water's EDGE — just
+    // covered or just uncovered — sidling in short bursts, and hurries after the water as it drains;
+    // left high and dry it buries itself (a small hump in the mud), and covered deep it is lost to view.
+    function makeShoreCrabs(c) {
+        const spots = flatsSpots((x, y, z) => z > -1.4 && z < 0.4 && deepNear(x, y, 400), c.spacing, c.beds, 110, () => 0);
+        return spots.map((S, bi) => ({ bi, cx: S.x, cy: S.y, crabs: Array.from({ length: Math.round(R(c.n[0], c.n[1])) }, (_, i) => {
+            let a = R(0, 6.283), d = Math.sqrt(rnd()) * 60;
+            for (let k = 0; k < 12 && onLand(S.x + Math.cos(a) * d, S.y + Math.sin(a) * d); k++) { a = R(0, 6.283); d = Math.sqrt(rnd()) * 60; }
+            if (onLand(S.x + Math.cos(a) * d, S.y + Math.sin(a) * d)) d = 0;
+            const ph = rnd(); return { i, x: S.x + Math.cos(a) * d, y: S.y + Math.sin(a) * d, h: R(0, 6.283), t: R(0, 3), burst: 0, vx: 0, vy: 0, leg: 0, pick: R(0, 7), ph: R(0, 7), size: R(0.75, 1.15), buried: false, rear: 0, rearT: 0, phase: ph < 0.55 ? 0 : ph < 0.85 ? 1 : 2, crust: rnd() < 0.12, stay: rnd() < 0.35, bur: 0 };
+        }) }));
+    }
+    function updateShoreCrabs(dt) {
+        const c = cfg.shoreCrabs;
+        for (const B of scrabBeds) {
+            if (!onCam(B.cx, B.cy, 900)) continue;   // far off: nothing moves that nobody sees (it is all tide-driven, so it catches up)
+            for (const q of B.crabs) {
+                q.t -= dt; q.ph += dt; q.pick += dt * 3;
+                const d = depthAtT(q.x, q.y), rising = Tide.levelAt(Tide.clock() + 2) > Tide.level();
+                // THE TIDE (research: Carcinus migrates UP the shore with the flood to forage on the newly covered flats
+                // and back down with the ebb; the small ones stay and bury or hide as the water leaves). A crab left dry
+                // sinks into the mud over a few seconds (q.bur 0..1) and digs out again as the water returns.
+                const want = q.stay ? [-0.1, 0.25] : rising ? [0.15, 0.55] : [0.05, 0.4];
+                const burTo = d < (q.stay ? -0.05 : -0.2) ? 1 : 0;
+                q.bur += (burTo - q.bur) * Math.min(1, dt / (burTo ? 2.5 : 1.2));
+                q.buried = q.bur > 0.95;
+                if (q.bur > 0.4) { q.burst = 0; q.rear = Math.max(0, q.rear - dt * 3); continue; }
+                // a boat close: it REARS — claws spread wide and open — for a moment, then backs off sideways into deeper water
+                const bt = d < 0.35 && boatNear(q.x, q.y, c.threatR);   // (covered deep, it just carries on)
+                q.calm = Math.max(0, (q.calm || 0) - dt);
+                if (bt && q.rearT <= 0 && q.calm <= 0) { q.rearT = R(1.2, 2.2); q.calm = R(6, 10); q.h = Math.atan2(bt.x - q.x, -(bt.y - q.y)); q.burst = 0; }
+                else if (bt && q.rearT <= 0 && q.burst <= 0 && q.t > 0.4) q.t = R(0.1, 0.4);   // still there: keep edging away in short bursts
+                if (q.rearT > 0) { q.rearT -= dt; q.rear = Math.min(1, q.rear + dt * 5);
+                    if (q.rearT <= 0) { const deep = bestDepthSpot(q.x, q.y, 60, 0.45, 8), a = deep ? Math.atan2(deep.x - q.x, -(deep.y - q.y)) : q.h + Math.PI; q.vx = Math.sin(a) * 30; q.vy = -Math.cos(a) * 30; q.burst = 0.6; q.t = R(2, 4);
+                        const s1 = a + Math.PI / 2, s2 = a - Math.PI / 2; q.h = Math.abs(angDiff(s1, q.h)) < Math.abs(angDiff(s2, q.h)) ? s1 : s2; }
+                    continue; }
+                q.rear = Math.max(0, q.rear - dt * 3);
+                if (q.burst > 0) { q.burst -= dt; q.leg += dt * 36; const nx = q.x + q.vx * dt, ny = q.y + q.vy * dt; if (!onLand(nx, ny)) { q.x = nx; q.y = ny; } else q.burst = 0; }
+                else if (q.t <= 0) {
+                    // to the edge: the best nearby spot for a depth of a hand's breadth; a sidestep if already there
+                    const tgt = bt ? bestDepthSpot(q.x + (q.x - bt.x) * 0.3, q.y + (q.y - bt.y) * 0.3, 60, 0.45, 8) : (d < want[0] || d > want[1]) ? bestDepthSpot(q.x, q.y, 80, (want[0] + want[1]) / 2, 8) : null;
+                    let a = tgt ? Math.atan2(tgt.x - q.x, -(tgt.y - q.y)) : R(0, 6.283);
+                    if (Math.hypot(q.x - B.cx, q.y - B.cy) > (q.stay ? 140 : 280)) a = Math.atan2(B.cx - q.x, -(B.cy - q.y));
+                    const spd = (tgt ? R(22, 34) : R(10, 18)) * (d > 0.3 ? 0.6 : 1);   // (slower, foraging, under the water) q.vx = Math.sin(a) * spd; q.vy = -Math.cos(a) * spd; q.burst = R(0.2, 0.5); q.t = tgt ? R(0.1, 0.5) : R(1, 4);
+                    const s1 = a + Math.PI / 2, s2 = a - Math.PI / 2; q.h = Math.abs(angDiff(s1, q.h)) < Math.abs(angDiff(s2, q.h)) ? s1 : s2;
+                }
+            }
+        }
+    }
+    // SHORE CRAB (Carcinus maenas, the Wadden's own — Wes's references, Sep 26 2026: from above on black, on the
+    // sand, the red phase in the water, one rearing with its claws up). The shell a broad TRAPEZOID, widest at
+    // the front, five sharp teeth down each front edge and three small lobes between the stalked eyes; mottled
+    // olive-khaki (the green phase) or orange-khaki (the red phase), now and then crusted white with barnacles;
+    // long jointed legs, orange-tan and clearly segmented, the last joint a flattened point, spanning ~2.5x the
+    // shell; stout claws, orange with dark fingers. Threatened it REARS: stops, lifts the front and spreads its
+    // claws wide and open; then backs off sideways into the water.
+    function scrabShell(ctx) {
+        ctx.beginPath(); ctx.moveTo(-0.9, -2.35);
+        ctx.lineTo(-0.5, -2.1); ctx.lineTo(-0.2, -2.4); ctx.lineTo(0.2, -2.4); ctx.lineTo(0.5, -2.1); ctx.lineTo(0.9, -2.35);   // three lobes between the eyes
+        // the right front edge: five teeth out to the widest point
+        for (let t = 1; t <= 5; t++) { const u = t / 5, x = 1.15 + u * 1.85, y = -2.3 + u * 1.3; ctx.lineTo(x - 0.15, y - 0.35); ctx.lineTo(x + 0.12, y - 0.05); }
+        ctx.quadraticCurveTo(2.9, 0.4, 1.6, 1.9); ctx.lineTo(1.0, 2.2); ctx.lineTo(-1.0, 2.2); ctx.lineTo(-1.6, 1.9); ctx.quadraticCurveTo(-2.9, 0.4, -3.0, -0.95);
+        for (let t = 5; t >= 1; t--) { const u = t / 5, x = -(1.15 + u * 1.85), y = -2.3 + u * 1.3; ctx.lineTo(x - 0.12, y - 0.05); ctx.lineTo(x + 0.15, y - 0.35); }
+        ctx.closePath();
+    }
+    function drawShoreCrab(ctx, q) {
+        const d = q.dOv != null ? q.dOv : depthAtT(q.x, q.y);
+        // under the water it fades smoothly with depth (gone by ~0.85 m), never a pop
+        const under = Math.max(0, Math.min(1, (d - 0.02) / 0.83)), vis = 1 - under * under * (3 - 2 * under);
+        if (vis < 0.02) return;
+        const P = SCRAB[q.phase || 0], k = SCRAB_SPAN / 10 * q.size, moving = q.burst > 0, lg = moving ? q.leg : 0, rear = q.rear || 0;
+        const bur = q.buried && q.bur == null ? 1 : (q.bur || 0);
+        ctx.save(); ctx.translate(q.x, q.y); ctx.rotate(q.h); ctx.scale(k, k); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+        // burying: the mud rises round it — a hump and the two eyes are what's left
+        if (bur > 0.02) { ctx.fillStyle = `rgba(70,60,40,${0.35 * bur})`; ctx.beginPath(); ctx.ellipse(0, 0, 2.8, 2.2, 0, 0, 6.283); ctx.fill();
+            ctx.fillStyle = `rgba(26,28,18,${bur})`; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.arc(sd * 0.75, -1.9, 0.28, 0, 6.283); ctx.fill(); } }
+        if (bur > 0.98) { ctx.restore(); return; }
+        ctx.globalAlpha *= vis * (1 - bur);
+        // the shadow (longer when it rears up)
+        ctx.fillStyle = 'rgba(0,0,0,0.25)'; ctx.beginPath(); ctx.ellipse(0.5 + under + rear * 0.6, 0.8 + under * 1.5 + rear * 0.9, 3.1, 2.5, 0, 0, 6.283); ctx.fill();
+        // four walking legs a side: coxa out from the shell, a long merus, then carpus and the flattened dactyl
+        for (const sd of [-1, 1]) for (let l = 0; l < 4; l++) {
+            const y0 = -0.6 + l * 0.75, sw = moving ? Math.sin(lg + l * 1.4 + (sd > 0 ? 0 : Math.PI)) * 0.3 : Math.sin(q.ph * 0.6 + l) * 0.02;
+            const a0 = [-0.75, -0.28, 0.18, 0.62][l] + sw, a1 = a0 + [-0.45, -0.2, 0.25, 0.45][l], a2 = a1 + [-0.3, -0.1, 0.2, 0.35][l];   // a radial fan: the front pairs reaching forward, the back pairs back
+            const x0 = sd * 2.3, kx = x0 + sd * Math.cos(a0) * 2.0, ky = y0 + Math.sin(a0) * 2.0, jx = kx + sd * Math.cos(a1) * 1.3, jy = ky + Math.sin(a1) * 1.3, fx = jx + sd * Math.cos(a2) * 1.0, fy = jy + Math.sin(a2) * 1.0;
+            ctx.strokeStyle = P.legDark; ctx.lineWidth = 0.95; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(kx, ky); ctx.lineTo(jx, jy); ctx.lineTo(fx, fy); ctx.stroke();
+            ctx.strokeStyle = P.leg; ctx.lineWidth = 0.65; ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(kx, ky); ctx.stroke(); ctx.lineWidth = 0.55; ctx.beginPath(); ctx.moveTo(kx, ky); ctx.lineTo(jx, jy); ctx.stroke();
+            ctx.lineWidth = 0.4; ctx.beginPath(); ctx.moveTo(jx, jy); ctx.lineTo(fx, fy); ctx.stroke();
+        }
+        // the claws: held in front (picking), or raised and spread wide, open, when it rears
+        for (const sd of [-1, 1]) {
+            const dip = moving || rear ? 0 : Math.max(0, Math.sin(q.pick + (sd > 0 ? 0 : Math.PI)));
+            const ex = sd * (1.9 + rear * 2.2), ey = -2.3 - rear * 0.8 + dip * 0.3, cx2 = sd * (1.7 - dip * 0.35 + rear * 2.6), cy2 = -3.6 - rear * 1.2 + dip * 0.5;
+            ctx.strokeStyle = P.legDark; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(sd * 1.4, -1.6); ctx.lineTo(ex, ey); ctx.lineTo(cx2, cy2); ctx.stroke();
+            ctx.strokeStyle = P.leg; ctx.lineWidth = 0.8; ctx.beginPath(); ctx.moveTo(sd * 1.4, -1.6); ctx.lineTo(ex, ey); ctx.lineTo(cx2, cy2); ctx.stroke();
+            ctx.save(); ctx.translate(cx2, cy2); ctx.rotate(sd * (0.25 + rear * 0.5) - dip * sd * 0.2);
+            ctx.fillStyle = P.claw; ctx.beginPath(); ctx.ellipse(0, -0.5, 0.95, 1.4, 0, 0, 6.283); ctx.fill(); ctx.strokeStyle = P.legDark; ctx.lineWidth = 0.18; ctx.stroke();
+            const gape = 0.15 + rear * 0.45;   // the fingers, dark-tipped, open in the threat
+            ctx.fillStyle = P.finger; for (const f of [-1, 1]) { ctx.beginPath(); ctx.moveTo(f * 0.45, -1.6); ctx.quadraticCurveTo(f * (0.55 + gape), -2.5, f * gape * 0.6, -3.1); ctx.lineTo(f * 0.05, -1.7); ctx.closePath(); ctx.fill(); }
+            ctx.restore();
+        }
+        // the shell, mottled, the teeth; a rearing crab tips up, so its shell foreshortens
+        ctx.save(); ctx.scale(1, 1 - rear * 0.18);
+        ctx.fillStyle = P.shell; scrabShell(ctx); ctx.fill();
+        ctx.save(); scrabShell(ctx); ctx.clip();
+        ctx.fillStyle = P.mottle; ctx.globalAlpha *= 0.55; for (let m = 0; m < 9; m++) { const x = Math.sin(m * 2.3 + (q.i || 0)) * 1.9, y = Math.cos(m * 1.7 + (q.i || 0)) * 1.4; ctx.beginPath(); ctx.ellipse(x, y, 0.55, 0.35, m, 0, 6.283); ctx.fill(); } ctx.globalAlpha /= 0.55;
+        ctx.fillStyle = P.pale; ctx.globalAlpha *= 0.35; ctx.beginPath(); ctx.ellipse(-0.7, 0.2, 0.9, 1.1, 0.4, 0, 6.283); ctx.fill(); ctx.beginPath(); ctx.ellipse(0.7, 0.2, 0.9, 1.1, -0.4, 0, 6.283); ctx.fill(); ctx.globalAlpha /= 0.35;   // the pale H of the shell's regions
+        if (q.crust) { ctx.fillStyle = '#e8e2d2'; for (let m = 0; m < 6; m++) { ctx.beginPath(); ctx.arc(-1.2 + (m % 3) * 0.5, -0.4 + Math.floor(m / 3) * 0.6, 0.32, 0, 6.283); ctx.fill(); } }   // barnacles
+        ctx.restore();
+        ctx.strokeStyle = 'rgba(40,30,15,0.55)'; ctx.lineWidth = 0.18; scrabShell(ctx); ctx.stroke();
+        ctx.fillStyle = '#1a1712'; for (const sd of [-1, 1]) { ctx.beginPath(); ctx.arc(sd * 0.95, -2.45, 0.3, 0, 6.283); ctx.fill(); }   // the stalked eyes
+        ctx.restore();
+        if (under > 0.05) { ctx.fillStyle = `rgba(${waterTint()},${0.5 * under})`; ctx.beginPath(); ctx.ellipse(0, 0, 5.5, 4.5, 0, 0, 6.283); ctx.fill(); }
+        ctx.restore();
+    }
+    function drawFlatsLand(ctx) {
+        // (drawn with the perched: over the dry flats and the land; the underwater ones dimmed by depth)
+        for (const B of scrabBeds) if (onCam(B.cx, B.cy, 200)) for (const q of B.crabs) drawShoreCrab(ctx, q);
+        for (const C of gsealCols) if (onCam(C.cx, C.cy, 300)) for (const s of C.seals) { const bl = s.blend || 0;
+            if (bl < 0.99) { ctx.save(); ctx.globalAlpha *= 1 - bl; drawGreySeal(ctx, s); ctx.restore(); }
+            if (bl > 0.01) { ctx.save(); ctx.globalAlpha *= bl; drawGreySealSwim(ctx, s); ctx.restore(); } }
+        for (const F of spoonFlocks) if (onCam(F.cx, F.cy, 300) || F.mode === 'fly') for (const b of F.birds) if (b.mode === 'wade') drawSpoonbill(ctx, b);
+        for (const F of avoFlocks) if (onCam(F.cx, F.cy, 300) || F.mode === 'fly') for (const b of F.birds) if (b.mode === 'wade') drawAvocet(ctx, b);
+    }
+    function drawFlatsAir(ctx) {
+        for (const F of spoonFlocks) for (const b of F.birds) if (b.mode !== 'wade' && onCam(b.x, b.y, 100)) drawSpoonbill(ctx, b);
+        for (const F of avoFlocks) for (const b of F.birds) if (b.mode !== 'wade' && onCam(b.x, b.y, 100)) drawAvocet(ctx, b);
+    }
+
     // ══ OTTER POINT (designed Sep 26 2026; Wes chose the four) ═══════════════════════════════
     // Monterey's kelp coast. SEA OTTERS raft in the kelp beds on their backs — wrapped in the
     // fronds so they don't drift, grooming, cracking urchins on their chests, a mother with her
@@ -7052,7 +8103,12 @@
     // against the deep blue, the flippers turquoise-white; never the dark grey of a humpback.)
     const BLUE = { body: '#b7bfcc', mottle: '#dde3ea', dark: '#8f99aa', wet: '#b3bac8', under: '#c2ccd8', fin: '#c4ece8', fluke: '#c5d1dd', guard: '#d9dfe7', pleat: '#d9ccc4' };
     let foams = [], blood = [], kelpBeds = [], seaOtterRafts = [], slHauls = [], slGroups = [], whites = [], bluePods = [], blueBlows = [], krill = [], huntCool = 8;
-    const onCam = (x, y, pad) => { const c = state.camera; if (!c) return true; return Math.abs(x - c.x) < 760 + (pad || 0) && Math.abs(y - c.y) < 520 + (pad || 0); };
+    // On the player's screen, or near it. The view is the canvas (1 u = 1 px) ROTATED about the camera by
+    // camera.rotation, so the test is a circle round the camera through the canvas corners — a fixed 760x520 box
+    // (as this was) culled animals still on screen at the corners of a wide or rotated view, and Wes saw the
+    // Clubhouse terns 'just disappear' (Sep 27 2026).
+    const onCam = (x, y, pad) => { const c = state.camera; if (!c) return true; const cv = typeof canvas !== 'undefined' && canvas ? canvas : null;
+        const R = cv ? Math.hypot(cv.width, cv.height) / 2 : 920, dx = x - c.x, dy = y - c.y, r = R + (pad || 0); return dx * dx + dy * dy < r * r; };
     const islandById = (id) => ((state.course && state.course.islands) || []).find(s => s.id === id);
     function polyCentre(V) { let x = 0, y = 0; for (const p of V) { x += p.x; y += p.y; } return { x: x / V.length, y: y / V.length }; }
     function polyEdgeDist(x, y, V) {
@@ -8469,12 +9525,12 @@
         // The Sailing School's ducklings (school.js owns their motion).
         drawDucklings,
         // For tests and the venue card.
-        debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, leaps, shoals, poppers, fishers, runs, soarers, rompers, whalePods, blows, splashes, riders, flyfish, gliders, prints, flyPatches, stripers, condors, bands, coyotes, boilsHit, orcaPods, penguinColonies: colonies2, floeGroups, swimmers, treks, lseals, ternFlocks, visited: [...visited], jellyBloom, mantas, foxFlocks, hawksbills, dugongs, blood, foams, igHeaps, crabBeds, boobyFlocks, boobyLines, frigates, frigFish, hammerSchools, seaOtterRafts, slHauls, slGroups, whites, bluePods, blueBlows, krill, huntCool, woken: [...lurkWoken], feats: [...feats] }),
+        debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, leaps, shoals, poppers, fishers, runs, soarers, rompers, whalePods, blows, splashes, riders, flyfish, gliders, prints, flyPatches, stripers, condors, bands, coyotes, boilsHit, orcaPods, penguinColonies: colonies2, floeGroups, swimmers, treks, lseals, ternFlocks, visited: [...visited], jellyBloom, mantas, foxFlocks, hawksbills, dugongs, blood, foams, igHeaps, crabBeds, boobyFlocks, boobyLines, frigates, frigFish, hammerSchools, gsealCols, spoonFlocks, avoFlocks, scrabBeds, clubCorms, velFleets, mackBoils, clubTerns, clubGulls, seaOtterRafts, slHauls, slGroups, whites, bluePods, blueBlows, krill, huntCool, woken: [...lurkWoken], feats: [...feats] }),
         forceBoil: (x, y) => { boil = { x, y, t: 0, life: 45, seed: 1 }; if (flight) flight.mode = 'transit'; },
         // The drawing functions, for a look-bench (eval/_wildlife_bench.js) — not used by the game.
         art: { drawBoilAt: (ctx, x, y, t) => { const o = boil, oT = T; boil = { x, y, t: 10, life: 60, seed: 3 }; T = t; drawBoil(ctx); boil = o; T = oT; }, drawGullFlying, drawGullPerched, drawPelicanFlying, drawPelicanSitting, drawPorpoise,
                drawTurtle, drawTurtleUnder, drawGrebe, drawLoon, drawBeaver, drawMoose, drawSlap, drawWakeTrail, drawDuckling, drawDucklings,
-               drawCruiser, seaTurtleShape, eagleRayShape, reefSharkShape, drawGator, drawEgret, drawAnhinga, drawFrog, drawLeap, drawShoal, drawSeal, drawSealHead, drawSealUnder, drawBear, drawSockeye, drawEagle, drawOtter, drawWhale, drawBlow, drawSplash, drawSpinner, drawFlyfish, drawAlbatross, drawPrint, drawMahi, setT: (t) => { T = t; }, drawStriperBoil, drawStriper, drawCondor, drawBighorn, drawCoyote, drawOrca, drawSwimmers, drawLeopardSeal, drawTern, drawTreks, PENG: () => PENG, drawGoldJelly, drawManta, drawFlyingFox, drawHawksbill, drawTurtleTracks, drawDugong, drawArcticSprite, arcticImg, drawIguana, drawCrab, drawBooby, drawFrigate, drawFrigFish, drawHammer, drawSeaOtter, drawSeaOtterPup, drawSeaLion, drawWhiteShark, drawBlueWhale, drawBlueBlow, drawKrill },
+               drawCruiser, seaTurtleShape, eagleRayShape, reefSharkShape, drawGator, drawEgret, drawAnhinga, drawFrog, drawLeap, drawShoal, drawSeal, drawSealHead, drawSealUnder, drawBear, drawSockeye, drawEagle, drawOtter, drawWhale, drawBlow, drawSplash, drawSpinner, drawFlyfish, drawAlbatross, drawPrint, drawMahi, setT: (t) => { T = t; }, onCam: (x, y, pad) => onCam(x, y, pad), drawStriperBoil, drawStriper, drawCondor, drawBighorn, drawCoyote, drawOrca, drawSwimmers, drawLeopardSeal, drawTern, drawTreks, PENG: () => PENG, drawGoldJelly, drawManta, drawFlyingFox, drawHawksbill, drawTurtleTracks, drawDugong, drawArcticSprite, arcticImg, drawIguana, drawCrab, drawBooby, drawFrigate, drawFrigFish, drawGreySeal, drawGreySealSwim, drawGullFloat, drawGullFlying, drawCormorant, drawVelellaFleet, drawMackBoil, drawSpoonbill, drawAvocet, drawShoreCrab, drawHammer, drawSeaOtter, drawSeaOtterPup, drawSeaLion, drawWhiteShark, drawBlueWhale, drawBlueBlow, drawKrill },
         // Otter Point: set a shark hunting a given sea lion group now (probes and the bench)
         forceHunt: (wi, gi) => { const W = whites[wi], G = slGroups[gi]; if (!W || !G) return false; const q = G.members.find(m => !m.gone); W.mode = 'stalk'; W.t = 7; W.target = { G, q }; W.x = q.x - 300; W.y = q.y; return true; },
     };

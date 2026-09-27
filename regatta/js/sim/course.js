@@ -261,6 +261,44 @@ function checkRiverRun() {
     }
     _riverRun.last = here;
 }
+// LIGHTHOUSE COVE — Scoop's "Under the Bridges" (Wes, Sep 26 2026): sail under every bridge in
+// the Cove in one race, then finish. A bridge is any placed kind carrying `chartSpan` (the three
+// bridge kinds in venuedoc.js), so one Wes adds later joins the set; its gate is the deck's
+// centreline, end to end along sprite-up (0.46 of the drawn size each way, the bakes' 92% fill).
+// Only the towers are hard, so crossing that line anywhere a hull can reach is passing under.
+// Wes's 25 recorded Cove races crossed 0-2, never the north one (580 u past mark 1):
+// all three is a deliberate detour.
+let _coveBridges = null;   // { key: course, gates: [{id, a, b}], last: {x,y}, under: Set } for the race in progress
+function _coveBridgeGates() {
+    const doc = state.course && state.course.doc, VD = window.VenueDoc;
+    if (!doc || !VD) return [];
+    const out = [];
+    for (const p of doc.props || []) {
+        const K = VD.PROP_KINDS[p.kind];
+        if (!K || !K.chartSpan) continue;
+        const L = 0.46 * K.world * (p.scale || 1), h = p.heading || 0, ux = Math.sin(h), uy = -Math.cos(h);
+        out.push({ id: p.id, a: { x: p.x - ux * L, y: p.y - uy * L }, b: { x: p.x + ux * L, y: p.y + uy * L } });
+    }
+    return out;
+}
+function checkCoveBridges() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== 'bay' || !me || !me.isPlayer
+        || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _coveBridges = null; return; }
+    if (!_coveBridges || _coveBridges.key !== state.course) _coveBridges = { key: state.course, gates: _coveBridgeGates(), last: null, under: new Set(), done: false };
+    const B = _coveBridges, here = { x: me.x, y: me.y };
+    if (B.last && !B.done) {
+        for (const g of B.gates) {
+            if (B.under.has(g.id) || !_routeGateCrossed(B.last, here, g.a, g.b)) continue;
+            B.under.add(g.id);
+            if (B.gates.length && B.under.size >= B.gates.length) {
+                B.done = true;
+                if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'bay:bridges' });
+            }
+        }
+    }
+    B.last = here;
+}
 if (typeof GameEvents !== 'undefined') GameEvents.on('player-contact', (e) => {
     const me = state.boats && state.boats[0];
     if (!state.course || state.course.venueKey !== RIVER_RUN.venue || !me || e.isFloe || !_riverOnLastLeg(me)) return;
@@ -446,6 +484,81 @@ function checkVolcanicRun() {
         if (R.gates.length && R.hit.size === R.gates.length) { R.done = true; if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'volcanic:outer' }); }
     }
     R.last = here;
+}
+// SPOONBILL FLATS (designed Sep 26 2026, Wes) — the tide's flats and the passages over them.
+//   flats:mud        value = seconds the player has sailed AFLOAT over the flats — ground a boat would sit
+//                    aground on at low water (Tide.groundAt > low water − draft; the cuts are dredged to
+//                    −1.35 m, the channel's rim is −1.6), from the gun. Skitter's "Mud Runner" is 50 s and never
+//                    aground. Wes's Sep 16 laps: 39-41 s; the bot fleet 2 of 54 clean at 50+ (eval/_flats_fleet_feats.js).
+//   flats:route:<id> the player sailed onto a passage's FLAT and stayed afloat on it `hold` seconds. A
+//                    passage's flat is the drying ground whose nearest marked line (doc.tide.passages,
+//                    Wes edits them in editor.html) is that passage's, within `reach` u — the lines are
+//                    where the cuts are, not lanes: Wes crossed the first loop's flat diagonally between
+//                    the wantij and the gamble. The banner names the flat as you sail onto it
+//                    ('flats-passage', js/ui/screens.js), so what you see is what counts. Scythe's
+//                    "Chart the Flats" collects the six named ones across races (FLATS_PASSAGES).
+//   flats:aground    the player touched the mud while racing (it also costs the clean star — js/tide.js touches).
+const FLATS_RUN = { venue: 'flats', reach: 450, hold: 4 };
+// the flats: ground a boat sits aground on at low water
+const _flatsZ = () => { const T = state.tide; return T ? T.mid - T.amp - T.draft : -1.5; };
+let _flatsRun = null;   // { lines, cur, curS, done:Set, mud, sent } for the race in progress
+function _flatsDist(x, y, P) {
+    let best = 1e9;
+    for (let i = 1; i < P.length; i++) { const ax = P[i - 1][0], ay = P[i - 1][1], vx = P[i][0] - ax, vy = P[i][1] - ay, L2 = vx * vx + vy * vy || 1;
+        let u = ((x - ax) * vx + (y - ay) * vy) / L2; u = u < 0 ? 0 : u > 1 ? 1 : u; const d = Math.hypot(x - ax - u * vx, y - ay - u * vy); if (d < best) best = d; }
+    return best;
+}
+// which passage's flat a point lies on (null in the channel, or away from every line)
+function _flatsPassageAt(x, y, lines) {
+    if (typeof Tide === 'undefined' || !Tide.groundAt || Tide.groundAt(x, y) <= _flatsZ()) return null;
+    let best = null, bd = FLATS_RUN.reach;
+    for (const ln of lines) { const d = _flatsDist(x, y, ln.pts); if (d < bd) { bd = d; best = ln; } }
+    return best;
+}
+function checkFlatsRun(dt) {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== FLATS_RUN.venue || !me || !me.isPlayer
+        || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _flatsRun = null; return; }
+    if (!_flatsRun) { const P = ((state.course.doc && state.course.doc.tide && state.course.doc.tide.passages) || []).filter(p => p && p.id && Array.isArray(p.pts) && p.pts.length > 1);
+        _flatsRun = { lines: P.map(p => ({ id: p.id, name: p.name || p.id, pts: p.pts })), cur: null, curS: 0, done: new Set(), mud: 0, sent: 0 }; }
+    const R = _flatsRun, emit = (id, value) => { if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', value === undefined ? { id } : { id, value }); };
+    const ln = me.aground ? null : _flatsPassageAt(me.x, me.y, R.lines);
+    if (typeof Tide !== 'undefined' && Tide.groundAt && !me.aground && Tide.groundAt(me.x, me.y) > _flatsZ()) R.mud += dt;
+    if (R.mud - R.sent >= 0.5) { R.sent = Math.floor(R.mud * 2) / 2; emit('flats:mud', R.sent); }
+    if (ln !== R.cur) {
+        R.cur = ln; R.curS = 0;
+        if (ln && typeof FLATS_PASSAGES !== 'undefined' && FLATS_PASSAGES.includes(ln.id) && typeof GameEvents !== 'undefined') GameEvents.emit('flats-passage', { id: ln.id, name: ln.name, sailed: R.done.has(ln.id) });
+    }
+    if (ln) { R.curS += dt; if (!R.done.has(ln.id) && R.curS >= FLATS_RUN.hold) { R.done.add(ln.id); emit('flats:route:' + ln.id); } }
+}
+if (typeof GameEvents !== 'undefined') GameEvents.on('player-aground', () => {
+    if (!state.course || state.course.venueKey !== FLATS_RUN.venue || !state.race || state.race.status !== 'racing') return;
+    GameEvents.emit('player-feat', { id: 'flats:aground' });
+});
+// CLUBHOUSE POINT (designed Sep 26 2026, Wes) — the eval anchor, so nothing here touches a boat; this only
+// watches the player's own crossings:
+//   seatrials:everycan  Lateen's "Every Can": in one race, round BOTH top marks (the windward gate crossed near
+//                       its port can on one lap and its starboard can on the other) and use BOTH halves of the
+//                       bottom line across its three crossings (the start, the lap-one leeward gate, the finish).
+//                       6 of Wes's 27 laps here would have earned it — the limit is the two top cans.
+const SEA_RUN = { venue: 'seatrials', topY: -4000, botY: 0, reach: 900 };
+let _seaRun = null;   // { last, top:Set, bot:Set, done } for the race in progress
+function checkSeaTrialsRun() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== SEA_RUN.venue || !me || !me.isPlayer
+        || state.race.status !== 'racing') { if (!state.race || state.race.status !== 'racing') _seaRun = null; return; }
+    if (!_seaRun) _seaRun = { last: null, top: new Set(), bot: new Set(), done: false };
+    const R = _seaRun, here = { x: me.x, y: me.y };
+    if (R.closed) return;   // (the frame the finish is crossed still counts — it is one of the three bottom crossings)
+    if (R.last && !R.done) {
+        for (const [yy, set] of [[SEA_RUN.topY, R.top], [SEA_RUN.botY, R.bot]]) {
+            if ((R.last.y - yy) * (here.y - yy) < 0) { const xc = R.last.x + (here.x - R.last.x) * (yy - R.last.y) / (here.y - R.last.y); if (Math.abs(xc) < SEA_RUN.reach) set.add(xc < 0 ? 'L' : 'R'); }
+        }
+        // (the finish is the last crossing: count it, then stop)
+        if (R.top.size === 2 && R.bot.size === 2 && typeof GameEvents !== 'undefined') { R.done = true; GameEvents.emit('player-feat', { id: 'seatrials:everycan' }); }
+    }
+    R.last = here;
+    if (me.raceState.finished) R.closed = true;
 }
 // GLOWTIDE STRAIT (designed Sep 26 2026) — the venue's question is "follow the glow, or trust
 // your own line?", and Veil's objective is the answer:

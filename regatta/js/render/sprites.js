@@ -836,6 +836,18 @@ const SPIN_LOOKS = {
     Vent: 'rays',
     Basalt: 'fiverays',
     Soot: 'tricolour',
+    Scythe: 'crosshalves',
+    Zee: 'halves',
+    // The shark saga's bench (Sep 26 2026) — the less-used patterns, none shared among the nine.
+    Gape: 'sunburst',
+    Dapple: 'fiverays',
+    Woebegone: 'chevron',
+    Bruiser: 'tricolour',
+    Mitt: 'triangle',
+    Relic: 'thirds',
+    Goblin: 'rays',
+    Nib: 'gores',
+    Lash: 'halves',
 };
 // colorC is OPTIONAL and falls back to colorB, so every pattern authored before the
 // third colour existed renders byte-identically. A region is either a bare function

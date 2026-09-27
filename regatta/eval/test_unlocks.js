@@ -69,7 +69,7 @@ console.log('enforcement');
 console.log('the rulebook');
 {
     const w = world(); w.__UNLOCKS = 'on';
-    const unshipped = [];   // objectives live before the art — see Unlocks.shipped
+    const unshipped = ['Curl', 'Rake'];   // Spoonbill Flats' four, art owed (Sep 26 2026)   // objectives live before the art — see Unlocks.shipped
     for (const a of w.Unlocks.ACHIEVEMENTS) ok(unshipped.includes(a.char) || w.AI_CONFIG.some(c => c.name === a.char), `${a.char} is in the roster`);
     ok(w.Unlocks.ACHIEVEMENTS.every(a => a.hidden === undefined), 'no objective is hidden');
     ok(w.Unlocks.ACHIEVEMENTS.every(a => typeof w.Unlocks.hintOf(a) === 'string' && w.Unlocks.hintOf(a).length > 10), 'every objective is spelled out');
@@ -214,18 +214,30 @@ console.log('Lighthouse Cove');
     w.recordsEligible = () => true;
     w.Series = { raceFacts: () => ({ stars: 4 }) };
     const cove = w.Unlocks.forVenue('bay').map(a => a.char).join(',');
-    ok(cove === 'Roll,Wake,Zeffir,Plunge,Piper,Scoop', 'six Cove objectives: ' + cove);
+    ok(cove === 'Roll,Wake,Scoop,Plunge,Piper,Zeffir', 'six Cove objectives (Scoop the bridges, Zeffir the gulls): ' + cove);
     ok(w.Unlocks.hintOf(w.Unlocks.achievementFor('Plunge')).includes('4:15'), 'the target time is spelled out: ' + w.Unlocks.hintOf(w.Unlocks.achievementFor('Plunge')));
     // Pretend Wake's art has not shipped, to check an earned-before-art character waits.
     const wakeCfg = w.AI_CONFIG.splice(w.AI_CONFIG.findIndex(c => c.name === 'Wake'), 1)[0];
     newRace(w);
     w.GameEvents.emit('player-feat', { id: 'bay:bow-cross' });
     w.GameEvents.emit('player-feat', { id: 'bay:gulls' });
-    w.GameEvents.emit('player-feat', { id: 'bay:bait-boil' });
+    w.GameEvents.emit('player-feat', { id: 'bay:bridges' });
     const order = fleet(w, [['Bixby', { me: true, time: 240 }], ['Bruce', {}]]);
     w.state.race.timer = 999;
     const got = w.Unlocks.poll(order);
     for (const n of ['Roll', 'Wake', 'Zeffir', 'Plunge', 'Piper', 'Scoop']) ok(got.includes(n), `${n} earned`);
+    // The bait boil is scenery now: it alone earns nobody (Sep 26 2026).
+    {
+        const wb = world(); wb.__UNLOCKS = 'on';
+        wb.window.VenueDoc = { get: (k) => (k === 'bay' ? { records: { provisional: 255 } } : null) };
+        wb.recordsEligible = () => true; wb.Series = { raceFacts: () => ({ stars: 0 }) };
+        newRace(wb);
+        wb.GameEvents.emit('player-feat', { id: 'bay:bait-boil' });
+        const ob = fleet(wb, [['Bruce', {}], ['Bixby', { me: true, time: 240 }]]);
+        wb.state.race.timer = 999;
+        const gb = wb.Unlocks.poll(ob);
+        ok(!gb.includes('Scoop') && !gb.includes('Zeffir'), 'a bait boil alone earns neither Scoop nor Zeffir: ' + gb.join(','));
+    }
     ok(!w.Unlocks.unseen().includes('Wake'), 'Wake earned but no ceremony until he ships');
     ok(w.Unlocks.isEarned('Wake'), 'and remembered');
     w.AI_CONFIG.push(wakeCfg);

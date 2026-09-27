@@ -11,12 +11,19 @@
 
     python3 regatta/art/batch_generate.py sync breeze fathom
 
-WHY gpt-image-1.5 AND NOT gpt-image-2: only the 1.5 line honours
-`background: "transparent"` and returns a real alpha channel. gpt-image-2 accepts
-`auto` and `opaque` only. `ingest.py` hard-fails on non-transparent corners, and
-every hand-run this pipeline has done so far lost time to a background-removal
-step that repainted the matte instead of cutting it. Native alpha removes that
-step entirely, so the model choice is load-bearing rather than a preference.
+THE MODEL MUST RETURN REAL ALPHA. `ingest.py` hard-fails on non-transparent corners,
+and every hand-run background-removal step repainted the matte instead of cutting it,
+so a model that cannot honour `background: "transparent"` is not usable here.
+  · gpt-image-2.5-sunburst (the default since Sep 26 2026, Wes's pick for regenerating the
+    roster): OpenAI's most capable image model; transparent PNG is documented for both
+    2.5 models, and it takes `quality` up to `xhigh` / `max`. It bills BY TOKEN ($30/M
+    image output, $5/M text input), so the per-image cost is read back off each
+    response's `usage` and printed, rather than guessed. Its model page lists only the
+    images endpoints, not Batch, so use `sync` until `submit` is proved on it.
+  · gpt-image-1.5 (`--model gpt-image-1.5`): the old pin, per-image priced (UNIT_COST).
+  · gpt-image-2 returns `auto` / `opaque` only — never use it here.
+`--out` puts a run in its own folder under art/candidates/, so two models or two
+quality levels can sit side by side for a comparison.
 
 THE PROMPT IS NOT WRITTEN HERE. It comes from `prompt.py.build()`, the same
 assembly the manual flow uses, so the two can never drift. The Images API has no
@@ -54,11 +61,13 @@ CANDIDATES = ROOT / "candidates"
 STATE = ROOT / ".batch_state.json"
 API = "https://api.openai.com/v1"
 
-MODEL = "gpt-image-1.5"          # the only current model that returns true alpha
+MODEL = "gpt-image-2.5-sunburst" # default; --model overrides (see the docstring)
+TOKEN_PRICED = {"gpt-image-2.5-sunburst": {"out": 30.0, "text_in": 5.0},     # $ per 1M tokens
+                "gpt-image-2.5-flare": None}                                 # unpriced here
 SIZE = "1024x1024"
 QUALITY = "high"                 # transparency is unreliable below medium
 # high / medium / low per 1024x1024 image; Batch API is half price.
-UNIT_COST = {"high": 0.133, "medium": 0.034, "low": 0.009}
+UNIT_COST = {"high": 0.133, "medium": 0.034, "low": 0.009}   # gpt-image-1.5 only
 
 SPAN, CX, CY = 0.86, 0.51, 0.50  # roster framing, measured off the shipped set
 
@@ -82,9 +91,22 @@ def size_for(asset):
 
 
 def cost_of(size, quality, batched):
-    """UNIT_COST is quoted per 1024x1024; the API bills output area, so scale by it."""
+    """UNIT_COST is quoted per 1024x1024; the API bills output area, so scale by it.
+    None for a token-priced model or quality: that cost is only known afterwards."""
+    if MODEL != "gpt-image-1.5" or quality not in UNIT_COST:
+        return None
     w, h = (int(v) for v in size.split("x"))
     return UNIT_COST[quality] * (w * h) / (1024 * 1024) * (0.5 if batched else 1.0)
+
+
+def usage_cost(usage):
+    """Dollars for one response, from its `usage` block, for a token-priced model."""
+    rate = TOKEN_PRICED.get(MODEL)
+    if not usage or not rate:
+        return None
+    out = usage.get("output_tokens") or 0
+    inp = usage.get("input_tokens") or 0
+    return out * rate["out"] / 1e6 + inp * rate["text_in"] / 1e6
 
 
 KEYFILE = pathlib.Path.home() / ".config" / "openai" / "regatta-key"
@@ -225,7 +247,7 @@ def master_of(asset, profiles):
 
 def save(key, png_bytes, dest_dir=None, asset=None, profiles=None):
     dest_dir = dest_dir or CANDIDATES
-    dest_dir.mkdir(exist_ok=True)
+    dest_dir.mkdir(parents=True, exist_ok=True)
     m = master_of(asset, profiles)
     canvas, stripped, aspect = normalise(png_bytes, m)
     dest = dest_dir / f"{key}.png"
@@ -260,7 +282,17 @@ def estimate(keys, quality, batched, by_key=None):
     mixed selection no longer has one unit price."""
     sizes = [size_for(by_key[k]) if by_key else SIZE for k in keys]
     per = {s: cost_of(s, quality, batched) for s in set(sizes)}
+    if any(v is None for v in per.values()):
+        return None, per
     return sum(per[s] for s in sizes), per
+
+
+def estimate_line(n, quality, how, total, per):
+    if total is None:
+        return (f"\n{n} image(s), {MODEL} {quality}, {how} — billed by token; the real cost "
+                f"of each is printed as it comes back\n")
+    breakdown = ", ".join(f"{s} ~${c:.3f} each" for s, c in sorted(per.items()))
+    return f"\n{n} image(s), {MODEL} {quality}, {how} ({breakdown}) = ~${total:.2f}\n"
 
 
 # ── commands ───────────────────────────────────────────────────────────────────
@@ -268,9 +300,7 @@ def cmd_submit(args):
     m, by_key = load()
     keys = select(args, by_key)
     total, per = estimate(keys, args.quality, batched=True, by_key=by_key)
-    breakdown = ", ".join(f"{s} ~${c:.3f} each" for s, c in sorted(per.items()))
-    print(f"\n{len(keys)} image(s), {MODEL} {args.quality}, Batch API "
-          f"({breakdown}) = ~${total:.2f}\n")
+    print(estimate_line(len(keys), args.quality, "Batch API", total, per))
     lines = []
     for k in keys:
         lines.append(json.dumps({
@@ -367,9 +397,8 @@ def cmd_sync(args):
     m, by_key = load()
     keys = select(args, by_key)
     total, per = estimate(keys, args.quality, batched=False, by_key=by_key)
-    breakdown = ", ".join(f"{s} ~${c:.3f} each" for s, c in sorted(per.items()))
-    print(f"\n{len(keys)} image(s), {MODEL} {args.quality}, direct "
-          f"({breakdown}) = ~${total:.2f}\n")
+    print(estimate_line(len(keys), args.quality, "direct", total, per))
+    out_dir = CANDIDATES / args.out if args.out else CANDIDATES
     if args.dry_run:
         print("--dry-run: nothing sent.")
         return
@@ -395,22 +424,32 @@ def cmd_sync(args):
                     except ValueError:
                         msg = r.text[:600]
                     return k, RuntimeError(f"{r.status_code}: {msg}")
-                return k, base64.b64decode(r.json()["data"][0]["b64_json"])
+                j = r.json()
+                return k, (base64.b64decode(j["data"][0]["b64_json"]), j.get("usage"))
             except requests.RequestException as exc:
                 # Record it. "gave up after retries" with no reason is not a diagnosis.
                 last = f"{type(exc).__name__}: {str(exc)[:160]}"
                 time.sleep(min(90, 2 ** attempt * 8))
         return k, RuntimeError(f"gave up after 6 attempts — last: {last}")
 
+    spent, counted = 0.0, 0
     with ThreadPoolExecutor(max_workers=args.workers) as ex:
         for k, res in ex.map(one, keys):
             if isinstance(res, Exception):
                 print(f"  {k:12s} FAILED: {res}")
             else:
+                png, usage = res
+                c = usage_cost(usage)
+                if c is not None:
+                    spent += c; counted += 1
+                    print(f"  {k:12s} ${c:.3f}  ({usage.get('output_tokens')} image tokens out, "
+                          f"{usage.get('input_tokens')} in)")
                 try:
-                    save(k, res, asset=by_key.get(k), profiles=m["profiles"])
+                    save(k, png, dest_dir=out_dir, asset=by_key.get(k), profiles=m["profiles"])
                 except Exception as exc:                            # noqa: BLE001
                     print(f"  {k:12s} FAILED to normalise: {exc}")
+    if counted:
+        print(f"\nspent ${spent:.2f} on {counted} image(s) — ${spent / counted:.3f} each")
     print("\nNothing shipped was touched. Next: python3 regatta/art/review.py sheet")
 
 
@@ -425,7 +464,8 @@ def main():
                        help="portraits whose jacket collides with the animal's colour")
         p.add_argument("--all-portraits", action="store_true")
         p.add_argument("--threshold", type=float, default=25.0)
-        p.add_argument("--quality", choices=["low", "medium", "high"], default=QUALITY)
+        p.add_argument("--quality", choices=["low", "medium", "high", "xhigh", "max"], default=QUALITY)
+        p.add_argument("--model", default=MODEL, help=f"image model (default {MODEL})")
         p.add_argument("--dry-run", action="store_true")
 
     s = sub.add_parser("submit", help="queue a Batch API job (half price, up to 24h)")
@@ -443,9 +483,12 @@ def main():
     s = sub.add_parser("sync", help="generate now, no batch (full price)")
     common(s)
     s.add_argument("--workers", type=int, default=4)
+    s.add_argument("--out", help="subfolder of art/candidates/ for this run (e.g. sunburst-xhigh)")
     s.set_defaults(fn=cmd_sync)
 
     args = ap.parse_args()
+    global MODEL
+    MODEL = getattr(args, "model", MODEL)
     args.fn(args)
 
 

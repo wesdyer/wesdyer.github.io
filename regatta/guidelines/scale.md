@@ -126,6 +126,13 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Blue-footed booby (span) | Emberfall | 1.5 m | 15 | ~44 (×3) | 44 | ✓ Sep 26 |
 | Great frigatebird (span) | Emberfall | 2.2 m | 22 | ~64 (the albatross's) | 64 | ✓ Sep 26 |
 | Scalloped hammerhead | Emberfall | 2.3 m (Galápagos schooling adults) | 30 | ~70 (×3; size 0.8–1.12) | ~70 | ✓ Sep 26 (re-drawn) |
+| Grey seal (cow / bull) | Spoonbill Flats | 2.0 m (2.6 m) | 20 (26) | ~46 (broad, ~2×; bulls ×1.05–1.22) | ~40 (~53) | ✓ Sep 26 |
+| Roseate spoonbill (span) | Spoonbill Flats | 0.8 m (1.3 m) | 8 (13) | ~26 (×3; span 40) | ~26 (40) | ✓ Sep 26 |
+| Pied avocet (span) | Spoonbill Flats | 0.44 m (0.75 m) | 4 (8) | 20 (the floor; span 34) | ~20 (34) | ✓ Sep 26 |
+| Shore crab (legs) | Spoonbill Flats | 15 cm | 1.5 | ~9 (as the Sally Lightfoot, Wes) | ~7–10 | ✓ Sep 26 (re-drawn) |
+| Great cormorant (span) | Clubhouse Point | 0.9 m (1.4 m) | 9 (14) | ~26 (×3; span 40) | ~26 (40) | ✓ Sep 26 |
+| By-the-wind sailor | Clubhouse Point | 7 cm | 0.7 | ~6 (a mass in windrows, rule 7) | ~6 | ✓ Sep 26 |
+| Atlantic mackerel | Clubhouse Point | 35 cm | 3.5 | ~9 (a ball of dozens) | ~9 | ✓ Sep 26 |
 | Sea otter (on its back) | Otter Point | 1.3 m | 13 | ~30 (broad floater, ~2.3×) | 32 | ✓ Sep 26 |
 | California sea lion (cow / bull) | Otter Point | 1.9 m (2.4 m) | 19 (24) | ~38 (2×: about half the white shark, Wes's refs; slim, a quarter as wide as long) | ~39 (~49) | ✓ Sep 26 |
 | Great white shark | Otter Point | 5 m | 50 | ~76 (1.5×: bigger than a hull ON PURPOSE — the venue's showpiece) | 76 | ✓ Sep 26 |

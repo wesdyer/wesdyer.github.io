@@ -407,6 +407,10 @@ const TIDE = {
     }
     // After the position integrates: a hull in less than her draft is aground — put her
     // back, take her way, and let the crew shove her downhill until the water returns.
+    // Groundings per race, keyed by the boat's raceState (Wes, Sep 26 2026: at the Flats running
+    // aground costs the CLEAN star). A WeakMap, never a raceState field — those are in the trace hash.
+    const touchLog = new WeakMap();
+    function touches(rs) { return (rs && touchLog.get(rs)) || 0; }
     function afterMove(boat, preX, preY, dt) {
         const T = state.tide;
         if (!T) return;
@@ -424,8 +428,11 @@ const TIDE = {
                 // bar, ten seconds, for a channel sailor that brushed its edge at low water.
                 const F = T.field, gx = fieldAt(F.gx, preX, preY, 0), gy = fieldAt(F.gy, preX, preY, 0), gl = Math.hypot(gx, gy) || 1;
                 if (boat.ai) boat.ai.collisionData = { type: 'island', normal: { x: gx / gl, y: gy / gl }, aground: true };
+                if (state.race.status === 'racing' && !boat.raceState.finished) touchLog.set(boat.raceState, touches(boat.raceState) + 1);
                 if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) window.onRaceEvent('aground', { boat });
-                if (boat.isPlayer && window.GameEvents) GameEvents.emit('player-aground', { boat });
+                // (not once you have finished: the boat drifts on up the narrowing river behind the results, and Wes heard the
+                // thump over the debrief — Sep 26 2026. GameEvents is a top-level const: never on window.)
+                if (boat.isPlayer && !boat.raceState.finished && state.race.status !== 'finished' && typeof GameEvents !== 'undefined') GameEvents.emit('player-aground', { boat });
             }
             return;
         }
@@ -1453,6 +1460,26 @@ const TIDE = {
         ctx.drawImage(mm.cv, 0, 0);
     }
 
+    // the named passages over the flats, labelled OVER the land (hud.js calls this after the land layer):
+    // Scythe's "Chart the Flats" collects them, and sim/course.js names each as you sail onto it —
+    // a small label at each cut's high point
+    function drawMinimapLabels(ctx, cx, cy, scale, width, height) {
+        const T = state.tide;
+        if (!T) return;
+        if (typeof FLATS_PASSAGES !== 'undefined' && T.passages && T.passages.length) {
+            if (mm.labelsFor !== T.passages) { mm.labelsFor = T.passages; mm.labels = null; }
+            if (!mm.labels) mm.labels = T.passages.filter(p => FLATS_PASSAGES.includes(p.id)).map(p => {
+                let best = null, bz = -1e9;
+                for (let i = 1; i < p.pts.length; i++) { const a = p.pts[i - 1], b = p.pts[i], L2 = Math.hypot(b[0] - a[0], b[1] - a[1]);
+                    for (let u = 0; u <= L2; u += 40) { const x = a[0] + (b[0] - a[0]) * u / L2, y = a[1] + (b[1] - a[1]) * u / L2, z = groundAt(x, y); if (z > bz) { bz = z; best = [x, y]; } } }
+                return { name: (p.name || p.id).replace(/^The /i, ''), x: best[0], y: best[1] };
+            });
+            ctx.save(); ctx.font = 'bold 8px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineWidth = 2.5; ctx.strokeStyle = 'rgba(10,25,35,0.85)'; ctx.fillStyle = 'rgba(210,245,238,0.95)';
+            for (const q of mm.labels) { const px = (q.x - cx) * scale + width / 2, py = (q.y - cy) * scale + height / 2; if (px < 0 || py < 0 || px > width || py > height) continue; ctx.strokeText(q.name, px, py); ctx.fillText(q.name, px, py); }
+            ctx.restore();
+        }
+    }
+
     // ── the HUD ─────────────────────────────────────────────────────────────
     // What the instruments say: depth under the keel, the tide's state and the next turn.
     function hudInfo(boat) {
@@ -1530,10 +1557,10 @@ const TIDE = {
         CONST: TIDE, init, update, build,
         clock, level, levelAt, rateAt, flow, nextReach, nextHigh, nextLow, setOverride,
         groundAt, depthAt, mulAt, mulForDepth,
-        speedMul, afterMove, refloatIn,
+        speedMul, afterMove, refloatIn, touches,
         addFill,
         stampGrid, safeGrid, refreshBotGrid, routeCost, routeWait, setNerve, riskAt, escapeReach,
-        drawWet, drawDry, drawEelgrass, drawMinimap, hudInfo, propFrame, propSwing,
+        drawWet, drawDry, drawEelgrass, drawMinimap, drawMinimapLabels, hudInfo, propFrame, propSwing,
         _pic: pic
     };
 })();

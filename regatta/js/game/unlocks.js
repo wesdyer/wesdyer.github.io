@@ -41,6 +41,8 @@ const STARTING_TEN = ['Bixby', 'Bruce', 'Cheer', 'Pinch', 'Glide', 'Wobble', 'Su
 //           true grants; false/null does not. null means "not decidable yet" (Snap waits
 //           for the boat behind you to finish) — see `poll`.
 //   progress(c) optional [have, need] for a counted criterion, shown in the picker
+// Spoonbill Flats' six passages over the mud (the doc's `tide.passages` ids; the point bars don't count)
+const FLATS_PASSAGES = ['wantij', 'gamble', 'neck', 'creek', 'headcut', 'delta'];
 const ACHIEVEMENTS = [
     // ── A · First Season ──────────────────────────────────────────────────────────
     { char: 'Ripple', family: 'season', title: 'Welcome Aboard',
@@ -75,27 +77,30 @@ const ACHIEVEMENTS = [
       hint: 'Finish exactly 5th, three races in a row.',
       test: (r, c) => c.fifthStreak >= 3 },
 
-    // ── Lighthouse Cove `bay` (designed Sep 25 2026) ──────────────────────────────────
-    // Three animals live here — gulls, porpoises, pelicans (js/wildlife.js) — and each has
-    // its racer. Wake (the porpoise) shipped Sep 25 2026 with the Cove.
+    // ── Lighthouse Cove `bay` (designed Sep 25 2026; Explorer and Wildlife reworked Sep 26) ─
+    // Four animals live here — gulls, porpoises, pelicans, harbour seals (js/wildlife.js).
+    // Wake (the porpoise) shipped Sep 25 2026 with the Cove. Sep 26 (Wes): the Explorer rung
+    // is the three bridges (checkCoveBridges, js/sim/course.js) and the gull rock moved to the
+    // Wildlife rung, so Zeffir the gull keeps his own birds and Scoop takes the bridges; the
+    // pelicans' bait boil is scenery now (the feat still fires; no row reads it).
     { char: 'Roll', venue: 'bay', rung: 'first-win', title: 'The Witness',
       hint: 'Win a race at Lighthouse Cove.',
       test: (r) => r.venue === 'bay' && r.won },
     { char: 'Wake', venue: 'bay', rung: 'mechanic', title: 'Ahead of the Ship',
       hint: "Cross a cargo ship's bow within 3 boat lengths, then finish the race.",
       test: (r) => r.venue === 'bay' && r.finished && r.feats.includes('bay:bow-cross') },
-    { char: 'Zeffir', venue: 'bay', rung: 'explorer', title: 'Gull Rock',
-      hint: 'Put up the gulls on the rock east of the lighthouse island, then finish the race.',
-      test: (r) => r.venue === 'bay' && r.finished && r.feats.includes('bay:gulls') },
+    { char: 'Scoop', venue: 'bay', rung: 'explorer', title: 'Under the Bridges',
+      hint: 'Sail under all three of the Cove\'s bridges in one race, then finish the race.',
+      test: (r) => r.venue === 'bay' && r.finished && r.feats.includes('bay:bridges') },
     { char: 'Plunge', venue: 'bay', rung: 'target', title: 'Precision Diver',
       hint: (t) => t ? `Beat the Cove's target time of ${fmtTarget(t)} in Time Trials.` : "Beat the Cove's target time in Time Trials (target coming).",
       test: (r) => r.venue === 'bay' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
     { char: 'Piper', venue: 'bay', rung: 'four-stars', title: 'Home Waters',
       hint: 'Earn four stars in one race at the Cove: win, no penalties, lead at every mark, and sail on manual trim.',
       test: (r) => r.venue === 'bay' && r.stars === 4 },
-    { char: 'Scoop', venue: 'bay', rung: 'wildlife', title: 'Pelican Patrol',
-      hint: 'Sail through a bait boil while the pelicans are diving, then finish the race.',
-      test: (r) => r.venue === 'bay' && r.finished && r.feats.includes('bay:bait-boil') },
+    { char: 'Zeffir', venue: 'bay', rung: 'wildlife', title: 'Gull Rock',
+      hint: 'Put up the gulls on the rock east of the lighthouse island, then finish the race.',
+      test: (r) => r.venue === 'bay' && r.finished && r.feats.includes('bay:gulls') },
 
     // ── Stillwater Lake `lake` (designed Sep 25 2026) ─────────────────────────────────
     // Animals: loons (Diver), a moose in the west lily bed (Timber), beavers (scenery).
@@ -294,6 +299,58 @@ const ACHIEVEMENTS = [
     { char: 'Soot', venue: 'volcanic', rung: 'wildlife', title: 'Booby Shower',
       hint: 'At Emberfall Isle, be under a flock of blue-footed boobies as they plunge-dive together, then finish the race.',
       test: (r) => r.venue === 'volcanic' && r.finished && r.feats.includes('volcanic:boobies') },
+
+    // ── Clubhouse Point `seatrials` (designed Sep 26 2026) ────────────────────────────
+    // The eval anchor: its course, wind and conditions never change, and nothing here touches a boat. A
+    // North Atlantic club off a rocky point (Wes): great cormorants drying their wings on the cans, fleets
+    // of by-the-wind sailors, mackerel boils on the flanks and just past the gates, arctic terns diving on
+    // them — all picture only (js/wildlife.js). Every can: sim/course.js SEA_RUN. All six already drawn.
+    { char: 'Sable', venue: 'seatrials', rung: 'first-win', title: 'The Regular',
+      hint: 'Win a race at Clubhouse Point.',
+      test: (r) => r.venue === 'seatrials' && r.won },
+    { char: 'Latch', venue: 'seatrials', rung: 'mechanic', title: 'Same Every Week',
+      hint: 'Finish three races in a row at Clubhouse Point within 3 seconds of each other.',
+      test: (r, c) => { const q = (((c.venues || {}).seatrials || {}).recent) || []; return r.venue === 'seatrials' && r.finished && q.length === 3 && q.every(t => t != null) && Math.max(...q) - Math.min(...q) <= 3.0; } },
+    { char: 'Lateen', venue: 'seatrials', rung: 'explorer', title: 'Every Can',
+      hint: 'In one race at Clubhouse Point, round both top marks (one on each lap) and use both halves of the bottom line — at the start, the bottom gate or the finish.',
+      test: (r) => r.venue === 'seatrials' && r.finished && r.feats.includes('seatrials:everycan') },
+    { char: 'Flash', venue: 'seatrials', rung: 'target', title: 'The Number',
+      hint: (t) => t ? `Beat Clubhouse Point's target time of ${fmtTarget(t)} in Time Trials.` : "Beat Clubhouse Point's target time in Time Trials (target coming).",
+      test: (r) => r.venue === 'seatrials' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
+    { char: 'Skerry', venue: 'seatrials', rung: 'four-stars', title: 'Clean Sheet',
+      hint: 'Earn four stars in one race at Clubhouse Point: win, no penalties, lead at every mark, and sail on manual trim.',
+      test: (r) => r.venue === 'seatrials' && r.stars === 4 },
+    { char: 'Flicker', venue: 'seatrials', rung: 'wildlife', title: 'Under the Birds',
+      hint: 'At Clubhouse Point, sail right under the arctic terns as they dive on a mackerel boil, then finish the race.',
+      test: (r) => r.venue === 'seatrials' && r.finished && r.feats.includes('seatrials:birds') },
+
+    // ── Spoonbill Flats `flats` (designed Sep 26 2026) ───────────────────────────────
+    // The Wadden. The tide is the venue: a 60 s sine on the race clock drains and floods the
+    // flats, and the marked passages across them (doc.tide.passages, risk rungs 1-3) are open
+    // only briefly near high water. The flats and passages are read in sim/course.js (FLATS_RUN); a grounding
+    // is `flats:aground` and costs the clean star (js/tide.js touches, Series.raceFacts).
+    // Animals (js/wildlife.js, Wes): roseate spoonbills, grey seals, shore crabs, pied avocets.
+    // Petal and Skitter stay as drawn (Wes); Scythe (pied avocet) and Zee (grey seal —
+    // "for the Zealand reference") shipped Sep 26; Curl and Rake are to draw.
+    { char: 'Petal', venue: 'flats', rung: 'first-win', title: 'Pink on the Flats',
+      hint: 'Win a race at Spoonbill Flats.',
+      test: (r) => r.venue === 'flats' && r.won },
+    { char: 'Skitter', venue: 'flats', rung: 'mechanic', title: 'Mud Runner',
+      hint: 'In one race at the Flats, sail 50 seconds over the flats — the ground you would sit aground on at low water — and never run aground.',
+      test: (r) => r.venue === 'flats' && r.finished && ((r.vals || {})['flats:mud'] || 0) >= 50 && !r.feats.includes('flats:aground') },
+    { char: 'Scythe', venue: 'flats', rung: 'explorer', title: 'Chart the Flats',
+      hint: 'Across your races at the Flats, sail all six passages over the mud — the wantij, the west gamble, the neck, the flood creek, the head cut and the delta cut. Each is named as you sail onto it.',
+      test: (r, c) => r.venue === 'flats' && r.finished && FLATS_PASSAGES.every(p => ((((c.venues || {}).flats || {}).routes) || []).includes(p)),
+      progress: (c) => [FLATS_PASSAGES.filter(p => ((((c.venues || {}).flats || {}).routes) || []).includes(p)).length, FLATS_PASSAGES.length] },
+    { char: 'Curl', venue: 'flats', rung: 'target', title: 'Beat the Tide',
+      hint: (t) => t ? `Beat the Flats' target time of ${fmtTarget(t)} in Time Trials.` : "Beat the Flats' target time in Time Trials (target coming).",
+      test: (r) => r.venue === 'flats' && r.finished && r.timeTrial && r.target > 0 && r.time < r.target },
+    { char: 'Rake', venue: 'flats', rung: 'four-stars', title: 'Full Tide',
+      hint: 'Earn four stars in one race at the Flats: win, no penalties and never aground, lead at every mark, and sail on manual trim.',
+      test: (r) => r.venue === 'flats' && r.stars === 4 },
+    { char: 'Zee', venue: 'flats', rung: 'wildlife', title: 'Keep Your Distance',
+      hint: 'At low water, sail close past a grey seal colony hauled out on a sandbank — close enough to watch them, not so close that a single seal slides into the water — then finish the race.',
+      test: (r) => r.venue === 'flats' && r.finished && r.feats.includes('flats:seals') },
 
     // ── Otter Point `otter` (designed Sep 26 2026) ────────────────────────────────────────
     // Monterey's kelp coast: the fleet runs a kilometre offshore of the north-coast kelp beds, and
@@ -550,6 +607,12 @@ const Unlocks = {
         // '<venue>:route' value, added to the venue's set on a finish.
         const route = r.finished && r.vals && r.vals[r.venue + ':route'];
         if (route) v.routes = [...new Set([...(v.routes || []), route])];
+        // ...or several a race, as feats '<venue>:route:<id>' (Spoonbill Flats' passages)
+        const many = r.finished ? (r.feats || []).filter(f => f.startsWith(r.venue + ':route:')).map(f => f.slice(r.venue.length + 7)) : [];
+        if (many.length) v.routes = [...new Set([...(v.routes || []), ...many])];
+        // the last three results at the venue, in order (a DNF is a null and breaks a run) — Clubhouse Point's
+        // consistency rung reads them
+        v.recent = [...(v.recent || []), r.finished ? r.time : null].slice(-3);
         this._write(CAREER_KEY, c);
         const earned = this.store().earned;
         return this._grantFrom(ACHIEVEMENTS.filter(a => !earned[a.char]), r, c, ctx);

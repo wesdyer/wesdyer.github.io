@@ -1084,6 +1084,50 @@ function drawMinimapProps(mc, t, scale) {
     }
 }
 
+// ── THE BIG MAP ─────────────────────────────────────────────────────────────
+// M, or a click on the chart, grows it 3x and back (Wes, Sep 26 2026). It grows from its own
+// top-right corner, left and down over the water, lifted out of the HUD column so nothing
+// else moves: a same-size placeholder holds its place in the flow. The canvas is REDRAWN at
+// the new size rather than stretched, so the chart stays sharp — drawMinimap reads the
+// canvas's own width, and its cached layers key on it. The glyphs (boats, marks) keep their
+// pixel size, so the bigger chart shows more of the water, not bigger arrows.
+const MINIMAP_SMALL = 160, MINIMAP_BIG_SCALE = 3;
+let minimapBig = false;
+function toggleMinimapSize(big) {
+    const wrap = document.getElementById('hud-minimap-wrap');
+    const cv = document.getElementById('minimap');
+    if (!wrap || !cv) return;
+    minimapBig = typeof big === 'boolean' ? big : !minimapBig;
+    let hold = document.getElementById('hud-minimap-hold');
+    if (minimapBig) {
+        if (!hold) {
+            hold = document.createElement('div'); hold.id = 'hud-minimap-hold';
+            wrap.parentElement.insertBefore(hold, wrap);
+        }
+        // measured before the lift: where the small chart's top-right corner sits in the column
+        const col = wrap.parentElement, top = wrap.offsetTop, right = col.clientWidth - (wrap.offsetLeft + wrap.offsetWidth);
+        hold.className = wrap.className.replace(/\bmt-\d+\b/g, '') + ' invisible';
+        hold.style.cssText = `width:${wrap.offsetWidth}px; height:${wrap.offsetHeight}px; margin-top:${getComputedStyle(wrap).marginTop};`;
+        const px = MINIMAP_SMALL * MINIMAP_BIG_SCALE;
+        Object.assign(wrap.style, { position: 'absolute', top: top + 'px', right: right + 'px', width: px + 'px', height: px + 'px', zIndex: 30, cursor: 'zoom-out', marginTop: '0' });
+        cv.width = px; cv.height = px;
+        wrap.title = 'Shrink map (M)';
+    } else {
+        if (hold) hold.remove();
+        Object.assign(wrap.style, { position: '', top: '', right: '', width: '', height: '', zIndex: '', cursor: 'zoom-in', marginTop: '' });
+        cv.width = MINIMAP_SMALL; cv.height = MINIMAP_SMALL;
+        wrap.title = 'Enlarge map (M)';
+    }
+    window._occCache = null;          // the mark chips re-read what the chart now covers
+    if (typeof drawMinimap === 'function') { try { drawMinimap(); } catch (e) {} }
+}
+if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => {
+    const wrap = document.getElementById('hud-minimap-wrap');
+    if (wrap) wrap.addEventListener('click', (e) => { e.stopPropagation(); toggleMinimapSize(); });
+});
+// The anchor is measured when it grows; a resize moves the column, so measure again.
+if (typeof window !== 'undefined') window.addEventListener('resize', () => { if (minimapBig) { toggleMinimapSize(false); toggleMinimapSize(true); } });
+
 // A still layer of the chart: repainted only when `key` changes (see drawMinimap).
 const _mmLayers = {};
 function mmStaticLayer(name, key, w, h) {
@@ -1355,6 +1399,9 @@ function drawMinimap() {
     if (state.course.doc) drawMinimapProps(mc, t, scale);
     }
     if (L2) ctx.drawImage(L2.cv, 0, 0);
+    // The cuts' names only on a chart big enough to read them (Wes, Sep 26 2026): the small HUD
+    // chart leaves them off, the enlarged one (M) and the bigger previews keep them.
+    if (window.Tide && state.tide && wholeMap && Tide.drawMinimapLabels && width > MINIMAP_SMALL) Tide.drawMinimapLabels(ctx, cx, cy, scale, width, height);
 
     // Trace (Player Only)
     if (player.raceState.trace.length) {

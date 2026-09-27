@@ -178,7 +178,9 @@ const Series = {
     raceFacts(rs, pos) {
         rs = rs || {};
         const won = pos === 1;
-        const clean = !(rs.totalPenalties > 0);
+        // clean = no penalty, and at the Flats no grounding either (Wes, Sep 26 2026)
+        const touched = (window.Tide && Tide.touches) ? Tide.touches(rs) : 0;
+        const clean = !(rs.totalPenalties > 0) && !touched;
         const ranks = rs.legRanks || [];
         const led = ranks.length > 0 && ranks.every(r => r === 1);
         const manual = !rs.usedAutoTrim;
@@ -187,7 +189,7 @@ const Series = {
         while (stars < 4 && facts[stars]) stars++;
         let missed = null;
         if (stars === 0) missed = { rung: 1, why: pos ? `${_ordinalWord(pos)} place` : 'not finishing' };
-        else if (stars === 1) missed = { rung: 2, why: rs.totalPenalties > 1 ? `${rs.totalPenalties} penalties` : 'a penalty' };
+        else if (stars === 1) missed = { rung: 2, why: rs.totalPenalties > 1 ? `${rs.totalPenalties} penalties` : rs.totalPenalties === 1 ? 'a penalty' : touched > 1 ? `aground ${touched} times` : 'running aground' };
         else if (stars === 2) { const i = ranks.findIndex(r => r !== 1); missed = { rung: 3, why: `${_ordinalWord(ranks[i])} at mark ${i + 1}` }; }
         else if (stars === 3) missed = { rung: 4, why: 'auto trim' };
         return { won, clean, led, manual, stars, missed };
