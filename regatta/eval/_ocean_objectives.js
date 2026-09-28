@@ -21,7 +21,7 @@ const measure = (pts) => {   // pts: [t, x, y, kn] on the run
     return o;
 };
 const files = [...fs.readdirSync('regatta/eval/rl/traj').filter(f => f.startsWith('traj_ocean_')).map(f => 'regatta/eval/rl/traj/' + f),
-    ...fs.readdirSync(path.join(require('os').homedir(), 'Desktop')).filter(f => /^traj_ocean_\d+\.json$/.test(f)).map(f => path.join(require('os').homedir(), 'Desktop', f))];
+    ...fs.readdirSync(path.join(require('os').homedir(), 'Desktop')).filter(f => /^traj_ocean_(solo_|competitive_)?\d+\.json$/.test(f)).map(f => path.join(require('os').homedir(), 'Desktop', f))];
 const wes = files.map(f => JSON.parse(fs.readFileSync(f, 'utf8'))).filter(j => j.finished && (j.format || []).includes('swell'))
     .map(j => ({ fin: Math.round(j.finishTime), ...measure(j.samples.filter(s => s[1] === 1 && s[8] === 3).map(s => [s[0], s[2], s[3], s[5] * 4])) }));
 (async () => {

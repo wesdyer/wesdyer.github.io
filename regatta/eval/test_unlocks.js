@@ -69,7 +69,7 @@ console.log('enforcement');
 console.log('the rulebook');
 {
     const w = world(); w.__UNLOCKS = 'on';
-    const unshipped = ['Curl', 'Rake'];   // Spoonbill Flats' four, art owed (Sep 26 2026)   // objectives live before the art — see Unlocks.shipped
+    const unshipped = [];   // objectives live before the art — see Unlocks.shipped
     for (const a of w.Unlocks.ACHIEVEMENTS) ok(unshipped.includes(a.char) || w.AI_CONFIG.some(c => c.name === a.char), `${a.char} is in the roster`);
     ok(w.Unlocks.ACHIEVEMENTS.every(a => a.hidden === undefined), 'no objective is hidden');
     ok(w.Unlocks.ACHIEVEMENTS.every(a => typeof w.Unlocks.hintOf(a) === 'string' && w.Unlocks.hintOf(a).length > 10), 'every objective is spelled out');
@@ -191,7 +191,7 @@ console.log('the new-rival queue');
     const w = world(); w.__UNLOCKS = 'on';
     w.Unlocks.grant(['Ripple', 'Scuttle', 'Skim'], 'bay');
     const pool = w.Unlocks.fleetPool(w.AI_CONFIG.filter(c => c.name !== 'Bixby'));
-    const owed = w.Unlocks.rivalsFor(pool).map(c => c.name);
+    const owed = w.Unlocks.rivalsFor(pool).map(c => c.name).filter(n => n !== w.Unlocks.huntTarget());   // the hunted shark has its own slot (test_sharks.js)
     ok(owed.join(',') === 'Ripple,Scuttle', 'two slots a race, oldest first: ' + owed.join(','));
     const boats = [{ name: 'Bixby', isPlayer: true }, { name: 'Ripple' }, { name: 'Scuttle' }];
     w.Unlocks.onRaceStart(boats);
@@ -202,7 +202,7 @@ console.log('the new-rival queue');
     ok(r.find(x => x.name === 'Skim').left === 2, 'a lucky draw counts toward the three too');
     w.Unlocks.onRaceStart(boats);
     ok(w.Unlocks.store().rivals.map(x => x.name).join(',') === 'Skim', 'after three races Ripple and Scuttle are paid; Skim is next');
-    ok(w.Unlocks.rivalsFor(pool).map(c => c.name).join(',') === 'Skim', 'Skim now owed');
+    ok(w.Unlocks.rivalsFor(pool).map(c => c.name).filter(n => n !== w.Unlocks.huntTarget()).join(',') === 'Skim', 'Skim now owed');
     w.Unlocks.markSeen(['Ripple']);
     ok(!w.Unlocks.unseen().includes('Ripple') && w.Unlocks.unseen().length === 2, 'markSeen drops one ceremony');
 }
@@ -300,7 +300,7 @@ console.log('Sockeye Run');
     w.recordsEligible = () => false;
     w.Series = { raceFacts: () => ({ stars: 1 }) };
     const river = w.Unlocks.forVenue('river').map(a => a.char).join(',');
-    ok(river === 'Slipstream,Snag,Grizzle,Riffle,Seam', 'five Sockeye Run objectives: ' + river);
+    ok(river === 'Slipstream,Snag,Pennant,Riffle,Seam,Grizzle', 'six Sockeye Run objectives: ' + river);
     const race = (emits, me = { me: true, time: 240 }) => {
         newRace(w);
         for (const e of emits) w.GameEvents.emit('player-feat', e);
@@ -308,9 +308,9 @@ console.log('Sockeye Run');
         w.state.race.timer = 999;
         return w.Unlocks.poll(order);
     };
-    const r1 = race([{ id: 'river:scraped' }, { id: 'river:chute' }]);
+    const r1 = race([{ id: 'river:scraped' }, { id: 'river:bears' }]);
     ok(!r1.includes('Snag'), 'a scrape on the run home is not Snag');
-    ok(r1.includes('Grizzle'), 'finishing down the chute earns Grizzle');
+    ok(r1.includes('Grizzle'), 'passing both bears earns Grizzle (the Wildlife rung since Sep 27 2026)');
     const r2 = race([]);
     ok(r2.includes('Snag'), 'a clean run home earns Snag');
     const w2 = world(); w2.__UNLOCKS = 'on'; w2.settings.venue = 'river'; w2.window.VenueDoc = { get: () => ({ records: {} }) };
@@ -326,7 +326,7 @@ console.log('Sailing School');
     let units = {};
     w.School = { active: true, progress: () => ({ units }) };
     const school = w.Unlocks.forVenue('pond').map(a => a.char).join(',');
-    ok(school === 'Paddle,Fuzz,Oar,Bask,Wisp', 'five school objectives: ' + school);
+    ok(school === 'Paddle,Fuzz,Oar,Pip,Bask,Wisp', 'six school objectives: ' + school);
     // Start practice: 2.0 s counts, 2.4 s and an early start do not.
     ok(!w.Unlocks.schoolEvent('start', { late: 2.4, ocs: false }).includes('Oar'), 'a 2.4 s start is not Oar');
     ok(!w.Unlocks.schoolEvent('start', { late: 0.5, ocs: true }).includes('Oar'), 'over early is not Oar');

@@ -364,6 +364,16 @@ const VOLCANO = {
     function aimedPoint(v) {
         const boats = state.boats.filter(b => b.raceState && !b.raceState.finished);
         if (!boats.length) return null;
+        // A TIME TRIAL IS SOLO, and the draw below then picks the player every time — an aimed bolt every
+        // 5–20 s, where a race gives the player the weighted share of a full fleet's draw (3 of 12 at a
+        // ten-boat venue). Wes, Sep 27 2026: the odds of being targeted are the race's in solo too. So alone,
+        // the aimed striker takes the player at that share and otherwise lands a free strike on the course,
+        // as it would have near a rival. Only ever drawn solo, so a race's RNG stream is unchanged.
+        if (boats.length === 1 && boats[0].isPlayer && state.boats.length === 1) {
+            const fleet = typeof fleetOpponents === 'function' ? fleetOpponents() : 9;
+            const share = VOLCANO.playerWeight / (VOLCANO.playerWeight + fleet);
+            if (v.rng() >= share) return freePoint(v);
+        }
         let total = 0;
         for (const b of boats) total += b.isPlayer ? VOLCANO.playerWeight : 1;
         let pick = v.rng() * total, boat = boats[boats.length - 1];

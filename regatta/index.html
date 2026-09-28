@@ -245,7 +245,7 @@
         .ch-door-name { font-size: 36px; line-height: 0.98; text-transform: uppercase; }
         .ch-door-blurb { font-size: 14px; line-height: 1.5; color: #d5ecf5; }
         .ch-door-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; }
-        .ch-cta { border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #c4d2e6; background: transparent; }
+        .ch-cta { border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #c4d2e6; background: transparent; white-space: nowrap; flex-shrink: 0; }
         .ch-door.primary .ch-cta { background: #2f6bff; border-color: transparent; color: #fff; font-weight: 900; font-style: italic; font-size: 14px; padding: 12px 22px; box-shadow: 0 6px 24px rgba(47,107,255,0.4); }
         .ch-door.compact .ch-door-pic { height: 118px; }
         .ch-door.compact .ch-door-body { gap: 5px; padding: 10px 16px 12px; }
@@ -296,6 +296,14 @@
         .ch-len:hover { background: rgba(255,255,255,0.06); }
         .ch-len.sel { background: #2f6bff; border-color: transparent; color: #fff; box-shadow: 0 6px 24px rgba(47,107,255,0.4); }
         .ch-len .n { font-size: 44px; line-height: 1; }
+        #series-lengths .ch-len { padding: 12px 0 10px; }
+        #series-lengths .ch-len .n { font-size: 32px; }
+        .ch-mode { padding: 12px 0; border: 1px solid rgba(255,255,255,0.18); border-radius: 999px; background: transparent; color: #c4d2e6; font-weight: 800; font-size: 14px; cursor: pointer; }
+        .ch-mode:hover { background: rgba(255,255,255,0.06); }
+        .ch-mode.sel { background: #2f6bff; border-color: transparent; color: #fff; }
+        .ch-pick { position: relative; cursor: pointer; border-radius: 12px; }
+        .ch-pick.on { outline: 3px solid #f2c14e; outline-offset: 2px; }
+        .ch-pick .ch-pick-n { position: absolute; top: 8px; right: 8px; z-index: 3; min-width: 30px; height: 30px; border-radius: 999px; background: #f2c14e; color: #0c1322; font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: 15px; }
         .ch-panel { background: rgba(6,14,26,0.45); border: 1px solid rgba(255,255,255,0.09); border-radius: 14px; padding: 16px 18px; }
         .ch-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #101a2e; border: 1px solid rgba(255,255,255,0.09); border-radius: 16px; padding: 16px 16px 16px 24px; }
         /* Twelve race columns must still fit: the skipper, race and total tracks can shrink from their
@@ -992,20 +1000,20 @@
                             <div class="ch-door-foot"><span id="door-cup-state" class="t-label t-label-sm"></span><span class="ch-cta">Choose a cup <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
                         </div>
                     </button>
+                    <button id="door-series" class="ch-door compact" style="--door-accent:#5aa7ff; --door-ink:#0c1322;">
+                        <div id="door-series-pic" class="ch-door-pic"></div>
+                        <div class="ch-door-body">
+                            <div class="t-display ch-door-name">Race</div>
+                            <div class="ch-door-blurb">Race the fleet: one race, or a series of up to twelve. Pick the venues or draw them.</div>
+                            <div class="ch-door-foot"><span id="door-series-state" class="t-label t-label-sm"></span><span class="ch-cta">Choose races <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
+                        </div>
+                    </button>
                     <button id="door-race" class="ch-door compact" style="--door-accent:#ff9a3c; --door-ink:#0c1322;">
                         <div id="door-race-pic" class="ch-door-pic"></div>
                         <div class="ch-door-body">
                             <div class="t-display ch-door-name">Time Trials</div>
-                            <div class="ch-door-blurb">One race, any venue, against the clock. Set records and earn stars.</div>
+                            <div class="ch-door-blurb">Just you, the clock and the ghost of your best run. Set records and beat target times.</div>
                             <div class="ch-door-foot"><span id="door-race-state" class="t-label t-label-sm"></span><span class="ch-cta">Pick a venue <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
-                        </div>
-                    </button>
-                    <button id="door-series" class="ch-door compact" style="--door-accent:#5aa7ff; --door-ink:#0c1322;">
-                        <div id="door-series-pic" class="ch-door-pic"></div>
-                        <div class="ch-door-body">
-                            <div class="t-display ch-door-name">Series</div>
-                            <div class="ch-door-blurb">Draw 4&ndash;12 venues and race them as a series. Points add up; the final race breaks ties.</div>
-                            <div class="ch-door-foot"><span id="door-series-state" class="t-label t-label-sm"></span><span class="ch-cta">Draw a series <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
                         </div>
                     </button>
                     <button id="door-school" class="ch-door compact" style="--door-accent:#7ff0d4; --door-ink:#0c1322;">
@@ -1046,6 +1054,23 @@
             </div>
         </div>
 
+        <!-- THE FULL CHART (Sep 27 2026): the briefing's course chart, the whole screen. Click the chart on the
+             board to open; Close, a click outside the chart, or Esc to go back. -->
+        <div id="course-full-overlay" class="hidden absolute inset-0 flex flex-col pointer-events-auto" style="z-index:65; background:#0c1322; color:#eef3fb;">
+            <div class="flex items-center justify-between" style="padding:18px 28px; border-bottom:1px solid rgba(255,255,255,0.07);">
+                <div>
+                    <div id="course-full-title" class="t-display uppercase" style="font-size:30px; line-height:1;"></div>
+                    <div id="course-full-sub" class="t-label" style="font-size:10px; letter-spacing:0.28em; color:#7787a0; margin-top:6px;"></div>
+                </div>
+                <button id="course-full-close" class="res-btn" style="padding:12px 20px;">Close &#10005;</button>
+            </div>
+            <div id="course-full-box" class="relative" style="flex:1 1 auto; min-height:0; margin:20px 28px 28px;">
+                <div id="course-full-inner" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); border-radius:12px; background:rgba(6,14,26,0.45); overflow:hidden;">
+                    <canvas id="course-full-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+                </div>
+            </div>
+        </div>
+
         <!-- Series picker: how many races, and the draw. Redraw is free until you start. -->
         <div id="series-overlay" class="hidden absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-y-auto ch-overlay">
             <div class="ch-header">
@@ -1053,7 +1078,7 @@
                     <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
                     <div>
                         <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:31px; letter-spacing:-0.02em;">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
-                        <div id="series-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;">SERIES &middot; A RANDOM DRAW</div>
+                        <div id="series-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#7787a0; margin-top:7px;">RACE &middot; AGAINST THE FLEET</div>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
@@ -1065,8 +1090,13 @@
             </div>
             <div class="grid flex-1" style="grid-template-columns:420px minmax(0, 1fr); gap:32px; padding:26px 32px 28px; min-height:0;">
                 <div class="flex flex-col" style="gap:18px;">
-                    <div class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">How many races?</div>
-                    <div id="series-lengths" class="grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px;"></div>
+                    <div id="series-mode" class="grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;">
+                        <button type="button" class="ch-mode" data-mode="draw">Draw them</button>
+                        <button type="button" class="ch-mode" data-mode="pick">Pick them</button>
+                    </div>
+                    <div id="series-len-title" class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">How many races?</div>
+                    <div id="series-lengths" class="grid" style="grid-template-columns:repeat(5, minmax(0, 1fr)); gap:10px;"></div>
+                    <div id="series-pennant-note" style="font-size:13px; line-height:1.5; color:#9fb2cc;"></div>
                     <div class="ch-panel flex flex-col" style="gap:8px;">
                         <div class="t-label t-label-sm" style="color:#dbeafe;">How it scores</div>
                         <div style="font-size:14px; line-height:1.55; color:#d5ecf5;">10 points for a win, down to 1 for tenth. Retiring scores 0. Every race counts, and a tie goes to whoever placed better in the last race. Same fleet, same boat, all the way through.</div>
@@ -1074,16 +1104,16 @@
                 </div>
                 <div class="flex flex-col" style="gap:16px; min-height:0;">
                     <div class="flex items-baseline justify-between">
-                        <div class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">Your draw</div>
+                        <div id="series-right-title" class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">Your draw</div>
                         <div id="series-draw-note" class="t-mono" style="font-size:12px; color:#7787a0;"></div>
                     </div>
                     <div id="series-draw" class="grid" style="gap:14px;"></div>
                     <div style="flex-grow:1;"></div>
                     <div class="ch-bar">
-                        <div style="font-size:13px; font-weight:700; color:#9fb2cc;">Not the draw you wanted? Redraw as often as you like &mdash; it is free until you start.</div>
+                        <div id="series-bar-note" style="font-size:13px; font-weight:700; color:#9fb2cc;">Not the draw you wanted? Redraw as often as you like &mdash; it is free until you start.</div>
                         <div class="flex gap-2.5 shrink-0">
                             <button id="series-redraw-btn" class="res-btn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M21 12a9 9 0 1 1-3-6.7"></path><path d="M21 4v5h-5"></path></svg> Redraw</button>
-                            <button id="series-start-btn" class="res-btn res-btn-primary">Sail this series <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+                            <button id="series-start-btn" class="res-btn res-btn-primary"><span id="series-start-label">Sail this series</span> <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
                         </div>
                     </div>
                 </div>
@@ -1198,7 +1228,7 @@
                     <!-- The chart gets the whole width and whatever height the hero leaves — the
                          SHAPE of the course is the thing a preview should show big. -->
                     <div id="venue-course-box" class="relative" style="flex:1 1 auto; min-height:120px; min-width:0;">
-                        <div id="venue-course-inner" style="position:absolute; left:0; bottom:0; border-radius:8px; background:rgba(6,14,26,0.45); overflow:hidden;">
+                        <div id="venue-course-inner" title="Open the full chart" style="position:absolute; left:0; bottom:0; border-radius:8px; background:rgba(6,14,26,0.45); overflow:hidden; cursor:zoom-in;">
                             <canvas id="venue-course-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
                         </div>
                         <div id="venue-records-inline" style="position:absolute; bottom:0; right:0; display:none; min-width:0; overflow:hidden;"></div>
@@ -1245,7 +1275,7 @@
                     <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" alt=""
                          class="h-11 w-auto burgee-flutter" draggable="false">
                     <div>
-                        <div class="t-display uppercase" style="font-size:27px; line-height:1;">Race Results</div>
+                        <div id="res-title" class="t-display uppercase" style="font-size:27px; line-height:1;">Race Results</div>
                         <div id="res-subtitle" class="t-label" style="font-size:10px; letter-spacing:0.28em; color:#7787a0; margin-top:6px;"></div>
                     </div>
                 </div>
@@ -1254,6 +1284,7 @@
                 <div id="res-status" class="t-mono flex items-center gap-2" style="font-size:12.5px; color:#9fb2cc; white-space:nowrap;"></div>
             </div>
 
+            <div id="res-race-body">
             <!-- You, then your own race: the splits are the only place a single race can
                  tell you HOW it went rather than just where it ended. -->
             <div class="flex items-center gap-7" style="padding:26px 36px; border-bottom:1px solid rgba(255,255,255,0.07); background:radial-gradient(700px 200px at 30% 0%, rgba(242,193,78,0.09), transparent);">
@@ -1279,6 +1310,18 @@
                     <div class="res-r">Pts</div>
                 </div>
                 <div id="results-list"></div>
+            </div>
+
+            </div>
+            <!-- TIME TRIALS (Sep 27 2026): the run on the chart, and its numbers — whole race, then leg by leg. -->
+            <div id="res-trial" class="hidden" style="padding:26px 36px 8px;">
+                <div class="grid" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.05fr); gap:28px; align-items:start;">
+                    <div style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:14px;">
+                        <canvas id="res-trial-map" style="width:100%; aspect-ratio:1; display:block; border-radius:10px;"></canvas>
+                        <div id="res-trial-legend" class="flex flex-wrap items-center" style="gap:14px; margin-top:12px; font-size:12px; color:#9fb2cc;"></div>
+                    </div>
+                    <div id="res-trial-stats" class="flex flex-col" style="gap:18px; min-width:0;"></div>
+                </div>
             </div>
 
             <div class="flex items-center justify-between gap-6" style="margin:18px 36px 32px; background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px 16px 16px 24px;">
@@ -1559,6 +1602,7 @@
     <script src="js/game/core.js"></script>
     <script src="js/game/state.js"></script>
     <script src="js/game/series.js"></script>
+    <script src="js/game/timetrial.js"></script>
     <script src="js/game/unlocks.js"></script>
     <script src="js/game/audio.js"></script>
     <script src="js/sim/wind.js"></script>

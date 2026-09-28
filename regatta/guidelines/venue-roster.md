@@ -49,9 +49,9 @@ not where the Aug 5 doc assumed.
 | Bluewater Bonanza | **Spar** blue marlin | **Finley** yellowfin | **Mola** sunfish (explorer) · **Song** humpback (wildlife) | **Roam** blue shark | **Torrent** swordfish (+5) | 2 |
 | Redrock Reservoir | **Chisel** humpback chub | **Sawbill** merganser | **Trek** Colorado pikeminnow (was Echo, canyon bat) | **Ridge** razorback sucker | **Talon** bald eagle (+15) · **Linesider** striped bass (Wildlife) | 3 |
 | Glowtide Strait | **Lure** black seadevil | **Veil** vampire squid | **Bloom** man-of-war | **Drift** sea nettle | **Prism** maxima clam (+5) | 0 |
-| Glacier Sound | **Bluff** polar bear | **Tiny** krill | **Spike** narwhal (Skerry parked) | **Pebble** Adélie penguin | **Fathom** orca (+23) · **Grin** leopard seal (Wildlife) | 1 |
+| Glacier Sound | **Bluff** polar bear | **Tiny** krill | **Chime** beluga (Spike moved to Legal Aggression Sep 27; Skerry parked) | **Pebble** Adélie penguin | **Fathom** orca (+23) · **Grin** leopard seal (Wildlife) | 1 |
 | Otter Point | *open* (Scoop went to the Cove) | *Loom* kelp greenling | ↦**Breeze** nudibranch | *Freckle* leopard shark | *Azure* blue whale | 3 |
-| Spoonbill Flats | **Petal** spoonbill† | **Skitter** mudskipper† | **Scythe** pied avocet | *Curl* Eurasian curlew | *Rake* Eurasian oystercatcher | 3 (+ **Zee** grey seal, Wildlife) |
+| Spoonbill Flats | **Petal** spoonbill† | **Skitter** mudskipper† | **Scythe** pied avocet | **Curl** Eurasian curlew | **Rake** Eurasian oystercatcher | 3 (+ **Zee** grey seal, Wildlife) |
 | Emberfall Isle | **Ember** firefish† | **Torch** fire salamander† | **Vent** yeti crab | **Basalt** marine iguana | **Soot** sooty tern | 3 |
 
 **40 of 60 slots are filled from the roster; 20 characters to build** (the Aug 5 map
@@ -729,7 +729,7 @@ is dropped.
 |---|---|---|
 | First win | **Bluff** (polar bear) | Win at Glacier Sound. |
 | Mechanic | **Tiny** (krill) | *Untouched:* finish without touching any ice: floe, ice island or glacier shore (style `ice`; granite doesn't count). `collision.js` now tags `player-contact` with `ice`. |
-| Explorer | **Spike** (narwhal; narwhals gather at glacier fronts) | *The Calving Face:* within 350 u of the north glacier front (props 57–61), in the bay past the rounding island. No track comes within 1,100 u; a bot's detour costs about 100 s (`eval/_arctic_face.js`). |
+| Explorer | **Chime** (beluga; belugas feed at tidewater glacier fronts — Spike's until Sep 27 2026, when Wes moved him to Legal Aggression) | *The Calving Face:* within 350 u of the north glacier front (props 57–61), in the bay past the rounding island. No track comes within 1,100 u; a bot's detour costs about 100 s (`eval/_arctic_face.js`). |
 | Target time | **Pebble** (Adélie penguin) | 4:05 (38 races). |
 | Four stars | **Fathom** (orca, +23) | Four stars in one race here. |
 | Wildlife | **Grin** (leopard seal, shipped Sep 25) | *Four Colonies:* pass all four penguin colonies in one race. Wes's tracks come within 350 u of the gentoos in 29/38 races, the macaronis in 12/38, and the emperors in 5/38, so it takes a deliberate trip to the emperors. |
@@ -980,7 +980,7 @@ a rocky point. All six characters were already drawn (orphans with no rung).
 | Rung | Character | Objective | Judged |
 |---|---|---|---|
 | First win | **Sable** (great cormorant) | The Regular: win at the Point | `r.won` |
-| Mechanic | **Latch** (remora) | Same Every Week: three Point finishes in a row within 3.0 s | `career.venues.seatrials.recent` (last three results, a DNF is a null); Wes's best three-in-a-row spread in 27 laps: 4.1 s |
+| Mechanic | **Mitt** (oceanic whitetip; Latch moved to Close Racing's Inches, Sep 27) | Same Every Week: three Point finishes in a row within 3.0 s | `career.venues.seatrials.recent` (last three results, a DNF is a null); Wes's best three-in-a-row spread in 27 laps: 4.1 s |
 | Explorer | **Lateen** (by-the-wind sailor) | Every Can: in one race round both top marks and use both halves of the bottom line (start, lap-one gate, finish) | `seatrials:everycan` (sim/course.js SEA_RUN: gate-line crossings within 900 u, side by sign); 6 of Wes's 27 laps |
 | Target | **Flash** (mackerel) | The Number: beat 3:30 | `records.provisional` 210 (unchanged) |
 | Four stars | **Skerry** (Atlantic puffin, +6) | Clean Sheet: four stars | `r.stars === 4` |
@@ -1019,8 +1019,8 @@ Zealand reference" — not a harbour seal, Roll is one); target 3:15 from his Se
 | First win | **Petal** (roseate spoonbill) | Pink on the Flats: win | `r.won` |
 | Mechanic | **Skitter** (mudskipper) | Mud Runner: 50 s over the flats in one race, never aground | `flats:mud` value ≥ 50 and no `flats:aground` (sim/course.js FLATS_RUN). "The flats" = ground a boat sits aground on at low water (z > LW − draft = −1.5 m: the dredged cuts at −1.35 count, the channel's rim at −1.6 does not). Wes's laps 39–41 s; bots 2 of 54 clean at 50+ (eval/_flats_fleet_feats.js) |
 | Explorer | **Scythe** (pied avocet) | Chart the Flats: sail all six passages across races — wantij, west gamble, neck, flood creek, head cut, delta cut | `flats:route:<id>` feats → `career.venues.flats.routes` (several a race); a passage counts after 4 s afloat on its FLAT (drying ground whose nearest marked line is that passage's, within 450 u) — the lines are where the cuts are, not lanes: Wes crossed the first flat diagonally between the wantij and gamble lines. Named in a banner as you sail onto one (`flats-passage`, js/ui/screens.js) and labelled on the minimap (Tide.drawMinimapLabels) — what you see is what counts. Progress N of 6 |
-| Target | *Curl* (curlew) | Beat the Tide: 3:15 | `records.provisional` 195 (Wes's Sep 16 laps 2:56/2:53/2:52 ×1.1; set by hand — set_venue_targets.js skips it because the cuts beat the channel-only path) |
-| Four stars | *Rake* (oystercatcher) | Full Tide: four stars | `r.stars === 4`; clean now also means never aground (Tide.touches, a WeakMap on raceState — never a raceState field) |
+| Target | **Curl** (curlew) | Beat the Tide: 3:15 | `records.provisional` 195 (Wes's Sep 16 laps 2:56/2:53/2:52 ×1.1; set by hand — set_venue_targets.js skips it because the cuts beat the channel-only path) |
+| Four stars | **Rake** (oystercatcher) | Full Tide: four stars | `r.stars === 4`; clean now also means never aground (Tide.touches, a WeakMap on raceState — never a raceState field) |
 | Wildlife | **Zee** (grey seal) | Keep Your Distance: at low water stand off a hauled-out colony (within 400 u of its centre) for 3 s without flushing a seal (flush 160 u), then finish | `flats:seals` (js/wildlife.js); the fleet never comes within 490 u of a hauled colony (eval/_flats_seal_watch.js) |
 
 Found on the way: `player-aground` had NEVER fired — tide.js tested `window.GameEvents`, but GameEvents is
@@ -1253,3 +1253,21 @@ Scenery only, no objectives:
   course: the staghorn by mark 3, the pillar on the 3→4 leg, the brain coral on the leg
   home. They scatter from a boat and regroup. The SHOALS kit. The first cut was "way too
   fast"; they now cruise at under ~12 u/s.
+
+## Six rungs at every venue (Sep 27 2026, Wes)
+
+Every venue now carries six: First win · Mechanic · Explorer · Target time · Four stars · Wildlife (the pond keeps
+its own six: First win · Every lesson · The start · Explorer · Wildlife · Report card). `eval/test_six_rungs.js`.
+
+| Venue | Rung | Character | Objective | Judged |
+|---|---|---|---|---|
+| Duckling Pond | Explorer | **Pip** (pumpkinseed sunfish) | Round the Raft: a full circle round the swim raft (prop-44) in a Sailing School section | `pond:raft`, sweep inside 260 u |
+| Stillwater Lake | Explorer | **Barbel** (lake sturgeon) | Round Every Island: the race's track goes round all seven islands | `lake:islands`, winding of the closed track round each island (auto-found clumps not touching the shore); autopilot rounds 1 of 7; every island has sailable water all round |
+| | Wildlife | **Timber** (moose) | Wake the Neighbour (moved from Explorer) | `lake:moose` |
+| Pearl Lagoon | Wildlife | **Fizz** (sea goldie / anthias) | Scatter the Reef: all five reef schools in one race — yellow and blue tangs and sea goldies by the course, green chromis (east staghorn prop-26) and humbug damselfish (west elkhorn prop-15) to find off it | `lagoon:shoals`; the brain-coral school became orange-pink goldies with a lyre tail |
+| Sockeye Run | Explorer | **Pennant** (arctic grayling) | Right, Then Left: the right-hand channel past all three islands (shape-13, 42, 43) in one race, the left in another | `river:route:keep-right/keep-left` into career routes; the autopilot passes them mixed |
+| | Wildlife | **Grizzle** (brown bear) | Close to the Bears: within a boat length (110 u) of both fishing grizzlies (moved from Explorer; the chute is retired) | `river:bears`; autopilot closest 264–463 u |
+| Glowtide Strait | Explorer | **Blink** (flashlight fish) | Where the Mantas Feed: the far south-west shoal behind the west peninsula, by Wes's bonfire (prop-52), where three new mantas circle | `glowtide:mantas`, within 450 u of (-2804, 3306); autopilot closest ~1,800 u |
+| | Wildlife | **Bloom** (man o' war) | Find the Bloom (moved from Explorer) | `glowtide:bloom` |
+
+All five portraits shipped Sep 27 2026.

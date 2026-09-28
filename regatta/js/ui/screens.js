@@ -284,7 +284,7 @@ function renderVenuePicker() {
     // The header's second line: which cup or series and which race, where the standings
     // screen says the same thing. A single race keeps the club motto.
     if (UI.preRaceCrumb) {
-        UI.preRaceCrumb.textContent = inSeries ? `${Series.active.name} · Race ${Series.raceNumber()} of ${Series.total()}`.toUpperCase() : 'TIME TRIAL · ONE RACE, AGAINST THE CLOCK';
+        UI.preRaceCrumb.textContent = inSeries ? (Series.total() === 1 ? 'RACE · ONE RACE AGAINST THE FLEET' : `${Series.active.name} · Race ${Series.raceNumber()} of ${Series.total()}`.toUpperCase()) : 'TIME TRIAL · SOLO, AGAINST THE CLOCK AND YOUR GHOST';
         UI.preRaceCrumb.style.color = inSeries ? '#f2c14e' : '#7787a0';
     }
     sizeRaceDayHero();
@@ -480,7 +480,7 @@ function renderVenueDetail(key) {
     // still stands with an em dash: the first run founds the book, and ALL
     // RECORDS is still the way in.
     const prov = provisionalRecord(key);
-    const rec = best ? { label: 'Your best time', t: best.t, mine: true }
+    const rec = best && best.t != null ? { label: 'Your best time', t: best.t, mine: true }
               : { label: 'Time to beat', t: prov, mine: false };
     const recordBlock = `
         <div class="pr-record shrink-0" style="background:rgba(6,14,26,0.4); border-radius:14px;
@@ -688,6 +688,39 @@ function layoutVenueCourseMap(pending) {
         _chartAnim.ro.observe(box);
     }
     if (show) drawCourseMiniMap();
+}
+
+// THE FULL CHART: the board's chart borrowed whole (drawCourseMiniMap's target), drawn to fill the screen.
+// The wind animation follows the chart it was last drawn into, so closing re-lays the board's.
+function openCourseFull() {
+    const ov = document.getElementById('course-full-overlay');
+    if (!ov || !state.course || !state.course.route || state.course.route.length < 2) return;
+    ov.classList.remove('hidden');
+    const c = typeof venueCard === 'function' ? venueCard(settings.venue) : {};
+    document.getElementById('course-full-title').textContent = (c && c.name) || venueDisplayName(settings.venue) || settings.venue;
+    document.getElementById('course-full-sub').innerHTML = courseSummaryText();
+    _drawCourseFull();
+}
+function _drawCourseFull() {
+    const ov = document.getElementById('course-full-overlay');
+    if (!ov || ov.classList.contains('hidden')) return;
+    drawCourseMiniMap({ box: document.getElementById('course-full-box'), inner: document.getElementById('course-full-inner'),
+                        canvas: document.getElementById('course-full-map'), noRecords: true,
+                        visible: () => !ov.classList.contains('hidden') });
+}
+function closeCourseFull() {
+    const ov = document.getElementById('course-full-overlay');
+    if (!ov || ov.classList.contains('hidden')) return;
+    ov.classList.add('hidden');
+    layoutVenueCourseMap();
+}
+if (typeof document !== 'undefined') {
+    const _cf = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
+    _cf('venue-course-inner', 'click', (e) => { e.preventDefault(); openCourseFull(); });
+    _cf('course-full-close', 'click', (e) => { e.preventDefault(); closeCourseFull(); });
+    _cf('course-full-box', 'click', (e) => { if (!e.target.closest('#course-full-inner')) closeCourseFull(); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const ov = document.getElementById('course-full-overlay'); if (ov && !ov.classList.contains('hidden')) { e.stopPropagation(); closeCourseFull(); } } }, true);
+    window.addEventListener('resize', () => _drawCourseFull());
 }
 
 // `target` lets another surface borrow the chart whole — Sailing School's screens draw it
@@ -2433,8 +2466,9 @@ function toggleNewGame(show) {
 // ⚠️ A NEW PERSISTED PROGRESS KEY MUST BE ADDED HERE, or it survives a new game.
 function startNewGame() {
     const keys = [SCHOOL_PROGRESS_KEY, TROPHIES_KEY, RESULT_BESTS_KEY, RECORDS_KEY, 'regatta_venue_stats',
-                  UNLOCKS_KEY, CAREER_KEY];
+                  UNLOCKS_KEY, CAREER_KEY, GHOSTS_KEY];
     for (const k of keys) { try { localStorage.removeItem(k); } catch (e) {} }
+    if (window.TimeTrial) { TimeTrial._ghost = null; TimeTrial._lb = null; }
     settings.character = window.Unlocks ? STARTING_TEN[0] : DEFAULT_SETTINGS.character;
     settings.venue = DEFAULT_SETTINGS.venue;
     settings.lastRaceVenue = DEFAULT_SETTINGS.lastRaceVenue;
@@ -2500,24 +2534,39 @@ document.querySelectorAll('.ov-swatch[data-color]').forEach(b => b.addEventListe
 // the clubhouse to change venue or character, or straight into another race here.
 // Inside a cup or series the same two buttons are "abandon" (behind the confirm) and
 // "standings" — the results page never offers a rematch mid-series.
-if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault(); if (window.Series && Series.active) toggleAbandon(true); else restartRace(); });
-if (UI.resultsRematchButton) UI.resultsRematchButton.addEventListener('click', (e) => { e.preventDefault(); if (window.Series && Series.active) proceedToStandings(); else rematchRace(); });
+// A Race of ONE is a series of one underneath, but it reads as a single race: Back to Clubhouse and Rematch
+// (the same fleet), no standings (Wes, Sep 27 2026).
+const _oneRace = () => !!(window.Series && Series.active && Series.total() === 1);
+function _closeOneRace() {
+    if (!Series.active.results[0]) Series.recordRace(finishOrder());
+    if (window.Unlocks) { Unlocks.flush(finishOrder()); presentUnlocks(); }
+    Series.recordFinal();
+}
+if (UI.resultsRestartButton) UI.resultsRestartButton.addEventListener('click', (e) => { e.preventDefault();
+    if (_oneRace()) { _closeOneRace(); Series.abandon(); restartRace(); }
+    else if (window.Series && Series.active) toggleAbandon(true); else restartRace(); });
+if (UI.resultsRematchButton) UI.resultsRematchButton.addEventListener('click', (e) => { e.preventDefault();
+    if (_oneRace()) { const prev = Series.active; _closeOneRace(); Series.startSeries(prev.venues); if (prev.fleet) Series.lockFleet(prev.fleet, prev.character); rematchRace(); }
+    else if (window.Series && Series.active) proceedToStandings(); else rematchRace(); });
 if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preventDefault(); startRace(); });
 {
     // THE CLUBHOUSE DOORS (Sep 2026 redesign). The school is the front door until you
     // graduate; Cup and Series go through a picker; Race opens the board as it always was.
     const on = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', (e) => { e.preventDefault(); el.blur(); fn(e); }); };
     const idle = () => state.race.status === 'waiting' && !_venueLoading;
-    on('door-school', () => { if (!idle()) return; hideClubhouseOverlays(); School.begin(); });
-    on('door-cup', () => { if (!idle()) return; showCupPicker(); });
-    on('door-series', () => { if (!idle()) return; showSeriesPicker(); });
+    // Time Trials is solo (TimeTrial.active); every other door races a fleet.
+    on('door-school', () => { if (!idle()) return; TimeTrial.active = false; hideClubhouseOverlays(); School.begin(); });
+    on('door-cup', () => { if (!idle()) return; TimeTrial.active = false; showCupPicker(); });
+    on('door-series', () => { if (!idle()) return; TimeTrial.active = false; showSeriesPicker(); });
     on('door-race', () => {
         if (!idle()) return;
+        TimeTrial.active = true;
         if (window.Series && Series.active) Series.abandon();
         // The board opens on the venue the door was previewing — the last one picked HERE —
         // not on whatever venue the last cup or series race left in `settings.venue`.
         const lv = settings.lastRaceVenue;
         if (lv && VENUE_ORDER.includes(lv) && lv !== settings.venue) selectVenue(lv);
+        else resetGame();   // send the fleet home: a time trial is solo
         showRaceBoard();
     });
     on('cup-back-btn', () => showClubhouse());
@@ -2525,7 +2574,7 @@ if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preven
     // Leaving the board mid-cup is abandoning the cup, so it goes through the confirm.
     on('prerace-back-btn', () => { if (!idle()) return; if (window.Series && Series.active) toggleAbandon(true); else showClubhouse(); });
     on('series-redraw-btn', () => { _seriesDraw = Series.draw(_seriesLen); renderSeriesPicker(); });
-    on('series-start-btn', () => { if (!idle() || !_seriesDraw) return; Series.startSeries(_seriesDraw); _seriesDraw = null; enterSeriesRace(); });   // straight to the race 1 briefing, like a cup
+    on('series-start-btn', () => { const v = _seriesChosen(); if (!idle() || !v.length) return; TimeTrial.active = false; Series.startSeries(v); _seriesDraw = null; enterSeriesRace(); });   // straight to the race 1 briefing, like a cup
     // The fleet page: back to where you chose, or on — a single race starts here, a cup or
     // series goes to its first briefing.
     on('fleet-back-btn', () => {
@@ -2599,8 +2648,10 @@ function showToast(text) {
 // hash (VenueDoc.recordsHash: the venue's physical content, not its copy or colours), so
 // editing a venue retires its book. Old entries stay in storage under the old hash and
 // come back if the edit is reverted. Pre-hash entries are simply never read again.
+// SINCE SEP 27 2026 (Wes): only a TIME TRIAL sets anything — the records book, your best time and the ghost.
+// A Race (even a Race of one), a Cup, the school and the eval harness set none of them.
 function recordsEligible() {
-    return !(window.Series && Series.active) && !(window.School && School.active);
+    return !!(window.TimeTrial && TimeTrial.solo()) && state.boats.length === 1;
 }
 // Cached per venue on the document's identity: the game never edits a document in place,
 // and hashing one is a canonical walk of ~10k props.
@@ -2634,9 +2685,9 @@ function venueBestKey(venue) { return `${venue || settings.venue}:${recordsVenue
 function bestForVenue(venue) {
     const rec = loadVenueBests()[venueBestKey(venue)];
     if (typeof rec === 'number') return { t: rec, bestPos: 0, bestPosT: 0, stars: 0 };
-    if (!rec || typeof rec.t !== 'number') return null;
+    if (!rec || (typeof rec.t !== 'number' && !rec.bestPos && !rec.stars)) return null;
     return {
-        t: rec.t,
+        t: typeof rec.t === 'number' ? rec.t : null,   // null: raced here, never trialled (Sep 27 2026)
         bestPos: rec.bestPos || rec.pos || 0,
         bestPosT: rec.bestPosT || (rec.bestPos ? 0 : rec.t) || 0,
         stars: rec.stars || 0
@@ -2645,8 +2696,12 @@ function bestForVenue(venue) {
 
 // Called once per race, from the first showResults() of that race — see `bestChecked`.
 // Returns what there was to beat on each record, and whether this race beat it.
+// SINCE SEP 27 2026 (Wes): the TIME is a Time Trials best — solo, against the clock — and the PLACE and the
+// STARS come from racing the fleet (a Race or a Cup). The school sets neither.
 function recordVenueBest(seconds, pos, stars) {
-    if (!recordsEligible()) return null;   // a cup, series or school race: nothing to beat, nothing set
+    if (window.School && School.active) return null;
+    const trial = recordsEligible();
+    if (trial) { pos = 0; stars = 0; }
     const bests = loadVenueBests();
     const key = venueBestKey();
     const prev = bestForVenue();
@@ -2654,7 +2709,7 @@ function recordVenueBest(seconds, pos, stars) {
     const previousPos = (prev && prev.bestPos) ? prev.bestPos : null;
     const previousStars = prev ? (prev.stars || 0) : 0;
 
-    const isBest = previous === null || seconds < previous;
+    const isBest = trial && (previous === null || seconds < previous);
     const isBestPos = !!pos && (previousPos === null || pos < previousPos);
     const isBestStars = (stars | 0) > previousStars;
     if (isBest || isBestPos || isBestStars) {
@@ -2671,9 +2726,13 @@ function recordVenueBest(seconds, pos, stars) {
     return { previous, isBest, previousPos, isBestPos, previousStars, isBestStars };
 }
 
-// Distances are recorded in world units. 5 units = 1 metre (VenueDoc.U_PER_M), and a race
-// is a couple of kilometres, so kilometres is the unit that reads without counting zeros.
+// ⚠️ DISTANCE SAILED IS ALREADY IN METRES. physics.js adds `speed × 12 × dt` to legDistances — the
+// world-units-to-metres step (0.2 m a unit) is inside that 12 — and this used to divide by 5 AGAIN
+// as if it were world units, so every distance on screen was a fifth of the truth: a 4.8 km course
+// "sailed" in 1.2 km (Wes, Sep 27 2026: corrected everywhere; stored shortest tracks migrated ×5 on
+// load, see loadAllRecords). unitsToKm stays for genuine world units.
 function unitsToKm(u) { return u / 5 / 1000; }
+function sailedKm(m) { return m / 1000; }
 
 // ── VENUE RECORDS ───────────────────────────────────────────────────────────
 // The record BOOK, as opposed to the personal-best chip above: per venue, per leg
@@ -2689,7 +2748,15 @@ function unitsToKm(u) { return u / 5 / 1000; }
 // the run is an auto run (rs.usedAutoTrim, sampled every frame).
 const RECORDS_KEY = 'regatta_records';
 function loadAllRecords() {
-    try { return JSON.parse(localStorage.getItem(RECORDS_KEY)) || {}; } catch (e) { return {}; }
+    let all;
+    try { all = JSON.parse(localStorage.getItem(RECORDS_KEY)) || {}; } catch (e) { return {}; }
+    // THE SHORTEST TRACKS WERE STORED A FIFTH SHORT (see sailedKm). Migrated once, in place.
+    if (!all.__distV2) {
+        for (const k of Object.keys(all)) { const b = all[k]; if (b && b.minDist && typeof b.minDist.d === 'number') b.minDist.d = Math.round(b.minDist.d * 5 * 100) / 100; }
+        all.__distV2 = true;
+        saveAllRecords(all);
+    }
+    return all;
 }
 function saveAllRecords(r) {
     // Same reasoning as saveSettings: a storage failure must not take the race with it.
@@ -2722,7 +2789,7 @@ function trackRecordFor(board, venue) {
     let best = rec.track ? { ...rec.track } : null;
     if (!best && board === 'auto') {
         const legacy = bestForVenue(venue);
-        if (legacy) best = { t: legacy.t, char: null };
+        if (legacy && legacy.t != null) best = { t: legacy.t, char: null };
     }
     const prov = provisionalRecord(venue);
     if (prov != null && (!best || prov < best.t)) best = { t: prov, char: null, provisional: true };
@@ -2981,6 +3048,28 @@ function showResults() {
     const leader = sorted[0];
     const player = state.boats.find(b => b.isPlayer) || state.boats[0];
 
+    // TIME TRIALS have their own page: the run on the chart, and its numbers (renderTrialResults).
+    const trial = sorted.length === 1 && !!(window.TimeTrial && TimeTrial.solo());
+    const raceBody = document.getElementById('res-race-body'), trialBody = document.getElementById('res-trial');
+    if (raceBody) raceBody.classList.toggle('hidden', trial);
+    if (trialBody) trialBody.classList.toggle('hidden', !trial);
+    const title = document.getElementById('res-title'); if (title) title.textContent = trial ? 'Time Trial' : 'Race Results';
+    if (trial) {
+        const rs = player.raceState;
+        if (!state.race.bestChecked) {
+            state.race.bestChecked = true;
+            state.race.bestOutcome = (rs.finished && !rs.resultStatus) ? recordVenueBest(rs.finishTime, 1, 0) : null;
+        }
+        const sub = document.getElementById('res-subtitle');
+        if (sub) sub.textContent = `${(venueDisplayName(settings.venue) || settings.venue).toUpperCase()} · SOLO, AGAINST THE CLOCK`;
+        const status = document.getElementById('res-status'); if (status) status.textContent = '';
+        renderTrialResults(player);
+        renderResultsFootnote(leader);
+        styleResultsButtons();
+        if (window.Unlocks) { Unlocks.poll(sorted); presentUnlocks(); }
+        return;
+    }
+
     const gapScale = fleetGapScale();
 
     renderResultsHeader(sorted, gapScale);
@@ -2994,6 +3083,190 @@ function showResults() {
     styleResultsButtons();
     // Achievements: counted once the player's place is final, then the cards.
     if (window.Unlocks) { Unlocks.poll(sorted); presentUnlocks(); }
+}
+
+// ── TIME TRIALS RESULTS (Wes, Sep 27 2026) ──────────────────────────────────────
+// Left: the chart (the minimap, drawn big) with this run's track, coloured leg by leg, and the ghost's —
+// your previous best — dashed. Right: the whole run (time, the delta to the previous best, top and average
+// speed, distance, collisions), then every leg with the same numbers and its delta to the ghost's leg.
+const TRIAL_LEG_COLOURS = ['#94a3b8', '#5eead4', '#f2c14e', '#f472b6', '#60a5fa', '#a78bfa', '#fb923c', '#34d399', '#f87171', '#facc15'];
+function _trialLegColour(k) { return k <= 0 ? TRIAL_LEG_COLOURS[0] : TRIAL_LEG_COLOURS[1 + (k - 1) % (TRIAL_LEG_COLOURS.length - 1)]; }
+function renderTrialResults(player) {
+    const host = document.getElementById('res-trial-stats'), cv = document.getElementById('res-trial-map');
+    if (!host || !cv) return;
+    const rs = player.raceState, dnf = !!rs.resultStatus;
+    const sig = [rs.finished, rs.resultStatus, rs.finishTime.toFixed(3), rs.legTimes.length].join('|');
+    if (host.dataset.sig === sig) return;
+    host.dataset.sig = sig;
+    const best = state.race.bestOutcome, prev = best ? best.previous : null;
+    const gs = TimeTrial.ghostSplits(), hits = TimeTrial.hitsByLeg();
+    const kmTxt = (m) => `${sailedKm(m).toFixed(2)} km`, mTxt = (m) => `${Math.round(m)} m`;
+    const signed = (d, digits) => `${d <= 0 ? '\u2212' : '+'}${Math.abs(d).toFixed(digits)}s`;
+    const dCol = (d) => d <= 0 ? '#34d399' : '#f87171';
+    const totalHits = Object.values(hits).reduce((a, c) => a + c, 0);
+    const dist = rs.legDistances.reduce((a, c) => a + c, 0);
+
+    const stat = (label, value, sub, color) => `<div style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:14px; padding:14px 16px; min-width:0;">
+        <div class="t-label t-label-sm" style="color:#9fb2cc;">${label}</div>
+        <div class="t-mono" style="font-size:26px; font-weight:900; line-height:1.15; margin-top:4px; color:${color || '#eef3fb'};">${value}</div>
+        ${sub ? `<div style="font-size:12px; color:#9fb2cc; margin-top:2px;">${sub}</div>` : ''}</div>`;
+    const timeStat = dnf ? stat('Time', rs.resultStatus, 'Did not finish', '#f87171')
+        : stat('Time', formatBestTime(rs.finishTime), best && best.isBest ? (prev == null ? 'Your first time here' : 'A new best') : '', best && best.isBest ? '#f2c14e' : null);
+    const deltaStat = (dnf || prev == null) ? stat('Vs previous best', '\u2014', prev == null ? 'No previous best' : '')
+        : stat('Vs previous best', signed(rs.finishTime - prev, 3), `Best was ${formatBestTime(prev)}`, dCol(rs.finishTime - prev));
+    const cards = [timeStat, deltaStat,
+        stat('Top speed', `${boatTopSpeed(player).toFixed(1)} kn`),
+        stat('Average speed', `${boatAvgSpeed(player).toFixed(1)} kn`),
+        stat('Distance', kmTxt(dist)),
+        stat('Collisions', String(totalHits), totalHits ? 'land, ice or marks' : 'A clean run', totalHits ? '#f87171' : '#34d399')];
+
+    // Leg by leg: the start (gun to the line), then each leg.
+    const rows = [];
+    const row = (k, label, t, gt) => {
+        const top = rs.legTopSpeeds[k] || 0, d = rs.legDistances[k] || 0, sum = rs.legSpeedSums ? (rs.legSpeedSums[k] || 0) : 0;
+        const avg = t > 0.1 ? sum / t : 0, h = hits[k] || 0;
+        rows.push(`<div class="grid items-center res-trial-leg" data-leg="${k}" style="grid-template-columns:18px 70px 1fr 0.9fr 0.8fr 0.8fr 0.9fr 0.6fr; gap:10px; padding:9px 12px; border-top:1px solid rgba(255,255,255,0.06); font-size:13px; cursor:pointer; border-radius:8px;">
+            <span style="width:10px; height:10px; border-radius:3px; background:${_trialLegColour(k)};"></span>
+            <span class="t-label t-label-sm" style="color:#dbeafe;">${label}</span>
+            <span class="t-mono" style="color:#eef3fb;">${t != null ? formatSplitTime(t) : '\u2014'}</span>
+            <span class="t-mono" style="color:${gt != null && t != null ? dCol(t - gt) : '#66748c'};">${gt != null && t != null ? signed(t - gt, 1) : '\u2014'}</span>
+            <span class="t-mono" style="color:#c4d2e6;">${top.toFixed(1)}</span>
+            <span class="t-mono" style="color:#c4d2e6;">${avg.toFixed(1)}</span>
+            <span class="t-mono" style="color:#c4d2e6;">${mTxt(d)}</span>
+            <span class="t-mono" style="color:${h ? '#f87171' : '#66748c'};">${h}</span></div>`);
+    };
+    if (rs.startLegDuration != null) row(0, 'Start', rs.startLegDuration, gs ? gs.start : null);
+    rs.legTimes.forEach((t, i) => row(i + 1, `Leg ${i + 1}`, t, gs && gs.legs ? gs.legs[i] : null));
+    const head = `<div class="grid t-label" style="grid-template-columns:18px 70px 1fr 0.9fr 0.8fr 0.8fr 0.9fr 0.6fr; gap:10px; padding:0 12px 8px; font-size:10px; letter-spacing:0.14em; color:#66748c;">
+        <span></span><span>Leg</span><span>Time</span><span>Vs ghost</span><span>Top kn</span><span>Avg kn</span><span>Dist</span><span>Hits</span></div>`;
+    host.innerHTML = `<div class="grid" style="grid-template-columns:repeat(3, minmax(0, 1fr)); gap:12px;">${cards.join('')}</div>
+        <div style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:14px 4px 6px;">
+            <div class="t-label t-label-sm" style="color:#dbeafe; padding:0 12px 10px;">Leg by leg${gs ? '' : ' <span style="color:#66748c;">· no ghost yet to compare</span>'}</div>
+            ${head}${rows.join('') || '<div style="padding:10px 12px; color:#66748c;">No legs sailed.</div>'}</div>`;
+
+    // THE CHART. The minimap's own drawing, rendered once onto a base canvas; the tracks go over it on every
+    // redraw, so a click (highlight a leg) or a hover (the readout) never repaints the whole chart.
+    const px = Math.round(cv.clientWidth * (window.devicePixelRatio || 1)) || 640;
+    const base = document.createElement('canvas'); base.width = px; base.height = px;
+    drawMinimap.target = { ctx: base.getContext('2d') };
+    try { drawMinimap(); } finally { drawMinimap.target = null; }
+    const P = drawMinimap.last; if (!P) return;
+    cv.width = px; cv.height = px;
+    _trialMap = { cv, base, P, px, run: (TimeTrial._rec && TimeTrial._rec.s) || [], ghost: (TimeTrial._ghost && TimeTrial._ghost.s) || null, sel: null, hover: null };
+    _trialMapDraw();
+    _trialMapWire(host);
+    const ghost = _trialMap.ghost;
+    const legend = document.getElementById('res-trial-legend');
+    if (legend) {
+        const sw = (c, dash) => `<span style="display:inline-block; width:22px; height:0; border-top:3px ${dash ? 'dashed' : 'solid'} ${c}; vertical-align:middle; margin-right:6px;"></span>`;
+        legend.innerHTML = [`<span data-leg="0" style="cursor:pointer;">${sw(_trialLegColour(0))}Start</span>`, ...rs.legTimes.map((_, i) => `<span data-leg="${i + 1}" style="cursor:pointer;">${sw(_trialLegColour(i + 1))}Leg ${i + 1}</span>`),
+            ghost ? `<span>${sw('rgba(255,255,255,0.7)', true)}Ghost (previous best)</span>` : ''].join('')
+            + `<span style="color:#66748c; margin-left:auto;">Click a leg to pick it out · hover the track for the numbers</span>`;
+        legend.querySelectorAll('[data-leg]').forEach(el => el.addEventListener('click', () => _trialMapSelect(+el.dataset.leg)));
+    }
+}
+
+// THE RESULTS CHART'S INTERACTION (Wes, Sep 27 2026): click a leg row or the track to pick that leg out (the
+// rest dims; click it again to clear); hover the track for the instruments at that moment, in plain words.
+let _trialMap = null;
+function _trialMapXY(x, y) { const P = _trialMap.P; return [(x - P.cx) * P.scale + P.width / 2, (y - P.cy) * P.scale + P.height / 2]; }
+function _trialMapDraw() {
+    const M = _trialMap; if (!M) return;
+    const g = M.cv.getContext('2d'), lw = Math.max(2, M.px / 260), sel = M.sel;
+    g.clearRect(0, 0, M.px, M.px); g.drawImage(M.base, 0, 0);
+    if (M.ghost && M.ghost.length > 1) {
+        g.save(); g.setLineDash([lw * 3, lw * 2.5]); g.lineWidth = lw * 0.9; g.strokeStyle = 'rgba(255,255,255,0.55)';
+        g.beginPath(); let first = true;
+        for (const q of M.ghost) { if (!(q[6] >= 1)) continue; if (sel != null && q[6] !== sel) { first = true; continue; }
+            const [x, y] = _trialMapXY(q[0], q[1]); if (first) { g.moveTo(x, y); first = false; } else g.lineTo(x, y); }
+        g.stroke(); g.restore();
+    }
+    const run = M.run;
+    if (run.length > 1) {
+        g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
+        // outline first so the track reads on any water, then each leg in its own colour; a picked leg is
+        // drawn fat and last, the others faint
+        const seg = (i, pass, on) => { const a = run[i - 1], b = run[i], leg = b[6] || 0;
+            const [x0, y0] = _trialMapXY(a[0], a[1]), [x1, y1] = _trialMapXY(b[0], b[1]);
+            g.globalAlpha = sel == null ? (leg === 0 && pass ? 0.55 : 1) : on ? 1 : 0.18;
+            const w = sel != null && on ? lw * 1.8 : lw;
+            g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1);
+            g.strokeStyle = pass ? _trialLegColour(leg) : 'rgba(8,16,28,0.75)'; g.lineWidth = pass ? w : w + 2.5; g.stroke(); };
+        for (const pass of [0, 1]) for (let i = 1; i < run.length; i++) if (sel == null || (run[i][6] || 0) !== sel) seg(i, pass, false);
+        if (sel != null) for (const pass of [0, 1]) for (let i = 1; i < run.length; i++) if ((run[i][6] || 0) === sel) seg(i, pass, true);
+        const endQ = run[run.length - 1], [ex, ey] = _trialMapXY(endQ[0], endQ[1]);
+        g.globalAlpha = 1; g.beginPath(); g.arc(ex, ey, lw * 2.2, 0, Math.PI * 2); g.fillStyle = '#ffffff'; g.fill(); g.strokeStyle = '#0b1c2b'; g.lineWidth = 1.5; g.stroke();
+        if (M.hover != null && run[M.hover]) {   // the boat at the hovered moment
+            const q = run[M.hover], [hx, hy] = _trialMapXY(q[0], q[1]);
+            g.save(); g.translate(hx, hy); g.rotate(q[2] / 1000);
+            g.beginPath(); g.moveTo(0, -lw * 5); g.lineTo(lw * 3.3, lw * 3.8); g.lineTo(0, lw * 2.3); g.lineTo(-lw * 3.3, lw * 3.8); g.closePath();
+            g.fillStyle = '#ffffff'; g.fill(); g.strokeStyle = '#0b1c2b'; g.lineWidth = 1.6; g.stroke(); g.restore();
+        }
+        g.restore();
+    }
+}
+function _trialMapSelect(leg) {
+    const M = _trialMap; if (!M) return;
+    M.sel = (leg == null || M.sel === leg) ? null : leg;
+    document.querySelectorAll('#res-trial-stats .res-trial-leg').forEach(r => { const on = M.sel != null && +r.dataset.leg === M.sel;
+        r.style.background = on ? 'rgba(255,255,255,0.08)' : ''; r.style.boxShadow = on ? `inset 3px 0 0 ${_trialLegColour(M.sel)}` : ''; r.style.opacity = M.sel == null || on ? '' : '0.55'; });
+    _trialMapDraw();
+}
+// The nearest sample of this run to a point on the canvas (canvas pixels), within `maxPx`.
+function _trialMapNearest(cx, cy, maxPx) {
+    const M = _trialMap; let best = -1, bd = maxPx * maxPx;
+    for (let i = 0; i < M.run.length; i++) { const q = M.run[i]; if (M.sel != null && (q[6] || 0) !== M.sel) continue;
+        const [x, y] = _trialMapXY(q[0], q[1]), d = (x - cx) ** 2 + (y - cy) ** 2; if (d < bd) { bd = d; best = i; } }
+    return best;
+}
+// What the boat was doing at sample i, in words a non-sailor reads: speeds in knots, the wind by name.
+function _trialMoment(i) {
+    const M = _trialMap, q = M.run[i]; if (!q) return '';
+    const t0 = TimeTrial._rec ? TimeTrial._rec.t0 : 0, t = t0 + i * 0.25;
+    const kn = (v) => v == null ? '\u2014' : `${(v / 10).toFixed(1)} kn`;
+    const twa = q[10], abs = twa == null ? null : Math.abs(twa);
+    const pointOf = abs == null ? '' : abs < 38 ? 'Too close to the wind' : abs < 60 ? 'Sailing upwind' : abs < 110 ? 'Reaching across the wind' : abs < 150 ? 'Broad reach' : 'Running downwind';
+    const side = twa == null ? '' : twa < 0 ? 'wind over the right side (starboard)' : 'wind over the left side (port)';
+    const row = (k, v) => `<div style="display:flex; justify-content:space-between; gap:14px;"><span style="color:#9fb2cc;">${k}</span><span class="t-mono" style="color:#eef3fb;">${v}</span></div>`;
+    const leg = q[6] || 0;
+    return `<div class="t-label t-label-sm" style="color:${_trialLegColour(leg)}; margin-bottom:6px;">${leg ? 'Leg ' + leg : 'Start'} \u00b7 ${t < 0 ? '\u2212' + formatSplitTime(-t) + ' before the gun' : formatSplitTime(t) + ' into the race'}</div>`
+        + row('Speed over the ground', kn(q[7]))
+        + row('Boat speed through the water', kn(q[8]))
+        + row('Wind speed', kn(q[9]))
+        + row('Angle to the wind', abs == null ? '\u2014' : `${abs}\u00b0`)
+        + (pointOf ? `<div style="color:#dbeafe; margin-top:4px;">${pointOf}, ${side}</div>` : '')
+        + row('Speed toward / away from the wind', kn(q[11]))
+        + row('Spinnaker', q[4] ? 'Up' : 'Down')
+        + (q[12] ? `<div style="color:#67e8f9; margin-top:2px;">Planing</div>` : '');
+}
+function _trialMapWire(host) {
+    const M = _trialMap, cv = M.cv;
+    host.querySelectorAll('.res-trial-leg').forEach(r => r.addEventListener('click', () => _trialMapSelect(+r.dataset.leg)));
+    if (cv.dataset.wired) return;   // the canvas outlives the race; its listeners read the current _trialMap
+    cv.dataset.wired = '1';
+    let tip = document.getElementById('res-trial-tip');
+    if (!tip) { tip = document.createElement('div'); tip.id = 'res-trial-tip';
+        tip.style.cssText = 'position:absolute; pointer-events:none; display:none; z-index:5; background:rgba(6,14,26,0.94); border:1px solid rgba(255,255,255,0.18); border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.55; min-width:250px; box-shadow:0 8px 24px rgba(0,0,0,0.5);';
+        cv.parentElement.style.position = 'relative'; cv.parentElement.appendChild(tip); }
+    const at = (e) => { const r = cv.getBoundingClientRect(), k = _trialMap.px / r.width; return [(e.clientX - r.left) * k, (e.clientY - r.top) * k, k, r]; };
+    cv.addEventListener('mousemove', (e) => {
+        if (!_trialMap) return;
+        const [x, y, k] = at(e), i = _trialMapNearest(x, y, 14 * k);
+        _trialMap.hover = i >= 0 ? i : null; _trialMapDraw();
+        cv.style.cursor = i >= 0 ? 'pointer' : '';
+        if (i < 0) { tip.style.display = 'none'; return; }
+        tip.innerHTML = _trialMoment(i); tip.style.display = '';
+        const host = cv.parentElement.getBoundingClientRect(), ox = e.clientX - host.left, oy = e.clientY - host.top;
+        const left = ox + 18 + tip.offsetWidth > host.width ? ox - tip.offsetWidth - 18 : ox + 18;
+        tip.style.left = Math.max(4, left) + 'px'; tip.style.top = Math.max(4, Math.min(host.height - tip.offsetHeight - 4, oy - 20)) + 'px';
+    });
+    cv.addEventListener('mouseleave', () => { if (_trialMap) { _trialMap.hover = null; _trialMapDraw(); } tip.style.display = 'none'; });
+    cv.addEventListener('click', (e) => {
+        if (!_trialMap) return;
+        const [x, y, k] = at(e); const M2 = _trialMap, keep = M2.sel; M2.sel = null;   // search every leg, not just the picked one
+        const i = _trialMapNearest(x, y, 14 * k); M2.sel = keep;
+        _trialMapSelect(i >= 0 ? (M2.run[i][6] || 0) : null);
+    });
 }
 
 // Venue, breeze, fleet size — and whether the race is actually over, which it often is
@@ -3111,11 +3384,18 @@ function renderResultsHero(sorted, player, leader) {
     host.dataset.sig = sig;
 
     const dnf = !!rs.resultStatus;
-    const headline = dnf ? rs.resultStatus : ordinalOf(pos);
+    // TIME TRIALS are solo: the time is the headline, and the ghost is the boat you raced.
+    const solo = sorted.length === 1;
+    const headline = dnf ? rs.resultStatus : solo ? formatBestTime(rs.finishTime) : ordinalOf(pos);
     // The gap that decided your race — to the boat AHEAD, because that is the one you were
     // sailing against. The winner gets the gap they won by instead.
     let gap = '';
-    if (dnf) {
+    const gt = solo && window.TimeTrial ? TimeTrial.ghostTime() : null;
+    if (solo && !dnf) {
+        gap = gt == null ? 'Your first run here — it is your ghost now'
+            : rs.finishTime < gt ? `${(gt - rs.finishTime).toFixed(2)}s faster than your ghost — the new ghost`
+            : `+${(rs.finishTime - gt).toFixed(2)}s behind your ghost`;
+    } else if (dnf) {
         gap = rs.resultStatus === 'DNS' ? 'Never started' : 'Did not finish';
     } else if (ahead && ahead.raceState.finished && !ahead.raceState.resultStatus) {
         gap = `+${(rs.finishTime - ahead.raceState.finishTime).toFixed(2)}s behind ${ahead.name}`;
@@ -3151,7 +3431,7 @@ function renderResultsHero(sorted, player, leader) {
     // one colour. Gold, silver, bronze for the podium and the page's white for everyone
     // else; the screen used to shout every result in gold, which made a seventh look like a
     // win until you read the number.
-    const pc = placeColor(pos, dnf);
+    const pc = solo ? (best && best.isBest ? '#f2c14e' : '#eef3fb') : placeColor(pos, dnf);
     // The band's wash is the PLAYER'S colour, not a gold that belongs to first place. It is
     // the same colour as the glow behind the portrait sitting in it, at a third the alpha.
     if (host.parentElement) {
@@ -3165,20 +3445,20 @@ function renderResultsHero(sorted, player, leader) {
                      style="width:100%;height:100%;object-fit:contain;" draggable="false">
             </div>
             <div>
-                <div class="t-label" style="font-size:12px;letter-spacing:0.24em;color:${pc};">${dnf ? 'You Did Not Finish' : 'You Finished'}</div>
+                <div class="t-label" style="font-size:12px;letter-spacing:0.24em;color:${pc};">${dnf ? 'You Did Not Finish' : solo ? 'Time Trial' : 'You Finished'}</div>
                 <div class="flex items-baseline gap-3.5" style="margin-top:4px;">
-                    <span class="t-display italic" style="font-size:${dnf ? 46 : 72}px;line-height:1;color:${pc};">${headline}</span>
+                    <span class="t-display italic" style="font-size:${dnf ? 46 : solo ? 60 : 72}px;line-height:1;color:${pc};">${headline}</span>
                     <div>
                         <div class="t-display-8 t-display uppercase" style="font-size:19px;letter-spacing:0.02em;">${escapeHTMLText(player.name)}</div>
                         <!-- YOUR time is the second-biggest thing on the page, at full precision — the
                              record card beside it used to out-size it with thousandths while this
                              read 02:44, which put the emphasis on the wrong race. -->
-                        ${dnf ? '' : `<div class="t-mono" style="font-size:34px;font-weight:900;line-height:1.05;margin-top:2px;color:${best && best.isBest ? '#f2c14e' : '#eef3fb'};">${formatBestTime(rs.finishTime)}</div>`}
+                        ${dnf || solo ? '' : `<div class="t-mono" style="font-size:34px;font-weight:900;line-height:1.05;margin-top:2px;color:${best && best.isBest ? '#f2c14e' : '#eef3fb'};">${formatBestTime(rs.finishTime)}</div>`}
                         <div style="font-size:13px;color:#9fb2cc;margin-top:2px;">${gap}</div>
                     </div>
                 </div>
                 <div class="flex gap-2" style="margin-top:10px;">${chips.join('')}</div>
-                ${facts ? `<div class="flex items-center gap-3" style="margin-top:10px;">${starStrip(facts.stars, 17)}<span style="font-size:13px; color:${facts.stars >= 4 ? '#f2c14e' : '#9fb2cc'};">${starSentence(facts.stars, facts.missed, 'race')}${best && best.isBestStars && facts.stars > 0 ? ' <span style="color:#f2c14e;">New best here.</span>' : ''}</span></div>` : ''}
+                ${facts && !solo ? `<div class="flex items-center gap-3" style="margin-top:10px;">${starStrip(facts.stars, 17)}<span style="font-size:13px; color:${facts.stars >= 4 ? '#f2c14e' : '#9fb2cc'};">${starSentence(facts.stars, facts.missed, 'race')}${best && best.isBestStars && facts.stars > 0 ? ' <span style="color:#f2c14e;">New best here.</span>' : ''}</span></div>` : ''}
             </div>
         </div>
         ${recordCard(best, rs)}`;
@@ -3331,7 +3611,7 @@ function boatStartTime(b) {
     return t > 0 ? Math.round(t * 10) / 10 : null;
 }
 function boatDistKm(b) {
-    return Math.round(unitsToKm(b.raceState.legDistances.reduce((a, c) => a + c, 0)) * 100) / 100;
+    return Math.round(sailedKm(b.raceState.legDistances.reduce((a, c) => a + c, 0)) * 100) / 100;
 }
 
 // BEST AND WORST OF EACH MEASURED COLUMN — quickest and slowest burst, quickest and slowest
@@ -3820,7 +4100,7 @@ function refreshClubhouse() {
     // A profile from before that key existed falls back to `venue` once, until a pick.
     const last = VENUE_ORDER.includes(settings.lastRaceVenue) ? settings.lastRaceVenue
                : (settings.venue && VENUE_ORDER.includes(settings.venue)) ? settings.venue : 'bay';
-    const raceState = $('door-race-state'); if (raceState) raceState.textContent = `Last trial · ${venueDisplayName(last) || last}`;
+    const raceState = $('door-race-state'); if (raceState) { raceState.textContent = venueDisplayName(last) || last; raceState.style.cssText = "min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"; }
     const racePic = $('door-race-pic');
     if (racePic) {
         racePic.innerHTML = `<img src="assets/images/venues/${last}.png" alt="${escapeHTMLText(venueDisplayName(last) || last)}" draggable="false">`;
@@ -3828,17 +4108,19 @@ function refreshClubhouse() {
         // the course's time to beat. The door says "Set a record" — this is the number.
         const best = (typeof bestForVenue === 'function') ? bestForVenue(last) : null;
         const prov = (typeof provisionalRecord === 'function') ? provisionalRecord(last) : null;
-        const rec = best ? { label: 'Your best', t: best.t, mine: true } : (prov != null ? { label: 'Time to beat', t: prov, mine: false } : { label: 'No record yet', t: null, mine: false });
+        const rec = best && best.t != null ? { label: 'Your best', t: best.t, mine: true } : (prov != null ? { label: 'Time to beat', t: prov, mine: false } : { label: 'No record yet', t: null, mine: false });
         // m:ss.s — the door is a glance, not the records book.
         const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
-        racePic.insertAdjacentHTML('beforeend', `<span class="ch-chip" style="position:absolute; right:12px; bottom:12px; display:inline-flex; align-items:center; gap:8px; background:rgba(6,14,26,0.8); color:${rec.mine ? '#f2c14e' : rec.t != null ? '#dbeafe' : '#9fb2cc'}; border:1px solid ${rec.mine ? 'rgba(242,193,78,0.5)' : 'rgba(255,255,255,0.22)'};">${rec.label}${rec.t != null ? ` <span class="t-mono" style="font-size:13px; letter-spacing:0; text-transform:none;">${fmt(rec.t)}</span>` : ''}${best && best.stars ? ` ${starStrip(best.stars, 11)}` : ''}</span>`);
+        racePic.insertAdjacentHTML('beforeend', `<span class="ch-chip" style="position:absolute; right:12px; bottom:12px; display:inline-flex; align-items:center; gap:8px; background:rgba(6,14,26,0.8); color:${rec.mine ? '#f2c14e' : rec.t != null ? '#dbeafe' : '#9fb2cc'}; border:1px solid ${rec.mine ? 'rgba(242,193,78,0.5)' : 'rgba(255,255,255,0.22)'};">${rec.label}${rec.t != null ? ` <span class="t-mono" style="font-size:13px; letter-spacing:0; text-transform:none;">${fmt(rec.t)}</span>` : ''}</span>`);
     }
     for (const id of ['hub-hero-img', 'hub-hero-bg']) { const el = $(id); if (el && HUB_HERO && el.getAttribute('src') !== HUB_HERO) el.src = HUB_HERO; }
     // Who you are, in the header. Locked mid-series, so the pill says so then.
     const me = playerCharacter();
     const skImg = $('hub-skipper-img'); if (skImg) { skImg.src = `assets/images/competitors/${me.name.toLowerCase()}.png`; skImg.alt = me.name; }
     const skName = $('hub-skipper-name'); if (skName) skName.textContent = me.name;
-    const tally = $('clubhouse-tally'); if (tally) tally.textContent = `${Series.pool().length} venues · ${CUPS.length} cups · ${(typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.length : 0} sailors`;
+    // Sailors = the ones you have: the starting ten plus everyone unlocked (all of them when unlocks are off).
+    const sailors = (typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.filter(c => !window.Unlocks || Unlocks.isUnlocked(c.name)).length : 0;
+    const tally = $('clubhouse-tally'); if (tally) tally.textContent = `${Series.pool().length} venues · ${CUPS.length} cups · ${sailors} sailors`;
 }
 // The race board — the pre-race overlay, in whichever dress the moment calls for.
 function showRaceBoard() {
@@ -3886,25 +4168,65 @@ function startCup(id) {
     enterSeriesRace();   // straight to the race 1 briefing; the fleet is a detour from there
 }
 
-// ── series ───────────────────────────────────────────────────────────────────
-let _seriesLen = 4, _seriesDraw = null;
+// ── the Race door ────────────────────────────────────────────────────────────
+// RACE (Wes, Sep 27 2026): the fleet, one race or a series of up to thirteen — drawn at random from
+// every venue (Redraw is free until you start), or picked by hand in the order you
+// click them, Clubhouse Point included. Four races or more fly a pennant (the biggest tier the
+// length reaches) and count for the series achievements. The solo race is Time Trials.
+let _seriesLen = 4, _seriesDraw = null, _seriesMode = 'draw', _seriesPicks = [];
 function showSeriesPicker() { if (!_seriesDraw) _seriesDraw = Series.draw(_seriesLen); renderSeriesPicker(); _chShow(UI.seriesOverlay); }
+function _seriesChosen() { return _seriesMode === 'pick' ? _seriesPicks.slice() : (_seriesDraw || []); }
 function renderSeriesPicker() {
-    const lens = document.getElementById('series-lengths'), grid = document.getElementById('series-draw'), note = document.getElementById('series-draw-note');
-    if (!lens || !grid || !_seriesDraw) return;
+    const $ = (id) => document.getElementById(id);
+    const lens = $('series-lengths'), grid = $('series-draw'), note = $('series-draw-note');
+    if (!lens || !grid) return;
+    if (!_seriesDraw) _seriesDraw = Series.draw(_seriesLen);
+    const pick = _seriesMode === 'pick';
+    document.querySelectorAll('#series-mode .ch-mode').forEach(b => {
+        b.classList.toggle('sel', b.dataset.mode === _seriesMode);
+        b.onclick = () => { _seriesMode = b.dataset.mode; renderSeriesPicker(); };
+    });
+    // How many races: 1..12 when drawing; when picking, the count is what you have picked.
     const pens = Series.pennants();
-    lens.innerHTML = Series.lengths().map(n => { const p = pens.find(q => q.n === n) || {};
-        const line = p.won ? 'Pennant won' : p.best ? `Best ${_ordinal(p.best)}` : '';
-        return `<button type="button" class="ch-len${n === _seriesLen ? ' sel' : ''}" data-n="${n}"><span class="t-display n">${n}</span><span class="t-label t-label-sm" style="color:${n === _seriesLen ? '#dbeafe' : '#7f8ea9'};">races</span>`
-            + `<span style="margin-top:6px;">${pennantHTML(n, !!p.won, 34)}</span><span class="t-label t-label-xs" style="color:${p.won ? '#f2c14e' : '#7f8ea9'}; min-height:12px;">${line}</span></button>`; }).join('')
-        + `<div class="flex items-center" style="padding:0 6px; font-size:13px; line-height:1.5; color:#9fb2cc;">Twelve is every venue, shuffled.</div>`;
+    const nNow = pick ? _seriesPicks.length : _seriesLen;
+    $('series-len-title').textContent = pick ? `${nNow} race${nNow === 1 ? '' : 's'} picked` : 'How many races?';
+    lens.style.display = pick ? 'none' : '';
+    lens.innerHTML = Array.from({ length: RACE_MAX }, (_, i) => i + 1).map(n => {
+        const tier = SERIES_LENGTHS.includes(n) ? pens.find(q => q.n === n) : null;
+        return `<button type="button" class="ch-len${n === _seriesLen ? ' sel' : ''}" data-n="${n}"><span class="t-display n">${n}</span>`
+            + (tier ? `<span style="margin-top:2px;">${pennantHTML(n, !!tier.won, 22)}</span>` : `<span style="height:24px;"></span>`) + `</button>`; }).join('');
     lens.querySelectorAll('.ch-len').forEach(b => b.addEventListener('click', () => { _seriesLen = +b.dataset.n; _seriesDraw = Series.draw(_seriesLen); renderSeriesPicker(); }));
+    const tier = pennantTier(nNow), tp = tier ? pens.find(q => q.n === tier) : null;
+    $('series-pennant-note').textContent = nNow === 0 ? 'Click venues in the order you want to race them — any or all of them.'
+        : nNow === 1 ? 'One race against the fleet. No standings, no pennant.'
+        : nNow < 4 ? `${nNow} races, one set of standings. Four or more races fly a pennant.`
+        : `Sails for the ${tier}-race pennant${tp && tp.won ? ' — already yours' : tp && tp.best ? ` · your best ${_ordinal(tp.best)}` : ''}.`;
+    $('series-right-title').textContent = pick ? 'Pick your venues' : nNow === 1 ? 'Your venue' : 'Your draw';
+    $('series-bar-note').textContent = pick ? (_seriesPicks.length ? 'Click a picked venue again to take it out.' : 'Pick at least one venue.')
+        : 'Not the draw you wanted? Redraw as often as you like — it is free until you start.';
+    $('series-redraw-btn').style.display = pick ? 'none' : '';
+    const chosen = _seriesChosen();
+    $('series-start-label').textContent = chosen.length === 1 ? 'Sail this race' : 'Sail this series';
+    $('series-start-btn').disabled = !chosen.length;
+    $('series-start-btn').style.opacity = chosen.length ? '' : '0.4';
+    if (pick) {
+        const all = VENUE_ORDER.slice();
+        grid.style.gridTemplateColumns = 'repeat(5, minmax(0, 1fr))';
+        grid.innerHTML = all.map(k => { const i = _seriesPicks.indexOf(k);
+            return `<div class="ch-pick${i >= 0 ? ' on' : ''}" data-k="${k}">${_routeTile(k, '', '', 1.4, 220)}${i >= 0 ? `<span class="ch-pick-n">${i + 1}</span>` : ''}</div>`; }).join('');
+        grid.querySelectorAll('.ch-pick').forEach(el => el.addEventListener('click', () => {
+            const k = el.dataset.k, i = _seriesPicks.indexOf(k);
+            if (i >= 0) _seriesPicks.splice(i, 1); else if (_seriesPicks.length < RACE_MAX) _seriesPicks.push(k);
+            renderSeriesPicker(); }));
+        if (note) note.textContent = _seriesPicks.length ? `${_seriesPicks.length} race${_seriesPicks.length === 1 ? '' : 's'} · about ${_seriesPicks.length * 5} minutes on the water` : '';
+        return;
+    }
     const n = _seriesDraw.length;
-    const cols = n <= 4 ? 4 : n <= 6 ? 3 : 4;
-    grid.style.gridTemplateColumns = `repeat(${cols}, minmax(0, 1fr))`;
-    const tilePx = n <= 4 ? 260 : n <= 6 ? 360 : 260;   // 4 or 3 columns of the draw grid
-    grid.innerHTML = _seriesDraw.map((k, i) => _routeTile(k, '', `Race ${i + 1}`, n > 6 ? 1.8 : (n > 4 ? 1.4 : 1), tilePx)).join('');
-    if (note) note.textContent = `${n} races · about ${n * 5} minutes on the water`;
+    const cols = n <= 4 ? n : n <= 6 ? 3 : 4;
+    grid.style.gridTemplateColumns = `repeat(${Math.max(cols, 2)}, minmax(0, 1fr))`;
+    const tilePx = n <= 4 ? 260 : n <= 6 ? 360 : 260;
+    grid.innerHTML = _seriesDraw.map((k, i) => _routeTile(k, '', n === 1 ? escapeHTMLText(venueDisplayName(k) || k) : `Race ${i + 1}`, n > 6 ? 1.8 : (n > 4 ? 1.4 : n === 1 ? 1.6 : 1), tilePx)).join('');
+    if (note) note.textContent = `${n} race${n === 1 ? '' : 's'} · about ${n * 5} minutes on the water`;
 }
 
 // Onto the board for the current race of the cup or series.
@@ -3931,15 +4253,15 @@ function showFleetPage(opts) {
     // Render AFTER un-hiding: the boat previews measure the band they sit in.
     selectedCompetitor = null;
     renderCompetitorGrid();
-    if (UI.fleetCrumb) UI.fleetCrumb.textContent = inS ? `${Series.active.name} · the fleet for all ${Series.total()} races`.toUpperCase() : 'THE FLEET · TIME TRIAL';
+    if (UI.fleetCrumb) UI.fleetCrumb.textContent = !inS ? 'THE FLEET · TIME TRIAL' : Series.total() === 1 ? 'RACE · THE FLEET' : `${Series.active.name} · the fleet for all ${Series.total()} races`.toUpperCase();
     const fromBoard = _fleetFrom === 'board';
-    if (UI.fleetBackLabel) UI.fleetBackLabel.textContent = inS ? (fromBoard ? 'Briefing' : (Series.active.kind === 'cup' ? 'Cups' : 'Series')) : 'Venues';
+    if (UI.fleetBackLabel) UI.fleetBackLabel.textContent = inS ? (fromBoard ? 'Briefing' : (Series.active.kind === 'cup' ? 'Cups' : 'Race')) : 'Venues';
     if (UI.fleetPrimaryBtn) UI.fleetPrimaryBtn.innerHTML = inS ? (fromBoard ? `Back to the briefing ${_CH_ARROW}` : `Race 1 briefing ${_CH_ARROW}`) : `Start Race ${_CH_ARROW}`;
     if (UI.fleetContext) {
         const key = settings.venue, c = venueCard(key);
         const me = playerCharacter();
         UI.fleetContext.innerHTML = `
-            <div class="t-label t-label-sm" style="color:#dbeafe;">${inS ? 'Race 1 of ' + Series.total() : 'Time trial'}</div>
+            <div class="t-label t-label-sm" style="color:#dbeafe;">${inS ? (Series.total() === 1 ? 'One race' : 'Race 1 of ' + Series.total()) : 'Time trial'}</div>
             <div style="border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,0.09); background:#101a2e;">
                 <div class="pr-venue-shot" style="aspect-ratio:1.5; border-radius:0; box-shadow:none;">${venueThumb(key, escapeHTMLText(c.name || key), 400)}</div>
                 <div class="flex flex-col" style="padding:16px 20px 18px; gap:6px;">
@@ -3990,15 +4312,16 @@ function finishOrder() {
     });
 }
 function styleResultsButtons() {
-    const inS = !!(window.Series && Series.active);
+    const inS = !!(window.Series && Series.active) && !_oneRace();
     if (UI.resultsRestartButton) UI.resultsRestartButton.textContent = inS ? `Abandon ${Series.active.kind}` : 'Back to Clubhouse';
-    if (UI.resultsRematchButton) UI.resultsRematchButton.innerHTML = inS ? `Standings ${_CH_ARROW}` : 'Rematch &#8635;';
+    const trial = !!(window.TimeTrial && TimeTrial.solo()) && state.boats.length === 1;
+    if (UI.resultsRematchButton) UI.resultsRematchButton.innerHTML = inS ? `Standings ${_CH_ARROW}` : trial ? 'Retry &#8635;' : 'Rematch &#8635;';
 }
 function proceedToStandings() {
     if (!window.Series || !Series.active) return;
     if (!Series.active.results[Series.active.index]) Series.recordRace(finishOrder());
-    if (window.Unlocks) { Unlocks.flush(finishOrder()); presentUnlocks(); }
     const final = Series.finished();
+    if (window.Unlocks) { Unlocks.flush(finishOrder()); if (final) Unlocks.seriesFinal(Series.summary()); presentUnlocks(); }
     if (final) Series.recordFinal();
     renderStandings(final);
     _chShow(UI.standingsOverlay);

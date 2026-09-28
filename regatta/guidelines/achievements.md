@@ -282,6 +282,9 @@ and more spectacular of the two.
 
 ## B · The Start Line (3)
 
+*Built Sep 27 2026 (eval/test_start.js). Skip is visible, not hidden (Wes: nothing hidden). Autopilot: never within
+1.0 s, never first across; Wes's own starts: ~76 of 221 within 1.0 s.*
+
 | Character | Title | Earned by |
 |---|---|---|
 | **Crush** (Mantis Shrimp) | Gun Fighter | Cross the line **within 1.0s of the gun** — confirming Wes's note; the draft already read `< 1s`. The fastest strike in the ocean, earned by timing. Sub-0.1s is the Frame Perfect burgee. |
@@ -289,6 +292,10 @@ and more spectacular of the two.
 | **Skip** (Green Basilisk) | Trigger Happy | Go OCS, restart, and still win. Hidden until your first OCS. |
 
 ## C · Clean & Dirty (2)
+
+*Built Sep 27 2026 (js/game/unlocks.js, eval/test_clean.js). Shake It Off went to **Grotto** (wolf eel) — Stomp is
+Emberfall's four-star character (Wes). Measured: bot races with rules on penalize 0–2 rivals (12 races, three venues),
+so Untouchable's 5+ is very rare unless the player's own racing stirs the fleet up.*
 
 Regal moved to the series family, where a zero-penalty regatta belongs.
 
@@ -302,6 +309,11 @@ Clean Season burgee — he moved to the shark ladder, per Wes.)*
 
 ## D · Close Racing (3)
 
+*Built Sep 27 2026 (eval/test_close.js). Latch kept Inches (Wes) — Clubhouse Point's 'Same Every Week' went to
+**Mitt**. Photo Finish = the nearest boat still racing within 55 u of the line as you cross; Inches = on port, across a
+starboard boat's bow 0–55 u ahead of it; The Circle = every rounding/gate within 55 u of the nearest mark (not the
+finish), at least one seen, no mark touched. Autopilot: wide at every race, 0 photo finishes, 0 Inches.*
+
 | Character | Title | Earned by |
 |---|---|---|
 | **Pulse** (Tree Frog) | Photo Finish | Win by less than a boatlength. |
@@ -311,7 +323,14 @@ Clean Season burgee — he moved to the shark ladder, per Wes.)*
 *(Flare moved to the series family — see below. His old "beat the same rival 5
 races running" was a grind with no story; Wes's replacement is a much better one.)*
 
-## E · Leg & Mark Craft (7)
+## E · Leg & Mark Craft (8)
+
+*Built Sep 27 2026 (eval/test_legs.js). Wes: Sable and Flash stay at Clubhouse Point, Bruiser and Nib stay in the
+shark pack — **Saffron** (lined seahorse) took Perfect Roundings, **Sovereign** (Napoleon wrasse) Run Line, and a new
+**Wick** (storm petrel, portrait owed) Beat Line — the fastest upwind leg, top three. Threading needs 3+ legs (not the
+start). Never Passed and Perfect Roundings also need a top-three finish (at the back you can't be passed or lose a
+place — the autopilot in last place earned Perfect Roundings until then). Up/downwind legs: within 60° of the course
+wind, from the route. Autopilot (9 races): earns none.*
 
 | Character | Title | Earned by |
 |---|---|---|
@@ -324,6 +343,14 @@ races running" was a grind with no story; Wes's replacement is a much better one
 | **Splash** (Hippo) | All Kite | **Win a race with the spinnaker up for more than half the elapsed time.** *(was: gain 3+ places on downwind legs)* The exact inverse of Lateen, which is the joke: the sailing purist wins without ever hoisting, and the most joyful heavyweight in the file wins by never taking it down. Rewards reading a course for kite-legs and committing. |
 
 ## F · Boat Handling & Conditions (8)
+
+*Built Sep 27 2026 (sim/course.js checkHandling, eval/test_handling.js). Wes: Grip takes Never Let Go; Lateen is Clubhouse
+Point's and Mola has a venue row, so two new characters — **Bluebottle** (Portuguese man o' war, One Sail, Forever) and
+**Dab** (flounder, Sunbather); **Spin** was always new. All three portraits owed (prompt.py bluebottle / dab / spin).
+Wind = the average true wind at the player's boat, gun to finish. Measured bands (bots' own positions): Bayou ~5 kn and
+the Lake ~7 (Whisper Wind), Bluewater ~19 and Glacier Sound ~23 (Storm Wall), Pearl Lagoon and Otter Point ~17, the rest 10–15 (all 13 measured). Tacks/gybes = the wind side
+changing through the bow/stern, held 1.5 s. Surgical waits until second finishes or the clock passes your time + 30 s.
+The kite is manual for the player, so One Sail, Forever = never pressing the kite key.*
 
 | Character | Title | Earned by |
 |---|---|---|
@@ -339,6 +366,15 @@ races running" was a grind with no story; Wes's replacement is a much better one
 
 ## F2 · Legal Aggression (3)
 
+*Built Sep 27 2026 (sim/course.js checkAggression, eval/test_aggression.js; probes _aggro_feats.js, _aggro_air.js). Wes moved
+**Spike** here (his roster line is "makes his own right of way"); Glacier Sound's Calving Face went to **Chime** the beluga.
+**Corsair** and Chime shipped the same day (Corsair's hull is #0E4F57 — the slot's teal was Grizzle's). A pass = a rival
+ahead (fleetRank's order) that falls behind for 4 s; a re-pass of one boat inside 10 s of its last counted pass is free (at
+a 2 s hold the autopilot's churn made 13 passes finishing 9th; at 4 s its best was 12, no penalty-free 15 seen). Give way =
+Sawbill's Redrock detector anywhere: the rival's own avoidance GIVE_WAY against the player at HIGH/IMMINENT, > 0.35 rad
+off course for 0.8 s; different rivals (autopilot best 3). Dirty air = physics.js's bad-air cone attributed to the
+player's boat, intensity ≥ 0.1, gaps under 1 s forgiven (autopilot best 21 s; a rival placed in the cone stays 1–14 s).*
+
 Racing's third food group after clean and fast: *forcing*. All three reward
 making rivals flinch **within the rules**, and all three are void if you take any
 penalty that race. The reward is never for contact.
@@ -346,10 +382,26 @@ penalty that race. The reward is never for contact.
 | Character | Title | Earned by |
 |---|---|---|
 | **Frenzy** (Piranha) | Feeding Frenzy | **15 gross overtakes in one race, no penalties.** *(was 9)* Wes's catch is exact: with a ten-boat fleet, 9 net passes is just *winning*. Gross passes (re-passes of the same boat debounced 10s) in a shifty race can run well past fleet size, so 15 means you genuinely ate through the fleet more than once. The single-race counter; the series version is Lance. |
-| **Spike** (Narwhal) | Makes His Own Right of Way | Force 5 rivals to give way in one race — duck, tack or bear away while you hold ROW — no penalties on you. |
-| **Corsair** (Frigatebird) · NEW | Air Thief | **Hold a rival in your dirty air for 30 continuous seconds, and beat them.** Wes's "dirtying someone's air for a period of time," and the frigatebird is the character it was waiting for: the kleptoparasite that harasses other seabirds in the air until they give up what they're carrying. It never lands on water, it steals its whole living, and it's the most piratical silhouette in the sky. The one achievement in the game for using your own wind shadow as a weapon. |
+| **Spike** (Narwhal) · moved from Glacier Sound | Makes His Own Right of Way | Force 5 rivals to give way in one race — duck, tack or bear away while you hold ROW — no penalties on you. |
+| **Corsair** (Frigatebird) · NEW | Air Thief | **Hold a rival in your dirty air for 30 continuous seconds, and beat them — no penalties.** Wes's "dirtying someone's air for a period of time," and the frigatebird is the character it was waiting for: the kleptoparasite that harasses other seabirds in the air until they give up what they're carrying. It never lands on water, it steals its whole living, and it's the most piratical silhouette in the sky. The one achievement in the game for using your own wind shadow as a weapon. |
+
+## T · Time Trials (1) — built Sep 27 2026
+
+*The solo mode's one achievement (Wes). A comb jelly — a new phylum for the roster (ctenophores), and a see-through
+racer for a race against your own ghost. `timetrial.js` emits 'ghost:beaten' only when a run beats a ghost you already
+had (founding the first ghost is not beating it); `_count` keeps the venues in career `ghostVenues`; the row counts in
+solo (Unlocks.soloCounts: family 'trials'). Shipped Sep 27 2026.*
+
+| Character | Title | Earned by |
+|---|---|---|
+| **Phantom** (Comb Jelly) · NEW | Ghost Story | Beat your own ghost in Time Trials at five different venues. |
 
 ## F3 · The Odometer Pair (2)
+
+*Built Sep 27 2026 (eval/test_odometer.js). Flicker is Clubhouse Point's wildlife rung, so Longest Migration went to a
+new character: **Meridian** the leatherback turtle (Wes; the longest migration of any reptile; portrait owed —
+prompt.py meridian). Distance is each boat's legDistances. The winner finishes first, so the answer waits (null, and
+the results page keeps asking) until every boat still sailing is either home or already past the player's distance.*
 
 | Character | Title | Earned by |
 |---|---|---|
@@ -370,81 +422,75 @@ character, the honest threshold is a real ocean crossing (≈3,000 nm), not 100 
 | **Cruz** (California Newt) | World Tour | **Win a race at every venue in the game.** *(swapped with Mistral per Wes)* One of the coolest characters in the file and quietly the strongest total statline (+14), so he should cost the broadest thing a player can do. "Never once out of position" now means *anywhere*. |
 | **Muninn** (Raven) | The Rememberer | **Hold the manual-trim track record at every venue in the game.** *(was: unlock all 99 others)* The raven who remembers everything is the one name at the top of every manual board — he is the sum of all sixteen trim masters and then some. This also fixes the moving-target problem Wes raised: a collection target rots every time the roster grows, but a mastery target doesn't — new characters don't touch it, and a new *venue* reads as an honest new summit rather than a chore. **If you hold Muninn and a new venue ships, you keep him.** He remains the only character with a special trait (`windFast`). |
 
-## H · The Shark Pack (9 + capstone)
+## G2 · The Grand Tour (4) — built Sep 27 2026 (Wes)
 
-Wes: *include more sharks in the progression and end with the Whale Shark.* The
-pack becomes the roster's flagship collection with **twelve sharks and four ways
-in** — a ladder, feats, venues, and a capstone.
-
-**Should Bruce still be first?** Yes — and the question dissolves once you notice
-Bruce isn't a *rung*, he's the seed: he's free on screen one. The first *earned*
-shark is Blaze. Keeping the great white as the starter is right for the same
-reason he was picked for the ten: he's the character the competitive player grabs
-without scrolling, and *beating the famous one* is a better opening chapter than
-beating an obscure one. A bull shark opening the collection would be a deep cut
-in the one slot that needs instant recognition — so Bruiser stays where he's
-best, as the shark that turns up in fresh water where no shark belongs.
-
-**The ladder** — each unlock becomes the next opponent:
+Stars at every racing venue — the 13 in VENUE_ORDER, Clubhouse Point included, not the Sailing School. One star is a
+win, so the first rung is Cruz's planned World Tour; Muninn moved from Prestige's manual-trim boards to the top rung.
+The best stars per venue are kept in the career (`career.venues[v].stars`, any race, never down); each row shows N of 13.
+A venue added later joins the set; a character already earned is kept. (eval/test_tour.js)
 
 | Character | Title | Earned by |
 |---|---|---|
-| **Blaze** (Mako) | Faster Fish | Beat Bruce 3 consecutive races. |
-| **Anvil** (Hammerhead) | Harder Fish | Beat Blaze 3 consecutive races. |
-| **Stripes** (Tiger Shark) | Eats Everything | **Beat Anvil 3 consecutive races.** *(moved into the ladder per Wes; his old 10-clean-races criterion became a Clean Season burgee tier)* The tiger is the right third rung — after the fastest and the widest comes the one that eats whatever it finds. |
-| **Lash** (Thresher) · future | Tail End | Beat Stripes 3 consecutive races. Build when the ladder needs a fourth rung — and vary the rule when it ships; four identical rungs is one too many. |
+| **Cruz** (California Newt) | World Tour | Win a race at every venue |
+| **Strut** (Flamingo) | Two-Star Tour | 2+ stars at every venue |
+| **Breeze** (Nudibranch) | Three-Star Tour | 3+ stars at every venue |
+| **Muninn** (Raven) | The Rememberer | 4 stars at every venue |
 
-**The feat sharks:**
+## H · The Shark Pack (12) — built Sep 27 2026
 
-| Character | Title | Earned by |
-|---|---|---|
-| **Dozer** (Nurse Shark) | Wide Awake | Cross the start line dead last, then finish on the podium. He sleeps through the start and wakes up near your transom; so did you. |
-| **Woebegone** (Wobbegong) · bench | The Rug Moves | Podium after being last at the halfway mark. |
-| **Razor** (Barracuda) | Swims With Sharks | Finish ahead of every shark in a race with **3+ sharks** in the fleet. Not a shark, and not the capstone — the fish that hangs with sharks and fears none. |
-
-**The venue sharks** (counted in their venue tracks below): **Bruiser** the Bull
-Shark (win at Stillwater, Sockeye *and* Redrock — the freshwater triple),
-**Roam** the Blue Shark (Bluewater Bonanza), **Relic** the Greenland Shark
-(Glacier Sound), **Goblin** the Goblin Shark (Glowtide Strait), **Gape** the
-Basking Shark (Fallwater Fjord), **Blacktip** (Reef 2).
-
-**The capstone:**
+*Built Sep 27 2026 (js/game/unlocks.js family 'sharks', eval/test_sharks.js). Wes set the ladder: **Bruce → Blaze →
+Stripes → Bruiser → Anvil → Lash → Nib → Goblin → Relic → Dapple**; Dozer, Woebegone and Razor keep their sketched
+feats; Gape waits for Fallwater Fjord. Every rung asks you to beat the shark before it (`prey`), and that shark is
+guaranteed a place in your fleet until you have (Unlocks.huntTarget — a slot on top of the new-unlock two). Any race
+against the fleet counts — a Race of any length or a Cup race; a Time Trial has none. "In a row" counts only races
+that shark was in (career `h2h`: streak, clean streak, per-venue streak, venues beaten at). The rules vary up the
+ladder: plain streaks at the bottom, then where and how.*
 
 | Character | Title | Earned by |
 |---|---|---|
-| **Dapple** (Whale Shark) | The Gentle Giant | **Own every shark in the game.** The last one to arrive is the biggest and gentlest fish in the sea. Evaluated against the sharks that have shipped at the time you complete it — **shipping a new shark later never takes Dapple back.** He should ship while the pack is still being collected, not after. |
+| **Blaze** (Mako) | Faster Fish | Finish ahead of Bruce in 3 races in a row. |
+| **Stripes** (Tiger Shark) | Eats Everything | Finish ahead of Blaze in 3 races in a row. |
+| **Bruiser** (Bull Shark) | Fresh Water | Finish ahead of Stripes at all three fresh waters: Stillwater Lake, Sockeye Run and Redrock Reservoir. (The bull shark is the one that swims up rivers; his old freshwater-triple idea folded into the ladder.) |
+| **Anvil** (Hammerhead) | Harder Fish | Finish ahead of Bruiser in 3 races in a row, no penalty in any of them. |
+| **Lash** (Thresher) | Tail End | Round the first mark behind Anvil, then finish ahead of him. (The thresher stuns from behind.) |
+| **Nib** (Blacktip Reef Shark) | Reef Runner | Finish ahead of Lash at Pearl Lagoon, leading him at every mark. |
+| **Goblin** (Goblin Shark) | Out of the Deep | Finish ahead of Nib at Glowtide Strait. |
+| **Relic** (Greenland Shark) | Four Hundred Winters | Finish ahead of Goblin at Glacier Sound in 2 races in a row (races there). |
+| **Dapple** (Whale Shark) | The Gentle Giant | Earn every other shark (the ladder, Dozer, Woebegone, Roam, Mitt — and Gape once he ships; earned is never taken back). Arrives in the same race as the last one. |
+| **Dozer** (Nurse Shark) | Wide Awake | Cross the start line dead last of the fleet, then finish in the top three. |
+| **Woebegone** (Wobbegong) | The Rug Moves | Last of the fleet at the halfway mark, then top three. |
+| **Razor** (Barracuda) | Swims With Sharks | Finish ahead of every shark in a race with three or more sharks in the fleet. |
 
-## S · Series — the consistency family (13)
+## S · Series — the consistency family (10) — built Sep 27 2026
 
-Wes's biggest structural note: *more achievements around series — that rewards
-the consistency that is hard to obtain but represents real skill.* Agreed, and
-it's the cleanest gap in the Aug 3 draft — one-race feats reward a good day,
-series feats reward being good. This family is now the second largest.
+*Built Sep 27 2026 with the mode change (Wes): **Time Trials is solo** — you, the clock and the ghost of your best
+run (js/game/timetrial.js); records and target times are set only there, and a solo race counts only for the venue
+rungs about the course (mechanic, explorer, target, wildlife; not Sawbill's give-way) — never a win, a place, a star
+or a career count/streak. **Race** (the old Series door) is 1–13 races against the fleet, drawn at random or
+picked by hand from all thirteen venues (Clubhouse Point included, Wes); a Race of one reads as one race (Back to
+Clubhouse / Rematch with the same fleet). Pennants go to the biggest tier the length reaches (4/6/8/10/12). Cups are
+unchanged and don't count here — they have their own trophies and 1–4 stars.*
 
-Everything here needs the regatta system (4 / 8 / 10 / full, low-point scoring).
-**Four of them need discards**, which real series scoring has anyway — and the
-discard is what makes Renew possible.
+*A **series** = a Race of 4+ races sailed to its last race (Series.summary, Unlocks.seriesFinal, checked once when the
+last race is scored). High-point 10..1, DNF 0, no discards, ties on the last race. Test: eval/test_race_modes.js.
+Pearl and Scoop left the family (no series repeats a venue; both have venue rows). Crest (macaroni penguin) is new —
+Wes wanted one somewhere; macaronis spend ~six months at sea after breeding. All six portraits shipped Sep 27 2026.*
 
 | Character | Title | Earned by |
 |---|---|---|
-| **Anchor** (Sea Turtle) | Champion | **Win your first regatta.** *(was: top-5 in 5 consecutive races; the orca held this)* Wes: the top-5 streak was the weaker achievement anyway. Beloved, mellow, brutally consistent — the sea turtle is a better face for *your first championship* than a streak nobody notices they're on. The top-5 streak becomes a burgee. |
-| **Regal** (Mute Swan) | White Gloves | Win a regatta with zero penalties. Royalty is earned politely. |
-| **Mistral** (Swift) | The Season | **Complete 10 regattas.** *(swapped with Cruz per Wes)* The common swift stays airborne for ten months without landing — attendance is literally its superpower, and a genuinely valuable late unlock (+5 accel, +5 momentum) for the player who keeps showing up. |
-| **Flare** (Fighting Fish) | Grudge Match | **Win a regatta you entered the final race trailing on points.** *(was: beat the same rival 5 races running)* Wes's own replacement, and it's much better: the old one asked you to care about a rival the game never told you to care about, while this one manufactures a rival out of the standings automatically. The last race of a series you're losing is the most charged race the game can produce, and the Siamese fighting fish should be the one waiting at the end of it. |
-| **Tempo** (Snapping Shrimp) · NEW | Metronome | **Every start of a regatta inside 1.0s of the gun.** Wes's example, taken literally, because "all of them" is a much better feat than "the average." The pistol shrimp's snap is the loudest and one of the fastest actions in the ocean, and it fires on command — Crush is the single perfect strike, Tempo is never missing one. |
-| **Titan** (Giant Trevally) · NEW | By Daylight | **Win every race of a regatta by 5+ seconds** (8+ race format). Wes's dominance feat. Winning a race by five seconds is a good race; doing it eight times running is a statement. The GT is the reef's most feared predator and the one gamefish anglers describe as unfair — the right face for total dominance. |
-| **Lance** (Sailfish) · NEW | Through the Fleet | **Average 10+ overtakes per race across a regatta.** Wes's series version of Frenzy. The fastest fish in the ocean, which hunts by slashing through a bait ball again and again rather than picking one fish — exactly the shape of the achievement. *(Third billfish after Spar and Torrent — flag for the livery test; the sail itself should carry the silhouette.)* |
-| **Huddle** (Emperor Penguin) · NEW | No Discard | **Podium in every race of a full-length regatta.** The endurance feat: no bad day, not even one you're allowed to throw away. Emperors do the hardest sustained thing in the animal world and do it by not breaking formation. |
-| **Renew** (Immortal Jellyfish) · NEW | The Discard | **Win a regatta despite finishing last in one of its races.** The most forgiving achievement in the game and the most sailing-literate: the discard is real series scoring, and every club sailor has won a series on the back of one throw-out. *Turritopsis dohrnii* reverts to its juvenile form and starts over, which is the only animal on Earth that is literally a drop race. |
-| **Pearl** (Oyster) | Flawless | Sweep a **lagoon** regatta of 8+ races — win every one. *(venue: Pearl Lagoon)* |
-| **Scoop** (Pelican) | Club Champion | Win a **full-length** Clubhouse series. *(venue: Clubhouse Point)* Beer-can racing is a season, not a weekend. |
-| **Nimbus** (Eagle Ray) | Glide Path | *(moved — now Pearl Lagoon's mechanic rung)* |
-| **Snag** (Hellbender) | Older Than the River | *(moved — now Sockeye Run's mechanic rung)* |
+| **Anchor** (Sea Turtle) | Champion | Win a series. |
+| **Regal** (Mute Swan) | White Gloves | Win a series with every race clean — no penalty, never aground. |
+| **Mistral** (Swift) | The Season | Sail 10 series to the end, any result. |
+| **Flare** (Fighting Fish) | Grudge Match | Win a series you went into the last race behind on points (strictly fewer than the leader). |
+| **Tempo** (Snapping Shrimp) · NEW | Metronome | Every start within 1.0 s of the gun, in a series of 6+. |
+| **Titan** (Giant Trevally) · NEW | By Daylight | Win every race of a series of 8+, each by 5 s or more. |
+| **Lance** (Sailfish) · NEW | Through the Fleet | Win a series having passed every boat in the fleet at least once (`passed:<name>` feats, a counted pass). *(was: average 10 overtakes — it paid for bad starts)* |
+| **Huddle** (Emperor Penguin) · NEW | Unbroken | Top three in every race of a series of 12 or more. *(was "No Discard")* |
+| **Renew** (Immortal Jellyfish) · NEW | Start Over | Win a series of 6+ despite a last place or a DNF in one race. *(was "The Discard")* |
+| **Crest** (Macaroni Penguin) · NEW | Six Months at Sea | Win a series of 12 or more races. |
 
-**Two more good series ideas, deliberately left as burgees**: win regattas at 5
-different venues (that's Cruz's World Tour with extra steps) and lead a series
-after every single race (wire-to-wire, which Titan already implies). Both tier
-naturally, which is the burgee test.
+Two series ideas stay burgees (Wes, to come back to): regattas won at N different venues, and leading a series after
+every race.
 
 ---
 

@@ -132,7 +132,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.allInWater, 'a minute on, every cruiser is still in the water (off the sand; over reef is fine)');
     ok(r.dryIsSand, 'the swimmers\' dry-land test knows a sand cay is dry');
     ok(r.formationTight, 'the rays keep formation');
-    ok(r.shoals === 'yellowtang:26,bluetang:20,yellowtang:22', `three schools of tangs (${r.shoals})`);
+    ok(r.shoals === 'yellowtang:26,bluetang:20,goldie:28,chromis:30,humbug:18', `five reef schools: yellow and blue tangs, sea goldies, green chromis, humbugs (${r.shoals})`);
     ok(r.shoalsHome, 'a minute on, the schools are still round their coral heads, in the water');
     ok(r.shoalMoves, 'the schools circle their coral heads (the reef they sit on is water to a fish)');
     ok(r.tangSpeed <= 14, `calm tangs cruise slowly (fastest ${r.tangSpeed.toFixed(1)} u/s)`);

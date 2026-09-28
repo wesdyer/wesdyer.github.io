@@ -38,6 +38,12 @@ function recordTrajectory(dt) {
                     return h.toString(16) + ':' + str.length;
                 } catch (e) { return null; } })(),
                 started: new Date().toISOString(), legs: state.race.totalLegs,
+                // SOLO OR COMPETITIVE (Wes, Sep 27 2026): a Time Trial is sailed alone and a race against a fleet
+                // is a different race — dirty air, traffic, covering — so a target time (set_venue_targets.js)
+                // reads only one kind. `context` says which door it came through.
+                mode: state.boats.length === 1 ? 'solo' : 'competitive',
+                context: (window.School && School.active) ? 'school' : (window.Series && Series.active) ? Series.active.kind === 'cup' ? 'cup' : 'race'
+                       : (window.TimeTrial && TimeTrial.solo()) ? 'timetrial' : 'single',
                 // WHO the rivals were, once — the per-sample tuples are anonymous,
                 // and a human-vs-bot comparison needs the fleet and its difficulty.
                 fleet: state.boats.filter(b => !b.isPlayer).map(b => b.name),
@@ -223,7 +229,7 @@ function recordTrajectory(dt) {
             delete t.acc; delete t._lastSt; delete t._evT; delete t.hint; delete t.hintLg; delete t._riv;
             const a = document.createElement('a');
             a.href = URL.createObjectURL(new Blob([JSON.stringify(t)], { type: 'application/json' }));
-            a.download = 'traj_' + t.venue + '_' + Date.now() + '.json';
+            a.download = 'traj_' + t.venue + '_' + t.mode + '_' + Date.now() + '.json';
             a.click(); URL.revokeObjectURL(a.href);
         } else if (recTraj) recTraj = null; // too short to keep (e.g. instant reset)
     } catch (e) { /* the recorder must never break the game */ }

@@ -292,6 +292,8 @@ function checkMarkCollisions(dt) {
             const res = satPolygonCircle(poly, circ, circ.r);
             if (res) {
                 if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_mark', { boat });
+                // the player touching a mark (Popper's 'The Circle' must not) — an event only
+                if (boat.isPlayer && state.race.status === 'racing' && !boat.raceState.finished && typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'close:touch' });
 
                 // Store Collision Data for AI
                 if (boat.ai) {

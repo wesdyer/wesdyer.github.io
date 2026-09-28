@@ -1139,9 +1139,12 @@ function mmStaticLayer(name, key, w, h) {
     return L;
 }
 
+// drawMinimap.target = { ctx } draws the chart onto another canvas instead — the Time Trials results map —
+// with no boats, leaving the projection in drawMinimap.last ({ cx, cy, scale, width, height }) for whatever
+// the caller draws on top (the run's track).
 function drawMinimap() {
     if (!minimapCtx) { const c = document.getElementById('minimap'); if(c) minimapCtx = c.getContext('2d'); }
-    const ctx = minimapCtx;
+    const ctx = (drawMinimap.target && drawMinimap.target.ctx) || minimapCtx;
     if (!ctx || !state.boats.length) return;
 
     const width = ctx.canvas.width, height = ctx.canvas.height;
@@ -1508,6 +1511,7 @@ function drawMinimap() {
         beacon(p.x, p.y, 4.6);
     }
 
+    if (drawMinimap.target) { drawMinimap.last = { cx, cy, scale, width, height }; return; }
     // Boats
     // Marker size. These were tuned when the minimap framed player+marks; a
     // mask venue shows the WHOLE map, where a fixed 8px arrow is a boat the size
@@ -1528,6 +1532,19 @@ function drawMinimap() {
         ctx.fillStyle = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
         ctx.fill();
         ctx.strokeStyle = 'rgba(11, 28, 43, 0.85)'; ctx.lineWidth = 1.4 * mk; ctx.stroke();
+    }
+
+    // TIME TRIALS: your ghost, as a hollow arrow the size of yours — the same shape says "you",
+    // the missing fill says "not really". Under your own arrow.
+    const gp = window.TimeTrial && TimeTrial.solo() && TimeTrial._ghost && state.race.status !== 'waiting'
+        ? TimeTrial.poseAt(state.race.status === 'prestart' ? -state.race.timer : state.race.timer) : null;
+    if (gp) {
+        const pos = t(gp.x, gp.y);
+        ctx.save(); ctx.translate(pos.x, pos.y); ctx.rotate(gp.heading);
+        ctx.beginPath(); ctx.moveTo(0, -11); ctx.lineTo(7, 8.5); ctx.lineTo(0, 5); ctx.lineTo(-7, 8.5); ctx.closePath();
+        ctx.fillStyle = 'rgba(255,255,255,0.18)'; ctx.fill();
+        ctx.setLineDash([3, 2]); ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 1.6; ctx.stroke();
+        ctx.restore();
     }
 
     // THE PLAYER IS A LARGE WHITE ARROW — drawn last, so it is never buried under a rival.
@@ -1584,8 +1601,12 @@ function updateLeaderboard() {
     }
     UI.leaderboard.classList.remove('hidden');
 
+    // TIME TRIALS: your ghost races on the board as a boat would (TimeTrial.leaderEntry). Its progress
+    // comes from the recorded run, not from getBoatProgress.
+    const ghost = window.TimeTrial ? TimeTrial.leaderEntry() : null;
+    const prog = (b) => (b.isGhost && !b.raceState.finished) ? b.ghostProgress : getBoatProgress(b);
     // Sort boats
-    const sorted = [...state.boats].sort((a, b) => {
+    const sorted = [...state.boats, ...(ghost ? [ghost] : [])].sort((a, b) => {
         // Scoring helper: 0=Finished, 1=DNF, 2=DNS, 3=Racing
         const getScore = (boat) => {
             if (!boat.raceState.finished) return 3;
@@ -1605,13 +1626,14 @@ function updateLeaderboard() {
         if (a.raceState.leg !== b.raceState.leg) return b.raceState.leg - a.raceState.leg;
 
         // 3. Progress within leg (For Racing or DNF/DNS tiebreak)
-        const pA = getBoatProgress(a);
-        const pB = getBoatProgress(b);
+        const pA = prog(a);
+        const pB = prog(b);
         return pB - pA;
     });
+    if (ghost) ghost.prevRank = ghost.lbRank;
 
     const leader = sorted[0];
-    const leaderProgress = getBoatProgress(leader);
+    const leaderProgress = prog(leader);
 
     // Update Header
     // The pips carry the count, so the label is just a label. `2/4` beside four bars with
@@ -1715,10 +1737,12 @@ function updateLeaderboard() {
             // renames boat 0 in place (and `swapClashingOpponent` can re-identify an AI) —
             // so a src set once at row creation left the OLD portrait on the row while the
             // name beside it updated. Cheap to re-check: a string compare per row per draw.
-            if (faceImg && faceImg.dataset.face !== boat.name) {
-                faceImg.dataset.face = boat.name;
-                faceImg.src = "assets/images/competitors/" + boat.name.toLowerCase() + ".png";
+            const faceName = boat.face || boat.name;
+            if (faceImg && faceImg.dataset.face !== faceName) {
+                faceImg.dataset.face = faceName;
+                faceImg.src = "assets/images/competitors/" + faceName.toLowerCase() + ".png";
             }
+            if (faceImg) faceImg.style.opacity = boat.isGhost ? '0.45' : '';
 
             const dnx = boat.raceState.leg === 0 && !boat.raceState.finished;
             let rowClass = "lb-row flex items-center transition-colors duration-500";
@@ -1740,9 +1764,11 @@ function updateLeaderboard() {
                                  : 'transparent';
 
             rankDiv.style.color = me ? me : dnx ? '#475569' : '#64748b';
-            nameDiv.style.color = boat.raceState.penalty ? '#f87171'
+            nameDiv.style.color = boat.isGhost ? '#94a3b8'
+                                : boat.raceState.penalty ? '#f87171'
                                 : me ? me
                                 : dnx ? '#64748b' : '#ffffff';
+            if (boat.isGhost) row.style.background = 'rgba(148,163,184,0.10)';
             nameDiv.textContent = boat.name;
             rankDiv.textContent = index + 1;
 
@@ -1769,11 +1795,11 @@ function updateLeaderboard() {
                     if (boat.raceState.finished) {
                         distDiv.textContent = "+" + (boat.raceState.finishTime - leader.raceState.finishTime).toFixed(1) + "s";
                     } else {
-                        const diff = Math.max(0, totalRaceDist - getBoatProgress(boat));
+                        const diff = Math.max(0, totalRaceDist - prog(boat));
                         distDiv.textContent = "+" + Math.round(diff * 0.2) + "m";
                     }
                 } else {
-                    const diff = Math.max(0, leaderProgress - getBoatProgress(boat));
+                    const diff = Math.max(0, leaderProgress - prog(boat));
                     distDiv.textContent = "+" + Math.round(diff * 0.2) + "m";
                 }
             }

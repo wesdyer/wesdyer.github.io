@@ -12,7 +12,9 @@ window.addEventListener('resize', resize);
 // The race-day hero is sized from its column's width, so it has to be re-sized with it.
 window.addEventListener('resize', sizeRaceDayHero);
 // After the hero re-sizes, the chart's box has a new width — re-decide and re-draw.
-window.addEventListener('resize', layoutVenueCourseMap);
+// ⚠️ NOT `addEventListener('resize', layoutVenueCourseMap)`: the listener is handed the Event, which
+// landed in the `pending` parameter — truthy — and every resize hid the chart and the records with it.
+window.addEventListener('resize', () => layoutVenueCourseMap());
 resize();
 
 window.addEventListener('click', () => {

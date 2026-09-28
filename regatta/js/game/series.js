@@ -2,8 +2,10 @@
 //
 // One object underneath the three ways onto the water that are more than one race
 // (guidelines/venues.md, the Sep 2026 clubhouse redesign): a CUP is a fixed, named list
-// of four venues with a trophy; a SERIES is a random draw of 4/6/8/10/12 from the twelve
-// racing venues. Both lock the fleet and the player's character from the start of race
+// of four venues with a trophy; a SERIES is what the clubhouse's RACE door sails (Wes, Sep 27
+// 2026): one race or up to thirteen against the fleet — every venue, Clubhouse Point included —
+// drawn at random or picked by hand. A Race of one is a series of one: no standings,
+// no pennant. The solo race against the clock is Time Trials (timetrial.js). Both lock the fleet and the player's character from the start of race
 // one, score 10 for a win down to 1 with DNF/DNS at 0, sum every race with no discards,
 // and break ties on the better place in the LAST race — stepping back a race when
 // neither boat placed in it. A single race is not a series and never touches this.
@@ -30,7 +32,11 @@ const CUPS = [
       venues: ['lagoon', 'river', 'flats', 'volcanic'],
       blurb: 'A squall, a current, a falling tide, a vent. Every race has a clock in it.' },
 ];
-const SERIES_LENGTHS = [4, 6, 8, 10, 12];
+const SERIES_LENGTHS = [4, 6, 8, 10, 12];     // the pennant tiers
+const RACE_MAX = 13;                            // a Race is 1..13 races: every venue once
+// The pennant a series of n races flies: the biggest tier it reaches (a 7-race series earns the
+// 6-race pennant); under four races, none.
+function pennantTier(n) { let t = 0; for (const L of SERIES_LENGTHS) if (n >= L) t = L; return t; }
 const TROPHIES_KEY = 'regatta_trophies';
 
 // A win is worth ten, tenth is worth one; anyone who did not finish scores nothing.
@@ -57,11 +63,10 @@ const Series = {
     cups() { return CUPS; },
     cup(id) { return CUPS.find(c => c.id === id) || null; },
     lengths() { return SERIES_LENGTHS; },
-    // The twelve racing venues: the picker's order minus the benchmark course. The school
-    // pond is not in VENUE_ORDER at all.
+    // Every venue in the picker's order, Clubhouse Point included (Wes, Sep 27 2026: the draw and a pick both
+    // reach all thirteen). The school pond is not in VENUE_ORDER at all.
     pool() {
-        const order = (typeof VENUE_ORDER !== 'undefined') ? VENUE_ORDER : [];
-        return order.filter(k => k !== 'seatrials');
+        return (typeof VENUE_ORDER !== 'undefined') ? VENUE_ORDER.slice() : [];
     },
     rng() {
         if (!this._rng) {
@@ -70,7 +75,7 @@ const Series = {
         }
         return this._rng;
     },
-    // n venues, no repeats, in a shuffled order. Twelve is every venue.
+    // n venues, no repeats, in a shuffled order. Thirteen is every venue.
     draw(n, rng) {
         const r = rng || this.rng();
         const pool = this.pool().slice();
@@ -91,7 +96,7 @@ const Series = {
     },
     startSeries(venues) {
         if (!venues || !venues.length) return null;
-        this.active = { kind: 'series', id: 'series-' + venues.length, name: `${venues.length}-race series`,
+        this.active = { kind: 'series', id: 'series-' + venues.length, name: venues.length === 1 ? 'Race' : `${venues.length}-race series`,
                         venues: venues.slice(), index: 0, fleet: null, character: null, results: [] };
         return this.active;
     },
@@ -125,11 +130,24 @@ const Series = {
             return { name: b.name, isPlayer: !!b.isPlayer, pos: finished ? place : null, status,
                      time: (rs.finished && !status) ? rs.finishTime : null, pts: seriesPoints(place, finished),
                      // The four star facts, for the player only (the bots' marks are not ranked).
-                     facts: b.isPlayer ? this.raceFacts(rs, finished ? place : null) : null };
+                     facts: b.isPlayer ? this.raceFacts(rs, finished ? place : null) : null,
+                     // What the Series achievements ask of each race (js/game/unlocks.js, family 'series'), player only.
+                     aggro: b.isPlayer ? this._raceExtras(order, b) : null };
         });
         const result = { venue: this.currentVenue(), index: this.active.index, rows };
         this.active.results[this.active.index] = result;
         return result;
+    },
+    // The player's start (seconds after the gun, null if never started), the winning margin over second (a lower
+    // bound while second is still sailing: the clock past the player's time), and the rivals passed this race
+    // (sim/course.js checkAggression's 'passed:<name>' feats).
+    _raceExtras(order, me) {
+        const rs = me.raceState || {}, feats = Object.keys((state.race && state.race.unlocks && state.race.unlocks.feats) || {});
+        let margin = null;
+        if (order[0] === me && rs.finished && !rs.resultStatus) { const two = order[1], t = two && two.raceState;
+            margin = !two ? Infinity : (t.finished && !t.resultStatus) ? t.finishTime - rs.finishTime : Math.max(0, ((state.race && state.race.timer) || 0) - rs.finishTime); }
+        return { start: rs.startLegDuration != null ? rs.startLegDuration : null, margin,
+                 passed: feats.filter(f => f.startsWith('passed:')).map(f => f.slice(7)) };
     },
     advance() {
         if (!this.active || this.isLast()) return false;
@@ -238,7 +256,9 @@ const Series = {
             // trophy of its own — but it has a length, and length is difficulty: twelve venues
             // in a row is a different feat from four. One pennant per length, won once and kept,
             // with the best result at that length beside it.
-            const n = s.venues.length;
+            const n = pennantTier(s.venues.length);
+            if (!n) { this.lastFinal = { kind: 'series', n: 0, won: me.rank === 1, firstPennant: false };
+                      t.series = Object.assign({}, prev, { sailed: (prev.sailed || 0) + 1, last: new Date().toISOString() }); this.saveTrophies(t); return t; }
             const byLen = Object.assign({}, prev.byLen || {});
             const pl = byLen[n] || { sailed: 0, won: false, best: null, pts: 0 };
             this.lastFinal = { kind: 'series', n, won: me.rank === 1, firstPennant: me.rank === 1 && !pl.won };
@@ -248,6 +268,21 @@ const Series = {
         }
         this.saveTrophies(t);
         return t;
+    },
+    // THE SERIES AS THE ACHIEVEMENTS SEE IT (family 'series' in unlocks.js): only a random-draw Series sailed to
+    // its last race counts — a Cup has its own trophy and stars (Wes, Sep 27 2026). Null for anything else.
+    summary(s) {
+        s = s || this.active;
+        if (!s || s.kind !== 'series' || s.venues.length < 4 || s.results.filter(Boolean).length < s.venues.length) return null;
+        const table = this.standings(), me = table.find(r => r.isPlayer); if (!me) return null;
+        const races = s.results.map(r => { const row = r.rows.find(q => q.isPlayer) || {}, x = row.aggro || {};
+            return { venue: r.venue, pos: row.pos, finished: row.pos != null, last: row.pos == null || row.pos === r.rows.length,
+                     clean: !!(row.facts && row.facts.clean), start: x.start != null ? x.start : null, margin: x.margin != null ? x.margin : null, passed: x.passed || [] }; });
+        // before the last race: the player's points against the best of anyone else's
+        const before = (row) => row.pts.slice(0, -1).reduce((a, b) => a + b, 0);
+        const leaderBefore = Math.max(...table.filter(r => !r.isPlayer).map(before));
+        return { n: s.venues.length, won: me.rank === 1, rank: me.rank, races, fleet: (s.fleet || table.filter(r => !r.isPlayer).map(r => r.name)).slice(),
+                 trailing: s.venues.length > 1 && before(me) < leaderBefore };
     },
     cupsWon() { const t = this.trophies(); return CUPS.filter(c => t[c.id] && t[c.id].won).length; },
     // The pennant rack: one entry per series length, in order.
@@ -259,5 +294,5 @@ const Series = {
 
 function _ordinalWord(n) { n = n | 0; const s = ['th', 'st', 'nd', 'rd'], v = n % 100; return n + (s[(v - 20) % 10] || s[v] || s[0]); }
 
-if (typeof window !== 'undefined') { window.Series = Series; window.CUPS = CUPS; window.seriesPoints = seriesPoints; }
+if (typeof window !== 'undefined') { window.Series = Series; window.CUPS = CUPS; window.seriesPoints = seriesPoints; window.pennantTier = pennantTier; }
 if (typeof module !== 'undefined' && module.exports) module.exports = { Series, CUPS, SERIES_LENGTHS, seriesPoints };

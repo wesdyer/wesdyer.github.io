@@ -154,10 +154,17 @@
             // Schools of tangs round three coral heads by the course (Sep 25 2026, Wes): yellow
             // at the staghorn by mark 3 and the brain coral on the leg home, blue at the pillar
             // on the 3->4 leg. A cloud of bright slivers — a tang is flat, so from above it is a
-            // thin fleck — that scatters from a boat and gathers again.
+            // thin fleck — that scatters from a boat and gathers again. Sep 27 2026 (Wes): the brain-coral
+            // school is SEA GOLDIES (anthias) — orange-pink, so the three read as three colours — and scattering
+            // all three in one race is Fizz's Wildlife rung ('lagoon:shoals').
             shoals: [{ kind: 'yellowtang', count: 26, prop: 'prop-43', reactR: 110 },
                      { kind: 'bluetang', count: 20, prop: 'prop-34', reactR: 110 },
-                     { kind: 'yellowtang', count: 22, prop: 'prop-8', reactR: 110 }],
+                     { kind: 'goldie', count: 28, prop: 'prop-8', reactR: 110 },
+                     // Sep 27 2026 (Wes): two more to FIND, off the racing line — green chromis hovering over the
+                     // east staghorn (780 u off the course), humbug damselfish in the west elkhorn (1,090 u off).
+                     { kind: 'chromis', count: 30, prop: 'prop-26', reactR: 110 },
+                     { kind: 'humbug', count: 18, prop: 'prop-15', reactR: 110 }],
+            shoalsFeat: 'lagoon:shoals',
         },
         // Sockeye Run (designed Sep 25 2026). The stream runs toward the finish; the salmon
         // run the other way. Placed by eval/_river_spots.js in the shallows 20-60 u off the bank.
@@ -280,7 +287,9 @@
         glowtide: {
             bloom: { c: [-2350, -2550], r: 280, n: 520 },
             // each manta travels a circuit of feeding spots, stopping at each to feed (loops and flips)
-            mantas: { routes: [[[650, 3150], [1300, 2600], [300, 2300], [-100, 3300]], [[250, 1350], [-600, 1100], [-200, 400], [600, 800]], [[-420, -700], [300, -1100], [-200, -2100], [-900, -1300]]] },
+            mantas: { routes: [[[650, 3150], [1300, 2600], [300, 2300], [-100, 3300]], [[250, 1350], [-600, 1100], [-200, 400], [600, 800]], [[-420, -700], [300, -1100], [-200, -2100], [-900, -1300]],
+                // three more feeding in the far south-west shoal by the bonfire — Blink's Explorer spot (Wes, Sep 27 2026)
+                [[-2980, 3160], [-2700, 3060], [-2600, 3330], [-2900, 3440]], [[-2650, 3480], [-2860, 3560], [-3000, 3380], [-2780, 3300]], [[-2560, 3200], [-2700, 3150], [-2820, 3260], [-2640, 3380]]] },
             // three colonies commuting back and forth between the islands all night, each on its own line
             foxes: { paths: [[[2900, 1400], [-3400, 1250]], [[2700, -350], [-3300, -650]], [[2600, 2900], [-3300, 3300]]], n: [5, 8], z: [55, 85] },
             // swimming spots on and beside the course (the sunken rocks and reef edges they forage)
@@ -876,6 +885,10 @@
         G.a += dt * 0.05;
         let tx = G.hx + Math.cos(G.a) * (60 + 30 * Math.sin(G.a * 1.7)), ty = G.hy + Math.sin(G.a) * (60 + 30 * Math.sin(G.a * 1.3));
         const b = (state.boats || []).find(bt => Math.hypot(bt.x - G.cx, bt.y - G.cy) < c.reactR + 40);
+        // the player scattering it (Fizz's rung: every school in one race)
+        const pl = playerCanEarn();
+        if (pl && Math.hypot(pl.x - G.cx, pl.y - G.cy) < c.reactR + 40 && !G.byPlayer) { G.byPlayer = true;
+            if (cfg && cfg.shoalsFeat && shoals.length && shoals.every(q => q.byPlayer)) feat(cfg.shoalsFeat); }
         if (b) { G.flee = 1.6; const d = Math.hypot(G.cx - b.x, G.cy - b.y) || 1; G.fx = (G.cx - b.x) / d; G.fy = (G.cy - b.y) / d; }
         G.flee = Math.max(0, G.flee - dt);
         if (G.flee > 0) { tx = G.cx + G.fx * 90; ty = G.cy + G.fy * 90; }
@@ -4610,8 +4623,16 @@
     // TANGS from above: a tang is flat side to side, so from above it is a thin bright sliver —
     // yellow, or royal blue with a yellow tail — and a school is a cloud of them, all facing the
     // way it moves, a shade of shadow on the sand under each.
+    // SEA GOLDIES (anthias, Sep 27 2026): the same flat reef-fish sliver from above but slimmer, glowing
+    // orange-gold with a pink cast, and a deep LYRE TAIL — two long pink lobes — so a goldie school reads as
+    // a warmer, finer cloud than the tangs.
+    // GREEN CHROMIS: small, slim, glowing blue-green — a school hovering over branching coral. HUMBUGS (three-
+    // striped damselfish): white with three bold black bars, a chunky little fish, so they read as black-and-white
+    // specks against the others' colour.
+    const SHOAL_LOOK = { bluetang: ['#2f63ee', '#ffd21f', 1], yellowtang: ['#ffd21f', '#f5c400', 1], goldie: ['#ff6a10', '#ff2f86', 0.9],
+                         chromis: ['#3fe0c0', '#8ff4e0', 0.8], humbug: ['#f6f7f2', '#1a1a1a', 1.1] };
     function drawShoal(ctx, G) {
-        const blue = G.cfg.kind === 'bluetang';
+        const look = SHOAL_LOOK[G.cfg.kind] || SHOAL_LOOK.yellowtang, lyre = G.cfg.kind === 'goldie';
         const tint = waterTint();
         for (const f of G.fish) {
             const s = TANG_SCALE * f.size, w = Math.sin(f.ph * 3) * 0.12 * Math.min(1, 0.3 + (f.spd || 0) / 12);
@@ -4620,10 +4641,13 @@
             ctx.restore();
             ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(s, s);
             ctx.globalAlpha *= 0.9;
-            ctx.fillStyle = blue ? '#2f63ee' : '#ffd21f';
+            ctx.fillStyle = look[0]; ctx.scale(look[2], 1);
             ctx.beginPath(); ctx.moveTo(0, -3.8); ctx.quadraticCurveTo(1.35, -1.2, 0.9, 2.2); ctx.lineTo(0, 2.6); ctx.lineTo(-0.9, 2.2); ctx.quadraticCurveTo(-1.35, -1.2, 0, -3.8); ctx.fill();
-            ctx.fillStyle = blue ? '#ffd21f' : '#f5c400';
-            ctx.beginPath(); ctx.moveTo(0, 2.3); ctx.lineTo(-1.3 + w, 4.4); ctx.lineTo(0, 3.7); ctx.lineTo(1.3 + w, 4.4); ctx.closePath(); ctx.fill();
+            if (G.cfg.kind === 'humbug') { ctx.save(); ctx.clip(); ctx.fillStyle = '#1a1a1a'; for (const by of [-2.6, -0.6, 1.4]) ctx.fillRect(-1.6, by, 3.2, 0.75); ctx.restore(); }
+            ctx.scale(1 / look[2], 1);
+            ctx.fillStyle = look[1];
+            if (lyre) { ctx.beginPath(); ctx.moveTo(0, 2.2); ctx.lineTo(-1.5 + w, 5.4); ctx.lineTo(-0.5 + w, 4.1); ctx.lineTo(0, 3.5); ctx.lineTo(0.5 + w, 4.1); ctx.lineTo(1.5 + w, 5.4); ctx.closePath(); ctx.fill(); }
+            else { ctx.beginPath(); ctx.moveTo(0, 2.3); ctx.lineTo(-1.3 + w, 4.4); ctx.lineTo(0, 3.7); ctx.lineTo(1.3 + w, 4.4); ctx.closePath(); ctx.fill(); }
             ctx.globalAlpha *= 0.3; ctx.fillStyle = `rgb(${tint})`;
             ctx.beginPath(); ctx.moveTo(0, -3.8); ctx.quadraticCurveTo(1.35, -1.2, 0.9, 2.2); ctx.lineTo(-0.9, 2.2); ctx.quadraticCurveTo(-1.35, -1.2, 0, -3.8); ctx.fill();
             ctx.restore();

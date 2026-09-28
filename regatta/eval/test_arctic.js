@@ -91,7 +91,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         const base = { venue: 'arctic', finished: true, feats: [], vals: {} }, T = (ch, o) => A.find(a => a.char === ch).test(Object.assign({}, base, o));
         out.tiny = T('Tiny', {}) && !T('Tiny', { feats: ['arctic:iced'] });
         out.grin = T('Grin', { vals: { 'arctic:colonies': 4 } }) && !T('Grin', { vals: { 'arctic:colonies': 3 } });
-        out.spike = T('Spike', { feats: ['arctic:face'] }) && !T('Spike', {});
+        out.chime = T('Chime', { feats: ['arctic:face'] }) && !T('Chime', {});
         return out;
     });
     ok(r.pods === '4,3,5', `three orca pods (${r.pods})`);
@@ -109,8 +109,8 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.colVals === '1,2,3,4', `each species counts once (${r.colVals})`);
     ok(r.faceFar === 0 && r.faceNear === 1, 'the glacier face: within 350 u only');
     ok(r.granite === 0 && r.floe === 1 && r.floeStyle, 'iced: ice contact counts, granite does not');
-    ok(r.rows === 'Bluff,Tiny,Spike,Pebble,Fathom,Grin', `six Glacier Sound rows (${r.rows})`);
-    ok(r.tiny && r.grin && r.spike, 'Tiny clean, Grin four colonies, Spike the face');
+    ok(r.rows === 'Bluff,Tiny,Chime,Pebble,Fathom,Grin', `six Glacier Sound rows (${r.rows})`);
+    ok(r.tiny && r.grin && r.chime, 'Tiny clean, Grin four colonies, Chime the face');
     ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs[0] : ''));
     await b.close();
     console.log(fails ? `\nFAIL — ${fails} failure(s)` : '\nPASS — 0 failure(s)');

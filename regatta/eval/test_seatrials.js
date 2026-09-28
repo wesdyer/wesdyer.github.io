@@ -34,7 +34,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         const A = Unlocks.ACHIEVEMENTS.filter(a => a.venue === 'seatrials'); out.rows = A.map(a => a.char + ':' + a.rung).join(',');
         const base = { venue: 'seatrials', finished: true, feats: [], vals: {} }, T = (ch, o, c) => A.find(a => a.char === ch).test(Object.assign({}, base, o), c || { venues: {} });
         const cv = (q) => ({ venues: { seatrials: { recent: q } } });
-        out.latch = T('Latch', {}, cv([190, 191.5, 192.9])) && !T('Latch', {}, cv([190, 191.5, 193.1])) && !T('Latch', {}, cv([190, null, 190.5])) && !T('Latch', {}, cv([190, 190.5]));
+        out.latch = T('Mitt', {}, cv([190, 191.5, 192.9])) && !T('Mitt', {}, cv([190, 191.5, 193.1])) && !T('Mitt', {}, cv([190, null, 190.5])) && !T('Mitt', {}, cv([190, 190.5]));
         out.lateen = T('Lateen', { feats: ['seatrials:everycan'] }) && !T('Lateen', {});
         out.flicker = T('Flicker', { feats: ['seatrials:birds'] }) && !T('Flicker', {});
         out.target = (VenueDoc.get('seatrials').records || {}).provisional;
@@ -84,7 +84,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
           state.camera = oc; out.cornerMiss = miss; out.canvas = cv.width + 'x' + cv.height; }
         return out;
     }, trajs);
-    ok(r.rows === 'Sable:first-win,Latch:mechanic,Lateen:explorer,Flash:target,Skerry:four-stars,Flicker:wildlife', `the six rows (${r.rows})`);
+    ok(r.rows === 'Sable:first-win,Mitt:mechanic,Lateen:explorer,Flash:target,Skerry:four-stars,Flicker:wildlife', `the six rows (${r.rows})`);
     ok(r.latch, 'Same Every Week: three Point finishes in a row within 3.0 s (not 3.1, not with a DNF between, not two)');
     ok(r.lateen && r.flicker, 'Every Can and Under the Birds read their feats');
     ok(r.target === 210, `the target is 3:30 (${r.target})`);

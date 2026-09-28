@@ -42,7 +42,7 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' +
         out.bloom = T('Bloom', { feats: ['glowtide:bloom'] }) && !T('Bloom', {});
         return out;
     });
-    ok(r.jel >= 400 && r.mantas === 3 && r.dug === '3c', `a golden jellyfish bloom (${r.jel}), 3 mantas, 3 dugongs with a calf (${r.dug})`);
+    ok(r.jel >= 400 && r.mantas === 6 && r.dug === '3c', `a golden jellyfish bloom (${r.jel}), 6 mantas (3 in the south-west shoal), 3 dugongs with a calf (${r.dug})`);
     ok(r.calls === 0, `wildlife never calls Math.random (${r.calls})`);
     ok(Object.values(r.dry).every(v => v === 0), `jellies, mantas, dugongs and swimming turtles stay in the water (${JSON.stringify(r.dry)})`);
     ok(['crawldown', 'crawlup', 'nest', 'swim'].every(m => r.modes.includes(m)), `hawksbills swim, and nest: up the beach, dig, back down (${r.modes})`);
@@ -50,7 +50,7 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' +
     ok(r.glowPre === 0, 'glow: nothing counted before the gun');
     ok(r.glow3 >= 2.9 && r.glow3 <= 3.1 && r.glowAway === r.glow3 && r.glowFresh === r.glow3, `glow: 3 s in another boat's wake counts 3 s (${r.glow3}); out of it, or in fresh stern water, adds nothing`);
     ok(r.bloomFar === 0 && r.bloomIn === 1, 'the bloom: only inside it');
-    ok(r.rows === 'Lure,Veil,Bloom,Drift,Prism', `five Glowtide rows (${r.rows})`);
+    ok(r.rows === 'Lure,Veil,Blink,Drift,Prism,Bloom', `six Glowtide rows (${r.rows})`);
     ok(r.veil && r.bloom, 'Veil: a win with 5 s or less in the glow; Bloom: the bloom');
     ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs[0] : ''));
     await b.close(); console.log(fails ? `\nFAIL — ${fails} failure(s)` : '\nPASS — 0 failure(s)'); process.exit(fails ? 1 : 0);

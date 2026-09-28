@@ -1371,6 +1371,13 @@ function updateBoatRaceState(boat, dt) {
         // leg advances: a boat one leg further along outranks the whole fleet by
         // definition, and the boat rounding this mark is about to become that boat.
         const rankHere = boat.isPlayer ? fleetRank(boat) : 0;
+        // CLOSE RACING (Popper's 'The Circle'): a mark rounded — or a gate gone through — more than a boat length off
+        // the nearest mark. Not the finish. An event only, no state.
+        if (boat.isPlayer && state.race.status === 'racing' && rs.leg < state.race.totalLegs && _entry && typeof GameEvents !== 'undefined') {
+            const idx = _entry.marks || (_entry.mark && _entry.mark.markIdx != null ? [_entry.mark.markIdx] : []);
+            let d = 1e9; for (const i of idx) { const m = marks[i]; if (m) d = Math.min(d, Math.hypot(boat.x - m.x, boat.y - m.y) - (m.bodyR || 12)); }
+            if (idx.length) GameEvents.emit('player-feat', { id: d > 55 ? 'close:wide' : 'close:tight', value: Math.round(d) });
+        }
         rs.leg++;
         if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: rs.leg - 1, time: state.race.timer });
         rs.isRounding = false;
@@ -1409,6 +1416,13 @@ function updateBoatRaceState(boat, dt) {
             // legs. The trace's leg field is cosmetic, so this is unobserved by the
             // golden traces — noted rather than relied upon.
             rs.trace.push({ x: boat.x, y: boat.y, leg: rs.leg });
+            // PHOTO FINISH (Pulse): the nearest boat still racing is within a boat length (55 u) of the line as you cross
+            if (boat.isPlayer && typeof GameEvents !== 'undefined' && _entry && _entry.marks && _entry.marks.length === 2) {
+                const a = marks[_entry.marks[0]], b2 = marks[_entry.marks[1]], L = Math.hypot(b2.x - a.x, b2.y - a.y) || 1;
+                let gap = 1e9; for (const o of state.boats) { if (o === boat || o.raceState.finished || o.raceState.leg !== state.race.totalLegs) continue;
+                    gap = Math.min(gap, Math.abs((o.x - a.x) * (b2.y - a.y) - (o.y - a.y) * (b2.x - a.x)) / L); }
+                if (gap <= 55) GameEvents.emit('player-feat', { id: 'close:photo', value: Math.round(gap) });
+            }
             if (boat.isPlayer) {
                 // The record book closes at the line: track record, top speed,
                 // shortest track and quickest start all commit here, and the course
@@ -1418,7 +1432,9 @@ function updateBoatRaceState(boat, dt) {
                 if (rr.track) showToast(`✦ COURSE RECORD — ${formatBestTime(rs.finishTime)}`);
                 showRaceMessage("FINISHED!", "text-green-400", "border-green-400/50");
                 Sound.playFinish();
-                if (window.confetti) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+                // In a time trial the confetti is for beating your ghost, not for finishing alone.
+                const trialMiss = window.TimeTrial && TimeTrial.solo() && TimeTrial.ghostTime() != null && rs.finishTime >= TimeTrial.ghostTime();
+                if (window.confetti && !trialMiss) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             } else {
                 Sayings.queueQuote(boat, "finished_race");
             }
@@ -1505,6 +1521,8 @@ function updateBoatRaceState(boat, dt) {
                                 // BEFORE the leg advances, or you outrank the whole fleet
                                 // by virtue of being the one boat already on leg 1.
                                 if (boat.isPlayer) boat.raceState.startRank = fleetRank(boat);
+                                // first of the whole fleet across (Clutch's 'Line Boss') — an event only, no state
+                                if (boat.isPlayer && !state.boats.some(b => b !== boat && b.raceState.leg > 0) && typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'start:first' });
                                 boat.raceState.leg++;
                                 boat.raceState.roundSweep = 0;
                                 boat.raceState.roundWrong = 0;

@@ -46,10 +46,18 @@ function update(dt) {
     checkRedrockRun();
     checkArcticRun();
     checkGlowRun(dt);
+    checkPondRaft();
+    checkLakeRun();
+    checkRiverSplits();
     checkOtterRun();
     checkVolcanicRun();
     checkFlatsRun(dt);
     checkSeaTrialsRun();
+    checkCloseCrossing();
+    checkLegCraft(dt);
+    checkHandling(dt);
+    checkAggression(dt);
+    if (window.TimeTrial) TimeTrial.update();
     // The swell's own clock. Advanced from dt like everything else, so it pauses with the
     // race and is identical for a given seed — a wave field is pure trigonometry and must
     // never reach for the RNG stream. No-op off the ocean.
@@ -156,6 +164,8 @@ function update(dt) {
                             const along = ((q.x - sm0.x) * sdx + (q.y - sm0.y) * sdy) / sL;
                             if (along >= 0 && along <= sL) { over = true; break; }
                         }
+                        // (the player over at the gun: Skip's 'Trigger Happy' — an event only, no state)
+                        if (over && b.isPlayer && typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'start:ocs' });
                         if (over !== !!b.raceState.ocs) {
                             b.raceState.ocs = over;
                             if (b.isPlayer) {
@@ -624,6 +634,8 @@ function draw() {
     }
     drawRulesOverlay(ctx);
 
+    // Your best run's ghost, under the boats (Time Trials only).
+    if (window.TimeTrial) TimeTrial.drawGhost(ctx);
     // Draw All Boats (viewport cull: mid-race most of the fleet is off-screen)
     const boatViewR = Math.sqrt(canvas.width ** 2 + canvas.height ** 2) * 0.6 + 90;
     const boatViewR2 = boatViewR * boatViewR;
@@ -983,12 +995,18 @@ function draw() {
                      ? ` <span class="t-mono text-slate-500" style="font-size:10px;">Top:${getTop(i)}kn Dist:${getDist(i)}m Moves:${getMoves(i)}</span>`
                      : '';
                  const CHIP = 'bg-slate-900/60 px-2 py-0.5 rounded border-r-2 border-slate-500 shadow-md flex justify-between gap-4';
+                 // TIME TRIALS: each finished split against the ghost's same split — green when you
+                 // were quicker, red when slower (TimeTrial.ghostSplits).
+                 const gs = window.TimeTrial && TimeTrial.solo() ? TimeTrial.ghostSplits() : null;
+                 const vsGhost = (mine, theirs) => (gs && theirs != null && mine != null)
+                     ? ` <span class="t-mono" style="font-size:11px; color:${mine <= theirs ? '#34d399' : '#f87171'};">${mine <= theirs ? '\u2212' : '+'}${Math.abs(mine - theirs).toFixed(1)}</span>`
+                     : '';
 
                  if (player.raceState.startLegDuration !== null) {
-                     html += `<div class="${CHIP}"><span class="t-mono text-slate-300" style="font-size:11px;">Start ${formatSplitTime(player.raceState.startLegDuration)}</span>${tele(0)}</div>`;
+                     html += `<div class="${CHIP}"><span class="t-mono text-slate-300" style="font-size:11px;">Start ${formatSplitTime(player.raceState.startLegDuration)}${vsGhost(player.raceState.startLegDuration, gs && gs.start)}</span>${tele(0)}</div>`;
                  }
                  player.raceState.legTimes.forEach((t, i) => {
-                     html += `<div class="${CHIP}"><span class="t-mono text-slate-300" style="font-size:11px;">Leg ${i+1} ${formatSplitTime(t)}</span>${tele(i+1)}</div>`;
+                     html += `<div class="${CHIP}"><span class="t-mono text-slate-300" style="font-size:11px;">Leg ${i+1} ${formatSplitTime(t)}${vsGhost(t, gs && gs.legs[i])}</span>${tele(i+1)}</div>`;
                  });
                  if ((state.race.status==='racing' || state.race.status==='prestart') && player.raceState.leg <= state.race.totalLegs) {
                      const cur = player.raceState.leg;
@@ -1243,6 +1261,10 @@ function resetGame() {
     }
 
     if (school) School.onFleetBuilt();
+    // TIME TRIALS ARE SOLO (Wes, Sep 27 2026): the fleet is drawn as always, so the rng stream
+    // does not change length, and then sent home — just you, the course and your ghost.
+    if (window.TimeTrial && TimeTrial.solo()) state.boats.length = 1;
+    if (window.TimeTrial) TimeTrial.onReset();
     repositionBoats();
     // THE CAMERA IS PART OF SETTING THE COURSE. It follows the player by lerping 10% a
     // frame, so a race that starts with it parked over the LAST race's finish line spends
@@ -1260,6 +1282,7 @@ function resetGame() {
     // seeded RNG (and leaving stale quotes on screen on a real restart).
     if (!window.__DNS_KEEP_SAYINGS_LEAK) {
         Sayings.queue = [];
+        if (Sayings.current && Sayings.overlay) Sayings.hide();   // don't leave the last race's bubble up
         Sayings.current = null;
         Sayings.timer = 0;
         Sayings.silenceTimer = 0;

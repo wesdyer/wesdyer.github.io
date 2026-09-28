@@ -382,7 +382,7 @@ function checkRedrockRun() {
 //   arctic:iced   Tiny's "Untouched" is a finish WITHOUT it: any contact with ice — a floe, an
 //                 ice island or the glacier shore (style 'ice'; granite does not count). The
 //                 fleet finishes floe-free 6 times in 40, Wes 20 in 38 (eval/_arctic_ice.js).
-//   arctic:face   Spike's "The Calving Face": within faceR of the north glacier front (props
+//   arctic:face   Chime's "The Calving Face" (Spike's until Sep 27): within faceR of the north glacier front (props
 //                 57-61) — the north-east bay past the rounding island, where no track goes
 //                 (closest 1,100 u; a bot's detour costs ~100 s, eval/_arctic_face.js).
 const ARCTIC_RUN = { venue: 'arctic', face: ['prop-57', 'prop-58', 'prop-59', 'prop-60', 'prop-61'], faceR: 350 };
@@ -586,6 +586,250 @@ function checkGlowRun(dt) {
     if (inWake) G.secs += dt;
     if (G.secs - G.sent >= 0.1 && typeof GameEvents !== 'undefined') { G.sent = Math.round(G.secs * 10) / 10; GameEvents.emit('player-feat', { id: 'glowtide:glow', value: G.sent }); }
     if (!G.bloom && Math.hypot(me.x - GLOW_RUN.bloom.x, me.y - GLOW_RUN.bloom.y) < GLOW_RUN.bloom.r && typeof GameEvents !== 'undefined') { G.bloom = true; GameEvents.emit('player-feat', { id: 'glowtide:bloom' }); }
+    if (!G.sw && Math.hypot(me.x - GLOW_SW.x, me.y - GLOW_SW.y) < GLOW_SW.r && typeof GameEvents !== 'undefined') { G.sw = true; GameEvents.emit('player-feat', { id: 'glowtide:mantas' }); }
+}
+// ── SIX RUNGS AT EVERY VENUE (Sep 27 2026, Wes) — events only, no raceState ─────────────────────────────
+// A LOOP ROUND A POINT is the angle the player's track sweeps about it: a full turn is 2π. `_sweepAdd` keeps
+// the running sum for one point from the player's last position.
+function _sweepAdd(S, x, y, cx, cy) {
+    const a = Math.atan2(y - cy, x - cx);
+    if (S.a != null) { let d = a - S.a; d = Math.atan2(Math.sin(d), Math.cos(d)); S.sum += d; }
+    S.a = a;
+}
+//   pond:raft   Pip's "Round the Raft": a full turn round the Sailing School's swim raft (prop-44), inside
+//               raftR, during any section — the school's objective is judged when the section ends.
+const POND_RAFT = { venue: 'pond', prop: 'prop-44', r: 260 };
+let _pondRaft = null;
+function checkPondRaft() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== POND_RAFT.venue || !me || !me.isPlayer) { _pondRaft = null; return; }
+    const pr = ((VenueDoc.get('pond') || {}).props || []).find(q => q.id === POND_RAFT.prop); if (!pr) return;
+    if (!_pondRaft || _pondRaft.course !== state.course) _pondRaft = { course: state.course, S: { sum: 0, a: null }, sent: false };
+    const R = _pondRaft;
+    if (Math.hypot(me.x - pr.x, me.y - pr.y) > POND_RAFT.r) { R.S = { sum: 0, a: null }; return; }   // left the raft: start over
+    _sweepAdd(R.S, me.x, me.y, pr.x, pr.y);
+    if (!R.sent && Math.abs(R.S.sum) >= Math.PI * 2 * 0.95 && typeof GameEvents !== 'undefined') { R.sent = true; GameEvents.emit('player-feat', { id: 'pond:raft' }); }
+}
+//   lake:islands  Barbel's "Round Every Island": the whole race's track, closed from the finish back to the
+//                 start, goes round every island in the lake — each ISLAND is a connected clump of hard land
+//                 touching neither the shore nor the arena edge (_lakeIslands, found from the course so a
+//                 venue edit carries through). A point inside each is swept; |sum| near 2π is enclosed.
+function _lakeIslands() {
+    const c = state.course; if (c._lakeIsl) return c._lakeIsl;
+    const L = (c.islands || []).filter(s => !/\.hit$/.test(s.id) && VenueDoc.traits(s).hard && !VenueDoc.traits(s).reef && s.vertices && s.vertices.length > 2);
+    const bb = s => { let a = Infinity, b = Infinity, d = -Infinity, e = -Infinity; for (const q of s.vertices) { a = Math.min(a, q.x); b = Math.min(b, q.y); d = Math.max(d, q.x); e = Math.max(e, q.y); } return [a, b, d, e]; };
+    const B = L.map(bb), touch = (i, j) => { const A = B[i], C = B[j]; if (A[2] < C[0] - 5 || C[2] < A[0] - 5 || A[3] < C[1] - 5 || C[3] < A[1] - 5) return false;
+        return L[i].vertices.some(q => pointInPoly(q.x, q.y, L[j].vertices)) || L[j].vertices.some(q => pointInPoly(q.x, q.y, L[i].vertices)); };
+    const par = L.map((_, i) => i), f = i => par[i] === i ? i : (par[i] = f(par[i]));
+    for (let i = 0; i < L.length; i++) for (let j = i + 1; j < L.length; j++) if (touch(i, j)) par[f(i)] = f(j);
+    const comps = {}; L.forEach((s, i) => (comps[f(i)] = comps[f(i)] || []).push(i));
+    const E = Arena.extent(c.boundary), W = Math.max(E.maxX - E.minX, E.maxY - E.minY), out = [];
+    for (const ids of Object.values(comps)) {
+        const X = ids.map(i => B[i]).reduce((a, q) => [Math.min(a[0], q[0]), Math.min(a[1], q[1]), Math.max(a[2], q[2]), Math.max(a[3], q[3])]);
+        if (X[2] - X[0] > W * 0.6 || X[3] - X[1] > W * 0.6) continue;   // the shore
+        const big = ids.reduce((a, i) => ((B[i][2] - B[i][0]) * (B[i][3] - B[i][1]) > (B[a][2] - B[a][0]) * (B[a][3] - B[a][1]) ? i : a));
+        const v = L[big].vertices; let x = v.reduce((a, q) => a + q.x, 0) / v.length, y = v.reduce((a, q) => a + q.y, 0) / v.length;
+        if (!pointInPoly(x, y, v)) { x = (v[0].x + v[Math.floor(v.length / 2)].x) / 2; y = (v[0].y + v[Math.floor(v.length / 2)].y) / 2; }
+        out.push({ id: ids.map(i => L[i].id).join('+'), x, y });
+    }
+    return (c._lakeIsl = out);
+}
+const LAKE_RUN = { venue: 'lake', need: Math.PI * 2 * 0.8 };
+let _lakeRun = null;
+function checkLakeRun() {
+    const me = state.boats && state.boats[0];
+    if (!state.course || state.course.venueKey !== LAKE_RUN.venue || !me || !me.isPlayer || !state.race) { _lakeRun = null; return; }
+    if (state.race.status !== 'racing' && state.race.status !== 'finished') { _lakeRun = null; return; }
+    if (me.raceState.leg < 1 && !me.raceState.finished) return;
+    if (!_lakeRun || _lakeRun.me !== me) _lakeRun = { me, isl: _lakeIslands().map(p => ({ p, S: { sum: 0, a: null } })), x0: me.x, y0: me.y, done: false };
+    const R = _lakeRun; if (R.done) return;
+    for (const q of R.isl) _sweepAdd(q.S, me.x, me.y, q.p.x, q.p.y);
+    if (me.raceState.finished) {
+        R.done = true;
+        if (me.raceState.resultStatus) return;
+        // close the loop: the start and finish share the gate, so the straight hop home is short
+        for (const q of R.isl) { const S = { sum: q.S.sum, a: q.S.a }; for (let k = 1; k <= 8; k++) _sweepAdd(S, me.x + (R.x0 - me.x) * k / 8, me.y + (R.y0 - me.y) * k / 8, q.p.x, q.p.y); q.closed = S.sum; }
+        const n = R.isl.filter(q => Math.abs(q.closed) >= LAKE_RUN.need).length;
+        if (typeof GameEvents !== 'undefined') { GameEvents.emit('player-feat', { id: 'lake:islands-n', value: n });
+            if (n === R.isl.length && n > 0) GameEvents.emit('player-feat', { id: 'lake:islands' }); }
+    }
+}
+//   river:route:keep-right / keep-left   Pennant's "Right, Then Left": the three river islands the course passes
+//               (the big island in the gorge and the two above the finish), each passed with it on the SAME side
+//               of you — all on your left (you took the right-hand channel every time) or all on your right.
+//               A pass is sweeping 90°+ round the island while inside its ring; the sweep's sign is the side.
+//   river:bears Grizzle's "Close to the Bears": within a boat length of both fishing grizzlies in one race.
+const RIVER_SPLITS = { venue: 'river', islands: [{ id: 'shape-13', x: 3150, y: -3792, r: 450 }, { id: 'shape-42', x: 4661, y: -6056, r: 480 }, { id: 'shape-43', x: 5575, y: -6344, r: 700 }],
+    bears: [[5500, -6070], [2320, -4300]], bearR: 110 };
+let _riverSplits = null;
+function checkRiverSplits() {
+    const me = state.boats && state.boats[0], C = RIVER_SPLITS;
+    if (!state.course || state.course.venueKey !== C.venue || !me || !me.isPlayer || !state.race) { _riverSplits = null; return; }
+    if (state.race.status !== 'racing' && state.race.status !== 'finished') { _riverSplits = null; return; }
+    if (me.raceState.leg < 1 && !me.raceState.finished) return;
+    if (!_riverSplits || _riverSplits.me !== me) _riverSplits = { me, isl: C.islands.map(p => ({ p, S: null, side: 0 })), bears: C.bears.map(() => false), done: false };
+    const R = _riverSplits; if (R.done) return;
+    const emit = (id) => { if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id }); };
+    const close = (q) => { if (q.S && Math.abs(q.S.sum) >= Math.PI / 2) q.side = q.S.sum > 0 ? 1 : -1; q.S = null; };
+    for (const q of R.isl) {
+        if (Math.hypot(me.x - q.p.x, me.y - q.p.y) < q.p.r) { if (!q.S) q.S = { sum: 0, a: null }; _sweepAdd(q.S, me.x, me.y, q.p.x, q.p.y); }
+        else if (q.S) close(q);
+    }
+    if (!me.raceState.finished) C.bears.forEach((b, i) => { if (!R.bears[i] && Math.hypot(me.x - b[0], me.y - b[1]) < C.bearR) { R.bears[i] = true; if (R.bears.every(Boolean)) emit('river:bears'); } });
+    if (me.raceState.finished) {
+        R.done = true;
+        if (me.raceState.resultStatus) return;
+        for (const q of R.isl) if (q.S) close(q);
+        // With y pointing down the screen, sweeping round an island with a NEGATIVE sum means it was on your left.
+        if (R.isl.every(q => q.side === -1)) emit('river:route:keep-right');
+        else if (R.isl.every(q => q.side === 1)) emit('river:route:keep-left');
+    }
+}
+//   glowtide:mantas  Blink's "Where the Mantas Feed": the far south-west shoal behind the west peninsula, by the
+//                    bonfire (Wes, Sep 27 2026), where three mantas circle — within r of its centre.
+const GLOW_SW = { venue: 'glowtide', x: -2804, y: 3306, r: 450 };
+
+// BOAT HANDLING & CONDITIONS (Sep 27 2026) — events only, no raceState. From the gun to the player's finish:
+//   wind:avg (value)   the average true wind at the player's boat, kn, sampled each second (Frond, Bulkhead, Chroma)
+//   tack:n / gybe:n    the bow through head-to-wind / the stern through dead downwind, the new side held 1.5 s (Viper, Spin)
+//   kite:hoisted       the spinnaker set at any time after the gun (One Sail, Forever — must NOT happen)
+//   calm:30            under 2 kn of boatspeed for 30 s straight (Sunbather)
+//   grip:<name>        a rival held within two boat lengths (110 u) astern for 60 s straight (Grip, Never Let Go)
+const HANDLING = { settle: 1.5, calmKn: 2, calmS: 30, gripR: 110, gripS: 60 };
+let _handling = null;
+function checkHandling(dt) {
+    const me = state.boats && state.boats[0];
+    if (!me || !me.isPlayer || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _handling = null; return; }
+    if (!_handling) _handling = { wSum: 0, wN: 0, wT: 0, side: 0, pend: 0, pendT: 0, pendKind: '', tacks: 0, gybes: 0, calm: 0, calmSent: false, hoisted: false, grip: new Map(), gripSent: new Set() };
+    const H = _handling, emit = (id, value) => { if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', value === undefined ? { id } : { id, value }); };
+    const w = typeof getWindAt === 'function' ? getWindAt(me.x, me.y) : state.wind;
+    H.wT += dt; if (H.wT >= 1) { H.wT -= 1; H.wSum += w.speed; H.wN++; emit('wind:avg', Math.round(H.wSum / H.wN * 10) / 10); }
+    // tacks and gybes: which side the wind is on; a change that holds for 1.5 s is a manoeuvre, through the bow or the stern
+    const twa = normalizeAngle(me.heading - w.direction), side = twa < 0 ? -1 : 1;
+    if (!H.side) H.side = side;
+    if (side !== H.side) { if (H.pend !== side) { H.pend = side; H.pendT = 0; H.pendKind = Math.abs(twa) < Math.PI / 2 ? 'tack' : 'gybe'; } H.pendT += dt;
+        if (H.pendT >= HANDLING.settle) { H.side = side; H.pend = 0; if (H.pendKind === 'tack') emit('tack:n', ++H.tacks); else emit('gybe:n', ++H.gybes); } }
+    else H.pend = 0;
+    // the kite, becalmed
+    if (!H.hoisted && me.spinnaker) { H.hoisted = true; emit('kite:hoisted'); }
+    if (me.speed * 4 < HANDLING.calmKn) { H.calm += dt; if (!H.calmSent && H.calm >= HANDLING.calmS) { H.calmSent = true; emit('calm:30'); } } else H.calm = 0;
+    // GRIP: a rival within two lengths astern (behind the player's beam line, 27.5 u past the transom's centre-line reference), held
+    const fx = Math.sin(me.heading), fy = -Math.cos(me.heading);
+    for (const o of state.boats) { if (o === me || o.raceState.finished) continue;
+        const dx = o.x - me.x, dy = o.y - me.y, d = Math.hypot(dx, dy), astern = dx * fx + dy * fy < -27.5;
+        if (d < HANDLING.gripR && astern) { const t = (H.grip.get(o) || 0) + dt; H.grip.set(o, t); if (t >= HANDLING.gripS && !H.gripSent.has(o.name)) { H.gripSent.add(o.name); emit('grip:' + o.name); } }
+        else H.grip.set(o, 0); }
+}
+// LEGAL AGGRESSION (Sep 27 2026) — events only, no raceState. From the player's start crossing to the finish:
+//   pass:n (value)      Frenzy's 'Feeding Frenzy': GROSS passes — a rival ahead of the player (fleetRank's order) falls
+//                       behind and stays there 4 s; a re-pass of the same boat within 10 s of its last counted pass doesn't count
+//                       (4 s, not 2: at 2 the autopilot's tacking churn made 13 passes finishing 9th, eval/_aggro_feats.js).
+//   passed:<name>       each rival passed (a counted pass) — Lance's 'Through the Fleet' collects them across a Series.
+//   give:n (value)      Spike's 'Makes His Own Right of Way': how many DIFFERENT rivals gave way to the player —
+//                       Redrock's junction detector (Sawbill), anywhere on the course: the rival's own avoidance holds
+//                       GIVE_WAY against the player at HIGH/IMMINENT risk and turns > 0.35 rad off course for 0.8 s.
+//   air:<name>          Corsair's 'Air Thief': a rival inside the player's own wind shadow — physics.js's bad-air cone
+//                       (450 u downwind, 20 → 100 u wide), intensity ≥ 0.1 — for 30 s, a gap under 1 s forgiven.
+const AGGRO = { hold: 4, repass: 10, dev: 0.35, giveHold: 0.8, airMin: 0.1, airS: 30, airGap: 1 };
+let _aggro = null;
+function _aggroAhead(o, me) {   // fleetRank's pairwise order: is o ahead of me?
+    const A = me.raceState, B = o.raceState;
+    if (B.finished) return true;
+    if (B.leg !== A.leg) return B.leg > A.leg;
+    return (B.nextWaypoint.dist || 0) < (A.nextWaypoint.dist || 0);
+}
+function _aggroShadow(me, o) {   // the intensity of the player's bad air at o (physics.js's cone, attributed)
+    const w = typeof getWindAt === 'function' ? getWindAt(o.x, o.y) : state.wind;
+    const wx = -Math.sin(w.direction), wy = Math.cos(w.direction), dx = o.x - me.x, dy = o.y - me.y;
+    const down = dx * wx + dy * wy; if (down <= 10 || down > 450) return 0;
+    const half = (20 + (down / 450) * 80) * 0.7, cross = Math.abs(dx * -wy + dy * wx);
+    return cross < half ? 0.95 * (1 - cross / half) * (1 - down / 450) : 0;
+}
+function checkAggression(dt) {
+    const me = state.boats && state.boats[0];
+    if (!me || !me.isPlayer || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _aggro = null; return; }
+    if (me.raceState.leg < 1) return;
+    if (!_aggro) _aggro = { t: 0, ahead: new Map(), flipT: new Map(), last: new Map(), passes: 0, give: new Map(), gave: new Set(), air: new Map(), gap: new Map(), airSent: new Set() };
+    const G = _aggro, emit = (id, value) => { if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', value === undefined ? { id } : { id, value }); };
+    G.t += dt;
+    // WHO WAS AHEAD AT EACH MARK (the Shark Pack, Sep 27 2026): the moment the player rounds a mark (leg L → L+1,
+    // L ≥ 1 — the start is not a mark and the finish ends the check), every rival still ahead is 'mark:behind:<name>',
+    // and at the first mark 'mark1:behind:<name>' too. Lash asks for Anvil ahead at mark 1; Nib for Lash never ahead.
+    const L = me.raceState.leg;
+    if (G.leg != null && L > G.leg && G.leg >= 1)
+        for (const o of state.boats) if (o !== me && _aggroAhead(o, me)) { emit('mark:behind:' + o.name); if (G.leg === 1) emit('mark1:behind:' + o.name); }
+    G.leg = L;
+    for (const o of state.boats) {
+        if (o === me) continue;
+        // PASSES: the order as of the player's start is the reference, so the start itself is not a feast
+        const now = _aggroAhead(o, me);
+        if (!G.ahead.has(o)) G.ahead.set(o, now);
+        if (now !== G.ahead.get(o)) { const f = (G.flipT.get(o) || 0) + dt; G.flipT.set(o, f);
+            if (f >= AGGRO.hold) { G.ahead.set(o, now); G.flipT.set(o, 0);
+                if (!now) { const l = G.last.get(o); if (l === undefined || G.t - l >= AGGRO.repass) { emit('pass:n', ++G.passes); emit('passed:' + o.name); G.last.set(o, G.t); } } } }
+        else G.flipT.set(o, 0);
+        if (o.raceState.finished) continue;
+        // GIVE WAY
+        const c = o.controller;
+        if (c) { const on = c.threatBoat === me && c.avoidanceRole === 'GIVE_WAY' && (c.riskState === 'HIGH' || c.riskState === 'IMMINENT') && c.lastAvoidDeviation > AGGRO.dev;
+            const v = on ? (G.give.get(o) || 0) + dt : Math.max(0, (G.give.get(o) || 0) - dt / 2); G.give.set(o, v);
+            if (on && v >= AGGRO.giveHold && !G.gave.has(o.name)) { G.gave.add(o.name); emit('give:n', G.gave.size); } }
+        // DIRTY AIR
+        if (_aggroShadow(me, o) >= AGGRO.airMin) { G.air.set(o, (G.air.get(o) || 0) + dt); G.gap.set(o, 0);
+            if (G.air.get(o) >= AGGRO.airS && !G.airSent.has(o.name)) { G.airSent.add(o.name); emit('air:' + o.name); } }
+        else { const g = (G.gap.get(o) || 0) + dt; G.gap.set(o, g); if (g > AGGRO.airGap) G.air.set(o, 0); }
+    }
+}
+// LEG & MARK CRAFT (Sep 27 2026) — events only, no raceState:
+//   mark:held / mark:lost  Saffron's 'Perfect Roundings': the player's fleet rank ~4 boat lengths (220 u) before a mark
+//                          (or gate) vs 220 u after it; the finish is not a mark.
+//   pass:overtaken         Brine's 'Never Passed': from the start crossing, a place lost and held for 2 s.
+//   kite:secs (value)      Splash's 'All Kite': seconds after the gun with the spinnaker up.
+const LEG_CRAFT = { near: 220, hold: 2 };
+let _legCraft = null;   // { leg, rankIn, pending: { marks, rankIn }, ref, worseT, betterT, kite, sent } for the race in progress
+function _legCraftMarks(leg) { const e = typeof routeLeg === 'function' ? routeLeg(leg) : null, M = state.course.marks || [];
+    if (!e) return []; const idx = e.marks || (e.mark && e.mark.markIdx != null ? [e.mark.markIdx] : []); return idx.map(i => M[i]).filter(Boolean); }
+function checkLegCraft(dt) {
+    const me = state.boats && state.boats[0];
+    if (!me || !me.isPlayer || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _legCraft = null; return; }
+    if (!_legCraft) _legCraft = { leg: -1, rankIn: null, pending: null, ref: null, worseT: 0, betterT: 0, kite: 0, sent: 0 };
+    const R = _legCraft, rs = me.raceState, emit = (id, value) => { if (typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', value === undefined ? { id } : { id, value }); };
+    // the kite
+    if (me.spinnaker && me.spinnakerDeployProgress > 0.5) R.kite += dt;
+    if (R.kite - R.sent >= 0.5) { R.sent = Math.floor(R.kite * 2) / 2; emit('kite:secs', R.sent); }
+    if (rs.leg < 1) return;
+    const rank = fleetRank(me);
+    // PERFECT ROUNDINGS: arm the leg's mark(s) on approach; on leaving, compare
+    if (R.leg !== rs.leg) {
+        if (R.leg >= 1 && R.rankIn != null) R.pending = { marks: _legCraftMarks(R.leg), rankIn: R.rankIn };
+        R.leg = rs.leg; R.rankIn = null;
+    }
+    const isFinish = rs.leg >= state.race.totalLegs, M = _legCraftMarks(rs.leg), near = (L) => L.length && Math.min(...L.map(m => Math.hypot(me.x - m.x, me.y - m.y))) < LEG_CRAFT.near;
+    if (!isFinish && R.rankIn == null && near(M)) R.rankIn = rank;
+    if (R.pending && !near(R.pending.marks)) { emit(rank > R.pending.rankIn ? 'mark:lost' : 'mark:held', rank - R.pending.rankIn); R.pending = null; }
+    // NEVER PASSED: a place lost for 2 s is a pass; a place gained for 2 s is the new reference
+    if (R.ref == null) R.ref = rank;
+    if (rank > R.ref) { R.worseT += dt; R.betterT = 0; if (R.worseT >= LEG_CRAFT.hold) { emit('pass:overtaken', rank); R.ref = rank; R.worseT = 0; } }
+    else if (rank < R.ref) { R.betterT += dt; R.worseT = 0; if (R.betterT >= LEG_CRAFT.hold) { R.ref = rank; R.betterT = 0; } }
+    else { R.worseT = 0; R.betterT = 0; }
+}
+// CLOSE RACING — Latch's 'Inches' (Sep 27 2026): the player on PORT crosses ahead of a boat on STARBOARD within
+// one boat length — across its bow line, 0..55 u in front of its bow (hull half-length 27.5 past its centre).
+// Per bot, the side of its centreline the player is on; a flip in front of its bow is a crossing. Events only.
+const _inchesSide = new Map();
+function checkCloseCrossing() {
+    const me = state.boats && state.boats[0];
+    if (!me || !me.isPlayer || state.race.status !== 'racing' || me.raceState.finished || typeof Rules === 'undefined') { _inchesSide.clear(); return; }
+    const myTack = Rules.getTack(me);
+    for (const o of state.boats) {
+        if (o === me || o.raceState.finished) continue;
+        const dx = me.x - o.x, dy = me.y - o.y;
+        if (dx * dx + dy * dy > 200 * 200) { _inchesSide.delete(o); continue; }
+        const fx = Math.sin(o.heading), fy = -Math.cos(o.heading), ahead = dx * fx + dy * fy - 27.5, side = Math.sign(dx * -fy + dy * fx) || 1;
+        const was = _inchesSide.get(o); _inchesSide.set(o, side);
+        if (was !== undefined && was !== side && ahead >= 0 && ahead <= 55 && myTack === -1 && Rules.getTack(o) === 1 && typeof GameEvents !== 'undefined')
+            GameEvents.emit('player-feat', { id: 'close:inches', value: Math.round(ahead) });
+    }
 }
 const _bowSide = new Map();
 function checkBowCrossing(list) {

@@ -4,7 +4,8 @@
 //
 // Wes, Sep 25 2026:
 //   · the target (the Target-time objective, `records.provisional`) is the MEAN of his
-//     recorded trajectories at that venue × 1.1, rounded UP to the next 5 seconds;
+//     recorded trajectories at that venue × 1.1, rounded UP to the next 5 seconds — his SOLO
+//     (Time Trials) runs once there are any, else the competitive ones (Sep 27 2026);
 //   · the time limit (`course.cutoff`) is 10 minutes on every course.
 //
 // ⚠️ A TRAJECTORY ONLY COUNTS IF IT WAS SAILED ON TODAY'S COURSE. Courses are rebuilt, and a
@@ -59,7 +60,8 @@ const runs = {};
 for (const f of fs.readdirSync(TRAJ).filter(x => x.endsWith('.json'))) {
     const d = JSON.parse(fs.readFileSync(path.join(TRAJ, f), 'utf8'));
     if (!d.finished || !(d.finishTime > 0)) continue;
-    (runs[d.venue] = runs[d.venue] || []).push({ t: d.finishTime, legs: d.legs });
+    // Unlabelled files predate the label (Sep 27 2026) and were all sailed against a fleet.
+    (runs[d.venue] = runs[d.venue] || []).push({ t: d.finishTime, legs: d.legs, mode: d.mode || 'competitive' });
 }
 
 const HEAD = '// GENERATED ONCE by art/export_venue_doc.js — now the SOURCE OF TRUTH.\n'
@@ -81,7 +83,11 @@ for (const key of VENUES) {
     const legs = (doc.course.route || []).length - 1;
     const est = EST[key] || 0;
 
-    const all = runs[key] || [];
+    // THE TARGET IS A TIME TRIAL TIME, so it reads SOLO runs (Wes, Sep 27 2026: trajectories are labelled solo
+    // or competitive). A venue with no solo runs yet falls back to the competitive ones, and says so.
+    const every = runs[key] || [];
+    const solo = every.filter(r => r.mode === 'solo');
+    const all = solo.length ? solo : every, kind = solo.length ? 'solo' : 'competitive';
     const match = all.filter(r => r.legs === legs);
     const mean = match.length ? match.reduce((a, r) => a + r.t, 0) / match.length : 0;
     const ratio = est > 0 && mean > 0 ? mean / est : 0;
@@ -90,7 +96,7 @@ for (const key of VENUES) {
     else if (!match.length) why = `trajectories are ${[...new Set(all.map(r => r.legs))].join('/')}-leg, the course is ${legs}-leg`;
     else if (!(est > 0)) why = 'no course estimate to check against';
     else if (ratio < RATIO_MIN || ratio > RATIO_MAX) why = `mean ${mmss(mean)} is ${ratio.toFixed(2)}× the path best ${mmss(est)} — an older course`;
-    else { target = Math.ceil(mean * FACTOR / STEP) * STEP; why = `${match.length} runs, mean ${mean.toFixed(1)}s (${ratio.toFixed(2)}× path best)`; }
+    else { target = Math.ceil(mean * FACTOR / STEP) * STEP; why = `${match.length} ${kind} runs, mean ${mean.toFixed(1)}s (${ratio.toFixed(2)}× path best)${kind === 'solo' ? '' : ' — no solo runs yet'}`; }
 
     const before = JSON.stringify(doc);
     doc.course.cutoff = CUTOFF;

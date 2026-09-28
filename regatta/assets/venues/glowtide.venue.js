@@ -43728,6 +43728,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": -237.2911929059876,
       "heading": 0,
       "scale": 2.3368143996606845
+    },
+    {
+      "id": "prop-52",
+      "kind": "glowtide-bonfire",
+      "x": -3329.057363922724,
+      "y": 3095.612361780465,
+      "heading": 0,
+      "scale": 3
     }
   ],
   "records": {
