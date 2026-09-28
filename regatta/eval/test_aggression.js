@@ -22,6 +22,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         const base = { finished: true, won: false, penalties: 0, feats: [], vals: {}, behind: [] }, T = (ch, o) => A.find(a => a.char === ch).test(Object.assign({}, base, o), {});
         out.frenzy = T('Frenzy', { vals: { 'pass:n': 15 } }) && !T('Frenzy', { vals: { 'pass:n': 14 } }) && !T('Frenzy', { vals: { 'pass:n': 20 }, penalties: 1 }) && !T('Frenzy', { vals: { 'pass:n': 20 }, finished: false });
         out.spike = T('Spike', { vals: { 'give:n': 5 } }) && !T('Spike', { vals: { 'give:n': 4 } }) && !T('Spike', { vals: { 'give:n': 6 }, penalties: 1 });
+        out.razor = T('Razor', { vals: { 'pass:ambush': 'A|B|C' }, behind: ['A', 'B', 'C', 'D'] }) && !T('Razor', { vals: { 'pass:ambush': 'A|B|C' }, behind: ['A', 'B'] }) && T('Razor', { vals: { 'pass:ambush': 'X|Y|Z;A|B|C' }, behind: ['A', 'B', 'C'] }) && !T('Razor', {});
         out.corsair = T('Corsair', { feats: ['air:Bixby'], behind: ['Bixby'] }) && !T('Corsair', { feats: ['air:Bixby'], behind: ['Bruce'] }) && !T('Corsair', { feats: ['air:Bixby'], behind: ['Bixby'], penalties: 1 });
         out.arctic = Unlocks.ACHIEVEMENTS.filter(a => a.char === 'Spike').length === 1 && Unlocks.ACHIEVEMENTS.some(a => a.char === 'Chime' && a.venue === 'arctic');
         // THE LIVE CHECK, stepped by hand (no update(): the bots' own controllers would overwrite the give-way fields)
@@ -57,10 +58,11 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         out.air = feats.filter(f => /^air/.test(f)).join(' '); out.airName = bots[3].name;
         return out;
     });
-    ok(r.rows === 'Frenzy,Spike,Corsair', `the three Legal Aggression rows (${r.rows})`);
+    ok(r.rows === 'Frenzy,Razor,Spike,Corsair', `the four Legal Aggression rows (${r.rows})`);
     ok(r.arctic, 'Spike has one row (aggression); Chime holds Glacier Sound\'s Calving Face');
     ok(r.frenzy, 'Feeding Frenzy: 15 passes, not 14, void on a penalty or a DNF');
     ok(r.spike, 'Makes His Own Right of Way: 5 give-ways, not 4, void on a penalty');
+    ok(r.razor, 'Ambush: a burst of three passes, all three finishing behind you');
     ok(r.corsair, 'Air Thief: the air-thieved rival must finish behind; void on a penalty');
     ok(r.preStart === 0, `nothing before the player starts (${r.preStart})`);
     ok(r.blip === 0 && r.pass1 === 'pass:n=1', `a pass counts once held 4 s, not after 1 s (${r.pass1})`);

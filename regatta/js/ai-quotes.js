@@ -2319,22 +2319,6 @@ const AI_QUOTES = {
     "start_planing": "Wheeeee!",
     "random": "Why spin? Why not!"
   },
-  "Bluebottle": {
-    "player_passes_them": "The wind takes me where it likes.",
-    "they_pass_player": "One sail. It's enough.",
-    "they_hit_player": "Sting.",
-    "they_were_hit": "Ow.",
-    "narrowly_avoided_collision": "Drifting.",
-    "player_narrowly_avoided_collision": "Lucky.",
-    "moved_into_first": "Blown to the front.",
-    "moved_into_last": "Blown to the back.",
-    "rounded_mark": "Round we go.",
-    "first_across_start": "The wind's own start.",
-    "finished_race": "Arrived.",
-    "prestart": "Waiting for the wind.",
-    "start_planing": "Here it comes.",
-    "random": "I never needed a kite."
-  },
   "Dab": {
     "player_passes_them": "Take your time.",
     "they_pass_player": "Oh, hello.",
@@ -2574,5 +2558,21 @@ const AI_QUOTES = {
     "prestart": "Is it dark yet?",
     "start_planing": "Glowing now!",
     "random": "You're racing your own ghost. And me."
+  },
+  "Wink": {
+    "player_passes_them": "*wave* Bye!",
+    "they_pass_player": "Hey! I was waving!",
+    "they_hit_player": "Oops — big claw!",
+    "they_were_hit": "Mind the claw!",
+    "narrowly_avoided_collision": "Close one! *wave*",
+    "player_narrowly_avoided_collision": "Nice moves!",
+    "moved_into_first": "Look at me! Look!",
+    "moved_into_last": "Just waving to the crowd.",
+    "rounded_mark": "Round with a flourish!",
+    "first_across_start": "First! *wave wave*",
+    "finished_race": "*wave* Done!",
+    "prestart": "One claw's all I need.",
+    "start_planing": "Here we go!",
+    "random": "Who needs a spinnaker? I've got this claw."
   }
 };

@@ -969,3 +969,16 @@ identified as "you won the race" at 9.
    discards, without which Renew and Huddle can't exist.
 5. **Ambient events**, and with them venue rungs 2 and 4, per venue as the events
    land.
+
+
+## Sep 27 2026 — luck fixes (Wes)
+
+- **Razor** (barracuda) left the Shark Pack: *Swims With Sharks* needed 3+ sharks in a random fleet. Now Legal
+  Aggression's **Ambush**: pass three boats within 20 s (not in the first 60 s after your start) and finish ahead of
+  all three (`pass:ambush`, sim/course.js checkAggression). Autopilot: 0 of 12.
+- **Knot** (nautilus) *Dead Reckoning* was "exactly 5th three races running" (luck). Now: win having sailed most (60%+)
+  of a leg of 20 s or more on the other side of that leg's rhumb line from the fleet's median, 150 u+ apart
+  (`split:leg`, checkSplit; eval/test_split.js).
+- **Bluebottle** removed — the same species as Bloom (Portuguese man o' war). **Wink** the fiddler crab (one giant claw,
+  waved like a signal flag — one sail) takes *One Sail, Forever* (Sep 28; Argo the argonaut was drafted and retired).
+- Kept as they are (Wes): Snap needing Whiskers in the fleet, Bramble, Pulse, Frenzy; wind-band hints stay unsignposted.

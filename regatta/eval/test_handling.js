@@ -1,4 +1,4 @@
-// BOAT HANDLING & CONDITIONS — Frond, Bulkhead, Chroma, Crimson, Viper, Spin, Grip, Bluebottle, Dab. Headless, real page.
+// BOAT HANDLING & CONDITIONS — Frond, Bulkhead, Chroma, Crimson, Viper, Spin, Grip, Wink, Dab. Headless, real page.
 //   node regatta/eval/test_handling.js     (from the repo root)
 const { chromium } = require('playwright'); const path = require('path');
 let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else console.log('  ok   ' + m); };
@@ -12,7 +12,7 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' +
     out.crimson = [T('Crimson', { marginAhead: 31 }), T('Crimson', { marginAhead: 29 }), T('Crimson', { marginAhead: null }), T('Crimson', { won: false, marginAhead: 40 })].map(String).join(',');
     out.tacks = T('Viper', { vals: { 'tack:n': 12 } }) && !T('Viper', { vals: { 'tack:n': 11 } }) && T('Spin', { vals: { 'gybe:n': 12 } }) && !T('Spin', { vals: { 'tack:n': 20 } });
     out.grip = T('Grip', { feats: ['grip:Stripes'], behind: ['Stripes'] }) && !T('Grip', { feats: ['grip:Stripes'], behind: ['Oar'] }) && !T('Grip', { feats: ['grip:Stripes'], behind: ['Stripes'], penalties: 1 });
-    out.kite = T('Bluebottle', {}) && !T('Bluebottle', { feats: ['kite:hoisted'] }) && T('Dab', { feats: ['calm:30'] }) && !T('Dab', {});
+    out.kite = T('Wink', {}) && !T('Wink', { feats: ['kite:hoisted'] }) && T('Dab', { feats: ['calm:30'] }) && !T('Dab', {});
     // THE EVENTS in a real race at the Point (a northerly: wind from 0)
     const feats = [], vals = {}; GameEvents.on('player-feat', e => { feats.push(e.id); if (e.value !== undefined) vals[e.id] = e.value; });
     for (let i = 0; i < 30 * 31; i++) update(1 / 30);
@@ -36,7 +36,7 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' +
     state.race.timer = 110; out.m1 = Unlocks._margin(order, order[0]); state.race.timer = 140; out.m2 = Unlocks._margin(order, order[0]);
     order[1].raceState.finished = true; order[1].raceState.finishTime = 112; out.m3 = Unlocks._margin(order, order[0]);
     return out; });
-  ok(r.rows === 'Frond,Bulkhead,Chroma,Crimson,Viper,Spin,Grip,Bluebottle,Dab', `the nine rows (${r.rows})`);
+  ok(r.rows === 'Frond,Bulkhead,Chroma,Crimson,Viper,Spin,Grip,Wink,Dab', `the nine rows (${r.rows})`);
   ok(r.wind === '10100', `Whisper Wind at 7 kn or less, Storm Wall at 18 or more, wins only (${r.wind})`);
   ok(r.chroma, 'Every Colour: all three wind bands won');
   ok(r.crimson === 'true,false,null,false', `Surgical: 30 s or more, undecided while it can't be known (${r.crimson})`);

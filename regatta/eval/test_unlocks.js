@@ -137,23 +137,16 @@ console.log('Splat, Zing, Wiggle, Knot, Hug');
     order = fleet(w, [['Bruce', {}], ['Bixby', { me: true, status: 'DNF' }]]);
     ok(w.Unlocks.poll(order).includes('Wiggle'), 'a served turn → Wiggle, even on a DNF');
 
-    for (let k = 0; k < 3; k++) {
-        newRace(w);
-        order = fleet(w, names10.map((n, i) => [n, i === 4 ? { me: true } : {}]));
-        w.state.race.timer = 999;
-        got = w.Unlocks.poll(order);
-    }
-    ok(got.includes('Knot'), 'three 5ths in a row → Knot');
-
-    const w2 = world(); w2.__UNLOCKS = 'on';
-    for (let k = 0; k < 3; k++) {
-        newRace(w2);
-        const pos = k === 1 ? 3 : 4;
-        order = fleet(w2, names10.map((n, i) => [n, i === pos ? { me: true } : {}]));
-        w2.state.race.timer = 999;
-        got = w2.Unlocks.poll(order);
-    }
-    ok(!got.includes('Knot') && w2.Unlocks.career().fifthStreak === 1, 'a 4th breaks the streak');
+    // Knot (Sep 27 2026): a won race with a leg sailed apart from the fleet ('split:leg'); a win without it is not
+    newRace(w);
+    order = fleet(w, names10.map((n, i) => [n, i === 0 ? { me: true } : {}]));
+    w.state.race.timer = 999;
+    ok(!w.Unlocks.poll(order).includes('Knot'), 'a win with the fleet → no Knot');
+    newRace(w);
+    w.GameEvents.emit('player-feat', { id: 'split:leg', value: 2 });
+    order = fleet(w, names10.map((n, i) => [n, i === 0 ? { me: true } : {}]));
+    w.state.race.timer = 999;
+    ok(w.Unlocks.poll(order).includes('Knot'), 'a win with a leg sailed apart from the fleet → Knot');
 
     const w3 = world(); w3.__UNLOCKS = 'on';
     for (let k = 0; k < 25; k++) {

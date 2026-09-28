@@ -843,7 +843,6 @@ const SPIN_LOOKS = {
     Wick: 'triangle',
     Meridian: 'thirds',
     Spin: 'sunburst',
-    Bluebottle: 'solid',
     Dab: 'gores',
     Chime: 'fiverays',
     Corsair: 'triangle',
@@ -859,6 +858,7 @@ const SPIN_LOOKS = {
     Blink: 'crosshalves',
     Fizz: 'fiverays',
     Phantom: 'tricolour',
+    Wink: 'solid',
     // The shark saga's bench (Sep 26 2026) — the less-used patterns, none shared among the nine.
     Gape: 'sunburst',
     Dapple: 'fiverays',

@@ -730,7 +730,7 @@ function checkHandling(dt) {
 //                       GIVE_WAY against the player at HIGH/IMMINENT risk and turns > 0.35 rad off course for 0.8 s.
 //   air:<name>          Corsair's 'Air Thief': a rival inside the player's own wind shadow — physics.js's bad-air cone
 //                       (450 u downwind, 20 → 100 u wide), intensity ≥ 0.1 — for 30 s, a gap under 1 s forgiven.
-const AGGRO = { hold: 4, repass: 10, dev: 0.35, giveHold: 0.8, airMin: 0.1, airS: 30, airGap: 1 };
+const AGGRO = { ambushS: 20, ambushFrom: 60, hold: 4, repass: 10, dev: 0.35, giveHold: 0.8, airMin: 0.1, airS: 30, airGap: 1 };
 let _aggro = null;
 function _aggroAhead(o, me) {   // fleetRank's pairwise order: is o ahead of me?
     const A = me.raceState, B = o.raceState;
@@ -766,7 +766,13 @@ function checkAggression(dt) {
         if (!G.ahead.has(o)) G.ahead.set(o, now);
         if (now !== G.ahead.get(o)) { const f = (G.flipT.get(o) || 0) + dt; G.flipT.set(o, f);
             if (f >= AGGRO.hold) { G.ahead.set(o, now); G.flipT.set(o, 0);
-                if (!now) { const l = G.last.get(o); if (l === undefined || G.t - l >= AGGRO.repass) { emit('pass:n', ++G.passes); emit('passed:' + o.name); G.last.set(o, G.t); } } } }
+                if (!now) { const l = G.last.get(o); if (l === undefined || G.t - l >= AGGRO.repass) { emit('pass:n', ++G.passes); emit('passed:' + o.name); G.last.set(o, G.t);
+                    // RAZOR'S AMBUSH (Sep 27 2026): three counted passes inside AGGRO.ambushS seconds — not in the first
+                    // AGGRO.ambushFrom seconds after your start, when the fleet is still sorting itself out
+                    if (G.t >= AGGRO.ambushFrom) { (G.passT || (G.passT = [])).push({ t: G.t, n: o.name }); } G.passT = (G.passT || []).filter(x => G.t - x.t <= AGGRO.ambushS);
+                    // the value is the boats in the burst; the row asks that you finish ahead of all of them
+                    const names = [...new Set(G.passT.map(x => x.n))];
+                    if (names.length >= 3) { (G.ambushes || (G.ambushes = [])).push(names.join('|')); emit('pass:ambush', G.ambushes.join(';')); } } } } }
         else G.flipT.set(o, 0);
         if (o.raceState.finished) continue;
         // GIVE WAY
@@ -779,6 +785,26 @@ function checkAggression(dt) {
             if (G.air.get(o) >= AGGRO.airS && !G.airSent.has(o.name)) { G.airSent.add(o.name); emit('air:' + o.name); } }
         else { const g = (G.gap.get(o) || 0) + dt; G.gap.set(o, g); if (g > AGGRO.airGap) G.air.set(o, 0); }
     }
+}
+// KNOT'S "DEAD RECKONING" (Sep 27 2026, Wes: sail a different course than the fleet, and win) — 'split:leg' when, on
+// one leg of 20 s or more, the player spent SPLIT.frac of it on the other side of that leg's rhumb line from the
+// fleet: the median signed offset of the rivals on the same leg, the player at least SPLIT.gap from it and the two
+// on opposite sides. Events only, no raceState.
+const SPLIT = { frac: 0.6, gap: 150, minLeg: 20 };
+let _split = null;
+function checkSplit(dt) {
+    const me = state.boats && state.boats[0];
+    if (!me || !me.isPlayer || !state.race || state.race.status !== 'racing' || me.raceState.finished) { if (!state.race || state.race.status !== 'racing') _split = null; return; }
+    const L = me.raceState.leg; if (L < 1 || typeof legTargetPoint !== 'function') return;
+    if (!_split || _split.me !== me) _split = { me, leg: L, t: 0, on: 0, sent: false };
+    const S = _split;
+    if (S.leg !== L) { if (!S.sent && S.t >= SPLIT.minLeg && S.on / S.t >= SPLIT.frac && typeof GameEvents !== 'undefined') { S.sent = true; GameEvents.emit('player-feat', { id: 'split:leg', value: S.leg }); } S.leg = L; S.t = 0; S.on = 0; }
+    const a = legTargetPoint(L - 1), b = legTargetPoint(L); if (!a || !b) return;
+    const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, off = (x, y) => ((x - a.x) * dy - (y - a.y) * dx) / len;
+    const rivals = state.boats.filter(o => o !== me && !o.raceState.finished && o.raceState.leg === L).map(o => off(o.x, o.y)).sort((p, q) => p - q);
+    S.t += dt;
+    if (rivals.length >= 2) { const med = rivals[rivals.length >> 1], mine = off(me.x, me.y);
+        if (Math.sign(mine) !== Math.sign(med) && Math.abs(mine - med) >= SPLIT.gap) S.on += dt; }
 }
 // LEG & MARK CRAFT (Sep 27 2026) — events only, no raceState:
 //   mark:held / mark:lost  Saffron's 'Perfect Roundings': the player's fleet rank ~4 boat lengths (220 u) before a mark

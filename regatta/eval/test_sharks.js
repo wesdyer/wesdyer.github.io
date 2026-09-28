@@ -64,7 +64,6 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         out.relic = T('Relic', { venue: 'arctic' }, h('Goblin', { vs: { arctic: 2 } })) && !T('Relic', { venue: 'arctic' }, h('Goblin', { vs: { arctic: 1 } }));
         out.dozer = T('Dozer', { pos: 3, startRank: 10 }) && !T('Dozer', { pos: 4, startRank: 10 }) && !T('Dozer', { pos: 2, startRank: 9 });
         out.woebegone = T('Woebegone', { pos: 2, legRanks: [8, 10, 6, 2] }) && !T('Woebegone', { pos: 2, legRanks: [10, 9, 6, 2] }) && !T('Woebegone', { pos: 4, legRanks: [8, 10, 6, 4] });
-        out.razor = T('Razor', { rivals: ['Bruce', 'Blaze', 'Nib', 'Cheer'], behind: ['Bruce', 'Blaze', 'Nib'] }) && !T('Razor', { rivals: ['Bruce', 'Blaze', 'Cheer'], behind: ['Bruce', 'Blaze'] }) && !T('Razor', { rivals: ['Bruce', 'Blaze', 'Nib'], behind: ['Bruce', 'Blaze'] });
         // DAPPLE: every other shark; arriving in the same race as the last one
         localStorage.removeItem('regatta_unlocks');
         const others = A.map(a => a.char).filter(n => n !== 'Dapple' && n !== 'Relic').concat(['Roam', 'Mitt']);
@@ -77,7 +76,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         window.__UNLOCKS = undefined; localStorage.removeItem('regatta_unlocks'); localStorage.removeItem('regatta_career');
         return out;
     });
-    ok(r.rows === 'Blaze,Stripes,Bruiser,Anvil,Lash,Nib,Goblin,Relic,Dapple,Dozer,Woebegone,Razor', `the shark rows (${r.rows})`);
+    ok(r.rows === 'Blaze,Stripes,Bruiser,Anvil,Lash,Nib,Goblin,Relic,Dapple,Dozer,Woebegone', `the shark rows (${r.rows})`);
     ok(r.prey === 'Bruce>Blaze Blaze>Stripes Stripes>Bruiser Bruiser>Anvil Anvil>Lash Lash>Nib Nib>Goblin Goblin>Relic', `the ladder (${r.prey})`);
     ok(r.hunt0 === 'Bruce' && r.hunt1 === 'Blaze' && r.slot, `the hunted shark: ${r.hunt0}, then ${r.hunt1}, with a fleet slot`);
     ok(r.streaks === '1,1,2,0,1,2', `head to head: sat out neither counts nor breaks, a loss resets (${r.streaks})`);
@@ -85,7 +84,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.arctic === 1 && /arctic/.test(r.venues), `the per-venue streak and the venues beaten at (${r.arctic}; ${r.venues})`);
     ok(/^mark1:behind:\w+,mark:behind:\w+$/.test(r.markFeats), `rival ahead at mark 1: ${r.markFeats}`);
     ok(r.markOthers === 0, `rivals behind at the mark are not named (${r.markOthers})`);
-    for (const k of ['blaze', 'stripes', 'bruiser', 'anvil', 'lash', 'nib', 'goblin', 'relic', 'dozer', 'woebegone', 'razor']) ok(r[k], `${k}: the row reads its rule`);
+    for (const k of ['blaze', 'stripes', 'bruiser', 'anvil', 'lash', 'nib', 'goblin', 'relic', 'dozer', 'woebegone']) ok(r[k], `${k}: the row reads its rule`);
     ok(r.dappleBefore === false && r.dappleWith === 'Relic,Dapple', `Dapple arrives with the last shark (${r.dappleWith})`);
     ok(/every other shark/.test(r.dappleHint), `Dapple's hint (${r.dappleHint})`);
     ok(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs[0] : ''));

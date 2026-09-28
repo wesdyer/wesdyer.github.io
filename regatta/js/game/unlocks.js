@@ -86,9 +86,10 @@ const ACHIEVEMENTS = [
       hint: 'Finish 25 races.',
       test: (r, c) => c.finishes >= 25,
       progress: (c) => [c.finishes || 0, 25] },
+    // Sep 27 2026 (Wes): was 'exactly 5th three races running' — luck. Now the navigator's feat: your own course.
     { char: 'Knot', family: 'season', title: 'Dead Reckoning',
-      hint: 'Finish exactly 5th, three races in a row.',
-      test: (r, c) => c.fifthStreak >= 3 },
+      hint: 'Sail most of a leg on the other side of the course from the fleet, and win.',
+      test: (r) => r.won && r.feats.includes('split:leg') },
 
     // ── B · The Start Line (built Sep 27 2026) ─────────────────────────────────────
     // Crossing time is raceState.startLegDuration (seconds after the gun); 'start:first' and 'start:ocs' are
@@ -156,7 +157,8 @@ const ACHIEVEMENTS = [
 
     // ── F · Boat Handling & Conditions (built Sep 27 2026) ─────────────────────────
     // Events from sim/course.js checkHandling. Wes: Grip takes Never Let Go; Lateen is Clubhouse Point's and Mola has a
-    // venue row, so One Sail, Forever and Sunbather are new characters — Bluebottle (Portuguese man o' war) and Dab (flounder);
+    // venue row, so One Sail, Forever and Sunbather are new characters — Wink (fiddler crab, one giant claw; Bluebottle until Sep 27,
+    // the same species as Bloom) and Dab (flounder);
     // Spin (spinner dolphin) was always new. All three shipped Sep 27 2026.
     { char: 'Frond', family: 'handling', title: 'Whisper Wind',
       hint: 'Win a race sailed in an average wind of 7 knots or less.',
@@ -180,7 +182,7 @@ const ACHIEVEMENTS = [
     { char: 'Grip', family: 'handling', title: 'Never Let Go',
       hint: 'Hold a rival within two lengths astern for a minute, then beat them. No penalty.',
       test: (r) => r.finished && r.penalties === 0 && r.feats.some(f => f.startsWith('grip:') && r.behind.includes(f.slice(5))) },
-    { char: 'Bluebottle', family: 'handling', title: 'One Sail, Forever',
+    { char: 'Wink', family: 'handling', title: 'One Sail, Forever',
       hint: 'Win a race without ever hoisting the spinnaker.',
       test: (r) => r.won && !r.feats.includes('kite:hoisted') },
     { char: 'Dab', family: 'handling', title: 'Sunbather',
@@ -194,6 +196,11 @@ const ACHIEVEMENTS = [
     { char: 'Frenzy', family: 'aggression', title: 'Feeding Frenzy',
       hint: 'Make 15 passes in one race and take no penalty. A re-pass counts after 10 seconds.',
       test: (r) => r.finished && r.penalties === 0 && ((r.vals || {})['pass:n'] || 0) >= 15 },
+    // Sep 27 2026 (Wes): Razor the barracuda — was 'finish ahead of every shark with 3+ in the fleet', which hung on
+    // the fleet draw. A barracuda lies still and strikes in a burst: three counted passes within 20 s.
+    { char: 'Razor', family: 'aggression', title: 'Ambush',
+      hint: 'Pass three boats within 20 seconds and finish ahead of all three.',
+      test: (r) => r.finished && String((r.vals || {})['pass:ambush'] || '').split(';').some(g => g && g.split('|').every(n => r.behind.includes(n))) },
     { char: 'Spike', family: 'aggression', title: 'Makes His Own Right of Way',
       hint: 'Make 5 different rivals give way to you in one race, taking no penalty.',
       test: (r) => r.finished && r.penalties === 0 && ((r.vals || {})['give:n'] || 0) >= 5 },
@@ -274,9 +281,6 @@ const ACHIEVEMENTS = [
       hint: 'Be last of the fleet at the halfway mark, then finish in the top three.',
       test: (r) => { const L = (r.legRanks || []).length - 1, h = Math.floor((L + 1) / 2) - 1;   // marks rounded, not the finish
           return r.finished && r.pos <= 3 && r.fleet > 1 && h >= 0 && r.legRanks[h] === r.fleet; } },
-    { char: 'Razor', family: 'sharks', title: 'Swims With Sharks',
-      hint: 'Finish ahead of every shark in a race with three or more sharks in the fleet.',
-      test: (r) => { const sh = (r.rivals || []).filter(n => SHARKS.includes(n)); return r.finished && sh.length >= 3 && sh.every(n => r.behind.includes(n)); } },
 
     // ── Time Trials (Sep 27 2026, Wes) — the one achievement of the solo mode: Phantom the comb jelly, a see-through
     // racer for a ghost race. A ghost beaten is one you already had (timetrial.js emits 'ghost:beaten' only then).

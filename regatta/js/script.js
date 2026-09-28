@@ -57,6 +57,7 @@ function update(dt) {
     checkLegCraft(dt);
     checkHandling(dt);
     checkAggression(dt);
+    checkSplit(dt);
     if (window.TimeTrial) TimeTrial.update();
     // The swell's own clock. Advanced from dt like everything else, so it pauses with the
     // race and is identical for a given seed — a wave field is pure trigonometry and must
