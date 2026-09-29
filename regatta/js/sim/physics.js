@@ -204,6 +204,43 @@ const J111_PLANING = {
     wakeWidthScale: 1.5
 };
 
+// DRAG BREAKS THE PLANE (Wes, Sep 28 2026). A planing hull that runs onto a bar, into kelp or
+// weed, over mud with a hand of water under it, or into broken water loses the plane RAPIDLY —
+// not instantly, and faster the more drag there is — and sheds its speed fast, rather than
+// coasting through on the keelboat's nine-second carry. Before this, the plane only knew the
+// boat's own speed, which drag lowers slowly: a boat planed straight across every Otter kelp bed.
+//   · `waterDrag` is what the water does to a planing hull here: the bottom's share of drive,
+//     1 − (shoal × tide), or broken water at its OWN level (a rapid's turbulence, a vent's boil)
+//     — the strongest wins, like overlapping bars. Broken water counts at its level, not at its
+//     share of drive (× RAPIDS_DRAG / BOIL_DRAG): aerated water will not hold a hull up whatever
+//     it does to the sails' drive, and at the drive share only the one turbulence-1 rapid, and
+//     no boil below peak breath, could ever reach the red. A boil is the harsher water (it takes
+//     BOIL_DRAG of the drive to a rapid's RAPIDS_DRAG), so it counts at the rapid-equivalent
+//     level, boil × 0.85/0.6. So: rapids of 0.65 and up break the plane at their heart, 0.3-0.5
+//     rapids do not; a rift (0.8) or fissure (0.7) at any breath, a mound (0.55) boiling hard.
+//   · THE RED LINE. Only water "in the red" drains the plane: the flats sounder's red band
+//     (under 0.4 × `free` clearance, hud.js) is a tide multiplier of ~0.47, so drag over 0.53.
+//     A bar's feathered rim, amber water, lilies and eelgrass cost speed but keep the plane.
+//   · In the red a hold on the plane drains at waterDrag / breakS per second and the plane
+//     breaks at zero: 0.8 (a bar's heart) in ~0.4 s, kelp 0.65 in ~0.45 s. Out of it the hold
+//     refills over `refillS`, so a brush with the red is forgiven. No entry while in the red.
+//   · THE BITE. Carrying way into drag (speed over `margin` × target) above displacement speed
+//     (`hullKt`, full by `biteKt`), the slow-down rate grows by `bite` × drag (a bar's heart at
+//     planing speed: ~9 s → ~1.6 s). A light-air wade, or a wobble inside a weedbed, is untouched. Bottom and rapids only — a boil already scrubs speed on contact
+//     (BOIL_SCRUB) and would be charged twice. Keyed to drag, not the momentum stat: weed on
+//     the keel does not care how heavy the boat is.
+// `planeHold` lives on the boat and only once a boat has met red water — never raceState
+// (the trace hash), and no field grows where there is none.
+const PLANE_DRAG = {
+    red: 0.53,
+    breakS: 0.3,
+    refillS: 0.5,
+    bite: 6,
+    hullKt: 7,
+    biteKt: 11,
+    margin: 1.15
+};
+
 function getTargetSpeed(twaRadians, useSpinnaker, windSpeed) {
     const twaDeg = Math.abs(twaRadians) * (180 / Math.PI);
     const angles = J111_POLARS.angles;
@@ -720,6 +757,18 @@ function updateBoat(boat, dt) {
     boat.optimalSailAngle = optimalSailAngle;
     targetKnots *= trimEfficiency;
 
+    // THE WATER, read before the plane — PLANE_DRAG. Applied to the target at the shoal and
+    // rapids slots below, as before; read here because the plane has to know about it.
+    const shoalNow = state.course._hasShoals ? window.VenueDoc.shoalField(state.course.islands, boat.x, boat.y) : 1;
+    const tideNow = (state.tide && window.Tide) ? Tide.speedMul(boat) : 1;
+    const rapidsNow = rapidsTurbAt(boat.x, boat.y);
+    const boilNow = (state.volcano && window.Volcano) ? Volcano.boilAt(boat.x, boat.y) : 0;
+    const bottomDrag = 1 - shoalNow * tideNow;
+    const waterDrag = Math.max(bottomDrag, rapidsNow, boilNow * BOIL_DRAG / RAPIDS_DRAG);
+    const inRed = waterDrag > PLANE_DRAG.red;
+    if (inRed) boat.planeHold = (boat.planeHold == null ? 1 : boat.planeHold) - dt * waterDrag / PLANE_DRAG.breakS;
+    else if (boat.planeHold != null && boat.planeHold < 1) boat.planeHold = Math.min(1, boat.planeHold + dt / PLANE_DRAG.refillS);
+
     // PLANING LOGIC
     const twaDeg = Math.abs(angleToWind * 180 / Math.PI);
     const tws = effectiveWind;
@@ -730,6 +779,8 @@ function updateBoat(boat, dt) {
         twaDeg < (J111_PLANING.maxTWA * 180 / Math.PI) &&
         tws > J111_PLANING.minTWS
     );
+    // No getting onto the plane in red water.
+    if (inRed && !boat.raceState.isPlaning) canPlane = false;
 
     // Hysteresis State Machine
     if (canPlane) {
@@ -772,6 +823,12 @@ function updateBoat(boat, dt) {
         } else {
              boat.raceState.planingTimer = 0;
         }
+    }
+
+    // Red water has drained the hold: the plane breaks now, whatever the speed says.
+    if (boat.raceState.isPlaning && inRed && boat.planeHold <= 0) {
+        boat.raceState.isPlaning = false;
+        boat.raceState.planingTimer = 0;
     }
 
     if (boat.raceState.isPlaning) {
@@ -857,7 +914,7 @@ function updateBoat(boat, dt) {
     // the shallowest part of the bar, feathering to nothing at its rim, so grazing an edge
     // is nearly free and crossing the middle is a real price you chose to pay.
     if (state.course._hasShoals) {
-        boat.shoalMul = window.VenueDoc.shoalField(state.course.islands, boat.x, boat.y);
+        boat.shoalMul = shoalNow;
         targetKnots *= boat.shoalMul;
     } else if (boat.shoalMul !== 1) {
         boat.shoalMul = 1;
@@ -866,7 +923,7 @@ function updateBoat(boat, dt) {
     // off a polygon: full speed with a hand of clearance, the mud taking more as the water
     // goes, nothing at all aground — see js/tide.js. Only ever set on a tidal venue, so no
     // other venue's boats grow the fields (the golden traces hash every primitive).
-    if (state.tide && window.Tide) targetKnots *= Tide.speedMul(boat);
+    if (state.tide && window.Tide) targetKnots *= tideNow;
 
     // RAPIDS. Turbulence only — a rapid authors no flow; whatever stream runs through
     // it is the Current layer's and arrives through getCurrentAt below. Broken water
@@ -877,7 +934,7 @@ function updateBoat(boat, dt) {
     // carries it. Phase is dealt per boat from a counter and the shape is pure in
     // state.time, so a fleet in the same stopper tosses independently and no RNG is
     // drawn.
-    boat.rapidsTurb = rapidsTurbAt(boat.x, boat.y);
+    boat.rapidsTurb = rapidsNow;
     // A seabed vent's BOIL is broken water with a difference: aerated, it will not hold a
     // hull up or let it grip. It takes the rapids' drag and yaw below, AND it SCRUBS speed
     // on contact — a share per second, not a target the boat drifts toward — so crossing
@@ -885,7 +942,7 @@ function updateBoat(boat, dt) {
     // couple of hundred units round its end. That is the choice (Wes: "it doesn't present
     // a real choice"). The router prices the same field (Volcano.boilMul) and the bots
     // read it locally, so the fleet knows what the foam means.
-    boat.boil = (state.volcano && window.Volcano) ? Volcano.boilAt(boat.x, boat.y) : 0;
+    boat.boil = boilNow;
     if (boat.boil > 0.01) {
         boat.rapidsTurb = Math.max(boat.rapidsTurb, boat.boil);
         targetKnots *= (1 - (BOIL_DRAG - RAPIDS_DRAG) * boat.boil);   // on top of the rapids' share below
@@ -968,6 +1025,17 @@ function updateBoat(boat, dt) {
         // Decelerating (Momentum). Higher momentum stat = slower loss.
         const momMod = 1.0 - boat.stats.momentum * 0.02;
         speedAlpha *= momMod;
+        // Drag takes the way off fast — PLANE_DRAG.bite. Bottom and rapids, not the boil.
+        // Only on way CARRIED INTO the drag — speed more than `margin` over the target — and
+        // only above displacement speed: nothing below `hullKt`, full from `biteKt` (smoothstep).
+        // A light-air fleet wading the swamp's weed at 3-5 kt must not feel it: bitten there,
+        // it lost every steering wobble at once and rebuilt it on the 5.5 s constant, a ratchet
+        // to a crawl (swamp, 8 seeds: 59 finishers → 0-38 under the earlier forms).
+        if (boat.speed > targetGameSpeed * PLANE_DRAG.margin) {
+            const u = Math.max(0, Math.min(1, (boat.speed * 4 - PLANE_DRAG.hullKt) / (PLANE_DRAG.biteKt - PLANE_DRAG.hullKt)));
+            const bite = Math.max(bottomDrag, RAPIDS_DRAG * rapidsNow) * u * u * (3 - 2 * u);
+            if (bite > 0) speedAlpha = 1 - (1 - speedAlpha) * Math.pow(SPEED_DECAY_DOWN, timeScale * PLANE_DRAG.bite * bite);
+        }
     }
 
     boat.speed = boat.speed * (1 - speedAlpha) + targetGameSpeed * speedAlpha;
