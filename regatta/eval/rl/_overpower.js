@@ -92,7 +92,7 @@ const factorOf = (heel, cope) => { const o = heel - THRESH; return o <= 0 ? 1 : 
         if (!j.format) continue;
         const F = j.format, I = n => F.indexOf(n);
         if (I('awa') < 0 || I('aws') < 0) continue;
-        const v = f.slice(5, f.lastIndexOf('_'));
+        const v = f.slice(5, f.lastIndexOf('_')).replace(/_(solo|competitive)$/, '');
         const rows = j.samples.filter(r => r[I('leg')] >= 1);
         if (!rows.length) continue;
         const o = byV[v] = byV[v] || { heels: [], f: [], n: 0, pressed: 0, laps: 0 };

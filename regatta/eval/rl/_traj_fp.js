@@ -71,7 +71,11 @@ const PATHS_WHY = 'course.paths added only — every other key byte-identical (2
 // re-benched on it (ot0* anchors), the human column is a recording and stands.
 const V3_WHY = '; course.paths re-saved only (2026-09-14 courseSig v3 re-freeze, by-key proof)';
 const ADJUDICATED = {
-    bay: { stamps: ['a331fe02:13481', '915b07e4:1019761', 'c48f3aae:1021110'], on: '7f6cf2f6:1020959', why: 'boundary-only change, tracks re-verified inside the new arena; ' + PATHS_WHY + V3_WHY },
+    // ⭐ BAY RE-FROZEN (2026-09-28, the solo/competitive intake): his six laps stamp 64a2ab22:1039713,
+    // the committed doc at 6550164. The freeze took the shipping doc one edit later — the target time
+    // (records.provisional 255 → 250, set from these same laps); a by-key diff shows NOTHING else moved.
+    // The older bay laps stay adjudicated only on 7f6cf2f6 (the previous frozen cut) and now read as stale.
+    bay: { stamps: ['64a2ab22:1039713'], on: '64a2b767:1039713', why: 'records.provisional only (the target set from these laps) — by-key diff 2026-09-28' },
     arctic:    { stamps: ['86fc97f4:97975'],   on: 'b0074f92:98492', why: PATHS_WHY },
     glowtide:  { stamps: ['3fbd12b1:514566', '10b0f94a:515467'],  on: '34e647ff:515467', why: PATHS_WHY + V3_WHY },
     lagoon:    { stamps: ['3acc77de:61737', 'ebd9cc79:62851'],   on: '54f1a9d1:62851', why: PATHS_WHY + V3_WHY },
@@ -98,7 +102,8 @@ const ADJUDICATED = {
 const TD = path.join(__dirname, 'traj');
 const byVenue = {};
 for (const f of fs.readdirSync(TD).filter(f => f.startsWith('traj_'))) {
-    const v = f.slice(5, f.lastIndexOf('_'));
+    // Sep 28 2026 files carry the mode: traj_<venue>_<solo|competitive>_<ts>.json
+    const v = f.slice(5, f.lastIndexOf('_')).replace(/_(solo|competitive)$/, '');
     (byVenue[v] = byVenue[v] || []).push(f);
 }
 const want = process.argv.slice(2).length ? process.argv.slice(2) : Object.keys(byVenue).sort();

@@ -82001,6 +82001,6 @@ window.VENUE_DOC["bay"] = {
     "shallowColor": "#2396c7"
   },
   "records": {
-    "provisional": 255
+    "provisional": 250
   }
 };
