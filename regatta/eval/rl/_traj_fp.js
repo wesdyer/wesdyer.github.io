@@ -71,11 +71,12 @@ const PATHS_WHY = 'course.paths added only — every other key byte-identical (2
 // re-benched on it (ot0* anchors), the human column is a recording and stands.
 const V3_WHY = '; course.paths re-saved only (2026-09-14 courseSig v3 re-freeze, by-key proof)';
 const ADJUDICATED = {
-    // ⭐ BAY RE-FROZEN (2026-09-28, the solo/competitive intake): his six laps stamp 64a2ab22:1039713,
-    // the committed doc at 6550164. The freeze took the shipping doc one edit later — the target time
-    // (records.provisional 255 → 250, set from these same laps); a by-key diff shows NOTHING else moved.
-    // The older bay laps stay adjudicated only on 7f6cf2f6 (the previous frozen cut) and now read as stale.
-    bay: { stamps: ['64a2ab22:1039713'], on: '64a2b767:1039713', why: 'records.provisional only (the target set from these laps) — by-key diff 2026-09-28' },
+    // ⭐ BAY RE-FROZEN (2026-09-28, then 2026-09-29 — the playtest laps added). Sep 28 laps stamp
+    // 64a2ab22:1039713 and Sep 29 laps 64a2b767:1039713; the two docs differ ONLY in records.provisional
+    // (255 vs 250). Adding the Sep 29 laps put the target back at 255 (4:15: six solo laps, mean 230.0 s),
+    // so the frozen cut IS 64a2ab22 — the Sep 28 laps match it directly, the Sep 29 laps are adjudicated.
+    // The older bay laps stay adjudicated only on 7f6cf2f6 (an earlier frozen cut) and read as stale.
+    bay: { stamps: ['64a2b767:1039713'], on: '64a2ab22:1039713', why: 'records.provisional only (250 → 255, the target reset from these laps + Sep 28\'s) — by-key diff 2026-09-29' },
     arctic:    { stamps: ['86fc97f4:97975'],   on: 'b0074f92:98492', why: PATHS_WHY },
     glowtide:  { stamps: ['3fbd12b1:514566', '10b0f94a:515467'],  on: '34e647ff:515467', why: PATHS_WHY + V3_WHY },
     lagoon:    { stamps: ['3acc77de:61737', 'ebd9cc79:62851'],   on: '54f1a9d1:62851', why: PATHS_WHY + V3_WHY },
@@ -83,7 +84,11 @@ const ADJUDICATED = {
     ocean:     { stamps: ['1b1a7101:564735'],  on: '46475464:565174', why: PATHS_WHY },
     redrock:   { stamps: ['60f2a5ec:63791', 'a6530aaa:65152'],   on: '18d5c8a8:65152', why: PATHS_WHY + V3_WHY },
     river:     { stamps: ['76659ee5:1786811', 'd5e773f6:1787917'], on: '90856445:1787917', why: PATHS_WHY + V3_WHY },
-    seatrials: { stamps: ['ae1026bc:1595'],    on: 'ad2dd96f:1751', why: PATHS_WHY },
+    // SEATRIALS RE-FROZEN (2026-09-29, the playtest intake): his six laps stamp ba7f0d6f:1781; the freeze
+    // took the doc one edit later (records.provisional 210 → 205, set from these laps), by-key diff: nothing
+    // else. The Aug laps (ae1026bc, adjudicated on the old cut ad2dd96f) now read as stale — the doc they
+    // were sailed on also lacked records and had course.cutoff 360, not 600.
+    seatrials: { stamps: ['ba7f0d6f:1781'],    on: 'ba7f7c8b:1781', why: 'records.provisional only (the target set from these laps) — by-key diff 2026-09-29' },
     swamp:     { stamps: ['59f2931b:335924'],  on: 'f6ac8c39:335942', why: 'his +0.75 kt laps (2026-09-08) were stamped ON the old frozen doc' + V3_WHY },
     volcanic:  { stamps: ['4ac8c0e5:45501'],   on: '46ebdb19:45501', why: 'his five laps (2026-09-13) were stamped ON the old frozen doc' + V3_WHY },
     // ⭐ SPOONBILL FLATS (2026-09-16, the flats intake): his three laps stamp 8eb84e74:38655, a
