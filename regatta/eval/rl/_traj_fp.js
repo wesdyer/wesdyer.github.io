@@ -88,7 +88,11 @@ const ADJUDICATED = {
     // because set_venue_targets refuses: 1.76x the 1:58 path estimate). A by-key diff shows nothing else moved.
     // The older lake laps (84140c1f, 4ac9dd20, adjudicated on 6d3363c) now read as stale.
     lake:      { stamps: ['b4249776:1001243'], on: 'e3df0977:1001273', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-29' },
-    ocean:     { stamps: ['1b1a7101:564735'],  on: '46475464:565174', why: PATHS_WHY },
+    // OCEAN RE-FROZEN (2026-09-30, the playtest intake): his six laps stamp 9812f466:569834. The freeze took the doc one
+    // edit later: records.provisional added (220 = 3:40, Time Trial mean 196.0 s x 1.1 up to 5 s, set by hand because
+    // set_venue_targets refuses — his mean is 0.79x its 4:07 path estimate; the estimate doesn't count swell surfing).
+    // A by-key diff shows nothing else moved. The older ocean laps (1b1a7101 on 46475464) now read as stale.
+    ocean:     { stamps: ['9812f466:569834'],  on: 'faadda46:569864', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-30' },
     redrock:   { stamps: ['60f2a5ec:63791', 'a6530aaa:65152'],   on: '18d5c8a8:65152', why: PATHS_WHY + V3_WHY },
     // RIVER RE-FROZEN (2026-09-30, the playtest intake): his six finished laps stamp 572d60cb:1787947 (a seventh race
     // ended aground on leg 3 and was not ingested). The freeze took the doc one edit later: records.provisional
