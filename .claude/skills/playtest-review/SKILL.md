@@ -135,7 +135,10 @@ python3 engagement.py $S $D/labels.tsv > $D/engagement.md
     - only then `rm -rf ~/Desktop/<venue>-tests` AND the session's bundle in `~/Desktop/regatta tests/` (its path is
       `align.bundle(S)['path']`; from Sep 30 Wes leaves bundles there), and report the space freed. Keep the `regatta tests` folder itself.
 
-    Each venue freed 15–20 GB.
+    Each venue freed 15–20 GB. **Use LITERAL absolute paths in the `rm -rf`.** Claude Code's safety check refuses a
+    removal whose target comes from a variable or command substitution (Sockeye Run). Print the bundle path first,
+    then paste it quoted into the rm.
+    Clip sizes vary: whitewater and foam compress badly (Sockeye: 24 clips = 424 MB, proxy 239 MB).
 
 ## Gotchas
 
