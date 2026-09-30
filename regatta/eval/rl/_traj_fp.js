@@ -80,7 +80,11 @@ const ADJUDICATED = {
     arctic:    { stamps: ['86fc97f4:97975'],   on: 'b0074f92:98492', why: PATHS_WHY },
     glowtide:  { stamps: ['3fbd12b1:514566', '10b0f94a:515467'],  on: '34e647ff:515467', why: PATHS_WHY + V3_WHY },
     lagoon:    { stamps: ['3acc77de:61737', 'ebd9cc79:62851'],   on: '54f1a9d1:62851', why: PATHS_WHY + V3_WHY },
-    lake:      { stamps: ['84140c1f:1000622', '4ac9dd20:1001243'], on: '6d3363c:1001243', why: PATHS_WHY + V3_WHY },
+    // LAKE RE-FROZEN (2026-09-29, the playtest intake): his six laps stamp b4249776:1001243. The freeze took the doc
+    // one edit later: records.provisional added (230 = 3:50, Time Trial mean 207.1 s x 1.1 up to 5 s, set by hand
+    // because set_venue_targets refuses: 1.76x the 1:58 path estimate). A by-key diff shows nothing else moved.
+    // The older lake laps (84140c1f, 4ac9dd20, adjudicated on 6d3363c) now read as stale.
+    lake:      { stamps: ['b4249776:1001243'], on: 'e3df0977:1001273', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-29' },
     ocean:     { stamps: ['1b1a7101:564735'],  on: '46475464:565174', why: PATHS_WHY },
     redrock:   { stamps: ['60f2a5ec:63791', 'a6530aaa:65152'],   on: '18d5c8a8:65152', why: PATHS_WHY + V3_WHY },
     river:     { stamps: ['76659ee5:1786811', 'd5e773f6:1787917'], on: '90856445:1787917', why: PATHS_WHY + V3_WHY },

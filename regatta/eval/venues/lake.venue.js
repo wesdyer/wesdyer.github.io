@@ -4111,7 +4111,7 @@ window.VENUE_DOC["lake"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 480,
+    "cutoff": 600,
     "paths": {
       "sig": "v3-aff9265d-eu0",
       "legs": [
@@ -82933,5 +82933,8 @@ window.VENUE_DOC["lake"] = {
       "scale": 1.827,
       "plane": "surface"
     }
-  ]
+  ],
+  "records": {
+    "provisional": 230
+  }
 };
