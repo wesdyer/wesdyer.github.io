@@ -45,11 +45,18 @@ def bundle(path):
     # Only an EXPORT can be cut; the raw track we read is always on the recording clock.
     cut = bool(sl) and not (len(sl) == 1 and sl[0]['timeScale'] == 1 and sl[0]['sourceStartMs'] == 0)
     if cut: print('note: the Screen Studio edit has %d slices — an exported .mp4 would not match; the raw track does' % len(sl), file=sys.stderr)
-    tr = sorted(glob.glob(os.path.join(path, 'transcripts', '*.json')))
+    tr = sorted(glob.glob(os.path.join(path, 'transcripts', '*.json')), key=lambda f: not f.endswith('.fixed.json'))  # retranscribe.py repair first
     keys = json.load(open(os.path.join(R, 'keystrokes-0.json'))) if os.path.exists(os.path.join(R, 'keystrokes-0.json')) else []
     mic = (glob.glob(os.path.join(R, 'enhanced', '*microphone*')) or glob.glob(os.path.join(R, '*microphone*.m4a')) or [None])[0]
     video = os.path.join(R, 'channel-1-display-0.mp4')   # raw screen: no webcam/captions/padding, 3072x2304
     dur = next(s['durationMs'] for r in meta['recorders'] if r['type'] == 'display' for s in r['sessions']) / 1000
+    if tr:   # Whisper loops: one phrase over and over (Clubhouse Point, 19:32-24:53) — repair with retranscribe.py
+        segs = json.load(open(tr[0]))['json']['transcript']
+        from collections import Counter
+        words = ' '.join(s['text'] for s in segs).split()
+        grams = Counter(' '.join(words[i:i + 8]) for i in range(len(words) - 8))
+        g, n = grams.most_common(1)[0] if grams else ('', 0)
+        if n > 8: print('⚠️  transcript loops: "%s" ×%d — run retranscribe.py on that stretch' % (g, n), file=sys.stderr)
     return dict(path=path, duration=dur, rec0=rec0, cut=cut, video=video if os.path.exists(video) else None, transcript=json.load(open(tr[0]))['json']['transcript'] if tr else [],
                 keys=[dict(k, t=k['unixTimeMs'] / 1000 - rec0) for k in keys], mic=mic)
 

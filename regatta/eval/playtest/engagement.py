@@ -24,13 +24,26 @@ from align import load_laps, sample_video_t, iso, mmss, phrases, bundle
 def mm(s): m, x = s.split(':'); return int(m) * 60 + int(x)
 
 def progress_fn(course):
+    """Course progress in units. Rounding-mark courses aim each leg at its legRounds mark (the last
+    leg at the finish line). GATE courses (Clubhouse Point: legRounds all null, marks in pairs) aim
+    each leg at the nearest point of its gate — the pairs alternate: leg 1 the far gate, leg 2 the
+    start/leeward pair, … The first version aimed every gate leg at the finish, so places jumped."""
     L, lr, mk = course['legLens'], course['legRounds'], course['marks']
-    def target(leg):
+    pairs = [mk[i:i + 2] for i in range(0, len(mk) - 1, 2)]
+    gates = not any(lr) and len(pairs) >= 2
+    def seg_pt(x, y, a, b):
+        dx, dy = b[0] - a[0], b[1] - a[1]
+        u = max(0.0, min(1.0, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy or 1)))
+        return a[0] + u * dx, a[1] + u * dy
+    def target(leg, x=None, y=None):
+        if gates:
+            a, b = pairs[leg % len(pairs)]
+            return seg_pt(x, y, a, b) if x is not None else ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
         if leg < len(lr) and lr[leg]: return lr[leg]['x'], lr[leg]['y']
         a, b = mk[-2], mk[-1]; return (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
     def prog(leg, x, y):
         if leg <= 0: return 0.0
-        tx, ty = target(leg)
+        tx, ty = target(leg, x, y)
         ll = L[leg] if leg < len(L) else 0
         return sum(L[:leg]) + max(0.0, ll - math.hypot(x - tx, y - ty))
     return prog, target

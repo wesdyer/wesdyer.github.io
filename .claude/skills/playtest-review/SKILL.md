@@ -58,7 +58,10 @@ python3 engagement.py $S $D/labels.tsv > $D/engagement.md
 
 ## Steps
 
-1. **Align.** Run align.py and read the WHOLE timeline. Note every remark that is a problem, a
+1. **Align.** Run align.py and read the WHOLE timeline. If it warns that the transcript loops (Clubhouse Point
+   repeated one phrase ×72 across 19:32–24:53), run `python3 retranscribe.py $S <from> <to>`. It uses local
+   mlx-whisper on the voice track (about 16 s for 6 minutes) and writes a `.fixed.json` that the tools prefer.
+   Then re-run align.py and read that stretch. Note every remark that is a problem, a
    question, an idea or praise.
 2. **Test the testable.** Check each remark against laps.md or an ad-hoc probe, and say when the data
    disagrees with Wes. At Lighthouse Cove "they all start on port" was true of the approach
@@ -99,6 +102,14 @@ python3 engagement.py $S $D/labels.tsv > $D/engagement.md
    Then tell Wes the bundle can go. Lighthouse Cove took about 370 MB and 8 minutes of encoding.
 9. **Commit** in the issues repo (`git add -A && git commit`), then report the headline
    findings and ask Wes for triage.
+
+## Gotchas
+
+- **Gate courses** (Clubhouse Point) have null `legRounds`. `engagement.progress_fn` aims each leg at the nearest
+  point of its gate; before Sep 29 it aimed every leg at the finish, and places jumped. `laps.py`'s mark-zone
+  timer is empty on gates.
+- The `rivals` tack flag at running angles is not a reliable read of who had rights. Check a frame before
+  saying who was wrong in an encounter.
 
 ## Don'ts
 
