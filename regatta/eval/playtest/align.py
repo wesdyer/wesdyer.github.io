@@ -28,6 +28,19 @@ from datetime import datetime
 def iso(s): return datetime.fromisoformat(s.replace('Z', '+00:00')).timestamp()
 def mmss(s): s = max(0, s); return '%d:%02d' % (s // 60, s % 60)
 
+SS_HOME = os.path.expanduser('~/Desktop/regatta tests')   # where Screen Studio saves recordings
+
+def _covers(b, tests_dir):
+    """Does bundle b's recording window contain every lap in tests_dir?"""
+    try:
+        m = json.load(open(os.path.join(b, 'recording', 'metadata.json')))
+        s = next(x for r in m['recorders'] if r['type'] == 'display' for x in r['sessions'])
+        t0, t1 = s['unixStartMs'] / 1000, s['unixStartMs'] / 1000 + s['durationMs'] / 1000
+        laps = [iso(json.load(open(f))['started']) for f in glob.glob(os.path.join(tests_dir, 'traj_*.json'))]
+        return bool(laps) and all(t0 <= t <= t1 for t in laps)
+    except Exception:
+        return False
+
 def bundle(path):
     """Everything a Screen Studio bundle knows, on one clock (seconds from recording start).
     `path` may be the bundle or the venue's test folder holding it (Wes keeps them together)."""
@@ -35,7 +48,11 @@ def bundle(path):
         path = os.path.join(path, 'bundle')
     if not os.path.isdir(os.path.join(path, 'recording')):
         found = sorted(glob.glob(os.path.join(path, '*.screenstudio')))
-        if len(found) != 1: sys.exit('expected one .screenstudio bundle in %s, found %d' % (path, len(found)))
+        if not found:
+            # Wes can leave the bundle where Screen Studio saved it: pick the one in ~/Desktop/regatta tests whose
+            # recording window covers the laps' start times (moving it early split the audio, Sep 29)
+            found = [b for b in glob.glob(os.path.join(SS_HOME, '*.screenstudio')) if _covers(b, path)]
+        if len(found) != 1: sys.exit('expected one .screenstudio bundle in %s (or covering its laps in %s), found %d' % (path, SS_HOME, len(found)))
         path = found[0]
     R = os.path.join(path, 'recording')
     meta = json.load(open(os.path.join(R, 'metadata.json')))
@@ -50,6 +67,12 @@ def bundle(path):
     tr = sorted(glob.glob(os.path.join(path, 'transcripts', '*.json')), key=rank)
     keys = json.load(open(os.path.join(R, 'keystrokes-0.json'))) if os.path.exists(os.path.join(R, 'keystrokes-0.json')) else []
     mic = (glob.glob(os.path.join(R, 'enhanced', '*microphone*')) or glob.glob(os.path.join(R, '*microphone*.m4a')) or [None])[0]
+    if mic and '/enhanced/' not in mic:
+        # Screen Studio finishes the enhanced (voice-only) track AFTER recording; if the bundle was moved first it
+        # lands in a same-named stub back in SS_HOME (Pearl Lagoon, Sep 29). Use it if it's there.
+        stub = glob.glob(os.path.join(SS_HOME, os.path.basename(path.rstrip('/')), 'recording', 'enhanced', '*microphone*'))
+        if stub: mic = stub[0]
+        else: print('⚠️  no enhanced voice track — using the raw mic (dB is then comparable only within this venue)', file=sys.stderr)
     video = os.path.join(R, 'channel-1-display-0.mp4')   # raw screen: no webcam/captions/padding, 3072x2304
     dur = next(s['durationMs'] for r in meta['recorders'] if r['type'] == 'display' for s in r['sessions']) / 1000
     if tr:   # Whisper loops: one phrase over and over (Clubhouse Point, 19:32-24:53) — repair with retranscribe.py

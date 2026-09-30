@@ -17,9 +17,13 @@ during a review.
 
 One folder per venue, **`~/Desktop/<venue>-tests/`**, holding:
 - the six `traj_<key>_<solo|competitive>_<ts>.json` files
-- the Screen Studio **bundle** `Google Chrome <date>.screenstudio`, which Wes moves in with the laps. The tools
-  find it there. To confirm it's the right bundle, `recording/metadata.json` `unixStartMs` must come before the
-  first lap's `started`.
+- the Screen Studio **bundle**, which is optional here. If the folder has none, `bundle()` takes the one in
+  `~/Desktop/regatta tests/` whose recording window covers the laps' start times.
+
+**Wes should NOT move a bundle until Screen Studio has finished processing it.** The enhanced (voice-only) track is
+written after the recording ends. When the bundle was moved first, the track landed in a same-named stub back in
+`regatta tests/`: Lake's was lost, and Lagoon's was rescued. `bundle()` now falls back to such a stub and warns when it
+has only the raw mic. The enhanced track matters: at Lagoon, racing measured 8.8 dB quieter on it and only 3 dB on the raw mic.
 
 The bundle holds:
 - the exact start time
@@ -124,7 +128,9 @@ python3 engagement.py $S $D/labels.tsv > $D/engagement.md
 10. **Clean up when Wes says so.**
     - md5 every trajectory against `archive/` and `eval/rl/traj/`
     - md5 every small bundle file (project, meta, markers, transcripts including .local/.fixed, metadata,
-      keystrokes, clicks, mouse moves, cursors, enhanced mic) against `archive/bundle/`
+      keystrokes, clicks, mouse moves, cursors, enhanced mic) against `archive/bundle/`. **A missing file is a
+      finding, not a skip.** Lagoon's enhanced track was absent from the bundle and the first check skipped it silently.
+    - check `~/Desktop/regatta tests/` for a stub of this session; copy anything the archive lacks, then delete the stub
     - confirm the clips, proxy and leaderboard.tsv exist
     - only then `rm -rf ~/Desktop/<venue>-tests` and report the space freed
 

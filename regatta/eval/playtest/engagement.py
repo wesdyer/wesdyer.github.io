@@ -31,6 +31,11 @@ def progress_fn(course):
     L, lr, mk = course['legLens'], course['legRounds'], course['marks']
     pairs = [mk[i:i + 2] for i in range(0, len(mk) - 1, 2)]
     gates = not any(lr) and len(pairs) >= 2
+    # the finish: the last pair of marks that aren't rounding marks (Lighthouse Cove: its own line), else the
+    # start line doubles as the finish (Stillwater Lake — aiming at the last two marks there gave negative gaps)
+    rounds = {(r['x'], r['y']) for r in lr if r}
+    free = [m for m in mk if (m[0], m[1]) not in rounds]
+    finish = free[-2:] if len(free) >= 4 else (free[:2] if len(free) >= 2 else mk[-2:])
     def seg_pt(x, y, a, b):
         dx, dy = b[0] - a[0], b[1] - a[1]
         u = max(0.0, min(1.0, ((x - a[0]) * dx + (y - a[1]) * dy) / (dx * dx + dy * dy or 1)))
@@ -40,7 +45,7 @@ def progress_fn(course):
             a, b = pairs[leg % len(pairs)]
             return seg_pt(x, y, a, b) if x is not None else ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
         if leg < len(lr) and lr[leg]: return lr[leg]['x'], lr[leg]['y']
-        a, b = mk[-2], mk[-1]; return (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
+        a, b = finish; return (a[0] + b[0]) / 2, (a[1] + b[1]) / 2
     def prog(leg, x, y):
         if leg <= 0: return 0.0
         tx, ty = target(leg, x, y)

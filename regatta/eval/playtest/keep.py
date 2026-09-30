@@ -62,7 +62,8 @@ def main():
          + ([B['mic']] if B['mic'] else [])
     for f in keep:
         if not os.path.exists(f): continue
-        rel = os.path.relpath(f, root)
+        # the enhanced track may live in a stub outside the bundle — archive it where the bundle would hold it
+        rel = os.path.relpath(f, root) if f.startswith(root) else os.path.join('recording', 'enhanced', os.path.basename(f))
         dst = os.path.join(arc, 'bundle', rel); os.makedirs(os.path.dirname(dst), exist_ok=True)
         shutil.copy2(f, dst)
     proxy = os.path.join(arc, 'session_proxy.mp4')
