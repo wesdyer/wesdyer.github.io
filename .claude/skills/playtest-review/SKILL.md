@@ -15,7 +15,7 @@ during a review.
 
 ## Inputs
 
-One folder per venue, **`~/Desktop/<venue>-tests/`**, holding:
+One folder per venue, **`~/Desktop/<venue>-tests/`** (or `-test`, as at Gatorgrass Bayou; match either), holding:
 - the six `traj_<key>_<solo|competitive>_<ts>.json` files
 - the Screen Studio **bundle**, which is optional here. If the folder has none, `bundle()` takes the one in
   `~/Desktop/regatta tests/` whose recording window covers the laps' start times.
@@ -105,7 +105,7 @@ python3 engagement.py $S $D/labels.tsv > $D/engagement.md
    - What was filed.
    - Praise to keep.
    - Asked but not an issue.
-7. **File** into `issues.md`. A repeat of an existing issue gets this venue's evidence added and
+7. **File** into `issues.md`. **FIRST, and again before every later edit of `issues.md` (clip embeds included):** run `git -C ~/Desktop/regatta-issues status --short`. If `issues.md` is modified, that's Wes's triage in progress: commit it alone ("Wes's triage: …") before touching the file. Gatorgrass Bayou's triage got folded into a clip-embed commit because only the first edit was checked. A repeat of an existing issue gets this venue's evidence added and
    its "Seen at" updated, not a new entry. Evidence is quotes with `venue @ MM:SS`, data,
    stills and 🔎 things Claude observed. Stills are EMBEDDED, not named: `![MM:SS · slug|560](<venue>/evidence/<file>.jpg)`
    on its own line, indented under a list item (Wes reads the folder in Obsidian). A cause is either verified with file:line or marked
