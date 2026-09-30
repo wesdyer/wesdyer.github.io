@@ -79,7 +79,10 @@ const ADJUDICATED = {
     bay: { stamps: ['64a2b767:1039713'], on: '64a2ab22:1039713', why: 'records.provisional only (250 → 255, the target reset from these laps + Sep 28\'s) — by-key diff 2026-09-29' },
     arctic:    { stamps: ['86fc97f4:97975'],   on: 'b0074f92:98492', why: PATHS_WHY },
     glowtide:  { stamps: ['3fbd12b1:514566', '10b0f94a:515467'],  on: '34e647ff:515467', why: PATHS_WHY + V3_WHY },
-    lagoon:    { stamps: ['3acc77de:61737', 'ebd9cc79:62851'],   on: '54f1a9d1:62851', why: PATHS_WHY + V3_WHY },
+    // LAGOON RE-FROZEN (2026-09-29, the playtest intake): his six laps stamp a28c2765:63241. The freeze took the doc one
+    // edit later: records.provisional 190 → 195 (3:15, Time Trial mean 175.2 s × 1.1 up to 5 s; the old 3:10 came from race
+    // laps). A by-key diff shows nothing else moved. Older lagoon laps (3acc77de, ebd9cc79 on 54f1a9d1) now read as stale.
+    lagoon:    { stamps: ['a28c2765:63241'], on: 'a28c1b20:63241', why: 'records.provisional only (190 → 195, the target set from these laps) — by-key diff 2026-09-29' },
     // LAKE RE-FROZEN (2026-09-29, the playtest intake): his six laps stamp b4249776:1001243. The freeze took the doc
     // one edit later: records.provisional added (230 = 3:50, Time Trial mean 207.1 s x 1.1 up to 5 s, set by hand
     // because set_venue_targets refuses: 1.76x the 1:58 path estimate). A by-key diff shows nothing else moved.
