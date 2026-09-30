@@ -96,7 +96,11 @@ const ADJUDICATED = {
     // else. The Aug laps (ae1026bc, adjudicated on the old cut ad2dd96f) now read as stale — the doc they
     // were sailed on also lacked records and had course.cutoff 360, not 600.
     seatrials: { stamps: ['ba7f0d6f:1781'],    on: 'ba7f7c8b:1781', why: 'records.provisional only (the target set from these laps) — by-key diff 2026-09-29' },
-    swamp:     { stamps: ['59f2931b:335924'],  on: 'f6ac8c39:335942', why: 'his +0.75 kt laps (2026-09-08) were stamped ON the old frozen doc' + V3_WHY },
+    // SWAMP RE-FROZEN (2026-09-30, the playtest intake): his seven laps stamp 6691639a:335942 (4 Time Trials, 3 races).
+    // The freeze took the doc one edit later: records.provisional added (195 = 3:15, Time Trial mean 175.6 s x 1.1 up to
+    // 5 s, set by hand because set_venue_targets refuses it — 2.50x the 1:10 path estimate). A by-key diff shows nothing
+    // else moved. The Sep 8 laps (59f2931b on f6ac8c39) now read as stale.
+    swamp:     { stamps: ['6691639a:335942'],  on: '895f3a97:335972', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-30' },
     volcanic:  { stamps: ['4ac8c0e5:45501'],   on: '46ebdb19:45501', why: 'his five laps (2026-09-13) were stamped ON the old frozen doc' + V3_WHY },
     // ⭐ SPOONBILL FLATS (2026-09-16, the flats intake): his three laps stamp 8eb84e74:38655, a
     // doc 33 bytes short of the committed 431d683 (144108a1:38688) that matches NO commit — the
