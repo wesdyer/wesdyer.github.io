@@ -1,6 +1,6 @@
 ---
 name: playtest-review
-description: Review one venue of Wes's narrated regatta playtest (Screen Studio video + transcript + 6 traj_*.json) and file what it shows into ~/Desktop/regatta-issues — issues with evidence, venue impressions, and when he was engaged with the racing. Use when Wes hands over a venue's test folder ("here's <venue>", "<venue>-tests is ready", "review the video").
+description: Ingest and review one venue of Wes's narrated regatta playtest (Screen Studio bundle + 6 traj_*.json) and file what it shows into ~/Desktop/regatta-issues — issues with evidence, venue impressions, and when he was engaged with the racing — then archive it so the raw recording can be deleted. Use when Wes hands over a venue's test folder ("here's <venue>", "<venue>-tests is ready", "ingest and review <venue>").
 ---
 
 # Playtest review — one venue
@@ -23,12 +23,18 @@ One folder per venue, **`~/Desktop/<venue>-tests/`**, holding:
 
 The bundle holds:
 - the exact start time
-- `transcripts/*.json` (Whisper, per-phrase timing)
+- `transcripts/*.json`: Screen Studio's own Whisper transcript. **Don't trust it.** It broke at both of the
+  first two venues. Transcribe locally instead (step 1).
+- `recording-markers.json` (bundle root): markers Wes drops during the recording. The format is unknown until
+  the first one arrives; `align.bundle()` parses defensively and warns if it can't.
 - `recording/keystrokes-0.json` (every steering key, with modifiers)
 - `mouseclicks-0.json`
 - `recording/enhanced/*microphone*` (the voice-only track)
 - `recording/channel-1-display-0.mp4`: the raw screen, 3072×2304, on the recording clock, with no webcam,
   captions or padding over the HUD.
+
+Wes records with the browser window at the **same size every time** (2000×1500 at both of the first two venues).
+The OCR crops and the layline comparisons (PT-027) depend on it; if `metadata.json`'s display `cropRect` differs, redo the crops.
 
 **Wes no longer exports video (Sep 29 2026).** An old folder may still hold an exported `.mp4` or `.srt`;
 ignore both. The `.srt` from Lighthouse Cove collapsed everything after 13:23 into one cue with backwards timing.
@@ -37,6 +43,7 @@ ignore both. The `.srt` from Lighthouse Cove collapsed everything after 13:23 in
 
 ```
 S=~/Desktop/<venue>-tests; D=~/Desktop/regatta-issues/<venue>
+python3 transcribe.py $S                      # local mlx-whisper, whole session (~47 s for 27 min) → *.local.json
 python3 align.py $S > $D/timeline.md          # narration on the video clock, split by lap; drift check
 python3 laps.py  $S > $D/laps.md              # splits, hits, fleet at gun, gaps, roundings, speeds
 python3 engagement.py $S $D/labels.tsv --init # rows to label
@@ -58,11 +65,21 @@ python3 engagement.py $S $D/labels.tsv > $D/engagement.md
 
 ## Steps
 
-1. **Align.** Run align.py and read the WHOLE timeline. If it warns that the transcript loops (Clubhouse Point
-   repeated one phrase ×72 across 19:32–24:53), run `python3 retranscribe.py $S <from> <to>`. It uses local
-   mlx-whisper on the voice track (about 16 s for 6 minutes) and writes a `.fixed.json` that the tools prefer.
-   Then re-run align.py and read that stretch. Note every remark that is a problem, a
-   question, an idea or praise.
+0. **Ingest the laps (Wes wants it with every review).** Follow the trajectory intake (memory: regatta-trajectory-intake):
+   - copy the six files into `regatta/eval/rl/traj/` and run `node regatta/eval/traj_audit.js`
+   - **add** them to the venue's set; don't replace older laps
+   - target = mean of ALL Time Trial laps on the current course × 1.1, rounded up to 5 s
+     (`node regatta/eval/set_venue_targets.js` dry). Hand-edit `records.provisional`, never `--write`: it deletes
+     Flats' hand-set 3:15.
+   - `node regatta/eval/freeze_venues.js --add <venue>`
+   - by-key diff from the laps' doc to the frozen doc, then an ADJUDICATED entry in `eval/rl/_traj_fp.js`
+   - check `_traj_fp.js <venue>` shows every new lap valid
+   - old laps stay in `traj/`, marked stale
+   - commit on `master` when Wes says so
+1. **Transcribe and align.** Run transcribe.py, then align.py, and read the WHOLE timeline. Note every remark
+   that is a problem, a question, an idea or praise. If a venue was already labelled on Screen Studio's
+   transcript, repair only the bad stretch with `retranscribe.py $S <from> <to>`, which writes a `.fixed.json`,
+   so the labels keep their times. If `bundle()` found markers, read around each one first: Wes flagged it.
 2. **Test the testable.** Check each remark against laps.md or an ad-hoc probe, and say when the data
    disagrees with Wes. At Lighthouse Cove "they all start on port" was true of the approach
    (7/9 at −15 s) but not of the gun (0–4/9). "The AI is faster" was true boat for boat, while
@@ -97,22 +114,32 @@ python3 engagement.py $S $D/labels.tsv > $D/engagement.md
                                                       # proxy, trajectories, transcript, keys, clicks, voice track)
    python3 leaderboard.py $S $D/archive/leaderboard.tsv   # leaderboard OCR at 1 fps, races only (~10 min)
    ```
+   `keep.py` adds a clip row for every marker Wes dropped that no row already covers (−15 s / +10 s).
    Check that `align/laps/engagement` run from `$D/archive` give the same output; only the title line should
    differ. Embed each clip in its issues under "🎬 Clips:" as `![mm:ss · slug|560](<venue>/clips/<file>.mp4)`.
    Then tell Wes the bundle can go. Lighthouse Cove took about 370 MB and 8 minutes of encoding.
-9. **Commit** in the issues repo (`git add -A && git commit`), then report the headline
-   findings and ask Wes for triage.
+9. **Commit** in the issues repo, then report the headline findings and ask Wes for triage. **Run `git diff`
+   first:** Wes triages in Obsidian by editing the Pri column, and a blind `git add -A` once swept up his
+   half-finished triage. He added **P0** (most urgent, ahead of P1). New issues arrive as `P?→Pn`.
+10. **Clean up when Wes says so.**
+    - md5 every trajectory against `archive/` and `eval/rl/traj/`
+    - md5 every small bundle file (project, meta, markers, transcripts including .local/.fixed, metadata,
+      keystrokes, clicks, mouse moves, cursors, enhanced mic) against `archive/bundle/`
+    - confirm the clips, proxy and leaderboard.tsv exist
+    - only then `rm -rf ~/Desktop/<venue>-tests` and report the space freed
+
+    Each venue freed 15–20 GB.
 
 ## Gotchas
 
 - **Gate courses** (Clubhouse Point) have null `legRounds`. `engagement.progress_fn` aims each leg at the nearest
-  point of its gate; before Sep 29 it aimed every leg at the finish, and places jumped. `laps.py`'s mark-zone
-  timer is empty on gates.
+  point of its gate; before Sep 29 it aimed every leg at the finish, and places jumped. `laps.py` times the
+  165 u zone around the gate line.
+- The `spd` columns are units per FRAME at 60 fps: seconds = units / (60 × spd).
 - The `rivals` tack flag at running angles is not a reliable read of who had rights. Check a frame before
   saying who was wrong in an encounter.
 
 ## Don'ts
 
-- Don't ingest these laps into `eval/rl/traj/`. That's the separate trajectory intake; ask first.
 - Don't send video, audio or frames to any external service.
 - Don't propose again what memory says Wes already rejected. Flag the conflict instead.

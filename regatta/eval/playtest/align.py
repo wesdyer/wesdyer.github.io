@@ -45,7 +45,9 @@ def bundle(path):
     # Only an EXPORT can be cut; the raw track we read is always on the recording clock.
     cut = bool(sl) and not (len(sl) == 1 and sl[0]['timeScale'] == 1 and sl[0]['sourceStartMs'] == 0)
     if cut: print('note: the Screen Studio edit has %d slices — an exported .mp4 would not match; the raw track does' % len(sl), file=sys.stderr)
-    tr = sorted(glob.glob(os.path.join(path, 'transcripts', '*.json')), key=lambda f: not f.endswith('.fixed.json'))  # retranscribe.py repair first
+    # transcribe.py's local transcript first, then a retranscribe.py repair, then Screen Studio's own
+    rank = lambda f: 0 if f.endswith('.local.json') else 1 if f.endswith('.fixed.json') else 2
+    tr = sorted(glob.glob(os.path.join(path, 'transcripts', '*.json')), key=rank)
     keys = json.load(open(os.path.join(R, 'keystrokes-0.json'))) if os.path.exists(os.path.join(R, 'keystrokes-0.json')) else []
     mic = (glob.glob(os.path.join(R, 'enhanced', '*microphone*')) or glob.glob(os.path.join(R, '*microphone*.m4a')) or [None])[0]
     video = os.path.join(R, 'channel-1-display-0.mp4')   # raw screen: no webcam/captions/padding, 3072x2304
@@ -57,7 +59,23 @@ def bundle(path):
         grams = Counter(' '.join(words[i:i + 8]) for i in range(len(words) - 8))
         g, n = grams.most_common(1)[0] if grams else ('', 0)
         if n > 8: print('⚠️  transcript loops: "%s" ×%d — run retranscribe.py on that stretch' % (g, n), file=sys.stderr)
-    return dict(path=path, duration=dur, rec0=rec0, cut=cut, video=video if os.path.exists(video) else None, transcript=json.load(open(tr[0]))['json']['transcript'] if tr else [],
+    # Screen Studio markers (Wes drops one when something should be kept). The format isn't known yet —
+    # both Sep 29 files were empty — so take any time-like number and say so if nothing parses.
+    markers, mf = [], os.path.join(path, 'recording-markers.json')
+    if os.path.exists(mf):
+        def walk(o):
+            if isinstance(o, dict):
+                ks = [k for k in o if isinstance(o[k], (int, float)) and any(w in k.lower() for w in ('ms', 'time', 'at', 'start'))]
+                if ks:
+                    v = float(o[ks[0]])
+                    markers.append(v / 1000 - rec0 if v > 1e12 else v / 1000 if 'ms' in ks[0].lower() or v > 1e5 else v)
+                for x in o.values(): walk(x)
+            elif isinstance(o, list):
+                for x in o: walk(x)
+        raw = json.load(open(mf)); walk(raw)
+        if raw and raw != {'json': []} and not markers:
+            print('⚠️  recording-markers.json has content but no time field was recognised: %s' % json.dumps(raw)[:200], file=sys.stderr)
+    return dict(path=path, markers=sorted(markers), markers_file=mf if os.path.exists(mf) else None, duration=dur, rec0=rec0, cut=cut, video=video if os.path.exists(video) else None, transcript=json.load(open(tr[0]))['json']['transcript'] if tr else [],
                 keys=[dict(k, t=k['unixTimeMs'] / 1000 - rec0) for k in keys], mic=mic)
 
 def load_laps(d, rec0):

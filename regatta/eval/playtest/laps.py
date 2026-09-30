@@ -76,6 +76,16 @@ def lap_report(L):
     pt = L['j']['finishTime']
     place = 1 + sum(1 for i, ft in fin.items() if ft < pt)
     print('- player place %d; finishers: %s' % (place, ', '.join('%s %s(%+.0fs)' % (fleet[i - 1], mmss(ft), ft - pt) for i, ft in order)))
+    # the file ends at HIS finish, so boats still racing have no time — give their course-progress gap
+    # instead (units; 1 u = 10 cm) and a rough seconds estimate at their speed then. The spd column is
+    # units per FRAME at 60 fps (Scuttle, CP R3: 771 u at 2.0 → 6.4 s; results screen said +5.58 s)
+    from engagement import progress_fn
+    prog, _ = progress_fn(L['j']['course'])
+    last = race[-1]; me = prog(last[F['leg']], last[F['x']], last[F['y']])
+    behind = sorted((me - prog(x[1], r[0], r[1]), fleet[x[0] - 1], r[3]) for r, x in zip(last[F['rivals']], last[F['rivalsX']]))
+    if behind:
+        print('- still racing at your finish: ' + ', '.join('%s %.0fu (~%.0fs)' % (n, g, g / (60 * max(sp, 0.3))) for g, n, sp in behind[:4])
+              + (' …' if len(behind) > 4 else ''))
     # gap at each mark: player time − best rival time to reach that leg
     rows = []
     for lg, tt, s in marks:
@@ -93,11 +103,17 @@ def lap_report(L):
     print('- mean speed by player-leg (player / fleet): ' + ' · '.join('L%d %.2f/%.2f' % (lg, sum(a) / len(a), sum(b) / max(1, len(b))) for lg, (a, b) in sorted(by.items())))
     # roundings: seconds inside the zone (per boat, per rounding leg)
     lr = L['j']['course']['legRounds']
+    gates = not any(lr)
+    _, target = progress_fn(L['j']['course'])
     def zone_secs(track):   # track: list of (t, x, y, leg)
         out = {}
         for k in range(1, len(track)):
             t0, x, y, lg = track[k]
             m = lr[lg] if lg < len(lr) else None
+            if gates and lg >= 1:                       # gate course: the zone is 165 u around the gate LINE
+                gx, gy = target(lg, x, y)
+                if math.hypot(x - gx, y - gy) < 165: out[lg] = out.get(lg, 0) + (t0 - track[k - 1][0])
+                continue
             if m and math.hypot(x - m['x'], y - m['y']) < m['zone']:
                 out[lg] = out.get(lg, 0) + (t0 - track[k - 1][0])
         return out
@@ -110,10 +126,11 @@ def lap_report(L):
     out = []
     for lg in sorted(set(ptr) | set(rz)):
         r = sorted(rz.get(lg, []))
+        if not r and gates: continue               # the last gate is the finish line: nothing to round
         med = r[len(r) // 2][0] if r else float('nan')
         worst = '%s %.0fs' % (r[-1][1], r[-1][0]) if r else '-'
         out.append('M%d you %.0fs / fleet median %.0fs / worst %s' % (lg, ptr.get(lg, float('nan')), med, worst))
-    print('- seconds in the %du mark zone: ' % (lr[1]['zone'] if lr[1] else 0) + ' · '.join(out))
+    print('- seconds in the %s: ' % ('165u gate zone' if gates else '%du mark zone' % lr[1]['zone']) + ' · '.join(out))
 
 def main():
     laps = load_laps(sys.argv[1], bundle(sys.argv[2] if len(sys.argv) > 2 else sys.argv[1])['rec0'])

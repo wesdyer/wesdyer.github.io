@@ -35,7 +35,14 @@ def main():
     tests, vdir = sys.argv[1], sys.argv[2]
     B = bundle(tests)
     if not B['video']: sys.exit('no raw video in the bundle — nothing to cut (already archived?)')
-    rows = [l.rstrip('\n').split('\t') for l in open(os.path.join(vdir, 'clips.tsv')) if l.strip() and not l.startswith('#')]
+    cpath = os.path.join(vdir, 'clips.tsv')
+    rows = [l.rstrip('\n').split('\t') for l in open(cpath) if l.strip() and not l.startswith('#')] if os.path.exists(cpath) else []
+    # every Screen Studio marker Wes dropped becomes a clip (−15 s / +10 s) unless a row already covers it
+    for m in B['markers']:
+        if not any(mm(r[0]) <= m <= mm(r[1]) for r in rows):
+            r = [mmss(max(0, m - 15)), mmss(m + 10), 'marker-%s' % mmss(m).replace(':', 'm'), 'marker']
+            rows.append(r); open(cpath, 'a').write('\t'.join(r) + '\n')
+            print('marker at %s → clip row added' % mmss(m))
     os.makedirs(os.path.join(vdir, 'clips'), exist_ok=True)
     total = 0
     for r in rows:
@@ -50,7 +57,7 @@ def main():
     arc = os.path.join(vdir, 'archive'); os.makedirs(arc, exist_ok=True)
     root = B['path']; R = os.path.join(root, 'recording')
     for f in glob.glob(os.path.join(tests, 'traj_*.json')): shutil.copy2(f, arc)
-    keep = [os.path.join(root, 'project.json'), os.path.join(root, 'meta.json')] + glob.glob(os.path.join(root, 'transcripts', '*.json')) \
+    keep = [os.path.join(root, 'project.json'), os.path.join(root, 'meta.json'), os.path.join(root, 'recording-markers.json')] + glob.glob(os.path.join(root, 'transcripts', '*.json')) \
          + [os.path.join(R, n) for n in ('metadata.json', 'metadata-raw.json', 'keystrokes-0.json', 'mouseclicks-0.json', 'mousemoves-0.json', 'cursors.json')] \
          + ([B['mic']] if B['mic'] else [])
     for f in keep:

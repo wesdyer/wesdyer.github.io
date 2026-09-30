@@ -10,11 +10,10 @@ track for that window, with condition_on_previous_text off (it's what lets a loo
 writes transcripts/<name>.fixed.json in the bundle: the original segments outside the window, the new
 ones inside, same format. align.bundle() prefers a *.fixed.json.
 """
-import sys, os, json, glob, subprocess, tempfile
+import sys, os, json, glob
 from align import bundle
-from ocr import FFMPEG
 
-MODEL = 'mlx-community/whisper-large-v3-turbo'
+from transcribe import MODEL
 
 def mm(s): m, x = s.split(':'); return int(m) * 60 + float(x)
 
@@ -23,19 +22,9 @@ def main():
     B = bundle(tests)
     src = sorted(f for f in glob.glob(os.path.join(B['path'], 'transcripts', '*.json')) if not f.endswith('.fixed.json'))[0]
     doc = json.load(open(src))
-    wav = tempfile.mkstemp(suffix='.wav')[1]
-    subprocess.run([FFMPEG, '-loglevel', 'error', '-y', '-ss', str(t0), '-t', str(t1 - t0), '-i', B['mic'],
-                    '-ac', '1', '-ar', '16000', wav], check=True)
-    import mlx_whisper, soundfile
-    audio, _ = soundfile.read(wav, dtype='float32')   # an array: mlx_whisper would shell out to `ffmpeg` on PATH
-    prompt = doc['json'].get('generator', {}).get('prompt') or 'Regatta sailing racing game.'
-    r = mlx_whisper.transcribe(audio, path_or_hf_repo=MODEL, word_timestamps=True, language='en',
-                               condition_on_previous_text=False, initial_prompt=prompt)
-    os.unlink(wav)
-    new = []
-    for seg in r['segments']:
-        for w in seg.get('words', []):
-            new.append({'startMs': int((t0 + w['start']) * 1000), 'endMs': int((t0 + w['end']) * 1000), 'text': w['word']})
+    from transcribe import whisper_words
+    prompt = doc['json'].get('generator', {}).get('prompt') or None
+    new = whisper_words(B['mic'], t0, t1, **({'prompt': prompt} if prompt else {}))
     old = doc['json']['transcript']
     kept = [s for s in old if not (t0 * 1000 <= s['startMs'] < t1 * 1000)]
     merged = sorted(kept + new, key=lambda s: s['startMs'])
