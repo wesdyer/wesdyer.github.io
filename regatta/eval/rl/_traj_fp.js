@@ -90,7 +90,11 @@ const ADJUDICATED = {
     lake:      { stamps: ['b4249776:1001243'], on: 'e3df0977:1001273', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-29' },
     ocean:     { stamps: ['1b1a7101:564735'],  on: '46475464:565174', why: PATHS_WHY },
     redrock:   { stamps: ['60f2a5ec:63791', 'a6530aaa:65152'],   on: '18d5c8a8:65152', why: PATHS_WHY + V3_WHY },
-    river:     { stamps: ['76659ee5:1786811', 'd5e773f6:1787917'], on: '90856445:1787917', why: PATHS_WHY + V3_WHY },
+    // RIVER RE-FROZEN (2026-09-30, the playtest intake): his six finished laps stamp 572d60cb:1787947 (a seventh race
+    // ended aground on leg 3 and was not ingested). The freeze took the doc one edit later: records.provisional
+    // 195 → 205 (3:25, Time Trial mean 182.8 s × 1.1 up to 5 s; the old 3:15 came from race laps). A by-key diff shows
+    // nothing else moved. The older river laps (76659ee5, d5e773f6 on 90856445) now read as stale.
+    river:     { stamps: ['572d60cb:1787947'], on: '57154221:1787947', why: 'records.provisional only (195 → 205, the target set from these laps) — by-key diff 2026-09-30' },
     // SEATRIALS RE-FROZEN (2026-09-29, the playtest intake): his six laps stamp ba7f0d6f:1781; the freeze
     // took the doc one edit later (records.provisional 210 → 205, set from these laps), by-key diff: nothing
     // else. The Aug laps (ae1026bc, adjudicated on the old cut ad2dd96f) now read as stale — the doc they
