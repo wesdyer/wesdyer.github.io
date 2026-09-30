@@ -110,7 +110,9 @@ def load_laps(d, rec0):
         t0 = iso(j['started'])
         end_wall = int(re.findall(r'_(\d{13})\.json$', f)[0]) / 1000
         pre = S[0][F['t']] if S[0][F['phase']] == 0 else 0
-        game = pre + (j.get('finishTime') or S[-1][F['t']])
+        # elapsed = the last sample's race clock, NOT finishTime: a "+15 s at finish" penalty is added to
+        # finishTime (Sockeye Run R1 read −14.9 s drift until this), and a race that never finished has none
+        game = pre + (S[-1][F['t']] if S[-1][F['phase']] == 1 else 0)
         laps.append(dict(file=os.path.basename(f), j=j, F=F, S=S, mode=j['mode'],
                          v0=t0 - rec0, v1=end_wall - rec0, pre=pre, game=game,
                          drift=(end_wall - t0) - game))
@@ -159,7 +161,7 @@ def main():
     print('|---|---|---|---|---|---|')
     for L in laps:
         print('| %s | %s | %s | %s | %s | %+.1f |' % (L['name'], L['file'], mmss(L['v0']), mmss(L['v1']),
-              mmss(L['j'].get('finishTime') or 0), L['drift']))
+              mmss(L['j']['finishTime']) if L['j'].get('finishTime') else 'DNF', L['drift']))
     if B['transcript']:
         tj = B['transcript']
         cur = None

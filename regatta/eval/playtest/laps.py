@@ -27,7 +27,9 @@ def lap_report(L):
     race = [s for s in S if s[F['phase']] == 1]
     col = lambda k, rows=race: [r[F[k]] for r in rows]
     t, leg = col('t'), col('leg')
-    print('\n## %s — %s, finish %s (video %s–%s)\n' % (L['name'], L['file'], mmss(L['j']['finishTime']), mmss(L['v0']), mmss(L['v1'])))
+    pfin = L['j'].get('finishTime')
+    print('\n## %s — %s, finish %s (video %s–%s)\n' % (L['name'], L['file'], mmss(pfin) if pfin else '**DID NOT FINISH**', mmss(L['v0']), mmss(L['v1'])))
+    if not pfin: pfin = race[-1][F['t']]   # an unfinished race: use the last sample
     # leg splits
     marks, prev = [], leg[0]
     for i in range(len(t)):
@@ -36,7 +38,7 @@ def lap_report(L):
     splits = []
     for lg, tt, s in marks:
         splits.append('L%d %s' % (lg - 1, mmss(tt - last))); last = tt
-    splits.append('L%d %s' % (leg[-1], mmss(L['j']['finishTime'] - last)))
+    splits.append('L%d %s' % (leg[-1], mmss(pfin - last)))
     print('- legs: ' + ' · '.join(splits))
     tk = col('playerTack'); flips = sum(1 for i in range(1, len(tk)) if tk[i] != tk[i - 1])
     sp = col('spd')
@@ -48,7 +50,16 @@ def lap_report(L):
         s = race[t.index(tt)]
         print('- **hit?** t=%s (video %s) speed %.2f → %.2f, leg %d' % (mmss(tt), mmss(sample_video_t(L, s)), a, b, s[F['leg']]))
     ev = L['j'].get('events') or []
-    if ev: print('- events: %s' % ev)
+    if ev:   # group repeats (a grind logs every 0.5 s) into episodes: type × n, time span, where
+        eps = []
+        for e in ev:
+            key = (e[1], e[2] if len(e) > 2 and isinstance(e[2], str) else '')
+            if eps and eps[-1]['key'] == key and e[0] - eps[-1]['t1'] <= 1.5:
+                eps[-1]['t1'] = e[0]; eps[-1]['n'] += 1
+            else:
+                eps.append(dict(key=key, t0=e[0], t1=e[0], n=1, at=tuple(e[-2:]) if len(e) >= 4 else None))
+        print('- events: ' + ' · '.join('%s%s ×%d %.1f–%.1fs%s' % (p['key'][0], (' ' + p['key'][1]) if p['key'][1] else '', p['n'], p['t0'], p['t1'],
+              ' @%s' % (p['at'],) if p['at'] else '') for p in eps))
     if L['mode'] != 'competitive': return
     fleet = L['j']['fleet']
     # rival identity per sample
@@ -73,7 +84,7 @@ def lap_report(L):
         h = hits([a for a, b, c, d in rows], [b for a, b, c, d in rows], [c for a, b, c, d in rows])
         if h: rhits[fleet[i - 1]] = ['%s(v%s)' % (mmss(a), mmss(sample_video_t(L, rows[[r[0] for r in rows].index(a)][3]))) for a, _, _ in h]
     order = sorted(fin.items(), key=lambda kv: kv[1])
-    pt = L['j']['finishTime']
+    pt = pfin
     place = 1 + sum(1 for i, ft in fin.items() if ft < pt)
     print('- player place %d; finishers: %s' % (place, ', '.join('%s %s(%+.0fs)' % (fleet[i - 1], mmss(ft), ft - pt) for i, ft in order)))
     # the file ends at HIS finish, so boats still racing have no time — give their course-progress gap

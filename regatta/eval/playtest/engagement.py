@@ -132,7 +132,7 @@ def main():
     for L in laps:
         ghost = best if L['mode'] == 'solo' else None
         bins = lap_bins(L, ghost)
-        print('## %s (%s)\n' % (L['name'], mmss(L['j']['finishTime'])))
+        print('## %s (%s)\n' % (L['name'], mmss(L['j']['finishTime']) if L['j'].get('finishTime') else 'DNF'))
         print('| video | talk | leg | kn-ish | contest | mark | words/s | dB | keys/s | shift |')
         print('|---|---|---|---|---|---|---|---|---|---|')
         for b in sorted(bins):
@@ -154,7 +154,7 @@ def main():
                   '●' if B['mark'] > B['n'] / 3 else '', w, '%.0f' % db if db is not None else '—', kps, '%d%%' % (100 * sh) if kps else ''))
             if dom: agg[dom].append((L['mode'], cv, leg, sum(B['spd']) / len(B['spd']), B['mark'] > B['n'] / 3, w, db, kps, sh))
         print()
-        if L['mode'] == 'solo' and (best is None or L['j']['finishTime'] < best['j']['finishTime']): best = L
+        if L['mode'] == 'solo' and L['j'].get('finishTime') and (best is None or L['j']['finishTime'] < best['j']['finishTime']): best = L
     print('## Summary by dominant talk\n')
     print('| talk | bins | TT |gap to ghost| s | race gap to nearest (u) | beat/reach/run % | mean speed | near mark % | words/s | dB | keys/s | shift % |')
     print('|---|---|---|---|---|---|---|---|---|---|---|')
