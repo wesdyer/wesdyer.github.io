@@ -132,7 +132,8 @@ python3 engagement.py $S $D/labels.tsv > $D/engagement.md
       finding, not a skip.** Lagoon's enhanced track was absent from the bundle and the first check skipped it silently.
     - check `~/Desktop/regatta tests/` for a stub of this session; copy anything the archive lacks, then delete the stub
     - confirm the clips, proxy and leaderboard.tsv exist
-    - only then `rm -rf ~/Desktop/<venue>-tests` and report the space freed
+    - only then `rm -rf ~/Desktop/<venue>-tests` AND the session's bundle in `~/Desktop/regatta tests/` (its path is
+      `align.bundle(S)['path']`; from Sep 30 Wes leaves bundles there), and report the space freed. Keep the `regatta tests` folder itself.
 
     Each venue freed 15–20 GB.
 
