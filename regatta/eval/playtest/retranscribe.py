@@ -20,7 +20,9 @@ def mm(s): m, x = s.split(':'); return int(m) * 60 + float(x)
 def main():
     tests, t0, t1 = sys.argv[1], mm(sys.argv[2]), mm(sys.argv[3])
     B = bundle(tests)
-    src = sorted(f for f in glob.glob(os.path.join(B['path'], 'transcripts', '*.json')) if not f.endswith('.fixed.json'))[0]
+    # repair the best unrepaired source: the local transcript if there is one, else Screen Studio's
+    cands = [f for f in glob.glob(os.path.join(B['path'], 'transcripts', '*.json')) if not f.endswith('.fixed.json')]
+    src = sorted(cands, key=lambda f: 0 if f.endswith('.local.json') else 1)[0]
     doc = json.load(open(src))
     from transcribe import whisper_words
     prompt = doc['json'].get('generator', {}).get('prompt') or None

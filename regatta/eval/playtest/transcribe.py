@@ -28,9 +28,22 @@ def whisper_words(mic, t0=0.0, t1=None, prompt=PROMPT):
     audio, _ = soundfile.read(wav, dtype='float32')   # an array: mlx_whisper would shell out to `ffmpeg` on PATH
     os.unlink(wav)
     r = mlx_whisper.transcribe(audio, path_or_hf_repo=MODEL, word_timestamps=True, language='en',
-                               condition_on_previous_text=False, initial_prompt=prompt)
-    return [{'startMs': int((t0 + w['start']) * 1000), 'endMs': int((t0 + w['end']) * 1000), 'text': w['word']}
-            for seg in r['segments'] for w in seg.get('words', [])]
+                               condition_on_previous_text=False, initial_prompt=prompt,
+                               # drop text Whisper invents in silent gaps ("Thank you.", "I'm going to do the same" ×N —
+                               # Bluewater Bonanza, Sep 30); needs word_timestamps, which we already ask for
+                               hallucination_silence_threshold=2.0)
+    words = [{'startMs': int((t0 + w['start']) * 1000), 'endMs': int((t0 + w['end']) * 1000), 'text': w['word']}
+             for seg in r['segments'] for w in seg.get('words', [])]
+    # Whisper's silence filler: a lone "Thank you." with >= 2 s of nothing either side (six at Bluewater Bonanza)
+    out, i = [], 0
+    while i < len(words):
+        pair = ' '.join(w['text'].strip().lower().strip('.,!') for w in words[i:i + 2])
+        before = words[i]['startMs'] - (words[i - 1]['endMs'] if i else -10**9)
+        after = (words[i + 2]['startMs'] if i + 2 < len(words) else 10**12) - words[min(i + 1, len(words) - 1)]['endMs']
+        if pair == 'thank you' and before >= 2000 and after >= 2000:
+            i += 2; continue
+        out.append(words[i]); i += 1
+    return out
 
 def main():
     from align import bundle

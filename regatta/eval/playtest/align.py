@@ -62,8 +62,8 @@ def bundle(path):
     # Only an EXPORT can be cut; the raw track we read is always on the recording clock.
     cut = bool(sl) and not (len(sl) == 1 and sl[0]['timeScale'] == 1 and sl[0]['sourceStartMs'] == 0)
     if cut: print('note: the Screen Studio edit has %d slices — an exported .mp4 would not match; the raw track does' % len(sl), file=sys.stderr)
-    # transcribe.py's local transcript first, then a retranscribe.py repair, then Screen Studio's own
-    rank = lambda f: 0 if f.endswith('.local.json') else 1 if f.endswith('.fixed.json') else 2
+    # a retranscribe.py repair first (it's a patch ON the best source), then the local transcript, then Screen Studio's
+    rank = lambda f: 0 if f.endswith('.fixed.json') else 1 if f.endswith('.local.json') else 2
     tr = sorted(glob.glob(os.path.join(path, 'transcripts', '*.json')), key=rank)
     keys = json.load(open(os.path.join(R, 'keystrokes-0.json'))) if os.path.exists(os.path.join(R, 'keystrokes-0.json')) else []
     mic = (glob.glob(os.path.join(R, 'enhanced', '*microphone*')) or glob.glob(os.path.join(R, '*microphone*.m4a')) or [None])[0]

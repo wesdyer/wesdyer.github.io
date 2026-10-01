@@ -80,7 +80,11 @@ python3 engagement.py $S $D/labels.tsv > $D/engagement.md
    - check `_traj_fp.js <venue>` shows every new lap valid
    - old laps stay in `traj/`, marked stale
    - commit on `master` when Wes says so
-1. **Transcribe and align.** Run transcribe.py, then align.py, and read the WHOLE timeline. Note every remark
+1. **Transcribe and align.** If the review starts right after the recording, the enhanced voice track may still be
+   being written ("moov atom not found"; Redrock). Wait until ffmpeg opens it and it hasn't changed for 20 s (a background
+   `until` loop) rather than fall back to the raw mic. Whisper still invents text in silences; transcribe.py drops it with
+   `hallucination_silence_threshold` plus a lone-"thank you" filter (Bluewater). Read the timeline for leftover repeats.
+   Then: Run transcribe.py, then align.py, and read the WHOLE timeline. Note every remark
    that is a problem, a question, an idea or praise. If a venue was already labelled on Screen Studio's
    transcript, repair only the bad stretch with `retranscribe.py $S <from> <to>`, which writes a `.fixed.json`,
    so the labels keep their times. If `bundle()` found markers, read around each one first: Wes flagged it.
