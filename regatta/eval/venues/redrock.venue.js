@@ -4591,7 +4591,7 @@ window.VENUE_DOC["redrock"] = {
         "pass": "through"
       }
     ],
-    "cutoff": 360,
+    "cutoff": 600,
     "paths": {
       "sig": "v3-6912d2b6-e7n",
       "legs": [
@@ -6191,5 +6191,8 @@ window.VENUE_DOC["redrock"] = {
       "heading": 4.742109058096345,
       "scale": 0.84
     }
-  ]
+  ],
+  "records": {
+    "provisional": 230
+  }
 };
