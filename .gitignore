@@ -72,3 +72,7 @@ regatta/eval/rl/*.json
 regatta/eval/rating/*.jsonl
 regatta/eval/rating/*.part
 regatta/eval/rl/_retired_benches/
+
+# Python bytecode — regenerated on every run of the eval/playtest tools
+__pycache__/
+*.pyc
