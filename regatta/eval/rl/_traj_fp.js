@@ -77,7 +77,11 @@ const ADJUDICATED = {
     // so the frozen cut IS 64a2ab22 — the Sep 28 laps match it directly, the Sep 29 laps are adjudicated.
     // The older bay laps stay adjudicated only on 7f6cf2f6 (an earlier frozen cut) and read as stale.
     bay: { stamps: ['64a2b767:1039713'], on: '64a2ab22:1039713', why: 'records.provisional only (250 → 255, the target reset from these laps + Sep 28\'s) — by-key diff 2026-09-29' },
-    arctic:    { stamps: ['86fc97f4:97975'],   on: 'b0074f92:98492', why: PATHS_WHY },
+    // ARCTIC RE-FROZEN (2026-10-01, the playtest intake): his six laps stamp b18581b1:98522. The freeze took the doc one edit
+    // later: records.provisional 245 → 210 (3:30, Time Trial mean 188.0 s x 1.1 up to 5 s, set by hand: set_venue_targets
+    // refuses, 0.92x its 3:23 path estimate; the old 4:05 came from race laps). A by-key diff shows nothing else moved.
+    // The older arctic laps (86fc97f4 on b0074f92) now read as stale.
+    arctic:    { stamps: ['b18581b1:98522'],   on: 'b1850191:98522', why: 'records.provisional only (245 → 210, the target set from these laps) — by-key diff 2026-10-01' },
     // GLOWTIDE RE-FROZEN (2026-10-01, the playtest intake): his six laps stamp 3ca30a2f:515607. The freeze took the doc one
     // edit later: records.provisional 220 → 200 (3:20, Time Trial mean 181.7 s × 1.1 up to 5 s; the old 3:40 came from race
     // laps). A by-key diff shows nothing else moved. Older glowtide laps (3fbd12b1, 10b0f94a on 34e647ff) now read as stale.
