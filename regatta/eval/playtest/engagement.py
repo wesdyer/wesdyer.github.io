@@ -85,7 +85,7 @@ def lap_bins(L, ghost=None):
 def main():
     d, lpath = sys.argv[1], sys.argv[2]; BU = bundle(d)
     rec0 = BU['rec0']
-    laps = load_laps(d, rec0)
+    laps = load_laps(d, BU['clock'])
     tj = BU['transcript']
     downs = [(k['t'], 'shift' in k['activeModifiers']) for k in BU['keys'] if k['type'] == 'keyDown' and not k['isARepeat']]
     loud = None

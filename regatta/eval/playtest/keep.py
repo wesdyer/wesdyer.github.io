@@ -58,8 +58,10 @@ def main():
     root = B['path']; R = os.path.join(root, 'recording')
     for f in glob.glob(os.path.join(tests, 'traj_*.json')): shutil.copy2(f, arc)
     keep = [os.path.join(root, 'project.json'), os.path.join(root, 'meta.json'), os.path.join(root, 'recording-markers.json')] + glob.glob(os.path.join(root, 'transcripts', '*.json')) \
-         + [os.path.join(R, n) for n in ('metadata.json', 'metadata-raw.json', 'keystrokes-0.json', 'mouseclicks-0.json', 'mousemoves-0.json', 'cursors.json')] \
-         + ([B['mic']] if B['mic'] else [])
+         + [os.path.join(R, n) for n in ('metadata.json', 'metadata-raw.json', 'cursors.json')] \
+         + sorted(glob.glob(os.path.join(R, 'keystrokes-*.json')) + glob.glob(os.path.join(R, 'mouseclicks-*.json')) + glob.glob(os.path.join(R, 'mousemoves-*.json'))) \
+         + sorted(glob.glob(os.path.join(R, 'enhanced', '*'))) \
+         + ([B['mic']] if B['mic'] else [])   # a paused recording's joined voice (recording/joined/) — what the tools read
     for f in keep:
         if not os.path.exists(f): continue
         # the enhanced track may live in a stub outside the bundle — archive it where the bundle would hold it

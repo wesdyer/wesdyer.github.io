@@ -15,7 +15,7 @@ from ocr import read_frame
 def main():
     tests, out = sys.argv[1], sys.argv[2]
     B = bundle(tests)
-    laps = [L for L in load_laps(tests, B['rec0']) if L['mode'] == 'competitive']
+    laps = [L for L in load_laps(tests, B['clock']) if L['mode'] == 'competitive']
     with open(out, 'w') as f:
         f.write('video_s\tlap\trace_s\trank\tname\tgap\n')
         for L in laps:

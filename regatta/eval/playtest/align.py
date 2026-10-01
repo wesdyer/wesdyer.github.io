@@ -30,12 +30,42 @@ def mmss(s): s = max(0, s); return '%d:%02d' % (s // 60, s % 60)
 
 SS_HOME = os.path.expanduser('~/Desktop/regatta tests')   # where Screen Studio saves recordings
 
+def _sessions(meta):
+    """The display recorder's sessions, in order. A PAUSED recording has several (Spoonbill Flats, Sep 30:
+    20:24, a 4-minute pause, then 4:22) — each with its own display-N, microphone-N, keystrokes-N … files."""
+    return [s for r in meta['recorders'] if r['type'] == 'display' for s in r['sessions']]
+
+def _joined(R, sess, FFMPEG):
+    """Several sessions → one video and one voice track, back to back (Screen Studio's own timeline: the pause is
+    cut out). Stream copy, so the frames are the originals. Cached in recording/joined/ (keep.py doesn't archive it).
+    Each session's voice is its enhanced track if Screen Studio wrote one, else its raw mic (said so)."""
+    import subprocess
+    J = os.path.join(R, 'joined'); os.makedirs(J, exist_ok=True)
+    video, mic = os.path.join(J, 'display.mp4'), os.path.join(J, 'microphone-voice.m4a')
+    def concat(parts, out, extra):
+        if os.path.exists(out) and os.path.getmtime(out) >= max(os.path.getmtime(x) for x in parts): return
+        lst = out + '.txt'
+        open(lst, 'w').write(''.join("file '%s'\n" % x.replace("'", "'\\''") for x in parts))
+        subprocess.run([FFMPEG, '-loglevel', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', lst] + extra + [out], check=True)
+        os.unlink(lst)
+    vids = [os.path.join(R, 'channel-1-display-%d.mp4' % i) for i in range(len(sess))]
+    if all(os.path.exists(v) for v in vids): concat(vids, video, ['-c', 'copy'])
+    else: video = None
+    voices = []
+    for i in range(len(sess)):
+        e = glob.glob(os.path.join(R, 'enhanced', '*microphone-%d-enhanced*' % i))
+        if not e: print('⚠️  session %d has no enhanced voice track — its raw mic is used (dB not comparable across the pause)' % i, file=sys.stderr)
+        voices.append(e[0] if e else os.path.join(R, 'channel-2-microphone-%d.m4a' % i))
+    # re-encode the audio: the enhanced and raw tracks differ in format, and a concat of AAC needs one
+    concat(voices, mic, ['-ac', '1', '-c:a', 'aac', '-b:a', '96k'])
+    return video, mic
+
 def _covers(b, tests_dir):
     """Does bundle b's recording window contain every lap in tests_dir?"""
     try:
         m = json.load(open(os.path.join(b, 'recording', 'metadata.json')))
-        s = next(x for r in m['recorders'] if r['type'] == 'display' for x in r['sessions'])
-        t0, t1 = s['unixStartMs'] / 1000, s['unixStartMs'] / 1000 + s['durationMs'] / 1000
+        ss = _sessions(m)   # a paused recording spans its first session's start to its last one's end
+        t0, t1 = ss[0]['unixStartMs'] / 1000, ss[-1]['unixStartMs'] / 1000 + ss[-1]['durationMs'] / 1000
         laps = [iso(json.load(open(f))['started']) for f in glob.glob(os.path.join(tests_dir, 'traj_*.json'))]
         return bool(laps) and all(t0 <= t <= t1 for t in laps)
     except Exception:
@@ -56,7 +86,20 @@ def bundle(path):
         path = found[0]
     R = os.path.join(path, 'recording')
     meta = json.load(open(os.path.join(R, 'metadata.json')))
-    rec0 = next(s['unixStartMs'] for r in meta['recorders'] if r['type'] == 'display' for s in r['sessions']) / 1000
+    sess = _sessions(meta)
+    rec0 = sess[0]['unixStartMs'] / 1000
+    # THE VIDEO CLOCK across a pause: session k's wall time maps to (wall − its start) + the durations before it.
+    # Wall times inside a pause clamp to the cut. One session → wall − rec0, exactly as before.
+    spans, acc = [], 0.0
+    for s in sess:
+        spans.append((s['unixStartMs'] / 1000, s['unixEndMs'] / 1000 if 'unixEndMs' in s else s['unixStartMs'] / 1000 + s['durationMs'] / 1000, acc))
+        acc += s['durationMs'] / 1000
+    def clock(w):
+        for a, b, off in reversed(spans):
+            if w >= a: return off + min(w, b) - a
+        return w - rec0
+    if len(sess) > 1:
+        print('note: %d recording sessions (paused); the video clock joins them back to back, pauses cut' % len(sess), file=sys.stderr)
     proj = json.load(open(os.path.join(path, 'project.json')))['json']
     sl = [x for sc in proj['scenes'] for x in sc['slices']]
     # Only an EXPORT can be cut; the raw track we read is always on the recording clock.
@@ -65,7 +108,8 @@ def bundle(path):
     # a retranscribe.py repair first (it's a patch ON the best source), then the local transcript, then Screen Studio's
     rank = lambda f: 0 if f.endswith('.fixed.json') else 1 if f.endswith('.local.json') else 2
     tr = sorted(glob.glob(os.path.join(path, 'transcripts', '*.json')), key=rank)
-    keys = json.load(open(os.path.join(R, 'keystrokes-0.json'))) if os.path.exists(os.path.join(R, 'keystrokes-0.json')) else []
+    keys = [k for i in range(len(sess)) if os.path.exists(os.path.join(R, 'keystrokes-%d.json' % i))
+            for k in json.load(open(os.path.join(R, 'keystrokes-%d.json' % i)))]
     mic = (glob.glob(os.path.join(R, 'enhanced', '*microphone*')) or glob.glob(os.path.join(R, '*microphone*.m4a')) or [None])[0]
     if mic and '/enhanced/' not in mic:
         # Screen Studio finishes the enhanced (voice-only) track AFTER recording; if the bundle was moved first it
@@ -74,7 +118,13 @@ def bundle(path):
         if stub: mic = stub[0]
         else: print('⚠️  no enhanced voice track — using the raw mic (dB is then comparable only within this venue)', file=sys.stderr)
     video = os.path.join(R, 'channel-1-display-0.mp4')   # raw screen: no webcam/captions/padding, 3072x2304
-    dur = next(s['durationMs'] for r in meta['recorders'] if r['type'] == 'display' for s in r['sessions']) / 1000
+    dur = sum(s['durationMs'] for s in sess) / 1000
+    if len(sess) > 1:
+        from ocr import FFMPEG
+        if os.path.exists(video) or os.path.isdir(os.path.join(R, 'joined')):
+            jv, jm = _joined(R, sess, FFMPEG) if os.path.exists(video) else (None, os.path.join(R, 'joined', 'microphone-voice.m4a'))
+            video = jv or video
+            if os.path.exists(jm): mic = jm
     if tr:   # Whisper loops: one phrase over and over (Clubhouse Point, 19:32-24:53) — repair with retranscribe.py
         segs = json.load(open(tr[0]))['json']['transcript']
         from collections import Counter
@@ -91,17 +141,19 @@ def bundle(path):
                 ks = [k for k in o if isinstance(o[k], (int, float)) and any(w in k.lower() for w in ('ms', 'time', 'at', 'start'))]
                 if ks:
                     v = float(o[ks[0]])
-                    markers.append(v / 1000 - rec0 if v > 1e12 else v / 1000 if 'ms' in ks[0].lower() or v > 1e5 else v)
+                    markers.append(clock(v / 1000) if v > 1e12 else v / 1000 if 'ms' in ks[0].lower() or v > 1e5 else v)
                 for x in o.values(): walk(x)
             elif isinstance(o, list):
                 for x in o: walk(x)
         raw = json.load(open(mf)); walk(raw)
         if raw and raw != {'json': []} and not markers:
             print('⚠️  recording-markers.json has content but no time field was recognised: %s' % json.dumps(raw)[:200], file=sys.stderr)
-    return dict(path=path, markers=sorted(markers), markers_file=mf if os.path.exists(mf) else None, duration=dur, rec0=rec0, cut=cut, video=video if os.path.exists(video) else None, transcript=json.load(open(tr[0]))['json']['transcript'] if tr else [],
-                keys=[dict(k, t=k['unixTimeMs'] / 1000 - rec0) for k in keys], mic=mic)
+    return dict(path=path, markers=sorted(markers), markers_file=mf if os.path.exists(mf) else None, duration=dur, rec0=rec0, clock=clock, sessions=len(sess), cut=cut, video=video if os.path.exists(video) else None, transcript=json.load(open(tr[0]))['json']['transcript'] if tr else [],
+                keys=sorted([dict(k, t=clock(k['unixTimeMs'] / 1000)) for k in keys], key=lambda k: k['t']), mic=mic)
 
 def load_laps(d, rec0):
+    """rec0: the bundle's clock (B['clock'], which handles a paused recording) or a bare start time."""
+    clock = rec0 if callable(rec0) else (lambda w: w - rec0)
     laps = []
     for f in sorted(glob.glob(os.path.join(d, 'traj_*.json'))):
         j = json.load(open(f))
@@ -114,7 +166,7 @@ def load_laps(d, rec0):
         # finishTime (Sockeye Run R1 read −14.9 s drift until this), and a race that never finished has none
         game = pre + (S[-1][F['t']] if S[-1][F['phase']] == 1 else 0)
         laps.append(dict(file=os.path.basename(f), j=j, F=F, S=S, mode=j['mode'],
-                         v0=t0 - rec0, v1=end_wall - rec0, pre=pre, game=game,
+                         v0=clock(t0), v1=clock(end_wall), pre=pre, game=game,
                          drift=(end_wall - t0) - game))
     laps.sort(key=lambda L: L['v0'])
     n = {'solo': 0, 'competitive': 0}
@@ -153,10 +205,11 @@ def phrases(tj):
 def main():
     d = sys.argv[1]; B = bundle(sys.argv[2] if len(sys.argv) > 2 else d)
     rec0 = B['rec0']
-    laps = load_laps(d, rec0)
+    laps = load_laps(d, B['clock'])
     print('# Timeline — %s\n' % os.path.basename(os.path.abspath(d)))
     print('Video clock = wall clock − %s (bundle metadata). Drift = wall duration − game duration (≈0 is good).\n'
-          % datetime.utcfromtimestamp(rec0).isoformat(timespec='milliseconds'))
+          % datetime.utcfromtimestamp(rec0).isoformat(timespec='milliseconds')
+          + ('' if B['sessions'] == 1 else ' **%d sessions (paused): the clock joins them back to back with each pause cut, as Screen Studio\'s own timeline does.** Within a lap the clocks still agree (drift).\n' % B['sessions']))
     print('| lap | file | video in | video out | result | drift s |')
     print('|---|---|---|---|---|---|')
     for L in laps:

@@ -144,7 +144,7 @@ def lap_report(L):
     print('- seconds in the %s: ' % ('165u gate zone' if gates else '%du mark zone' % lr[1]['zone']) + ' · '.join(out))
 
 def main():
-    laps = load_laps(sys.argv[1], bundle(sys.argv[2] if len(sys.argv) > 2 else sys.argv[1])['rec0'])
+    laps = load_laps(sys.argv[1], bundle(sys.argv[2] if len(sys.argv) > 2 else sys.argv[1])['clock'])
     print('# Laps — %s' % sys.argv[1].rstrip('/').split('/')[-1])
     for L in laps: lap_report(L)
 

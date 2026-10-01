@@ -147,6 +147,13 @@ python3 fps.py $S > $D/fps.md                 # distinct frames/s mid-lap from t
 
 ## Gotchas
 
+- **A paused recording has several sessions** (Spoonbill Flats, Sep 30: display-0/1, microphone-0/1, keystrokes-0/1 …).
+  `align.bundle()` joins them back to back into `recording/joined/` (video by stream copy, ~4 GB, deleted with the bundle) and
+  `B['clock'](wall)` maps wall time onto that joined clock, pauses cut. Pass `B['clock']` to `load_laps`, never `B['rec0']`.
+  Screen Studio may write an enhanced track for session 0 only; the later session then uses its raw mic (dB not comparable
+  across the pause, a warning says so). The cleanup md5 list includes every `*-N.json` and every enhanced track.
+- **A banner on screen isn't proof of the state.** At the Flats the "AGROUND" banner stayed up 54 s after refloating (PT-086);
+  check the trajectory (`spd`) before believing a HUD message in a still.
 - **Gate courses** (Clubhouse Point) have null `legRounds`. `engagement.progress_fn` aims each leg at the nearest
   point of its gate; before Sep 29 it aimed every leg at the finish, and places jumped. `laps.py` times the
   165 u zone around the gate line.

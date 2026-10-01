@@ -23,7 +23,7 @@ def main():
     S = sys.argv[1]; B = bundle(S)
     print('# Frame rate — distinct frames/s in a 10-s window mid-lap (raw track is 60 fps)\n')
     print('| lap | window | fps |\n|---|---|---|')
-    for L in load_laps(S, B['rec0']):
+    for L in load_laps(S, B['clock']):
         mid = (L['v0'] + L['pre'] + L['v1']) / 2
         print('| %s | %s | %.1f |' % (L['name'], mmss(mid), distinct_fps(B['video'], mid)))
 
