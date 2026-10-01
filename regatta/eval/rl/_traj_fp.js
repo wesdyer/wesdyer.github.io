@@ -125,7 +125,13 @@ const ADJUDICATED = {
     // 5 s, set by hand because set_venue_targets refuses it — 2.50x the 1:10 path estimate). A by-key diff shows nothing
     // else moved. The Sep 8 laps (59f2931b on f6ac8c39) now read as stale.
     swamp:     { stamps: ['6691639a:335942'],  on: '895f3a97:335972', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-30' },
-    volcanic:  { stamps: ['4ac8c0e5:45501'],   on: '46ebdb19:45501', why: 'his five laps (2026-09-13) were stamped ON the old frozen doc' + V3_WHY },
+    // EMBERFALL RE-FROZEN (2026-10-01, the playtest intake): his six laps stamp 4e18315c:45531. By-key diff vs the old frozen
+    // doc (46ebdb19): course.cutoff 360 → 600 (the 10:00 time limit; every lap finished 3:13-3:52, so no lap met either) and
+    // records.provisional added (215); then the freeze took one edit more, provisional 215 → 225 (3:45 — Wes's call: the
+    // rule's 3:55 counts TT2's 3:51.5, caught in eruptions; without it 3:40). Marks, lines, route, shapes, wind, props
+    // byte-identical. The Sep 13 laps (4ac8c0e5) now read as stale.
+    volcanic:  { stamps: ['4e18315c:45531'],   on: '4e17c67f:45531', why: 'course.cutoff 360 → 600 and records.provisional only (the target set from these laps) — by-key diff 2026-10-01' },
+    // was: volcanic:  { stamps: ['4ac8c0e5:45501'],   on: '46ebdb19:45501', why: 'his five laps (2026-09-13) were stamped ON the old frozen doc' + V3_WHY },
     // ⭐ SPOONBILL FLATS (2026-09-16, the flats intake): his three laps stamp 8eb84e74:38655, a
     // doc 33 bytes short of the committed 431d683 (144108a1:38688) that matches NO commit — the
     // page he sailed on was loaded before the last ladder save (the editor's save() re-bakes
