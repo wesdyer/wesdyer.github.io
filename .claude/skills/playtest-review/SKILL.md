@@ -52,6 +52,7 @@ python3 align.py $S > $D/timeline.md          # narration on the video clock, sp
 python3 laps.py  $S > $D/laps.md              # splits, hits, fleet at gun, gaps, roundings, speeds
 python3 engagement.py $S $D/labels.tsv --init # rows to label
 python3 engagement.py $S $D/labels.tsv > $D/engagement.md
+python3 fps.py $S > $D/fps.md                 # distinct frames/s mid-lap from the raw video (needs the bundle)
 ```
 
 - `align.bundle(tests_dir)` finds the bundle and returns the exact start, transcript, keys, mic and the raw
