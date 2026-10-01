@@ -82,6 +82,10 @@ const ADJUDICATED = {
     // refuses, 0.92x its 3:23 path estimate; the old 4:05 came from race laps). A by-key diff shows nothing else moved.
     // The older arctic laps (86fc97f4 on b0074f92) now read as stale.
     arctic:    { stamps: ['b18581b1:98522'],   on: 'b1850191:98522', why: 'records.provisional only (245 → 210, the target set from these laps) — by-key diff 2026-10-01' },
+    // OTTER RE-FROZEN (2026-10-01, the playtest intake): his six laps stamp 6f409d2:142392. The freeze took the doc one
+    // edit later: records.provisional 225 → 220 (3:40, Time Trial mean 197.6 s x 1.1 up to 5 s; set_venue_targets agrees).
+    // A by-key diff shows nothing else moved. The older otter laps (5817c877:142328) now read as stale.
+    otter:     { stamps: ['6f409d2:142392'],   on: '6f41517:142392', why: 'records.provisional only (225 → 220, the target set from these laps) — by-key diff 2026-10-01' },
     // GLOWTIDE RE-FROZEN (2026-10-01, the playtest intake): his six laps stamp 3ca30a2f:515607. The freeze took the doc one
     // edit later: records.provisional 220 → 200 (3:20, Time Trial mean 181.7 s × 1.1 up to 5 s; the old 3:40 came from race
     // laps). A by-key diff shows nothing else moved. Older glowtide laps (3fbd12b1, 10b0f94a on 34e647ff) now read as stale.
@@ -132,7 +136,12 @@ const ADJUDICATED = {
     // field's depthAt(x, y, t) on the race clock: 0 aground samples of 5002 (min depth 0.64 m
     // vs a 0.5 m draft), every passage he took open at the level he took it. The water he sailed
     // is the water the benched doc has.
-    flats:     { stamps: ['8eb84e74:38655'],   on: '144108a1:38688', why: 'course block identical; tracks replayed afloat through the frozen tide field (0 aground of 5002 samples, min depth 0.64 m vs draft 0.5) — _flats_replay.js' },
+    // SPOONBILL FLATS RE-FROZEN (2026-10-01, the playtest intake): his six laps (and two Sep 27 race laps) stamp
+    // eb1649a7:388785. The freeze took the doc one edit later: records.provisional 195 → 190 (3:10, Time Trial mean 169.8 s
+    // x 1.1 up to 5 s, set by hand: set_venue_targets refuses at 0.78x its 3:37 path estimate). A by-key diff shows nothing
+    // else moved. The Sep 16 laps above (8eb84e74) now read as stale; their two-step ruling is kept for the record.
+    flats:     { stamps: ['eb1649a7:388785'],  on: 'eb163e62:388785', why: 'records.provisional only (195 → 190, the target set from these laps) — by-key diff 2026-10-01' },
+    // was: flats:     { stamps: ['8eb84e74:38655'],   on: '144108a1:38688', why: 'course block identical; tracks replayed afloat through the frozen tide field (0 aground of 5002 samples, min depth 0.64 m vs draft 0.5) — _flats_replay.js' },
 };
 
 const TD = path.join(__dirname, 'traj');
