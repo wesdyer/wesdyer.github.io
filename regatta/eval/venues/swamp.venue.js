@@ -9,7 +9,7 @@ window.VENUE_DOC["swamp"] = {
   "card": {
     "name": "Gatorgrass Bayou",
     "tag": "Swamp",
-    "blurb": "Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel — patience beats pace in here.",
+    "blurb": "Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel, and there's more than one way through the maze — find the fast one, then hold the narrows behind you.",
     "conditions": "Still & weedy",
     "hazards": "Grass islands & weed beds"
   },

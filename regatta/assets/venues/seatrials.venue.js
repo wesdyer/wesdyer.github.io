@@ -9,7 +9,7 @@ window.VENUE_DOC["seatrials"] = {
   "card": {
     "name": "Clubhouse Point",
     "tag": "Clubhouse",
-    "blurb": "Round the cans off the clubhouse — same course, same evening breeze, every week all season. Nothing out here is trying to beat you, which leaves only your own boatspeed to blame.",
+    "blurb": "Round the cans off the clubhouse — same course, same evening breeze, all season. Nothing here is trying to beat you; it comes down to the start, and every run: plane it hot and long, or sail it deep?",
     "conditions": "Calm, standard",
     "hazards": "None"
   },

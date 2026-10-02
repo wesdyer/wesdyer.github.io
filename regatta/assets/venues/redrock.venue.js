@@ -8,7 +8,7 @@ window.VENUE_DOC["redrock"] = {
   "card": {
     "name": "Redrock Reservoir",
     "tag": "Reservoir",
-    "blurb": "Sandstone walls carve the breeze into shadows, funnels and sudden gust-bombs. Learn the canyon and it fights for you.",
+    "blurb": "Sandstone walls carve the breeze into shadows, funnels and sudden gust-bombs, and the corridors keep the whole fleet on top of you. Learn the canyon and it fights for you — but nobody sails away alone in here.",
     "conditions": "Flat, wind-shadowed",
     "hazards": "Rock spires & canyon walls"
   },

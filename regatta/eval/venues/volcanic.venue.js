@@ -9,9 +9,9 @@ window.VENUE_DOC["volcanic"] = {
   "card": {
     "name": "Emberfall Isle",
     "tag": "Volcanic",
-    "blurb": "Black water lit from below. Lava meets the sea, steam stands in columns, and the marks are the cones themselves — round them tight, or hang back and wait for the vent to pass.",
-    "conditions": "Gusty, hot and unstable",
-    "hazards": "Erupting cones, vents & pumice"
+    "blurb": "Black water lit from below and a storm overhead. Ash kills the breeze, vents boil the water, and lightning blacks out your instruments — sail by feel. Round the cones tight, or give the eruptions room.",
+    "conditions": "Ash, steam and lightning",
+    "hazards": "Ash plumes, steam vents & lightning"
   },
   "world": {
     "size": 13000,

@@ -93,6 +93,47 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 | 15 | Duckling Pond | **Lessons → mini W/L** | where is the wind, and what does that let me do? | the graduation horn, ducklings escorting you over the line |
 | 16 | Otter Point | **Coastal triangle**, 2 laps | inside the kelp or outside in the swell — and has the answer changed since last lap? | rounding Otter Rock as a set breaks on it |
 
+
+## As played — the first full playtest (Sep 29 – Oct 1 2026)
+
+Wes sailed every venue narrated — three Time Trials and three races each — and every remark was checked against the
+trajectories. The Summary table above is the DESIGN intent; this is what the venues actually do. Each venue section below
+carries its own **As played** paragraph, and the card text (`card.blurb`) was rewritten from these findings on Oct 1.
+
+**What drives engagement — the same at every venue.**
+1. **A live contest beats any venue feature.** Racing-talk peaks came with a ghost within ~3–6 s or a boat within ~15–80 m;
+   the troughs came with nothing close. Runaway leads were the lowest race at six venues (Glacier R3 8 %, Spoonbill R3 4 %).
+   The fleet's strength is the biggest engagement lever in the game, ahead of any single venue change.
+2. **Narrow water makes the pack.** Redrock's corridors, Sockeye's chutes, the Bayou's narrows and Otter's rocks produced pack
+   races; the open venues (Lagoon, Glacier, Flats) produced the runaways.
+3. **Conditions that change the answer hold attention with no rival.** Stillwater's shifts (80 % racing talk while 24 s
+   behind the ghost), Bluewater's swell sets, Glacier's moving ice, the Flats' tide, Lagoon's squalls: the right answer differs
+   run to run, so a decision is always live.
+4. **A route you can memorize goes dead.** Gatorgrass Bayou ("you almost memorize the right route through") was the least
+   engaged venue; Pearl Lagoon's route is "pretty optimal". A fixed maze needs a variable on top of it.
+5. **A hazard must read as fair.** Anything the player can't explain pulls him out of the race to diagnose it — Emberfall's ash
+   (close races, never above 71 % racing talk), Sockeye's rock trap, a stale banner, a leg counted late.
+6. **Uniform wind gets noticed** (asked for gusts or shifts at eight venues), and **wildlife helps when it is dense and
+   reacts** (Lagoon's praise came while racing) but costs attention when it is static, stuck or odd.
+7. **The first Time Trial is the tour lap** (22–58 % racing talk everywhere): the venue's first impression is its look.
+
+| # | Venue | The question it actually asks | Its best moment in the playtest |
+|---|---|---|---|
+| 1 | Lighthouse Cove | under the bridge or round the island — and when does the traffic get in the way? | a never-tried route through traffic (R2) |
+| 2 | Stillwater Lake | where's the next puff? (lap time follows the wind: 2:48 at 8 kt, 3:46 at 6.5) | 24 s behind and still gambling on the wind |
+| 3 | Pearl Lagoon | ride the squall or duck it? (the route itself is set by the channel and the coral) | chasing the ghost through squalls |
+| 4 | Gatorgrass Bayou | which channel? (three real routes ~30 s apart — then it's memorized) | holding a rival off in the narrows |
+| 5 | Sockeye Run | which lane through the chutes? — "a river rafting run" | sixth to first past a pileup in the chute |
+| 6 | Bluewater Bonanza | can I catch the next set? — swell hopping works as designed | the pack in the swell: 100 % racing talk |
+| 7 | Redrock Reservoir | which corridor, and who's in it? | a 3-s duel through the corridors |
+| 8 | Glowtide Strait | how close to the rocks? — the tide carries you; the glow is the look, not the decision | a 3-s duel to the finish |
+| 9 | Glacier Sound | which gap, before it closes? — the ice is somewhere new every run | back from seventh through the short passage |
+| 10 | Clubhouse Point | plane hot and long, or sail deep and short, on each run | two minutes level with the ghost |
+| 11 | Spoonbill Flats | which passage is open now? (as designed) | a 1-s ghost duel through the passages |
+| 12 | Emberfall Isle | how do I stay out of the ash? — and the lightning, which blacks out the instruments | sailing by feel with the instruments gone |
+| 15 | Duckling Pond | a gentle first race against a slowed fleet: "cheerful, easy, non-threatening" | the ducklings |
+| 16 | Otter Point | inside or out, where to cross the point, and a wave to surf home (as designed) | ninth to first in a close pack |
+
 ---
 
 # 1. Lighthouse Cove `bay`
@@ -101,6 +142,8 @@ cylinder. This is probably the single highest-flavour-per-unit-work idea here.
 
 **Description.** The friendly front door. Fair water, honest breeze, nothing
 hidden — a working harbour with a race running through it.
+
+**As played (Oct 1 2026 playtest).** Traffic defines the course — Wes: "traffic really defines this course in ways that it doesn't in other places" — and the real decision is under the bridge or round the island; the wind bends in learnable patterns that reward replays. Long, but "it really does have a lot going on".
 
 **Character & narrative.** The club regatta in a working port. Spectator boats at
 anchor, pelicans on the pilings, a container ship keeping its schedule regardless
@@ -375,6 +418,8 @@ anyone watching. It costs nothing and rewards exactly the thing the venue teache
 The most *readable* venue — the water shows you where the pressure is, and the
 penalty for not looking is sitting still while someone sails past.
 
+**As played (Oct 1 2026 playtest).** The wind is the opponent: shifts and gusts held Wes even 24 s behind the ghost or comfortably leading — the only venue where the conditions alone kept him racing. Lap times swing with the run's wind (2:48 at 8 kt, 3:46 at 6.5), which makes targets hard. He wants more wildlife on the empty water.
+
 **Character & narrative.** Quiet and a little smug. An angler who resents you, a
 loon that dives as you approach, a cabin with the lights on. The story is *the
 patient read* — you won because you looked at the water.
@@ -429,6 +474,8 @@ trout rings (ambient) · shoal patch (terrain) · glass patch (terrain, drifting
 
 **Description.** Turquoise flats, coral gates, and squalls marching down the
 trades. Duck the rain or ride it — the brave get wet and get ahead.
+
+**As played (Oct 1 2026 playtest).** The most alive venue: dense, reactive wildlife, praised while racing without pulling him out. Squalls are a real mechanic at the right speed; coral heads make the start and the pinching hard. But the channel, coral and sand make one route optimal — the squalls carry the race's decisions.
 
 **Character & narrative.** Warm, bright, periodically violent. Turtles, rays
 under glass-clear water, flying fish off the bow. The story is *the gamble* —
@@ -485,6 +532,8 @@ with palms (landmark) · squall cell with rain curtain and **dead-air wake**
 
 **Description.** Green, close, airless. The breeze is fickle and the water grabs
 at you. Nothing here is fast — this venue is about not stopping.
+
+**As played (Oct 1 2026 playtest).** A maze more than a race: three real routes about 30 s apart, then "you almost memorize the right route" — the least engaged venue of the round. Its one engaged race was the one sailed in company, holding the narrows with the rules. It needs a variable on top of the maze.
 
 **Character & narrative.** The most *inhabited* venue. A stilt shack with a rust
 roof, a pirogue tied up, gators in the water, dragonflies. The story is *the
@@ -550,6 +599,8 @@ reactive)** · lily-pad raft (ambient) · cattails (ambient) · stilt shack
 **Description.** A river that actually flows. The stream runs hard down the middle
 and dawdles — or turns back on itself — along the banks. Pick the lane that pays,
 and pick it again in reverse on the way home.
+
+**As played (Oct 1 2026 playtest).** "More like a river rafting run": the current lanes, the chutes and the rocks are boat handling more than sailing, and the pack piles up — "the mosh pit of the river congestion" — which made its races gripping. Uniform wind down the river; current-facing rock pockets trapped boats (filed as a P0 bug).
 
 **Character & narrative.** Alpine and busy. Stone bridges, salmon running up the
 shallows, bears working the gravel bars, eagles on the snags, Bixby's kin in the
@@ -651,6 +702,8 @@ venue owns the otter**).
 **Description.** No shore, no shelter, no excuses. Big water and a long way to
 go. The event, not the place — real regatta slang, deliberately.
 
+**As played (Oct 1 2026 playtest).** Swell hopping works exactly as designed — "the swell hopping we had hoped to design and it's actually working" — and the pack in the swell produced the most absorbed races of the round (82–100 % racing talk, half the race bins silent).
+
 **Character & narrative.** Epic and lonely. Dolphins on the bow wave, an
 albatross that follows whoever's leading, a whale surfacing once a race. The
 story is *the passage*.
@@ -707,6 +760,8 @@ whitecap fragments (terrain).
 
 **Description.** Sandstone walls, turquoise water, and a breeze that does what
 the rock tells it. The only warm palette in the game.
+
+**As played (Oct 1 2026 playtest).** The corridors force contact: "once you get ahead [elsewhere], you're kind of free from the fleet. Not so here." Learnable wind shifts up the canyons and real start choices round the rock. Unforgiving: one mistake ends a Time Trial.
 
 **Character & narrative.** Silent and enormous — until the fleet arrives, and
 then it is the loudest venue in the game. Bighorn on the ledges, ravens, an
@@ -838,6 +893,8 @@ canyon wall (terrain) · **slot narrows (terrain, gate)** · bighorn on a ledge
 
 **Description.** Night racing on black water, where the only truth glows.
 
+**As played (Oct 1 2026 playtest).** The tide and the rocks are the venue: the stream carries you and "am I going to go close to the rocks… or sail further from them" is the recurring risk. The glow, the moonlight and the boat lights are the look and are loved; the glow did not come up as a decision. The heaviest venue to render (38–52 fps).
+
 **Character & narrative.** Eerie and beautiful. Jellyfish lanterns, moths at the
 mark lamps, an owl on the committee boat. The story is *the leap of faith*.
 
@@ -899,6 +956,8 @@ owl on the committee boat (ambient).
 **Description.** Steel water, blue ice, and a wind that falls off the glacier
 without warning. The completed template.
 
+**As played (Oct 1 2026 playtest).** Route planning through moving ice — "endlessly fascinating", a different way through every run because the floes start somewhere new. High wind and a striking colour ramp. The wind varies in strength, not direction; the overpowered state is unfinished; the bots struggle in the ice and lose 30–40 s by the first mark.
+
 **Character & narrative.** Hostile and magnificent. Orcas surfacing in formation,
 penguins diving off a floe as you pass, a polar bear once in five races. The
 story is *the survival* — you finished, and the ice moved while you did.
@@ -959,6 +1018,8 @@ see the standing constraint below.*
 
 **Description.** The measuring stick. Nothing happens here on purpose.
 
+**As played (Oct 1 2026 playtest).** The measuring stick works: steady breeze, precision, ghost duels (a two-minute dead heat) and one real choice on every run — plane hot and long or sail deep. Rights battles off the start are the fun.
+
 **Character & narrative.** The Wednesday-night club series: same course, same
 evening breeze, same fleet, every week all season. This is the rename earning its
 keep — **beer-can racing is the most repeatable racing there is**, so the name now
@@ -1002,6 +1063,8 @@ meaningless.
 **Description.** A wide estuary that fills and empties while you race it — a full tide
 every minute. The deep channel always goes round; the flats are the short way, for a
 while.
+
+**As played (Oct 1 2026 playtest).** Exactly as designed: "all about the tides and which passages to take… things are closing up on you". Long planing runs, navigating with nothing to see, and the tightest ghost duels of the round. Spoonbills and seals loved; eelgrass and the path line in the channels need work.
 
 **Character & narrative.** Big, quiet, slightly ominous — the sea leaving, and coming
 back. (The withies at the sills and the spoonbills on the sand were removed Sep 19 2026 — the marks for good, the birds until the wildlife pass.) Spoonbills once landed on the sand the
@@ -1106,6 +1169,8 @@ Card art: the Aug 2026 pass-4 master. Track `racing-flats`. Cup: the Swirl Cup s
 
 **Description.** Black water lit from below. Lava enters the sea, steam stands in
 columns, and rafts of floating pumice drift across the course.
+
+**As played (Oct 1 2026 playtest).** The lightning is the venue — "the big thing that happens in this venue": it blacks out the instruments and you sail by feel. The ash plumes are real dead air; the bots look ahead and route round them, so the fleet seemed to sail through the ash better than he could, and he kept stopping to question it. Frame rate 40–54 fps.
 
 **Character & narrative.** Alien and spectacular — the only venue that looks
 dangerous before you've sailed a metre. The story is *the gauntlet*.
@@ -1434,6 +1499,8 @@ spoonbill/egret (ambient).
 lawn — a floating pontoon, a rack of training dinghies, the instructor's launch
 puttering nearby. Nowhere is far from shore, and nothing here can hurt you.
 
+**As played (Oct 1 2026 playtest).** Calm, cheerful, non-threatening — the right first venue; the short graduation race teaches what a race is. The lessons need a full-screen opener (players don't read the coach card) and the off-screen mark chip once drew ten times too big.
+
 **Character & narrative.** Nobody learns to sail on the ocean; everybody learns
 on a pond. First-lesson morning: dew on the lawn, sails flapping on the
 pontoon, other students wobbling through their tacks, a parent watching from
@@ -1691,6 +1758,8 @@ and it already differentiates how the venues feel.
 **Description.** A granite coast under a wall of fog. Kelp beds flatten the swell
 and grab your keel; outside them the sets roll through and the breeze builds all
 afternoon.
+
+**As played (Oct 1 2026 playtest).** Exactly as designed: inside or outside, when to tack, where to cross the point, and a wave to surf home. Narrow water round the rocks gave the closest pack racing of the round (a 9th-to-1st race within 80 u of a boat).
 
 **Character & narrative.** Beautiful and cold. Otters rafting in the kelp, harbor
 seals hauled out on the rocks, pelicans diving in a line, a great white's fin once

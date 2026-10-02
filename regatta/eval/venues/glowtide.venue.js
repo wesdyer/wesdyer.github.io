@@ -9,9 +9,9 @@ window.VENUE_DOC["glowtide"] = {
   "card": {
     "name": "Glowtide Strait",
     "tag": "Strait",
-    "blurb": "Race by moonlight on water that burns blue where it moves. The dark hides the breeze — the glow gives it away, if you know how to look.",
+    "blurb": "Race by moonlight through a strait of rocks and running tide. The stream carries you, the rocks cut the corner for anyone brave enough, and the water burns blue wherever something moves.",
     "conditions": "Dark & glowing",
-    "hazards": "Rocky shores & lit marks"
+    "hazards": "Rocks, the tide & the dark"
   },
   "world": {
     "size": 3107.8125,

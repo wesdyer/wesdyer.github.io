@@ -9,9 +9,9 @@ window.VENUE_DOC["ocean"] = {
   "card": {
     "name": "Bluewater Bonanza",
     "tag": "Ocean",
-    "blurb": "Nothing out here but you, a steady breeze, and a mile of rolling swell. Surf hard downwind, grind out the beat — pure speed wins.",
+    "blurb": "Nothing out here but you, the fleet and a mile of rolling swell. Grind out the beat, then catch a set and chain the waves home — the race is won and lost on the surf.",
     "conditions": "Long rolling swell",
-    "hazards": "None — open water"
+    "hazards": "Open water and the swell"
   },
   "world": {
     "size": 13000,

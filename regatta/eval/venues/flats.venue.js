@@ -9,7 +9,7 @@ window.VENUE_DOC["flats"] = {
   "card": {
     "name": "Spoonbill Flats",
     "tag": "Tidal Flats",
-    "blurb": "A wide estuary that fills and empties while you race it. The deep channel always goes round; the flats are the short way — for a while. Read the tide, cross the wantij while there is water on the sill, and never let the mud take your keel.",
+    "blurb": "A wide estuary that fills and empties while you race it. The channel always goes round; the flats are the short way — while the water lasts. Time the tide, take each passage as it opens, and never let the mud take your keel.",
     "conditions": "Moderate onshore breeze, a full tide every minute",
     "hazards": "Drying flats, the sill, the stream"
   },

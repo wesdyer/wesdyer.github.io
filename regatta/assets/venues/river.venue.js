@@ -9,7 +9,7 @@ window.VENUE_DOC["river"] = {
   "card": {
     "name": "Sockeye Run",
     "tag": "River",
-    "blurb": "The stream runs hard down the middle and dawdles along the banks. Pick the lane that pays and let the river carry you past the fleet.",
+    "blurb": "A salmon river in spate. The stream runs hard down the middle and dawdles at the banks, the chutes squeeze the fleet, and the rocks don't move. Pick your lane and ride the river past the pileup.",
     "conditions": "Fast midstream",
     "hazards": "Rocky banks"
   },

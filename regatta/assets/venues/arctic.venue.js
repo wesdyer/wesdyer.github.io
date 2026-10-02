@@ -9,7 +9,7 @@ window.VENUE_DOC["arctic"] = {
   "card": {
     "name": "Glacier Sound",
     "tag": "Arctic",
-    "blurb": "Freezing katabatic winds pour off the ice cap and the pack drifts where it pleases. Mind the bergs, tame the gusts, survive to the finish.",
+    "blurb": "Katabatic wind off the ice cap and a pack that drifts where it pleases — no two races find the same way through. Thread the gaps before they close; the pale-blue edge of the ice is sailable, the white is not.",
     "conditions": "Steep cold chop",
     "hazards": "Drifting bergs & floes"
   },

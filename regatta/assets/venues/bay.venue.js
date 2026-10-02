@@ -9,7 +9,7 @@ window.VENUE_DOC["bay"] = {
   "card": {
     "name": "Lighthouse Cove",
     "tag": "Bay",
-    "blurb": "Buoys to port, lighthouse to starboard, no excuses anywhere. Fair water and honest breeze — every part of your game gets tested here.",
+    "blurb": "A working harbour with a race running through it. The ships keep their schedule and steal your wind, the bridge kills the breeze beneath it, and every lap asks the same question: under the span, or round the island?",
     "conditions": "Slight ebb",
     "hazards": "Buoys, shore & traffic"
   },

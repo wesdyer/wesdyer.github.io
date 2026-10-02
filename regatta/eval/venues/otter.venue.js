@@ -9,7 +9,7 @@ window.VENUE_DOC["otter"] = {
   "card": {
     "name": "Otter Point",
     "tag": "Kelp Coast",
-    "blurb": "A granite coast under a wall of fog. Kelp beds flatten the swell and grab your keel; outside them the sets roll through and the breeze builds all afternoon. Hug the rocks or go wide — the otters are watching.",
+    "blurb": "A granite coast under a wall of fog. Kelp flattens the swell and grabs your keel; outside, the sets roll through. Hug the rocks or go wide, cross the point where you dare, and surf a set home.",
     "conditions": "Northwest sea breeze, long Pacific swell",
     "hazards": "Kelp, granite & breaking surf"
   },

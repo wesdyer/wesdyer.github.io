@@ -70,30 +70,33 @@ const PATHS_WHY = 'course.paths added only — every other key byte-identical (2
 // (prop colliders as silhouettes) is a SIM change the stamp cannot see; the bot column was
 // re-benched on it (ot0* anchors), the human column is a recording and stands.
 const V3_WHY = '; course.paths re-saved only (2026-09-14 courseSig v3 re-freeze, by-key proof)';
+// ⭐ CARD REWRITE (2026-10-01): every venue but lake and pond had card.blurb (and on ocean, glowtide, volcanic
+// conditions/hazards) rewritten from the playtest review (regatta-issues/venues.md). Card text only: each entry
+// below gained its previous frozen stamp and points `on` at the re-frozen doc.
 const ADJUDICATED = {
     // ⭐ BAY RE-FROZEN (2026-09-28, then 2026-09-29 — the playtest laps added). Sep 28 laps stamp
     // 64a2ab22:1039713 and Sep 29 laps 64a2b767:1039713; the two docs differ ONLY in records.provisional
     // (255 vs 250). Adding the Sep 29 laps put the target back at 255 (4:15: six solo laps, mean 230.0 s),
     // so the frozen cut IS 64a2ab22 — the Sep 28 laps match it directly, the Sep 29 laps are adjudicated.
     // The older bay laps stay adjudicated only on 7f6cf2f6 (an earlier frozen cut) and read as stale.
-    bay: { stamps: ['64a2b767:1039713'], on: '64a2ab22:1039713', why: 'records.provisional only (250 → 255, the target reset from these laps + Sep 28\'s) — by-key diff 2026-09-29' },
+    bay: { stamps: ['64a2b767:1039713', '64a2ab22:1039713'], on: '4d9d11bc:1039795', why: 'records.provisional only (250 → 255, the target reset from these laps + Sep 28\'s) — by-key diff 2026-09-29' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // ARCTIC RE-FROZEN (2026-10-01, the playtest intake): his six laps stamp b18581b1:98522. The freeze took the doc one edit
     // later: records.provisional 245 → 210 (3:30, Time Trial mean 188.0 s x 1.1 up to 5 s, set by hand: set_venue_targets
     // refuses, 0.92x its 3:23 path estimate; the old 4:05 came from race laps). A by-key diff shows nothing else moved.
     // The older arctic laps (86fc97f4 on b0074f92) now read as stale.
-    arctic:    { stamps: ['b18581b1:98522'],   on: 'b1850191:98522', why: 'records.provisional only (245 → 210, the target set from these laps) — by-key diff 2026-10-01' },
+    arctic:    { stamps: ['b18581b1:98522', 'b1850191:98522'],   on: '8bd99d47:98592', why: 'records.provisional only (245 → 210, the target set from these laps) — by-key diff 2026-10-01' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // OTTER RE-FROZEN (2026-10-01, the playtest intake): his six laps stamp 6f409d2:142392. The freeze took the doc one
     // edit later: records.provisional 225 → 220 (3:40, Time Trial mean 197.6 s x 1.1 up to 5 s; set_venue_targets agrees).
     // A by-key diff shows nothing else moved. The older otter laps (5817c877:142328) now read as stale.
-    otter:     { stamps: ['6f409d2:142392'],   on: '6f41517:142392', why: 'records.provisional only (225 → 220, the target set from these laps) — by-key diff 2026-10-01' },
+    otter:     { stamps: ['6f409d2:142392', '6f41517:142392'],   on: '36ea2999:142376', why: 'records.provisional only (225 → 220, the target set from these laps) — by-key diff 2026-10-01' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // GLOWTIDE RE-FROZEN (2026-10-01, the playtest intake): his six laps stamp 3ca30a2f:515607. The freeze took the doc one
     // edit later: records.provisional 220 → 200 (3:20, Time Trial mean 181.7 s × 1.1 up to 5 s; the old 3:40 came from race
     // laps). A by-key diff shows nothing else moved. Older glowtide laps (3fbd12b1, 10b0f94a on 34e647ff) now read as stale.
-    glowtide:  { stamps: ['3ca30a2f:515607'],  on: '3ca1f1ed:515607', why: 'records.provisional only (220 → 200, the target set from these laps) — by-key diff 2026-10-01' },
+    glowtide:  { stamps: ['3ca30a2f:515607', '3ca1f1ed:515607'],  on: 'b51bae51:515660', why: 'records.provisional only (220 → 200, the target set from these laps) — by-key diff 2026-10-01' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // LAGOON RE-FROZEN (2026-09-29, the playtest intake): his six laps stamp a28c2765:63241. The freeze took the doc one
     // edit later: records.provisional 190 → 195 (3:15, Time Trial mean 175.2 s × 1.1 up to 5 s; the old 3:10 came from race
     // laps). A by-key diff shows nothing else moved. Older lagoon laps (3acc77de, ebd9cc79 on 54f1a9d1) now read as stale.
-    lagoon:    { stamps: ['a28c2765:63241'], on: 'a28c1b20:63241', why: 'records.provisional only (190 → 195, the target set from these laps) — by-key diff 2026-09-29' },
+    lagoon:    { stamps: ['a28c2765:63241', 'a28c1b20:63241'], on: '46a943f2:63303', why: 'records.provisional only (190 → 195, the target set from these laps) — by-key diff 2026-09-29' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // LAKE RE-FROZEN (2026-09-29, the playtest intake): his six laps stamp b4249776:1001243. The freeze took the doc
     // one edit later: records.provisional added (230 = 3:50, Time Trial mean 207.1 s x 1.1 up to 5 s, set by hand
     // because set_venue_targets refuses: 1.76x the 1:58 path estimate). A by-key diff shows nothing else moved.
@@ -103,34 +106,34 @@ const ADJUDICATED = {
     // edit later: records.provisional added (220 = 3:40, Time Trial mean 196.0 s x 1.1 up to 5 s, set by hand because
     // set_venue_targets refuses — his mean is 0.79x its 4:07 path estimate; the estimate doesn't count swell surfing).
     // A by-key diff shows nothing else moved. The older ocean laps (1b1a7101 on 46475464) now read as stale.
-    ocean:     { stamps: ['9812f466:569834'],  on: 'faadda46:569864', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-30' },
+    ocean:     { stamps: ['9812f466:569834', 'faadda46:569864'],  on: '326e92a7:569908', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-30' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // REDROCK RE-FROZEN (2026-09-30, the playtest intake): his laps stamp 481d1a0b:65152. TT2 (223.0 s) is EXCLUDED at
     // Wes's word ("I don't think we should keep this trajectory for the sake of determining the right time… two pretty
     // serious mistakes") and kept only in the playtest archive. The freeze took the doc one edit later: records.provisional
     // added (225 = 3:45, mean of the three clean Time Trials 200.1 s x 1.1 up to 5 s, set by hand: set_venue_targets
     // refuses at its band edge). A by-key diff shows nothing else moved. The older redrock laps (60f2a5ec, a6530aaa on 18d5c8a8) now read as stale.
-    redrock:   { stamps: ['481d1a0b:65152'],   on: 'cf1c0aee:65182', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-30' },
+    redrock:   { stamps: ['481d1a0b:65152', 'cf1c0aee:65182'],   on: 'f138b982:65274', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-30' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // RIVER RE-FROZEN (2026-09-30, the playtest intake): his six finished laps stamp 572d60cb:1787947 (a seventh race
     // ended aground on leg 3 and was not ingested). The freeze took the doc one edit later: records.provisional
     // 195 → 205 (3:25, Time Trial mean 182.8 s × 1.1 up to 5 s; the old 3:15 came from race laps). A by-key diff shows
     // nothing else moved. The older river laps (76659ee5, d5e773f6 on 90856445) now read as stale.
-    river:     { stamps: ['572d60cb:1787947'], on: '57154221:1787947', why: 'records.provisional only (195 → 205, the target set from these laps) — by-key diff 2026-09-30' },
+    river:     { stamps: ['572d60cb:1787947', '57154221:1787947'], on: '7d25495b:1788008', why: 'records.provisional only (195 → 205, the target set from these laps) — by-key diff 2026-09-30' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // SEATRIALS RE-FROZEN (2026-09-29, the playtest intake): his six laps stamp ba7f0d6f:1781; the freeze
     // took the doc one edit later (records.provisional 210 → 205, set from these laps), by-key diff: nothing
     // else. The Aug laps (ae1026bc, adjudicated on the old cut ad2dd96f) now read as stale — the doc they
     // were sailed on also lacked records and had course.cutoff 360, not 600.
-    seatrials: { stamps: ['ba7f0d6f:1781'],    on: 'ba7f7c8b:1781', why: 'records.provisional only (the target set from these laps) — by-key diff 2026-09-29' },
+    seatrials: { stamps: ['ba7f0d6f:1781', 'ba7f7c8b:1781'],    on: 'bab5cca2:1802', why: 'records.provisional only (the target set from these laps) — by-key diff 2026-09-29' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // SWAMP RE-FROZEN (2026-09-30, the playtest intake): his seven laps stamp 6691639a:335942 (4 Time Trials, 3 races).
     // The freeze took the doc one edit later: records.provisional added (195 = 3:15, Time Trial mean 175.6 s x 1.1 up to
     // 5 s, set by hand because set_venue_targets refuses it — 2.50x the 1:10 path estimate). A by-key diff shows nothing
     // else moved. The Sep 8 laps (59f2931b on f6ac8c39) now read as stale.
-    swamp:     { stamps: ['6691639a:335942'],  on: '895f3a97:335972', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-30' },
+    swamp:     { stamps: ['6691639a:335942', '895f3a97:335972'],  on: '5e655bc2:336044', why: 'records.provisional added only (the target set from these laps) — by-key diff 2026-09-30' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // EMBERFALL RE-FROZEN (2026-10-01, the playtest intake): his six laps stamp 4e18315c:45531. By-key diff vs the old frozen
     // doc (46ebdb19): course.cutoff 360 → 600 (the 10:00 time limit; every lap finished 3:13-3:52, so no lap met either) and
     // records.provisional added (215); then the freeze took one edit more, provisional 215 → 225 (3:45 — Wes's call: the
     // rule's 3:55 counts TT2's 3:51.5, caught in eruptions; without it 3:40). Marks, lines, route, shapes, wind, props
     // byte-identical. The Sep 13 laps (4ac8c0e5) now read as stale.
-    volcanic:  { stamps: ['4e18315c:45531'],   on: '4e17c67f:45531', why: 'course.cutoff 360 → 600 and records.provisional only (the target set from these laps) — by-key diff 2026-10-01' },
+    volcanic:  { stamps: ['4e18315c:45531', '4e17c67f:45531'],   on: '5dad49ee:45563', why: 'course.cutoff 360 → 600 and records.provisional only (the target set from these laps) — by-key diff 2026-10-01' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // was: volcanic:  { stamps: ['4ac8c0e5:45501'],   on: '46ebdb19:45501', why: 'his five laps (2026-09-13) were stamped ON the old frozen doc' + V3_WHY },
     // ⭐ SPOONBILL FLATS (2026-09-16, the flats intake): his three laps stamp 8eb84e74:38655, a
     // doc 33 bytes short of the committed 431d683 (144108a1:38688) that matches NO commit — the
@@ -146,7 +149,7 @@ const ADJUDICATED = {
     // eb1649a7:388785. The freeze took the doc one edit later: records.provisional 195 → 190 (3:10, Time Trial mean 169.8 s
     // x 1.1 up to 5 s, set by hand: set_venue_targets refuses at 0.78x its 3:37 path estimate). A by-key diff shows nothing
     // else moved. The Sep 16 laps above (8eb84e74) now read as stale; their two-step ruling is kept for the record.
-    flats:     { stamps: ['eb1649a7:388785'],  on: 'eb163e62:388785', why: 'records.provisional only (195 → 190, the target set from these laps) — by-key diff 2026-10-01' },
+    flats:     { stamps: ['eb1649a7:388785', 'eb163e62:388785'],  on: '7cd59e44:388770', why: 'records.provisional only (195 → 190, the target set from these laps) — by-key diff 2026-10-01' + '; then card text only (blurb/conditions/hazards rewritten from the playtest round, 2026-10-01; recordsHash skips card)' },
     // was: flats:     { stamps: ['8eb84e74:38655'],   on: '144108a1:38688', why: 'course block identical; tracks replayed afloat through the frozen tide field (0 aground of 5002 samples, min depth 0.64 m vs draft 0.5) — _flats_replay.js' },
 };
 

@@ -9,7 +9,7 @@ window.VENUE_DOC["lagoon"] = {
   "card": {
     "name": "Pearl Lagoon",
     "tag": "Lagoon",
-    "blurb": "Turquoise flats, coral gates, and squalls marching down the trades. Duck the rain or ride it — the brave get wet and get ahead.",
+    "blurb": "Turquoise flats, coral heads and squalls marching down the trades. The channel sets your course; the squalls decide the race — duck the rain or ride it, and the brave get wet and get ahead.",
     "conditions": "Trade breeze, squally",
     "hazards": "Coral heads, the reef pass & squalls"
   },
