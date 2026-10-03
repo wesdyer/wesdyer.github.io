@@ -3,7 +3,9 @@
 // loads before ai/bot.js. Extracted verbatim from script.js (refactor 2026-08-24).
 // NOTE: eval/gen_roster.js, gen_archive.js, rate_report.js, rate_run.js,
 // tier_model.py, tier_grid.py, gen_stats.py and art/review.py regex-scrape
-// `const AI_CONFIG = [` ... `\n];` from THIS file — keep that exact shape.
+// the AI_CONFIG array from its declaration at column 0 to the `\n];` that closes it —
+// keep that exact shape, and never write the declaration itself in a comment above it:
+// the scrapers take the FIRST match, and a quoted copy here broke every one of them.
 
 
 // AI Configuration

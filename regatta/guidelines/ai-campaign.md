@@ -17815,3 +17815,20 @@ notes:
 | 3 (bully/gambler) | 26 (16%) | 213.0 / 206.5 | 2.0 | 8.7 | 27.2 k | wantij 0.46 / head cut 0.96 |
 | all-nerve-3 fleet (treeFLN3E1, 80) | 80 | 211.9 / 210.7 | 1.8 | 8.1 | 27.9 k | wantij takers 25% → med 184.3; non-takers 217.6 |
 | him | 3 | 172.8 / 173.8 | 0 | 2.4-4.6 | 24.6 k | wantij 3/3, head cut 2/3 + creek 1/3 |
+
+## RIVER PROMOTED (Oct 2 2026, PT-055) — grounding physics + two notches filled; river re-frozen 1dc0eea34e9cacff → 7efebc7061e85209
+
+**Why.** Wes's Sockeye R3 ended pinned 157 s at 0 kt in a notch on shape-34's west face, 3.3 kt running into it. Cause: `checkIslandCollisions` took 60% of speed on EVERY frame of land contact, so a boat the current held against a rock could never build way — the old "island-8 notch" DNFs (above) were the same rock, a physics trap and not a bot loop.
+
+**Changes.** (1) `js/sim/collision.js`: the grounding loss scales with where the bow points against the land — bow-on 60%, scraping 2%, nothing from ~15° bow-out. (2) river shape-34 and shape-18 notches filled with gentle convex chords. (3) `eval/test_current_traps.js` (in `npm test`; `SWEEP=1` for every 40 u of shoreline): every pocket facing ≥ 1 kt must be sailable out of — river 164 / glowtide 61 / bay 26 / flats 37 (flood + ebb) points pass; on the old physics 4 trapped (river 2, glowtide 2).
+
+**River bench** (`rate_run.js --venue river --trials 60 --seed 5000`, 540 boat-races):
+
+| cut | leg DNF | DNS | fin med | winner med |
+|---|---|---|---|---|
+| old physics + old rocks (HEAD 9a0bdf0) | 10 | 4 | 223.6 | 189.4 |
+| no scrape friction (bow-out free, bow-on 60%) | 1 | 5 | 212.9 | 182.9 |
+| 8% scrape — REJECTED, traps return | 11 | 4 | 217.1 | 183.7 |
+| **shipped: 2% scrape** | **3** | 4 | **212.7** | 184.4 |
+
+The DNS (bots that never cross the start line against the current) are PT-051, untouched here. Old river baselines are retired. Goldens regenerated the same day (they were already stale at 9a0bdf0 — seatrials diverged at t=0 without this change).

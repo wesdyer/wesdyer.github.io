@@ -213,7 +213,11 @@ function recordTrajectory(dt) {
                 // local current at the player (drift attribution on current venues)
                 (() => { try {
                     const c = (typeof getCurrentAt === 'function') && getCurrentAt(player.x, player.y);
-                    return c ? [+(c.x || 0).toFixed(2), +(c.y || 0).toFixed(2)] : [0, 0];
+                    // getCurrentAt returns { speed (kt), direction (rad, flowing toward) };
+                    // speed/4 is game units per frame, x60 per second.
+                    if (!c || !(c.speed > 0)) return [0, 0];
+                    const ups = c.speed / 4 * 60;
+                    return [+(Math.sin(c.direction) * ups).toFixed(2), +(-Math.cos(c.direction) * ups).toFixed(2)];
                 } catch (e) { return [0, 0]; } })(),
                 // The venue's weather at the player (volcano.js); zeros off Emberfall.
                 (() => { try { const f = state.volcano && window.Volcano && Volcano.fryOf(player); return f ? +Math.max(0, f.t0 + f.dur - state.volcano.t).toFixed(1) : 0; } catch (e) { return 0; } })(),

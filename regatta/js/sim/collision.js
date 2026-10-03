@@ -869,8 +869,18 @@ function checkIslandCollisions(dt) {
                  boat.x -= res.axis.x * res.overlap;
                  boat.y -= res.axis.y * res.overlap;
 
-                 // Grounding Penalty: Lose 60% speed instantly + massive drag
-                 boat.speed *= 0.4;
+                 // Grounding Penalty, per frame of contact, by where the bow points against
+                 // the land (res.axis points boat -> land): bow-on 60%, scraping along it 2%,
+                 // and nothing once the bow points ~15° or more away — so a boat can always
+                 // sail OUT. The flat 0.4 every frame trapped boats for good in a pocket the
+                 // current pressed them into: the loss outran any speed the sails could build
+                 // (PT-055, Sockeye Run R3 — 157 s at 0 kt in the shape-34 notch). Keep the
+                 // scrape small: at 8% a boat sliding bow-out along a pinned face was crushed
+                 // the same way (river bench, 60 races: 11 DNFs at 8%, 1 with none at all).
+                 const intoLand = Math.sin(boat.heading) * res.axis.x - Math.cos(boat.heading) * res.axis.y;
+                 const SCRAPE = 0.02;
+                 boat.speed *= 1 - (intoLand > 0 ? SCRAPE + (0.6 - SCRAPE) * intoLand
+                                                 : SCRAPE * Math.max(0, 1 + intoLand / 0.25));
 
                  // Tell the AI it is ON the ice, exactly as mark contact does. Without
                  // this the avoidance cost function sees every candidate blocked (the

@@ -105,7 +105,17 @@ const check = (name, ok, detail) => {
         victim.speed = 1.0;
         checkIslandCollisions(1 / 60);
         o.groundedNoPenalty = victim.raceState.penalty === false && victim.raceState.totalPenalties === 0;
-        o.groundedLostSpeed = victim.speed < 0.5;
+        // heading 0 runs ALONG this shore: a scrape costs some, not the bow-on 60% (PT-055)
+        o.scrapeSpeed = victim.speed;
+        o.groundedLostSpeed = victim.speed < 1 && victim.speed > 0.5;
+        victim.x = -5; victim.y = 0; victim.heading = Math.PI / 2; victim.speed = 1.0;   // bow-on
+        checkIslandCollisions(1 / 60);
+        o.bowOnSpeed = victim.speed;
+        o.bowOnLost = victim.speed < 0.45;
+        victim.x = -5; victim.y = 0; victim.heading = -Math.PI / 2; victim.speed = 1.0;  // bow out
+        checkIslandCollisions(1 / 60);
+        o.bowOutSpeed = victim.speed;
+        o.bowOutKept = victim.speed === 1.0;
         o.groundedPushedOut = victim.x < -5;
         state.course.islands = saveIsl;
 
@@ -133,7 +143,9 @@ const check = (name, ok, detail) => {
 
     console.log('\nwhat a grounding costs');
     check('running aground gives NO penalty — land is not a mark', r.groundedNoPenalty === true);
-    check('...it costs speed instead', r.groundedLostSpeed === true);
+    check('...it costs speed instead — a scrape along the shore some', r.groundedLostSpeed === true, `speed ${r.scrapeSpeed}`);
+    check('...bow-on, most of it', r.bowOnLost === true, `speed ${r.bowOnSpeed}`);
+    check('...and pointing away, none — a boat can always sail out (PT-055)', r.bowOutKept === true, `speed ${r.bowOutSpeed}`);
     check('...and pushes the boat clear', r.groundedPushedOut === true);
 
     check('no page errors', errs.length === 0, errs[0]);
