@@ -226,7 +226,8 @@ function update(dt) {
         }
     }
 
-    // Update Boats
+    // Update Boats (the adaptive band first, so its multiplier applies this frame)
+    if (window.Adaptive) Adaptive.update(dt);
     for (const boat of state.boats) {
         updateBoat(boat, dt);
     }

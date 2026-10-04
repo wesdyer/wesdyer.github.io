@@ -883,6 +883,9 @@ function updateBoat(boat, dt) {
     // answer "what kind of day suits you", pressure answers "how you handle the
     // deviations from it".
     targetKnots *= windGrooveFactor(boat.stats, state.wind.baseSpeed);
+    // ADAPTIVE AI (js/ai/adaptive.js): a flat % on a BOT's target speed when the race has come
+    // apart — every character keeps its own stat profile. Never set on the player.
+    if (boat._adaptMul != null && !boat.isPlayer) targetKnots *= boat._adaptMul;
 
     // OVERPOWERED, beside the groove and deliberately not inside it. They ask different
     // questions of the same stat: the groove asks what kind of DAY suits this boat, keyed to
@@ -1373,8 +1376,12 @@ function updateBoatRaceState(boat, dt) {
         const [m0, m1] = startLinePts();
         const lineDx = m1.x - m0.x, lineDy = m1.y - m0.y;
         const lineLen = Math.hypot(lineDx, lineDy) || 1;
-        // Signed perpendicular distance to the line: positive = course side (OCS).
-        const perpDist = ((boat.x - m0.x) * lineDy - (boat.y - m0.y) * lineDx) / lineLen;
+        // Signed perpendicular distance to the line: positive = course side (OCS) — on the ROUTE'S
+        // OWN direction (startCrossSign, as hullLineOffset reads it). Unsigned, a line authored
+        // `dir: -1` (swamp, river, ocean, flats) was read inside out: a boat that dipped 140u back
+        // below it stayed OCS for good and looped in recovery, never starting, while one sailing
+        // on 40u over the line was quietly cleared (start bench, Oct 4 2026).
+        const perpDist = startCrossSign() * ((boat.x - m0.x) * lineDy - (boat.y - m0.y) * lineDx) / lineLen;
         if (perpDist < -40) {
             boat.raceState.ocs = false;
             if (boat.isPlayer) hideRaceMessage();
@@ -1754,6 +1761,101 @@ function updateBoatRaceState(boat, dt) {
     }
 }
 
+// ── REMAINING COURSE, CONTINUOUS THROUGH EVERY LEG CHANGE (PT-006) ──────────
+// The leaderboard read `this goal's field + the later legs' lengths` and sorted by leg first. A
+// boat that had passed a mark or gone through a gate kept measuring to it until the engine
+// credited the leg — outside the zone, moving away — so her progress slid BACKWARDS as she
+// sailed on, then leapt forward at the credit (measured headless, 3 races: 11-140 leaps of
+// 200u+ per venue at leg changes, hundreds of backward slides; Clubhouse Point's gates 102
+// place swaps a minute, 74 of them reversed within 10 s). Two changes make it one number:
+//   * the next leg is priced from where THIS boat will meet the goal — the mark, or her nearest
+//     point on the line — not from the goal's centre, so "this leg + the rest" and "the next
+//     leg + the rest" agree at the goal;
+//   * across a rounding the two readings blend by how far round she is (the engine's own sweep
+//     against the requirement), and through a gate they hand over when she is in it
+//     (isRounding), so the reading never waits on the credit (PT-081's late credit included).
+// Leg 0 is the same: distance to her point on the start line plus leg 1 from there, so there
+// is no jump at the gun. A pure read — nothing in the sim or the AI consumes it.
+function courseRemaining(GR, boat) {
+    const rs = boat.raceState, route = state.course.route, marks = state.course.marks;
+    const n = GR.legs.length;
+    if (!GR.rankable || !route) return window.GoalField.remaining(GR, rs.leg, boat.x, boat.y, rs);
+    const field = (L, x, y) => {
+        const F = GR.legs[L]; if (!F) return null;
+        const r = window.GoalField.lookup(F, x, y);
+        return r ? r.dist : (F.goal ? Math.hypot(F.goal.x - x, F.goal.y - y) : null);
+    };
+    const restFrom = (L) => { let s = 0; for (let k = L; k < n; k++) s += GR.legLen[k] || 0; return s; };
+    // where a boat at (x, y) meets goal L: the mark, or her nearest point on the line
+    const meet = (L, x, y) => {
+        const e = route[L]; if (!e) return null;
+        if (e.kind === 'round' && e.mark) return { x: e.mark.x, y: e.mark.y };
+        if (e.marks && marks) {
+            const a = marks[e.marks[0]], b = marks[e.marks[1]]; if (!a || !b) return null;
+            const dx = b.x - a.x, dy = b.y - a.y, l2 = dx * dx + dy * dy || 1;
+            const t = Math.max(0, Math.min(1, ((x - a.x) * dx + (y - a.y) * dy) / l2));
+            return { x: a.x + dx * t, y: a.y + dy * t };
+        }
+        return null;
+    };
+    // this leg, then the next from where she meets this goal
+    const via = (L, x, y, dHere) => {
+        if (dHere == null) return null;
+        if (L + 1 >= n) return dHere;
+        const m = meet(L, x, y); const dNext = m && GR.legs[L + 1] ? window.GoalField.lookupNear(GR.legs[L + 1], m.x, m.y) : null;
+        return dNext == null ? dHere + restFrom(L + 1) : dHere + dNext + restFrom(L + 2);
+    };
+    const L = rs.leg;
+    if (L === 0) {
+        if (n < 2) return null;
+        const m = meet(0, boat.x, boat.y); if (!m) return null;
+        const d1 = GR.legs[1] ? window.GoalField.lookupNear(GR.legs[1], m.x, m.y) : null; if (d1 == null) return null;
+        return Math.hypot(boat.x - m.x, boat.y - m.y) + d1 + restFrom(2);
+    }
+    if (L >= n) return 0;
+    const A = via(L, boat.x, boat.y, field(L, boat.x, boat.y));
+    if (A == null) return window.GoalField.remaining(GR, L, boat.x, boat.y, rs);
+    if (L + 1 >= n) return A;
+    const e = route[L];
+    let w = 0;
+    if (e.kind === 'round' && e.mark && rs.roundRebased && e.mark.reqSweep > 0) {
+        w = Math.max(0, Math.min(1, (rs.roundSweep || 0) / e.mark.reqSweep));
+    } else if (e.marks && !e.finish && e.pass !== 'through' && rs.isRounding) {
+        w = 1;
+    }
+    if (w <= 0) return A;
+    const dB = field(L + 1, boat.x, boat.y);
+    if (dB == null) return A;
+    const B = dB + restFrom(L + 2);
+    return (1 - w) * A + w * B;
+}
+
+// The rounding/gate state a ranking needs, for something that is NOT a raced boat — the Time
+// Trial ghost, a replayed trajectory — so courseRemaining can blend it exactly as it blends a boat
+// in the race. Feed it positions in order; it keeps `rs` the way the engine keeps raceState.
+function trackRankState(rs, x, y, heading, leg) {
+    const route = state.course && state.course.route, marks = state.course && state.course.marks;
+    if (rs.leg !== leg || !rs.lastPos) {
+        rs.roundSweep = 0; rs.roundWrong = 0; rs.roundArmed = false; rs.roundBanked = false; rs.roundRebased = false;
+        rs.roundEntryB = null; rs.roundFrom = { x, y }; rs.isRounding = false; rs._wrongRound = false;
+        rs.leg = leg; rs.lastPos = { x, y };
+    }
+    const e = route && route[leg];
+    if (leg >= 1 && e && e.kind === 'round' && e.mark && typeof CoursePath !== 'undefined') {
+        roundingStep({ x, y, heading }, rs, e.mark, CoursePath.anchor(route[leg + 1], marks));
+    } else if (leg >= 1 && e && e.marks && marks && !rs.isRounding) {
+        const a = marks[e.marks[0]], c = marks[e.marks[1]];
+        if (a && c) {
+            const side = (px, py) => (px - a.x) * (c.y - a.y) - (py - a.y) * (c.x - a.x);
+            if (side(rs.lastPos.x, rs.lastPos.y) * side(x, y) < 0) {
+                const t = ((x - a.x) * (c.x - a.x) + (y - a.y) * (c.y - a.y)) / ((c.x - a.x) ** 2 + (c.y - a.y) ** 2 || 1);
+                if (t >= 0 && t <= 1) rs.isRounding = true;
+            }
+        }
+    }
+    rs.lastPos = { x, y };
+}
+
 // Collision Helpers
 function getBoatProgress(boat) {
     const rs = boat.raceState;
@@ -1776,6 +1878,13 @@ function getBoatProgress(boat) {
     // the number is continuous through the gun (it reaches ~0 as the line is crossed, which
     // is where leg 1's path begins).
     if (rs.leg === 0) {
+        // ...in the goal fields' units where there are some (courseRemaining's leg 0), so the
+        // reading runs straight on through the gun instead of jumping from one scale to another.
+        const GR0 = (state.course && state.course.goalFieldsRank) || GF;
+        if (GR0 && GR0.rankable && window.GoalField) {
+            const rem0 = courseRemaining(GR0, boat);
+            if (rem0 != null) return GR0.total - rem0;
+        }
         const m = legMid(0);
         return m ? -Math.hypot(boat.x - m.x, boat.y - m.y) : 0;
     }
@@ -1790,7 +1899,7 @@ function getBoatProgress(boat) {
     // line uses) — see buildCoursePaths.
     const GR = (state.course && state.course.goalFieldsRank) || GF;
     if (GR && window.GoalField) {
-        const rem = window.GoalField.remaining(GR, rs.leg, boat.x, boat.y, rs);
+        const rem = courseRemaining(GR, boat);
         if (rem != null) return GR.total - rem;
     }
 
@@ -1856,14 +1965,18 @@ function ordinalOf(n) {
 // within a leg.
 function fleetRank(boat) {
     const A = boat.raceState;
-    let ahead = 1;
+    let ahead = 1, pA = null;
     for (const o of state.boats) {
         if (o === boat) continue;
         const B = o.raceState;
         if (B.finished !== A.finished) { if (B.finished) ahead++; continue; }
         if (A.finished) { if (B.finishTime < A.finishTime) ahead++; continue; }
-        if (B.leg !== A.leg) { if (B.leg > A.leg) ahead++; continue; }
-        if ((B.nextWaypoint.dist || 0) < (A.nextWaypoint.dist || 0)) ahead++;
+        // ON THE LEADERBOARD'S OWN NUMBER (PT-041): it read straight-line distance to the next
+        // waypoint and leg first, a second ranking that disagreed with the board — "3rd at mark 1"
+        // for a boat that led it by 3 s. getBoatProgress is a pure read on the goal fields
+        // (courseRemaining); the ruler fallback's projection hint is read by nothing in the sim.
+        if (pA == null) pA = getBoatProgress(boat);
+        if (getBoatProgress(o) > pA) ahead++;
     }
     return ahead;
 }

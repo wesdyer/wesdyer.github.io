@@ -144,6 +144,7 @@ const UI = {
     settingBgSound: document.getElementById('setting-bg-sound'),
     settingMusic: document.getElementById('setting-music'),
     settingPenalties: document.getElementById('setting-penalties'),
+    settingAdaptiveAI: document.getElementById('setting-adaptive-ai'),
     settingNavAids: document.getElementById('setting-navaids'),
     settingClockMillis: document.getElementById('setting-clock-millis'),
     settingTrim: document.getElementById('setting-trim'),
@@ -2305,6 +2306,7 @@ function applySettings() {
     if (UI.settingBgSound) UI.settingBgSound.checked = settings.bgSoundEnabled;
     if (UI.settingMusic) UI.settingMusic.checked = settings.musicEnabled;
     if (UI.settingPenalties) UI.settingPenalties.checked = settings.penaltiesEnabled;
+    if (UI.settingAdaptiveAI) UI.settingAdaptiveAI.checked = settings.adaptiveAI !== false;
     if (UI.settingNavAids) UI.settingNavAids.checked = settings.navAids;
     if (UI.settingClockMillis) UI.settingClockMillis.checked = !!settings.clockMillis;
     if (UI.settingTrim) UI.settingTrim.checked = settings.autoTrim;
@@ -2605,6 +2607,7 @@ if (UI.settingSound) UI.settingSound.addEventListener('change', (e) => { setting
 if (UI.settingBgSound) UI.settingBgSound.addEventListener('change', (e) => { settings.bgSoundEnabled = e.target.checked; saveSettings(); Sound.updateWindSound(Sound.playerWindSpeed()); });
 if (UI.settingMusic) UI.settingMusic.addEventListener('change', (e) => { settings.musicEnabled = e.target.checked; saveSettings(); Sound.init(); });
 if (UI.settingPenalties) UI.settingPenalties.addEventListener('change', (e) => { settings.penaltiesEnabled = e.target.checked; saveSettings(); });
+if (UI.settingAdaptiveAI) UI.settingAdaptiveAI.addEventListener('change', (e) => { settings.adaptiveAI = e.target.checked; saveSettings(); });
 if (UI.settingNavAids) UI.settingNavAids.addEventListener('change', (e) => { settings.navAids = e.target.checked; saveSettings(); });
 if (UI.settingClockMillis) UI.settingClockMillis.addEventListener('change', (e) => { settings.clockMillis = e.target.checked; saveSettings(); });
 if (UI.settingTrim) UI.settingTrim.addEventListener('change', (e) => { settings.autoTrim = e.target.checked; saveSettings(); });
@@ -3288,8 +3291,10 @@ function renderResultsHeader(sorted, gapScale) {
         sub.textContent = [
             venueDisplayName(settings.venue) || 'Open Water',
             observedWindText(),
-            `${state.boats.length} boats`
-        ].join(' · ').toUpperCase();
+            `${state.boats.length} boats`,
+            // the race was sailed with the Adaptive AI band engaged at some point (js/ai/adaptive.js)
+            state.race && state.race.adaptiveUsed ? 'Adaptive AI' : null
+        ].filter(Boolean).join(' · ').toUpperCase();
     }
     if (status) {
         const racing = state.boats.filter(b => !b.raceState.finished).length;

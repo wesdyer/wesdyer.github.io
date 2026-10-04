@@ -211,7 +211,8 @@
     function build(grid, route, marks) {
         if (!grid || !grid.nav || !route || route.length < 2) return null;
         const t0 = now();
-        const N = grid.n, RES = grid.res, T_ = grid._tight, nav = grid.nav;
+        // The tight tier ALWAYS (_tightAll), even where the fabric rule took it off the bots' grid.
+        const N = grid.n, RES = grid.res, T_ = grid._tightAll || grid._tight, nav = grid.nav;
         const pass = new Uint8Array(N * N);
         for (let k = 0; k < N * N; k++) pass[k] = (nav[k] || (T_ && T_[k])) ? 1 : 0;
         const metric = cfg().metric;
@@ -251,6 +252,7 @@
             const t1 = now(); F.T = fmmFor(G, srcCells, srcPt); fmmMs += now() - t1;
             F.Tmin = Math.min(...srcCells.map(c => F.T[c]));
             F.kind = kind; F.line = line; F.goal = goalPt(e); F.srcPt = srcPt; F.leg = L; F.N = N; F.RES = RES; F.x0 = grid.x0; F.y0 = grid.y0; F.pass = pass;
+            F.cone = cone; F.wfx = grid._wfx; F.wfy = grid._wfy;   // the last hop of a reading is priced like every other step (lookup)
             legs.push(F);
         }
         // Leg lengths: leg L's field read at the previous goal (the start line's middle for leg 1),
@@ -259,7 +261,7 @@
         let prev = goalPt(route[0]);
         for (let L = 1; L < legs.length; L++) {
             const F = legs[L];
-            if (F && prev) { const r = lookup(F, prev.x, prev.y); legLen[L] = r ? r.dist : 0; }
+            if (F && prev) { const d = lookupNear(F, prev.x, prev.y); legLen[L] = d != null ? d : 0; }
             const g = goalPt(route[L]); if (g) prev = g;
         }
         const total = legLen.reduce((a, b) => a + b, 0);
@@ -276,12 +278,21 @@
     // The field read at a world point: the remaining sailing distance and the next corner. A boat's
     // own cell can be unreached (hugging a shore inside the tight band), so the best reached cell
     // within four is used instead. Null when nothing nearby was reached.
+    //
+    // ⚠️ THE LAST HOP IS PRICED LIKE EVERY OTHER STEP (PT-006). The field is cone-priced, and the hop
+    // from the boat to her cell's corner was added as a plain Euclidean length: an upwind corner far
+    // ahead was undercharged by up to 1/cos 40° and a near one was not, so the reading leapt ±1,000u
+    // whenever her cell's corner changed — a bot on a steady port tack at Clubhouse Point read
+    // 3,855 → 4,955 → 3,366 in six seconds, and the leaderboard swapped places 102 times a minute.
+    // And the WHOLE 3×3 neighbourhood is always read (min over consistently priced candidates), so
+    // the answer does not hinge on which single cell she is in.
     function lookup(F, x, y) {
         const { N, RES, x0, y0, dist, anc } = F;
+        const cone = !!F.cone && F.wfx && F.wfy;
         const i0 = Math.max(0, Math.min(N - 1, Math.floor((x - x0) / RES)));
         const j0 = Math.max(0, Math.min(N - 1, Math.floor((y - y0) / RES)));
-        let best = -1, bd = Infinity;
-        for (let r = 0; r <= 4 && best < 0; r++) {
+        let best = -1, bd = Infinity, bestS = -1, bdS = Infinity;
+        for (let r = 0; r <= 4; r++) {
             for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
                 if (Math.max(Math.abs(di), Math.abs(dj)) !== r) continue;
                 const i = i0 + di, j = j0 + dj;
@@ -291,15 +302,47 @@
                 const a = anc[id];
                 const sp = F.srcPt.get(a);
                 const ax = sp ? sp.x : x0 + ((a % N) + 0.5) * RES, ay = sp ? sp.y : y0 + (Math.floor(a / N) + 0.5) * RES;
-                const total = (sp ? 0 : dist[a]) + Math.hypot(ax - x, ay - y);
+                const hx = ax - x, hy = ay - y, hd = Math.hypot(hx, hy);
+                const total = (sp ? 0 : dist[a]) + (cone ? segCost(hx, hy, hd, F.wfx[id], F.wfy[id], true) : hd);
                 if (total < bd) { bd = total; best = id; }
+                if (sp && total < bdS) { bdS = total; bestS = id; }
             }
+            if (best >= 0 && r >= 1) break;
         }
         if (best < 0) return null;
+        // Inside a cone every path to the goal costs the same, so a neighbour's intermediate corner
+        // can win the min by a rounding hair. Where a straight run to the goal itself is within
+        // 0.3%, take it: the reading is the same and the next corner is the goal.
+        if (bestS >= 0 && bdS <= bd * 1.003 + 1) { best = bestS; bd = bdS; }
         const a = anc[best];
         const src = F.srcPt.get(a);
         const next = src ? { x: src.x, y: src.y } : { x: x0 + ((a % N) + 0.5) * RES, y: y0 + (Math.floor(a / N) + 0.5) * RES };
         return { dist: bd, next, nextCell: a, cell: best, atGoal: !!src };
+    }
+
+    // The field at a point that may be ON LAND — a goal point such as Bluewater's island mark
+    // (mark-3, `type: none`, zone 1000, at the island's centre). lookup searches four cells and
+    // found nothing there, so the next leg's length read 0 and the whole course fell back to the
+    // ruler (PT-006). Search outward to the nearest reached water instead: its value plus the
+    // straight distance to the point.
+    function lookupNear(F, x, y, maxCells) {
+        const r0 = lookup(F, x, y);
+        if (r0) return r0.dist;
+        const { N, RES, x0, y0, dist } = F;
+        const i0 = Math.floor((x - x0) / RES), j0 = Math.floor((y - y0) / RES);
+        for (let r = 5; r <= (maxCells || 60); r++) {
+            let bd = Infinity;
+            for (let dj = -r; dj <= r; dj++) for (let di = -r; di <= r; di++) {
+                if (Math.max(Math.abs(di), Math.abs(dj)) !== r) continue;
+                const i = i0 + di, j = j0 + dj;
+                if (i < 0 || j < 0 || i >= N || j >= N) continue;
+                const d = dist[j * N + i]; if (!isFinite(d)) continue;
+                const t = d + Math.hypot(x0 + (i + 0.5) * RES - x, y0 + (j + 0.5) * RES - y);
+                if (t < bd) bd = t;
+            }
+            if (isFinite(bd)) return bd;
+        }
+        return null;
     }
 
     // Remaining course distance for a boat on leg `leg`, or null when the course is not rankable.
@@ -419,10 +462,21 @@
         }
         return pts;
     }
+    // THE FIELD FOR THE PLAYER'S PATH LINE AND DIAL at her position. On a tidal venue the path runs
+    // on the water that is always there (the safe grid — shortcuts across the flats are hers to
+    // find), but once she is ON one — a cut that dries at low water — that field has nothing to say
+    // and the line simply vanished (Wes, Spoonbill R3 at 1:57, mid-channel: "Notice here, there's
+    // no blue line", PT-088). Off the safe water, the all-water ranking field takes over, so the
+    // line never advertises a shortcut but never abandons her on one.
+    function pathField(player, leg) {
+        const F = state.course.goalFields && state.course.goalFields.legs[leg];
+        if (F && F.T && isFinite(Tat(F, player.x, player.y))) return F;
+        const R = state.course.goalFieldsRank && state.course.goalFieldsRank.legs[leg];
+        return (R && R.T) ? R : F;
+    }
     // The direction of progress for the dial: the path's direction at the boat, or null.
     function progressDir(player) {
-        const GF = state.course.goalFields; const leg = player.raceState.leg;
-        const F = GF && GF.legs[leg]; if (!F || !F.T) return null;
+        const F = pathField(player, player.raceState.leg); if (!F || !F.T) return null;
         return gradAt(F, player.x, player.y);
     }
     // The player's path ahead, recomputed every few frames.
@@ -431,7 +485,7 @@
         const leg = player.raceState.leg;
         const c = player._goalPath;
         if (c && c.leg === leg && fc - c.f < PATH_EVERY) return c.pts;
-        const GF = state.course.goalFields; const F = GF && GF.legs[leg];
+        const F = pathField(player, leg);
         const pts = (F && F.T) ? descend(F, player.x, player.y, PATH_AHEAD) : null;
         player._goalPath = { f: fc, leg, pts };
         return pts;
@@ -526,5 +580,5 @@
         return c.goalFields;
     }
 
-    window.GoalField = { build, lookup, remaining, Tat, gradAt, descend, progressDir, playerPath, drawPath, playerAim, rebuild, segCost, COS_BEAT, COS_RUN };
+    window.GoalField = { build, lookup, lookupNear, remaining, Tat, gradAt, descend, progressDir, playerPath, drawPath, playerAim, rebuild, segCost, COS_BEAT, COS_RUN };
 })();

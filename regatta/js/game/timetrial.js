@@ -138,7 +138,18 @@ const TimeTrial = {
             : (this._lb = { src: g, id: 'ghost', name: 'Ghost', face: g.char || me.name, isGhost: true, colors: g.colors || me.colors,
                             raceState: { finished: false, finishTime: 0, leg: 0, resultStatus: null } });
         if (t >= g.t) { e.raceState.finished = true; e.raceState.finishTime = g.t; e.raceState.leg = state.race.totalLegs + 1; e.ghostProgress = null; }
-        else { const p = this.poseAt(t) || { prog: 0, leg: 0 }; e.raceState.finished = false; e.raceState.leg = p.leg || 0; e.ghostProgress = p.prog || 0; }
+        else {
+            const p = this.poseAt(t) || { prog: 0, leg: 0 }; e.raceState.finished = false;
+            // RE-RANKED LIVE from where the ghost is (PT-006), on the same continuous ranking as your
+            // boat — a saved run's recorded progress was measured on whatever ranking shipped when it
+            // was sailed, and a changed ranking would set it against yours on two scales.
+            const GR = state.course && (state.course.goalFieldsRank || state.course.goalFields);
+            if (p.x != null && p.leg != null && GR && GR.rankable && typeof courseRemaining === 'function') {
+                trackRankState(e.raceState, p.x, p.y, p.heading || 0, p.leg);
+                const rem = courseRemaining(GR, { x: p.x, y: p.y, raceState: e.raceState });
+                e.ghostProgress = rem != null ? GR.total - rem : (p.prog || 0);
+            } else { e.raceState.leg = p.leg || 0; e.ghostProgress = p.prog || 0; }
+        }
         return e;
     },
 };

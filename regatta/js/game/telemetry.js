@@ -48,6 +48,7 @@ function recordTrajectory(dt) {
                 // and a human-vs-bot comparison needs the fleet and its difficulty.
                 fleet: state.boats.filter(b => !b.isPlayer).map(b => b.name),
                 aiStatBonus: (typeof AI_STAT_BONUS !== 'undefined') ? AI_STAT_BONUS : null,
+                adaptiveAI: !!(typeof settings !== 'undefined' && settings.adaptiveAI !== false),
                 // Course meta so analysis needs nothing but this file: without
                 // the mark position, distance-from-ring can't be derived offline.
                 course: {
@@ -98,7 +99,7 @@ function recordTrajectory(dt) {
                          'leg', 'sweep', 'armed', 'ringSect16', 'rivals',
                          'legProg', 'floes', 'giveWayN', 'ocs', 'penaltyTurnsOwed',
                          'awa', 'aws', 'playerTack', 'rivalsX', 'current',
-                         'fried', 'boil', 'windMul', 'swell'],
+                         'fried', 'boil', 'windMul', 'swell', 'adapt'],
                 formatNotes: {
                     ringSect16: '0clear 3closing 5lead 8plug 10hard, scalar 0 when >3 zones from the round mark',
                     rivals: 'unfinished rivals as [x,y,hdg,spd,tack(1=stbd,-1=port)]',
@@ -112,6 +113,7 @@ function recordTrajectory(dt) {
                     boil: 'broken water under the player from a vent boil, 0..1 (volcano.js)',
                     windMul: 'the plume dead-air multiplier at the player, 1 in clear air (volcano.js)',
                     swell: 'the sea at the player (swell.js; null off the ocean): [swell clock s, set strength, surf01, withWave 0/1] — the clock lets a race be replayed against the exact sea',
+                    adapt: 'aligned with rivals: the Adaptive AI target-speed multiplier on each (js/ai/adaptive.js), 1 when the band is idle',
                 },
                 samples: [], acc: 0,
             };
@@ -225,6 +227,7 @@ function recordTrajectory(dt) {
                 (() => { try { return (state.volcano && window.Volcano) ? +Volcano.windMul(player.x, player.y).toFixed(2) : 1; } catch (e) { return 1; } })(),
                 (() => { try { if (!(window.Swell && Swell.active())) return null; const sw = player.swell || {};
                     return [+Swell.now().toFixed(3), +Swell.setAt(Swell.primary(), player.x, player.y).toFixed(2), +(sw.surf01 || 0).toFixed(2), sw.withWave ? 1 : 0]; } catch (e) { return null; } })(),
+                recTraj._riv.map(b => b._adaptMul != null ? +b._adaptMul.toFixed(4) : 1),
             ]);
         } else if (recTraj && recTraj.samples.length > 50) {
             const t = recTraj; recTraj = null;

@@ -595,7 +595,7 @@ const TIDE = {
         const lim = T.mid - T.amp - T.draft - T.botMargin;
         let closed = 0;
         for (let k = 0; k < N * N; k++) if (nav[k] && grid._elev[k] > lim) { nav[k] = 0; closed++; }
-        const g = Object.assign({}, grid, { nav, _clear: null, _tight: null, _safe: true, _closed: closed });
+        const g = Object.assign({}, grid, { nav, _clear: null, _tight: null, _tightAll: null, _safe: true, _closed: closed });
         g.at = (i, j) => (i < 0 || j < 0 || i >= N || j >= N) ? 0 : nav[j * N + i];
         return g;
     }

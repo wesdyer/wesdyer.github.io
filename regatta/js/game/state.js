@@ -18,6 +18,8 @@ const DEFAULT_SETTINGS = {
     bgSoundEnabled: true,
     musicEnabled: false,
     penaltiesEnabled: true,
+    // ADAPTIVE AI (js/ai/adaptive.js): the fleet pushes when you run away, eases when you trail.
+    adaptiveAI: true,
     surf: true,               // breaking seas on the windward shore — see drawSurf
     cameraMode: 'heading',
     // WHICH FACE THE INSTRUMENTS WEAR: 'boat' | 'rose' | 'both' | 'off'.

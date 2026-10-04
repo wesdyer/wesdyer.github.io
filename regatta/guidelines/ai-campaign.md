@@ -17848,3 +17848,59 @@ The DNS (bots that never cross the start line against the current) are PT-051, u
 4. *+ mark-room lanes* (60u per overlapped boat inside, hysteresis). 30-race med bay −2.6, lagoon −0.9, volcanic −3.2, lake +1.4, redrock +3.0 — but loops (10 races) bay 33→31, **lagoon 41→73** (14% of it stuck-recovery), redrock 79→82.
 
 **Conclusion.** Every replacement traded one venue for another; the ring machinery is tuned and a cleaner line into the mark mostly moves boats into each other. The lever left is the **give-way manoeuvre at marks** (turning hard away rather than slowing or taking the outside lane) — rules + avoidance, not navigation. No DNF or missed rounding in any variant.
+
+## THE VENUE TABLE — the playtest-fix session (`eval/rl/_st_close_table.js`, 2026-10-04)
+PRE = stpre* on treeSTPRE (HEAD 8f6b490's js), POST = stpost* on treeSTPOST (the working tree: PT-055 grounding scrape — already in 5ca79f5, so in both —; the continuous ranking (PT-006, sim-inert); Adaptive AI (PT-003, inert here: the player never sails); the starboard start + nerve start risk (PT-002/PT-068); the two `dir: -1` start-line sign fixes). Both trees bench the SAME frozen venue docs (mktree links eval/venues). **Human = the median of his playtest-intake laps** (3 Time Trials + 3 races per venue, Sep 29–30; bay 12 with the earlier set), the Sep 16 reference in brackets — glowtide's moved most (204.4 → 179.3). Every race differs PRE→POST (the start changes the draw), so ±5 s on an 8-race set is noise; read the big moves.
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| arctic | 197.8 (6) [209.4] | 301/305.1/239 | 304/298.1/233 | 1.522 → **1.537** | 0.0 | 9 | 0 | 1.76/1.79/6.92/0.04/0.38 | 80/80 | 0/8 vs stprearc |
+| swamp | 173.9 (7) [173.3] | 248/253.5/167 | 256/266.2/172 | 1.426 → **1.472** | 0.0 | 5 | 0 | 4.06/3.26/0.00/0.07/0.49 | 80/80 | 0/8 vs stpresw |
+| redrock | 202.1 (6) [204.2] | 292/289.4/216 | 285/283.6/222 | 1.445 → **1.410** | 0.0 | 7 | 1 | 7.36/2.23/0.00/0.36/0.68 | 80/80 | 0/8 vs stprerr |
+| glowtide | 179.3 (6) [204.4] | 232/231.7/167 | 230/231.3/174 | 1.294 → **1.283** | 0.0 | 7 | 1 | 6.76/2.89/0.00/0.44/0.76 | 160/160 | 0/16 vs stpreglow |
+| lagoon | 176.5 (6) [174.7] | 211/211.5/179 | 217/221.0/179 | 1.195 → **1.229** | 0.0 | 1 | 0 | 1.01/0.63/0.00/0.31/0.38 | 80/80 | 0/8 vs stprelag |
+| flats | 172.7 (6) [172.8] | 211/214.0/170 | 211/212.8/172 | 1.222 → **1.222** | 0.0 | 0 | 0 | 0.00/0.70/0.00/0.03/0.19 | 240/240 | 0/8 vs stprefl9400 |
+| bay | 229.6 (12) [239] | 269/266.1/216 | 272/268.7/238 | 1.172 → **1.185** | 0.0 | 0 | 0 | 0.11/0.25/0.00/0.04/0.14 | 80/80 | 0/8 vs stprebay |
+| volcanic | 198.3 (6) [195.5] | 220/220.3/165 | 217/218.5/169 | 1.109 → **1.094 ✅** | 0.0 | 0 | 0 | 0.08/1.03/0.00/0.13/0.29 | 240/240 | 0/8 vs stprevo9400 |
+| river | 194 (6) [187.4] | 213/216.2/163 | 211/213.7/172 | 1.098 → **1.088 ✅** | 0.0 | 18 | 1 | 20.20/3.75/0.00/0.07/0.64 | 80/80 | 0/8 vs stpreriv |
+| lake | 201.2 (6) [194.8] | 213/215.0/178 | 212/214.8/178 | 1.059 → **1.054 ✅** | 0.0 | 0 | 0 | 0.15/0.82/0.00/0.11/0.20 | 80/80 | 0/8 vs stprelk |
+| seatrials | 182.3 (6) [185.7] | 191/192.6/172 | 191/193.8/175 | 1.048 → **1.048 ✅** | 0.0 | 0 | 0 | 0.00/0.32/0.00/0.22/0.19 | 160/160 | 0/16 vs stprest |
+| ocean | 201.8 (6) [214.2] | 208/211.2/170 | 204/207.9/178 | 1.031 → **1.011 ✅** | 0.0 | 0 | 0 | 0.01/0.54/0.00/0.07/0.19 | 160/160 | 0/16 vs stpreoc |
+| otter | 201.4 (6) [200.8] | 207/207.8/181 | 202/204.9/182 | 1.028 → **1.003 ✅** | 0.0 | 0 | 0 | 0.49/0.40/0.00/0.03/0.11 | 240/240 | 0/8 vs stpreot9400 |
+
+notes:
+  arctic: 8 @ 9100 both
+  swamp: 8 @ 9400 both
+  redrock: 8 @ 9400 both
+  glowtide: 16 @ 9400 both
+  lagoon: 8 @ 9400 both
+  flats: 3×8 both
+  bay: 8 @ 9400 both
+  volcanic: 3×8 both
+  river: 8 @ 9400 both
+  lake: 8 @ 6100 both
+  seatrials: 16 @ 9400 both
+  ocean: 16 @ 9400 both
+  otter: 3×8 both
+
+| venue | PRE dirt l/b/f/m/pen | POST dirt l/b/f/m/pen | PRE fins | POST fins |
+|---|---|---|---|---|
+| arctic | 3.01/2.06/7.80/0.05/0.39 | 1.76/1.79/6.92/0.04/0.38 | 80/80 | 80/80 |
+| swamp | 3.21/3.17/0.00/0.05/0.54 | 4.06/3.26/0.00/0.07/0.49 | 80/80 | 80/80 |
+| redrock | 7.54/2.95/0.00/0.39/0.76 | 7.36/2.23/0.00/0.36/0.68 | 80/80 | 80/80 |
+| glowtide | 5.64/3.55/0.00/0.58/0.77 | 6.76/2.89/0.00/0.44/0.76 | 160/160 | 160/160 |
+| lagoon | 0.13/0.85/0.00/0.15/0.30 | 1.01/0.63/0.00/0.31/0.38 | 80/80 | 80/80 |
+| flats | 0.00/0.92/0.00/0.12/0.22 | 0.00/0.70/0.00/0.03/0.19 | 240/240 | 240/240 |
+| bay | 0.11/0.33/0.00/0.10/0.17 | 0.11/0.25/0.00/0.04/0.14 | 80/80 | 80/80 |
+| volcanic | 0.12/1.14/0.00/0.10/0.29 | 0.08/1.03/0.00/0.13/0.29 | 240/240 | 240/240 |
+| river | 20.77/2.95/0.00/0.03/0.41 | 20.20/3.75/0.00/0.07/0.64 | 80/80 | 80/80 |
+| lake | 0.35/0.40/0.00/0.10/0.16 | 0.15/0.82/0.00/0.11/0.20 | 80/80 | 80/80 |
+| seatrials | 0.00/0.20/0.00/0.34/0.28 | 0.00/0.32/0.00/0.22/0.19 | 159/160 | 160/160 |
+| ocean | 0.02/0.77/0.00/0.06/0.21 | 0.01/0.54/0.00/0.07/0.19 | 160/160 | 160/160 |
+| otter | 0.60/0.40/0.00/0.02/0.14 | 0.49/0.40/0.00/0.03/0.11 | 240/240 | 240/240 |
+
+**At goal (≤ 1.1): otter 1.003, ocean 1.011, seatrials 1.048, lake 1.054, river 1.088, volcanic 1.094 = 6 of 13 (PRE: 4 — river and volcanic crossed).** Moved most: redrock −7 s, otter −5, ocean −4, volcanic −3, glowtide −2, river −2; swamp +8, lagoon +6 (land contacts 0.13 → 1.01/boat — to look at), bay +3, arctic +3. No DNF in either.
+
+**The two regressions, dug into (2026-10-04, 24 paired races each, `ocean_bench` ten-bot, seeds 9400–9423):**
+- **swamp is NOT a regression** — POST faster in 14 of 24 races, paired median −9.0 s (mean −7.7). The 8-race table's +8 s was noise; boats with ≥10 land contacts equal (23 vs 23).
+- **lagoon IS a small one** — POST slower in 17 of 24, paired median +4.0 s (mean +5.0), on the first beat (leg-1 med 37 → 41) and a doubled leg-2 tail (boats 15 s+ over: 23 → 47 of 240), land contacts 0.30 → 0.72/boat. Not bunching (M1 spread 25 vs 24 s, gap 2.0 s both). Under the nine-bot rate harness the first beat is EQUAL (leg-1 med 44.1 vs 43.9) and land contacts fall (580 → 150 frames, 8 races) — the cost is the ten-boat pack: with the starboard start 63% of the fleet is on port 5 s after the gun (28% before), tacking straight off the line into a crowd. **Accepted by the owner** as is. The candidate fix if it is ever wanted: hold starboard after the gun until there is clear water to tack into (≤ ~5 s).

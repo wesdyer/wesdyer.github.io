@@ -282,12 +282,18 @@ function buildGridRaw(land, arena, obstacles, opts) {
     // this is a venue-class knee on a measured grid property (the curP90 /
     // noSubsample scoping shape), not a tuned knob. Pure geometry, so the
     // grid stays a pure function of its cache key.
+    let tightAll = null;
     {
         let nT = 0, nN = 0;
         for (let k = 0; k < n * n; k++) { nT += tight[k]; nN += nav[k]; }
-        if (nT > nN * 0.08) tight.fill(0);
+        // The ranking field and the player's path line keep the tier whatever the fabric
+        // rule says (`_tightAll`, read only by js/sim/goalfield.js): a slot the bots are
+        // told to leave alone is still water a player can thread, and Wes did — Gatorgrass
+        // R3, through the cypress, led the race while the leaderboard put him 9th, +925 m,
+        // because the field went the long way round (PT-006).
+        if (nT > nN * 0.08) { tightAll = tight.slice(); tight.fill(0); }
     }
-    return { n, x0, y0, res: RES, nav, _tight: tight, _shapes: shapes,
+    return { n, x0, y0, res: RES, nav, _tight: tight, _tightAll: tightAll || tight, _shapes: shapes,
              cell: (wx, wy) => [Math.floor((wx - x0) / RES), Math.floor((wy - y0) / RES)],
              world: (i, j) => [x0 + (i + 0.5) * RES, y0 + (j + 0.5) * RES],
              at: (i, j) => (i < 0 || j < 0 || i >= n || j >= n) ? 0 : nav[j * n + i] };

@@ -1622,10 +1622,9 @@ function updateLeaderboard() {
 
         if (scoreA === 0) return a.raceState.finishTime - b.raceState.finishTime;
 
-        // 2. Leg (For Racing)
-        if (a.raceState.leg !== b.raceState.leg) return b.raceState.leg - a.raceState.leg;
-
-        // 3. Progress within leg (For Racing or DNF/DNS tiebreak)
+        // 2. Progress — the whole course remaining, continuous through every rounding and gate
+        //    (courseRemaining). NOT leg first: a boat round the mark but not yet credited is
+        //    where she is, and sorting by leg let a late credit drop her down the board (PT-006).
         const pA = prog(a);
         const pB = prog(b);
         return pB - pA;

@@ -71,7 +71,7 @@ const RECYCLE = 25;
     // as venue specialisation, which is the one result the campaign exists to produce.
     // Hash the files that decide how a boat sails, and refuse a mismatched merge.
     const AI_FILES = ['js/script.js', 'js/ai/roster.js', 'js/ai/bot.js', 'js/ai/navigation.js',
-                      'js/ai/avoidance.js', 'js/rules.js', 'js/planner.js', 'js/traffic.js',
+                      'js/ai/avoidance.js', 'js/ai/adaptive.js', 'js/rules.js', 'js/planner.js', 'js/traffic.js',
                       'js/venuedoc.js', 'js/swell.js', 'js/water.js', 'js/tide.js', 'js/volcano.js'];
     const aiHash = crypto.createHash('sha256');
     for (const f of AI_FILES) {

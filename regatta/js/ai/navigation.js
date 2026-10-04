@@ -538,10 +538,14 @@ Object.assign(BotController.prototype, {
                 // differ by ~110°, which aimed every recovery into the pin-end pocket).
                 const wd = getWindAt(laneX, laneY).direction;
 
-                // Signed position relative to the line (>0 = course side / above).
+                // Signed position relative to the line (>0 = course side / above) — on the ROUTE'S
+                // OWN direction (startCrossSign), as hullLineOffset reads it. Unsigned, a line
+                // authored `dir: -1` (swamp, river, ocean, flats) read "above" as "below": a boat
+                // that had not started drove further up the course and zig-zagged 50-230u over the
+                // line for good (start bench, Oct 4 2026).
                 const lineDx = m2.x - m1.x, lineDy = m2.y - m1.y;
                 const nx = lineDy, ny = -lineDx;
-                const dot = (boat.x - m1.x) * nx + (boat.y - m1.y) * ny;
+                const dot = startCrossSign() * ((boat.x - m1.x) * nx + (boat.y - m1.y) * ny);
 
                 if (boat.raceState.ocs) {
                     // Over early — dip back below the line at our lane to clear OCS.
@@ -2053,6 +2057,83 @@ Object.assign(BotController.prototype, {
         // Stage just behind the line in our lane, then ease across timed to cross on
         // the gun. The crossing run is SHORT, so we drift little and cross inside the
         // segment (a long run drifts out of the segment, never starts, and jams).
+        // ── THE STARBOARD START (PT-002, Oct 3 2026) ─────────────────────────────
+        // The fleet ran in on whatever tack the geometry gave — 43% on port ten seconds out
+        // (Clubhouse Point 100%), so a player on starboard had rights over nearly everyone — and
+        // then held HEAD-TO-WIND, stopped dead, so the pack crossed 4.5 s after the gun at 3.9 kt
+        // (start_bench.js). A sailor sets up below and to starboard of her spot, comes in on
+        // starboard, holds there with the sails eased — moving, steerable, with rights — keeping
+        // her depth by heading up (closing the line) or bearing away on the same tack (opening it),
+        // and runs at the line close-hauled on starboard, timed from where she actually is.
+        // The foul-stream case (cannotHold, below) keeps its own way-on plan untouched.
+        if (this.startWayOn == null) {
+            const cS = getCurrentAt(boat.x, boat.y);
+            this.startWayOn = (cS ? cS.speed * 4 * Math.cos(cS.direction - wd) : 0) <= -1.5;
+        }
+        const SB = !this.startWayOn && !(P.oldStart);
+        const hS = wd - 0.78;                                    // close-hauled, starboard tack
+        const sx = Math.sin(hS), sy = -Math.cos(hS);
+        if (SB) {
+            // RISK APPETITE (PT-068): the character's nerve — the same trait the Flats read for
+            // how close to the mud she sails — sets how close to the gun she aims. Bold boats
+            // (nerve 3) commit a third of a second sooner and are over more often; cautious ones
+            // leave a little in hand. Centred on the roster's mix (59% nerve 1): an uncentred
+            // spread made the whole fleet later AND the bold boats more often over. Wes: "different AI should have different assessments
+            // of that risk".
+            const nerve = boat.traits && boat.traits.nerve != null ? boat.traits.nerve : 2;
+            const riskAdj = nerve >= 3 ? 0.35 : nerve === 2 ? 0.1 : nerve === 1 ? -0.15 : -0.4;   // ~zero over the roster's nerve mix
+            const tRun = this.getApproachTime(behind / cosT, boat.speed, boat.stats) + BUF + riskAdj;
+            const myPct = ((boat.x - m0.x) * dx + (boat.y - m0.y) * dy) / (lineLen * lineLen);
+            if (this.startCommitted || timer <= tRun) {
+                this.startCommitted = true;
+                // up across the line on starboard, from wherever she is — unless that run would
+                // carry her outside the segment (a crossing there is no start), then at her lane
+                const run = behind / cosT + PAST;
+                const ex = boat.x + sx * (behind / cosT), ey = boat.y + sy * (behind / cosT);
+                const ePct = ((ex - m0.x) * dx + (ey - m0.y) * dy) / (lineLen * lineLen);
+                if (ePct < 0.06 || ePct > 0.94) return { target: { x: aimX, y: aimY }, speed: 1.0 };
+                return { target: { x: boat.x + sx * run, y: boat.y + sy * run }, speed: 1.0 };
+            }
+            // the hold sits a little toward the starboard end of the lane: the slow drift to port
+            // on starboard carries her back through it
+            const rx = Math.sin(wd + Math.PI / 2), ry = -Math.cos(wd + Math.PI / 2);
+            const rightward = (dx * rx + dy * ry) >= 0 ? 1 : -1;     // +pct is toward the starboard end
+            const holdPct = Math.max(0.12, Math.min(0.88, this.startLinePct + 0.2 * rightward));
+            // drifted well past her lane to port with time in hand: reach back and set up again
+            if (this.startHold === true && timer > Math.max(15, tRun + 8) && (this.startLinePct - myPct) * rightward > 0.15) this.startHold = false;
+            // Deeper than the old stage (one boat length): a hold that creeps up the line goes over,
+            // and the dip back below it ran on port — 39 of the port boats ten seconds out.
+            // ⚠️ A FAIR STREAM IS STILL OPEN: Glowtide's 1-1.6 kt sweeps eased-sail holds over the
+            // line before the gun (3.3 OCS a race). Tried and dropped, no measured gain: a hold
+            // deeper by ~60u per knot of set, and the set added to the run's timing.
+            const HOLD = STAGE * 1.6;
+            const hx = m0.x + dx * holdPct - Math.sin(wd) * HOLD, hy = m0.y + dy * holdPct + Math.cos(wd) * HOLD;
+            if (this.startHold !== true) {
+                const dH = Math.hypot(boat.x - hx, boat.y - hy);
+                // in position: near her spot, OR already on starboard at a sensible depth inside the
+                // segment — a boat that has set up does not need to sail to a point to prove it
+                const onStbdNow = window.Rules && Rules.getTack(boat) === 1;
+                if (dH < 120 || (onStbdNow && behind > HOLD * 0.6 && behind < HOLD * 2.2 && myPct > 0.08 && myPct < 0.92)) this.startHold = true;
+                else {
+                    // set up below and to starboard of the hold, then come in on starboard
+                    const brg = Math.atan2(hx - boat.x, -(hy - boat.y));        // the game's heading convention
+                    const onStbd = Math.abs(normalizeAngle(brg - hS)) < 0.45;
+                    if (onStbd || behind < 40) return { target: { x: hx, y: hy }, speed: 0.85 };
+                    return { target: { x: hx - sx * 110, y: hy - sy * 110 }, speed: 0.9 };
+                }
+            }
+            // HOLD: on starboard, PINCHED ~35° off the wind with the sails eased — moving and
+            // steerable but slow, so she does not drift down the line (eased at 45° she crossed a
+            // quarter of Clubhouse Point's line in 20 s and started outside the pin; at 29° she sat
+            // on the irons brake, 0.5 rad, stalled and fell onto port). Depth by the angle: up to
+            // close-hauled when too deep, away toward a reach when too close.
+            // (Bearing away further when too close — to a broad reach, with way on — was tried for
+            // the stream and measured worse everywhere else: boats ran off, gybed onto port and
+            // crossed late, port share 8% → 28%. The fair stream is handled by the depth instead.)
+            const err = (behind - HOLD) / HOLD;                    // + too deep, − too close
+            const offW = err >= 0 ? 0.62 + Math.min(0.16, err * 0.4) : 0.62 + Math.min(0.9, -err * 1.1);
+            return { heading: wd - offW, speed: 0.4 };
+        }
         const tCross = this.getApproachTime(STAGE / cosT, boat.speed, boat.stats) + BUF;
         if (this.startCommitted || timer <= tCross) {
             this.startCommitted = true;
