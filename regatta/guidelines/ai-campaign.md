@@ -17832,3 +17832,19 @@ notes:
 | **shipped: 2% scrape** | **3** | 4 | **212.7** | 184.4 |
 
 The DNS (bots that never cross the start line against the current) are PT-051, untouched here. Old river baselines are retired. Goldens regenerated the same day (they were already stale at 9a0bdf0 — seatrials diverged at t=0 without this change).
+
+## PT-004 "AI ROUNDINGS LOOK BAD" — FOUR REPLACEMENTS OF THE RING MACHINERY TRIED, ALL REJECTED (Oct 2–3 2026)
+
+**Wes, at nine venues:** the bots swing wide, "go past the mark and then down and up", loop beside it, and give away places. **Measured from his 30 playtest races** (inside 600u of each rounding mark): he sails 1,250–1,450u, 35–55u off the mark; the fleet median 1,500–2,000u, 60–110u off, typically 2–8 s slower; the worst bot per rounding +1,000–3,000u. Winding round the mark is the same for both (bots +26° median), so the loops are BESIDE the mark, not round it.
+
+**Where the distance goes** (headless, per rounding inside 600u, bay / lagoon / redrock): approach 369/289/348, entry hunt 325/268/230, **armed orbit 419/532/644**, exit punch 61/51/118, after credit 625/551/688. Time per rounding 17.1 / 18.8 / 29.8 s.
+
+**What makes the loops** (`loop` = > 300° net heading change within 25 s, inside 600u; 10 races, HEAD): bay 33, lagoon 41, redrock 79 — and in every venue the bot is **GIVING WAY to another boat for ~35–50% of loop time** (redrock's are mostly the orbit itself, 56% armed). The visible "bad rounding" is half rounding logic, half the avoidance layer's give-way manoeuvre in a pack at a mark.
+
+**Tried and rejected** (patch kept: `eval/attic/pt004_tangent_rounding.patch`):
+1. *Early departure* (`_leaveNow`: leave when a straight course to the next leg passes the mark on the required side, clear of the hard zone, and the engine's own sweep + string tests would credit it). Moved distance from orbit to exit; totals unchanged.
+2. *Follow the ruler's arc* (no entry hunt / orbit / widen on floe-free venues). M2/M3 beautiful; the carrot past the mark drew a line across the WRONG side and a lagoon boat circled M5 for **1,000 s**.
+3. *Tangent-point pursuit* on a 90u circle (65u tried: a hull cannot hold it, slower). Time-neutral (17.4/18.7/29.0 s), cleaner plots; 30-race finish med bay −1.7, lagoon −3.1, volcanic −3.6, **redrock +7.7, lake +2.6**. Gated per rounding to open water (`tangentRoundOpen`: arc + approach/exit corridors) — redrock still +6.6 (its "open" M1/M2), lagoon's gain gone.
+4. *+ mark-room lanes* (60u per overlapped boat inside, hysteresis). 30-race med bay −2.6, lagoon −0.9, volcanic −3.2, lake +1.4, redrock +3.0 — but loops (10 races) bay 33→31, **lagoon 41→73** (14% of it stuck-recovery), redrock 79→82.
+
+**Conclusion.** Every replacement traded one venue for another; the ring machinery is tuned and a cleaner line into the mark mostly moves boats into each other. The lever left is the **give-way manoeuvre at marks** (turning hard away rather than slowing or taking the outside lane) — rules + avoidance, not navigation. No DNF or missed rounding in any variant.

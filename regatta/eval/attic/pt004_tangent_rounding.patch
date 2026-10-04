@@ -1,0 +1,233 @@
+diff --git a/regatta/js/ai/bot.js b/regatta/js/ai/bot.js
+index 8830d52..71e22d6 100644
+--- a/regatta/js/ai/bot.js
++++ b/regatta/js/ai/bot.js
+@@ -100,6 +100,40 @@ function orbitTightR(rm) {
+ }
+ 
+ // AI Controller
++// IS THIS ROUNDING IN OPEN WATER? (PT-004) The tangent-point rounding beat the ring
++// machinery at open marks (lagoon −3.1 s, volcanic −3.6 s median finish, 30 races) and lost
++// to it in confined water (redrock +7.7 s, lake +2.6 s), where the old radii were priced
++// against rock funnels. So pick per ROUNDING — the same mark can be open from one side and
++// pinched from another — and test only the water the rounding uses, not a whole ring:
++// the arc from the approach bearing round to the exit bearing (the required way) at the
++// tangent radius and two widths outside it, and the ruler's own approach and exit paths
++// within two zones of the mark, each with a boat-width of water either side. Cached per leg.
++function tangentRoundOpen(rm, leg, Rr) {
++    rm._tanOpen = rm._tanOpen || {};
++    if (rm._tanOpen[leg] !== undefined) return rm._tanOpen[leg];
++    const g = state.course.botGrid, dmc = state.course.dmc;
++    const inL = dmc && dmc.legs && dmc.legs[leg], outL = dmc && dmc.legs && dmc.legs[leg + 1];
++    if (!g || !inL || !inL.pts || !outL || !outL.pts) return (rm._tanOpen[leg] = false);
++    const wet = (x, y) => { const c = g.cell(x, y); return g.at(c[0], c[1]); };
++    const roomy = (x, y) => wet(x, y) && wet(x + 40, y) && wet(x - 40, y) && wet(x, y + 40) && wet(x, y - 40);
++    const near = (p) => Math.hypot(p.x - rm.x, p.y - rm.y) < rm.zone * 2;
++    let bIn = null, bOut = null;
++    for (const p of inL.pts) if (near(p)) { if (!roomy(p.x, p.y)) return (rm._tanOpen[leg] = false); if (bIn == null) bIn = Math.atan2(p.y - rm.y, p.x - rm.x); }
++    for (const p of outL.pts) if (near(p)) { if (!roomy(p.x, p.y)) return (rm._tanOpen[leg] = false); bOut = Math.atan2(p.y - rm.y, p.x - rm.x); }
++    if (bIn == null || bOut == null) return (rm._tanOpen[leg] = false);
++    const sgn = rm.side === 'port' ? -1 : 1;
++    let sweep = (bOut - bIn) * sgn;
++    while (sweep < 0) sweep += Math.PI * 2;
++    while (sweep > Math.PI * 2) sweep -= Math.PI * 2;
++    for (let a = 0; a <= sweep + 1e-6; a += 0.15) {
++        const b = bIn + sgn * a;
++        for (const R of [Rr, Rr + 60, Rr + 120]) {
++            if (!wet(rm.x + Math.cos(b) * R, rm.y + Math.sin(b) * R)) return (rm._tanOpen[leg] = false);
++        }
++    }
++    return (rm._tanOpen[leg] = true);
++}
++
+ class BotController {
+     constructor(boat) {
+         this.boat = boat;
+@@ -367,6 +401,7 @@ class BotController {
+                 // the requirement no longer discounted the buffer is a quarter-radian
+                 // of extra orbit, sailed in an island's lee, for nothing.
+                 if (rsL.roundBanked && rsL.roundWrapped !== false) this._outbound = true;
++                else if (this._leaveNow(rsL, rmL)) this._outbound = true;
+                 else if ((rsL.roundSweep || 0) < needL * 0.8) this._outbound = false;
+                 if (this._outbound) { this.wiggleActive = false; this.wiggleDuration = 0; }
+             }
+@@ -1445,6 +1480,68 @@ class BotController {
+         }
+     }
+ 
++    // LEAVE THE MOMENT A STRAIGHT COURSE ON WOULD COMPLETE THE ROUNDING (PT-004).
++    //
++    // The armed orbit circles ~140u off the mark until the engine banks the sweep — but
++    // a boat that stays ON a circle never gets the early credit a departing boat does
++    // (the engine forgives acos(R/d) of bearing as she draws away), so the fleet sailed
++    // 420-640u of orbit per rounding against the ~150-250u of arc a sailor turns, kept
++    // going round past the point where it could have left, then turned away: Wes, at
++    // nine venues, "they go past the mark and then down and up". A sailor leaves as soon
++    // as the line to where she is going keeps the mark on the required side. Ask
++    // exactly that, with the engine's own arithmetic, so it can never trade a missed
++    // rounding for a short one:
++    //   side    the line to the next leg's path ~600u on passes the mark the required
++    //           way, clear of avoidance's hard mark zone, over water;
++    //   sweep   the winding banked plus the short way still to come on a run to the
++    //           next anchor reaches the requirement (roundingStep's `need`);
++    //   string  ...and wraps the mark (the engine's roundWrapped test, same form).
++    // Floe venues and confined marks keep the ring machinery byte-for-byte.
++    _leaveNow(rs, rm) {
++        if (state.course._hasFloes == null) state.course._hasFloes = (state.course.islands || []).some(i => i.isFloe);
++        if (state.course._hasFloes || !rs.roundArmed || !rs.roundRebased || !rs.roundFrom) return false;
++        // open-water roundings only, the same per-rounding choice navigation makes
++        if (rm._tanR == null || !tangentRoundOpen(rm, rs.leg, rm._tanR)) return false;
++        const route = state.course.route, dmc = state.course.dmc;
++        if (!route || !route[rs.leg] || route[rs.leg].kind !== 'round' || typeof CoursePath === 'undefined') return false;
++        const nextA = CoursePath.anchor(route[rs.leg + 1], state.course.marks);
++        const nxt = dmc && dmc.legs && dmc.legs[rs.leg + 1];
++        if (!nextA || !nxt || !nxt.pts || nxt.pts.length < 2) return false;
++        const held = this._leaveLeg === rs.leg;                 // hysteresis once committed
++        const boat = this.boat, sgn = rm.side === 'port' ? -1 : 1;
++        let tp = nxt.pts[nxt.pts.length - 1];
++        for (let k = 0; k < nxt.pts.length; k++) if (nxt.cum[k] > 600) { tp = nxt.pts[k]; break; }
++        const brg = (x, y) => Math.atan2(y - rm.y, x - rm.x);
++        const shortWay = (a, b) => { let d = b - a; while (d > Math.PI) d -= Math.PI * 2; while (d < -Math.PI) d += Math.PI * 2; return d; };
++        const bNow = brg(boat.x, boat.y);
++        // side + clearance of the line we would actually sail
++        if (shortWay(bNow, brg(tp.x, tp.y)) * sgn < 0) return this._leaveDrop();
++        const ex = tp.x - boat.x, ey = tp.y - boat.y, eL2 = ex * ex + ey * ey || 1;
++        const tc = Math.max(0, Math.min(1, ((rm.x - boat.x) * ex + (rm.y - boat.y) * ey) / eL2));
++        const clr = Math.hypot(boat.x + ex * tc - rm.x, boat.y + ey * tc - rm.y);
++        const need = 38 + (rm.bodyR || 12);
++        if (clr < need * (held ? 0.7 : 1)) return this._leaveDrop();
++        const g = state.course.botGrid;
++        if (g) {
++            const L = Math.sqrt(eL2);
++            for (let d = 25; d < Math.min(L, 600); d += 25) {
++                const c = g.cell(boat.x + ex / L * d, boat.y + ey / L * d);
++                if (!g.at(c[0], c[1])) return this._leaveDrop();
++            }
++        }
++        // sweep + string, on a run to the next anchor
++        const bTo = brg(nextA.x, nextA.y);
++        const pred = (rs.roundSweep || 0) + shortWay(bNow, bTo) * sgn;
++        const req = rm.reqSweep != null ? rm.reqSweep * ROUND_SWEEP_TOL : Math.PI / 4;
++        if (pred < req + (held ? -0.1 : 0.1)) return this._leaveDrop();
++        let needW = (bTo - brg(rs.roundFrom.x, rs.roundFrom.y)) * sgn;
++        while (needW <= 0) needW += Math.PI * 2;
++        while (needW > Math.PI * 2) needW -= Math.PI * 2;
++        if (pred < needW - Math.PI + (held ? 0 : 0.2)) return this._leaveDrop();
++        this._leaveLeg = rs.leg;
++        return true;
++    }
++    _leaveDrop() { this._leaveLeg = null; return false; }
+ }
+ function updateAITrim(boat, optimalSailAngle, dt) {
+     // Basic AI Trim: Adjust towards optimal at a fixed rate
+diff --git a/regatta/js/ai/navigation.js b/regatta/js/ai/navigation.js
+index a73f2d9..1c3cf31 100644
+--- a/regatta/js/ai/navigation.js
++++ b/regatta/js/ai/navigation.js
+@@ -87,8 +87,35 @@ Object.assign(BotController.prototype, {
+                 if (this.dmcFollowLeg !== followLeg) { this.dmcFollowLeg = followLeg; this.dmcHint = null; this.dmcCarrotS = null; }
+                 const s = CoursePath.project(dmcLegF, boat.x, boat.y, this.dmcHint);
+                 this.dmcHint = s;
+-                const LOOKP = 450;
+                 const cum = dmcLegF.cum, pts = dmcLegF.pts;
++                // OPEN WATER FOLLOWS THE RULER THROUGH THE ROUNDING (PT-004). The entrance
++                // hunt, the armed orbit and the post-arming widen are pack-ice machinery:
++                // on a floe-free venue they rode the ring to a scored sector, then orbited
++                // ~140u off the mark on a target that led faster than a hull turns — full
++                // boat-length loops beside the mark (playtest: the fleet sailed 1,500-2,000u
++                // inside 600u of a mark against Wes's 1,250-1,450, and he called it at nine
++                // venues). Far out, the ruler's path carries the approach as on every leg;
++                // near the mark (or armed anywhere) the boat steers for the TANGENT POINT on a
++                // small circle round the mark on the required side — what a sailor aims at —
++                // and leaves on _leaveNow. (Chasing a carrot on the ruler's arc instead was
++                // tried and measured: the line to a carrot past the mark crossed it on the
++                // wrong side, and one lagoon boat circled M5 for 1,000 s.)
++                if (state.course._hasFloes == null) {
++                    state.course._hasFloes = (state.course.islands || []).some(i => i.isFloe);
++                }
++                if (rm && rm._tanR == null) {
++                    // The ruler's navigable rounding radius, never under 90u: a 65u circle (just
++                    // outside avoidance's hard zone, where Wes rounds) was tried and measured
++                    // slower — a hull at speed cannot hold it and drifts wide.
++                    const rr = (typeof CoursePath !== 'undefined' && state.course.botGrid)
++                        ? CoursePath._roundR(rm, state.course.botGrid) : 0;
++                    rm._tanR = Math.max(90, rr || 0);
++                }
++                // OPEN WATER ONLY, per rounding (tangentRoundOpen, js/ai/bot.js): confined
++                // marks keep the ring machinery, which was priced against rock funnels.
++                const openRound = !state.course._hasFloes && !!rm
++                    && tangentRoundOpen(rm, rs.leg, rm._tanR);
++                const LOOKP = 450;
+ 
+                 // ROUTE FREEDOM UNTIL THE ROUNDING. Sticky ruler carrots pin the boat
+                 // to the ideal line at 450u hops, so the grid router can only ever
+@@ -127,7 +154,7 @@ Object.assign(BotController.prototype, {
+                 // required way round), ride the ring to it, cut in. Arming and the
+                 // orbit-to-sweep machinery take over from there.
+                 let entryHandled = false;
+-                if (rm && followLeg === rs.leg && this._rulerMode && !rs.roundArmed
++                if (!openRound && rm && followLeg === rs.leg && this._rulerMode && !rs.roundArmed
+                     && dRm > rm.zone * 0.95 && state.course.botGrid) {
+                     const gE = state.course.botGrid;
+                     const sgnR = rm.side === 'port' ? -1 : 1;
+@@ -241,6 +268,51 @@ Object.assign(BotController.prototype, {
+                 // pack. The orbit target adapts its radius (tight inside the ring,
+                 // 1.6x zone outside, straight back toward the ring from far away)
+                 // and the lead angle carries the boat the required way round.
++                // THE TANGENT POINT. From outside a circle of radius Rr round the mark, the
++                // point where a line from the boat touches it on the required side; aimed a
++                // little past it so the boat keeps turning. Pursuing it traces the circle from
++                // any approach and cannot pass the mark the wrong way. Rr is the ruler's own
++                // tight ring where it is all water, else the ruler's navigable radius (so
++                // rock-girt marks keep their checked water).
++                if (!entryHandled && openRound && rm && followLeg === rs.leg && !this._outbound
++                    && (dRm < rm.zone * 2.5 || rs.roundArmed)) {
++                    // MARK-ROOM: one lane out per overlapped boat INSIDE us. Every boat on one
++                    // tight circle packed the fleet onto a line and the give-way layer looped
++                    // them out of it (loops at marks: give-way 53-60% of the time, 3 races).
++                    // A pack rounds in lanes — the inside boat takes the mark, each boat
++                    // outside her a boat-width wider. Counted every half second with a lane
++                    // of hysteresis, so a boat does not flick between circles.
++                    this._laneT = (this._laneT || 0) - 0.1;
++                    if (this._laneLeg !== rs.leg) { this._laneLeg = rs.leg; this._lane = 0; this._laneT = 0; }
++                    if (this._laneT <= 0) {
++                        this._laneT = 0.5;
++                        const myB = Math.atan2(boat.y - rm.y, boat.x - rm.x);
++                        let inside = 0;
++                        for (const ob of state.boats) {
++                            if (ob === boat || ob.raceState.finished || ob.raceState.leg !== rs.leg) continue;
++                            if ((ob.x - boat.x) ** 2 + (ob.y - boat.y) ** 2 > 160 * 160) continue;
++                            const dOb = Math.hypot(ob.x - rm.x, ob.y - rm.y);
++                            if (dOb > dRm - 20) continue;                       // not inside us
++                            if (Math.abs(normalizeAngle(Math.atan2(ob.y - rm.y, ob.x - rm.x) - myB)) > 0.7) continue;
++                            inside++;
++                        }
++                        inside = Math.min(3, inside);
++                        if (inside > this._lane || inside < this._lane - 1) this._lane = inside;
++                    }
++                    const Rr = rm._tanR + 60 * (this._lane || 0);
++                    const sgnT = rm.side === 'port' ? -1 : 1;
++                    const brgT = Math.atan2(boat.y - rm.y, boat.x - rm.x);
++                    // Inside the circle the target leads 1.4 rad: ~115u ahead on a 90u circle,
++                    // a chord a hull at speed can hold that still clears the mark by ~70u. At
++                    // 0.75 rad (66u ahead) a boat nudged inside by traffic passed its target
++                    // and looped back (lagoon: 27 loops at marks vs the ring's 11, 3 races).
++                    const aT = dRm > Rr * 1.05
++                        ? brgT + sgnT * (Math.acos(Rr / dRm) + 0.35)
++                        : brgT + sgnT * 1.4;
++                    destX = rm.x + Math.cos(aT) * Rr;
++                    destY = rm.y + Math.sin(aT) * Rr;
++                    entryHandled = true;
++                }
+                 if (!entryHandled && rm && rs.roundArmed && followLeg === rs.leg) {
+                     const brgA = Math.atan2(boat.y - rm.y, boat.x - rm.x);
+                     const sgnA = rm.side === 'port' ? -1 : 1;
+@@ -424,7 +496,7 @@ Object.assign(BotController.prototype, {
+                 // made instead of demanding a separate departure.
+                 const gridW = state.course.botGrid;
+                 const widen = (p) => {
+-                    if (!rm || !gridW) return p;
++                    if (!rm || !gridW || openRound) return p;
+                     const dx0 = p.x - rm.x, dy0 = p.y - rm.y;
+                     const d0 = Math.hypot(dx0, dy0);
+                     if (d0 > rm.zone * 1.1 || d0 < 1) return p;
