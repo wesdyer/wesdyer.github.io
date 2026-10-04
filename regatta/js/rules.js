@@ -442,6 +442,25 @@
                             // layer builds separately (rule19Pairs in script.js).
                             if (this.isContinuingObstruction(mark)) continue;
                             if (d1 < this.zoneOf(mark) || d2 < this.zoneOf(mark)) {
+                                // RRS 18.1(a)(3): rule 18 "does not apply ... between a boat
+                                // approaching a mark and one leaving it." A boat whose CURRENT
+                                // leg is to this mark is approaching it; one whose PREVIOUS leg
+                                // was is leaving it. Unencoded, the boat coming down to a mark
+                                // latched mark-room over one sailing away from it — overlapped
+                                // by the heading-blind overlap test — and the leaving boat took
+                                // the contact penalty whatever rules 10/11 said (PT-067: Wes,
+                                // leaving Redrock's mark close-hauled on starboard, penalized
+                                // when Bixby gybed onto starboard running down to it).
+                                const roleAt = (b) => {
+                                    const hasMark = (e) => !!e && ((e.mark && (e.mark === mark || Math.hypot(e.mark.x - mark.x, e.mark.y - mark.y) < 1))
+                                        || (e.marks && e.marks.indexOf(mIdx) !== -1));
+                                    const leg = b.raceState.leg, route = state.course.route || [];
+                                    if (hasMark(route[leg])) return 'approach';
+                                    if (leg >= 1 && hasMark(route[leg - 1])) return 'leave';
+                                    return null;
+                                };
+                                const r1 = roleAt(b1), r2 = roleAt(b2);
+                                if ((r1 === 'approach' && r2 === 'leave') || (r1 === 'leave' && r2 === 'approach')) continue;
                                 // RRS 18.1: Rule 18 applies "between boats
                                 // when they are required to leave a mark on
                                 // the same side."

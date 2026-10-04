@@ -473,13 +473,15 @@
         rule: 'Rule 18.1(a)(3)',
         title: 'No mark-room between a boat approaching the mark and one leaving it',
         ruleText: 'Rule 18 ... does not apply between a boat approaching a mark and one leaving it.',
-        knownGap: true, // zone snapshot has no approach-vs-leave test; leg-awareness only partially masks it
+        // Encoded 2026-10-04 (PT-067: Wes, leaving Redrock's mark close-hauled, penalized when a
+        // boat running down to it touched him): a boat whose PREVIOUS leg was this mark is leaving
+        // it, one whose CURRENT leg is to it is approaching, and no snapshot latches between them.
         venue: 'bay', anchor: 'roundMark',
         boats: [
             // A has rounded and is LEAVING (sailing away from the mark, on the
-            // next leg's side); B approaches. Both inside the zone, overlapped
+            // next leg — legOffset 1); B approaches. Both inside the zone, overlapped
             // by the lateral-distance-blind overlap definition.
-            { name: 'A', dx: 0.55, dy: -0.35, heading: 3.14159 },
+            { name: 'A', dx: 0.55, dy: -0.35, heading: 3.14159, legOffset: 1 },
             { name: 'B', dx: -0.75, dy: 0.30, heading: 1.5707963 },
         ],
         phases: [{
@@ -488,6 +490,32 @@
             oracle: { markRoom: null }, // 18 must not apply between them at all
         }],
         note: 'A heads south (away, leaving), B heads east (approaching). If a snapshot latches for either boat, 18.1(a)(3) is unencoded.',
+    });
+
+    S.push({
+        id: 'pt067-leaving-vs-runner-contact',
+        rule: 'Rule 18.1(a)(3) + 11 (umpire)',
+        title: 'Leaving the mark close-hauled, a runner coming down to it touches you',
+        ruleText: 'Rule 18 does not apply between a boat approaching a mark and one leaving it, so the contact is judged on Section A alone: on the same tack, the windward boat keeps clear. (PT-067, Redrock R1: Wes leaving the mark on starboard, Bixby running down to it gybed onto starboard just to windward and touched him — and Wes was penalized.)',
+        venue: 'bay', anchor: 'roundMark',
+        boats: [
+            // A has rounded and beats away from the mark on starboard (leaving, legOffset 1);
+            // B runs down to it on starboard, a hull's width to windward of A and touching.
+            { name: 'A', dx: 0.45, dy: 0, heading: 'stbdCH', legOffset: 1 },
+            { name: 'B', dx: 0.38, dy: 0, dw: 16, heading: 'stbdRun' },   // nearer the mark: the INSIDE boat
+        ],
+        phases: [
+            {
+                step: 'rules', frames: 5,
+                pre: { tackA: 'starboard', tackB: 'starboard' },
+                oracle: { markRoom: null, row: 'A' },
+            },
+            {
+                step: 'contact', frames: 1, clearPenalties: true,
+                pre: { contact: true },
+                behavior: { penA: false, penB: true },
+            },
+        ],
     });
 
     const API = { scenarios: S };

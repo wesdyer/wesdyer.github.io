@@ -210,7 +210,11 @@ function checkBoatCollisions(dt) {
                         }
                     }
 
-                    const pInfo = { rule: res.rule, reason: res.reason, kind: 'contact' };
+                    // Labelled by what DECIDED it: when mark-room set the right-of-way boat, the foul
+                    // is the room not given (Rule 18), not the Section A rule mark-room overrode.
+                    const pInfo = res.markRoom
+                        ? { rule: 'Rule 18', reason: 'Mark-Room', kind: 'contact' }
+                        : { rule: res.rule, reason: res.reason, kind: 'contact' };
                     // RRS 15: a boat that has JUST acquired right of way owes the
                     // other boat room to keep clear, initially. Contact inside that
                     // window (2 s, and only when the acquisition was NOT caused by
@@ -253,8 +257,8 @@ function checkBoatCollisions(dt) {
                         triggerPenalty(effectiveRow, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'contact' });
                     } else if (r15 && effectiveRow) {
                         triggerPenalty(effectiveRow, { rule: 'Rule 15', reason: 'No Room to Respond', kind: 'contact' });
-                    } else if (effectiveRow === b1) triggerPenalty(b2, pInfo);
-                    else if (effectiveRow === b2) triggerPenalty(b1, pInfo);
+                    } else if (effectiveRow === b1) triggerPenalty(b2, Object.assign({ other: b1.name }, pInfo));
+                    else if (effectiveRow === b2) triggerPenalty(b1, Object.assign({ other: b2.name }, pInfo));
                     else {
                         triggerPenalty(b1, pInfo);
                         triggerPenalty(b2, pInfo);

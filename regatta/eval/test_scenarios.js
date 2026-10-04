@@ -159,7 +159,11 @@ const check = (label, ok, detail) => {
                     const posOf = (p) => {
                         if (s.anchor === 'roundMark') {
                             if (p.du != null || p.dv != null) return { x: origin.x + (p.du || 0), y: origin.y + (p.dv || 0) };
-                            return { x: origin.x + (p.dx || 0) * zone, y: origin.y + (p.dy || 0) * zone };
+                            // dw/dc: world units TOWARD the wind / across it (right, facing the wind),
+                            // on top of the zone-fraction position — for placing a boat to windward
+                            const ow = (p.dw || 0), oc = (p.dc || 0);
+                            return { x: origin.x + (p.dx || 0) * zone + Math.sin(wd) * ow + Math.cos(wd) * oc,
+                                     y: origin.y + (p.dy || 0) * zone - Math.cos(wd) * ow + Math.sin(wd) * oc };
                         }
                         return { x: origin.x + ux * (p.dl || 0) + hx * (p.dh || 0),
                                  y: origin.y + uy * (p.dl || 0) + hy * (p.dh || 0) };
@@ -178,7 +182,7 @@ const check = (label, ok, detail) => {
                         bt.raceState.isTacking = !!bs.isTacking;
                         bt.raceState.lastPos = { x: bt.x, y: bt.y };
                         bt.fadeTimer = 1;
-                        if (s.anchor === 'roundMark' && window.__sb.markLeg >= 0) bt.raceState.leg = window.__sb.markLeg;
+                        if (s.anchor === 'roundMark' && window.__sb.markLeg >= 0) bt.raceState.leg = window.__sb.markLeg + (bs.legOffset || 0);   // legOffset 1 = she has rounded it and is leaving
                         home[bs.name] = { x: P.x, y: P.y };
                     }
                     // bankSpot validation: one island pass must not displace anyone

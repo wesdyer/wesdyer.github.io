@@ -134,6 +134,8 @@ function recordTrajectory(dt) {
                                 (recTraj._evT = recTraj._evT || {})[ty] = state.race.timer;
                                 const ev = [+state.race.timer.toFixed(1), ty];
                                 if (ty === 'collision_boat' && d.other) ev.push(d.other.name);
+                                // the CALL, so a penalty can be explained from the record (PT-067)
+                                if (ty === 'penalty') ev.push(`${d.rule || '?'}${d.reason ? ' — ' + d.reason : ''}${d.other ? ' vs ' + d.other : ''}`);
                                 if (ty === 'collision_island') ev.push(d.isFloe ? 'floe' : 'land');
                                 // trailing position — where it happened (contact maps)
                                 ev.push(Math.round(d.boat.x), Math.round(d.boat.y));

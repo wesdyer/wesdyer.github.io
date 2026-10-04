@@ -449,7 +449,7 @@ function steerageFactor(boat) {
 
 function triggerPenalty(boat, info) {
     if (boat.raceState.finished) return;
-    if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('penalty', { boat, kind: info && info.kind, rule: info && info.rule });
+    if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('penalty', { boat, kind: info && info.kind, rule: info && info.rule, reason: info && info.reason, other: info && info.other });
     if (!settings.penaltiesEnabled) return;
 
     // One-Turn Penalty (RRS 44 style): the foul flags the boat and owes a
@@ -470,6 +470,10 @@ function triggerPenalty(boat, info) {
         // Announce, don't call upward: audio and the banner subscribe to this in
         // game/audio.js and ui/screens.js. Same frame, same order as the old
         // direct calls (sound first, banner second — registration order).
+        // WHY, kept for the turn-countdown banner (a string on the boat, not raceState: the
+        // trace hash reads raceState's numbers). PT-067: the reason used to show for one frame
+        // before the countdown replaced it, so "why did I get a penalty?" had no answer.
+        boat._penaltyWhy = info && info.rule ? `${info.rule}${info.reason ? ' — ' + info.reason : ''}` : null;
         if (boat.isPlayer) GameEvents.emit('player-penalty', info);
     }
 }
@@ -1729,7 +1733,8 @@ function updateBoatRaceState(boat, dt) {
             }
         } else if (boat.isPlayer) {
             const remaining = Math.ceil((Math.PI * 2 - Math.abs(rs.penaltyRot)) * 180 / Math.PI);
-            showRaceMessage(`PENALTY! TURN ${remaining}° MORE TO CLEAR (or +15s at finish)`, "text-red-500", "border-red-500/50");
+            const why = boat._penaltyWhy ? ` (${boat._penaltyWhy})` : '';
+            showRaceMessage(`PENALTY${why}! TURN ${remaining}° MORE TO CLEAR (or +15s at finish)`, "text-red-500", "border-red-500/50");
         }
     }
 
