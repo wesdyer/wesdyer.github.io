@@ -54,6 +54,8 @@
     // of three hull lengths of the boat nearer to it."
     // Hull length ≈ 55 units → 3 × 55 = 165
     const ZONE_RADIUS = 165;
+    // A penalty turn built past this (rad, ~120°) is a turn being TAKEN, not owed — see Rule 21.
+    const TAKING_PENALTY_ROT = 2.1;
 
     // RRS Definition — Tack, Starboard or Port:
     // "A boat is on the tack, starboard or port, corresponding to her
@@ -647,8 +649,17 @@
             // Overrides: All of Section A (Rules 10-13).
             // Exception: If both boats are returning/penalized, Section D
             // does not apply between them; fall through to normal rules.
-            const b1Returning = b1.raceState.ocs || b1.raceState.penalty;
-            const b2Returning = b2.raceState.ocs || b2.raceState.penalty;
+            // TAKING a penalty, not OWING one (PT-036). RRS 21 binds "a boat that is taking a
+            // penalty"; a boat that owes the turn and is still sailing her course keeps her
+            // rights. Keyed on `penalty` — set from the foul until the turn is done — every
+            // other boat had rights over her all that time: Blaze hit Wes from clear astern
+            // twice while he owed a turn, and Wes took both penalties. Taking = a bot in her
+            // spin (penaltySpin), or any boat whose penalty turn has built past 120° — more than
+            // a tack or a gybe, and the decay (~7°/s) keeps ordinary sailing below it.
+            const taking = (b) => !!b.raceState.penalty && (
+                !!(b.controller && b.controller.penaltySpin) || Math.abs(b.raceState.penaltyRot || 0) >= TAKING_PENALTY_ROT);
+            const b1Returning = b1.raceState.ocs || taking(b1);
+            const b2Returning = b2.raceState.ocs || taking(b2);
 
             if (b1Returning && !b2Returning) {
                 result.rowBoat = b2;

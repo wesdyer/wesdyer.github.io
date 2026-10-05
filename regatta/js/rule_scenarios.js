@@ -518,6 +518,51 @@
         ],
     });
 
+    // ═══════════════ Rule 21 — taking (not owing) a penalty ═══════════════
+    S.push({
+        id: 'pt036-owing-keeps-rights',
+        rule: 'Rule 21 / 12 (umpire)',
+        title: 'Owing a penalty is not taking one — a boat clear astern still keeps clear',
+        ruleText: 'Rule 21 binds "a boat that is taking a penalty". A boat that owes her turn and is still sailing her course keeps her rights: a boat clear astern of her keeps clear (Rule 12). (PT-036: Blaze hit Wes from clear astern twice while he owed a turn, and Wes took both penalties.)',
+        venue: 'seatrials', anchor: 'openWater',
+        boats: [
+            // A owes a turn but sails straight; B is clear astern, bow on A's transom
+            { name: 'A', dl: 0, dh: 0, heading: 'stbdCH', penalty: true },
+            { name: 'B', dl: 6, dh: -64, heading: 'stbdCH' },
+        ],
+        phases: [
+            {
+                step: 'rules', frames: 5,
+                pre: { overlapped: false, bAsternOfA: true },
+                oracle: { row: 'A', rule: 'Rule 12' },
+            },
+            {
+                // B sails up onto A's transom, a touch to windward — still hers to keep clear
+                move: { B: { dl: 6, dh: -50 } },
+                step: 'contact', frames: 1,
+                pre: { contact: true },
+                behavior: { penB: true },   // the boat clear astern is penalized
+            },
+        ],
+    });
+
+    S.push({
+        id: 'r21-taking-penalty-keeps-clear',
+        rule: 'Rule 21',
+        title: 'A boat taking her penalty keeps clear',
+        ruleText: 'A boat that is taking a penalty shall keep clear of one that is not.',
+        venue: 'seatrials', anchor: 'openWater',
+        boats: [
+            // A is partway through her turn (built past a tack): she keeps clear of B
+            { name: 'A', dl: 0, dh: 0, heading: 'stbdCH', penalty: true, penaltyRot: 3.0 },
+            { name: 'B', dl: 0, dh: -120, heading: 'stbdCH' },
+        ],
+        phases: [{
+            step: 'rules', frames: 5,
+            oracle: { row: 'B', rule: 'Rule 21' },
+        }],
+    });
+
     const API = { scenarios: S };
     if (typeof module !== 'undefined' && module.exports) module.exports = API;
     if (root) root.RuleScenarios = API;

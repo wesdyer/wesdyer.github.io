@@ -179,6 +179,10 @@ const check = (label, ok, detail) => {
                         bt.speed = 6; bt.velocity = { x: Math.sin(bt.heading) * 6, y: -Math.cos(bt.heading) * 6 };
                         bt.raceState.finished = false; bt.raceState.ocs = false;
                         bt.raceState.penalty = false; bt.raceState.totalPenalties = 0;
+                        // a boat that starts the scenario OWING a penalty (PT-036), optionally partway
+                        // through her turn (penaltyRot, rad of turn built up)
+                        if (bs.penalty) { bt.raceState.penalty = true; bt.raceState.penaltyTurnsOwed = 1; bt.raceState.totalPenalties = 1;
+                            bt.raceState.penaltyRot = bs.penaltyRot || 0; bt.raceState.penaltyLastHeading = null; bt.raceState.penaltyFlagTime = 0; }
                         bt.raceState.isTacking = !!bs.isTacking;
                         bt.raceState.lastPos = { x: bt.x, y: bt.y };
                         bt.fadeTimer = 1;
