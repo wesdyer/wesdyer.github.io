@@ -1464,7 +1464,7 @@ function updateBoatRaceState(boat, dt) {
         rs.roundWrong = 0;
         rs.roundArmed = false;
         rs.roundBanked = false;
-        rs.roundRebased = false;
+        rs.roundRebased = false; rs._rlMark = null;
         rs.roundEntryB = null;
         rs.roundFrom = { x: boat.x, y: boat.y };
         rs._wrongRound = false;
@@ -1607,7 +1607,7 @@ function updateBoatRaceState(boat, dt) {
                                 boat.raceState.roundWrong = 0;
                                 boat.raceState.roundArmed = false;
                                 boat.raceState.roundBanked = false;
-                                boat.raceState.roundRebased = false;
+                                boat.raceState.roundRebased = false; boat.raceState._rlMark = null;
                                 boat.raceState.roundEntryB = null;
                                 boat.raceState.roundFrom = { x: boat.x, y: boat.y };
                                 if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: 0, time: state.race.timer });
@@ -1841,7 +1841,7 @@ function courseRemaining(GR, boat) {
 function trackRankState(rs, x, y, heading, leg) {
     const route = state.course && state.course.route, marks = state.course && state.course.marks;
     if (rs.leg !== leg || !rs.lastPos) {
-        rs.roundSweep = 0; rs.roundWrong = 0; rs.roundArmed = false; rs.roundBanked = false; rs.roundRebased = false;
+        rs.roundSweep = 0; rs.roundWrong = 0; rs.roundArmed = false; rs.roundBanked = false; rs.roundRebased = false; rs._rlMark = null;
         rs.roundEntryB = null; rs.roundFrom = { x, y }; rs.isRounding = false; rs._wrongRound = false;
         rs.leg = leg; rs.lastPos = { x, y };
     }
@@ -2207,6 +2207,114 @@ function roundingStep(boat, rs, rm, nextA) {
     // measured at 12 boats in 144 failing to finish. Same coupling as the
     // tolerance and the exit latch: half of this change strands boats.
     rs.roundWrapped = wrapped;
-    if (d2 > rm.zone ** 2 && d2 > d2prev && rs.roundBanked && wrapped) return { done: true, wrong };
+
+    // ── COMPLETION: THE ROUNDING LINE + THE STRING (PT-081, PT-062; Oct 4 2026) ──────────
+    // Every live system that gets this right decides the MOMENT with a line and the SIDE with
+    // a separate test (Sailaway's detection line from the mark away from the previous and next
+    // marks; ECDIS's end-of-turn line; the FMS fly-by sequence), and every one that decides it
+    // with a magnitude fails both ways. Ours did: the sweep had to reach `reqSweep` counted
+    // from a re-base that fired at 2 zones — Wes passing Otter's mark 300u off re-based ABEAM,
+    // 2.02 of 2.25 rad thrown away, and the rest took 4.9 km (credited up to 9 km late); at
+    // Bluewater he never came within 2 zones, so the winding banked since the start line
+    // credited him 2.5 km short of the island. Now:
+    //   * the ROUNDING LINE: a ray from the mark along the bisector of the turn the rounding
+    //     makes — inbound to outbound, the required way round — out to the nearer of the
+    //     previous and next marks (≥ 3 zones). A hairpin's points straight back; a passing
+    //     mark's is square to the course on the side the boat passes.
+    //   * the STRING over the WHOLE leg (no re-base): the taut string from where she began the
+    //     leg, along her track, to the next mark, passes this mark on the required side — the
+    //     rule itself, a two-class decision with half a turn of margin, so a nibble cannot pass.
+    // Credit = she crosses the line the required way with the string wrapped. The rebased
+    // sweep and `roundBanked` above stay as they were: the AI's exit and the leaderboard's
+    // blend read them.
+    if (rs._rlMark !== rm) { rs._rlMark = rm; rs.roundSweepLeg = 0; rs.roundLineCrossed = false; rs.roundFromLeg = rs.lastPos ? { x: rs.lastPos.x, y: rs.lastPos.y } : { x: boat.x, y: boat.y }; }
+    {
+        const rx0 = rs.lastPos.x - rm.x, ry0 = rs.lastPos.y - rm.y;
+        let dL = Math.atan2(ry1, rx1) - Math.atan2(ry0, rx0);
+        while (dL > Math.PI) dL -= Math.PI * 2;
+        while (dL < -Math.PI) dL += Math.PI * 2;
+        rs.roundSweepLeg += dL * sgn;
+    }
+    let wrappedLeg = true;
+    if (nextA && rs.roundFromLeg) {
+        const bTo = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
+        const bFrom = Math.atan2(rs.roundFromLeg.y - rm.y, rs.roundFromLeg.x - rm.x);
+        let needW = (bTo - bFrom) * sgn;
+        while (needW <= 0) needW += Math.PI * 2;
+        while (needW > Math.PI * 2) needW -= Math.PI * 2;
+        let rem = bTo - Math.atan2(ry1, rx1);
+        while (rem > Math.PI) rem -= Math.PI * 2;
+        while (rem < -Math.PI) rem += Math.PI * 2;
+        wrappedLeg = (rs.roundSweepLeg + rem * sgn) >= needW - Math.PI;
+    }
+    // The crossing is LATCHED for the leg (and undone by crossing back the wrong way), and the
+    // credit lands at the first moment both hold: a long turn (Otter's mark is a 307° loop round
+    // the headland) crosses the bisector halfway round, before the string has wrapped.
+    const line = roundingLine(rm, nextA, rs.roundFromLeg);
+    if (line) {
+        // the step from lastPos to here crosses the ray [mark, mark + u·len], going the required way
+        const ax = rs.lastPos.x, ay = rs.lastPos.y, bx = boat.x, by = boat.y;
+        const ex = line.ux * line.len, ey = line.uy * line.len;
+        const den = (bx - ax) * ey - (by - ay) * ex;
+        if (Math.abs(den) > 1e-9) {
+            const t = ((rm.x - ax) * ey - (rm.y - ay) * ex) / den;          // along the step
+            const u = ((rm.x - ax) * (by - ay) - (rm.y - ay) * (bx - ax)) / den;   // along the ray
+            if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
+                const bA = Math.atan2(ay - rm.y, ax - rm.x), bB = Math.atan2(by - rm.y, bx - rm.x);
+                let dB = bB - bA; while (dB > Math.PI) dB -= Math.PI * 2; while (dB < -Math.PI) dB += Math.PI * 2;
+                rs.roundLineCrossed = dB * sgn > 0;
+            }
+        }
+    }
+    // ...or THE OLD TEST, unchanged — banked against the requirement from the re-base, string
+    // wrapped, outside the zone and drawing away — for the boat that came round from PAST the
+    // line's angle (Redrock's M4: in from the far side, round 276°, never crossing the bisector
+    // the right way near the mark). It keeps the old nibble protection (test_rounding_nibble:
+    // without the sweep requirement a touch-and-tack-away counted). Now it also needs the
+    // re-base to have happened — she came within ROUND_NEAR zones — so a boat that never came
+    // near (Bluewater's island, 2.2 km off, credited 22.7 s before her closest approach) is
+    // the line's alone. Where both can fire, the line fires first (Otter: at her closest
+    // approach instead of up to 9 km later).
+    if (wrappedLeg && rs.roundLineCrossed) return { done: true, wrong };
+    if (rs.roundRebased && d2 > rm.zone ** 2 && d2 > d2prev && rs.roundBanked && wrapped) return { done: true, wrong };
     return { done: false, wrong };
+}
+
+// THE ROUNDING LINE of a mark for one rounding: { ux, uy, len } — see roundingStep. The turn is
+// read off the course's own ideal paths (inbound path ~3 zones out, outbound likewise) so the
+// line is the course's, the same for every boat, and drawable; a mark the race route does not
+// carry (the School's) falls back to where this boat began the leg. Cached on the mark per pair.
+function roundingLine(rm, nextA, fromPt) {
+    if (!nextA) return null;
+    const route = state.course && state.course.route, dmc = state.course && state.course.dmc;
+    let L = -1;
+    if (route) for (let i = 1; i < route.length; i++) { const e = route[i]; if (e && e.kind === 'round' && e.mark === rm) { L = i; break; } }
+    const key = L >= 0 ? 'L' + L : null;
+    if (key && rm._rline && rm._rline[key]) return rm._rline[key];
+    const zone = rm.zone || 165;
+    const along = (leg, fromEnd, dist) => {
+        const P = dmc && dmc.legs && dmc.legs[leg];
+        if (!P || !P.pts || P.pts.length < 2) return null;
+        const pts = P.pts, cum = P.cum, total = cum[cum.length - 1];
+        const target = fromEnd ? Math.max(0, total - dist) : Math.min(total, dist);
+        let k = 1; while (k < cum.length - 1 && cum[k] < target) k++;
+        const f = (target - cum[k - 1]) / Math.max(1e-6, cum[k] - cum[k - 1]);
+        return { x: pts[k - 1].x + (pts[k].x - pts[k - 1].x) * f, y: pts[k - 1].y + (pts[k].y - pts[k - 1].y) * f };
+    };
+    const D = zone * 3;
+    const prevA = L >= 1 && typeof CoursePath !== 'undefined' ? CoursePath.anchor(route[L - 1], state.course.marks) : null;
+    const inPt = (L >= 0 && along(L, true, D)) || prevA || fromPt;
+    const outPt = (L >= 0 && along(L + 1, false, D)) || nextA;
+    if (!inPt || !outPt) return null;
+    const sgn = (rm.side === 'port') ? -1 : 1;
+    const aIn = Math.atan2(inPt.y - rm.y, inPt.x - rm.x), aOut = Math.atan2(outPt.y - rm.y, outPt.x - rm.x);
+    let arc = (aOut - aIn) * sgn;                       // the turn, the required way round, in (0, 2π]
+    while (arc <= 0) arc += Math.PI * 2;
+    while (arc > Math.PI * 2) arc -= Math.PI * 2;
+    const mid = aIn + sgn * arc / 2;
+    const far = Math.min(prevA ? Math.hypot(prevA.x - rm.x, prevA.y - rm.y) : Infinity, Math.hypot(nextA.x - rm.x, nextA.y - rm.y));
+    const len = Math.max(zone * 3, Math.min(20000, isFinite(far) ? far : zone * 20));
+    const out = { ux: Math.cos(mid), uy: Math.sin(mid), len };
+    if (key) { rm._rline = rm._rline || {}; rm._rline[key] = out; }
+    return out;
 }

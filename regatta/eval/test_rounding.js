@@ -50,6 +50,7 @@ const check = (name, ok, detail) => {
             boat.raceState.roundArmed = false;
             boat.raceState.roundSweep = 0;
             boat.raceState.roundWrong = 0;
+            boat.raceState._rlMark = null;   // the rounding line's per-leg latch (PT-081)
             boat.x = pts[0].x; boat.y = pts[0].y;
             boat.raceState.lastPos = { x: boat.x, y: boat.y };
             for (let i = 1; i < pts.length; i++) {

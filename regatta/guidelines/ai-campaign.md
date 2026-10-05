@@ -17904,3 +17904,24 @@ notes:
 **The two regressions, dug into (2026-10-04, 24 paired races each, `ocean_bench` ten-bot, seeds 9400–9423):**
 - **swamp is NOT a regression** — POST faster in 14 of 24 races, paired median −9.0 s (mean −7.7). The 8-race table's +8 s was noise; boats with ≥10 land contacts equal (23 vs 23).
 - **lagoon IS a small one** — POST slower in 17 of 24, paired median +4.0 s (mean +5.0), on the first beat (leg-1 med 37 → 41) and a doubled leg-2 tail (boats 15 s+ over: 23 → 47 of 240), land contacts 0.30 → 0.72/boat. Not bunching (M1 spread 25 vs 24 s, gap 2.0 s both). Under the nine-bot rate harness the first beat is EQUAL (leg-1 med 44.1 vs 43.9) and land contacts fall (580 → 150 frames, 8 races) — the cost is the ten-boat pack: with the starboard start 63% of the fleet is on port 5 s after the gun (28% before), tacking straight off the line into a crowd. **Accepted by the owner** as is. The candidate fix if it is ever wanted: hold starboard after the gun until there is clear water to tack into (≤ ~5 s).
+
+## THE VENUE TABLE — PT-081/PT-062 rounding line (`eval/rl/_v81_close_table.js`, 2026-10-04)
+PRE = v81r36* (HEAD b3b558d), POST = v81r81* (the rounding line + leg-long string, the old test kept as a fallback behind the re-base). Same protocol and human refs as the table above.
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| arctic | 197.8 (6) [209.4] | 302/298.9/226 | 301/306.8/235 | 1.527 → **1.522** | 0.0 | 10 | 1 | 4.09/3.25/7.95/0.04/0.69 | 80/80 | 0/8 vs v81r36arc |
+| swamp | 173.9 (7) [173.3] | 247/272.0/172 | 247/272.0/172 | 1.420 → **1.420** | 0.0 | 5 | 0 | 4.24/3.42/0.00/0.06/0.53 | 80/80 | 8/8 vs v81r36sw |
+| redrock | 202.1 (6) [204.2] | 289/291.7/217 | 278/276.7/211 | 1.430 → **1.376** | 0.0 | 9 | 1 | 7.45/4.65/0.00/0.34/0.93 | 80/80 | 0/8 vs v81r36rr |
+| glowtide | 179.3 (6) [204.4] | 228/228.8/166 | 226/227.3/172 | 1.272 → **1.260** | 0.0 | 6 | 1 | 5.59/3.24/0.00/0.57/0.79 | 160/160 | 0/16 vs v81r36glow |
+| flats | 172.7 (6) [172.8] | 212/212.9/172 | 210/212.8/172 | 1.228 → **1.216** | 0.0 | 0 | 0 | 0.00/0.72/0.00/0.04/0.18 | 240/240 | 0/8 vs v81r36fl9400 |
+| lagoon | 176.5 (6) [174.7] | 211/212.5/180 | 211/209.8/177 | 1.195 → **1.195** | 0.0 | 0 | 0 | 0.20/0.68/0.00/0.14/0.34 | 80/80 | 0/8 vs v81r36lag |
+| lake | 201.2 (6) [194.8] | 211/214.8/178 | 219/219.2/179 | 1.049 → **1.088 ✅** | 0.0 | 1 | 0 | 0.41/1.56/0.00/0.25/0.44 | 80/80 | 0/8 vs v81r36lk |
+| river | 194 (6) [187.4] | 212/217.4/172 | 210/214.7/170 | 1.093 → **1.082 ✅** | 0.0 | 19 | 1 | 23.34/5.70/0.00/0.10/0.79 | 80/80 | 0/8 vs v81r36riv |
+| volcanic | 198.3 (6) [195.5] | 218/219.1/167 | 213/215.3/168 | 1.099 → **1.074 ✅** | 0.0 | 0 | 0 | 0.10/0.89/0.00/0.06/0.27 | 240/240 | 0/8 vs v81r36vo9400 |
+| bay | 229.6 (12) [239] | 274/270.0/233 | 241/236.9/190 | 1.193 → **1.050 ✅** | 0.0 | 0 | 0 | 0.04/0.38/0.00/0.09/0.19 | 80/80 | 0/8 vs v81r36bay |
+| seatrials | 182.3 (6) [185.7] | 190/193.4/175 | 190/193.4/175 | 1.042 → **1.042 ✅** | 0.6 | 0 | 0 | 0.00/0.30/0.00/0.34/0.31 | 159/160 | 16/16 vs v81r36st |
+| ocean | 201.8 (6) [214.2] | 204/208.3/178 | 204/207.7/178 | 1.011 → **1.011 ✅** | 0.0 | 0 | 0 | 0.06/0.66/0.00/0.09/0.20 | 160/160 | 0/16 vs v81r36oc |
+| otter | 201.4 (6) [200.8] | 201/203.9/181 | 200/201.1/181 | 0.998 → **0.993 ✅** | 0.0 | 0 | 0 | 0.51/0.31/0.00/0.03/0.10 | 240/240 | 0/8 vs v81r36ot9400 |
+
+**At goal 7 of 13 (bay joins: 274 → 241 s, 1.193 → 1.050).** The bots orbited a mark until the old sweep requirement banked; the rounding line credits them as they pass, so they turn for the next mark sooner — much of PT-004's "past the mark, then down and up". Redrock −11 s, volcanic −5 s; lake +8 s. **Cost: boat contacts up** — river 2.40 → 5.70/boat (pen 0.51 → 0.79), arctic 1.98 → 3.25, lake 1.09 → 1.56, redrock 3.67 → 4.65: boats leave the mark earlier and cut into traffic still rounding. Owner shipped it; penalties/rights/AI to be worked after the bug push. No DNF; swamp and seatrials byte-identical (no rounding marks).
