@@ -1941,7 +1941,10 @@ function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot) {
         try { ctx.filter = 'hue-rotate(-110deg) saturate(1.6) contrast(1.4)'; } catch (e) {}
         label = Volcano.garble(String(label), 1);
     }
-    const pulseAge = state._goalPulseT != null ? state.time - state._goalPulseT : 99;
+    // A stamp from the FUTURE is stale — the clock was reset under it (restartRace; the
+    // School after a race) — and a negative age scaled the chip ~10× (PT-102).
+    let pulseAge = state._goalPulseT != null ? state.time - state._goalPulseT : 99;
+    if (!(pulseAge >= 0)) pulseAge = 99;
     const k = 1 + 0.25 * Math.max(0, 1 - pulseAge / 0.8);
     ctx.scale(k, k);
 

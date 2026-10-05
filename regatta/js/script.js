@@ -1149,6 +1149,7 @@ function resetGame() {
     // Seed for island generation
     state.race.seed = Math.floor(Math.random() * 1000000);
     state.time = 0;
+    state._goalPulseT = null; state._goalLegSeen = null;   // stamped on the old clock (PT-102)
     if (window.Rules) window.Rules.init();
     state.race.status = 'waiting'; // Wait for user to start
 

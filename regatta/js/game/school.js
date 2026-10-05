@@ -1618,14 +1618,20 @@ const School = {
     drawEdgeIndicators(ctx, toScreen, rot, occluded, viewPos) {
         const s = this.s; if (!s || !s.buoys || typeof drawMarkEdgeIndicator !== 'function') return;
         const player = state.boats[0];
+        const chips = [];
         s.buoys.forEach((b, i) => {
             if (!b.on || b.done) return;
             const v = viewPos ? viewPos(b.p.x, b.p.y) : null;
             const p = (v && v.inView) ? v : toScreen(b.p.x, b.p.y);
             if (v ? (v.inView && !(occluded && occluded(v.x, v.y))) : p.onScreen) return;
-            const d = Math.round(this.dist(player, b.p) * 0.2);
-            drawMarkEdgeIndicator(ctx, p.x, p.y, d + 'm', b.side || null, rot);
+            chips.push({ x: p.x, y: p.y, d: Math.round(this.dist(player, b.p) * 0.2), side: b.side || null });
         });
+        // A gate's two buoys that project to (nearly) the same edge point draw as one chip,
+        // the nearer distance — the race's rule (script.js).
+        if (chips.length === 2 && Math.hypot(chips[0].x - chips[1].x, chips[0].y - chips[1].y) < 48) {
+            drawMarkEdgeIndicator(ctx, (chips[0].x + chips[1].x) / 2, (chips[0].y + chips[1].y) / 2,
+                Math.min(chips[0].d, chips[1].d) + 'm', chips[0].side === chips[1].side ? chips[0].side : null, rot);
+        } else for (const c of chips) drawMarkEdgeIndicator(ctx, c.x, c.y, c.d + 'm', c.side, rot);
     },
 
     // ── the teal ring: what Paddle is pointing at ─────────────────────────────
