@@ -12340,7 +12340,7 @@ window.VENUE_DOC["swamp"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-4f1eaf89-9s6p",
+      "sig": "v3-d19f4bd6-9s2y",
       "legs": [
         {
           "pts": []

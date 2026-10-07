@@ -100,7 +100,16 @@ const TIDE = {
 
     // ── the clock ───────────────────────────────────────────────────────────
     // The RACE clock: negative in the prestart, so the phase at the gun is phase0 exactly.
+    // A SCOPED CLOCK (Oct 7 2026, the venue page's tide slider): `atPhase(s, fn)` runs fn as if the tide
+    // stood at phase s of its cycle — 0 low water, 0.25 mid-flood, 0.5 high, 0.75 mid-ebb, 1 low — and puts
+    // the race's clock straight back. Synchronous, and nothing in here caches by time, so the race never
+    // sees it. `levelAtPhase(s)` is the level at that phase.
+    let _clockOv = null;
+    function phaseClock(s) { const T = state.tide; return (-Math.PI / 2 + 2 * Math.PI * s - T.phase0) * T.period / (2 * Math.PI); }
+    function atPhase(s, fn) { const was = _clockOv; _clockOv = phaseClock(s); try { return fn(); } finally { _clockOv = was; } }
+    function levelAtPhase(s) { return levelAt(phaseClock(s)); }
     function clock() {
+        if (_clockOv != null) return _clockOv;
         const r = state.race;
         return r.status === 'prestart' ? -r.timer : r.timer;
     }
@@ -230,11 +239,14 @@ const TIDE = {
     const sstep = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
 
     // Build the field from a document. Returns null when the document has no tidal anchors.
-    function build(doc) {
+    // `chart` (optional, Oct 7 2026): the CHARTS' field — { clip: [x0, y0, x1, y1] }. The maps show far
+    // more than the arena (the river up the valley past the head), so their field takes in EVERY anchor,
+    // clipped to what a map can show, at a coarser cell. The race never reads it.
+    function build(doc, chart) {
         const VD = window.VenueDoc;
         if (!doc || !VD) return null;
         const C = cfg();
-        const shapes = VD.shapes(doc);
+        const shapes = VD.raceShapes ? VD.raceShapes(doc) : VD.shapes(doc);   // not the scenery past the map line
         const anchors = { channel: [], pool: [], bar: [], flat: [] }, marsh = [];
         for (const sh of shapes) {
             const T = VD.traits(sh);
@@ -256,10 +268,21 @@ const TIDE = {
         const arenaArea = (bb[2] - bb[0]) * (bb[3] - bb[1]);
         for (const list of [anchors.channel, anchors.pool, anchors.bar, anchors.flat]) for (const a of list) {
             const b2 = bboxOf(a.outer, [Infinity, Infinity, -Infinity, -Infinity]);
-            if ((b2[2] - b2[0]) * (b2[3] - b2[1]) >= arenaArea) continue;
+            if (!chart && (b2[2] - b2[0]) * (b2[3] - b2[1]) >= arenaArea) continue;
             bb = [Math.min(bb[0], b2[0]), Math.min(bb[1], b2[1]), Math.max(bb[2], b2[2]), Math.max(bb[3], b2[3])];
         }
-        const PAD = C.rasterPad, res = C.res;
+        if (chart && chart.clip) {
+            // what a map can show, widened to every tide shape short of the sea (one under 4x the arena
+            // — the editor can scroll to the head of a channel the maps never reach)
+            const c = chart.clip.slice();
+            for (const list of [anchors.channel, anchors.pool, anchors.bar, anchors.flat]) for (const a of list) {
+                const b2 = bboxOf(a.outer, [Infinity, Infinity, -Infinity, -Infinity]);
+                if ((b2[2] - b2[0]) * (b2[3] - b2[1]) >= 4 * arenaArea) continue;
+                c[0] = Math.min(c[0], b2[0]); c[1] = Math.min(c[1], b2[1]); c[2] = Math.max(c[2], b2[2]); c[3] = Math.max(c[3], b2[3]);
+            }
+            bb = [Math.max(bb[0], c[0]), Math.max(bb[1], c[1]), Math.min(bb[2], c[2]), Math.min(bb[3], c[3])];
+        }
+        const PAD = C.rasterPad, res = chart ? C.res * 3 : C.res;
         const x0 = bb[0] - PAD, y0 = bb[1] - PAD;
         const W = Math.ceil((bb[2] + PAD - x0) / res), H = Math.ceil((bb[3] + PAD - y0) / res);
         const F = { W, H, x0, y0, res, n: W * H };
@@ -873,7 +896,17 @@ const TIDE = {
     // view has left the window. Two passes from one computation: the wet flats (under the
     // wind waves, so the water still moves over them) and the dry ground (over them — mud
     // has no waves on it), with the water's edge painted on the dry pass.
-    const pic = { cvWet: null, cvDry: null, x0: 0, y0: 0, w: 0, h: 0, level: NaN, key: '' };
+    // THE DRAWING'S FIELD (Oct 7 2026): the picture, the eelgrass, the birds and the contours draw from
+    // `drawField()` — the race's field unless a caller (the editor) names another, the charts' wider one
+    // (chartField). The physics never reads it. Each field keeps its own picture cache, so drawing the
+    // charts' field and then the race's over it does not rebuild both every frame.
+    let _drawField = null;
+    function setDrawField(F) { _drawField = F || null; }
+    function drawField() { return _drawField || (state.tide && state.tide.field); }
+    const _pics = new WeakMap();
+    const newPic = () => ({ cvWet: null, cvDry: null, x0: 0, y0: 0, w: 0, h: 0, level: NaN, key: '' });
+    let pic = newPic();
+    function usePic() { const F = drawField(); if (!F) return; let P = _pics.get(F); if (!P) { P = newPic(); _pics.set(F, P); } pic = P; }
     // A mottle for the mud — ±7% of value in soft blotches a few boat-lengths across — so the
     // dry flat is not flat paint while its tile is owed. One 64² tile of fbm, indexed by the
     // picture's world-aligned pixel, so it neither swims nor tiles visibly (the window's
@@ -965,7 +998,8 @@ const TIDE = {
         return [a, b, c, d];
     }
     function refreshPicture(ctx) {
-        const T = state.tide, F = T.field;
+        usePic();
+        const T = state.tide, F = drawField();
         const C = cfg();
         const [va, vb, vc, vd] = viewWindow(ctx);
         const L = level();
@@ -1165,7 +1199,7 @@ const TIDE = {
     function drawEelgrass(ctx, wetPass) {
         const c = state.course;
         if (!c || !c._hasVeg || !state.tide || typeof VEG_STYLES === 'undefined' || !VEG_STYLES.eelgrass) return;
-        const spec = VEG_STYLES.eelgrass, F = state.tide.field;
+        const spec = VEG_STYLES.eelgrass, F = drawField();
         const [va, vb, vc, vd] = viewWindow(ctx);
         const C = EEL.cell, H = C / 2, now = state.time || 0;
         let sheet = null, count = 0;
@@ -1282,7 +1316,7 @@ const TIDE = {
     // stepping and pecking on its own clock; on the flood they are simply not there. No RNG:
     // cell hashes and state.time only.
     function drawBirds(ctx) {
-        const T = state.tide, F = T.field;
+        const T = state.tide, F = drawField();
         if (Tide.flow() >= 0) return;                        // the flood: they have lifted
         const [va, vb, vc, vd] = viewWindow(ctx);
         const i0 = Math.max(1, Math.floor((va - F.x0) / F.res)), i1 = Math.min(F.W - 2, Math.ceil((vc - F.x0) / F.res));
@@ -1388,7 +1422,7 @@ const TIDE = {
     }
     // A contour of the ground at height `iso`, marching squares over the visible raster.
     function drawIso(ctx, iso, stroke, width, dash) {
-        const T = state.tide, F = T.field;
+        const T = state.tide, F = drawField();
         const [va, vb, vc, vd] = viewWindow(ctx);
         const i0 = Math.max(0, Math.floor((va - F.x0) / F.res) - 1), i1 = Math.min(F.W - 2, Math.ceil((vc - F.x0) / F.res) + 1);
         const j0 = Math.max(0, Math.floor((vb - F.y0) / F.res) - 1), j1 = Math.min(F.H - 2, Math.ceil((vd - F.y0) / F.res) + 1);
@@ -1433,26 +1467,73 @@ const TIDE = {
     // the level has moved a couple of centimetres or the projection changed. Dry ground in
     // the flats' sand, the sits/slows bands as a pale wash, deep water left to the chart.
     const mm = { cv: null, key: '', level: NaN };
+    // THE CHARTS' FIELD (Oct 7 2026: Spoonbill's mud stopped where the race's raster did, and the main
+    // channel ran on up the valley through bare grass). Built once per venue ground, lazily, over the
+    // area the maps can show (the editor's preview and minimap guides) — the race keeps its own.
+    let _chartBuilt = null;
+    function chartField() {
+        const doc = state.course && state.course.doc, VD = window.VenueDoc;
+        if (!doc || !VD || !VD.viewGuides) return null;
+        const sig = fieldSig(doc) + '|chart';
+        if (_chartBuilt && _chartBuilt.sig === sig) return _chartBuilt.field;
+        const g = VD.viewGuides(doc); if (!g) return null;
+        const clip = [Infinity, Infinity, -Infinity, -Infinity];
+        if (g.preview) bboxOf(g.preview, clip);
+        const Q = g.minimap && g.minimap.square;
+        if (Q) { clip[0] = Math.min(clip[0], Q.x0); clip[1] = Math.min(clip[1], Q.y0); clip[2] = Math.max(clip[2], Q.x1); clip[3] = Math.max(clip[3], Q.y1); }
+        const field = isFinite(clip[0]) ? build(doc, { clip }) : null;
+        _chartBuilt = { sig, field };
+        return field;
+    }
+    // THE CHART'S OWN LEVEL (Oct 7 2026): the venue page's tide slider. Read by drawMinimap alone — never
+    // by level(), which the physics reads — and set only for the length of the board's land paint.
+    let _chartLevel = null;
+    function setChartLevel(v) { _chartLevel = (v == null) ? null : +v; }
     function drawMinimap(ctx, cx, cy, scale, width, height) {
-        const T = state.tide, F = T.field;
-        const L = level();
+        // THE RACE'S FIELD WHERE IT REACHES (16 u), the charts' wider one only past it (48 u): the coarse
+        // field alone drew every cut and bar edge as a staircase at a zoomed-in view (Wes, Oct 7 2026).
+        const T = state.tide, R = T.field, CF = chartField();
+        const L = _chartLevel != null ? _chartLevel : level();
         const key = [width, height, cx.toFixed(1), cy.toFixed(1), scale.toFixed(6)].join('|');
         if (!mm.cv || mm.key !== key || Math.abs(L - mm.level) > 0.02) {
             if (!mm.cv) mm.cv = document.createElement('canvas');
             if (mm.cv.width !== width || mm.cv.height !== height) { mm.cv.width = width; mm.cv.height = height; }
             const g = mm.cv.getContext('2d');
             const im = g.createImageData(width, height), A = im.data;
+            const inside = (F, wx, wy) => F && wx >= F.x0 + F.res && wy >= F.y0 + F.res && wx <= F.x0 + (F.W - 1) * F.res && wy <= F.y0 + (F.H - 1) * F.res;
+            // THE TIDE AS IT STANDS (Wes, Oct 7 2026): ground the water has left is the mud (or sand) it
+            // is, ground under it is water — the chart's own, beneath this layer. No in-between band.
+            // The edge is ANTI-ALIASED: a first pass samples the ground into a buffer, and each pixel's
+            // signed distance to the water's edge, in pixels, is its height over the level divided by
+            // the ground's slope across the pixel — so the shoreline blends over one pixel, no staircase.
+            const N = width * height, zb = new Float32Array(N), sb = new Float32Array(N), mb = new Uint8Array(N);
             for (let py = 0; py < height; py++) for (let px = 0; px < width; px++) {
                 const wx = (px + 0.5 - width / 2) / scale + cx, wy = (py + 0.5 - height / 2) / scale + cy;
-                const o = (py * width + px) * 4;
-                const i = Math.floor((wx - F.x0) / F.res), j = Math.floor((wy - F.y0) / F.res);
-                if (i < 0 || j < 0 || i >= F.W || j >= F.H) { A[o + 3] = 0; continue; }
-                const k = j * F.W + i;
-                if (F.mMask[k]) { A[o + 3] = 0; continue; }
-                const d = L - F.z[k];
-                if (d <= 0) { const s = F.mat[k]; A[o] = 176 + 46 * s; A[o + 1] = 138 + 58 * s; A[o + 2] = 84 + 48 * s; A[o + 3] = 235; }
-                else if (d < T.draft + T.free) { const u = d / (T.draft + T.free); A[o] = 150; A[o + 1] = 170; A[o + 2] = 165; A[o + 3] = Math.round(190 * (1 - u)); }
-                else A[o + 3] = 0;
+                const q = py * width + px;
+                const F = inside(R, wx, wy) ? R : (CF || R);
+                const fx = (wx - F.x0) / F.res - 0.5, fy = (wy - F.y0) / F.res - 0.5;
+                const i = Math.floor(fx), j = Math.floor(fy);
+                if (i < -1 || j < -1 || i >= F.W || j >= F.H) { mb[q] = 2; continue; }
+                const ci = (v) => Math.max(0, Math.min(F.W - 1, v)), cj = (v) => Math.max(0, Math.min(F.H - 1, v));
+                const k00 = cj(j) * F.W + ci(i), k10 = cj(j) * F.W + ci(i + 1), k01 = cj(j + 1) * F.W + ci(i), k11 = cj(j + 1) * F.W + ci(i + 1);
+                const ux = fx - i, uy = fy - j;
+                const bl = (a, b, c, d2) => (a * (1 - ux) + b * ux) * (1 - uy) + (c * (1 - ux) + d2 * ux) * uy;
+                if (bl(F.mMask[k00], F.mMask[k10], F.mMask[k01], F.mMask[k11]) > 0.5) { mb[q] = 1; continue; }
+                zb[q] = bl(F.z[k00], F.z[k10], F.z[k01], F.z[k11]);
+                sb[q] = bl(F.mat[k00], F.mat[k10], F.mat[k01], F.mat[k11]);
+            }
+            const zAt = (x, y, z0) => { if (x < 0 || y < 0 || x >= width || y >= height) return z0; const q = y * width + x; return mb[q] ? z0 : zb[q]; };
+            for (let py = 0; py < height; py++) for (let px = 0; px < width; px++) {
+                const q = py * width + px, o = q * 4;
+                if (mb[q]) { A[o + 3] = 0; continue; }
+                const z = zb[q];
+                const gx = (zAt(px + 1, py, z) - zAt(px - 1, py, z)) / 2, gy = (zAt(px, py + 1, z) - zAt(px, py - 1, z)) / 2;
+                const slope = Math.max(1e-4, Math.hypot(gx, gy));
+                const sd = (L - z) / slope;                       // + under water, in pixels from the edge
+                const a = Math.min(1, Math.max(0, 0.5 - sd));
+                if (a <= 0) { A[o + 3] = 0; continue; }
+                const sm = sb[q];
+                A[o] = 176 + 46 * sm; A[o + 1] = 138 + 58 * sm; A[o + 2] = 84 + 48 * sm; A[o + 3] = Math.round(235 * a);
             }
             g.putImageData(im, 0, 0);
             mm.key = key; mm.level = L;
@@ -1509,7 +1590,7 @@ const TIDE = {
     function fieldSig(doc) {
         const VD = window.VenueDoc;
         let sig = JSON.stringify((doc.world && doc.world.boundary) || null) + '|' + JSON.stringify(cfg());
-        for (const sh of VD.shapes(doc)) {
+        for (const sh of (VD.raceShapes ? VD.raceShapes(doc) : VD.shapes(doc))) {
             const T = VD.traits(sh);
             if (!T.tide && T.kind !== 'flats-marsh') continue;
             sig += `|${sh.id}:${T.kind}:${T.elev}:${sh.feather || ''}:${sh.overChannel ? 'o' : ''}:${sh.outer.length}:${sh.outer[0]}:${sh.outer[sh.outer.length >> 1]}:${(sh.holes || []).length}`;
@@ -1560,7 +1641,7 @@ const TIDE = {
         speedMul, afterMove, refloatIn, touches,
         addFill,
         stampGrid, safeGrid, refreshBotGrid, routeCost, routeWait, setNerve, riskAt, escapeReach,
-        drawWet, drawDry, drawEelgrass, drawMinimap, drawMinimapLabels, hudInfo, propFrame, propSwing,
+        drawWet, drawDry, drawEelgrass, drawMinimap, drawMinimapLabels, setDrawField, chartField, setChartLevel, atPhase, levelAtPhase, hudInfo, propFrame, propSwing,
         _pic: pic
     };
 })();

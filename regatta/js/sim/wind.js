@@ -556,6 +556,193 @@ function islandWindDir(isl) {
     return isl._wdBase + shift;
 }
 
+// ── THE LEE FIELD (Oct 2026) ──────────────────────────────────────────────────────────────────
+// A point is in the lee of whatever tall land lies UPWIND of it along the wind that actually reached
+// it. So: trace the MEAN wind (regionWindAt under WIND_MEAN_FIELD) back from the point, step by step,
+// following its bends, up to the longest lee any caster has; the first caster met at distance d, with
+// lee length L (shadowLen: 10 heights), gives the deficit SHADOW_MAX * smoothstep(1 - d/L). Passing
+// NEAR a caster rather than over it gives a soft edge that widens downstream — the plume's spread
+// (SHADOW_SPREAD), from a distance field over the casters. The bend rule disappears: a traced path
+// only reaches water the flow carried it to.
+//
+// PRECOMPUTED, on a LEE_RES grid over the arena plus the longest lee, once per course and per WIND
+// OFFSET: the day's shift and each region's oscillation turn the wind a few degrees off its mean, so
+// fields are kept for offsets every LEE_STEP_DEG and the two either side of the live offset are
+// blended. A field is built the first time its offset is needed (a few tens of ms) and kept for the
+// course. Deterministic, and touches no RNG.
+let LEE_FIELD_ON = true;
+const LEE_RES = 50;                  // field cell, units
+const LEE_CRES = 25;                 // caster raster cell, units
+const LEE_STEP_DEG = 4;              // offset between precomputed fields
+const LEE_SOFT = 100;                // how far a lee's side fades, units
+const LEE_MAX_DEG = 40;              // largest offset kept (beyond it, clamped)
+let _leeLast = null;                 // the last venue's fields, by content (see below)
+function leeCasters() {
+    const c = state.course;
+    // With no regions the mean wind IS the base direction, so that is part of the key too.
+    const base = (c.windRegions && c.windRegions.length) ? null : state.wind.baseDirection;
+    if (c._lee && c._lee.islands === c.islands && c._lee.regions === c.windRegions && c._lee.boundary === c.boundary && c._lee.base === base) return c._lee;
+    const casters = (c.navIslands || c.islands || []).filter(i => !i.isFloe && i.vertices && i.vertices.length > 2 && shadowLen(i, 'wind') > 0);
+    // Every resetGame recompiles the course into fresh objects, so a rematch would rebuild what it
+    // already had. The fields depend only on the casters, their lees, the regions and the arena: key
+    // a one-entry cache on that content, and a new course of the same venue takes the old fields.
+    // (Not a region's `phase`: it is drawn fresh each race, and the mean wind sets the oscillation to 0.)
+    let sig = '';
+    try {
+        const e = Arena.extent(c.boundary);
+        sig = [e.minX, e.minY, e.maxX, e.maxY, base, JSON.stringify(c.windRegions || null, (k, v) => k === 'phase' ? undefined : typeof v === 'number' ? Math.round(v * 1000) / 1000 : v)].join('|');
+        for (const i of casters) { let h = 0; const V = i.vertices;
+            for (let k = 0; k < V.length; k++) h = (h * 31 + Math.round(V[k].x * 10) * 7 + Math.round(V[k].y * 10)) % 2147483647;
+            sig += `;${V.length},${h},${shadowLen(i, 'wind').toFixed(1)}`; }
+    } catch (err) { sig = ''; }
+    if (sig && _leeLast && _leeLast.sig === sig) {
+        const L = _leeLast;
+        L.islands = c.islands; L.regions = c.windRegions; L.boundary = c.boundary; L.casters = casters; L.base = base;
+        return (c._lee = L);
+    }
+    const L = { islands: c.islands, regions: c.windRegions, boundary: c.boundary, base, casters, maxLen: 0, fields: new Map(), sig };
+    c._lee = L; _leeLast = sig ? L : null;
+    if (!casters.length) return L;
+    for (const i of casters) L.maxLen = Math.max(L.maxLen, shadowLen(i, 'wind'));
+    const e = Arena.extent(c.boundary), pad = L.maxLen + LEE_RES * 2;
+    L.x0 = e.minX - pad; L.y0 = e.minY - pad;
+    L.w = Math.ceil((e.maxX - e.minX + 2 * pad) / LEE_RES) + 1; L.h = Math.ceil((e.maxY - e.minY + 2 * pad) / LEE_RES) + 1;
+    // the caster raster: each cell the longest lee of any caster covering it (scanline fill)
+    const cw = Math.ceil(L.w * LEE_RES / LEE_CRES) + 1, ch = Math.ceil(L.h * LEE_RES / LEE_CRES) + 1;
+    const lens = new Float32Array(cw * ch);
+    for (const isl of casters) {
+        const len = shadowLen(isl, 'wind'), V = isl.vertices;
+        let filled = 0, ymin = Infinity, ymax = -Infinity; for (const v of V) { ymin = Math.min(ymin, v.y); ymax = Math.max(ymax, v.y); }
+        const j0 = Math.max(0, Math.floor((ymin - L.y0) / LEE_CRES)), j1 = Math.min(ch - 1, Math.ceil((ymax - L.y0) / LEE_CRES));
+        const xs = [];
+        for (let j = j0; j <= j1; j++) {
+            const y = L.y0 + (j + 0.5) * LEE_CRES; xs.length = 0;
+            for (let a = 0, b = V.length - 1; a < V.length; b = a++) {
+                const p = V[a], q = V[b];
+                if ((p.y > y) !== (q.y > y)) xs.push(p.x + (y - p.y) * (q.x - p.x) / (q.y - p.y));
+            }
+            xs.sort((u, v) => u - v);
+            for (let k = 0; k + 1 < xs.length; k += 2) {
+                const i0 = Math.max(0, Math.ceil((xs[k] - L.x0) / LEE_CRES - 0.5)), i1 = Math.min(cw - 1, Math.floor((xs[k + 1] - L.x0) / LEE_CRES - 0.5));
+                for (let i = i0; i <= i1; i++) { filled++; if (lens[j * cw + i] < len) lens[j * cw + i] = len; }
+            }
+        }
+        // A caster narrower than a cell can fall between the cell centres the fill tests: then (only
+        // then — a filled caster keeps exactly its fill) stamp the cells under its centre and vertices.
+        if (!filled) for (const p of [{ x: isl.x, y: isl.y }].concat(V)) {
+            const i = Math.floor((p.x - L.x0) / LEE_CRES), j = Math.floor((p.y - L.y0) / LEE_CRES);
+            if (i >= 0 && j >= 0 && i < cw && j < ch && lens[j * cw + i] < len) lens[j * cw + i] = len;
+        }
+    }
+    // distance (units) from every raster cell to the nearest caster cell, and that caster's lee
+    // length — a two-pass chamfer sweep carrying the source's length along with the distance
+    const dist = new Float32Array(cw * ch).fill(1e9), near = new Float32Array(cw * ch);
+    for (let k = 0; k < cw * ch; k++) if (lens[k] > 0) { dist[k] = 0; near[k] = lens[k]; }
+    const D1 = LEE_CRES, D2 = LEE_CRES * Math.SQRT2;
+    const relax = (k, kn, d) => { if (dist[kn] + d < dist[k]) { dist[k] = dist[kn] + d; near[k] = near[kn]; } };
+    for (let j = 0; j < ch; j++) for (let i = 0; i < cw; i++) { const k = j * cw + i;
+        if (i > 0) relax(k, k - 1, D1); if (j > 0) { relax(k, k - cw, D1); if (i > 0) relax(k, k - cw - 1, D2); if (i < cw - 1) relax(k, k - cw + 1, D2); } }
+    for (let j = ch - 1; j >= 0; j--) for (let i = cw - 1; i >= 0; i--) { const k = j * cw + i;
+        if (i < cw - 1) relax(k, k + 1, D1); if (j < ch - 1) { relax(k, k + cw, D1); if (i < cw - 1) relax(k, k + cw + 1, D2); if (i > 0) relax(k, k + cw - 1, D2); } }
+    L.cw = cw; L.ch = ch; L.dist = dist; L.near = near;
+    // the mean wind's direction on the field grid (unit vectors, for a smooth trace)
+    const was = typeof WIND_MEAN_FIELD !== 'undefined' ? WIND_MEAN_FIELD : false;
+    WIND_MEAN_FIELD = true;
+    const ux = new Float32Array(L.w * L.h), uy = new Float32Array(L.w * L.h);
+    try {
+        for (let j = 0; j < L.h; j++) for (let i = 0; i < L.w; i++) {
+            const d = regionWindAt(L.x0 + i * LEE_RES, L.y0 + j * LEE_RES).direction;
+            ux[j * L.w + i] = Math.sin(d); uy[j * L.w + i] = -Math.cos(d);   // the way UPWIND
+        }
+    } finally { WIND_MEAN_FIELD = was; }
+    L.ux = ux; L.uy = uy;
+    return L;
+}
+// The mean wind's direction at a point (radians, where it comes FROM), from the field grid.
+function leeMeanDir(L, x, y) {
+    const gx = Math.max(0, Math.min(L.w - 1.001, (x - L.x0) / LEE_RES)), gy = Math.max(0, Math.min(L.h - 1.001, (y - L.y0) / LEE_RES));
+    const i = Math.floor(gx), j = Math.floor(gy), fx = gx - i, fy = gy - j, k = j * L.w + i;
+    const vx = (L.ux[k] * (1 - fx) + L.ux[k + 1] * fx) * (1 - fy) + (L.ux[k + L.w] * (1 - fx) + L.ux[k + L.w + 1] * fx) * fy;
+    const vy = (L.uy[k] * (1 - fx) + L.uy[k + 1] * fx) * (1 - fy) + (L.uy[k + L.w] * (1 - fx) + L.uy[k + L.w + 1] * fx) * fy;
+    return Math.atan2(vx, -vy);
+}
+// One field: the deficit (0..SHADOW_MAX) on every field cell, with the wind turned `off` radians.
+function leeBuild(L, off) {
+    const f = new Float32Array(L.w * L.h), co = Math.cos(off), so = Math.sin(off);
+    const step = LEE_CRES, n = Math.ceil(L.maxLen / step);
+    for (let j = 0; j < L.h; j++) for (let i = 0; i < L.w; i++) {
+        let x = L.x0 + i * LEE_RES, y = L.y0 + j * LEE_RES;
+        // quick reject: nothing within the longest lee
+        const ci0 = Math.floor((x - L.x0) / LEE_CRES), cj0 = Math.floor((y - L.y0) / LEE_CRES);
+        if (ci0 < 0 || cj0 < 0 || ci0 >= L.cw || cj0 >= L.ch || L.dist[cj0 * L.cw + ci0] > L.maxLen) continue;
+        let best = 0;
+        for (let s = 1; s <= n; s++) {
+            // upwind along the (turned) mean wind at the trace's current position
+            const gx = Math.max(0, Math.min(L.w - 1, Math.round((x - L.x0) / LEE_RES))), gy = Math.max(0, Math.min(L.h - 1, Math.round((y - L.y0) / LEE_RES)));
+            const k0 = gy * L.w + gx, ax = L.ux[k0], ay = L.uy[k0];
+            x += (ax * co - ay * so) * step; y += (ax * so + ay * co) * step;
+            const ci = Math.floor((x - L.x0) / LEE_CRES), cj = Math.floor((y - L.y0) / LEE_CRES);
+            if (ci < 0 || cj < 0 || ci >= L.cw || cj >= L.ch) break;
+            const kc = cj * L.cw + ci;
+            if (L.dist[kc] === 0) {                 // the wind came over this land: its lee, if it reaches
+                const d = s * step, len = L.near[kc];
+                if (len > d) { const t = 1 - d / len; best = t * t * (3 - 2 * t); }
+                break;                              // nothing further upwind counts
+            }
+        }
+        f[j * L.w + i] = best * SHADOW_MAX;
+    }
+    // SOFT EDGES: a lee only exists where the wind came over land, so a wind blowing down a canyon is
+    // not shadowed by the walls beside it. Its sides fade over ~LEE_SOFT units (a separable box blur,
+    // twice — close to a Gaussian), the way a real wake's edge is a gradient, not a line.
+    // ...and the CORE KEEPS ITS STRENGTH (Wes, Oct 5 2026): each cell takes the stronger of its own lee
+    // and the blurred one. A blur alone also drained a narrow plume's middle — a 15 m island lost half its
+    // bite to the grid, not to physics — where a real wake is as wide as its island and strongest behind it.
+    const raw = Float32Array.from(f);
+    const r = Math.max(1, Math.round(LEE_SOFT / LEE_RES)), tmp = new Float32Array(f.length);
+    for (let pass = 0; pass < 2; pass++) {
+        for (let j = 0; j < L.h; j++) { let acc = 0; const row = j * L.w;
+            for (let i = -r; i < L.w + r; i++) { if (i + r < L.w) acc += f[row + Math.min(L.w - 1, i + r)]; if (i - r - 1 >= 0) acc -= f[row + i - r - 1]; if (i >= 0 && i < L.w) tmp[row + i] = acc / (2 * r + 1); } }
+        for (let i = 0; i < L.w; i++) { let acc = 0;
+            for (let j = -r; j < L.h + r; j++) { if (j + r < L.h) acc += tmp[Math.min(L.h - 1, j + r) * L.w + i]; if (j - r - 1 >= 0) acc -= tmp[(j - r - 1) * L.w + i]; if (j >= 0 && j < L.h) f[j * L.w + i] = acc / (2 * r + 1); } }
+    }
+    for (let k = 0; k < f.length; k++) if (raw[k] > f[k]) f[k] = raw[k];
+    return f;
+}
+function leeField(L, bin) {
+    let f = L.fields.get(bin);
+    if (!f) { f = leeBuild(L, bin * LEE_STEP_DEG * Math.PI / 180); L.fields.set(bin, f); }
+    return f;
+}
+// The wind lee of fixed land at (x, y), as a factor (1 = clear air). `dir` is the wind here now.
+function leeFieldAt(x, y, dir) {
+    const L = leeCasters();
+    if (!L.casters.length || x < L.x0 || y < L.y0) return 1;
+    const gx = (x - L.x0) / LEE_RES, gy = (y - L.y0) / LEE_RES;
+    if (gx >= L.w - 1 || gy >= L.h - 1) return 1;
+    // how far the live wind here has turned off the mean, in field steps
+    const off = Math.max(-LEE_MAX_DEG, Math.min(LEE_MAX_DEG, normalizeAngle(dir - leeMeanDir(L, x, y)) * 180 / Math.PI)) / LEE_STEP_DEG;
+    const b0 = Math.floor(off), u = off - b0;
+    const i = Math.floor(gx), j = Math.floor(gy), fx = gx - i, fy = gy - j, k = j * L.w + i;
+    const samp = (f) => (f[k] * (1 - fx) + f[k + 1] * fx) * (1 - fy) + (f[k + L.w] * (1 - fx) + f[k + L.w + 1] * fx) * fy;
+    const d = samp(leeField(L, b0)) * (1 - u) + (u > 1e-6 ? samp(leeField(L, b0 + 1)) * u : 0);
+    return 1 - d;
+}
+// Build every field a race can ask for, now: the casters and all 2*LEE_MAX_DEG/LEE_STEP_DEG+1 offsets.
+// Built on demand, a race paid 5-25 ms a field mid-race (Redrock built 19 of them in one race, in
+// bursts as the wind swung); the start's loading card is where that belongs. Pure: no RNG.
+function leeWarm() {
+    const L = leeCasters();
+    if (!L.casters.length) return L;
+    const nb = Math.round(LEE_MAX_DEG / LEE_STEP_DEG);
+    for (let b = -nb; b <= nb; b++) leeField(L, b);
+    return L;
+}
+// `reset` is for code that edits a caster's height or outline IN PLACE (the tests): the cache is keyed
+// on the course's objects and on content, and an in-place edit is neither.
+if (typeof window !== 'undefined') window.__leeField = { on: (v) => { LEE_FIELD_ON = !!v; }, casters: () => leeCasters(),
+    reset: () => { _leeLast = null; if (typeof state !== 'undefined' && state.course) state.course._lee = null; } };
+
 // A WAKE ONLY REACHES WATER THE FLOW ACTUALLY CARRIED IT TO, measured as the bend between the
 // wind at the obstacle and the wind where you are standing.
 //
@@ -593,7 +780,16 @@ function shadowAt(x, y, dir, kind) {
     const cFlowY = isWind ? 0 : -Math.cos(dir);
     const cKey = isWind ? '' : 'c' + Math.round(dir / SHADOW_QUANTUM);
     let factor = 1;
+    // FIXED LAND'S WIND LEE COMES FROM THE LEE FIELD (Oct 2026): the shore actually upwind of
+    // this point, found by tracing the mean wind back from here — not each shape's whole
+    // silhouette projected from its centre, which let a coastline's far end, kilometres away,
+    // decide the breeze on the course. Moving casters (floes) keep the silhouette model below.
+    if (isWind && LEE_FIELD_ON) {
+        if (localDir === null) localDir = regionWindAt(x, y).direction;
+        factor = leeFieldAt(x, y, localDir);
+    }
     for (const isl of (list || [])) {
+        if (isWind && LEE_FIELD_ON && !isl.isFloe) continue;   // fixed land: the field above
         // LENGTH FIRST. It reads an authored number or a height and needs neither geometry nor
         // wind, and it is zero for almost everything — 114 of Glacier Sound's 123 shapes author
         // no height at all — so asking it before the direction lookup and the silhouette keeps
@@ -750,6 +946,9 @@ if (typeof window !== 'undefined') {
 // agreement rather than a number picked to feel right. Nothing in any venue authors a
 // height yet, so this decides nothing today — it decides what the FIRST authored cliff
 // does, which is exactly when a made-up constant would have been hardest to argue with.
+// TEN (Wes, Oct 5 2026). Once the lee field traced the real shore upwind of every point, the authored
+// heights — set high to make the old silhouette lees show at all — put whole canyons in dead air. Every
+// venue height and prop height was HALVED to undo that, and the rule stays the sailor's ten heights.
 const SHADOW_HEIGHTS = 10;           // wind shadow, in obstacle heights
 const SHADOW_WAKE = 2.5;            // current wake, in half-widths of what the stream sees
 const M_TO_U = 5;                   // the world's scale: 5 units to the metre

@@ -976,20 +976,20 @@ const PROP_KINDS = {
     // `prop-spin` checkbox OFF and set `heading °` per placement from the prop inspector.
     // cove-boatshed, when it lands, is the one whose heading is not merely tidy but MEANS
     // something: its door canopy faces the water.
-    'bay-cove-church':       { label: 'Church',              world: 184, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-house-captains': { label: "Captain's house",   world: 129, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-cottage-ell':  { label: 'Cottage with ell',    world: 118, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-cottage':      { label: 'Cape cottage',        world:  80, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-church':       { label: 'Church',              world: 184, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#63666F' },
+    'bay-cove-house-captains': { label: "Captain's house",   world: 129, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#81786E' },
+    'bay-cove-cottage-ell':  { label: 'Cottage with ell',    world: 118, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#676F75' },
+    'bay-cove-cottage':      { label: 'Cape cottage',        world:  80, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#837A71' },
     // The waterfront's smallest building and the only one with no ridge — a single shed slope.
     // Its stove pipe is a CIRCLE where every other chimney in the town is a rectangle, which is
     // correct rather than decorative: a metal flue is round and a brick stack is not.
-    'bay-cove-shanty':       { label: 'Fish shanty',         world:  55, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-cottage-dormer': { label: 'Dormered cottage',  world: 100, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-shanty':       { label: 'Fish shanty',         world:  55, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#4C443E' },
+    'bay-cove-cottage-dormer': { label: 'Dormered cottage',  world: 100, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#AAA198' },
     // ⚠️ THE ONE BUILDING WHOSE HEADING MEANS SOMETHING RATHER THAN MERELY LOOKING TIDY: the
     // boat shed's door canopy projects from one gable end, and that end faces the WATER. Point
     // it inland and the building is backwards. Everything else in this town only needs its
     // ridges to agree with its neighbours.
-    'bay-cove-boatshed':     { label: 'Boat shed',           world: 150, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-boatshed':     { label: 'Boat shed',           world: 150, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#594F45' },
     // ── THE COVE'S CROSSINGS ────────────────────────────────────────────────
     // ⚠️ `canopy`, AND IT IS THE ONLY THING IN THIS VENUE THAT BELONGS THERE. Everything else
     // the cove owns stands on land or floats; a bridge deck is 30m up and the fleet sails
@@ -1016,26 +1016,37 @@ const PROP_KINDS = {
     // drawn over the fleet. `opaque`: the deck does not fade over the player's hull — a fading
     // deck was tried first and Wes found the bridge harder to navigate with it. Only the towers
     // block wind or hulls; the deck does neither. art/bridgesplit.py cuts the bake.
-    // `chartSpan` is the paint the minimap draws it in, abstracted: deck line + tower blocks.
-    'bay-bay-cove-bridge-truss': { label: 'Truss bridge',   world: 870, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed',
+    // `chartLandform` (Oct 7 2026) is a big LANDFORM's colour on the charts — a volcano, a peak, a
+    // nunatak, a mesa — drawn as its painted footprint with a light-to-shade relief (a volcano adds its
+    // glowing crater). Sampled from the bake like `chartBuilding`. `chartFlat` drops the relief for a
+    // feature IN the ground rather than standing on it (a crevasse, a glacier's front), and for Glacier
+    // Sound's mountains (Wes, Oct 7 2026: shaded, they looked busy) — white on snow, grey on rock, a
+    // faint edge.
+    // `chartBuilding` (Oct 7 2026) is a BUILDING's roof colour on the charts — the minimap and the venue
+    // page draw its painted footprint (prop_outlines' `paint`) in it. Sampled from the bake (the median
+    // of its opaque pixels); the chart lifts it a little and cases it, so a dark roof reads on dark ground.
+    // `chartSpan` is the paint the minimap draws it in, abstracted: deck line + tower blocks. The deck runs
+    // along sprite-UP unless `chartSpanAxis: 'x'` (a bridge drawn left to right, like the flats' stone
+    // bridge); `chartSpanLen` is its half-length and `chartSpanWidth` its width, as fractions of `world`.
+    'bay-bay-cove-bridge-truss': { label: 'Truss bridge',   world: 870, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed',
                                    parts: { surface: 'bay-bay-cove-bridge-truss-towers', canopy: 'bay-bay-cove-bridge-truss-deck' }, opaque: true, chartSpan: '#9AA3AB' },
-    'bay-bay-cove-bridge-truss-towers': { label: 'Truss bridge towers', world: 870, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed', part: true },
+    'bay-bay-cove-bridge-truss-towers': { label: 'Truss bridge towers', world: 870, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed', part: true },
     'bay-bay-cove-bridge-truss-deck':   { label: 'Truss bridge deck',   world: 870, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // The truss's foil — the red suspension span, San Francisco's own pairing. Same rules.
-    'bay-bay-cove-bridge-suspension': { label: 'Suspension bridge', world: 920, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed',
+    'bay-bay-cove-bridge-suspension': { label: 'Suspension bridge', world: 920, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed',
                                    parts: { surface: 'bay-bay-cove-bridge-suspension-towers', canopy: 'bay-bay-cove-bridge-suspension-deck' }, opaque: true, chartSpan: '#C0362C' },
-    'bay-bay-cove-bridge-suspension-towers': { label: 'Suspension bridge towers', world: 920, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed', part: true },
+    'bay-bay-cove-bridge-suspension-towers': { label: 'Suspension bridge towers', world: 920, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed', part: true },
     'bay-bay-cove-bridge-suspension-deck':   { label: 'Suspension bridge deck',   world: 920, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // The Bay Bridge's silver-grey with X-braced towers (the manifest's `skyway`). Same rules.
-    'bay-bay-cove-bridge-skyway': { label: 'Bay bridge', world: 900, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed',
+    'bay-bay-cove-bridge-skyway': { label: 'Bay bridge', world: 900, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed',
                                    parts: { surface: 'bay-bay-cove-bridge-skyway-towers', canopy: 'bay-bay-cove-bridge-skyway-deck' }, opaque: true, chartSpan: '#B4BCC2' },
-    'bay-bay-cove-bridge-skyway-towers': { label: 'Bay bridge towers', world: 900, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed', part: true },
+    'bay-bay-cove-bridge-skyway-towers': { label: 'Bay bridge towers', world: 900, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed', part: true },
     'bay-bay-cove-bridge-skyway-deck':   { label: 'Bay bridge deck',   world: 900, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // THE FLEET'S HOME, and the only object in the game that carries the SaltyCritter Yacht
     // Club's own burgee — painted flat on the seaward roof slope, which is why it survives a
     // camera that deletes anything vertical. LANDMARK: venue identity, on land, never an
     // obstacle in the water. Place it facing the water with cove-marina in front of it.
-    'bay-cove-yacht-club':   { label: 'Yacht club',          world: 168, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-yacht-club':   { label: 'Yacht club',          world: 168, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#A89E92' },
     // The cove's waterfront begins here. A single sawn pile top — place these with the
     // editor's `prop-spin` ON and a `count`, because addProps' "ONE DRAG LAYS A STAND" is
     // what a row of pilings actually is; a baked cluster would stamp one arrangement and
@@ -1096,9 +1107,9 @@ const PROP_KINDS = {
     // nothing. A wrong collider is worse than none. If a placement ever needs teeth, lay
     // hidden hard shapes down the fingers — the river's 82-bank precedent.
     'bay-cove-marina':       { label: 'Marina',              world: 240, plane: 'float',   contact: 'none', motion: 'fixed' },
-    'bay-cove-shop-row':     { label: 'Shop row',            world: 200, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-store-general': { label: 'General store',      world: 124, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-cafe':         { label: 'Cafe',                world:  88, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-shop-row':     { label: 'Shop row',            world: 200, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#847C73' },
+    'bay-cove-store-general': { label: 'General store',      world: 124, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#7B746C' },
+    'bay-cove-cafe':         { label: 'Cafe',                world:  88, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#877C70' },
     // The town's one CIRCLE. Place it with prop-spin ON — a parasol has no front, and rotating
     // the green/cream wedges is free variety that stops a terrace of four reading as one stamp.
     // It is the only cove building-set prop that wants spin on.
@@ -1114,7 +1125,7 @@ const PROP_KINDS = {
     // mature oak crown really is wider in plan than a light tower's base, and an aerial photo
     // of a headland shows exactly that. If the namesake needs more presence, place it alone on
     // a point — do not inflate it, or it stops agreeing with every other measured thing here.
-    'bay-cove-lighthouse':   { label: 'Lighthouse',          world:  84, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-lighthouse':   { label: 'Lighthouse',          world:  84, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#F0EDE6' },
     'bay-cove-oak-black':    { label: 'Black oak',           world:  96, plane: 'surface', contact: 'none', motion: 'fixed' },
     'bay-cove-pine-pitch':   { label: 'Pitch pine',          world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
     'bay-cove-cedar-red':    { label: 'Red cedar',           world:  42, plane: 'surface', contact: 'none', motion: 'fixed' },
@@ -1440,8 +1451,8 @@ const PROP_KINDS = {
     // line at 5% ink: a 296px quad to composite a 26px-wide rope. Round props that fill their
     // frame (both boulders, the raft, the fire ring) get none, exactly as a canopy does not.
     // RE-MEASURE ON ANY RE-INGEST — a box too small clips the sprite, which is a visible bug.
-    'lake-camp-lodge':        { label: 'Camp lodge',        world: 166, plane: 'surface', contact: 'none', srcBox: [0.276, 0.059, 0.448, 0.881], motion: 'fixed' },
-    'lake-cabin':             { label: 'Log cabin',         world:  88, plane: 'surface', contact: 'none', srcBox: [0.234, 0.058, 0.531, 0.884], motion: 'fixed' },
+    'lake-camp-lodge':        { label: 'Camp lodge',        world: 166, plane: 'surface', contact: 'none', srcBox: [0.276, 0.059, 0.448, 0.881], motion: 'fixed', chartBuilding: '#53714E' },
+    'lake-cabin':             { label: 'Log cabin',         world:  88, plane: 'surface', contact: 'none', srcBox: [0.234, 0.058, 0.531, 0.884], motion: 'fixed', chartBuilding: '#444F38' },
     'lake-log-fallen':        { label: 'Fallen log',        world:  74, plane: 'surface', contact: 'none', srcBox: [0.355, 0.058, 0.29, 0.885], motion: 'fixed' },
     // ⚠️ THE SWIM LINE COLLIDES, AND A CIRCLE CANNOT HONESTLY COVER IT. The segment is 74u
     // long and 6.5u wide — 11:1 — so this is the cargo-ship case at its most extreme, and
@@ -1460,8 +1471,8 @@ const PROP_KINDS = {
     // per-course decision and not a default. The proper fix is an oblong collider in
     // propTraits, and this entry is the second asset asking for one.
     'lake-swim-line':         { label: 'Swim line',         world:  74, plane: 'float',   contact: 'soft', contactR: 12, srcBox: [0.456, 0, 0.088, 1], motion: 'fixed' },
-    'lake-cabin-b':           { label: 'Tin-roof cabin',    world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'lake-camp-cabin':        { label: 'Camp bunkhouse',    world:  51, plane: 'surface', contact: 'none', srcBox: [0.314, 0.059, 0.373, 0.883], motion: 'fixed' },
+    'lake-cabin-b':           { label: 'Tin-roof cabin',    world:  72, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#743829' },
+    'lake-camp-cabin':        { label: 'Camp bunkhouse',    world:  51, plane: 'surface', contact: 'none', srcBox: [0.314, 0.059, 0.373, 0.883], motion: 'fixed', chartBuilding: '#33432F' },
     'lake-canoe-rack':        { label: 'Canoe rack',        world:  51, plane: 'surface', contact: 'none', srcBox: [0.181, 0.059, 0.633, 0.883], motion: 'fixed' },
     'lake-canoe':             { label: 'Canoe',             world:  46, plane: 'float',   contact: 'soft', contactR:  6, srcBox: [0.376, 0.055, 0.248, 0.884], motion: 'fixed' },
     'lake-boulder-large':     { label: 'Glacial boulder',   world:  44, plane: 'surface', contact: 'hard', contactR: 19, motion: 'fixed' },
@@ -1553,7 +1564,7 @@ const PROP_KINDS = {
     // srcBox measured off the shipped 600px bake with a 1% margin: the bridge is a 1:7.9 ribbon
     // in a square frame, so 82% of that frame is empty and this skips sampling it. Re-measure
     // on any re-ingest — the number is only true for this bake.
-    'river-footbridge':       { label: 'Foot bridge',       world: 300, plane: 'canopy',  contact: 'none', motion: 'fixed', fadeMin: 0.3, srcBox: [0.407, 0.030, 0.187, 0.940] },
+    'river-footbridge':       { label: 'Foot bridge',       world: 300, plane: 'canopy',  contact: 'none', motion: 'fixed', fadeMin: 0.3, srcBox: [0.407, 0.030, 0.187, 0.940], chartSpan: '#C2AE8C' },
     // ── THE GRANITE BOULDERS ────────────────────────────────────────────────────────
     // The venue's first rock you can actually hit. `outcrop` is a SHAPE and means a scoured
     // bedrock ledge; these are props and mean individual stones. The largest is 52u,
@@ -1670,18 +1681,18 @@ const PROP_KINDS = {
     // (the runtime cannot read the mask back — the srcBox/contactR contract). The magma
     // entry is the crater lake; the lava entry is the channels, whose "radius" is only an
     // area measure — downhill is computed from the crater's centre, not this one.
-    'volcanic-volcano-main':    { label: 'Volcano (4 streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
+    'volcanic-volcano-main':    { label: 'Volcano (4 streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1, chartLandform: '#453D40' ,
                                   lava: { magma: { cx: 0.4942, cy: 0.4952, r: 0.1058 }, lava: { cx: 0.4903, cy: 0.5124, r: 0.0961 } } },
     // The rest of the family (2026-09-07), at slot: same size and contract, told apart by
     // stream count and silhouette. Each gets its `lava` numbers from ingest when its master
     // lands; until then drawPropLava sees no regions and the rock draws alone.
-    'volcanic-volcano-crater':  { label: 'Volcano (crater only)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
+    'volcanic-volcano-crater':  { label: 'Volcano (crater only)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1, chartLandform: '#41444C' ,
                                   lava: { magma: { cx: 0.4944, cy: 0.4892, r: 0.1266 } } },   // ingested 2026-09-07; no channels, so no lava entry
-    'volcanic-volcano-1':       { label: 'Volcano (1 stream)',    world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
+    'volcanic-volcano-1':       { label: 'Volcano (1 stream)',    world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1, chartLandform: '#42454E' ,
                                   lava: { magma: { cx: 0.4823, cy: 0.4902, r: 0.1158 }, lava: { cx: 0.6697, cy: 0.7863, r: 0.0723 } } },   // ingested 2026-09-07
-    'volcanic-volcano-4':       { label: 'Volcano (4 wide streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
+    'volcanic-volcano-4':       { label: 'Volcano (4 wide streams)', world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1, chartLandform: '#41444C' ,
                                   lava: { magma: { cx: 0.4953, cy: 0.4993, r: 0.097 }, lava: { cx: 0.5647, cy: 0.5065, r: 0.1228 } } },   // ingested 2026-09-07; the 2-stream slot was retired for this
-    'volcanic-volcano-3':       { label: 'Volcano (3 streams)',   world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1,
+    'volcanic-volcano-3':       { label: 'Volcano (3 streams)',   world: 1400, plane: 'surface', contact: 'none', motion: 'fixed', cone: 1, chartLandform: '#424047' ,
                                   lava: { magma: { cx: 0.4956, cy: 0.5016, r: 0.1102 }, lava: { cx: 0.5402, cy: 0.5905, r: 0.1053 } } },   // ingested 2026-09-07
     // A lava lake without a mountain: a molten pool in a rampart of basalt, on the same keyed
     // contract (magma only). Its `lava` numbers arrive with its master.
@@ -1706,9 +1717,9 @@ const PROP_KINDS = {
     // own — in the water, back one with a small `basalt` shape at its footprint, height typed.
     // Three structures (honeycomb of column tops, a blade, a heap of blocks) so no two read
     // as one asset at two scales.
-    'volcanic-crag-columns':    { label: 'Basalt crag (columns)', world: 320, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'volcanic-crag-fin':        { label: 'Basalt crag (ridge)',   world: 260, plane: 'surface', contact: 'none', motion: 'fixed' },   // a serrated ridge of summits, keyed `fin` for the file
-    'volcanic-crag-tor':        { label: 'Basalt crag (peak)',    world: 180, plane: 'surface', contact: 'none', motion: 'fixed' },   // a single sharp peak, keyed `tor` for the file
+    'volcanic-crag-columns':    { label: 'Basalt crag (columns)', world: 320, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#393F4B' },
+    'volcanic-crag-fin':        { label: 'Basalt crag (ridge)',   world: 260, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#464D59' },   // a serrated ridge of summits, keyed `fin` for the file
+    'volcanic-crag-tor':        { label: 'Basalt crag (peak)',    world: 180, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#3A404C' },   // a single sharp peak, keyed `tor` for the file
     'volcanic-vent-islet':      { label: 'Vent islet',       world:  360, plane: 'surface', contact: 'none', motion: 'fixed', cone: 0.45, steam: true,
                                   lava: { magma: { cx: 0.606, cy: 0.4382, r: 0.0756 } } },   // ingested 2026-09-07
     // The seabed vent: drawn on the bottom, through the water column like the sunken
@@ -1736,14 +1747,14 @@ const PROP_KINDS = {
                                   lava: { magma: { cx: 0.501, cy: 0.4833, r: 0.1747 } } },    // ingested 2026-09-07
     'volcanic-crack-web':       { label: 'Lava crack (web)',   world: 320, plane: 'surface', contact: 'none', motion: 'fixed',
                                   lava: { magma: { cx: 0.5034, cy: 0.5014, r: 0.1568 } } },   // ingested 2026-09-07
-    'redrock-tower-butte':    { label: 'Butte',          world: 640, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'redrock-tower-fin':      { label: 'Sandstone fin',  world: 520, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'redrock-tower-twins':    { label: 'Twin spires',    world: 440, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'redrock-tower-castle':   { label: 'Castle tower',   world: 360, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'redrock-tower-dome':     { label: 'Slickrock dome', world: 300, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'redrock-tower-needle':   { label: 'Needle spire',   world: 220, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'redrock-tower-hoodoos':  { label: 'Hoodoo file',    world: 160, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'redrock-tower-balanced': { label: 'Balanced rock',  world: 110, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-tower-butte':    { label: 'Butte',          world: 640, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#E69759' },
+    'redrock-tower-fin':      { label: 'Sandstone fin',  world: 520, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#C86C3B' },
+    'redrock-tower-twins':    { label: 'Twin spires',    world: 440, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#B66B3D' },
+    'redrock-tower-castle':   { label: 'Castle tower',   world: 360, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#BE6C3C' },
+    'redrock-tower-dome':     { label: 'Slickrock dome', world: 300, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#E4C49B' },
+    'redrock-tower-needle':   { label: 'Needle spire',   world: 220, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#C76F3D' },
+    'redrock-tower-hoodoos':  { label: 'Hoodoo file',    world: 160, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#9F594C' },
+    'redrock-tower-balanced': { label: 'Balanced rock',  world: 110, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#D77936' },
     // Two later additions (2026-08-26). The mesa is the SECOND BUTTE — an elongated waisted
     // table at 560, sitting between butte (640) and fin (520), safe because all three are
     // different structures; it exists so a venue wanting two big tables does not stamp one
@@ -1751,7 +1762,7 @@ const PROP_KINDS = {
     // wall feet and shorelines — no cap, no crescent, nothing standing — deliberately inside
     // the hoodoos' rung because dressing and landmarks cannot be confused. Both scenery:
     // contact none, and only the mesa is big enough to earn a backing `redrock` shape.
-    'redrock-tower-mesa':     { label: 'Mesa',           world: 560, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'redrock-tower-mesa':     { label: 'Mesa',           world: 560, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#EBBF8C' },
     'redrock-talus':          { label: 'Talus pile',     world: 140, plane: 'surface', contact: 'none', motion: 'fixed' },
     // The boulder pair (2026-08-26), on the lake pair's 2.4x step. The LARGE is the venue's
     // hazard at boat scale — one boat length of rounded sandstone, hard, the one prop where
@@ -1934,12 +1945,12 @@ const PROP_KINDS = {
     // the compile's own idiom: `isle` shapes with `hidden: true` along them. NOT `bank`, which
     // reads like the right kind and is not — it is `hard: false, nav: false`, so a boat would
     // sail through the hut slowly and the router would never see it.
-    'swamp-shack':          { label: 'Fishing shack',   world: 189, plane: 'surface', contact: 'hard', contactR: 44, motion: 'fixed' },
+    'swamp-shack':          { label: 'Fishing shack',   world: 189, plane: 'surface', contact: 'hard', contactR: 44, motion: 'fixed', chartBuilding: '#7B5F55' },
     // The second camp. Both radii are r50 of their own sprite, not a share of `world`, because
     // these two are shaped differently — the big shack is a hut beside a long walkway, this is
     // an L of building and deck — so one fraction cannot serve both. Both grew when the art was
     // recalibrated on its boat; see the manifest notes for why the world sizes moved.
-    'swamp-shack-b':        { label: 'Crawfish camp',   world: 133, plane: 'surface', contact: 'hard', contactR: 28, motion: 'fixed' },
+    'swamp-shack-b':        { label: 'Crawfish camp',   world: 133, plane: 'surface', contact: 'hard', contactR: 28, motion: 'fixed', chartBuilding: '#4D5549' },
 
     // THE DRIFT LOG — a whole fallen trunk, and the far end of the size ladder the deadhead
     // starts: 0.91 m of wood over 7.6 m against the deadhead's 2 m over 3 m. Same plane and
@@ -2282,12 +2293,12 @@ const PROP_KINDS = {
     // horn WELL BACK ON THE ICE and away from round-1: the course rounds `granite-isle`, a 629u
     // granite shape, and a bigger rock of the same colour standing behind the one piece of land
     // the player must read is this batch's worst legibility risk.
-    'arctic-crevasse':         { label: 'Crevasse',           world:  780, plane: 'surface', contact: 'none', srcBox: [0.442, 0.059, 0.116, 0.882], motion: 'fixed' },
-    'arctic-crevasse-wide':    { label: 'Crevasse, rift',     world: 1200, plane: 'surface', contact: 'none', srcBox: [0.373, 0.058, 0.253, 0.883], motion: 'fixed' },
-    'arctic-crevasse-bridged': { label: 'Crevasse, bridged',  world:  900, plane: 'surface', contact: 'none', srcBox: [0.390, 0.058, 0.220, 0.883], motion: 'fixed' },
-    'arctic-nunatak-crag':     { label: 'Granite crag',       world:  400, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'arctic-nunatak-horn':     { label: 'Granite horn',       world:  680, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'arctic-nunatak-massif':   { label: 'Granite massif',     world:  900, plane: 'surface', contact: 'none', srcBox: [0.028, 0.233, 0.943, 0.533], motion: 'fixed' },
+    'arctic-crevasse':         { label: 'Crevasse',           world:  780, plane: 'surface', contact: 'none', srcBox: [0.442, 0.059, 0.116, 0.882], motion: 'fixed', chartLandform: '#79AACB', chartFlat: true },
+    'arctic-crevasse-wide':    { label: 'Crevasse, rift',     world: 1200, plane: 'surface', contact: 'none', srcBox: [0.373, 0.058, 0.253, 0.883], motion: 'fixed', chartLandform: '#88B1CC', chartFlat: true },
+    'arctic-crevasse-bridged': { label: 'Crevasse, bridged',  world:  900, plane: 'surface', contact: 'none', srcBox: [0.390, 0.058, 0.220, 0.883], motion: 'fixed', chartLandform: '#8AB7D3', chartFlat: true },
+    'arctic-nunatak-crag':     { label: 'Granite crag',       world:  400, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#8C939C', chartFlat: true },
+    'arctic-nunatak-horn':     { label: 'Granite horn',       world:  680, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#8C939C', chartFlat: true },
+    'arctic-nunatak-massif':   { label: 'Granite massif',     world:  900, plane: 'surface', contact: 'none', srcBox: [0.028, 0.233, 0.943, 0.533], motion: 'fixed', chartLandform: '#8C939C', chartFlat: true },
     // THE SMALL SHARP ONES, and the only props in this commission small enough to stand near
     // the waterline without swamping it. Ones and twos along the ice front of `shape-3` and
     // `shape-4` where the sheet is breaking up, and along the tops of the steeper ice margins.
@@ -2307,12 +2318,12 @@ const PROP_KINDS = {
     // the frame, which is what makes `heading °` mean what a designer expects. Lay it
     // PARALLEL to the coastline it stands behind — one of these does more for the sound's
     // sense of enclosure than three separate peaks, because a sound is a place with walls.
-    'arctic-peak-ridge':       { label: 'Snow ridge',        world:  700, plane: 'surface', contact: 'none', srcBox: [0.365, 0.029, 0.270, 0.942], motion: 'fixed' },
+    'arctic-peak-ridge':       { label: 'Snow ridge',        world:  700, plane: 'surface', contact: 'none', srcBox: [0.365, 0.029, 0.270, 0.942], motion: 'fixed', chartLandform: '#F3F6F9', chartFlat: true },
     // The compact white one. It fills its frame, so no srcBox — the same call the crag and the
     // horn take. ⚠️ ITS ART IS SOFT: the delivery carried only 684px of subject, so the bake
     // upscales 1.60x. Fine at its declared size and the first of these to go soft if placed
     // large, which is the opposite of the crevasse. Prefer the ridge for a big statement.
-    'arctic-peak-pyramid':     { label: 'Snow peak',         world:  620, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'arctic-peak-pyramid':     { label: 'Snow peak',         world:  620, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#F3F6F9', chartFlat: true },
     // THE FIRST OF THE THREE SNOW DRIFTS, and the family that says which way the wind blows.
     // ⚠️ EVERY DRIFT IN A VENUE MUST POINT THE SAME WAY — lay this one ALONG the lee edge of
     // an ice mass or against the foot of a nunatak, and make the tails and barchans, when
@@ -2324,7 +2335,7 @@ const PROP_KINDS = {
     // beside the drifts rather than beside the peaks: it is a broad low snow swelling, pale with
     // thin dark marks on it, and it is the one prop that belongs in the OPEN middle of an ice
     // mass where everything else wants an edge or an obstacle to sit against.
-    'arctic-peak-dome':        { label: 'Ice dome',          world:  420, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'arctic-peak-dome':        { label: 'Ice dome',          world:  420, plane: 'surface', contact: 'none', motion: 'fixed', chartLandform: '#F3F6F9', chartFlat: true },
     'arctic-drift-bank':       { label: 'Snow drift, bank', world:  520, plane: 'surface', contact: 'none', srcBox: [0.370, 0.058, 0.259, 0.883], motion: 'fixed' },
     // The lee tongue: place it downwind of anything that stands up — a crag, a hut, the station
     // — wide end touching the obstacle, tongue streaming away. It is the cheapest way to make
@@ -2353,7 +2364,7 @@ const PROP_KINDS = {
     // transparent rotation margin; a margin here would stop sections touching. cove-wall-stone is
     // the precedent. Ingest warns that content reaches the frame edge on every delivery — correct
     // and expected.
-    'arctic-glacier-front':    { label: 'Glacier front',     world:  800, plane: 'surface', contact: 'none', srcBox: [0.226, 0, 0.547, 1], motion: 'fixed' },
+    'arctic-glacier-front':    { label: 'Glacier front',     world:  800, plane: 'surface', contact: 'none', srcBox: [0.226, 0, 0.547, 1], motion: 'fixed', chartLandform: '#4888B1', chartFlat: true },
 
     // ── AND THE VENUE'S HUMAN PRESENCE ──────────────────────────────────────
     // Glacier Sound's only sign that anyone has ever been here, and now offered BOTH ways: the
@@ -2376,8 +2387,8 @@ const PROP_KINDS = {
     // BOTH ARE surface / none / fixed for the block's reason above — they stand on land that
     // already stops a boat. The station is a LANDMARK by role and never sits in the water; place
     // it back from the shore with the hut and the zodiac around it.
-    'arctic-hut':              { label: 'Research hut',       world:   94, plane: 'surface', contact: 'none', srcBox: [0.229, 0.163, 0.541, 0.674], motion: 'fixed' },
-    'arctic-station':          { label: 'Research station',   world:  170, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'arctic-hut':              { label: 'Research hut',       world:   94, plane: 'surface', contact: 'none', srcBox: [0.229, 0.163, 0.541, 0.674], motion: 'fixed', chartBuilding: '#EA160A' },
+    'arctic-station':          { label: 'Research station',   world:  170, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#E9150A' },
 
     // THE STATION TENDER, AND THE ONLY VENUE-NEUTRAL PROP IN THIS FILE. Its manifest slot is
     // deliberately venue-less "like mark/buoy-channel-*: a support RIB is race furniture at every
@@ -2442,7 +2453,7 @@ const PROP_KINDS = {
     // and it carries a P1 `rework` block in art/manifest.json saying so. Its 64%-skipped srcBox
     // is a symptom of the same defect: a correctly proportioned boathouse is not a narrow strip.
     // WORLD AND srcBox BOTH BELONG TO THIS ART, NOT TO THE REROLL — recompute both when it lands.
-    'pond-boathouse':          { label: 'Boathouse',          world:  174, plane: 'surface', contact: 'none', srcBox: [0.297, 0.059, 0.405, 0.882], motion: 'fixed' },
+    'pond-boathouse':          { label: 'Boathouse',          world:  174, plane: 'surface', contact: 'none', srcBox: [0.297, 0.059, 0.405, 0.882], motion: 'fixed', chartBuilding: '#B6B9B4' },
     'pond-oak-white':          { label: 'White oak',          world:  150, plane: 'surface', contact: 'none', motion: 'fixed' },
     'pond-maple-red':          { label: 'Red maple',          world:   84, plane: 'surface', contact: 'none', motion: 'fixed' },
     'pond-pontoon':            { label: 'Club pontoon',       world:   74, plane: 'float',   contact: 'none', srcBox: [0.287, 0.058, 0.425, 0.885], motion: 'fixed' },
@@ -2488,10 +2499,10 @@ const PROP_KINDS = {
     // tower rule ("lay a shape under a landmark") no longer applies to any of Otter's rocks;
     // the prop IS the object. The reef keeps contactR 42 as its fallback circle.
     'otter-tidepool-shelf':    { label: 'Tidepool shelf',      world: 300, plane: 'surface', contact: 'hard', height: 0, motion: 'fixed' },
-    'otter-tidepool-pinnacle': { label: 'Granite pinnacle',    world: 160, plane: 'surface', contact: 'hard', height: 17, motion: 'fixed' },
+    'otter-tidepool-pinnacle': { label: 'Granite pinnacle',    world: 160, plane: 'surface', contact: 'hard', height: 8.5, motion: 'fixed' },
     'otter-tidepool-reef':     { label: 'Wash rock',           world: 120, plane: 'surface', contact: 'hard', contactR: 42, height: 0, motion: 'fixed' },
-    'otter-tidepool-basin':    { label: 'Tidepool basin',      world: 140, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
-    'otter-tidepool-ridge':    { label: 'Granite ridge',       world: 240, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
+    'otter-tidepool-basin':    { label: 'Tidepool basin',      world: 140, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed' },
+    'otter-tidepool-ridge':    { label: 'Granite ridge',       world: 240, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
     // ── OTTER POINT'S TIDEPOOL LIFE (2026-09-14) ──────────────────────────────
     // Five pools with the life in them (art/manifest.json `otter-tidepool-*`), each owned by
     // one colour so they read apart at race scale — green anemones, purple urchins, orange
@@ -2512,8 +2523,8 @@ const PROP_KINDS = {
     // with two stacks off its end). Landmarks, contact none — `coastalgranite` /
     // `tidepool` shapes under the solid parts, never under the slot or the arch neck.
     'otter-centre-tidepool-flats': { label: 'Tidepool flats',    world: 420, plane: 'surface', contact: 'hard', height: 0, motion: 'fixed' },
-    'otter-centre-surge-channel':  { label: 'Surge channel',     world: 380, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
-    'otter-centre-cypress-crag':   { label: 'Cypress crag',      world: 320, plane: 'surface', contact: 'hard', height: 12, motion: 'fixed' },
+    'otter-centre-surge-channel':  { label: 'Surge channel',     world: 380, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed' },
+    'otter-centre-cypress-crag':   { label: 'Cypress crag',      world: 320, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' },
     // THE ARCHES ARE COMPOSITES, like the bayou trees: `parts.surface` (the piers) is what the
     // tracer turns into the collider and what draws under the fleet; `parts.canopy` (the span,
     // the top of the arch) draws OVER the fleet, so a hull between the piers is under the arch.
@@ -2522,9 +2533,9 @@ const PROP_KINDS = {
     // `part: true` rows are the halves: never placed on their own, kept out of the picker.
     // art/archsplit.py cuts the bake; the passage is the neck run (arch point 24u x scale,
     // sea arch 16u x scale — beam-wise, a hull sails through lengthwise).
-    'otter-centre-arch-point':     { label: 'Arch point',        world: 480, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed',
+    'otter-centre-arch-point':     { label: 'Arch point',        world: 480, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed',
                                 parts: { surface: 'otter-centre-arch-point-piers', canopy: 'otter-centre-arch-point-span' }, opaque: true },
-    'otter-centre-arch-point-piers': { label: 'Arch point piers', world: 480, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed', part: true },
+    'otter-centre-arch-point-piers': { label: 'Arch point piers', world: 480, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed', part: true },
     'otter-centre-arch-point-span': { label: 'Arch point span',  world: 480, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // ── OTTER POINT'S DRY ROCKS (2026-09-14) ──────────────────────────────────
     // The California rock set's land pieces (art/manifest.json `otter-boulder-*`,
@@ -2532,24 +2543,24 @@ const PROP_KINDS = {
     // headland meadows — dry, lichen-spotted, no intertidal bands, scrub only in the
     // joints. Landmarks, contact none: they stand on the meadow or the granite band; a
     // `coastalgranite` shape goes under any that must stop a hull in the water.
-    'otter-boulder-egg':        { label: 'Granite boulder',     world:  44, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
-    'otter-boulder-pile':       { label: 'Boulder pile',        world: 110, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
-    'otter-outcrop-whaleback':  { label: 'Granite whaleback',   world: 120, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' },
+    'otter-boulder-egg':        { label: 'Granite boulder',     world:  44, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed' },
+    'otter-boulder-pile':       { label: 'Boulder pile',        world: 110, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
+    'otter-outcrop-whaleback':  { label: 'Granite whaleback',   world: 120, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
     'otter-outcrop-pavement':   { label: 'Granite pavement',    world: 160, plane: 'surface', contact: 'hard', height: 0, motion: 'fixed' },
-    'otter-outcrop-fin':        { label: 'Granite fin',         world: 140, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' },
+    'otter-outcrop-fin':        { label: 'Granite fin',         world: 140, plane: 'surface', contact: 'hard', height: 2.5, motion: 'fixed' },
     // ── OTTER POINT'S SEA STACKS (2026-09-14) ─────────────────────────────────
     // Standing in the water with the three intertidal bands round their feet: the thin
     // blade and the flat-topped table plus the bird rock, and the sea arch.
     // Landmarks, contact none — the redrock tower rule: a `coastalgranite` shape with a
     // `height` at the footprint carries the collider, the surf and a real lee.
-    'otter-stack-blade':        { label: 'Blade stack',         world: 150, plane: 'surface', contact: 'hard', height: 12, motion: 'fixed' },
-    'otter-stack-table':        { label: 'Table stack',         world: 130, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
-    'otter-stack-bird-rock':    { label: 'Bird rock',           world: 220, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed' },
+    'otter-stack-blade':        { label: 'Blade stack',         world: 150, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' },
+    'otter-stack-table':        { label: 'Table stack',         world: 130, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
+    'otter-stack-bird-rock':    { label: 'Bird rock',           world: 220, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' },
     // the arch: a spur pinched to an isthmus with transparent notches either side of the
     // neck — shapes under the two lobes only, never under the neck, so a dinghy can duck through
-    'otter-sea-arch':           { label: 'Sea arch',            world: 180, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed',
+    'otter-sea-arch':           { label: 'Sea arch',            world: 180, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed',
                        parts: { surface: 'otter-sea-arch-piers', canopy: 'otter-sea-arch-span' }, opaque: true },
-    'otter-sea-arch-piers':         { label: 'Sea arch piers', world: 180, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed', part: true },
+    'otter-sea-arch-piers':         { label: 'Sea arch piers', world: 180, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed', part: true },
     'otter-sea-arch-span':          { label: 'Sea arch span',  world: 180, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // ── OTTER POINT'S SECOND VEGETATION SET, BEACH PROPS AND THE LIGHT (2026-09-14) ──
     // What the California references showed the first seven plants did not: a yellow-
@@ -2568,7 +2579,7 @@ const PROP_KINDS = {
     'otter-cypress-grove':      { label: 'Cypress grove',       world: 220, plane: 'surface', contact: 'none', motion: 'fixed' },
     'otter-driftwood-log':      { label: 'Driftwood log',       world:  54, plane: 'surface', contact: 'none', motion: 'fixed' },
     'otter-kelp-wrack':         { label: 'Kelp wrack',          world:  40, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'otter-lighthouse-pinos':   { label: 'Point Pinos light',   world:  96, plane: 'surface', contact: 'hard', height: 12, motion: 'fixed' },
+    'otter-lighthouse-pinos':   { label: 'Point Pinos light',   world:  96, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed', chartBuilding: '#5F5750' },
     // ── SPOONBILL FLATS (2026-09-17, the first six of eighteen; art/flats-prompts.md) ──
     // The estuary's own things: the dinghy the tide left (the warning, contact none — it
     // lies on ground that dries), the kaap and the wreck as hard landmarks, the fish weir
@@ -2585,25 +2596,25 @@ const PROP_KINDS = {
     // frame: the kedge, the mooring buoy) they turn to lie to the stream while afloat and
     // stay where they settled when the water leaves them (drawProps, Tide.propSwing).
     'flats-stranded-dinghy':    { label: 'Stranded dinghy',     world:  64, plane: 'surface', contact: 'none', motion: 'fixed', floats: 0.2, swing: [0.5, 0.06] },   // afloat with 0.2 m under her, swinging to the stream about the kedge at the top of the frame; on the mud below that
-    'flats-kaap':               { label: 'Kaap (daymark)',      world:  56, plane: 'surface', contact: 'hard', height: 15, motion: 'fixed' },
-    'flats-wreck-hull':         { label: 'Wreck',               world: 130, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
-    'flats-fish-weir':          { label: 'Fish weir',           world: 200, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed', tidal: true, tideH: 1.2, tideRef: 3 },
-    'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed', tidal: true, tideH: 0.7, tideRef: 5 },
-    'flats-stone-bridge':       { label: 'Stone bridge',        world: 300, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'flats-kaap':               { label: 'Kaap (daymark)',      world:  56, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed' },
+    'flats-wreck-hull':         { label: 'Wreck',               world: 130, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed' },
+    'flats-fish-weir':          { label: 'Fish weir',           world: 200, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed', tidal: true, tideH: 1.2, tideRef: 3 },
+    'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 0.5, motion: 'fixed', tidal: true, tideH: 0.7, tideRef: 5 },
+    'flats-stone-bridge':       { label: 'Stone bridge',        world: 300, plane: 'surface', contact: 'none', motion: 'fixed', chartSpan: '#A8A397', chartSpanAxis: 'x', chartSpanLen: 0.43, chartSpanWidth: 0.13 },
     // round 2 (2026-09-17): the houseboat came back as a plan; the gangway is on her port side, so place her with that side to the marsh
-    'flats-houseboat':          { label: 'Houseboat',           world: 120, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' },
+    'flats-houseboat':          { label: 'Houseboat',           world: 120, plane: 'surface', contact: 'hard', height: 2.5, motion: 'fixed', chartBuilding: '#50463B' },
     // the centrepiece (round 2, a roof plan): placed ONCE at the head, the tail-race toward the finish reach
-    'flats-tide-mill':          { label: 'Tide mill',           world: 240, plane: 'surface', contact: 'hard', height: 10, motion: 'fixed' },
+    'flats-tide-mill':          { label: 'Tide mill',           world: 240, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed', chartBuilding: '#69727F' },
     // on a swinging mooring, bow to the flood; the buoy ahead is in the sprite, so the collider covers boat, line and buoy
-    'flats-fishing-boat':       { label: 'Fishing boat',        world:  80, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed', floats: 0.35, swing: [0.5, 0.06] },   // on her mooring: swings to the stream about the buoy at the top of the frame,
+    'flats-fishing-boat':       { label: 'Fishing boat',        world:  80, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed', floats: 0.35, swing: [0.5, 0.06] },   // on her mooring: swings to the stream about the buoy at the top of the frame,
     // the channel beacons (round 2, a plan): red to port, green to starboard — the green is the red master recoloured
-    'flats-perch-beacon':       { label: 'Beacon (red, port)',  world:  44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
-    'flats-perch-beacon-green': { label: 'Beacon (green, stbd)', world: 44, plane: 'surface', contact: 'hard', height: 8, motion: 'fixed' },
+    'flats-perch-beacon':       { label: 'Beacon (red, port)',  world:  44, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
+    'flats-perch-beacon-green': { label: 'Beacon (green, stbd)', world: 44, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
     'flats-sea-lavender':       { label: 'Sea lavender',        world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
     'flats-shell-bank':         { label: 'Shell bank',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed', tidal: true, tideH: 0.35, tideRef: 30 },
     'flats-driftwood-tree':     { label: 'Driftwood tree',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed', floats: 0.3 },   // a log lifts off the sand when the tide reaches it; no swing (it lies where it is)
     // the last of the set: the working harbour, where the wantij creek leaves the channel; the stage is to the left of the ridge, so that side faces the water
-    'flats-oyster-shed':        { label: 'Oyster shed',         world: 130, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' }
+    'flats-oyster-shed':        { label: 'Oyster shed',         world: 130, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed', chartBuilding: '#6A4031' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
@@ -3365,6 +3376,323 @@ function shapeTraits(s) {
 // `land[]` + `ice[]` become one ordered `shapes[]`, land first — which is exactly the
 // order the game drew them in, since drawIslands ran a 'land' pass and then a 'floe' pass.
 // Preserving it is what keeps a migrated venue identical rather than merely similar.
+// ── THE MAP LINE (Oct 2026) ───────────────────────────────────────────────────────────────────
+// A venue's shapes may run as far past the race boundary as the designer likes; the maps draw them
+// all. A shape lying ENTIRELY outside the map line — the boundary pushed out by `world.mapMargin`
+// (default 1200 u) along every bearing from the arena's middle — is MAP-ONLY: compiled into the
+// backdrop list the maps and the land layer draw, never into the race (no collision, lee, current,
+// router, grid, tide or check sees it), and left out of recordsHash and courseSig, so scenery past
+// the line never resets a record book. Shapes crossing the line race exactly as they always have.
+const MAP_MARGIN = 1200;
+const _mapLineCache = new WeakMap();
+function mapLine(doc) {
+    if (!doc || !doc.world || !doc.world.boundary) return null;
+    const hit = _mapLineCache.get(doc);
+    const B = doc.world.boundary.poly, margin = doc.world.mapMargin != null ? +doc.world.mapMargin : MAP_MARGIN;
+    if (hit && hit.B === B && hit.margin === margin) return hit.line;
+    let line = null;
+    if (Array.isArray(B) && B.length >= 3) {
+        let cx = 0, cy = 0; for (const p of B) { cx += p[0]; cy += p[1]; } cx /= B.length; cy /= B.length;
+        const NA = 256, R = new Float64Array(NA);
+        for (let i = 0; i < NA; i++) {
+            const a = i / NA * Math.PI * 2, ux = Math.cos(a), uy = Math.sin(a);
+            let far = 0;
+            for (let k = 0; k < B.length; k++) {
+                const p = B[k], q = B[(k + 1) % B.length], ex = q[0] - p[0], ey = q[1] - p[1], den = ux * ey - uy * ex;
+                if (Math.abs(den) < 1e-9) continue;
+                const t = ((p[0] - cx) * ey - (p[1] - cy) * ex) / den, s2 = ((p[0] - cx) * uy - (p[1] - cy) * ux) / den;
+                if (t > 0 && s2 >= 0 && s2 <= 1) far = Math.max(far, t);
+            }
+            R[i] = far + margin;
+        }
+        const ring = []; for (let i = 0; i < NA; i++) { const a = i / NA * Math.PI * 2; ring.push([cx + Math.cos(a) * R[i], cy + Math.sin(a) * R[i]]); }
+        // radius of the line along any bearing (it is star-shaped about the middle)
+        const radiusAt = (x, y) => { let a = Math.atan2(y - cy, x - cx); if (a < 0) a += Math.PI * 2; const f = a / (Math.PI * 2) * NA, i = Math.floor(f) % NA, u = f - Math.floor(f); return R[i] * (1 - u) + R[(i + 1) % NA] * u; };
+        line = { cx, cy, margin, ring, radiusAt };
+    }
+    _mapLineCache.set(doc, { B, margin, line });
+    return line;
+}
+// Entirely outside the line: every vertex at or past it (a 2 u tolerance, so a shape trimmed to the
+// line — sharing its edge — counts as outside, and one trimmed to the inside counts as inside).
+function isMapOnly(doc, sh) {
+    const L = mapLine(doc); if (!L || !sh || !Array.isArray(sh.outer) || sh.outer.length < 3) return false;
+    for (const p of sh.outer) if (Math.hypot(p[0] - L.cx, p[1] - L.cy) < L.radiusAt(p[0], p[1]) - 2) return false;
+    return true;
+}
+// ── THE VIEW GUIDES (Oct 2026) ────────────────────────────────────────────────────────────────
+// What each surface can ever show of a venue — so a designer knows how far to build the land out and
+// in what detail (editor toggles under Wind / Current).
+//   game     the race camera: 1 world unit per CSS pixel, the frame centred ⅙ of its height ahead of
+//            the boat (CAM_LOOK_AHEAD) and turned any way. With the boat anywhere it can sail
+//            (sailableArea: water reachable from the start, inside the boundary), on a screen up to
+//            GAME_SCREEN (2560×1440 CSS px), everything within reach = look + half-diagonal is visible —
+//            the sailable area OFFSET outward by that reach (traced from a distance field).
+//   minimap  the race minimap (a square canvas) frames the arena's bounding SQUARE: the boundary's
+//            extent, its long side across the canvas, centred (drawMinimap's wholeMap branch). It does
+//            not turn (Wes, Oct 6 2026), so the guide is that square.
+//   preview  the venue page's map, zoomed all the way out: the smallest view that holds the whole
+//            SAILABLE area (sailableHull), on each measured panel size (PREVIEW_PANELS) at the turn
+//            that panel picks — the union of those views' visible rectangles.
+const GAME_SCREEN = { w: 2560, h: 1440 };
+// The farthest the race shows from the boat: the canvas is the window in CSS px at 1 unit a px, and in
+// heading-up mode the camera sits CAM_LOOK_AHEAD (⅙ of the height) AHEAD of the boat — along the screen's
+// own vertical. So the far point is a top corner of that shifted screen, √((w/2)² + (h/2 + h/6)²), not the
+// half-diagonal plus the look-ahead (which overstated it by ~110 u). Turned any way, that radius about any
+// point the boat can reach.
+const GAME_REACH = Math.hypot(GAME_SCREEN.w / 2, GAME_SCREEN.h / 2 + GAME_SCREEN.h / 6);
+function _extentOf(B) { let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity; for (const p of B) { x0 = Math.min(x0, p[0]); y0 = Math.min(y0, p[1]); x1 = Math.max(x1, p[0]); y1 = Math.max(y1, p[1]); } return { x0, y0, x1, y1 }; }
+// ── THE SAILABLE AREA (Wes, Oct 5 2026) ──────────────────────────────────────────────────────────
+// "Sailable = water reachable via a path from the starting point, only in the arena." So: a grid over
+// the race boundary, a cell wet when it is inside the boundary and off the land a boat cannot sail over
+// (race shapes that are neither awash, paint nor drifting), and a flood fill from the start line's
+// middle through wet cells (8-connected) — a lake cut off inside the boundary is not part of it. The
+// view guides measure from these cells; the venue page's map fits their convex hull (a view only needs
+// the area's extremes in every direction, which the hull gives exactly).
+const SAIL_GRID = 120;
+const _sailCache = new WeakMap();
+function _shapesSig(doc) {
+    let h = 0, n = 0;
+    for (const sh of (doc.shapes || [])) { n++; h = (h * 31 + (sh.kind || '').length) % 2147483647;
+        for (const r of [sh.outer || []].concat(sh.holes || [])) for (const p of r) h = (h * 31 + Math.round(p[0]) * 7 + Math.round(p[1])) % 2147483647; }
+    const c = doc.course || {};
+    for (const m of (c.marks || [])) h = (h * 31 + Math.round(m.x) * 7 + Math.round(m.y)) % 2147483647;
+    return n + ':' + h;
+}
+// The start: the middle of the route's first line (or the first goal), in world units.
+function _startPoint(doc) {
+    const c = doc.course || {}, M = {}; for (const m of (c.marks || [])) M[m.id] = m;
+    const r0 = (c.route || [])[0];
+    if (r0) {
+        const ln = r0.lineId && (c.lines || []).find(l => l.id === r0.lineId);
+        const ids = ln ? ln.marks : (r0.marks || (r0.markId ? [r0.markId] : []));
+        const ps = (ids || []).map(id => M[id]).filter(Boolean);
+        if (ps.length) return [ps.reduce((t, p) => t + p.x, 0) / ps.length, ps.reduce((t, p) => t + p.y, 0) / ps.length];
+    }
+    const m0 = (c.marks || [])[0]; return m0 ? [m0.x, m0.y] : null;
+}
+function sailableArea(doc) {
+    const B = doc && doc.world && doc.world.boundary && doc.world.boundary.poly; if (!B || B.length < 3) return null;
+    const sig = _shapesSig(doc), hit = _sailCache.get(doc);
+    if (hit && hit.B === B && hit.sig === sig) return hit.area;
+    const land = [];
+    for (const sh of raceShapes(doc)) {
+        const T = shapeTraits(sh);
+        if (T.motion === 'drift' || T.awash || T.paint || !Array.isArray(sh.outer) || sh.outer.length < 3) continue;
+        land.push({ outer: sh.outer, holes: sh.holes || [], e: _extentOf(sh.outer) });
+    }
+    const e = _extentOf(B), span = Math.max(e.x1 - e.x0, e.y1 - e.y0), cell = span / SAIL_GRID;
+    const nx = Math.ceil((e.x1 - e.x0) / cell), ny = Math.ceil((e.y1 - e.y0) / cell);
+    const wet = new Uint8Array(nx * ny);
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+        const x = e.x0 + (i + 0.5) * cell, y = e.y0 + (j + 0.5) * cell;
+        if (!pointInRing(x, y, B)) continue;
+        let dry = false;
+        for (const L of land) {
+            if (x < L.e.x0 || x > L.e.x1 || y < L.e.y0 || y > L.e.y1 || !pointInRing(x, y, L.outer)) continue;
+            if (!L.holes.some(r => r.length >= 3 && pointInRing(x, y, r))) { dry = true; break; }
+        }
+        if (!dry) wet[j * nx + i] = 1;
+    }
+    // flood from the start (the wet cell nearest it, should a mark sit on a cell called dry)
+    const sp = _startPoint(doc), mask = new Uint8Array(nx * ny);
+    let seed = -1;
+    if (sp) { let best = Infinity; const si = (sp[0] - e.x0) / cell - 0.5, sj = (sp[1] - e.y0) / cell - 0.5;
+        for (let k = 0; k < wet.length; k++) if (wet[k]) { const d = (k % nx - si) ** 2 + (Math.floor(k / nx) - sj) ** 2; if (d < best) { best = d; seed = k; } } }
+    if (seed >= 0) {
+        const q = [seed]; mask[seed] = 1;
+        while (q.length) { const k = q.pop(), i = k % nx, j = (k - i) / nx;
+            for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) { const a = i + di, b2 = j + dj;
+                if (a < 0 || b2 < 0 || a >= nx || b2 >= ny) continue; const kk = b2 * nx + a; if (wet[kk] && !mask[kk]) { mask[kk] = 1; q.push(kk); } } }
+    } else mask.set(wet);
+    const pts = [], h = cell / 2;
+    for (let k = 0; k < mask.length; k++) if (mask[k]) { const x = e.x0 + (k % nx + 0.5) * cell, y = e.y0 + (Math.floor(k / nx) + 0.5) * cell;
+        pts.push([x - h, y - h], [x + h, y - h], [x + h, y + h], [x - h, y + h]); }
+    const hull = pts.length ? _convexHull(pts) : B.map(p => [p[0], p[1]]);
+    const area = { x0: e.x0, y0: e.y0, cell, nx, ny, mask, hull };
+    _sailCache.set(doc, { B, sig, area });
+    return area;
+}
+function sailableHull(doc) { const A = sailableArea(doc); return A ? A.hull : null; }
+// Everything within `r` of the sailable area, as one ring: an EXACT Euclidean distance transform over
+// the cell mask (padded by r), traced at r. (A chamfer sweep over-measures by up to ~8%, which at the
+// game's 1,600 u reach pulled the line ~100 u short of what the screen really shows — Oct 6 2026.)
+function sailableOffsetRing(doc, r) {
+    const A = sailableArea(doc); if (!A) return null;
+    const pc = Math.ceil(r * 1.15 / A.cell) + 2, W = A.nx + 2 * pc, H = A.ny + 2 * pc, X0 = A.x0 - pc * A.cell, Y0 = A.y0 - pc * A.cell;
+    const INF = 1e20, f = new Float64Array(W * H).fill(INF);
+    for (let j = 0; j < A.ny; j++) for (let i = 0; i < A.nx; i++) if (A.mask[j * A.nx + i]) f[(j + pc) * W + i + pc] = 0;
+    // Felzenszwalb–Huttenlocher: the squared distance, exact, columns then rows
+    const edt1 = (g, n) => {
+        const d = new Float64Array(n), v = new Int32Array(n), z = new Float64Array(n + 1); let k = 0; v[0] = 0; z[0] = -INF; z[1] = INF;
+        for (let q = 1; q < n; q++) {
+            let s2 = ((g[q] + q * q) - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+            while (s2 <= z[k]) { k--; s2 = ((g[q] + q * q) - (g[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]); }
+            k++; v[k] = q; z[k] = s2; z[k + 1] = INF;
+        }
+        k = 0; for (let q = 0; q < n; q++) { while (z[k + 1] < q) k++; d[q] = (q - v[k]) ** 2 + g[v[k]]; }
+        return d;
+    };
+    const col = new Float64Array(H), row = new Float64Array(W);
+    for (let i = 0; i < W; i++) { for (let j = 0; j < H; j++) col[j] = f[j * W + i]; const d = edt1(col, H); for (let j = 0; j < H; j++) f[j * W + i] = d[j]; }
+    for (let j = 0; j < H; j++) { for (let i = 0; i < W; i++) row[i] = f[j * W + i]; const d = edt1(row, W); for (let i = 0; i < W; i++) f[j * W + i] = d[i]; }
+    // in units, from a cell's centre; a cell reaches half a cell (to its corner, √2/2) further
+    const at = (x, y) => { const gx = Math.max(0, Math.min(W - 1.001, (x - X0) / A.cell - 0.5)), gy = Math.max(0, Math.min(H - 1.001, (y - Y0) / A.cell - 0.5));
+        const i = Math.floor(gx), j = Math.floor(gy), fx = gx - i, fy = gy - j, k = j * W + i, D = (q) => Math.sqrt(f[q]) * A.cell;
+        return (D(k) * (1 - fx) + D(k + 1) * fx) * (1 - fy) + (D(k + W) * (1 - fx) + D(k + W + 1) * fx) * fy - A.cell * Math.SQRT1_2; };
+    return _traceZero((x, y) => at(x, y) - r, { x0: A.x0, y0: A.y0, x1: A.x0 + A.nx * A.cell, y1: A.y0 + A.ny * A.cell }, r * 1.1, 240);
+}
+function _convexHull(P) {
+    const pts = P.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lo = [], up = [];
+    for (const p of pts) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (let i = pts.length - 1; i >= 0; i--) { const p = pts[i]; while (up.length >= 2 && cross(up[up.length - 2], up[up.length - 1], p) <= 0) up.pop(); up.push(p); }
+    lo.pop(); up.pop(); return lo.concat(up);
+}
+// THE PANEL'S GEOMETRY, one rule for the venue page (screens.js drawCourseMiniMap) and this guide. A
+// panel W×H with an opaque strip of `inB` px over its foot: the area must land in the FIT box (clear of
+// the compass row, a pad, and room for the mark chips at the sides), centred at (W/2, oy); what a player
+// SEES is the panel above the strip.
+const PREVIEW_PAD = 26, PREVIEW_TOP = 70, PREVIEW_SIDES = 90;
+function previewPanel(W, H, inB) {
+    const Hv = H - inB - PREVIEW_TOP;
+    return { W, H, inB, fw: W - 2 * PREVIEW_PAD - PREVIEW_SIDES, fh: Hv - 2 * PREVIEW_PAD, oy: PREVIEW_TOP + Hv / 2, visH: H - inB };
+}
+// The fit of a set of points to a panel at turn `rot`: scale (px per unit) and the turned-frame centre.
+function previewFit(pts, rot, P) {
+    const ca = Math.cos(rot), sa = Math.sin(rot);
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const [x, y] of pts) { const rx = x * ca - y * sa, ry = x * sa + y * ca;
+        if (rx < x0) x0 = rx; if (rx > x1) x1 = rx; if (ry < y0) y0 = ry; if (ry > y1) y1 = ry; }
+    return { scale: Math.min(P.fw / Math.max(300, x1 - x0), P.fh / Math.max(300, y1 - y0)), rcx: (x0 + x1) / 2, rcy: (y0 + y1) / 2 };
+}
+// The turn (15° steps within ±90°) that lets the area fill the panel best; upright unless a turn buys 12%.
+function previewTurn(pts, P) {
+    let best = -1, rot = 0;
+    for (let k = -6; k <= 6; k++) { const a = k * Math.PI / 12, sc = previewFit(pts, a, P).scale * (k === 0 ? 1.12 : 1); if (sc > best) { best = sc; rot = a; } }
+    return rot;
+}
+// THE LABEL CHECK (one rule for the board and the guide, Oct 6 2026): after the fit, zoom out until every
+// rounding mark's number (a box 44 x 54 px about it) and every line's pill (170 x 30 px under its middle)
+// clears the panel's edges, the compass row and the foot. On a small panel this can zoom out — and pick a
+// different turn — so the guide has to run it too, or it would undercount what the board shows.
+// `goals` is { marks: [{x,y}], lines: [[{x,y},{x,y}]] } (previewGoals).
+function previewGoals(doc, runtime) {
+    const out = { marks: [], lines: [] };
+    if (runtime) {   // the race's compiled route: rounds carry their mark, lines their mark indices
+        const mk = runtime.marks || [];
+        for (const e of (runtime.route || [])) {
+            if (e.kind === 'round' && e.mark) out.marks.push(e.mark);
+            else if (e.marks && mk[e.marks[0]] && mk[e.marks[1]]) out.lines.push([mk[e.marks[0]], mk[e.marks[1]]]);
+        }
+        return out;
+    }
+    const c = (doc && doc.course) || {}, M = {}; for (const m of (c.marks || [])) M[m.id] = m;
+    for (const e of (c.route || [])) {
+        if (e.kind === 'round' && M[e.markId]) out.marks.push(M[e.markId]);
+        else if (e.lineId) { const ln = (c.lines || []).find(l => l.id === e.lineId); if (ln && M[ln.marks[0]] && M[ln.marks[1]]) out.lines.push([M[ln.marks[0]], M[ln.marks[1]]]); }
+    }
+    return out;
+}
+function previewWholeFit(pts, goals, rot, P) {
+    const f = previewFit(pts, rot, P), ca = Math.cos(rot), sa = Math.sin(rot);
+    const pr = (x, y) => { const rx = x * ca - y * sa, ry = x * sa + y * ca; return [P.W / 2 + (rx - f.rcx) * f.scale, P.oy + (ry - f.rcy) * f.scale]; };
+    for (let it = 0; it < 30 && goals; it++) {
+        let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+        const add = (xa, ya, xb, yb) => { bx0 = Math.min(bx0, xa); by0 = Math.min(by0, ya); bx1 = Math.max(bx1, xb); by1 = Math.max(by1, yb); };
+        for (const m of goals.marks) { const [x, y] = pr(m.x, m.y); add(x - 22, y - 36, x + 22, y + 18); }
+        for (const [a, b] of goals.lines) { const [ax, ay] = pr(a.x, a.y), [bx, by] = pr(b.x, b.y), mx = (ax + bx) / 2, my = (ay + by) / 2;
+            add(Math.min(ax, bx) - 6, Math.min(ay, by) - 6, Math.max(ax, bx) + 6, Math.max(ay, by) + 6); add(mx - 85, my, mx + 85, my + 30); }
+        if (bx0 === Infinity) break;
+        if (bx0 >= 8 && bx1 <= P.W - 8 && by0 >= PREVIEW_TOP - 20 && by1 <= P.visH - 6) break;
+        f.scale *= 0.94;
+    }
+    return f;
+}
+// The board's turn: 15° steps within ±90°, the one whose whole view (labels and all) is biggest —
+// upright unless a turn buys 12%.
+function previewWholeTurn(pts, goals, P) {
+    let best = -1, rot = 0;
+    for (let k = -6; k <= 6; k++) { const a = k * Math.PI / 12, sc = previewWholeFit(pts, goals, a, P).scale * (k === 0 ? 1.12 : 1); if (sc > best) { best = sc; rot = a; } }
+    return rot;
+}
+// A VENUE'S ONE TURN (Wes, Oct 6 2026: Lake's guide was an upright square merged with a 75° one). The
+// turn is chosen once, on a reference panel (the 1440×900 board's 606 px square), and every screen uses
+// it — so a venue looks the same on any window, and on a small one the label check only zooms out.
+const PREVIEW_REF_PANEL = 606;
+const _turnCache = new WeakMap();
+function previewVenueTurn(doc) {
+    const sig = _shapesSig(doc), hit = _turnCache.get(doc); if (hit && hit.sig === sig) return hit.rot;
+    const hull = sailableHull(doc); if (!hull) return 0;
+    const rot = previewWholeTurn(hull, previewGoals(doc), previewPanel(PREVIEW_REF_PANEL, PREVIEW_REF_PANEL, 0));
+    _turnCache.set(doc, { sig, rot });
+    return rot;
+}
+// The board's measured map squares (Oct 6 2026, the square stage: W, H, no strip over the map) from
+// 1024×768 to 2560×1440 windows and the portrait tablets. A small square spends proportionally more on
+// its fixed margins, so it shows the most around the area; the big ones bound the other end.
+const PREVIEW_PANELS = [[432, 432, 0], [487, 487, 0], [554, 554, 0], [606, 606, 0], [694, 694, 0], [949, 949, 0], [1309, 1309, 0]];
+// The world rectangle (4 corners) a panel shows of the whole sailable area, zoomed all the way out.
+function previewWhole(doc, P) {
+    const hull = sailableHull(doc); if (!hull) return null;
+    const goals = previewGoals(doc), rot = previewVenueTurn(doc), f = previewWholeFit(hull, goals, rot, P), ca = Math.cos(rot), sa = Math.sin(rot);
+    const w = (sx, sy) => { const rx = (sx - P.W / 2) / f.scale + f.rcx, ry = (sy - P.oy) / f.scale + f.rcy; return [rx * ca + ry * sa, -rx * sa + ry * ca]; };
+    return [w(0, 0), w(P.W, 0), w(P.W, P.visH), w(0, P.visH)];
+}
+// The zero contour of f (negative inside) over extent `e` padded by `pad`, on an N-cell grid, as one ring.
+function _traceZero(fn, e, pad, N) {
+    const x0 = e.x0 - pad, y0 = e.y0 - pad, side = Math.max(e.x1 - e.x0, e.y1 - e.y0) + 2 * pad;
+    // one cell of margin all round, so a region touching the extent still closes
+    const cell = side / (N - 2), X0 = x0 - cell, Y0 = y0 - cell;
+    const G = N + 1, f = new Float64Array(G * G);
+    for (let j = 0; j < G; j++) for (let i = 0; i < G; i++) f[j * G + i] = fn(X0 + i * cell, Y0 + j * cell);
+    // trace the zero contour: segments per cell, then chain
+    const segs = [], P = (i, j) => [X0 + i * cell, Y0 + j * cell], lerp = (a, b, fa, fb) => { const u = fa / (fa - fb); return [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u]; };
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+        const v = [f[j * G + i], f[j * G + i + 1], f[(j + 1) * G + i + 1], f[(j + 1) * G + i]], c = [P(i, j), P(i + 1, j), P(i + 1, j + 1), P(i, j + 1)];
+        const pts = [];
+        for (let k = 0; k < 4; k++) { const a = v[k], b = v[(k + 1) % 4]; if ((a < 0) !== (b < 0)) pts.push(lerp(c[k], c[(k + 1) % 4], a, b)); }
+        if (pts.length === 2) segs.push(pts); else if (pts.length === 4) { segs.push([pts[0], pts[1]]); segs.push([pts[2], pts[3]]); }
+    }
+    if (!segs.length) return null;
+    const key = (p) => Math.round(p[0] * 8) + ',' + Math.round(p[1] * 8), adj = new Map();
+    for (const [a, b] of segs) for (const [p, q] of [[a, b], [b, a]]) { const k = key(p); if (!adj.has(k)) adj.set(k, []); adj.get(k).push(q); }
+    const ring = [segs[0][0]], seen = new Set([key(segs[0][0])]);
+    let cur = segs[0][1];
+    for (let n = 0; n < segs.length + 2; n++) {
+        if (seen.has(key(cur))) break;
+        ring.push(cur); seen.add(key(cur));
+        const nx = (adj.get(key(cur)) || []).find(q => !seen.has(key(q)) || (key(q) === key(ring[0]) && ring.length > 2));
+        if (!nx) break; cur = nx;
+    }
+    return ring;
+}
+const _guideCache = new WeakMap();
+function viewGuides(doc) {
+    const B = doc && doc.world && doc.world.boundary && doc.world.boundary.poly; if (!B) return null;
+    const sig = _shapesSig(doc), hit = _guideCache.get(doc); if (hit && hit.B === B && hit.sig === sig) return hit.g;
+    const e = _extentOf(B), cx = (e.x0 + e.x1) / 2, cy = (e.y0 + e.y1) / 2, side = Math.max(e.x1 - e.x0, e.y1 - e.y0);
+    const g = { game: sailableOffsetRing(doc, GAME_REACH), gameReach: GAME_REACH, minimap: { cx, cy, r: side / 2 * Math.SQRT2, square: { x0: cx - side / 2, y0: cy - side / 2, x1: cx + side / 2, y1: cy + side / 2 } },
+                preview: previewGuideRect(doc) };
+    _guideCache.set(doc, { B, sig, g });
+    return g;
+}
+// THE PREVIEW GUIDE: every measured panel's whole view shares the venue's one turn, so their union is
+// bounded by one rectangle in that turned frame — drawn as that rectangle, 4 u outside it.
+function previewGuideRect(doc) {
+    const rot = previewVenueTurn(doc), ca = Math.cos(rot), sa = Math.sin(rot);
+    const qs = PREVIEW_PANELS.map(([W, H, inB]) => previewWhole(doc, previewPanel(W, H, inB))).filter(Boolean);
+    if (!qs.length) return null;
+    let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
+    for (const q of qs) for (const [x, y] of q) { const u = x * ca - y * sa, w = x * sa + y * ca; a0 = Math.min(a0, u); a1 = Math.max(a1, u); b0 = Math.min(b0, w); b1 = Math.max(b1, w); }
+    const back = (u, w) => [u * ca + w * sa, -u * sa + w * ca], m = 4;   // drawn just outside, never on, the extreme view
+    return [back(a0 - m, b0 - m), back(a1 + m, b0 - m), back(a1 + m, b1 + m), back(a0 - m, b1 + m)];
+}
+
+// The shapes the RACE reads: every shape that is not map-only.
+function raceShapes(doc) { return migrateShapes(doc).filter(sh => !isMapOnly(doc, sh)); }
+
 function migrateShapes(doc) {
     if (doc.shapes) return doc.shapes;
     const out = [];
@@ -3456,9 +3784,9 @@ function compileVenueDoc(doc, light) {
             K.height != null ? { height: K.height } : {})));
     }
 
-    for (const l of allShapes) {
-        const T = shapeTraits(l);
-        if (T.motion === 'drift') { shapeOrder.push({ drift: true, i: -1 }); continue; }
+    // One authored shape → one runtime island. Shared by the shape list and the BACKDROP
+    // (below), so a backdrop shape is built exactly like the land it continues.
+    const islandFromShape = (l, T) => {
         // KEYHOLED, so the runtime's single-ring render / collision / pathfinding all see the
         // interior water. With no holes this is `outer` copied, which is why every existing
         // venue is byte-identical across this change.
@@ -3548,7 +3876,9 @@ function compileVenueDoc(doc, light) {
             height: T.awash ? 0 : T.height,
             windShadow: T.awash ? 0 : (l.windShadow != null ? l.windShadow : null),
             currentShadow: T.awash ? 0 : (l.currentShadow != null ? l.currentShadow : null),
-            holes: (l.holes || []).map(h => h.map(p => ({ x: p[0], y: p[1] })))
+            holes: (l.holes || []).map(h => h.map(p => ({ x: p[0], y: p[1] }))),
+            // the outer ring alone, un-keyholed — for drawing an edge without the slits to the holes
+            outerRing: (l.holes && l.holes.length) ? l.outer.map(p => ({ x: p[0], y: p[1] })) : null
         };
         if (isBareRock) {
             isl.facets = verts.map((v1, j) => {
@@ -3558,9 +3888,37 @@ function compileVenueDoc(doc, light) {
                 return { i: j, lit: (mx / m) * FACET_LIGHT.x + (my / m) * FACET_LIGHT.y };
             });
         }
+        return isl;
+    };
+    const mapOnly = [];
+    for (const l of allShapes) {
+        const T = shapeTraits(l);
+        if (T.motion === 'drift') { shapeOrder.push({ drift: true, i: -1 }); continue; }
+        if (isMapOnly(doc, l)) { mapOnly.push(l); shapeOrder.push({ drift: false, i: -1, mapOnly: true }); continue; }   // past the map line: maps only (the slot keeps document indices aligned)
+        const isl = islandFromShape(l, T);
         shapeOrder.push({ drift: false, i: islands.length });
         islands.push(isl);
         byId[l.id] = isl;
+    }
+    // THE BACKDROP (Oct 2026): land beyond the race boundary that only the maps paint — the
+    // minimap, the venue page's map and the main view's land layer. It continues a venue's
+    // coast and country out of frame so a map never ends in a ruler-straight slab. It is NOT
+    // in `islands`: no collision, lee, current shadow, router, grid, surf, props or wildlife
+    // ever sees it, and recordsHash / courseSig leave `doc.backdrop` out, so adding or
+    // re-generating it changes no race and resets no record book (eval/_build_backdrop.js).
+    // `doc.backdrop = { margin, ring, shapes }`: `ring` is the line beyond which the backdrop
+    // owns the maps (they clip the authored land to it), `shapes` the land past it.
+    const backdrop = [];
+    const BD = doc.backdrop && !Array.isArray(doc.backdrop) ? doc.backdrop : { shapes: doc.backdrop || [] };
+    const backdropRing = Array.isArray(BD.ring) && BD.ring.length >= 3 ? BD.ring.map(p => ({ x: p[0], y: p[1] })) : null;
+    for (const l of mapOnly) { const isl = islandFromShape(l, shapeTraits(l)); isl.backdrop = true; backdrop.push(isl); }
+    for (const l of (BD.shapes || [])) {
+        if (!l || !Array.isArray(l.outer) || l.outer.length < 3) continue;
+        const T = shapeTraits(l);
+        if (T.motion === 'drift') continue;
+        const isl = islandFromShape(l, T);
+        isl.backdrop = true;
+        backdrop.push(isl);
     }
 
     const course = doc.course || {};
@@ -3943,13 +4301,13 @@ function compileVenueDoc(doc, light) {
                 //
                 // `!awash` and not `!reef`: a coral reef is a soft WALL and is deliberately NOT
                 // awash, so it stays in the grid and still closes the pass it is meant to close.
-                const fixed = migrateShapes(doc).filter(sh => {
+                const fixed = raceShapes(doc).filter(sh => {
                     const t = shapeTraits(sh);
                     return t.motion === 'fixed' && !t.awash;
                 });
                 // Same sampling rule as the game's grid (see buildCoursePaths):
                 // icy venues keep centre-sampled land.
-                const hasDrift = migrateShapes(doc).some(sh => shapeTraits(sh).motion !== 'fixed');
+                const hasDrift = raceShapes(doc).some(sh => shapeTraits(sh).motion !== 'fixed');
                 grid = window.SailCheck.buildGrid(fixed, boundary, null,
                     hasDrift ? { noSubsample: true } : null);
             }
@@ -4010,6 +4368,8 @@ function compileVenueDoc(doc, light) {
 
     return {
         islands,
+        backdrop,
+        backdropRing,
         ice,
         // Pictures with positions. Props affect NOTHING but pixels — no collision, no
         // lee, no router entry — so compile normalizes and passes them through, and no
@@ -4155,7 +4515,7 @@ function courseSig(doc) {
     const pt = (p) => [r(p[0]), r(p[1])];
     const marks = (c.marks || []).map(m => [m.id || '', r(m.x), r(m.y), m.kind || '', m.radius != null ? r(m.radius) : '']);
     const land = [];
-    for (const sh of migrateShapes(doc)) {
+    for (const sh of raceShapes(doc)) {
         const t = shapeTraits(sh);
         if (t.motion !== 'fixed' || t.awash) continue;
         land.push([(sh.outer || []).map(pt), (sh.holes || []).map(h => h.map(pt))]);
@@ -4197,7 +4557,8 @@ function courseSig(doc) {
 // shape (moving floes included — courseSig leaves them out because they do not move the
 // ruler, but they do move the fleet), the course, the wind, current, gusts, squalls, swell,
 // rapids, traffic, and every prop a hull can touch or a router prices. What is NOT: the
-// card copy, the note, the palette, the fx (snowfall, spindrift), the course description,
+// card copy, the note, the palette, the fx (snowfall, spindrift), the backdrop (scenery beyond
+// the boundary that only the maps draw), the course description,
 // the saved paths (derived from what is already hashed), the provisional record itself,
 // props with contact:none (shore trees, buildings, ships on land) and any `_`-prefixed
 // field. So a replant or a retint keeps the book; a physics edit resets it.
@@ -4213,9 +4574,11 @@ function canonJSON(x) {
 }
 function recordsHash(doc) {
     if (!doc) return 'r1-none';
-    const skipTop = { note: 1, card: 1, palette: 1, fx: 1, records: 1, props: 1, course: 1 };
+    const skipTop = { note: 1, card: 1, palette: 1, fx: 1, records: 1, props: 1, course: 1, backdrop: 1, chart: 1 };
     const out = {};
     for (const k of Object.keys(doc)) if (!skipTop[k]) out[k] = doc[k];
+    // Scenery past the map line is no part of the race (see isMapOnly).
+    if (Array.isArray(doc.shapes)) out.shapes = doc.shapes.filter(sh => !isMapOnly(doc, sh));
     const c = doc.course || {}, course = {};
     for (const k of Object.keys(c)) if (k !== 'description' && k !== 'paths') course[k] = c[k];
     out.course = course;
@@ -4263,6 +4626,8 @@ window.VenueDoc = {
     // The course's leg polylines, saved by the editor — see courseSig / savedCoursePaths.
     courseSig,
     savedPaths: savedCoursePaths,
+    // The map line and the race/map split (see THE MAP LINE).
+    mapLine, isMapOnly, raceShapes, viewGuides, sailableArea, sailableHull, previewPanel, previewFit, previewTurn, previewGoals, previewWholeFit, previewWholeTurn, previewVenueTurn,
     // What the record book is keyed on — see recordsHash.
     recordsHash,
     // THE GAME'S ONE LENGTH CONVERSION, in the file both the game and the editor already

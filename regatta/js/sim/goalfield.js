@@ -540,7 +540,10 @@
             const ends = e.marks.map(i => marks[i]).filter(Boolean);
             const isGate = e.kind === 'gate' && !e.finish && leg > 0 && leg < state.race.totalLegs;
             let gateSideOf = null;
-            if (isGate && ends.length === 2) {
+            // A THROUGH gate is sailed between, not rounded (physics: finish || pass === 'through'),
+            // so its ends have no rounding side — the chip draws them as a gate to pass, no arc.
+            const through = isGate && e.pass === 'through';
+            if (isGate && !through && ends.length === 2) {
                 const m1 = ends[0], m2 = ends[1];
                 const gdx = m2.x - m1.x, gdy = m2.y - m1.y, gl = Math.hypot(gdx, gdy) || 1;
                 const gs = (e.dir >= 0 ? 1 : -1);
@@ -563,7 +566,7 @@
                 const w = Math.max(0, Math.min(1, (3 * hwid - dist) / (1.5 * hwid)));
                 aim = { x: mx + (wp.x - mx) * w, y: my + (wp.y - my) * w };
             } else aim = { x: wp.x, y: wp.y };
-            res = { kind: isGate ? 'gate' : 'line', goal: null, ends, gateSideOf, direct: true, aim, dist: dTo(aim), side: null };
+            res = { kind: isGate ? 'gate' : 'line', goal: null, ends, gateSideOf, through, finish: !!e.finish, start: leg === 0, direct: true, aim, dist: dTo(aim), side: null };
         } else {
             const wp = player.raceState.nextWaypoint;
             res = { kind: 'wp', goal: wp, direct: true, aim: { x: wp.x, y: wp.y }, dist: dTo(wp), side: null, ends: null };

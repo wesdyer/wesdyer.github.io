@@ -2018,7 +2018,8 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
     check('with the field OFF the wind layer draws its regions\' own arrows',
           excl.offWind > excl.offOther * 1.5, `${excl.offWind} vs ${excl.offOther}`);
     check('...and with the field ON they give way to it entirely',
-          excl.onWind === excl.onOther, `${excl.onWind} vs ${excl.onOther}`);
+          // a pixel or two of anti-aliasing noise is not an arrow: region arrows draw hundreds
+          Math.abs(excl.onWind - excl.onOther) <= Math.max(3, excl.onOther * 0.002), `${excl.onWind} vs ${excl.onOther}`);
     await page.evaluate(() => { const A = window.EditorApp; while (A._state().histIdx > 0) A._undo(); });
 
     // ── The Gusts layer ─────────────────────────────────────────────────────
@@ -2563,7 +2564,13 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         // SELECT on empty water: a marquee, and nothing created.
         A._pickTool('select'); A._setOsel([]);
         const before = n();
-        down(150, 120); move(cv.clientWidth - 80, cv.clientHeight - 80); up();
+        // Start the marquee on open water — the venue's land may run out to the frame (map-only scenery
+        // past the map line), so a fixed corner can land on a shape and drag it instead.
+        const vw = A._view(), onLand = (sx, sy) => { const wx = vw.x + (sx - cv.clientWidth / 2) / vw.scale, wy = vw.y + (sy - cv.clientHeight / 2) / vw.scale;
+            return A._state().doc.shapes.some(l => { let c = false; const o = l.outer; for (let i = 0, j = o.length - 1; i < o.length; j = i++) { if (((o[i][1] > wy) !== (o[j][1] > wy)) && wx < (o[j][0] - o[i][0]) * (wy - o[i][1]) / (o[j][1] - o[i][1]) + o[i][0]) c = !c; } return c; }); };
+        let sx0 = 150, sy0 = 120;
+        for (let k = 0; k < 400 && onLand(sx0, sy0); k++) { sx0 = 60 + (k * 37) % (cv.clientWidth / 2); sy0 = 60 + Math.floor(k / 10) * 9; }
+        down(sx0, sy0); move(cv.clientWidth - 80, cv.clientHeight - 80); up();
         r.selectCreated = n() - before;
         r.selectSelected = A._osel().length;
 

@@ -579,7 +579,7 @@ function recomputeEstimate() {
         //
         // `!awash` rather than `!reef`: a coral reef is a soft WALL and is deliberately not
         // awash, so it stays in the grid and still closes the pass it exists to close.
-        const solid = window.VenueDoc.shapes(doc).filter(sh => {
+        const solid = window.VenueDoc.raceShapes(doc).filter(sh => {
             const t = window.VenueDoc.traits(sh);
             return t.motion === 'fixed' && !t.awash;
         });
@@ -595,7 +595,7 @@ function recomputeEstimate() {
                 solid.push({ id: p.id + (i ? `.hit${i + 1}` : '.hit'), kind: 'isle', outer: ring, holes: [], hidden: true }));
         }
         let grid = window.SailCheck.buildGrid(solid, course.boundary, null,
-            window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed') ? { noSubsample: true } : null);
+            window.VenueDoc.raceShapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed') ? { noSubsample: true } : null);
         // THE TIDE'S SAFE WATER (Spoonbill Flats): the estimate is the channel route — the
         // water that is always there — exactly as the game's own chart path is. The flats
         // are a field the tide opens and closes, not a polygon, so they are closed HERE
@@ -2098,7 +2098,13 @@ function drawTideLayer() {
     Tide.setOverride(lvl);
     ctx.save();
     ctx.translate(W() / 2, H() / 2); ctx.scale(view.scale, view.scale); ctx.translate(-view.x, -view.y);
-    try { Tide.drawWet(ctx); Tide.drawDry(ctx); } finally { ctx.restore(); Tide.setOverride(null); }
+    // The charts' wider field first (the river up the valley, past the race's raster — Oct 7 2026), then
+    // the race's own, sharper, over it wherever it reaches.
+    try {
+        const CF = Tide.chartField && Tide.chartField();
+        if (CF && Tide.setDrawField) { Tide.setDrawField(CF); try { Tide.drawWet(ctx); Tide.drawDry(ctx); } finally { Tide.setDrawField(null); } }
+        Tide.drawWet(ctx); Tide.drawDry(ctx);
+    } finally { ctx.restore(); Tide.setOverride(null); }
     ctx.save();
     ctx.font = '600 11px Archivo, system-ui, sans-serif'; ctx.fillStyle = 'rgba(253,230,138,0.9)';
     ctx.textAlign = 'left'; ctx.textBaseline = 'top';
@@ -2127,6 +2133,12 @@ function drawLandLayer() {
             // drawn as an outline rather than a solid, which is what "not really there" looks like.
             if (TR(l).hidden) { ctx.setLineDash([5, 4]); ctx.stroke(); ctx.setLineDash([]); }
             else ctx.stroke();
+        }
+        // Map-only scenery (wholly past VenueDoc.mapLine — never raced) wears a dotted outline.
+        if (window.VenueDoc && window.VenueDoc.isMapOnly) {
+            ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
+            for (const l of shapes) { if (!window.VenueDoc.isMapOnly(doc, l)) continue; ctx.beginPath(); for (const ring of eachRing(l)) ringPath(ring); ctx.stroke(); }
+            ctx.restore();
         }
         // Vertices of the SELECTED shape only — 137 dots everywhere is noise, and a handle
         // that is drawn but not grabbable (or grabbable but not drawn) is worse than none.
@@ -2966,6 +2978,7 @@ function draw() {
     // brush disc you cannot see under the ice you are about to reshape is no use.
     if (showField && shown('wind')) drawWindField();
     if (showCurField && shown('current')) drawCurrentField();
+    drawViewGuides();
     drawBrushDisc();
     drawBoundaryHandles();
     drawVertexSelection();
@@ -8872,6 +8885,25 @@ $('btn-rotmap').addEventListener('click', () => {
 function syncFieldButtons() {
     $('btn-field-wind').classList.toggle('btn-primary', showField);
     $('btn-field-cur').classList.toggle('btn-primary', showCurField);
+}
+// ── View guides: what the race camera, the minimap and the venue page's map can ever show ──
+const guides = { game: false, mini: false, prev: false };
+function syncGuideButtons() {
+    $('btn-guide-game').classList.toggle('btn-primary', guides.game);
+    $('btn-guide-mini').classList.toggle('btn-primary', guides.mini);
+    $('btn-guide-prev').classList.toggle('btn-primary', guides.prev);
+}
+for (const [id, k] of [['btn-guide-game', 'game'], ['btn-guide-mini', 'mini'], ['btn-guide-prev', 'prev']])
+    $(id).addEventListener('click', () => { guides[k] = !guides[k]; syncGuideButtons(); draw(); });
+function drawViewGuides() {
+    if (!doc || !(guides.game || guides.mini || guides.prev) || !window.VenueDoc || !window.VenueDoc.viewGuides) return;
+    const g = window.VenueDoc.viewGuides(doc); if (!g) return;
+    ctx.save(); ctx.lineWidth = 2; ctx.setLineDash([10, 6]);
+    const outline = (col) => { ctx.strokeStyle = 'rgba(6,14,26,0.6)'; ctx.lineWidth = 4; ctx.setLineDash([]); ctx.stroke(); ctx.strokeStyle = col; ctx.lineWidth = 2; ctx.setLineDash([10, 6]); ctx.stroke(); };
+    if (guides.game && g.game) { ctx.beginPath(); ringPath(g.game); outline('#facc15'); }
+    if (guides.mini) { const Q = g.minimap.square; ctx.beginPath(); ringPath([[Q.x0, Q.y0], [Q.x1, Q.y0], [Q.x1, Q.y1], [Q.x0, Q.y1]]); outline('#f472b6'); }
+    if (guides.prev && g.preview) { ctx.beginPath(); ringPath(g.preview); outline('#22d3ee'); }
+    ctx.restore();
 }
 $('btn-field-wind').addEventListener('click', () => {
     showField = !showField; syncFieldButtons(); fieldProbe(); draw();

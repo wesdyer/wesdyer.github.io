@@ -45,6 +45,8 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
             t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
         Math.random = rng;
         resetGame();
+        // Regions only: no land casts a lee here (the lee field traces whatever wind these regions state).
+        for (const i of state.course.islands) { i.height = 0; i.windShadow = 0; } __leeField.reset();
 
         // Freeze everything the regions are not responsible for.
         state.gusts = [];
@@ -74,6 +76,8 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
             { id: 'E', poly: box(0, 0, 1500), falloff: 200, direction:  10 * Math.PI/180, speed: 10, period: 0 }
         ];
         resetGame();
+        // Regions only: no land casts a lee here (the lee field traces whatever wind these regions state).
+        for (const i of state.course.islands) { i.height = 0; i.windShadow = 0; } __leeField.reset();
         state.gusts = []; state.wind.speed = 8; state.wind.baseDirection = -1; state.wind.direction = -1; state.time = 0;
         const wrap = sample(0, 0);
 
@@ -87,6 +91,8 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
         // different venues with identical fields.
         d.wind.regions = [{ id: 'V', poly: box(0, 0, 1500), falloff: 200, direction: 0, speed: null, period: 0 }];
         resetGame();
+        // Regions only: no land casts a lee here (the lee field traces whatever wind these regions state).
+        for (const i of state.course.islands) { i.height = 0; i.windShadow = 0; } __leeField.reset();
         state.gusts = []; state.wind.speed = 17; state.wind.baseDirection = -1; state.wind.direction = -1; state.time = 0;
         const venueSpeed = sample(0, 0);
 
@@ -112,6 +118,8 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
     const cur = await page.evaluate(() => {
         localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'seatrials' }));
         resetGame();
+        // Regions only: no land casts a lee here (the lee field traces whatever wind these regions state).
+        for (const i of state.course.islands) { i.height = 0; i.windShadow = 0; } __leeField.reset();
         // getCurrentAt returns NULL, not a zero vector, when nothing is flowing —
         // ambientCurrentAt hands back `conditions.current`, which is null by default.
         const before = { vc: !!venueCurrent(), at: (getCurrentAt(0, 0) || {}).speed || 0 };
@@ -169,7 +177,11 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
         // all five geometry assertions read "no shadow anywhere". The enormous-outline
         // case is deliberately covered further down, on arctic's coast, and it is a
         // DIFFERENT property.
-        const s = isl.reduce((a, b) => (b.radius < a.radius ? b : a), isl[0]);
+        // ...and no smaller than the LEE FIELD resolves (Oct 2026: fixed land casts through a 5 m field,
+        // so a 1 m islet's plume is a smear one cell wide — sub-grid is the field's own business, not
+        // this geometry's). The smallest island at least 7.5 m in radius.
+        const big = isl.filter(i => i.radius >= 75);
+        const s = (big.length ? big : isl).reduce((a, b) => (b.radius < a.radius ? b : a), (big.length ? big : isl)[0]);
 
         // A SHAPE CASTS ITS LEE DOWN THE WIND AT ITSELF, so these sweep the FIELD rather than
         // handing shadowAt a direction — there is no direction to hand it any more, and the
@@ -180,7 +192,11 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
         // island would take its own blended angle and the probes would be aimed elsewhere —
         // which is the real behaviour, and is what the region tests above cover.
         state.course.windRegions = [];
-        const shadeAt = (x, y, dir) => { state.wind.direction = dir; return shadowAt(x, y, null, 'wind'); };
+        // THE LEE FIELD follows the MEAN wind (with no regions, the base direction) and turns with the
+        // live wind only within ±40° of it — which is all a race ever asks (racing boats measured within
+        // 29° of the mean on every venue, Oct 5 2026). So a probe "at wind d" turns the day's wind to d,
+        // mean and all. Heights are edited IN PLACE below, so every probe drops the cached fields first.
+        const shadeAt = (x, y, dir) => { state.wind.direction = dir; state.wind.baseDirection = dir; __leeField.reset(); return shadowAt(x, y, null, 'wind'); };
 
         // NOTHING casts a lee until it is given a height — that is the default, deliberately,
         // so the feature existing does not change how ten venues sail.
@@ -259,6 +275,7 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
             if (!coast || i.radius > coast.radius) coast = i;
         }
         coast.height = 20;                              // 20 m of shelf and shore
+        __leeField.reset();
         o.coastRadius = Math.round(coast.radius);
         const b = state.course.boundary, dA = state.wind.direction;
         let n = 0, dim = 0;
@@ -280,9 +297,14 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
     check('nothing casts a lee until it is given a height', shade.silentByDefault === true);
     check('downwind of an island the breeze is thin, at every wind direction',
           shade.lee.every(v => v < 0.75), shade.lee.join(' '));
-    check('...and upwind of it is untouched', shade.luff.every(v => v === 1), shade.luff.join(' '));
+    // NEAR-untouched: the field's soft edge (LEE_SOFT, a blur) reaches ~20 m every way, upwind too —
+    // a few percent, where the downwind side loses a quarter or more.
+    check('...and upwind of it is (nearly) untouched', shade.luff.every(v => v >= 0.93), shade.luff.join(' '));
+    // The spot east of the island is downwind only in a WEST wind (270°, sample 6), and in the lee
+    // there and nowhere near as much at any other angle; in an east wind (sample 2) it is upwind, clear.
     check('the shadow TURNS with the wind — one spot, shadowed at one angle',
-          shade.fixed.filter(v => v < 1).length === 1, shade.fixed.join(' '));
+          shade.fixed.indexOf(Math.min(...shade.fixed)) === 6 && shade.fixed[6] < 0.5 && shade.fixed[2] >= 0.95
+          && shade.fixed.filter(v => v < 0.75).length === 1, shade.fixed.join(' '));
     check('it fades with distance rather than ending at a wall',
           shade.profile.every((v, i) => i === 0 || v >= shade.profile[i - 1] - 1e-9)
           && shade.profile[0] < 0.5 && shade.profile[shade.profile.length - 1] === 1,

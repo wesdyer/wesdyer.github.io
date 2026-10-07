@@ -899,7 +899,9 @@ const MINIMAP_ISLAND = {
     swampgrass: { body: '#a09453', top: '#4d7c0f' },
     ice:      { body: '#b8dcf5', top: '#f2f9ff' },
     redrock:  { body: '#cc6533', top: '#d98e57' },
-    granite:  { body: '#4b5563', top: '#374151' },
+    // Light rock on the chart (Wes, Oct 4 2026): the old slate (#374151) vanished into Glacier
+    // Sound's navy water, the only venue whose rocks are granite.
+    granite:  { body: '#9aa3ad', top: '#9aa3ad' },
     // Coral sand: the lagoon's beaches, kept sand-coloured in both slots — a mask
     // isle full of cream sand IS its own cap.
     coralsand: { body: '#efe4cf', top: '#efe4cf' },
@@ -1009,6 +1011,417 @@ const MINIMAP_ISLAND = {
 // is the whole picture, not a detail of the middle. A wooded island shows its CANOPY from
 // above; bare ground shows the GROUND. `trees` is the flag that already knows which is
 // which, so it decides here rather than a second list of exceptions.
+// ── THE CHART PALETTE (PT-019, Oct 2026) ─────────────────────────────────────
+// The maps — the race minimap, the venue page, the results map — paint each ground in the colour
+// of WHAT IT IS, not of its ground texture: a forest is its canopy, not the duff under it; a
+// meadow is grass; a beach is sand; rock is a light stone that never sinks into the water. Bright
+// and storybook like the rest of the game, but each venue keeps its own water and mood (the night
+// venues stay night). Wes, Oct 4 2026: "it should read like the kinds they aim to represent …
+// bright and cheery … while reminding players of what it represents."
+//
+// Keyed by KIND (not look), because two kinds can share a ground texture and still be different
+// things on a chart. `edge` defaults to the fill darkened; `tex` picks the overlay — 'canopy' (soft
+// tree dots), 'grain' (faint speckle) or none. Awash/painted zones carry their own alpha.
+const CHART_WATER = {
+    bay: '#2f9bd6', lake: '#2c8fb3', lagoon: '#1ea2dd', swamp: '#2f8288', river: '#3d998c', ocean: '#1f82c8',
+    redrock: '#28b2c9', glowtide: '#283a86', arctic: '#2f6396', otter: '#2a9aab', flats: '#4c87bd',
+    volcanic: '#25496d', seatrials: '#2f9bd6', pond: '#3aa0b8'
+};
+const CHART_KINDS = {
+    // forests and scrub: the canopy
+    forestfloor: { fill: '#4b9147', tex: 'canopy' }, humus: { fill: '#3f8a52', tex: 'canopy' },
+    cypressfloor: { fill: '#3f7f55', tex: 'canopy' }, jungle: { fill: '#2f7d45', tex: 'canopy' },   // a night jungle
+    coastalscrub: { fill: '#98b94b', tex: 'canopy' },
+    // an ISLE is a beach (Wes, Oct 7 2026): its race look (`tropical`) paints the body sand, and the
+    // green on Bay's islands is their own scrub shapes and tree props — so on the chart it is sand too
+    isle: { fill: '#ecd7a5', tex: 'grain' },
+    tropicscrub: { fill: '#8cc23f', tex: 'canopy' },
+    // grass and marsh
+    meadow: { fill: '#9fcd55', tex: 'grain' }, coastalmeadow: { fill: '#c5c265', tex: 'grain' },
+    reed: { fill: '#7fbe50', tex: 'grain' }, swampgrass: { fill: '#73b043', tex: 'grain' },
+    marsh: { fill: '#93b154', tex: 'grain' }, 'flats-marsh': { fill: '#a9b05c', tex: 'grain' },
+    lawn: { fill: '#9fd25a', tex: 'grain' }, mossfloor: { fill: '#6fa856', tex: 'canopy' },
+    // sand and earth
+    lakesand: { fill: '#e8d5a6', tex: 'grain' }, buffsand: { fill: '#e9cd92', tex: 'grain' },
+    tropicsand: { fill: '#f5e8cb', tex: 'grain' }, desertsand: { fill: '#ebb27c', tex: 'grain' },
+    mud: { fill: '#8d6c47', tex: 'grain' }, lane: { fill: '#e3d9c0' },
+    // rock: light stone, warm or cool to suit the venue
+    granite: { fill: '#b6bec8', tex: 'grain' }, gneiss: { fill: '#b3b0b3', tex: 'grain' },
+    outcrop: { fill: '#b9bcbf', tex: 'grain' }, coastalrock: { fill: '#c4baa8', tex: 'grain' },
+    coastalgranite: { fill: '#d6c8ae', tex: 'grain' }, karst: { fill: '#a9aeb6', tex: 'grain' },
+    coralrock: { fill: '#d2c9b6', tex: 'grain' }, tidepool: { fill: '#9e8f7b', tex: 'grain' },
+    sunkenrock: { fill: '#8893a2' }, cobble: { fill: '#b4aea2', tex: 'grain' },
+    redrock: { fill: '#de7b46', tex: 'grain' }, slickrock: { fill: '#f3d7a7', tex: 'grain' },
+    coralreef: { fill: '#f59a86', edge: '#c8665a', tex: 'grain' },   // living reef: coral pink, not beach
+    // volcanic: still dark, but light enough to read on night water
+    // darker (Wes, Oct 7 2026): pale grey read as limestone, not a volcano — toward the race's own basalt
+    basalt: { fill: '#565c67', tex: 'grain' }, blacksand: { fill: '#3e4148', tex: 'grain' },
+    cinder: { fill: '#79504a', tex: 'grain' }, lava: { fill: '#ff6a2b' }, magma: { fill: '#ff8a3d' },
+    // ice
+    ice: { fill: '#f4f9ff', edge: '#9fc6e6' }, floe: { fill: '#f4f9ff', edge: '#9fc6e6' },
+    // AWASH and painted zones: tints over the water, so they stay water
+    shallows: { fill: 'rgba(255,255,255,0.20)', zone: true }, shoal: { fill: 'rgba(250,236,196,0.45)', zone: true },
+    // tropicshoal = coral flats: a pink wash over the turquoise
+    tropicshoal: { fill: 'rgba(255,170,150,0.38)', zone: true }, cobbleshoal: { fill: 'rgba(200,192,178,0.55)', zone: true },
+    mudflat: { fill: 'rgba(170,136,92,0.55)', zone: true }, seagrass: { fill: 'rgba(92,178,112,0.30)', zone: true, tex: 'weed' },
+    kelp: { fill: 'rgba(176,138,62,0.40)', zone: true, tex: 'weed' }, lilybed: { fill: 'rgba(116,186,92,0.28)', zone: true, tex: 'weed' },
+    // Weed is WATER you can sail, slowly: a faint tint and a scatter of weed strokes, never a fill
+    // that reads as land (Gatorgrass's maze vanished under flat yellow-green mats).
+    duckweed: { fill: 'rgba(156,206,74,0.26)', zone: true, tex: 'weed' }, weedmat: { fill: 'rgba(126,166,64,0.30)', zone: true, tex: 'weed' },
+    weedbed: { fill: 'rgba(96,150,74,0.26)', zone: true, tex: 'weed' },
+    // The flats' BARS and SHELVES are not filled (Wes, Oct 7 2026: hard cream crescents and grey slabs
+    // over a ground the tide layer already models): Tide.drawMinimap paints them from the field — sand or
+    // mud by material, wet or dry by the level — with soft edges, so they read as the ground they are.
+    'flats-channel': { fill: 'rgba(40,96,160,0.55)', zone: true }, 'flats-bar': { skip: true, zone: true },
+    'flats-pool': { fill: 'rgba(120,170,214,0.6)', zone: true }, 'flats-flat': { skip: true, zone: true },
+    'flats-eelgrass': { fill: 'rgba(110,170,104,0.35)', zone: true, tex: 'weed' },
+};
+function chartKindOf(isl) { return isl && isl.kind ? CHART_KINDS[isl.kind] || null : null; }
+function chartShade(hex, f) {
+    const s = String(hex).replace('#', '');
+    if (!/^[0-9a-f]{6}$/i.test(s)) return 'rgba(0,0,0,0.25)';
+    const c = [0, 2, 4].map(i => Math.round(parseInt(s.substr(i, 2), 16) * f));
+    return `rgb(${c[0]},${c[1]},${c[2]})`;
+}
+// The two overlays, baked once: a soft canopy of tree dots, and a faint grain.
+let _chartTex = null;
+function chartTextures(ctx) {
+    if (_chartTex) return _chartTex;
+    const mk = (draw) => { const c = document.createElement('canvas'); c.width = c.height = 64; draw(c.getContext('2d')); return c; };
+    let seed = 7; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    const canopy = mk(g => {
+        for (let i = 0; i < 26; i++) {
+            const x = r() * 64, y = r() * 64, rad = 2.2 + r() * 2.6;
+            g.fillStyle = 'rgba(10,40,20,0.30)'; g.beginPath(); g.arc(x + 0.8, y + 1, rad, 0, Math.PI * 2); g.fill();
+            g.fillStyle = 'rgba(255,255,220,0.22)'; g.beginPath(); g.arc(x - 0.6, y - 0.7, rad * 0.55, 0, Math.PI * 2); g.fill();
+        }
+    });
+    const grain = mk(g => {
+        for (let i = 0; i < 140; i++) { g.fillStyle = r() < 0.5 ? 'rgba(0,0,0,0.10)' : 'rgba(255,255,255,0.10)'; g.fillRect(r() * 64, r() * 64, 1.2, 1.2); }
+    });
+    const weed = mk(g => {
+        g.lineCap = 'round';
+        for (let i = 0; i < 22; i++) {
+            const x = r() * 64, y = r() * 64, a = (r() - 0.5) * 1.2, L = 3 + r() * 3;
+            g.strokeStyle = r() < 0.5 ? 'rgba(150,210,80,0.85)' : 'rgba(90,150,60,0.85)'; g.lineWidth = 1.3;
+            g.beginPath(); g.moveTo(x, y); g.lineTo(x + Math.sin(a) * L, y - Math.cos(a) * L); g.stroke();
+        }
+    });
+    _chartTex = { canopy: ctx.createPattern(canopy, 'repeat'), grain: ctx.createPattern(grain, 'repeat'), weed: ctx.createPattern(weed, 'repeat') };
+    return _chartTex;
+}
+
+// ── THE CHART FINISH (PT-019, round 2, Oct 2026) ────────────────────────────
+// Wes found the tiled textures "a little too regular", and the research agreed: a repeated tile is
+// what the eye catches. So nothing here tiles. Everything is placed per shape and baked once into
+// the chart's cached layers:
+//   · DEPTH TINT — pale shallows along every coast fading to the venue's water, from a coarse
+//     distance-to-land field (Felzenszwalb–Huttenlocher EDT on a ~360 px mask).
+//   · WATERLINES — two or three thin ripples following the coast, the old chart-maker's figure-
+//     ground trick (Huffman, "On Waterlines"); traced as exact offsets of the land union.
+//   · LAND — a soft drop shadow, a light rim just inside the coast, and a gentle large-scale
+//     lightness variation, so no fill is a flat bucket of paint.
+//   · GLYPHS — trees, specks and weed strokes on a jittered world-space lattice per shape (stable
+//     under zoom and pan), density swayed by low-frequency noise into groves and clearings, a few
+//     tree shapes at varied size. Hashed per cell, so a venue always draws the same.
+// The small race minimap keeps depth, waterline, shadow and rim; glyphs would only be noise there.
+function chartRng(seed) { let s = (seed >>> 0) || 1; return () => (s = (Math.imul(s, 1664525) + 1013904223) >>> 0) / 4294967296; }
+function chartSeed(str) { let h = 2166136261; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619); return h >>> 0; }
+function chartNoise(seed) {
+    const hash = (i, j) => { let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263) + seed) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    const vn = (x, y) => { const i = Math.floor(x), j = Math.floor(y), fx = x - i, fy = y - j, sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+        const a = hash(i, j), b = hash(i + 1, j), c = hash(i, j + 1), d = hash(i + 1, j + 1);
+        return a + (b - a) * sx + (c - a) * sy + (a - b - c + d) * sx * sy; };
+    return (x, y) => vn(x, y) * 0.65 + vn(x * 2.13 + 5.2, y * 2.13 - 1.7) * 0.35;   // 0..1
+}
+// CHART CORNERS, ROUNDED (Wes, Oct 5 2026: Sockeye's slabs met the forest in knife points). Each
+// vertex is replaced by a short quadratic between points `r` back along its two edges (capped at a
+// third of each edge), in world units, cached on the island. Chart only — colliders keep their
+// corners. A keyholed shape keeps its ring, since rounding would pry its zero-width slits open.
+const CHART_CORNER_R = 180;
+function chartVerts(isl) {
+    if (!isl || !isl.vertices) return [];
+    if (isl._chartVerts && isl._chartVertsOf === isl.vertices) return isl._chartVerts;
+    const V = isl.vertices, n = V.length;
+    let out = V;
+    if (n >= 4 && !(isl.holes && isl.holes.length) && !isl.isFloe) {
+        out = [];
+        for (let i = 0; i < n; i++) {
+            const a = V[(i - 1 + n) % n], b = V[i], c = V[(i + 1) % n];
+            const la = Math.hypot(b.x - a.x, b.y - a.y), lc = Math.hypot(c.x - b.x, c.y - b.y);
+            const ra = Math.min(CHART_CORNER_R, la / 3), rc = Math.min(CHART_CORNER_R, lc / 3);
+            if (la < 1e-6 || lc < 1e-6) { out.push(b); continue; }
+            // Only a real CORNER is rounded (a turn past ~35°). A gentle vertex — a curve's sampling,
+            // or an edge two shapes share — stays exact, so neighbours never part along it.
+            const turn = Math.abs(Math.atan2((b.x - a.x) * (c.y - b.y) - (b.y - a.y) * (c.x - b.x), (b.x - a.x) * (c.x - b.x) + (b.y - a.y) * (c.y - b.y)));
+            if (turn < 0.6) { out.push(b); continue; }
+            const p0 = { x: b.x + (a.x - b.x) * ra / la, y: b.y + (a.y - b.y) * ra / la };
+            const p2 = { x: b.x + (c.x - b.x) * rc / lc, y: b.y + (c.y - b.y) * rc / lc };
+            for (let k = 0; k <= 4; k++) {
+                const u = k / 4, w0 = (1 - u) * (1 - u), w1 = 2 * u * (1 - u), w2 = u * u;
+                out.push({ x: w0 * p0.x + w1 * b.x + w2 * p2.x, y: w0 * p0.y + w1 * b.y + w2 * p2.y });
+            }
+        }
+    }
+    isl._chartVerts = out; isl._chartVertsOf = isl.vertices;
+    return out;
+}
+// A shape's rings for drawing: its outer and holes as SEPARATE subpaths (filled even-odd) when it has
+// holes — the keyholed single ring joins them with a zero-width slit, which anti-aliases into a hairline
+// across the land — and the corner-rounded single ring otherwise.
+function chartRings(isl) {
+    if (isl.holes && isl.holes.length && isl.outerRing) return [isl.outerRing].concat(isl.holes);
+    return [chartVerts(isl)];
+}
+function chartRingsPath(target, isl, t) {
+    for (const r of chartRings(isl)) { r.forEach((v, i) => { const p = t(v.x, v.y); i ? target.lineTo(p.x, p.y) : target.moveTo(p.x, p.y); }); target.closePath(); }
+}
+// Standing land the finish works from: backdrop (unclipped) and authored (clipped to the ring).
+function chartStanding(list) { return (list || []).filter(i => i && i.vertices && i.vertices.length > 2 && !i.hidden && !i.awash && !i.paint && !i.isFloe && !i.reef); }
+// 1-D squared distance transform (Felzenszwalb & Huttenlocher).
+function chartEdt1(f, n, d, v, z) {
+    let k = 0; v[0] = 0; z[0] = -Infinity; z[1] = Infinity;
+    for (let q = 1; q < n; q++) {
+        let s2 = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]);
+        while (s2 <= z[k]) { k--; s2 = ((f[q] + q * q) - (f[v[k]] + v[k] * v[k])) / (2 * q - 2 * v[k]); }
+        k++; v[k] = q; z[k] = s2; z[k + 1] = Infinity;
+    }
+    k = 0;
+    for (let q = 0; q < n; q++) { while (z[k + 1] < q) k++; d[q] = (q - v[k]) * (q - v[k]) + f[v[k]]; }
+}
+function chartEdt(seedMask, w, h) {          // distance (px) from every pixel to the nearest seed
+    const INF = 1e20, g = new Float64Array(w * h), n = Math.max(w, h);
+    const f = new Float64Array(n), d = new Float64Array(n), v = new Int32Array(n), z = new Float64Array(n + 1);
+    for (let i = 0; i < w * h; i++) g[i] = seedMask[i] ? 0 : INF;
+    for (let x = 0; x < w; x++) { for (let y = 0; y < h; y++) f[y] = g[y * w + x]; chartEdt1(f, h, d, v, z); for (let y = 0; y < h; y++) g[y * w + x] = d[y]; }
+    for (let y = 0; y < h; y++) { for (let x = 0; x < w; x++) f[x] = g[y * w + x]; chartEdt1(f, w, d, v, z); for (let x = 0; x < w; x++) g[y * w + x] = Math.sqrt(d[x]); }
+    return g;
+}
+// The land union drawn into `g` (already transformed to chart px), backdrop free, authored inside the ring.
+function chartFillLand(g, t, bd, au, ring, stroke) {
+    const path = (vs) => { g.beginPath(); vs.forEach((v, i) => { const p = t(v.x, v.y); i ? g.lineTo(p.x, p.y) : g.moveTo(p.x, p.y); }); g.closePath(); };
+    const shape = (isl) => { g.beginPath(); chartRingsPath(g, isl, t); };
+    for (const isl of bd) { shape(isl); g.fill('evenodd'); if (stroke) g.stroke(); }
+    if (ring) { g.save(); path(ring); g.clip(); }
+    for (const isl of au) { shape(isl); g.fill('evenodd'); if (stroke) g.stroke(); }
+    if (ring) g.restore();
+}
+// The fields one chart needs, built once per static-layer key.
+let _chartFx = { key: null };
+// ROCKS IN THE WATER are props (Otter's stacks, pinnacles, reef rocks), compiled as hidden colliders that
+// take surf: the chart's coast — the shallows and the waterlines — is measured round them too (Wes,
+// Oct 7 2026). Only natural rock: no building, bridge, pier, quay, wall, piling, weir, beacon, wreck,
+// or tree (a trunk's collider is not a coast).
+const CHART_NOT_ROCK = /bridge|pier|dock|quay|wall|piling|float|trestle|weir|beacon|kaap|wreck|containers|marina|terminal|mill|shed|shack|house|light|boat|mark|buoy|oak|tree|palm|pine|spruce|trunk/;
+function chartPropRocks() {
+    const c = state.course, doc = c.doc, VD = window.VenueDoc;
+    if (!doc || !VD) return [];
+    const kindOf = new Map((doc.props || []).map(p => [p.id, p.kind]));
+    return (c.islands || []).filter(i => {
+        if (!i.propSurf || !i.vertices || i.vertices.length < 3 || i.awash) return false;
+        const kind = kindOf.get(String(i.id).split('.hit')[0]), K = kind && VD.PROP_KINDS[kind];
+        return !!K && !K.chartBuilding && !K.chartSpan && !CHART_NOT_ROCK.test(kind);
+    });
+}
+function chartFields(key, width, height, t, venueKey) {
+    if (_chartFx.key === key) return _chartFx;
+    const bd = chartStanding(state.course.backdrop), au = chartStanding(state.course.islands).concat(chartPropRocks());
+    const ring = (state.course.backdrop && state.course.backdrop.length) ? state.course.backdropRing : null;
+    const ds = Math.max(1, Math.ceil(Math.max(width, height) / 360));
+    const mw = Math.ceil(width / ds), mh = Math.ceil(height / ds);
+    const mc = document.createElement('canvas'); mc.width = mw; mc.height = mh;
+    const g = mc.getContext('2d'); g.scale(1 / ds, 1 / ds); g.fillStyle = '#fff';
+    // stroked too, a mask pixel wide: where two shapes meet edge to edge the coarse mask otherwise
+    // leaves a slit of "water", and the rim light glows along every internal seam (Wes, Oct 5 2026)
+    g.strokeStyle = '#fff'; g.lineWidth = ds * 1.5; g.lineJoin = 'round';
+    chartFillLand(g, t, bd, au, ring, true);
+    const px = g.getImageData(0, 0, mw, mh).data;
+    const land = new Uint8Array(mw * mh); for (let i = 0; i < mw * mh; i++) land[i] = px[i * 4 + 3] > 127 ? 1 : 0;
+    const water = new Uint8Array(mw * mh); for (let i = 0; i < mw * mh; i++) water[i] = land[i] ? 0 : 1;
+    // Waterlines ring HARD shores only — a sedge island or a marsh you can push through is not a
+    // coast, and ringing them turned the bayou's maze into contour lines.
+    const hard = (l) => l.filter(i => !i.soft);
+    _chartFx = { key, ds, mw, mh, land, toLand: chartEdt(land, mw, mh), toWater: chartEdt(water, mw, mh), bd, au, ring,
+                 bdHard: hard(bd), auHard: hard(au),
+                 noise: chartNoise(chartSeed(String(venueKey || 'chart'))) };
+    return _chartFx;
+}
+// Water: depth tint (and nothing on land, which is painted over it).
+// SHALLOWS TOWARD A COLOUR, not white, where the water is dark (Wes, Oct 7 2026: Emberfall's navy lifted
+// toward white made a grey haze the colour of its basalt, and the coast smeared into it). Unlisted
+// venues keep the lift toward white.
+const CHART_SHALLOW = { volcanic: '#5a9cc0' };
+function chartDepthCanvas(F, waterHex, width, shallowHex) {
+    const c = document.createElement('canvas'); c.width = F.mw; c.height = F.mh;
+    const g = c.getContext('2d'), img = g.createImageData(F.mw, F.mh), D = img.data;
+    const s = String(waterHex).replace('#', ''), W = [0, 2, 4].map(i => parseInt(s.substr(i, 2), 16));
+    const T = shallowHex ? [1, 3, 5].map(i => parseInt(shallowHex.substr(i, 2), 16)) : [255, 255, 255];
+    const LIFT = shallowHex ? 0.75 : 0.40;   // toward a colour the lift can go further without washing out
+    const band = Math.max(3, width * 0.03) / F.ds, deep = band * 5;
+    for (let i = 0; i < F.mw * F.mh; i++) {
+        const dd = F.toLand[i];
+        const sh = Math.max(0, 1 - dd / band); const shallow = sh * sh * (3 - 2 * sh);     // smooth
+        const dp = Math.min(1, Math.max(0, (dd - band) / deep));
+        const lift = LIFT * shallow, sink = 0.10 * dp;
+        D[i * 4] = W[0] + (T[0] - W[0]) * lift - W[0] * sink;
+        D[i * 4 + 1] = W[1] + (T[1] - W[1]) * lift - W[1] * sink;
+        D[i * 4 + 2] = W[2] + (T[2] - W[2]) * lift - W[2] * sink;
+        D[i * 4 + 3] = 255;
+    }
+    g.putImageData(img, 0, 0);
+    return c;
+}
+// Waterlines: rings at given offsets (chart px) around the land union, faded outward.
+function chartWaterlines(mc, F, t, width, height, offsets, lw) {
+    const c = document.createElement('canvas'); c.width = width; c.height = height;
+    const g = c.getContext('2d'); g.lineJoin = 'round'; g.lineCap = 'round';
+    offsets.forEach((d, k) => {
+        g.clearRect(0, 0, width, height);
+        g.globalCompositeOperation = 'source-over'; g.fillStyle = g.strokeStyle = '#fff'; g.lineWidth = 2 * (d + lw / 2);
+        chartFillLand(g, t, F.bdHard, F.auHard, F.ring, true);
+        g.globalCompositeOperation = 'destination-out'; g.lineWidth = Math.max(0.01, 2 * (d - lw / 2));
+        chartFillLand(g, t, F.bdHard, F.auHard, F.ring, d - lw / 2 > 0.2);
+        mc.save(); mc.globalAlpha = [0.42, 0.24, 0.13, 0.08][k] || 0.08; mc.drawImage(c, 0, 0); mc.restore();
+    });
+}
+// Land overlay: a light rim inside the coast and the large-scale lightness variation.
+function chartLandOverlay(F, worldOf) {
+    const c = document.createElement('canvas'); c.width = F.mw; c.height = F.mh;
+    const g = c.getContext('2d'), img = g.createImageData(F.mw, F.mh), D = img.data;
+    const rimW = 4;
+    for (let y = 0; y < F.mh; y++) for (let x = 0; x < F.mw; x++) {
+        const i = y * F.mw + x;
+        if (!F.land[i]) continue;
+        const rim = Math.max(0, 1 - F.toWater[i] / rimW);
+        const [wx, wy] = worldOf((x + 0.5) * F.ds, (y + 0.5) * F.ds);
+        const n = F.noise(wx / 2200, wy / 2200) * 2 - 1;
+        const L = rim * 0.20 + n * 0.09;
+        const v = L > 0 ? 255 : 0;
+        D[i * 4] = D[i * 4 + 1] = D[i * 4 + 2] = v; D[i * 4 + 3] = Math.min(255, Math.abs(L) * 255);
+    }
+    g.putImageData(img, 0, 0);
+    return c;
+}
+// THE GLYPH LAYER, BY KIND (Wes, Oct 5 2026: seams showed as lines of cut trees). Trees, specks and weed
+// are scattered over each KIND's whole visible area — every shape of it, authored or surround, merged —
+// from one world lattice seeded by the kind, so no shape boundary inside a forest can show. The
+// visible area comes from a kind map: every standing shape painted in draw order, each kind its own
+// colour, so a meadow laid over a forest takes its ground away from the trees as it does on screen.
+function chartGlyphLayer(mc, order, ring, t, unit, worldOf, noise, budget, ringOut) {
+    const W = mc.canvas.width, H = mc.canvas.height;
+    const ms = Math.max(1, unit * 0.5), mw = Math.ceil(W / ms), mh = Math.ceil(H / ms);
+    const kinds = [];
+    for (const o of order) { const ck = chartKindOf(o.isl); if (ck && ck.tex && !ck.zone && !kinds.includes(o.isl.kind)) kinds.push(o.isl.kind); }
+    if (!kinds.length) return;
+    const km = document.createElement('canvas'); km.width = mw; km.height = mh;
+    const g = km.getContext('2d'); g.setTransform(1 / ms, 0, 0, 1 / ms, 0, 0); g.imageSmoothingEnabled = false;
+    const path = (isl) => { const P = new Path2D(); chartRingsPath(P, isl, t); return P; };
+    const ringP = ring ? (() => { const P = new Path2D(); ring.forEach((v, i) => { const p = t(v.x, v.y); i ? P.lineTo(p.x, p.y) : P.moveTo(p.x, p.y); }); P.closePath(); return P; })() : null;
+    // colour = kind index + 1 in the red channel (0 = water / untextured land)
+    for (const o of order) {
+        const k = kinds.indexOf(o.isl.kind) + 1;
+        g.save();
+        if (o.clip && ringP) { const P = new Path2D(); P.rect(-10, -10, W + 20, H + 20); P.addPath(ringP); g.clip(P, 'evenodd'); }   // the surround: outside the ring
+        else if (!o.clip && ringOut) { const P = new Path2D(); ringOut.forEach((v, i) => { const p = t(v.x, v.y); i ? P.lineTo(p.x, p.y) : P.moveTo(p.x, p.y); }); P.closePath(); g.clip(P); }   // authored: inside the pushed ring
+        g.fillStyle = `rgb(${k},0,0)`;
+        g.fill(path(o.isl), 'evenodd');
+        g.restore();
+    }
+    const px = g.getImageData(0, 0, mw, mh).data;
+    kinds.forEach((kindName, ki) => {
+        const ck = CHART_KINDS[kindName];
+        const out = new Uint8Array(mw * mh); let any = false;
+        for (let i = 0; i < mw * mh; i++) { const inK = px[i * 4] === ki + 1 && px[i * 4 + 3] > 127; out[i] = inK ? 0 : 1; if (inK) any = true; }
+        if (!any) return;
+        const dIn = chartEdt(out, mw, mh);
+        const at = (x, y) => { const i = Math.floor(x / ms), j = Math.floor(y / ms); return (i < 0 || j < 0 || i >= mw || j >= mh) ? 0 : dIn[j * mw + i] * ms; };
+        chartGlyphsAt(mc, kindName, ck, at, { x0: 0, y0: 0, x1: W, y1: H }, unit, worldOf, noise, budget);
+    });
+}
+
+// The glyphs for one shape: 'canopy' trees, 'grain' specks, 'weed' strokes. Inside/outside comes
+// from a small mask of the shape (one fill, then array reads) rather than isPointInPath per test,
+// which was most of the bake on the river's long banks.
+function chartGlyphs(mc, isl, ck, t, unit, worldOf, noise, budget) {
+    const P = new Path2D(); let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    chartVerts(isl).forEach((v, i) => { const p = t(v.x, v.y); i ? P.lineTo(p.x, p.y) : P.moveTo(p.x, p.y); x0 = Math.min(x0, p.x); y0 = Math.min(y0, p.y); x1 = Math.max(x1, p.x); y1 = Math.max(y1, p.y); });
+    P.closePath();
+    x0 = Math.max(x0, 0); y0 = Math.max(y0, 0); x1 = Math.min(x1, mc.canvas.width); y1 = Math.min(y1, mc.canvas.height);
+    if (x1 - x0 < unit * 2 || y1 - y0 < unit * 2) return 0;
+    const kind = ck.tex;
+    const r = kind === 'canopy' ? unit * 2.6 : kind === 'weed' ? unit * 2.2 : unit * 2.4;
+    const edge = kind === 'canopy' ? r * 0.7 : r * 0.4;
+    // the shape's mask, at ~1 glyph-unit resolution, eroded by `edge` via its own distance field
+    const ms = Math.max(1, unit * 0.5), mw = Math.ceil((x1 - x0) / ms) + 1, mh = Math.ceil((y1 - y0) / ms) + 1;
+    const mcv = document.createElement('canvas'); mcv.width = mw; mcv.height = mh;
+    const mg = mcv.getContext('2d'); mg.setTransform(1 / ms, 0, 0, 1 / ms, -x0 / ms, -y0 / ms); mg.fillStyle = '#fff'; mg.fill(P, 'evenodd');
+    const px = mg.getImageData(0, 0, mw, mh).data, out = new Uint8Array(mw * mh);
+    for (let i = 0; i < mw * mh; i++) out[i] = px[i * 4 + 3] > 127 ? 0 : 1;
+    const dIn = chartEdt(out, mw, mh);           // distance to outside, in mask px
+    const at = (x, y) => { const i = Math.floor((x - x0) / ms), j = Math.floor((y - y0) / ms); return (i < 0 || j < 0 || i >= mw || j >= mh) ? 0 : dIn[j * mw + i] * ms; };
+    return chartGlyphsAt(mc, isl.kind, ck, at, { x0, y0, x1, y1 }, unit, worldOf, noise, budget);
+}
+// Scatter and draw one kind's glyphs where `at(x, y)` (distance inside its area, panel px) allows.
+function chartGlyphsAt(mc, kindName, ck, at, box, unit, worldOf, noise, budget) {
+    const { x0, y0, x1, y1 } = box;
+    const kind = ck.tex, base = String(ck.fill);
+    const r = kind === 'canopy' ? unit * 2.6 : kind === 'weed' ? unit * 2.2 : unit * 2.4;
+    const edge = kind === 'canopy' ? r * 0.7 : r * 0.4;
+    // STABLE IN THE WORLD (Wes, Oct 5 2026: zooming reshuffled every tree). Points sit on a jittered
+    // lattice in WORLD units, its spacing the glyph spacing rounded to a power of two — so within a
+    // zoom band every tree keeps its place, and the band changes only when the zoom doubles (the map's
+    // crossfade covers that). Each point's jitter, keep-roll and shape come from a hash of its cell,
+    // not from a sequence, so the same tree is the same tree from any view.
+    const [wa, wb] = worldOf(0, 0), [wc, wd] = worldOf(1, 0);
+    const pxPerU = 1 / Math.hypot(wc - wa, wd - wb);
+    const L = Math.round(Math.log2(r / pxPerU)), sw = Math.pow(2, L);
+    const seedK = chartSeed(String(kindName) + L);   // by KIND: one lattice across every shape of it
+    const hash = (i, j, k) => { let h = (Math.imul(i, 374761393) + Math.imul(j, 668265263) + Math.imul(k, 1442695041) + seedK) | 0; h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967296; };
+    const corners = [worldOf(x0, y0), worldOf(x1, y0), worldOf(x0, y1), worldOf(x1, y1)];
+    let gx0 = Infinity, gx1 = -Infinity, gy0 = Infinity, gy1 = -Infinity;
+    for (const [cx2, cy2] of corners) { gx0 = Math.min(gx0, cx2); gx1 = Math.max(gx1, cx2); gy0 = Math.min(gy0, cy2); gy1 = Math.max(gy1, cy2); }
+    const i0 = Math.floor(gx0 / sw) - 1, i1 = Math.ceil(gx1 / sw) + 1, j0 = Math.floor(gy0 / sw) - 1, j1 = Math.ceil(gy1 / sw) + 1;
+    if ((i1 - i0) * (j1 - j0) > 4e5) return 0;
+    // world -> panel: the inverse of worldOf, from three samples (it is affine)
+    const [ox, oy] = worldOf(0, 0), [ux, uy] = worldOf(1, 0), [vx, vy] = worldOf(0, 1);
+    const ax = ux - ox, ay = uy - oy, bx2 = vx - ox, by2 = vy - oy, det = ax * by2 - bx2 * ay;
+    const toPanel = (wx, wy) => { const dx = wx - ox, dy = wy - oy; return [(dx * by2 - dy * bx2) / det, (ax * dy - ay * dx) / det]; };
+    const pts = [];
+    for (let j = j0; j <= j1 && pts.length < budget; j++) for (let i = i0; i <= i1; i++) {
+        const wx = (i + 0.15 + 0.7 * hash(i, j, 1)) * sw, wy = (j + 0.15 + 0.7 * hash(i, j, 2)) * sw;
+        const [px, py] = toPanel(wx, wy);
+        if (px < x0 || py < y0 || px > x1 || py > y1) continue;
+        if (at(px, py) < edge) continue;
+        const n = noise(wx / 1600 + 31.7, wy / 1600 - 12.3);
+        const keep = kind === 'canopy' ? 0.15 + 0.95 * n : 0.25 + 0.75 * n;
+        if (hash(i, j, 3) > keep) continue;
+        pts.push([px, py, hash(i, j, 4), hash(i, j, 5), hash(i, j, 6)]);
+    }
+    const dark = base.startsWith('#') ? chartShade(base, 0.68) : 'rgba(40,70,30,0.6)';
+    const lite = base.startsWith('#') ? chartShade(base, 1.18) : 'rgba(200,230,140,0.6)';
+    for (const [x, y, h1, h2, h3] of pts) {
+        let hk = 0; const rnd2 = () => [h1, h2, h3][hk++ % 3];
+        const sc = 0.85 + rnd2() * 0.3;
+        if (kind === 'canopy') {
+            const rr = unit * 1.15 * sc, v = rnd2();
+            mc.fillStyle = 'rgba(10,35,25,0.28)'; mc.beginPath(); mc.arc(x + rr * 0.35, y + rr * 0.45, rr, 0, Math.PI * 2); mc.fill();
+            mc.fillStyle = dark; mc.beginPath();
+            if (v < 0.25) { mc.arc(x - rr * 0.45, y, rr * 0.75, 0, Math.PI * 2); mc.arc(x + rr * 0.45, y + rr * 0.1, rr * 0.75, 0, Math.PI * 2); }
+            else mc.arc(x, y, rr * (v < 0.5 ? 0.8 : 1), 0, Math.PI * 2);
+            mc.fill();
+            mc.fillStyle = lite; mc.globalAlpha = 0.55; mc.beginPath(); mc.arc(x - rr * 0.3, y - rr * 0.3, rr * 0.38, 0, Math.PI * 2); mc.fill(); mc.globalAlpha = 1;
+        } else if (kind === 'weed') {
+            const a = (rnd2() - 0.5) * 1.4, L = unit * (1.2 + rnd2() * 0.9);
+            mc.strokeStyle = rnd2() < 0.5 ? 'rgba(150,210,80,0.75)' : 'rgba(80,140,60,0.75)'; mc.lineWidth = Math.max(0.8, unit * 0.45); mc.lineCap = 'round';
+            mc.beginPath(); mc.moveTo(x, y); mc.quadraticCurveTo(x + Math.sin(a) * L * 0.6 + L * 0.2, y - Math.cos(a) * L * 0.5, x + Math.sin(a) * L, y - Math.cos(a) * L); mc.stroke();
+        } else {
+            mc.fillStyle = rnd2() < 0.55 ? 'rgba(0,0,0,0.13)' : 'rgba(255,255,255,0.16)';
+            mc.beginPath(); mc.arc(x, y, Math.max(0.6, unit * 0.35 * sc), 0, Math.PI * 2); mc.fill();
+        }
+    }
+    return pts.length;
+}
+
 function minimapIsland(style) {
     const row = MINIMAP_ISLAND[style];
     if (row) return row;
@@ -1034,6 +1447,7 @@ function minimapProps() {
     const c = state.course;
     if (c._mmProps) return c._mmProps;
     const out = c._mmProps = [];
+    // (landforms first — the ground everything else on them stands on; see the sort at the end)
     const doc = c.doc, VD = window.VenueDoc;
     if (!doc || !VD || !VD.propHitRings) return out;
     const vis = (c.islands || []).filter(i => !i.hidden && !i.awash && !i.paint && i.vertices && i.vertices.length > 2);
@@ -1045,17 +1459,52 @@ function minimapProps() {
         const K = VD.PROP_KINDS[p.kind];
         if (!K) continue;
         const T = VD.propTraits(p);
-        if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
+        if (T.motion !== 'fixed') continue;
         const w = K.world * (p.scale || 1);
+        // BUILDINGS (Wes, Oct 7 2026): every house, shed, lodge and light, hard or not, as its painted
+        // footprint (prop_outlines' `paint`, turned and scaled like the sprite) in its roof colour.
+        // ...and the big LANDFORMS the same way (volcanoes, peaks, nunataks, mesas), at their true size.
+        if (K.chartBuilding || K.chartLandform) {
+            const O = (window.PROP_OUTLINES || {})[p.kind];
+            if (O && O.paint && O.paint.length) {
+                const f = w / O.world, h = p.heading || 0, c0 = Math.cos(h), s0 = Math.sin(h);
+                const rings = O.paint.map(r => r.map(q => [p.x + q[0] * f * c0 - q[1] * f * s0, p.y + q[0] * f * s0 + q[1] * f * c0]));
+                if (K.chartLandform) out.push({ landform: true, flat: !!K.chartFlat, crack: /crevasse/.test(p.kind), volcano: /volcano/.test(p.kind), p, w, rings, color: K.chartLandform });
+                else out.push({ building: true, p, w, rings, color: K.chartBuilding });
+            }
+            continue;
+        }
+        // A SPAN the chart always draws, hard or not: a bridge is a landmark whether or not a hull can
+        // touch it (Sockeye's footbridge stops nothing — Wes, Oct 6 2026). Its hard parts, if any, as towers.
+        if (K.chartSpan) { out.push({ span: true, p, w, rings: T.contact === 'hard' ? (VD.propHitRings(p).rings || []) : [], color: K.chartSpan, axis: K.chartSpanAxis || 'y', len: K.chartSpanLen || 0.46, width: K.chartSpanWidth || 0.08 }); continue; }
+        if (T.contact !== 'hard') continue;
         const rings = VD.propHitRings(p).rings || [];
-        if (K.chartSpan) { out.push({ span: true, p, w, rings, color: K.chartSpan }); continue; }
         if (w < MM_PROP_MIN || !rings.length) continue;
         let n = 0, on = 0;
         for (const r of rings) for (const v of r) { n++; if (onVis(v[0], v[1])) on++; }
         if (on > n * 0.5) continue;
         out.push({ span: false, p, w, rings });
     }
+    out.sort((a, b) => (b.landform ? 1 : 0) - (a.landform ? 1 : 0));
     return out;
+}
+// LANDMARKS THE CHART MUST SHOW (Wes, Oct 5 2026): the volcanoes — the thing Emberfall is about —
+// as cones with a glowing crater, at every size; and on the larger maps every coral head, which is a
+// hard collision however small (the size floor above drops them). Drawn over the land layer.
+function drawChartLandmarks(mc, t, scale, width) {
+    const doc = state.course.doc, VD = window.VenueDoc;
+    if (!doc || !VD) return;
+    const big = width >= 420, u = width / 180;
+    for (const p of doc.props || []) {
+        const K = VD.PROP_KINDS[p.kind]; if (!K) continue;
+        const q = t(p.x, p.y), wr = K.world * (p.scale || 1) * 0.5 * scale;
+        // (volcanoes are LANDFORMS now — drawMinimapProps, at their true size; the capped cone is gone)
+        if (big && /coral/.test(p.kind)) {
+            const r = Math.max(1.6 * u / 2.2, Math.min(wr, 6));
+            mc.fillStyle = '#ff8e7c'; mc.strokeStyle = 'rgba(120,40,40,0.6)'; mc.lineWidth = 1;
+            mc.beginPath(); mc.arc(q.x, q.y, r, 0, Math.PI * 2); mc.fill(); mc.stroke();
+        }
+    }
 }
 function drawMinimapProps(mc, t, scale) {
     const ringPath = (r) => {
@@ -1063,7 +1512,61 @@ function drawMinimapProps(mc, t, scale) {
         r.forEach((v, i) => { const q = t(v[0], v[1]); i ? mc.lineTo(q.x, q.y) : mc.moveTo(q.x, q.y); });
         mc.closePath();
     };
+    const hexRGB = (h) => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16));
+    const mix = (c, to, k) => `rgb(${c.map((v, i) => Math.round(v + (to[i] - v) * k)).join(',')})`;
     for (const m of minimapProps()) {
+        if (m.landform && m.crack) {
+            // A CREVASSE is a crack, not a slab: its traced outline takes in the snow rim, so the chart
+            // draws the crack itself — a tapered line along the outline's long axis, dark blue inside a
+            // pale lip, as wide as a third of the outline across.
+            const P = [].concat(...m.rings); let mx = 0, my = 0; for (const v of P) { mx += v[0]; my += v[1]; } mx /= P.length; my /= P.length;
+            let sxx = 0, syy = 0, sxy = 0; for (const v of P) { const dx = v[0] - mx, dy = v[1] - my; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; }
+            const ang = 0.5 * Math.atan2(2 * sxy, sxx - syy), ux = Math.cos(ang), uy = Math.sin(ang);
+            let a0 = Infinity, a1 = -Infinity, b0 = Infinity, b1 = -Infinity;
+            for (const v of P) { const a = (v[0] - mx) * ux + (v[1] - my) * uy, bb = -(v[0] - mx) * uy + (v[1] - my) * ux; a0 = Math.min(a0, a); a1 = Math.max(a1, a); b0 = Math.min(b0, bb); b1 = Math.max(b1, bb); }
+            const half = Math.max(0.6 / scale, (b1 - b0) * 0.17), N = 12, side = [], other = [];
+            for (let i = 0; i <= N; i++) { const f = i / N, a = a0 + (a1 - a0) * f, wv = half * Math.pow(Math.sin(Math.PI * f), 0.6);
+                side.push(t(mx + ux * a - uy * wv, my + uy * a + ux * wv)); other.push(t(mx + ux * a + uy * wv, my + uy * a - ux * wv)); }
+            mc.beginPath(); side.forEach((q, i) => i ? mc.lineTo(q.x, q.y) : mc.moveTo(q.x, q.y)); for (let i = other.length - 1; i >= 0; i--) mc.lineTo(other[i].x, other[i].y); mc.closePath();
+            mc.lineJoin = 'round'; mc.strokeStyle = 'rgba(214,232,245,0.95)'; mc.lineWidth = 2; mc.stroke();
+            mc.fillStyle = '#3f74a0'; mc.fill();
+            continue;
+        }
+        if (m.landform) {
+            // THE LANDFORM at its true size: its footprint lit from the north-west and shaded to the
+            // south-east (the chart's relief), a shade-darker edge; a volcano adds its crater, glowing.
+            const c = hexRGB(m.color);
+            let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+            for (const r of m.rings) for (const v of r) { const q = t(v[0], v[1]); x0 = Math.min(x0, q.x); y0 = Math.min(y0, q.y); x1 = Math.max(x1, q.x); y1 = Math.max(y1, q.y); }
+            const size = Math.max(x1 - x0, y1 - y0), q0 = t(m.p.x, m.p.y);
+            if (size < 4) { mc.fillStyle = mix(c, [255, 255, 255], 0.1); mc.beginPath(); mc.arc(q0.x, q0.y, 2, 0, Math.PI * 2); mc.fill(); }
+            else {
+                let g;
+                if (m.flat) g = mix(c, [255, 255, 255], 0);
+                else {
+                    g = mc.createLinearGradient(x0, y0, x1, y1);
+                    g.addColorStop(0, mix(c, [255, 255, 255], 0.28)); g.addColorStop(0.55, mix(c, [255, 255, 255], 0.05)); g.addColorStop(1, mix(c, [0, 0, 0], 0.28));
+                }
+                mc.fillStyle = g; mc.strokeStyle = mix(c, [0, 0, 0], m.flat ? 0.12 : 0.4); mc.lineWidth = 1; mc.lineJoin = 'round';
+                for (const r of m.rings) { ringPath(r); mc.fill(); mc.stroke(); }
+            }
+            if (m.volcano) {
+                const r = Math.max(1.8, size * 0.14);
+                const cg = mc.createRadialGradient(q0.x, q0.y, 0, q0.x, q0.y, r);
+                cg.addColorStop(0, '#ffe08a'); cg.addColorStop(0.5, '#ff7a2b'); cg.addColorStop(1, 'rgba(200,40,20,0.9)');
+                mc.fillStyle = cg; mc.beginPath(); mc.arc(q0.x, q0.y, r, 0, Math.PI * 2); mc.fill();
+            }
+            continue;
+        }
+        if (m.building) {
+            // the roof, lifted a fifth toward white and cased, so a dark roof still reads on dark
+            // ground; never smaller than a few px, so a cottage on the race's minimap is still a dot
+            const [r0, g0, b0] = [1, 3, 5].map(i => parseInt(m.color.substr(i, 2), 16)), L = (v) => Math.round(v + (255 - v) * 0.2);
+            mc.fillStyle = `rgb(${L(r0)},${L(g0)},${L(b0)})`; mc.strokeStyle = 'rgba(10,20,30,0.55)'; mc.lineWidth = 1; mc.lineJoin = 'round';
+            if (m.w * scale < 3.5) { const q = t(m.p.x, m.p.y); mc.fillRect(q.x - 1.6, q.y - 1.6, 3.2, 3.2); mc.strokeRect(q.x - 1.6, q.y - 1.6, 3.2, 3.2); continue; }
+            for (const r of m.rings) { ringPath(r); mc.fill(); mc.stroke(); }
+            continue;
+        }
         if (!m.span) {
             mc.fillStyle = MM_PROP_STONE;
             for (const r of m.rings) { ringPath(r); mc.fill(); }
@@ -1071,9 +1574,11 @@ function drawMinimapProps(mc, t, scale) {
         }
         // THE DECK: end to end along sprite-up (0.46 of the drawn size each way — the bakes'
         // 92% fill), on a dark casing so a pale bridge still reads over pale water.
-        const h = m.p.heading || 0, ux = Math.sin(h), uy = -Math.cos(h), L = 0.46 * m.w;
+        const h = m.p.heading || 0, L = m.len * m.w;
+        const ux = m.axis === 'x' ? Math.cos(h) : Math.sin(h), uy = m.axis === 'x' ? Math.sin(h) : -Math.cos(h);
         const a = t(m.p.x - ux * L, m.p.y - uy * L), b = t(m.p.x + ux * L, m.p.y + uy * L);
-        const lw = Math.max(2, 0.08 * m.w * scale);
+        // never thinner than a trail: a span is the way across, and under ~4 px it read as a crack
+        const lw = Math.max(4.5, m.width * m.w * scale);
         mc.lineCap = 'butt';
         mc.beginPath(); mc.moveTo(a.x, a.y); mc.lineTo(b.x, b.y);
         mc.strokeStyle = 'rgba(10,20,30,0.45)'; mc.lineWidth = lw + 1.5; mc.stroke();
@@ -1183,7 +1688,11 @@ function drawMinimap() {
         const e = Arena.extent((window.School && School._previewBounds) || state.course.boundary);
         minX = e.minX; maxX = e.maxX; minY = e.minY; maxY = e.maxY;
     }
-    const pad = wholeMap ? 0 : (schoolBounds ? 60 : 200);
+    // A borrowed target may name the exact world box to paint (the venue page's map renders the
+    // panel's own window — rotated, cropped to the course — at the panel's resolution).
+    const tgtExtent = drawMinimap.target && drawMinimap.target.extent;
+    if (tgtExtent) { minX = tgtExtent.minX; maxX = tgtExtent.maxX; minY = tgtExtent.minY; maxY = tgtExtent.maxY; }
+    const pad = (wholeMap || tgtExtent) ? 0 : (schoolBounds ? 60 : 200);
     minX-=pad; maxX+=pad; minY-=pad; maxY+=pad;
     const scale = (width - (state.course.doc ? 0 : 20)) / Math.max(maxX-minX, maxY-minY);
     const cx = (minX+maxX)/2, cy = (minY+maxY)/2;
@@ -1215,7 +1724,7 @@ function drawMinimap() {
                               (window.WATER_CONFIG || {}).baseColor, (window.WATER_CONFIG || {}).heroColor].join('|') : null;
     const L1 = mmKey ? mmStaticLayer('zones', mmKey, width, height) : null;
     if (!L1 || L1.fresh) {
-    const mc = L1 ? L1.g : ctx;
+    let mc = L1 ? L1.g : ctx;
     const mmPoly = (verts) => {
             mc.beginPath();
             if (verts.length) {
@@ -1230,17 +1739,45 @@ function drawMinimap() {
                 const s = String(h || '').replace('#', '');
                 return /^[0-9a-f]{6}$/i.test(s) ? [0, 2, 4].map(i => parseInt(s.substr(i, 2), 16)) : fb;
             };
-            const base = rgbOf(window.WATER_CONFIG.baseColor, [14, 79, 134]);
+            const chartWater = CHART_WATER[state.course.venueKey] || null;
+            const base = rgbOf(chartWater || window.WATER_CONFIG.baseColor, [14, 79, 134]);
             // The WHOLE canvas, not the extent rect: the frame's spare margins show cropped
             // scenery from beyond the arena, and that scenery must sit on sea, not on glass.
-            mc.fillStyle = `rgba(${base[0]},${base[1]},${base[2]},0.9)`;
+            // The chart's water (CHART_WATER) is opaque and brighter than the course's own.
+            mc.fillStyle = chartWater || `rgba(${base[0]},${base[1]},${base[2]},0.9)`;
             mc.fillRect(0, 0, width, height);
+            // THE CHART FINISH (see chartFields): depth tint, then waterlines, both baked here.
+            if (chartWater && mmKey) {
+                const F = chartFields(mmKey + '|' + ((state.course.backdrop || []).length), width, height, t, state.course.venueKey);
+                mc.save(); mc.imageSmoothingEnabled = true; mc.imageSmoothingQuality = 'high';
+                mc.drawImage(chartDepthCanvas(F, chartWater, width, CHART_SHALLOW[state.course.venueKey]), 0, 0, F.mw * F.ds, F.mh * F.ds);
+                mc.restore();
+                const u = width / 180;
+                if (width >= 420) chartWaterlines(mc, F, t, width, height, [1.5 * u, 3.4 * u, 5.8 * u], Math.max(1, u * 0.2));
+                else chartWaterlines(mc, F, t, width, height, [Math.max(2, 1.8 * u)], 1);
+            }
             // Painted zones, in document order: shallows in the hero water, meadows in the
             // same submerged olive the course bakes.
             const hero = rgbOf(window.WATER_CONFIG.heroColor || window.WATER_CONFIG.baseColor, base);
+            // Zones stop at the backdrop's ring too (see the land pass): past it the backdrop
+            // owns the chart.
+            const zRing = state.course.backdrop && state.course.backdrop.length ? state.course.backdropRing : null;
+            // Zones fade out across the ring like the land does (a hard clip left Spoonbill's
+            // tidal flats as a rectangle): they draw into their own layer, masked softly below.
+            // Zones are NOT clipped at the ring: they are tints on the water, the backdrop has none to
+            // continue them, and a clip cut every shoal crossing the ring into a straight-edged wedge.
+            const zClip = true;   // paint zones (shallows tints) stop at the ring; awash bars and reefs do not (land pass)
+            if (zRing && zClip) { mc.save(); mmPoly(zRing); mc.clip(); }
             for (const isl of state.course.islands || []) {
                 if (!isl.paint || isl.hidden || !isl.vertices) continue;
                 mmPoly(isl.vertices);
+                const ckz = chartKindOf(isl);
+                if (ckz && ckz.zone) {
+                    mc.fillStyle = ckz.fill; mc.fill('evenodd');
+                    if (ckz.tex && width >= 420) chartGlyphs(mc, isl, ckz, t, width / 180,
+                        (x, y) => [(x - width / 2) / scale + cx, (y - height / 2) / scale + cy], chartNoise(chartSeed(String(state.course.venueKey))), 4000);
+                    continue;
+                }
                 // A vegetated zone shows in its own plant's darkest tone; a bare tint zone
                 // shows in the hero water. Reads the same VEG_STYLES row the bed itself
                 // bakes from, so the map and the world cannot drift apart.
@@ -1250,6 +1787,7 @@ function drawMinimap() {
                     : `rgba(${hero[0]},${hero[1]},${hero[2]},0.9)`;
                 mc.fill('evenodd');
             }
+            if (zRing && zClip) mc.restore();
         }
     
         // ── PUFFS: WATER, SO THEY GO UNDER THE LAND ─────────────────────────────
@@ -1275,8 +1813,12 @@ function drawMinimap() {
     // shows the estuary emptying and filling. Its own small cache; see Tide.drawMinimap.
     if (window.Tide && state.tide && wholeMap) Tide.drawMinimap(ctx, cx, cy, scale, width, height);
 
+    // The venue page's map shows the MEDIAN day (Wes, Oct 4 2026): no puffs, lulls or squalls —
+    // they are instants, and a preview that froze one would plan the race round weather that
+    // will not be there.
+    const medianOnly = !!(drawMinimap.target && drawMinimap.target.terrainOnly);
     const _gc = (typeof activeGustColors !== 'undefined' && activeGustColors) || null;
-    if (_gc) {
+    if (_gc && !medianOnly) {
         const _lift = (c, floor) => {
             const [h, s, l] = rgbToHsl(c[0], c[1], c[2]);
             return l >= floor ? c : hslToRgb(h, s, floor);
@@ -1326,7 +1868,7 @@ function drawMinimap() {
 
     // Squalls: the weather worth planning around, drawn as its shadow — a dark cell
     // with a rim, heavier than a puff because it IS heavier than a puff.
-    if (state.squalls) {
+    if (state.squalls && !medianOnly) {
         for (const q of state.squalls) {
             const pos = t(q.x, q.y);
             const R = Math.max(q.rx, q.ry) * scale;
@@ -1348,7 +1890,8 @@ function drawMinimap() {
 
     const L2 = mmKey ? mmStaticLayer('land', mmKey, width, height) : null;
     if (!L2 || L2.fresh) {
-    const mc = L2 ? L2.g : ctx;
+    let mc = L2 ? L2.g : ctx;
+    let glyphJob = null;   // the per-kind glyph layer, drawn once the ring clip is lifted (chartGlyphLayer)
     if (state.course.islands) {
             // Body first. Shoals draw their body and are then skipped by the cap pass below:
             // the cap is vegetation or snow, and a bar under water has neither. Paint zones
@@ -1357,9 +1900,75 @@ function drawMinimap() {
             // ⚠️ `hidden`, NOT `isBank` — see the note in drawIslands. isBank is "out of the
             // router", which is a different question from "do not draw", and the chart has to
             // agree with the water about what is there.
-            for (const isl of state.course.islands) {
+            // THE BACKDROP first (venuedoc.js): beyond its ring — a camera's reach past the
+            // boundary — the backdrop owns the chart, so the authored land, shoals, caps and
+            // props are clipped to the ring and no slab an author left out there shows its
+            // ruler-straight edge. Inside the ring nothing changes.
+            const bdRing = state.course.backdrop && state.course.backdrop.length ? state.course.backdropRing : null;
+            // The chart finish on land: a soft drop shadow under the whole land union first.
+            const chartOn = !!(mmKey && CHART_WATER[state.course.venueKey]);
+            const cu = width / 180;
+            const chartF = chartOn ? chartFields(mmKey + '|' + ((state.course.backdrop || []).length), width, height, t, state.course.venueKey) : null;
+            const worldOf = (x, y) => [(x - width / 2) / scale + cx, (y - height / 2) / scale + cy];
+            if (chartF) {
+                mc.save(); mc.fillStyle = 'rgb(22,44,52)';   // opaque: a shadow takes its strength from the fill, and the land covers it
+                mc.shadowColor = 'rgba(0,28,48,0.38)'; mc.shadowBlur = Math.max(2, cu * 1.4); mc.shadowOffsetY = Math.max(1, cu * 0.6);
+                chartFillLand(mc, t, chartF.bd, chartF.au, chartF.ring, false);
+                mc.restore();
+            }
+            // Awash shapes (bars, reefs) are water, and the backdrop has none to continue them: they
+            // draw BEFORE the clip, uncut, so a bar crossing the ring keeps its shape.
+            const auWet = state.course.islands.filter(i => i.awash || i.reef), auDry = state.course.islands.filter(i => !(i.awash || i.reef));
+            // THE SURROUND GOES ON TOP, clipped to OUTSIDE the ring (Wes, Oct 5 2026). The authored land
+            // draws whole first; the surround then covers everything past the ring. A clip's edge is
+            // anti-aliased, and with this order its half-covered pixels blend surround over the same
+            // authored ground carrying on past the ring — no seam — where the old order (authored cut
+            // to the inside, over the surround) let the ground beneath show through as a faint line.
+            // The authored land is cut at the ring pushed ~2 px OUTWARD (the ring is star-shaped about
+            // the arena's middle, so a radial push is an exact offset): the surround's soft edge then
+            // lies over solid authored ground — no seam — while authored slabs past the ring still go.
+            const bdOut = bdRing ? (() => {
+                let mx = 0, my = 0; for (const v of bdRing) { mx += v.x; my += v.y; } mx /= bdRing.length; my /= bdRing.length;
+                const push = 2.5 / scale;
+                return bdRing.map(v => { const dx = v.x - mx, dy = v.y - my, d = Math.hypot(dx, dy) || 1; return { x: v.x + dx / d * push, y: v.y + dy / d * push }; });
+            })() : null;
+            if (bdOut) { mc.save(); mc.beginPath(); bdOut.forEach((v, i) => { const p = t(v.x, v.y); i ? mc.lineTo(p.x, p.y) : mc.moveTo(p.x, p.y); }); mc.closePath(); mc.clip(); }
+            // No ring (the venue's own shapes run past the map line, the far ones map-only): the map-only
+            // land draws LAST, over the race land. It stops exactly at the line and the race land runs on
+            // under it, so its edge lies over solid ground — drawn underneath, every race layer ending at
+            // the line let the ones below show through as a hairline (Otter's meadow under its forest).
+            const bdList = state.course.backdrop || [];
+            // ...in DOCUMENT ORDER (Oct 7 2026). The generated continuations (`sur-*`) sit at the end of the
+            // document, so they still draw last; but a shape the designer placed early that happens to lie
+            // wholly past the line (Otter's buff-sand beach, under its cypress floor) keeps its place, instead
+            // of being lifted over everything authored after it.
+            let mmLand;
+            if (bdRing) mmLand = auWet.concat(auDry, ['clip'], state.course.backdrop);
+            else {
+                const ord = new Map(); (state.course.doc && state.course.doc.shapes || []).forEach((sh, i) => ord.set(sh.id, i));
+                const all = state.course.islands.concat(bdList), key = (isl, k) => ord.has(isl.id) ? ord.get(isl.id) : 1e6 + k;
+                mmLand = all.map((isl, k) => [key(isl, k), k, isl]).sort((a, b) => a[0] - b[0] || a[1] - b[1]).map(e => e[2]);
+            }
+            let clipped = false; glyphJob = { order: [], cu, worldOf, noise: chartF ? chartF.noise : null, ringOut: bdOut, lanes: [] };
+            for (const isl of mmLand) {
+                if (isl === 'clip') {
+                    clipped = true;
+                    mc.restore();                      // lift the authored clip
+                    mc.save(); mc.beginPath();
+                    mc.rect(-10, -10, width + 20, height + 20);
+                    bdRing.forEach((v, i) => { const p = t(v.x, v.y); i ? mc.lineTo(p.x, p.y) : mc.moveTo(p.x, p.y); });
+                    mc.closePath(); mc.clip('evenodd');
+                    continue;
+                }
                 if (isl.hidden || isl.paint) continue;
-                mc.fillStyle = isl.reef
+                const ck = chartKindOf(isl);
+                if (ck && ck.skip) continue;   // drawn by another layer (the tide's field)
+                // TRAILS GO ON TOP (Wes, Oct 6 2026: Sockeye's south trail vanished under a copse that
+                // came after it in the document). A trail is a line across the ground, never ground other
+                // ground lies on — so it is painted after every fill and the trees' glyphs (below).
+                if (ck && isl.kind === 'lane') { glyphJob.lanes.push(isl); continue; }
+                mc.fillStyle = ck ? ck.fill
+                    : isl.reef
                     ? `rgba(${submergedTint(REEF_RUBBLE[1]).join(',')},0.6)`   // the band's own drowned khaki
                     : isl.awash
                     ? `rgba(${shoalTintFor(isl).join(',')},0.6)`
@@ -1367,17 +1976,28 @@ function drawMinimap() {
                     ? minimapIsland(isl.style).top
                     : minimapIsland(isl.style).body;
                 mc.beginPath();
-                if (isl.vertices.length > 0) {
-                    const p0 = t(isl.vertices[0].x, isl.vertices[0].y);
-                    mc.moveTo(p0.x, p0.y);
-                    for(let i=1; i<isl.vertices.length; i++) {
-                        const pi = t(isl.vertices[i].x, isl.vertices[i].y);
-                        mc.lineTo(pi.x, pi.y);
-                    }
+                if (ck) chartRingsPath(mc, isl, t);   // the chart's rounded corners; holes as their own rings
+                else {
+                    const cvs = isl.vertices;
+                    if (cvs.length > 0) { const p0 = t(cvs[0].x, cvs[0].y); mc.moveTo(p0.x, p0.y); for (let i = 1; i < cvs.length; i++) { const pi = t(cvs[i].x, cvs[i].y); mc.lineTo(pi.x, pi.y); } }
+                    mc.closePath();
                 }
-                mc.closePath();
                 // even-odd: mask rings are keyholed (the sound is a hole in the land)
                 mc.fill('evenodd');
+                // A hairline of the fill's own colour closes the anti-aliasing seam where two shapes meet
+                // edge to edge — otherwise the ground beneath bleeds through as a faint line (Wes, Oct 5
+                // 2026). Not on keyholed rings, whose slits would draw as lines across the water.
+                if (ck && !ck.zone && !isl.awash && (!(isl.holes && isl.holes.length) || isl.outerRing)) {
+                    mc.strokeStyle = mc.fillStyle; mc.lineWidth = 1.25; mc.lineJoin = 'round'; mc.stroke();
+                }
+                // The chart finish (PT-019): a canopy or a grain over the ground, and a coast a
+                // shade darker than the land so a shore reads as a line. Standing land only — an
+                // awash zone is water and stays a clean tint.
+                // Glyphs come later, over each kind's whole area (chartGlyphLayer), and there are no
+                // per-shape outlines: both drew every internal shape boundary as a seam (Wes, Oct 5
+                // 2026). The coast is drawn by the rim light and the depth tint, which see only land
+                // and water.
+                if (ck && !ck.zone && !isl.awash && chartF && width >= 420) glyphJob.order.push({ isl, clip: clipped });
             }
             // Center cap (vegetation on land, snow on ice)
             for (const isl of state.course.islands) {
@@ -1399,12 +2019,33 @@ function drawMinimap() {
                 mc.fill();
             }
         }
-    if (state.course.doc) drawMinimapProps(mc, t, scale);
+        if (state.course.islands && state.course.backdrop && state.course.backdrop.length && state.course.backdropRing) mc.restore();   // the ring clip
+        if (glyphJob && glyphJob.order.length) chartGlyphLayer(mc, glyphJob.order, state.course.backdrop && state.course.backdrop.length ? state.course.backdropRing : null, t, glyphJob.cu, glyphJob.worldOf, glyphJob.noise, 9000, glyphJob.ringOut);
+        // the trails, over the ground and its glyphs (see TRAILS GO ON TOP)
+        if (glyphJob && glyphJob.lanes.length) for (const isl of glyphJob.lanes) {
+            const ck = chartKindOf(isl);
+            mc.fillStyle = ck.fill; mc.beginPath(); chartRingsPath(mc, isl, t); mc.fill('evenodd');
+            mc.strokeStyle = ck.fill; mc.lineWidth = 1.25; mc.lineJoin = 'round'; mc.stroke();
+        }
+        // the props — landforms, buildings, bridges, hard rocks — over the ground, its glyphs and its
+        // trails (Oct 7 2026: a forest's tree glyphs used to draw over a cabin among them)
+        if (state.course.doc) drawMinimapProps(mc, t, scale);
+        if (state.course.doc && CHART_WATER[state.course.venueKey]) drawChartLandmarks(mc, t, scale, width);
+        // The rim light inside every coast and the large-scale variation across the fills.
+        if (state.course.islands && mmKey && CHART_WATER[state.course.venueKey]) {
+            const F = chartFields(mmKey + '|' + ((state.course.backdrop || []).length), width, height, t, state.course.venueKey);
+            mc.save(); mc.imageSmoothingEnabled = true; mc.imageSmoothingQuality = 'high';
+            mc.drawImage(chartLandOverlay(F, (x, y) => [(x - width / 2) / scale + cx, (y - height / 2) / scale + cy]), 0, 0, F.mw * F.ds, F.mh * F.ds);
+            mc.restore();
+        }
     }
     if (L2) ctx.drawImage(L2.cv, 0, 0);
     // The cuts' names only on a chart big enough to read them (Wes, Sep 26 2026): the small HUD
     // chart leaves them off, the enlarged one (M) and the bigger previews keep them.
     if (window.Tide && state.tide && wholeMap && Tide.drawMinimapLabels && width > MINIMAP_SMALL) Tide.drawMinimapLabels(ctx, cx, cy, scale, width, height);
+
+    // The venue page wants the water and land only: it draws its own course on top.
+    if (drawMinimap.target && drawMinimap.target.terrainOnly) return;
 
     // Trace (Player Only)
     if (player.raceState.trace.length) {
@@ -1926,7 +2567,54 @@ function drawBoatIndicator(ctx, boat) {
 // screen), sits on a dark plate so it reads on any water, keeps the rounding-direction arc,
 // and carries the distance in a pill of its own. Pulses once when the leg changes so the
 // eye reacquires the new goal.
-function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot) {
+// THE CHIP'S DOT SAYS WHAT TO DO (Wes, Oct 5 2026): green — round it to starboard (keep it on your
+// right); red — round it to port; yellow — sail through the gate. A start or finish is not a dot at
+// all but the line glyph (lineChipSpec). Absent, the side decides it, and green is the old default.
+const CHIP_COLORS = { starboard: '#22c55e', port: '#ef4444', through: '#facc15' };
+function chipColorFor(side, kindHint) {
+    if (kindHint && CHIP_COLORS[kindHint]) return CHIP_COLORS[kindHint];
+    return side === 'port' ? CHIP_COLORS.port : CHIP_COLORS.starboard;
+}
+// The line glyph: { color, chequer, countdown, rim }. A bar — the line itself; a finish
+// is chequered; before the gun the countdown sits on the plate over a short bar.
+function drawChipLineGlyph(ctx, o) {
+    const col = o.color || '#ffffff';
+    if (o.rim) { ctx.beginPath(); ctx.arc(0, 0, 25.5, 0, Math.PI * 2); ctx.strokeStyle = o.rim; ctx.lineWidth = 3; ctx.stroke(); }
+    if (o.countdown != null) {
+        ctx.fillStyle = '#ffffff'; ctx.font = FONT.mono(o.countdown.length > 3 ? 12 : 15); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(o.countdown, 0, -3);
+        ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(-12, 8, 24, 3.5, 1.75); ctx.fill();
+        return;
+    }
+    const L = 13, h = 5;
+    if (o.chequer) {
+        for (let i = 0; i < 6; i++) for (let j = 0; j < 2; j++) {
+            ctx.fillStyle = (i + j) % 2 ? '#0f172a' : '#ffffff';
+            ctx.fillRect(-L + i * (2 * L / 6), -h + j * h, 2 * L / 6, h);
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.9)'; ctx.lineWidth = 1; ctx.strokeRect(-L, -h, 2 * L, 2 * h);
+    } else {
+        ctx.fillStyle = col; ctx.beginPath(); ctx.roundRect(-L, -2.2, 2 * L, 4.4, 2.2); ctx.fill();
+    }
+    // No posts at the ends (Wes, Oct 5 2026): at chip size the dots were clutter; the bar is the line.
+    if (o.go) {   // after the gun: a forward chevron above — cross it now
+        ctx.strokeStyle = col; ctx.lineWidth = 2.5; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(-5, -9); ctx.lineTo(0, -14); ctx.lineTo(5, -9); ctx.stroke();
+    }
+}
+// THE LINE CHIP (Wes, Oct 5 2026): a line in the line's own colours — before the gun red, with the
+// clock to the gun on the plate (m:ss, whole seconds under ten); after it white with a "go" chevron;
+// the finish chequered. The bar shape, not the colour, keeps a red start from reading as a port mark.
+function lineChipSpec(kind, secsToGun) {
+    if (kind === 'finish') return { chequer: true };
+    if (kind === 'prestart') {
+        const s2 = Math.max(0, Math.ceil(secsToGun || 0));
+        const cd = s2 >= 10 ? `${Math.floor(s2 / 60)}:${String(s2 % 60).padStart(2, '0')}` : String(s2);
+        return { color: '#ef4444', rim: 'rgba(239,68,68,0.9)', countdown: cd };
+    }
+    return { color: '#ffffff', go: true };
+}
+function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot, dotColor) {
     // Fried electronics (volcano.js): a chip on the rim wanders round it, and every chip
     // jitters, flickers, turns hot and reads static, like every other instrument — the goal
     // is still out there, but the box that points at it is not to be trusted.
@@ -1953,8 +2641,14 @@ function drawMarkEdgeIndicator(ctx, x, y, label, markIndex, screenRot) {
     ctx.fillStyle = 'rgba(15,23,42,0.66)'; ctx.fill();
     ctx.strokeStyle = 'rgba(64,245,200,0.55)'; ctx.lineWidth = 1.5; ctx.stroke();
 
-    ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fillStyle = '#22c55e'; ctx.fill();
-    ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5; ctx.stroke();
+    if (dotColor && typeof dotColor === 'object') {
+        // A LINE, not a mark (start / finish): a bar, so a red start can never read
+        // as a port rounding. `countdown` (pre-gun) replaces the bar with the clock.
+        drawChipLineGlyph(ctx, dotColor);
+    } else {
+        ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI*2); ctx.fillStyle = dotColor || chipColorFor(markIndex); ctx.fill();
+        ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5; ctx.stroke();
+    }
 
     if (markIndex !== null) {
         let start, end, ccw, fixed = false;

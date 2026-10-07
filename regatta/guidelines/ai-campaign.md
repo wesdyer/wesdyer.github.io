@@ -17925,3 +17925,47 @@ PRE = v81r36* (HEAD b3b558d), POST = v81r81* (the rounding line + leg-long strin
 | otter | 201.4 (6) [200.8] | 201/203.9/181 | 200/201.1/181 | 0.998 → **0.993 ✅** | 0.0 | 0 | 0 | 0.51/0.31/0.00/0.03/0.10 | 240/240 | 0/8 vs v81r36ot9400 |
 
 **At goal 7 of 13 (bay joins: 274 → 241 s, 1.193 → 1.050).** The bots orbited a mark until the old sweep requirement banked; the rounding line credits them as they pass, so they turn for the next mark sooner — much of PT-004's "past the mark, then down and up". Redrock −11 s, volcanic −5 s; lake +8 s. **Cost: boat contacts up** — river 2.40 → 5.70/boat (pen 0.51 → 0.79), arctic 1.98 → 3.25, lake 1.09 → 1.56, redrock 3.67 → 4.65: boats leave the mark earlier and cut into traffic still rounding. Owner shipped it; penalties/rights/AI to be worked after the bug push. No DNF; swamp and seatrials byte-identical (no rounding marks).
+
+## THE VENUE TABLE — the traced lee field + re-heighted venues (`eval/rl/_lee_close_table.js`, 2026-10-05)
+PRE = v81r81* (the shipped rounding line: old frozen venues, silhouette lee at 10 heights). POST = leeR* on treeLEE = the working tree (traced lee field, js/sim/wind.js; SHADOW_HEIGHTS 10; map-only scenery past the map line; prop-kind heights halved) on **Wes's re-heighted shipping venues** (he re-set every shape height by hand after the halving; copied into the tree, not frozen yet). So POST mixes the lee model with a venue change: per the venues README this is a PROMOTE — the frozen copies are re-frozen from these docs at commit. Same seeds, widths and human refs as the v81 table. Swamp and seatrials have no casters and are byte-identical, the sanity check.
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| arctic | 197.8 (6) [209.4] | 301/306.8/235 | 293/294.0/209 | 1.522 → **1.481** | 0.0 | 7 | 0 | 2.08/1.21/5.65/0.05/0.36 | 80/80 | 0/8 vs v81r81arc |
+| redrock | 202.1 (6) [204.2] | 278/276.7/211 | 294/289.8/219 | 1.376 → **1.455** | 0.0 | 8 | 1 | 6.96/3.33/0.00/0.46/0.86 | 80/80 | 0/8 vs v81r81rr |
+| swamp | 173.9 (7) [173.3] | 247/272.0/172 | 247/272.0/172 | 1.420 → **1.420** | 0.0 | 5 | 0 | 4.24/3.42/0.00/0.06/0.53 | 80/80 | 8/8 vs v81r81sw |
+| glowtide | 179.3 (6) [204.4] | 226/227.3/172 | 219/223.8/168 | 1.260 → **1.221** | 0.0 | 6 | 0 | 5.49/2.74/0.00/0.36/0.65 | 160/160 | 0/16 vs v81r81glow |
+| flats | 172.7 (6) [172.8] | 210/212.8/172 | 210/211.5/173 | 1.216 → **1.216** | 0.0 | 0 | 0 | 0.00/0.67/0.00/0.01/0.20 | 240/240 | 0/8 vs v81r81fl9400 |
+| lagoon | 176.5 (6) [174.7] | 211/209.8/177 | 209/211.2/179 | 1.195 → **1.184** | 0.0 | 0 | 0 | 0.11/0.65/0.00/0.19/0.30 | 80/80 | 0/8 vs v81r81lag |
+| river | 194 (6) [187.4] | 210/214.7/170 | 218/215.6/173 | 1.082 → **1.124** | 0.0 | 20 | 0 | 23.40/2.94/0.00/0.06/0.57 | 80/80 | 0/8 vs v81r81riv |
+| lake | 201.2 (6) [194.8] | 219/219.2/179 | 218/220.6/179 | 1.088 → **1.083 ✅** | 0.0 | 1 | 0 | 0.26/0.99/0.00/0.10/0.33 | 80/80 | 0/8 vs v81r81lk |
+| volcanic | 198.3 (6) [195.5] | 213/215.3/168 | 214/215.8/164 | 1.074 → **1.079 ✅** | 0.0 | 0 | 0 | 0.09/0.75/0.00/0.06/0.27 | 240/240 | 0/8 vs v81r81vo9400 |
+| seatrials | 182.3 (6) [185.7] | 190/193.4/175 | 190/193.4/175 | 1.042 → **1.042 ✅** | 0.6 | 0 | 0 | 0.00/0.30/0.00/0.34/0.31 | 159/160 | 16/16 vs v81r81st |
+| bay | 229.6 (12) [239] | 241/236.9/190 | 238/233.9/180 | 1.050 → **1.037 ✅** | 0.0 | 0 | 0 | 0.07/0.74/0.00/0.14/0.24 | 80/80 | 0/8 vs v81r81bay |
+| ocean | 201.8 (6) [214.2] | 204/207.7/178 | 204/207.7/178 | 1.011 → **1.011 ✅** | 0.0 | 0 | 0 | 0.13/0.66/0.00/0.11/0.23 | 160/160 | 0/16 vs v81r81oc |
+| otter | 201.4 (6) [200.8] | 200/201.1/181 | 201/204.0/181 | 0.993 → **0.998 ✅** | 0.0 | 0 | 0 | 0.67/0.29/0.00/0.02/0.12 | 240/240 | 0/8 vs v81r81ot9400 |
+
+**No DNF, goal count unchanged at 7 of 13.** Arctic −8 s (1.522 → 1.481) and Glowtide −7 s: lees no longer reach from far coasts across the course. **Redrock +16 s (1.376 → 1.455)** — the canyon walls now shade the channels for real (the old silhouettes fired as narrow plumes); his one Oct 5 lap on the field (an interim height setting) was 218.5 s against ~200 s before, so the human ref there predates the change and the ratio overstates the gap. River +8 s (1.082 → 1.124) on a noisy 8-set; its boat contacts halved (5.70 → 2.94/boat). Arctic contacts 3.25 → 1.21, lake 1.56 → 0.99. Bay contacts 0.38 → 0.74 (small n). Everything else within the ±5 s band.
+
+## THE VENUE TABLE — the lee keeps its core (`eval/rl/_leeC_close_table.js`, 2026-10-06)
+PRE = leeR* (the traced lee field, blurred), POST = leeC* on treeLEE2: each field cell takes the stronger of its own lee and the blurred one (Wes accepted the recommendation — the blur had drained narrow plumes, a 15 m islet lost half its bite to the grid). Same venues (his heights), seeds, widths and refs. Swamp and seatrials byte-identical (no casters).
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| arctic | 197.8 (6) [209.4] | 293/294.0/209 | 304/304.4/236 | 1.481 → **1.537** | 0.0 | 10 | 0 | 2.94/2.76/7.44/0.05/0.47 | 80/80 | 0/8 vs leeRarc |
+| redrock | 202.1 (6) [204.2] | 294/289.8/219 | 304/296.4/212 | 1.455 → **1.504** | 0.0 | 13 | 1 | 8.05/5.53/0.00/0.40/1.18 | 80/80 | 0/8 vs leeRrr |
+| swamp | 173.9 (7) [173.3] | 247/272.0/172 | 247/272.0/172 | 1.420 → **1.420** | 0.0 | 5 | 0 | 4.24/3.42/0.00/0.06/0.53 | 80/80 | 8/8 vs leeRsw |
+| glowtide | 179.3 (6) [204.4] | 219/223.8/168 | 226/225.3/166 | 1.221 → **1.260** | 0.0 | 6 | 0 | 5.50/2.81/0.00/0.26/0.69 | 160/160 | 0/16 vs leeRglow |
+| flats | 172.7 (6) [172.8] | 210/211.5/173 | 210/211.5/173 | 1.216 → **1.216** | 0.0 | 0 | 0 | 0.00/0.67/0.00/0.01/0.20 | 240/240 | 7/8 vs leeRfl9400 |
+| lagoon | 176.5 (6) [174.7] | 209/211.2/179 | 211/209.3/176 | 1.184 → **1.195** | 0.0 | 0 | 0 | 0.16/0.80/0.00/0.14/0.34 | 80/80 | 0/8 vs leeRlag |
+| lake | 201.2 (6) [194.8] | 218/220.6/179 | 219/221.6/182 | 1.083 → **1.088 ✅** | 0.0 | 0 | 0 | 0.14/0.96/0.00/0.07/0.26 | 80/80 | 0/8 vs leeRlk |
+| river | 194 (6) [187.4] | 218/215.6/173 | 211/212.4/171 | 1.124 → **1.088 ✅** | 0.0 | 13 | 0 | 20.38/2.64/0.00/0.06/0.54 | 80/80 | 0/8 vs leeRriv |
+| bay | 229.6 (12) [239] | 238/233.9/180 | 246/236.8/180 | 1.037 → **1.071 ✅** | 0.0 | 0 | 0 | 0.14/0.71/0.00/0.14/0.23 | 80/80 | 0/8 vs leeRbay |
+| volcanic | 198.3 (6) [195.5] | 214/215.8/164 | 211/213.6/169 | 1.079 → **1.064 ✅** | 0.0 | 0 | 0 | 0.20/0.76/0.00/0.05/0.26 | 240/240 | 0/8 vs leeRvo9400 |
+| seatrials | 182.3 (6) [185.7] | 190/193.4/175 | 190/193.4/175 | 1.042 → **1.042 ✅** | 0.6 | 0 | 0 | 0.00/0.30/0.00/0.34/0.31 | 159/160 | 16/16 vs leeRst |
+| ocean | 201.8 (6) [214.2] | 204/207.7/178 | 204/207.9/178 | 1.011 → **1.011 ✅** | 0.0 | 0 | 0 | 0.13/0.66/0.00/0.11/0.22 | 160/160 | 13/16 vs leeRoc |
+| otter | 201.4 (6) [200.8] | 201/204.0/181 | 200/202.4/181 | 0.998 → **0.993 ✅** | 0.0 | 0 | 0 | 0.59/0.36/0.00/0.02/0.09 | 240/240 | 0/8 vs leeRot9400 |
+
+**No DNF; goal count 7 of 13 holds (bay stays inside at 1.071).** Slower where narrow lees now bite: arctic +11 s (1.481 → 1.537), redrock +10 s, bay +8 s, glowtide +7 s. River −7 s on a noisy 8-set. Redrock contacts up (3.33 → 5.53/boat, pen 0.86 → 1.18): the stronger channel lees bunch the fleet. Everything else within ±3 s.
+
+**REFREEZE (2026-10-07, with the PT-010 commit).** All 13 benchmark venues re-frozen from the shipping files (`freeze_venues.js --add` each; `--check` all match). The leeR*/leeC* tables above were benched on copies taken Oct 5 ~23:30; Wes edited arctic, flats, glowtide, lake, otter and river after that, so the next bench is a fresh baseline on the new freeze — do not diff it against leeC*.

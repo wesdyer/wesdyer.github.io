@@ -49,6 +49,10 @@ function recordTrajectory(dt) {
                 fleet: state.boats.filter(b => !b.isPlayer).map(b => b.name),
                 aiStatBonus: (typeof AI_STAT_BONUS !== 'undefined') ? AI_STAT_BONUS : null,
                 adaptiveAI: !!(typeof settings !== 'undefined' && settings.adaptiveAI !== false),
+                // THE LEE RULE the run was sailed under (Oct 2026): the traced lee field or the old
+                // silhouettes, and how many heights a lee runs. Heights themselves are in the doc hash.
+                lee: { model: (typeof LEE_FIELD_ON !== 'undefined' && LEE_FIELD_ON) ? 'field' : 'silhouette',
+                       heights: (typeof SHADOW_HEIGHTS !== 'undefined') ? SHADOW_HEIGHTS : null },
                 // Course meta so analysis needs nothing but this file: without
                 // the mark position, distance-from-ring can't be derived offline.
                 course: {

@@ -1350,6 +1350,10 @@ function initCourse(opts) {
         state.race.totalLegs = c.legs;
         state.course.route = c.route;
         state.course.islands = c.islands;      // replaced below, once the floes exist
+        // Map-only land beyond the boundary (venuedoc.js THE BACKDROP): painted by the maps and
+        // the land layer, read by nothing that simulates.
+        state.course.backdrop = c.backdrop || [];
+        state.course.backdropRing = c.backdropRing || null;
         state.course.props = c.props || [];
         state.course.navIslands = c.islands;
         state.course.navVersion = 0;
@@ -1563,6 +1567,8 @@ function initCourse(opts) {
     // island generator (and its navigability flood-fill) is gone — nothing had set
     // islandCount above zero since land moved into the venue documents.
     state.course.islands = [];
+    state.course.backdrop = [];
+    state.course.backdropRing = null;
 
     // A GENERATED course has no venue features left to add. Weed beds, brash, the river's
     // banks and shore, the drifting floes and the wildlife on them were all per-race
@@ -1626,7 +1632,7 @@ function buildCoursePaths() {
             // shoal stamped as a wall is a shortcut the router can never take and the
             // player can — the two would disagree about the course on every bar. It is
             // priced instead, below, as the seconds the crossing actually costs.
-            const fixed = window.VenueDoc.shapes(doc).filter(sh => {
+            const fixed = window.VenueDoc.raceShapes(doc).filter(sh => {
                 const t = window.VenueDoc.traits(sh);
                 return t.motion === 'fixed' && !t.awash;
             });
@@ -1655,7 +1661,7 @@ function buildCoursePaths() {
             // Icy venues keep centre-sampled land: sub-cell shore threads are a
             // trap under floe drift, and every arctic margin constant was priced
             // on this sampling. See buildGridRaw.
-            const hasDrift = window.VenueDoc.shapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed');
+            const hasDrift = window.VenueDoc.raceShapes(doc).some(sh => window.VenueDoc.traits(sh).motion !== 'fixed');
             grid = window.SailCheck.buildGrid(fixed, state.course.boundary, null,
                 hasDrift ? { noSubsample: true } : null);
             // Kept for the periodic floe-aware rebuild (refreshBotGrid): same land,

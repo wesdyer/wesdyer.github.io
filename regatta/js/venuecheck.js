@@ -114,7 +114,7 @@ function runChecks(ctx) {
     // different reason — every one of these checks asks whether a hull FITS, and a hull
     // fits over a shoal at any width. Counting a bar as a wall would report a sailable
     // course as unroundable and send a designer moving geometry that was already fine.
-    const land = window.VenueDoc.shapes(doc)
+    const land = window.VenueDoc.raceShapes(doc)
         .filter(s => {
             const t = window.VenueDoc.traits(s);
             return t.motion === 'fixed' && !t.awash;

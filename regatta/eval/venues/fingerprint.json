@@ -1,54 +1,54 @@
 {
   "bay": {
-    "hash": "3947c39e4b7f07dc",
-    "frozen": "2026-10-01"
+    "hash": "2698a9e4b76a8b75",
+    "frozen": "2026-10-07"
   },
   "arctic": {
-    "hash": "05cb2fe97a3e11a9",
-    "frozen": "2026-10-01"
+    "hash": "25dc9a092e90e5ef",
+    "frozen": "2026-10-07"
   },
   "seatrials": {
     "hash": "03a10a6503256767",
-    "frozen": "2026-10-01"
+    "frozen": "2026-10-07"
   },
   "ocean": {
-    "hash": "a3f9a297ab1cc50b",
-    "frozen": "2026-10-01"
+    "hash": "87cee2eda1892ce0",
+    "frozen": "2026-10-07"
   },
   "river": {
-    "hash": "7efebc7061e85209",
-    "frozen": "2026-10-02"
+    "hash": "73b0fa83d08d3cc7",
+    "frozen": "2026-10-07"
   },
   "redrock": {
-    "hash": "8cf62f68f14c11a0",
-    "frozen": "2026-10-01"
+    "hash": "e297fa06d74e7e50",
+    "frozen": "2026-10-07"
   },
   "lake": {
-    "hash": "ca5bfb213c296e14",
-    "frozen": "2026-09-30"
+    "hash": "ef7f66ce3b3c9876",
+    "frozen": "2026-10-07"
   },
   "lagoon": {
-    "hash": "df075dc33028b4b1",
-    "frozen": "2026-10-01"
+    "hash": "c74ebb6a86f838cd",
+    "frozen": "2026-10-07"
   },
   "swamp": {
-    "hash": "d955e6c188611853",
-    "frozen": "2026-10-01"
+    "hash": "b917116ef482f76a",
+    "frozen": "2026-10-07"
   },
   "glowtide": {
-    "hash": "73ddf5c480948eb5",
-    "frozen": "2026-10-01"
+    "hash": "15c8c28643f15f57",
+    "frozen": "2026-10-07"
   },
   "volcanic": {
-    "hash": "2af679f64bab40e8",
-    "frozen": "2026-10-01"
+    "hash": "3c6c4c505e3e7902",
+    "frozen": "2026-10-07"
   },
   "otter": {
-    "hash": "b46a971ee61ae314",
-    "frozen": "2026-10-01"
+    "hash": "5ecb33ed383a4cbd",
+    "frozen": "2026-10-07"
   },
   "flats": {
-    "hash": "9b7f8c61ec02feec",
-    "frozen": "2026-10-01"
+    "hash": "c00232ff8f5485be",
+    "frozen": "2026-10-07"
   }
 }

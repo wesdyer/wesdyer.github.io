@@ -232,7 +232,9 @@ console.log('\nleg count does not leak between venues');
                         // (No backticks in here: this whole probe is a template literal.)
                         docLand: (() => {
                             const d = window.VenueDoc.get(v);
-                            const shapes = window.VenueDoc.shapes(d).filter(s => {
+                            // RACE shapes: one wholly past the map line is map-only scenery (Oct 2026),
+                            // drawn on the maps and never raced, so it is not the race's ground.
+                            const shapes = window.VenueDoc.raceShapes(d).filter(s => {
                                 const t = window.VenueDoc.traits(s);
                                 return t.motion === 'fixed' && !t.awash;
                             }).length;

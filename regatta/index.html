@@ -393,10 +393,56 @@
            spills at any size eval/_preview_fit.js tries. */
         /* A SIZE container (both axes): the hero's height is set by JS and the panel is a
            stretched flex item, so its height never depends on its own content. */
-        #venue-detail { container-type: size; container-name: brief; }
         /* Its padding scales with the window: a fixed 24/28px took a sixth of the smallest
            panel (322x268 at 1024x768). */
-        #venue-detail { padding: clamp(12px, 2.6vh, 24px) clamp(16px, 2.2vw, 28px); }
+        /* THE VENUE STRIP (PT-010): the briefing over the map's foot. A FIXED height, so the map's
+           bottom inset is the same on every venue: art | (name + blurb, the time to beat at the
+           right) over the facts. */
+        #venue-hero { height: 156px; }
+        /* Beside the map: a card — art on top, then the briefing, the facts two by two. */
+        #venue-stage[data-mode="row"] #venue-hero { flex-direction: column; height: auto; }
+        #venue-stage[data-mode="row"] #venue-art { width: 100% !important; flex: 1 1 auto; min-height: 90px; }
+        #venue-stage[data-mode="row"] #venue-detail { flex: none; gap: 12px; padding: 16px 18px !important; }
+        #venue-stage[data-mode="row"] .vs-top { flex-direction: column; gap: 12px; }
+        #venue-stage[data-mode="row"] .vs-blurb { -webkit-line-clamp: 4; }
+        #venue-stage[data-mode="row"] .vs-record { align-items: flex-start; text-align: left; }
+        #venue-stage[data-mode="row"] .vs-chips { display: grid; grid-template-columns: 1fr 1fr; margin-top: auto; }
+        #venue-stage[data-mode="row"] .vs-chips .vs-chip:nth-child(4) { display: flex; }
+        #venue-art img { width: 100%; height: 100%; object-fit: cover; }
+        #venue-detail { flex-direction: column; gap: 6px; padding: 11px 14px 12px !important; }
+        .vs-top { display: flex; gap: 14px; min-height: 0; }
+        .vs-head { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+        .vs-title { font-size: 26px; line-height: 1; }
+        .vs-title.long { font-size: 22px; }
+        .vs-blurb { font-size: 12.5px; line-height: 1.4; color: #cbd5e1; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+        .vs-chips { display: flex; gap: 6px; margin-top: auto; }
+        .vs-chip { display: flex; flex-direction: column; gap: 1px; padding: 5px 11px; border-radius: 10px; background: rgba(6,14,26,0.55); flex: 1 1 auto; min-width: 0; }
+        .vs-chips .vs-chip:first-child, .vs-chips .vs-chip:last-child { flex: none; }
+        .vs-chip-v { font-size: 12.5px; line-height: 1.25; color: #fff; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .vs-record { flex: none; display: flex; flex-direction: column; align-items: flex-end; text-align: right; gap: 1px; }
+        .vs-record-time { font-size: 24px; color: #fff; line-height: 1.05; }
+        .vs-record-links { display: flex; gap: 10px; margin-top: 2px; }
+        .vs-link { background: none; border: none; padding: 0; cursor: pointer; color: #8fd8d0; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+        @media (max-height: 760px) { #venue-hero { height: 140px; } #venue-art { width: 140px !important; } .vs-blurb { -webkit-line-clamp: 1; } .vs-record-time { font-size: 20px; } .vs-title { font-size: 22px; } }
+        @media (max-width: 1180px) { .vs-chips .vs-chip:nth-child(4) { display: none; } }
+        /* The venue map's hover readout (PT-010). */
+        .vm-toggle { position: absolute; left: 14px; top: 14px; z-index: 4; display: flex; padding: 3px; gap: 3px; border-radius: 11px; background: rgba(6,14,26,0.84); }
+        .vm-toggle button { border: 0; border-radius: 8px; padding: 6px 13px; background: transparent; color: #cbd5e1; font: 800 11px "Archivo", sans-serif; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+        .vm-toggle button:hover { color: #fff; }
+        .vm-toggle button.sel { background: #2f6bff; color: #fff; }
+        /* Bottom-right of the map, where map apps keep their view controls: clear of the Wind / Current
+           toggle (top-left) and the compass (top-right). (It sat 182 px up for the old strip over the foot.) */
+        .vm-reset { display: none; position: absolute; right: 14px; bottom: 14px; z-index: 4; border: 0; border-radius: 10px; padding: 7px 13px; background: rgba(6,14,26,0.86); color: #e2e8f0; font: 800 11px "Archivo", sans-serif; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+        .vm-reset:hover { color: #fff; background: #2f6bff; }
+        /* The tide slider (tidal venues): bottom-left of the map, opposite Reset view — the cycle, low to low. */
+        .vm-tide { position: absolute; left: 14px; bottom: 14px; z-index: 4; display: flex; flex-direction: column; gap: 3px; padding: 7px 12px 6px; border-radius: 10px; background: rgba(6,14,26,0.86); color: #e2e8f0; width: 196px; }
+        .vm-tide-top { display: flex; justify-content: space-between; }
+        .vm-tide-k { color: #9fd3dd; }
+        .vm-tide-now { color: #fff; }
+        .vm-tide-range { width: 100%; margin: 0; accent-color: #38bdf8; cursor: pointer; }
+        .vm-tide-ticks { display: flex; justify-content: space-between; font-size: 9px; color: #94a3b8; letter-spacing: 0.04em; }
+        .vm-hover { position: absolute; right: 66px; top: 15px; width: 212px; box-sizing: border-box; font-variant-numeric: tabular-nums; display: none; pointer-events: none; z-index: 3; padding: 7px 11px; border-radius: 10px; background: rgba(6,14,26,0.9); color: #fff; font-size: 12.5px; line-height: 1.5; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,0.4); }
+        .vm-hover-k { color: #9fd3dd; display: inline-block; width: 62px; }
         .pr-rec-short { display: none; }
         .pr-record-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; column-gap: 16px; row-gap: 2px; }
         .pr-record-body { display: flex; flex-direction: column; }
@@ -463,12 +509,17 @@
            column narrows too (long values wrap to a second line instead).
            !important where the value being beaten is inline on the element. */
         @media (max-width: 1180px) {
-            #pr-columns { grid-template-columns: minmax(0,1fr) 400px !important; }
             /* The art stops driving the layout: instead of a square as wide as the
                hero is tall (which starves the briefing), it takes 40% of the hero
                and scales its square image inside — smaller, never cropped. */
             #venue-art { aspect-ratio: auto !important; width: 40%; min-width: 180px; }
             .pr-facts { min-width: 200px !important; }
+        }
+        /* A PORTRAIT window: the venues go under the stage, seven across, rather than squeezing the map. */
+        @media (max-aspect-ratio: 1/1) {
+            #pr-columns { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 1fr) auto; }
+            #venue-picker { grid-template-columns: repeat(7, minmax(0, 1fr)) !important; }
+            #venue-picker .vp-card-label, #venue-picker [class*="label"] { font-size: 10px; }
         }
         .pr-record-time { font-size: 32px; font-weight: 900; line-height: 1; margin-top: 7px; }
         /* ⚠️ A 800px-tall window gives the hero about 300px, and the briefing wants 365 —
@@ -1058,22 +1109,6 @@
             </div>
         </div>
 
-        <!-- THE FULL CHART (Sep 27 2026): the briefing's course chart, the whole screen. Click the chart on the
-             board to open; Close, a click outside the chart, or Esc to go back. -->
-        <div id="course-full-overlay" class="hidden absolute inset-0 flex flex-col pointer-events-auto" style="z-index:65; background:#0c1322; color:#eef3fb;">
-            <div class="flex items-center justify-between" style="padding:18px 28px; border-bottom:1px solid rgba(255,255,255,0.07);">
-                <div>
-                    <div id="course-full-title" class="t-display uppercase" style="font-size:30px; line-height:1;"></div>
-                    <div id="course-full-sub" class="t-label" style="font-size:10px; letter-spacing:0.28em; color:#7787a0; margin-top:6px;"></div>
-                </div>
-                <button id="course-full-close" class="res-btn" style="padding:12px 20px;">Close &#10005;</button>
-            </div>
-            <div id="course-full-box" class="relative" style="flex:1 1 auto; min-height:0; margin:20px 28px 28px;">
-                <div id="course-full-inner" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); border-radius:12px; background:rgba(6,14,26,0.45); overflow:hidden;">
-                    <canvas id="course-full-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
-                </div>
-            </div>
-        </div>
 
         <!-- Series picker: how many races, and the draw. Redraw is free until you start. -->
         <div id="series-overlay" class="hidden absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-y-auto ch-overlay">
@@ -1101,7 +1136,7 @@
                     <div id="series-len-title" class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">How many races?</div>
                     <div id="series-lengths" class="grid" style="grid-template-columns:repeat(5, minmax(0, 1fr)); gap:10px;"></div>
                     <div id="series-pennant-note" style="font-size:13px; line-height:1.5; color:#9fb2cc;"></div>
-                    <div class="ch-panel flex flex-col" style="gap:8px;">
+                    <div id="series-scoring" class="ch-panel flex flex-col" style="gap:8px;">
                         <div class="t-label t-label-sm" style="color:#dbeafe;">How it scores</div>
                         <div style="font-size:14px; line-height:1.55; color:#d5ecf5;">10 points for a win, down to 1 for tenth. Retiring scores 0. Every race counts, and a tie goes to whoever placed better in the last race. Same fleet, same boat, all the way through.</div>
                     </div>
@@ -1222,20 +1257,27 @@
             <!-- THE PREVIEW ON THE LEFT, THE CHOICE ON THE RIGHT (Sep 2026). The hero is art plus
                  briefing with the course chart under it; the right column is every venue card, or
                  inside a cup or series the route. The fleet is its own page now (fleet-overlay). -->
-            <div id="pr-columns" class="flex-1 grid gap-6" style="grid-template-columns:minmax(0,1fr) 440px; padding:18px 32px 20px; min-height:0;">
+            <div id="pr-columns" class="flex-1 grid gap-6" style="grid-template-columns:minmax(0,1fr) clamp(300px, 30vw, 440px); padding:18px 32px 20px; min-height:0;">
 
                 <div class="flex flex-col gap-3" style="min-width:0; min-height:0;">
-                    <div id="venue-hero" class="flex overflow-hidden shrink-0" style="border-radius:16px; min-height:220px;">
-                        <div id="venue-art" class="relative shrink-0" style="height:100%; aspect-ratio:1;"></div>
-                        <div id="venue-detail" class="flex flex-col" style="flex:1 1 auto; min-width:0; overflow-y:auto; scrollbar-width:thin;"></div>
-                    </div>
-                    <!-- The chart gets the whole width and whatever height the hero leaves — the
-                         SHAPE of the course is the thing a preview should show big. -->
-                    <div id="venue-course-box" class="relative" style="flex:1 1 auto; min-height:120px; min-width:0;">
-                        <div id="venue-course-inner" title="Open the full chart" style="position:absolute; left:0; bottom:0; border-radius:8px; background:rgba(6,14,26,0.45); overflow:hidden; cursor:zoom-in;">
-                            <canvas id="venue-course-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+                    <!-- THE MAP IS THE HERO (PT-010, Oct 2026): the venue's own minimap, turned to
+                         fit, with the course, wind and current over it (drawCourseMiniMap). The
+                         briefing — art, name, facts, the time to beat — rides a strip at its foot,
+                         and the map frames the course in the water above the strip. -->
+                    <!-- THE STAGE (Wes, Oct 5 2026): a SQUARE map, so zoomed all the way out it shows the
+                         whole sailable area and little else (no land to build out at the sides), with the
+                         briefing beside it when there is room for a column and under it when not
+                         (layoutVenueStage). -->
+                    <div id="venue-stage" style="position:relative; flex:1 1 auto; min-height:0; min-width:0;">
+                        <div id="venue-course-box" style="position:absolute; left:0; top:0; border-radius:16px; overflow:hidden; background:#0b1628;">
+                            <div id="venue-course-inner" style="position:absolute; left:0; top:0; cursor:grab;">
+                                <canvas id="venue-course-map" style="position:absolute; inset:0; width:100%; height:100%;"></canvas>
+                            </div>
                         </div>
-                        <div id="venue-records-inline" style="position:absolute; bottom:0; right:0; display:none; min-width:0; overflow:hidden;"></div>
+                        <div id="venue-hero" class="flex overflow-hidden" style="position:absolute; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,0.45);">
+                            <div id="venue-art" class="relative shrink-0" style="width:156px;"></div>
+                            <div id="venue-detail" class="flex" style="flex:1 1 auto; min-width:0;"></div>
+                        </div>
                     </div>
                 </div>
 

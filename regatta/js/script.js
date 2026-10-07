@@ -840,21 +840,30 @@ function draw() {
                 const v = viewPos(rm.x, rm.y);
                 if (!v.inView || occluded(v.x, v.y)) {
                     const at = v.inView ? v : toScreen(rm.x, rm.y);
-                    drawMarkEdgeIndicator(gctx, at.x, at.y, metres(A.dist), rm.side || null, rot);
+                    drawMarkEdgeIndicator(gctx, at.x, at.y, metres(A.dist), rm.side || null, rot, chipColorFor(rm.side));
                 }
             } else if (A && (A.kind === 'gate' || A.kind === 'line')) {
+                // A line's chips wear the line's colour (the start red until the gun, white after;
+                // the finish white); a through gate's yellow; a rounding gate's ends their own side's.
+                // A start or finish draws the LINE glyph (lineChipSpec), never a dot: a red start dot
+                // read as a port rounding (Wes, Oct 5 2026).
+                const lineColor = A.through ? CHIP_COLORS.through
+                    : (A.kind === 'line' || A.finish) ? lineChipSpec(A.finish && !A.start ? 'finish' : (A.start && state.race.status === 'prestart') ? 'prestart' : 'start', state.race.timer)
+                    : null;
                 goalAimPt = A.aim;
                 const chips = [];
                 for (const mk of A.ends) {
                     const v = viewPos(mk.x, mk.y);
                     if (v.inView && !occluded(v.x, v.y)) continue;
                     const at = v.inView ? v : toScreen(mk.x, mk.y);
-                    chips.push({ x: at.x, y: at.y, label: metres(Math.hypot(mk.x - player.x, mk.y - player.y)), mi: A.gateSideOf ? A.gateSideOf(mk) : null });
+                    const mi = A.gateSideOf ? A.gateSideOf(mk) : null;
+                    chips.push({ x: at.x, y: at.y, label: metres(Math.hypot(mk.x - player.x, mk.y - player.y)), mi, col: lineColor || chipColorFor(mi) });
                 }
-                // Two ends that project to (nearly) the same edge point draw as one chip.
+                // Two ends that project to (nearly) the same edge point draw as one chip — the gate as
+                // a whole: a rounding gate's merged chip is yellow with no arc (either end will do).
                 if (chips.length === 2 && Math.hypot(chips[0].x - chips[1].x, chips[0].y - chips[1].y) < 48) {
-                    drawMarkEdgeIndicator(gctx, (chips[0].x + chips[1].x) / 2, (chips[0].y + chips[1].y) / 2, chips[0].label, null, rot);
-                } else for (const ch of chips) drawMarkEdgeIndicator(gctx, ch.x, ch.y, ch.label, ch.mi, rot);
+                    drawMarkEdgeIndicator(gctx, (chips[0].x + chips[1].x) / 2, (chips[0].y + chips[1].y) / 2, chips[0].label, null, rot, lineColor || CHIP_COLORS.through);
+                } else for (const ch of chips) drawMarkEdgeIndicator(gctx, ch.x, ch.y, ch.label, ch.mi, rot, ch.col);
             } else if (A) {
                 // No route entry to read (defensive): the single waypoint pip.
                 const wp = A.goal;
@@ -1166,6 +1175,9 @@ function resetGame() {
     state.race.timer = state.race.startTimerDuration;
 
     initCourse();
+    // The wind shadows for every angle, now rather than mid-race (leeWarm; cached by content, so a
+    // rematch costs nothing). A light course never races.
+    if (state.course.loadState === 'full' && typeof leeWarm === 'function') leeWarm();
 
     // Init Water Renderer
     if (window.WaterRenderer) window.WaterRenderer.init();

@@ -292,34 +292,15 @@ function renderVenuePicker() {
     renderVenueDetail(selected);
 }
 
-// ⚠️ THE HERO'S HEIGHT IS SET BY ITS OWN WIDTH, and only JS can say so. The art panel is
-// square and takes the hero's full height, so the hero must never be taller than the share
-// of the column the art is allowed to have — otherwise the panel hits its max-width, stops
-// being square, and the art letterboxes onto the gradient. CSS cannot express "my height
-// depends on my width", so this runs on every render and on resize.
-const HERO_ART_SHARE = 0.5;    // of the column's WIDTH — the art is square; the chart under the hero gets the rest
-const VENUE_STRIP_SHARE = 0.55; // of the column's HEIGHT — the hero keeps the rest
+// The hero used to be sized here (a square of art as tall as half the column, the chart
+// under it). Since PT-010 the hero is the briefing strip over the map's foot with a fixed CSS
+// height, so this only clears what older builds of the page left inline. Kept as the resize
+// hook input.js already calls.
 function sizeRaceDayHero() {
     const hero = document.getElementById('venue-hero');
     const art = document.getElementById('venue-art');
-    const picker = document.getElementById('venue-picker');
-    const col = hero && hero.parentElement;
-    if (!hero || !art || !col) return;
-    const w = col.clientWidth, h = col.clientHeight;
-    if (w <= 0) return;
-
-    // ⚠️ ONE NUMBER GOVERNS BOTH ENDS. The hero's height and the art's width ceiling have to
-    // be the same share of the column: cap the height higher than the width and the square
-    // panel hits its width limit, stops being square, and the art letterboxes.
-    // The chart lives UNDER the hero now (Sep 2026) and takes whatever height is left, so the
-    // hero also yields when the column is short: the chart keeps at least CHART_MIN.
-    const side = Math.round(w * HERO_ART_SHARE);
-    const CHART_MIN = 200, GAP = 12;
-    const height = h > 0 ? Math.max(220, Math.min(side, h - CHART_MIN - GAP)) : side;
-    hero.style.height = height + 'px';
-    hero.style.maxHeight = height + 'px';
-    art.style.maxWidth = height + 'px';
-    void picker;   // the cards are a plain 3-column grid now; CSS owns their size
+    if (hero) { hero.style.height = ''; hero.style.maxHeight = ''; }
+    if (art) art.style.maxWidth = '';
 }
 
 // THE BREEZE A BRIEFING SHOULD QUOTE. Not `state.wind.baseSpeed`, which is the region
@@ -407,15 +388,9 @@ function renderVenueDetail(key) {
         const [dh, ds, dl] = rgbToHsl(deepRgb[0], deepRgb[1], deepRgb[2]);
         const dk = hslToRgb(dh, Math.min(1, ds * 1.05), Math.min(dl, 0.15));
         const darkEnd = '#' + dk.map(v => v.toString(16).padStart(2, '0')).join('');
-        const smoothMix = (a, b, t) => mixHex(a, b, t * t * (3 - 2 * t));
-        const at = (t) => t <= 0.58 ? smoothMix(darkEnd, deep, t / 0.58)
-                                    : smoothMix(deep, base, (t - 0.58) / 0.42);
-        const stops = [];
-        for (let i = 0; i <= 16; i++) {
-            const t = i / 16;
-            stops.push(`${at(t)} ${(t * 100).toFixed(1)}%`);
-        }
-        hero.style.background = `linear-gradient(115deg, ${stops.join(', ')})`;
+        // The strip rides over the map, so it stays dark enough for its type on any water: the
+        // venue's deep water beside the art, settling to its abyss under the facts and the time.
+        hero.style.background = `linear-gradient(100deg, ${deep}f0 0%, ${darkEnd}f2 46%, ${darkEnd}f5 100%)`;
     }
     if (art) {
         // A GENTLE seam, not a shadow: just enough of the panel colour bleeding onto the
@@ -424,7 +399,7 @@ function renderVenueDetail(key) {
         const seam = mixHex(deep, '#0c1322', 0.55).replace('rgb(', 'rgba(').replace(')', ',0.5)');
         art.innerHTML = `
             <img src="assets/images/venues/${key}.png" alt="${c.name || c.tag || key}" draggable="false"
-                 style="width:100%; height:100%; object-fit:contain; display:block;">
+                 style="width:100%; height:100%; object-fit:cover; display:block;">
             <div style="position:absolute; inset:0; pointer-events:none;
                         background:linear-gradient(90deg, ${seam} 0%, rgba(12,19,34,0) 14%);"></div>`;
     }
@@ -453,17 +428,6 @@ function renderVenueDetail(key) {
         }
     }
 
-    // A long value (Hazards, usually) is marked wide: on the shortest panels the facts pair up
-    // in two columns and a wide one takes both.
-    const wide = (v) => String(v).replace(/&[a-z]+;/g, 'x').replace(/<[^>]+>/g, '').length > 11;
-    const row = (label, value, gold) => `
-        <div class="pr-row${wide(value) ? ' pr-row-wide' : ''}${label === 'Time Limit' ? ' pr-row-limit' : ''} flex items-center justify-between gap-5"
-             style="background:${gold ? 'rgba(242,193,78,0.14)' : 'rgba(6,14,26,0.45)'};
-                    border:1px solid ${gold ? 'rgba(242,193,78,0.4)' : 'transparent'};">
-            <span class="t-label t-label-sm" style="color:${gold ? '#f2c14e' : '#9fd3dd'};">${label}</span>
-            <span class="t-mono" style="font-size:12.5px; color:${gold ? '#f2c14e' : '#ffffff'};">${value}</span>
-        </div>`;
-
     const idx = VENUE_ORDER.indexOf(key) + 1;
     const best = bestForVenue(key);
     // The names run from "Redrock" to "Bluewater Bonanza", so the long ones step down a
@@ -480,52 +444,42 @@ function renderVenueDetail(key) {
     // to beat", in white, because it is held by nobody. With neither, the block
     // still stands with an em dash: the first run founds the book, and ALL
     // RECORDS is still the way in.
+    // ONE RECORDS BLOCK (PT-010): the time to beat big, your best under it, the book one click
+    // away. The records table that sat beside the old chart is gone — the same numbers twice
+    // was the complaint. Gold = a time YOU set here. "Time trials only" shows where records
+    // cannot be set (a cup or series briefing), so the question is answered where it arises.
     const prov = provisionalRecord(key);
-    const rec = best && best.t != null ? { label: 'Your best time', t: best.t, mine: true }
-              : { label: 'Time to beat', t: prov, mine: false };
+    const mine = !!(best && best.t != null);
     const recordBlock = `
-        <div class="pr-record shrink-0" style="background:rgba(6,14,26,0.4); border-radius:14px;
-                    border:1px solid ${rec.mine ? 'rgba(242,193,78,0.4)' : 'rgba(255,255,255,0.18)'};">
-            <div class="pr-record-head">
-                <span class="t-label t-label-sm" style="color:${rec.mine ? '#f2c14e' : '#dbeafe'};">${rec.label}</span>
-                <button class="t-label t-label-sm" onclick="openRecordsOverlay()"
-                        style="background:none; border:none; padding:0; cursor:pointer; color:#8fd8d0;
-                               text-decoration:underline; text-underline-offset:3px; white-space:nowrap;"><span class="pr-rec-long">All records</span><span class="pr-rec-short">Records</span> &rarr;</button>
+        <div class="vs-record">
+            <div class="t-label t-label-xs" style="color:#dbeafe;">Time to beat</div>
+            <div class="t-mono vs-record-time">${prov != null ? formatBestTime(prov) : '&mdash;'}</div>
+            <div class="t-label t-label-xs" style="color:#9fb2cc; white-space:nowrap;">${best && best.stars ? starStrip(best.stars, 11) + ' &middot; ' : ''}Your best
+                <span class="t-mono" style="font-size:12px; color:${mine ? '#f2c14e' : '#7787a0'}; margin-left:3px;">${mine ? formatBestTime(best.t) : '&mdash;'}</span></div>
+            <div class="vs-record-links">
+                ${recordsEligible() ? '' : '<span class="t-label t-label-xs" style="color:#7787a0;">Time trials only</span>'}
+                ${venueObjectivesStrip(key, true)}
+                <button class="t-label t-label-xs vs-link" onclick="openRecordsOverlay()">Records &rarr;</button>
             </div>
-            <div class="pr-record-body">
-                <div class="t-mono pr-record-time" style="color:${rec.mine ? '#f2c14e' : '#ffffff'};">${rec.t != null ? formatBestTime(rec.t) : '&mdash;'}</div>
-                ${best ? `<div class="pr-record-stars">${starStrip(best.stars, 13)}<span class="t-label t-label-xs pr-record-stars-text" style="color:#9fb2cc;">${best.stars >= 4 ? 'Four stars here' : best.stars > 0 ? `${best.stars} star${best.stars > 1 ? 's' : ''} here` : 'No stars here yet'}</span></div>` : ''}
-            </div>
-            ${recordsEligible() ? '' : `<div class="t-label t-label-xs" style="color:#9fb2cc; margin-top:4px;">Records are set in time trials</div>`}
         </div>`;
+    const chip = (label, value) => `
+        <div class="vs-chip" title="${String(value).replace(/<[^>]+>/g, '').replace(/"/g, '&quot;')}"><span class="t-label t-label-xs" style="color:#9fd3dd;">${label}</span><span class="t-mono vs-chip-v">${value}</span></div>`;
+    const context = (window.Series && Series.active) ? `Race ${Series.raceNumber()} of ${Series.total()}` : `Venue ${idx} of ${VENUE_ORDER.length}`;
 
     UI.venueDetail.innerHTML = `
-        <div class="pr-chips flex gap-2 shrink-0">
-            <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#dbeafe; white-space:nowrap;">${(window.Series && Series.active) ? `Race ${Series.raceNumber()} of ${Series.total()}` : `Venue ${idx} of ${VENUE_ORDER.length}`}</span>
-            <span class="t-label t-label-sm" style="background:rgba(6,14,26,0.45); border-radius:999px; padding:5px 13px; color:#7ff0d4; white-space:nowrap;">${c.tag || key}</span>
-        </div>
-        <div class="t-display uppercase pr-venue-title${longName}">${c.name || c.tag || key}</div>
-        <div class="pr-blurb">${c.blurb || ''}</div>
-        ${recordBlock}
-        ${venueObjectivesStrip(key)}
-        <!-- CHART LEFT, FACTS RIGHT (design 9a). The chart is the picture and gets
-             the room: this row takes ALL the slack the briefing leaves (flex-grow,
-             not margin-top:auto), so the chart scales up into it — as big as the
-             vertical space allows, cropped to the course's own aspect. The facts
-             stay a fixed-width readout column, anchored to the bottom edge like
-             the chart so the two read as one baseline. The Course row still
-             carries the numbers, so nothing is lost when the chart yields. -->
-        <div style="flex:1 1 auto;"></div>
-        <!-- The chart is no longer in here: it sits under the hero, full width, in
-             #venue-course-box (index.html). The facts anchor to the panel's bottom. -->
-        <div class="pr-bottom flex" style="gap:14px;">
-            <div class="pr-facts flex flex-col gap-1.5" style="flex:1 1 auto; min-width:240px;">
-                ${row('Wind', pending ? '&hellip;' : windRangeText())}
-                ${row('Water', waterVal || (pending ? '&hellip;' : '&mdash;'))}
-                ${row('Hazards', c.hazards || '—')}
-                ${row('Course', pending ? '&hellip;' : courseSummaryText())}
-                ${row('Time Limit', pending ? '&hellip;' : timeLimitText())}
+        <div class="vs-top">
+            <div class="vs-head">
+                <div class="t-label t-label-xs" style="color:#7ff0d4;">${context} &middot; ${c.tag || key}</div>
+                <div class="t-display uppercase vs-title${longName}">${c.name || c.tag || key}</div>
+                <div class="vs-blurb">${c.blurb || ''}</div>
             </div>
+            ${recordBlock}
+        </div>
+        <div class="vs-chips">
+            ${chip('Wind', pending ? '&hellip;' : windRangeText())}
+            ${chip('Water', waterVal || (pending ? '&hellip;' : '&mdash;'))}
+            ${chip('Course', pending ? '&hellip;' : courseSummaryText())}
+            ${chip('Time limit', pending ? '&hellip;' : timeLimitText())}
         </div>`;
     layoutVenueCourseMap(pending);
 }
@@ -535,12 +489,16 @@ function renderVenueDetail(key) {
 // earned, a "?" for one whose art has not shipped) and a button to the full list. Nothing is
 // hidden — the list spells every objective out (Wes, Sep 25 2026). One compact row, because
 // the race-day board does not scroll.
-function venueObjectivesStrip(key) {
+function venueObjectivesStrip(key, compact) {
     if (!window.Unlocks || !Unlocks.enforced()) return '';
     const list = Unlocks.forVenue(key);
     if (!list.length) return '';
     const got = list.filter(a => Unlocks.isEarned(a.char)).length;
-    const faces = list.map(a => venueObjectiveFace(a, 30)).join('');
+    const faces = list.map(a => venueObjectiveFace(a, compact ? 20 : 30)).join('');
+    // The venue page's strip has room for one link, not the faces: the count, and the list a
+    // click away.
+    if (compact) return `
+        <button type="button" class="t-label t-label-xs vs-link" onclick="openVenueObjectives('${key}')">Earn here &middot; ${got}/${list.length} &rarr;</button>`;
     return `
         <button type="button" class="pr-objectives shrink-0" onclick="openVenueObjectives('${key}')"
                 style="background:rgba(6,14,26,0.4); border:1px solid rgba(255,255,255,0.14); border-radius:12px; padding:7px 12px; cursor:pointer; text-align:left;">
@@ -635,7 +593,7 @@ function courseSummaryText() {
         }
     }
     const km = units / ((window.VenueDoc && window.VenueDoc.U_PER_M) || 5) / 1000;
-    return `${state.race.totalLegs} legs${km >= 0.1 ? ` &middot; ${km.toFixed(1)} km` : ''}`;
+    return `${state.race.totalLegs} leg${state.race.totalLegs === 1 ? "" : "s"}${km >= 0.1 ? ` &middot; ${km.toFixed(1)} km` : ''}`;
 }
 
 // The race's cutoff, as the briefing states it — THE SAME RULE the race enforces
@@ -659,602 +617,1075 @@ function timeLimitText() {
     return `${Math.floor(cutoff / 60)}:${String(Math.floor(cutoff % 60)).padStart(2, '0')}`;
 }
 
-// The chart earns its place only when the briefing can carry facts and a chart side by
-// side. Below ~400px of section width the facts column would be crushed, so the chart
-// yields — the Course row states its numbers either way. (At 1280 the whole briefing
-// is cramped — the blurb collapses there too; this is the same trade.)
+// ── THE VENUE MAP (PT-010, Oct 2026) ──────────────────────────────────────────────
+// The map IS the venue page: it fills the left column and the briefing rides a strip over
+// its foot (#venue-hero). Playtesters could not tell land from water on the old chart (grey
+// contours on navy) and it looked nothing like the minimap they race with, so the map is now
+// DRAWN BY the minimap — drawMinimap into a borrowed canvas, terrain only — with the course,
+// the wind and the current laid over it in the race's own vocabulary:
+//   · TURNED TO FIT. The course's long axis lies along the panel — 0° unless a turn buys 12%
+//     more scale, never past 90° — so a tall strait fills a wide panel instead of sitting in a
+//     strip at the bottom. A small N arrow says how far it turned (cartography's rule).
+//   · MARKS LIKE THE GOAL CHIP: green buoy, teal arc the way round, numbered in sailing order
+//     ("2 · 4" for a mark rounded twice). Start green, gates gold with their leg, finish
+//     dashed. The legs are a quiet dotted line — one way round, not THE way.
+//   · WIND IS MOTION, coloured by the race's own streak ramp (streakColorFor: ice → white →
+//     cream → gold → amber → red), so a shade means the same knots here as on the water.
+//   · CURRENT as chart arrows, weighted by rate, a few labelled in knots; a tidal venue plays
+//     its whole cycle every TIDE_LOOP_S so flood and ebb both show.
+// Everything static draws once into an offscreen layer; the loop blits it under the comets
+// and the current. `target` lets another surface borrow the map whole (the full-screen chart,
+// the Sailing School's screens); absent, it is the race-day board's.
+
+const _chartAnim = { raf: 0 };
+const TIDE_LOOP_S = 12;
+
+// THE MEDIAN DAY (Wes, Oct 4 2026): the map shows the wind a race will mostly see, not the
+// instant the board was opened — the regions' own means with the oscillation at zero
+// (regionWindAt under WIND_MEAN_FIELD, the switch the grid bake uses for the same reason),
+// and no puffs, lulls or squalls. A venue with no wind regions blows its base wind.
+function venueMeanWindAt(x, y) {
+    if (!(state.course.windRegions && state.course.windRegions.length) || typeof WIND_MEAN_FIELD === 'undefined')
+        return { direction: state.wind.baseDirection, speed: state.wind.baseSpeed };
+    const was = WIND_MEAN_FIELD;
+    WIND_MEAN_FIELD = true;
+    try { return regionWindAt(x, y); } finally { WIND_MEAN_FIELD = was; }
+}          // one full tidal cycle on the preview, seconds
+
+// THE STAGE (Wes, Oct 5 2026): the map is SQUARE — the whole sailable area fits it with a thin margin,
+// so there is no wide band of scenery to build — with the briefing either BESIDE it (a card at least
+// VS_CARD_MIN wide) or UNDER it (the strip). Whichever leaves the bigger map wins, so every window
+// shape gets the largest square it can hold.
+const VS_GAP = 14, VS_CARD_MIN = 300, VS_CARD_MAX = 640;
+function layoutVenueStage() {
+    const st = document.getElementById('venue-stage'), box = document.getElementById('venue-course-box'), hero = document.getElementById('venue-hero');
+    if (!st || !box || !hero) return;
+    const w = st.clientWidth, h = st.clientHeight; if (w < 40 || h < 40) return;
+    const stripH = window.innerHeight <= 760 ? 140 : 156;
+    const place = (el, x, y, ww, hh) => { el.style.left = x + 'px'; el.style.top = y + 'px'; el.style.width = ww + 'px'; el.style.height = hh + 'px'; };
+    const besideSide = Math.min(h, w - VS_CARD_MIN - VS_GAP), underSide = Math.min(w, h - stripH - VS_GAP);
+    if (besideSide >= underSide) {
+        st.dataset.mode = 'row';
+        const side = Math.max(120, besideSide), cw = Math.min(VS_CARD_MAX, w - side - VS_GAP);
+        place(box, 0, 0, side, side);
+        place(hero, side + VS_GAP, 0, cw, side);
+    } else {
+        st.dataset.mode = 'col';
+        const side = Math.max(120, underSide);
+        place(box, Math.round((w - side) / 2), 0, side, side);
+        place(hero, 0, side + VS_GAP, w, stripH);
+    }
+}
+// Kept as the board's single entry point (selectVenue and resize call it).
 function layoutVenueCourseMap(pending) {
+    layoutVenueStage();
     const box = document.getElementById('venue-course-box');
     if (!box) return;
-    // While the selection's light build is still in flight, the chart holds off
-    // entirely — state.course is the PREVIOUS venue, and a wrong chart for a beat is
-    // worse than a blank one. The build's completion re-renders the panel.
-    if (pending) {
-        box.style.display = 'none';
+    // While the selection's light build is in flight state.course is the PREVIOUS venue — a
+    // wrong map for a beat is worse than an empty one. The build's completion re-renders.
+    // (The box stays up: the briefing strip lives inside it.)
+    if (pending || !(state.course && state.course.route && state.course.route.length)) {
         if (_chartAnim.raf) { cancelAnimationFrame(_chartAnim.raf); _chartAnim.raf = 0; }
-        if (_chartAnim.ro) { _chartAnim.ro.disconnect(); _chartAnim.ro = null; }
+        const cv = document.getElementById('venue-course-map');
+        if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
         return;
     }
-    const section = box.parentElement;
-    const show = !!(state.course && state.course.route && state.course.route.length)
-        && section.clientWidth >= 404;
-    box.style.display = show ? 'block' : 'none';
-    // Redraw whenever the box actually changes size — the first draw happens before
-    // the web fonts land, and when they do the fact rows grow and the box with them;
-    // without this the chart stayed sized to the pre-font stack, visibly short of
-    // the Wind and Course rows it sits beside.
+    // Redraw when the box changes size (web fonts landing re-flow the strip, and the strip's
+    // height is the map's bottom inset).
     if (typeof ResizeObserver !== 'undefined') {
         if (_chartAnim.ro) _chartAnim.ro.disconnect();
-        _chartAnim.ro = new ResizeObserver(() => drawCourseMiniMap());
-        _chartAnim.ro.observe(box);
+        _chartAnim.ro = new ResizeObserver(() => { layoutVenueStage(); _drawBoardMap(); });
+        const stage = document.getElementById('venue-stage');
+        _chartAnim.ro.observe(stage || box);
     }
-    if (show) drawCourseMiniMap();
+    venueMapResetButton(!!venueMapBoardView());
+    _drawBoardMap();
+    _wireBoardMapGestures();
 }
 
-// THE FULL CHART: the board's chart borrowed whole (drawCourseMiniMap's target), drawn to fill the screen.
-// The wind animation follows the chart it was last drawn into, so closing re-lays the board's.
-function openCourseFull() {
-    const ov = document.getElementById('course-full-overlay');
-    if (!ov || !state.course || !state.course.route || state.course.route.length < 2) return;
-    ov.classList.remove('hidden');
-    const c = typeof venueCard === 'function' ? venueCard(settings.venue) : {};
-    document.getElementById('course-full-title').textContent = (c && c.name) || venueDisplayName(settings.venue) || settings.venue;
-    document.getElementById('course-full-sub').innerHTML = courseSummaryText();
-    _drawCourseFull();
+// PAN AND ZOOM ON THE BOARD'S MAP (Wes, Oct 5 2026: the full-screen chart is gone — the board's map
+// is big enough once it can zoom). Wheel or pinch to zoom about the pointer, drag to pan, double-
+// click or "Reset view" to go back. Every view is clamped live inside the whole view (the whole sailable area) and to 6x
+// the fit (drawCourseMiniMap's `limit`). During a gesture the baked map — over a backing of the
+// whole view — is moved as a picture; 150 ms after it settles it is redrawn sharp. The view
+// belongs to the venue: picking another starts from the fit.
+const _vmBoard = { view: null, venue: null, timer: 0, wired: false, backing: null, backingFor: null };
+function venueMapBoardView() {
+    return (_vmBoard.view && state.course && _vmBoard.venue === state.course.venueKey) ? _vmBoard.view : null;
 }
-function _drawCourseFull() {
-    const ov = document.getElementById('course-full-overlay');
-    if (!ov || ov.classList.contains('hidden')) return;
-    drawCourseMiniMap({ box: document.getElementById('course-full-box'), inner: document.getElementById('course-full-inner'),
-                        canvas: document.getElementById('course-full-map'), noRecords: true,
-                        visible: () => !ov.classList.contains('hidden') });
+function _drawBoardMap() {
+    drawCourseMiniMap();
+    _chartAnim.gesture = null;
 }
-function closeCourseFull() {
-    const ov = document.getElementById('course-full-overlay');
-    if (!ov || ov.classList.contains('hidden')) return;
-    ov.classList.add('hidden');
-    layoutVenueCourseMap();
+function venueMapResetView() { _vmBoard.view = null; if (_vmBoard.motion) { _vmBoard.motion.cur = _vmBoard.motion.target = _vmBoard.motion.vel = null; } venueMapResetButton(false); _drawBoardMap(); }
+function venueMapResetButton(on) {
+    const inner = document.getElementById('venue-course-inner'); if (!inner) return;
+    let b2 = inner.querySelector('.vm-reset');
+    if (!b2) {
+        b2 = document.createElement('button'); b2.type = 'button'; b2.className = 'vm-reset'; b2.textContent = 'Reset view'; b2.title = 'Back to the whole area (or double-click the map)';
+        b2.addEventListener('click', (e) => { e.stopPropagation(); e.preventDefault(); venueMapResetView(); });
+        b2.addEventListener('pointerdown', (e) => e.stopPropagation());
+        inner.appendChild(b2);
+    }
+    b2.style.display = on ? 'block' : 'none';
 }
-if (typeof document !== 'undefined') {
-    const _cf = (id, ev, fn) => { const el = document.getElementById(id); if (el) el.addEventListener(ev, fn); };
-    _cf('venue-course-inner', 'click', (e) => { e.preventDefault(); openCourseFull(); });
-    _cf('course-full-close', 'click', (e) => { e.preventDefault(); closeCourseFull(); });
-    _cf('course-full-box', 'click', (e) => { if (!e.target.closest('#course-full-inner')) closeCourseFull(); });
-    window.addEventListener('keydown', (e) => { if (e.key === 'Escape') { const ov = document.getElementById('course-full-overlay'); if (ov && !ov.classList.contains('hidden')) { e.stopPropagation(); closeCourseFull(); } } }, true);
-    window.addEventListener('resize', () => _drawCourseFull());
+// SMOOTH PAN AND ZOOM (Wes, Oct 5 2026). The view animates: `cur` is what is on screen, `target` where
+// it is going. A wheel step moves the target (about the pointer) and `cur` eases toward it; a drag
+// moves both 1:1 with the pointer and leaves a little inertia on release. While anything moves, each
+// frame is only a composite — the whole-area backing plus the last sharp bake, placed by `cur` — and
+// the sharp re-bake (≈80 ms) waits until the motion has settled, no button is down and the input has
+// been quiet for 300 ms, so it never lands mid-gesture.
+const VM_EASE = 16;            // per second: wheel zoom glides to its target in ~0.2 s
+const VM_IDLE_MS = 120;          // the settle is a re-anchor now (a few ms), not a re-bake
+function _wireBoardMapGestures() {
+    if (_vmBoard.wired) return;
+    const inner = document.getElementById('venue-course-inner'), cv = document.getElementById('venue-course-map');
+    if (!inner || !cv) return;
+    _vmBoard.wired = true;
+    inner.style.cursor = 'grab'; inner.style.touchAction = 'none';
+    const V0 = () => cv._vmView;
+    const base = () => { const o = V0(); return o && { scale: o.scale, rcx: o.rcx, rcy: o.rcy }; };
+    const M = _vmBoard.motion = _vmBoard.motion || { cur: null, target: null, vel: null, lastInput: 0, down: false };
+    const start = () => {
+        if (!M.cur) { M.cur = venueMapBoardView() || base(); M.target = Object.assign({}, M.cur); }
+        _vmBoard.venue = state.course.venueKey;
+        venueMapResetButton(true);
+        M.lastInput = performance.now();
+        if (!_chartAnim.raf) _chartAnim.raf = requestAnimationFrame(chartCometFrame);
+    };
+    const clamp = (q) => { const o = V0(); return o && o.limit ? o.limit(q) : q; };
+    const zoomAt = (px, py, f) => {
+        const o = V0(); if (!o) return;
+        start();
+        const q = M.target;
+        const ns = o.clampScale ? o.clampScale(q.scale * f) : q.scale * f;
+        if (Math.abs(ns - q.scale) < q.scale * 1e-4) return;
+        const rx = (px - o.W / 2) / q.scale + q.rcx, ry = (py - o.oy) / q.scale + q.rcy;
+        M.target = clamp({ scale: ns, rcx: rx - (px - o.W / 2) / ns, rcy: ry - (py - o.oy) / ns });
+        M.vel = null;
+    };
+    const local = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    inner.addEventListener('wheel', (e) => {
+        e.preventDefault(); e.stopPropagation();
+        const [x, y] = local(e);
+        // trackpads send many small deltas, mice a few big ones: one exponential handles both
+        zoomAt(x, y, Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0015)));
+    }, { passive: false });
+    const ptrs = new Map(); let last = null, lastT = 0, pinch = null, moved = false;
+    inner.addEventListener('pointerdown', (e) => {
+        if (e.target.closest('.vm-toggle, .vm-reset, .vm-tide')) return;
+        inner.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, local(e)); moved = false;
+        const tip = inner.querySelector('.vm-hover'); if (tip) tip.style.display = 'none';
+        start(); M.down = true; M.vel = null;
+        M.target = Object.assign({}, M.cur);            // a grab stops any glide where it is
+        if (ptrs.size === 1) { last = local(e); lastT = performance.now(); inner.style.cursor = 'grabbing'; }
+        if (ptrs.size === 2) { const [a2, b2] = [...ptrs.values()]; pinch = { d: Math.hypot(a2[0] - b2[0], a2[1] - b2[1]) }; }
+    });
+    inner.addEventListener('pointermove', (e) => {
+        if (!ptrs.has(e.pointerId)) return;
+        ptrs.set(e.pointerId, local(e));
+        if (ptrs.size === 2 && pinch) {
+            const [a2, b2] = [...ptrs.values()], d = Math.hypot(a2[0] - b2[0], a2[1] - b2[1]);
+            if (pinch.d > 0) { zoomAt((a2[0] + b2[0]) / 2, (a2[1] + b2[1]) / 2, d / pinch.d); M.cur = Object.assign({}, M.target); }
+            pinch.d = d; moved = true; return;
+        }
+        const p2 = local(e), now = performance.now();
+        if (last) {
+            const dx = p2[0] - last[0], dy = p2[1] - last[1];
+            if (dx || dy) {
+                moved = true; start();
+                const q = M.cur;
+                const nv = clamp({ scale: q.scale, rcx: q.rcx - dx / q.scale, rcy: q.rcy - dy / q.scale });
+                const dt = Math.max(1, now - lastT) / 1000;
+                // panel px per second, smoothed: the fling on release
+                const vx = (q.rcx - nv.rcx) * q.scale / dt, vy = (q.rcy - nv.rcy) * q.scale / dt;
+                M.flick = M.flick ? { x: M.flick.x * 0.6 + vx * 0.4, y: M.flick.y * 0.6 + vy * 0.4 } : { x: vx, y: vy };
+                M.cur = nv; M.target = Object.assign({}, nv);
+            }
+        }
+        last = p2; lastT = now;
+    });
+    const up = (e) => {
+        ptrs.delete(e.pointerId); if (ptrs.size < 2) pinch = null;
+        if (!ptrs.size) {
+            last = null; inner.style.cursor = 'grab'; M.down = false; M.lastInput = performance.now();
+            // inertia: carry the last drag velocity on, decaying (a stale flick — the pointer held still — is dropped)
+            if (M.flick && performance.now() - lastT < 80 && Math.hypot(M.flick.x, M.flick.y) > 60) M.vel = { x: M.flick.x, y: M.flick.y };
+            M.flick = null;
+        }
+    };
+    inner.addEventListener('pointerup', up); inner.addEventListener('pointercancel', up);
+    inner.addEventListener('dblclick', (e) => { e.preventDefault(); M.cur = M.target = M.vel = null; venueMapResetView(); });
+    // a drag is not a click on the box behind
+    inner.addEventListener('click', (e) => { if (moved) { e.stopPropagation(); moved = false; } }, true);
+}
+// One step of the view's motion; returns true while it is still moving (or a bake is pending).
+function venueMapStepMotion(dt) {
+    const M = _vmBoard.motion, cv = document.getElementById('venue-course-map');
+    if (!M || !M.cur || !cv || !cv._vmView) return false;
+    const o = cv._vmView;
+    if (M.vel && !M.down) {
+        const q = M.cur;
+        const nv = o.limit({ scale: q.scale, rcx: q.rcx - M.vel.x * dt / q.scale, rcy: q.rcy - M.vel.y * dt / q.scale });
+        M.cur = nv; M.target = Object.assign({}, nv);
+        const k = Math.exp(-5 * dt); M.vel = { x: M.vel.x * k, y: M.vel.y * k };
+        if (Math.hypot(M.vel.x, M.vel.y) < 8) M.vel = null;
+        M.lastInput = performance.now();
+    } else if (!M.down) {
+        const k = 1 - Math.exp(-VM_EASE * dt), c = M.cur, t = M.target;
+        // ease the scale in log space and the centre linearly — zoom feels even at every level
+        const ls = Math.log(c.scale) + (Math.log(t.scale) - Math.log(c.scale)) * k;
+        M.cur = { scale: Math.exp(ls), rcx: c.rcx + (t.rcx - c.rcx) * k, rcy: c.rcy + (t.rcy - c.rcy) * k };
+        if (Math.abs(Math.log(t.scale / M.cur.scale)) < 0.002 && Math.hypot(t.rcx - M.cur.rcx, t.rcy - M.cur.rcy) * t.scale < 0.4) M.cur = Object.assign({}, t);
+    }
+    const settled = !M.down && !M.vel && M.cur.scale === M.target.scale && M.cur.rcx === M.target.rcx && M.cur.rcy === M.target.rcy;
+    if (settled && performance.now() - M.lastInput > VM_IDLE_MS) {
+        // the sharp bake, at rest
+        _vmBoard.view = Object.assign({ rot: o.rot }, M.cur);
+        const same = Math.abs(M.cur.scale - o.scale) < 1e-9 && Math.abs(M.cur.rcx - o.rcx) < 1e-6 && Math.abs(M.cur.rcy - o.rcy) < 1e-6;
+        M.cur = M.target = null;
+        if (!same) { _drawBoardMap(); return 'baked'; }   // the bake restarted the loop itself
+        return false;
+    }
+    // the composite for this frame
+    const k2 = M.cur.scale / o.scale;
+    _chartAnim.gesture = { k: k2, tx: (o.W / 2) * (1 - k2) + (o.rcx - M.cur.rcx) * M.cur.scale, ty: o.oy * (1 - k2) + (o.rcy - M.cur.rcy) * M.cur.scale,
+                           view: M.cur, rot: o.rot, W: o.W, oy: o.oy };
+    return true;
 }
 
-// `target` lets another surface borrow the chart whole — Sailing School's screens draw it
-// into their own box. Absent, it is the race-day board's.
+// The points the frame must hold: every goal (a rounding with room for its chip) and the
+// sailed paths, so a detour round land never leaves the picture.
+function venueMapPoints() {
+    const marks = state.course.marks || [], route = state.course.route || [], dmc = state.course.dmc;
+    const pts = [];
+    // THE WHOLE SAILABLE AREA (Wes, Oct 5 2026): every bay, finger and outer route a boat can reach
+    // from the start, inside the arena, is part of the choice — VenueDoc.sailableHull.
+    const hull = state.course.doc && window.VenueDoc && VenueDoc.sailableHull ? VenueDoc.sailableHull(state.course.doc) : null;
+    const B = state.course.boundary;
+    if (hull && hull.length) for (const q of hull) pts.push([q[0], q[1]]);
+    else if (B && B.poly && B.poly.length) for (const q of B.poly) pts.push([q[0], q[1]]);   // [x, y] pairs (arena.js)
+    else if (B && B.radius) for (let k = 0; k < 16; k++) { const a = k / 16 * Math.PI * 2; pts.push([B.x + Math.cos(a) * B.radius, B.y + Math.sin(a) * B.radius]); }
+    // The goals frame only a venue WITHOUT a sailable area (a generated course): every mark lies on
+    // sailable water, so the area already holds them, and adding room round each one shifted the frame
+    // off the area the editor's preview guide measures (Oct 6 2026). The labels keep their own check
+    // (fitMinimum).
+    if (!(hull && hull.length)) for (const e of route) {
+        if (e.kind === 'round' && e.mark) {
+            const z = (e.mark.zone || 165) * 1.6;
+            pts.push([e.mark.x - z, e.mark.y - z], [e.mark.x + z, e.mark.y + z]);
+        } else if (e.marks) for (const i of e.marks) if (marks[i]) pts.push([marks[i].x, marks[i].y]);
+    }
+    return pts;
+}
+
+// The turn (multiple of 15°, within ±90°) that lets the course fill a W×H window best.
+// Upright wins unless a turn buys 12% more scale, so a venue that fits either way stays put.
+function venueMapRotation(pts, W, H) {
+    let best = { score: -1, a: 0 };
+    for (let k = -6; k <= 6; k++) {
+        const a = k * Math.PI / 12, ca = Math.cos(a), sa = Math.sin(a);
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        for (const [x, y] of pts) {
+            const rx = x * ca - y * sa, ry = x * sa + y * ca;
+            if (rx < x0) x0 = rx; if (rx > x1) x1 = rx; if (ry < y0) y0 = ry; if (ry > y1) y1 = ry;
+        }
+        const s = Math.min(W / Math.max(300, x1 - x0), H / Math.max(300, y1 - y0)) * (k === 0 ? 1.12 : 1);
+        if (s > best.score) best = { score: s, a };
+    }
+    return best.a;
+}
+
+function venueMapArrow(ctx, x, y, ang, len, col, w) {
+    const dx = Math.sin(ang), dy = -Math.cos(ang);
+    ctx.strokeStyle = col; ctx.fillStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(x - dx * len / 2, y - dy * len / 2);
+    ctx.lineTo(x + dx * len / 2 - dx * w * 2, y + dy * len / 2 - dy * w * 2);
+    ctx.stroke();
+    const hx = x + dx * len / 2, hy = y + dy * len / 2, s = w * 3.2;
+    ctx.beginPath(); ctx.moveTo(hx, hy);
+    ctx.lineTo(hx - dx * s * 1.6 + dy * s, hy - dy * s * 1.6 - dx * s);
+    ctx.lineTo(hx - dx * s * 1.6 - dy * s, hy - dy * s * 1.6 + dx * s);
+    ctx.closePath(); ctx.fill();
+}
+
+// ── HOVER: the wind and the stream where the pointer is ──
+// The median-day wind (venueMeanWindAt) and the current at the map's own tide clock — the
+// numbers a venue-wide badge could not give on a course where both change across the water.
+const VM_POINTS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+function vmCompassName(rad) {
+    const deg = ((rad * 180 / Math.PI) % 360 + 360) % 360;
+    return VM_POINTS[Math.round(deg / 22.5) % 16];
+}
+function venueMapHoverWire(inner, canvas) {
+    let tip = inner.querySelector('.vm-hover');
+    if (!tip) { tip = document.createElement('div'); tip.className = 'vm-hover'; inner.appendChild(tip); }
+    if (inner._vmHover) return;
+    inner._vmHover = true;
+    inner.addEventListener('mouseleave', () => { tip.style.display = 'none'; });
+    inner.addEventListener('mousemove', (e) => {
+        // over the map's own controls the readout steps aside, so it never covers what you are reaching for
+        if (e.target.closest && e.target.closest('.vm-reset, .vm-toggle, .vm-tide')) { tip.style.display = 'none'; return; }
+        const cv = inner.querySelector('canvas'), V = cv && cv._vm;
+        if (!V || !state.course) return;
+        const r = cv.getBoundingClientRect();
+        const sx = e.clientX - r.left, sy = e.clientY - r.top;
+        const [wx, wy] = V.inv(sx, sy);
+        // THE SAME BOX WHEREVER THE POINTER IS (Wes, Oct 6 2026: it jumped as its size changed): always
+        // the same rows — Wind, and Current where the venue has a stream — at a fixed width (CSS), so on
+        // land or ice the values say so instead of the box shrinking to one word.
+        const hasCurRow = !!(state.course.currentRegions && state.course.currentRegions.length && typeof getCurrentAt === 'function');
+        const row = (k, v) => `<div><span class="t-label t-label-xs vm-hover-k">${k}</span><span class="t-mono">${v}</span></div>`;
+        const onFloe = typeof pointInVerts === 'function' && (state.course.islands || []).some(i => i.isFloe && i.vertices
+            && (wx - i.x) ** 2 + (wy - i.y) ** 2 <= i.radius * i.radius && pointInVerts(wx, wy, i.vertices));
+        let html;
+        if (onFloe || (typeof pointOnLand === 'function' && pointOnLand(wx, wy))) {
+            const what = onFloe ? 'drifting ice' : 'land';
+            html = row('Wind', what) + (hasCurRow ? row('Current', what) : '');
+        } else {
+            const w = venueMeanWindAt(wx, wy);
+            html = row('Wind', `${Math.round(w.speed)} kt from ${vmCompassName(w.direction)}`);
+            if (hasCurRow) {
+                const C = _chartAnim.canvas === cv ? _chartAnim.curField : null;
+                const t0 = state.time;
+                if (C && C.period > 0) state.time = C.t0 + (C.clock / TIDE_LOOP_S) * C.period;
+                let c = null;
+                try { c = vmTidal() ? Tide.atPhase(vmTidePhase(), () => getCurrentAt(wx, wy)) : getCurrentAt(wx, wy); } finally { state.time = t0; }
+                html += row('Current', c && c.speed >= 0.1 ? `${c.speed.toFixed(1)} kt toward ${vmCompassName(c.direction)}` : 'slack');
+            }
+        }
+        if (tip.innerHTML !== html) tip.innerHTML = html;
+        tip.style.display = 'block';
+        // beside the compass when the row has room for the box's fixed width; on a small map, where it
+        // would run into the Wind / Current toggle, just under the compass. Decided by the MAP's width
+        // alone, so it never flips as the reading changes.
+        const tg = inner.querySelector('.vm-toggle'), ir = inner.getBoundingClientRect();
+        const toggleRight = tg ? tg.getBoundingClientRect().right - ir.left : 0;
+        const under = ir.width - 66 - tip.offsetWidth < toggleRight + 8;
+        tip.style.top = under ? '64px' : ''; tip.style.right = under ? '14px' : '';
+        // pinned beside the compass (Wes, Oct 6 2026), not trailing the pointer: it never covers the
+        // spot being read or a control being reached for (CSS .vm-hover places it)
+    });
+}
+
 function drawCourseMiniMap(target) {
-    const T = target || {};
+    const T = target || { view: venueMapBoardView() };
     const box = T.box || document.getElementById('venue-course-box');
     const inner = T.inner || document.getElementById('venue-course-inner');
     const canvas = T.canvas || document.getElementById('venue-course-map');
-    if (!box || !inner || !canvas) return;
-    const availW = box.clientWidth, availH = box.clientHeight;
-    if (availW < 40 || availH < 40) return;
-
-    const marks = state.course.marks || [];
+    if (!box || !inner || !canvas || !state.course || !state.boats.length) return;
     const route = state.course.route || [];
-    const legs = route.length - 1;
-    if (legs < 1) return;
+    if (route.length < 2) return;
+    // The board's map fills its box; the full chart and the school's screens keep their box's
+    // own size too. Only the board has a strip over the foot to frame the course above.
+    const W = Math.round(T.inner ? (T.full ? box.clientWidth * 0.92 : box.clientWidth) : box.clientWidth);
+    const H = Math.round(T.inner ? (T.full ? box.clientHeight * 0.86 : box.clientHeight) : box.clientHeight);
+    if (W < 60 || H < 60) return;
+    inner.style.width = W + 'px'; inner.style.height = H + 'px';
+    const strip = !T.box ? document.getElementById('venue-hero') : null;
+    const inB = strip && strip.offsetParent && box.contains(strip) ? strip.offsetHeight + 16 : 0;   // the strip over the map's foot (none since the square stage)
+    const inT = 70;                                // the compass's row, and a mark chip's label above it
+    const pad = 26;
 
-    // THE COURSE sets the frame: marks, rounding zones, and the computed paths the
-    // legs actually take (a detour around land must not leave the picture).
-    const dmc = state.course.dmc;
-    const pts = [];
-    for (const e of route) {
-        if (e.kind === 'round' && e.mark) {
-            const z = e.mark.zone || 165;
-            pts.push([e.mark.x - z, e.mark.y - z], [e.mark.x + z, e.mark.y + z]);
-        } else if (e.marks) {
-            for (const i of e.marks) if (marks[i]) pts.push([marks[i].x, marks[i].y]);
-        }
-    }
-    for (let leg = 1; leg <= legs; leg++) {
-        const P = dmc && dmc.legs && dmc.legs[leg] && dmc.legs[leg].pts;
-        if (P) for (const q of P) pts.push([q.x, q.y]);
-    }
+    // ── THE FRAME (Wes, Oct 5 2026): the WHOLE view — every bit of water a boat can reach from the
+    // start (VenueDoc.sailableArea) and every mark and gate with its label — is where the map opens AND
+    // the furthest it zooms out: the smallest view that holds the whole sailable area. Zoomed in, a view
+    // pans only within it. The editor's cyan guide is this view on each measured panel size.
+    const pts = venueMapPoints();
     if (pts.length < 2) return;
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (const [x, y] of pts) {
-        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
-        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
-    }
-    // No boundary in the frame: it was tried, and it pulled every chart out to water
-    // nobody races on. The COURSE is the subject — marks, zones and the sailed paths,
-    // padded a touch — and whatever land falls inside that frame is the context.
-    // AS BIG AS THE BOX ALLOWS, CROPPED BOTH WAYS. The chart scales until it runs
-    // out of width or height, then the panel takes only what the course's aspect
-    // needs — no letterboxed dead water on either axis. It is pinned bottom-left,
-    // so the facts column beside it shares its baseline and growth spends the
-    // vertical slack upward.
-    const PAD = 16; // room for arrowheads
-    const spanX = Math.max(200, maxX - minX), spanY = Math.max(200, maxY - minY);
-    const scale = Math.min((availW - 2 * PAD) / spanX, (availH - 2 * PAD) / spanY);
-    const w = Math.max(96, Math.round(spanX * scale) + 2 * PAD);
-    const h = Math.max(96, Math.round(spanY * scale) + 2 * PAD);
-    inner.style.width = w + 'px';
-    inner.style.height = h + 'px';
-    // The record book fills the water the chart leaves, when there is enough of it.
-    const recEl = T.noRecords ? null : document.getElementById('venue-records-inline');
-    if (recEl) {
-        const remain = availW - w - 16;
-        if (remain >= 215) {
-            recEl.style.left = (w + 16) + 'px';
-            recEl.style.display = 'block';
-            renderVenueRecordsInline(recEl);
-        } else {
-            recEl.style.display = 'none';
+    const Hv = H - inB - inT;
+    const oy = inT + Hv / 2;
+    const visH = H - inB;                          // what shows: the panel above the strip
+    const fitBox = { fw: W - 2 * pad - 90, fh: Hv - 2 * pad };   // == VenueDoc.previewPanel
+    const frameFor = (rot, view) => {
+        const ca = Math.cos(rot), sa = Math.sin(rot);
+        let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+        for (const [x, y] of pts) {
+            const rx = x * ca - y * sa, ry = x * sa + y * ca;
+            if (rx < x0) x0 = rx; if (rx > x1) x1 = rx; if (ry < y0) y0 = ry; if (ry > y1) y1 = ry;
         }
-    }
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
-    // The chart is STATIC and the wind is not: everything below draws once into an
-    // offscreen layer, and the animation loop blits it under the moving wind comets
-    // each frame instead of re-tracing land and legs sixty times a second.
-    const off = document.createElement('canvas');
-    off.width = canvas.width; off.height = canvas.height;
-    const ctx = off.getContext('2d');
-    ctx.scale(dpr, dpr);
-    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-    const X = (x) => w / 2 + (x - cx) * scale;
-    const Y = (y) => h / 2 + (y - cy) * scale;
-
-    // Land, faintly — context, not subject. `hidden` shapes draw here too: hidden
-    // means "the venue's own art already paints me" (the river's banks sit behind one
-    // continuous drawn shore), and the chart has no such art — a collider is land.
-    // ONE fill for all of it: translucent fills painted shape by shape stack where
-    // shapes overlap, and the river's 82 overlapping banks read as bubbles instead of
-    // a shore. A single path with nonzero winding fills the union at one flat alpha.
-    // Outlines only on shapes the venue itself draws — an invisible collider gets no
-    // internal seams.
-    // NORMALIZED WINDING, one ring direction for everything: the mask baker emits
-    // rings wound either way, and under nonzero fill two overlapping rings of
-    // opposite winding cancel — land over land read as a hole in the terrain. Wound
-    // the same way, overlap is union, which is what land on land is.
-    const ringPath = (vs) => {
-        let area = 0;
-        for (let i = 0, n = vs.length; i < n; i++) {
-            const p2 = vs[i], q2 = vs[(i + 1) % n];
-            area += p2.x * q2.y - q2.x * p2.y;
-        }
-        const seq = area < 0 ? [...vs].reverse() : vs;
-        seq.forEach((v, i) => i ? ctx.lineTo(X(v.x), Y(v.y)) : ctx.moveTo(X(v.x), Y(v.y)));
-        ctx.closePath();
-    };
-    // SHALLOWS FIRST, under the land, because that is where they are. A chart is where a
-    // sailor decides whether to cut a bar, so leaving them off would hide the one hazard
-    // this view exists to plan around — but they are drawn as a WASH with no outline. An
-    // inked edge here is the difference between "you may cross this, slowly" and "sail
-    // round it", and the second one is a lie the player would plan on.
-    // KEYED ON DRAG, not on who renders it. The chart is information, and what makes a
-    // shape informative here is that crossing it costs something — a visual-only zone
-    // carries nothing, and drawn in the shoal's warning sand it would read as a hazard
-    // that is not there. This used to test `!l.paint`, which was the same answer back
-    // when every paint zone was dragless and the wrong one the moment the bayou's weed
-    // arrived: a 0.6-drag hyacinth mat is precisely what a sailor opens this view to plan
-    // around. `shoalMul < 1` is the same condition _hasShoals uses for the physics, so
-    // the chart now warns about exactly the set of things that can slow you down.
-    const chartShoals = (state.course.islands || []).filter(l => l.awash && l.shoalMul < 1 && l.vertices && l.vertices.length >= 3);
-    if (chartShoals.length) {
-        ctx.beginPath();
-        for (const isl of chartShoals) ringPath(isl.vertices);
-        ctx.fillStyle = 'rgba(232,220,177,0.16)';
-        ctx.fill();
-    }
-    const landShapes = (state.course.landShapes || []).filter(l => l.vertices && l.vertices.length >= 3);
-    if (landShapes.length) {
-        ctx.beginPath();
-        for (const isl of landShapes) ringPath(isl.vertices);
-        ctx.fillStyle = 'rgba(238,243,251,0.10)';
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(238,243,251,0.18)';
-        ctx.lineWidth = 1;
-        for (const isl of landShapes) {
-            if (isl.hidden) continue;
-            ctx.beginPath();
-            ringPath(isl.vertices);
-            ctx.stroke();
-        }
-    }
-
-    // THE TOUR, not the atlas. The legs, lines and roundings are no longer painted
-    // into this layer all at once — chartTourFrame walks them leg by leg on top of
-    // it every frame (see the course-tour block below), showing how the course is
-    // SAILED rather than where its furniture sits. The static layer keeps only
-    // land and a dim pip per mark, so the frame still reads as a chart while the
-    // tour is between goals. Reduced motion gets the whole course at once instead
-    // (chartStaticCourse) — a walkthrough nobody watches move is a slow diagram.
-    for (const mk of marks) {
-        ctx.beginPath();
-        ctx.arc(X(mk.x), Y(mk.y), 2, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(238,243,251,0.3)';
-        ctx.fill();
-    }
-
-    // Wind is MOTION, not a glyph: comet streaks fly downwind across the chart —
-    // and they fly the FIELD, not one average. Each comet samples regionWindAt at
-    // its own position every frame, so the streaks bend where the authored regions
-    // bend, park in the dead spots, and stream where the breeze is real.
-    const A = _chartAnim;
-    if (A.raf) { cancelAnimationFrame(A.raf); A.raf = 0; }
-    A.static = off; A.w = w; A.h = h; A.dpr = dpr; A.last = 0;
-    A.box = box; A.canvas = canvas;
-    A.visible = T.visible || (() => UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden'));
-    // The chart-to-world transform, inverted — the field lives in world units.
-    A.scale = scale; A.cx = cx; A.cy = cy;
-    A.X = X; A.Y = Y;
-    // Screen-space polyline per leg, measured once — the tour draws partial
-    // lengths every frame and should not re-project the ruler each time.
-    A.legPaths = [];
-    for (let leg = 1; leg <= legs; leg++) {
-        const P = dmc && dmc.legs && dmc.legs[leg] && dmc.legs[leg].pts;
-        let pp = [];
-        if (P && P.length >= 2) pp = P.map(q => [X(q.x), Y(q.y)]);
-        else {
-            const a = legTargetPoint(leg - 1), b = legTargetPoint(leg);
-            if (a && b) pp = [[X(a.x), Y(a.y)], [X(b.x), Y(b.y)]];
-        }
-        const cum = [0];
-        for (let i = 1; i < pp.length; i++)
-            cum.push(cum[i - 1] + Math.hypot(pp[i][0] - pp[i - 1][0], pp[i][1] - pp[i - 1][1]));
-        A.legPaths[leg] = { pts: pp, cum, total: cum[cum.length - 1] || 0 };
-    }
-    A.tour = { leg: 1, phase: 'origin', t: 0, clock: 0 };
-    const count = Math.max(30, Math.min(140, Math.round(w * h / 400)));
-    A.comets = [];
-    for (let i = 0; i < count; i++) A.comets.push(spawnChartComet());
-
-    const draw2d = canvas.getContext('2d');
-    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        // One still frame: the whole course at once, and the same streaks at
-        // mid-life, pointing the way, no loop.
-        chartStaticCourse(ctx, X, Y);
-        draw2d.setTransform(1, 0, 0, 1, 0, 0);
-        draw2d.drawImage(off, 0, 0);
-        draw2d.setTransform(dpr, 0, 0, dpr, 0, 0);
-        for (const cm of A.comets) { cm.age = cm.ttl / 2; drawChartComet(draw2d, cm); }
-        return;
-    }
-    A.raf = requestAnimationFrame(chartCometFrame);
-}
-
-// The chart's one animation. Comets ride on fxRand — the seeded VISUALS stream — so
-// an idle clubhouse never advances the race's own RNG.
-const _chartAnim = { raf: 0 };
-
-// The LOCAL wind, in chart terms: the same blended field the boats sail
-// (regionWindAt — direction is where the wind comes FROM), turned downwind and
-// mapped from knots to chart px/s with enough contrast that a dead spot visibly
-// parks its comets while a katabatic corner streams.
-function chartWindAt(sx, sy) {
-    const A = _chartAnim;
-    const wind = regionWindAt(A.cx + (sx - A.w / 2) / A.scale,
-                              A.cy + (sy - A.h / 2) / A.scale);
-    return { fx: -Math.sin(wind.direction), fy: Math.cos(wind.direction),
-             px: 3 + Math.min(60, wind.speed * 2.6), kt: wind.speed };
-}
-
-function spawnChartComet() {
-    const A = _chartAnim;
-    const cm = { x: fxRand() * A.w, y: fxRand() * A.h,
-                 ttl: 1.8 + fxRand() * 2.2, age: fxRand() * 1.8,   // desynced fades
-                 jit: 0.75 + fxRand() * 0.5 };                     // per-comet size character
-    const lw = chartWindAt(cm.x, cm.y);   // the still frame needs a heading too
-    cm.fx = lw.fx; cm.fy = lw.fy; cm.kt = lw.kt;
-    return cm;
-}
-
-// THE STREAK IS THE ANEMOMETER: length, brightness and weight all follow the LOCAL
-// knots, so a katabatic corner reads as long hard strokes and a glassy patch as
-// short faint drifters — the difference is visible in a still, not only in motion.
-function drawChartComet(ctx, cm) {
-    const env = Math.sin(Math.PI * Math.min(1, cm.age / cm.ttl));
-    const kt = cm.kt || 0;
-    const a = env * Math.min(0.8, 0.22 + kt * 0.025);
-    if (a <= 0.01) return;
-    const len = cm.jit * Math.min(30, 4 + kt * 0.9);
-    const tx = cm.x - cm.fx * len, ty = cm.y - cm.fy * len;
-    const grad = ctx.createLinearGradient(cm.x, cm.y, tx, ty);
-    grad.addColorStop(0, `rgba(190,220,255,${a.toFixed(3)})`);
-    grad.addColorStop(1, 'rgba(190,220,255,0)');
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = Math.min(2, 1 + kt * 0.035);
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(cm.x, cm.y);
-    ctx.lineTo(tx, ty);
-    ctx.stroke();
-}
-
-// ── The course tour ─────────────────────────────────────────────────────────
-// The chart doesn't show the whole route at once — it SAILS it. One leg at a
-// time: the origin goal appears (the start line first), the path draws itself
-// toward the next goal, the goal lands — a rounding's curl sweeping around its
-// mark in the side's colour, on repeat — then the spent goal and path clear and
-// the next leg begins from the goal just reached. After the finish the whole
-// picture holds a beat and the tour restarts. The point is the ORDER: how to
-// move through the course, not just where its furniture sits.
-
-function chartArrowGlyph(ctx, x, y, dx, dy, size, color) {
-    const len = Math.hypot(dx, dy) || 1;
-    const ux = dx / len, uy = dy / len;
-    ctx.beginPath();
-    ctx.moveTo(x + ux * size, y + uy * size);
-    ctx.lineTo(x - ux * size * 0.6 - uy * size * 0.6, y - uy * size * 0.6 + ux * size * 0.6);
-    ctx.lineTo(x - ux * size * 0.6 + uy * size * 0.6, y - uy * size * 0.6 - ux * size * 0.6);
-    ctx.closePath();
-    ctx.fillStyle = color;
-    ctx.fill();
-}
-
-// One route entry's goal, at `alpha`. Lines and gates keep their standing
-// colours — start green, gate gold, finish white-dashed. A rounding is the mark
-// plus its curled arrow in the SIDE'S OWN colour (red for port, green for
-// starboard — the same red and green the water means by those words), and
-// `clock` makes the curl sweep around the mark on repeat, tracing the turn the
-// way it will be sailed; pass null for the full static curl (reduced motion).
-function chartGoalGlyph(ctx, e, marks, X, Y, alpha, clock) {
-    if (!e || alpha <= 0.01) return;
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    if ((e.kind === 'line' || e.kind === 'gate') && e.marks) {
-        const m1 = marks[e.marks[0]], m2 = marks[e.marks[1]];
-        if (m1 && m2) {
-            const col = e.role === 'start' ? '#34d399'
-                      : e.kind === 'gate' && !e.finish ? '#f2c14e' : '#eef3fb';
-            ctx.beginPath();
-            ctx.moveTo(X(m1.x), Y(m1.y)); ctx.lineTo(X(m2.x), Y(m2.y));
-            ctx.strokeStyle = col;
-            ctx.lineWidth = 2;
-            if (e.finish) ctx.setLineDash([4, 3]);
-            ctx.stroke();
-            ctx.setLineDash([]);
-            for (const m of [m1, m2]) {
-                ctx.beginPath();
-                ctx.arc(X(m.x), Y(m.y), 2.5, 0, Math.PI * 2);
-                ctx.fillStyle = col;
-                ctx.fill();
+        const v = { scale: Math.min(fitBox.fw / Math.max(300, x1 - x0), fitBox.fh / Math.max(300, y1 - y0)),
+                    rcx: (x0 + x1) / 2, rcy: (y0 + y1) / 2 };
+        const fitMarks = [], fitLines = [];
+        {
+            const mk = state.course.marks || [];
+            for (const e of route) {
+                if (e.kind === 'round' && e.mark) fitMarks.push(e.mark);
+                else if (e.marks && mk[e.marks[0]] && mk[e.marks[1]]) fitLines.push([mk[e.marks[0]], mk[e.marks[1]]]);
             }
         }
-    } else if (e.kind === 'round' && e.mark) {
-        const port = e.mark.side === 'port';
-        const col = port ? '#f87171' : '#4ade80';
-        const mx = X(e.mark.x), my = Y(e.mark.y);
-        ctx.beginPath();
-        ctx.arc(mx, my, 3, 0, Math.PI * 2);
-        ctx.fillStyle = col;
-        ctx.fill();
-        // The curl grows around the mark, holds a beat, fades, goes again. A port
-        // rounding keeps the mark to port — counterclockwise seen from above, and
-        // the world renders north-up, so the screen agrees with the water.
-        let frac = 1, curlA = 0.9;
-        if (clock !== null) {
-            const p = (clock % 1.7) / 1.7;
-            frac = p < 0.65 ? 1 - Math.pow(1 - p / 0.65, 2) : 1;
-            if (p > 0.88) curlA *= (1 - p) / 0.12;
+        const projectV = (q) => (x, y) => { const rx = x * ca - y * sa, ry = x * sa + y * ca; return [W / 2 + (rx - q.rcx) * q.scale, oy + (ry - q.rcy) * q.scale]; };
+        const invV = (q) => (sx, sy) => { const rx = (sx - W / 2) / q.scale + q.rcx, ry = (sy - oy) / q.scale + q.rcy; return [rx * ca + ry * sa, -rx * sa + ry * ca]; };
+        // The minimum: zoom out until every mark's number and every line's label clears the panel's
+        // edges, the compass row and the strip.
+        const fitMinimum = (q, shiftFirst) => {
+            for (let it = 0; it < 30; it++) {
+                const P = projectV(q);
+                let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+                const add = (xa, ya, xb, yb) => { bx0 = Math.min(bx0, xa); by0 = Math.min(by0, ya); bx1 = Math.max(bx1, xb); by1 = Math.max(by1, yb); };
+                for (const m of fitMarks) { const [x, y] = P(m.x, m.y); add(x - 22, y - 36, x + 22, y + 18); }
+                for (const [a2, b2] of fitLines) { const [ax, ay] = P(a2.x, a2.y), [bx, by] = P(b2.x, b2.y); const mx = (ax + bx) / 2, my = (ay + by) / 2;
+                    add(Math.min(ax, bx) - 6, Math.min(ay, by) - 6, Math.max(ax, bx) + 6, Math.max(ay, by) + 6); add(mx - 85, my, mx + 85, my + 30); }
+                if (bx0 === Infinity) return;
+                const L = 8, R2 = W - 8, Tp = inT - 20, Bt = H - inB - 6;
+                if (bx0 >= L && bx1 <= R2 && by0 >= Tp && by1 <= Bt) return;
+                const fits = (bx1 - bx0) <= (R2 - L) && (by1 - by0) <= (Bt - Tp);
+                if (shiftFirst && fits) {
+                    // slide the view (not the zoom) until the goals are on the panel
+                    const dx = bx0 < L ? L - bx0 : bx1 > R2 ? R2 - bx1 : 0, dy = by0 < Tp ? Tp - by0 : by1 > Bt ? Bt - by1 : 0;
+                    q.rcx -= dx / q.scale; q.rcy -= dy / q.scale;
+                    continue;
+                }
+                q.scale *= 0.94;
+            }
+        };
+        // The whole view: the fit, then the label check — VenueDoc's, the same one the editor's preview
+        // guide runs, so the guide is exactly what this board can show. (A course with no document keeps
+        // the local check.)
+        if (window.VenueDoc && VenueDoc.previewWholeFit && state.course.doc) {
+            const w = VenueDoc.previewWholeFit(pts, VenueDoc.previewGoals(null, state.course), rot, VenueDoc.previewPanel(W, H, inB));
+            v.scale = w.scale; v.rcx = w.rcx; v.rcy = w.rcy;
+        } else fitMinimum(v, false);
+        const whole = { scale: v.scale, rcx: v.rcx, rcy: v.rcy };
+        // The limit, EXACT (no nudging, so a zoom-out at the stop never jiggles): scale between the
+        // whole view's and 6x it, and the view's visible box inside the whole view's, in the turned frame.
+        const clampV = (q) => {
+            q.scale = Math.min(whole.scale * 6, Math.max(whole.scale, q.scale));
+            const hx = W / 2 / whole.scale - W / 2 / q.scale;
+            q.rcx = Math.min(whole.rcx + hx, Math.max(whole.rcx - hx, q.rcx));
+            const top = whole.rcy - oy / whole.scale + oy / q.scale, bot = whole.rcy + (visH - oy) / whole.scale - (visH - oy) / q.scale;
+            q.rcy = Math.min(bot, Math.max(top, q.rcy));
+            return q;
+        };
+        if (view) { v.scale = view.scale; v.rcx = view.rcx; v.rcy = view.rcy; clampV(v); }
+        return { v, rot, ca, sa, whole, clampV, projectV, invV };
+    };
+    // THE TURN: a venue's own, chosen once (VenueDoc.previewVenueTurn, on a reference panel) and used at
+    // every size, so the map faces the same way on any screen and the editor's guide is one rectangle.
+    // (A course with no document still picks per panel: upright unless a turn buys 12%.)
+    let F;
+    if (T.view && T.view.rot != null) F = frameFor(T.view.rot, T.view);
+    else if (T.rot != null) F = frameFor(T.rot, null);
+    else if (state.course.doc && window.VenueDoc && VenueDoc.previewVenueTurn) F = frameFor(VenueDoc.previewVenueTurn(state.course.doc), null);
+    else {
+        let bestScore = -1;
+        for (let k = -6; k <= 6; k++) {
+            const f = frameFor(k * Math.PI / 12, null);
+            const sc = f.whole.scale * (k === 0 ? 1.12 : 1);
+            if (sc > bestScore) { bestScore = sc; F = f; }
         }
-        const r = 8.5, ccw = port;
-        const a1 = -Math.PI / 2 + (ccw ? -1.55 : 1.55) * Math.PI * frac;
-        ctx.globalAlpha = alpha * curlA;
-        ctx.beginPath();
-        ctx.arc(mx, my, r, -Math.PI / 2, a1, ccw);
-        ctx.strokeStyle = col;
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-        // arrowhead at the arc's end, tangent to it
-        const tx = Math.cos(a1), ty = Math.sin(a1);
-        chartArrowGlyph(ctx, mx + tx * r, my + ty * r, ccw ? ty : -ty, ccw ? -tx : tx, 4, col);
     }
-    ctx.restore();
-}
+    const { v, rot, ca, sa, whole, clampV, projectV, invV } = F;
+    const scale = v.scale, rcx = v.rcx, rcy = v.rcy;
+    // world → panel, and back
+    const S = projectV(v);
+    const inv = invV(v);
+    // The limits a live gesture needs, without a redraw.
+    const clampScale = (sc) => Math.min(whole.scale * 6, Math.max(whole.scale, sc));
+    const limit = (q) => clampV({ scale: q.scale, rcx: q.rcx, rcy: q.rcy });
+    // The whole view's visible box in the world (for the board's backing bake)
+    const IW = invV(whole), wc = [IW(0, 0), IW(W, 0), IW(0, visH), IW(W, visH)];
+    const wholeBox = { x0: Math.min(...wc.map(p => p[0])), x1: Math.max(...wc.map(p => p[0])), y0: Math.min(...wc.map(p => p[1])), y1: Math.max(...wc.map(p => p[1])) };
+    canvas._vmView = { scale, rcx, rcy, rot, fit: whole.scale, W, H, oy, limit, clampScale, wholeBox };
+    canvas._vmViewFor = state.course;
 
-// Point (and local heading) at arc-length `s` along a measured screen polyline.
-function chartPathPoint(path, s) {
-    const pts = path.pts, cum = path.cum;
-    for (let i = 1; i < pts.length; i++) {
-        if (cum[i] >= s || i === pts.length - 1) {
-            const f = Math.max(0, Math.min(1, (s - cum[i - 1]) / ((cum[i] - cum[i - 1]) || 1)));
-            return { x: pts[i - 1][0] + (pts[i][0] - pts[i - 1][0]) * f,
-                     y: pts[i - 1][1] + (pts[i][1] - pts[i - 1][1]) * f,
-                     dx: pts[i][0] - pts[i - 1][0], dy: pts[i][1] - pts[i - 1][1] };
+    const dpr = window.devicePixelRatio || 1;
+    // THE SWAP. Setting a canvas's size clears it, and the new picture would only land a frame later —
+    // a blank flash. So the size is set only when it changes, the first frame is drawn before this
+    // returns, and a NEW VENUE crossfades from a snapshot of the old one. A new view of the same venue
+    // needs neither: the land is cached (vmLand) and everything over it is drawn live.
+    const prevA = (_chartAnim.canvas === canvas && _chartAnim.ready && _chartAnim.inv) ? { course: _chartAnim.course, inv: _chartAnim.inv, comets: _chartAnim.comets } : null;
+    let fadeFrom = null;
+    if (canvas.width && canvas.height && prevA && prevA.course !== state.course) {
+        fadeFrom = document.createElement('canvas'); fadeFrom.width = canvas.width; fadeFrom.height = canvas.height;
+        fadeFrom.getContext('2d').drawImage(canvas, 0, 0);
+    }
+    if (canvas.width !== Math.round(W * dpr) || canvas.height !== Math.round(H * dpr)) { canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr); fadeFrom = null; }
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+
+
+
+    // No wind or current badge: a venue-wide number misleads where the breeze and the stream
+    // change across the water (Wes, Oct 4 2026). Hover the map instead — venueMapHover reads the
+    // median wind and the current at the pointer.
+    const curMax = (typeof courseCurrentMax === 'function') ? courseCurrentMax() : null;
+    const hasCur = curMax != null && curMax >= 0.3;
+    // THE COMPASS is not baked in: it is drawn over every frame (vmDrawCompass), so a pan or zoom
+    // moves the map under it rather than carrying it off (Wes, Oct 5 2026).
+
+    // ── THE LOOP: the cached land, the course and the comets, composed every frame (chartCometFrame) ──
+    const A = _chartAnim;
+    if (A.raf) { cancelAnimationFrame(A.raf); A.raf = 0; }
+    A.ready = true; A.w = W; A.h = H; A.dpr = dpr; A.last = 0; A.course = state.course;
+    A.view = { scale, rcx, rcy }; A.oy = oy; A.fit = whole.scale;
+    vmLandEnsure(wholeBox, whole.scale * dpr);
+    A.box = box; A.canvas = canvas;
+    A.visible = T.visible || (() => UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden'));
+    A.inv = inv; A.S = S; A.rot = rot; A.scale = scale; A.T = T;
+    A.compass = { x: W - 34, y: 37, rot };
+    canvas._vm = { inv, rot, T };
+    // The School's small preview stays a picture: no leg bar, no hover.
+    if (!T.noRecords) venueMapHoverWire(inner, canvas);
+    A.inT = inT; A.inB = inB;
+    // The median field, sampled once per draw on a coarse panel grid the comets read every frame.
+    const FC = 24, fw = Math.ceil(W / FC) + 1, fh = Math.ceil(H / FC) + 1, field = new Float32Array(fw * fh * 3);
+    for (let j = 0; j < fh; j++) for (let i = 0; i < fw; i++) {
+        const [wx, wy] = inv(i * FC, j * FC);
+        const w = venueMeanWindAt(wx, wy);
+        const fx = -Math.sin(w.direction), fy = Math.cos(w.direction);
+        const o = (j * fw + i) * 3;
+        field[o] = fx * ca - fy * sa; field[o + 1] = fx * sa + fy * ca; field[o + 2] = w.speed;
+    }
+    A.field = { FC, fw, fh, data: field };
+    // THE CURRENT VIEW (Wes, Oct 5 2026): the same comets, flown by the stream instead of the wind,
+    // on a toggle. Sampled on the same grid at the map's tide clock (venueMapCurrentField), and
+    // re-sampled through the cycle on a tidal venue.
+    A.curField = null;
+    if (hasCur && typeof getCurrentAt === 'function') {
+        let period = 0;
+        for (const r of (state.course.currentRegions || [])) period = Math.max(period, r.period || 0);
+        // A finer grid than the wind's: a stream lives in channels a few px wide (Sockeye's river).
+        const CF = 10, cw = Math.ceil(W / CF) + 1, chh = Math.ceil(H / CF) + 1;
+        A.curField = { FC: CF, fw: cw, fh: chh, data: new Float32Array(cw * chh * 3), land: new Uint8Array(cw * chh), period, t0: state.time, clock: 0, sampled: -1,
+                       ref: Math.max(0.6, (curMax || 0) * 0.5) };   // half the peak: most of a stream runs well below it
+        for (let j = 0; j < chh; j++) for (let i = 0; i < cw; i++) {
+            const [wx, wy] = inv(i * CF, j * CF);
+            A.curField.land[j * cw + i] = (typeof pointOnLand === 'function' && pointOnLand(wx, wy)) ? 1 : 0;
         }
+        venueMapCurrentField(A.curField, 0);
     }
-    return null;
+    if (!A.curField && _vmMode === 'current') _vmMode = 'wind';
+    if (!T.noRecords) venueMapModeToggle(inner, !!A.curField);
+    if (!T.noRecords && !T.box) venueMapTideSlider(inner);
+    const count = Math.max(40, Math.min(220, Math.round(W * H / 2600)));
+    // The same venue in a new view KEEPS its comets, carried to where they now are on the panel — a
+    // pan's end is not a reason to restart the weather.
+    if (prevA && prevA.course === state.course && prevA.comets) {
+        A.comets = prevA.comets.slice(0, count);
+        for (const cm of A.comets) { const [wx, wy] = prevA.inv(cm.x, cm.y); [cm.x, cm.y] = S(wx, wy); }
+    } else A.comets = chartCometSeed(count);
+    while (A.comets.length < count) A.comets.push(spawnChartComet());
+    chartCometRelax(null);           // a zoom or a reset left them bunched or spread: even them out
+
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        for (const cm of A.comets) cm.age = cm.ttl / 2;
+        vmComposeFrame(canvas.getContext('2d'), A.view, 0, null, true);
+        return;
+    }
+    A.fade = fadeFrom ? { c: fadeFrom, t: 0 } : null;
+    A.last = 0;
+    chartCometFrame(performance.now());            // the new picture, now — no blank frame
 }
 
-// The leg's path drawn to `prog` of its length, like a pen: an arrowhead rides
-// the growing tip while drawing and leaves with it — once the line is complete
-// the revealed goal says where it was going, and a leftover mid-path arrow is
-// clutter.
-function chartTourPath(ctx, path, prog, alpha) {
-    if (!path || path.pts.length < 2 || prog <= 0 || alpha <= 0.01) return;
-    const target = path.total * Math.min(1, prog);
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    ctx.moveTo(path.pts[0][0], path.pts[0][1]);
-    for (let i = 1; i < path.pts.length && path.cum[i] <= target; i++)
-        ctx.lineTo(path.pts[i][0], path.pts[i][1]);
-    const tip = chartPathPoint(path, target);
-    if (tip) {
-        ctx.lineTo(tip.x, tip.y);
-        ctx.stroke();
-        if (prog < 1) chartArrowGlyph(ctx, tip.x, tip.y, tip.dx, tip.dy, 5, 'rgba(255,255,255,0.85)');
-    } else {
-        ctx.stroke();
-    }
-    ctx.restore();
-}
-
-// The tour's phase clock. The draw phase paces to the leg's on-screen length —
-// a long beat takes longer to trace than a short hop — everything else is a
-// fixed beat, and the finish holds longest: the last goal lingers before the
-// loop wipes and restarts.
-function chartTourDur(phase, leg) {
-    if (phase === 'draw') {
-        const p = _chartAnim.legPaths && _chartAnim.legPaths[leg];
-        return Math.max(0.6, Math.min(1.8, ((p && p.total) || 150) / 240));
-    }
-    return { origin: 0.45, reveal: 0.35, hold: 1.2, holdFinal: 2.6, fade: 0.4 }[phase];
-}
-
-// One frame of the walkthrough: advance the phase clock, then draw at most three
-// things — the start line (leg 1 only), the leg's path (partial while drawing),
-// and its destination goal. 'fade' clears the WHOLE leg, goal included: a goal
-// already shown as one leg's end is not re-shown as the next leg's beginning —
-// the next path simply draws from where it stood, and the picture never carries
-// more than one leg.
-function chartTourFrame(ctx, dt) {
-    const A = _chartAnim, T = A.tour;
-    const route = (state.course && state.course.route) || [];
-    const marks = (state.course && state.course.marks) || [];
-    const legs = route.length - 1;
-    if (!T || legs < 1) return;
-    T.clock += dt;
-    T.t += dt;
-    const durOf = (ph) => chartTourDur(ph === 'hold' && T.leg === legs ? 'holdFinal' : ph, T.leg);
-    let d;
-    while (T.t >= (d = durOf(T.phase))) {
-        T.t -= d;
-        if (T.phase === 'origin') T.phase = 'draw';
-        else if (T.phase === 'draw') T.phase = 'reveal';
-        else if (T.phase === 'reveal') T.phase = 'hold';
-        else if (T.phase === 'hold') T.phase = 'fade';
-        else if (T.leg === legs) { T.leg = 1; T.phase = 'origin'; }
-        else { T.leg++; T.phase = 'draw'; }
-    }
-    const k = Math.min(1, T.t / durOf(T.phase));
-    let originA = 1, pathProg = 1, pathA = 1, destA = 1;
-    if (T.phase === 'origin')      { originA = k; pathProg = pathA = destA = 0; }
-    else if (T.phase === 'draw')   { pathProg = k; destA = 0; }
-    else if (T.phase === 'reveal') { destA = k; }
-    else if (T.phase === 'fade')   { originA = pathA = destA = 1 - k; }
-    // The start line is the only goal ever shown at a leg's beginning — every
-    // later leg starts from a goal the viewer just watched land, so re-drawing
-    // it would only restate the obvious.
-    if (T.leg === 1) chartGoalGlyph(ctx, route[0], marks, A.X, A.Y, originA, T.clock);
-    chartTourPath(ctx, A.legPaths[T.leg], pathProg, pathA);
-    chartGoalGlyph(ctx, route[T.leg], marks, A.X, A.Y, destA, T.clock);
-}
-
-// The whole course at once — the pre-tour chart, kept for reduced motion where
-// a leg-by-leg walkthrough would never move. Physical lines are merged across
-// roles (a windward-leeward reuses one pair of marks as start, leeward gate and
-// finish): the start's green outranks the gate's gold, and the finish rides on
-// top as white dashes over any base.
-function chartStaticCourse(ctx, X, Y) {
-    const marks = state.course.marks || [];
+// THE COURSE over the land — lines, gates, the finish, rounding marks and their numbers — drawn LIVE
+// every frame from the view on screen (S: world → panel px), so a pan or zoom never waits on a bake
+// and the labels stay crisp at any zoom.
+function vmDrawCourse(ctx, S) {
     const route = state.course.route || [];
-    const dmc = state.course.dmc;
-    const legs = route.length - 1;
-    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.lineJoin = 'round';
-    for (let leg = 1; leg <= legs; leg++) {
-        const P = dmc && dmc.legs && dmc.legs[leg] && dmc.legs[leg].pts;
-        if (P && P.length >= 2) {
-            ctx.beginPath();
-            P.forEach((q, i) => i ? ctx.lineTo(X(q.x), Y(q.y)) : ctx.moveTo(X(q.x), Y(q.y)));
-            ctx.stroke();
-            const i = Math.max(1, Math.round((P.length - 1) * 0.42));
-            chartArrowGlyph(ctx, X(P[i].x), Y(P[i].y), X(P[i].x) - X(P[i - 1].x), Y(P[i].y) - Y(P[i - 1].y),
-                            5, 'rgba(255,255,255,0.75)');
-            continue;
+    // ── THE COURSE ──
+    const marks = state.course.marks || [];
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+    // NO ROUTES (Wes, Oct 4 2026): the map shows the marks and gates and the water between them,
+    // and the player chooses the way round. A drawn route — even several — reads as the answer.
+    ctx.setLineDash([]);
+    // Sailing order: every goal after the start is a numbered leg. A line remembers every pass
+    // it serves, in order, and which one is the finish.
+    const linePasses = {}, byMark = new Map();
+    {
+        let n = 0;
+        for (const e of route) {
+            if (e.role === 'start') continue;
+            n++;
+            if (e.kind === 'round' && e.mark) {
+                const k = Math.round(e.mark.x / 40) + ',' + Math.round(e.mark.y / 40);
+                const g = byMark.get(k) || { m: e.mark, nums: [], side: e.side || e.mark.side };
+                g.nums.push(n); byMark.set(k, g);
+            } else if (e.marks) {
+                const k = e.marks.slice().sort().join('|');
+                (linePasses[k] = linePasses[k] || []).push({ n, finish: !!e.finish });
+            }
         }
-        const a = legTargetPoint(leg - 1), b = legTargetPoint(leg);
-        if (!a || !b) continue;
-        ctx.beginPath();
-        ctx.moveTo(X(a.x), Y(a.y));
-        ctx.lineTo(X(b.x), Y(b.y));
-        ctx.stroke();
-        const t = 0.42;
-        chartArrowGlyph(ctx, X(a.x + (b.x - a.x) * t), Y(a.y + (b.y - a.y) * t),
-                        X(b.x) - X(a.x), Y(b.y) - Y(a.y), 5, 'rgba(255,255,255,0.75)');
     }
     const segs = new Map();
     for (const e of route) {
         if ((e.kind !== 'line' && e.kind !== 'gate') || !e.marks) continue;
-        const m1 = marks[e.marks[0]], m2 = marks[e.marks[1]];
-        if (!m1 || !m2) continue;
-        const key = Math.min(e.marks[0], e.marks[1]) + '|' + Math.max(e.marks[0], e.marks[1]);
-        const g = segs.get(key) || { m1, m2, start: false, finish: false, gate: false };
+        const key = e.marks.slice().sort().join('|');
+        const g = segs.get(key) || { key, m1: marks[e.marks[0]], m2: marks[e.marks[1]], start: false, finish: false };
         if (e.role === 'start') g.start = true;
         if (e.finish) g.finish = true;
-        if (e.kind === 'gate') g.gate = true;
         segs.set(key, g);
     }
+    const START_C = '#34d399', GATE_C = '#f2c14e', FINISH_C = '#ffffff';
     for (const g of segs.values()) {
-        const col = g.start ? '#34d399' : g.gate ? '#f2c14e' : g.finish ? '#eef3fb' : 'rgba(255,255,255,0.6)';
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        ctx.moveTo(X(g.m1.x), Y(g.m1.y)); ctx.lineTo(X(g.m2.x), Y(g.m2.y));
-        ctx.strokeStyle = col;
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        if (g.finish && col !== '#eef3fb') {
-            ctx.setLineDash([4, 3]);
-            ctx.strokeStyle = '#eef3fb';
-            ctx.stroke();
+        if (!g.m1 || !g.m2) continue;
+        const [ax, ay] = S(g.m1.x, g.m1.y), [bx, by] = S(g.m2.x, g.m2.y);
+        const passes = linePasses[g.key] || [];
+        const gatePasses = passes.filter(p => !p.finish);
+        // EVERY ROLE THE LINE PLAYS, said in its own colour (Wes, Oct 4 2026: on the lake the start
+        // is also the finish and the old "START · GATE 3" hid it). The line itself carries them
+        // too: a start's green, a gate's gold, and a finish's white dashes laid over either.
+        const parts = [];
+        if (g.start) parts.push(['START', START_C]);
+        for (const p of gatePasses) parts.push([`GATE ${p.n}`, GATE_C]);
+        if (g.finish) parts.push(['FINISH', FINISH_C]);
+        const base = g.start ? START_C : gatePasses.length ? GATE_C : FINISH_C;
+        ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(6,14,26,0.75)';
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        ctx.lineWidth = 3; ctx.strokeStyle = base;
+        ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+        if (g.finish && base !== FINISH_C) {
+            ctx.setLineDash([5, 5]); ctx.strokeStyle = FINISH_C;
+            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
+            ctx.setLineDash([]);
+        } else if (g.finish) {
+            // A finish alone: white and black, like the chequered flag.
+            ctx.setLineDash([5, 5]); ctx.strokeStyle = '#0f172a';
+            ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(bx, by); ctx.stroke();
             ctx.setLineDash([]);
         }
-        for (const m of [g.m1, g.m2]) {
-            ctx.beginPath();
-            ctx.arc(X(m.x), Y(m.y), 2.5, 0, Math.PI * 2);
-            ctx.fillStyle = col;
-            ctx.fill();
-        }
+        for (const [x, y] of [[ax, ay], [bx, by]]) { ctx.beginPath(); ctx.arc(x, y, 4.5, 0, Math.PI * 2); ctx.fillStyle = base; ctx.fill(); }
+        // The pill: each role in its colour, a dot between.
+        ctx.font = '800 10px "Archivo", sans-serif'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+        const sep = ' · ', sepW = ctx.measureText(sep).width;
+        const ws = parts.map(([t]) => ctx.measureText(t).width);
+        const tw = ws.reduce((a, b) => a + b, 0) + sepW * (parts.length - 1) + 14;
+        const mx = (ax + bx) / 2, my = (ay + by) / 2;
+        ctx.fillStyle = 'rgba(6,14,26,0.88)'; ctx.beginPath(); ctx.roundRect(mx - tw / 2, my + 10, tw, 17, 8.5); ctx.fill();
+        let x = mx - tw / 2 + 7;
+        parts.forEach(([t, c], i) => {
+            if (i) { ctx.fillStyle = '#94a3b8'; ctx.fillText(sep, x, my + 19); x += sepW; }
+            ctx.fillStyle = c; ctx.fillText(t, x, my + 19); x += ws[i];
+        });
     }
-    for (const e of route) {
-        if (e.kind === 'round' && e.mark) chartGoalGlyph(ctx, e, marks, X, Y, 1, null);
+    // Rounding marks, drawn like the race's goal chip (drawMarkEdgeIndicator): a port rounding
+    // circles the mark counter-clockwise, a starboard one clockwise, arrowhead the way you go.
+    for (const g of byMark.values()) {
+        const [x, y] = S(g.m.x, g.m.y);
+        ctx.beginPath(); ctx.arc(x, y, 15, 0, Math.PI * 2); ctx.fillStyle = 'rgba(6,14,26,0.85)'; ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, 6, 0, Math.PI * 2); ctx.fillStyle = (typeof chipColorFor === 'function') ? chipColorFor(g.side) : '#22c55e'; ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6; ctx.stroke();
+        if (g.side === 'port' || g.side === 'starboard') {
+            const ccw = g.side === 'port';
+            const a0 = ccw ? 0.9 : Math.PI - 0.9, a1 = ccw ? -Math.PI * 0.85 : Math.PI * 1.85;
+            ctx.strokeStyle = '#22d3ee'; ctx.lineWidth = 2.6;
+            ctx.beginPath(); ctx.arc(x, y, 11, a0, a1, ccw); ctx.stroke();
+            const tx = x + 11 * Math.cos(a1), ty = y + 11 * Math.sin(a1), tg = a1 + (ccw ? -Math.PI / 2 : Math.PI / 2);
+            ctx.save(); ctx.translate(tx, ty); ctx.rotate(tg); ctx.fillStyle = '#22d3ee';
+            ctx.beginPath(); ctx.moveTo(-3.5, -4); ctx.lineTo(4.5, 0); ctx.lineTo(-3.5, 4); ctx.closePath(); ctx.fill();
+            ctx.restore();
+        }
+        const lbl = g.nums.join(' · ');
+        ctx.font = '700 11px "IBM Plex Mono", monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const tw = ctx.measureText(lbl).width + 10;
+        ctx.fillStyle = 'rgba(6,14,26,0.88)'; ctx.beginPath(); ctx.roundRect(x - tw / 2, y - 33, tw, 16, 8); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.fillText(lbl, x, y - 24.5);
+    }
+
+}
+
+// The current at the preview's own tide clock, into the comet grid. state.time is borrowed and put
+// straight back (courseCurrentMax does the same): the board does not advance the race.
+function venueMapCurrentField(C, clock) {
+    const t0 = state.time, A = _chartAnim, ca = Math.cos(A.rot || 0), sa = Math.sin(A.rot || 0);
+    if (vmTidal()) return Tide.atPhase(vmTidePhase(), () => venueMapCurrentSample(C, ca, sa));
+    state.time = C.t0 + (C.period > 0 ? (clock / TIDE_LOOP_S) * C.period : 0);
+    try { venueMapCurrentSample(C, ca, sa); } finally { state.time = t0; }
+}
+function venueMapCurrentSample(C, ca, sa) {
+    const A = _chartAnim;
+    {
+        for (let j = 0; j < C.fh; j++) for (let i = 0; i < C.fw; i++) {
+            const k = j * C.fw + i, o = k * 3;
+            if (C.land[k]) { C.data[o] = C.data[o + 1] = C.data[o + 2] = 0; continue; }
+            const [wx, wy] = A.inv(i * C.FC, j * C.FC);
+            const c = getCurrentAt(wx, wy);
+            const sp = c ? c.speed : 0, d = c ? c.direction : 0;
+            // `direction` is where the stream sets TOWARD
+            const fx = Math.sin(d), fy = -Math.cos(d);
+            C.data[o] = fx * ca - fy * sa; C.data[o + 1] = fx * sa + fy * ca; C.data[o + 2] = sp;
+        }
     }
 }
 
-// Self-terminating: the loop lives only while the race-day board is up and the chart
-// is showing. Everything that re-opens or re-sizes the chart goes through
-// drawCourseMiniMap, which restarts it.
+// Which flow the comets show: the median wind, or the current. Kept across venues; a venue with no
+// current falls back to wind.
+let _vmMode = 'wind';
+function venueMapModeToggle(inner, hasCur) {
+    let tg = inner.querySelector('.vm-toggle');
+    if (!hasCur) { if (tg) tg.remove(); return; }
+    if (!tg) {
+        tg = document.createElement('div'); tg.className = 'vm-toggle';
+        tg.addEventListener('click', (e) => {
+            e.stopPropagation(); e.preventDefault();
+            const b2 = e.target.closest('[data-mode]'); if (!b2) return;
+            _vmMode = b2.dataset.mode;
+            tg.querySelectorAll('[data-mode]').forEach(x => x.classList.toggle('sel', x.dataset.mode === _vmMode));
+            for (const cm of _chartAnim.comets || []) { cm.age = cm.ttl; }   // respawn into the new flow
+        });
+        tg.addEventListener('mousemove', (e) => e.stopPropagation());
+        inner.appendChild(tg);
+    }
+    tg.innerHTML = `<button type="button" data-mode="wind" class="${_vmMode === 'wind' ? 'sel' : ''}">Wind</button>`
+                 + `<button type="button" data-mode="current" class="${_vmMode === 'current' ? 'sel' : ''}">Current</button>`;
+}
+
+// The flow at a panel point, already turned into the panel's frame: the median wind (A.field) or
+// the current (A.curField), by the toggle.
+function chartWindAt(sx, sy) {
+    const A = _chartAnim, cur = _vmMode === 'current' && A.curField;
+    const F = cur ? A.curField : A.field;
+    // BILINEAR between grid points, so a comet's heading turns smoothly instead of snapping as it
+    // crosses into the next cell (Wes, Oct 5 2026).
+    const gx = Math.max(0, Math.min(F.fw - 1.001, sx / F.FC)), gy = Math.max(0, Math.min(F.fh - 1.001, sy / F.FC));
+    const i = Math.floor(gx), j = Math.floor(gy), ux = gx - i, uy = gy - j;
+    const o00 = (j * F.fw + i) * 3, o10 = o00 + 3, o01 = o00 + F.fw * 3, o11 = o01 + 3, D = F.data;
+    const bl = (k) => (D[o00 + k] * (1 - ux) + D[o10 + k] * ux) * (1 - uy) + (D[o01 + k] * (1 - ux) + D[o11 + k] * ux) * uy;
+    let fx = bl(0), fy = bl(1);
+    const m = Math.hypot(fx, fy); if (m > 1e-6) { fx /= m; fy /= m; }
+    const kt = bl(2);
+    // knots to panel px/s: the stream is a tenth of the wind's speed, so it is drawn ~10x faster
+    return cur ? { fx, fy, px: 5 + Math.min(55, (kt / (F.ref || 3)) * 45), kt, cur: true }
+               : { fx, fy, px: 8 + Math.min(80, kt * 3.4), kt, cur: false };
+}
+
+// Where a comet is born: anywhere for the wind; in the current view, on water that is moving —
+// on a river most of the panel is land, and comets born there showed nothing.
+// Where a comet is born. EVENLY (Wes, Oct 6 2026): uniform random spots clump — three streaks in one
+// patch, none in the next — so a rebirth draws CANDIDATES and takes the one farthest from every other
+// comet (best-candidate sampling, as the race's comet field does), and the first population is laid on
+// a jittered grid (chartCometSeed). In the current view a candidate must also be on moving water — on
+// a river most of the panel is land, and comets born there showed nothing.
+const CHART_COMET_CANDIDATES = 10;
+// Comets live in the frame of the view they were sampled in (A.view). A gesture `g` maps that frame to
+// the screen by a similarity (k, tx, ty); null is the identity.
+const cmScreen = (g, x, y) => g ? [g.k * x + g.tx, g.k * y + g.ty] : [x, y];
+const cmAnchor = (g, X, Y) => g ? [(X - g.tx) / g.k, (Y - g.ty) / g.k] : [X, Y];
+function chartCometSpot(self, g) {
+    const A = _chartAnim, others = A.comets || [];
+    const ok = (x, y) => !(_vmMode === 'current' && A.curField) || chartWindAt(x, y).kt >= 0.15;
+    let best = null, bestD = -1;
+    for (let c = 0, tries = 0; c < CHART_COMET_CANDIDATES && tries < 160; tries++) {
+        const X = fxRand() * A.w, Y = fxRand() * A.h, [x, y] = cmAnchor(g, X, Y);
+        if (!ok(x, y)) continue;
+        c++;
+        let d = Infinity;
+        for (const o of others) { if (o === self) continue; const [ox, oy] = cmScreen(g, o.x, o.y), dd = (ox - X) ** 2 + (oy - Y) ** 2; if (dd < d) d = dd; }
+        if (d > bestD) { bestD = d; best = [x, y]; }
+    }
+    return best || cmAnchor(g, fxRand() * A.w, fxRand() * A.h);
+}
+// KEEP THEM EVEN through a zoom (Wes, Oct 6 2026: "when you zoom the placement looks off"). Comets ride
+// the map, so a zoom in spreads them and pushes most off the panel, and a zoom out squeezes them into
+// the middle. Each call looks at `n` comets (all of them when n is omitted): one off the panel, or with
+// a neighbour closer than half the even spacing, is reborn at the emptiest spot, fading in.
+function chartCometRelax(g, n) {
+    const A = _chartAnim, C = A.comets || []; if (!C.length) return;
+    const sp = Math.sqrt(A.w * A.h / C.length), near = (0.5 * sp) ** 2, M = 18;
+    // every comet off the panel (cheap to find, and a fast zoom pushes half of them out at once), then
+    // `n` more at random for the neighbour test
+    const off = C.filter(cm => { const [X, Y] = cmScreen(g, cm.x, cm.y); return X < -M || X > A.w + M || Y < -M || Y > A.h + M; });
+    const pick = n == null ? C.slice().sort(() => fxRand() - 0.5) : off.concat(Array.from({ length: Math.min(n, C.length) }, () => C[Math.floor(fxRand() * C.length)]));
+    for (const cm of pick) {
+        const [X, Y] = cmScreen(g, cm.x, cm.y);
+        let bad = X < -M || X > A.w + M || Y < -M || Y > A.h + M;
+        if (!bad) for (const o of C) { if (o === cm) continue; const [ox, oy] = cmScreen(g, o.x, o.y); if ((ox - X) ** 2 + (oy - Y) ** 2 < near) { bad = true; break; } }
+        if (bad) { [cm.x, cm.y] = chartCometSpot(cm, g); cm.age = 0; cm.ttl = 1.8 + fxRand() * 2.2; }
+    }
+}
+// The first population: one comet per cell of a grid as fine as the count, jittered within its cell,
+// ages spread so they do not all fade in together.
+function chartCometSeed(count) {
+    const A = _chartAnim, out = [];
+    const cols = Math.max(1, Math.round(Math.sqrt(count * A.w / A.h))), rows = Math.max(1, Math.ceil(count / cols));
+    const cw = A.w / cols, chh = A.h / rows;
+    const cells = [];
+    for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) cells.push([i, j]);
+    for (let k = cells.length - 1; k > 0; k--) { const r = Math.floor(fxRand() * (k + 1)); [cells[k], cells[r]] = [cells[r], cells[k]]; }
+    for (const [i, j] of cells.slice(0, count)) {
+        const cm = spawnChartComet();
+        let x = (i + 0.15 + fxRand() * 0.7) * cw, y = (j + 0.15 + fxRand() * 0.7) * chh;
+        if (_vmMode === 'current' && A.curField && chartWindAt(x, y).kt < 0.15) [x, y] = chartCometSpot(cm);
+        cm.x = x; cm.y = y;
+        out.push(cm);
+        A.comets = out;               // later picks see the ones already placed
+    }
+    return out;
+}
+function spawnChartComet() {
+    const A = _chartAnim;
+    const [sx0, sy0] = chartCometSpot();
+    const cm = { x: sx0, y: sy0,
+                 ttl: 1.8 + fxRand() * 2.2, age: fxRand() * 1.8,   // desynced fades
+                 jit: 0.75 + fxRand() * 0.5 };                     // per-comet size character
+    const lw = chartWindAt(cm.x, cm.y);
+    cm.fx = lw.fx; cm.fy = lw.fy; cm.kt = lw.kt; cm.cur = lw.cur;
+    return cm;
+}
+
+// THE STREAK IS THE ANEMOMETER, in the race's own colours: streakColorFor maps knots to the
+// same ice → white → cream → gold → amber → red the comets wear on the water, so a gold
+// streak here is the gold one out there. Larger than the race's (Wes, Oct 5 2026) — this is the
+// map's one moving thing and must read over any water. The CURRENT view flies cyan comets whose
+// length and weight follow the stream's knots; slack water shows none.
+function drawChartComet(ctx, cm, g) {
+    const env = Math.sin(Math.PI * Math.min(1, cm.age / cm.ttl));
+    const kt = cm.kt || 0;
+    let col, a, len, lw, head = 1;
+    if (cm.cur) {
+        if (kt < 0.1) return;
+        // Scaled to this venue's strongest stream, so a 0.5 kt harbour drift still reads; the
+        // hover gives the knots.
+        const ref = (_chartAnim.curField && _chartAnim.curField.ref) || 3;
+        const u = Math.min(1, kt / ref);
+        col = [Math.round(120 - 90 * u), Math.round(235 - 25 * u), 255];
+        a = env * Math.min(0.95, 0.6 + u * 0.35);
+        len = cm.jit * (20 + u * 42);
+        lw = 2 + u * 2.6;
+    } else {
+        col = (typeof streakColorFor === 'function') ? streakColorFor(kt) : [235, 245, 255];
+        a = env * Math.min(0.95, 0.5 + kt * 0.02);
+        // a longer tail and a quieter head (Wes, Oct 6 2026): the streak carries the direction, the
+        // head only says which end leads
+        len = cm.jit * Math.min(110, 26 + kt * 3.3);
+        lw = Math.min(4.5, 2.2 + kt * 0.08);
+        head = 0.55;
+    }
+    if (a <= 0.01) return;
+    // THE TAIL FOLLOWS THE FLOW: traced back upstream from the head in short steps through the
+    // field, so it bends round a headland the way the air or the water does, instead of a straight
+    // stroke along the head's heading. Tapered from the head's width to a point, fading as it goes.
+    // traced through the field in the comet's own frame, drawn on screen: its length is screen px at
+    // any zoom, and mid-gesture the tail still bends where the air does
+    const gk = g ? g.k : 1, N = 10, step = len / N / gk, pts = [cmScreen(g, cm.x, cm.y)];
+    let x = cm.x, y = cm.y;
+    for (let k = 0; k < N; k++) {
+        const f = chartWindAt(x, y);
+        x -= f.fx * step; y -= f.fy * step;
+        pts.push(cmScreen(g, x, y));
+    }
+    const hw = lw / 2;
+    for (let k = 0; k < N; k++) {
+        const [x0, y0] = pts[k], [x1, y1] = pts[k + 1];
+        let dx = x1 - x0, dy = y1 - y0; const dl = Math.hypot(dx, dy) || 1; dx /= dl; dy /= dl;
+        const w0 = hw * (1 - k / N), w1 = hw * (1 - (k + 1) / N);
+        ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${(a * (1 - k / N)).toFixed(3)})`;
+        ctx.beginPath();
+        ctx.moveTo(x0 - dy * w0, y0 + dx * w0); ctx.lineTo(x1 - dy * w1, y1 + dx * w1);
+        ctx.lineTo(x1 + dy * w1, y1 - dx * w1); ctx.lineTo(x0 + dy * w0, y0 - dx * w0);
+        ctx.closePath(); ctx.fill();
+    }
+    // the head: the tail's blunt end, rounded
+    ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${(a * head).toFixed(3)})`;
+    ctx.beginPath(); ctx.arc(pts[0][0], pts[0][1], hw * (head < 1 ? 0.85 : 1), 0, Math.PI * 2); ctx.fill();
+}
+
+// Self-terminating: the loop lives only while its surface is up and showing.
 function chartCometFrame(ts) {
     const A = _chartAnim;
-    const box = A.box || document.getElementById('venue-course-box');
-    const canvas = A.canvas || document.getElementById('venue-course-map');
-    const boardUp = A.visible ? A.visible() : (UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden'));
-    if (!A.static || !box || !canvas || box.style.display === 'none' || !boardUp || !canvas.isConnected) {
-        A.raf = 0;
-        return;
-    }
+    const canvas = A.canvas;
+    const up = A.visible ? A.visible() : false;
+    if (!A.ready || !canvas || !up || !canvas.isConnected) { A.raf = 0; return; }
     const dt = A.last ? Math.min(0.05, (ts - A.last) / 1000) : 0.016;
     A.last = ts;
-    const ctx = canvas.getContext('2d');
+    const moving = venueMapStepMotion(dt);
+    if (moving === 'baked') return;              // settled: drawCourseMiniMap re-anchored and drew
+    if (!moving) A.gesture = null;
+    const g = moving ? A.gesture : null;
+    vmComposeFrame(canvas.getContext('2d'), g ? g.view : A.view, dt, g, false);
+    // At rest, sharpen: paint one missing land tile a frame (vmLandWork), never mid-motion.
+    if (moving) _vmLand.idleSince = performance.now();
+    else vmLandWork();
+    A.raf = requestAnimationFrame(chartCometFrame);
+}
+// ONE FRAME: the land from the cache at `view`, the course over it, the comets (anchored to A.view and
+// carried by the gesture's similarity while it lasts), a venue switch's crossfade, the compass.
+function vmComposeFrame(ctx, view, dt, g, still) {
+    const A = _chartAnim;
     ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.drawImage(A.static, 0, 0);
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    vmLandDraw(ctx, view);
     ctx.setTransform(A.dpr, 0, 0, A.dpr, 0, 0);
-    chartTourFrame(ctx, dt);
-    const M = 18; // wrap margin: a comet leaves fully before it re-enters fully
+    vmDrawCourse(ctx, vmProject(view));
+    // the hover readout reads the view on screen, mid-zoom too
+    if (A.canvas && A.canvas._vm && g) { const ca = Math.cos(A.rot), sa = Math.sin(A.rot);
+        A.canvas._vm.inv = (sx, sy) => { const rx = (sx - A.w / 2) / view.scale + view.rcx, ry = (sy - A.oy) / view.scale + view.rcy; return [rx * ca + ry * sa, -rx * sa + ry * ca]; }; }
+    if (still) { ctx.setTransform(A.dpr, 0, 0, A.dpr, 0, 0); for (const cm of A.comets) drawChartComet(ctx, cm); }
+    else chartCometsStep(ctx, dt, g);
+    if (g) A.fade = null;
+    if (A.fade) {
+        A.fade.t += dt;
+        const a = 1 - A.fade.t / 0.22;
+        if (a <= 0) A.fade = null;
+        else { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = a * a; ctx.drawImage(A.fade.c, 0, 0); ctx.globalAlpha = 1; }
+    }
+    vmDrawCompass(ctx);
+}
+// world → panel px for a view at the map's turn
+function vmProject(v) {
+    const A = _chartAnim, ca = Math.cos(A.rot), sa = Math.sin(A.rot);
+    return (x, y) => { const rx = x * ca - y * sa, ry = x * sa + y * ca; return [A.w / 2 + (rx - v.rcx) * v.scale, A.oy + (ry - v.rcy) * v.scale]; };
+}
+
+// ── THE TIDE SLIDER (Wes, Oct 7 2026) ──
+// On a tidal venue the board's map takes a slider through the tide's CYCLE — low water, flood, high, ebb,
+// low — and everything on the map follows that one moment: the land is repainted at its level
+// (Tide.setChartLevel, the chart's own) and the current comets show its stream, flooding or ebbing
+// (Tide.atPhase, a scoped clock the race never sees). A level alone would not do: the same level comes
+// twice a cycle, once with the stream running in and once running out. Per venue; starts at mid-flood.
+const _vmTide = { venue: null, phase: 0.25, timer: 0 };
+function vmTidal() { const T = state.tide; return !!(T && T.amp > 0 && window.Tide && Tide.setChartLevel && Tide.atPhase); }
+function vmTidePhase() {
+    if (!vmTidal() || !state.course) return null;
+    if (_vmTide.venue !== state.course.venueKey) { _vmTide.venue = state.course.venueKey; _vmTide.phase = 0.25; }
+    return _vmTide.phase;
+}
+function vmTideLevel() { const s = vmTidePhase(); return s == null ? null : Tide.levelAtPhase(s); }
+const VM_TIDE_NAMES = ['Low water', 'Flood', 'High water', 'Ebb', 'Low water'];
+function vmTideName(s) { const k = Math.round(s * 4); return Math.abs(s * 4 - k) < 0.12 ? VM_TIDE_NAMES[k] : (s < 0.5 ? 'Flood · rising' : 'Ebb · falling'); }
+function venueMapTideSlider(inner) {
+    let el = inner.querySelector('.vm-tide');
+    if (!vmTidal()) { if (el) el.remove(); return; }
+    vmTidePhase();
+    if (!el) {
+        el = document.createElement('div'); el.className = 'vm-tide';
+        el.innerHTML = `<div class="vm-tide-top"><span class="t-label t-label-xs vm-tide-k">Tide</span><span class="t-label t-label-xs vm-tide-now"></span></div>`
+            + `<input type="range" class="vm-tide-range" min="0" max="1" step="0.005">`
+            + `<div class="vm-tide-ticks t-label">${['Low', 'Flood', 'High', 'Ebb', 'Low'].map(n => `<span>${n}</span>`).join('')}</div>`;
+        for (const ev of ['pointerdown', 'mousemove', 'wheel', 'dblclick']) el.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
+        const r = el.querySelector('input');
+        r.addEventListener('input', () => {
+            _vmTide.phase = +r.value;
+            el.querySelector('.vm-tide-now').textContent = vmTideName(_vmTide.phase);
+            // the stream follows at once; the land is repainted at most every 120 ms while dragging
+            const C = _chartAnim.curField; if (C) venueMapCurrentField(C, 0);
+            if (!_vmTide.timer) _vmTide.timer = setTimeout(() => { _vmTide.timer = 0; _drawBoardMap(); }, 120);
+        });
+        inner.appendChild(el);
+    }
+    const r = el.querySelector('input');
+    if (document.activeElement !== r) r.value = String(_vmTide.phase);
+    el.querySelector('.vm-tide-now').textContent = vmTideName(_vmTide.phase);
+}
+
+// ── THE LAND CACHE (Wes, Oct 5 2026: "prerender, then pan around with the wind and current on top") ──
+// The land never changes while a venue is on the board, so it is painted ONCE per zoom level and only
+// composited after that. Level 0 is the whole view (wholeBox) at the fit's resolution, painted with the
+// venue and always there, so nothing is ever blank; levels 1 and 2 are the same area at 2x and 4x.
+// WHOLE IMAGES, NOT TILES: the painter sizes its depth band and waterlines to the picture it paints and
+// measures the distance to shore only inside it, so tiles each shaded the water their own way and met
+// in visible seams. A whole level matches the base exactly. Painted at rest only (0.15-0.6 s, once per
+// venue): level 1 in the background a moment after the venue settles, level 2 the first time a zoom
+// asks for it. Until then the next level down stands in, a little soft.
+const VM_LEVELS = 2, VM_LAND_MAX = 4096, VM_PREFILL_MS = 700;
+const _vmLand = { key: '', course: null, x0: 0, y0: 0, side: 0, p0: 0, lv: [], want: 0, idleSince: 0 };
+function vmLandPaint(minX, minY, side, N) {
+    const c = document.createElement('canvas'); c.width = N; c.height = N;
+    const p0 = state.boats[0], keep = p0 && { x: p0.x, y: p0.y };
+    if (p0) { p0.x = 1e9; p0.y = 1e9; }   // parked off the paint, whatever drawMinimap decides to draw
+    drawMinimap.target = { ctx: c.getContext('2d'), terrainOnly: true, extent: { minX, maxX: minX + side, minY, maxY: minY + side } };
+    const tl = vmTideLevel();
+    if (tl != null && window.Tide && Tide.setChartLevel) Tide.setChartLevel(tl);
+    try { drawMinimap(); } catch (e) { /* a map without terrain still shows the course */ }
+    finally { drawMinimap.target = null; if (p0) { p0.x = keep.x; p0.y = keep.y; } if (window.Tide && Tide.setChartLevel) Tide.setChartLevel(null); }
+    return c;
+}
+function vmLandEnsure(B, p0) {
+    if (!B) return;
+    const side = Math.max(B.x1 - B.x0, B.y1 - B.y0), cx = (B.x0 + B.x1) / 2, cy = (B.y0 + B.y1) / 2;
+    const tl = vmTideLevel();
+    const key = [state.course && state.course.venueKey, Math.round(cx), Math.round(cy), Math.round(side), p0.toFixed(4), tl == null ? '' : tl.toFixed(2)].join('|');
+    const L = _vmLand;
+    if (L.key === key && L.course === state.course) return;
+    L.key = key; L.course = state.course; L.want = 0; L.idleSince = performance.now();
+    L.x0 = cx - side / 2; L.y0 = cy - side / 2; L.side = side; L.p0 = p0;
+    L.lv = [vmLandPaint(L.x0, L.y0, side, vmLandSize(0))];
+}
+function vmLandSize(l) { return Math.max(64, Math.min(VM_LAND_MAX, Math.ceil(_vmLand.side * _vmLand.p0 * 2 ** l))); }
+// The level a view wants: used up to 1.5x its own resolution (a 6x zoom draws 4x), so the biggest
+// level paints half as many pixels for a softness the eye does not find at rest.
+function vmLandLevel(v) {
+    const need = v.scale * _chartAnim.dpr / _vmLand.p0;
+    return need <= 1.2 ? 0 : Math.max(1, Math.min(VM_LEVELS, Math.ceil(Math.log2(need / 1.5))));
+}
+function vmLandDraw(ctx, v) {
+    const A = _chartAnim, L = _vmLand, d = A.dpr, c = Math.cos(A.rot), sn = Math.sin(A.rot);
+    const pal = (state.course.doc && state.course.doc.palette) || {};
+    ctx.fillStyle = pal.baseColor || '#1f6f95';
+    ctx.fillRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    if (!L.lv[0]) return;
+    ctx.setTransform(d * v.scale * c, d * v.scale * sn, -d * v.scale * sn, d * v.scale * c,
+                     d * (A.w / 2 - v.rcx * v.scale), d * (A.oy - v.rcy * v.scale));
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    const want = vmLandLevel(v);
+    let l = want; while (l > 0 && !L.lv[l]) l--;
+    ctx.drawImage(L.lv[l], L.x0, L.y0, L.side, L.side);
+    L.want = L.lv[want] ? 0 : want;
+}
+// At rest: paint the level the view wants, or — once the venue has been still a moment — level 1 ahead
+// of the first zoom. One level a call; returns true when it painted.
+function vmLandWork() {
+    const L = _vmLand, now = performance.now();
+    let l = L.want;
+    if (!l && !L.lv[1] && L.lv[0] && now - L.idleSince > VM_PREFILL_MS) l = 1;
+    if (!l || L.lv[l]) return false;
+    L.lv[l] = vmLandPaint(L.x0, L.y0, L.side, vmLandSize(l));
+    L.want = 0;
+    return true;
+}
+// THE COMPASS: a needle, white to north and red to south (Wes), turned with the map — in the panel's
+// own frame, over everything, so it stays in its corner while the map pans and zooms beneath it.
+function vmDrawCompass(ctx) {
+    const A = _chartAnim, K = A.compass; if (!K) return;
+    ctx.setTransform(A.dpr, 0, 0, A.dpr, 0, 0);
+    const nx = K.x, ny = K.y, rot = K.rot;
+    ctx.fillStyle = 'rgba(6,14,26,0.84)'; ctx.beginPath(); ctx.arc(nx, ny, 21, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(203,213,225,0.35)'; ctx.lineWidth = 1; ctx.stroke();
+    const dx = Math.sin(rot), dy = -Math.cos(rot), px = -dy, py = dx, L = 15, Wd = 5;
+    ctx.beginPath(); ctx.moveTo(nx + dx * L, ny + dy * L); ctx.lineTo(nx + px * Wd, ny + py * Wd); ctx.lineTo(nx - px * Wd, ny - py * Wd); ctx.closePath();
+    ctx.fillStyle = '#ffffff'; ctx.fill();
+    ctx.beginPath(); ctx.moveTo(nx - dx * L, ny - dy * L); ctx.lineTo(nx + px * Wd, ny + py * Wd); ctx.lineTo(nx - px * Wd, ny - py * Wd); ctx.closePath();
+    ctx.fillStyle = '#ef4444'; ctx.fill();
+    ctx.beginPath(); ctx.arc(nx, ny, 1.8, 0, Math.PI * 2); ctx.fillStyle = '#0f172a'; ctx.fill();
+    ctx.font = '800 9px "Archivo", sans-serif'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText('N', nx + dx * 29, ny + dy * 29);
+}
+// The comets live in the frame of the view they were sampled in (A.view). Mid-gesture they are CARRIED
+// by the gesture's similarity `g` (k, tx, ty): their positions move with the map, their size does not —
+// scaled with it, a 6x zoom drew them as six-times-fat streaks.
+function chartCometsStep(ctx, dt, g) {
+    const A = _chartAnim;
+    ctx.setTransform(A.dpr, 0, 0, A.dpr, 0, 0);
+    const C = A.curField;
+    if (C && C.period > 0 && !vmTidal()) {
+        C.clock = (C.clock + dt) % TIDE_LOOP_S;
+        const q = Math.floor(C.clock * 4);   // a tidal field re-samples four times a second
+        if (q !== C.sampled) { C.sampled = q; venueMapCurrentField(C, C.clock); }
+    }
+    const M = 18, k = g ? g.k : 1;   // wrap margin: a comet leaves fully before it re-enters fully
+    if (g) chartCometRelax(g, 12);   // mid-gesture, a dozen a frame keeps the spread even
     for (const cm of A.comets) {
         const lw = chartWindAt(cm.x, cm.y);
-        cm.fx = lw.fx; cm.fy = lw.fy; cm.kt = lw.kt;
-        cm.x += lw.fx * lw.px * dt;
-        cm.y += lw.fy * lw.px * dt;
+        cm.fx = lw.fx; cm.fy = lw.fy; cm.kt = lw.kt; cm.cur = lw.cur;
+        // the drift is in SCREEN px a second, whatever the zoom
+        cm.x += lw.fx * lw.px * dt / k;
+        cm.y += lw.fy * lw.px * dt / k;
         cm.age += dt;
-        if (cm.x < -M) cm.x += A.w + 2 * M; else if (cm.x > A.w + M) cm.x -= A.w + 2 * M;
-        if (cm.y < -M) cm.y += A.h + 2 * M; else if (cm.y > A.h + M) cm.y -= A.h + 2 * M;
+        // A current comet that drifts off the moving water (onto land, into slack) is reborn on
+        // it: a narrow river would otherwise empty in a second.
+        if (lw.cur && lw.kt < 0.1 && cm.age > 0.2) cm.age = cm.ttl + 1;
+        if (!g) {
+            if (cm.x < -M) cm.x += A.w + 2 * M; else if (cm.x > A.w + M) cm.x -= A.w + 2 * M;
+            if (cm.y < -M) cm.y += A.h + 2 * M; else if (cm.y > A.h + M) cm.y -= A.h + 2 * M;
+        }
         if (cm.age > cm.ttl) {
             cm.age = 0;
             cm.ttl = 1.8 + fxRand() * 2.2;
-            cm.x = fxRand() * A.w;
-            cm.y = fxRand() * A.h;
+            [cm.x, cm.y] = chartCometSpot(cm, g);
             cm.jit = 0.75 + fxRand() * 0.5;
         }
-        drawChartComet(ctx, cm);
+        drawChartComet(ctx, cm, g);
     }
-    A.raf = requestAnimationFrame(chartCometFrame);
 }
 
 // --- Competitor scouting (sidebar, below the venue briefing) ---------------
@@ -1954,6 +2385,10 @@ function loadVenueWorld(opts) {
     // two venues disagree about the course axis, which is why it read as intermittent.
     // Consumes no RNG, so the golden traces are untouched.
     repositionBoats();
+
+    // The race's wind shadows, every wind angle it can swing to, built here behind the loading
+    // card rather than mid-race (see leeWarm). Only a full build races; browsing never pays it.
+    if (state.course.loadState === 'full' && typeof leeWarm === 'function') leeWarm();
 
     // A FULL build just priced the course honestly — remember the numbers, so the next
     // time this venue is merely browsed the board can quote the real sailed distance
@@ -2937,40 +3372,6 @@ function openRecordsOverlay() {
 function closeRecordsOverlay() {
     const ov = document.getElementById('records-overlay');
     if (ov) ov.classList.add('hidden');
-}
-
-// The inline record book: the empty water to the RIGHT of the course chart, on
-// screens wide enough to have any. Shows the board the player is currently set up to
-// attack (their trim setting), with the full book one click away — which is also the
-// only route on small screens, via the Records chip in the hero header.
-function renderVenueRecordsInline(el) {
-    const board = settings.autoTrim ? 'auto' : 'manual';
-    const rec = recordsFor(board);
-    const track = trackRecordFor(board);
-    const line = (label, value, holder) => `
-        <div class="flex items-center justify-between" style="gap:8px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.06);">
-            <span class="t-label t-label-sm" style="color:#9fb2cc;">${label}</span>
-            <span class="flex items-center" style="gap:7px;">
-                <span class="t-mono" style="font-size:12px;color:#eef3fb;white-space:nowrap;">${value}</span>
-                ${recHolderHTML(holder, 18)}
-            </span>
-        </div>`;
-    const legBits = [];
-    for (let i = 0; i < state.race.totalLegs; i++) {
-        const lr = rec.legs[i];
-        if (lr) legBits.push(`L${i + 1} ${formatSplitTime(lr.t)}`);
-    }
-    el.innerHTML = `
-        <div class="flex items-baseline justify-between" style="margin-bottom:4px;">
-            <span class="t-label t-label-sm" style="color:#f2c14e;">✦ Records &middot; ${board === 'auto' ? 'auto' : 'manual'} trim</span>
-            <button class="t-label t-label-xs" onclick="openRecordsOverlay()"
-                    style="color:#a8cbff;border:1px solid rgba(168,203,255,0.4);border-radius:999px;padding:2px 9px;cursor:pointer;background:transparent;">All records</button>
-        </div>
-        ${line('Track', track ? formatBestTime(track.t) : '—', track)}
-        ${legBits.length ? `<div class="t-mono" style="font-size:10px;color:#66748c;padding:3px 0;border-bottom:1px solid rgba(255,255,255,0.06);">${legBits.join(' &middot; ')}</div>` : ''}
-        ${line('Top speed', rec.topSpeed ? rec.topSpeed.v.toFixed(1) + ' kt' : '—', rec.topSpeed)}
-        ${line('Shortest', rec.minDist ? rec.minDist.d.toFixed(2) + ' km' : '—', rec.minDist)}
-        ${line('Best start', rec.start ? '+' + rec.start.t.toFixed(1) + 's' : '—', rec.start)}`;
 }
 
 const RES_MEDALS = ['#f2c14e', '#c8d3e3', '#c98a4b'];   // gold, silver, bronze
@@ -4206,6 +4607,9 @@ function renderSeriesPicker() {
         : nNow === 1 ? 'One race against the fleet. No standings, no pennant.'
         : nNow < 4 ? `${nNow} races, one set of standings. Four or more races fly a pennant.`
         : `Sails for the ${tier}-race pennant${tp && tp.won ? ' — already yours' : tp && tp.best ? ` · your best ${_ordinal(tp.best)}` : ''}.`;
+    // Scoring only means something across races: a single race is just "finish as high as you
+    // can", and explaining points there was noise (PT-010).
+    $('series-scoring').style.display = nNow === 1 ? 'none' : '';
     $('series-right-title').textContent = pick ? 'Pick your venues' : nNow === 1 ? 'Your venue' : 'Your draw';
     $('series-bar-note').textContent = pick ? (_seriesPicks.length ? 'Click a picked venue again to take it out.' : 'Pick at least one venue.')
         : 'Not the draw you wanted? Redraw as often as you like — it is free until you start.';

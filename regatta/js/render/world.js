@@ -4420,7 +4420,14 @@ function drawIslands(ctx, only, pending) {
     const camY = state.camera.y;
 
     let drawn = 0;
-    for (const isl of state.course.islands) {
+    // The BACKDROP (venuedoc.js) paints first, under everything authored, and only in the
+    // static land pass. It starts a camera's reach beyond the boundary, so in a race it is
+    // usually culled; it is here so the view and the minimap agree where they do meet.
+    const bd = state.course.backdrop;
+    // Over the race land, as on the maps (hud.js): the map-only land stops at the line, the race land
+    // runs on under it, so the join is solid.
+    const list = (bd && bd.length && (!only || only(bd[0]))) ? state.course.islands.concat(bd) : state.course.islands;
+    for (const isl of list) {
         // Invisible colliders: the river banks draw as one continuous mass in
         // drawRiverShore instead. Awash shapes were already painted UNDER the water by
         // drawShoals — this pass is the world standing above it. A reef collides like

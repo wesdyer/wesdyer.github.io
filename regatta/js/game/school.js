@@ -1624,14 +1624,15 @@ const School = {
             const v = viewPos ? viewPos(b.p.x, b.p.y) : null;
             const p = (v && v.inView) ? v : toScreen(b.p.x, b.p.y);
             if (v ? (v.inView && !(occluded && occluded(v.x, v.y))) : p.onScreen) return;
-            chips.push({ x: p.x, y: p.y, d: Math.round(this.dist(player, b.p) * 0.2), side: b.side || null });
+            chips.push({ x: p.x, y: p.y, d: Math.round(this.dist(player, b.p) * 0.2), side: b.side || null, through: !!b.noZone });
         });
         // A gate's two buoys that project to (nearly) the same edge point draw as one chip,
         // the nearer distance — the race's rule (script.js).
         if (chips.length === 2 && Math.hypot(chips[0].x - chips[1].x, chips[0].y - chips[1].y) < 48) {
             drawMarkEdgeIndicator(ctx, (chips[0].x + chips[1].x) / 2, (chips[0].y + chips[1].y) / 2,
-                Math.min(chips[0].d, chips[1].d) + 'm', chips[0].side === chips[1].side ? chips[0].side : null, rot);
-        } else for (const c of chips) drawMarkEdgeIndicator(ctx, c.x, c.y, c.d + 'm', c.side, rot);
+                Math.min(chips[0].d, chips[1].d) + 'm', chips[0].side === chips[1].side ? chips[0].side : null, rot,
+                chips[0].side === chips[1].side && chips[0].side ? chipColorFor(chips[0].side) : CHIP_COLORS.through);
+        } else for (const c of chips) drawMarkEdgeIndicator(ctx, c.x, c.y, c.d + 'm', c.side, rot, c.through ? CHIP_COLORS.through : chipColorFor(c.side));
     },
 
     // ── the teal ring: what Paddle is pointing at ─────────────────────────────
