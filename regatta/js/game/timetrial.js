@@ -162,7 +162,7 @@ TimeTrial._hit = function () {
     if (!this.solo() || !this._rec || state.race.status !== 'racing') return;
     const me = state.boats && state.boats[0]; if (!me || me.raceState.finished) return;
     const t = this._clock(), R = this._rec;
-    if (t - R.lastHit > 1.0) { const leg = me.raceState.leg; R.hits[leg] = (R.hits[leg] || 0) + 1; }
+    if (t - R.lastHit > 1.0) { const leg = me.raceState.leg; R.hits[leg] = (R.hits[leg] || 0) + 1; (R.hitT = R.hitT || []).push({ t, leg }); }   // ...and when, for the replay's ticks
     R.lastHit = t;
 };
 if (typeof GameEvents !== 'undefined') {

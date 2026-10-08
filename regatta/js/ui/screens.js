@@ -3531,8 +3531,10 @@ function showResults() {
 const TRIAL_LEG_COLOURS = ['#94a3b8', '#5eead4', '#f2c14e', '#f472b6', '#60a5fa', '#a78bfa', '#fb923c', '#34d399', '#f87171', '#facc15'];
 function _trialLegColour(k) { return k <= 0 ? TRIAL_LEG_COLOURS[0] : TRIAL_LEG_COLOURS[1 + (k - 1) % (TRIAL_LEG_COLOURS.length - 1)]; }
 function renderTrialResults(player) {
-    const host = document.getElementById('res-trial-stats'), cv = document.getElementById('res-trial-map');
-    if (!host || !cv) return;
+    const host = document.getElementById('res-trial-stats');
+    if (!host) return;
+    // THE CHART AND THE REPLAY AGAINST YOUR GHOST (PT-007): the race page's map card, moved here (raceresults.js).
+    if (typeof renderTrialReplay === 'function') renderTrialReplay(player);
     const rs = player.raceState, dnf = !!rs.resultStatus;
     const sig = [rs.finished, rs.resultStatus, rs.finishTime.toFixed(3), rs.legTimes.length].join('|');
     if (host.dataset.sig === sig) return;
@@ -3583,85 +3585,15 @@ function renderTrialResults(player) {
             <div class="t-label t-label-sm" style="color:#dbeafe; padding:0 12px 10px;">Leg by leg${gs ? '' : ' <span style="color:#66748c;">· no ghost yet to compare</span>'}</div>
             ${head}${rows.join('') || '<div style="padding:10px 12px; color:#66748c;">No legs sailed.</div>'}</div>`;
 
-    // THE CHART. The minimap's own drawing, rendered once onto a base canvas; the tracks go over it on every
-    // redraw, so a click (highlight a leg) or a hover (the readout) never repaints the whole chart.
-    const px = Math.round(cv.clientWidth * (window.devicePixelRatio || 1)) || 640;
-    const base = document.createElement('canvas'); base.width = px; base.height = px;
-    drawMinimap.target = { ctx: base.getContext('2d') };
-    try { drawMinimap(); } finally { drawMinimap.target = null; }
-    const P = drawMinimap.last; if (!P) return;
-    cv.width = px; cv.height = px;
-    _trialMap = { cv, base, P, px, run: (TimeTrial._rec && TimeTrial._rec.s) || [], ghost: (TimeTrial._ghost && TimeTrial._ghost.s) || null, sel: null, hover: null };
-    _trialMapDraw();
-    _trialMapWire(host);
-    const ghost = _trialMap.ghost;
-    const legend = document.getElementById('res-trial-legend');
-    if (legend) {
-        const sw = (c, dash) => `<span style="display:inline-block; width:22px; height:0; border-top:3px ${dash ? 'dashed' : 'solid'} ${c}; vertical-align:middle; margin-right:6px;"></span>`;
-        legend.innerHTML = [`<span data-leg="0" style="cursor:pointer;">${sw(_trialLegColour(0))}Start</span>`, ...rs.legTimes.map((_, i) => `<span data-leg="${i + 1}" style="cursor:pointer;">${sw(_trialLegColour(i + 1))}Leg ${i + 1}</span>`),
-            ghost ? `<span>${sw('rgba(255,255,255,0.7)', true)}Ghost (previous best)</span>` : ''].join('')
-            + `<span style="color:#66748c; margin-left:auto;">Click a leg to pick it out · hover the track for the numbers</span>`;
-        legend.querySelectorAll('[data-leg]').forEach(el => el.addEventListener('click', () => _trialMapSelect(+el.dataset.leg)));
-    }
+    // a leg row picks its leg out on the chart and sends the replay to where it began
+    host.querySelectorAll('.res-trial-leg').forEach(r => r.addEventListener('click', () => { if (typeof _rrLegRow === 'function') _rrLegRow(+r.dataset.leg); }));
 }
 
-// THE RESULTS CHART'S INTERACTION (Wes, Sep 27 2026): click a leg row or the track to pick that leg out (the
-// rest dims; click it again to clear); hover the track for the instruments at that moment, in plain words.
-let _trialMap = null;
-function _trialMapXY(x, y) { const P = _trialMap.P; return [(x - P.cx) * P.scale + P.width / 2, (y - P.cy) * P.scale + P.height / 2]; }
-function _trialMapDraw() {
-    const M = _trialMap; if (!M) return;
-    const g = M.cv.getContext('2d'), lw = Math.max(2, M.px / 260), sel = M.sel;
-    g.clearRect(0, 0, M.px, M.px); g.drawImage(M.base, 0, 0);
-    if (M.ghost && M.ghost.length > 1) {
-        g.save(); g.setLineDash([lw * 3, lw * 2.5]); g.lineWidth = lw * 0.9; g.strokeStyle = 'rgba(255,255,255,0.55)';
-        g.beginPath(); let first = true;
-        for (const q of M.ghost) { if (!(q[6] >= 1)) continue; if (sel != null && q[6] !== sel) { first = true; continue; }
-            const [x, y] = _trialMapXY(q[0], q[1]); if (first) { g.moveTo(x, y); first = false; } else g.lineTo(x, y); }
-        g.stroke(); g.restore();
-    }
-    const run = M.run;
-    if (run.length > 1) {
-        g.save(); g.lineCap = 'round'; g.lineJoin = 'round';
-        // outline first so the track reads on any water, then each leg in its own colour; a picked leg is
-        // drawn fat and last, the others faint
-        const seg = (i, pass, on) => { const a = run[i - 1], b = run[i], leg = b[6] || 0;
-            const [x0, y0] = _trialMapXY(a[0], a[1]), [x1, y1] = _trialMapXY(b[0], b[1]);
-            g.globalAlpha = sel == null ? (leg === 0 && pass ? 0.55 : 1) : on ? 1 : 0.18;
-            const w = sel != null && on ? lw * 1.8 : lw;
-            g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1);
-            g.strokeStyle = pass ? _trialLegColour(leg) : 'rgba(8,16,28,0.75)'; g.lineWidth = pass ? w : w + 2.5; g.stroke(); };
-        for (const pass of [0, 1]) for (let i = 1; i < run.length; i++) if (sel == null || (run[i][6] || 0) !== sel) seg(i, pass, false);
-        if (sel != null) for (const pass of [0, 1]) for (let i = 1; i < run.length; i++) if ((run[i][6] || 0) === sel) seg(i, pass, true);
-        const endQ = run[run.length - 1], [ex, ey] = _trialMapXY(endQ[0], endQ[1]);
-        g.globalAlpha = 1; g.beginPath(); g.arc(ex, ey, lw * 2.2, 0, Math.PI * 2); g.fillStyle = '#ffffff'; g.fill(); g.strokeStyle = '#0b1c2b'; g.lineWidth = 1.5; g.stroke();
-        if (M.hover != null && run[M.hover]) {   // the boat at the hovered moment
-            const q = run[M.hover], [hx, hy] = _trialMapXY(q[0], q[1]);
-            g.save(); g.translate(hx, hy); g.rotate(q[2] / 1000);
-            g.beginPath(); g.moveTo(0, -lw * 5); g.lineTo(lw * 3.3, lw * 3.8); g.lineTo(0, lw * 2.3); g.lineTo(-lw * 3.3, lw * 3.8); g.closePath();
-            g.fillStyle = '#ffffff'; g.fill(); g.strokeStyle = '#0b1c2b'; g.lineWidth = 1.6; g.stroke(); g.restore();
-        }
-        g.restore();
-    }
-}
-function _trialMapSelect(leg) {
-    const M = _trialMap; if (!M) return;
-    M.sel = (leg == null || M.sel === leg) ? null : leg;
-    document.querySelectorAll('#res-trial-stats .res-trial-leg').forEach(r => { const on = M.sel != null && +r.dataset.leg === M.sel;
-        r.style.background = on ? 'rgba(255,255,255,0.08)' : ''; r.style.boxShadow = on ? `inset 3px 0 0 ${_trialLegColour(M.sel)}` : ''; r.style.opacity = M.sel == null || on ? '' : '0.55'; });
-    _trialMapDraw();
-}
-// The nearest sample of this run to a point on the canvas (canvas pixels), within `maxPx`.
-function _trialMapNearest(cx, cy, maxPx) {
-    const M = _trialMap; let best = -1, bd = maxPx * maxPx;
-    for (let i = 0; i < M.run.length; i++) { const q = M.run[i]; if (M.sel != null && (q[6] || 0) !== M.sel) continue;
-        const [x, y] = _trialMapXY(q[0], q[1]), d = (x - cx) ** 2 + (y - cy) ** 2; if (d < bd) { bd = d; best = i; } }
-    return best;
-}
 // What the boat was doing at sample i, in words a non-sailor reads: speeds in knots, the wind by name.
-function _trialMoment(i) {
-    const M = _trialMap, q = M.run[i]; if (!q) return '';
-    const t0 = TimeTrial._rec ? TimeTrial._rec.t0 : 0, t = t0 + i * 0.25;
+// `run` is TimeTrial's own samples (the instruments are only recorded there); the results map hovers it.
+function _trialMomentOf(run, t0, i) {
+    const q = run[i]; if (!q) return '';
+    const t = t0 + i * GHOST_SAMPLE_DT;
     const kn = (v) => v == null ? '\u2014' : `${(v / 10).toFixed(1)} kn`;
     const twa = q[10], abs = twa == null ? null : Math.abs(twa);
     const pointOf = abs == null ? '' : abs < 38 ? 'Too close to the wind' : abs < 60 ? 'Sailing upwind' : abs < 110 ? 'Reaching across the wind' : abs < 150 ? 'Broad reach' : 'Running downwind';
@@ -3678,36 +3610,6 @@ function _trialMoment(i) {
         + row('Spinnaker', q[4] ? 'Up' : 'Down')
         + (q[12] ? `<div style="color:#67e8f9; margin-top:2px;">Planing</div>` : '');
 }
-function _trialMapWire(host) {
-    const M = _trialMap, cv = M.cv;
-    host.querySelectorAll('.res-trial-leg').forEach(r => r.addEventListener('click', () => _trialMapSelect(+r.dataset.leg)));
-    if (cv.dataset.wired) return;   // the canvas outlives the race; its listeners read the current _trialMap
-    cv.dataset.wired = '1';
-    let tip = document.getElementById('res-trial-tip');
-    if (!tip) { tip = document.createElement('div'); tip.id = 'res-trial-tip';
-        tip.style.cssText = 'position:absolute; pointer-events:none; display:none; z-index:5; background:rgba(6,14,26,0.94); border:1px solid rgba(255,255,255,0.18); border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.55; min-width:250px; box-shadow:0 8px 24px rgba(0,0,0,0.5);';
-        cv.parentElement.style.position = 'relative'; cv.parentElement.appendChild(tip); }
-    const at = (e) => { const r = cv.getBoundingClientRect(), k = _trialMap.px / r.width; return [(e.clientX - r.left) * k, (e.clientY - r.top) * k, k, r]; };
-    cv.addEventListener('mousemove', (e) => {
-        if (!_trialMap) return;
-        const [x, y, k] = at(e), i = _trialMapNearest(x, y, 14 * k);
-        _trialMap.hover = i >= 0 ? i : null; _trialMapDraw();
-        cv.style.cursor = i >= 0 ? 'pointer' : '';
-        if (i < 0) { tip.style.display = 'none'; return; }
-        tip.innerHTML = _trialMoment(i); tip.style.display = '';
-        const host = cv.parentElement.getBoundingClientRect(), ox = e.clientX - host.left, oy = e.clientY - host.top;
-        const left = ox + 18 + tip.offsetWidth > host.width ? ox - tip.offsetWidth - 18 : ox + 18;
-        tip.style.left = Math.max(4, left) + 'px'; tip.style.top = Math.max(4, Math.min(host.height - tip.offsetHeight - 4, oy - 20)) + 'px';
-    });
-    cv.addEventListener('mouseleave', () => { if (_trialMap) { _trialMap.hover = null; _trialMapDraw(); } tip.style.display = 'none'; });
-    cv.addEventListener('click', (e) => {
-        if (!_trialMap) return;
-        const [x, y, k] = at(e); const M2 = _trialMap, keep = M2.sel; M2.sel = null;   // search every leg, not just the picked one
-        const i = _trialMapNearest(x, y, 14 * k); M2.sel = keep;
-        _trialMapSelect(i >= 0 ? (M2.run[i][6] || 0) : null);
-    });
-}
-
 // Venue, breeze, fleet size — and whether the race is actually over, which it often is
 // not: the overlay opens when YOU finish, with boats still on the water behind you.
 function renderResultsHeader(sorted, gapScale) {

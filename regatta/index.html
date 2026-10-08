@@ -1355,8 +1355,9 @@
                  your race leg by leg, and the fleet. js/ui/raceresults.js draws the left and the leg table. -->
             <div id="res-race-body" style="padding:22px 36px 8px;">
                 <div class="grid" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.08fr); gap:24px; align-items:start;">
-                    <div class="flex flex-col" style="gap:16px; min-width:0;">
-                        <div style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:14px;">
+                    <div id="res-race-mapslot" class="flex flex-col" style="gap:16px; min-width:0;">
+                        <!-- ONE MAP CARD for both pages: raceresults.js moves it into #res-trial-mapslot for a Time Trial. -->
+                        <div id="res-map-card" style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:14px;">
                             <div style="position:relative;">
                                 <canvas id="res-race-map" style="width:100%; aspect-ratio:1; display:block; border-radius:10px; touch-action:none;"></canvas>
                                 <div id="res-race-zoom" class="t-label" style="position:absolute; top:10px; right:10px; display:none; cursor:pointer; background:rgba(6,14,26,0.85); border:1px solid rgba(255,255,255,0.18); border-radius:999px; padding:6px 12px; font-size:10px; letter-spacing:0.12em; color:#dbeafe;">Reset view</div>
@@ -1388,10 +1389,7 @@
             <!-- TIME TRIALS (Sep 27 2026): the run on the chart, and its numbers — whole race, then leg by leg. -->
             <div id="res-trial" class="hidden" style="padding:26px 36px 8px;">
                 <div class="grid" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.05fr); gap:28px; align-items:start;">
-                    <div style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:14px;">
-                        <canvas id="res-trial-map" style="width:100%; aspect-ratio:1; display:block; border-radius:10px;"></canvas>
-                        <div id="res-trial-legend" class="flex flex-wrap items-center" style="gap:14px; margin-top:12px; font-size:12px; color:#9fb2cc;"></div>
-                    </div>
+                    <div id="res-trial-mapslot" style="min-width:0;"></div>
                     <div id="res-trial-stats" class="flex flex-col" style="gap:18px; min-width:0;"></div>
                 </div>
             </div>
