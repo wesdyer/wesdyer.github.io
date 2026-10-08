@@ -2236,7 +2236,9 @@ function updateLeaderboard() {
         || (state.course.dmc && state.course.dmc.total) || (state.race.totalLegs * len);
 
 
-    if (state.race.status === 'prestart' || (window.School && School.lesson())) {
+    // ...and not in a SOLO TIME TRIAL: a board of you and your ghost said nothing the splits panel does
+    // not say better (PT-008, Wes: "almost completely useless"); hud-tt-splits stands in its place
+    if (state.race.status === 'prestart' || (window.School && School.lesson()) || (window.TimeTrial && TimeTrial.solo())) {
          UI.leaderboard.classList.add('hidden');
          return;
     }

@@ -1476,10 +1476,10 @@ function updateBoatRaceState(boat, dt) {
                 rs.legRanks.push(rankHere);
                 // Leg records commit as they happen — and say so, mid-race.
                 const li = rs.legTimes.length - 1;
-                if (commitLegRecord(runTrimBoard(rs), li, split)) {
-                    (state.race.legRecordsSet = state.race.legRecordsSet || []).push(li);
-                    showToast(`\u2726 LEG ${li + 1} RECORD \u2014 ${formatSplitTime(split)}`);
-                }
+                const beaten = commitLegRecord(runTrimBoard(rs), li, split);
+                if (beaten !== false) (state.race.legRecordsSet = state.race.legRecordsSet || []).push(li);
+                // the split card (PT-008): every leg, a record in gold — UI only, no state
+                if (typeof announceLegSplit === 'function') announceLegSplit(rs, li, split, beaten);
             }
         }
         rs.legSplitTimer = 5.0;

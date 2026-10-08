@@ -31,10 +31,13 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         // picking another venue on the board (a light build, no resetGame) must not carry this venue's ghost over
         const home = settings.venue; selectVenue(home === 'volcanic' ? 'bay' : 'volcanic'); loadVenueWorld({ light: true });
         out.otherVenueGhost = TimeTrial.ghostTime(); selectVenue(home); loadVenueWorld(); resetGame();
-        // the ghost on the leaderboard (a row with progress and a leg) and its splits for the leg chips
+        // the ghost races (an entry with progress and a leg), and — PT-008 — a solo Time Trial shows the SPLITS
+        // PANEL against it in the leaderboard's place: no leaderboard, the panel headed "vs ghost"
         startRace(); while (state.race.status === 'prestart') update(1 / 30); for (let i = 0; i < 30 * 20; i++) update(1 / 30);
         const le = TimeTrial.leaderEntry(); updateLeaderboard();
-        out.lb = !!(le && le.isGhost && le.raceState.leg >= 1 && le.ghostProgress > 0 && UI.boatRows.ghost);
+        const pan = document.getElementById('hud-tt-splits'); renderTrialSplitsPanel(pan, state.boats[0]);
+        out.lb = !!(le && le.isGhost && le.raceState.leg >= 1 && le.ghostProgress > 0
+            && UI.leaderboard.classList.contains('hidden') && /vs ghost/i.test(pan.textContent) && /Start|Leg/.test(pan.textContent));
         const sp = TimeTrial.ghostSplits(); out.splits = !!(sp && sp.legs.length === state.race.totalLegs && sp.start != null);
         // GHOST STORY: a run that beats a ghost you already had emits 'ghost:beaten'; five venues earn Phantom
         { const gb = []; GameEvents.on('player-feat', e => { if (e.id === 'ghost:beaten') gb.push(1); });
@@ -123,7 +126,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.ghostSaved && r.ghostLoaded && r.pose, 'the finished run is saved as the ghost and the next trial loads it');
     ok(r.otherVenueGhost === null, `a venue picked on the board has no ghost of the last one (${r.otherVenueGhost})`);
     ok(r.ghostMeta, 'the ghost keeps its character, livery and sail trim');
-    ok(r.lb && r.splits, 'the ghost has a leaderboard row (leg, progress) and its splits for the leg chips');
+    ok(r.lb && r.splits, 'the ghost races (leg, progress); a solo Time Trial shows the splits panel vs the ghost, no leaderboard; the ghost has its splits');
     ok(r.ghostBeaten === 1, `beating a ghost you already had is 'ghost:beaten' (${r.ghostBeaten})`);
     ok(r.phantom.split(',').includes('Phantom') && r.ghostVenues === 5, `Ghost Story: ghosts beaten at five venues earn Phantom, in solo (${r.phantom}; ${r.ghostVenues})`);
     ok(r.soloGot === 'Chime' && r.soloRule, `solo counts only for the course rungs: the Calving Face yes, Bluff/Scuttle/Splat/Ripple no (${r.soloGot})`);

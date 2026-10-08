@@ -993,8 +993,13 @@ function draw() {
             // the venue caption's hidden state — it has to gate on 'waiting' itself
             // or stale splits would show over the venue picker.
             const legTimesHidden = state.race.status === 'prestart' || state.race.status === 'waiting' || (window.School && School.active);
-            UI.legTimes.classList.toggle('hidden', legTimesHidden);
-            if (!legTimesHidden) {
+            // A SOLO TIME TRIAL shows its splits as a panel in the leaderboard's place (PT-008), not as chips
+            const ttPanel = document.getElementById('hud-tt-splits');
+            const ttSolo = !!(ttPanel && window.TimeTrial && TimeTrial.solo()) && !legTimesHidden;
+            if (ttPanel) ttPanel.classList.toggle('hidden', !ttSolo);
+            if (ttSolo) renderTrialSplitsPanel(ttPanel, player);
+            UI.legTimes.classList.toggle('hidden', legTimesHidden || ttSolo);
+            if (!legTimesHidden && !ttSolo) {
                  let html = "";
                  const getMoves = (i) => player.raceState.legManeuvers[i] || 0;
                  const getDist = (i) => Math.round(player.raceState.legDistances[i] || 0);
@@ -1032,6 +1037,29 @@ function draw() {
             }
         }
     }
+}
+
+// THE SPLITS PANEL (PT-008): the start and each finished leg with its time and its margin on the ghost's
+// same leg (green quicker, red slower; a leg record set this run in gold), then the leg being sailed, live,
+// with the ghost's time for it as the target. Rewritten only when its text changes (it runs every frame).
+function renderTrialSplitsPanel(el, player) {
+    const rs = player.raceState, gs = TimeTrial.ghostSplits(), recs = state.race.legRecordsSet || [];
+    const sg = (d) => `${d < 0 ? '\u2212' : '+'}${Math.abs(d).toFixed(1)}`;
+    const delta = (t, g) => (g != null && t != null) ? `<span class="d" style="color:${t <= g ? '#34d399' : '#f87171'};">${sg(t - g)}</span>` : '<span class="d" style="color:#64748b;">\u2014</span>';
+    let rows = '';
+    if (rs.startLegDuration != null) rows += `<div class="tt-row"><span class="l">Start</span><span class="t">${formatSplitTime(rs.startLegDuration)}</span>${delta(rs.startLegDuration, gs && gs.start)}</div>`;
+    rs.legTimes.forEach((t, i) => {
+        const rec = recs.includes(i);
+        // a leg record is the TIME in gold (✦); its margin on the ghost keeps the green/red of every row
+        rows += `<div class="tt-row${rec ? ' rec' : ''}"><span class="l">Leg ${i + 1}</span><span class="t">${formatSplitTime(t)}${rec ? ' \u2726' : ''}</span>${delta(t, gs && gs.legs && gs.legs[i])}</div>`;
+    });
+    if (state.race.status === 'racing' && !rs.finished && rs.leg <= state.race.totalLegs) {
+        const cur = rs.leg, t = cur === 0 ? state.race.timer : state.race.timer - rs.legStartTime;
+        const g = cur === 0 ? (gs && gs.start) : (gs && gs.legs ? gs.legs[cur - 1] : null);
+        rows += `<div class="tt-row cur"><span class="l">${cur === 0 ? 'Start' : 'Leg ' + cur}</span><span class="t">${formatSplitTime(t)}</span><span class="g">${g != null ? 'ghost<br>' + formatSplitTime(g) : ''}</span></div>`;
+    }
+    const html = `<div class="tt-panel"><div class="tt-h"><span>Splits</span><span>${gs ? 'vs ghost' : 'no ghost yet'}</span></div>${rows}</div>`;
+    if (el._html !== html) { el.innerHTML = html; el._html = html; }
 }
 
 // A point at arc length `s` along a dmc leg path — the ruler's own cum table, walked.

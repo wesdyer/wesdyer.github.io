@@ -3235,9 +3235,10 @@ function trackRecordFor(board, venue) {
 }
 
 // A leg record is committed THE MOMENT it is sailed — abandoning a race later does
-// not unhappen a great leg. ⚠️ Returns true only when a PREVIOUS record was beaten:
-// the first run over a course founds every entry in the book, and founding is not
-// breaking — announcing it would paint the whole first results screen gold.
+// not unhappen a great leg. ⚠️ Returns the BEATEN record's time (for the split card's
+// margin) only when a PREVIOUS record was beaten, else false: the first run over a course
+// founds every entry in the book, and founding is not breaking — announcing it would paint
+// the whole first results screen gold.
 function commitLegRecord(board, legIdx, t) {
     if (!recordsEligible()) return false;
     const all = loadAllRecords();
@@ -3247,7 +3248,40 @@ function commitLegRecord(board, legIdx, t) {
     if (prev && prev.t <= t) return false;
     rec.legs[legIdx] = { t, char: settings.character };
     saveAllRecords(all);
-    return !!prev;
+    return prev ? prev.t : false;
+}
+// The book's record for one leg on this board (null when none), read without writing.
+function legRecordTime(board, legIdx) {
+    const rec = loadAllRecords()[recordsBoardKey(board)];
+    return rec && rec.legs && rec.legs[legIdx] ? rec.legs[legIdx].t : null;
+}
+
+// ── THE SPLIT CARD (PT-008, Wes Oct 7 2026) ──
+// Every leg, the moment it ends: its time, and how it compares — in a Time Trial against your ghost's same
+// leg, in a race against your record for that leg (a Time Trial's) — green quicker, red slower; and a new
+// leg record in gold, against the record it beat. Three seconds, under the clock. Not in the School.
+function showSplitCard(kind, label, time, delta) {
+    const el = document.getElementById('hud-split-card');
+    if (!el) return;
+    el.className = 'hud-split-card show' + (kind ? ' ' + kind : '');
+    el.innerHTML = `<span class="k">${label}</span><span class="t">${time}</span>${delta ? `<span class="d">${delta}</span>` : ''}`;
+    clearTimeout(el._hide);
+    el._hide = setTimeout(() => { el.className = 'hud-split-card' + (kind ? ' ' + kind : ''); }, 3000);
+}
+function announceLegSplit(rs, li, split, beaten) {
+    if (window.School && School.active) return;
+    const signed = (d) => `${d < 0 ? '\u2212' : '+'}${Math.abs(d).toFixed(1)}`;
+    if (beaten !== false && beaten != null) {
+        showSplitCard('record', `\u2726 Leg ${li + 1} record`, formatSplitTime(split), `${signed(split - beaten)} vs record`);
+        return;
+    }
+    let ref = null, what = '';
+    const gs = window.TimeTrial && TimeTrial.solo() ? TimeTrial.ghostSplits() : null;
+    if (gs && gs.legs && gs.legs[li] != null) { ref = gs.legs[li]; what = 'vs ghost'; }
+    else { const r = legRecordTime(runTrimBoard(rs), li); if (r != null) { ref = r; what = 'vs record'; } }
+    if (ref == null) { showSplitCard('', `Leg ${li + 1}`, formatSplitTime(split), ''); return; }
+    const d = split - ref;
+    showSplitCard(d <= 0 ? 'faster' : 'slower', `Leg ${li + 1}`, formatSplitTime(split), `${signed(d)} ${what}`);
 }
 
 // Everything a FINISHED run can set, committed at the line: the track record (with

@@ -434,6 +434,27 @@
            toggle (top-left) and the compass (top-right). (It sat 182 px up for the old strip over the foot.) */
         .vm-reset { display: none; position: absolute; right: 14px; bottom: 14px; z-index: 4; border: 0; border-radius: 10px; padding: 7px 13px; background: rgba(6,14,26,0.86); color: #e2e8f0; font: 800 11px "Archivo", sans-serif; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
         .vm-reset:hover { color: #fff; background: #2f6bff; }
+        /* PT-008: the split card under the race clock, and a Time Trial's splits panel. */
+        .hud-split-card { margin-top: 10px; display: flex; align-items: baseline; gap: 16px; padding: 9px 22px; border-radius: 14px;
+            background: rgba(15,23,42,0.88); border: 2px solid #94a3b8; box-shadow: 0 10px 30px rgba(0,0,0,0.4); color: #fff;
+            opacity: 0; transform: translateY(-6px); transition: opacity .25s ease, transform .25s ease; pointer-events: none; white-space: nowrap; }
+        .hud-split-card.show { opacity: 1; transform: none; }
+        .hud-split-card .k { font: 900 15px Archivo, sans-serif; letter-spacing: .14em; text-transform: uppercase; color: #cbd5e1; }
+        .hud-split-card .t { font: 700 30px 'IBM Plex Mono', monospace; }
+        .hud-split-card .d { font: 700 19px 'IBM Plex Mono', monospace; }
+        .hud-split-card.record { border-color: #f2c14e; } .hud-split-card.record .k, .hud-split-card.record .d { color: #f2c14e; }
+        .hud-split-card.faster { border-color: #34d399; } .hud-split-card.faster .k, .hud-split-card.faster .d { color: #34d399; }
+        .hud-split-card.slower { border-color: #f87171; } .hud-split-card.slower .k, .hud-split-card.slower .d { color: #f87171; }
+        .tt-panel { background: rgba(15,23,42,0.82); border: 1px solid rgba(148,163,184,0.25); border-radius: 12px; padding: 10px 12px 8px; color: #e2e8f0; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+        .tt-h { display: flex; justify-content: space-between; font: 800 11px Archivo, sans-serif; letter-spacing: .16em; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
+        .tt-row { display: grid; grid-template-columns: 62px 1fr 66px; align-items: baseline; padding: 5px 0; border-top: 1px solid rgba(255,255,255,0.06); font: 600 16px 'IBM Plex Mono', monospace; }
+        .tt-row .l { font: 800 12px Archivo, sans-serif; letter-spacing: .08em; color: #cbd5e1; text-transform: uppercase; }
+        .tt-row .d { text-align: right; font-size: 15px; }
+        .tt-row.rec .t { color: #f2c14e; }
+        .tt-row.cur { background: rgba(34,197,94,0.10); border-radius: 6px; padding: 6px 4px; margin: 2px -4px 0; border-top: none; }
+        .tt-row.cur .l { color: #86efac; }
+        .tt-row.cur .t { color: #fff; font-size: 19px; font-weight: 700; }
+        .tt-row .g { text-align: right; font-size: 11px; color: #94a3b8; line-height: 1.2; }
         /* The tide slider (tidal venues): bottom-left of the map, opposite Reset view — the cycle, low to low. */
         .vm-tide { position: absolute; left: 14px; bottom: 14px; z-index: 4; display: flex; flex-direction: column; gap: 3px; padding: 7px 12px 6px; border-radius: 10px; background: rgba(6,14,26,0.86); color: #e2e8f0; width: 196px; }
         .vm-tide-top { display: flex; justify-content: space-between; }
@@ -641,6 +662,10 @@
         <!-- Leaderboard, back on the left edge. It used to sit inset (left-16) so the
              edge-indicator band stayed visible past it; goal indicators now draw on the
              overlay canvas ABOVE this panel, so the lane no longer needs reserving. -->
+        <!-- THE SPLITS PANEL (PT-008): a solo Time Trial's leaderboard was one row, so in its place the
+             splits — the start and every leg against your ghost, the current leg live with the ghost's
+             time for it as the target. Rendered by script.js with the leg times. -->
+        <div id="hud-tt-splits" class="absolute top-24 left-4 z-10 pointer-events-none w-72 hidden"></div>
         <div id="leaderboard" class="absolute top-24 left-4 z-10 flex flex-col gap-0 pointer-events-none transition-opacity duration-300 w-72 hidden">
            <!-- Header: which leg, and how many are left. The pips say the second thing
                 without arithmetic — four dashes, two lit. -->
@@ -1407,6 +1432,10 @@
              <div id="hud-timer" class="t-mono text-5xl text-white drop-shadow-xl tracking-widest">01:00</div>
              <div id="hud-start-time" class="t-mono text-xl text-green-300 drop-shadow-md mt-1 hidden"></div>
              <div id="hud-message" class="mt-2 text-lg font-bold text-yellow-300 bg-slate-900/80 px-4 py-1 rounded-full border border-yellow-500/50 shadow-lg hidden"></div>
+             <!-- THE SPLIT CARD (PT-008): each leg's time as it ends, against the ghost (a Time Trial) or your
+                  leg record (a race) — green quicker, red slower — and gold for a new leg record. Three
+                  seconds, under the clock (showSplitCard). -->
+             <div id="hud-split-card" class="hud-split-card" aria-live="polite"></div>
              <!-- OCS state is easy to mistake for a missed line crossing: the boat
                   holds its own return course while the player wonders why nothing
                   registered. Persistent + pulsing while the flag is up; the arrow
