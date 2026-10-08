@@ -143,7 +143,7 @@
            a picture of the finish belongs. */
         .res-grid {
             display: grid;
-            grid-template-columns: 52px 40px 150px minmax(140px, 1fr) 80px 84px 70px 84px 70px 84px 70px 56px;
+            grid-template-columns: 52px 40px 150px minmax(140px, 1fr) 80px 84px 84px 70px 84px 70px 56px;   /* PT-007: the start moved into the hover */
             gap: 10px;
             align-items: center;
         }
@@ -1350,34 +1350,40 @@
                 <div id="res-status" class="t-mono flex items-center gap-2" style="font-size:12.5px; color:#9fb2cc; white-space:nowrap;"></div>
             </div>
 
-            <div id="res-race-body">
-            <!-- You, then your own race: the splits are the only place a single race can
-                 tell you HOW it went rather than just where it ended. -->
-            <div class="flex items-center gap-7" style="padding:26px 36px; border-bottom:1px solid rgba(255,255,255,0.07); background:radial-gradient(700px 200px at 30% 0%, rgba(242,193,78,0.09), transparent);">
-                <div id="res-hero" class="flex items-center gap-5" style="flex:none;"></div>
-                <div style="width:1px; align-self:stretch; background:rgba(255,255,255,0.08);"></div>
-                <div style="flex:1; min-width:0;">
-                    <div id="res-splits-label" class="t-label" style="font-size:10px; letter-spacing:0.16em; color:#66748c; margin-bottom:8px;">Your Splits</div>
-                    <!-- Grid sizing lives in the stylesheet (see #res-splits) — it has to
-                         change at the breakpoint, and an inline style cannot. -->
-                    <div id="res-splits"></div>
+            <!-- THE RACE (PT-007, Oct 2026): the Time Trial page's shape. Left, the course on the chart with
+                 the whole fleet's tracks and a replay, then everyone's place through the race; right, you,
+                 your race leg by leg, and the fleet. js/ui/raceresults.js draws the left and the leg table. -->
+            <div id="res-race-body" style="padding:22px 36px 8px;">
+                <div class="grid" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.08fr); gap:24px; align-items:start;">
+                    <div class="flex flex-col" style="gap:16px; min-width:0;">
+                        <div style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:14px;">
+                            <div style="position:relative;">
+                                <canvas id="res-race-map" style="width:100%; aspect-ratio:1; display:block; border-radius:10px; touch-action:none;"></canvas>
+                                <div id="res-race-zoom" class="t-label" style="position:absolute; top:10px; right:10px; display:none; cursor:pointer; background:rgba(6,14,26,0.85); border:1px solid rgba(255,255,255,0.18); border-radius:999px; padding:6px 12px; font-size:10px; letter-spacing:0.12em; color:#dbeafe;">Reset view</div>
+                            </div>
+                            <div id="res-race-replay" style="margin-top:12px;"></div>
+                            <div id="res-race-legend" class="flex flex-wrap items-center" style="gap:12px; margin-top:10px; font-size:12px; color:#9fb2cc;"></div>
+                        </div>
+                    </div>
+                    <div class="flex flex-col" style="gap:16px; min-width:0;">
+                        <div style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px 18px;">
+                            <div id="res-hero" class="flex flex-wrap items-center gap-5"></div>
+                        </div>
+                        <div id="res-race-legs"></div>
+                    </div>
                 </div>
-            </div>
-
-            <div style="padding:20px 36px 8px;">
-                <div class="res-grid t-label" style="padding:0 14px 10px; font-size:10px; letter-spacing:0.14em; color:#66748c;">
-                    <div>Pos</div><div></div><div>Skipper</div>
-                    <!-- The ruler states its own scale (filled in by renderResultsHeader from
-                         the fleet's spread), or the markers are a picture with no units. -->
-                    <div id="res-gap-head" style="padding-left:8px;">Gap to winner</div>
-                    <div class="res-r">Time</div><div class="res-r">Delta</div>
-                    <div class="res-r">Start</div><div class="res-r">Top Spd</div>
-                    <div class="res-r">Avg</div><div class="res-r">Dist km</div><div class="res-r">Pen</div>
-                    <div class="res-r">Pts</div>
+                <!-- THE FLEET, full width under both (Wes, Oct 7 2026: keep the finish arrows, top and average
+                     speed and the distance; the start time is in each row's hover). -->
+                <div style="margin-top:20px;">
+                    <div class="res-grid t-label" style="padding:0 14px 10px; font-size:10px; letter-spacing:0.14em; color:#66748c;">
+                        <div>Pos</div><div></div><div>Skipper</div>
+                        <div id="res-gap-head" style="padding-left:8px;">Gap to winner</div>
+                        <div class="res-r">Time</div><div class="res-r">Delta</div>
+                        <div class="res-r">Top Spd</div><div class="res-r">Avg</div><div class="res-r">Dist km</div>
+                        <div class="res-r">Pen</div><div class="res-r">Pts</div>
+                    </div>
+                    <div id="results-list"></div>
                 </div>
-                <div id="results-list"></div>
-            </div>
-
             </div>
             <!-- TIME TRIALS (Sep 27 2026): the run on the chart, and its numbers — whole race, then leg by leg. -->
             <div id="res-trial" class="hidden" style="padding:26px 36px 8px;">
@@ -1673,6 +1679,7 @@
     <script src="js/game/state.js"></script>
     <script src="js/game/series.js"></script>
     <script src="js/game/timetrial.js"></script>
+    <script src="js/game/racelog.js"></script>
     <script src="js/game/unlocks.js"></script>
     <script src="js/game/audio.js"></script>
     <script src="js/sim/wind.js"></script>
@@ -1694,6 +1701,7 @@
     <script src="js/render/effects.js"></script>
     <script src="js/render/hud.js"></script>
     <script src="js/ui/screens.js"></script>
+    <script src="js/ui/raceresults.js"></script>
     <script src="js/ui/input.js"></script>
     <script src="js/script.js"></script>
 </body>

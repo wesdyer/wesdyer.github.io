@@ -59,6 +59,7 @@ function update(dt) {
     checkAggression(dt);
     checkSplit(dt);
     if (window.TimeTrial) TimeTrial.update();
+    if (window.RaceLog) RaceLog.update();
     // The swell's own clock. Advanced from dt like everything else, so it pauses with the
     // race and is identical for a given seed — a wave field is pure trigonometry and must
     // never reach for the RNG stream. No-op off the ocean.
@@ -1318,6 +1319,7 @@ function resetGame() {
     // does not change length, and then sent home — just you, the course and your ghost.
     if (window.TimeTrial && TimeTrial.solo()) state.boats.length = 1;
     if (window.TimeTrial) TimeTrial.onReset();
+    if (window.RaceLog) RaceLog.onReset();
     repositionBoats();
     // THE CAMERA IS PART OF SETTING THE COURSE. It follows the player by lerping 10% a
     // frame, so a race that starts with it parked over the LAST race's finish line spends

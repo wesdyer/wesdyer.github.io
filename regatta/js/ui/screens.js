@@ -3515,7 +3515,8 @@ function showResults() {
     // Called from HERE, not from inside the hero. The hero redraws only when the hero's own
     // signature changes, and a split tile can go stale without it: "fleet fastest" is taken
     // away by a boat still out on the water sailing a quicker leg than you did.
-    renderResultsSplits(player);
+    // THE CHART, THE REPLAY AND YOUR LEGS (PT-007, js/ui/raceresults.js) — the old split tiles' job, and more.
+    if (typeof renderRaceResults === 'function') renderRaceResults(player, sorted);
     renderResultsRows(sorted, leader, fleetExtremes(), gapScale);
     renderResultsFootnote(leader);
     styleResultsButtons();
@@ -4121,7 +4122,6 @@ function renderResultsRows(sorted, leader, ext, gapScale) {
                     </div>
                     <div class="res-time res-r t-mono" style="font-size:13px;"></div>
                     <div class="res-delta res-r t-mono" style="font-size:12px;color:#7787a0;"></div>
-                    <div class="res-start res-r t-mono" style="font-size:12px;"></div>
                     <div class="res-top res-r t-mono" style="font-size:12px;"></div>
                     <div class="res-avg res-r t-mono" style="font-size:12px;color:#9fb2cc;"></div>
                     <div class="res-dist res-r t-mono" style="font-size:12px;color:#9fb2cc;"></div>
@@ -4202,14 +4202,6 @@ function renderResultsRows(sorted, leader, ext, gapScale) {
             if (Math.abs(v - bad) < 1e-9) return '#ef4444';
             return '#9fb2cc';
         };
-        // Time to cross the line — the first thing you can win or lose, and the one number
-        // here that is settled while the rest of the race is still being sailed.
-        const start = boatStartTime(boat);
-        const startEl = q('res-start');
-        startEl.textContent = start === null ? '—' : '+' + start.toFixed(1) + 's';
-        startEl.style.color = start === null ? '#4a5a72'
-            : edge(start, ext && ext.start, true, true);
-
         const top = boatTopSpeed(boat), avg = boatAvgSpeed(boat), dist = boatDistKm(boat);
         const topEl = q('res-top');
         topEl.textContent = top.toFixed(1);
@@ -4222,6 +4214,12 @@ function renderResultsRows(sorted, leader, ext, gapScale) {
         const distEl = q('res-dist');
         distEl.textContent = dist.toFixed(2);
         distEl.style.color = edge(dist, ext && ext.dist, true);
+
+        // THE START LIVES IN THE ROW'S HOVER (PT-007): the finish arrows, top and average speed and the distance
+        // stayed on the row at Wes's word; the start time is the one number that moved off it.
+        const start = boatStartTime(boat);
+        row.title = `${boat.name} — start ${start === null ? 'never crossed' : '+' + start.toFixed(1) + 's'} · top ${boatTopSpeed(boat).toFixed(1)} kn`
+            + ` · average ${boatAvgSpeed(boat).toFixed(1)} kn · sailed ${boatDistKm(boat).toFixed(2)} km`;
 
         const penEl = q('res-pen');
         penEl.textContent = rs.totalPenalties > 0 ? rs.totalPenalties : '—';
