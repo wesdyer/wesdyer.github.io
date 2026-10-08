@@ -103,7 +103,7 @@ const VENUE = process.argv[6] || 'ocean';
         const seed = SEED0 + i;
         const r = await page.evaluate(async ({ seed, tenBot }) => {
             window.evalHarness.seed = seed;
-            window.resetGame(); window.startRace();
+            window.resetGame(); window.startRace(); window.__vt = [];
             window.__cc = {}; window.__ccT = {};
             state.course.cutoff = 900;
             const pl = state.boats.find(b => b.isPlayer);
@@ -163,7 +163,7 @@ const VENUE = process.argv[6] || 'ocean';
                         f.xtrk += Math.hypot(tx, ty); f.xN++;
                     }
                 }
-                if (it % 300 === 0 && t > 100) { const v = bots.find(b => b.name === 'Vent'); if (v && !v.raceState.finished) { const e = state.course.route[v.raceState.leg]; (window.__vt = window.__vt || []).push([Math.round(t), v.raceState.leg, Math.round(v.x), Math.round(v.y), +(v.speed||0).toFixed(1), e && e.kind, e && e.mark ? [Math.round(e.mark.x), Math.round(e.mark.y), e.mark.side] : null, v.controller && v.controller.navTarget ? [Math.round(v.controller.navTarget.x), Math.round(v.controller.navTarget.y)] : null]); } }
+                if (it % 300 === 0 && t > 100) { const v = bots.find(b => b.name === (window.__WATCH || 'Vent')); if (v && !v.raceState.finished) { const e = state.course.route[v.raceState.leg]; (window.__vt = window.__vt || []).push([Math.round(t), v.raceState.leg, Math.round(v.x), Math.round(v.y), +(v.speed||0).toFixed(1), e && e.kind, e && e.mark ? [Math.round(e.mark.x), Math.round(e.mark.y), e.mark.side] : null, v.controller && v.controller.navTarget ? [Math.round(v.controller.navTarget.x), Math.round(v.controller.navTarget.y)] : null]); } }
                 if (info.every(f => f.fin != null)) break;
             }
             for (const [k, b] of bots.entries()) {
@@ -176,7 +176,7 @@ const VENUE = process.argv[6] || 'ocean';
         const fins = r.info.filter(f => f.fin != null).map(f => f.fin).sort((a, b) => a - b);
         console.log(`seed ${seed}: finishers ${fins.length} finT ${fins.join(',')}`);
     }
-    if (process.env.VT) { console.log(JSON.stringify(out[0].route)); for (const r of out[0].vt || []) console.log(JSON.stringify(r)); }
+    if (process.env.VT) { for (const o of out) if (o.info.some(b => b.fin == null)) { console.log('seed', o.seed, JSON.stringify(o.route)); for (const r of o.vt || []) console.log(JSON.stringify(r)); } }
     fs.writeFileSync(path.join(__dirname, 'ocean_bench_' + LABEL + '.json'), JSON.stringify(out));
     // ⚠️ SIDECAR, not a key on the array — JSON.stringify drops properties set on an
     // array, and every existing baseline reader expects a bare list. Same file stem.

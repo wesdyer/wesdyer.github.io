@@ -17969,3 +17969,44 @@ PRE = leeR* (the traced lee field, blurred), POST = leeC* on treeLEE2: each fiel
 **No DNF; goal count 7 of 13 holds (bay stays inside at 1.071).** Slower where narrow lees now bite: arctic +11 s (1.481 → 1.537), redrock +10 s, bay +8 s, glowtide +7 s. River −7 s on a noisy 8-set. Redrock contacts up (3.33 → 5.53/boat, pen 0.86 → 1.18): the stronger channel lees bunch the fleet. Everything else within ±3 s.
 
 **REFREEZE (2026-10-07, with the PT-010 commit).** All 13 benchmark venues re-frozen from the shipping files (`freeze_venues.js --add` each; `--check` all match). The leeR*/leeC* tables above were benched on copies taken Oct 5 ~23:30; Wes edited arctic, flats, glowtide, lake, otter and river after that, so the next bench is a fresh baseline on the new freeze — do not diff it against leeC*.
+
+## Rounding fix — hairpins and marks rounded twice (2026-10-07)
+
+Wes: the AI fleet finished well before him on Bay without sailing the full course. Two faults in the rounding line (PT-081/PT-062): a hairpin wrapped its turn to the sliver and counted on arrival, and a mark rounded twice (Bay legs 2 and 4) handed leg 4 leg 2's line — 7 of 9 bots were credited 2.5–3.3 km from the mark in his trajectory. Fix in `roundingStep` / `roundingLine` (js/sim/physics.js); guard eval/test_rounding_hairpin.js.
+
+**Unedited venues** — PRE = leeC* (HEAD), POST = hpF* on treeHAIR (`_hpF_close_table.js`). Arctic, flats, glowtide, lake, otter and river rows here are NOT comparable (Wes edited them after leeC; see the clean table below).
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| arctic | 197.8 (6) [209.4] | 304/304.4/236 | 304/304.4/236 | 1.537 → **1.537** | 0.0 | 10 | 0 | 2.94/2.76/7.44/0.05/0.47 | 80/80 | 8/8 vs leeCarc |
+| redrock | 202.1 (6) [204.2] | 304/296.4/212 | 304/296.4/212 | 1.504 → **1.504** | 0.0 | 13 | 1 | 8.05/5.53/0.00/0.40/1.18 | 80/80 | 8/8 vs leeCrr |
+| swamp | 173.9 (7) [173.3] | 247/272.0/172 | 247/272.0/172 | 1.420 → **1.420** | 0.0 | 5 | 0 | 4.24/3.42/0.00/0.06/0.53 | 80/80 | 8/8 vs leeCsw |
+| flats | 172.7 (6) [172.8] | 210/211.5/173 | 210/212.2/172 | 1.216 → **1.216** | 0.0 | 0 | 0 | 0.00/0.67/0.00/0.02/0.19 | 240/240 | 0/8 vs leeCfl9400 |
+| lagoon | 176.5 (6) [174.7] | 211/209.3/176 | 211/209.3/176 | 1.195 → **1.195** | 0.0 | 0 | 0 | 0.16/0.80/0.00/0.14/0.34 | 80/80 | 8/8 vs leeClag |
+| glowtide | 179.3 (6) [204.4] | 226/225.3/166 | 212/214.9/169 | 1.260 → **1.182** | 0.0 | 3 | 0 | 4.54/1.99/0.00/0.28/0.53 | 160/160 | 0/16 vs leeCglow |
+| bay | 229.6 (12) [239] | 246/236.8/180 | 266/265.6/225 | 1.071 → **1.159** | 0.0 | 0 | 0 | 0.15/0.71/0.00/0.19/0.26 | 80/80 | 0/8 vs leeCbay |
+| river | 194 (6) [187.4] | 211/212.4/171 | 215/219.3/174 | 1.088 → **1.108** | 1.2 | 18 | 0 | 42.09/2.61/0.00/0.10/0.50 | 79/80 | 0/8 vs leeCriv |
+| lake | 201.2 (6) [194.8] | 219/221.6/182 | 215/217.2/177 | 1.088 → **1.069 ✅** | 0.0 | 0 | 0 | 0.09/0.68/0.00/0.06/0.23 | 80/80 | 0/8 vs leeClk |
+| volcanic | 198.3 (6) [195.5] | 211/213.6/169 | 211/213.6/169 | 1.064 → **1.064 ✅** | 0.0 | 0 | 0 | 0.20/0.76/0.00/0.05/0.26 | 240/240 | 8/8 vs leeCvo9400 |
+| seatrials | 182.3 (6) [185.7] | 190/193.4/175 | 190/193.4/175 | 1.042 → **1.042 ✅** | 0.6 | 0 | 0 | 0.00/0.30/0.00/0.34/0.31 | 159/160 | 16/16 vs leeCst |
+| ocean | 201.8 (6) [214.2] | 204/207.9/178 | 204/207.9/178 | 1.011 → **1.011 ✅** | 0.0 | 0 | 0 | 0.13/0.66/0.00/0.11/0.22 | 160/160 | 16/16 vs leeCoc |
+| otter | 201.4 (6) [200.8] | 200/202.4/181 | 200/201.3/181 | 0.993 → **0.993 ✅** | 0.0 | 0 | 0 | 0.31/0.25/0.00/0.02/0.09 | 240/240 | 0/8 vs leeCot9400 |
+
+**Edited venues, clean** — PRE = hpP* on treeHPRE (HEAD physics, Oct 7 freeze), POST = hpF* (`_hpP_close_table.js`):
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| arctic | 197.8 (6) [209.4] | 304/304.4/236 | 304/304.4/236 | 1.537 → **1.537** | 0.0 | 10 | 0 | 2.94/2.76/7.44/0.05/0.47 | 80/80 | 8/8 vs hpParc |
+| flats | 172.7 (6) [172.8] | 210/212.2/172 | 210/212.2/172 | 1.216 → **1.216** | 0.0 | 0 | 0 | 0.00/0.67/0.00/0.02/0.19 | 240/240 | 8/8 vs hpPfl9400 |
+| glowtide | 179.3 (6) [204.4] | 215/217.4/170 | 212/214.9/169 | 1.199 → **1.182** | 0.0 | 3 | 0 | 4.54/1.99/0.00/0.28/0.53 | 160/160 | 0/16 vs hpPglow |
+| river | 194 (6) [187.4] | 215/219.3/174 | 215/219.3/174 | 1.108 → **1.108** | 1.2 | 18 | 0 | 42.09/2.61/0.00/0.10/0.50 | 79/80 | 8/8 vs hpPriv |
+| lake | 201.2 (6) [194.8] | 215/217.2/177 | 215/217.2/177 | 1.069 → **1.069 ✅** | 0.0 | 0 | 0 | 0.09/0.68/0.00/0.06/0.23 | 80/80 | 8/8 vs hpPlk |
+| otter | 201.4 (6) [200.8] | 200/201.3/181 | 200/201.3/181 | 0.993 → **0.993 ✅** | 0.0 | 0 | 0 | 0.31/0.25/0.00/0.02/0.09 | 240/240 | 1/8 vs hpPot9400 |
+| arctic | 2.94/2.76/7.44/0.05/0.47 | 2.94/2.76/7.44/0.05/0.47 | 80/80 | 80/80 |
+| flats | 0.00/0.67/0.00/0.02/0.19 | 0.00/0.67/0.00/0.02/0.19 | 240/240 | 240/240 |
+| glowtide | 4.63/2.15/0.00/0.21/0.54 | 4.54/1.99/0.00/0.28/0.53 | 160/160 | 160/160 |
+| river | 42.09/2.61/0.00/0.10/0.50 | 42.09/2.61/0.00/0.10/0.50 | 79/80 | 79/80 |
+| lake | 0.09/0.68/0.00/0.06/0.23 | 0.09/0.68/0.00/0.06/0.23 | 80/80 | 80/80 |
+| otter | 0.31/0.25/0.00/0.02/0.09 | 0.31/0.25/0.00/0.02/0.09 | 240/240 | 240/240 |
+
+**Only Bay moves materially: 246 → 266 s median (1.071 → 1.159) — the fleet now sails the whole course.** Glowtide −3 s (one leg-1 rounding was credited early before; within noise), Otter 1/8 races differ with identical stats; every other venue byte-identical. The River DNF (1 of 80: Vent wedged at (1203, −1050) on leg 3 from 125 s) is on HEAD physics too, so not this fix — and not Wes's River edit either: the colliders there (prop-9's traced outline beside outcrop shape-40) are identical in both versions, and a leg-3 bot dropped into that pocket stays stuck on the Oct 5 River from all 4 headings tried (current River: 3 of 4). The edit only changed which race ran into it. An existing bot-escape trap (PT-051 family).
