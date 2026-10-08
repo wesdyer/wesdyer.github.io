@@ -102,6 +102,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     // A Race of one, through the screens: picker → board → results reads as a single race; Rematch keeps the fleet
     await p.evaluate(() => { localStorage.removeItem('regatta_unlocks'); ['regatta_bests', 'regatta_records', 'regatta_ghosts'].forEach(k => localStorage.removeItem(k)); const u = document.getElementById('unlock-screen'); if (u) u.classList.add('hidden'); resetGame(); showClubhouse(); });
     await p.click('#door-series'); await p.waitForTimeout(200);
+    await p.click('#series-mode .ch-mode[data-mode="draw"]'); await p.waitForTimeout(150);
     await p.click('#series-lengths .ch-len[data-n="1"]'); await p.waitForTimeout(200);
     const lbl = await p.evaluate(() => document.getElementById('series-start-label').textContent);
     await p.click('#series-start-btn'); await p.waitForTimeout(1200);

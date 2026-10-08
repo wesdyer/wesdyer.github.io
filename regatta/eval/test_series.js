@@ -70,8 +70,8 @@ let fails = 0; const check = (name, ok, detail) => { console.log(`  ${ok ? 'ok  
     if (race < 4) {
       check(`race ${race}: buttons abandon / next`, /Abandon cup/.test(btn[0]) && /Next race/.test(btn[1]), btn.join(' | '));
       await page.click('#standings-next-btn'); await page.waitForTimeout(1500);
-      const nb = await page.evaluate(() => ({ board: !document.getElementById('pre-race-overlay').classList.contains('hidden'), chip: document.getElementById('prerace-series-chip').textContent, n: Series.raceNumber(), venue: settings.venue, fleet: state.boats.filter(b => !b.isPlayer).map(b => b.name) }));
-      check(`race ${race + 1}: board says race ${race + 1}`, nb.board && nb.n === race + 1 && nb.chip.includes(`Race ${race + 1} of 4`), JSON.stringify(nb));
+      const nb = await page.evaluate(() => ({ board: !document.getElementById('pre-race-overlay').classList.contains('hidden'), chip: document.getElementById('prerace-crumb').textContent, n: Series.raceNumber(), venue: settings.venue, fleet: state.boats.filter(b => !b.isPlayer).map(b => b.name) }));
+      check(`race ${race + 1}: board says race ${race + 1}`, nb.board && nb.n === race + 1 && nb.chip.toUpperCase().includes(`RACE ${race + 1} OF 4`), JSON.stringify(nb));
       check(`race ${race + 1}: no fleet page between races`, !(await vis('fleet-overlay')));
       const lockedPill = await page.evaluate(() => (document.querySelector('#fleet-overlay .pr-fleet-item.me .pr-lock-pill') || {}).textContent);
       check(`race ${race + 1}: skipper locked`, /Locked/.test(lockedPill || ''), lockedPill);
@@ -91,7 +91,22 @@ let fails = 0; const check = (name, ok, detail) => { console.log(`  ${ok ? 'ok  
   }
 
   console.log('series flow + abandon');
+  // NOTHING PRESELECTED (PT-011): the door opens on Pick, nothing picked, nothing drawn — and a
+  // visit's picks do not survive to the next one
+  const picker = () => page.evaluate(() => ({ mode: document.querySelector('#series-mode .ch-mode.sel').dataset.mode,
+      first: document.querySelector('#series-mode .ch-mode').dataset.mode, picked: document.querySelectorAll('#series-draw .ch-pick.on').length,
+      tiles: document.querySelectorAll('#series-draw .ch-pick').length, startOff: document.getElementById('series-start-btn').disabled }));
   await page.click('#door-series'); await page.waitForTimeout(300);
+  const fresh = await picker();
+  check('series: opens on Pick (listed first), nothing picked, start off', fresh.mode === 'pick' && fresh.first === 'pick' && fresh.picked === 0 && fresh.tiles === 13 && fresh.startOff, JSON.stringify(fresh));
+  await page.click('#series-draw .ch-pick[data-k="bay"]'); await page.waitForTimeout(150);
+  await page.click('#series-back-btn'); await page.waitForTimeout(300);
+  await page.click('#door-series'); await page.waitForTimeout(300);
+  const again = await picker();
+  check('series: last visit\'s pick is gone on the next visit', again.mode === 'pick' && again.picked === 0 && again.startOff, JSON.stringify(again));
+  await page.click('#series-mode .ch-mode[data-mode="draw"]'); await page.waitForTimeout(200);
+  const undrawn = await page.evaluate(() => ({ lenSel: document.querySelectorAll('#series-lengths .ch-len.sel').length, tiles: document.querySelectorAll('#series-draw > *').length, startOff: document.getElementById('series-start-btn').disabled }));
+  check('series: Random draws nothing until you choose how many', undrawn.lenSel === 0 && undrawn.tiles === 0 && undrawn.startOff, JSON.stringify(undrawn));
   await page.click('#series-lengths .ch-len[data-n="6"]'); await page.waitForTimeout(200);
   const draw1 = await page.evaluate(() => [...document.querySelectorAll('#series-draw .pr-venue-name')].map(e => e.textContent));
   await page.click('#series-redraw-btn'); await page.waitForTimeout(200);
@@ -100,8 +115,8 @@ let fails = 0; const check = (name, ok, detail) => { console.log(`  ${ok ? 'ok  
   check('series: redraw changes the draw', JSON.stringify(draw1) !== JSON.stringify(draw2), 'same twice (possible but unlikely)');
   await page.click('#series-start-btn'); await page.waitForTimeout(1500);
   check('series: straight to the race 1 briefing', await vis('pre-race-overlay') && !(await vis('fleet-overlay')));
-  const sb = await page.evaluate(() => ({ kind: Series.active && Series.active.kind, n: Series.total(), chip: document.getElementById('prerace-series-chip').textContent, tiles: document.querySelectorAll('#pr-route-grid .pr-route-tile').length }));
-  check('series: board for race 1 of 6', sb.kind === 'series' && sb.n === 6 && sb.tiles === 6 && /Race 1 of 6/.test(sb.chip), JSON.stringify(sb));
+  const sb = await page.evaluate(() => ({ kind: Series.active && Series.active.kind, n: Series.total(), chip: document.getElementById('prerace-crumb').textContent, tiles: document.querySelectorAll('#pr-route-grid .pr-route-tile').length }));
+  check('series: board for race 1 of 6', sb.kind === 'series' && sb.n === 6 && sb.tiles === 6 && /RACE 1 OF 6/i.test(sb.chip), JSON.stringify(sb));
   await page.evaluate(() => startRace()); await page.waitForTimeout(2500);
   await finish(3, null); await page.waitForTimeout(300);
   await page.click('#results-rematch-button'); await page.waitForTimeout(300);
@@ -116,13 +131,13 @@ let fails = 0; const check = (name, ok, detail) => { console.log(`  ${ok ? 'ok  
 
   console.log('single race untouched');
   await page.click('#door-race'); await page.waitForTimeout(1200);
-  const single = await page.evaluate(() => ({ chipHidden: document.getElementById('prerace-series-chip').classList.contains('hidden'), pickerShown: !document.getElementById('venue-picker').classList.contains('hidden'), tiles: document.querySelectorAll('#venue-picker .pr-venue-tile').length }));
-  check('single: picker back, chip gone', single.chipHidden && single.pickerShown && single.tiles === 13, JSON.stringify(single));
+  const single = await page.evaluate(() => ({ chipHidden: /^TIME TRIAL/i.test(document.getElementById('prerace-crumb').textContent), pickerShown: !document.getElementById('venue-picker').classList.contains('hidden'), tiles: document.querySelectorAll('#venue-picker .pr-venue-tile').length }));
+  check('single: picker back, crumb says time trial', single.chipHidden && single.pickerShown && single.tiles === 13, JSON.stringify(single));
   await page.click('#start-race-btn'); await page.waitForTimeout(2500);
   check('single: Start Race goes straight to the water', !(await vis('fleet-overlay')) && await page.evaluate(() => state.race.status === 'prestart'));
   await finish(1, null); await page.waitForTimeout(300);
   const labels = await page.evaluate(() => [document.getElementById('results-restart-button').textContent.trim(), document.getElementById('results-rematch-button').textContent.trim()]);
-  check('single: results buttons back to clubhouse / rematch', /Back to Clubhouse/.test(labels[0]) && /Rematch/.test(labels[1]), labels.join(' | '));
+  check('single: results buttons back to clubhouse / retry', /Back to Clubhouse/.test(labels[0]) && /Retry/.test(labels[1]), labels.join(' | '));
   await page.click('#results-restart-button'); await page.waitForTimeout(800);
   check('single: back to clubhouse lands on the hub', await vis('clubhouse-overlay'));
   console.log('page errors:', errs.length ? errs.join('\n') : 'none');

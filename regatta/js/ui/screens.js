@@ -2994,7 +2994,7 @@ if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preven
     // Time Trials is solo (TimeTrial.active); every other door races a fleet.
     on('door-school', () => { if (!idle()) return; TimeTrial.active = false; hideClubhouseOverlays(); School.begin(); });
     on('door-cup', () => { if (!idle()) return; TimeTrial.active = false; showCupPicker(); });
-    on('door-series', () => { if (!idle()) return; TimeTrial.active = false; showSeriesPicker(); });
+    on('door-series', () => { if (!idle()) return; TimeTrial.active = false; showSeriesPicker(true); });
     on('door-race', () => {
         if (!idle()) return;
         TimeTrial.active = true;
@@ -4613,14 +4613,20 @@ function startCup(id) {
 // every venue (Redraw is free until you start), or picked by hand in the order you
 // click them, Clubhouse Point included. Four races or more fly a pennant (the biggest tier the
 // length reaches) and count for the series achievements. The solo race is Time Trials.
-let _seriesLen = 4, _seriesDraw = null, _seriesMode = 'draw', _seriesPicks = [];
-function showSeriesPicker() { if (!_seriesDraw) _seriesDraw = Series.draw(_seriesLen); renderSeriesPicker(); _chShow(UI.seriesOverlay); }
+// NOTHING PRESELECTED (PT-011, Wes): the hub door opens it fresh — Pick, nothing picked, and no
+// draw until you say how many. The last visit's picks had turned a click on one venue into a 2-race
+// series. Coming BACK from race 1's briefing (`fresh` false) keeps what you chose.
+let _seriesLen = 0, _seriesDraw = null, _seriesMode = 'pick', _seriesPicks = [];
+function showSeriesPicker(fresh) {
+    if (fresh) { _seriesLen = 0; _seriesDraw = null; _seriesMode = 'pick'; _seriesPicks = []; }
+    renderSeriesPicker(); _chShow(UI.seriesOverlay);
+}
 function _seriesChosen() { return _seriesMode === 'pick' ? _seriesPicks.slice() : (_seriesDraw || []); }
 function renderSeriesPicker() {
     const $ = (id) => document.getElementById(id);
     const lens = $('series-lengths'), grid = $('series-draw'), note = $('series-draw-note');
     if (!lens || !grid) return;
-    if (!_seriesDraw) _seriesDraw = Series.draw(_seriesLen);
+    if (!_seriesDraw && _seriesLen) _seriesDraw = Series.draw(_seriesLen);
     const pick = _seriesMode === 'pick';
     document.querySelectorAll('#series-mode .ch-mode').forEach(b => {
         b.classList.toggle('sel', b.dataset.mode === _seriesMode);
@@ -4637,17 +4643,18 @@ function renderSeriesPicker() {
             + (tier ? `<span style="margin-top:2px;">${pennantHTML(n, !!tier.won, 22)}</span>` : `<span style="height:24px;"></span>`) + `</button>`; }).join('');
     lens.querySelectorAll('.ch-len').forEach(b => b.addEventListener('click', () => { _seriesLen = +b.dataset.n; _seriesDraw = Series.draw(_seriesLen); renderSeriesPicker(); }));
     const tier = pennantTier(nNow), tp = tier ? pens.find(q => q.n === tier) : null;
-    $('series-pennant-note').textContent = nNow === 0 ? 'Click venues in the order you want to race them — any or all of them.'
+    $('series-pennant-note').textContent = nNow === 0 ? (pick ? 'Click venues in the order you want to race them — any or all of them.' : 'Choose how many races, and the venues are drawn for you.')
         : nNow === 1 ? 'One race against the fleet. No standings, no pennant.'
         : nNow < 4 ? `${nNow} races, one set of standings. Four or more races fly a pennant.`
         : `Sails for the ${tier}-race pennant${tp && tp.won ? ' — already yours' : tp && tp.best ? ` · your best ${_ordinal(tp.best)}` : ''}.`;
     // Scoring only means something across races: a single race is just "finish as high as you
     // can", and explaining points there was noise (PT-010).
     $('series-scoring').style.display = nNow === 1 ? 'none' : '';
+    const drawn = !pick && !!_seriesDraw;
     $('series-right-title').textContent = pick ? 'Pick your venues' : nNow === 1 ? 'Your venue' : 'Your draw';
     $('series-bar-note').textContent = pick ? (_seriesPicks.length ? 'Click a picked venue again to take it out.' : 'Pick at least one venue.')
-        : 'Not the draw you wanted? Redraw as often as you like — it is free until you start.';
-    $('series-redraw-btn').style.display = pick ? 'none' : '';
+        : drawn ? 'Not the draw you wanted? Redraw as often as you like — it is free until you start.' : 'Choose how many races.';
+    $('series-redraw-btn').style.display = drawn ? '' : 'none';
     const chosen = _seriesChosen();
     $('series-start-label').textContent = chosen.length === 1 ? 'Sail this race' : 'Sail this series';
     $('series-start-btn').disabled = !chosen.length;
@@ -4664,6 +4671,7 @@ function renderSeriesPicker() {
         if (note) note.textContent = _seriesPicks.length ? `${_seriesPicks.length} race${_seriesPicks.length === 1 ? '' : 's'} · about ${_seriesPicks.length * 5} minutes on the water` : '';
         return;
     }
+    if (!drawn) { grid.innerHTML = ''; if (note) note.textContent = ''; return; }
     const n = _seriesDraw.length;
     const cols = n <= 4 ? n : n <= 6 ? 3 : 4;
     grid.style.gridTemplateColumns = `repeat(${Math.max(cols, 2)}, minmax(0, 1fr))`;
