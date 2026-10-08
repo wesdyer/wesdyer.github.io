@@ -2242,6 +2242,15 @@ function roundingStep(boat, rs, rm, nextA) {
         let needW = (bTo - bFrom) * sgn;
         while (needW <= 0) needW += Math.PI * 2;
         while (needW > Math.PI * 2) needW -= Math.PI * 2;
+        // A HAIRPIN (in from where you go back to: Bay's beat between two marks) comes in and leaves on
+        // the same bearing, so the turn is the WHOLE way round plus the sliver — not the sliver the wrap
+        // into (0, 2π] leaves. Without this a hairpin was "wrapped" from its first step and credited at the
+        // first crossing of the line, hundreds of metres short of the mark (Oct 8 2026, Wes: the AI fleet
+        // finishing early on Bay). The old test's requiredSweep has the same clamp.
+        if (needW < HAIRPIN_ARC) needW += Math.PI * 2;
+        // ...and a mark that must be GONE ROUND (`minWrap`: the School's lesson marks) never takes the
+        // string's glance: where the string passes the mark's near side the lesson still means "around it".
+        if (rm.minWrap && needW < rm.minWrap) needW += Math.PI * 2;
         let rem = bTo - Math.atan2(ry1, rx1);
         while (rem > Math.PI) rem -= Math.PI * 2;
         while (rem < -Math.PI) rem += Math.PI * 2;
@@ -2250,7 +2259,7 @@ function roundingStep(boat, rs, rm, nextA) {
     // The crossing is LATCHED for the leg (and undone by crossing back the wrong way), and the
     // credit lands at the first moment both hold: a long turn (Otter's mark is a 307° loop round
     // the headland) crosses the bisector halfway round, before the string has wrapped.
-    const line = roundingLine(rm, nextA, rs.roundFromLeg);
+    const line = roundingLine(rm, nextA, rs.roundFromLeg, rs.leg);
     if (line) {
         // the step from lastPos to here crosses the ray [mark, mark + u·len], going the required way
         const ax = rs.lastPos.x, ay = rs.lastPos.y, bx = boat.x, by = boat.y;
@@ -2284,11 +2293,16 @@ function roundingStep(boat, rs, rm, nextA) {
 // read off the course's own ideal paths (inbound path ~3 zones out, outbound likewise) so the
 // line is the course's, the same for every boat, and drawable; a mark the race route does not
 // carry (the School's) falls back to where this boat began the leg. Cached on the mark per pair.
-function roundingLine(rm, nextA, fromPt) {
+// THE LEG ITSELF, not the first leg that rounds this mark: a course that rounds one mark twice (Bay's
+// legs 2 and 4) has a different turn there each time, and handing leg 4 leg 2's line credited the second
+// rounding wherever the fleet crossed the first one's bisector — kilometres from the mark (Oct 8 2026).
+const HAIRPIN_ARC = 0.35;   // rad: in and out bearings this close make a hairpin, the whole way round
+function roundingLine(rm, nextA, fromPt, legIdx) {
     if (!nextA) return null;
     const route = state.course && state.course.route, dmc = state.course && state.course.dmc;
     let L = -1;
-    if (route) for (let i = 1; i < route.length; i++) { const e = route[i]; if (e && e.kind === 'round' && e.mark === rm) { L = i; break; } }
+    if (route && legIdx != null && route[legIdx] && route[legIdx].kind === 'round' && route[legIdx].mark === rm) L = legIdx;
+    else if (route) for (let i = 1; i < route.length; i++) { const e = route[i]; if (e && e.kind === 'round' && e.mark === rm) { L = i; break; } }
     const key = L >= 0 ? 'L' + L : null;
     if (key && rm._rline && rm._rline[key]) return rm._rline[key];
     const zone = rm.zone || 165;
@@ -2311,6 +2325,8 @@ function roundingLine(rm, nextA, fromPt) {
     let arc = (aOut - aIn) * sgn;                       // the turn, the required way round, in (0, 2π]
     while (arc <= 0) arc += Math.PI * 2;
     while (arc > Math.PI * 2) arc -= Math.PI * 2;
+    if (arc < HAIRPIN_ARC) arc += Math.PI * 2;          // a hairpin: the whole way round (see roundingStep)
+    if (rm.minWrap && arc < rm.minWrap) arc += Math.PI * 2;   // a mark to be gone round: the far side
     const mid = aIn + sgn * arc / 2;
     const far = Math.min(prevA ? Math.hypot(prevA.x - rm.x, prevA.y - rm.y) : Infinity, Math.hypot(nextA.x - rm.x, nextA.y - rm.y));
     const len = Math.max(zone * 3, Math.min(20000, isFinite(far) ? far : zone * 20));

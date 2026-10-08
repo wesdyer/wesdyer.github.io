@@ -605,8 +605,18 @@ function leeCasters() {
     if (!casters.length) return L;
     for (const i of casters) L.maxLen = Math.max(L.maxLen, shadowLen(i, 'wind'));
     const e = Arena.extent(c.boundary), pad = L.maxLen + LEE_RES * 2;
-    L.x0 = e.minX - pad; L.y0 = e.minY - pad;
-    L.w = Math.ceil((e.maxX - e.minX + 2 * pad) / LEE_RES) + 1; L.h = Math.ceil((e.maxY - e.minY + 2 * pad) / LEE_RES) + 1;
+    let x0 = e.minX - pad, y0 = e.minY - pad, x1 = e.maxX + pad, y1 = e.maxY + pad;
+    // ...and no further than a lee can reach: the School's race lifts the arena to a 10⁶ u horizon, and a
+    // grid that size (80k cells a side) failed to allocate every frame — the race sat frozen at 0:30
+    // (Oct 7 2026). Clipped on the arena's own lattice, so the cells a venue keeps are the same cells.
+    const reach = 2 * L.maxLen + 3 * LEE_SOFT + 2 * LEE_RES;
+    let cx0 = Infinity, cy0 = Infinity, cx1 = -Infinity, cy1 = -Infinity;
+    for (const isl of casters) for (const v of isl.vertices) { cx0 = Math.min(cx0, v.x); cy0 = Math.min(cy0, v.y); cx1 = Math.max(cx1, v.x); cy1 = Math.max(cy1, v.y); }
+    if (cx0 - reach > x0) x0 += Math.floor((cx0 - reach - x0) / LEE_RES) * LEE_RES;
+    if (cy0 - reach > y0) y0 += Math.floor((cy0 - reach - y0) / LEE_RES) * LEE_RES;
+    x1 = Math.min(x1, cx1 + reach); y1 = Math.min(y1, cy1 + reach);
+    L.x0 = x0; L.y0 = y0;
+    L.w = Math.ceil((x1 - x0) / LEE_RES) + 1; L.h = Math.ceil((y1 - y0) / LEE_RES) + 1;
     // the caster raster: each cell the longest lee of any caster covering it (scanline fill)
     const cw = Math.ceil(L.w * LEE_RES / LEE_CRES) + 1, ch = Math.ceil(L.h * LEE_RES / LEE_CRES) + 1;
     const lens = new Float32Array(cw * ch);

@@ -55,6 +55,15 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.randomCalls === 0, `wildlife never calls Math.random (${r.randomCalls})`);
     ok(r.mateSlid && !r.featAfterMate, 'a classmate sends them in, and earns nothing');
     ok(r.featPlayer && r.schoolFeat, 'the player does, in a lesson, and the school remembers it');
+    // THE GRADUATION RACE RUNS (Oct 7 2026): it lifts the arena to a 10^6 u horizon, and the lee field
+    // sized its grid from the arena: the allocation failed every frame and the clock sat at 0:30.
+    const race = await p.evaluate(() => {
+        School.start(4);
+        const t0 = state.race.timer, e0 = [];
+        try { for (let i = 0; i < 180; i++) update(1 / 60); } catch (e) { e0.push(e.message); }
+        return { venue: state.course.venueKey, t0, t1: state.race.timer, err: e0[0] || null };
+    });
+    ok(race.venue === 'pond' && !race.err && race.t1 < race.t0 - 2.5, `the graduation race's clock runs (${race.t0} → ${(+race.t1).toFixed(1)} in 3 s${race.err ? '; ' + race.err : ''})`);
     ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs[0] : ''));
     await b.close();
     console.log(fails ? `\nFAIL — ${fails} failure(s)` : '\nPASS — 0 failure(s)');

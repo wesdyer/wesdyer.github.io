@@ -220,7 +220,7 @@ function update(dt) {
             }
 
             if (state.camera.target === 'boat') {
-                state.camera.target = 'finish';
+                state.camera.target = (window.School && School.active) ? 'boatDone' : 'finish';
                 _resultsPending = true;
             }
         }
@@ -253,7 +253,13 @@ function update(dt) {
     // Player Cam
     const player = state.boats[0];
     const camLerp = 1 - Math.pow(0.9, timeScale);
-    if (state.camera.mode === 'heading') {
+    // ONE OWNER FOR THE ROTATION (PT-103): once the camera has gone to the finish line, the finish turns it
+    // (toward north) and the mode does not. Both used to run, pulling against each other every frame —
+    // heading-up toward a finished boat still swinging about, the finish toward north — and the view
+    // shook back and forth after every finish.
+    if (state.camera.target === 'finish') { /* the finish block below turns it */ }
+    else if (state.camera.target === 'boatDone') { /* the School's finish: held still until its results */ }
+    else if (state.camera.mode === 'heading') {
         let diff = normalizeAngle(player.heading - state.camera.rotation);
         state.camera.rotation += diff * camLerp;
     } else if (state.camera.mode === 'north') {
@@ -262,11 +268,15 @@ function update(dt) {
     }
 
     if (state.camera.messageTimer > 0) state.camera.messageTimer -= dt;
-    if (state.camera.target === 'boat') {
-        if (player.raceState.finished && player.fadeTimer <= 0) {
-             state.camera.target = 'finish';
+    if (state.camera.target === 'boat' || state.camera.target === 'boatDone') {
+        // The finish raises the results ONCE. A race then swings the camera to the finish line to watch the
+        // fleet come in; the School's results follow within a second, so its camera stays on the boat
+        // ('boatDone': following, finish already announced) rather than lurch away and back (PT-103).
+        if (state.camera.target === 'boat' && player.raceState.finished && player.fadeTimer <= 0) {
+             state.camera.target = (window.School && School.active) ? 'boatDone' : 'finish';
              _resultsPending = true;
-        } else {
+        }
+        if (state.camera.target !== 'finish') {
             // ── THE BOAT SITS LOW, SO THE WATER AHEAD IS ON SCREEN ──────────────
             // Centred, half the frame is spent on where you have already been. What a
             // sailor is actually reading is in front: the next mark, the pressure coming

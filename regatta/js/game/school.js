@@ -849,8 +849,13 @@ const School = {
             // taut string from one to the other round the mark, exactly as a race leg's is.
             const N = s.tasks[s.taskIdx + 1];
             s.nextA = N ? N.place() : { x: M.x - (M.x - s.prevTarget.x), y: M.y - (M.y - s.prevTarget.y) };
-            s.rm = { x: M.x, y: M.y, zone: 165, radius: 12, side: T.side };
+            // `minWrap` (Oct 8 2026, Wes: "crediting roundings just as I enter the circle" on the 2nd mark): the
+            // marks are placed from the wind, and on the top mark — in from the first mark, out to the leeward
+            // gate — the race's taut-string rule asked for a 27° glance, so crossing the line on the way IN
+            // counted. A lesson mark is to be gone ROUND: at least half a turn, else the whole way.
+            s.rm = { x: M.x, y: M.y, zone: 165, radius: 12, side: T.side, minWrap: Math.PI };
             s.rm.reqSweep = (typeof CoursePath !== 'undefined' && CoursePath.requiredSweepPts) ? CoursePath.requiredSweepPts(s.rm, s.prevTarget, s.nextA) : null;
+            if (s.rm.reqSweep != null && s.rm.reqSweep < Math.PI) s.rm.reqSweep += Math.PI * 2;   // the old test agrees
             s.track = { roundSweep: 0, roundArmed: false, roundBanked: false, roundRebased: false, roundEntryB: null,
                         roundFrom: { x: p.x, y: p.y }, roundWrong: 0, _wrongRound: false, lastPos: { x: p.x, y: p.y } };
             s.target = M;
@@ -935,10 +940,16 @@ const School = {
                 } else { s.stallT = 0; s._stallD = null; s._stallRate = null; }
             }
             if (T.kind === 'mark') {
-                const res = (typeof roundingStep === 'function') ? roundingStep(p, s.track, s.rm, s.nextA) : { done: false };
-                s.track.lastPos = { x: p.x, y: p.y };
-                if (res.wrong) this.instruct(`<em>Wrong side.</em> Go back and round the mark with it on your <em>${T.side === 'starboard' ? 'RIGHT' : 'LEFT'}</em>.`, T.goal);
-                if (res.done) { Sound.playGateClear(); s.prevTarget = s.W; this.nextPondTask(); }
+                // ROUNDED, THEN CLEAR OF THE CIRCLE (Oct 7 2026, Wes): the race credits a mark halfway round the
+                // turn, and in a lesson that put the next mark up while the boat was still turning. The race's
+                // rule decides THAT it was rounded; the lesson moves on when the boat sails out of the circle.
+                if (!s.track.rounded) {
+                    const res = (typeof roundingStep === 'function') ? roundingStep(p, s.track, s.rm, s.nextA) : { done: false };
+                    s.track.lastPos = { x: p.x, y: p.y };
+                    if (res.wrong) this.instruct(`<em>Wrong side.</em> Go back and round the mark with it on your <em>${T.side === 'starboard' ? 'RIGHT' : 'LEFT'}</em>.`, T.goal);
+                    if (res.done) s.track.rounded = true;
+                }
+                if (s.track.rounded && Math.hypot(p.x - s.rm.x, p.y - s.rm.y) > s.rm.zone) { Sound.playGateClear(); s.prevTarget = s.W; this.nextPondTask(); }
             } else {
                 const A = s.gateA, mid = s.gateMid;
                 const perp = (p.x - mid.x) * A.x + (p.y - mid.y) * A.y;       // + = past the gate, along the approach
