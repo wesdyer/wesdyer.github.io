@@ -145,6 +145,17 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.renew, 'Start Over: won a 6+ series with a last place or a DNF');
     ok(r.crest, 'Six Months at Sea: won a 12-race series');
     ok(r.final === 'Anchor,Crest,Huddle,Lance,Regal,Tempo,Titan' && r.done === 1 && r.finalNull === 0, `seriesFinal grants and counts the series (${r.final}; ${r.done})`);
+    // A TIME TRIAL NEVER KEEPS A FLEET (Oct 10 2026): after a fleet race, the Time Trials door switching to
+    // its remembered venue did a light build and left the nine rivals on the water — Wes raced a "time trial"
+    // on Stillwater Lake with the whole fleet and the splits panel where the leaderboard belongs.
+    const p2 = await b.newPage(); p2.on('pageerror', e => errs.push(e.message));
+    await p2.goto('file://' + path.resolve('regatta/index.html'));
+    await p2.waitForFunction(() => window.state && state.boats.length > 0);
+    const fleet0 = await p2.evaluate(() => { TimeTrial.active = false; settings.venue = 'bay'; settings.lastRaceVenue = 'lake'; saveSettings(); resetGame(); showClubhouse(); return state.boats.length; });
+    await p2.click('#door-race'); await p2.waitForTimeout(500);
+    const tt2 = await p2.evaluate((fleet) => { const atBoard = state.boats.length; beginRace(); return { fleet, atBoard, atGun: state.boats.length, venue: settings.venue }; }, fleet0);
+    await p2.close();
+    ok(tt2.fleet === 10 && tt2.atBoard === 1 && tt2.atGun === 1 && tt2.venue === 'lake', `a Time Trial after a fleet race, on another venue, is solo (fleet ${tt2.fleet} -> board ${tt2.atBoard} -> gun ${tt2.atGun}, ${tt2.venue})`);
     ok(errs.length === 0, 'no page errors' + (errs.length ? ': ' + errs[0] : ''));
     await b.close();
     console.log(fails ? `\nFAIL — ${fails} failure(s)` : '\nPASS — 0 failure(s)');

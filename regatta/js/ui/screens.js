@@ -2609,6 +2609,11 @@ function hideVenueLoading() {
 }
 
 function beginRace() {
+    // A TIME TRIAL IS SOLO, however it was reached (Wes, Oct 10 2026: a "race" on Stillwater Lake with
+    // the whole fleet and the Time Trial's splits where the leaderboard belongs). The Time Trials door
+    // switched venue with a light build and never sent the last race's fleet home; resetGame trims to
+    // one boat, and this is the same trim at the moment the race actually begins.
+    if (window.TimeTrial && TimeTrial.solo() && state.boats.length > 1) state.boats.length = 1;
     if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
     if (typeof hideClubhouseOverlays === 'function') hideClubhouseOverlays();
     // Starting race one of a cup or series is what locks the fleet: these nine, and you as
@@ -3002,8 +3007,10 @@ if (UI.startRaceBtn) UI.startRaceBtn.addEventListener('click', (e) => { e.preven
         // The board opens on the venue the door was previewing — the last one picked HERE —
         // not on whatever venue the last cup or series race left in `settings.venue`.
         const lv = settings.lastRaceVenue;
-        if (lv && VENUE_ORDER.includes(lv) && lv !== settings.venue) selectVenue(lv);
-        else resetGame();   // send the fleet home: a time trial is solo
+        if (lv && VENUE_ORDER.includes(lv) && lv !== settings.venue) {
+            selectVenue(lv);   // a light build: it keeps whatever fleet the last race left...
+            if (state.boats.length > 1) state.boats.length = 1;   // ...so send it home here too (a time trial is solo)
+        } else resetGame();   // send the fleet home: a time trial is solo
         showRaceBoard();
     });
     on('cup-back-btn', () => showClubhouse());
