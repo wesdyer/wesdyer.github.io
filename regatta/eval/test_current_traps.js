@@ -26,7 +26,9 @@ const VENUES = (process.env.VENUES || 'river,glowtide,bay,flats,lagoon').split('
 const VERBOSE = !!process.env.VERBOSE;
 const SWEEP = !!process.env.SWEEP;     // also every 40 u of shoreline (slow; see SWEEP below)
 const MIN_KT = 1.0, MIN_INTO = 0.8;
-const NAMED = { river: [{ name: 'PT-055 shape-34 notch (Wes R3)', x: 3668, y: -3510 }] };
+// PT-051 (Oct 2026): shape-33's face pinned four bots for 20-78 s — the boats were steering into the rock
+// (fixed in the bot), and the water itself is escapable; held here so it stays so.
+const NAMED = { river: [{ name: 'PT-055 shape-34 notch (Wes R3)', x: 3668, y: -3510 }, { name: 'PT-051 shape-33 face (Pearl/Latch/Rake)', x: 4157, y: -3796 }] };
 let fails = 0;
 const check = (name, ok, detail) => {
     console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${name}${ok || !detail ? '' : ' — ' + detail}`);

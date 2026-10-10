@@ -2656,6 +2656,16 @@ function propTraits(p) {
 //
 // Rings come back in world coordinates, one per detached piece of the sprite (an arch and
 // its stacks are several), and `traced` says whether they came from the art or the circle.
+// Monotone chain: the convex hull of [x, y] points, counter-clockwise, no repeated end point.
+function convexHull2D(pts) {
+    const P = pts.slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+    if (P.length < 3) return P;
+    const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+    const lo = [], hi = [];
+    for (const p of P) { while (lo.length >= 2 && cross(lo[lo.length - 2], lo[lo.length - 1], p) <= 0) lo.pop(); lo.push(p); }
+    for (let i = P.length - 1; i >= 0; i--) { const p = P[i]; while (hi.length >= 2 && cross(hi[hi.length - 2], hi[hi.length - 1], p) <= 0) hi.pop(); hi.push(p); }
+    return lo.slice(0, -1).concat(hi.slice(0, -1));
+}
 function propHitRings(p) {
     const T = propTraits(p);
     const k = PROP_KINDS[p.kind] || {};
@@ -2663,10 +2673,16 @@ function propHitRings(p) {
     const size = (k.world || 0) * (p.scale != null ? +p.scale : 1);
     if (O && O.rings && O.rings.length && O.world > 0 && size > 0 && p.contactR == null) {
         const f = size / O.world, c = Math.cos(p.heading || 0), sn = Math.sin(p.heading || 0);
-        return { traced: true, rings: O.rings.map(ring => ring.map(([x, y]) => {
+        const rings = O.rings.map(ring => ring.map(([x, y]) => {
             const X = x * f, Y = y * f;
             return [p.x + X * c - Y * sn, p.y + X * sn + Y * c];      // the draw's own rotate(heading), y down
-        })) };
+        }));
+        // `hitConvex` (Oct 2026, PT-051): the placement collides on the CONVEX HULL of its outline —
+        // the art's own extent with its notches filled. A traced log jam is all branches, and where
+        // the river runs into one the notch between two of them held a boat on every heading (Sockeye
+        // prop-9: Vent from 124 s to the cutoff). Wes: "change it from a pocket to a convex shape".
+        if (p.hitConvex) return { traced: true, rings: [convexHull2D([].concat(...rings))] };
+        return { traced: true, rings };
     }
     const r = T.contactR, ring = [];
     for (let i = 0; i < 12; i++) {
