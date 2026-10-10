@@ -1818,13 +1818,16 @@ function drawMinimap() {
     // will not be there.
     const medianOnly = !!(drawMinimap.target && drawMinimap.target.terrainOnly);
     const _gc = (typeof activeGustColors !== 'undefined' && activeGustColors) || null;
+    drawMinimap._key = null;
     if (_gc && !medianOnly) {
-        const _lift = (c, floor) => {
-            const [h, s, l] = rgbToHsl(c[0], c[1], c[2]);
-            return l >= floor ? c : hslToRgb(h, s, floor);
-        };
-        const gustC = _lift(_gc.gustMid, 0.42);
-        const lullC = _gc.lullBright;                    // authored bright; already legible
+        // PT-038 (Wes: "how do I tell which one's which on this mini-map?" ... "more like a sharper-edge
+        // thing"): the chart speaks the WIND COMETS' language, the same on every venue — a gust is warm
+        // (gold, where the comet scale goes when the wind builds) and a lull is cool (ice), so the hue
+        // alone says more or less wind; and each cell is a flat core with a crisp rim, the lull's rim
+        // dashed, so the shape says it too for anyone the colours fail. The venue's own water tints
+        // (palette.gusts) stay on the course itself, where they are the water showing through.
+        const gustC = [255, 196, 72], lullC = [196, 160, 255];   // gold (more wind), lavender (less)
+        let anyGust = false, anyLull = false;
         for (const g of state.gusts) {
             const pos = t(g.x, g.y);
             const R = g.radiusX * scale;
@@ -1849,21 +1852,27 @@ function drawMinimap() {
             // should disagree. (Drawn in the scaled frame, so the offset scales with it.)
             const ox = -PUFF_SKEW * g.radiusX * scale;
             const grad = ctx.createRadialGradient(ox, 0, 0, ox, 0, R);
-            grad.addColorStop(0, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${peak.toFixed(3)})`);
-            grad.addColorStop(0.55, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${(peak * 0.45).toFixed(3)})`);
-            grad.addColorStop(1, `rgba(${c[0]}, ${c[1]}, ${c[2]}, 0)`);
+            // A plateau, then a short shoulder to the rim: an edge you can see, without the hard
+            // disc that read as a fog bank where a big lull outgrows an arm of the lake.
+            const a0 = Math.min(0.55, peak * 0.85);
+            grad.addColorStop(0, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a0.toFixed(3)})`);
+            grad.addColorStop(0.72, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${(a0 * 0.8).toFixed(3)})`);
+            grad.addColorStop(1, `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${(a0 * 0.35).toFixed(3)})`);
             ctx.beginPath();
             ctx.arc(ox, 0, R, 0, Math.PI * 2);
             ctx.fillStyle = grad;
             ctx.fill();
-            // A thin ring at the cell's true extent, weather-chart style. The soft core
-            // alone loses on Open Ocean, whose chart is the same navy as its gusts — a
-            // rim is the one mark that survives any backdrop without adding real ink.
-            ctx.lineWidth = 1.2;
-            ctx.strokeStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${Math.min(0.7, (0.20 + strength * 0.25) * (1 + small)).toFixed(3)})`;
+            // A ring at the cell's true extent, weather-chart style: crisp, and dashed for a lull.
+            // (Drawn in the cell's scaled frame, so the dash and width are divided back out.)
+            const sy = g.radiusY / g.radiusX;
+            ctx.lineWidth = 1.6 / Math.max(0.3, Math.min(1, sy));
+            ctx.setLineDash(g.type === 'gust' ? [] : [4, 3]);
+            ctx.strokeStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${Math.min(0.95, 0.55 + strength * 0.4).toFixed(3)})`;
             ctx.stroke();
             ctx.restore();
+            if (g.type === 'gust') anyGust = true; else anyLull = true;
         }
+        drawMinimap._key = (anyGust || anyLull) ? { anyGust, anyLull, gustC, lullC } : null;
     }
 
     // Squalls: the weather worth planning around, drawn as its shadow — a dark cell
@@ -2207,6 +2216,28 @@ function drawMinimap() {
         ctx.fill();
         ctx.shadowBlur = 0;
         ctx.strokeStyle = '#0b1c2b'; ctx.lineWidth = 1.6; ctx.stroke();
+        ctx.restore();
+    }
+    // THE GUST / LULL KEY (PT-038), drawn last so land and the fleet never cover it: the two swatches as the
+    // chart draws them, so "which one's which" is answered on the chart itself.
+    const K = !medianOnly && drawMinimap._key;
+    if (K) {
+    const { anyGust, anyLull, gustC, lullC } = K;
+        const fs = Math.max(9, Math.round(Math.min(width, height) * 0.055));
+        ctx.save();
+        ctx.font = `700 ${fs}px Inter, system-ui, sans-serif`; ctx.textBaseline = 'middle';
+        const items = [anyGust && ['gust', gustC, false], anyLull && ['lull', lullC, true]].filter(Boolean);
+        let x = fs * 0.7; const y = height - fs * 0.9, r = fs * 0.42;
+        const w = items.reduce((acc, [lbl]) => acc + r * 2 + fs * 0.35 + ctx.measureText(lbl).width + fs * 0.8, fs * 0.2);
+        ctx.fillStyle = 'rgba(6, 14, 26, 0.6)';
+        ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x - fs * 0.35, y - fs * 0.75, w, fs * 1.5, fs * 0.4) : ctx.rect(x - fs * 0.35, y - fs * 0.75, w, fs * 1.5); ctx.fill();
+        for (const [lbl, c, dashed] of items) {
+            ctx.beginPath(); ctx.arc(x + r, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${c[0]}, ${c[1]}, ${c[2]}, 0.45)`; ctx.fill();
+            ctx.setLineDash(dashed ? [3, 2] : []); ctx.lineWidth = 1.4; ctx.strokeStyle = `rgb(${c[0]}, ${c[1]}, ${c[2]})`; ctx.stroke();
+            ctx.setLineDash([]); ctx.fillStyle = '#e6eef8'; ctx.fillText(lbl, x + r * 2 + fs * 0.35, y);
+            x += r * 2 + fs * 0.35 + ctx.measureText(lbl).width + fs * 0.8;
+        }
         ctx.restore();
     }
     // Fried electronics: the chart tears and goes to static until it reboots (volcano.js).
