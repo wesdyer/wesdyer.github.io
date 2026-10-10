@@ -3240,11 +3240,11 @@ window.VENUE_DOC["ocean"] = {
           ]
         ],
         "falloff": 1000,
-        "count": 12,
+        "count": 10,
         "gustKt": 10,
-        "sizeM": 600,
-        "lifeS": 120,
-        "bias": 0.8,
+        "sizeM": 1300,
+        "lifeS": 180,
+        "bias": 0.65,
         "veer": 30
       }
     ]

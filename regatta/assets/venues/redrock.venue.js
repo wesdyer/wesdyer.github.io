@@ -8961,11 +8961,11 @@ window.VENUE_DOC["redrock"] = {
           ]
         ],
         "falloff": 150,
-        "count": 4,
+        "count": 5,
         "gustKt": 8,
-        "sizeM": 160,
+        "sizeM": 320,
         "lifeS": 40,
-        "bias": 0.75,
+        "bias": 0.65,
         "veer": 20
       },
       {
@@ -9017,11 +9017,11 @@ window.VENUE_DOC["redrock"] = {
           ]
         ],
         "falloff": 150,
-        "count": 4,
+        "count": 5,
         "gustKt": 8,
-        "sizeM": 160,
+        "sizeM": 320,
         "lifeS": 40,
-        "bias": 0.75,
+        "bias": 0.65,
         "veer": 20
       },
       {
@@ -9053,11 +9053,11 @@ window.VENUE_DOC["redrock"] = {
           ]
         ],
         "falloff": 225,
-        "count": 4,
+        "count": 5,
         "gustKt": 8,
-        "sizeM": 160,
+        "sizeM": 320,
         "lifeS": 40,
-        "bias": 0.75,
+        "bias": 0.65,
         "veer": 20
       }
     ]

@@ -12483,11 +12483,11 @@ window.VENUE_DOC["arctic"] = {
           ]
         ],
         "falloff": 500,
-        "count": 3,
-        "bias": 0.8,
-        "veer": 15,
+        "count": 7,
+        "bias": 0.65,
+        "veer": 25,
         "gustKt": 7,
-        "sizeM": 360,
+        "sizeM": 450,
         "lifeS": 90
       }
     ]
