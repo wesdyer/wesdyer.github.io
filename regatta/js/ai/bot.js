@@ -273,7 +273,15 @@ class BotController {
             // a channel sailor crossing the finish bar's edge at low water, 13 u/s for two
             // seconds, then a full loop in three metres of water, ten seconds gone). The
             // physics' push-off handles a hull that is aground; the timer bleeds instead.
-            const tideSlow = !!(state.tide && (this.boat.aground || (this.boat.tideMul != null && this.boat.tideMul < 0.7)));
+            // ...AND IN THE WEED (PT-051, Oct 2026). The same fact on Gatorgrass's weed, mud and duckweed:
+            // a boat in a drag band making way is sailing as fast as the water lets her. Measured
+            // (`_pt051_weed.js`, two races): in a drag band the boat's own sailing makes 2.26 kt toward
+            // her target and the wiggle it trips makes -0.08 — 211 boat-seconds a race going nowhere,
+            // then a clearance run that loses ground too. Wes: "Pulse was just sitting there". A boat
+            // that has truly stopped in it (under 0.3 kt) still counts as stuck.
+            const weedSlow = !!(this.boat.raceState.leg >= 1 && this.boat.shoalMul != null && this.boat.shoalMul < 0.7
+                && this.boat.speed * 4 > 0.3);
+            const tideSlow = !!(state.tide && (this.boat.aground || (this.boat.tideMul != null && this.boat.tideMul < 0.7))) || weedSlow;
             if (this.boat.speed < accelBar && !tideSlow) {
                 this.lowSpeedTimer += TICK;
             } else if (tideSlow) {
@@ -962,6 +970,20 @@ class BotController {
         // the other) that keeps the wedged boat looping — measured: with the
         // reflex in charge, three different ESCAPE aims produced byte-equal
         // 785/768/693s loops because this override discarded them every tick.
+        // HELD OVER THE GROUND (PT-051): how long she has been making under half a knot over the
+        // ground — the water may be carrying her through the hull's own speed (Nimbus, 1.3-2.6 kt
+        // through the water and 3 u a second over the ground against Sockeye's shape-18 for 322 s).
+        // Two readings, and EITHER one under half a knot counts: `velocity` carries the stream even
+        // while the collision holds her still (a river reads knots against a hull going nowhere), and
+        // her position jitters as the collision bounces her off a wall (redrock reads motion that is
+        // only the grind). Measured alone, each missed the other venue's pins.
+        {
+            const pG = this._gsPrev, gsP = pG ? Math.hypot(this.boat.x - pG.x, this.boat.y - pG.y) / TICK / 15 : 1;
+            this._gsPrev = { x: this.boat.x, y: this.boat.y };
+            const vG = this.boat.velocity || { x: 0, y: 0 }, gsK = Math.min(gsP, Math.hypot(vG.x, vG.y) * 4);
+            if (gsK < 0.5) this._groundSlowT = (this._groundSlowT || 0) + TICK;
+            else if (gsK > 1.0) this._groundSlowT = 0;
+        }
         if (!this.escActive
             && this.boat.ai.collisionData && this.boat.ai.collisionData.type === 'island') {
              const col = this.boat.ai.collisionData;
@@ -996,9 +1018,15 @@ class BotController {
                  this._lastReflexT = nowH;
                  if (gapH > 1.0) this._reflexReHit = (gapH < 6.0);
                  const reHit = !!this._reflexReHit;
+                 // PINNED IS A RE-HIT TOO (PT-051): a boat held against the rock (under half a knot OVER
+                 // THE GROUND for 1.5 s) has had the facet answer fail for as long as she has been there.
+                 // Sockeye's shape-33 face is a rough line of bumps: the facet "out" sent Pearl to
+                 // 128° — into the rock — while the clearance field points north, the way a stopped
+                 // boat sails clear in 2.6 s (test_current_traps).
+                 const pinnedE = (this._groundSlowT || 0) > 1.5;
                  let outVX = -col.normal.x, outVY = -col.normal.y;
                  const gW = state.course.botGrid;
-                 if (reHit && !col.isFloe && !col.aground     // mud is not a wall: the clearance field knows only the land
+                 if ((reHit || pinnedE) && !col.isFloe && !col.aground     // mud is not a wall: the clearance field knows only the land
                      && gW && window.SailCheck && window.SailCheck.clearanceField) {
                      if (!gW._clear) gW._clear = window.SailCheck.clearanceField(gW);
                      const cB = gW.cell(this.boat.x, this.boat.y);
@@ -1050,6 +1078,14 @@ class BotController {
                      const cvx = Math.sin(curE.direction) * cU;
                      const cvy = -Math.cos(curE.direction) * cU;
                      const lwC = getWindAt(this.boat.x, this.boat.y);
+                     // ...BUT A PINNED BOAT HAS NO SPEED TO PLAN ON (PT-051, Oct 2026). Capped at the
+                     // boat she has, a boat stopped against the rock scores every heading the same — the
+                     // stream alone — and holds whichever wins the tie on zero information. Sockeye's
+                     // shape-33: Latch, Rake, Pearl, Pebble pinned 20-78 s each, in 7 of 8 races, holding
+                     // 113°, where a stopped boat sails clear on 0° in 2.6 s (test_current_traps). Pinned
+                     // (under half a knot and slow for 1.5 s), rank by the boat she can BUILD on each
+                     // heading; anything still moving keeps the honest cap above.
+                     const pinnedC = pinnedE;
                      let bestT = -Infinity;
                      for (const off of ESC_TWAS) {
                          const h = normalizeAngle(lwC.direction + off);
@@ -1068,7 +1104,7 @@ class BotController {
                          // the true track, and where nothing escapes it picks the
                          // least-bad instead of a confident wrong answer.
                          const pol = getTargetSpeed(Math.abs(off), false, lwC.speed) * 0.25 * 60;
-                         const v = Math.min(pol, (this.boat.speed || 0) * 60);
+                         const v = pinnedC ? pol : Math.min(pol, (this.boat.speed || 0) * 60);
                          const tOut = (Math.sin(h) * v + cvx) * outXc
                                     + (-Math.cos(h) * v + cvy) * outYc;
                          if (tOut > bestT) { bestT = tOut; escH = h; }

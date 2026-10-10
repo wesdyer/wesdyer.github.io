@@ -18010,3 +18010,45 @@ Wes: the AI fleet finished well before him on Bay without sailing the full cours
 | otter | 0.31/0.25/0.00/0.02/0.09 | 0.31/0.25/0.00/0.02/0.09 | 240/240 | 240/240 |
 
 **Only Bay moves materially: 246 → 266 s median (1.071 → 1.159) — the fleet now sails the whole course.** Glowtide −3 s (one leg-1 rounding was credited early before; within noise), Otter 1/8 races differ with identical stats; every other venue byte-identical. The River DNF (1 of 80: Vent wedged at (1203, −1050) on leg 3 from 125 s) is on HEAD physics too, so not this fix — and not Wes's River edit either: the colliders there (prop-9's traced outline beside outcrop shape-40) are identical in both versions, and a leg-3 bot dropped into that pocket stays stuck on the Oct 5 River from all 4 headings tried (current River: 3 of 4). The edit only changed which race ran into it. An existing bot-escape trap (PT-051 family).
+
+## PT-051 — bots stuck: weed and current pins (2026-10-09, uncommitted pending Wes)
+
+Census tool `_pt051_census.js` (ten bots, ocean_bench's construction incl. the LATE venue write — the early addInitScript pattern is NOT reproducible on river/lagoon/swamp; a first census used it and its river numbers were noise). Episode classes: SLOW (<150 u sailed in 15 s) and LOOP (sailing, but <80 u made good in 15 s, not within 450 u of the leg's rounding mark — a hairpin rounding is the course). Probes: `_pt051_watch.js` / `_pt051_avdbg.js` (WARM0 replays the census's earlier seeds: a race reads caches the previous one left), `_pt051_weed.js`.
+
+**1. Weed (bot.js liveness):** a boat in a drag band (shoalMul < 0.7) making > 0.3 kt is not stuck — the timer bleeds, as on the Flats. Measured before: in weed the boat's own sailing makes 2.26 kt VMC, the wiggle it tripped -0.08 kt for 211 boat-s/race. PRE hpF, POST wdA:
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| arctic | 197.8 (6) [209.4] | 304/304.4/236 | 304/304.4/236 | 1.537 → **1.537** | 0.0 | 10 | 0 | 2.94/2.76/7.44/0.05/0.47 | 80/80 | 8/8 vs hpFarc |
+| redrock | 202.1 (6) [204.2] | 304/296.4/212 | 304/296.4/212 | 1.504 → **1.504** | 0.0 | 13 | 1 | 8.05/5.53/0.00/0.40/1.18 | 80/80 | 8/8 vs hpFrr |
+| swamp | 173.9 (7) [173.3] | 247/272.0/172 | 240/242.5/172 | 1.420 → **1.380** | 0.0 | 3 | 0 | 3.00/1.63/0.00/0.06/0.34 | 80/80 | 0/8 vs hpFsw |
+| flats | 172.7 (6) [172.8] | 210/212.2/172 | 210/212.2/172 | 1.216 → **1.216** | 0.0 | 0 | 0 | 0.00/0.67/0.00/0.02/0.19 | 240/240 | 8/8 vs hpFfl9400 |
+| lagoon | 176.5 (6) [174.7] | 211/209.3/176 | 210/208.6/176 | 1.195 → **1.190** | 0.0 | 0 | 0 | 0.11/0.70/0.00/0.15/0.35 | 80/80 | 5/8 vs hpFlag |
+| glowtide | 179.3 (6) [204.4] | 212/214.9/169 | 212/214.9/169 | 1.182 → **1.182** | 0.0 | 3 | 0 | 4.54/1.99/0.00/0.28/0.53 | 160/160 | 15/16 vs hpFglow |
+| bay | 229.6 (12) [239] | 266/265.6/225 | 266/265.6/225 | 1.159 → **1.159** | 0.0 | 0 | 0 | 0.15/0.71/0.00/0.19/0.26 | 80/80 | 8/8 vs hpFbay |
+| river | 194 (6) [187.4] | 215/219.3/174 | 215/219.6/174 | 1.108 → **1.108** | 1.2 | 18 | 0 | 42.16/2.61/0.00/0.10/0.50 | 79/80 | 7/8 vs hpFriv |
+| lake | 201.2 (6) [194.8] | 215/217.2/177 | 215/217.2/177 | 1.069 → **1.069 ✅** | 0.0 | 0 | 0 | 0.09/0.68/0.00/0.06/0.23 | 80/80 | 8/8 vs hpFlk |
+| volcanic | 198.3 (6) [195.5] | 211/213.6/169 | 211/213.6/169 | 1.064 → **1.064 ✅** | 0.0 | 0 | 0 | 0.20/0.76/0.00/0.05/0.26 | 240/240 | 1/8 vs hpFvo9400 |
+| seatrials | 182.3 (6) [185.7] | 190/193.4/175 | 190/193.4/175 | 1.042 → **1.042 ✅** | 0.6 | 0 | 0 | 0.00/0.30/0.00/0.34/0.31 | 159/160 | 16/16 vs hpFst |
+| ocean | 201.8 (6) [214.2] | 204/207.9/178 | 204/207.9/178 | 1.011 → **1.011 ✅** | 0.0 | 0 | 0 | 0.13/0.66/0.00/0.11/0.22 | 160/160 | 16/16 vs hpFoc |
+| otter | 201.4 (6) [200.8] | 200/201.3/181 | 200/201.3/181 | 0.993 → **0.993 ✅** | 0.0 | 0 | 0 | 0.31/0.25/0.00/0.02/0.09 | 240/240 | 1/8 vs hpFot9400 |
+
+**2. Current/wall pins (bot.js contact reflex):** a boat held under 0.5 kt over the ground (min of position-change and velocity readings) for 1.5 s escapes along the clearance field (as a re-hit does) and ranks escape headings by the speed she can build, not the speed she has. Sockeye shape-33: Pearl pinned 78 s -> 4 s; a stopped boat there sails clear on 0° in 2.6 s (test_current_traps machinery). v1 (water speed) missed current pins, v2 (velocity) missed river (velocity carries the stream), v3 (position) missed redrock (collision bounce) — v4 takes the min. PRE wdA, POST pnD:
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| arctic | 197.8 (6) [209.4] | 304/304.4/236 | 304/303.6/236 | 1.537 → **1.537** | 0.0 | 10 | 0 | 3.01/2.34/7.25/0.05/0.44 | 80/80 | 6/8 vs wdAarc |
+| redrock | 202.1 (6) [204.2] | 304/296.4/212 | 289/292.3/212 | 1.504 → **1.430** | 0.0 | 12 | 1 | 7.89/5.15/0.00/0.38/1.07 | 80/80 | 5/8 vs wdArr |
+| swamp | 173.9 (7) [173.3] | 240/242.5/172 | 240/240.1/172 | 1.380 → **1.380** | 0.0 | 3 | 0 | 2.89/1.77/0.00/0.07/0.38 | 80/80 | 6/8 vs wdAsw |
+| flats | 172.7 (6) [172.8] | 210/212.2/172 | 210/212.2/172 | 1.216 → **1.216** | 0.0 | 0 | 0 | 0.00/0.67/0.00/0.02/0.19 | 240/240 | 8/8 vs wdAfl9400 |
+| glowtide | 179.3 (6) [204.4] | 212/214.9/169 | 214/215.4/169 | 1.182 → **1.194** | 0.0 | 3 | 0 | 4.38/2.08/0.00/0.23/0.51 | 160/160 | 12/16 vs wdAglow |
+| lagoon | 176.5 (6) [174.7] | 210/208.6/176 | 210/208.6/176 | 1.190 → **1.190** | 0.0 | 0 | 0 | 0.11/0.70/0.00/0.15/0.35 | 80/80 | 8/8 vs wdAlag |
+| bay | 229.6 (12) [239] | 266/265.6/225 | 266/265.6/225 | 1.159 → **1.159** | 0.0 | 0 | 0 | 0.15/0.71/0.00/0.19/0.26 | 80/80 | 8/8 vs wdAbay |
+| river | 194 (6) [187.4] | 215/219.6/174 | 212/216.4/174 | 1.108 → **1.093 ✅** | 1.2 | 16 | 0 | 36.56/2.61/0.00/0.10/0.50 | 79/80 | 2/8 vs wdAriv |
+| lake | 201.2 (6) [194.8] | 215/217.2/177 | 215/217.0/177 | 1.069 → **1.069 ✅** | 0.0 | 0 | 0 | 0.06/0.65/0.00/0.06/0.23 | 80/80 | 7/8 vs wdAlk |
+| volcanic | 198.3 (6) [195.5] | 211/213.6/169 | 211/213.6/169 | 1.064 → **1.064 ✅** | 0.0 | 0 | 0 | 0.20/0.76/0.00/0.05/0.26 | 240/240 | 8/8 vs wdAvo9400 |
+| seatrials | 182.3 (6) [185.7] | 190/193.4/175 | 190/193.4/175 | 1.042 → **1.042 ✅** | 0.6 | 0 | 0 | 0.00/0.30/0.00/0.34/0.31 | 159/160 | 16/16 vs wdAst |
+| ocean | 201.8 (6) [214.2] | 204/207.9/178 | 204/207.9/178 | 1.011 → **1.011 ✅** | 0.0 | 0 | 0 | 0.13/0.66/0.00/0.11/0.22 | 160/160 | 16/16 vs wdAoc |
+| otter | 201.4 (6) [200.8] | 200/201.3/181 | 200/201.3/181 | 0.993 → **0.993 ✅** | 0.0 | 0 | 0 | 0.31/0.25/0.00/0.02/0.09 | 240/240 | 8/8 vs wdAot9400 |
+
+Census after both (8 seeds): swamp LOOP 579 -> 181 boat-s/race (SLOW 0 -> 127: boats now plod through the weed belt instead of wiggling in it), land hits 42 -> 29; river SLOW 42 -> 9, shape-33 pins gone; redrock and arctic loops unchanged (walls/ice ping-pong, next). Still open: the prop-9 pocket on Sockeye (1197,-1049) — NO heading escapes a stopped boat in 15 s (a venue trap, PT-055 class, for Wes); the Redrock confined-water ping-pong; Glacier ice loops. Suite: only the two pre-existing failures (livery, path_estimate bay/lake).
