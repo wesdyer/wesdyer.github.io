@@ -631,6 +631,12 @@
         /* FRIED ELECTRONICS (volcano.js): a HUD panel a strike took out. Jitter, inversion
            blinks and a rolling scanline until its system reboots. */
         .fried { animation: hud-fry 0.11s steps(2, end) infinite; }
+        /* THE CLOCK SITS ON A PLATE, in every state (PT-069, Wes: "the start time is super critical...
+           there should be some sort of black outline... so that no matter where it's placed you can see
+           it"). The orange of the last ten seconds all but vanished over Redrock's sandstone and Glacier's
+           ice; on the plate it reads over anything. Same dark pill as the HUD's other badges. */
+        #hud-timer { background: rgba(8, 15, 28, 0.72); padding: 2px 22px 4px; border-radius: 999px;
+                     border: 1px solid rgba(255, 255, 255, 0.14); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35); }
         #hud-timer.fried { position: relative; }   /* the clock is static-positioned; its scanlines need a box */
         .fried::after { content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
             background: repeating-linear-gradient(0deg, rgba(255,255,255,0.10) 0 2px, rgba(0,0,0,0.30) 2px 4px);
