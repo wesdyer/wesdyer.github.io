@@ -27,14 +27,17 @@ const ROOT = process.argv[5] ? path.join(__dirname, process.argv[5]) : path.reso
       P.x = a[1] + (c[1] - a[1]) * f; P.y = a[2] + (c[2] - a[2]) * f; P.heading = a[3]; P.speed = a[4] / 4 || P.speed;
       const v = P.speed * 60 / 60; P.velocity = { x: Math.sin(P.heading) * P.speed, y: -Math.cos(P.heading) * P.speed };
     };
+    const rot = new Map();
     for (let it = 0; it < 60 * 200; it++) {
       place(); window.update(1 / 60);
+      if (state.race.status === 'racing') for (const bt of state.boats) { if (bt === P || bt.raceState.leg >= 1) continue; const R = rot.get(bt) || { h: bt.heading, net: 0, max: 0 }; R.net += normalizeAngle(bt.heading - R.h); R.max = Math.max(R.max, Math.abs(R.net)); R.h = bt.heading; rot.set(bt, R); }
       if (state.race.status === 'racing' && (state.race.timer > 160 || state.boats.every(bt => bt === P || bt.raceState.leg >= 1))) break;
     }
     const pen = new Set(), ocs = new Set();
-    return state.boats.filter(bt => bt !== P).map(bt => ({ name: bt.name, cross: bt.raceState.leg >= 1 ? +(bt.raceState.startTimeDisplay || 0).toFixed(1) : null, pens: bt.raceState.totalPenalties || 0 }));
+    return state.boats.filter(bt => bt !== P).map(bt => ({ name: bt.name, cross: bt.raceState.leg >= 1 ? +(bt.raceState.startTimeDisplay || 0).toFixed(1) : null, pens: bt.raceState.totalPenalties || 0, turns: rot.get(bt) ? +(rot.get(bt).max / (2 * Math.PI)).toFixed(1) : 0 }));
   }, { seed: SEED0 + i, track }));
   const C = out.flat(), ts = C.map(c => c.cross == null ? 999 : c.cross).sort((x, y) => x - y);
   console.log(`${path.basename(TRAJ)} (${d.venue}) with Wes's track, ${TRIALS} seeds: n ${C.length} med ${ts[Math.floor(ts.length / 2)]} p90 ${ts[Math.floor(ts.length * 0.9)]} max ${ts[ts.length - 1] === 999 ? '>160' : ts[ts.length - 1]} >30s ${C.filter(c => c.cross == null || c.cross > 30).length} >60s ${C.filter(c => c.cross == null || c.cross > 60).length} pens ${C.reduce((a, c) => a + c.pens, 0)}`);
+  console.log(`   circling: ${C.filter(c => c.turns >= 2).length} bots >= 2 net turns, max ${Math.max(0, ...C.map(c => c.turns))}` + C.filter(c => c.turns >= 2).map(c => ` | ${c.name} ${c.turns}t crossed ${c.cross ?? '>160'}`).join(''));
   for (const c of C.filter(c => c.cross == null || c.cross > 30)) console.log(`   late: ${c.name} ${c.cross ?? '>160'} pens ${c.pens}`);
   await b.close(); })();
