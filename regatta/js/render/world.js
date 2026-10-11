@@ -222,18 +222,38 @@ function pointOnLand(x, y) {
 // 39u, finer than the 56u hull that has to stay visible under it.
 const CANOPY_RIM_SAMPLES = 16;
 const CANOPY_INNER_SAMPLES = 8;
+// ⚠️ WATER A HULL CAN REACH, NOT MERELY "NOT AN ISLAND" (Wes, Oct 11 2026: "trees completely on land
+// also transparent ... for example on lake"). Stillwater's whole outer shore is the BACKDROP — map-only
+// land (venuedoc.js) that draws with the islands but is not one, so pointOnLand never sees it — and every
+// tree planted on it read as standing in open water: the crowns faded around the player all along the
+// shore (61 of them within 700 u of one spot). Land is the islands AND the backdrop; and beyond the
+// sailing limit there is no hull to lose under a crown at all. (The same test sends PT-014's overhanging
+// shore trees to the canopy plane, so they get the same answer.)
+function _crownWet(x, y) {
+    if (pointOnLand(x, y)) return false;
+    const bd = state.course && state.course.backdrop;
+    if (bd) for (const isl of bd) {
+        if (!isl.vertices || isl.vertices.length < 3) continue;
+        const dx = x - isl.x, dy = y - isl.y;
+        if (isl.radius && dx * dx + dy * dy > isl.radius * isl.radius) continue;
+        if (!pointInVerts(x, y, isl.vertices)) continue;
+        if (!(isl.holes || []).some(h => h && h.length >= 3 && pointInVerts(x, y, h))) return false;
+    }
+    const b = state.course && state.course.boundary;
+    return !(b && window.Arena) || Arena.contains(b, x, y);
+}
 function crownOverWater(p, worldW) {
     if (p._overWater !== undefined) return p._overWater;
     const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
     const r = worldW * 0.5;
-    let over = !pointOnLand(x, y);
+    let over = _crownWet(x, y);
     for (let k = 0; !over && k < CANOPY_RIM_SAMPLES; k++) {
         const a = (k / CANOPY_RIM_SAMPLES) * Math.PI * 2;
-        if (!pointOnLand(x + r * Math.cos(a), y + r * Math.sin(a))) over = true;
+        if (_crownWet(x + r * Math.cos(a), y + r * Math.sin(a))) over = true;
     }
     for (let k = 0; !over && k < CANOPY_INNER_SAMPLES; k++) {
         const a = (k + 0.5) / CANOPY_INNER_SAMPLES * Math.PI * 2;   // offset off the rim spokes
-        if (!pointOnLand(x + r * 0.66 * Math.cos(a), y + r * 0.66 * Math.sin(a))) over = true;
+        if (_crownWet(x + r * 0.66 * Math.cos(a), y + r * 0.66 * Math.sin(a))) over = true;
     }
     if (p.motion !== 'drift') p._overWater = over;   // a drifter's answer moves with it
     return over;
