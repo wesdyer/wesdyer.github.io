@@ -2624,7 +2624,7 @@ const VEG_STYLES = {
     // ── SPOONBILL FLATS' EELGRASS (Sep 18 2026) ──────────────────────────────
     // Zostera on the low flats. LIVE like the kelp — the baker only scatters the tufts
     // (rim thinning, open holes, the reference's bare openings) and paints nothing; the
-    // tufts are drawn every frame by js/tide.js (Tide.drawEelgrass) from its own sheet,
+    // bed is baked by js/tide.js (eelBake) into a combed texture and drawn every frame,
     // combed by the tide's stream and split between the wet pass (under the water) and
     // the dry pass (flat on the mud), which is why they cannot live in this file's layers.
     // Tones are the exposed bed's: a dark olive heart, the leaf, the pale streak the last

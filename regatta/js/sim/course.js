@@ -1536,6 +1536,9 @@ function initCourse(opts) {
         // world is ready to race or needs the full load first.
         state.course.venueKey = settings.venue;
         state.course.loadState = light ? 'light' : 'full';
+        // The eelgrass meadows bake here, on the full build only (the board's light one never draws them),
+        // and never in the eval harness, which never draws at all.
+        if (!light && !window.evalHarness && window.Tide && Tide.prebakeEelgrass) Tide.prebakeEelgrass();
         return;
     }
 
