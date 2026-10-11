@@ -23,8 +23,10 @@ function renderRaceResults(player, sorted) {
     if (!window.RaceLog) return;
     _raceLegs(player);   // from raceState; the counts are empty without a log
     if (RaceLog.t0 == null) return;
+    // `key` caches the chart: the race's serial as well as t0, because every race starts on the same
+    // clock and t0 alone let a second race reuse the first one's map (Wes, Oct 10 2026).
     const L = { t0: RaceLog.t0, dt: RACELOG_DT, boats: RaceLog.boats, events: RaceLog.events, legStart: RaceLog.legStart,
-                me: RaceLog.boats.findIndex(B => B.boat === player), legs: player.raceState.legTimes.length, key: 'race:' + RaceLog.t0, src: RaceLog };
+                me: RaceLog.boats.findIndex(B => B.boat === player), legs: player.raceState.legTimes.length, key: 'race:' + RaceLog.serial + ':' + RaceLog.t0, src: RaceLog };
     _rrShow('res-race-mapslot', L);
 }
 
@@ -55,7 +57,7 @@ function renderTrialReplay(player) {
     const legStart = { 0: 0 };
     for (let i = 1; i < R.s.length; i++) if ((R.s[i][6] || 0) > (R.s[i - 1][6] || 0)) legStart[R.s[i][6]] = R.t0 + i * GHOST_SAMPLE_DT;
     const L = { t0: R.t0, dt: GHOST_SAMPLE_DT, boats, events: events.sort((a, b) => a.t - b.t), legStart, me: 0,
-                legs: player.raceState.legTimes.length, key: 'trial:' + R.t0 + ':' + R.s.length, instr: R.s, ghost: !!boats[1] };
+                legs: player.raceState.legTimes.length, key: 'trial:' + RaceLog.serial + ':' + R.t0 + ':' + R.s.length, instr: R.s, ghost: !!boats[1] };
     _rrShow('res-trial-mapslot', L);
 }
 

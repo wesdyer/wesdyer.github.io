@@ -16,6 +16,7 @@ const RACELOG_HOLD = 3;            // a place swap has to hold this long (s) to 
 
 const RaceLog = {
     t0: null,                      // race clock of the first sample (negative: prestart)
+    serial: 0,                     // one per race: the results map is cached on it (t0 is the same start clock every race)
     next: 0,
     boats: [],                     // per boat, in state.boats order: { boat, s: [[x, y, heading×1000, leg, progress, kite, sog in tenths of a knot]], done }
     me: null,                      // the player's counts: { tacks: {leg: n}, gybes, passed, passedBy, hits, pens }
@@ -28,6 +29,7 @@ const RaceLog = {
     _clock() { const r = state.race; return r.status === 'prestart' ? -r.timer : r.timer; },
 
     onReset() {
+        this.serial++;
         this.t0 = null; this.next = 0; this.boats = []; this.events = []; this.legStart = {}; this._fin = false;
         this._ahead = null; this._aheadLeg = -1;
         this.me = { tacks: {}, gybes: {}, passed: {}, passedBy: {}, hits: {}, pens: {}, place: {} };
