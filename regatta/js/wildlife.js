@@ -715,13 +715,15 @@
         return (p && state.race && state.race.status === 'racing' && !p.raceState.finished) ? p : null;
     }
 
-    function update(dt) {
+    function update(dt, boatsOnly) {
         if (!cfg || !(dt > 0)) return;
         // A new race on the same venue (Rematch) re-runs initCourse; if it did not, reset here.
         const sig = state.race ? state.race.unlocks : null;
         if (sig !== lastRaceSig) { lastRaceSig = sig; feats = new Set(); lurkWoken = new Set(); boilsHit = 0; for (const B of stripers) B.hit = false; visited = new Set(); }
         T += dt;
         const me = playerCanEarn();
+        // the fleet fast-forwarding behind the results: only what a hull can touch
+        if (boatsOnly) { if (whalePods.length) updateWhales(dt, me); return; }
         for (const c of colonies) updateColony(c, dt, me);
         for (const f of followers) updateFollowers(f, dt);
         updatePods(dt);

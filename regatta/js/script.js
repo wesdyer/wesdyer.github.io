@@ -20,6 +20,13 @@ let _resultsPending = false;
 // down. Past about 0.3 that panel starts running off the bottom edge.
 const CAM_LOOK_AHEAD = 1 / 6;
 
+// THE FLEET FINISHING BEHIND THE RESULTS (PT-052). While the results overlay covers the screen the
+// loop fast-forwards the race, and nothing visual needs to move: particles, comets, wind waves, surf,
+// drifting props, wakes, sea spray and the animals (bar the whales, which a hull can hit). Measured:
+// those were 40-75% of a step on Glowtide and Otter. Presentation-only, so the race is unchanged.
+let simFxSkip = false;
+let _ffFrames = 0;
+const FF_BUDGET_MS = 12;   // sim per frame while fast-forwarding: leaves the frame room for the overlay's own UI
 function update(dt) {
     state.time += WORLD_CLOCK * dt;
     const timeScale = dt * 60;
@@ -333,7 +340,7 @@ function update(dt) {
     // positions, ~1.5s of life — about half the old visual length) plus
     // sparse foam dots. The old 'wake-wave' particle streams lived ~11s and
     // are gone entirely; drawWakes renders the ribbons.
-    if (state.race.status !== 'waiting') {
+    if (state.race.status !== 'waiting' && !simFxSkip) {
         for (const boat of state.boats) {
             if (!boat.wakeTrail) { boat.wakeTrail = []; boat.wakeSampleT = 0; }
 
@@ -407,6 +414,7 @@ function update(dt) {
     // the emptiest water, seeded pre-aged — so the wind can be read anywhere on screen at
     // the same coverage whatever it is doing. Lives in wind.js with the rest of the layer;
     // runs after updateParticles so this frame's drift is wrapped this frame.
+    if (!simFxSkip) {
     updateParticles(dt);
     updateCometField(dt, canvas.width, canvas.height);
     updateWindWaves(dt);
@@ -417,13 +425,15 @@ function update(dt) {
     // Both are RNG-free and purely visual (drifting props force contact:none).
     updateDriftingProps(dt);
     updateJellyDrifts(dt);
+    }
     // The venue's animals (wildlife.js): own PRNG, touches no boat — sim-clocked only so the
-    // birds the player sees are where a wildlife objective is judged.
-    if (window.Wildlife) Wildlife.update(dt);
+    // birds the player sees are where a wildlife objective is judged. Fast-forwarding, only the
+    // whales move: a surfaced whale is the one animal a hull can hit (checkWhaleContact).
+    if (window.Wildlife) Wildlife.update(dt, simFxSkip);
     // WHITECAPS, SURF SPRAY AND THE BOW UPWIND. After the boats, because two of the three
     // read `boat.swell` and it is written in updateBoat. Its own particle arrays and its
     // own PRNG, so it can neither be seen by the sim nor perturb it. No-op off the ocean.
-    if (window.SeaFX) window.SeaFX.update(dt, state);
+    if (window.SeaFX && !simFxSkip) window.SeaFX.update(dt, state);
 
     recordTrajectory(dt);
 }
@@ -1089,12 +1099,36 @@ function loop(timestamp) {
     const dt = (timestamp - lastTime) / 1000;
     lastTime = timestamp;
     if (!state.paused) {
+        // THE FLEET FINISHES AS FAST AS THE MACHINE ALLOWS once you have (PT-052, Wes: "it really
+        // should be a faster finish for the AIs once I've finished because I'm not going to wait
+        // around"). The results overlay is opaque, so behind it nothing is drawn and nothing visual
+        // is stepped (simFxSkip) — measured, the effects and animals were 40-75% of a step on
+        // Glowtide and Otter — and the frame is filled with whole 1/60 s sim steps up to a budget,
+        // where it used to be a fixed 10x. The race itself is unchanged: same steps, same order,
+        // finish times identical to the frame (eval/rl/_pt052_full.js); full results now land in
+        // 0.1-6 s of wall time where they took up to minutes.
+        const resultsUp = UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden');
+        if (resultsUp && state.race.status === 'racing' && state.boats.some(b => !b.raceState.finished)) {
+            const t0 = performance.now();
+            simFxSkip = true;
+            try {
+                do { update(1 / 60); }
+                while (performance.now() - t0 < FF_BUDGET_MS && state.race.status === 'racing'
+                       && state.boats.some(b => !b.raceState.finished));
+            } finally { simFxSkip = false; }
+            // The overlay re-reads the order from updateLeaderboard, which draw() calls every tenth
+            // frame — draw() is skipped here, so the same cadence is kept from this side. Once the last
+            // boat is in, a final read so the page says so without waiting for the cadence.
+            if (++_ffFrames % 10 === 0 || !state.boats.some(b => !b.raceState.finished) || state.race.status !== 'racing') updateLeaderboard();
+            requestAnimationFrame(loop);
+            return;
+        }
+        if (resultsUp) { requestAnimationFrame(loop); return; }   // nothing left to sail; nothing to draw under it
+
         let iterations = 1;
-        // The fleet finishes at 10x once you have: the shipped results overlay, and the
-        // Sailing School's own results screen (E), which keeps the sim running behind it
-        // and re-reads the finish order as the classmates come in.
-        if ((UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden'))
-            || (window.School && School.active && School._screenId === 'E')) {
+        // The Sailing School's own results screen (E) keeps the sim running behind it, drawn,
+        // and re-reads the finish order as the classmates come in: 10x, as before.
+        if (window.School && School.active && School._screenId === 'E') {
             iterations = 10;
         }
 
