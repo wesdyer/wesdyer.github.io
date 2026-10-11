@@ -257,7 +257,14 @@ function propSpriteFor(p, plane) {
     const kind = reg[p.kind] || {};
     const parts = kind.parts;
     if (parts) return parts[plane] ? propSprite(parts[plane]) : null;
-    const own = p.plane || 'surface';
+    let own = p.plane || 'surface';
+    // A SHORE TREE THAT LEANS OVER THE WATER (PT-014, Wes at Lighthouse Cove: "we drew over top
+    // of the tree. That's not correct."). The kind is one sprite on `surface`, under the fleet,
+    // which is right for a crown wholly on land — and wrong the moment the crown reaches past
+    // the shore, where a hull alongside the bank was painted over the leaves. Such a crown goes
+    // to the canopy plane: over the boats, and fading for the player like every crown there.
+    // crownOverWater is cached on the placement, so this costs one property read a frame.
+    if (kind.overhang && own === 'surface' && crownOverWater(p, (kind.world || 0) * (p.scale || 1))) own = 'canopy';
     // SPOONBILL FLATS: a surface prop on ground the tide covers (the kind says `tidal`: a
     // stranded dinghy, oyster trestles, a fish weir) is drawn UNDER the water while its
     // cell is wet — the 'tidal' pass, between the seabed and the wet flats, tinted like a

@@ -809,6 +809,16 @@ const MARK_KINDS = {
 //                                        slows (drag, same 0..0.9 currency as a shoal);
 //                                        hard stops. contactR is the collider radius in
 //                                        world units.
+//   overhang true                        A SHORE TREE (PT-014): a one-sprite crown on `surface`
+//                                        whose crown reaches over water draws on `canopy`
+//                                        instead — over the fleet, fading for the player like
+//                                        any crown — so a hull sailing along the bank passes
+//                                        UNDER the leaves rather than being painted over them.
+//                                        A crown wholly on land stays on `surface`, under the
+//                                        boats, where it can never meet one. These carry
+//                                        fadeMin 0.3 (the footbridge's floor): the crown is
+//                                        the WHOLE tree, with no trunk left on `surface`, so at
+//                                        the canopy's floor of 0 it would vanish outright.
 //   motion   fixed | drift               Fixed, or adrift on the day's water. DRIFT
 //                                        FORCES contact:none — a drifting collider would
 //                                        need the router re-priced every frame, so a
@@ -1126,9 +1136,9 @@ const PROP_KINDS = {
     // of a headland shows exactly that. If the namesake needs more presence, place it alone on
     // a point — do not inflate it, or it stops agreeing with every other measured thing here.
     'bay-cove-lighthouse':   { label: 'Lighthouse',          world:  84, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#F0EDE6' },
-    'bay-cove-oak-black':    { label: 'Black oak',           world:  96, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-pine-pitch':   { label: 'Pitch pine',          world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-cedar-red':    { label: 'Red cedar',           world:  42, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-oak-black':    { label: 'Black oak',           world:  96, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
+    'bay-cove-pine-pitch':   { label: 'Pitch pine',          world:  72, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
+    'bay-cove-cedar-red':    { label: 'Red cedar',           world:  42, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     // THE SHRUB LAYER UNDER THOSE THREE — same plane and the same reasoning, one band lower.
     // The whole set sits BELOW the cedar's 42 on purpose: a shrub the size of a tree makes the
     // headland one undifferentiated size. Size cannot separate them from each other, though —
@@ -1137,9 +1147,9 @@ const PROP_KINDS = {
     // The two hydrangeas are one species in two soils and are meant to be planted ALTERNATELY;
     // they are also the only cultivated plants here, so they belong by the houses and the
     // harbour, in ones and short rows, never scattered over a wild bluff.
-    'bay-cove-oak-scrub':    { label: 'Scrub oak',           world:  36, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-bayberry-northern': { label: 'Northern bayberry', world: 28, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'bay-cove-plum-beach':   { label: 'Beach plum',          world:  22, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'bay-cove-oak-scrub':    { label: 'Scrub oak',           world:  36, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
+    'bay-cove-bayberry-northern': { label: 'Northern bayberry', world: 28, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
+    'bay-cove-plum-beach':   { label: 'Beach plum',          world:  22, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     'bay-cove-hydrangea-blue': { label: 'Blue hydrangea',    world:  18, plane: 'surface', contact: 'none', motion: 'fixed' },
     'bay-cove-hydrangea-pink': { label: 'Pink hydrangea',    world:  18, plane: 'surface', contact: 'none', motion: 'fixed' },
 
@@ -1355,8 +1365,8 @@ const PROP_KINDS = {
     // pandanus's measured 3.9% interior alpha holes — the best of any tree in the game —
     // is now a free bonus rather than a requirement. Anyone re-planing any of these to
     // `canopy` has to restore the openings requirement first.
-    'ocean-palm-coconut':    { label: 'Coconut palm',   world:  70, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'ocean-pandanus':        { label: 'Pandanus',       world:  52, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'ocean-palm-coconut':    { label: 'Coconut palm',   world:  70, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
+    'ocean-pandanus':        { label: 'Pandanus',       world:  52, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     'ocean-almond-tropical': { label: 'Tropical almond', world: 110, plane: 'surface', contact: 'none', motion: 'fixed' },
     // ── AND ITS THREE UNDERBRUSH PLANTS ─────────────────────────────────────
     // Delivered and registered 2026-08-14. What goes UNDER the trees: the default coastal
@@ -1772,7 +1782,7 @@ const PROP_KINDS = {
     // decision, and dress shores with the small (contact none) in any quantity.
     'redrock-boulder-large':  { label: 'Sandstone boulder',        world: 48, plane: 'surface', contact: 'hard', contactR: 20, motion: 'fixed' },
     'redrock-boulder-small':  { label: 'Sandstone boulder, small', world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'ocean-naupaka':         { label: 'Beach naupaka',     world: 40, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'ocean-naupaka':         { label: 'Beach naupaka',     world: 40, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     'ocean-morning-glory':   { label: 'Beach morning glory', world: 30, plane: 'surface', contact: 'none', motion: 'fixed' },
     'ocean-grass-coastal':   { label: 'Coastal grass',     world: 20, plane: 'surface', contact: 'none', motion: 'fixed' },
     // The coral heads — the lagoon's teeth, and the venue card's promised hazard. All six
@@ -2477,14 +2487,14 @@ const PROP_KINDS = {
     // round 3 as layered feathery pads in tiers — a sheltered-grove crown, roughly round in plan;
     // the windswept lean the slot asked for did not survive generation and was let go on the
     // owner's call. Surface plane, no contact: headland scenery the fleet cannot reach.
-    'otter-cypress-monterey':  { label: 'Monterey cypress',    world: 128, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-cypress-monterey':  { label: 'Monterey cypress',    world: 128, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     // Coast live oak: the broadleaf of the three, on the gold meadow above the cliffs; 96u = 10.4 m,
     // honest for an exposed-coast specimen. Shipped round 4 (2026-09-13) as a dome of eleven smooth
     // leaf-grained billows, the biggest off centre — the cove-oak-black family, against the pine's tufts.
     'otter-oak-live':          { label: 'Coast live oak',      world:  96, plane: 'surface', contact: 'none', motion: 'fixed' },
     // Monterey pine: the tallest tree here and the smallest footprint from above — 72u = 7.8 m of crown.
     // Shipped round 3 as packed bristly needle tufts, the cove-pine-pitch family.
-    'otter-pine-monterey':     { label: 'Monterey pine',       world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-pine-monterey':     { label: 'Monterey pine',       world:  72, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     // The scrub: coyote brush is the commonest plant on the coast (28u = 3 m, honest), coastal
     // sage the smallest and palest (20u, 1.5x a real plant, declared in the manifest). Both surface
     // scenery, contact none, like every plant here.
@@ -2573,10 +2583,10 @@ const PROP_KINDS = {
     // sizes they were a few pixels, and the yellow of the lizard tail did not carry at all.
     'otter-bloom-lizardtail':   { label: 'Lizard tail',         world:  40, plane: 'surface', contact: 'none', motion: 'fixed' },
     'otter-thicket-coastal':    { label: 'Coastal thicket',     world:  48, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'otter-cypress-ghost':      { label: 'Ghost cypress',       world:  90, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-cypress-ghost':      { label: 'Ghost cypress',       world:  90, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     'otter-iceplant-red':       { label: 'Ice plant (red)',     world:  36, plane: 'surface', contact: 'none', motion: 'fixed' },
     'otter-dunegrass':          { label: 'Dune grass',          world:  34, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'otter-cypress-grove':      { label: 'Cypress grove',       world: 220, plane: 'surface', contact: 'none', motion: 'fixed' },
+    'otter-cypress-grove':      { label: 'Cypress grove',       world: 220, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     'otter-driftwood-log':      { label: 'Driftwood log',       world:  54, plane: 'surface', contact: 'none', motion: 'fixed' },
     'otter-kelp-wrack':         { label: 'Kelp wrack',          world:  40, plane: 'surface', contact: 'none', motion: 'fixed' },
     'otter-lighthouse-pinos':   { label: 'Point Pinos light',   world:  96, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed', chartBuilding: '#5F5750' },
