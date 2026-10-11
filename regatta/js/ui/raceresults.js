@@ -90,7 +90,7 @@ function _raceMapBuild(L) {
     if (_raceMap && _raceMap.cv === cv && _raceMap.key === L.key && _raceMap.px === px) { _raceMap.L = L; return; }
     const B = Math.min(px * 3, 3000);
     const base = document.createElement('canvas'); base.width = B; base.height = B;
-    drawMinimap.target = { ctx: base.getContext('2d') };
+    drawMinimap.target = { ctx: base.getContext('2d'), noWeather: true };   // no puffs, lulls or squalls: one frozen instant
     try { drawMinimap(); } finally { drawMinimap.target = null; }
     const P = drawMinimap.last; if (!P) return;
     cv.width = px; cv.height = px;

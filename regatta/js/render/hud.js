@@ -1827,8 +1827,10 @@ function drawMinimap() {
 
     // The venue page's map shows the MEDIAN day (Wes, Oct 4 2026): no puffs, lulls or squalls —
     // they are instants, and a preview that froze one would plan the race round weather that
-    // will not be there.
-    const medianOnly = !!(drawMinimap.target && drawMinimap.target.terrainOnly);
+    // will not be there. The post-race replay map leaves them off too (`noWeather`, Wes Oct 10
+    // 2026): its chart is baked once at the finish, so it would show that one instant's cells
+    // under a whole race of tracks.
+    const medianOnly = !!(drawMinimap.target && (drawMinimap.target.terrainOnly || drawMinimap.target.noWeather));
     const _gc = (typeof activeGustColors !== 'undefined' && activeGustColors) || null;
     drawMinimap._key = null;
     if (_gc && !medianOnly) {
