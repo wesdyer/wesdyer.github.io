@@ -2,6 +2,41 @@
 // planFloeTrajectory, applyAvoidance. Methods installed on
 // BotController.prototype (class declared in ai/bot.js, which must load first).
 // Extracted verbatim from script.js (refactor 2026-08-24).
+// ── SHIPS ARE ON RAILS (PT-005, Oct 10 2026) ─────────────────────────────────────────────────
+// A vessel's whole passage is authored (js/traffic.js): where it is at any race time is a lookup,
+// not a forecast. Wes: "we know EXACTLY where each vessel will be at each point in time. It's okay
+// if AI uses this knowledge." Measured before (eval/rl/_pt005_census.js, 6 races): 55 boat-s a race
+// against the ships, 48 of them cargo ships, the cost in a few 3-8 s grinds — and the straight-line
+// forecast the planner used was RIGHT in every long one (off 4-54 u). The ship was never a surprise;
+// two decisions were wrong (eval/rl/_pt005_trace.js): a boat crossing the ship's track raced the bow
+// from abeam on a 4 s horizon and turned in before it had the lead, and once touching, every fan
+// candidate collided, the tie went to the heading INTO the hull, and she was ground at 0 kt while the
+// whole ship slid past. shipPoseAt answers the first; the peel (applyAvoidance) the second.
+const _shipPoseCache = new Map();
+function shipPoseAt(v, dt) {
+    if (!window.Traffic || !v.path) return null;
+    const clock = trafficClock() + dt;
+    const key = v.id + '@' + Math.round(clock * 60);
+    if (_shipPoseCache.has(key)) return _shipPoseCache.get(key);
+    if (_shipPoseCache.size > 4000) _shipPoseCache.clear();
+    const at = Traffic.localTime(v.doc, v.path, clock);
+    let pose = null;
+    if (at) { const q = v.path.at(at.t); pose = { x: q.x, y: q.y, h: at.reverse ? q.heading + Math.PI : q.heading }; }
+    _shipPoseCache.set(key, pose);
+    return pose;
+}
+// Distance from a point to the ship's capsule (spine + beam radius, exactly what checkTrafficCollisions
+// collides against) at a pose, minus the beam radius: <= 0 is inside the hull. Also the point's place in
+// the ship's frame: `along` (+ toward the bow) and `lat` (+ to starboard).
+function shipClearance(v, pose, x, y) {
+    const r = v.hullBeam * 0.5, half = Math.max(1, v.hullLen * 0.5 - r);
+    const fx = Math.sin(pose.h), fy = -Math.cos(pose.h);
+    const dx = x - pose.x, dy = y - pose.y;
+    const along = dx * fx + dy * fy, lat = dx * -fy + dy * fx;
+    const t = Math.max(-half, Math.min(half, along));
+    return { d: Math.hypot(along - t, lat) - r, along, lat, fx, fy };
+}
+
 Object.assign(BotController.prototype, {
     updateRiskAssessment(dt) {
         // Decrement timer
@@ -271,16 +306,116 @@ Object.assign(BotController.prototype, {
      */
 });
 Object.assign(BotController.prototype, {
+    // CROSS AHEAD OR GO ASTERN (PT-005 A). The fan below looks 4 s ahead, and a boat whose course
+    // crosses a ship's track decided from that window alone: she ran up beside the bow, sailing parallel
+    // at ~2.5 kt over a 5 kt ship, postponed the cross over and over, then turned in before she had the
+    // lead and the bow took her (Grizzle, Skerry). A ship's whole passage is known (shipPoseAt), so the
+    // question is answered far enough out to act on: sailing her intended heading for DODGE_T seconds,
+    // does she ever come within DODGE_M of a hull — at its TRUE position at that time? If not, nothing
+    // changes. If so, the nearest sailable heading that stays clear the whole way (off either side, the
+    // side kept once chosen so she does not dither), which is crossing ahead when she really is ahead and
+    // passing astern when she is not — the seamanlike rule, never cross a ship's bow unless clearly able.
+    // Clear of everything nowhere: the heading whose conflict comes LATEST. Land and other boats remain
+    // the fan's business; it runs next, on the heading this hands it.
+    _shipDodge(boat, desiredHeading) {
+        const DODGE_T = 20, DODGE_DT = 0.5, DODGE_M = 78;    // seconds ahead; step; hull radius 38 + 40 u margin
+        const v0 = boat.speed * 60;
+        const ships = [];
+        for (const v of state.traffic) {
+            if (!v.active) continue;
+            const reach = (Math.max(v0, 120) + v.speed) * DODGE_T + v.hullLen * 0.5 + DODGE_M;
+            if ((v.x - boat.x) ** 2 + (v.y - boat.y) ** 2 < reach * reach) ships.push(v);
+        }
+        if (!ships.length) { this._dodgeSide = 0; return null; }
+        const w = getWindAt(boat.x, boat.y), spin = !!boat.spinnaker;
+        const pol = (h) => { const a = Math.abs(normalizeAngle(h - w.direction)); return a < 0.6 ? 0 : getTargetSpeed(a, spin, w.speed) * 15; };
+        // first conflict time along heading h (Infinity = clear for the whole horizon)
+        const conflict = (h) => {
+            const vb = 0.5 * v0 + 0.5 * pol(h);
+            const sx = Math.sin(h) * vb, sy = -Math.cos(h) * vb;
+            for (let t = DODGE_DT; t <= DODGE_T + 1e-6; t += DODGE_DT) {
+                const bx = boat.x + sx * t, by = boat.y + sy * t;
+                for (const v of ships) {
+                    const pose = shipPoseAt(v, t); if (!pose) continue;
+                    if (shipClearance(v, pose, bx, by).d < DODGE_M) return t;
+                }
+            }
+            return Infinity;
+        };
+        if (conflict(desiredHeading) === Infinity) { this._dodgeSide = 0; return null; }
+        const OFFS = [0.15, 0.3, 0.45, 0.6, 0.8, 1.0, 1.25, 1.5];
+        let best = null, bestT = -1;
+        for (const o of OFFS) {
+            // the side already chosen first, so a tie never flips her
+            const sides = this._dodgeSide ? [this._dodgeSide, -this._dodgeSide] : [1, -1];
+            for (const sg of sides) {
+                const h = normalizeAngle(desiredHeading + sg * o);
+                if (pol(h) <= 0) continue;
+                const tc = conflict(h);
+                if (tc === Infinity) { this._dodgeSide = sg; return h; }
+                if (tc > bestT) { bestT = tc; best = h; }
+            }
+        }
+        return best;
+    },
+
+    _shipPeel(boat) {
+        let hit = null;
+        for (const v of state.traffic) {
+            if (!v.active) continue;
+            const c = shipClearance(v, { x: v.x, y: v.y, h: v.heading }, boat.x, boat.y);
+            if (c.d < 34) { hit = { v, c }; break; }          // HULL_R ~28 + a few units: touching
+        }
+        if (hit) this._peelHold = { id: hit.v.id, side: hit.c.lat >= 0 ? 1 : -1, until: state.race.timer + 1.5 };
+        const H = this._peelHold;
+        if (!H || state.race.timer > H.until) return null;
+        const v = state.traffic.find(s => s.id === H.id);
+        if (!v || !v.active) { this._peelHold = null; return null; }
+        // out to her side, square to the track
+        const fx = Math.sin(v.heading), fy = -Math.cos(v.heading);
+        const ox = -fy * H.side, oy = fx * H.side;
+        const w = getWindAt(boat.x, boat.y), spin = !!boat.spinnaker;
+        let best = null, bestS = -Infinity;
+        for (let k = 0; k < 36; k++) {
+            const h = -Math.PI + k * Math.PI / 18;
+            const twa = Math.abs(normalizeAngle(h - w.direction));
+            if (twa < 0.6) continue;                          // in irons: not a way out
+            const sp = getTargetSpeed(twa, spin, w.speed);
+            const out = Math.sin(h) * ox - Math.cos(h) * oy;
+            if (out <= 0.2) continue;
+            const s = out * sp;
+            if (s > bestS) { bestS = s; best = h; }
+        }
+        return best;
+    },
+
     applyAvoidance(desiredHeading, speedRequest) {
-        // If stuck (Wiggle Mode), ignore avoidance to force breakout
         this.lastAvoidDeviation = 0;
         this.lastAvoidDeviationSigned = 0;
+        const boat = this.boat;
+        // THE PEEL (PT-005 B). Touching a ship, every candidate in the fan below collides and they all
+        // price the same, so the argmin kept the heading she came in on — into the hull — and the
+        // contact took her speed every frame until the whole ship had slid past (Grizzle 8 s, Skerry 9 s
+        // at 0-0.3 kt). Instead: sail OUT, square off the ship's track to whichever side she is on (not
+        // straight off the nearest point: in front of the bow that would race the ship down its own
+        // path), on the best-speed sailable heading. Holds 1.5 s past the contact so she clears it.
+        // FIRST, ahead of the wiggle and the escape: a boat ground against a ship reads as stuck to both,
+        // and both steer by the LAND (the wiggle's breakout, the escape's clearance field) with no ship in
+        // it — measured, the wiggle swung Grizzle straight back into the hull she had just turned off.
+        if (state.traffic && state.traffic.length && state.race.status === 'racing') {
+            const peel = this._shipPeel(boat);
+            if (peel != null) { this.lastAvoidDeviation = Math.abs(normalizeAngle(peel - desiredHeading)); return peel; }
+        }
+        // If stuck (Wiggle Mode), ignore avoidance to force breakout
         if (this.wiggleActive) return desiredHeading;
         // ESCAPE retraces the boat's own wake (sailable by construction); the
         // 150u-entry / 120u-abort rival guards replace avoidance while it runs.
         if (this.escActive) return desiredHeading;
-
-        const boat = this.boat;
+        // CROSS AHEAD OR GO ASTERN (PT-005 A), decided early off the ship's schedule — see _shipDodge.
+        if (state.traffic && state.traffic.length && state.race.status === 'racing') {
+            const dodge = this._shipDodge(boat, desiredHeading);
+            if (dodge != null) desiredHeading = dodge;
+        }
         // PROBE HOOK (deflection push, 2026-08-19): per-candidate cost ledger
         // behind `window.__AVDBG` — same pattern as __AV/__CHAR, byte-inert
         // when unset. Consumers: eval/rl/_deflect_why.js, _role_vs_rules.js.
@@ -1630,9 +1765,7 @@ Object.assign(BotController.prototype, {
                 const TLK = lookaheadFrames / 60;
                 for (const v of state.traffic) {
                     if (!v.active) continue;
-                    const rV = v.hullBeam * 0.5, halfV = Math.max(1, v.hullLen * 0.5 - rV);
-                    const fxV = Math.sin(v.heading), fyV = -Math.cos(v.heading);
-                    const svx = fxV * v.speed, svy = fyV * v.speed;
+                    const rV = v.hullBeam * 0.5;
                     // broad phase: could these two possibly meet inside the lookahead?
                     const dx0 = v.x - boat.x, dy0 = v.y - boat.y;
                     const closeMax = (speed + Math.abs(v.speed)) * TLK + v.hullLen * 0.5 + 120;
@@ -1642,12 +1775,11 @@ Object.assign(BotController.prototype, {
                         const tS = TLK * iS / NS;
                         const bx = boat.x + (futureX - boat.x) * (iS / NS);
                         const by = boat.y + (futureY - boat.y) * (iS / NS);
-                        const vx0 = v.x + svx * tS, vy0 = v.y + svy * tS;
-                        const ax2 = vx0 - fxV * halfV, ay2 = vy0 - fyV * halfV;
-                        const wxV = bx - ax2, wyV = by - ay2;
-                        const tt = Math.max(0, Math.min(1, (wxV * fxV + wyV * fyV) / (2 * halfV)));
-                        const cxV = ax2 + fxV * tt * 2 * halfV, cyV = ay2 + fyV * tt * 2 * halfV;
-                        const dV = Math.hypot(bx - cxV, by - cyV);
+                        // ON ITS RAILS (PT-005 C): where the ship really is at tS — the straight line
+                        // at today's heading was 370-530 u wrong at 4 s for a motorboat on a bend.
+                        const pS = shipPoseAt(v, tS);
+                        if (!pS) continue;                       // off the water by then
+                        const dV = shipClearance(v, pS, bx, by).d + rV;
                         // HULL_R for the boat, the beam radius for the ship, and the same
                         // ~25u margin the mark test uses.
                         const hardV = rV + 25 + 38;

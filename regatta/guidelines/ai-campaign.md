@@ -18073,3 +18073,12 @@ PRE = pnD* on treePIN4 (spA* for river), POST = gsA* on treeGUST: same js, nine 
 | otter | 201.4 (6) [200.8] | 200/201.3/181 | 202/203.4/181 | 0.993 → **1.003 ✅** | 0.0 | 0 | 0 | 0.49/0.61/0.00/0.02/0.19 | 240/240 | 0/8 vs pnDot9400 |
 
 - Within noise on eight venues (medians -7 to +4 s). **Redrock is the outlier: median 289 -> 313, mean 292.3 -> 304.1, land contacts 7.89 -> 9.34 per boat.** The bigger corridor cells (320 m, 65% gusts) shift the wind where the walls are close; worth a look if Redrock bots read slow in play.
+
+## PT-005 — ships on rails (`eval/rl/_pt5_close_table.js`, 2026-10-11)
+Census (`_pt005_census.js`, ten-bot bay, contact episodes with traffic): 6 races @9400 55 boat-s/race (cargo ships 48), the straight-line forecast RIGHT in every long episode; the failures were decisions (`_pt005_trace.js`): racing the bow from abeam on the 4 s fan, and once touching every candidate collided, the tie kept the heading into the hull, and the wiggle/escape (land-only) steered back in. Fixes in avoidance.js: A `_shipDodge` (20 s look along the exact rails, nearest sailable clear heading, side kept), B `_shipPeel` (first in applyAvoidance: out square to the track, 1.5 s hold), C exact poses (`shipPoseAt`) in the 4 s fan. Held-out census 10 @9500: 86 -> 7 boat-s, longest 7.4 -> 1.35 s. Bench 2x20 @9400/9600:
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| bay | 229.6 (12) [239] | 267/266.4/223 | 268/266.7/228 | 1.163 → **1.167** | 0.0 | 0 | 0 | 0.21/0.51/0.00/0.12/0.22 | 400/400 | 0/20 vs pt5Pbay9400 |
+
+- Pace neutral (med 267 -> 268, mean 266.4 -> 266.7): the ~1 s/boat of contact is spent on dodging instead. Land contacts 0.12 -> 0.21/boat. Accepted by Wes as a behaviour fix; bay goldens regenerated (NOTE: `run_traces --venue X --update` rewrites traces.json with ONLY that venue: merge it back).
