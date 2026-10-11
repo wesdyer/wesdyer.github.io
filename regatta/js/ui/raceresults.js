@@ -360,12 +360,18 @@ function _raceLegs(player) {
 const RC_VIEWS = [['speed', 'Speed'], ['vmc', 'VMC'], ['gap', 'Gap']];
 const RC_KT = 15;   // world units a second per knot
 let _rc = null;     // { L, key, view, series, ... }
+// A finished boat's progress is logged as getBoatProgress reports it — course length + 1e6 − finish time,
+// so finished boats sort by time. The charts want distance: take the bonus back off (that sample and any
+// after it are at the finish line).
+const _rcFinTime = (B) => { const rs = B.boat && B.boat.raceState; return rs && rs.finished && !rs.resultStatus ? rs.finishTime : null; };
+const _rcProg = (B, v) => { if (v == null || v < 5e5) return v; const ft = _rcFinTime(B); return ft != null ? v - 1e6 + ft : null; };
 function _rcSeries(L) {
     const B = L.boats[L.me]; if (!B || B.s.length < 3) return null;
-    const dt = L.dt, b0 = _rrB0(L, B), trial = !!L.instr;
+    const dt = L.dt, b0 = _rrB0(L, B), trial = !!L.instr, myFin = _rcFinTime(B);
     const pts = [];
     for (let i = 0; i < B.s.length; i++) {
         const t = b0 + i * dt; if (t < 0) continue;
+        if (myFin != null && t > myFin + dt) break;          // the race ends at your finish
         const q = B.s[i], ins = trial ? L.instr[i] : null;
         const sog = (trial ? ins[7] : q[6]) / 10, stw = (trial ? ins[8] : q[7]) / 10, tws = (trial ? ins[9] : q[8]) / 10, twa = trial ? ins[10] : q[9];
         let tgt = null;
@@ -373,7 +379,7 @@ function _rcSeries(L) {
             const a = Math.abs(twa) * Math.PI / 180;
             tgt = a < 0.5236 ? getTargetSpeed(0.5236, !!q[5], tws) * (a / 0.5236) : getTargetSpeed(a, !!q[5], tws);
         }
-        pts.push({ i, t, leg: q[3] || 0, prog: q[4], sog, stw: isNaN(stw) ? null : stw, tws: isNaN(tws) ? null : tws, tgt });
+        pts.push({ i, t, leg: q[3] || 0, prog: _rcProg(B, q[4]), sog, stw: isNaN(stw) ? null : stw, tws: isNaN(tws) ? null : tws, tgt });
     }
     if (pts.length < 3) return null;
     // VMC: the progress rate over a 2 s window (progress is in world units), in knots
@@ -429,7 +435,14 @@ function _rcRef(L) {
     }
     if (!Bx || Bx.s.length < 3) return null;
     const b0 = _rrB0(L, Bx), out = []; let mx = -Infinity;
-    Bx.s.forEach((q, i) => { const t = b0 + i * L.dt; if (t < 0 || q[4] == null) return; mx = Math.max(mx, q[4]); out.push({ t, maxProg: mx }); });
+    Bx.s.forEach((q, i) => { const t = b0 + i * L.dt, pr = _rcProg(Bx, q[4]); if (t < 0 || pr == null) return; mx = Math.max(mx, pr); out.push({ t, maxProg: mx }); });
+    // Its log can stop short of its finish (the fast-forward after yours does not sample): end the line
+    // at the finish itself, at the course length — your own finishing progress — so the gap runs to the end.
+    const ft = _rcFinTime(Bx), me = L.boats[L.me];
+    if (ft != null && out.length && ft > out[out.length - 1].t && me) {
+        const myLast = me.s.length ? _rcProg(me, me.s[me.s.length - 1][4]) : null, myFt = _rcFinTime(me);
+        if (myLast != null && myFt != null && myLast > mx) out.push({ t: ft, maxProg: myLast });
+    }
     return out.length > 2 ? Object.assign(out, { name }) : null;
 }
 function _rcBuild(L) {
