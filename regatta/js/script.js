@@ -808,7 +808,7 @@ function draw() {
         // school's coach card gets its chip drawn AT the mark, over the panel.
         if (!window._occCache || Math.abs(state.time - window._occCache.t) > 0.25) {
             const rects = [];
-            for (const id of ['leaderboard', 'hud-rose', 'hud-minimap-wrap', 'school-card']) {
+            for (const id of ['leaderboard', 'hud-rose', 'hud-tiles', 'hud-minimap-wrap', 'school-card']) {
                 const el = document.getElementById(id);
                 if (!el || el.classList.contains('hidden')) continue;
                 const cs = getComputedStyle(el);

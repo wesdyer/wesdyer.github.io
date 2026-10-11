@@ -2834,6 +2834,7 @@ function boatInstrumentData(player, prev) {
     const _dmc = prev ? (prev.dmcNA ? null : prev.dmc) : dmcRate(player);
     return {
         sog, vmg, dmc: (_dmc == null ? 0 : _dmc), dmcNA: _dmc == null, tws: w.speed, twa, twsCol, sogCol, badAir,
+        penalty: !!player.raceState.penalty, pressure: badAir ? 0 : eff > refHi ? 1 : eff < refLo ? -1 : 0,
         // In the no-sail zone: inside ~38° of the wind, where the polar runs out. Both faces
         // paint the angle red so the number itself says why the boat is stopping.
         noGo: twa < 38,
@@ -2899,21 +2900,54 @@ function updateRoseHud(player, localWind) {
     // style.color rather than swapping Tailwind classes: the colour is already decided as a
     // hex by boatInstrumentData, and a class list that has to be scrubbed before every write
     // is how the old block grew a six-name remove() call.
-    if (UI.speed) { UI.speed.textContent = d.sog.toFixed(1); UI.speed.style.color = d.sogCol; }
+    if (UI.speed) {
+        UI.speed.textContent = d.sog.toFixed(1); UI.speed.style.color = '';           // a fried HUD's pink comes off
+    }
     if (UI.vmg) UI.vmg.textContent = d.dmcNA ? '\u2014' : d.dmc.toFixed(1);
+    // THE STATUS WORDS (PT-056): every colour now comes with the word for what it means, and each word means
+    // ONE thing — dirty air is not "light wind" any more. The number stays white; the word and the tile's
+    // underline carry the colour. Gust and lull speak the minimap's language (gold more, lavender less).
+    // SPEED: planing and surfing both light the whole reading — turquoise planing, amber surfing — and when the
+    // boat is doing both the number keeps planing's turquoise (it is the hull's speed regime) and the line names
+    // both, each word in its own colour. A penalty outranks them all.
+    {
+        const sp = document.getElementById('hud-speed-st'), cell = UI.speed && UI.speed.closest('.hud-dial-cell');
+        const key = d.penalty ? 'pen' : d.planing && d.surfing ? 'both' : d.surfing ? 'surf' : d.planing ? 'plane' : '';
+        if (sp && sp.dataset.sig !== key) {
+            sp.dataset.sig = key;
+            const w = (t, c) => `<span style="color:${c};">${t}</span>`;
+            sp.innerHTML = key === 'pen' ? w('Penalty', '#f87171') : key === 'both' ? w('Planing', '#67e8f9') + w(' \u00b7 ', '#64748b') + w('Surfing', '#fcd34d')
+                : key === 'surf' ? w('Surfing', '#fcd34d') : key === 'plane' ? w('Planing', '#67e8f9') : '';
+            if (cell) { cell.classList.toggle('planing', key === 'plane' || key === 'both'); cell.classList.toggle('surfing', key === 'surf'); }
+        }
+    }
+    tileStatus('hud-vmg-st', !d.dmcNA && d.dmc < -0.2 ? ['Away', '#f87171'] : null);
+    // the tiles' quiet defaults (dim, no rim) keep each one three balanced rows: the wind as usual, and the
+    // point of sail — the TWA tile names where the boat is pointing as well as when it is in the red zone
+    const DIM = '#7b8ba4';
+    tileStatus('hud-wind-st', d.badAir ? ['Dirty air \u2193', '#fb923c'] : d.pressure > 0 ? ['Gust', '#ffc448'] : d.pressure < 0 ? ['Lull', '#c4a0ff'] : ['Steady', DIM, true]);
+    tileStatus('hud-twa-st', d.noGo ? ['No-go', '#f87171'] : d.twa < 70 ? ['Upwind', DIM, true] : d.twa < 120 ? ['Reach', DIM, true] : ['Downwind', DIM, true]);
     if (UI.windSpeed) {
-        UI.windSpeed.textContent = d.tws.toFixed(1) + (d.badAir ? ' \u2193' : ''); UI.windSpeed.style.color = d.twsCol;
+        UI.windSpeed.textContent = d.tws.toFixed(1); UI.windSpeed.style.color = '';
         // The wind icon beside the number takes the comet ramp's colour for this many knots
         // (streakColorFor, js/sim/wind.js), so the chip doubles as the legend for the streaks
         // on the water: the player sees "14.2" next to the same cream the comets are drawn
         // in, and learns the scale without a key. The NUMBER keeps its own colour — that one
         // is course-relative (more or less pressure than normal here) and says something else.
-        const ico = UI.windSpeed.previousElementSibling;
+        const ico = document.querySelector('#hud-tiles .hud-tile-ico');
         if (ico && typeof streakColorFor === 'function') { const c = streakColorFor(d.tws); ico.style.color = `rgb(${c[0]},${c[1]},${c[2]})`; }
     }
-    if (UI.windAngle) { UI.windAngle.textContent = `${d.twa}\u00b0`; UI.windAngle.style.color = d.noGo ? '#f87171' : ''; }
-    roseCue('hud-planing-label', 'absolute -top-4 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-cyan-400 hidden', 'PLANING', d.planing);
-    roseCue('hud-surfing-label', 'absolute -top-9 left-1/2 transform -translate-x-1/2 text-[10px] font-black tracking-widest text-amber-300 hidden', 'SURFING', d.surfing);
+    if (UI.windAngle) { UI.windAngle.textContent = `${d.twa}\u00b0`; UI.windAngle.style.color = ''; }
+}
+// One tile's status word, and its colour on the tile's rim — written only when it changes.
+function tileStatus(id, st) {
+    const el = document.getElementById(id); if (!el) return;
+    const sig = st ? st[0] + st[1] : '';
+    if (el.dataset.sig === sig) return; el.dataset.sig = sig;
+    el.textContent = st ? st[0] : ''; el.style.color = st ? st[1] : '';
+    const tile = el.parentElement; if (!tile.classList.contains('hud-tile')) return;   // the dial's words carry no rim
+    const lit = !!st && !st[2];                                                         // a quiet default lights no rim
+    tile.classList.toggle('on', lit); tile.style.setProperty('--tile-c', lit ? st[1] : '');
 }
 
 // ── THE TIDE READOUT (Spoonbill Flats) ──────────────────────────────────────
@@ -3008,6 +3042,7 @@ function hudShowsRose() { const m = settings.hudMode || 'boat'; return m === 'ro
 function applyHudMode() {
     const m = settings.hudMode || 'boat';
     if (UI.hudRose) UI.hudRose.classList.toggle('hidden', !hudShowsRose());
+    const tiles = document.getElementById('hud-tiles'); if (tiles) tiles.classList.toggle('hidden', !hudShowsRose());
     if (UI.minimapWrap) UI.minimapWrap.classList.toggle('mt-4', hudShowsRose());
 }
 
