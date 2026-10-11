@@ -141,6 +141,7 @@ const School = {
 
     exit(nextVenue) {
         if (!this.active) return;
+        if (this._introEl) { this._introEl.remove(); this._introEl = null; }   // leaving with the card intro up
         const sv = this._saved || {};
         this.active = false;
         this.unit = 0;
@@ -1990,7 +1991,17 @@ const School = {
             #school-card .school-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.22); }
             #school-card .school-dot.on { background:${this.GREEN_HI}; }
             #school-card .school-pip { width:14px; height:14px; border-radius:50%; border:2px solid rgba(255,255,255,0.3); box-sizing:border-box; }
-            #school-card .school-pip.on { border:0; background:${this.ORANGE}; box-shadow:0 0 7px rgba(245,133,31,0.6); }`;
+            #school-card .school-pip.on { border:0; background:${this.ORANGE}; box-shadow:0 0 7px rgba(245,133,31,0.6); }
+            /* A NEW INSTRUCTION IS SEEN (PT-105): the card glows orange and bumps once, so a change draws the eye */
+            @keyframes school-card-pulse {
+                0%   { transform:translateX(-50%) scale(1);    box-shadow:0 14px 40px rgba(4,16,28,0.45), 0 0 0 0 rgba(245,133,31,0); }
+                18%  { transform:translateX(-50%) scale(1.035); box-shadow:0 14px 40px rgba(4,16,28,0.45), 0 0 0 3px rgba(245,133,31,0.95), 0 0 34px 6px rgba(245,133,31,0.55); }
+                100% { transform:translateX(-50%) scale(1);    box-shadow:0 14px 40px rgba(4,16,28,0.45), 0 0 0 0 rgba(245,133,31,0); }
+            }
+            #school-card.pulse { animation:school-card-pulse 1.1s ease-out; }
+            @keyframes school-text-in { from { opacity:0.15; } to { opacity:1; } }
+            #school-card.pulse #school-card-text { animation:school-text-in 0.5s ease-out; }
+            @keyframes school-intro-bob { 0%,100% { transform:translateY(0); } 50% { transform:translateY(8px); } }`;
         document.head.appendChild(cardCss);
         // The reading gates: any key advances (never Esc — pause — nor F-keys nor a bare
         // modifier, and never a key-repeat), and the keystroke is CONSUMED in capture so
@@ -2101,6 +2112,10 @@ const School = {
         const esc = t => t.includes('<') ? t : t.replace(/&/g, '&amp;').replace(/</g, '&lt;');
         const line = this._lines.length ? this._lines[this._lines.length - 1] : (this._tip || '');
         d.text.innerHTML = esc(line);
+        if (line && line !== this._shownLine) {
+            this._shownLine = line;
+            d.card.classList.remove('pulse'); void d.card.offsetWidth; d.card.classList.add('pulse');
+        }
         const dep = this._deploy ? `<span style="color:rgb(64,245,200); font-weight:800;">${this._deploy.up ? 'Raising' : 'Lowering'} the spinnaker&hellip;</span>` : null;
         const sub = dep || ((this._lines.length && this._tip) ? `<span style="color:${this.ORANGE};">${esc(this._tip)}</span>` : (this._hint || ''));
         d.hint.innerHTML = sub;
@@ -2192,7 +2207,7 @@ const School = {
     // section is already built underneath (start(n) ran) and the sim is held until Next.
     // Screen A shows the pond, but section 1 runs on the open-water twin — so the pond is
     // built first, its chart captured, and then section 1 is built underneath the screen.
-    begin() { this.start(1); this.screen('A'); },
+    begin() { this._introShown = false; this.start(1); this.screen('A'); },
     screen(id) {
         this.ensureDom();
         const el = this._dom.screen;
@@ -2242,6 +2257,7 @@ const School = {
     },
     hideScreen() {
         if (this._dom) this._dom.screen.style.display = 'none';
+        const was = this._screenId;
         this._screenId = null;
         // The click (or Enter) that pressed Begin must not ALSO advance the first reading
         // gate: the button's handler unpauses before the same event reaches the gate's
@@ -2250,6 +2266,64 @@ const School = {
         clearInterval(this._screenTick); this._screenTick = null;
         if (this._simHeld) { this._simHeld = false; state.paused = false; }
         if (this.active) this.showFrame(true);
+        if (was === 'A' && this.active && !this._introShown) { this._introShown = true; this.showCardIntro(); }
+    },
+    // THE CARD, INTRODUCED (PT-105, Wes: "people don't often read these things ... the tutorial should
+    // begin with a quick little message that overlays the whole screen"). Once per visit to the School,
+    // right after Begin: the pond dims, the coach card stays lit in a spotlight, and one big line says what
+    // it is. Any key or a click goes on; the keystroke is consumed, so it does not also pass the first gate.
+    showCardIntro() {
+        this.ensureDom();
+        const card = this._dom.card;
+        let keep = null, keepHL;
+        const ov = document.createElement('div');
+        ov.id = 'school-intro';
+        ov.style.cssText = 'position:fixed; inset:0; z-index:61; pointer-events:auto; cursor:pointer;';
+        ov.innerHTML = `
+            <div id="school-intro-hole" style="position:fixed; border-radius:18px; box-shadow:0 0 0 200vmax rgba(3,9,18,0.78), 0 0 0 3px rgba(245,133,31,0.95), 0 0 40px 8px rgba(245,133,31,0.45); pointer-events:none; transition:all .2s;"></div>
+            <div id="school-intro-msg" style="position:fixed; left:50%; transform:translateX(-50%); width:min(90vw,760px); text-align:center; color:#fff; pointer-events:none;">
+                <div class="t-display uppercase" style="font-size:56px; line-height:1;">Read this card.</div>
+                <div style="font-size:22px; line-height:1.4; color:#dbe5f3; margin-top:12px;">It tells you what to do next.</div>
+                <div style="margin-top:14px; font-size:34px; color:#F5C518; animation:school-intro-bob 1.2s ease-in-out infinite;">&#8595;</div>
+            </div>`;
+        document.body.appendChild(ov);
+        const place = () => {
+            const hole = ov.querySelector('#school-intro-hole'), msg = ov.querySelector('#school-intro-msg');
+            const r = card.getBoundingClientRect();
+            if (!r.width) { hole.style.display = 'none'; msg.style.bottom = '120px'; return; }
+            hole.style.display = ''; hole.style.left = (r.left - 10) + 'px'; hole.style.top = (r.top - 10) + 'px';
+            hole.style.width = (r.width + 20) + 'px'; hole.style.height = (r.height + 20) + 'px';
+            msg.style.bottom = (window.innerHeight - r.top + 34) + 'px';
+        };
+        // two frames of the lesson first, so the pond is drawn behind the dimmer (the loop draws nothing while
+        // paused), then hold it; the card is lit for the intro with a line of its own, and the lesson's own
+        // line comes back on the dismissal
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            if (!this._introEl) return;
+            state.paused = true;
+            // the first step's ring on the boat waits for that step: it is the card being introduced, not the boat
+            keepHL = this.highlight; this.highlight = null;
+            this.updateRing();
+            if (typeof draw === 'function') draw();              // the world ring is on the canvas, which is held now
+            keep = this._lines.slice();
+            this._lines = ["Coach Paddle's instructions appear <em>here</em>."]; this._shownLine = this._lines[0]; this.renderLines();
+            place();
+        }));
+        window.addEventListener('resize', place);
+        const done = (e) => {
+            if (e && e.type === 'keydown' && (e.repeat || e.key === 'Escape' || /^F\d{1,2}$/.test(e.key) || ['Shift', 'Control', 'Alt', 'Meta'].includes(e.key))) return;
+            if (e) { e.preventDefault(); e.stopPropagation(); }
+            window.removeEventListener('keydown', done, true); window.removeEventListener('resize', place);
+            ov.remove(); this._introEl = null;
+            this._continueAt = performance.now();               // the same press must not pass the first reading gate
+            if (!this._simHeld) state.paused = false;
+            if (keep) this._lines = keep;
+            if (keepHL !== undefined && this.highlight == null) this.highlight = keepHL;
+            if (this._dom && this._dom.card) { this._shownLine = null; this.renderLines(); }   // and the card pulses as play begins
+        };
+        window.addEventListener('keydown', done, true);
+        ov.addEventListener('click', done);
+        this._introEl = ov;
     },
     // Next runs the section that is already built; the others rebuild and show a screen.
     screenContent(id) {
