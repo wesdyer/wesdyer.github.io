@@ -3441,9 +3441,26 @@ function mapLine(doc) {
 }
 // Entirely outside the line: every vertex at or past it (a 2 u tolerance, so a shape trimmed to the
 // line — sharing its edge — counts as outside, and one trimmed to the inside counts as inside).
+// ⚠️ THE HOLES TOO, AND A SHAPE THAT SURROUNDS THE LINE IS NOT OUTSIDE IT (Oct 11 2026). Stillwater's
+// forest floor (shape-2) is the land AROUND the lake — the lake is its hole — so its outer ring lies
+// far past the line while its land is 35% of the race area. Reading the outer ring alone made it
+// map-only: it lost its collision (a boat sailed 366-408 u onto the forest at two shores), its lee and
+// its routing, and drew after all race land, over the gneiss outcrops the editor shows on top of it.
+function _inRing(x, y, P) {
+    let c = false;
+    for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+        const [xi, yi] = P[i], [xj, yj] = P[j];
+        if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) c = !c;
+    }
+    return c;
+}
 function isMapOnly(doc, sh) {
     const L = mapLine(doc); if (!L || !sh || !Array.isArray(sh.outer) || sh.outer.length < 3) return false;
-    for (const p of sh.outer) if (Math.hypot(p[0] - L.cx, p[1] - L.cy) < L.radiusAt(p[0], p[1]) - 2) return false;
+    const inside = (p) => Math.hypot(p[0] - L.cx, p[1] - L.cy) < L.radiusAt(p[0], p[1]) - 2;
+    for (const p of sh.outer) if (inside(p)) return false;
+    for (const h of sh.holes || []) if (Array.isArray(h)) for (const p of h) if (inside(p)) return false;
+    // all of it past the line, but wrapped round it: land that contains the line's middle surrounds the race
+    if (_inRing(L.cx, L.cy, sh.outer) && !(sh.holes || []).some(h => Array.isArray(h) && h.length >= 3 && _inRing(L.cx, L.cy, h))) return false;
     return true;
 }
 // ── THE VIEW GUIDES (Oct 2026) ────────────────────────────────────────────────────────────────

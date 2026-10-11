@@ -18082,3 +18082,12 @@ Census (`_pt005_census.js`, ten-bot bay, contact episodes with traffic): 6 races
 | bay | 229.6 (12) [239] | 267/266.4/223 | 268/266.7/228 | 1.163 → **1.167** | 0.0 | 0 | 0 | 0.21/0.51/0.00/0.12/0.22 | 400/400 | 0/20 vs pt5Pbay9400 |
 
 - Pace neutral (med 267 -> 268, mean 266.4 -> 266.7): the ~1 s/boat of contact is spent on dodging instead. Land contacts 0.12 -> 0.21/boat. Accepted by Wes as a behaviour fix; bay goldens regenerated (NOTE: `run_traces --venue X --update` rewrites traces.json with ONLY that venue: merge it back).
+
+## STILLWATER SHORE RESTORED (`eval/rl/_lkfix_close_table.js`, 2026-10-11)
+Since af5ddb7 (Oct 7, the map line) `isMapOnly` read only a shape's outer ring, so lake shape-2 (the forest floor AROUND the lake; the lake is its hole; 35% of the race area is its land) compiled map-only: no collision (a boat sailed ~400 u onto the forest at 2 of 8 shores), lee or routing, and drawn over the gneiss. Fixed: holes must lie past the line too, and land surrounding the line's middle is never map-only. Only venue affected. Lake re-baked (with Wes's shape-2 reorder), re-frozen, goldens regenerated. PRE = lkPre* on HEAD js, POST = lkFix*:
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| lake | 201.2 (6) [194.8] | 216/216.6/163 | 221/221.7/171 | 1.074 → **1.098 ✅** | 0.0 | 0 | 0 | 0.24/0.84/0.00/0.07/0.23 | 400/400 | 0/20 vs lkPre6100 |
+
+- Bots ~5 s slower (med 216 -> 221): the shore's lee and the cut-throughs are back. Lake benches between Oct 7 and Oct 11 ran on the broken shore — not comparable with lkFix*.
