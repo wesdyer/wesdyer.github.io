@@ -69,6 +69,7 @@ function _rrShow(slotId, L) {
     if (!_raceMap) return;
     _raceMapLegend(L);
     _raceReplayBar();
+    _rcBuild(L);
     _raceMapDraw();
 }
 
@@ -155,6 +156,7 @@ function _raceMapDraw() {
     g.setTransform(1, 0, 0, 1, 0, 0);
     const zb = document.getElementById('res-race-zoom'); if (zb) zb.style.display = M.z > 1.01 ? '' : 'none';
     _raceReplaySync();
+    if (typeof _rcDraw === 'function') _rcDraw();   // the trace's playhead follows the replay
 }
 
 function _raceMapWire() {
@@ -341,4 +343,222 @@ function _raceLegs(player) {
         <div class="t-label t-label-sm" style="color:#dbeafe; padding:0 12px 10px;">Your race, leg by leg ${totals}</div>
         ${head}${rows.join('') || '<div style="padding:10px 12px; color:#66748c;">No legs sailed.</div>'}</div>`;
     host.querySelectorAll('.res-race-leg').forEach(r => r.addEventListener('click', () => _rrLegRow(+r.dataset.leg)));
+}
+
+// ── THE TRACE (Oct 2026) ────────────────────────────────────────────────────────────────────────────────
+// The space under the legs (Wes: "use the space to add a graph ... it could expand to fit the space"). What
+// sailing's own debrief tools draw (SailFrames, ChartedSails, Tactiqs): speed over time against the boat's
+// polar target, synced to the replay. Three views, each a different question:
+//   Speed   was I sailing the boat well?  your SOG, the polar target for the wind and angle you sailed
+//           (dashed), the wind faint behind; each leg's band says its average % of polar
+//   VMC     was I going the right way?    velocity made on course — the rate you closed on the finish along
+//           the course (the HUD's progress number) — with SOG faint behind: the gap is speed that did not count
+//   Gap     where did I win or lose time? seconds ahead of the ghost (a Time Trial) or the winner (a race),
+//           green ahead, red behind; offered only when there is someone to compare with
+// Leg bands in the chart's colours, the replay's moments as ticks, its clock as a playhead; hover for the
+// numbers (and your boat on the map), click to send the replay there.
+const RC_VIEWS = [['speed', 'Speed'], ['vmc', 'VMC'], ['gap', 'Gap']];
+const RC_KT = 15;   // world units a second per knot
+let _rc = null;     // { L, key, view, series, ... }
+function _rcSeries(L) {
+    const B = L.boats[L.me]; if (!B || B.s.length < 3) return null;
+    const dt = L.dt, b0 = _rrB0(L, B), trial = !!L.instr;
+    const pts = [];
+    for (let i = 0; i < B.s.length; i++) {
+        const t = b0 + i * dt; if (t < 0) continue;
+        const q = B.s[i], ins = trial ? L.instr[i] : null;
+        const sog = (trial ? ins[7] : q[6]) / 10, stw = (trial ? ins[8] : q[7]) / 10, tws = (trial ? ins[9] : q[8]) / 10, twa = trial ? ins[10] : q[9];
+        let tgt = null;
+        if (tws != null && twa != null && !isNaN(tws) && typeof getTargetSpeed === 'function') {
+            const a = Math.abs(twa) * Math.PI / 180;
+            tgt = a < 0.5236 ? getTargetSpeed(0.5236, !!q[5], tws) * (a / 0.5236) : getTargetSpeed(a, !!q[5], tws);
+        }
+        pts.push({ i, t, leg: q[3] || 0, prog: q[4], sog, stw: isNaN(stw) ? null : stw, tws: isNaN(tws) ? null : tws, tgt });
+    }
+    if (pts.length < 3) return null;
+    // VMC: the progress rate over a 2 s window (progress is in world units), in knots
+    const W = Math.max(1, Math.round(1 / dt));
+    for (let k = 0; k < pts.length; k++) {
+        const a = pts[Math.max(0, k - W)], b = pts[Math.min(pts.length - 1, k + W)];
+        pts[k].vmc = (b.prog != null && a.prog != null && b.t > a.t) ? (b.prog - a.prog) / (b.t - a.t) / RC_KT : null;
+    }
+    // light smoothing for the lines (the raw samples show every wave)
+    const sm = (key, r) => { const out = new Array(pts.length); for (let k = 0; k < pts.length; k++) { let s = 0, n = 0; for (let j = Math.max(0, k - r); j <= Math.min(pts.length - 1, k + r); j++) { const v = pts[j][key]; if (v != null) { s += v; n++; } } out[k] = n ? s / n : null; } out.forEach((v, k) => pts[k][key + 'S'] = v); };
+    // the target over ~2.5 s: the wind angle wobbles sample to sample and the polar is steep near the eye
+    sm('sog', W); sm('tgt', Math.round(W * 2.5)); sm('tws', W * 2); sm('vmc', W);
+    // GAP: when you reached a point on the course vs when the other boat did. Positive = ahead (seconds).
+    const ref = _rcRef(L);
+    if (ref) {
+        let j = 0;
+        for (const p of pts) {
+            if (p.prog == null) { p.gap = null; continue; }
+            while (j < ref.length - 1 && ref[j].maxProg < p.prog) j++;
+            const r = ref[j];
+            if (r.maxProg < p.prog) { p.gap = null; continue; }            // past where they ever got
+            const r0 = ref[Math.max(0, j - 1)];
+            const f = r.maxProg > r0.maxProg ? (p.prog - r0.maxProg) / (r.maxProg - r0.maxProg) : 0;
+            const tRef = r0.t + (r.t - r0.t) * Math.max(0, Math.min(1, f));
+            p.gap = tRef - p.t;
+        }
+        sm('gap', W);
+    }
+    // per leg: span, % polar (mean STW over mean target, where the target means anything), mean VMC, gap at its end
+    const legs = [];
+    for (const p of pts) {
+        let g = legs[legs.length - 1];
+        if (!g || g.leg !== p.leg) { g = { leg: p.leg, t0: p.t, t1: p.t, stw: 0, tgt: 0, vmc: 0, n: 0, nv: 0, gap: null }; legs.push(g); }
+        g.t1 = p.t;
+        if (p.tgt != null && p.tgt > 1 && p.stw != null) { g.stw += p.stw; g.tgt += p.tgt; g.n++; }
+        if (p.vmc != null) { g.vmc += p.vmc; g.nv++; }
+        if (p.gapS != null) g.gap = p.gapS;
+    }
+    for (const g of legs) { g.pct = g.n && g.tgt > 0 ? 100 * g.stw / g.tgt : null; g.vmcAvg = g.nv ? g.vmc / g.nv : null; }
+    return { pts, legs, ref: !!ref, refName: ref ? ref.name : null, tMax: pts[pts.length - 1].t };
+}
+// The boat you are compared with: the ghost, or in a race the winner (the first boat home; else the furthest on)
+function _rcRef(L) {
+    let Bx = null, name = null;
+    if (L.instr) { Bx = L.boats.find(b => b.ghost); name = 'the ghost'; }
+    else {
+        let best = null;
+        L.boats.forEach((B, i) => { if (i === L.me || !B.s.length) return;
+            const rs = B.boat && B.boat.raceState; const ft = rs && rs.finished && !rs.resultStatus ? rs.finishTime : Infinity;
+            const key = ft !== Infinity ? -ft : -1e9 + (B.s[B.s.length - 1][4] || 0) / 1e6;
+            if (!best || key > best.key) best = { key, B }; });
+        if (best) { Bx = best.B; name = Bx.boat && Bx.boat.name ? Bx.boat.name : 'the winner'; }
+    }
+    if (!Bx || Bx.s.length < 3) return null;
+    const b0 = _rrB0(L, Bx), out = []; let mx = -Infinity;
+    Bx.s.forEach((q, i) => { const t = b0 + i * L.dt; if (t < 0 || q[4] == null) return; mx = Math.max(mx, q[4]); out.push({ t, maxProg: mx }); });
+    return out.length > 2 ? Object.assign(out, { name }) : null;
+}
+function _rcBuild(L) {
+    const card = document.getElementById('res-chart-card'); if (!card) return;
+    const slot = document.getElementById(L.instr ? 'res-trial-chartslot' : 'res-race-chartslot');
+    if (slot && card.parentElement !== slot) slot.appendChild(card);
+    if (!_rc || _rc.key !== L.key) {
+        const series = _rcSeries(L);
+        _rc = { key: L.key, L, view: (_rc && _rc.view) || 'speed', series, hover: null };
+        if (!series || (_rc.view === 'gap' && !series.ref)) _rc.view = 'speed';
+    } else _rc.L = L;
+    card.style.display = _rc.series ? '' : 'none';
+    _rcTabs(); _rcWire(); _rcDraw();
+}
+function _rcTabs() {
+    const host = document.getElementById('rc-tabs'); if (!host || !_rc || !_rc.series) return;
+    const S = _rc.series, views = RC_VIEWS.filter(([k]) => k !== 'gap' || S.ref);
+    host.innerHTML = views.map(([k, n]) => { const on = _rc.view === k;
+        return `<span data-view="${k}" class="t-label" style="cursor:pointer; user-select:none; font-size:10px; letter-spacing:0.14em; padding:5px 11px; border-radius:999px; border:1px solid ${on ? 'transparent' : 'rgba(255,255,255,0.16)'}; background:${on ? '#2f6bff' : 'transparent'}; color:${on ? '#fff' : '#c4d2e6'};">${n}</span>`; }).join('');
+    host.querySelectorAll('[data-view]').forEach(s => s.addEventListener('click', () => { _rc.view = s.dataset.view; _rcTabs(); _rcDraw(); }));
+    const lg = document.getElementById('rc-legend'); if (!lg) return;
+    const sw = (c, dash, fill) => fill ? `<span style="display:inline-block; width:14px; height:9px; border-radius:2px; background:${c}; vertical-align:middle; margin-right:5px;"></span>`
+        : `<span style="display:inline-block; width:16px; height:0; border-top:2px ${dash ? 'dashed' : 'solid'} ${c}; vertical-align:middle; margin-right:5px;"></span>`;
+    lg.innerHTML = _rc.view === 'speed' ? `<span>${sw('#eef3fb')}You (SOG)</span><span>${sw('#f2c14e', true)}Polar target</span><span>${sw('rgba(96,165,250,0.35)', false, true)}Wind</span>`
+        : _rc.view === 'vmc' ? `<span>${sw('#5eead4')}VMC (on course)</span><span>${sw('rgba(238,243,251,0.4)')}SOG</span>`
+        : `<span>${sw('rgba(52,211,153,0.55)', false, true)}Ahead of ${S.refName}</span><span>${sw('rgba(248,113,113,0.55)', false, true)}Behind</span>`;
+}
+function _rcGeom(cv) {
+    const r = cv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1;
+    const W = Math.max(50, Math.round(r.width * dpr)), H = Math.max(50, Math.round(r.height * dpr));
+    if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+    const padL = 34 * dpr, padR = 10 * dpr, padT = 20 * dpr, padB = 30 * dpr;
+    return { W, H, dpr, x0: padL, x1: W - padR, y0: padT, y1: H - padB };
+}
+function _rcDraw() {
+    const cv = document.getElementById('res-chart'); if (!cv || !_rc || !_rc.series || cv.offsetParent === null) return;
+    const S = _rc.series, g = cv.getContext('2d'), G = _rcGeom(cv), d = G.dpr, view = _rc.view;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, G.W, G.H);
+    const tx = (t) => G.x0 + (G.x1 - G.x0) * Math.max(0, Math.min(1, t / Math.max(1, S.tMax)));
+    // the y range for this view
+    let lo = 0, hi = 1;
+    if (view === 'speed') { for (const p of S.pts) hi = Math.max(hi, p.sogS || 0, p.tgtS || 0, p.twsS || 0); hi = Math.ceil(hi * 1.08); }
+    else if (view === 'vmc') { for (const p of S.pts) { hi = Math.max(hi, p.sogS || 0, p.vmcS || 0); lo = Math.min(lo, p.vmcS || 0); } hi = Math.ceil(hi * 1.08); lo = Math.max(-4, Math.floor(lo * 1.08)); }
+    else { let m = 1; for (const p of S.pts) if (p.gapS != null) m = Math.max(m, Math.abs(p.gapS)); m = Math.ceil(m * 1.1); lo = -m; hi = m; }
+    const ty = (v) => G.y1 - (G.y1 - G.y0) * (v - lo) / Math.max(1e-6, hi - lo);
+    // leg bands, with their labels
+    g.font = `800 ${10 * d}px Inter, system-ui, sans-serif`; g.textBaseline = 'top';
+    S.legs.forEach((lg, k) => {
+        const xa = tx(lg.t0), xb = tx(k + 1 < S.legs.length ? S.legs[k + 1].t0 : S.tMax), col = _trialLegColour(lg.leg);
+        const sel = _raceMap && _raceMap.sel != null, on = !sel || _raceMap.sel === lg.leg;
+        g.globalAlpha = on ? 0.09 : 0.03; g.fillStyle = col; g.fillRect(xa, G.y0, xb - xa, G.y1 - G.y0);
+        g.globalAlpha = on ? 0.9 : 0.35; g.fillStyle = col; g.fillRect(xa, G.y1 + 2 * d, xb - xa - 1 * d, 3 * d);
+        g.globalAlpha = 1;
+        if (k > 0) { g.strokeStyle = 'rgba(255,255,255,0.12)'; g.lineWidth = 1 * d; g.beginPath(); g.moveTo(xa, G.y0); g.lineTo(xa, G.y1); g.stroke(); }
+        const name = lg.leg === 0 ? 'START' : `LEG ${lg.leg}`;
+        const val = view === 'speed' ? (lg.pct != null ? ` · ${Math.round(lg.pct)}%` : '') : view === 'vmc' ? (lg.vmcAvg != null ? ` · ${lg.vmcAvg.toFixed(1)} kn` : '') : (lg.gap != null ? ` · ${lg.gap >= 0 ? '+' : '−'}${Math.abs(lg.gap).toFixed(1)}s` : '');
+        const txt = name + val, w = g.measureText(txt).width;
+        if (xb - xa > w + 8 * d) { g.fillStyle = col; g.fillText(txt, xa + 5 * d, G.y0 - 15 * d); }
+        else if (xb - xa > g.measureText(name).width + 8 * d) { g.fillStyle = col; g.fillText(name, xa + 5 * d, G.y0 - 15 * d); }
+    });
+    // grid and axis labels
+    g.textBaseline = 'middle'; g.textAlign = 'right'; g.font = `600 ${10 * d}px "JetBrains Mono", ui-monospace, monospace`;
+    const step = view === 'gap' ? Math.max(1, Math.ceil((hi - lo) / 6)) : Math.max(1, Math.ceil((hi - lo) / 5));
+    for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) {
+        const y = ty(v); g.strokeStyle = v === 0 && view !== 'speed' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.06)'; g.lineWidth = 1 * d;
+        g.beginPath(); g.moveTo(G.x0, y); g.lineTo(G.x1, y); g.stroke();
+        g.fillStyle = '#66748c'; g.fillText(view === 'gap' ? (v > 0 ? '+' : v < 0 ? '−' : '') + Math.abs(v) + 's' : String(v), G.x0 - 6 * d, y);
+    }
+    g.textAlign = 'left';
+    const line = (key, col, w, dash, alpha) => { g.save(); g.beginPath(); g.rect(G.x0, G.y0, G.x1 - G.x0, G.y1 - G.y0); g.clip(); g.strokeStyle = col; g.lineWidth = w * d; g.globalAlpha = alpha || 1; if (dash) g.setLineDash(dash.map(x => x * d)); g.lineJoin = 'round';
+        g.beginPath(); let on = false; for (const p of S.pts) { const v = p[key]; if (v == null) { on = false; continue; } const x = tx(p.t), y = ty(v); if (!on) { g.moveTo(x, y); on = true; } else g.lineTo(x, y); } g.stroke(); g.restore(); };
+    if (view === 'speed') {
+        // the wind, a faint area from the floor
+        g.save(); g.fillStyle = 'rgba(96,165,250,0.07)'; g.beginPath(); let started = false, lastX = G.x0;
+        for (const p of S.pts) { if (p.twsS == null) continue; const x = tx(p.t), y = ty(p.twsS); if (!started) { g.moveTo(x, G.y1); g.lineTo(x, y); started = true; } else g.lineTo(x, y); lastX = x; }
+        if (started) { g.lineTo(lastX, G.y1); g.closePath(); g.fill(); } g.restore();
+        line('twsS', 'rgba(96,165,250,0.3)', 1);
+        line('tgtS', '#f2c14e', 1.6, [5, 4]);
+        line('sogS', '#eef3fb', 2);
+    } else if (view === 'vmc') {
+        line('sogS', 'rgba(238,243,251,0.35)', 1.5);
+        line('vmcS', '#5eead4', 2.2);
+    } else {
+        // ahead green, behind red: fill between the line and zero, split at zero
+        const z = ty(0);
+        for (const [sgn, col] of [[1, 'rgba(52,211,153,0.35)'], [-1, 'rgba(248,113,113,0.35)']]) {
+            g.save(); g.beginPath(); g.rect(G.x0, sgn > 0 ? G.y0 : z, G.x1 - G.x0, sgn > 0 ? z - G.y0 : G.y1 - z); g.clip();
+            g.fillStyle = col; g.beginPath(); let st = false, lx = 0;
+            for (const p of S.pts) { if (p.gapS == null) continue; const x = tx(p.t), y = ty(p.gapS); if (!st) { g.moveTo(x, z); g.lineTo(x, y); st = true; } else g.lineTo(x, y); lx = x; }
+            if (st) { g.lineTo(lx, z); g.closePath(); g.fill(); } g.restore();
+        }
+        line('gapS', '#eef3fb', 1.8);
+    }
+    // the replay's moments, under the axis
+    if (_raceMap) for (const e of _raceMap.L.events) { const c = _RR_TICK[e.kind]; if (!c || e.t < 0) continue;
+        g.fillStyle = c[0]; g.fillRect(tx(e.t) - 2 * d, G.y1 + 8 * d, 4 * d, e.kind === 'leg' ? 7 * d : 5 * d); }
+    // time labels
+    g.fillStyle = '#66748c'; g.textBaseline = 'top'; g.font = `600 ${10 * d}px "JetBrains Mono", ui-monospace, monospace`;
+    const tStep = [15, 30, 60, 120, 300].find(s => S.tMax / s <= 7) || 600;
+    for (let t = 0; t <= S.tMax; t += tStep) { const x = tx(t); g.textAlign = t === 0 ? 'left' : 'center'; g.fillText(formatSplitTime(t).replace(/\.\d+$/, ''), x, G.y1 + 17 * d); }
+    // the playhead, and the hovered moment
+    if (_raceMap) { const T = _rrT(); if (T >= 0 && T <= S.tMax + 1) { const x = tx(T); g.strokeStyle = 'rgba(90,167,255,0.9)'; g.lineWidth = 1.5 * d; g.beginPath(); g.moveTo(x, G.y0); g.lineTo(x, G.y1); g.stroke(); } }
+    if (_rc.hover != null) { const p = S.pts[_rc.hover]; const x = tx(p.t); g.strokeStyle = 'rgba(255,255,255,0.55)'; g.lineWidth = 1 * d; g.setLineDash([3 * d, 3 * d]); g.beginPath(); g.moveTo(x, G.y0); g.lineTo(x, G.y1); g.stroke(); g.setLineDash([]); }
+}
+function _rcWire() {
+    const cv = document.getElementById('res-chart'); if (!cv || cv.dataset.wired) return;
+    cv.dataset.wired = '1';
+    const pick = (e) => { if (!_rc || !_rc.series) return null; const G = _rcGeom(cv), r = cv.getBoundingClientRect(), x = (e.clientX - r.left) * G.dpr;
+        const t = (x - G.x0) / (G.x1 - G.x0) * _rc.series.tMax; if (t < -1 || t > _rc.series.tMax + 1) return null;
+        let best = 0, bd = Infinity; _rc.series.pts.forEach((p, k) => { const dd = Math.abs(p.t - t); if (dd < bd) { bd = dd; best = k; } }); return best; };
+    cv.addEventListener('pointermove', (e) => {
+        const k = pick(e), tip = document.getElementById('rc-tip');
+        if (k == null) { _rc.hover = null; if (tip) tip.style.display = 'none'; if (_raceMap) { _raceMap.hover = null; _raceMapDraw(); } return; }
+        _rc.hover = k; const p = _rc.series.pts[k];
+        if (_raceMap) { _raceMap.hover = p.i; _raceMapDraw(); } else _rcDraw();
+        if (tip) {
+            const kn = (v) => v == null ? '—' : v.toFixed(1) + ' kn';
+            const rows = [[`${p.leg ? 'Leg ' + p.leg : 'Start'} · ${formatSplitTime(p.t)}`, ''], ['Speed over the ground', kn(p.sog)], ['Polar target', p.tgt != null ? kn(p.tgt) + (p.stw != null && p.tgt > 1 ? ` (${Math.round(100 * p.stw / p.tgt)}%)` : '') : '—'],
+                ['VMC (on course)', kn(p.vmcS)], ['Wind', kn(p.tws)]];
+            if (_rc.series.ref) rows.push([`vs ${_rc.series.refName}`, p.gapS == null ? '—' : `${p.gapS >= 0 ? '+' : '−'}${Math.abs(p.gapS).toFixed(1)}s ${p.gapS >= 0 ? 'ahead' : 'behind'}`]);
+            tip.innerHTML = rows.map(([a, b], i) => i === 0 ? `<div style="color:${_trialLegColour(p.leg)}; font-weight:800; margin-bottom:3px;">${a}</div>` : `<div style="display:flex; justify-content:space-between; gap:16px;"><span style="color:#9fb2cc;">${a}</span><span class="t-mono" style="color:#eef3fb;">${b}</span></div>`).join('');
+            tip.style.display = '';
+            const host = cv.parentElement.getBoundingClientRect(), ox = e.clientX - host.left, oy = e.clientY - host.top;
+            tip.style.left = Math.max(4, ox + 16 + tip.offsetWidth > host.width ? ox - tip.offsetWidth - 16 : ox + 16) + 'px';
+            tip.style.top = Math.max(4, Math.min(host.height - tip.offsetHeight - 4, oy - 30)) + 'px';
+        }
+    });
+    cv.addEventListener('mouseleave', () => { if (!_rc) return; _rc.hover = null; const tip = document.getElementById('rc-tip'); if (tip) tip.style.display = 'none'; if (_raceMap) { _raceMap.hover = null; _raceMapDraw(); } else _rcDraw(); });
+    cv.addEventListener('click', (e) => { const k = pick(e); if (k != null && _rc && typeof _raceSeek === 'function') _raceSeek(_rc.series.pts[k].t); });
+    cv.style.cursor = 'crosshair';
+    if (window.ResizeObserver) new ResizeObserver(() => _rcDraw()).observe(cv);
 }

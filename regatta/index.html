@@ -1360,7 +1360,7 @@
                  the whole fleet's tracks and a replay, then everyone's place through the race; right, you,
                  your race leg by leg, and the fleet. js/ui/raceresults.js draws the left and the leg table. -->
             <div id="res-race-body" style="padding:22px 36px 8px;">
-                <div class="grid" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.08fr); gap:24px; align-items:start;">
+                <div class="grid" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.08fr); gap:24px; align-items:stretch;">
                     <div id="res-race-mapslot" class="flex flex-col" style="gap:16px; min-width:0;">
                         <!-- ONE MAP CARD for both pages: raceresults.js moves it into #res-trial-mapslot for a Time Trial. -->
                         <div id="res-map-card" style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:14px;">
@@ -1377,6 +1377,19 @@
                             <div id="res-hero" class="flex flex-wrap items-center gap-5"></div>
                         </div>
                         <div id="res-race-legs"></div>
+                        <!-- THE TRACE (Oct 2026): fills the column under the legs — raceresults.js moves it between pages. -->
+                        <div id="res-race-chartslot" class="flex flex-col" style="flex:1; min-height:0;">
+                            <div id="res-chart-card" class="flex flex-col" style="flex:1; min-height:230px; background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:12px 14px 10px;">
+                                <div class="flex items-center" style="gap:10px; margin-bottom:8px;">
+                                    <div id="rc-tabs" class="flex" style="gap:4px;"></div>
+                                    <div id="rc-legend" class="flex flex-wrap items-center" style="gap:12px; margin-left:auto; font-size:11px; color:#9fb2cc;"></div>
+                                </div>
+                                <div style="position:relative; flex:1; min-height:180px;">
+                                    <canvas id="res-chart" style="position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none;"></canvas>
+                                    <div id="rc-tip" style="position:absolute; pointer-events:none; display:none; z-index:5; background:rgba(6,14,26,0.94); border:1px solid rgba(255,255,255,0.18); border-radius:10px; padding:8px 10px; font-size:12px; line-height:1.5; white-space:nowrap; box-shadow:0 8px 24px rgba(0,0,0,0.5);"></div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <!-- THE FLEET, full width under both (Wes, Oct 7 2026: keep the finish arrows, top and average
@@ -1394,9 +1407,12 @@
             </div>
             <!-- TIME TRIALS (Sep 27 2026): the run on the chart, and its numbers — whole race, then leg by leg. -->
             <div id="res-trial" class="hidden" style="padding:26px 36px 8px;">
-                <div class="grid" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.05fr); gap:28px; align-items:start;">
+                <div class="grid" style="grid-template-columns:minmax(0, 1fr) minmax(0, 1.05fr); gap:28px; align-items:stretch;">
                     <div id="res-trial-mapslot" style="min-width:0;"></div>
-                    <div id="res-trial-stats" class="flex flex-col" style="gap:18px; min-width:0;"></div>
+                    <div class="flex flex-col" style="gap:18px; min-width:0;">
+                        <div id="res-trial-stats" class="flex flex-col" style="gap:18px; min-width:0;"></div>
+                        <div id="res-trial-chartslot" class="flex flex-col" style="flex:1; min-height:0;"></div>
+                    </div>
                 </div>
             </div>
 

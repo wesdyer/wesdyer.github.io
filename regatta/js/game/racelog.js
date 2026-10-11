@@ -83,8 +83,12 @@ const RaceLog = {
             if (B.done) continue;
             const v = b.velocity || { x: 0, y: 0 };
             const prog = typeof getBoatProgress === 'function' ? Math.round(getBoatProgress(b)) : 0;
+            // ...and for the results trace (Oct 2026): [7] speed through the water, tenths of a knot; [8] wind speed,
+            // tenths; [9] wind angle, degrees, signed — so the trace can draw the polar target for a race too
+            const w = typeof getWindAt === 'function' ? getWindAt(b.x, b.y) : state.wind;
             B.s.push([Math.round(b.x), Math.round(b.y), Math.round(b.heading * 1000), b.raceState.leg, prog,
-                      b.spinnaker ? 1 : 0, Math.round(Math.hypot(v.x, v.y) * 40)]);   // speed over the ground, tenths of a knot (as TimeTrial's [7])
+                      b.spinnaker ? 1 : 0, Math.round(Math.hypot(v.x, v.y) * 40),   // speed over the ground, tenths of a knot (as TimeTrial's [7])
+                      Math.round(b.speed * 40), Math.round(w.speed * 10), Math.round(normalizeAngle(b.heading - w.direction) * 180 / Math.PI)]);
             if (b.raceState.finished) B.done = true;
         }
         if (me && !me.raceState.finished) this._count(me, t);
