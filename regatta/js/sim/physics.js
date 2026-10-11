@@ -474,6 +474,7 @@ function triggerPenalty(boat, info) {
         // trace hash reads raceState's numbers). PT-067: the reason used to show for one frame
         // before the countdown replaced it, so "why did I get a penalty?" had no answer.
         boat._penaltyWhy = info && info.rule ? `${info.rule}${info.reason ? ' — ' + info.reason : ''}` : null;
+        boat._penaltyInfo = info ? { rule: info.rule, reason: info.reason } : null;
         if (boat.isPlayer) GameEvents.emit('player-penalty', info);
     }
 }
@@ -1733,8 +1734,7 @@ function updateBoatRaceState(boat, dt) {
             }
         } else if (boat.isPlayer) {
             const remaining = Math.ceil((Math.PI * 2 - Math.abs(rs.penaltyRot)) * 180 / Math.PI);
-            const why = boat._penaltyWhy ? ` (${boat._penaltyWhy})` : '';
-            showRaceMessage(`PENALTY${why}! TURN ${remaining}° MORE TO CLEAR (or +15s at finish)`, "text-red-500", "border-red-500/50");
+            if (typeof showPenaltyBanner === 'function') showPenaltyBanner(boat._penaltyInfo, remaining);
         }
     }
 

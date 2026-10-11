@@ -3066,6 +3066,7 @@ if (UI.settingTelltaleColor) UI.settingTelltaleColor.addEventListener('input', (
 
 function showRaceMessage(text, textColorClass, borderColorClass) {
     if (UI.message) {
+        delete UI.message.dataset.pen;   // a plain line replaces the penalty banner's layout
         UI.message.textContent = text;
         UI.message.className = `mt-2 text-lg font-bold bg-slate-900/80 px-4 py-1 rounded-full border shadow-lg ${textColorClass} ${borderColorClass}`;
         UI.message.classList.remove('hidden');
@@ -4168,10 +4169,41 @@ function renderResultsFootnote(leader) {
 
 // Physics announces; the banner answers (see GameEvents in game/core.js — this
 // replaced triggerPenalty calling showRaceMessage directly from sim code).
-GameEvents.on('player-penalty', (info) => {
-    const why = info && info.rule ? ` (${info.rule}${info.reason ? ' — ' + info.reason : ''})` : '';
-    showRaceMessage(`PENALTY${why}! DO A 360° TURN TO CLEAR`, "text-red-500", "border-red-500/50");
-});
+GameEvents.on('player-penalty', (info) => { showPenaltyBanner(info, 360); });
+
+// ── THE PENALTY, SPELLED OUT (Wes, Oct 11 2026: "it's hard to read ... have the penalty and how to clear it
+// more clearly stated"). It was one red sentence on navy — rule, engine reason, live number and the
+// alternative run together, wrapping to two lines. Now four parts, each where the eye goes for it: a red
+// PENALTY badge and the rule in plain words FROM YOUR SIDE (the engine's reason names the other boat's
+// right — "Starboard" — which is not what you need to read); what to do, big and white; a ring that fills
+// as you turn, with the degrees left; and the alternative, small.
+const PENALTY_PLAIN = {
+    'Rule 10': 'Port tack gives way to starboard', 'Rule 11': 'The windward boat keeps clear',
+    'Rule 12': 'The boat behind keeps clear', 'Rule 13': 'A tacking boat keeps clear',
+    'Rule 15': 'You gained right of way too close', 'Rule 18': 'You must give mark-room',
+    'Rule 19': 'You must give room at an obstruction', 'Rule 31': "Don't touch a mark"
+};
+function showPenaltyBanner(info, remainingDeg) {
+    const el = UI.message; if (!el) return;
+    const rule = info && info.rule ? info.rule : null;
+    const plain = rule && PENALTY_PLAIN[rule] ? PENALTY_PLAIN[rule] : (info && info.reason) || 'A rule was broken';
+    const done = Math.max(0, Math.min(1, 1 - remainingDeg / 360));
+    const sig = (rule || '') + '|' + plain;
+    if (el.dataset.pen !== sig) {
+        el.dataset.pen = sig;
+        el.className = 'mt-2 hud-penalty';
+        el.innerHTML = `
+            <div class="hud-pen-ring"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" class="track"/><circle cx="22" cy="22" r="18" class="fill" pathLength="100"/></svg><span class="hud-pen-deg"></span></div>
+            <div class="hud-pen-body">
+                <div class="hud-pen-head"><span class="hud-pen-badge">Penalty</span><span class="hud-pen-why">${rule ? `<b>${rule}</b> · ` : ''}${plain}</span></div>
+                <div class="hud-pen-do">Turn a full circle to clear it <span class="hud-pen-alt">or take +15&thinsp;s at the finish</span></div>
+            </div>`;
+    }
+    el.classList.remove('hidden');
+    const deg = el.querySelector('.hud-pen-deg'), fill = el.querySelector('.fill');
+    if (deg) deg.textContent = `${Math.max(0, Math.round(remainingDeg))}°`;
+    if (fill) fill.style.strokeDasharray = `${(done * 100).toFixed(1)} 100`;
+}
 // A PASSAGE over the flats, named as you sail onto it (sim/course.js FLATS_RUN) — Wes, Sep 26 2026:
 // Scythe's objective collects them, so the player has to be told where they are. Never over another
 // message (a penalty, aground); gone after two seconds unless something replaced it.

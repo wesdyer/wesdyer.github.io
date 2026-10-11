@@ -37,6 +37,21 @@
         .hud-dial-k { margin-top: 1px; text-align: center; font-family: 'Archivo', sans-serif; font-weight: 800; font-size: 8.5px; letter-spacing: 0.06em; text-transform: uppercase; color: #cbd5e1; white-space: nowrap; }
         .hud-dial-v .hud-tile-u { font-size: 9px; }
         .hud-dial-st { font-weight: 900; }
+        /* THE PENALTY BANNER */
+        .hud-penalty { display: flex; align-items: center; gap: 12px; background: rgba(15,23,42,0.92); border: 1.5px solid rgba(248,113,113,0.75); border-radius: 16px; padding: 8px 16px 8px 9px; box-shadow: 0 8px 26px rgba(0,0,0,0.45), 0 0 0 3px rgba(248,113,113,0.12); max-width: min(92vw, 620px); }
+        .hud-pen-ring { position: relative; width: 46px; height: 46px; flex: none; }
+        .hud-pen-ring svg { width: 46px; height: 46px; transform: rotate(-90deg); }
+        .hud-pen-ring circle { fill: none; stroke-width: 5; }
+        .hud-pen-ring .track { stroke: rgba(248,113,113,0.22); }
+        .hud-pen-ring .fill { stroke: #f87171; stroke-linecap: round; stroke-dasharray: 0 100; transition: stroke-dasharray .12s linear; }
+        .hud-pen-deg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 12px; color: #fff; }
+        .hud-pen-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .hud-pen-head { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+        .hud-pen-badge { font-family: 'Archivo', sans-serif; font-weight: 900; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #fff; background: #dc2626; border-radius: 6px; padding: 2px 7px 1px; }
+        .hud-pen-why { font-size: 13px; font-weight: 600; color: #fecaca; overflow: hidden; text-overflow: ellipsis; }
+        .hud-pen-why b { font-weight: 800; color: #fca5a5; }
+        .hud-pen-do { font-size: 17px; font-weight: 800; color: #fff; line-height: 1.15; white-space: nowrap; }
+        .hud-pen-alt { font-size: 12px; font-weight: 600; color: #94a3b8; margin-left: 6px; }
         /* planing (turquoise) and surfing (amber) light the whole speed reading: number, unit and name */
         .hud-dial-cell.planing .hud-dial-v, .hud-dial-cell.planing .hud-dial-v .hud-tile-u, .hud-dial-cell.planing .hud-dial-k { color: #67e8f9; }
         .hud-dial-cell.surfing .hud-dial-v, .hud-dial-cell.surfing .hud-dial-v .hud-tile-u, .hud-dial-cell.surfing .hud-dial-k { color: #fcd34d; }
