@@ -1690,7 +1690,15 @@ function getWindAt(x, y) {
     // where the cloud has thinned away downwind. See volcano.js.
     if (state.volcano && window.Volcano) {
         const vm = Volcano.windMul(x, y);
-        if (vm < 1) { sumWx *= vm; sumWy *= vm; }
+        if (vm < 1) {
+            // ...and inside it the wind is unreliable: the mean is what the cloud shows, the swings are not
+            // (PT-096, Volcano.ashNoise)
+            const n = Volcano.ashNoise ? Volcano.ashNoise(x, y, 1 - vm) : { speed: 1, shift: 0 };
+            const m = Math.max(0.08, Math.min(1, vm * n.speed));
+            const c = Math.cos(n.shift), sn = Math.sin(n.shift);
+            const wx = sumWx * m, wy = sumWy * m;
+            sumWx = wx * c - wy * sn; sumWy = wx * sn + wy * c;
+        }
     }
 
     // The local mean, which gates whether a wake reached here — the lee's AIM still comes

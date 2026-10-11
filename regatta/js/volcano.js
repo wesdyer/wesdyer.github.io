@@ -56,6 +56,17 @@ const VOLCANO = {
     drift: 0.18 * 60 * 0.85,
     r0: 90, spread: 17,       // parcel radius at birth, growth per second
     deadMax: 0.8,             // share of the wind an erupting plume kills at its core
+    // ⚠️ ONE ASH, SEEN AND FELT (PT-096, Oct 11 2026). The cloud and its dead air used to fade on two clocks
+    // ((1-age/life)^1.3 drawn, ^0.6 felt), so old ash went on taking a fifth to a third of the wind as a sheet
+    // of clear-looking water: measured, 40% of the water losing 20-40% of the wind was barely visible, and
+    // the fleet — scoring tacks off the true field — routed round ash nobody could see. One fade now drives
+    // both, between the two (the ash still lingers — "the ash plumes should do more"), and the drawing is
+    // strong enough that a fifth of the wind gone reads as haze. The UNCERTAINTY Wes asked for lives INSIDE
+    // the ash instead (ashGust / ashShift, applied in getWindAt): thick ash is weak AND unreliable wind.
+    ashFade: 0.85,            // the one fade, (1 - age/life)^ashFade, for the cloud and its dead air
+    ashVis: 1.0,              // the cloud's opacity per unit of density (was 0.8)
+    ashGust: 0.45,            // speed swing inside the ash, as a share of the wind left, at full dead air
+    ashShift: 22 * Math.PI / 180,   // direction wander inside the ash at full dead air
     steamDead: 0.35,          // the islet's fixed hole
     quietDensity: 0.3,        // the wisp: pale, and readable as a wind sock
     strikeEvery: [5, 20],     // s a striker waits before its next strike, rerolled after each
@@ -222,8 +233,8 @@ const VOLCANO = {
     const radiusOf = (q) => q.r0 + q.spread * q.age;
     // Fades in over the first 0.6 s (a parcel is born at the crater, not on it) and thins
     // to nothing over its life — which is what "dissipates with distance" is.
-    const fadeOf = (q) => Math.min(1, q.age / 0.6) * Math.pow(1 - q.age / q.life, 1.3);
-    const deadFadeOf = (q) => Math.min(1, q.age / 0.6) * Math.pow(1 - q.age / q.life, 0.6);
+    const fadeOf = (q) => Math.min(1, q.age / 0.6) * Math.pow(1 - q.age / q.life, VOLCANO.ashFade);
+    const deadFadeOf = fadeOf;   // ONE fade: what you see thinning is the wind coming back (PT-096)
 
     function update(dt) {
         const v = V();
@@ -496,6 +507,19 @@ const VOLCANO = {
         return Math.max(0.12, Math.min(mul, prod));
     }
 
+    // THE WIND INSIDE THE ASH IS UNRELIABLE (PT-096): for the dead share `a` (1 - windMul) at a point, a speed
+    // factor and a direction offset that wander with time and place — a few seconds' period, a few hundred
+    // units' patch — scaled by how thick the ash is. Smooth, deterministic (sim clock, position), no RNG, so
+    // the golden traces replay. The planners never read it: they score the MEAN (windMul), which is what the
+    // cloud shows; the swings are what a sailor cannot know ahead, for the fleet as for the player.
+    function ashNoise(x, y, a) {
+        const v = V(); const t = v ? v.t : 0;
+        const ns = 0.6 * Math.sin(t * 0.83 + x * 0.0071 - y * 0.0053) + 0.4 * Math.sin(t * 1.37 - x * 0.0043 + y * 0.0089 + 1.7);
+        const nd = 0.6 * Math.sin(t * 0.61 + x * 0.0059 + y * 0.0067 + 0.5) + 0.4 * Math.sin(t * 1.09 - x * 0.0081 + y * 0.0037 + 2.3);
+        const k = Math.min(1, a / VOLCANO.deadMax);
+        return { speed: 1 + VOLCANO.ashGust * k * ns, shift: VOLCANO.ashShift * k * nd };
+    }
+
     // A vent's boil is an ELLIPSE along its lava (the mask's own axis): 0 outside, 1 at the
     // axis. `ventU` is the normalised radius, so the same shape serves the physics, the
     // foam and the steam.
@@ -741,7 +765,7 @@ const VOLCANO = {
             for (const q of ps) {
                 const dx = q.x - cam.x, dy = q.y - cam.y;
                 if (dx * dx + dy * dy > reach * reach) continue;
-                const a = 0.8 * q.density * fadeOf(q);
+                const a = VOLCANO.ashVis * q.density * fadeOf(q);
                 if (a < 0.004) continue;
                 seen.push({ q, px: S / 2 + dx / UPP, py: S / 2 + dy / UPP, r: radiusOf(q) / UPP * 1.15, a, k: Math.pow(q.ash, 0.7),
                             i: q.seed & 3, rot: hash(q.seed + 3) * Math.PI * 2 + q.age * 0.04 });
@@ -1051,7 +1075,7 @@ const VOLCANO = {
 
     window.Volcano = {
         init, update, reset, puffSprites, onWater, lavaFronts, ventU,
-        windMul, boilAt, boilMul, chargeOf, fryOf, isFried,
+        windMul, ashNoise, boilAt, boilMul, chargeOf, fryOf, isFried,
         hudFried, glitch, garble, applyHudClasses, drawMinimapFry, friedEdgePos, strSeed,
         drawVeil, drawBoils, drawStrikes, drawFlash,
         intensityOf, active: () => !!V()

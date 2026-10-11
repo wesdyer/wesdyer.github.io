@@ -18091,3 +18091,12 @@ Since af5ddb7 (Oct 7, the map line) `isMapOnly` read only a shape's outer ring, 
 | lake | 201.2 (6) [194.8] | 216/216.6/163 | 221/221.7/171 | 1.074 → **1.098 ✅** | 0.0 | 0 | 0 | 0.24/0.84/0.00/0.07/0.23 | 400/400 | 0/20 vs lkPre6100 |
 
 - Bots ~5 s slower (med 216 -> 221): the shore's lee and the cut-throughs are back. Lake benches between Oct 7 and Oct 11 ran on the broken shore — not comparable with lkFix*.
+
+## PT-096 — one ash, seen and felt (`eval/rl/_ash_close_table.js`, 2026-10-11)
+The cloud faded (1-age/life)^1.3 while its dead air faded ^0.6, so old ash took 20-40% of the wind under clear-looking water; the fleet scores tacks off the true field (navigation.js samples Volcano.windMul) and routed round ash nobody could see. Visibility probe (`_pt096_visual.js/.py`, frames with/without the veil vs windMul): cells losing 20-40% of the wind barely visible 40% -> 3%, 5-20% 85% -> 28%, hidden dead air (>=30%) 9.3% -> 4.9%. One fade (ashFade 0.85) for both, ashVis 1.0, and the uncertainty INSIDE the ash (Volcano.ashNoise in getWindAt: speed +/-45% and direction +/-22 deg at full dead air, deterministic) which the planners never read — they score the mean, i.e. what the cloud shows. Bench PRE gsAvo* POST ashAvo*:
+
+| venue | human med (n) [Sep 16 ref] | PRE bot med/mean/best | POST bot med/mean/best | ratio pre → post | DNF% | col med/boat | pen med/boat | dirt l/b/f/m/pen (mean/boat, post) | fins post | byte-check |
+|---|---|---|---|---|---|---|---|---|---|---|
+| volcanic | 198.3 (6) [195.5] | 213/214.2/169 | 212/213.3/171 | 1.074 → **1.069 ✅** | 0.0 | 0 | 0 | 0.17/0.86/0.00/0.09/0.25 | 240/240 | 0/8 vs gsAvo9400 |
+
+- Pace neutral. Emberfall goldens regenerated. Pre-existing (before today): test_volcano "no dodge" fails (bot turned 1.33 rad in 0.2 s beside a marked strike).
