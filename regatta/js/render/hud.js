@@ -515,7 +515,17 @@ function drawActiveGateLine(ctx) {
         const sameLine = fIdx[0] === sIdx[0] && fIdx[1] === sIdx[1];
 
         const finTarget = finished || leg >= totalLegs;
-        if (sameLine) {
+        // A line crossed MID-RACE (PT-058, Sockeye Run: start, round, back through the start line,
+        // finish). It used to stay slate furniture while it was the very thing to cross — Wes: "not
+        // at all obvious it's a line you're supposed to cross". Now it is the target, in the through
+        // gate's yellow (the same yellow its off-screen chip wears) and labelled GATE.
+        const curE = (!finished && leg > 0 && leg < totalLegs) ? routeLeg(leg) : null;
+        const gIdx = (curE && (curE.kind === 'gate' || curE.kind === 'line') && curE.marks) ? curE.marks : null;
+        const isGate = (idx) => !!gIdx && ((idx[0] === gIdx[0] && idx[1] === gIdx[1]) || (idx[0] === gIdx[1] && idx[1] === gIdx[0]));
+        const drawGate = () => drawLine(gIdx, true, CHIP_COLORS.through, 'GATE', curE.dir || 1);
+        if (gIdx && !isGate(sIdx) && !isGate(fIdx)) drawGate();
+        if (sameLine && isGate(sIdx)) drawGate();
+        else if (sameLine) {
             // One line playing both roles — the original single-line logic.
             const target = finTarget || leg === 0;
             let color = '#ffffff';
@@ -531,9 +541,11 @@ function drawActiveGateLine(ctx) {
             const startTarget = !finished && leg === 0;
             let sColor = '#94a3b8';
             if (startTarget) sColor = state.race.status === 'prestart' ? '#ef4444' : '#ffffff';
-            drawLine(sIdx, startTarget, sColor, startTarget ? 'START' : '', startE.dir || 1);
+            if (isGate(sIdx)) drawGate();
+            else drawLine(sIdx, startTarget, sColor, startTarget ? 'START' : '', startE.dir || 1);
             const fColor = finished ? '#4ade80' : (finTarget ? '#ffffff' : '#94a3b8');
-            drawLine(fIdx, finTarget, fColor, 'FINISH', finE.dir || 1);
+            if (isGate(fIdx)) drawGate();
+            else drawLine(fIdx, finTarget, fColor, 'FINISH', finE.dir || 1);
         }
         return;
     }
