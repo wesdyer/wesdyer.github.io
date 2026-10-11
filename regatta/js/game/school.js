@@ -477,7 +477,22 @@ const School = {
         // the short way out is FORWARD, which is finishing a tack. Copy and arrow both
         // read this one decision, so they can never disagree.
         const sgn = r.twa >= 0 ? 1 : -1;
-        if (inZone && !up.wasIn) { up.wasIn = true; up.zoneSide = sgn; up.zoneThrough = false; }
+        // ⚠️ WHAT THE LESSON ASKED FOR DECIDES WHICH WAY IS OUT (PT-104, Wes: "it tells me to tack, tells me
+        // to move back. Nope, it should tell me to finish the tack"). A tack spends seconds turning up through
+        // the zone before the bow crosses head-to-wind — longer if she slows in it — and side memory alone read
+        // that as drifting in: after 3 s the copy said "turn BACK" and the arrow pointed back, to someone doing
+        // exactly what they had just been told. So the zone is entered WANTING a tack whenever the lesson wants
+        // one: "zigzag" is up and they have not tacked yet, or the ducklings lie on the other board. Then the
+        // way out is forward, the far side, from the moment they turn in.
+        const duck0 = s.ducks && s.ducks[0];
+        let wantTackNow = up.zoneTaught && !up.saidTack;
+        if (!wantTackNow && duck0) {
+            const bw = normalizeAngle(Math.atan2(duck0.x - p.x, -(duck0.y - p.y)) - this.wd());
+            wantTackNow = Math.abs(bw) <= 48 * Math.PI / 180 && Math.sign(bw) !== Math.sign(r.twa);
+        }
+        if (!inZone) up.wantTackOut = wantTackNow;          // read on the way in, before the bow turns past it
+        if (inZone && !up.wasIn) { up.wasIn = true; up.zoneSide = sgn; up.zoneThrough = false; up.wantTack = !!up.wantTackOut; up.minAbs = r.abs; }
+        if (inZone) up.minAbs = Math.min(up.minAbs == null ? r.abs : up.minAbs, r.abs);
         if (inZone && !up.zoneThrough && sgn !== up.zoneSide && Math.abs(r.twa) > 5 * Math.PI / 180) up.zoneThrough = true;
         if (!inZone) up.wasIn = false;
         // GUIDANCE: the heading the lesson wants right now, shown as the teal turn arrow
@@ -488,7 +503,7 @@ const School = {
             const CH = 45 * Math.PI / 180;   // close-hauled, just outside the cone
             let target = null;
             if (inZone) {
-                const side = up.zoneThrough ? -up.zoneSide : up.zoneSide;
+                const side = (up.zoneThrough || up.wantTack) ? -up.zoneSide : up.zoneSide;
                 target = normalizeAngle(wd + side * CH);
             } else if (up.zoneTaught && !up.saidTack) {
                 // "Zigzag back and forth" is up and they have never tacked: the arrow shows
@@ -517,7 +532,7 @@ const School = {
         // zigzag coaching.
         if (!up.inZone && up.zoneT >= 3) {
             up.inZone = true; s.coneOn = true; up.saidThrough = false;
-            if (up.zoneThrough) {
+            if (up.zoneThrough || up.wantTack) {
                 up.saidThrough = true;
                 this.instruct(up.saidTack ? 'Keep turning — through and out the <em>other side</em>.'
                                           : "Keep turning all the way through — you're <em>tacking</em>!",
@@ -541,6 +556,9 @@ const School = {
             } else if (!up.zoneTaught) {
                 up.zoneTaught = true;
                 this.instruct('To sail upwind, <em>zigzag</em> back and forth just outside the red zone.', 'Follow the ducklings');
+            } else if (up.wantTack && !up.saidTack && (up.minAbs < 20 * Math.PI / 180 || up.zoneT >= 1.5)) {
+                // a tack begun and given up, back out the side they came in: no "good" for that — the ask again
+                this.instruct('Almost! Keep turning <em>all the way through</em> the red zone to come out the other side.', 'Tack through the wind');
             } else {
                 this.instruct('Good. Keep working your way upwind.', 'Follow the ducklings');
             }
