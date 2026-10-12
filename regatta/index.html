@@ -266,11 +266,70 @@
            and its button in that colour — teal for the school, gold for cups, the wordmark blue
            for a series, race-mark orange for a single race. */
         .ch-door:hover { box-shadow: 0 0 0 2px var(--door-accent, rgba(255,255,255,0.22)); }
-        .ch-door.primary { box-shadow: 0 0 0 2px #5aa7ff, 0 10px 30px rgba(90,167,255,0.28); }
+        .ch-door.primary { box-shadow: 0 0 0 2px var(--door-accent, #5aa7ff), 0 10px 30px color-mix(in srgb, var(--door-accent, #5aa7ff) 28%, transparent); }
         .ch-door.primary:hover { box-shadow: 0 0 0 2px var(--door-accent, #7fbcff), 0 10px 30px rgba(90,167,255,0.4); }
         .ch-door:hover .ch-cta, .ch-door.primary:hover .ch-cta { background: var(--door-accent); border-color: transparent; color: var(--door-ink, #0c1322); font-weight: 900; box-shadow: 0 6px 20px color-mix(in srgb, var(--door-accent) 45%, transparent); }
         .ch-door:hover .ch-door-name { color: var(--door-accent); }
-        #hub-skipper:hover .pr-change-pill { background: #2f6bff; border-color: #2f6bff; color: #fff; }
+        /* THE STAGE (Oct 2026 Lobby showcase). The hub is designed at 1600 x 1000 and ZOOMED to the
+           window by fitClubhouse (screens.js): every px below is a reference px. The stage is 1000
+           tall and 1600-1778 wide (16:10 to 16:9); outside that it is centred over #hub-backdrop. */
+        #clubhouse-overlay { overflow: auto; }
+        #clubhouse-overlay:not(.hidden) { display: flex; }
+        #hub-backdrop { position: fixed; inset: -6%; width: 112%; height: 112%; object-fit: cover; object-position: center 60%; filter: blur(30px) brightness(0.32) saturate(1.1); pointer-events: none; }
+        .ch-stage { position: relative; margin: auto; flex: none; width: 1600px; height: 1000px; display: flex; flex-direction: column; background: #0c1322; box-shadow: 0 0 80px rgba(0,0,0,0.5); }
+        .ch-main { flex: 1 1 auto; min-height: 0; display: flex; gap: 16px; padding: 0 32px; }
+        .ch-hero { flex: none; height: 100%; aspect-ratio: 3 / 2; border-radius: 16px; overflow: hidden; border: 1px solid rgba(148,163,184,0.18); background: #0c1322; }
+        .ch-hero img { width: 100%; height: 100%; object-fit: cover; object-position: center bottom; display: block; }
+        .ch-doors { flex: none; display: flex; flex-direction: column; gap: 12px; padding: 18px 32px 22px; }
+        /* You and your boat: the skipper's band on top (their colour fading toward the night navy, so
+           the boat on its right stands off it), the class they sail below. */
+        .ch-you { container-type: inline-size; flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; background: #101a2e; border: 1px solid rgba(148,163,184,0.18); border-radius: 16px; overflow: hidden; }
+        .ch-you-band { position: relative; flex: none; height: 176px; }
+        .ch-you-stripe { position: absolute; left: 0; right: 0; bottom: 0; height: 8px; }
+        .ch-you-face { position: absolute; left: 6px; bottom: 0; width: 184px; height: 184px; object-fit: contain; filter: drop-shadow(0 6px 12px rgba(0,0,0,0.4)); }
+        .ch-you-who { position: absolute; left: 198px; top: 18px; right: 236px; }
+        .ch-you-kicker { font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 11px; letter-spacing: 2px; }
+        .ch-you-name { margin: 6px 0 0 0; font-size: 54px; white-space: nowrap; line-height: 0.9; text-transform: uppercase; font-style: italic; text-shadow: 0 2px 10px rgba(0,0,0,0.35); }
+        .ch-you-creature { font-size: 10.5px; letter-spacing: 1.6px; margin-top: 6px; }
+        .ch-you-motto { margin: 8px 0 0 0; font-size: 14px; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        /* A 16:10 window gives the card ~620 px: the boat steps down so the name and motto have room
+           (eval/rl/_hub_text_fit.js checks every character). */
+        @container (max-width: 720px) {
+            .ch-you .ch-you-boat { width: 168px; height: 130px; top: 10px; right: 6px; }
+            .ch-you .ch-you-who { right: 178px; top: 12px; }
+            .ch-you .ch-you-name { font-size: 46px; margin-top: 4px; }
+            .ch-you .ch-you-motto { font-size: 13px; line-height: 1.3; margin-top: 6px; }
+            .ch-you .ch-you-creature { margin-top: 4px; }
+        }
+        .ch-you-boat { position: absolute; right: 10px; top: 3px; width: 220px; height: 170px; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35)); }
+        /* the Change button is a tonal button dressed per character (fillSkipperCard sets the vars) */
+        .ch-you-change { height: 26px; padding: 0 12px; border-radius: 999px; border: 1.5px solid var(--chg-line, rgba(255,255,255,0.7)); background: var(--chg-fill, rgba(6,10,20,0.28)); color: var(--chg-ink, #ffffff); font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 10.5px; letter-spacing: 0.12em; cursor: pointer; transition: background-color 0.15s, color 0.15s, border-color 0.15s; }
+        .ch-you-change:hover, .ch-you-change:focus-visible { background: var(--chg-hover, #2f6bff); border-color: var(--chg-hover, #2f6bff); color: var(--chg-hover-ink, #ffffff); }
+        .ch-you-change.locked { cursor: default; opacity: 0.85; }
+        .ch-you-change.locked:hover { background: var(--chg-fill, rgba(6,10,20,0.28)); border-color: var(--chg-line, rgba(255,255,255,0.7)); color: var(--chg-ink, #ffffff); }
+        .ch-you-body { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding: 16px 22px; }
+        .ch-you-boathead { display: flex; align-items: baseline; justify-content: space-between; }
+        .ch-you-boatname { margin: 0; font-size: 34px; line-height: 0.95; text-transform: uppercase; font-style: italic; color: #eef3fb; }
+        .ch-you-boattype { font-size: 12px; color: #b4c2d8; }
+        /* the drawing is black ink: tinted on a canvas (a CSS mask is blocked for file:// pages) */
+        .ch-you-showcase { flex: 1 1 auto; min-height: 90px; display: flex; gap: 18px; }
+        .ch-boat-lines { flex: 1 1 auto; min-width: 0; position: relative; }
+        .ch-logbook { flex: 0 0 176px; display: flex; flex-direction: column; justify-content: center; gap: 7px; padding-left: 18px; border-left: 1px solid rgba(148,163,184,0.18); }
+        .ch-logbook-title { font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 10.5px; letter-spacing: 2px; color: #93a3bd; }
+        .ch-logbook dl { margin: 0; display: grid; row-gap: 5px; }
+        .ch-logbook dt { font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 9.5px; letter-spacing: 1.6px; color: #93a3bd; }
+        .ch-logbook dd { margin: 1px 0 0 0; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 15px; line-height: 1.2; color: #eef3fb; }
+        .ch-logbook dd small { font-size: 11.5px; color: #b4c2d8; font-weight: 400; }
+        .ch-logbook-empty { font-size: 13px; line-height: 1.4; color: #b4c2d8; }
+        .ch-boat-lines canvas { position: absolute; }
+        .ch-boat-perf { display: grid; grid-template-columns: minmax(0, 1fr) 204px; gap: 16px; align-items: center; border-top: 1px solid rgba(148,163,184,0.18); padding-top: 10px; flex: 0 0 auto; }
+        .ch-boat-polar svg { display: block; width: 100%; height: auto; }
+        .ch-boat-key { display: flex; justify-content: center; gap: 10px; white-space: nowrap; margin-top: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #93a3bd; }
+        .ch-boat-key span { display: inline-flex; align-items: center; gap: 3px; }
+        .ch-boat-key i { display: inline-block; width: 12px; height: 2px; background: #9ccbff; }
+        .ch-boat-dl { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; row-gap: 8px; }
+        .ch-boat-dl dt { font-family: 'Archivo', sans-serif; font-weight: 800; text-transform: uppercase; font-size: 9.5px; letter-spacing: 1.6px; color: #93a3bd; }
+        .ch-boat-dl dd { margin: 2px 0 0 0; font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 13px; color: #eef3fb; }
         .ch-cta { transition: background-color 0.15s, color 0.15s, box-shadow 0.15s; }
         .ch-door-name { transition: color 0.15s; }
         .ch-door-pic { height: 236px; position: relative; overflow: hidden; background: #0a1220; }
@@ -279,11 +338,14 @@
         .ch-door-name { font-size: 36px; line-height: 0.98; text-transform: uppercase; }
         .ch-door-blurb { font-size: 14px; line-height: 1.5; color: #d5ecf5; }
         .ch-door-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: auto; }
+        /* each door's state line wears that door's own accent (Wes, Oct 12 2026): gold cups, blue races,
+           orange trials, teal school */
+        .ch-door-foot > .t-label:first-child { color: var(--door-accent, #c4d2e6); }
         .ch-cta { border: 1px solid rgba(255,255,255,0.18); border-radius: 12px; padding: 11px 18px; font-size: 13px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #c4d2e6; background: transparent; white-space: nowrap; flex-shrink: 0; }
-        .ch-door.primary .ch-cta { background: #2f6bff; border-color: transparent; color: #fff; font-weight: 900; font-style: italic; font-size: 14px; padding: 12px 22px; box-shadow: 0 6px 24px rgba(47,107,255,0.4); }
+        .ch-door.primary .ch-cta { background: var(--door-accent, #2f6bff); border-color: transparent; color: var(--door-ink, #fff); font-weight: 900; font-style: italic; font-size: 14px; padding: 12px 22px; box-shadow: 0 6px 24px color-mix(in srgb, var(--door-accent, #2f6bff) 40%, transparent); }   /* the leading door wears its own accent (Oct 2026) */
         .ch-door.compact .ch-door-pic { height: 118px; }
         .ch-door.compact .ch-door-body { gap: 5px; padding: 10px 16px 12px; }
-        .ch-door.compact .ch-door-name { font-size: min(40px, 2.9vw); white-space: nowrap; }   /* no blurb under it (Wes, Oct 7 2026): the name carries the door; scaled so "Sailing School" holds one line at 1024 */
+        .ch-door.compact .ch-door-name { font-size: 40px; white-space: nowrap; }   /* the stage zooms (fitClubhouse), so no vw here */   /* no blurb under it (Wes, Oct 7 2026): the name carries the door; scaled so "Sailing School" holds one line at 1024 */
         .ch-door.compact .ch-cta { padding: 8px 12px; font-size: 11.5px; }
         .ch-door.compact.primary .ch-cta { padding: 9px 14px; font-size: 12px; }
         .ch-door.compact .ch-fan { padding: 10px; gap: 4px; }
@@ -1068,44 +1130,73 @@
              with the wordmark in its sky, and the four doors in a row below it: Sailing
              School (the front door until you graduate), Cup, Series, Race. Every door shows
              its state; that is what makes a hub worth its click. -->
-        <div id="clubhouse-overlay" class="hidden absolute inset-0 z-50 flex flex-col pointer-events-auto overflow-hidden ch-overlay">
-            <!-- The painting takes every pixel the doors leave, and is ANCHORED TO ITS BOTTOM EDGE: the
-                 racers live in the bottom of the picture, so they are always the subject of the crop;
-                 the whole painting is shown, scaled to fit. -->
-            <div id="hub-hero" class="relative" style="flex:1 1 auto; min-height:320px; overflow:hidden; background:#0c1322;">
-                <!-- The hero master lands at assets/images/hero/clubhouse.png (art/manifest.json
-                     `hero-clubhouse`); until then the home venue's card stands in, cropped wide. -->
-                <!-- The painting FITS the band, whole, both ways (Wes, Sep 7): object-fit contain, anchored
-                     to the bottom so the racers sit on the doors. The bars a wide window leaves at the sides
-                     are the same painting blurred and dimmed, so they read as atmosphere rather than gaps. -->
-                <img id="hub-hero-bg" src="assets/images/venues/bay.png" alt="" draggable="false" aria-hidden="true" style="position:absolute; inset:-6%; width:112%; height:112%; object-fit:cover; object-position:center 60%; filter:blur(26px) brightness(0.42) saturate(1.15);">
-                <img id="hub-hero-img" src="assets/images/venues/bay.png" alt="" draggable="false" style="position:absolute; inset:0; width:100%; height:100%; object-fit:contain; object-position:center bottom;">
-                <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgba(12,19,34,0.55) 0%, rgba(12,19,34,0.0) 28%, rgba(12,19,34,0.0) 70%, #0c1322 100%);"></div>
-                <div style="position:absolute; inset:0; background:linear-gradient(to right, rgba(12,19,34,0.45) 0%, rgba(12,19,34,0.0) 45%);"></div>
-                <div class="ch-header" style="position:absolute; left:0; right:0; top:0; border-bottom:none;">
-                    <div class="flex items-center gap-4">
-                        <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
-                        <div>
-                            <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:38px; letter-spacing:-0.02em; text-shadow:0 2px 12px rgba(0,0,0,0.6);">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
-                            <div id="clubhouse-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#c4d2e6; margin-top:7px; text-shadow:0 1px 6px rgba(0,0,0,0.7);">FAIR WINDS &middot; SALTY RIVALS</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3 shrink-0">
-                        <!-- WHO YOU ARE AT THE CLUB. The character is a persistent setting, not a
-                             per-race choice, so it lives here — the one place, for every mode. -->
-                        <button id="hub-skipper" class="res-btn" title="Change skipper" style="display:flex; align-items:center; gap:12px; padding:8px 16px 8px 8px; background:rgba(12,19,34,0.55); text-transform:none; letter-spacing:0;">
-                            <img id="hub-skipper-img" src="" alt="" draggable="false" style="width:44px; height:44px; object-fit:cover; border-radius:10px; background:rgba(255,255,255,0.06);">
-                            <span style="display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left;">
-                                <span class="t-label t-label-sm" style="color:#9fb2cc;">Sailing as</span>
-                                <span id="hub-skipper-name" class="t-display uppercase" style="font-size:20px; line-height:1; color:#fff;"></span>
-                            </span>
-                            <span class="pr-change-pill" style="margin-left:4px;">Change</span>
-                        </button>
-                        <button class="res-btn js-open-settings" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center; background:rgba(12,19,34,0.45);"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
+        <div id="clubhouse-overlay" class="hidden absolute inset-0 z-50 pointer-events-auto ch-overlay">
+            <!-- THE CLUBHOUSE (Oct 2026: the "Lobby showcase" front page, Claude Design canvas
+                 "Clubhouse front page", board B). Laid out ONCE at 1600 x 1000 and ZOOMED to the window
+                 (fitClubhouse, screens.js) — the reference-resolution scaling games use, so the
+                 composition is the same on a laptop and a 4K screen. The stage widens from 16:10 to
+                 16:9; past that it is centred and the painting, blurred, fills the rest. -->
+            <img id="hub-backdrop" src="assets/images/venues/bay.png" alt="" draggable="false" aria-hidden="true">
+            <div id="clubhouse-stage" class="ch-stage">
+            <div class="ch-header" style="border-bottom:none; padding:14px 32px 12px;">
+                <div class="flex items-center gap-4">
+                    <img src="assets/images/misc/salty-crew-yacht-club-burgee.png" class="h-16 w-auto drop-shadow-2xl burgee-flutter" alt="SCYC Burgee">
+                    <div>
+                        <h1 class="t-wordmark font-black uppercase italic leading-none" style="font-size:38px; letter-spacing:-0.02em;">Salty Critter <span style="color:#5aa7ff;">Yacht Club</span></h1>
+                        <div id="clubhouse-crumb" class="t-mono" style="font-size:10px; letter-spacing:0.3em; color:#c4d2e6; margin-top:7px;">FAIR WINDS &middot; SALTY RIVALS</div>
                     </div>
                 </div>
+                <div class="flex items-center gap-3 shrink-0">
+                        <button class="res-btn js-open-settings" title="Settings (F2)" style="padding:14px 16px; display:flex; align-items:center; "><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg></button>
+                </div>
             </div>
-            <div class="flex flex-col shrink-0" style="gap:12px; padding:6px 32px 22px;">
+            <div class="ch-main">
+                <!-- The painting, whole: its panel is locked to the painting's own 3:2, so it is never
+                     cropped and never barred (Wes, Sep 7: the painting is shown whole). -->
+                <div id="hub-hero" class="ch-hero">
+                    <img id="hub-hero-img" src="assets/images/venues/bay.png" alt="The fleet racing past the clubhouse" draggable="false">
+                </div>
+                <!-- YOU AND YOUR BOAT, one card (the lobby pattern: your character, on your boat). The band
+                     is your colours with your portrait, name and motto and your boat from above; below it
+                     the class you sail — the Spindrift 18's line drawing, specs and polar, all from the
+                     game's own tables. Filled by fillSkipperCard and fillBoatCard. -->
+                <section id="hub-you-card" class="ch-you" aria-label="You and your boat">
+                    <div id="hub-skipper-band" class="ch-you-band">
+                        <div id="hub-skipper-stripe" class="ch-you-stripe"></div>
+                        <img id="hub-skipper-img" class="ch-you-face" src="" alt="" draggable="false">
+                        <div class="ch-you-who">
+                            <div class="flex items-center" style="gap:10px;"><span id="hub-skipper-label" class="ch-you-kicker">Sailing as</span><button id="hub-skipper" class="ch-you-change" type="button">Change</button></div>
+                            <h2 id="hub-skipper-name" class="t-display ch-you-name"></h2>
+                            <div id="hub-skipper-creature" class="t-label ch-you-creature"></div>
+                            <p id="hub-skipper-motto" class="ch-you-motto"></p>
+                        </div>
+                        <canvas id="hub-skipper-boat" class="ch-you-boat" aria-hidden="true"></canvas>
+                    </div>
+                    <div class="ch-you-body">
+                        <div class="ch-you-boathead">
+                            <div class="flex items-baseline" style="gap:12px;">
+                                <h3 class="t-display ch-you-boatname">Spindrift <span style="color:#9ccbff;">18</span></h3>
+                                <span class="ch-you-boattype">Planing sportboat</span>
+                            </div>
+                            <span class="ch-you-kicker" style="color:#93a3bd;">Your boat</span>
+                        </div>
+                        <div class="ch-you-showcase">
+                            <div class="ch-boat-lines"><canvas id="hub-boat-lines" role="img" aria-label="Line drawing of the Spindrift 18: sail plan beside deck plan"></canvas></div>
+                            <!-- YOUR LOGBOOK: what you have done in this boat (Unlocks.career): races and wins,
+                                 podiums, miles sailed, top speed. Filled by fillLogbook. -->
+                            <aside id="hub-logbook" class="ch-logbook" aria-label="Your logbook"></aside>
+                        </div>
+                        <div class="ch-boat-perf">
+                            <dl id="hub-boat-specs" class="ch-boat-dl"></dl>
+                            <div class="ch-boat-polar">
+                                <div id="hub-boat-polar"></div>
+                                <div id="hub-boat-polar-key" class="ch-boat-key"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <div class="ch-doors">
                 <div class="flex items-baseline justify-between">
                     <div class="t-display italic uppercase" style="font-size:24px; letter-spacing:0.03em;">What are we sailing today?</div>
                     <div id="clubhouse-tally" class="t-mono" style="font-size:14.5px; color:#c4d2e6; letter-spacing:0.04em;"></div>
@@ -1141,6 +1232,7 @@
                     </button>
                 </div>
             </div>
+        </div><!-- /clubhouse-stage -->
         </div>
 
         <!-- Cup picker: the three cups, each with its four races and its trophy's state. -->

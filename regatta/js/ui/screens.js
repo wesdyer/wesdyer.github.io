@@ -592,7 +592,7 @@ function courseSummaryText() {
             if (a && b) units += Math.hypot(b.x - a.x, b.y - a.y);
         }
     }
-    const km = units / ((window.VenueDoc && window.VenueDoc.U_PER_M) || 5) / 1000;
+    const km = unitsToKm(units);   // the world scale (see WORLD_M_PER_U)
     return `${state.race.totalLegs} leg${state.race.totalLegs === 1 ? "" : "s"}${km >= 0.1 ? ` &middot; ${km.toFixed(1)} km` : ''}`;
 }
 
@@ -610,7 +610,7 @@ function timeLimitText() {
         ? remembered.cutoff
         : (state.course && state.course.cutoff != null)
         ? state.course.cutoff
-        : (state.race.totalLegs * state.race.legLength) / 5 * 0.1875;
+        : (state.race.totalLegs * state.race.legLength) / 10 * 0.375;   // 0.375 s a metre at 10 u/m
     if (cutoff <= 0) return '&mdash;';
     // Unpadded minutes — "7:00", not the race clock's "07:00": this is a stated
     // limit, not a running readout that needs stable digits.
@@ -1994,7 +1994,10 @@ function drawProfileBoatArt(g, cfg) {
     // spinPattern first: the player picks theirs explicitly, and SPIN_LOOKS is
     // keyed by competitor name so it would miss them (or worse, match if they
     // happened to name themselves after one).
-    sail(getSpinnakerSprite(cfg.spinPattern || SPIN_LOOKS[cfg.name] || 'solid', cfg.spinnaker, cfg.spinnaker2 || cfg.hull, cfg.spinnaker3), -28, -1.25, 1);
+    // ...and then the SAME fallback the race uses (applyBoatIdentity): a character with no pattern
+    // of their own flies the one their name picks. This used to fall back to 'solid', so the picker
+    // and the hub card drew a plain kite for boats that race a striped one (fixed Oct 12 2026).
+    sail(getSpinnakerSprite(cfg.spinPattern || SPIN_LOOKS[cfg.name] || spinPatternForName(cfg.name), cfg.spinnaker, cfg.spinnaker2 || cfg.hull, cfg.spinnaker3), -28, -1.25, 1);
     g.restore();
 }
 
@@ -3172,13 +3175,14 @@ function recordVenueBest(seconds, pos, stars) {
     return { previous, isBest, previousPos, isBestPos, previousStars, isBestStars };
 }
 
-// ⚠️ DISTANCE SAILED IS ALREADY IN METRES. physics.js adds `speed × 12 × dt` to legDistances — the
-// world-units-to-metres step (0.2 m a unit) is inside that 12 — and this used to divide by 5 AGAIN
-// as if it were world units, so every distance on screen was a fifth of the truth: a 4.8 km course
-// "sailed" in 1.2 km (Wes, Sep 27 2026: corrected everywhere; stored shortest tracks migrated ×5 on
-// load, see loadAllRecords). unitsToKm stays for genuine world units.
-function unitsToKm(u) { return u / 5 / 1000; }
-function sailedKm(m) { return m / 1000; }
+// THE WORLD SCALE, everywhere (Wes, Oct 12 2026): 10 cm to the unit — the scale the boats and animals
+// are drawn to (guidelines/scale.md; the 56 u hull is the Spindrift's 18 ft). VenueDoc.U_PER_M is 10,
+// every authored metre is on it (venue schema 2), and physics.js sums legDistances in these metres.
+// History: Sep 27 2026 fixed a /5 slip (stored tracks x5); Oct 12 halved stored tracks to this scale.
+const WORLD_M_PER_U = 0.1;
+function unitsToKm(u) { return u * WORLD_M_PER_U / 1000; }
+function sailedMetres(m) { return m; }   // legDistances are world-scale metres already
+function sailedKm(m) { return sailedMetres(m) / 1000; }
 
 // ── VENUE RECORDS ───────────────────────────────────────────────────────────
 // The record BOOK, as opposed to the personal-best chip above: per venue, per leg
@@ -3200,6 +3204,12 @@ function loadAllRecords() {
     if (!all.__distV2) {
         for (const k of Object.keys(all)) { const b = all[k]; if (b && b.minDist && typeof b.minDist.d === 'number') b.minDist.d = Math.round(b.minDist.d * 5 * 100) / 100; }
         all.__distV2 = true;
+        saveAllRecords(all);
+    }
+    // ...and on the old 0.2 m scale until Oct 12 2026: halved once to the world scale (WORLD_M_PER_U).
+    if (!all.__distV3) {
+        for (const k of Object.keys(all)) { const b = all[k]; if (b && b.minDist && typeof b.minDist.d === 'number') b.minDist.d = Math.round(b.minDist.d / 2 * 100) / 100; }
+        all.__distV3 = true;
         saveAllRecords(all);
     }
     return all;
@@ -3549,7 +3559,7 @@ function renderTrialResults(player) {
     host.dataset.sig = sig;
     const best = state.race.bestOutcome, prev = best ? best.previous : null;
     const gs = TimeTrial.ghostSplits(), hits = TimeTrial.hitsByLeg();
-    const kmTxt = (m) => `${sailedKm(m).toFixed(2)} km`, mTxt = (m) => `${Math.round(m)} m`;
+    const kmTxt = (m) => `${sailedKm(m).toFixed(2)} km`, mTxt = (m) => `${Math.round(sailedMetres(m))} m`;
     const signed = (d, digits) => `${d <= 0 ? '\u2212' : '+'}${Math.abs(d).toFixed(digits)}s`;
     const dCol = (d) => d <= 0 ? '#34d399' : '#f87171';
     const totalHits = Object.values(hits).reduce((a, c) => a + c, 0);
@@ -4282,10 +4292,12 @@ function starSentence(stars, missed, kind) {
 // ── PENNANTS ─────────────────────────────────────────────────────────────────────────
 // A series pennant: a burgee-shaped flag with the series length on it, gold when that
 // length has been won, a faint outline otherwise. Drawn, not an asset, so it scales.
-function pennantHTML(n, won, w) {
+function pennantHTML(n, won, w, colour) {
     w = w || 40; const h = Math.round(w * 0.62);
-    const fill = won ? '#f2c14e' : 'rgba(255,255,255,0.08)', stroke = won ? '#8a6a12' : 'rgba(255,255,255,0.28)', ink = won ? '#0c1322' : 'rgba(255,255,255,0.45)';
-    return `<svg width="${w}" height="${h}" viewBox="0 0 40 25" style="display:block; overflow:visible;${won ? ' filter:drop-shadow(0 2px 6px rgba(242,193,78,0.45));' : ''}">
+    // `colour` dresses a won pennant in a door's accent (the hub's Race door is blue); gold elsewhere
+    const c = colour || '#f2c14e', edge = colour ? 'rgba(255,255,255,0.55)' : '#8a6a12';
+    const fill = won ? c : 'rgba(255,255,255,0.08)', stroke = won ? edge : 'rgba(255,255,255,0.28)', ink = won ? '#0c1322' : 'rgba(255,255,255,0.45)';
+    return `<svg width="${w}" height="${h}" viewBox="0 0 40 25" style="display:block; overflow:visible;${won ? ` filter:drop-shadow(0 2px 6px ${colour ? 'rgba(90,167,255,0.45)' : 'rgba(242,193,78,0.45)'});` : ''}">
         <path d="M2 2 L37 12.5 L2 23 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.5" stroke-linejoin="round"/>
         <text x="12" y="16.6" font-family="ui-monospace, Menlo, monospace" font-size="11" font-weight="800" fill="${ink}" text-anchor="middle">${n}</text></svg>`;
 }
@@ -4389,8 +4401,25 @@ function clubhouseBack() {
 // `hero-clubhouse` -> assets/images/hero/clubhouse.png); the home venue's card stands in.
 const HUB_HERO = 'assets/images/hero/hero-clubhouse-trio.jpg';   // the JPEG ingest writes beside the PNG master
 
+// THE HUB SCALES AS ONE PICTURE (Oct 2026, the Lobby showcase). It is laid out at a 1600 x 1000
+// reference and ZOOMED to the window — what game engines do (scale with the screen against a
+// reference resolution), so the composition is the same on a laptop and a 4K screen, text stays
+// crisp and clicks land (zoom, unlike a transform, re-lays out). The zoom is the smaller of the
+// two fits, held to 0.75-1.6 so text stays legible and never balloons; the stage then widens from
+// 16:10 to 16:9 to use a wide window, and past that it is centred over the blurred backdrop.
+function fitClubhouse() {
+    const stage = document.getElementById('clubhouse-stage');
+    if (!stage) return;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const z = Math.max(0.75, Math.min(1.6, Math.min(vw / 1600, vh / 1000)));
+    stage.style.zoom = z;
+    stage.style.width = Math.round(Math.max(1600, Math.min(1778, vw / z))) + 'px';
+    window._hubZoom = z;
+}
+window.addEventListener('resize', () => { if (UI.clubhouse && !UI.clubhouse.classList.contains('hidden')) { fitClubhouse(); const c = document.getElementById('hub-boat-lines'); if (c && c._img) drawBoatLines(c, '#9ccbff'); fillSkipperCard(playerCharacter()); } });
 function showClubhouse() {
     if (!UI.clubhouse) return;
+    fitClubhouse();
     refreshClubhouse();
     _chShow(UI.clubhouse);
     if (typeof presentUnlocks === 'function') presentUnlocks();   // anything earned on the way out
@@ -4426,7 +4455,7 @@ function refreshClubhouse() {
             holder.innerHTML = dots.map(d => `<span style="width:11px; height:11px; border-radius:999px; border:2px solid #7ff0d4; background:${d ? '#7ff0d4' : 'transparent'};"></span>`).join('');
         }
     }
-    const st = $('door-school-state'); if (st) { st.textContent = grad ? 'Graduated' : 'Not yet graduated'; st.style.color = grad ? '#7f8ea9' : '#7ff0d4'; }
+    const st = $('door-school-state'); if (st) { st.textContent = grad ? 'Graduated' : 'Not yet graduated'; st.style.color = ''; }
     // No "Earn here" strip on the school door (Wes, Sep 26 2026: the faces distract and the
     // link cannot really be clicked from a door). The pond's objectives are listed on the
     // school's own first screen instead — School.screenContent('A').
@@ -4445,62 +4474,445 @@ function refreshClubhouse() {
     const starred = CUPS.map(c => ({ c, t: t[c.id] })).filter(x => x.t && x.t.won && x.t.stars > 0);
     const topStar = starred.length ? starred.reduce((a, b) => (b.t.stars > a.t.stars ? b : a)) : null;
     const starTxt = topStar ? `${'\u2605'.repeat(topStar.t.stars)} ${topStar.c.name.replace(/ Cup$/i, '')}` : '';
+    // CUP: WHAT'S NEXT (Oct 2026). The trophies above already show what you have won and your best in
+    // the rest, so the line only points forward — the first cup in the club's order you have not won; once
+    // all three are yours, the stars still to take (4 a cup).
     const cupState = $('door-cup-state');
     if (cupState) {
-        cupState.textContent = won ? `${won} of ${CUPS.length} won${starTxt ? ' · ' + starTxt : bestTxt ? ' · best ' + bestTxt : ''}`
-                             : bestTxt ? `No cup yet · best ${bestTxt}` : 'No cups sailed yet';
-        cupState.style.color = won ? '#f2c14e' : bestTxt ? '#c4d2e6' : '#7f8ea9';
+        const next = CUPS.find(c => !(t[c.id] && t[c.id].won));
+        if (next) {
+            // (your best in it is on the trophy itself — its metal, or the place over a grey cup)
+            cupState.textContent = `Next: ${next.name.replace(/ Cup$/i, '')}`;
+            cupState.style.color = '';
+        } else {
+            const got = CUPS.reduce((a, c) => a + ((t[c.id] && t[c.id].stars) || 0), 0);
+            cupState.textContent = `All won · \u2605 ${got} of ${CUPS.length * 4}`;
+            cupState.style.color = '';
+        }
     }
-    const cupPic = $('door-cup-pic'); if (cupPic) cupPic.innerHTML = `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:18px; background:radial-gradient(420px 160px at 50% 100%, rgba(242,193,78,0.14), transparent);">${CUPS.map(c => trophyHTML(c, 84, trophyState(c.id))).join('')}</div>`;
+    // As on the cup screen: a podium is the trophy's metal; a cup sailed worse than 3rd keeps its grey
+    // trophy with your best place over it, so it never looks like a cup you have not sailed.
+    const cupPic = $('door-cup-pic'); if (cupPic) cupPic.innerHTML = `<div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; gap:18px; background:radial-gradient(420px 160px at 50% 100%, rgba(242,193,78,0.14), transparent);">${CUPS.map(c => {
+        const tr = t[c.id], badge = (tr && tr.sailed && !tr.won && tr.best > 3)
+            ? `<span class="t-mono" style="position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); font-size:14px; color:#eef3fb; background:rgba(6,14,26,0.86); border:1px solid rgba(255,255,255,0.28); border-radius:999px; padding:3px 9px; white-space:nowrap;">${_ordinal(tr.best)}</span>` : '';
+        return `<span style="position:relative; display:inline-flex;">${trophyHTML(c, 84, trophyState(c.id))}${badge}</span>`;
+    }).join('')}</div>`;
     const sb = t.series && t.series.best;
     // Pennants won, else the best result — like the cup door.
     const pens = Series.pennants(), pWon = pens.filter(p => p.won).length;
     const seriesState = $('door-series-state');
     if (seriesState) {
-        seriesState.textContent = pWon ? `${pWon} of ${pens.length} pennants` : sb ? `Best ${_ordinal(sb.rank)} · ${sb.n} races` : 'No series yet';
-        seriesState.style.color = pWon ? '#f2c14e' : sb ? '#c4d2e6' : '#7f8ea9';
+        // YOUR RACING (Oct 2026): the stars you have earned racing the fleet (best at each venue; a Time
+        // Trial earns none) toward the full set — four a venue — with a bar under it.
+        const bests = (typeof loadVenueBests === 'function') ? loadVenueBests() : {};
+        const perVenue = {};
+        for (const [k, r] of Object.entries(bests)) {
+            if (!r || typeof r !== 'object' || !(r.bestPos || r.stars)) continue;
+            const v = k.split(':')[0];
+            if (Series.pool().includes(v)) perVenue[v] = Math.max(perVenue[v] || 0, r.stars || 0);
+        }
+        const vStars = Object.values(perVenue).reduce((a, b) => a + b, 0), full = Series.pool().length * 4;
+        seriesState.innerHTML = `<span style="display:block;">\u2605 ${vStars} of ${full} stars</span>`
+            + `<span style="display:block; margin-top:6px; width:150px; max-width:100%; height:6px; border-radius:3px; background:rgba(148,163,184,0.2);"><span style="display:block; width:${Math.round(100 * vStars / full)}%; min-width:${vStars ? 3 : 0}px; height:100%; border-radius:3px; background:#5aa7ff;"></span></span>`;
+        seriesState.style.color = '';
     }
-    // THE DRAW AS A HAND OF CARDS (design 21a): three venue cards fanned on a graphite
-    // stage, the outer two splayed and tilted, the middle one on top, all peeking up from
-    // the bottom edge — a draw you could pick up. Dealt once per visit, not on every refresh.
+    // THE RACE DOOR (Oct 2026, the hub's "A, Progress"; canvas "Race door A"). The picture is the
+    // pennant ladder — the five series lengths, big, the won ones lit in the door's blue, the next one
+    // called out; the line is the stars toward the full set (seriesState, above). One streak chip:
+    // the best one still running — wins, then podiums, then days of racing (all from 1).
     const seriesPic = $('door-series-pic');
-    if (seriesPic && !seriesPic.children.length) {
-        const hand = Series.draw(3);
-        const card = (k, i) => {
-            const tf = i === 0 ? 'translateX(-50%) translateX(-58px) rotate(-14deg)' : i === 2 ? 'translateX(-50%) translateX(58px) rotate(14deg)' : 'translateX(-50%)';
-            const shadow = i === 1 ? '0 10px 24px rgba(0,0,0,0.6)' : '0 8px 20px rgba(0,0,0,0.5)';
-            return `<div class="ch-fan-card" style="position:absolute; left:50%; bottom:${i === 1 ? -20 : -28}px; width:110px; height:90px; border-radius:8px; border:2px solid #fff; overflow:hidden; box-shadow:${shadow}; transform:${tf}; z-index:${i === 1 ? 2 : 1};">${venueThumb(k, escapeHTMLText(venueDisplayName(k) || k), 110)}</div>`;
-        };
-        seriesPic.innerHTML = `<div style="position:absolute; inset:0; background:radial-gradient(ellipse at 50% 110%, #2a3450, #111a2e 70%);">${[0, 2, 1].map(i => card(hand[i], i)).join('')}</div><div id="door-series-rack" style="position:absolute; top:10px; left:12px; background:rgba(6,14,26,0.72); border-radius:999px; padding:5px 9px;"></div>`;
+    if (seriesPic) {
+        const pens = Series.pennants();
+        const next = pens.find(p => !p.won);
+        const car = window.Unlocks ? Unlocks.career() : {};
+        const dk = (d) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+        const now = new Date(), y = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        const days = (car.lastDay === dk(now) || car.lastDay === dk(y)) ? (car.dayStreak || 0) : 0;
+        const streak = car.winStreak >= 1 ? [car.winStreak, car.winStreak === 1 ? 'win' : 'wins']
+                     : car.podiumStreak >= 1 ? [car.podiumStreak, car.podiumStreak === 1 ? 'podium' : 'podiums']
+                     : days >= 1 ? [days, days === 1 ? 'day' : 'days'] : null;   // 1 day counts: you raced today (Wes)
+        const flame = streak ? `<span title="In a row" style="position:absolute; top:10px; right:10px; display:inline-flex; align-items:center; gap:6px; background:rgba(6,14,26,0.82); border:1px solid rgba(255,154,60,0.45); border-radius:999px; padding:4px 11px 4px 8px;">
+                <svg width="12" height="16" viewBox="0 0 24 32" aria-hidden="true"><path d="M12 1c2 6 9 9 9 18a9 9 0 0 1-18 0c0-5 3-7 4-11 1 3 3 4 3 4s-1-6 2-11z" fill="#ff9a3c"/></svg>
+                <span class="t-mono" style="font-size:13px; font-weight:700; color:#ffd27a;">${streak[0]}</span>
+                <span class="t-label t-label-sm" style="color:#ffd27a;">${streak[1]}</span></span>` : '';
+        seriesPic.innerHTML = `<div style="position:absolute; inset:0; background:radial-gradient(ellipse at 50% 125%, #1d3a66, #0d1628 70%); display:flex; align-items:center; justify-content:center; gap:6px; padding-bottom:10px;">${pens.map(p => pennantHTML(p.n, p.won, 56, '#5aa7ff')).join('')}</div>`
+            + `<span class="ch-chip" style="position:absolute; left:12px; bottom:10px; background:rgba(6,14,26,0.78); color:#dbeafe;">${next ? `Next: the ${next.n}-race pennant` : 'All five pennants won'}</span>` + flame;
     }
-    // The pennant rack over the cards, refreshed on every visit (the cards are dealt once).
-    const rack = $('door-series-rack'); if (rack) rack.innerHTML = pennantRack(26, 3);
     // The door previews the last venue picked on the race board (settings.lastRaceVenue).
     // A profile from before that key existed falls back to `venue` once, until a pick.
     const last = VENUE_ORDER.includes(settings.lastRaceVenue) ? settings.lastRaceVenue
                : (settings.venue && VENUE_ORDER.includes(settings.venue)) ? settings.venue : 'bay';
-    const raceState = $('door-race-state'); if (raceState) { raceState.textContent = venueDisplayName(last) || last; raceState.style.cssText = "min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"; }
+    // TIME TRIALS: RECORDS (Oct 2026). A trial earns no stars — it is you against the clock — so its
+    // progress is the venues where your best beats the course's time to beat. The line under the
+    // door always says how many; the picture tours every venue, shuffled, with
+    // that venue's number: your record in the door's orange where you hold it, the time to beat where you don't.
+    // It tours all of them (see below), not only the ones you have sailed.
+    const fmtT = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
+    const bestsAll = (typeof loadVenueBests === 'function') ? loadVenueBests() : {};
+    const trialBest = (v) => {   // your best trial time on the venue as it is now (its records hash)
+        const pre = `${v}:${typeof recordsVenueHash === 'function' ? recordsVenueHash(v) : ''}:`;
+        let best = null;
+        for (const [k, r] of Object.entries(bestsAll)) {
+            const t = typeof r === 'number' ? r : (r && typeof r.t === 'number' ? r.t : null);
+            if (t != null && k.startsWith(pre) && (best == null || t < best)) best = t;
+        }
+        return best;
+    };
+    const pool = Series.pool();
+    const trial = pool.map(v => ({ v, best: trialBest(v), toBeat: (typeof provisionalRecord === 'function') ? provisionalRecord(v) : null }));
+    for (const x of trial) x.record = x.best != null && (x.toBeat == null || x.best <= x.toBeat);
+    const nRecords = trial.filter(x => x.record).length;
+    const raceState = $('door-race-state');
+    if (raceState) {
+        raceState.textContent = `Records ${nRecords} of ${pool.length}`;
+        raceState.style.color = '';
+    }
     const racePic = $('door-race-pic');
     if (racePic) {
-        racePic.innerHTML = `<img src="assets/images/venues/${last}.png" alt="${escapeHTMLText(venueDisplayName(last) || last)}" draggable="false">`;
-        // The record for that venue, as the briefing states it: your best time in gold, else
-        // the course's time to beat. The door says "Set a record" — this is the number.
-        const best = (typeof bestForVenue === 'function') ? bestForVenue(last) : null;
-        const prov = (typeof provisionalRecord === 'function') ? provisionalRecord(last) : null;
-        const rec = best && best.t != null ? { label: 'Your best', t: best.t, mine: true } : (prov != null ? { label: 'Time to beat', t: prov, mine: false } : { label: 'No record yet', t: null, mine: false });
-        // m:ss.s — the door is a glance, not the records book.
-        const fmt = (t) => `${Math.floor(t / 60)}:${(t % 60).toFixed(1).padStart(4, '0')}`;
-        racePic.insertAdjacentHTML('beforeend', `<span class="ch-chip" style="position:absolute; right:12px; bottom:12px; display:inline-flex; align-items:center; gap:8px; background:rgba(6,14,26,0.8); color:${rec.mine ? '#f2c14e' : rec.t != null ? '#dbeafe' : '#9fb2cc'}; border:1px solid ${rec.mine ? 'rgba(242,193,78,0.5)' : 'rgba(255,255,255,0.22)'};">${rec.label}${rec.t != null ? ` <span class="t-mono" style="font-size:13px; letter-spacing:0; text-transform:none;">${fmt(rec.t)}</span>` : ''}</span>`);
+        // EVERY VENUE, IN A SHUFFLED ORDER (Wes, Oct 12 2026: encourage them to explore) — each with your
+        // record or its time to beat. A fresh shuffle each visit to the hub, so it never opens on the
+        // same venue twice running. Presentation only: Math.random here never touches the race.
+        const order = pool.slice();
+        for (let k = order.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [order[k], order[j]] = [order[j], order[k]]; }
+        const slide = (v, fade) => {
+            const x = trial.find(y => y.v === v) || { v, best: null, toBeat: null, record: false };
+            const rec = x.record ? { label: 'Your record', t: x.best, gold: true }
+                      : x.toBeat != null ? { label: 'Time to beat', t: x.toBeat, gold: false }
+                      : x.best != null ? { label: 'Your best', t: x.best, gold: false } : { label: 'No time yet', t: null, gold: false };
+            const name = escapeHTMLText(venueDisplayName(v) || v);
+            // each venue is a layer; a new one fades in over the old, which is then removed
+            const layer = document.createElement('div');
+            layer.className = 'tt-slide';
+            layer.style.cssText = `position:absolute; inset:0; opacity:${fade ? 0 : 1}; transition:opacity 0.6s ease;`;
+            layer.innerHTML = `<img src="assets/images/venues/${v}.png" alt="${name}" draggable="false" style="width:100%; height:100%; object-fit:cover; display:block;">`
+                + `<span class="ch-chip" style="position:absolute; left:12px; top:12px; background:rgba(6,14,26,0.72); color:#dbeafe;">${name}</span>`
+                + `<span class="ch-chip" style="position:absolute; right:12px; bottom:12px; display:inline-flex; align-items:center; gap:8px; background:rgba(6,14,26,0.8); color:${rec.gold ? '#ff9a3c' : rec.t != null ? '#dbeafe' : '#9fb2cc'}; border:1px solid ${rec.gold ? 'rgba(255,154,60,0.55)' : 'rgba(255,255,255,0.22)'};">${rec.label}${rec.t != null ? ` <span class="t-mono" style="font-size:13px; letter-spacing:0; text-transform:none;">${fmtT(rec.t)}</span>` : ''}</span>`;
+            if (!fade) racePic.innerHTML = '';
+            const old = [...racePic.querySelectorAll('.tt-slide')];
+            racePic.appendChild(layer);
+            if (fade) {
+                requestAnimationFrame(() => { layer.style.opacity = '1'; });
+                setTimeout(() => old.forEach(o => o.remove()), 700);
+            }
+        };
+        // SLOW AND QUIET (Wes): a venue every 5 s, crossfaded, hovered or not; still for a single venue
+        // and for a reduced-motion setting.
+        if (window._ttCycle) clearInterval(window._ttCycle);
+        let i = 0;
+        slide(order[0], false);
+        const still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (order.length > 1 && !still) window._ttCycle = setInterval(() => {
+            if (!UI.clubhouse || UI.clubhouse.classList.contains('hidden')) return;
+            i = (i + 1) % order.length; slide(order[i], true);
+        }, 5000);
     }
-    for (const id of ['hub-hero-img', 'hub-hero-bg']) { const el = $(id); if (el && HUB_HERO && el.getAttribute('src') !== HUB_HERO) el.src = HUB_HERO; }
-    // Who you are, in the header. Locked mid-series, so the pill says so then.
-    const me = playerCharacter();
-    const skImg = $('hub-skipper-img'); if (skImg) { skImg.src = `assets/images/competitors/${me.name.toLowerCase()}.png`; skImg.alt = me.name; }
-    const skName = $('hub-skipper-name'); if (skName) skName.textContent = me.name;
-    // Sailors = the ones you have: the starting ten plus everyone unlocked (all of them when unlocks are off).
-    const sailors = (typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.filter(c => !window.Unlocks || Unlocks.isUnlocked(c.name)).length : 0;
-    const tally = $('clubhouse-tally'); if (tally) tally.textContent = `${Series.pool().length} venues · ${CUPS.length} cups · ${sailors} sailors`;
+    for (const id of ['hub-hero-img', 'hub-backdrop']) { const el = $(id); if (el && HUB_HERO && el.getAttribute('src') !== HUB_HERO) el.src = HUB_HERO; }
+    fillSkipperCard(playerCharacter());
+    fillBoatCard();
+    fillLogbook();
+    // (The progress line that sat here — stars, cups, venues, school — went to the doors it describes,
+    // Wes Oct 12 2026: each door already says where you stand; a second summary only repeated it.)
+    const tally = $('clubhouse-tally'); if (tally) tally.textContent = '';
+    // ONE DOOR LEADS (Oct 2026): the next step on your path — the school until you graduate, then
+    // the cups until all are won, then the open races. It wears its accent as a ring and a filled
+    // button; the others stay equal.
+    const lead = !grad ? 'door-school' : Series.cupsWon() < CUPS.length ? 'door-cup' : 'door-series';
+    for (const id of ['door-school', 'door-cup', 'door-series', 'door-race']) { const d = $(id); if (d) d.classList.toggle('primary', id === lead); }
 }
+// THE BOAT CARD on the hub (Oct 2026 front page): the Spindrift 18, the one class everyone sails.
+// Every speed on it comes from the game's own table (getTargetSpeed / getOptimalVMGAngle) and its
+// planing rule (J111_PLANING), so the card cannot drift from the physics. The specs are the class
+// rule as written (guidelines: the Spindrift is a Melges 20 drawn at 18 ft); the game sails the
+// speed table, not the specs.
+const SPINDRIFT_SPECS = [['Length', '5.49 m · 18 ft'], ['Displacement', '440 kg'], ['Draft', '1.35 m'], ['Sail area', '21 m²<br>+ kite 36 m²']];
+// The speed the polar draws: the table's best sail, with the planing boost where she can reach
+// it. Physics switches the plane on in a step; the chart FADES it in (Wes: smooth the bump) —
+// over the last knot below entry speed and over 15 degrees at each end of the planing window.
+function boatSpeedAt(twaDeg, tws) {
+    const r = twaDeg * Math.PI / 180;
+    const v = Math.max(getTargetSpeed(r, false, tws), getTargetSpeed(r, true, tws));
+    const P = J111_PLANING, d = 180 / Math.PI;
+    const ramp = (x, a, b) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+    if (tws < P.minTWS) return v;
+    const lo = P.minTWA * d, hi = P.maxTWA * d;
+    const u = ramp(v, P.entrySpeed - 1, P.entrySpeed) * ramp(twaDeg, lo - 5, lo + 10) * (1 - ramp(twaDeg, hi - 5, hi + 5));
+    return v * (1 + (P.speedMultiplier - 1) * u);
+}
+// ...and smoothed across angle (a gaussian over +-9 degrees), so the table's 13 corners and the
+// planing shoulder read as one curve.
+function boatPolarCurve(tws) {
+    const raw = [];
+    for (let a = 0; a <= 180; a++) raw.push(boatSpeedAt(a, tws));
+    const out = [];
+    for (let a = 0; a <= 180; a += 2) {
+        let sum = 0, wsum = 0;
+        for (let j = -9; j <= 9; j++) { const b = a + j; if (b < 0 || b > 180) continue; const w = Math.exp(-(j * j) / 32); sum += raw[b] * w; wsum += w; }
+        out.push([a, a === 0 ? 0 : sum / wsum]);
+    }
+    return out;
+}
+function fillBoatCard() {
+    const host = document.getElementById('hub-boat-polar');
+    if (!host || host.dataset.done) return;   // the table never changes: draw once
+    host.dataset.done = '1';
+    const INK = '#9ccbff', GRID = 'rgba(148,163,184,0.25)', LABEL = '#93a3bd';
+    // Half polar LYING ON ITS SIDE (Wes: the upright one was too hard to read): the wind blows
+    // in from the left, true wind angle sweeps 0 (left) through 90 (up) to 180 (right), speed is
+    // the radius. Sideways it is twice as wide as tall, which is the shape the card has to give.
+    // One curve per wind strength, told apart by lightness AND weight (ordered, so one hue) and
+    // labelled on the curve itself at its fastest point.
+    const R14 = 100, k = R14 / 14, padX = 14, top = 18, W = padX * 2 + R14 * 2, H = top + R14 + 30;
+    const cx = padX + R14, base = top + R14;
+    const at = (deg, kn) => { const r = deg * Math.PI / 180, R = kn * k; return [cx - R * Math.cos(r), base - R * Math.sin(r)]; };
+    const f = (n) => n.toFixed(1);
+    const T = (x, y, txt, fill, anchor, size, weight) => `<text x="${f(x)}" y="${f(y)}" text-anchor="${anchor || 'middle'}" font-family="IBM Plex Mono, monospace" font-size="${size || 11}" font-weight="${weight || 400}" fill="${fill || LABEL}">${txt}</text>`;
+    // viewBox only: the svg scales to the width its column gives it (index.html .ch-boat-polar)
+    let svg = `<svg role="img" aria-label="Spindrift 18 polar: boat speed by true wind angle in 8, 12 and 20 knots of wind" viewBox="0 0 ${W} ${H}">`;
+    for (const kn of [5, 10, 14]) {   // speed rings, labelled where they cross the downwind side
+        const R = kn * k;
+        svg += `<path d="M${f(cx - R)} ${base} A${f(R)} ${f(R)} 0 0 1 ${f(cx + R)} ${base}" fill="none" stroke="${GRID}" ${kn === 14 ? 'stroke-dasharray="3 4"' : ''}/>`;
+        if (kn !== 14) svg += T(cx + R, base + 15, kn === 10 ? '10 kn' : String(kn), LABEL, 'middle', 11);
+    }
+    for (const deg of [45, 90, 135]) {   // angle spokes
+        const [x, y] = at(deg, 14), [lx, ly] = at(deg, 15.4);
+        svg += `<line x1="${cx}" y1="${base}" x2="${f(x)}" y2="${f(y)}" stroke="${GRID}"/>` + T(lx, ly + 4, deg + '°', LABEL, 'middle', 11);
+    }
+    svg += `<line x1="${padX - 6}" y1="${base}" x2="${W - padX + 6}" y2="${base}" stroke="rgba(148,163,184,0.45)"/>`;
+    // the wind, coming in from the left
+    svg += `<path d="M${padX - 4} ${base + 17}h22m-6 -4l6 4l-6 4" fill="none" stroke="${LABEL}" stroke-width="1.6"/>` + T(padX + 24, base + 21, 'WIND', LABEL, 'start', 11, 600);
+    const winds = [[8, '#5b8fd1', 2.2], [12, '#9ccbff', 2.8], [20, '#eaf4ff', 3.4]];
+    for (const [tws, col, sw] of winds) {
+        const curve = boatPolarCurve(tws);
+        let best = curve[0];
+        for (const p of curve) if (p[1] > best[1]) best = p;
+        svg += `<path d="M${curve.map(([a, v]) => at(a, v).map(f).join(' ')).join('L')}" fill="none" stroke="${col}" stroke-width="${sw}" stroke-linejoin="round" stroke-linecap="round"/>`;
+        const [lx, ly] = at(best[0] - 10, best[1] + 1.2);
+        svg += T(lx, ly + 4, String(tws), col, 'middle', 13, 700);
+    }
+    host.innerHTML = svg + '</svg>';
+    const key = document.getElementById('hub-boat-polar-key');
+    if (key) key.innerHTML = winds.map(([tws, col]) => `<span><i style="background:${col}"></i>${tws} kt</span>`).join('');
+    const dl = (list) => list.map(([t, d]) => `<div><dt>${t}</dt><dd>${d}</dd></div>`).join('');
+    const specs = document.getElementById('hub-boat-specs'); if (specs) specs.innerHTML = dl(SPINDRIFT_SPECS);
+    // The line drawing: black ink on transparent, cropped to the boat, drawn at the box's own
+    // size and tinted the card's blue. Its hairlines are ~1 px on a 1536 px sheet, so scaled
+    // down 4-5x they would vanish: the ink is laid down five times, a fraction of a pixel
+    // apart, to keep every line at least a pixel wide. Redrawn when the box changes size.
+    const lines = document.getElementById('hub-boat-lines');
+    if (lines && !lines._img) {
+        lines._img = new Image();
+        lines._img.onload = () => drawBoatLines(lines, INK);
+        lines._img.src = 'assets/images/boats/boat-spindrift-18.png';
+        if (window.ResizeObserver) new ResizeObserver(() => drawBoatLines(lines, INK)).observe(lines.parentElement);
+    }
+}
+const BOAT_LINES_CROP = { x: 60, y: 12, w: 1420, h: 1000 };   // the ink's box on the sheet, plus a margin
+function drawBoatLines(canvas, ink) {
+    const img = canvas._img, box = canvas.parentElement;
+    if (!img || !img.complete || !img.naturalWidth || !box) return;
+    const bw = box.clientWidth, bh = box.clientHeight;
+    if (!bw || !bh) return;
+    const dpr = (window.devicePixelRatio || 1) * (window._hubZoom || 1), C = BOAT_LINES_CROP;   // the stage is zoomed
+    const s = Math.min(bw / C.w, bh / C.h);
+    const w = Math.round(C.w * s), h = Math.round(C.h * s);
+    canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+    canvas.style.left = Math.round((bw - w) / 2) + 'px'; canvas.style.top = Math.round((bh - h) / 2) + 'px';
+    const g = canvas.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, canvas.width, canvas.height);
+    g.imageSmoothingEnabled = true; g.imageSmoothingQuality = 'high';
+    const o = 0.45 * dpr;
+    for (const [dx, dy] of [[0, 0], [o, 0], [-o, 0], [0, o], [0, -o]]) g.drawImage(img, C.x, C.y, C.w, C.h, dx, dy, canvas.width, canvas.height);
+    g.globalCompositeOperation = 'source-in';
+    g.fillStyle = ink; g.fillRect(0, 0, canvas.width, canvas.height);
+    g.globalCompositeOperation = 'source-over';
+}
+
+// YOUR LOGBOOK, beside the boat's line drawing (Oct 2026): what you have done in her. Races and
+// podiums are fleet races (as the career counts them); miles and top speed are every race sailed,
+// Time Trials too — the boat's odometer. Miles are nautical, a straight conversion of the distances
+// the results screen shows (sailedKm).
+function fillLogbook() {
+    const el = document.getElementById('hub-logbook');
+    if (!el || !window.Unlocks) return;
+    const c = Unlocks.career();
+    const nm = Unlocks.logbookMetres(c) / 1852;   // world-scale metres (the results screen's), in nautical miles
+    if (!c.races && !nm) {
+        el.innerHTML = `<div class="ch-logbook-title">Your logbook</div><div class="ch-logbook-empty">Every race you sail is logged here — miles, top speed, results.</div>`;
+        return;
+    }
+    const rows = [
+        ['Races', `${c.races}${c.races ? ` <small>· ${c.wins} ${c.wins === 1 ? 'win' : 'wins'}</small>` : ''}`],
+        ['Podiums', `${c.podiums}`],
+        ['Miles sailed', `${nm < 10 ? nm.toFixed(1) : Math.round(nm)} <small>nm</small>`],
+        ['Top speed', c.topSpeed ? `${c.topSpeed.toFixed(1)} <small>kn</small>` : '—']
+    ];
+    el.innerHTML = `<div class="ch-logbook-title">Your logbook</div><dl>${rows.map(([t, d]) => `<div><dt>${t}</dt><dd>${d}</dd></div>`).join('')}</dl>`;
+}
+
+// THE SKIPPER CARD on the hub (Oct 2026 front page): who you are, dressed in your colours —
+// the band is the hull, the stripe the kite, with your portrait over it and your boat from
+// above. Locked mid-series, the button says so (its click still explains why).
+function fillSkipperCard(me) {
+    const $ = (id) => document.getElementById(id);
+    if (!$('hub-you-card')) return;
+    // WCAG relative luminance and contrast, so a pale hull gets dark ink and a dark kite never
+    // becomes an unreadable name on the navy card.
+    const lum = (hex) => {
+        const h = String(hex || '').replace('#', '');
+        if (h.length !== 6) return 1;
+        const c = [0, 2, 4].map(i => { const v = parseInt(h.slice(i, i + 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+        return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+    };
+    const contrast = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05); };
+    // THE CARD'S COLOURS (Oct 12 2026; Wes: theme consistency, the character's vibe, legibility —
+    // and legibility matters most for the text meant to be read). A ROLE system, as design systems
+    // do it (Material's tonal roles; Spotify/Apple Music's artwork colours): every colour on the
+    // band is one of the character's own, shifted only in LIGHTNESS (OKLCH — hue and chroma kept,
+    // so a red never drifts to maroon-purple), and every pairing is held to APCA, the WCAG 3 draft:
+    //   band   their colour (the hull, or the kite when the hull is too dark or pale to read as a
+    //          colour) at a chosen lightness;
+    //   text   "Sailing as", species, motto, the Change label: white or black, whichever reads
+    //          better — white wherever it clears Lc 60 (else black), aiming for 75 (APCA's level
+    //          for small text), with a soft halo below that, as games do on bright banners;
+    //   name   big and heavy (Lc 40 floor, APCA headlines 45): one of the colours their boat wears;
+    //   stripe an accent divider (Lc 30) against the band AND the card body;
+    //   Change a tonal button: the text ink as label and outline, filling with their accent on hover.
+    // The band's lightness is SEARCHED: each candidate is scored on the name's vibe (their kite
+    // colour first, the other painted colours, the hull, then the black/white their palette leans
+    // to), on staying near their true colour, and on both legibilities — so Muninn keeps a sky blue
+    // just deep enough for his white text, with his black-navy name; Bruce's red lifts a touch so
+    // his black panel can be his name.
+    // Only the colours their boat actually WEARS (Wes: Muninn's kite is solid — its unused second and
+    // third colours are not his). The kite's pattern says how many it paints — 1, 2 or 3 — chosen
+    // exactly as the race chooses it, and a 2-colour kite with no second colour uses the hull.
+    const pattern = me.spinPattern || SPIN_LOOKS[me.name] || spinPatternForName(me.name);
+    const nKite = spinColorCount(pattern);
+    const kite = [me.spinnaker, ...(nKite >= 2 ? [me.spinnaker2 || me.hull] : []), ...(nKite >= 3 ? [me.spinnaker3] : [])].filter(Boolean);
+    const hex6 = (c) => { const h = String(c || '').replace('#', ''); return h.length === 3 ? h.split('').map(x => x + x).join('') : h; };
+    const rgbOf = (c) => { const h = hex6(c); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16) || 0); };
+    const toHex = (r) => '#' + r.map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+    // OKLab (Ottosson). toOk: hex -> [L, a, b]; fromOk clips to sRGB by easing chroma.
+    const lin = (v) => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    const gam = (v) => 255 * (v <= 0.0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - 0.055);
+    const toOk = (c) => {
+        const [r, g, b] = rgbOf(c).map(lin);
+        const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b), m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b), s3 = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+        return [0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s3, 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s3, 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s3];
+    };
+    const fromOk = ([L, A, B]) => {
+        for (let k = 1; k >= 0; k -= 0.05) {
+            const a = A * k, b = B * k;
+            const l = Math.pow(L + 0.3963377774 * a + 0.2158037573 * b, 3), m = Math.pow(L - 0.1055613458 * a - 0.0638541728 * b, 3), s3 = Math.pow(L - 0.0894841775 * a - 1.2914855480 * b, 3);
+            const rgb = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s3, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s3, -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s3];
+            if (rgb.every(v => v >= -0.001 && v <= 1.001) || k < 0.05) return toHex(rgb.map(v => gam(Math.max(0, Math.min(1, v)))));
+        }
+    };
+    const withL = (c, L) => { const o = toOk(c); return fromOk([Math.max(0, Math.min(1, L)), o[1], o[2]]); };
+    const Y = (c) => { const [r, g, b] = rgbOf(c).map(v => Math.pow(v / 255, 2.4)); return 0.2126729 * r + 0.7151522 * g + 0.0721750 * b; };
+    const apca = (txt, bg) => {   // |Lc|, SAPC-4g constants
+        const k = (y) => (y > 0.022 ? y : y + Math.pow(0.022 - y, 1.414));
+        const yt = k(Y(txt)), yb = k(Y(bg));
+        const sap = yb > yt ? (Math.pow(yb, 0.56) - Math.pow(yt, 0.57)) * 1.14 : (Math.pow(yb, 0.65) - Math.pow(yt, 0.62)) * 1.14;
+        return Math.abs(sap) < 0.1 ? 0 : Math.abs(sap) * 100 - 2.7;
+    };
+    const WHITE = '#ffffff', BLACK = '#0c1322', BODY = '#101a2e';
+    const base = bandColorFor(me.hull, me.spinnaker), L0 = toOk(base)[0];
+    const eq = (a, b) => a && b && a.toLowerCase() === b.toLowerCase();
+    // the name's candidates, most expressive first, each with how much of the character it carries
+    const lean = (ink) => [[me.hull, 2], [me.sail, 2], ...kite.map(c => [c, 1])].reduce((n, [c, w]) => n + (c && apca(c, ink) < 20 ? w : 0), 0);
+    const leanInk = lean(BLACK) > lean(WHITE) ? BLACK : WHITE;
+    const nameCands = [];
+    kite.forEach((c, i) => nameCands.push([c, i === 0 ? 1 : 0.9]));
+    nameCands.push([me.hull, 0.8]);
+    nameCands.push([leanInk, 0.4], [leanInk === BLACK ? WHITE : BLACK, 0.2]);
+    const cands = nameCands.filter(([c], i, a) => c && a.findIndex(([x]) => eq(x, c)) === i).map(([c, v]) => [c, eq(c, base) ? 0.35 : v]);
+    const clamp01 = (x) => Math.max(0, Math.min(1, x));
+    let best = null;
+    for (let L = Math.max(0.22, L0 - 0.36); L <= Math.min(0.95, L0 + 0.06) + 1e-9; L += 0.01) {
+        const bg = withL(base, L);
+        // white wherever it clears the floor (Wes: white reads better on Muninn's sky blue, as on most
+        // saturated banners), black on the pale bands where it cannot
+        const tW = apca(WHITE, bg), tB = apca(BLACK, bg), textInk = tW >= 60 ? WHITE : BLACK, textLc = textInk === WHITE ? tW : tB;
+        if (textLc < 60) continue;
+        for (const [c, vibe] of cands) {
+            const nameLc = apca(c, bg);
+            if (nameLc < 40) continue;
+            const score = 0.55 * vibe + 0.20 * clamp01((textLc - 60) / 15) + 0.15 * (1 - Math.abs(L - L0) / 0.36) + 0.10 * clamp01((nameLc - 40) / 10);
+            if (!best || score > best.score) best = { score, L, bg, textInk, textLc, name: c };
+        }
+    }
+    if (!best) {   // nothing passed both floors: the most legible shade, white or black text and name
+        const bg = withL(base, Math.max(0.22, L0 - 0.36)), textInk = apca(WHITE, bg) >= apca(BLACK, bg) ? WHITE : BLACK;
+        best = { L: Math.max(0.22, L0 - 0.36), bg, textInk, textLc: apca(textInk, bg), name: textInk };
+    }
+    const behind = best.bg, textInk = best.textInk, nameColour = best.name;
+    const left = withL(base, best.L + 0.03), right = withL(base, Math.max(0.12, best.L - 0.12));
+    const band = $('hub-skipper-band'); if (band) band.style.background = `linear-gradient(105deg, ${left} 0%, ${behind} 35%, ${right} 100%)`;
+    // small text: a soft halo when it reads below APCA's small-text level
+    const halo = best.textLc >= 75 ? 'none' : (textInk === WHITE ? '0 1px 2px rgba(6,10,20,0.55), 0 0 6px rgba(6,10,20,0.25)' : '0 1px 2px rgba(255,255,255,0.45), 0 0 6px rgba(255,255,255,0.2)');
+    for (const id of ['hub-skipper-label', 'hub-skipper-creature', 'hub-skipper-motto']) { const el = $(id); if (el) { el.style.color = textInk; el.style.textShadow = halo; } }
+    // THE STRIPE: an accent divider — the first colour the boat wears, not the band's own, that stands
+    // off both the band and the card's body (Lc 30); else white or black, whichever stands off both.
+    const both = (c) => Math.min(apca(c, left), apca(c, BODY));
+    // (a very light band over the dark body cannot have a divider standing off both — Lure's lime, Lateen's
+    // yellow — so there it underlines the BAND: the colour standing off it most, the body second)
+    const stripeColour = [...kite, me.hull].find(c => c && !eq(c, base) && both(c) >= 30)
+        || [...[...kite, me.hull].filter(c => c && !eq(c, base)), WHITE, BLACK].sort((a, b) => (0.7 * apca(b, left) + 0.3 * apca(b, BODY)) - (0.7 * apca(a, left) + 0.3 * apca(a, BODY)))[0];
+    const stripe = $('hub-skipper-stripe'); if (stripe) stripe.style.background = stripeColour;
+    // THE CHANGE BUTTON: a tonal button on the band — the text ink as label and outline over a faint
+    // wash of it; on hover it fills with their accent (the stripe colour), its label whichever ink
+    // reads on that.
+    const chg = $('hub-skipper');
+    if (chg) {
+        const dark = textInk === WHITE;
+        chg.style.setProperty('--chg-ink', textInk);
+        chg.style.setProperty('--chg-line', dark ? 'rgba(255,255,255,0.7)' : 'rgba(12,19,34,0.7)');
+        chg.style.setProperty('--chg-fill', dark ? 'rgba(6,10,20,0.28)' : 'rgba(255,255,255,0.32)');
+        chg.style.setProperty('--chg-hover', stripeColour);
+        chg.style.setProperty('--chg-hover-ink', apca(WHITE, stripeColour) >= apca(BLACK, stripeColour) ? WHITE : BLACK);
+    }
+    const img = $('hub-skipper-img');
+    if (img) { img.src = `assets/images/competitors/${me.name.toLowerCase()}.png`; img.alt = `${me.name}, ${me.creature}`; }
+    const name = $('hub-skipper-name');
+    if (name) {
+        name.textContent = me.name;
+        // A long name steps its size down until it fits its column (Woebegone, Slipstream…).
+        name.style.fontSize = '';
+        let px = parseFloat(getComputedStyle(name).fontSize) || 54;   // 54, or 46 on a narrow card
+        while (px > 34 && name.scrollWidth > name.clientWidth + 1) { px -= 2; name.style.fontSize = px + 'px'; }
+        name.style.color = nameColour;
+    }
+    const creature = $('hub-skipper-creature'); if (creature) creature.textContent = me.creature || '';
+    const motto = $('hub-skipper-motto'); if (motto) motto.textContent = me.personality || '';
+    const btn = $('hub-skipper');
+    if (btn) {
+        const locked = !!(window.Series && Series.locked && Series.locked());
+        btn.textContent = locked ? `Locked for the ${Series.active.kind}` : 'Change';
+        btn.setAttribute('aria-label', locked ? `Your skipper is locked for the ${Series.active.kind}` : 'Change skipper');
+        btn.classList.toggle('locked', locked);
+    }
+    // Their boat from above, kite flying — drawn for this card at its own (large) size from
+    // the same sprite pipeline as the race. Waits for the sprites, bounded.
+    const canvas = $('hub-skipper-boat');
+    if (canvas) {
+        if (!boatSpritesReady()) {
+            fillSkipperCard._tries = (fillSkipperCard._tries || 0) + 1;
+            if (fillSkipperCard._tries < 40) setTimeout(() => { if (playerCharacter().name === me.name) fillSkipperCard(me); }, 300);
+        } else {
+            const CW = 220, CH = 170, pad = 4, dpr = Math.max(2, (window.devicePixelRatio || 1) * (window._hubZoom || 1));
+            canvas.width = Math.round(CW * dpr); canvas.height = Math.round(CH * dpr);
+            const g = canvas.getContext('2d'), box = PROFILE_BOAT_BOUNDS;
+            const scale = Math.min((CW - pad * 2) / box.w, (CH - pad * 2) / box.h);
+            g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, canvas.width, canvas.height);
+            g.save(); g.scale(dpr, dpr); g.translate(CW / 2, CH / 2); g.scale(scale, scale);
+            g.translate(-(box.x + box.w / 2), -(box.y + box.h / 2));
+            drawProfileBoatArt(g, me);
+            g.restore();
+        }
+    }
+}
+
 // The race board — the pre-race overlay, in whichever dress the moment calls for.
 function showRaceBoard() {
     hideClubhouseOverlays();

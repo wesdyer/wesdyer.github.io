@@ -198,16 +198,16 @@ function update(dt) {
     } else if (state.race.status === 'racing') {
         state.race.timer += dt;
 
-        // Calculate Cutoff Time (0.1875s per meter)
-        // legLength is in units. 5 units = 1 meter.
-        let totalDistMeters = (state.race.totalLegs * state.race.legLength) / 5;
+        // Calculate Cutoff Time (0.375 s per metre — 0.1875 at the old 0.2 m a unit)
+        // legLength is in units; 10 units = 1 metre (the world scale).
+        let totalDistMeters = (state.race.totalLegs * state.race.legLength) / 10;
         // A designed course carries its own limit — authored, or derived from the route
         // by VenueDoc.compile. `legs × legLength` only ever described a
         // windward-leeward; the island special case that used to live here was that
         // same gap patched for one venue, and it did not generalise to a course with
         // gates in it.
         const cutoffTime = (state.course.cutoff != null)
-            ? state.course.cutoff : totalDistMeters * 0.1875;
+            ? state.course.cutoff : totalDistMeters * 0.375;
 
         if (state.race.timer >= cutoffTime) { // Dynamic Cutoff
             state.race.status = 'finished';
@@ -852,7 +852,7 @@ function draw() {
             // distance, whatever lies between — the way every shipped game's marker works. The WAY
             // there is a separate, softer element: the path line on the water (GoalField.drawPath),
             // so the arrow never has to be right about a route. See js/sim/goalfield.js.
-            const metres = (u) => Math.round(u * 0.2) + 'm';
+            const metres = (u) => Math.round(u * WORLD_M_PER_U) + 'm';   // the world scale (screens.js)
             const A = window.GoalField ? GoalField.playerAim(player, e, leg) : null;
             let goalAimPt = null;
             if (A && A.kind === 'mark') {
@@ -892,7 +892,7 @@ function draw() {
                 const v = viewPos(wp.x, wp.y);
                 if (!v.inView || occluded(v.x, v.y)) {
                     const at = v.inView ? v : toScreen(wp.x, wp.y);
-                    drawMarkEdgeIndicator(gctx, at.x, at.y, Math.round(wp.dist) + 'm', null, rot);
+                    drawMarkEdgeIndicator(gctx, at.x, at.y, Math.round(wp.dist * WORLD_M_PER_U) + 'm', null, rot);
                 }
             }
             // The published aim — the goal's bearing — for the rose's waypoint arrow. A bearing is

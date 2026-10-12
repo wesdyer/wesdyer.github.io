@@ -1654,7 +1654,7 @@ const School = {
             const v = viewPos ? viewPos(b.p.x, b.p.y) : null;
             const p = (v && v.inView) ? v : toScreen(b.p.x, b.p.y);
             if (v ? (v.inView && !(occluded && occluded(v.x, v.y))) : p.onScreen) return;
-            chips.push({ x: p.x, y: p.y, d: Math.round(this.dist(player, b.p) * 0.2), side: b.side || null, through: !!b.noZone });
+            chips.push({ x: p.x, y: p.y, d: Math.round(this.dist(player, b.p) * WORLD_M_PER_U), side: b.side || null, through: !!b.noZone });
         });
         // A gate's two buoys that project to (nearly) the same edge point draw as one chip,
         // the nearer distance — the race's rule (script.js).

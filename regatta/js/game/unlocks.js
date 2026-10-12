@@ -14,7 +14,7 @@
 // fleet drawn from the whole roster. Under a driven browser (navigator.webdriver), the eval
 // harness, or node's vm (no navigator at all), `enforced()` is false: nothing is locked,
 // the draw is the old draw, nothing is awarded. `window.__UNLOCKS = 'on' | 'off'` overrides
-// that for a test of this system itself.
+// that for a test of this system itself, and so does `?unlocks=off|on` in the page's address.
 //
 // Evaluated once per race, from the results page, once the player's place can no longer
 // change — see `poll`. Sailing School never reaches it (it has its own results).
@@ -690,6 +690,12 @@ const Unlocks = {
     STARTING_TEN,
 
     enforced() {
+        // ?unlocks=off (or =on) in the address bar: every character open for this tab, to check
+        // them all (Wes, Oct 12 2026). Nothing is written — the saved progress is untouched.
+        if (window.__UNLOCKS == null && typeof location !== 'undefined') {
+            const q = new URLSearchParams(location.search).get('unlocks');
+            if (q === 'on' || q === 'off') window.__UNLOCKS = q;
+        }
         const o = window.__UNLOCKS;
         if (o === 'on') return true;
         if (o === 'off') return false;
@@ -745,6 +751,17 @@ const Unlocks = {
         s.unseen = s.unseen || [];
         s.rivals = s.rivals || [];
         return s;
+    },
+    // The logbook's distance in world-scale metres. Builds on Oct 12 2026 stored it three ways — `distU`
+    // (old-scale metres), `distM` halved (= world metres), `distM` at distV 2 (old-scale metres) — so an
+    // older store is converted in place, once (`distV` 3 marks it done).
+    logbookMetres(c) {
+        if (c.distV !== 3) {
+            c.distM = c.distV === 2 ? (c.distM || 0) / 2 : (c.distM || 0) + (c.distU || 0) / 2;
+            delete c.distU;
+            c.distV = 3;
+        }
+        return c.distM || 0;
     },
     career() {
         const c = this._read(CAREER_KEY);
@@ -859,6 +876,9 @@ const Unlocks = {
             // you have put down — kept per race, the latest value winning.
             vals: Object.assign({}, (state.race.unlocks && state.race.unlocks.vals) || {}),
             topSpeed: tops.length ? Math.max(...tops) : 0,
+            // the distance you sailed this race, in world-scale metres — the SAME distance the results screen
+            // shows (Wes, Oct 12 2026: a straight conversion of it)
+            distM: (rs.legDistances || []).reduce((a, d) => a + (d || 0), 0),
             firstMarkRank: (rs.legRanks && rs.legRanks.length) ? rs.legRanks[0] : null,
             nextHome: undefined,
         };
@@ -926,11 +946,24 @@ const Unlocks = {
         if (r.finished && r.pos <= 3) c.podiums++;
         c.fifthStreak = (r.finished && r.pos === 5) ? c.fifthStreak + 1 : 0;
         c.startStreak = (r.feats || []).includes('start:first') ? (c.startStreak || 0) + 1 : 0;   // first across the start, races running
+        // THE HUB'S STREAKS (the Race door, Oct 2026): fleet races running — a win, a podium — and DAYS
+        // in a row with a fleet race, by the player's own calendar (read as running only if the last day
+        // is today or yesterday). A Time Trial keeps none of them: the chip lives on the Race door.
+        c.winStreak = r.won ? (c.winStreak || 0) + 1 : 0;
+        c.podiumStreak = (r.finished && r.pos <= 3) ? (c.podiumStreak || 0) + 1 : 0;
+        const dayKey = (d) => `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+        const now = new Date(), today = dayKey(now), yest = dayKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1));
+        if (c.lastDay !== today) { c.dayStreak = c.lastDay === yest ? (c.dayStreak || 0) + 1 : 1; c.lastDay = today; }
         v.races++;
         if (r.finished) v.finishes++;
         if (r.won) v.wins++;
         }
         v.stars = Math.max(v.stars || 0, r.stars || 0);
+        // THE BOAT'S LOGBOOK (the hub card, Oct 2026): every race you sail, a Time Trial too, adds its
+        // distance and may raise your top speed — the boat's odometer, not a fleet result.
+        Unlocks.logbookMetres(c);   // bring an older store up to date first
+        c.distM = (c.distM || 0) + (r.distM || 0);
+        c.topSpeed = Math.max(c.topSpeed || 0, r.topSpeed || 0);
         // the wind bands won in (Chroma's Every Colour): light <= 8 kn, medium, heavy >= 18 kn
         const aw = (r.vals || {})['wind:avg'];
         if (r.won && aw != null) { const band = aw <= 8 ? 'light' : aw >= 18 ? 'heavy' : 'medium'; c.windBands = [...new Set([...(c.windBands || []), band])]; }   // the best stars ever at this venue, any race (the Grand Tour rungs)
