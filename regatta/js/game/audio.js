@@ -720,6 +720,11 @@ const Sound = {
     windAudible: function() {
         if (UI.resultsOverlay && !UI.resultsOverlay.classList.contains('hidden')) return false;
         if (UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden')) return false;
+        // ...and once YOU have finished (Wes, Oct 12 2026: no wind or weather after the race). The
+        // race status stays 'racing' while the fleet comes in behind you, so it cannot say this alone.
+        // The finish horn still plays: it fires as you cross, before this turns false.
+        const me = state.boats && state.boats.find(b => b.isPlayer);
+        if (me && me.raceState && me.raceState.finished) return false;
         return state.race.status === 'prestart' || state.race.status === 'racing';
     },
 
