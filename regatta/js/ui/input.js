@@ -153,6 +153,12 @@ window.addEventListener('keydown', (e) => {
     if (key === 's' || key === 'S') key = 'ArrowDown';
 
     if (state.keys.hasOwnProperty(key)) state.keys[key] = true;
+    // SHIFT + left/right is the fine helm: exactly one degree per press, and one more per key
+    // repeat — physics applies the queue and holds the continuous turn while Shift is down.
+    if (e.shiftKey && (key === 'ArrowLeft' || key === 'ArrowRight') && !state.paused) {
+        state.helmNudge = (state.helmNudge || 0) + (key === 'ArrowLeft' ? -1 : 1);
+        e.preventDefault();
+    }
 
     // View & System
     // Sailing School frames every lesson in heading mode (the boat low in frame, goals at

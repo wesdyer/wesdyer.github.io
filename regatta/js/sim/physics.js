@@ -513,9 +513,16 @@ function updateBoat(boat, dt) {
         // Player Input
         // Apply Handling Stat (Player)
         const handlingMod = (1.0 + boat.stats.handling * 0.03);
-        const turnRate = (ctl.slow ? getTurnSpeed() * 0.25 : getTurnSpeed()) * timeScale * handlingMod * steerageFactor(boat);
-        if (ctl.left) boat.heading -= turnRate;
-        if (ctl.right) boat.heading += turnRate;
+        // SHIFT IS THE FINE HELM: exactly one degree per key press (and per key repeat), queued by
+        // input.js, and no continuous turn while it is held (Wes: fine tuning, one degree at a time).
+        if (ctl.slow) {
+            if (state.helmNudge) boat.heading += state.helmNudge * Math.PI / 180;
+        } else {
+            const turnRate = getTurnSpeed() * timeScale * handlingMod * steerageFactor(boat);
+            if (ctl.left) boat.heading -= turnRate;
+            if (ctl.right) boat.heading += turnRate;
+        }
+        state.helmNudge = 0;
     }
 
     boat.heading = normalizeAngle(boat.heading);
