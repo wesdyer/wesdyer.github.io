@@ -93,10 +93,10 @@ function segToShapeDist(p, q, shape) {
 // HULL_R is 30 in script.js, so a boat is ~60 units across; call the practical
 // clearance a boat needs to pass and manoeuvre 3 hull widths.
 const HULL_DIA = 60;
-// Findings are read by a person, and nobody thinks in world units. 5u = 1 metre, and a
-// boat is 55u = 11 m long, so gaps are also quoted in BOAT WIDTHS where that is the
-// actual question ("can two boats pass here?").
-const M = (u) => (Math.abs(u) >= 5000 ? `${(u / 5000).toFixed(2)} km` : `${Math.round(u / 5)} m`);
+// Findings are read by a person, and nobody thinks in world units. 10u = 1 metre (the world
+// scale, VenueDoc.U_PER_M), and a boat is ~55u = 5.5 m long, so gaps are also quoted in BOAT
+// WIDTHS where that is the actual question ("can two boats pass here?").
+const M = (u) => { const m = u / window.VenueDoc.U_PER_M; return Math.abs(m) >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`; };
 const HULLS = (u) => `${(u / HULL_DIA).toFixed(1)} hulls`;
 const PASSABLE = HULL_DIA * 3;
 

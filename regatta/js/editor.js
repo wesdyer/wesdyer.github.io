@@ -225,7 +225,7 @@ let previewSeed = 90210;
 let view = { x: 0, y: 0, scale: 0.1 };
 let drag = null;
 let measure = null;
-// A J111 to scale: 11 m long, 3.4 m beam, which is 55 x 17 world units. Dropped on the
+// The game's boat to scale: 55 x 17 world units — the 18 ft Spindrift at 10 cm a unit. Dropped on the
 // map so a designer can see whether a gap, a gate or a rounding actually fits a boat,
 // rather than converting metres in their head.
 const BOAT_L = 55, BOAT_B = 17;
@@ -259,9 +259,11 @@ const COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE',
 const compassOf = (rad) => COMPASS[Math.round(degOf(rad) / 22.5) % 16];
 
 // ── Units ───────────────────────────────────────────────────────────────────
-// 5 world units = 1 metre, and 55u = 11m = one boat length (a J111 — the game's 165u
-// RRS zone is three of them). Panels speak metres; world units survive only in the
-// cursor HUD, where they are the coordinates you would type into a document.
+// 10 world units = 1 metre, and ~55u = one boat length (the game's 165u RRS zone is three of
+// them). Panels speak metres; world units survive only in the cursor HUD, where they are the
+// coordinates you would type into a document.
+// THE WORLD SCALE (Oct 12 2026): 10 units to the metre, the scale the boats are drawn to — VenueDoc.U_PER_M,
+// shared with the game, every metre a document states (heights, puff sizes, swell) is on it (schema 2).
 const U_PER_M = window.VenueDoc.U_PER_M;
 const U_PER_BL = 55;
 const uToM = (u) => u / U_PER_M;
@@ -854,7 +856,7 @@ function newDoc() {
     let key = 'untitled', n = 2;
     while (window.VENUE_DOC[key]) key = `untitled-${n++}`;
     const size = 8000;                                   // 1.6 km of water: enough beat
-    const half = size / 2 - mToU(140);                   // the Fit-rect default inset
+    const half = size / 2 - mToU(70);                    // the Fit-rect default inset (700 u)
     const src = window.VenueDoc.migrate({
         schema: 1,
         venue: key,
@@ -3346,12 +3348,12 @@ function drawMeasure() {
             ctx.fillText(fmtM(d), (a.x + b.x) / 2 + 8, (a.y + b.y) / 2 - 6);
         }
     }
-    // The game's 0.1875 s/m, times the measured ratio of mean race time to cutoff.
-    const secs = uToM(total) * 0.1875 * 0.71;
+    // The game's 0.375 s/m, times the measured ratio of mean race time to cutoff.
+    const secs = uToM(total) * 0.375 * 0.71;   // 0.375 s a metre (0.1875 at the old 0.2 m a unit)
     const last = toS(pts[pts.length - 1].x, pts[pts.length - 1].y);
     const lines = [
         `${pts.length - 1} leg${pts.length > 2 ? 's' : ''}  ·  ${fmtM(total)}`,
-        `${fmtBL(total)} (55u = 11 m)`,
+        `${fmtBL(total)} (56 u = 5.6 m)`,
         `~${Math.floor(secs / 60)}:${String(Math.round(secs % 60)).padStart(2, '0')} to sail`
     ];
     ctx.font = '600 12px "IBM Plex Mono", monospace';
@@ -4950,7 +4952,7 @@ function inspGust(r) {
 <div class="in-sect"><span class="k">What comes out</span>
   <div class="in-grid">
     ${numF('gust', 'gr.gustKt', r.gustKt != null ? r.gustKt : 5, 'kt')}
-    ${numF('size', 'gr.sizeM', r.sizeM != null ? r.sizeM : 300, 'm')}
+    ${numF('size', 'gr.sizeM', r.sizeM != null ? r.sizeM : 150, 'm')}
     ${numF('life', 'gr.lifeS', r.lifeS != null ? r.lifeS : 90, 's')}
     ${numF('veer', 'gr.veer', r.veer != null ? r.veer : 15, '°')}
   </div>
@@ -5105,7 +5107,7 @@ function numEdit(el) {
         const ends = ln && lineEnds(ln.id);
         if (!ends) { inspectorRefresh(); return; }
         const wU = mToU(v0);
-        if (!(wU >= mToU(5))) { toast('A gate needs at least 5 m of width', true); inspectorRefresh(); return; }
+        if (!(wU >= mToU(2.5))) { toast('A gate needs at least 2.5 m of width', true); inspectorRefresh(); return; }   // 25 u (5 m at the old scale)
         const [a, b] = ends;
         const cx = (a.x + b.x) / 2, cy = (a.y + b.y) / 2;
         const len = Math.hypot(b.x - a.x, b.y - a.y);
@@ -5232,7 +5234,7 @@ function gustEdit(key, value) {
         if (v < 0 || v > 30) { toast('Gust must be 0–30 kt', true); inspectorRefresh(); return; }
         r.gustKt = v;
     } else if (key === 'sizeM') {
-        if (v < 1 || v > 2000) { toast('Size must be 1–2000 m', true); inspectorRefresh(); return; }
+        if (v < 1 || v > 1000) { toast('Size must be 1–1000 m', true); inspectorRefresh(); return; }
         r.sizeM = v;
     } else if (key === 'lifeS') {
         if (v < 1 || v > 900) { toast('Life must be 1–900 s', true); inspectorRefresh(); return; }
@@ -5370,7 +5372,7 @@ function info() {
 
     } else {
         dist = (state.race.totalLegs || 2) * (state.race.legLength || 4000);
-        cutoff = uToM(dist) * 0.1875;
+        cutoff = uToM(dist) * 0.375;   // 0.375 s a metre (0.1875 at the old 0.2 m a unit)
 
     }
     // THE RECOMMENDATION IS THE DERIVED LIMIT. Twice the best time along the course path,
@@ -6320,7 +6322,7 @@ function addIce(cx, cy, radius) {
     // in the same box gives smaller floes rather than a pile of overlapping bergs.
     const each = n === 1 ? radius : radius / Math.sqrt(n) * 0.85;
     for (let k = 0; k < n; k++) {
-        const rr = Math.max(mToU(4), each * (1 - vary / 2 + Math.random() * vary));
+        const rr = Math.max(mToU(2), each * (1 - vary / 2 + Math.random() * vary));   // 20 u
         let px = cx, py = cy;
         let ring = null;
         if (n > 1) {
@@ -6495,7 +6497,7 @@ function addRegion(kind, poly) {
         // now the "nothing else" is legible, because a stated default in knots and metres
         // can be judged against the course where `1x` could only be judged against itself.
         : kind === 'gust'
-        ? { id: `gust-${n}`, poly, falloff: 300, count: 8, gustKt: 5, sizeM: 300, lifeS: 90, bias: 0.5, veer: 15 }
+        ? { id: `gust-${n}`, poly, falloff: 300, count: 8, gustKt: 5, sizeM: 150, lifeS: 90, bias: 0.5, veer: 15 }
         // A rapid is PURE TEXTURE — turbulence and nothing else. Flow belongs to the
         // Current layer in whole, so a rapid has no speed or direction to default. The
         // falloff is tighter than a current's because rapids have edges you can see —
@@ -8318,7 +8320,7 @@ window.addEventListener('mouseup', () => {
     }
     if (d.kind === 'icenew') {
         // A tap with no drag still means "put ice here", at a sensible default size.
-        const r = d.r > mToU(6) ? d.r : mToU(30);
+        const r = d.r > mToU(3) ? d.r : mToU(15);   // 30 u / 150 u
         const n = addIce(d.origin.x, d.origin.y, r);
         afterEdit(true, 'add ice');
         toast(`${n} floe${n === 1 ? '' : 's'} placed · ${fmtM(r * 2)} across`);

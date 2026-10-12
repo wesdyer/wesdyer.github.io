@@ -961,7 +961,7 @@ if (typeof window !== 'undefined') {
 // venue height and prop height was HALVED to undo that, and the rule stays the sailor's ten heights.
 const SHADOW_HEIGHTS = 10;           // wind shadow, in obstacle heights
 const SHADOW_WAKE = 2.5;            // current wake, in half-widths of what the stream sees
-const M_TO_U = 5;                   // the world's scale: 5 units to the metre
+const M_TO_U = 10;                  // the world's scale: 10 units to the metre (heights halved with it, schema 2)
 function shadowLen(isl, kind) {
     const authored = kind === 'wind' ? isl.windShadow : isl.currentShadow;
     if (authored != null) return authored;

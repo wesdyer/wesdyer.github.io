@@ -21,9 +21,10 @@
 // derivations at each term.
 //
 // ── UNITS ──────────────────────────────────────────────────────────────────
-// The game is a uniformly time-compressed world: 5 units = 1 metre, and speeds are quoted in
-// knots where units/second = knots × 15. Those two together mean the game runs about 5.8×
-// real time. That is fine and it is why the REAL deep-water formulas can be used unchanged:
+// The game is a uniformly time-compressed world: 10 units = 1 metre (the world scale; this
+// read 5 until Oct 12 2026, when every authored metre was halved with it), and speeds are
+// quoted in knots where units/second = knots × 15. Those two together mean the game runs
+// about 2.9× real time. That is fine and it is why the REAL deep-water formulas can be used unchanged:
 // compression is uniform, so every RATIO — wave speed against boat speed, orbital velocity
 // against boat speed, crests met per boat length — comes out physically correct. Only the
 // wall-clock rate differs, and it differs for the boats in exactly the same proportion.
@@ -51,7 +52,7 @@
 //     works out to 1.5 kt of orbital velocity here exactly as it does at sea.)
 (function () {
 
-const U_PER_M = 5;
+const U_PER_M = 10;   // the world scale (venue swell heights halved with it, schema 2)
 const KT_TO_U = 15;                       // units/second per knot
 const HULL_LEN = 55;                      // units, bow to stern — the lever arm for the couple
 

@@ -1760,12 +1760,10 @@ function updateBoatRaceState(boat, dt) {
 
     // Stats
     if (state.race.status === 'racing' && boat.raceState.leg <= state.race.totalLegs) {
-        // Distance Calculation:
-        // Use visual scale: 1 unit = 0.2 meters.
-        // Distance = Speed (units/s) * dt * 0.2
-        // boat.speed is units per frame (at 60fps). Speed/s = boat.speed * 60.
-        // Distance = boat.speed * 60 * dt * 0.2 = boat.speed * 12.0 * dt.
-        const distMoved = boat.speed * 12.0 * dt;
+        // Distance Calculation, in METRES at the world scale: 1 unit = 0.1 m (guidelines/scale.md;
+        // this was 0.2 m, ×12, until Oct 12 2026). boat.speed is units per frame (at 60 fps), so
+        // speed/s = boat.speed * 60, and distance = boat.speed * 60 * dt * 0.1 = boat.speed * 6 * dt.
+        const distMoved = boat.speed * 6.0 * dt;
         const kn = boat.speed * 4;
         boat.raceState.legDistances[boat.raceState.leg] += distMoved;
         boat.raceState.legSpeedSums[boat.raceState.leg] += kn * dt;

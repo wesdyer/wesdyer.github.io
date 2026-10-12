@@ -147,10 +147,16 @@ tail slap is about a body length across.
 
 ## Where the code stands — **Observed**
 
-- **Distance labels** convert at 0.2 m per unit (`script.js` `metres()`, the school's buoy
-  distances), which is the old J-105 reading. At this ruler they should be 0.1. Moving them
-  halves every metre figure the player sees (the goal chip, the mark edge labels), so the
-  change belongs to Wes's venue scale pass, not to a wildlife change.
+- **Every metre is on this ruler** (Oct 12 2026, Wes: "move everything to the new system").
+  `VenueDoc.U_PER_M`, the lee rule's `M_TO_U` (wind.js) and the swell's `U_PER_M` are all 10;
+  the player-facing labels (results, records, course lengths, goal and school chips, the hub
+  logbook, the venue checker, the editor's rulers) read 10 cm a unit; `legDistances` are summed
+  in these metres. Venue documents went to **schema 2**: every metre a schema-1 file stated
+  (shape and traffic lee heights, gust puff sizes, swell heights) is halved on load
+  (`migrateVenueDoc`), and the kind tables' heights were halved in code, so nothing in the
+  game moved — only what the numbers mean. Tide `elev` is a vertical height against a draft
+  in metres and did not change. A few tuned constants keep their old value in units with a
+  note (the thunder's speed of sound, the 0.375 s a metre fallback cutoff).
 - **Speed** runs at 15 units/s per knot (`U_PER_S_PER_KNOT` in `sailcheck.js`). At 10 units per
   metre a real knot is 5.1 units/s, so the game runs about **3× real time**. That is a
   deliberate choice about how the game feels, and it stays; the knots shown are true to the

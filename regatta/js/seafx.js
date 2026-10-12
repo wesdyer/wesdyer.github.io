@@ -67,8 +67,9 @@
 //    rises and the boat visibly gets wetter, which is the cost `poundFoot` charges.
 (function () {
 
-// 5 units = 1 metre, and units/second = knots x 15. Every size in this file is quoted in
-// metres in its comment so the numbers can be checked against a photograph.
+// 10 units = 1 metre (the world scale), and units/second = knots x 15. ⚠️ The sizes below were
+// written when the game read 5 units a metre: a comment's metres are DOUBLE the true size at
+// this scale (the units, which are what run, are unchanged).
 const KT_TO_U = 15;                       // units/second per knot
 const TAU = Math.PI * 2;
 const BOW = 25;                           // units from centre to stem — HULL_LOCALS' y = -25
@@ -491,7 +492,7 @@ function updateBoats(dt, state) {
 // measurement. It is defensible because it is the SAME number the speed model and the router
 // use — what breaks is what slows you — but SHOAL_BREAK_REF is a tuned constant with metres
 // on one side and a drag fraction on the other, and it should not be dressed up as γ = 0.78.
-const SHOAL_BREAK_REF = 1.35;   // metres of swell that trips at mid-bar shallowness
+const SHOAL_BREAK_REF = 0.675;  // metres of swell that trips at mid-bar shallowness (world scale)
 const SHOAL_SITE_STEP = 72;     // units of contour between break sites
 const SHOAL_WASH = 95;          // how far the white water carries across the bar, units
 const SHOAL_LIFE = 0.42;        // fraction of the wave period the break is visible for
@@ -812,7 +813,7 @@ function drawShoalBreaks(ctx, cam, cullR2) {
     if (typeof settings !== 'undefined' && settings && settings.surf === false) return;
     const sw = window.Swell.primary();
     if (!sw) return;
-    const power = clamp01((sw.heightM || 0) / 2.2);
+    const power = clamp01((sw.heightM || 0) / 1.1);   // full power at 1.1 m (world scale)
     if (power <= 0.02) return;
 
     ctx.save();

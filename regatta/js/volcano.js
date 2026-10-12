@@ -94,7 +94,7 @@ const VOLCANO = {
     lazeStep: 120,            // world units between steam sources along a lava front
     lazeEvery: 3, lazeMax: 80, // s between a source's parcels; cap on sources per venue
     shadowR: 1300,            // how far a strike throws a shadow
-    speedOfSound: 5 * 340,    // world units per second (5 units to the metre)
+    speedOfSound: 1700,       // world units per second: 170 m/s at 10 u/m — tuned as 340 m/s when the game read 5 u/m; kept so the thunder lags as it always has
 };
 
 (function () {

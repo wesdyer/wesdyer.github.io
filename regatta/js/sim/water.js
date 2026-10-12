@@ -787,7 +787,7 @@ const SURF_FOAM_BUDGET = 14;      // foam blobs per frame — a long coast must 
 //
 // One crest per period, not the wind path's two: the run-in is a wavelength of a real train
 // now, and putting two crests in it would break the beach at twice the swell frequency.
-const SURF_SWELL_REF_M = 2.6;     // metres of swell at which the coast breaks at full power
+const SURF_SWELL_REF_M = 1.3;     // metres of swell at which the coast breaks at full power (world scale)
 const SURF_SWELL_REACH = 2.4;     // most the stand-off may stretch, at a big sea
 // REFRACTION. Waves bend into shallow water, so a shore at right angles to the swell still
 // gets some of it — the classic aerial of a swell wrapping round a headland into the bay

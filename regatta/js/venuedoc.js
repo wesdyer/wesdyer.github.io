@@ -132,6 +132,21 @@ function migrateVenueDoc(doc) {
         if (!doc.card.name) doc.card.name = doc.name;
         delete doc.name;
     }
+    // ── THE WORLD SCALE (schema 2, Oct 12 2026: Wes, "move everything to the new system") ──
+    // Schema 1 wrote metres at 0.2 m a unit (U_PER_M was 5); the world is 10 cm to the unit
+    // (guidelines/scale.md — the 56 u hull is the Spindrift's 18 ft). Every length a document
+    // states in metres and the game turns into units is HALVED once, so nothing in the game
+    // moves: the lee heights of shapes and traffic, the gust puff sizes, the swell heights.
+    // `elev` (a tide height, vertical, read against a draft in metres) and the world size
+    // (units) are not lengths on that scale and are left alone.
+    if (!(doc.schema >= 2)) {
+        const h = (o, k) => { if (o && typeof o[k] === 'number') o[k] = o[k] / 2; };
+        for (const s of (doc.shapes || [])) h(s, 'height');
+        for (const v of (doc.traffic || [])) h(v, 'height');
+        for (const r of ((doc.gusts && doc.gusts.regions) || [])) h(r, 'sizeM');
+        for (const t of ((doc.swell && doc.swell.trains) || [])) h(t, 'heightM');
+        doc.schema = 2;
+    }
     const c = doc.course;
     if (!c) return doc;
     const marks = c.marks || [];
@@ -179,9 +194,9 @@ function migrateVenueDoc(doc) {
         const wr = (doc.wind && doc.wind.regions) || [];
         const meanKt = wr.length ? wr.reduce((a, r) => a + (r.speed || 0), 0) / wr.length : 14;
         for (const r of gregs) {
-            // The old means: 0.35 x the venue wind, radiusX 900u (= 360 m across), 165 s.
+            // The old means: 0.35 x the venue wind, radiusX 900u (= 180 m across at 10 cm a unit), 165 s.
             if (r.gustKt == null && r.strength != null) r.gustKt = Math.round(r.strength * 0.35 * meanKt * 10) / 10;
-            if (r.sizeM == null && r.size != null) r.sizeM = Math.round(r.size * 360);
+            if (r.sizeM == null && r.size != null) r.sizeM = Math.round(r.size * 180);
             if (r.lifeS == null && r.life != null) r.lifeS = Math.round(r.life * 165);
             delete r.strength; delete r.size; delete r.life;
         }
@@ -280,7 +295,8 @@ function validateVenueDoc(doc) {
     const warn = (msg) => problems.push({ level: 'warn', msg });
 
     if (!doc || typeof doc !== 'object') { err('document is not an object'); return problems; }
-    if (doc.schema !== 1) err(`unsupported schema ${doc.schema} (expected 1)`);
+    // 2 = the world scale (metres at 10 units, Oct 12 2026); migrateVenueDoc lifts a 1 to it on load
+    if (doc.schema !== 2) err(`unsupported schema ${doc.schema} (expected 2)`);
     if (!doc.world || !doc.world.size) err('world.size missing');
     if (!doc.world || !doc.world.boundary) err('world.boundary missing');
     const bp = doc.world && doc.world.boundary && doc.world.boundary.poly;
@@ -590,7 +606,7 @@ function validateVenueDoc(doc) {
         const r = gustRegions[i], at = `gust region ${r.id || i}`;
         if (r.count != null && !(r.count >= 0 && r.count <= 200)) err(`${at}: count must be 0–200`);
         if (r.gustKt != null && !(r.gustKt >= 0 && r.gustKt <= 30)) err(`${at}: gust must be 0–30 kt`);
-        if (r.sizeM != null && !(r.sizeM > 0 && r.sizeM <= 2000)) err(`${at}: size must be 1–2000 m`);
+        if (r.sizeM != null && !(r.sizeM > 0 && r.sizeM <= 1000)) err(`${at}: size must be 1–1000 m`);
         if (r.lifeS != null && !(r.lifeS > 0 && r.lifeS <= 900)) err(`${at}: life must be 1–900 s`);
         if (r.bias != null && !(r.bias >= 0 && r.bias <= 1)) err(`${at}: bias must be 0–1`);
         if (r.veer != null && !(r.veer >= 0 && r.veer <= 90)) err(`${at}: veer must be 0–90 degrees`);
@@ -1038,19 +1054,19 @@ const PROP_KINDS = {
     // `chartSpan` is the paint the minimap draws it in, abstracted: deck line + tower blocks. The deck runs
     // along sprite-UP unless `chartSpanAxis: 'x'` (a bridge drawn left to right, like the flats' stone
     // bridge); `chartSpanLen` is its half-length and `chartSpanWidth` its width, as fractions of `world`.
-    'bay-bay-cove-bridge-truss': { label: 'Truss bridge',   world: 870, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed',
+    'bay-bay-cove-bridge-truss': { label: 'Truss bridge',   world: 870, plane: 'surface', contact: 'hard', height: 3.75, motion: 'fixed',
                                    parts: { surface: 'bay-bay-cove-bridge-truss-towers', canopy: 'bay-bay-cove-bridge-truss-deck' }, opaque: true, chartSpan: '#9AA3AB' },
-    'bay-bay-cove-bridge-truss-towers': { label: 'Truss bridge towers', world: 870, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed', part: true },
+    'bay-bay-cove-bridge-truss-towers': { label: 'Truss bridge towers', world: 870, plane: 'surface', contact: 'hard', height: 3.75, motion: 'fixed', part: true },
     'bay-bay-cove-bridge-truss-deck':   { label: 'Truss bridge deck',   world: 870, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // The truss's foil — the red suspension span, San Francisco's own pairing. Same rules.
-    'bay-bay-cove-bridge-suspension': { label: 'Suspension bridge', world: 920, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed',
+    'bay-bay-cove-bridge-suspension': { label: 'Suspension bridge', world: 920, plane: 'surface', contact: 'hard', height: 3.75, motion: 'fixed',
                                    parts: { surface: 'bay-bay-cove-bridge-suspension-towers', canopy: 'bay-bay-cove-bridge-suspension-deck' }, opaque: true, chartSpan: '#C0362C' },
-    'bay-bay-cove-bridge-suspension-towers': { label: 'Suspension bridge towers', world: 920, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed', part: true },
+    'bay-bay-cove-bridge-suspension-towers': { label: 'Suspension bridge towers', world: 920, plane: 'surface', contact: 'hard', height: 3.75, motion: 'fixed', part: true },
     'bay-bay-cove-bridge-suspension-deck':   { label: 'Suspension bridge deck',   world: 920, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // The Bay Bridge's silver-grey with X-braced towers (the manifest's `skyway`). Same rules.
-    'bay-bay-cove-bridge-skyway': { label: 'Bay bridge', world: 900, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed',
+    'bay-bay-cove-bridge-skyway': { label: 'Bay bridge', world: 900, plane: 'surface', contact: 'hard', height: 3.75, motion: 'fixed',
                                    parts: { surface: 'bay-bay-cove-bridge-skyway-towers', canopy: 'bay-bay-cove-bridge-skyway-deck' }, opaque: true, chartSpan: '#B4BCC2' },
-    'bay-bay-cove-bridge-skyway-towers': { label: 'Bay bridge towers', world: 900, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed', part: true },
+    'bay-bay-cove-bridge-skyway-towers': { label: 'Bay bridge towers', world: 900, plane: 'surface', contact: 'hard', height: 3.75, motion: 'fixed', part: true },
     'bay-bay-cove-bridge-skyway-deck':   { label: 'Bay bridge deck',   world: 900, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // THE FLEET'S HOME, and the only object in the game that carries the SaltyCritter Yacht
     // Club's own burgee — painted flat on the seaward roof slope, which is why it survives a
@@ -2509,10 +2525,10 @@ const PROP_KINDS = {
     // tower rule ("lay a shape under a landmark") no longer applies to any of Otter's rocks;
     // the prop IS the object. The reef keeps contactR 42 as its fallback circle.
     'otter-tidepool-shelf':    { label: 'Tidepool shelf',      world: 300, plane: 'surface', contact: 'hard', height: 0, motion: 'fixed' },
-    'otter-tidepool-pinnacle': { label: 'Granite pinnacle',    world: 160, plane: 'surface', contact: 'hard', height: 8.5, motion: 'fixed' },
+    'otter-tidepool-pinnacle': { label: 'Granite pinnacle',    world: 160, plane: 'surface', contact: 'hard', height: 4.25, motion: 'fixed' },
     'otter-tidepool-reef':     { label: 'Wash rock',           world: 120, plane: 'surface', contact: 'hard', contactR: 42, height: 0, motion: 'fixed' },
-    'otter-tidepool-basin':    { label: 'Tidepool basin',      world: 140, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed' },
-    'otter-tidepool-ridge':    { label: 'Granite ridge',       world: 240, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
+    'otter-tidepool-basin':    { label: 'Tidepool basin',      world: 140, plane: 'surface', contact: 'hard', height: 0.5, motion: 'fixed' },
+    'otter-tidepool-ridge':    { label: 'Granite ridge',       world: 240, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed' },
     // ── OTTER POINT'S TIDEPOOL LIFE (2026-09-14) ──────────────────────────────
     // Five pools with the life in them (art/manifest.json `otter-tidepool-*`), each owned by
     // one colour so they read apart at race scale — green anemones, purple urchins, orange
@@ -2533,8 +2549,8 @@ const PROP_KINDS = {
     // with two stacks off its end). Landmarks, contact none — `coastalgranite` /
     // `tidepool` shapes under the solid parts, never under the slot or the arch neck.
     'otter-centre-tidepool-flats': { label: 'Tidepool flats',    world: 420, plane: 'surface', contact: 'hard', height: 0, motion: 'fixed' },
-    'otter-centre-surge-channel':  { label: 'Surge channel',     world: 380, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed' },
-    'otter-centre-cypress-crag':   { label: 'Cypress crag',      world: 320, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' },
+    'otter-centre-surge-channel':  { label: 'Surge channel',     world: 380, plane: 'surface', contact: 'hard', height: 0.75, motion: 'fixed' },
+    'otter-centre-cypress-crag':   { label: 'Cypress crag',      world: 320, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
     // THE ARCHES ARE COMPOSITES, like the bayou trees: `parts.surface` (the piers) is what the
     // tracer turns into the collider and what draws under the fleet; `parts.canopy` (the span,
     // the top of the arch) draws OVER the fleet, so a hull between the piers is under the arch.
@@ -2543,9 +2559,9 @@ const PROP_KINDS = {
     // `part: true` rows are the halves: never placed on their own, kept out of the picker.
     // art/archsplit.py cuts the bake; the passage is the neck run (arch point 24u x scale,
     // sea arch 16u x scale — beam-wise, a hull sails through lengthwise).
-    'otter-centre-arch-point':     { label: 'Arch point',        world: 480, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed',
+    'otter-centre-arch-point':     { label: 'Arch point',        world: 480, plane: 'surface', contact: 'hard', height: 2.5, motion: 'fixed',
                                 parts: { surface: 'otter-centre-arch-point-piers', canopy: 'otter-centre-arch-point-span' }, opaque: true },
-    'otter-centre-arch-point-piers': { label: 'Arch point piers', world: 480, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed', part: true },
+    'otter-centre-arch-point-piers': { label: 'Arch point piers', world: 480, plane: 'surface', contact: 'hard', height: 2.5, motion: 'fixed', part: true },
     'otter-centre-arch-point-span': { label: 'Arch point span',  world: 480, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // ── OTTER POINT'S DRY ROCKS (2026-09-14) ──────────────────────────────────
     // The California rock set's land pieces (art/manifest.json `otter-boulder-*`,
@@ -2553,24 +2569,24 @@ const PROP_KINDS = {
     // headland meadows — dry, lichen-spotted, no intertidal bands, scrub only in the
     // joints. Landmarks, contact none: they stand on the meadow or the granite band; a
     // `coastalgranite` shape goes under any that must stop a hull in the water.
-    'otter-boulder-egg':        { label: 'Granite boulder',     world:  44, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed' },
-    'otter-boulder-pile':       { label: 'Boulder pile',        world: 110, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
-    'otter-outcrop-whaleback':  { label: 'Granite whaleback',   world: 120, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
+    'otter-boulder-egg':        { label: 'Granite boulder',     world:  44, plane: 'surface', contact: 'hard', height: 0.75, motion: 'fixed' },
+    'otter-boulder-pile':       { label: 'Boulder pile',        world: 110, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed' },
+    'otter-outcrop-whaleback':  { label: 'Granite whaleback',   world: 120, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed' },
     'otter-outcrop-pavement':   { label: 'Granite pavement',    world: 160, plane: 'surface', contact: 'hard', height: 0, motion: 'fixed' },
-    'otter-outcrop-fin':        { label: 'Granite fin',         world: 140, plane: 'surface', contact: 'hard', height: 2.5, motion: 'fixed' },
+    'otter-outcrop-fin':        { label: 'Granite fin',         world: 140, plane: 'surface', contact: 'hard', height: 1.25, motion: 'fixed' },
     // ── OTTER POINT'S SEA STACKS (2026-09-14) ─────────────────────────────────
     // Standing in the water with the three intertidal bands round their feet: the thin
     // blade and the flat-topped table plus the bird rock, and the sea arch.
     // Landmarks, contact none — the redrock tower rule: a `coastalgranite` shape with a
     // `height` at the footprint carries the collider, the surf and a real lee.
-    'otter-stack-blade':        { label: 'Blade stack',         world: 150, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed' },
-    'otter-stack-table':        { label: 'Table stack',         world: 130, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
-    'otter-stack-bird-rock':    { label: 'Bird rock',           world: 220, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed' },
+    'otter-stack-blade':        { label: 'Blade stack',         world: 150, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed' },
+    'otter-stack-table':        { label: 'Table stack',         world: 130, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
+    'otter-stack-bird-rock':    { label: 'Bird rock',           world: 220, plane: 'surface', contact: 'hard', height: 2.5, motion: 'fixed' },
     // the arch: a spur pinched to an isthmus with transparent notches either side of the
     // neck — shapes under the two lobes only, never under the neck, so a dinghy can duck through
-    'otter-sea-arch':           { label: 'Sea arch',            world: 180, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed',
+    'otter-sea-arch':           { label: 'Sea arch',            world: 180, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed',
                        parts: { surface: 'otter-sea-arch-piers', canopy: 'otter-sea-arch-span' }, opaque: true },
-    'otter-sea-arch-piers':         { label: 'Sea arch piers', world: 180, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed', part: true },
+    'otter-sea-arch-piers':         { label: 'Sea arch piers', world: 180, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed', part: true },
     'otter-sea-arch-span':          { label: 'Sea arch span',  world: 180, plane: 'canopy',  contact: 'none', motion: 'fixed', part: true },
     // ── OTTER POINT'S SECOND VEGETATION SET, BEACH PROPS AND THE LIGHT (2026-09-14) ──
     // What the California references showed the first seven plants did not: a yellow-
@@ -2589,7 +2605,7 @@ const PROP_KINDS = {
     'otter-cypress-grove':      { label: 'Cypress grove',       world: 220, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     'otter-driftwood-log':      { label: 'Driftwood log',       world:  54, plane: 'surface', contact: 'none', motion: 'fixed' },
     'otter-kelp-wrack':         { label: 'Kelp wrack',          world:  40, plane: 'surface', contact: 'none', motion: 'fixed' },
-    'otter-lighthouse-pinos':   { label: 'Point Pinos light',   world:  96, plane: 'surface', contact: 'hard', height: 6, motion: 'fixed', chartBuilding: '#5F5750' },
+    'otter-lighthouse-pinos':   { label: 'Point Pinos light',   world:  96, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed', chartBuilding: '#5F5750' },
     // ── SPOONBILL FLATS (2026-09-17, the first six of eighteen; art/flats-prompts.md) ──
     // The estuary's own things: the dinghy the tide left (the warning, contact none — it
     // lies on ground that dries), the kaap and the wreck as hard landmarks, the fish weir
@@ -2606,25 +2622,25 @@ const PROP_KINDS = {
     // frame: the kedge, the mooring buoy) they turn to lie to the stream while afloat and
     // stay where they settled when the water leaves them (drawProps, Tide.propSwing).
     'flats-stranded-dinghy':    { label: 'Stranded dinghy',     world:  64, plane: 'surface', contact: 'none', motion: 'fixed', floats: 0.2, swing: [0.5, 0.06] },   // afloat with 0.2 m under her, swinging to the stream about the kedge at the top of the frame; on the mud below that
-    'flats-kaap':               { label: 'Kaap (daymark)',      world:  56, plane: 'surface', contact: 'hard', height: 7.5, motion: 'fixed' },
-    'flats-wreck-hull':         { label: 'Wreck',               world: 130, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed' },
-    'flats-fish-weir':          { label: 'Fish weir',           world: 200, plane: 'surface', contact: 'hard', height: 1, motion: 'fixed', tidal: true, tideH: 1.2, tideRef: 3 },
-    'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 0.5, motion: 'fixed', tidal: true, tideH: 0.7, tideRef: 5 },
+    'flats-kaap':               { label: 'Kaap (daymark)',      world:  56, plane: 'surface', contact: 'hard', height: 3.75, motion: 'fixed' },
+    'flats-wreck-hull':         { label: 'Wreck',               world: 130, plane: 'surface', contact: 'hard', height: 0.75, motion: 'fixed' },
+    'flats-fish-weir':          { label: 'Fish weir',           world: 200, plane: 'surface', contact: 'hard', height: 0.5, motion: 'fixed', tidal: true, tideH: 1.2, tideRef: 3 },
+    'flats-oyster-trestles':    { label: 'Oyster trestles',     world: 150, plane: 'surface', contact: 'hard', height: 0.25, motion: 'fixed', tidal: true, tideH: 0.7, tideRef: 5 },
     'flats-stone-bridge':       { label: 'Stone bridge',        world: 300, plane: 'surface', contact: 'none', motion: 'fixed', chartSpan: '#A8A397', chartSpanAxis: 'x', chartSpanLen: 0.43, chartSpanWidth: 0.13 },
     // round 2 (2026-09-17): the houseboat came back as a plan; the gangway is on her port side, so place her with that side to the marsh
-    'flats-houseboat':          { label: 'Houseboat',           world: 120, plane: 'surface', contact: 'hard', height: 2.5, motion: 'fixed', chartBuilding: '#50463B' },
+    'flats-houseboat':          { label: 'Houseboat',           world: 120, plane: 'surface', contact: 'hard', height: 1.25, motion: 'fixed', chartBuilding: '#50463B' },
     // the centrepiece (round 2, a roof plan): placed ONCE at the head, the tail-race toward the finish reach
-    'flats-tide-mill':          { label: 'Tide mill',           world: 240, plane: 'surface', contact: 'hard', height: 5, motion: 'fixed', chartBuilding: '#69727F' },
+    'flats-tide-mill':          { label: 'Tide mill',           world: 240, plane: 'surface', contact: 'hard', height: 2.5, motion: 'fixed', chartBuilding: '#69727F' },
     // on a swinging mooring, bow to the flood; the buoy ahead is in the sprite, so the collider covers boat, line and buoy
-    'flats-fishing-boat':       { label: 'Fishing boat',        world:  80, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed', floats: 0.35, swing: [0.5, 0.06] },   // on her mooring: swings to the stream about the buoy at the top of the frame,
+    'flats-fishing-boat':       { label: 'Fishing boat',        world:  80, plane: 'surface', contact: 'hard', height: 0.75, motion: 'fixed', floats: 0.35, swing: [0.5, 0.06] },   // on her mooring: swings to the stream about the buoy at the top of the frame,
     // the channel beacons (round 2, a plan): red to port, green to starboard — the green is the red master recoloured
-    'flats-perch-beacon':       { label: 'Beacon (red, port)',  world:  44, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
-    'flats-perch-beacon-green': { label: 'Beacon (green, stbd)', world: 44, plane: 'surface', contact: 'hard', height: 4, motion: 'fixed' },
+    'flats-perch-beacon':       { label: 'Beacon (red, port)',  world:  44, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
+    'flats-perch-beacon-green': { label: 'Beacon (green, stbd)', world: 44, plane: 'surface', contact: 'hard', height: 2, motion: 'fixed' },
     'flats-sea-lavender':       { label: 'Sea lavender',        world:  72, plane: 'surface', contact: 'none', motion: 'fixed' },
     'flats-shell-bank':         { label: 'Shell bank',          world: 150, plane: 'surface', contact: 'none', motion: 'fixed', tidal: true, tideH: 0.35, tideRef: 30 },
     'flats-driftwood-tree':     { label: 'Driftwood tree',      world: 100, plane: 'surface', contact: 'none', motion: 'fixed', floats: 0.3 },   // a log lifts off the sand when the tide reaches it; no swing (it lies where it is)
     // the last of the set: the working harbour, where the wantij creek leaves the channel; the stage is to the left of the ridge, so that side faces the water
-    'flats-oyster-shed':        { label: 'Oyster shed',         world: 130, plane: 'surface', contact: 'hard', height: 3, motion: 'fixed', chartBuilding: '#6A4031' }
+    'flats-oyster-shed':        { label: 'Oyster shed',         world: 130, plane: 'surface', contact: 'hard', height: 1.5, motion: 'fixed', chartBuilding: '#6A4031' }
 };
 
 // What a prop IS, after its kind's preset and its own overrides — one place, like
@@ -4204,7 +4220,7 @@ function compileVenueDoc(doc, light) {
             gustKt: r.gustKt != null ? r.gustKt : 5,
             // METRES across the puff's long axis, mean. A cell is an ellipse and the short
             // axis is half this.
-            sizeM: r.sizeM != null ? r.sizeM : 300,
+            sizeM: r.sizeM != null ? r.sizeM : 150,
             // SECONDS it lives, mean. Check it against how long a puff takes to cross this
             // course — `estimate.puffDriftMps` is here for exactly that comparison.
             lifeS: r.lifeS != null ? r.lifeS : 90,
@@ -4534,7 +4550,7 @@ function compileCached(doc, light) {
     return out;
 }
 
-const U_PER_M = 5;
+const U_PER_M = 10;   // THE WORLD SCALE: 10 units to the metre (schema 2; was 5 — see migrateVenueDoc)
 
 // ── SAVED COURSE PATHS ──────────────────────────────────────────────────────
 // The polylines the legs actually follow — the board's chart, the race's distance-made-good
@@ -4632,6 +4648,18 @@ function recordsHash(doc) {
         props.push(p);
     }
     out.props = props;
+    // THE BOOK SURVIVES THE SCALE CHANGE (Oct 12 2026). Schema 2 restated every metre at 10 units
+    // (migrateVenueDoc halves them); the race is bit-identical, so the book must not reset. The hash
+    // reads the document in its schema-1 numbers — the halved fields doubled back (exact: a halving
+    // is exact in binary) and the schema written as 1 — so every hash is what it was before.
+    if (doc.schema >= 2) {
+        const dbl = (o, k) => (o && typeof o[k] === 'number' ? Object.assign({}, o, { [k]: o[k] * 2 }) : o);
+        out.schema = 1;
+        if (Array.isArray(out.shapes)) out.shapes = out.shapes.map(sh => dbl(sh, 'height'));
+        if (Array.isArray(out.traffic)) out.traffic = out.traffic.map(v => dbl(v, 'height'));
+        if (out.gusts && Array.isArray(out.gusts.regions)) out.gusts = Object.assign({}, out.gusts, { regions: out.gusts.regions.map(r => dbl(r, 'sizeM')) });
+        if (out.swell && Array.isArray(out.swell.trains)) out.swell = Object.assign({}, out.swell, { trains: out.swell.trains.map(t => dbl(t, 'heightM')) });
+    }
     const s = canonJSON(out);
     // Two independent 32-bit mixes (DJB2-xor and FNV-1a): 64 bits is plenty to tell one
     // edit from another, and both are a few lines with no table.
