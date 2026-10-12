@@ -299,6 +299,16 @@ CLASS_ADDON = {
     # The clubhouse hero (Sep 2026): the one wide painting in the library. It is CROPPED
     # to a ~3:1 band on the hub and the wordmark sits in its upper left, so the composition
     # has to survive both: the picture lives in the middle band, the upper-left is sky.
+    # A boat's line drawing (Oct 2026, the front page boat card): LANDSCAPE, because the card
+    # gives it a wide, short box — sail plan on the left, deck plan on the right, same scale.
+    "boat-lines": (
+        "Wide 3:2 landscape sheet, two views of the same boat drawn to the SAME SCALE, like an "
+        "architect's elevation and plan: on the LEFT 60%, the SAIL PLAN — the boat in exact side "
+        "profile, bow to the RIGHT, waterline horizontal, mast vertical, all sails set, the keel "
+        "and rudder drawn below the hull; on the RIGHT 40%, the DECK PLAN — the same hull seen "
+        "from straight above, bow pointing UP, centred in its half, its length equal to the "
+        "profile's hull length. Generous empty margin on every side; nothing touches the edge."
+    ),
     "hero": (
         "Wide 3:2 landscape painting, opaque, no text or lettering anywhere, no humans. "
         "COMPOSED FOR A WIDE CROP: the horizon sits at about 42% of the height; everything "
@@ -588,6 +598,29 @@ ARRANGEMENT_NEGATIVE = (
     "pattern, tiled pattern"
 )
 
+# BOAT LINES (Oct 2026): a boat's line drawing for the front page boat card — the one asset that
+# is NOT painted. It takes its own BASE (BOAT_LINES_BASE, swapped in by build()) because every word
+# of the painted base — jewel colour, brush planes, two-tone shading — is the opposite of an ink
+# drawing. One ink colour on transparent so the page can tint it; no text, because the name and
+# the numbers are typeset beside it from the game's own tables.
+BOAT_LINES_BASE = (
+    "A yacht designer's LINE DRAWING, the kind printed in a class brochure or a sailing magazine "
+    "boat test: clean precise technical illustration in a single dark ink colour on a transparent "
+    "background; uniform hairline strokes with a slightly heavier outline for the hull and sails; "
+    "flat, no shading, no fills, no colour, no gradients, no texture; sails drawn as outlines with "
+    "their batten lines and a few thin seam lines; elegant, accurate, true to scale; no text, no "
+    "numbers, no dimension arrows, no title block, no border."
+)
+BOAT_LINES_NEGATIVE = (
+    "painting, watercolour, colour, coloured fills, shading, shadows, gradients, cross-hatching, "
+    "sketchy loose lines, pencil texture, paper texture, background scenery, water, waves, sky, "
+    "people, crew, text, lettering, numbers, sail numbers, logos, dimension lines, arrows, "
+    "labels, title block, frame, border, grid, perspective view, three-quarter view, tilted "
+    "camera, cartoon, chibi, cute proportions, cruising yacht, cabin, portholes, windows, "
+    "lifelines, stanchions, wheel steering, overlapping genoa, gaff rig, two masts, cut off by "
+    "the frame edge"
+)
+
 # The hero: what a harbour painting drifts toward when left alone — sunsets, people, text.
 HERO_NEGATIVE = (
     ", text, lettering, signage, writing on flags or hulls, sail numbers, humans, people, "
@@ -664,7 +697,9 @@ def build(asset, profiles, bg="transparent"):
     prof = profiles[asset["class"]]
     display = asset.get("world", prof.get("reduceTest", 64))
     base = BASE
-    if asset["class"] in ("portrait", "trophy"):
+    if asset["class"] == "boat-lines":
+        base = BOAT_LINES_BASE
+    elif asset["class"] in ("portrait", "trophy"):
         base = base.replace(BASE_PROP_SHADING, BASE_PORTRAIT_SHADING)
     elif asset["class"] == "texture":
         for old, new in BASE_TEXTURE_SUBS:
@@ -827,6 +862,13 @@ def emit(asset, profiles, bg="transparent"):
             neg = (neg.replace("excessive bloom, ", "")
                       .replace(", high contrast, deep black shadow", "")
                    + EMISSIVE_NEGATIVE)
+    elif asset["class"] == "boat-lines":
+        # Nothing in NEGATIVE is about an ink drawing; it takes its own list whole. A boat whose
+        # character IS one of its terms (the Spindrift's wheel) lifts that term with `allow`.
+        neg = BOAT_LINES_NEGATIVE
+        for term in asset.get("allow", []):
+            assert (term + ", ") in neg or (", " + term) in neg, f"allow: {term!r} is not in the negative"
+            neg = neg.replace(term + ", ", "") if (term + ", ") in neg else neg.replace(", " + term, "")
     elif asset["class"] == "hero":
         # A harbour painting IS an eye-level perspective picture: the prop camera negatives
         # would fight it. The arrangement list stays — a fleet must not come back evenly spaced.

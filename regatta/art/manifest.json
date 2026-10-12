@@ -83,6 +83,18 @@
       "note": "Source element for compose.py. NEVER ships on its own — a single penguin is 4-7px at race scale. Lives in art/elements/, not assets/images/.",
       "reduceTest": 13,
       "elementFill": 0.88
+    },
+    "boat-lines": {
+      "track": "static",
+      "master": 1024,
+      "wide": [
+        1536,
+        1024
+      ],
+      "flat": true,
+      "background": "transparent",
+      "out": "assets/images/boats",
+      "note": "A boat's line drawing (Oct 2026): sail plan beside deck plan, one dark ink colour on transparent, no text. Shown on the front page boat card, masked and tinted, beside the name and the numbers typeset from the game's own tables. Deliver 1536x1024 or larger at 3:2."
     }
   },
   "roles": {
@@ -7578,6 +7590,17 @@
       "note": "THE WITHY AS ART (Wes, Sep 19 2026: 'for withies, let's add a prompt'). Today the 50 withies are drawn by js/tide.js (drawWithies) at doc.tide.withies: a stake, a tuft of six twigs on their own clock, a red or green IALA topmark, a lean with the stream and a ripple trailing downstream. When this master lands, the drawer swaps the procedural stake-and-tuft for the sprite — drawn at the same 50 positions, rotated and displaced by the lean the stream gives it, with the topmark disc and the ripple still drawn by code on top (the topmark's colour is the hand; never bake it in). World 28: a bough's tuft about a metre and a half across, larger than life like the venue's other small things. planRound true. Contact none, surface plane, never placed by hand — the positions are the document's. ROUND 1 (2026-09-19) REJECTED: my word — 'a starburst of twigs radiating from the stake's top' — and the generator drew exactly that, a radial snowflake of evenly spaced spokes. A withy is one bough tied by its butt, a lopsided tangle with the stake at one edge; the brief now says bush, broom head, crossing twigs, and forbids spokes and anything opposite anything. SUPERSEDED 2026-09-19 (Wes: 'I don't see a lot of images of withies online — should we just use daymarks?'): the channel marks are PERCHES now, drawn by js/tide.js — a pole's top with the IALA topmark over it, leaning with the stream. From above a pole is a dot and the topmark is the read, so there is nothing for art to add; the tripod beacon sprites (flats-perch-beacon, -green) stand at the throat and the junctions. REMOVED 2026-09-19 (Wes: 'remove the withies and don't replace them'): no channel marks on the flats at all — the cuts are read off the ground shading, the waterline and the draft contour. The tripod beacons stand at the throat and the creek's mouth as placed props.",
       "planRound": true,
       "fillTo": 0.86
+    },
+    {
+      "key": "boat-spindrift-18",
+      "class": "boat-lines",
+      "status": "art",
+      "gen": "1536x1024",
+      "allow": [
+        "wheel steering"
+      ],
+      "subject": "the SPINDRIFT 18, the 18-foot sportboat every skipper sails in this game. THE DECK PLAN MUST MATCH THE GAME'S OWN HULL EXACTLY (attach assets/images/boat-parts/hull.png as the reference): a deliberately BEAMY bullet-shaped hull — a sharp pointed bow, sides that swell out quickly, widest about 70% of the way aft where the beam is 0.58 of the hull's length L, then barely narrowing to a broad square TRANSOM 0.46 L wide straight across. Beam at 10% / 20% / 30% / 40% / 50% of the length from the bow: 0.20 / 0.34 / 0.43 / 0.50 / 0.55 L. ON DECK, bow to stern: a FLUSH foredeck (no cabin) with one small rectangular HATCH centred 0.25 L back from the bow; the MAST STEP on the centreline 0.37 L back; a large rounded COCKPIT COAMING running from 0.44 L to 0.77 L, almost as wide as the deck there, enclosing a cockpit well with a narrower forward step; a round steering WHEEL on the centreline 0.80 L back with three spokes; an open TRANSOM STEP across the last 0.09 L. SAIL PLAN, the same hull side-on: low freeboard, a near-vertical PLUMB bow, almost straight sheer, flat run aft to the open transom; a deep thin FIN KEEL 0.25 L below the hull ending in a torpedo-shaped lead BULB; a SPADE RUDDER under the hull just ahead of the transom (no tiller — it is steered by the wheel). RIG: one tall slender mast stepped 0.37 L from the bow and rising 1.45 L above the deck, a pair of swept-back spreaders, fractional forestay; a long BOOM 0.75 L reaching past the transom; a big fully battened MAINSAIL with a modest square top (five battens as thin lines); a NON-OVERLAPPING JIB tacked at the bow whose foot ends at the mast; and a large ASYMMETRIC SPINNAKER drawn as a DASHED outline, tacked at the bow on a very short stub bowsprit and hoisted from the masthead, its luff curving well forward, larger than main and jib together",
+      "note": "The boat every skipper sails (master, Oct 2026: the J/111 speed table on the 56 u game hull). The deck plan is measured from assets/images/boat-parts/hull.png — if the hull sprite changes, re-measure and rewrite this subject."
     }
   ],
   "scale": {
