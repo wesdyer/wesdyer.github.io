@@ -1590,7 +1590,9 @@ const PROP_KINDS = {
     // srcBox measured off the shipped 600px bake with a 1% margin: the bridge is a 1:7.9 ribbon
     // in a square frame, so 82% of that frame is empty and this skips sampling it. Re-measure
     // on any re-ingest — the number is only true for this bake.
-    'river-footbridge':       { label: 'Foot bridge',       world: 300, plane: 'canopy',  contact: 'none', motion: 'fixed', fadeMin: 0.3, srcBox: [0.407, 0.030, 0.187, 0.940], chartSpan: '#C2AE8C' },
+    // OPAQUE like every bridge (PT-057, Wes: "it's actually better to have opaque bridges… adds to some of the mystery"):
+    // a hull passing under it disappears, rather than the deck fading out round it as a tree's crown does.
+    'river-footbridge':       { label: 'Foot bridge',       world: 300, plane: 'canopy',  contact: 'none', motion: 'fixed', opaque: true, srcBox: [0.407, 0.030, 0.187, 0.940], chartSpan: '#C2AE8C' },
     // ── THE GRANITE BOULDERS ────────────────────────────────────────────────────────
     // The venue's first rock you can actually hit. `outcrop` is a SHAPE and means a scoured
     // bedrock ledge; these are props and mean individual stones. The largest is 52u,
