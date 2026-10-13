@@ -75,6 +75,7 @@ const { chromium } = require('playwright'); const path=require('path');
       })(),
       // --- "Finish Line": you are the headline, and a single race carries no series ---
       hero: document.getElementById('res-hero').innerText,
+      heroPortrait: (document.querySelector('#res-hero img') || {}).getAttribute ? document.querySelector('#res-hero img').getAttribute('src') : '',
       splitTiles: document.querySelectorAll('#res-race-legs .res-race-leg').length,
       subtitle: document.getElementById('res-subtitle').textContent,
       footnote: document.getElementById('res-footnote').textContent,
@@ -115,7 +116,7 @@ const { chromium } = require('playwright'); const path=require('path');
 
   console.log('\nyour finish is the headline');
   ok('the hero names your place', /\b6TH\b/.test(info.hero), info.hero.split('\n').slice(0, 3).join(' / '));
-  ok('...and who you sailed as', info.hero.includes(info.playerName.toUpperCase()));
+  ok('...and who you sailed as (the portrait)', info.heroPortrait.includes('/' + info.playerName.toLowerCase() + '.png'), info.heroPortrait);
   ok('...and the gap that decided it', /behind /.test(info.hero), info.hero);
   ok('a leg row per leg, plus the start (PT-007: the leg table replaced the split tiles)', info.splitTiles === 5, `${info.splitTiles} rows`);
   ok('the header states the venue', /CLUBHOUSE POINT/i.test(info.subtitle), info.subtitle);

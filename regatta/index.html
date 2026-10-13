@@ -503,7 +503,36 @@
         #venue-stage[data-mode="row"] .vs-record { align-items: flex-start; text-align: left; }
         #venue-stage[data-mode="row"] .vs-chips { display: grid; grid-template-columns: 1fr 1fr; margin-top: auto; }
         #venue-stage[data-mode="row"] .vs-chips .vs-chip:nth-child(4) { display: flex; }
+        /* The wide card (a Race of one has the board to itself): the strip's type at a reading size. */
+        #venue-stage[data-big="1"] #venue-detail { gap: 16px; padding: 22px 26px 24px !important; }
+        #venue-stage[data-big="1"] .vs-top { gap: 18px; }
+        #venue-stage[data-big="1"] .vs-head { gap: 8px; }
+        #venue-stage[data-big="1"] .t-label-xs { font-size: 12px; }
+        #venue-stage[data-big="1"] .vs-title { font-size: 38px; }
+        #venue-stage[data-big="1"] .vs-title.long { font-size: 32px; }
+        #venue-stage[data-big="1"] .vs-blurb { font-size: 16px; line-height: 1.5; }
+        #venue-stage[data-big="1"] .vs-record { gap: 4px; }
+        #venue-stage[data-big="1"] .vs-record-time { font-size: 38px; }
+        #venue-stage[data-big="1"] .vs-record-mine { font-size: 16px !important; }
+        #venue-stage[data-big="1"] .vs-record-sub > .t-mono:first-child { font-size: 24px !important; letter-spacing: 3px !important; }
+        #venue-stage[data-big="1"] .vs-chips { gap: 10px; }
+        #venue-stage[data-big="1"] .vs-chip { padding: 9px 14px; gap: 3px; }
+        #venue-stage[data-big="1"] .vs-chip-v { font-size: 17px; }
         #venue-art img { width: 100%; height: 100%; object-fit: cover; }
+        /* THE RESULTS SCORECARD (Oct 12 2026): portrait, then labelled cells split by hairlines. */
+        .rh-strip { display: flex; align-items: center; container-type: inline-size; min-height: 150px; }
+        .rh-por { width: 112px; height: 132px; flex: none; margin-right: 8px; }
+        .rh-por img { width: 100%; height: 100%; object-fit: contain; }
+        .rh-cell { display: flex; flex-direction: column; gap: 6px; padding: 0 20px; min-width: 0; border-left: 1px solid rgba(255,255,255,0.09); }
+        .rh-por + .rh-cell { border-left: none; padding-left: 10px; }
+        .rh-k { font-size: 11px; letter-spacing: 0.2em; color: #9fb2cc; }
+        .rh-place { font-size: 72px; line-height: 0.95; }
+        .rh-v { font-size: 30px; font-weight: 700; line-height: 1.05; color: #eef3fb; white-space: nowrap; }
+        .rh-sub { font-size: 14px; color: #9fb2cc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .rh-stars { line-height: 1.05; }
+        .rh-up { color: #34d399; font-size: 0.6em; } .rh-down { color: #f87171; }
+        .rh-v .rh-down { font-size: 0.6em; }
+        @container (max-width: 760px) { .rh-por { width: 84px; height: 100px; } .rh-cell { padding: 0 13px; } .rh-place { font-size: 56px; } .rh-v { font-size: 24px; } .rh-sub { font-size: 12.5px; } }
         #venue-detail { flex-direction: column; gap: 6px; padding: 11px 14px 12px !important; }
         .vs-top { display: flex; gap: 14px; min-height: 0; }
         .vs-head { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
@@ -1282,8 +1311,8 @@
             <div class="grid flex-1" style="grid-template-columns:420px minmax(0, 1fr); gap:32px; padding:26px 32px 28px; min-height:0;">
                 <div class="flex flex-col" style="gap:18px;">
                     <div id="series-mode" class="grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px;">
-                        <button type="button" class="ch-mode" data-mode="pick">Pick</button>
-                        <button type="button" class="ch-mode" data-mode="draw">Random</button>
+                        <button type="button" class="ch-mode" data-mode="pick">PICK</button>
+                        <button type="button" class="ch-mode" data-mode="draw">RANDOM</button>
                     </div>
                     <div id="series-len-title" class="t-display italic uppercase" style="font-size:28px; letter-spacing:0.03em;">How many races?</div>
                     <div id="series-lengths" class="grid" style="grid-template-columns:repeat(5, minmax(0, 1fr)); gap:10px;"></div>
@@ -1433,7 +1462,7 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col gap-3" style="min-height:0;">
+                <div id="pr-side" class="flex flex-col gap-3" style="min-height:0;">
                     <div class="flex flex-col shrink-0" style="gap:2px;">
                         <div id="pr-right-title" class="t-display italic uppercase" style="font-size:23px; letter-spacing:0.04em; line-height:1.1;"><span style="color:#5aa7ff; font-size:14px; vertical-align:middle;">&#9679;</span> Venues</div>
                         <div id="pr-route-note" class="t-mono" style="font-size:12px; color:#7787a0;"></div>
@@ -1500,7 +1529,7 @@
                     </div>
                     <div class="flex flex-col" style="gap:16px; min-width:0;">
                         <div style="background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px 18px;">
-                            <div id="res-hero" class="flex flex-wrap items-center gap-5"></div>
+                            <div id="res-hero" class="rh-strip"></div>
                         </div>
                         <div id="res-race-legs"></div>
                         <!-- THE TRACE (Oct 2026): fills the column under the legs — raceresults.js moves it between pages. -->

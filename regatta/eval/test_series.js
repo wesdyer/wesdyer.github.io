@@ -86,7 +86,7 @@ let fails = 0; const check = (name, ok, detail) => { console.log(`  ${ok ? 'ok  
       await page.click('#standings-abandon-btn'); await page.waitForTimeout(800);
       check('final: back to the hub', await vis('clubhouse-overlay') && await page.evaluate(() => Series.active === null));
       const cupState = await page.evaluate(() => document.getElementById('door-cup-state').textContent);
-      check('hub shows 1 of 3 won', cupState === '1 of 3 won', cupState);
+      check('hub: the cup door moves on to the next cup', /^Next: Explorer/.test(cupState), cupState);   // the won cup shows on its trophy, not in the line
     }
   }
 
@@ -127,7 +127,8 @@ let fails = 0; const check = (name, ok, detail) => { console.log(`  ${ok ? 'ok  
   await page.click('#abandon-confirm'); await page.waitForTimeout(800);
   check('series: abandoned to the hub', await vis('clubhouse-overlay') && await page.evaluate(() => Series.active === null));
   const st = await page.evaluate(() => document.getElementById('door-series-state').textContent);
-  check('hub: series door still No series yet', st === 'No series yet', st);
+  const pen = await page.evaluate(() => (JSON.parse(localStorage.getItem('regatta_trophies') || '{}').series || {}).byLen || {});
+  check('hub: an abandoned series flies no pennant', !Object.values(pen).some(x => x.won) && !/pennant won/i.test(st), st + ' ' + JSON.stringify(pen));
 
   console.log('single race untouched');
   await page.click('#door-race'); await page.waitForTimeout(1200);

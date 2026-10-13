@@ -273,6 +273,13 @@ function renderVenuePicker() {
     }
     // The board's series dress: the picker gives way to the route, and the header names
     // the race. A single race shows neither.
+    // A Race of ONE has nothing to choose and no route to show: the side column goes and the
+    // map and its briefing take the whole board (beside it when there is room, under it when not).
+    const one = inSeries && Series.total() === 1;
+    const side = document.getElementById('pr-side'), cols = document.getElementById('pr-columns');
+    if (side) side.classList.toggle('hidden', one);
+    if (cols) cols.style.gridTemplateColumns = one ? 'minmax(0,1fr)' : 'minmax(0,1fr) clamp(300px, 30vw, 440px)';
+    const stage = document.getElementById('venue-stage'); if (stage) stage.dataset.solo = one ? '1' : '';
     UI.venuePicker.classList.toggle('hidden', inSeries);
     if (UI.prRoute) { UI.prRoute.classList.toggle('hidden', !inSeries); if (inSeries) renderRouteStrip(); }
     if (!inSeries) {
@@ -448,23 +455,34 @@ function renderVenueDetail(key) {
     // away. The records table that sat beside the old chart is gone — the same numbers twice
     // was the complaint. Gold = a time YOU set here. "Time trials only" shows where records
     // cannot be set (a cup or series briefing), so the question is answered where it arises.
+    // TWO BOARDS, TWO CHALLENGES (Wes, Oct 12 2026). Records are a Time Trials thing, so the
+    // clock — time to beat, your best time, the record book — shows only on a trial's board.
+    // Racing the fleet (a Race, a cup, a series) shows what racing here earns: your best
+    // finish and its stars. "Earn here" (the venue's characters) shows on both.
+    const fleet = !!(window.Series && Series.active);
     const prov = provisionalRecord(key);
     const mine = !!(best && best.t != null);
-    const recordBlock = `
+    const placed = !!(best && best.bestPos);
+    const recordBlock = fleet ? `
+        <div class="vs-record">
+            <div class="t-label t-label-xs" style="color:#dbeafe;">Your best finish</div>
+            <div class="t-mono vs-record-time" style="color:${placed ? '#f2c14e' : '#fff'};">${placed ? _ordinal(best.bestPos) : '&mdash;'}</div>
+            <div class="t-label t-label-xs vs-record-sub" style="color:#9fb2cc; white-space:nowrap;">${placed ? (best.stars ? starStrip(best.stars, 14) : 'No stars yet') : 'Not raced here yet'}</div>
+            <div class="vs-record-links">${venueObjectivesStrip(key, true)}</div>
+        </div>` : `
         <div class="vs-record">
             <div class="t-label t-label-xs" style="color:#dbeafe;">Time to beat</div>
             <div class="t-mono vs-record-time">${prov != null ? formatBestTime(prov) : '&mdash;'}</div>
-            <div class="t-label t-label-xs" style="color:#9fb2cc; white-space:nowrap;">${best && best.stars ? starStrip(best.stars, 11) + ' &middot; ' : ''}Your best
-                <span class="t-mono" style="font-size:12px; color:${mine ? '#f2c14e' : '#7787a0'}; margin-left:3px;">${mine ? formatBestTime(best.t) : '&mdash;'}</span></div>
+            <div class="t-label t-label-xs vs-record-sub" style="color:#9fb2cc; white-space:nowrap;">Your best
+                <span class="t-mono vs-record-mine" style="font-size:12px; color:${mine ? '#f2c14e' : '#7787a0'}; margin-left:3px;">${mine ? formatBestTime(best.t) : '&mdash;'}</span></div>
             <div class="vs-record-links">
-                ${recordsEligible() ? '' : '<span class="t-label t-label-xs" style="color:#7787a0;">Time trials only</span>'}
                 ${venueObjectivesStrip(key, true)}
                 <button class="t-label t-label-xs vs-link" onclick="openRecordsOverlay()">Records &rarr;</button>
             </div>
         </div>`;
     const chip = (label, value) => `
         <div class="vs-chip" title="${String(value).replace(/<[^>]+>/g, '').replace(/"/g, '&quot;')}"><span class="t-label t-label-xs" style="color:#9fd3dd;">${label}</span><span class="t-mono vs-chip-v">${value}</span></div>`;
-    const context = (window.Series && Series.active) ? `Race ${Series.raceNumber()} of ${Series.total()}` : `Venue ${idx} of ${VENUE_ORDER.length}`;
+    const context = (window.Series && Series.active) ? (Series.total() === 1 ? 'One race' : `Race ${Series.raceNumber()} of ${Series.total()}`) : `Venue ${idx} of ${VENUE_ORDER.length}`;
 
     UI.venueDetail.innerHTML = `
         <div class="vs-top">
@@ -667,10 +685,14 @@ function layoutVenueStage() {
     if (besideSide >= underSide) {
         st.dataset.mode = 'row';
         const side = Math.max(120, besideSide), cw = Math.min(VS_CARD_MAX, w - side - VS_GAP);
-        place(box, 0, 0, side, side);
-        place(hero, side + VS_GAP, 0, cw, side);
+        // With the whole board to itself (a Race of one) the pair sits centred, not flush left.
+        const x0 = st.dataset.solo ? Math.max(0, Math.round((w - side - VS_GAP - cw) / 2)) : 0;
+        place(box, x0, 0, side, side);
+        place(hero, x0 + side + VS_GAP, 0, cw, side);
+        // A card with room to spare reads at a reading size, not the strip's.
+        st.dataset.big = cw >= 460 ? '1' : '';
     } else {
-        st.dataset.mode = 'col';
+        st.dataset.mode = 'col'; st.dataset.big = '';
         const side = Math.max(120, underSide);
         place(box, Math.round((w - side) / 2), 0, side, side);
         place(hero, 0, side + VS_GAP, w, stripH);
@@ -2769,7 +2791,7 @@ function raceContextLine() {
     const p = state.boats[0];
     // Sailing School: the pond and the section, as the section screen names it.
     if (window.School && School.active && School.sectionName) return `DUCKLING POND · ${School.sectionName().toUpperCase()}`;
-    const pre = (window.Series && Series.active) ? `${Series.active.name} · RACE ${Series.raceNumber()}/${Series.total()} · `.toUpperCase() : '';
+    const pre = _oneRace() ? 'RACE · ' : (window.Series && Series.active) ? `${Series.active.name} · RACE ${Series.raceNumber()}/${Series.total()} · `.toUpperCase() : '';
     const venue = pre + (venueDisplayName(state.race.venue) || '').toUpperCase();
     const total = state.race.totalLegs;
     const leg = p ? p.raceState.leg : 0;
@@ -2782,7 +2804,8 @@ function raceContextLine() {
 // you sure?". Staying in the race is the default (and what ESC does).
 function abandonContextLine() {
     // A cup or series is abandoned whole: no per-race retire, no restart, standings gone.
-    if (window.Series && Series.active) {
+    // A Race of one is just a race, so it reads like one.
+    if (window.Series && Series.active && !_oneRace()) {
         const s = Series.active, t = Series.total(), done = s.results.filter(Boolean).length;
         return `This ends the ${s.name} ${done ? `after race ${done} of ${t}` : `before race ${Series.raceNumber()} of ${t}`}. The standings won't be kept.`;
     }
@@ -2810,7 +2833,8 @@ function togglePause(show) {
         // last one), and the red row leaves the school rather than abandoning a race.
         const school = !!(window.School && School.active);
         if (UI.skipButton) UI.skipButton.classList.toggle('hidden', !(school && School.canSkip()));
-        const series = !school && !!(window.Series && Series.active);
+        // A Race of one is a single race here too: ABANDON RACE, and Restart sails it again.
+        const series = !school && !!(window.Series && Series.active) && !_oneRace();
         if (UI.abandonLabel) UI.abandonLabel.textContent = school ? 'LEAVE SCHOOL' : series ? `ABANDON ${Series.active.kind.toUpperCase()}` : 'ABANDON RACE';
         // No restarting a race inside a cup: abandoning ends the whole thing (Wes, Sep 4 2026).
         if (UI.restartButton) UI.restartButton.classList.toggle('hidden', series);
@@ -2833,7 +2857,7 @@ function toggleAbandon(show) {
     if (show) {
         if (UI.abandonContext) UI.abandonContext.textContent = abandonContextLine();
         const title = UI.abandonScreen.querySelector('.ov-title');
-        if (title) title.textContent = (window.Series && Series.active) ? `Abandon ${Series.active.kind}?` : 'Abandon race?';
+        if (title) title.textContent = (window.Series && Series.active && !_oneRace()) ? `Abandon ${Series.active.kind}?` : 'Abandon race?';
         UI.abandonScreen.classList.remove('hidden');
     } else {
         UI.abandonScreen.classList.add('hidden');
@@ -3672,51 +3696,6 @@ function renderResultsHeader(sorted, gapScale) {
     }
 }
 
-// THE RECORD, AS A CARD. It was a chip, and a chip can hold a time or a delta but not the
-// three things that make a lap time mean anything: what the mark was, what you did, and the
-// difference. Two states — one for beating it, a quiet one for missing it — and nothing at
-// all when there is no mark yet, because a first race here beat nobody.
-function recordCard(best, rs) {
-    // The measured records this run took — top speed, shortest way round, quickest
-    // start — as gold pills under the time card. The track record has the card
-    // itself; these are the record book's other pages.
-    const rr = state.race.recordResults;
-    const pills = [];
-    if (rr) {
-        const pill = (text) => pills.push(
-            `<span class="t-mono" style="background:rgba(242,193,78,0.14);border:1px solid rgba(242,193,78,0.5);`
-            + `border-radius:999px;padding:3px 10px;font-size:10.5px;color:#f2c14e;white-space:nowrap;">✦ ${text}</span>`);
-        if (rr.topSpeed) pill(`Top speed ${boatTopSpeed(state.boats[0]).toFixed(1)} kt`);
-        if (rr.minDist) pill(`Shortest track ${boatDistKm(state.boats[0]).toFixed(2)} km`);
-        if (rr.start) pill(`Best start +${(boatStartTime(state.boats[0]) || 0).toFixed(1)}s`);
-    }
-    const pillRow = pills.length
-        ? `<div class="flex flex-wrap justify-center" style="gap:6px;margin-top:10px;max-width:230px;">${pills.join('')}</div>`
-        : '';
-    if (!best || best.previous === null) {
-        return pillRow ? `<div style="flex:none;text-align:center;">${pillRow}</div>` : '';
-    }
-    const won = best.isBest;
-    const delta = Math.abs(rs.finishTime - best.previous).toFixed(2);
-    const frame = won
-        ? 'background:linear-gradient(150deg,rgba(242,193,78,0.16),rgba(242,193,78,0.05));border:1px solid rgba(242,193,78,0.5);'
-        : 'background:#141d31;border:1px solid rgba(255,255,255,0.09);';
-    // SECONDARY BY DESIGN: the reference, not the result. Smaller and quieter than your own
-    // time on the hero (Wes, Sep 13 2026 — it used to be the biggest number on the page).
-    return `
-        <div style="flex:none;${frame}border-radius:12px;padding:11px 16px;text-align:center;">
-            <div class="t-label" style="font-size:10px;letter-spacing:0.2em;color:${won ? '#f2c14e' : '#7787a0'};">
-                ${won ? '✦ New Course Record ✦' : 'Course Record'}
-            </div>
-            <div class="flex items-baseline justify-center gap-2" style="margin-top:4px;">
-                <span class="t-mono" style="font-size:20px;font-weight:800;color:${won ? '#f2c14e' : '#c4d2e6'};">${formatBestTime(won ? rs.finishTime : best.previous)}</span>
-            </div>
-            <div class="t-mono" style="font-size:11px;font-weight:800;color:${won ? '#34d399' : '#7787a0'};margin-top:2px;">
-                ${won ? 'beat it by ' + delta + 's' : '+' + delta + 's off the record'}
-            </div>
-            ${pillRow}
-        </div>`;
-}
 
 // You: portrait, the place you took, the gap that decided it, and your splits. Rebuilt
 // only when something in it changes — this function runs six times a second, and
@@ -3740,7 +3719,9 @@ function renderResultsHero(sorted, player, leader) {
 
     const sig = [pos, rs.finished, rs.resultStatus, rs.finishTime.toFixed(2),
                  rs.totalPenalties, rs.legTimes.length,
-                 best && best.isBest, best && best.isBestPos].join('|');
+                 best && best.isBest, best && best.isBestPos,
+                 // the standings move as the rest of the fleet comes home
+                 sorted.filter(b => b.raceState.finished).length].join('|');
     if (host.dataset.sig === sig) return;
     host.dataset.sig = sig;
 
@@ -3769,30 +3750,53 @@ function renderResultsHero(sorted, player, leader) {
         gap = 'Racing continues behind you';
     }
 
-    const chip = (text, color, border, bg) =>
-        `<span style="background:${bg};border:1px solid ${border};border-radius:999px;padding:4px 12px;`
-      + `font-size:11px;font-weight:800;letter-spacing:0.02em;color:${color};white-space:nowrap;">${text}</span>`;
-    const chips = [];
-    // The clock record has its own card beside the hero now (see `recordCard`) — a chip
-    // could not carry "old → new, and by how much" without becoming a sentence.
-    //
-    // The OTHER record stays a chip. Only when it is news, and only when there was
-    // something to beat: ⚠️ A FIRST RACE AT A VENUE IS NOT A PERSONAL BEST, or the screen
-    // congratulates every player on every new venue and the praise stops meaning anything.
-    if (best && best.isBestPos && best.previousPos !== null) {
-        chips.push(chip('BEST FINISH HERE ✦ ' + ordinalOf(best.previousPos).toUpperCase()
-                        + ' → ' + ordinalOf(pos).toUpperCase(),
-                        '#f2c14e', 'rgba(242,193,78,0.4)', 'rgba(242,193,78,0.1)'));
+    // THE SCORECARD (Wes, Oct 12 2026): the portrait, then a row of labelled cells — what this
+    // race was, and what it did to whatever it belongs to. Nothing the rest of the page already
+    // says (legs, tacks, speeds, the fleet) and no course record: records are a Time Trials
+    // thing, and a trial has its own page (renderTrialResults).
+    //   a single race   Place · Time · Stars (the race's four rungs)
+    //   a series race   Place · Time · Points · Series (a series flies pennants, not stars)
+    //   a cup race      Place · Time · Cup · Cup stars (the worst race counts: what is still in reach)
+    const S = window.Series && Series.active && Series.total() > 1 ? Series : null;
+    const look = S ? S.preview(finishOrder()) : null;
+    const cell = (label, body, sub) => `<div class="rh-cell"><div class="t-label rh-k">${label}</div>${body}${sub != null ? `<div class="rh-sub">${sub}</div>` : ''}</div>`;
+    const big = (text, color) => `<div class="t-mono rh-v"${color ? ` style="color:${color};"` : ''}>${text}</div>`;
+    const stars = (n) => `<div class="rh-stars">${starStrip(n, 26)}</div>`;
+    const pc = placeColor(pos, dnf);
+    const cells = [
+        cell('Place', `<div class="t-display italic rh-place" style="color:${pc};">${headline}</div>`),
+        cell('Time', big(dnf ? '&mdash;' : formatBestTime(rs.finishTime)), gap),
+    ];
+    // Where the standings leave you, and who you are chasing or holding off.
+    const standing = () => {
+        const me = look.me, t = look.table; if (!me) return ['&mdash;', ''];
+        const was = look.before ? look.before.rank : null;
+        const arrow = was == null || was === me.rank ? '' : was > me.rank
+            ? ` <span class="rh-up">&#9650;${was - me.rank}</span>` : ` <span class="rh-down">&#9660;${me.rank - was}</span>`;
+        let line;
+        if (me.rank === 1) { const two = t[1], d = two ? me.total - two.total : 0; line = !two ? 'Leads' : d ? `Leads ${escapeHTMLText(two.name)} by ${d}` : `Leads ${escapeHTMLText(two.name)} on the tie-break`; }
+        else { const d = t[0].total - me.total; line = d ? `${d} behind ${escapeHTMLText(t[0].name)}` : `Level with ${escapeHTMLText(t[0].name)}`; }
+        return [_ordinal(me.rank) + arrow, line];
+    };
+    if (!S) {
+        // One race: its own stars, and what earned them (or the penalty that cost one).
+        const n = facts ? facts.stars : 0;
+        const earned = ['Win', 'clean', 'wire to wire', 'manual trim'].slice(0, n).join(' · ');
+        const pen = rs.totalPenalties > 0 ? `<span class="rh-down">${rs.totalPenalties} penalt${rs.totalPenalties > 1 ? 'ies' : 'y'}</span>` : '';
+        cells.push(cell('Stars', stars(n), [pen, earned || (pen ? '' : 'None this race')].filter(Boolean).join(' · ')));
+    } else if (S.active.kind === 'cup') {
+        const [rank, line] = standing();
+        cells.push(cell('Cup', big(rank), `${look.me ? look.me.total : 0} pts${line ? ' · ' + line.charAt(0).toLowerCase() + line.slice(1) : ''}`));
+        const cs = look.cup, was = look.cupBefore ? look.cupBefore.stars : 4;
+        const lost = cs.stars < was ? `${STAR_RUNGS.cup[cs.stars]} lost this race` : null;
+        cells.push(cell('Cup stars', stars(cs.stars), lost || (cs.sailed >= cs.total ? (cs.stars ? 'Earned' : 'None this cup') : cs.stars ? 'Still in reach' : 'None left to earn')));
+    } else {
+        const [rank, line] = standing();
+        const pts = POINTS_FOR_PLACE(pos), scored = !dnf;
+        cells.push(cell('Points', big(scored ? '+' + pts : '0', scored && pos === 1 ? '#f2c14e' : null), `${look.me ? look.me.total : 0} after ${look.done} race${look.done === 1 ? '' : 's'}`));
+        cells.push(cell('Series', big(rank), line));
     }
-    chips.push(rs.totalPenalties > 0
-        ? chip(`${rs.totalPenalties} PENALT${rs.totalPenalties > 1 ? 'IES' : 'Y'}`, '#fca5a5', 'rgba(239,68,68,0.4)', 'rgba(239,68,68,0.12)')
-        : chip('CLEAN RACE — NO PENALTIES', '#34d399', 'rgba(255,255,255,0.09)', '#141d31'));
 
-    // THE PLACE IS SAID IN METAL, and the label says it with the number — one statement in
-    // one colour. Gold, silver, bronze for the podium and the page's white for everyone
-    // else; the screen used to shout every result in gold, which made a seventh look like a
-    // win until you read the number.
-    const pc = solo ? (best && best.isBest ? '#f2c14e' : '#eef3fb') : placeColor(pos, dnf);
     // The band's wash is the PLAYER'S colour, not a gold that belongs to first place. It is
     // the same colour as the glow behind the portrait sitting in it, at a third the alpha.
     if (host.parentElement) {
@@ -3800,29 +3804,10 @@ function renderResultsHero(sorted, player, leader) {
             `radial-gradient(700px 200px at 30% 0%, ${boatGlow(player, 0.14)}, transparent)`;
     }
     host.innerHTML = `
-        <div class="flex items-center" style="flex:none; gap:18px;">
-            <div style="width:110px;height:130px;flex:none;filter:drop-shadow(0 6px 22px ${boatGlow(player, 0.5)});">
-                <img src="assets/images/competitors/${player.name.toLowerCase()}.png" alt="${escapeHTMLText(player.name)}"
-                     style="width:100%;height:100%;object-fit:contain;" draggable="false">
-            </div>
-            <div>
-                <div class="t-label" style="font-size:12px;letter-spacing:0.24em;color:${pc};">${dnf ? 'You Did Not Finish' : solo ? 'Time Trial' : 'You Finished'}</div>
-                <div class="flex items-baseline gap-3.5" style="margin-top:4px;">
-                    <span class="t-display italic" style="font-size:${dnf ? 46 : solo ? 60 : 72}px;line-height:1;color:${pc};">${headline}</span>
-                    <div>
-                        <div class="t-display-8 t-display uppercase" style="font-size:19px;letter-spacing:0.02em;">${escapeHTMLText(player.name)}</div>
-                        <!-- YOUR time is the second-biggest thing on the page, at full precision — the
-                             record card beside it used to out-size it with thousandths while this
-                             read 02:44, which put the emphasis on the wrong race. -->
-                        ${dnf || solo ? '' : `<div class="t-mono" style="font-size:34px;font-weight:900;line-height:1.05;margin-top:2px;color:${best && best.isBest ? '#f2c14e' : '#eef3fb'};">${formatBestTime(rs.finishTime)}</div>`}
-                        <div style="font-size:13px;color:#9fb2cc;margin-top:2px;">${gap}</div>
-                    </div>
-                </div>
-                <div class="flex gap-2" style="margin-top:10px;">${chips.join('')}</div>
-                ${facts && !solo ? `<div class="flex items-center gap-3" style="margin-top:10px;">${starStrip(facts.stars, 17)}<span style="font-size:13px; color:${facts.stars >= 4 ? '#f2c14e' : '#9fb2cc'};">${starSentence(facts.stars, facts.missed, 'race')}${best && best.isBestStars && facts.stars > 0 ? ' <span style="color:#f2c14e;">New best here.</span>' : ''}</span></div>` : ''}
-            </div>
+        <div class="rh-por" style="filter:drop-shadow(0 6px 22px ${boatGlow(player, 0.5)});">
+            <img src="assets/images/competitors/${player.name.toLowerCase()}.png" alt="${escapeHTMLText(player.name)}" draggable="false">
         </div>
-        ${recordCard(best, rs)}`;
+        ${cells.join('')}`;
 }
 
 // START + one tile per leg: the time, where you stood when you got there, and which way
@@ -5076,7 +5061,7 @@ function showFleetPage(opts) {
                 <div class="t-display uppercase" style="font-size:28px; line-height:1;">${escapeHTMLText(me.name)}</div>
                 <div class="t-mono" style="font-size:12px; color:#9fb2cc;">${escapeHTMLText(me.creature || '')}</div>
                 <button id="fleet-change-btn" class="res-btn" style="align-self:flex-start; padding:11px 18px; font-size:13px;">Change skipper</button>
-                <div style="font-size:13px; line-height:1.5; color:#9fb2cc;">${inS ? `Your skipper and this fleet lock when race 1 starts, for the whole ${escapeHTMLText(Series.active.kind)}.` : 'Click a rival for their scouting notes.'}</div>
+                <div style="font-size:13px; line-height:1.5; color:#9fb2cc;">Click a rival for their scouting notes.</div>
             </div>`;
         const cb = document.getElementById('fleet-change-btn');
         if (cb) cb.addEventListener('click', (e) => { e.preventDefault(); openCharacterPicker(); });
@@ -5087,12 +5072,13 @@ function showFleetPage(opts) {
 function renderRouteStrip() {
     if (!UI.prRouteGrid || !window.Series || !Series.active) return;
     const s = Series.active, n = s.venues.length, cur = s.index;
+    const one = n === 1;   // a Race of one: the venue, with no series dress (no race number, no standings)
     const twoCols = n > 6;
     UI.prRouteGrid.style.gridTemplateColumns = twoCols ? 'repeat(2, minmax(0, 1fr))' : '1fr';
     UI.prRouteGrid.innerHTML = s.venues.map((k, i) => { const sp = _raceTileSpec(i, cur, 'NOW');
-        return _routeTile(k, 'pr-route-tile ' + sp.cls, sp.tag, twoCols ? 2.0 : 2.6, twoCols ? 210 : 430, _raceStarsExtra(i)); }).join('');
-    if (UI.prRightTitle) UI.prRightTitle.innerHTML = `<span style="color:#f2c14e; font-size:14px; vertical-align:middle;">&#9679;</span> ${s.kind === 'cup' ? 'The cup, race by race' : 'The series, race by race'}`;
-    if (UI.prRouteNote) UI.prRouteNote.textContent = cur === 0 ? 'Your skipper locks when you start race 1' : _standingsBlurb();
+        return _routeTile(k, 'pr-route-tile ' + sp.cls, one ? '' : sp.tag, twoCols ? 2.0 : 2.6, twoCols ? 210 : 430, _raceStarsExtra(i)); }).join('');
+    if (UI.prRightTitle) UI.prRightTitle.innerHTML = `<span style="color:#f2c14e; font-size:14px; vertical-align:middle;">&#9679;</span> ${one ? 'The race' : s.kind === 'cup' ? 'The cup, race by race' : 'The series, race by race'}`;
+    if (UI.prRouteNote) UI.prRouteNote.textContent = (one || cur === 0) ? '' : _standingsBlurb();
 }
 function _standingsBlurb() {
     const table = Series.standings(); const me = table.find(r => r.isPlayer); if (!me) return '';

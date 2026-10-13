@@ -185,6 +185,22 @@ const Series = {
         return table;
     },
     playerRow() { return this.standings().find(r => r.isPlayer) || null; },
+    // THE RESULTS PAGE'S LOOK AHEAD (Oct 12 2026). The race is scored into the series only when
+    // the player moves on to the standings, but the results page already says where it leaves
+    // them: the standings and the cup's stars WITH this race counted (from `order`, the page's
+    // finish order) and the player's row before it. Pure: the active series is left exactly as
+    // it was found, results array length included (finished() reads it).
+    preview(order) {
+        if (!this.active) return null;
+        const res = this.active.results, i = this.active.index, prev = res[i], len = res.length;
+        res[i] = undefined;
+        const before = this.playerRow(), cupBefore = this.active.kind === 'cup' ? this.cupStars() : null;
+        if (prev) res[i] = prev; else this.recordRace(order);
+        const table = this.standings(), me = table.find(r => r.isPlayer) || null;
+        const cup = this.active.kind === 'cup' ? this.cupStars() : null;
+        res[i] = prev; res.length = len;
+        return { table, me, before, cup, cupBefore, done: table.length ? table[0].pts.length : 0 };
+    },
 
     // ── STARS ───────────────────────────────────────────────────────────────────
     // Four rungs, CUMULATIVE (Wes, Sep 14 2026): a rung counts only if every rung below it

@@ -114,6 +114,13 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         return { fleet0, boats: state.boats.length, restart: UI.resultsRestartButton.textContent.trim(), rematch: UI.resultsRematchButton.textContent.trim() }; });
     await p.evaluate(() => UI.resultsRematchButton.click()); await p.waitForTimeout(800);
     const again = await p.evaluate(() => ({ n: Series.active && Series.total(), fleet: state.boats.filter(b => !b.isPlayer).map(b => b.name), status: state.race.status }));
+    // ...and pauses as one: ABANDON RACE (not series), Restart showing, and Restart sails it again with the same fleet
+    const paused = await p.evaluate(() => { togglePause(true); toggleAbandon(true);
+        const o = { abandon: UI.abandonLabel.textContent, restartHidden: UI.restartButton.classList.contains('hidden'), ctx: UI.pauseContext.textContent, title: UI.abandonScreen.querySelector('.ov-title').textContent };
+        toggleAbandon(false); UI.restartButton.click();
+        return { ...o, n: Series.active && Series.total(), fleet: state.boats.filter(b => !b.isPlayer).map(b => b.name), status: state.race.status, paused: state.paused }; });
+    ok(paused.abandon === 'ABANDON RACE' && !paused.restartHidden && !/SERIES|1\/1/.test(paused.ctx) && paused.title === 'Abandon race?', `a Race of one pauses as one race (${paused.abandon}, restart ${paused.restartHidden ? 'hidden' : 'shown'}, '${paused.ctx}', '${paused.title}')`);
+    ok(paused.n === 1 && !paused.paused && paused.status === 'prestart' && JSON.stringify(paused.fleet) === JSON.stringify(one.fleet0), `Restart: the same Race of one again, same fleet (${paused.n}, ${paused.status})`);
     const setNothing = await p.evaluate(() => ({ elig: recordsEligible(), bests: Object.values(JSON.parse(localStorage.getItem('regatta_bests') || '{}')).some(b => b.t != null), recs: Object.keys(JSON.parse(localStorage.getItem('regatta_records') || '{}')).filter(k => k !== '__distV2').length, ghosts: localStorage.getItem('regatta_ghosts') }));
     ok(!setNothing.elig && !setNothing.bests && setNothing.recs === 0 && !setNothing.ghosts, `a Race sets no best time, no record and no ghost (its place and stars are kept) (${JSON.stringify(setNothing)})`);
     ok(lbl === 'Sail this race' && one.boats === 10 && one.restart === 'Back to Clubhouse' && /Rematch/.test(one.rematch), `a Race of one reads as one race: '${lbl}', ${one.restart} / ${one.rematch}`);
