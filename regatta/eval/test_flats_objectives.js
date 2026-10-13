@@ -110,9 +110,21 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
             state.race.status = status; me.raceState.finished = false; me.x = 1e6; me.y = 1e6; for (let i = 0; i < 30; i++) Wildlife.update(1 / 30);
             const n0 = feats.filter(e => e.id === 'flats:seals').length;
             me.x = spot[0]; me.y = spot[1]; me.aground = false; for (let i = 0; i < 30 * 5; i++) Wildlife.update(1 / 30);
-            me.x = 1e6; me.y = 1e6; Tide.setOverride(null);
-            return feats.filter(e => e.id === 'flats:seals').length - n0; };
-        out.sealPre = watch(360, 'prestart'); out.sealClose = watch(60, 'racing'); out.sealOk = watch(360, 'racing');
+            const during = feats.filter(e => e.id === 'flats:seals').length - n0;
+            // PT-087: then (sometimes) on into the colony, flushing it, before sailing away — the watch is judged on the way out
+            if (intoAfter) { me.x = C0.seals[0].hx; me.y = C0.seals[0].hy; for (let i = 0; i < 30; i++) Wildlife.update(1 / 30); }
+            me.x = 1e6; me.y = 1e6; for (let i = 0; i < 5; i++) Wildlife.update(1 / 30); Tide.setOverride(null);
+            return { during, n: feats.filter(e => e.id === 'flats:seals').length - n0 }; };
+        let intoAfter = false;
+        out.sealPre = watch(360, 'prestart').n; out.sealClose = watch(60, 'racing').n;
+        const ok1 = watch(360, 'racing'); out.sealOk = ok1.n; out.sealDuring = ok1.during;
+        // the playtest's case: a good long watch, then on into the colony — must not earn it. A new unlocks context is a
+        // new race to the wildlife, which clears its once-a-race feat set (else the pass above would mask this).
+        state.race.unlocks = Object.assign({}, state.race.unlocks); intoAfter = true;
+        out.sealThenFlush = watch(360, 'racing').n;
+        // ...and the same new race, watched and left cleanly, still earns it (the reset worked)
+        state.race.unlocks = Object.assign({}, state.race.unlocks); intoAfter = false;
+        out.sealAgain = watch(360, 'racing').n;
         state.race.status = 'racing';
         // the minimap labels draw
         try { const c = document.createElement('canvas'); c.width = 160; c.height = 160; Tide.drawMinimapLabels(c.getContext('2d'), state.boats[0].x, state.boats[0].y, 0.01, 160, 160); out.labels = true; } catch (e) { out.labels = e.message; }
@@ -144,6 +156,9 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.landCrabs === 0, `crabs never on the marsh (${r.landCrabs})`);
     ok(r.crabJump < 0.12 && r.sealJump < 0.12, `nothing pops with the tide: the largest one-frame change in a crab's visibility ${r.crabJump}, a seal's crossfade ${r.sealJump}`);
     ok(r.sealOk === 1, 'Keep Your Distance: standing off a hauled colony, 360 u from its centre, earns it');
+    ok(r.sealDuring === 0, '...judged on the way out, not during the approach (PT-087)');
+    ok(r.sealThenFlush === 0, '...and a long watch followed by sailing into the colony does not earn it (PT-087)');
+    ok(r.sealAgain === 1, '...while the same watch, left cleanly in a fresh race, does');
     ok(r.sealClose === 0, 'sailing into the colony (it flushes) does not');
     ok(r.sealPre === 0, 'nor before the gun');
     ok(r.labels === true, `the passages are labelled on the minimap (${r.labels})`);

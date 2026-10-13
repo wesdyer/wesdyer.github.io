@@ -7542,12 +7542,26 @@
     }
     // the way down to the water from a point: the lowest of eight directions, 40 u out
     function flatsDownhill(x, y) { let best = 0, bz = 1e9; for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283, z = Tide.groundAt(x + Math.sin(a) * 40, y - Math.cos(a) * 40); if (z < bz) { bz = z; best = a; } } return best; }
+    // (a feat sent just after the line still counts: the race is tallied when its results settle)
+    function gsealJudge(C, c) { if (C.watch >= c.watchS && !C.flushedByPlayer) feat(c.feat); }
     function updateGreySeals(dt, me) {
         const c = cfg.greySeals;
         for (const C of gsealCols) {
             let hauled = 0;
-            // entering the colony's ring starts a clean watch — BEFORE the seals react this frame, so a flush on the way in counts
-            if (me && c.feat) { const d0 = Math.hypot(me.x - C.cx, me.y - C.cy); if (d0 > c.ringR) { C.inRing = false; C.watch = 0; } else if (!C.inRing) { C.inRing = true; C.flushedByPlayer = false; C.watch = 0; } }
+            // entering the colony's ring starts a clean watch — BEFORE the seals react this frame, so a flush on the way in counts.
+            // LEAVING it is when the watch is judged (PT-087): a watch of watchS with not one seal flushed by you from the
+            // moment you came in to the moment you left. It used to be awarded during the approach, at 3 s, so sailing on
+            // into the colony afterwards still earned it.
+            if (me && c.feat) {
+                const d0 = Math.hypot(me.x - C.cx, me.y - C.cy);
+                if (d0 > c.ringR) { if (C.inRing) gsealJudge(C, c); C.inRing = false; C.watch = 0; }
+                else if (!C.inRing) { C.inRing = true; C.flushedByPlayer = false; C.watch = 0; }
+            } else if (C.inRing && c.feat) {
+                // the player can no longer earn (crossed the finish still in the ring): judge the watch as it stands
+                const p = state.boats && state.boats.find(b => b.isPlayer);
+                if (p && p.raceState && p.raceState.finished) gsealJudge(C, c);
+                C.inRing = false; C.watch = 0;
+            }
             for (const s of C.seals) {
                 s.t -= dt; s.bob += dt; s.ring = Math.max(0, s.ring - dt / 1.6);
                 // lying <-> swimming is a crossfade over about a second, never a swap
@@ -7591,11 +7605,12 @@
                     }
                 }
             }
-            // KEEP YOUR DISTANCE (Zee): within watchR of a colony with three or more hauled out, for 3 s,
-            // and not one of them flushed by the player since coming within 450 u
+            // KEEP YOUR DISTANCE (Zee): within watchR of a colony with three or more hauled out, for 3 s, and not one of
+            // them flushed by the player between coming within ringR and leaving it — judged on the way OUT (above), or
+            // at the finish line if the race ends with you still watching.
             if (me && c.feat) {
                 const d = Math.hypot(me.x - C.cx, me.y - C.cy);
-                if (C.inRing && d < c.watchR && hauled >= 3 && !C.flushedByPlayer) { C.watch += dt; if (C.watch >= c.watchS) feat(c.feat); }
+                if (C.inRing && d < c.watchR && hauled >= 3 && !C.flushedByPlayer) C.watch += dt;
             }
         }
     }
