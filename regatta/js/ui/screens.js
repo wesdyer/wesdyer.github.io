@@ -267,9 +267,21 @@ function renderVenuePicker() {
 
     for (const btn of UI.venuePicker.children) {
         btn.classList.toggle('sel', btn.dataset.venue === selected);
-        // Stars earned here, in the corner of the art — only once there are any.
+        // YOUR BEST TIME HERE, in the corner of the art (PT-025, Oct 12 2026). This picker is the Time
+        // Trial board's, and a trial earns no stars — so the badge is the clock: gold where your best
+        // beats the course's time to beat (a record, as the hub's Time Trials door counts them), white
+        // where it doesn't yet, nothing where you have never trialled. Read for EVERY tile on its own
+        // venue (bestForVenueAny), not under the selected venue's leg count — which is why the badges
+        // used to vanish the moment another venue was picked.
         const st = btn.querySelector('.pr-venue-stars');
-        if (st) { const b = bestForVenue(btn.dataset.venue); const n = b ? b.stars : 0; st.innerHTML = n ? starStrip(n, 10) : ''; st.style.display = n ? '' : 'none'; }
+        if (st) {
+            const v = btn.dataset.venue, b = bestForVenueAny(v), t = b && b.t != null ? b.t : null;
+            const toBeat = typeof provisionalRecord === 'function' ? provisionalRecord(v) : null, rec = t != null && (toBeat == null || t <= toBeat);
+            st.innerHTML = t == null ? '' : `<span class="t-mono" style="font-size:11px; font-weight:700; color:${rec ? '#f2c14e' : '#eef3fb'};">${formatBestTime(t)}</span>`;
+            st.title = t == null ? '' : `Your best ${formatBestTime(t)}${toBeat != null ? ' · time to beat ' + formatBestTime(toBeat) : ''}`;
+            st.style.display = t == null ? 'none' : '';
+            st.style.border = rec ? '1px solid rgba(242,193,78,0.55)' : '1px solid rgba(255,255,255,0.12)';
+        }
     }
     // The board's series dress: the picker gives way to the route, and the header names
     // the race. A single race shows neither.
@@ -284,7 +296,11 @@ function renderVenuePicker() {
     if (UI.prRoute) { UI.prRoute.classList.toggle('hidden', !inSeries); if (inSeries) renderRouteStrip(); }
     if (!inSeries) {
         if (UI.prRightTitle) UI.prRightTitle.innerHTML = '<span style="color:#5aa7ff; font-size:14px; vertical-align:middle;">&#9679;</span> Venues';
-        if (UI.prRouteNote) UI.prRouteNote.textContent = `${VENUE_ORDER.length} venues`;
+        // The trial's progress, as the hub's Time Trials door states it: venues where your best beats the time to beat.
+        if (UI.prRouteNote) {
+            const recs = VENUE_ORDER.filter(v => { const b = bestForVenueAny(v), tb = typeof provisionalRecord === 'function' ? provisionalRecord(v) : null; return b && b.t != null && (tb == null || b.t <= tb); }).length;
+            UI.prRouteNote.textContent = `Records ${recs} of ${VENUE_ORDER.length}`;
+        }
     }
     // The board's button is the gun in every mode (Sep 6): the skipper is chosen on the hub and
     // the fleet page is no longer a step. (It still exists for the eval suites.)
@@ -436,7 +452,7 @@ function renderVenueDetail(key) {
     }
 
     const idx = VENUE_ORDER.indexOf(key) + 1;
-    const best = bestForVenue(key);
+    const best = bestForVenueAny(key);   // (any leg count: a tile just picked is briefed before its build lands)
     // The names run from "Redrock" to "Bluewater Bonanza", so the long ones step down a
     // size. Everything else about this block's type is in CSS, where a short window can
     // restyle it — see the max-height rules. Measuring the hero here would read a height
@@ -3179,6 +3195,24 @@ function venueBestKey(venue) { return `${venue || settings.venue}:${recordsVenue
 // A stored best, normalised. ⚠️ Two older shapes still read: a bare number (the first
 // version) and { t, pos } (the second, where `pos` was the place in the fastest race).
 // That `pos` seeds `bestPos` — it is a real finish that really happened here.
+// THE SAME, FOR DISPLAY: whatever this venue has on file under its current records hash, whatever leg
+// count it was keyed with — the board's tiles and briefing ask about venues that are not the one built
+// (bestForVenue keys on state.race.totalLegs, the built venue's). Fastest time, best place, most stars.
+function bestForVenueAny(venue) {
+    const pre = `${venue}:${recordsVenueHash(venue)}:`, all = loadVenueBests();
+    let out = null;
+    for (const [k, r] of Object.entries(all)) {
+        if (!k.startsWith(pre)) continue;
+        const t = typeof r === 'number' ? r : (r && typeof r.t === 'number' ? r.t : null);
+        const pos = r && typeof r === 'object' ? (r.bestPos || r.pos || 0) : 0, stars = r && typeof r === 'object' ? (r.stars || 0) : 0;
+        if (t == null && !pos && !stars) continue;
+        out = out || { t: null, bestPos: 0, stars: 0 };
+        if (t != null && (out.t == null || t < out.t)) out.t = t;
+        if (pos && (!out.bestPos || pos < out.bestPos)) out.bestPos = pos;
+        if (stars > out.stars) out.stars = stars;
+    }
+    return out;
+}
 function bestForVenue(venue) {
     const rec = loadVenueBests()[venueBestKey(venue)];
     if (typeof rec === 'number') return { t: rec, bestPos: 0, bestPosT: 0, stars: 0 };
