@@ -3094,6 +3094,7 @@ if (UI.settingTelltaleColor) UI.settingTelltaleColor.addEventListener('input', (
 function showRaceMessage(text, textColorClass, borderColorClass) {
     if (UI.message) {
         delete UI.message.dataset.pen;   // a plain line replaces the penalty banner's layout
+        delete UI.message.dataset.aground;   // ...and is not the aground banner (that one sets it again)
         UI.message.textContent = text;
         UI.message.className = `mt-2 text-lg font-bold bg-slate-900/80 px-4 py-1 rounded-full border shadow-lg ${textColorClass} ${borderColorClass}`;
         UI.message.classList.remove('hidden');
@@ -4184,6 +4185,7 @@ function showPenaltyBanner(info, remainingDeg) {
     const plain = rule && PENALTY_PLAIN[rule] ? PENALTY_PLAIN[rule] : (info && info.reason) || 'A rule was broken';
     const done = Math.max(0, Math.min(1, 1 - remainingDeg / 360));
     const sig = (rule || '') + '|' + plain;
+    delete el.dataset.aground;   // a penalty takes the line; the aground banner stops ticking it
     if (el.dataset.pen !== sig) {
         el.dataset.pen = sig;
         el.className = 'mt-2 hud-penalty';
@@ -4210,10 +4212,26 @@ GameEvents.on('flats-passage', (info) => {
 });
 // AGROUND on the flats (js/tide.js): the one message a stranded sailor needs is when the
 // water comes back, and the sine knows.
+// PT-086: it was set once and never touched again, so it sat frozen at "2s" for the rest of the race.
+// Now it is LIVE: tickAgroundBanner (called every frame from draw) counts it down from the tide and
+// takes it away the moment she floats. `dataset.aground` marks the line as this banner's, so it never
+// rewrites or hides a message that has replaced it (a penalty, a passage).
+function agroundText(boat) {
+    const r = window.Tide && boat ? Tide.refloatIn(boat) : null;
+    return r == null ? 'AGROUND — THE CREW ARE PUSHING OFF' : `AGROUND — THE TIDE REFLOATS YOU IN ${Math.max(1, Math.ceil(r))}s`;
+}
 GameEvents.on('player-aground', (info) => {
-    const r = window.Tide && info && info.boat ? Tide.refloatIn(info.boat) : null;
-    showRaceMessage(r == null ? 'AGROUND — THE CREW ARE PUSHING OFF' : `AGROUND — THE TIDE REFLOATS YOU IN ${Math.max(1, Math.ceil(r))}s`, "text-amber-400", "border-amber-500/50");
+    if (!info || !info.boat) return;
+    showRaceMessage(agroundText(info.boat), "text-amber-400", "border-amber-500/50");
+    if (UI.message) UI.message.dataset.aground = '1';
 });
+function tickAgroundBanner(player) {
+    const el = UI.message;
+    if (!el || el.dataset.aground !== '1') return;
+    if (!player || !player.aground || player.raceState.finished) { delete el.dataset.aground; hideRaceMessage(); return; }
+    const text = agroundText(player);
+    if (el.textContent !== text) el.textContent = text;
+}
 
 
 // ═══════════════════════════ THE CLUBHOUSE (Sep 2026 redesign) ═══════════════════════════

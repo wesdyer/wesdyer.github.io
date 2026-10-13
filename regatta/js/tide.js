@@ -499,6 +499,10 @@ const TIDE = {
         const T = state.tide;
         if (!T || !boat.aground) return null;
         const need = groundAt(boat.x, boat.y) + T.draft + T.refloat;
+        // Already that deep: the crew are only waiting out agroundMin. Without this the next time the
+        // level EQUALS `need` is on the ebb, most of a cycle away, and the banner read "9s" for the
+        // last moment before she floated (PT-086).
+        if (levelAt(clock()) >= need) return null;
         return nextReach(need, clock());
     }
 

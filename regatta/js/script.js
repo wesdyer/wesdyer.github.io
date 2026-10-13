@@ -925,6 +925,7 @@ function draw() {
 
     if (hudShowsRose()) updateRoseHud(player, localWind);
     if (typeof drawTideReadout === 'function') drawTideReadout(player);   // the tide panel, bottom right, whatever face the HUD wears
+    if (typeof tickAgroundBanner === 'function') tickAgroundBanner(player);   // PT-086: counts down, and clears when she floats
     if (window.Volcano && state.volcano) Volcano.applyHudClasses();
 
 
