@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["ocean"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "ocean",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.",
   "card": {
@@ -485,7 +485,7 @@ window.VENUE_DOC["ocean"] = {
         -5490.973359255727
       ],
       "r": 448.1391642941987,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-2",
@@ -594,7 +594,7 @@ window.VENUE_DOC["ocean"] = {
         -5804.6527310563215
       ],
       "r": 205.40773597751715,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-10",
@@ -979,7 +979,7 @@ window.VENUE_DOC["ocean"] = {
         6498.338810993262
       ],
       "r": 1039.0995856946756,
-      "height": 2
+      "height": 1
     },
     {
       "id": "shape-7",
@@ -1508,7 +1508,7 @@ window.VENUE_DOC["ocean"] = {
         -8629.962409682581
       ],
       "r": 17010.528387758506,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-14",
@@ -1625,7 +1625,7 @@ window.VENUE_DOC["ocean"] = {
         -5533.795952691643
       ],
       "r": 337.217261652452,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-15",
@@ -1726,7 +1726,7 @@ window.VENUE_DOC["ocean"] = {
         -5807.842262509125
       ],
       "r": 150.21812055814343,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-16",
@@ -1847,7 +1847,7 @@ window.VENUE_DOC["ocean"] = {
         6470.046790996303
       ],
       "r": 746.7377836886175,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-17",
@@ -1956,7 +1956,7 @@ window.VENUE_DOC["ocean"] = {
         -11107.480895009969
       ],
       "r": 13727.732384174024,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-18",
@@ -2029,7 +2029,7 @@ window.VENUE_DOC["ocean"] = {
         -6806.242910042249
       ],
       "r": 2232.9915321280423,
-      "height": 7
+      "height": 3.5
     },
     {
       "id": "shape-19",
@@ -2194,7 +2194,7 @@ window.VENUE_DOC["ocean"] = {
         -5961.989689875504
       ],
       "r": 2857.717088996677,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-20",
@@ -2279,7 +2279,7 @@ window.VENUE_DOC["ocean"] = {
         -3740.9175280266118
       ],
       "r": 385.2508744222832,
-      "height": 7
+      "height": 3.5
     },
     {
       "id": "shape-21",
@@ -2528,7 +2528,7 @@ window.VENUE_DOC["ocean"] = {
         -13381.768257519976
       ],
       "r": 6803.562972460601,
-      "height": 15
+      "height": 7.5
     },
     {
       "id": "shape-24",
@@ -2601,7 +2601,7 @@ window.VENUE_DOC["ocean"] = {
         6087.172878102161
       ],
       "r": 328.08889607369815,
-      "height": 7
+      "height": 3.5
     },
     {
       "id": "shape-25",
@@ -2674,7 +2674,7 @@ window.VENUE_DOC["ocean"] = {
         -11131.378422717264
       ],
       "r": 1959.9013881169553,
-      "height": 15
+      "height": 7.5
     },
     {
       "id": "shape-26",
@@ -2751,7 +2751,7 @@ window.VENUE_DOC["ocean"] = {
         -10842.842881924991
       ],
       "r": 1681.802214041206,
-      "height": 20
+      "height": 10
     }
   ],
   "course": {
@@ -2783,14 +2783,14 @@ window.VENUE_DOC["ocean"] = {
       },
       {
         "id": "mark-5",
-        "x": 13963.826471666693,
-        "y": -456.5475469642197,
+        "x": 13981.26,
+        "y": -257.31,
         "kind": "inflatable"
       },
       {
         "id": "mark-6",
-        "x": 13911.533026018096,
-        "y": -1054.2643658192674,
+        "x": 13894.1,
+        "y": -1253.5,
         "kind": "inflatable"
       }
     ],
@@ -2841,7 +2841,7 @@ window.VENUE_DOC["ocean"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v2-95f12af-4q9",
+      "sig": "v2-51b4e568-4q9",
       "legs": [
         {
           "pts": []
@@ -3242,7 +3242,7 @@ window.VENUE_DOC["ocean"] = {
         "falloff": 1000,
         "count": 10,
         "gustKt": 10,
-        "sizeM": 1300,
+        "sizeM": 650,
         "lifeS": 180,
         "bias": 0.65,
         "veer": 30
@@ -3256,7 +3256,7 @@ window.VENUE_DOC["ocean"] = {
       {
         "id": "primary",
         "periodS": 13.4,
-        "heightM": 3.9,
+        "heightM": 1.95,
         "speedKt": 15.5,
         "fromWind": 30,
         "sets": {
@@ -3282,7 +3282,7 @@ window.VENUE_DOC["ocean"] = {
       {
         "id": "windswell",
         "periodS": 9.5,
-        "heightM": 1.5,
+        "heightM": 0.75,
         "speedKt": 11,
         "fromWind": 0,
         "force": 1,
