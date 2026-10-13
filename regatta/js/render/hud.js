@@ -2102,8 +2102,13 @@ function drawMinimap() {
     const legNow = player.raceState.leg;
     const entry = routeLeg(legNow);
     const racing = state.race.status !== 'finished';
-    const active = (racing && legMarks(legNow)) || [];
-    const roundMark = (racing && entry && entry.kind === 'round') ? entry.mark : null;
+    // THE RESULTS CHART (drawMinimap.target.chart — js/ui/raceresults.js) is the whole course after the
+    // race, not a "where next" instrument: no target highlighted, and the course drawn to be SEEN. It is
+    // rendered at up to 3x its display size and shrunk to fit, so the in-race 1px slate gate came out a
+    // third of a pixel wide and vanished on open water (PT-026). `ui` is display pixels to canvas pixels.
+    const chart = drawMinimap.target && drawMinimap.target.chart, ui = (chart && drawMinimap.target.ui) || 1;
+    const active = (!chart && racing && legMarks(legNow)) || [];
+    const roundMark = (!chart && racing && entry && entry.kind === 'round') ? entry.mark : null;
 
     // Gates come from the ROUTE, not from the hardcoded pairs (0,1) and (2,3). A
     // course with one line and a rounding has no second gate, and reading marks[2]
@@ -2113,6 +2118,14 @@ function drawMinimap() {
         if (!m1 || !m2) return;
         if (window.School && (School.hideMark(m1) || School.hideMark(m2))) return;
         const p1 = t(m1.x, m1.y), p2 = t(m2.x, m2.y);
+        if (chart) {   // a white line on a dark casing: reads on deep blue, on ice and on sand
+            ctx.save(); ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+            ctx.strokeStyle = 'rgba(8, 18, 32, 0.75)'; ctx.lineWidth = 4.5 * ui; ctx.stroke();
+            ctx.strokeStyle = '#f8fafc'; ctx.lineWidth = 2.2 * ui; ctx.stroke();
+            ctx.restore();
+            return;
+        }
         ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
         // Inactive geometry is nearly gone. It still says "there is a gate here" for
         // orientation, and says nothing louder than that. MID-SLATE rather than a dim
@@ -2140,6 +2153,12 @@ function drawMinimap() {
         if (roundMark && m === roundMark) continue;
         if (window.School && School.hideMark(m)) continue;
         const p = t(m.x, m.y);
+        if (chart) {   // the race's own mark colour, ringed so it stands off any ground
+            ctx.beginPath(); ctx.arc(p.x, p.y, 4.2 * ui, 0, Math.PI * 2);
+            ctx.fillStyle = '#f97316'; ctx.fill();
+            ctx.strokeStyle = 'rgba(8, 18, 32, 0.85)'; ctx.lineWidth = 1.6 * ui; ctx.stroke();
+            continue;
+        }
         ctx.beginPath(); ctx.arc(p.x, p.y, 2.6 * mkR, 0, Math.PI * 2);
         ctx.fillStyle = 'rgba(148, 163, 184, 0.55)'; ctx.fill();
     }
