@@ -634,7 +634,10 @@ function draw() {
     // Cached world tile on floe-free courses; the arctic (floes drift, spin, and may be
     // authored behind headlands) draws live in document order as before.
     // The player's path line lies ON the water and BEHIND the land, so a headland hides the way round it.
-    if (window.GoalField) GoalField.drawPath(ctx, player);
+    // It is navigation, so it FRIES with the rest (PT-094): while lightning has the electronics out
+    // (volcano.js hudFried) the way is gone, like the chart and the goal chips are no use.
+    const pathFried = !!(state.volcano && window.Volcano && Volcano.hudFried('nav'));
+    if (window.GoalField && !pathFried) GoalField.drawPath(ctx, player);
     // The DRY flats over the wind waves (mud has no waves on it), with the water's edge and
     // the afloat line — and UNDER the marsh, so real land's polygon edge covers the raster's.
     if (window.Tide && state.tide) Tide.drawDry(ctx);
@@ -733,7 +736,7 @@ function draw() {
         drawActiveGateLine(g);
         if (state.course.type !== 'islandRound' && !(window.School && School.startPractice())) drawLadderLines(g);
         drawLayLines(g); drawMarkZones(g); drawRoundingArrows(g);
-        if (window.GoalField) GoalField.drawPath(g, player);
+        if (window.GoalField && !pathFried) GoalField.drawPath(g, player);
         drawRulesOverlay(g);
     }, (g) => { drawMarkBodies(g); });
 
