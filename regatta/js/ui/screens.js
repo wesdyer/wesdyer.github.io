@@ -176,7 +176,7 @@ function renderVenuePicker() {
             const v = btn.dataset.venue, b = bestForVenueAny(v), t = b && b.t != null ? b.t : null;
             const toBeat = typeof provisionalRecord === 'function' ? provisionalRecord(v) : null, rec = t != null && (toBeat == null || t <= toBeat);
             st.innerHTML = t == null ? '' : `<span class="t-mono" style="font-size:11px; font-weight:700; color:${rec ? '#f2c14e' : '#eef3fb'};">${formatBestTime(t)}</span>`;
-            st.title = t == null ? '' : `Your best ${formatBestTime(t)}${toBeat != null ? ' · time to beat ' + formatBestTime(toBeat) : ''}`;
+            st.title = t == null ? '' : rec ? `Your best ${formatBestTime(t)} — the time to beat` : `Your best ${formatBestTime(t)} · time to beat ${formatBestTime(toBeat)}`;
             st.style.display = t == null ? 'none' : '';
             st.style.border = rec ? '1px solid rgba(242,193,78,0.55)' : '1px solid rgba(255,255,255,0.12)';
         }
@@ -373,9 +373,14 @@ function renderVenueDetail(key) {
     // clock — time to beat, your best time, the record book — shows only on a trial's board.
     // Racing the fleet (a Race, a cup, a series) shows what racing here earns: your best
     // finish and its stars. "Earn here" (the venue's characters) shows on both.
+    // THE TIME TO BEAT IS THE BEST THERE IS (Wes, Oct 13 2026): the course's target until you beat
+    // it, then your best — never a slower target over a faster time of yours. Gold when it is yours;
+    // the line under it says whose it is, and gives your best when the target still stands.
     const fleet = !!(window.Series && Series.active);
     const prov = provisionalRecord(key);
     const mine = !!(best && best.t != null);
+    const yours = mine && (prov == null || best.t <= prov);
+    const toBeat = yours ? best.t : prov;
     const placed = !!(best && best.bestPos);
     const recordBlock = fleet ? `
         <div class="vs-record">
@@ -386,9 +391,9 @@ function renderVenueDetail(key) {
         </div>` : `
         <div class="vs-record">
             <div class="t-label t-label-xs" style="color:#dbeafe;">Time to beat</div>
-            <div class="t-mono vs-record-time">${prov != null ? formatBestTime(prov) : '&mdash;'}</div>
-            <div class="t-label t-label-xs vs-record-sub" style="color:#9fb2cc; white-space:nowrap;">Your best
-                <span class="t-mono vs-record-mine" style="font-size:12px; color:${mine ? '#f2c14e' : '#7787a0'}; margin-left:3px;">${mine ? formatBestTime(best.t) : '&mdash;'}</span></div>
+            <div class="t-mono vs-record-time" style="color:${yours ? '#f2c14e' : '#fff'};">${toBeat != null ? formatBestTime(toBeat) : '&mdash;'}</div>
+            <div class="t-label t-label-xs vs-record-sub" style="color:${yours ? '#f2c14e' : '#9fb2cc'}; white-space:nowrap;">${yours ? 'Your best<span class="t-mono vs-record-mine" style="font-size:12px;">&nbsp;</span>' : `Your best
+                <span class="t-mono vs-record-mine" style="font-size:12px; color:${mine ? '#eef3fb' : '#7787a0'}; margin-left:3px;">${mine ? formatBestTime(best.t) : '&mdash;'}</span>`}</div>
             <div class="vs-record-links">
                 ${venueObjectivesStrip(key, true)}
                 <button class="t-label t-label-xs vs-link" onclick="openRecordsOverlay()">Records &rarr;</button>
