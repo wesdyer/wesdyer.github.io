@@ -96,7 +96,7 @@ function updateTraffic() {
 // change of side with the player between the bow and 3 lengths ahead of it is a crossing.
 // Read-only — it announces a feat and changes nothing (the per-ship memory lives here, not on
 // the boat or the vessel, both of which the golden traces hash).
-const BOW_CROSS_LENGTHS = 3, BOW_CROSS_HULL = 55;   // rules.js HULL_LENGTH
+const BOW_CROSS_LENGTHS = 3, BOW_CROSS_HULL = BOAT_LEN_U;   // the Spindrift 18 (js/scale.js), as rules.js HULL_LENGTH
 
 // THROUGH THE GLASS — Stillwater Lake's mechanic objective (Diver, the loon). Mark 3 sits
 // inside the NW calm (wind region 'wind-shore-bay', 2 kn). One pass = entering the region's

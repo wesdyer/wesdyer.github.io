@@ -361,7 +361,9 @@
 
     // Larger than life on purpose (guidelines/scale.md: a real gull spans 14 units and
     // vanishes); still clearly smaller than a 55-unit hull.
-    const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = 40;
+    // THE HARBOUR PORPOISE against the Spindrift 18 (PT-016): 1.6 m true, drawn at 1.5x — 24 u, eight
+// feet beside an eighteen-foot boat. It was 40 (2.5x), "about two thirds of the length of a boat" (Wes).
+const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // Body lengths (bill/nose to tail) set by guidelines/scale.md — true x3, floor 20, in true
     // order where they share water: duckling 22 < turtle 27 < grebe 29 (pond); loon 32 <
     // beaver 36 < moose (lake). Measured by eval/_animal_sizes.js; were 33/55/65/53 (Sep 25).
@@ -1724,13 +1726,19 @@
             if (!pods.find(p => p.ship === s)) pods.push({ ship: s, members: Array.from({ length: cfg.pods.perShip }, (_, i) => makePorpoise(i)) });
         }
         pods = pods.filter(p => p.ship.active);
+        // BOW RIDING (PT-016, Wes: the ship "keeps running over the porpoises… they have to go the
+        // same speed as the cargo ship", and "should be riding the bow wake"): they surface in the
+        // pressure wave just off the stem — 5 to 65 u ahead, inside the beam — and keep the ship's
+        // pace while they are up (they used to roll at 40 u/s, ~100 u ahead, and the ship caught
+        // them). The pace is the ship's own movement frame to frame — `speed` is not in units a second.
         for (const p of pods) {
             const s = p.ship, fx = Math.sin(s.heading), fy = -Math.cos(s.heading);
             const bow = s.hullLen / 2;
+            const vx = p.lx != null && dt > 0 ? (s.x - p.lx) / dt : 0, vy = p.ly != null && dt > 0 ? (s.y - p.ly) / dt : 0; p.lx = s.x; p.ly = s.y;
             for (const m of p.members) {
-                const ahead = bow + 110 + m.lead + Math.sin(T * 0.7 + m.off) * 40;
-                const side = m.off + Math.sin(T * 0.45 + m.off * 0.1) * 55;
-                surfaceCycle(m, dt, s.x + fx * ahead - fy * side, s.y + fy * ahead + fx * side, s.heading + Math.sin(T * 0.45 + m.off) * 0.5);
+                const ahead = bow + 35 + m.lead * 0.5 + Math.sin(T * 0.7 + m.off) * 15;
+                const side = m.off * 0.8 + Math.sin(T * 0.45 + m.off * 0.1) * 20;
+                surfaceCycle(m, dt, s.x + fx * ahead - fy * side, s.y + fy * ahead + fx * side, s.heading + Math.sin(T * 0.45 + m.off) * 0.25, vx, vy);
             }
         }
         if (resident) {
@@ -1745,7 +1753,8 @@
         }
     }
     // A porpoise is seen for a second and a bit — the roll — and then is gone for a few.
-    function surfaceCycle(m, dt, x, y, h) {
+    // (cvx, cvy: the water it is carried with — a bow rider keeps the ship's pace)
+    function surfaceCycle(m, dt, x, y, h, cvx, cvy) {
         if (m.phase < 0) {
             m.slick = Math.max(0, (m.slick || 0) - dt / 3);
             m.next -= dt;
@@ -1753,7 +1762,8 @@
         } else {
             m.phase += dt / 1.35;
             // It moves with the pod while it is up, so the roll travels.
-            m.sx += Math.sin(m.sh) * 40 * dt; m.sy -= Math.cos(m.sh) * 40 * dt;
+            if (cvx != null) { m.sx += (cvx + Math.sin(m.sh) * 8) * dt; m.sy += (cvy - Math.cos(m.sh) * 8) * dt; }
+            else { m.sx += Math.sin(m.sh) * 40 * dt; m.sy -= Math.cos(m.sh) * 40 * dt; }
             if (m.phase >= 1) { m.phase = -1; m.next = R(2.2, 5.5); m.fx = m.sx; m.fy = m.sy; m.slick = 1; }
         }
     }
@@ -3326,7 +3336,7 @@
         // The footprint: a smooth slick left where it went down, fading.
         if (m.phase < 0) {
             if (m.slick > 0) {
-                ctx.save(); ctx.translate(m.fx, m.fy);
+                ctx.save(); ctx.translate(m.fx, m.fy); ctx.scale(PORPOISE_LEN / 40, PORPOISE_LEN / 40);
                 const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 18);
                 g.addColorStop(0, `rgba(170,205,225,${0.22 * m.slick})`); g.addColorStop(1, 'rgba(170,205,225,0)');
                 ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, 0, 18, 14, 0, 0, Math.PI * 2); ctx.fill();
@@ -3335,10 +3345,11 @@
             return;
         }
         const p = m.phase, vis = Math.sin(Math.PI * p);
-        ctx.save(); ctx.translate(m.sx, m.sy); ctx.rotate(m.sh);
+        // (drawn at a native 40 and scaled, so the wash, fin and spray shrink with the body)
+        ctx.save(); ctx.translate(m.sx, m.sy); ctx.rotate(m.sh); ctx.scale(PORPOISE_LEN / 40, PORPOISE_LEN / 40);
         // 1. The whole animal under the surface, faint: a spindle with flippers and flukes —
         //    every overhead shot of a porpoise shows the body beyond the part that breaks water.
-        const L = PORPOISE_LEN;
+        const L = 40;
         ctx.globalAlpha = Math.min(1, 0.35 + vis * 0.5);
         ctx.fillStyle = 'rgba(30,48,62,0.42)';
         ctx.beginPath(); ctx.moveTo(0, -L * 0.52);

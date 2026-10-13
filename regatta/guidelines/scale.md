@@ -6,11 +6,15 @@ props, structures — is made to this now.*
 
 ## The ruler — **Rule**
 
-**The boat is 5.5 m (18 ft) long. One world unit is 10 cm.**
+**The boat is a Spindrift 18: 18 ft (5.49 m) long. One world unit is 10 cm.**
+
+It is codified in `js/scale.js`, loaded first by every page: `SPINDRIFT_FT`, `WORLD_M_PER_U`,
+`BOAT_LEN_U` (55, derived) and `lifeU(metres)`. Size things from those, not from a typed 55 or 56
+(Wes, Oct 13 2026).
 
 | | |
 |---|---|
-| Hull | 55 units (`HULL_LENGTH` in `rules.js`) = 5.5 m = 18 ft |
+| Hull | 55 units (`BOAT_LEN_U` in `scale.js`; 54.9 held to the hull polygon's whole unit) = 18 ft |
 | 1 metre | 10 units |
 | 1 foot | ≈ 3 units |
 | On screen | 1 unit = 1 px at player zoom (art-pipeline.md §1) |
@@ -35,7 +39,7 @@ for play.
 1. **Floor: about 20 units along the long axis.** Anything smaller does not read at race
    speed. A duckling (1.5 units true) is drawn at the floor.
 2. **Cap: about 3× true size.** The approved Cove animals sit here: gull 2.7–3.7×, pelican
-   ~3×, porpoise 2.5×. Past 3× an animal stops reading as wildlife and starts reading as a
+   ~3×, porpoise now 1.5× (PT-016). Past 3× an animal stops reading as wildlife and starts reading as a
    landmark.
 3. **Keep the order.** Where the floor squashes small animals together, step them about 15%
    per rank so they stay in their true order: duckling < turtle < grebe < loon. A bigger animal
@@ -87,7 +91,7 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Beaver (with tail) | Lake | 1.2 m | 12 | 36 | 36 | ✓ resized Sep 25 (was 53) |
 | Brown pelican (body) | Cove | 1.3 m | 13 | 39 | 41 | ✓ approved |
 | Brown pelican (span) | Cove | 2.1 m | 21 | 63 | 62 | ✓ approved |
-| Harbour porpoise | Cove | 1.6 m | 16 | 48 | 40 | ✓ approved |
+| Harbour porpoise | Cove | 1.6 m | 16 | 48 | 24 (`lifeU(1.6) * 1.5`) | ✓ Oct 13 (PT-016: 40 read as "two thirds of a boat") |
 | Moose (with head) | Lake | 3 m | 30 | 90 | 77 | ✓ |
 | Green sea turtle | Lagoon | 1.2 m | 12 | ~26 (≈2×, Wes) | 26 (32 across the flippers) | ✓ cut from 37 / 46 across, Sep 25 |
 | Spotted eagle ray (disc; snout to tail tip) | Lagoon | 2 m span; ~3.5 m | 20; 35 | ~44; ~58 (about a hull) | 42; 58 | ✓ cut Sep 25 from 60 across and ~100 tip to tail |

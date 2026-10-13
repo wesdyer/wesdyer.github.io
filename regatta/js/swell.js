@@ -54,7 +54,7 @@
 
 const U_PER_M = 10;   // the world scale (venue swell heights halved with it, schema 2)
 const KT_TO_U = 15;                       // units/second per knot
-const HULL_LEN = 55;                      // units, bow to stern — the lever arm for the couple
+const HULL_LEN = BOAT_LEN_U;              // units, bow to stern (the Spindrift 18, js/scale.js) — the lever arm for the couple
 
 // ── TUNING ─────────────────────────────────────────────────────────────────
 // Every gain below is a fraction of a physically-derived quantity, not a free number, and

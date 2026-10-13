@@ -20,6 +20,7 @@ const near = (a, b, eps) => Math.abs(a - b) <= (eps == null ? 1e-6 : eps);
 
 global.window = {};
 const load = (f) => new Function('window', fs.readFileSync(path.join(ROOT, 'regatta/js', f), 'utf8'))(global.window);
+require('vm').runInThisContext(fs.readFileSync(path.join(ROOT, 'regatta/js/scale.js'), 'utf8'));   // the world scale, as the pages load it first
 load('arena.js');
 load('venuedoc.js');
 const V = global.window.VenueDoc;

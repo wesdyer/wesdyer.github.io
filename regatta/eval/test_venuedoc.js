@@ -46,6 +46,7 @@ delete require.cache[require.resolve(DOC)];
 require(DOC);
 // Arena first: compileVenueDoc asks it for the bounding circle of a polygon
 // boundary, which painted venues now have by default.
+require('vm').runInThisContext(fs.readFileSync(path.join(ROOT, 'regatta/js/scale.js'), 'utf8'));   // the world scale, as the pages load it first
 new Function('window', fs.readFileSync(path.join(ROOT, 'regatta/js/arena.js'), 'utf8'))(global.window);
 new Function('window', fs.readFileSync(path.join(ROOT, 'regatta/js/venuedoc.js'), 'utf8'))(global.window);
 const V = global.window.VenueDoc;

@@ -63,7 +63,7 @@
     const STARBOARD = 1;
     const PORT = -1;
 
-    const HULL_LENGTH = 55; // Approx length from hull polygon
+    const HULL_LENGTH = BOAT_LEN_U; // the Spindrift 18 (js/scale.js); the hull polygon below runs -25..+30
 
     // ═══════════════════════════════════════════════════════════════
     // Geometry Helpers

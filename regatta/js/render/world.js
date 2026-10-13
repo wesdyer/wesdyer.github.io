@@ -116,13 +116,13 @@ function drawPropWash(ctx) {
 // truer picture than a ghost crown, not a compromise between two.
 //
 // TWENTY LENGTHS IS A LONG RAMP, and it is doing something broader than uncovering your hull:
-// at 1120u a tree ten lengths off still sits at 50%, so the whole neighbourhood thins around
+// at 1100u a tree ten lengths off still sits at 50%, so the whole neighbourhood thins around
 // the player and the wood closes back in behind. Nothing pops, nothing switches state, and
 // there is no edge anywhere at which a crown becomes solid. On a venue carrying 1500 trees
 // that means roughly ninety crowns are partly open at any moment — which is the look being
 // asked for, an opening that travels with the boat rather than a tree that blinks.
 const CANOPY_FADE_MIN = 0.0;     // crown left with the hull dead under the stem
-const BOAT_LEN = 56;             // hull in world units; the manifest's scale anchor
+const BOAT_LEN = BOAT_LEN_U;     // hull in world units: the Spindrift 18 (js/scale.js) — was 56
 
 // HOW FAST THE BOAT'S SPEED CHASES ITS TARGET, per frame at 60fps. These were
 // literals inside updateBoat; they are named here because the ROUTER now has to
@@ -219,7 +219,7 @@ function pointOnLand(x, y) {
 // one tree a little transparency near the player. A false "on land" leaves a SOLID crown over
 // open water, which can swallow the hull — the one thing the whole fade exists to prevent. So
 // this errs toward detecting overlap: at sixteen points a 198u white pine samples its rim every
-// 39u, finer than the 56u hull that has to stay visible under it.
+// 39u, finer than the 55u hull that has to stay visible under it.
 const CANOPY_RIM_SAMPLES = 16;
 const CANOPY_INNER_SAMPLES = 8;
 // ⚠️ WATER A HULL CAN REACH, NOT MERELY "NOT AN ISLAND" (Wes, Oct 11 2026: "trees completely on land

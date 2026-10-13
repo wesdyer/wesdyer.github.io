@@ -3165,11 +3165,10 @@ function recordVenueBest(seconds, pos, stars) {
     return { previous, isBest, previousPos, isBestPos, previousStars, isBestStars };
 }
 
-// THE WORLD SCALE, everywhere (Wes, Oct 12 2026): 10 cm to the unit — the scale the boats and animals
-// are drawn to (guidelines/scale.md; the 56 u hull is the Spindrift's 18 ft). VenueDoc.U_PER_M is 10,
-// every authored metre is on it (venue schema 2), and physics.js sums legDistances in these metres.
+// THE WORLD SCALE, everywhere (Wes, Oct 12 2026): 10 cm to the unit — WORLD_M_PER_U, in js/scale.js with
+// the Spindrift 18 it is all sized from. VenueDoc.U_PER_M is its inverse, every authored metre is on it
+// (venue schema 2), and physics.js sums legDistances in these metres.
 // History: Sep 27 2026 fixed a /5 slip (stored tracks x5); Oct 12 halved stored tracks to this scale.
-const WORLD_M_PER_U = 0.1;
 function unitsToKm(u) { return u * WORLD_M_PER_U / 1000; }
 function sailedMetres(m) { return m; }   // legDistances are world-scale metres already
 function sailedKm(m) { return sailedMetres(m) / 1000; }

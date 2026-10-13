@@ -134,7 +134,7 @@ function migrateVenueDoc(doc) {
     }
     // ── THE WORLD SCALE (schema 2, Oct 12 2026: Wes, "move everything to the new system") ──
     // Schema 1 wrote metres at 0.2 m a unit (U_PER_M was 5); the world is 10 cm to the unit
-    // (guidelines/scale.md — the 56 u hull is the Spindrift's 18 ft). Every length a document
+    // (js/scale.js — the 55 u hull is the Spindrift 18). Every length a document
     // states in metres and the game turns into units is HALVED once, so nothing in the game
     // moves: the lee heights of shapes and traffic, the gust puff sizes, the swell heights.
     // `elev` (a tide height, vertical, read against a draft in metres) and the world size
@@ -4552,7 +4552,7 @@ function compileCached(doc, light) {
     return out;
 }
 
-const U_PER_M = 10;   // THE WORLD SCALE: 10 units to the metre (schema 2; was 5 — see migrateVenueDoc)
+const U_PER_M = 1 / WORLD_M_PER_U;   // THE WORLD SCALE (js/scale.js): 10 units to the metre (schema 2; was 5 — see migrateVenueDoc)
 
 // ── SAVED COURSE PATHS ──────────────────────────────────────────────────────
 // The polylines the legs actually follow — the board's chart, the race's distance-made-good

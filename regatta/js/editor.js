@@ -225,10 +225,10 @@ let previewSeed = 90210;
 let view = { x: 0, y: 0, scale: 0.1 };
 let drag = null;
 let measure = null;
-// The game's boat to scale: 55 x 17 world units — the 18 ft Spindrift at 10 cm a unit. Dropped on the
+// The game's boat to scale: 55 x 17 world units — the Spindrift 18 at 10 cm a unit (js/scale.js). Dropped on the
 // map so a designer can see whether a gap, a gate or a rounding actually fits a boat,
 // rather than converting metres in their head.
-const BOAT_L = 55, BOAT_B = 17;
+const BOAT_L = BOAT_LEN_U, BOAT_B = 17;
 let boatProbe = null;          // { x, y, heading }
 
 const cv = $('schematic');

@@ -16,6 +16,7 @@ const DIR = 'regatta/assets/venues';
 // migrate() needs nothing else from the page.
 const sandbox = { window: {} };
 vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync('regatta/js/scale.js', 'utf8'), sandbox);   // the world scale, as the pages load it first
 vm.runInContext(fs.readFileSync('regatta/js/venuedoc.js', 'utf8'), sandbox);
 const VenueDoc = sandbox.window.VenueDoc;
 
