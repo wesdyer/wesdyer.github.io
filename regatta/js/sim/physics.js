@@ -803,7 +803,6 @@ function updateBoat(boat, dt) {
                 if (boat.raceState.planingTimer > J111_PLANING.entryTime) {
                     boat.raceState.isPlaning = true;
                     boat.raceState.planingTimer = 0;
-                    if (!boat.isPlayer) Sayings.queueQuote(boat, "start_planing");
                     if (boat.isPlayer && settings.soundEnabled) {
                          // Optional: Play a surge sound or change wind pitch (handled in audio update)
                     }
@@ -1522,14 +1521,10 @@ function updateBoatRaceState(boat, dt) {
                 // In a time trial the confetti is for beating your ghost, not for finishing alone.
                 const trialMiss = window.TimeTrial && TimeTrial.solo() && TimeTrial.ghostTime() != null && rs.finishTime >= TimeTrial.ghostTime();
                 if (window.confetti && !trialMiss) window.confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-            } else {
-                Sayings.queueQuote(boat, "finished_race");
             }
         } else if (boat.isPlayer) {
             Sound.playGateClear();
             Sound.updateMusic();
-        } else {
-            Sayings.queueQuote(boat, "rounded_mark");
         }
     };
 
@@ -1622,9 +1617,6 @@ function updateBoatRaceState(boat, dt) {
                                 if (boat.isPlayer) {
                                     Sound.playGateClear();
                                     Sound.updateMusic();
-                                } else {
-                                    const othersStarted = state.boats.some(b => b !== boat && b.raceState.leg > 0);
-                                    if (!othersStarted) Sayings.queueQuote(boat, "first_across_start");
                                 }
                                 boat.raceState.startTimeDisplay = state.race.timer;
                                 boat.raceState.startTimeDisplayTimer = 5.0;

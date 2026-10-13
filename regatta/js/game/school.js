@@ -118,7 +118,6 @@ const School = {
         this.highlight = null;
         if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
         if (UI.resultsOverlay) UI.resultsOverlay.classList.add('hidden');
-        if (typeof Sayings !== 'undefined') { Sayings.queue = []; if (Sayings.current && Sayings.hide) Sayings.hide(); }
 
         if (unit === 4) this.beginRace();
         else {

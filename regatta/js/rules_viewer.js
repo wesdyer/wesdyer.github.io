@@ -328,7 +328,7 @@
     // the racing HUD is noise here — this page is about two boats and a rule
     function hideHud() {
         for (const sel of ['#leaderboard', '#raceInfo', '#quoteBar', '#minimapPanel', '#minimap',
-                           '#pre-race-overlay', '#results-overlay', '#ai-saying-overlay']) {
+                           '#pre-race-overlay', '#results-overlay']) {
             const e = document.querySelector(sel);
             if (e) { let p = e; if (sel === '#minimap' && e.parentElement) p = e.parentElement; p.style.display = 'none'; }
         }

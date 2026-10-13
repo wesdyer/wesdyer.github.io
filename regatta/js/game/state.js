@@ -456,7 +456,6 @@ class Boat {
         this.turbulence = [];
         this.turbulenceTimer = 0;
 
-        this.playerProximity = { minD: Infinity, close: false };
         this.lbRank = 0;
         this.creature = config ? (config.creature || "Unknown") : "Unknown";
         // Racing archetype persona (see ARCHETYPES). Player and unknown configs

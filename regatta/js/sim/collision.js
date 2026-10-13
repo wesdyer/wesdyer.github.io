@@ -194,21 +194,6 @@ function checkBoatCollisions(dt) {
                         ? (res.markRoom === b1.id ? b1 : b2)
                         : rowBoat;
 
-                    // Sayings Check
-                    let playerBoat = null;
-                    let aiBoat = null;
-                    if (b1.isPlayer) { playerBoat = b1; aiBoat = b2; }
-                    else if (b2.isPlayer) { playerBoat = b2; aiBoat = b1; }
-
-                    if (playerBoat && aiBoat) {
-                        if (effectiveRow === playerBoat) {
-                             if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
-                        } else if (effectiveRow === aiBoat) {
-                             if (!playerBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_were_hit");
-                        } else {
-                             if (!aiBoat.raceState.penalty) Sayings.queueQuote(aiBoat, "they_hit_player");
-                        }
-                    }
 
                     // Labelled by what DECIDED it: when mark-room set the right-of-way boat, the foul
                     // is the room not given (Rule 18), not the Section A rule mark-room overrode.
@@ -350,41 +335,6 @@ function checkMarkCollisions(dt) {
                 break;
             }
           }
-        }
-    }
-}
-
-function checkNearMisses(dt) {
-    const player = state.boats[0];
-    if (state.race.status === 'finished' || player.raceState.finished) return;
-
-    for (let i = 1; i < state.boats.length; i++) {
-        const ai = state.boats[i];
-        if (ai.raceState.finished) continue;
-
-        const distSq = (player.x - ai.x)**2 + (player.y - ai.y)**2;
-        const dist = Math.sqrt(distSq);
-
-        if (dist < 100) {
-            if (dist < ai.playerProximity.minD) {
-                ai.playerProximity.minD = dist;
-            }
-            ai.playerProximity.close = true;
-        } else {
-            if (ai.playerProximity.close) {
-                if (ai.playerProximity.minD < 60 && ai.playerProximity.minD > 20) {
-                     if (!player.raceState.penalty && !ai.raceState.penalty) {
-                         const res = getRightOfWay(player, ai);
-                         if (res.boat === player) {
-                             Sayings.queueQuote(ai, "narrowly_avoided_collision");
-                         } else {
-                             Sayings.queueQuote(ai, "player_narrowly_avoided_collision");
-                         }
-                     }
-                }
-            }
-            ai.playerProximity.close = false;
-            ai.playerProximity.minD = Infinity;
         }
     }
 }

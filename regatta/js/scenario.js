@@ -2401,15 +2401,6 @@
         // flipping once in ~15 otherwise identical runs. Cleared, the cells
         // respawn deterministically from the seeded stream.
         window.state.gusts = [];
-        // Sayings chatter draws Math.random too (a random boat quote fires
-        // after 10 quiet seconds, and quote picks roll for length): its
-        // module timers/queue persist across runs, so whether a draw lands
-        // inside the burst depended on carried-in state — one stream shift =
-        // one tail-frame divergence (caught by the runner's tripwire)
-        if (typeof Sayings !== 'undefined') {
-            Sayings.queue = []; Sayings.current = null;
-            Sayings.timer = 0; Sayings.silenceTimer = 0;
-        }
         window.Rules.interactions = {};
     }
     function pairRights() {

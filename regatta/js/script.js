@@ -250,13 +250,9 @@ function update(dt) {
     checkTrafficCollisions(dt);
     checkWhaleContact(dt);
     checkIslandCollisions(dt);
-    checkNearMisses(dt);
 
     // Sailing School: the segment driver, the companions, the coaching.
     if (window.School && School.active) School.update(dt);
-
-    // Sayings
-    Sayings.update(dt);
 
     // Player Cam
     const player = state.boats[0];
@@ -1368,18 +1364,6 @@ function resetGame() {
 
     state.particles = [];
     state.waveStates.clear();
-
-    // Reset the AI quote system. Its update() consumes Math.random() for quote
-    // selection; if its queue/timers carry over between races the number and
-    // timing of those random draws leaks across runs, desynchronising any
-    // seeded RNG (and leaving stale quotes on screen on a real restart).
-    if (!window.__DNS_KEEP_SAYINGS_LEAK) {
-        Sayings.queue = [];
-        if (Sayings.current && Sayings.overlay) Sayings.hide();   // don't leave the last race's bubble up
-        Sayings.current = null;
-        Sayings.timer = 0;
-        Sayings.silenceTimer = 0;
-    }
 
     hideRaceMessage();
 

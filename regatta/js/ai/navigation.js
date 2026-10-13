@@ -600,7 +600,6 @@ Object.assign(BotController.prototype, {
                         // drags them diagonally through the whole fleet (fouls).
                         if (boat.traits && boat.traits.sideCommit && leg > 1) {
                             idx = Math.random() < 0.5 ? 0 : 1;
-                            if (typeof Sayings !== 'undefined') Sayings.queueQuote(boat, 'side_pick');
                         }
                         this.gateChoice = { leg, idx };
                     }
@@ -1524,10 +1523,6 @@ Object.assign(BotController.prototype, {
             }
             if (best) {
                 coverTackSide = normalizeAngle(best.heading - wd) > 0 ? 1 : -1;
-                if (this.coverLockLeg !== boat.raceState.leg) {
-                    this.coverLockLeg = boat.raceState.leg;
-                    if (typeof Sayings !== 'undefined') Sayings.queueQuote(boat, 'cover_lock');
-                }
             }
         }
 

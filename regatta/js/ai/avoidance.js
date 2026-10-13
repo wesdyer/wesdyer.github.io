@@ -146,16 +146,6 @@ Object.assign(BotController.prototype, {
             }
         }
 
-        // Bully call-out: taunt when wading into a fresh close-quarters fight.
-        if (this.bullyQuoteTimer > 0) this.bullyQuoteTimer -= dt;
-        const wasCalm = this.riskState === 'LOW' || this.riskState === 'MEDIUM';
-        if (wasCalm && (maxRisk === 'HIGH' || maxRisk === 'IMMINENT') &&
-            this.boat.traits && this.boat.traits.aggro >= 0.8 && !(this.bullyQuoteTimer > 0) &&
-            state.race.status === 'racing') {
-            this.bullyQuoteTimer = 25;
-            if (typeof Sayings !== 'undefined') Sayings.queueQuote(this.boat, 'bully_engage');
-        }
-
         this.riskState = maxRisk;
         this.avoidanceRole = role;
 

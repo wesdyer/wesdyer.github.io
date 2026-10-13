@@ -2,10 +2,7 @@
 // rules overlay, nav aids (arrows, gates, ladder/lay lines, mark zones),
 // minimap, leaderboard (runs from draw(); boat.lbRank/prevRank are RENDER-LOCAL
 // state since the 2026-08-24 leak fixes — nothing sim-side reads them, the sim's
-// standing order is fleetRank/finish times. Sayings quote triggers ride the
-// leaderboard's render cadence on purpose: they are presentation, and their
-// Math.random draws must stay OUT of update()'s seeded stream),
-// edge indicators, and the boat/rose HUD. Classic script; global scope.
+// standing order is fleetRank/finish times), edge indicators, and the boat/rose HUD. Classic script; global scope.
 // Extracted verbatim from script.js (refactor 2026-08-24).
 function drawBoat(ctx, boat) {
     if (boat.opacity !== undefined && boat.opacity <= 0) return;
@@ -2518,36 +2515,6 @@ function updateLeaderboard() {
                 boat.lbRank = index;
             }
         });
-    }
-
-    // Sayings Checks
-    const player = state.boats[0];
-    const playerRank = player.lbRank;
-    const playerPrevRank = player.prevRank;
-
-    for (const boat of state.boats) {
-        if (boat.isPlayer) continue;
-
-        // Moved into First
-        if (boat.lbRank === 0 && boat.prevRank !== 0) {
-            Sayings.queueQuote(boat, "moved_into_first");
-        }
-
-        // Moved into Last
-        if (boat.lbRank === state.boats.length - 1 && boat.prevRank !== state.boats.length - 1) {
-            Sayings.queueQuote(boat, "moved_into_last");
-        }
-
-        // Passing Player (AI was behind, now ahead)
-        // Lower rank is better. Behind means rank > playerRank. Ahead means rank < playerRank.
-        if (boat.prevRank > playerPrevRank && boat.lbRank < playerRank) {
-            Sayings.queueQuote(boat, "they_pass_player");
-        }
-
-        // Player Passed AI (AI was ahead, now behind)
-        if (boat.prevRank < playerPrevRank && boat.lbRank > playerRank) {
-            Sayings.queueQuote(boat, "player_passes_them");
-        }
     }
 }
 

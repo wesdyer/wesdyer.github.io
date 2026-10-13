@@ -1,111 +1,9 @@
-// regatta/js/ui/screens.js — screens and overlays: the AI-sayings overlay, the
+// regatta/js/ui/screens.js — screens and overlays: the
 // canvas/ctx/UI element cache (60+ getElementById at load — pages must ship
 // #gameCanvas), race-day venue board + course chart (its own rAF loop),
 // competitor cards, character picker, venue load & race-start flow, settings,
 // records book, results screen, race messages/toasts. Classic script; global
 // scope. Extracted verbatim from script.js (refactor 2026-08-24).
-// AI Sayings System
-const Sayings = {
-    queue: [],
-    current: null,
-    timer: 0,
-    silenceTimer: 0,
-    overlay: null,
-    img: null,
-    name: null,
-    text: null,
-
-    init: function() {
-        this.overlay = document.getElementById('ai-saying-overlay');
-        this.img = document.getElementById('ai-saying-img');
-        this.name = document.getElementById('ai-saying-name');
-        this.text = document.getElementById('ai-saying-text');
-    },
-
-    queueQuote: function(boat, type) {
-        if (!boat || boat.isPlayer) return;
-        // Sailing School: the classmates keep quiet, lessons and race alike — the only voice
-        // on the water is Coach Paddle's, and the race's reminders need the box to themselves.
-        if (window.School && School.active) return;
-        if (this.queue.length >= 3) return;
-        if (!this.overlay) this.init();
-
-        const quotes = typeof AI_QUOTES !== 'undefined' ? AI_QUOTES[boat.name] : null;
-        let rawQuote = quotes ? quotes[type] : null;
-        // Archetype behavior triggers fall back to generic archetype lines so
-        // every character voices its style even without bespoke quotes.
-        if (!rawQuote && typeof ARCHETYPE_CALLS !== 'undefined' && ARCHETYPE_CALLS[type]) {
-            const lines = ARCHETYPE_CALLS[type];
-            rawQuote = lines[Math.floor(Math.random() * lines.length)];
-        }
-        if (!rawQuote) return;
-
-        let text = rawQuote;
-        if (typeof rawQuote === 'object') {
-            const options = ['short', 'medium', 'long'];
-            const length = options[Math.floor(Math.random() * options.length)];
-            text = rawQuote[length];
-        }
-
-        this.queue.push({ boat, text });
-    },
-
-    update: function(dt) {
-        this.silenceTimer += dt;
-
-        if (this.current) {
-            this.timer -= dt;
-            if (this.timer <= 0) {
-                this.hide();
-            }
-        } else if (this.queue.length > 0) {
-            const item = this.queue.shift();
-            this.show(item);
-        } else if (this.silenceTimer > 10.0 && state.race.status !== 'finished') {
-            const candidates = state.boats.filter(b => !b.isPlayer && !b.raceState.finished);
-            if (candidates.length > 0) {
-                const boat = candidates[Math.floor(Math.random() * candidates.length)];
-                let type = 'random';
-                if (state.race.status === 'prestart') type = 'prestart';
-                this.queueQuote(boat, type);
-            }
-            this.silenceTimer = 0;
-        }
-    },
-
-    show: function(item) {
-        this.current = item;
-        this.timer = 2.0;
-        this.silenceTimer = 0;
-
-        if (this.overlay && this.img && this.name && this.text) {
-            this.img.src = "assets/images/competitors/" + item.boat.name.toLowerCase() + ".png";
-            const color = isVeryDark(item.boat.colors.hull) ? item.boat.colors.spinnaker : item.boat.colors.hull;
-            this.img.style.borderColor = color;
-            this.name.textContent = item.boat.name;
-            this.name.style.color = color;
-            this.text.textContent = `"${item.text}"`;
-
-            this.overlay.classList.remove('hidden');
-            requestAnimationFrame(() => {
-                 this.overlay.classList.remove('translate-y-4', 'opacity-0');
-            });
-        }
-    },
-
-    hide: function() {
-        if (this.overlay) {
-             this.overlay.classList.add('translate-y-4', 'opacity-0');
-             setTimeout(() => {
-                 if (this.current === null) this.overlay.classList.add('hidden');
-             }, 500);
-             this.current = null;
-        } else {
-            this.current = null;
-        }
-    }
-};
-
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -1880,7 +1778,11 @@ function profileBandHTML(config, opts) {
                 <div style="padding:${compact ? '10px 12px 10px 0' : '16px 0'}; min-width:0;">
                     <div class="t-display text-white uppercase leading-tight truncate" style="font-size:${compact ? 26 : 36}px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
                     ${speciesLine(config.creature, compact ? 11 : 13)}
-                    <div class="t-label mt-1" style="font-size:${compact ? 11 : 13}px; letter-spacing:${compact ? 1.8 : 2.5}px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${o.label !== undefined ? o.label : (showArch && archDef ? archDef.label : '')}</div>
+                    ${o.label === undefined && !showArch && config.personality
+                        // No archetype to name (the picker): who they are, in a line (Wes, Oct 12 2026: the brief
+                        // description on the cards for now; their `quote` is kept for the pre-race brief).
+                        ? `<div class="mt-1" style="font-size:${compact ? 12 : 13}px; line-height:1.3; color:#e6ecf8; text-shadow: 0 1px 4px rgba(0,0,0,0.75); padding-right:${withBoat ? 142 : 0}px; overflow:hidden; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;" title="${escapeHTMLText(config.personality)}">${escapeHTMLText(config.personality)}</div>`
+                        : `<div class="t-label mt-1" style="font-size:${compact ? 11 : 13}px; letter-spacing:${compact ? 1.8 : 2.5}px; color:#fcd34d; text-shadow: 0 1px 4px rgba(0,0,0,0.7)">${o.label !== undefined ? o.label : (showArch && archDef ? archDef.label : '')}</div>`}
                 </div>
             </div>
         </div>`;
@@ -1934,7 +1836,8 @@ function scoutingNotesHTML(config, compact) {
         : { quote: 16, quoteTop: 16, barsTop: 20, barGap: 12, headTop: 20, beat: 15 };
 
     return `
-        <div class="italic pl-3" style="margin-top:${S.quoteTop}px; font-size:${S.quote}px; color:#e6ecf8; border-left:3px solid #fcd34d;">${config.personality || ''}</div>
+        <div class="italic pl-3" style="margin-top:${S.quoteTop}px; font-size:${S.quote}px; color:#e6ecf8; border-left:3px solid #fcd34d;">${config.quote ? `&ldquo;${escapeHTMLText(config.quote)}&rdquo;` : (config.personality || '')}</div>
+        ${config.quote && config.personality ? `<div style="margin-top:6px; font-size:${S.beat - 1}px; color:#9fb2cc;">${escapeHTMLText(config.personality)}</div>` : ''}
         <div class="flex flex-col" style="gap:${S.barGap}px; margin-top:${S.barsTop}px;">${bars}</div>
         <div class="t-label t-label-sm" style="margin-top:${S.headTop}px;">How to Beat Them</div>
         <div class="mt-1 leading-snug" style="font-size:${S.beat}px; font-weight:500; color:#9fe6c4;">${config.beat || (archDef ? archDef.weakness : '')}</div>`;
