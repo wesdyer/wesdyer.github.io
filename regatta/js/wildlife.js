@@ -8477,12 +8477,44 @@
     // ── CALIFORNIA SEA LIONS ─────────────────────────────────────────────────────────────
     // A haul-out: a rock (a prop's collider) or a beach (a sand shape). Each animal has its own
     // spot; the water's edge off that spot is where it goes in and comes out.
+    // The body's outline, native units (nose at y=-21, hind flippers to +19, the fore flippers'
+    // tips planted out at ±16.6): the axis and shoulders sit a little in from the edge, the tips on it.
+    const SL_AXIS = [[0, -21], [0, -14], [0, -6], [-5, -6], [5, -6], [0, 2], [0, 10], [0, 19]], SL_TIPS = [[-16.6, -1], [16.6, -1]];
+    function slFits(V, beach, x, y, h, size) {
+        const k = SEA_LION_LEN / 40 * size, sn = Math.sin(h), cs = Math.cos(h);
+        const at = (px, py) => [x + (px * cs - py * sn) * k, y + (px * sn + py * cs) * k];
+        const held = (wx, wy) => pointInPoly(wx, wy, V) || (beach && onLand(wx, wy));
+        for (const [px, py] of SL_AXIS) { const [wx, wy] = at(px, py); if (!held(wx, wy) || !held(wx + 3, wy) || !held(wx - 3, wy) || !held(wx, wy + 3) || !held(wx, wy - 3)) return false; }
+        for (const [px, py] of SL_TIPS) { const [wx, wy] = at(px, py); if (!held(wx, wy)) return false; }
+        return true;
+    }
+    // the spot's fitting heading nearest the one wanted
+    function slHeading(hs, want) { let b = want, bd = 1e9; for (const h of hs || []) { const d = Math.abs(angDiff(h, want)); if (d < bd) { bd = d; b = h; } } return b; }
+    // open water all the way from one point to another (no rock, no land)
+    function slClear(x0, y0, x1, y1) { const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 8); for (let i = 1; i <= n; i++) if (solidAt(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, null, true)) return false; return true; }
+    // Home is round the far side: it takes a spot by one it CAN reach — beside an animal whose way in
+    // is open water from here, on the same rock, all of it on the rock and clear of the others there.
+    function slRespot(H, m, q) {
+        const lying = H.members.filter(o => o !== m && o.mode !== 'gone');
+        for (const o of H.members) { if (o === m) continue;
+            const ax = o.ex + Math.sin(o.out) * 45, ay = o.ey - Math.cos(o.out) * 45; if (!slClear(q.x, q.y, ax, ay)) continue;
+            for (let k = 0; k < 24; k++) { const a = R(0, Math.PI * 2), d = R(15, 40), x = o.sx + Math.sin(a) * d, y = o.sy - Math.cos(a) * d;
+                if (!pointInPoly(x, y, H.V) || polyEdgeDist(x, y, H.V) < 12 || lying.some(l => Math.hypot(l.sx - x, l.sy - y) < 15)) continue;
+                const hs = []; for (let j = 0; j < 16; j++) { const h = j / 16 * Math.PI * 2; if (slFits(H.V, H.beach, x, y, h, 1.3)) hs.push(h); }
+                if (!hs.length) continue;
+                m.sx = x; m.sy = y; m.hs = hs; m.ex = o.ex; m.ey = o.ey; m.out = o.out; return true; } }
+        return false;
+    }
     function makeSeaLions(c) {
         const hauls = [];
         const add = (id, V, n, beach) => {
             const C = polyCentre(V), spots = [];
             const x0 = Math.min(...V.map(p => p.x)), x1 = Math.max(...V.map(p => p.x)), y0 = Math.min(...V.map(p => p.y)), y1 = Math.max(...V.map(p => p.y));
             const okAt = (x, y) => { if (!pointInPoly(x, y, V)) return false; const e = polyEdgeDist(x, y, V); return e >= 12 && !(beach && e > 110); };
+            // ALL OF IT ON THE ROCK (PT-083, Wes: "halfway on the rock, halfway underneath"): a spot
+            // keeps the headings at which the whole animal — nose to hind flippers, the fore flippers'
+            // tips — lies on it (a beach's back is land, which holds it up as well)
+            const headsAt = (x, y) => { const hs = [], a0 = R(0, Math.PI * 2); for (let q = 0; q < 16; q++) { const h = a0 + q / 16 * Math.PI * 2; if (slFits(V, beach, x, y, h, 1.3)) hs.push(h); } return hs; };
             // HUDDLED (drone refs): they lie in clumps, touching, all ways round — never evenly spread
             const clumps = [];
             for (let tries = 0; clumps.length < Math.max(1, Math.ceil(n / 9)) && tries < 300; tries++) { const x = R(x0, x1), y = R(y0, y1); if (okAt(x, y) && clumps.every(c2 => Math.hypot(c2.x - x, c2.y - y) > 70)) clumps.push({ x, y }); }
@@ -8490,7 +8522,8 @@
                 const c2 = clumps[tries % clumps.length], a = R(0, Math.PI * 2), d = R(0, 18 + spots.length * 2.2);
                 const x = c2.x + Math.cos(a) * d, y = c2.y + Math.sin(a) * d;
                 if (!okAt(x, y) || spots.some(s2 => Math.hypot(s2.x - x, s2.y - y) < 15)) continue;
-                spots.push({ x, y });
+                const hs = headsAt(x, y); if (!hs.length) continue;
+                spots.push({ x, y, hs });
             }
             // the water's edge off each spot: out from the rock's middle until the water is open
             const members = spots.map((s, i) => {
@@ -8500,7 +8533,7 @@
                     for (let d = 8; d < Math.min(bestD, 600); d += 8) { const px = s.x + Math.sin(aa) * d, py = s.y - Math.cos(aa) * d;
                         if (!pointInPoly(px, py, V) && !onLand(px, py)) { if (openAround(px + Math.sin(aa) * 14, py - Math.cos(aa) * 14, 12)) { bestD = d; a = aa; ex = px; ey = py; } break; } } }
                 const bull = rnd() < 0.2;
-                return { i, sx: s.x, sy: s.y, x: s.x, y: s.y, h: beach ? a + Math.PI + R(-1.1, 1.1) : R(0, Math.PI * 2), ex: ex + Math.sin(a) * 12, ey: ey - Math.cos(a) * 12, out: a,   // (the collider is traced off the painted rock)
+                return { i, sx: s.x, sy: s.y, x: s.x, y: s.y, hs: s.hs, h: slHeading(s.hs, beach ? a + Math.PI + R(-1.1, 1.1) : R(0, Math.PI * 2)), ex: ex + Math.sin(a) * 12, ey: ey - Math.cos(a) * 12, out: a,   // (the collider is traced off the painted rock)
                          bull, size: bull ? R(1.18, 1.3) : R(0.85, 1.02), mode: 'lie', t: R(2, 12), up: 0, bark: 0, wet: polyEdgeDist(s.x, s.y, V) < 45 ? 1 : rnd() < 0.15 ? 1 : 0, /* refs: dark wet ones by the waterline, golden dry ones up top */ lowWet: beach ? 0 : polyEdgeDist(s.x, s.y, V) < 45 ? 0.7 : 0, curl: R(-0.6, 0.6), bob: R(0, 7), home: true };
             });
             hauls.push({ id, V, C, beach: !!beach, members, alert: 0 });
@@ -8512,7 +8545,7 @@
             let best = 0, ba = 0;
             for (let k = 0; k < 24; k++) { const a = k / 24 * Math.PI * 2; let d = 0; while (d < 900 && !onLand(H.C.x + Math.sin(a) * d, H.C.y - Math.cos(a) * d) || d < 150) { d += 30; if (d > 900) break; }
                 let clear = 0; for (let q = 200; q <= 700; q += 50) if (!onLand(H.C.x + Math.sin(a) * q, H.C.y - Math.cos(a) * q)) clear++; if (clear > best) { best = clear; ba = a; } }
-            const p = snapOpen(H.C.x + Math.sin(ba) * (c.raftAt || 520), H.C.y - Math.cos(ba) * (c.raftAt || 520), 110); H.sea = p; H.depT = R(5, 30);
+            const p = snapOpen(H.C.x + Math.sin(ba) * (c.raftAt || 520), H.C.y - Math.cos(ba) * (c.raftAt || 520), 110); H.sea = p; H.depT = R(20, 120);
         }
         return hauls;
     }
@@ -8543,7 +8576,7 @@
                     const want = bd < c.lookR || H.alert > 0 ? 1 : m.mode === 'upright' ? 1 : 0;
                     m.up += (want - m.up) * Math.min(1, dt * 2.5);
                     if (want && b) m.look = Math.atan2(b.x - m.x, -(b.y - m.y));
-                    if (m.t <= 0) { const r = rnd(); m.mode = r < 0.25 ? 'upright' : 'lie'; m.t = R(3, 12); if (r < 0.35) m.bark = R(1.5, 3.5); if (r > 0.9) m.h += R(-0.8, 0.8); }
+                    if (m.t <= 0) { const r = rnd(); m.mode = r < 0.25 ? 'upright' : 'lie'; m.t = R(3, 12); if (r < 0.35) m.bark = R(1.5, 3.5); if (r > 0.9) m.h = slHeading(m.hs, m.h + R(-0.8, 0.8)); }
                     if (bd < c.reactR && !(H.flushCool > 0)) flushed.push(m);
                 } else if (m.mode === 'shuffle') {
                     // galumphing to the water's edge: the heaving gait, a body length a second
@@ -8557,24 +8590,28 @@
                     // hauling out: up out of the wash onto its spot, streaming water
                     // swim in to the edge (under the water, drawn with its group's look), then haul up onto its spot
                     m.t = Math.max(0, m.t); const tw = (m.ct || 2.2) - 2.2, el = (m.ct || 2.2) - m.t;
-                    if (el < tw) { const k3 = el / Math.max(tw, 1e-3); m.x = m.cx0 + (m.ex - m.cx0) * k3; m.y = m.cy0 + (m.ey - m.cy0) * k3; m.h = Math.atan2(m.ex - m.cx0, -(m.ey - m.cy0)); m.inWater = true; }
+                    if (el < tw) { const k3 = el / Math.max(tw, 1e-3), ax = m.cax ?? m.ex, ay = m.cay ?? m.ey, l1 = Math.hypot(ax - m.cx0, ay - m.cy0), l2 = Math.hypot(m.ex - ax, m.ey - ay), at = k3 * (l1 + l2);
+                        const [p0x, p0y, p1x, p1y, f] = at < l1 ? [m.cx0, m.cy0, ax, ay, at / Math.max(l1, 1e-3)] : [ax, ay, m.ex, m.ey, (at - l1) / Math.max(l2, 1e-3)];
+                        m.x = p0x + (p1x - p0x) * f; m.y = p0y + (p1y - p0y) * f; m.h = Math.atan2(p1x - p0x, -(p1y - p0y)); m.inWater = true; }
                     else { m.inWater = false; const k2 = (el - tw) / 2.2;
                         if (!m.outSplash) { m.outSplash = true; m.splash = 0.8; m.spx = m.ex; m.spy = m.ey; }
                         m.x = m.ex + (m.sx - m.ex) * k2; m.y = m.ey + (m.sy - m.ey) * k2; m.h = m.out + Math.PI; m.gait = m.bob * 9; }
-                    if (m.t <= 0) { m.mode = 'lie'; m.t = R(6, 16); m.wet = 1; m.h = m.out + Math.PI + R(-1.2, 1.2); m.outSplash = false; }
+                    if (m.t <= 0) { m.mode = 'lie'; m.t = R(6, 16); m.wet = 1; m.h = slHeading(m.hs, m.out + Math.PI + R(-1.2, 1.2)); m.outSplash = false; }
                 }
                 if (m.splash > 0) m.splash = Math.max(0, m.splash - dt / 1.4);
             }
-            // COMMUTING: every so often two to four of the ones by the water slip in and head out to sea
-            // together; they raft out there and come back to the same spots (no more than two groups out)
+            // COMMUTING: now and then two to four of the ones by the water, side by side, slip in and head
+            // out to sea together; they raft out there and come back to the same spots. One group out at
+            // a time, and none while a boat is by — they lie and watch it (PT-083: a rock whose animals
+            // went in and out every half minute read as hopping on and off it, and was half empty)
             H.depT -= dt;
-            if (H.depT <= 0 && !flushed.length) {
-                H.depT = R(25, 55);
+            if (H.depT <= 0 && !flushed.length && !(b && Math.hypot(b.x - H.C.x, b.y - H.C.y) < c.lookR + 200)) {
+                H.depT = R(70, 150);
                 const out = slGroups.filter(G => G.H === H && G.from).length;
                 const free = H.members.filter(m => (m.mode === 'lie' || m.mode === 'upright') && (Math.hypot(m.ex - m.x, m.ey - m.y) < 200 || H.beach));
-                if (out < 2 && free.length >= 2) {
-                    const n = Math.min(free.length, 2 + Math.floor(rnd() * 3)), start = Math.floor(rnd() * free.length), goers = [];
-                    for (let k = 0; k < n; k++) goers.push(free[(start + k) % free.length]);
+                const f0 = free[Math.floor(rnd() * free.length)], side = f0 ? free.filter(m => Math.hypot(m.ex - f0.ex, m.ey - f0.ey) < 90) : [];
+                if (out < 1 && side.length >= 2) {
+                    const n = Math.min(side.length, 2 + Math.floor(rnd() * 3)), goers = side.sort((p, q) => Math.hypot(p.ex - f0.ex, p.ey - f0.ey) - Math.hypot(q.ex - f0.ex, q.ey - f0.ey)).slice(0, n);
                     for (const m of goers) { m.mode = 'shuffle'; m.home = false; }
                     const G = makeSLGroup(H, 0, goers[0].ex, goers[0].ey, 'travel'); G.from = goers; G.members = []; G.pending = goers.slice(); G.t = R(25, 50); slGroups.push(G);
                 }
@@ -8598,9 +8635,16 @@
             if (G.pending) for (const m of G.pending.slice()) if (m.mode === 'gone') {
                 G.pending.splice(G.pending.indexOf(m), 1);
                 G.members.push({ j: G.members.length, x: m.x, y: m.y, h: m.h, ox: R(-40, 40), oy: R(-40, 20), leap: 0, leapT: R(0.2, 1.5), z: 0, splash: 1, sx: m.x, sy: m.y, splash2: 0, flip: 0,
-                    bull: m.bull, size: m.size, trail: [], trailT: 0, flung: 0, fz: 0, fx: 0, fy: 0, gone: false, bob: m.bob, src: m });
+                    bull: m.bull, size: m.size, trail: [], trailT: 0, flung: 0, fz: 0, fx: 0, fy: 0, gone: false, bob: m.bob, src: m,
+                    // in at the rock's very edge: first straight out along the open water it went in over
+                    // (its spot's way to the sea), clear of the rock, and only then to its place in the group
+                    exit: { x: m.ex + Math.sin(m.out) * 26, y: m.ey - Math.cos(m.out) * 26 } });
             }
             if (!G.members.length) continue;
+            // THE WAY HOME: a group off a rock leaves a trail on its way out, and follows it back — its
+            // steering looks only a few lengths ahead, and could not find its way round a big rock again
+            if (G.from && G.mode !== 'return') { const L0 = G.crumbs || (G.crumbs = []), c0 = L0[L0.length - 1];
+                if (!c0 || Math.hypot(G.x - c0.x, G.y - c0.y) > 40) { L0.push({ x: G.x, y: G.y }); if (L0.length > 400) L0.splice(0, 200); } }
             // RIDING THE SHARK'S TAIL (two of Wes's videos): sea lions that find a patrolling white shark
             // near them go to it and keep just behind its tail — the one place it can't strike — for a while
             if (G.mode === 'inspect') {
@@ -8635,13 +8679,25 @@
             } else if (G.mode === 'return') {
                 // back in to the rock: to the water's edge off a free spot, then up out of the water
                 const spot = G.H.members.find(m => !m.home && m.mode === 'gone') || null;
-                if (G.from && G.from.length) { const f = G.from[0], q = G.inAt || (G.inAt = snapOpen(f.ex + Math.sin(f.out) * 60, f.ey - Math.cos(f.out) * 60, 25)); G.tx = q.x; G.ty = q.y; }
+                const crumb = G.crumbs && G.crumbs[G.crumbs.length - 1];
+                if (crumb && G.from && G.from.length) { G.tx = crumb.x; G.ty = crumb.y; G.crumbT = (G.crumbT || 0) + dt; if (Math.hypot(crumb.x - G.x, crumb.y - G.y) < 35 || G.crumbT > 4) { G.crumbs.pop(); G.crumbT = 0; } }
+                else if (G.from && G.from.length) { const f = G.from[0], q = G.inAt || (G.inAt = snapOpen(f.ex + Math.sin(f.out) * 60, f.ey - Math.cos(f.out) * 60, 25)); G.tx = q.x; G.ty = q.y; }
                 else { const E = G.H.edge || (G.H.edge = (() => { const sa = Math.atan2(G.H.sea.x - G.H.C.x, -(G.H.sea.y - G.H.C.y)); let b = G.H.members[0]; for (const m of G.H.members) if (Math.abs(angDiff(m.out, sa)) < Math.abs(angDiff(b.out, sa))) b = m;
                         return snapOpen(b.ex + Math.sin(b.out) * 90, b.ey - Math.cos(b.out) * 90, 30); })()); G.tx = E.x; G.ty = E.y; }
-                if (Math.hypot(G.tx - G.x, G.ty - G.y) < 60 || G.t < -30) {
+                if (!(G.crumbs && G.crumbs.length && G.from && G.from.length) && Math.hypot(G.tx - G.x, G.ty - G.y) < 60 || G.t < -90) {
                     if (G.from && G.from.length) {
-                        for (const q of G.members) { const m = q.src; if (m && !q.gone) { m.mode = 'climb'; m.home = true; m.cx0 = q.x; m.cy0 = q.y; m.cw = Math.hypot(m.ex - q.x, m.ey - q.y); m.t = m.ct = 2.2 + m.cw / 45; } }
-                        G.done = true;
+                        // in to the edge off its own spot by open water — out from its way in, then in along
+                        // it — never across the rock (PT-083); one whose spot is round the other side stays
+                        // with the group, which goes on round to it (overdue, they all go in as they are)
+                        const late = G.t < -90;
+                        for (const q of G.members.slice()) { const m = q.src; if (!m || q.gone) continue;
+                            const ax = m.ex + Math.sin(m.out) * 45, ay = m.ey - Math.cos(m.out) * 45;
+                            if (!late && !slClear(q.x, q.y, ax, ay)) { if (!slRespot(G.H, m, q)) continue; }
+                            const bx = m.ex + Math.sin(m.out) * 45, by = m.ey - Math.cos(m.out) * 45;   // (its way in, or the one it took over)
+                            m.mode = 'climb'; m.home = true; m.cx0 = q.x; m.cy0 = q.y; m.cax = bx; m.cay = by;
+                            m.cw = Math.hypot(bx - q.x, by - q.y) + 45; m.t = m.ct = 2.2 + m.cw / 45;
+                            G.members.splice(G.members.indexOf(q), 1); G.from.splice(G.from.indexOf(m), 1); }
+                        if (!G.members.some(q => !q.gone)) G.done = true; else { G.inAt = null; G.t = Math.max(G.t, 0); G.from.sort((p, q) => Math.hypot(p.ex - G.x, p.ey - G.y) - Math.hypot(q.ex - G.x, q.ey - G.y)); }
                     } else { G.mode = 'loiter'; G.t = R(15, 30); }   // a commuting group idles off the rock, then heads back out
                 }
                 void spot;
@@ -8663,6 +8719,11 @@
                     if (q.flung <= 0) { q.fz = 0; q.splash = 1; q.sx = q.x; q.sy = q.y; }
                     continue;
                 }
+                if (q.exit) {
+                    const ex = q.exit.x - q.x, ey = q.exit.y - q.y, ed = Math.hypot(ex, ey);
+                    if (ed < 3) q.exit = null;
+                    else { q.h = Math.atan2(ex, -ey); const st = Math.min(ed, SL_SWIM * dt); q.x += ex / ed * st; q.y += ey / ed * st; recordTrail(q, dt, true); continue; }
+                }
                 const ox = G.mode === 'raft' ? q.ox * 0.8 : q.ox, oy = G.mode === 'raft' ? q.oy * 0.8 : q.oy;
                 const tx = G.x + -fy * ox + fx * oy, ty = G.y + fx * ox + fy * oy;
                 const d = Math.hypot(tx - q.x, ty - q.y), a = Math.atan2(tx - q.x, -(ty - q.y));
@@ -8670,9 +8731,13 @@
                 if (d > 1.5) {
                     // never under a rock: the body (nose, middle, flanks) must stay in open water — if the
                     // way is blocked it swings off either side, and failing that it waits for the group
+                    // (hemmed in for a second — its place is round the far side of the rock — it backs off
+                    // the way it can, rather than wait against the rock for good)
                     const nh0 = q.h + angDiff(moving ? a : G.h + q.ox * 0.02, q.h) * Math.min(1, dt * 3);
-                    for (const dh of [0, 0.5, -0.5, 1.1, -1.1]) { const nh = nh0 + dh, nx = q.x + Math.sin(nh) * v * dt, ny = q.y - Math.cos(nh) * v * dt;
-                        if (!slBlocked(nx, ny, nh)) { q.x = nx; q.y = ny; q.h = nh; break; } } }
+                    let went = false;
+                    for (const dh of q.pinned > 1 ? [0, 0.5, -0.5, 1.1, -1.1, 1.7, -1.7, 2.4, -2.4, Math.PI] : [0, 0.5, -0.5, 1.1, -1.1]) { const nh = nh0 + dh, nx = q.x + Math.sin(nh) * v * dt, ny = q.y - Math.cos(nh) * v * dt;
+                        if (!slBlocked(nx, ny, nh)) { q.x = nx; q.y = ny; q.h = nh; went = true; break; } }
+                    q.pinned = went ? Math.max(0, (q.pinned || 0) - dt) : (q.pinned || 0) + dt; }
                 else if (!moving) q.h += angDiff(G.h + q.ox * 0.02, q.h) * Math.min(1, dt * 0.5);
                 // OUT OF THE WAY: one in a boat's path (its track over 1.6 s within 45 u) leaps clear sideways,
                 // square to the boat's line, and drops back into its place in the group after
