@@ -2246,16 +2246,36 @@ function lockedBandHTML(ach, cfg, career) {
 const UNLOCK_CARDS_MAX = 4;
 let _unlockQueue = null;
 function presentUnlocks() {
-    if (!window.Unlocks || _unlockQueue) return;
+    if (!window.Unlocks) return;
+    // PT-012: ONE PILE. A criterion that waits on the fleet (Dart's Beeline: the shortest distance of
+    // anyone, known only when they are home) is granted after the pile is already up. It joins THAT
+    // pile — after the cards still to come — instead of waiting for it to close and opening its own.
+    if (_unlockQueue) { _joinUnlockQueue(); return; }
     const names = Unlocks.unseen();
     if (!names.length) return;
     const shown = names.length > UNLOCK_CARDS_MAX + 1 ? names.slice(-UNLOCK_CARDS_MAX) : names;
     const rest = names.filter(n => !shown.includes(n));
     // The strongest go last; the "+N more" card collects the weakest, and sits before them.
     _unlockQueue = { cards: rest.length ? [{ more: rest }, ...shown.map(n => ({ name: n }))] : shown.map(n => ({ name: n })), i: 0 };
+    _preloadUnlockArt(names);
     renderUnlockCard();
 }
-function renderUnlockCard() {
+function _queuedNames(q) { const out = []; for (const c of q.cards) { if (c.more) out.push(...c.more); else out.push(c.name); } return out; }
+function _joinUnlockQueue() {
+    const q = _unlockQueue, have = _queuedNames(q);
+    const late = Unlocks.unseen().filter(n => !have.includes(n));
+    if (!late.length) return;
+    _preloadUnlockArt(late);
+    for (const n of late) q.cards.push({ name: n });
+    renderUnlockCard(true);   // the count ("2 of 6") and the button (NEXT, not CONTINUE) change under the card on screen
+}
+// The portraits, fetched before their cards are up: a card drawn before its image had loaded showed an
+// empty band where the portrait goes (PT-012, Dart's card).
+const _unlockArt = {};
+function _preloadUnlockArt(names) {
+    for (const n of names) { const k = n.toLowerCase(); if (_unlockArt[k]) continue; const im = new Image(); im.src = `assets/images/competitors/${k}.png`; _unlockArt[k] = im; }
+}
+function renderUnlockCard(again) {
     const host = document.getElementById('unlock-screen');
     if (!host || !_unlockQueue) return;
     const q = _unlockQueue, card = q.cards[q.i];
@@ -2277,7 +2297,7 @@ function renderUnlockCard() {
         const band = cfg ? bandColorFor(cfg.hull, cfg.spinnaker) : '#1c2638';
         body.innerHTML = `
             <div class="rounded-xl" style="margin-top:14px; padding:14px 0 6px; background:linear-gradient(180deg, ${band} 0%, ${band}55 60%, transparent 100%);">
-                <img src="assets/images/competitors/${card.name.toLowerCase()}.png" alt="${card.name}" draggable="false" style="width:190px;height:190px;margin:0 auto;display:block;">
+                <img class="unlock-portrait" src="assets/images/competitors/${card.name.toLowerCase()}.png" alt="${card.name}" draggable="false" style="width:190px;height:190px;margin:0 auto;display:block;transition:opacity .18s ease;">
             </div>
             <div class="t-display uppercase" style="font-size:40px; line-height:1; margin-top:8px;">${card.name}</div>
             ${cfg ? `<div class="t-mono" style="font-size:13px; color:#9fb2cc; margin-top:4px;">${cfg.creature}</div>` : ''}
@@ -2287,10 +2307,13 @@ function renderUnlockCard() {
     }
     // The picker is offered once, on the last card of a pile — never earlier, where it would
     // skip the cards still to come.
+    // Not yet decoded (a cold cache): fade it in when it lands, rather than an empty band.
+    const pic = body.querySelector('.unlock-portrait');
+    if (pic && !pic.complete) { pic.style.opacity = '0'; pic.addEventListener('load', () => { pic.style.opacity = '1'; }, { once: true }); }
     if (seeBtn) seeBtn.classList.toggle('hidden', !(last && total > 1));
     if (btn) btn.querySelector('span').textContent = last ? 'CONTINUE' : 'NEXT';
     host.classList.remove('hidden');
-    if (window.confetti && !card.more) {
+    if (window.confetti && !card.more && !again) {   // (not again when a late card only re-dresses this one)
         try { confetti({ particleCount: 90, spread: 75, startVelocity: 38, origin: { y: 0.3 }, zIndex: 90 }); } catch (e) {}
     }
 }
