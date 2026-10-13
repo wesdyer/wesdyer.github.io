@@ -646,8 +646,10 @@ function drawLadderLines(ctx) {
             const x2 = cx + finalMax*px, y2 = cy + finalMax*py;
             ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
 
-            const distToGate = Math.abs(endProj - p) * 0.2;
-            if (distToGate > 50) {
+            // metres on the world scale (it was the old 0.2 m a unit, twice the true distance);
+            // labelled from 250 u out, as before
+            const gateU = Math.abs(endProj - p), distToGate = gateU * WORLD_M_PER_U;
+            if (gateU > 250) {
                  // Labels repeat at fixed world positions along the rung (static — the water
                  // moves past them), each with a chevron pointing toward the gate
                  const label = String(Math.round(distToGate));
@@ -2408,6 +2410,12 @@ function updateLeaderboard() {
                 nameDiv.style.cssText = "font-size:16px;";
                 nameDiv.textContent = boat.name;
 
+                // A PENALTY IS A WORD, not a colour (PT-098): a small red tag, shown while it is owed.
+                const penDiv = document.createElement('div');
+                penDiv.className = "lb-pen t-label shrink-0 mr-1.5";
+                penDiv.style.cssText = "display:none; font-size:9px; line-height:1; padding:2px 4px; border-radius:4px; background:#dc2626; color:#fff; letter-spacing:0.06em;";
+                penDiv.textContent = 'PEN';
+
                 // Which way this boat is going, shown only while it is still worth saying.
                 const trendDiv = document.createElement('div');
                 trendDiv.className = "lb-trend shrink-0 mr-1.5 text-center";
@@ -2420,6 +2428,7 @@ function updateLeaderboard() {
                 row.appendChild(rank);
                 row.appendChild(iconContainer);
                 row.appendChild(nameDiv);
+                row.appendChild(penDiv);
                 row.appendChild(trendDiv);
                 row.appendChild(distDiv);
 
@@ -2433,6 +2442,7 @@ function updateLeaderboard() {
             const distDiv = row.querySelector('.lb-dist');
             const nameDiv = row.querySelector('.lb-name');
             const trendDiv = row.querySelector('.lb-trend');
+            const penDiv = row.querySelector('.lb-pen');
             const faceImg = row.querySelector('.lb-face');
 
             // ⚠️ THE FACE FOLLOWS THE BOAT'S IDENTITY, WHICH CAN CHANGE UNDER A LIVE ROW.
@@ -2466,11 +2476,16 @@ function updateLeaderboard() {
                                  : boat.raceState.finished ? 'rgba(16,185,129,0.14)'
                                  : 'transparent';
 
+            // RED MEANS A PENALTY, AND ONLY THAT (PT-098, Wes at Emberfall: "characters with red,
+            // their names are red in the leaderboard, which makes it look like they have
+            // penalties"). Your name was drawn in your boat's colour — Flaunt's is red — and a
+            // penalty turned a name red too. Now every name is white (grey before the start, a
+            // ghost greyed), yours is told by its ring, fill and rank in your colour, and a
+            // penalty is the red PEN tag beside the name.
             rankDiv.style.color = me ? me : dnx ? '#475569' : '#64748b';
             nameDiv.style.color = boat.isGhost ? '#94a3b8'
-                                : boat.raceState.penalty ? '#f87171'
-                                : me ? me
-                                : dnx ? '#64748b' : '#ffffff';
+                                : dnx && !me ? '#64748b' : '#ffffff';
+            if (penDiv) penDiv.style.display = boat.raceState.penalty && !boat.raceState.finished ? '' : 'none';
             if (boat.isGhost) row.style.background = 'rgba(148,163,184,0.10)';
             nameDiv.textContent = boat.name;
             rankDiv.textContent = index + 1;
@@ -2499,11 +2514,11 @@ function updateLeaderboard() {
                         distDiv.textContent = "+" + (boat.raceState.finishTime - leader.raceState.finishTime).toFixed(1) + "s";
                     } else {
                         const diff = Math.max(0, totalRaceDist - prog(boat));
-                        distDiv.textContent = "+" + Math.round(diff * 0.2) + "m";
+                        distDiv.textContent = "+" + Math.round(diff * WORLD_M_PER_U) + "m";
                     }
                 } else {
                     const diff = Math.max(0, leaderProgress - prog(boat));
-                    distDiv.textContent = "+" + Math.round(diff * 0.2) + "m";
+                    distDiv.textContent = "+" + Math.round(diff * WORLD_M_PER_U) + "m";   // the world scale (was the old 0.2 m a unit: every gap read double)
                 }
             }
 
