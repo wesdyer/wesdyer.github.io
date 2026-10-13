@@ -26,7 +26,7 @@
 // the omens (masthead corona, instrument jitter). The bolt crawls from the nearest charged
 // cloud — or from the sky upwind when none is near — to the point, flashes the screen (a
 // wall of light near the camera, a flicker far off), lights the water, casts the fleet's
-// shadows, and the thunder arrives dist / 340 m/s later. A boat within FRY_R has her
+// shadows, and the thunder arrives dist / 1700 u/s later (170 m/s — kept at its old 340 when the world scale halved). A boat within FRY_R has her
 // ELECTRONICS FRIED for a time proportional to proximity: the player's chart, rose,
 // instruments, clock and goal chips go to static and reboot together; a bot holds her course
 // blind. The penalty is on INFORMATION, not on control — you can always sail by the water.
@@ -72,7 +72,7 @@ const VOLCANO = {
     strikeEvery: [5, 20],     // s a striker waits before its next strike, rerolled after each
     freeStrikers: 3,          // strikers that land anywhere on the course's water (Wes: two was not enough ambient lightning)
     aimLengths: [3, 6],       // the aimed striker lands this many hull lengths off a boat's projected position
-    hull: 55,                 // hull length, world units (HULL_LOCALS spans -25..30)
+    hull: BOAT_LEN_U,         // hull length, world units: the Spindrift 18 (HULL_LOCALS spans -25..30)
     playerWeight: 3,          // the aimed striker's draw counts the player as this many boats
     cloudReach: 2500,         // a bolt comes from a charged parcel this close, else from the sky
     skyRise: 500,             // ... which sits this far upwind of the point

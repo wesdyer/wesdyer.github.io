@@ -27,7 +27,8 @@ HOW IT IS BUILT. Everything is authored in a DESIGN FRAME where the wind blows s
 down the map (direction 0, the editor's own convention), because a beat "up" and a
 reach "across" are easy to reason about there. The finished map is then rotated 45° so
 the prevailing wind is a northwesterly on the HUD's compass. Distances are in world
-units, 5 per metre (VenueDoc.U_PER_M).
+units, 10 per metre (js/scale.js). It still writes schema 1, whose heights were on the old
+5 a metre — VenueDoc.migrateVenueDoc halves them on load.
 
 THE OBJECT LAYER (reworked 2026-09-14 against sixteen aerials of Point Lobos, Point
 Pinos, Pebble Beach, Carmel Highlands and Big Sur). What those photographs agree on:
@@ -66,7 +67,6 @@ import argparse, json, math, pathlib, random, sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "assets" / "venues" / "otter.venue.js"
 
-U_PER_M = 5
 VERBOSE = False
 # ── the vertex-budget knobs (Wes, 2026-09-14: the whole document under ~1,500 vertices) ──
 TOL = {"coast": 22, "shelf-apron": 32, "meadow": 40, "forest": 50, "sand": 20}   # Douglas-Peucker tolerance per ring (units; ~1 px each)

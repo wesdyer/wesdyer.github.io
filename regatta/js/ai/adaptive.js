@@ -65,7 +65,7 @@ const Adaptive = {
         const route = state.course && state.course.route, marks = state.course && state.course.marks;
         const e = route && route[boat.raceState.leg];
         if (!e) return 1;
-        let d = Infinity, zone = 165;
+        let d = Infinity, zone = ZONE_U;
         if (e.kind === 'round' && e.mark) { d = Math.hypot(boat.x - e.mark.x, boat.y - e.mark.y); zone = e.mark.zone || zone; }
         else if (e.marks && marks) {
             const a = marks[e.marks[0]], c = marks[e.marks[1]];

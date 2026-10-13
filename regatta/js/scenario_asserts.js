@@ -11,7 +11,7 @@
 //   { kind:'tack',    who: 0, tack: 'port'|'stbd', t: 7.0, xfail? }
 //   { kind:'goals',   who: 0, goal?: 1 (0-based; absent = ALL), t1?: 12.0
 //                     (deadline s; absent = end of run), xfail? }
-//   { kind:'proper',  who: 0, tol?: 10 (metres), xfail? }   needs ctx.proper
+//   { kind:'proper',  who: 0, tol?: 5 (world metres), xfail? }   needs ctx.proper
 //   { kind:'deflect', who: 0, max?: 23 (degrees), t0?, t1?, xfail? }
 //                     max recorded avoidance deviation over the window
 //   { kind:'role',    who: 0, role: 'STAND_ON'|'GIVE_WAY'|'NONE', t: 1.0, t1?, xfail? }
@@ -154,11 +154,11 @@
         if (a.kind === 'proper') {
             // holds her proper course: per-frame deviation between this run's
             // track and the PROPER COURSE composite stays within tolerance.
-            // Tolerance is authored in METRES (5 world units = 1 m).
+            // Tolerance is authored in world METRES (10 units = 1 m; scenario v2 — see migrate).
             const pr = ctx && ctx.proper;
             if (!pr) return { pass: false, why: 'no proper-course recording to compare against' };
-            const tolM = a.tol != null ? a.tol : 10;
-            const tolU = tolM * 5;
+            const tolM = a.tol != null ? a.tol : 5;
+            const tolU = tolM / WORLD_M_PER_U;
             // atS = the FIRST frame she strays beyond tolerance (when the
             // assert actually fails) — the max deviation, which typically
             // grows to the end of the run, reads out in the message
@@ -171,7 +171,7 @@
                 if (d > worst) { worst = d; at = f / 60; }
                 if (d > tolU && firstBad === null) firstBad = f / 60;
             }
-            const worstM = (worst / 5).toFixed(1);
+            const worstM = (worst * WORLD_M_PER_U).toFixed(1);
             // tol 0 = EXACT match to the proper-course composite
             return worst <= tolU
                 ? { pass: true, why: tolM === 0 ? 'matched proper course exactly'
@@ -222,7 +222,7 @@
             // budget (metres). ctx.marks = [{x,y}] in world units.
             const mk = ctx && ctx.marks && ctx.marks[a.mark];
             if (!mk) return { pass: false, why: 'mark ' + ((a.mark || 0) + 1) + ' missing' };
-            const maxU = (a.max != null ? a.max : 15) * 5;
+            const maxU = (a.max != null ? a.max : 7.5) / WORLD_M_PER_U;
             let best = Infinity, at = 0;
             for (let f = 0; f <= nF; f++) {
                 const b = frames[f].boats[a.who];
@@ -230,10 +230,10 @@
                 const d = Math.hypot(b.x - mk.x, b.y - mk.y);
                 if (d < best) { best = d; at = f / 60; }
             }
-            const bestM = (best / 5).toFixed(1);
+            const bestM = (best * WORLD_M_PER_U).toFixed(1);
             return best <= maxU
                 ? { pass: true, why: `rounded ${bestM} m off at ${at.toFixed(1)}s` }
-                : { pass: false, why: `never closer than ${bestM} m (> ${a.max != null ? a.max : 15} m)`, atS: at };
+                : { pass: false, why: `never closer than ${bestM} m (> ${a.max != null ? a.max : 7.5} m)`, atS: at };
         }
         if (a.kind === 'turn') {
             // turn BUDGET: total integrated heading change over the run —
@@ -328,7 +328,7 @@
         if (a.kind === 'tack') return `${a.t.toFixed(1)}s ${nm(a.who)} on ${a.tack}`;
         if (a.kind === 'goals') return `${nm(a.who)} completes ${a.goal != null ? 'goal ' + (a.goal + 1) : 'goals'}${a.t1 != null ? ' by ' + a.t1.toFixed(1) + 's' : ''}`;
         if (a.kind === 'proper') return a.tol === 0 ? `${nm(a.who)} matches proper course exactly`
-            : `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 10}m`;
+            : `${nm(a.who)} holds proper course \u00b1${a.tol != null ? a.tol : 5}m`;
         if (a.kind === 'nocollide') return 'no collisions';
         if (a.kind === 'deflect') {
             const win = a.t0 != null || a.t1 != null
@@ -341,12 +341,24 @@
                 ? ` ${(a.t0 != null ? a.t0.toFixed(1) : '0')}–${a.t1 != null ? a.t1.toFixed(1) + 's' : 'end'}` : '';
             return `${nm(a.who)} steady helm ≤ ${a.max != null ? a.max : 2} reversals${win}`;
         }
-        if (a.kind === 'near') return `${nm(a.who)} rounds within ${a.max != null ? a.max : 15}m of mark ${(a.mark || 0) + 1}`;
+        if (a.kind === 'near') return `${nm(a.who)} rounds within ${a.max != null ? a.max : 7.5}m of mark ${(a.mark || 0) + 1}`;
         if (a.kind === 'turn') return `${nm(a.who)} turns ≤ ${a.max != null ? a.max : 360}° total`;
         return a.kind;
     }
 
-    const api = { evaluate, label, ruleMatches, countFlaps };
+    // THE WORLD SCALE (Oct 13 2026): scenario v1 wrote its metres at the old 0.2 m a unit (5 u/m); the
+    // world is 10 cm to the unit. A v1 scenario's metre tolerances — proper.tol, near.max — are HALVED
+    // once, so every assertion passes and fails exactly where it did; it becomes v2 (in place).
+    function migrate(sc) {
+        if (!sc || typeof sc !== 'object' || sc.v >= 2) return sc;
+        for (const a of sc.asserts || []) {
+            if (a.kind === 'proper' && typeof a.tol === 'number') a.tol = a.tol / 2;
+            if (a.kind === 'near' && typeof a.max === 'number') a.max = a.max / 2;
+        }
+        sc.v = 2;
+        return sc;
+    }
+    const api = { evaluate, label, ruleMatches, countFlaps, migrate };
     if (typeof window !== 'undefined') window.ScenarioAsserts = api;
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })();

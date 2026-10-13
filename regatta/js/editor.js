@@ -265,7 +265,7 @@ const compassOf = (rad) => COMPASS[Math.round(degOf(rad) / 22.5) % 16];
 // THE WORLD SCALE (Oct 12 2026): 10 units to the metre, the scale the boats are drawn to — VenueDoc.U_PER_M,
 // shared with the game, every metre a document states (heights, puff sizes, swell) is on it (schema 2).
 const U_PER_M = window.VenueDoc.U_PER_M;
-const U_PER_BL = 55;
+const U_PER_BL = BOAT_LEN_U;   // a boat length: the Spindrift 18 (js/scale.js)
 const uToM = (u) => u / U_PER_M;
 const mToU = (m) => m * U_PER_M;
 const fmtM = (u) => (Math.abs(u) >= mToU(1000) ? `${(uToM(u) / 1000).toFixed(2)} km` : `${Math.round(uToM(u))} m`);
@@ -3353,7 +3353,7 @@ function drawMeasure() {
     const last = toS(pts[pts.length - 1].x, pts[pts.length - 1].y);
     const lines = [
         `${pts.length - 1} leg${pts.length > 2 ? 's' : ''}  ·  ${fmtM(total)}`,
-        `${fmtBL(total)} (56 u = 5.6 m)`,
+        `${fmtBL(total)} (${BOAT_LEN_U} u = ${(BOAT_LEN_U * WORLD_M_PER_U).toFixed(1)} m)`,
         `~${Math.floor(secs / 60)}:${String(Math.round(secs % 60)).padStart(2, '0')} to sail`
     ];
     ctx.font = '600 12px "IBM Plex Mono", monospace';
@@ -4153,7 +4153,7 @@ function inspectorRefresh() {
         if (v === '') delete p.drag; else p.drag = Math.max(0, Math.min(0.9, (+v || 0) / 100));
     }, 'prop drag');
     wirePropNum('data-propradius', (p, v) => {
-        if (v === '') delete p.contactR; else p.contactR = Math.max(4, (+v || 0) * 5);
+        if (v === '') delete p.contactR; else p.contactR = Math.max(4, mToU(+v || 0));   // (it was ×5, the old scale: each re-entry halved the radius)
     }, 'prop radius');
     wirePropNum('data-propheading', (p, v) => {
         p.heading = (((+v || 0) * Math.PI / 180) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
@@ -4624,7 +4624,7 @@ function inspLeg(e, i) {
         // The rounding circle is a property of the LEG — the same mark can be rounded
         // wide on one lap and tight on another. Typed here or dragged on the map.
         const cm = (course && course.route[i] && course.route[i].mark) || null;
-        const zoneU = e.zone != null ? e.zone : (cm && cm.zone != null ? cm.zone : 165);
+        const zoneU = e.zone != null ? e.zone : (cm && cm.zone != null ? cm.zone : ZONE_U);
         way = `<div class="in-sect"><span class="k">Rounding</span>
   <div class="in-seg" data-legseg="side">
     <button data-v="port"${e.side === 'port' ? ' class="on"' : ''}>Leave to port</button>
@@ -6492,7 +6492,7 @@ function addRegion(kind, poly) {
         ? { id: `current-${n}`, poly, falloff: 300, direction: 0,
             speed: 0.5, dirVar: 0, speedVar: 0, period: 0 }
         // A gust source starts NEUTRAL in every way but position: an equal share of the
-        // births, and an ordinary puff: 5 knots on the anemometer, 300 m across, gone in 90
+        // births, and an ordinary puff: 5 knots on the anemometer, 150 m across, gone in 90
         // seconds. Drawing one says WHERE, and nothing else, until you say otherwise — and
         // now the "nothing else" is legible, because a stated default in knots and metres
         // can be judged against the course where `1x` could only be judged against itself.
@@ -8765,10 +8765,10 @@ function boatLabel() {
     // same question. windBase points dead upwind, so TWA is the angle off that.
     const twa = Math.abs(((boatProbe.heading - windBase() + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
     const twaDeg = Math.round(twa * 180 / Math.PI);
-    return [`${BOAT_L / 5} m × ${(BOAT_B / 5).toFixed(1)} m — a J111`,
+    return [`${(BOAT_L * WORLD_M_PER_U).toFixed(1)} m × ${(BOAT_B * WORLD_M_PER_U).toFixed(1)} m — the Spindrift ${SPINDRIFT_FT}`,
             `heading ${degOf(boatProbe.heading)}° · ${twaDeg}° off the wind`
                 + `${twaDeg < 38 ? ' — inside the no-go zone' : ''}`,
-            `ring ${(BOAT_L * 3) / 5} m, three hull lengths`];
+            `ring ${(BOAT_L * 3 * WORLD_M_PER_U).toFixed(1)} m, three hull lengths`];
 }
 $('btn-align-x').addEventListener('click', () => { if (alignSel('x')) afterEdit(true, 'align X'); });
 $('btn-align-y').addEventListener('click', () => { if (alignSel('y')) afterEdit(true, 'align Y'); });

@@ -1344,7 +1344,7 @@ function updateBoatRaceState(boat, dt) {
             const dx = closest.x - boat.x, dy = closest.y - boat.y;
             boat.raceState.nextWaypoint = {
                 x: closest.x, y: closest.y,
-                dist: Math.sqrt(dx*dx + dy*dy) * 0.2,
+                dist: Math.sqrt(dx*dx + dy*dy) * WORLD_M_PER_U,   // world metres (was the old 0.2 m a unit)
                 angle: Math.atan2(dx, -dy)
             };
         }
@@ -1427,7 +1427,7 @@ function updateBoatRaceState(boat, dt) {
         const wdx = tx - boat.x, wdy = ty - boat.y;
         rs0.nextWaypoint = {
             x: tx, y: ty,
-            dist: Math.sqrt(wdx * wdx + wdy * wdy) * 0.2,
+            dist: Math.sqrt(wdx * wdx + wdy * wdy) * WORLD_M_PER_U,   // world metres (was the old 0.2 m a unit)
             angle: Math.atan2(wdx, -wdy)
         };
     }
@@ -1462,7 +1462,7 @@ function updateBoatRaceState(boat, dt) {
         if (boat.isPlayer && state.race.status === 'racing' && rs.leg < state.race.totalLegs && _entry && typeof GameEvents !== 'undefined') {
             const idx = _entry.marks || (_entry.mark && _entry.mark.markIdx != null ? [_entry.mark.markIdx] : []);
             let d = 1e9; for (const i of idx) { const m = marks[i]; if (m) d = Math.min(d, Math.hypot(boat.x - m.x, boat.y - m.y) - (m.bodyR || 12)); }
-            if (idx.length) GameEvents.emit('player-feat', { id: d > 55 ? 'close:wide' : 'close:tight', value: Math.round(d) });
+            if (idx.length) GameEvents.emit('player-feat', { id: d > BOAT_LEN_U ? 'close:wide' : 'close:tight', value: Math.round(d) });
         }
         rs.leg++;
         if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: rs.leg - 1, time: state.race.timer });
@@ -2302,7 +2302,7 @@ function roundingLine(rm, nextA, fromPt, legIdx) {
     else if (route) for (let i = 1; i < route.length; i++) { const e = route[i]; if (e && e.kind === 'round' && e.mark === rm) { L = i; break; } }
     const key = L >= 0 ? 'L' + L : null;
     if (key && rm._rline && rm._rline[key]) return rm._rline[key];
-    const zone = rm.zone || 165;
+    const zone = rm.zone || ZONE_U;
     const along = (leg, fromEnd, dist) => {
         const P = dmc && dmc.legs && dmc.legs[leg];
         if (!P || !P.pts || P.pts.length < 2) return null;

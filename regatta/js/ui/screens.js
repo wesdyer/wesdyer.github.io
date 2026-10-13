@@ -2430,7 +2430,7 @@ function setupPreRaceOverlay() {
 
 
     // Course Defaults
-    // 4000 units / 5 = 800m
+    // 4000 units = 400 m (the world scale, js/scale.js)
     // The player's preference, NOT state.race.totalLegs. Writing the current course's
     // leg count into the slider laundered Glacier Sound's 2 legs through the UI, and the
     // next resetGame read it straight back — so every later venue raced 2 laps.

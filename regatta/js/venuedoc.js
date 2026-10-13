@@ -576,7 +576,7 @@ function validateVenueDoc(doc) {
             if (r.speed != null && r.speed < 0) err(`${what} region ${r.id || i}: speed cannot be negative`);
             // A zero falloff is a deliberate hard edge; a tiny positive one is usually a
             // typo for either 0 or something soft.
-            if (r.falloff != null && r.falloff > 0 && r.falloff < 50) warn(`${what} region ${r.id || i}: falloff ${Math.round(r.falloff / 5)}m is very hard-edged`);
+            if (r.falloff != null && r.falloff > 0 && r.falloff < 50) warn(`${what} region ${r.id || i}: falloff ${Math.round(r.falloff / U_PER_M)}m is very hard-edged`);
         }
     };
     checkRegions((doc.wind && doc.wind.regions) || [], 'wind');
@@ -3295,7 +3295,7 @@ const SHAPE_KINDS = {
 };
 
 // How far in from a shoal's rim the water is still deep enough not to matter, in units.
-// 120u is 24 m — about two boat lengths, crossed in six seconds at hull speed, so the tax
+// 120u is 12 m — about two boat lengths, crossed in six seconds at hull speed, so the tax
 // arrives as a long build rather than a wall you hit. Clamped to half the shape's own
 // radius so a small bar still reaches its full drag somewhere in the middle instead of
 // being all rim.
@@ -4035,7 +4035,7 @@ function compileVenueDoc(doc, light) {
             // where a rounding ARMS — below three hull lengths, an ordinary rounding
             // sails past outside it and the leg silently never completes (Lighthouse
             // Cove shipped a stray 128 on its first mark, exactly this trap).
-            zone: Math.max(e.zone != null ? e.zone : 0, 165, radius * 2.1),
+            zone: Math.max(e.zone != null ? e.zone : 0, ZONE_U, radius * 2.1),
             side: e.side || 'starboard',
             markIdx: e.markIdx
         };

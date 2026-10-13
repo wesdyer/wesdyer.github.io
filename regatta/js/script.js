@@ -891,7 +891,7 @@ function draw() {
                 const v = viewPos(wp.x, wp.y);
                 if (!v.inView || occluded(v.x, v.y)) {
                     const at = v.inView ? v : toScreen(wp.x, wp.y);
-                    drawMarkEdgeIndicator(gctx, at.x, at.y, Math.round(wp.dist * WORLD_M_PER_U) + 'm', null, rot);
+                    drawMarkEdgeIndicator(gctx, at.x, at.y, Math.round(wp.dist) + 'm', null, rot);   // (nextWaypoint.dist is world metres)
                 }
             }
             // The published aim — the goal's bearing — for the rose's waypoint arrow. A bearing is

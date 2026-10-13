@@ -888,7 +888,7 @@
         if (m.body) { const dx = wx - (proto.x || 0), dy = wy - (proto.y || 0); for (const c of m.body) { c.x += dx; c.y += dy; } }
         // the RRS zone: three hull lengths (3 × 55 = 165 — the engine's own
         // floor). Real rule-18 zone snapshots latch on it. ⌥-drag resizes.
-        m.zone = 165;
+        m.zone = ZONE_U;
         m.side = 'port';
         window.state.course.marks.push(m);
         LAB.marks.push(m);
@@ -1155,9 +1155,9 @@
     });
     const hdgIn = ui.querySelector('#lab-hdg'), spdIn = ui.querySelector('#lab-spd');
     const xIn = ui.querySelector('#lab-x'), yIn = ui.querySelector('#lab-y');
-    // metres: the seatrials document states its 4000u beat as "800 m",
-    // so 5 world units = 1 m (hull 55u = an 11 m boat — consistent)
-    const UPM = 5;
+    // metres on the world scale (js/scale.js): 10 units a metre, the 55 u hull the Spindrift 18's 5.5 m.
+    // (It was 5 — the old 0.2 m a unit, which showed every distance double and placed typed ones at half.)
+    const UPM = 1 / WORLD_M_PER_U;
     function refreshBoatXY(lb) {
         const S = LAB.stage || { x: 0, y: 0 };
         xIn.value = ((lb.x - S.x) / UPM).toFixed(1);
@@ -1545,16 +1545,16 @@
             } else if (a.kind === 'proper') {
                 row.appendChild(boatSel(a.who, v => a.who = v));
                 row.appendChild(hintSpan('holds proper \u00b1'));
-                row.appendChild(bareIn(a.tol != null ? a.tol : 10, 26, 'max deviation from her proper course (m) — 0 = exact match',
-                    v => { const p = parseFloat(v); a.tol = Number.isFinite(p) && p >= 0 ? p : 10; }));
+                row.appendChild(bareIn(a.tol != null ? a.tol : 5, 26, 'max deviation from her proper course (m) — 0 = exact match',
+                    v => { const p = parseFloat(v); a.tol = Number.isFinite(p) && p >= 0 ? p : 5; }));
                 row.appendChild(hintSpan('m'));
             } else if (a.kind === 'nocollide') {
                 row.appendChild(hintSpan('no collisions \u2014 hulls never touch'));
             } else if (a.kind === 'near') {
                 row.appendChild(boatSel(a.who, v => a.who = v));
                 row.appendChild(hintSpan('rounds within'));
-                row.appendChild(bareIn(a.max != null ? a.max : 15, 26, 'closest approach budget (m)',
-                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p > 0 ? p : 15; }));
+                row.appendChild(bareIn(a.max != null ? a.max : 7.5, 26, 'closest approach budget (m)',
+                    v => { const p = parseFloat(v); a.max = Number.isFinite(p) && p > 0 ? p : 7.5; }));
                 row.appendChild(hintSpan('m of'));
                 const mSel = document.createElement('select');
                 mSel.className = 'sl-msel';
@@ -1712,9 +1712,9 @@
                     clear: { kind: 'clear', a: 0, b: second, min: 55 },
                     tack: { kind: 'tack', who: 0, tack: 'stbd', t: Math.round(LAB.durationS / 2) },
                     goals: { kind: 'goals', who: 0 },
-                    proper: { kind: 'proper', who: 0, tol: 10 },
+                    proper: { kind: 'proper', who: 0, tol: 5 },
                     nocollide: { kind: 'nocollide' },
-                    near: { kind: 'near', who: 0, mark: 0, max: 15 },
+                    near: { kind: 'near', who: 0, mark: 0, max: 7.5 },
                     turn: { kind: 'turn', who: 0, max: 360 },
                     deflect: { kind: 'deflect', who: 0, max: 23 },
                     role: { kind: 'role', who: 0, role: 'STAND_ON', t: Math.round(LAB.durationS / 2) },
@@ -2148,7 +2148,7 @@
             }
             boats.push({
                 name: rec.names[i],
-                maxDevM: pr ? +(maxDev / 5).toFixed(1) : null,
+                maxDevM: pr ? +(maxDev * WORLD_M_PER_U).toFixed(1) : null,
                 maxDevAtS: pr ? +maxDevAt.toFixed(1) : null,
                 turnDeg: Math.round(turn * 180 / Math.PI),
                 devFromS: devFrom, devFromRangeU: devRange,
@@ -2481,7 +2481,7 @@
             while (g && LAB.recording) {
                 let done = false;
                 if (g.type === 'point') {
-                    done = Math.hypot(boat.x - g.x, boat.y - g.y) < 110;   // ~2 hulls: pass through, never park
+                    done = Math.hypot(boat.x - g.x, boat.y - g.y) < 2 * BOAT_LEN_U;   // 2 hulls: pass through, never park
                 } else if (g.type === 'gate') {
                     // crossed the segment (either direction) = through the gate
                     const ln = g.ref;
@@ -3156,7 +3156,7 @@
     function sceneObj() {
         const S = LAB.stage;
         return {
-            v: 1, durationS: LAB.durationS, windKt: LAB.windKt,
+            v: 2, durationS: LAB.durationS, windKt: LAB.windKt,   // v2: metres on the world scale (ScenarioAsserts.migrate)
             seeds: LAB.seeds.map(s => s >>> 0),
             tags: LAB.tags.length ? [...LAB.tags] : undefined,
             asserts: LAB.asserts.length ? LAB.asserts.map(a => ({ ...a })) : undefined,
@@ -3319,6 +3319,7 @@
             if (!s2 || (l && (l.savedAt || 0) >= (s2.savedAt || 0))) merged[k] = l;
         }
         for (const t of loadTombs()) delete merged[t];
+        if (window.ScenarioAsserts && ScenarioAsserts.migrate) for (const k of Object.keys(merged)) ScenarioAsserts.migrate(merged[k]);
         return merged;
     }
     function persistLib(lib) {

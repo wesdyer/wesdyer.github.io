@@ -52,8 +52,8 @@
 
     // RRS Definition — Zone: "The area around a mark within a distance
     // of three hull lengths of the boat nearer to it."
-    // Hull length ≈ 55 units → 3 × 55 = 165
-    const ZONE_RADIUS = 165;
+    // three Spindrift 18 hulls (js/scale.js): 3 × 55 = 165
+    const ZONE_RADIUS = ZONE_U;
     // A penalty turn built past this (rad, ~120°) is a turn being TAKEN, not owed — see Rule 21.
     const TAKING_PENALTY_ROT = 2.1;
 

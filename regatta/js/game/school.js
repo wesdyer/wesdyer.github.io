@@ -382,14 +382,14 @@ const School = {
         }
         s.upBase = { x: p.x, y: p.y };                           // the along-wind origin
     },
-    // "Reached": the nearest duckling is within a boat length (56u) — and the beat moves on
+    // "Reached": the nearest duckling is within a boat length (BOAT_LEN_U, 55u) — and the beat moves on
     // before the hull can get to them, so they are never run over.
     ducksReached() {
         const s = this.s, p = state.boats[0];
         if (!s || !s.ducks || !s.ducks.length) return false;
         let best = Infinity;
         for (const d of s.ducks) best = Math.min(best, this.dist(p, d));
-        return best < 56;
+        return best < BOAT_LEN_U;
     },
     // Move a point toward a target at a capped speed (units/s): ducklings SWIM to a new
     // station, across the screen, rather than appearing there.
@@ -436,7 +436,7 @@ const School = {
     tickSnake(s) {
         const p = state.boats[0], n = s.snake, head = s.ducks[0];
         if (!head) return;
-        if (this.dist(p, head) < 56) {
+        if (this.dist(p, head) < BOAT_LEN_U) {
             n.count++;
             head.k = n.nextK++; head.station = this.snakeStation(head.k);
             s.ducks.push(s.ducks.shift());                       // to the back of the queue, front of the line
@@ -798,7 +798,7 @@ const School = {
     // ── UNIT 2 · THE POND ─────────────────────────────────────────────────────
     // The pond proper, for the first time: land, marks, the launch at the line. Free sailing
     // for now — the lessons that live here are still being written.
-    // Four beats: explore (200 m of sailing), round a windward mark to starboard, go through
+    // Four beats: explore, round a windward mark to starboard, go through
     // a leeward gate and round it, then a practice start on the real line. The course stays
     // hidden until the start; the mark and gate are the school's own buoys.
     beginPond() {
@@ -871,7 +871,7 @@ const School = {
             // marks are placed from the wind, and on the top mark — in from the first mark, out to the leeward
             // gate — the race's taut-string rule asked for a 27° glance, so crossing the line on the way IN
             // counted. A lesson mark is to be gone ROUND: at least half a turn, else the whole way.
-            s.rm = { x: M.x, y: M.y, zone: 165, radius: 12, side: T.side, minWrap: Math.PI };
+            s.rm = { x: M.x, y: M.y, zone: ZONE_U, radius: 12, side: T.side, minWrap: Math.PI };
             s.rm.reqSweep = (typeof CoursePath !== 'undefined' && CoursePath.requiredSweepPts) ? CoursePath.requiredSweepPts(s.rm, s.prevTarget, s.nextA) : null;
             if (s.rm.reqSweep != null && s.rm.reqSweep < Math.PI) s.rm.reqSweep += Math.PI * 2;   // the old test agrees
             s.track = { roundSweep: 0, roundArmed: false, roundBanked: false, roundRebased: false, roundEntryB: null,
@@ -945,7 +945,7 @@ const School = {
             // close-hauled course when the goal sits inside the no-sail cone.
             {
                 const tgt = this.dmcTarget();
-                const rounding = T.kind === 'mark' && s.W && this.dist(p, s.W) < ((s.W.zone) || 165);
+                const rounding = T.kind === 'mark' && s.W && this.dist(p, s.W) < ((s.W.zone) || ZONE_U);
                 if (tgt && !rounding) {
                     const d = Math.hypot(tgt.x - p.x, tgt.y - p.y);
                     if (s._stallD != null && dt > 0) {
@@ -1223,7 +1223,7 @@ const School = {
           cond: (c) => (c.unit !== 3 || c.rs.leg >= 1) && !c.rs.ocs && c.r.abs > 110 * Math.PI / 180 && !c.p.spinnaker,
           text: (c) => 'Going downwind? Press ' + c.S.K('Space') + ' to raise your spinnaker.' },
         { id: 'noprogress', dwell: 3, every: 10,
-          cond: (c) => c.rs.leg >= 1 && !c.rs.ocs && c.rs.penaltyTurnsOwed === 0 && !c.pastGate && c.wpDelta >= -0.02,
+          cond: (c) => c.rs.leg >= 1 && !c.rs.ocs && c.rs.penaltyTurnsOwed === 0 && !c.pastGate && c.wpDelta >= -0.01,   /* (world metres a second: -0.02 at the old 0.2 m a unit) */
           text: (c) => { const what = c.targetName === 'finish line' ? 'The finish' : c.targetName === 'windward gate' ? 'The windward gate' : 'The next mark';
                          return c.turnSide === 'around' ? `${what} is behind you. Turn around.` : `${what} is to your ${c.turnSide.toUpperCase()}. Turn toward it.`; } },
     ],
@@ -1553,7 +1553,7 @@ const School = {
         // The zone circle, exactly as the course draws its own (165u, amber with the hull inside).
         for (const b of (s.buoys || [])) {
             if (!b.on || b.done || b.noZone) continue;
-            const inZone = this.dist(player, b.p) < 165 + 25;
+            const inZone = this.dist(player, b.p) < ZONE_U + 25;
             ctx.save();
             ctx.strokeStyle = inZone ? 'rgba(251, 191, 36, 0.95)' : `rgba(${typeof NAV_RGB !== 'undefined' ? NAV_RGB : '64, 245, 200'}, 0.68)`;
             ctx.lineWidth = inZone ? 5.5 : 4;

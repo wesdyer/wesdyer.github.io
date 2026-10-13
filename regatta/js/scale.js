@@ -8,5 +8,7 @@ const SPINDRIFT_FT = 18;
 const M_PER_FT = 0.3048;
 const WORLD_M_PER_U = 0.1;                                                    // 10 cm a unit
 const BOAT_LEN_U = Math.round(SPINDRIFT_FT * M_PER_FT / WORLD_M_PER_U);      // 55
+// The racing rules' ZONE round a mark: three hull lengths (RRS Definitions, "Zone") — 165
+const ZONE_U = 3 * BOAT_LEN_U;
 // A thing's real length in metres, in world units (an animal's true size, before scale.md's ×k)
 function lifeU(metres) { return metres / WORLD_M_PER_U; }

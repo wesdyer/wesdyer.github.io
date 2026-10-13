@@ -1392,7 +1392,7 @@ class BotController {
                     rmG._gyOK = false;
                     const gR = state.course.botGrid;
                     if (gR) {
-                        const zR = rmG.zone || 165;
+                        const zR = rmG.zone || ZONE_U;
                         let okR = true;
                         for (let kR = 0; kR < 32; kR++) {
                             const aR = kR / 32 * Math.PI * 2;
@@ -1405,7 +1405,7 @@ class BotController {
                 if (!rmG._gyOK) return;
                 const dxG = rmG.x - this.boat.x, dyG = rmG.y - this.boat.y;
                 const dG = Math.hypot(dxG, dyG);
-                const zG = rmG.zone || 165;
+                const zG = rmG.zone || ZONE_U;
                 // OP5 — THE ORBIT-PHASE EASE, AT THE SCOPE THE SURVEY NAMED.
                 // The m3 kill is real (v1: stalls 14→4%, the residual class
                 // dies) and v1 died twice on scope: ocean's leg-1 mark-3 has

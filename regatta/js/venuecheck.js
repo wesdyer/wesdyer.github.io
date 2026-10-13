@@ -90,14 +90,15 @@ function segToShapeDist(p, q, shape) {
 }
 
 // ── Checks ──────────────────────────────────────────────────────────────────
-// HULL_R is 30 in script.js, so a boat is ~60 units across; call the practical
-// clearance a boat needs to pass and manoeuvre 3 hull widths.
+// HULL_R is 30 in script.js, so a boat's collision circle is ~60 units (6 m) across — a little
+// more than the 55 u hull (the Spindrift 18, js/scale.js); call the practical clearance a boat
+// needs to pass and manoeuvre three of those circles.
 const HULL_DIA = 60;
 // Findings are read by a person, and nobody thinks in world units. 10u = 1 metre (the world
 // scale, VenueDoc.U_PER_M), and a boat is ~55u = 5.5 m long, so gaps are also quoted in BOAT
 // WIDTHS where that is the actual question ("can two boats pass here?").
 const M = (u) => { const m = u / window.VenueDoc.U_PER_M; return Math.abs(m) >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`; };
-const HULLS = (u) => `${(u / HULL_DIA).toFixed(1)} hulls`;
+const HULLS = (u) => `${(u / HULL_DIA).toFixed(1)} boat circles`;
 const PASSABLE = HULL_DIA * 3;
 
 function runChecks(ctx) {
@@ -157,7 +158,7 @@ function runChecks(ctx) {
     // 3. ROUNDING CLEARANCE. The measured gap from the rounding island to every
     //    other landmass, against what a boat physically needs.
     //    This is the check that would have caught the granite island sitting 43
-    //    units from the coast with a ~56-unit hull: literally unroundable, and it
+    //    units from the coast with a 55-unit hull: literally unroundable, and it
     //    cost 4377 groundings per boat before anyone measured it.
     // Which land is being rounded is now DISCOVERED, not declared: whatever shape the
     // rounding mark stands on, or the nearest one inside its zone. A mark and an island
@@ -223,7 +224,7 @@ function runChecks(ctx) {
                 const level = d < HULL_DIA ? 'error' : d < PASSABLE ? 'warn' : 'ok';
                 add(level, 'round-clearance', 'Rounding clearance',
                     `Narrowest gap between "${rock.id}" and "${worst.other.id}" is ${M(d)} (${HULLS(d)})`
-                    + ` — a hull is ${M(HULL_DIA)} wide and wants ${M(PASSABLE)} to manoeuvre`,
+                    + ` — a boat's collision circle is ${M(HULL_DIA)} across and wants ${M(PASSABLE)} to manoeuvre`,
                     { segs: worst.g.from ? [[{ x: worst.g.from[0], y: worst.g.from[1] },
                                               { x: worst.g.to[0], y: worst.g.to[1] }]] : [] });
             }

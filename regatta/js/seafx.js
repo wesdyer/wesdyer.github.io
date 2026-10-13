@@ -107,8 +107,8 @@ const CAP_BREAK_S = 1.00;    // stage A — active breaking, bright, runs with t
 const CAP_DETACH_S = 0.50;   // how long the breaker takes to let go of the wave
 const CAP_FOAM_S = 2.30;     // stage B — the maturing foam patch, dull and streaky
 const CAP_BAND = 0.42;       // how far off the crest line a break may sit, in wavelengths
-const CAP_LEN_MIN = 44;      // units — 9 m
-const CAP_LEN_MAX = 96;      // units — 19 m
+const CAP_LEN_MIN = 44;      // units — 4.4 m
+const CAP_LEN_MAX = 96;      // units — 9.6 m
 // HALF-width across the crest, as a fraction of length. A real whitecap is a long thin
 // thing — 5:1 or finer — and the first cut drew it at 3:1, which is a floe, not foam.
 const CAP_ASPECT = 0.115;

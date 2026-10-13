@@ -228,7 +228,7 @@ function isConflictSoon(b1, b2) {
     const cpaY = py + vy * t;
     const cpaDistSq = cpaX*cpaX + cpaY*cpaY;
 
-    // 120 units is approx 3-4 boat lengths (safety margin)
+    // 120 units is 12 m, about two boat lengths (safety margin)
     if (cpaDistSq < 120*120) return true;
 
     return false;
@@ -777,7 +777,7 @@ function drawLayLines(ctx) {
     // go round. There is no circle at a finish and nothing to round — you cross — so the
     // inset only opened a gap between the line and the mark you are aiming at, in the one
     // place the aid has to be exact. Same reason the start line is already 0.
-    const zoneRadius = (leg === 0 || (rl && rl.finish)) ? 0 : 165;
+    const zoneRadius = (leg === 0 || (rl && rl.finish)) ? 0 : ZONE_U;
     const pts = targets.map(i => state.course.marks[i]);
     if (!pts[0] || !pts[1]) return;
     if (isUpwind) return drawEndLaylines(ctx, pts, zoneRadius);
@@ -877,7 +877,7 @@ function drawMarkZones(ctx) {
         const m = state.course.marks[idx];
         const closest = getClosestPointOnSegment(m.x, m.y, bowX, bowY, sternX, sternY);
         const distSq = (closest.x-m.x)**2 + (closest.y-m.y)**2;
-        const inZone = distSq < 165*165;
+        const inZone = distSq < ZONE_U * ZONE_U;
         ctx.strokeStyle = inZone ? 'rgba(251, 191, 36, 0.95)' : `rgba(${NAV_RGB}, 0.68)`;
         ctx.lineWidth = inZone ? 5.5 : 4;
         ctx.beginPath(); ctx.arc(m.x, m.y, 165, 0, Math.PI*2); ctx.stroke();

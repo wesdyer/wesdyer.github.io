@@ -716,7 +716,7 @@ function checkHandling(dt) {
     // GRIP: a rival within two lengths astern (behind the player's beam line, 27.5 u past the transom's centre-line reference), held
     const fx = Math.sin(me.heading), fy = -Math.cos(me.heading);
     for (const o of state.boats) { if (o === me || o.raceState.finished) continue;
-        const dx = o.x - me.x, dy = o.y - me.y, d = Math.hypot(dx, dy), astern = dx * fx + dy * fy < -27.5;
+        const dx = o.x - me.x, dy = o.y - me.y, d = Math.hypot(dx, dy), astern = dx * fx + dy * fy < -BOAT_LEN_U / 2;
         if (d < HANDLING.gripR && astern) { const t = (H.grip.get(o) || 0) + dt; H.grip.set(o, t); if (t >= HANDLING.gripS && !H.gripSent.has(o.name)) { H.gripSent.add(o.name); emit('grip:' + o.name); } }
         else H.grip.set(o, 0); }
 }

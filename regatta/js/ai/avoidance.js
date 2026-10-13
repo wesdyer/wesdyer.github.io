@@ -620,7 +620,7 @@ Object.assign(BotController.prototype, {
             const rmA = (typeof legRoundMark === 'function' ? legRoundMark(rsA.leg) : null) || state.course.roundMark;
             if (rsA.roundArmed && rmA && !rsA.finished) {
                 const dMA = Math.hypot(boat.x - rmA.x, boat.y - rmA.y);
-                if (dMA < (rmA.zone || 165) * 1.5) {
+                if (dMA < (rmA.zone || ZONE_U) * 1.5) {
                     // THE ARC ASSUMES AN UNOBSTRUCTED ORBIT — A QUEUE IS NOT
                     // ONE. With a parked rival near, the real path is dictated
                     // by traffic, and arc-graded probes reshuffled redrock's
@@ -643,7 +643,7 @@ Object.assign(BotController.prototype, {
                     // disable narrows to a rival parked within a hull-diameter
                     // band of MY arc radius — one physically blocking my orbit.
                     const myR = Math.max(70, dMA);
-                    const wideQ = (rmA.zone || 165) >= 500;
+                    const wideQ = (rmA.zone || ZONE_U) >= 500;
                     let queued = false;
                     for (const oQ of state.boats) {
                         if (oQ === boat || oQ.isPlayer || oQ.raceState.finished) continue;
