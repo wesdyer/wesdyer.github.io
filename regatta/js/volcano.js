@@ -319,7 +319,16 @@ const VOLCANO = {
             while (b.emitT <= 0 && guard++ < 8) {
                 b.emitT += 1 / rate;
                 const k = Math.floor(t * 17) + b.parcels.length + guard;
-                const at = ventPoint(b, hash(k * 3 + 1), hash(k * 5 + 2), 0.8);
+                // VENT STEAM COMES OFF THE SEA (PT-095): a vent laid across a shore has part of its ellipse
+                // on the land, so a parcel is born only on the WATER part — a few draws at the same cadence,
+                // and none this beat if all are dry. Once risen it is air, and the wind may carry it over
+                // the land like any plume (Wes: the rising steam can go over land, the water's cannot).
+                let at = null;
+                for (let tryN = 0; tryN < 4 && !at; tryN++) {
+                    const q = ventPoint(b, hash(k * 3 + 1 + tryN * 101), hash(k * 5 + 2 + tryN * 103), 0.8);
+                    if (!(typeof pointOnLand === 'function' && pointOnLand(q.x, q.y))) at = q;
+                }
+                if (!at) continue;
                 // Sizes and lives scattered, so the wisps blend into a bank instead of combing
                 // into rows born at one cadence and blown one way.
                 emit(b.parcels, at.x, at.y, (30 + b.b * 0.25) * (0.7 + 0.6 * hash(k * 7 + 3)), 9 + 6 * hash(k * 11 + 4), 6 + 3 * hash(k * 13 + 5), 0.42, 0, 0, k);
@@ -716,6 +725,27 @@ const VOLCANO = {
 
     let _bake = null;
     const UPP = 4;
+    // CUT THE LAND OUT of a scratch layer (PT-095): every solid shape within `reach` of (cx, cy), holes
+    // kept, filled destination-out. `toPx` maps a world point to the layer's pixels. A vent's foam lies ON
+    // the water, so it must not lie on the rock where a vent is laid across a shore.
+    function cutLand(g, toPx, cx, cy, reach) {
+        const isls = (state.course && state.course.islands) || [];
+        g.save();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        g.globalCompositeOperation = 'destination-out';
+        g.fillStyle = '#000';
+        for (const isl of isls) {
+            if (isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
+            const dx = isl.x - cx, dy = isl.y - cy, rr = (isl.radius || 0) + reach;
+            if (dx * dx + dy * dy > rr * rr) continue;
+            g.beginPath();
+            const ring = (vs) => { for (let i = 0; i < vs.length; i++) { const [x, y] = toPx(vs[i].x, vs[i].y); if (i) g.lineTo(x, y); else g.moveTo(x, y); } g.closePath(); };
+            ring(isl.vertices);
+            for (const h of (isl.holes || [])) if (h && h.length >= 3) ring(h);
+            g.fill('evenodd');
+        }
+        g.restore();
+    }
     function drawVeil(ctx) {
         const v = V();
         if (!v) return;
@@ -902,6 +932,8 @@ const VOLCANO = {
                 g.drawImage(_boilMaskScratch, 0, 0);
                 g.restore();
             }
+            // ...and never on the land: a vent laid across a shore keeps its foam on the water (PT-095).
+            cutLand(g, (x, y) => [x - b.x + half, y - b.y + half], b.x, b.y, half);
             ctx.drawImage(_boilScratch, 0, 0, S, S, b.x - half, b.y - half, S, S);
         }
     }
