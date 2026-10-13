@@ -5070,11 +5070,18 @@ function renderSeriesPicker() {
     $('series-start-label').textContent = chosen.length === 1 ? 'Sail this race' : 'Sail this series';
     $('series-start-btn').disabled = !chosen.length;
     $('series-start-btn').style.opacity = chosen.length ? '' : '0.4';
+    // STARS ON THE VENUES (Wes, Oct 12 2026): what racing the fleet there has earned, out of four, so a
+    // player can see where there are stars still to win — earned gold, the rest dim. Only where there is
+    // at least one; a venue with none has no badge.
+    const venueStars = (k) => { const b = bestForVenueAny(k), n = b ? b.stars : 0;
+        if (!n) return '';   // no badge until there is a star (Wes): an empty row on every unraced venue was noise
+        let g = ''; for (let i = 0; i < 4; i++) g += `<span style="color:${i < n ? '#f2c14e' : 'rgba(255,255,255,0.42)'};">&#9733;</span>`;
+        return `<span class="t-mono" title="${n} of 4 stars here" style="font-size:18px; letter-spacing:2px; line-height:1; white-space:nowrap;">${g}</span>`; };
     if (pick) {
         const all = VENUE_ORDER.slice();
         grid.style.gridTemplateColumns = 'repeat(5, minmax(0, 1fr))';
         grid.innerHTML = all.map(k => { const i = _seriesPicks.indexOf(k);
-            return `<div class="ch-pick${i >= 0 ? ' on' : ''}" data-k="${k}">${_routeTile(k, '', '', 1.4, 220)}${i >= 0 ? `<span class="ch-pick-n">${i + 1}</span>` : ''}</div>`; }).join('');
+            return `<div class="ch-pick${i >= 0 ? ' on' : ''}" data-k="${k}">${_routeTile(k, '', '', 1.4, 220, venueStars(k))}${i >= 0 ? `<span class="ch-pick-n">${i + 1}</span>` : ''}</div>`; }).join('');
         grid.querySelectorAll('.ch-pick').forEach(el => el.addEventListener('click', () => {
             const k = el.dataset.k, i = _seriesPicks.indexOf(k);
             if (i >= 0) _seriesPicks.splice(i, 1); else if (_seriesPicks.length < RACE_MAX) _seriesPicks.push(k);
@@ -5087,7 +5094,7 @@ function renderSeriesPicker() {
     const cols = n <= 4 ? n : n <= 6 ? 3 : 4;
     grid.style.gridTemplateColumns = `repeat(${Math.max(cols, 2)}, minmax(0, 1fr))`;
     const tilePx = n <= 4 ? 260 : n <= 6 ? 360 : 260;
-    grid.innerHTML = _seriesDraw.map((k, i) => _routeTile(k, '', n === 1 ? escapeHTMLText(venueDisplayName(k) || k) : `Race ${i + 1}`, n > 6 ? 1.8 : (n > 4 ? 1.4 : n === 1 ? 1.6 : 1), tilePx)).join('');
+    grid.innerHTML = _seriesDraw.map((k, i) => _routeTile(k, '', n === 1 ? escapeHTMLText(venueDisplayName(k) || k) : `Race ${i + 1}`, n > 6 ? 1.8 : (n > 4 ? 1.4 : n === 1 ? 1.6 : 1), tilePx, venueStars(k))).join('');
     if (note) note.textContent = `${n} race${n === 1 ? '' : 's'} · about ${n * 5} minutes on the water`;
 }
 
