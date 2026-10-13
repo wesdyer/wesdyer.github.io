@@ -297,7 +297,7 @@ function checkMarkCollisions(dt) {
             if (res) {
                 if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_mark', { boat });
                 // the player touching a mark (Popper's 'The Circle' must not) — an event only
-                if (boat.isPlayer && state.race.status === 'racing' && !boat.raceState.finished && typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'close:touch' });
+                if (boat.isPlayer && state.race.status === 'racing' && !boat.raceState.finished && typeof GameEvents !== 'undefined') GameEvents.emit('player-feat', { id: 'close:touch', obj: mark });
 
                 // Store Collision Data for AI
                 if (boat.ai) {
@@ -701,6 +701,11 @@ function checkTrafficCollisions(dt) {
             if (window.onRaceEvent && state.race.status === 'racing' && !boat.raceState.finished) {
                 window.onRaceEvent('collision_traffic', { boat, id: v.id });
             }
+            // ...but the PLAYER'S hit is counted like any other hard contact (PT-001: a ferry
+            // hit used to leave the results saying "A clean run"). An event only: no state, no RNG.
+            if (boat.isPlayer && state.race.status === 'racing' && !boat.raceState.finished && typeof GameEvents !== 'undefined') {
+                GameEvents.emit('player-contact', { leg: boat.raceState.leg, isFloe: false, traffic: true, obj: v });
+            }
         }
     }
 }
@@ -800,7 +805,7 @@ function checkWhaleContact(dt) {
                 boat._whaleT = state.time;
                 Wildlife.startleWhale(B.m, hit.cx, hit.cy);
                 if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('collision_island', { boat, isFloe: false, whale: true });
-                if (boat.isPlayer && state.race.status === 'racing' && typeof GameEvents !== 'undefined') GameEvents.emit('player-contact', { leg: boat.raceState.leg, isFloe: false, whale: true });
+                if (boat.isPlayer && state.race.status === 'racing' && typeof GameEvents !== 'undefined') GameEvents.emit('player-contact', { leg: boat.raceState.leg, isFloe: false, whale: true, obj: B });
             }
         }
     }
@@ -902,7 +907,7 @@ function checkIslandCollisions(dt) {
                  // The player's own contacts, for venue objectives that ask for a clean run
                  // (Sockeye Run's gorge — sim/course.js). An event only: no state, no RNG.
                  if (boat.isPlayer && state.race.status === 'racing' && !boat.raceState.finished && typeof GameEvents !== 'undefined') {
-                     GameEvents.emit('player-contact', { leg: boat.raceState.leg, isFloe: !!isl.isFloe, ice: isl.style === 'ice' });
+                     GameEvents.emit('player-contact', { leg: boat.raceState.leg, isFloe: !!isl.isFloe, ice: isl.style === 'ice', obj: isl });
                  }
 
                  // RRS 19 (Room at an Obstruction): if an overlapped boat sat

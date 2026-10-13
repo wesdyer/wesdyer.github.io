@@ -33,7 +33,7 @@ const RaceLog = {
         this.t0 = null; this.next = 0; this.boats = []; this.events = []; this.legStart = {}; this._fin = false;
         this._ahead = null; this._aheadLeg = -1;
         this.me = { tacks: {}, gybes: {}, passed: {}, passedBy: {}, hits: {}, pens: {}, place: {} };
-        this._side = null; this._pairs = null; this._pen = 0; this._leg = 0; this._lastHit = -1e9;
+        this._side = null; this._pairs = null; this._pen = 0; this._leg = 0; this._lastHit = -1e9; this._lastObj = null;
         this._on = false;
     },
 
@@ -136,12 +136,14 @@ const RaceLog = {
         }
     },
 
-    _hit() {
+    _hit(obj) {
         if (!this._on || state.race.status !== 'racing') return;
         const me = state.boats && state.boats.find(b => b.isPlayer); if (!me || me.raceState.finished) return;
         const t = this._clock(), leg = me.raceState.leg;
-        if (t - this._lastHit > 1.0) { this.me.hits[leg] = (this.me.hits[leg] || 0) + 1; this.events.push({ t, kind: 'hit', leg }); }
-        this._lastHit = t;
+        // one hit per contact episode, counted as the Time Trial counts it (timetrial.js, PT-001)
+        const fresh = typeof contactIsNewHit === 'function' ? contactIsNewHit(t - this._lastHit, obj, this._lastObj) : t - this._lastHit > 1.0;
+        if (fresh) { this.me.hits[leg] = (this.me.hits[leg] || 0) + 1; this.events.push({ t, kind: 'hit', leg }); }
+        this._lastHit = t; this._lastObj = obj;
     },
 
     // Boat i at race clock t (interpolated), or null before its first sample; a finished boat stays on its line.
@@ -156,8 +158,8 @@ const RaceLog = {
     tMax() { let n = 0; for (const B of this.boats) n = Math.max(n, B.s.length); return this.t0 == null ? 0 : this.t0 + (n - 1) * RACELOG_DT; },
 };
 if (typeof GameEvents !== 'undefined') {
-    GameEvents.on('player-contact', () => RaceLog._hit());
-    GameEvents.on('player-feat', (e) => { if (e && e.id === 'close:touch') RaceLog._hit(); });
+    GameEvents.on('player-contact', (e) => RaceLog._hit(e && e.obj));
+    GameEvents.on('player-feat', (e) => { if (e && e.id === 'close:touch') RaceLog._hit(e.obj); });
 }
 
 window.RaceLog = RaceLog;

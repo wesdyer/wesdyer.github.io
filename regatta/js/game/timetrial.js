@@ -154,20 +154,24 @@ const TimeTrial = {
     },
 };
 
-// COLLISIONS, per leg, for the results: a contact EPISODE — land, ice, a whale (player-contact) or a mark
-// (close:touch) — counted once, and again only after a second clear of anything. Both events fire every
-// frame of a grind, so the debounce is what makes it a count of hits rather than of frames.
+// COLLISIONS, per leg, for the results: a contact EPISODE — land, ice, a whale, a ship (player-contact)
+// or a mark (close:touch) — counted once. Both events fire every frame of a grind, and a scrape along
+// one tree bounces on and off it, so (PT-001) the same object is the same hit until you have been clear
+// of it for 3 s; something else is a new hit after 1 s clear (a tree, then the next tree).
 TimeTrial.hitsByLeg = function () { return (this._rec && this._rec.hits) || {}; };
-TimeTrial._hit = function () {
+TimeTrial._hit = function (obj) {
     if (!this.solo() || !this._rec || state.race.status !== 'racing') return;
     const me = state.boats && state.boats[0]; if (!me || me.raceState.finished) return;
     const t = this._clock(), R = this._rec;
-    if (t - R.lastHit > 1.0) { const leg = me.raceState.leg; R.hits[leg] = (R.hits[leg] || 0) + 1; (R.hitT = R.hitT || []).push({ t, leg }); }   // ...and when, for the replay's ticks
-    R.lastHit = t;
+    if (contactIsNewHit(t - R.lastHit, obj, R.lastObj)) { const leg = me.raceState.leg; R.hits[leg] = (R.hits[leg] || 0) + 1; (R.hitT = R.hitT || []).push({ t, leg }); }   // ...and when, for the replay's ticks
+    R.lastHit = t; R.lastObj = obj;
 };
+// Shared with RaceLog (the fleet results' hits), so both pages count a hit the same way.
+function contactIsNewHit(gap, obj, lastObj) { return gap > 3.0 || (gap > 1.0 && (obj == null || obj !== lastObj)); }
+if (typeof window !== 'undefined') window.contactIsNewHit = contactIsNewHit;
 if (typeof GameEvents !== 'undefined') {
-    GameEvents.on('player-contact', () => TimeTrial._hit());
-    GameEvents.on('player-feat', (e) => { if (e && e.id === 'close:touch') TimeTrial._hit(); });
+    GameEvents.on('player-contact', (e) => TimeTrial._hit(e && e.obj));
+    GameEvents.on('player-feat', (e) => { if (e && e.id === 'close:touch') TimeTrial._hit(e.obj); });
 }
 
 // ⚠️ THE GHOST IS READ FOR THE VENUE THAT IS UP *NOW*, not the one that was up at the last resetGame. Picking a

@@ -3601,7 +3601,7 @@ function renderTrialResults(player) {
         stat('Top speed', `${boatTopSpeed(player).toFixed(1)} kn`),
         stat('Average speed', `${boatAvgSpeed(player).toFixed(1)} kn`),
         stat('Distance', kmTxt(dist)),
-        stat('Collisions', String(totalHits), totalHits ? 'land, ice or marks' : 'A clean run', totalHits ? '#f87171' : '#34d399')];
+        stat('Collisions', String(totalHits), totalHits ? 'land, ice, marks or ships' : 'A clean run', totalHits ? '#f87171' : '#34d399')];
 
     // Leg by leg: the start (gun to the line), then each leg.
     const rows = [];

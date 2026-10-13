@@ -301,7 +301,7 @@ function checkCoveBridges() {
 }
 if (typeof GameEvents !== 'undefined') GameEvents.on('player-contact', (e) => {
     const me = state.boats && state.boats[0];
-    if (!state.course || state.course.venueKey !== RIVER_RUN.venue || !me || e.isFloe || !_riverOnLastLeg(me)) return;
+    if (!state.course || state.course.venueKey !== RIVER_RUN.venue || !me || e.isFloe || e.traffic || !_riverOnLastLeg(me)) return;   // rocks, logs, the bank — not a ship
     if (!_riverRun) _riverRun = { last: null, chute: false, scraped: false };
     if (_riverRun.scraped) return;
     _riverRun.scraped = true;
@@ -440,7 +440,7 @@ function checkOtterRun() {
     R.last = here;
 }
 if (typeof GameEvents !== 'undefined') GameEvents.on('player-contact', (e) => {
-    if (!state.course || state.course.venueKey !== OTTER_RUN.venue || !e || e.isFloe || e.whale) return;
+    if (!state.course || state.course.venueKey !== OTTER_RUN.venue || !e || e.isFloe || e.whale || e.traffic) return;
     if (!_otterRun) _otterRun = { last: null, inside: new Set(), scraped: false, w: false, n: false, tip: false, arch: false };
     if (_otterRun.scraped) return;
     _otterRun.scraped = true;

@@ -468,6 +468,25 @@ check('one knot is 15 u/s, the fleet\'s own clock', KT === 15,
         ok('no invisible wall alongside', Math.abs(me.x - q0.x) < 1e-9,
            `200u off the beam; a circle sized to the ${v.hullLen.toFixed(0)}u length would have hit`);
 
+        // PT-001: the player's hit on a ship is a hit — the Time Trial's Collisions said "A clean
+        // run" after a ferry stopped the boat dead — and a grind along one thing is ONE hit.
+        {
+            const st0 = state.race.status; state.race.status = 'racing';
+            const got = []; const fn = (e) => got.push(e); GameEvents.on('player-contact', fn);
+            me.x = v.x; me.y = v.y; me.raceState.finished = false;
+            checkTrafficCollisions(1 / 60);
+            if (GameEvents.off) GameEvents.off('player-contact', fn); else got.push = () => 0;
+            state.race.status = st0;
+            ok('a ship hit tells the game the player made contact', got.length >= 1 && got[0].traffic === true && got[0].obj && got[0].obj.id === v.id,
+               `${got.length} event(s), vessel ${got[0] && got[0].obj && got[0].obj.id}`);
+            const A = {}, B = {};
+            ok('contact episodes: the same object is one hit until 3 s clear',
+               !contactIsNewHit(1.4, A, A) && !contactIsNewHit(3.0, A, A) && contactIsNewHit(3.1, A, A),
+               'the Gatorgrass tree grind (contacts 1.4 s and 3.0 s apart) counts once');
+            ok('...and something else is a new hit after 1 s clear',
+               contactIsNewHit(1.2, B, A) && !contactIsNewHit(0.5, B, A), 'a tree, then the next tree');
+        }
+
         // Cannot trap: the property that makes this safe to ship before the planner sees it.
         setClock(first + dur * 0.5);
         me.x = v.x + px * 400; me.y = v.y + py * 400; me.speed = 1.2;
@@ -819,7 +838,7 @@ check('one knot is 15 u/s, the fleet\'s own clock', KT === 15,
         hEl.value = '50'; hEl.dispatchEvent(new Event('change'));
         ok('height writes through in metres', v().height === 50);
         const lenPlaceholderAfter = document.querySelector('[data-trshadow]').placeholder;
-        ok('...and the lee length follows it', +lenPlaceholderAfter === 50 * 5 * 10
+        ok("...and the lee length follows it", +lenPlaceholderAfter === 50 * 10 * 10
            && lenPlaceholderAfter !== lenPlaceholderBefore,
            `${lenPlaceholderBefore}u -> ${lenPlaceholderAfter}u (10x height, the island rule)`);
         ok('the doc still validates with a height',
