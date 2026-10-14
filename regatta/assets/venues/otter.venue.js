@@ -9104,14 +9104,14 @@ window.VENUE_DOC["otter"] = {
     "trains": [
       {
         "id": "primary",
-        "periodS": 13,
+        "periodS": 9.19,
         "heightM": 2.2,
         "speedKt": 14.5,
         "fromWind": 28
       },
       {
         "id": "windsea",
-        "periodS": 7.5,
+        "periodS": 5.3,
         "heightM": 0.5,
         "speedKt": 18,
         "fromWind": 8,

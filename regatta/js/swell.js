@@ -29,8 +29,14 @@
 // against boat speed, crests met per boat length — comes out physically correct. Only the
 // wall-clock rate differs, and it differs for the boats in exactly the same proportion.
 //
-//   deep-water wavelength   L = 1.56 T²  metres      → L_u = 7.8 T²    units
+//   deep-water wavelength   L = 1.56 T²  metres      → L_u = 15.6 T²   units (10 a metre)
 //   deep-water celerity     c = 1.56 T   m/s         → c_u = 45.5 T    units/s
+//
+// (Until Oct 13 2026 the wavelength was 7.8 T² — right at the old 5 units a metre, never moved
+// to 10 with the world scale, so every swell was half its true length against the boat. The fix
+// re-authored the venues' periods by 1/√2 — Bluewater 13.4 → 9.48 s and 9.5 → 6.72 s, Otter 13 →
+// 9.19 s and 7.5 → 5.3 s — so the sea Wes tuned is the same sea, crest for crest, now with honest
+// periods for it.)
 //
 // ⚠️ ...AND ONE PLACE WHERE UNIFORM COMPRESSION IS THE WRONG ANSWER: how fast the train
 // travels. Compressed faithfully, a 10-second swell arrives every 3 seconds of wall clock
@@ -186,7 +192,7 @@ function configure(doc, windFrom) {
         const H = Math.max(0, +t.heightM || 0);
         if (H <= 0) return;
         const theta = base + Math.PI + (+t.fromWind || 0) * Math.PI / 180;
-        const L = 7.8 * T * T;                       // units, crest to crest
+        const L = 1.56 * U_PER_M * T * T;            // units, crest to crest (15.6 T²)
         // Deep-water celerity unless the train names its own — see the note at the top of
         // the file for why an ocean venue wants to.
         const c = t.speedKt != null ? (+t.speedKt * KT_TO_U) : (45.5 * T);

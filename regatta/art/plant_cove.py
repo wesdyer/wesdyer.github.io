@@ -81,7 +81,7 @@ ROOT = pathlib.Path(__file__).resolve().parent
 DOC = ROOT.parent / "assets" / "venues" / "bay.venue.js"
 PREFIX = 'window.VENUE_DOC["bay"] = '
 
-PX_PER_M = 9.2                 # art/manifest.json scale.pxPerMetre
+PX_PER_M = 10.0                # art/manifest.json scale.pxPerMetre: the world scale, 10 u a metre (js/scale.js; was 9.2 until Oct 13 2026)
 CELL = 20.0                    # raster resolution: 2.17 m, finer than the smallest crown
 EXAGGERATE = 1.7               # see the module docstring
 

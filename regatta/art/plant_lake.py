@@ -70,7 +70,7 @@ ROOT = pathlib.Path(__file__).resolve().parent
 DOC = ROOT.parent / "assets" / "venues" / "lake.venue.js"
 PREFIX = 'window.VENUE_DOC["lake"] = '
 
-PX_PER_M = 9.2
+PX_PER_M = 10.0                # art/manifest.json scale.pxPerMetre: the world scale, 10 u a metre (js/scale.js; was 9.2 until Oct 13 2026)
 CELL = 10.0
 EXAGGERATE = 1.8
 

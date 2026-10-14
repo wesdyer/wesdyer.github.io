@@ -100,7 +100,7 @@ VENUEDOC = REPO / "js" / "venuedoc.js"
 PREFIX = 'window.VENUE_DOC["river"] = '
 CACHE = ROOT / "__pycache__" / "plant_river_geom.npz"
 
-PX_PER_M = 9.2                 # art/manifest.json scale.pxPerMetre
+PX_PER_M = 10.0                # art/manifest.json scale.pxPerMetre: the world scale, 10 u a metre (js/scale.js; was 9.2 until Oct 13 2026)
 CELL = 20.0                    # raster resolution: 2.17 m, finer than the smallest crown
 
 # ⚠️ THE VISIBILITY BUDGET, and the single most consequential constant in this file.

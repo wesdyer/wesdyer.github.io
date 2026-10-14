@@ -3255,7 +3255,7 @@ window.VENUE_DOC["ocean"] = {
     "trains": [
       {
         "id": "primary",
-        "periodS": 13.4,
+        "periodS": 9.48,
         "heightM": 1.95,
         "speedKt": 15.5,
         "fromWind": 30,
@@ -3281,7 +3281,7 @@ window.VENUE_DOC["ocean"] = {
       },
       {
         "id": "windswell",
-        "periodS": 9.5,
+        "periodS": 6.72,
         "heightM": 0.75,
         "speedKt": 11,
         "fromWind": 0,

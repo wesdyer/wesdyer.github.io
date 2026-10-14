@@ -37,9 +37,9 @@ const LAND_TEXTURES = {
     // 128, a QUARTER of the tile this asset was first authored against, and the
     // number is measured rather than picked. The other two textures size their
     // tile so the repeat is not countable across a big mass; this one is sized so
-    // the features that CAN be resolved land at true size. At the art scale of
-    // 9.2 world units per metre, 128 puts the shell chips at 4.9cm median and
-    // 14cm at p95 — a shell fragment and a small beach stone. The old 512 made
+    // the features that CAN be resolved land at true size. At the world scale of
+    // 10 units a metre (js/scale.js; measured at the old art scale of 9.2), 128 puts the
+    // shell chips at 4.5cm median and 13cm at p95 — a shell fragment and a small beach stone. The old 512 made
     // those 20cm cobbles, which is why it read as a photograph zoomed too far in.
     //
     // Note what 128 is NOT doing: it is not what fixed the ripples the first art
@@ -128,7 +128,7 @@ const LAND_TEXTURES = {
     //
     // TILE SIZE FOLLOWS THE MATERIAL, NOT THE VENUE, which is why these two differ. Grass
     // tussocks are centimetre-scale and land at true size at 128, with the cove's sand; a
-    // rounded whaleback is metre-scale, and 256 spans 27.8 world metres, putting a hump at
+    // rounded whaleback is metre-scale, and 256 spans 25.6 world metres, putting a hump at
     // 3-6 m across. That is a boulder, which is what it should be. Halving the rock to 128
     // would make it a cobble field.
     // ── STILLWATER LAKE'S THREE GROUNDS ─────────────────────────────────────
