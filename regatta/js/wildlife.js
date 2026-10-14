@@ -414,6 +414,14 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // wings, turtles' flippers — runs at HALF the real bird's rate. The sim clock is ~3x, and at
     // the real rates the beats read far too fast. Fish tail beats, jelly pulses and gaits are not wings.
     const WING_TIME = 0.5;
+    // HEIGHT IN THE AIR (Wes, Oct 13: "scale the birds by their height — that should affect shadows too"). The race view
+    // is a camera looking straight down from about 60 m (AIR_CAM, in units), so a bird z units up is that much nearer:
+    // drawn zScale(z) = AIR_CAM / (AIR_CAM - z) its true size — a pelican at 10 m reads a fifth bigger than on the water.
+    // Its SHADOW lies on the water at its true size, offset by its height (light from the upper left) and fainter the
+    // higher it flies (airShadowA).
+    const AIR_CAM = 600;
+    const zScale = (z) => AIR_CAM / (AIR_CAM - Math.max(0, Math.min(z || 0, AIR_CAM * 0.8)));
+    const airShadowA = (z, a) => a * Math.max(0.25, 1 - (z || 0) / 260);
 
     let cfg = null, rnd = null, T = 0;
     let colonies = [], followers = [], pods = [], resident = null, flight = null, boil = null, baskers = [], divers = [], waders = [], cruisers = [], lurkers = [], stalkers = [], perchers = [], leaps = [], shoals = [], poppers = [];
@@ -470,9 +478,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             colonies.push(makeColony(c, isl));
         }
         for (const f of cfg.followers || []) {
-            followers.push({ cfg: f, birds: Array.from({ length: f.count }, () => ({ a: R(0, 7), r: R(60, 150), w: R(0.5, 0.9) * (rnd() < 0.5 ? -1 : 1), z: R(28, 55), flap: R(0, 7) })) });
+            { const gz = R(25, 75); followers.push({ cfg: f, birds: Array.from({ length: f.count }, (_, i) => ({ juv: i % 4 === 2, a: R(0, 7), r: R(60, 150), w: R(0.5, 0.9) * (rnd() < 0.5 ? -1 : 1), z: Math.max(15, gz + R(-14, 14)), flap: R(0, 7) })) }); }   // each ship's gulls at their own height
         }
         if (cfg.pods) {
+            sprImg(PORP_SPR.file); PEL_PARTS.forEach(pelImg); sprImg(PEL_DIVE.file); sprImg(PEL_SIT.file); PEL_PARTS.forEach(gullImg); PEL_PARTS.forEach(gullJuvImg); sprImg(GULL_PERCH.file); sprImg(GULL_JUV_PERCH.file); sprImg(SEAL_SPR.head); sprImg(SEAL_SPR.body);   // ask for the painted porpoise now
             resident = makeResidentPod(cfg.pods.resident || 0);
         }
         if (cfg.feeders) {
@@ -683,7 +692,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (!inside(x, y)) continue;
             if (covers.some(p => Math.hypot(p.x - x, p.y - y) < p.r)) continue;
             if (birds.some(b => Math.hypot(b.hx - x, b.hy - y) < 20)) continue;
-            birds.push({ hx: x, hy: y, x, y, z: 0, h: into + R(-0.35, 0.35), perchH: 0, mode: 'perched', t: 0, flap: R(0, 7), orbitA: 0, orbitR: 0, orbitW: 0 });
+            birds.push({ hx: x, hy: y, x, y, z: 0, h: into + R(-0.35, 0.35), perchH: 0, mode: 'perched', t: 0, flap: R(0, 7), orbitA: 0, orbitR: 0, orbitW: 0, juv: birds.length % 4 === 3 });   // a quarter are first-year birds
         }
         for (const b of birds) b.perchH = b.h;
         return { cfg: c, isl, cx, cy, birds, airborne: 0 };
@@ -701,8 +710,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
 
     function makeFlight(f) {
         return {
-            cfg: f, mode: 'patrol', a: R(0, 7), x: 0, y: 0, h: 0, z: 70,
-            birds: Array.from({ length: f.count }, (_, i) => ({ i, x: 0, y: 0, h: 0, z: 70, mode: 'fly', t: 0, flap: R(0, 7), orbitA: R(0, 7), orbitR: R(85, 140) })),
+            // (Wes, Oct 13: "different flocks/birds should fly at different heights") each flight cruises at its own height —
+            // brown pelicans skim the swell or commute higher, 4-12 m — drifting slowly up and down, and each bird a little
+            // above or below its neighbours
+            cfg: f, mode: 'patrol', a: R(0, 7), x: 0, y: 0, h: 0, z: 70, zc: R(40, 120), zp: R(0, 7),
+            birds: Array.from({ length: f.count }, (_, i) => ({ i, x: 0, y: 0, h: 0, z: 70, zo: R(-12, 12), mode: 'fly', t: 0, flap: R(0, 7), orbitA: R(0, 7), orbitR: R(85, 140) })),
             nextDive: 0,
         };
     }
@@ -783,7 +795,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (slHauls.length || slGroups.length) updateSeaLions(dt);
         if (whites.length) updateWhites(dt);
         if (bluePods.length) updateBlues(dt, me);
-        if (cfg.seaLions || cfg.blues) { for (const S of splashes) S.t += dt; if (!whalePods.length) splashes = splashes.filter(S => S.t < S.life); }
+        if (cfg.seaLions || cfg.blues || cfg.feeders) { for (const S of splashes) S.t += dt; if (!whalePods.length) splashes = splashes.filter(S => S.t < S.life); }   // (the feeders: a pelican's plunge)
     }
 
     // ── POPPERS: harbour seals ──────────────────────────────────────────────────────────
@@ -1588,7 +1600,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             G.x += Math.sin(G.h) * v * dt; G.y -= Math.cos(G.h) * v * dt;
             if (far > 2500) { G.x = tx; G.y = ty; }
             G.bank = Math.cos(G.ph);
-            G.z = 14 + 26 * (0.5 + 0.5 * Math.sin(G.ph + 1.2));
+            G.z = (G.i ? 22 : 10) + 30 * (0.5 + 0.5 * Math.sin(G.ph + 1.2));   // up the windward side of each arc, down to the swell; each bird its own band
         }
     }
 
@@ -1714,7 +1726,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 g.orbitA += g.orbitW * dt;
                 const tx = c.cx + Math.cos(g.orbitA) * g.orbitR, ty = c.cy + Math.sin(g.orbitA) * g.orbitR;
                 steer(g, tx, ty, 150, 3.2, dt);
-                g.z = Math.min(60, g.z + 45 * dt);
+                g.zh = g.zh || 30 + 55 * Math.abs(Math.sin(g.hx * 0.37 + g.hy * 0.11));   // each gull its own height when flushed (from where it perched: no random draw)
+                g.z = Math.min(g.zh, g.z + 45 * dt);
                 // Settle again once nothing has been close for a while.
                 if (g.mode === 'wheel' && g.t > 22 + (g.orbitR / 60) && !flusher) { g.mode = 'down'; g.t = 0; }
             } else if (g.mode === 'down') {
@@ -1779,14 +1792,20 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function surfaceCycle(m, dt, x, y, h, cvx, cvy) {
         if (m.phase < 0) {
             m.slick = Math.max(0, (m.slick || 0) - dt / 3);
-            m.next -= dt;
-            if (m.next <= 0 && !onLand(x, y)) { m.phase = 0; m.sx = x; m.sy = y; m.sh = h; }
+            m.next -= dt; m.down = (m.down || 0) + dt;
+            // UNDER between breaths (Wes, Oct 13: "the porpoise seems to appear and disappear too suddenly"): it is still
+            // swimming down there — carried on with the pod, easing onto its place, turning with it — and it comes up
+            // where it has got to, so the dim shape that fades out as it goes down is the one that fades in to surface
+            if (m.ux == null) { m.ux = x; m.uy = y; m.uh = h; }
+            if (cvx != null) { m.ux += cvx * dt; m.uy += cvy * dt; }   // (a bow rider is carried at the ship's pace)
+            const k = Math.min(1, dt * 1.2); m.ux += (x - m.ux) * k; m.uy += (y - m.uy) * k; m.uh += angDiff(h, m.uh) * k;
+            if (m.next <= 0 && !onLand(m.ux, m.uy)) { m.phase = 0; m.sx = m.ux; m.sy = m.uy; m.sh = m.uh; }
         } else {
             m.phase += dt / 1.35;
             // It moves with the pod while it is up, so the roll travels.
             if (cvx != null) { m.sx += (cvx + Math.sin(m.sh) * 8) * dt; m.sy += (cvy - Math.cos(m.sh) * 8) * dt; }
             else { m.sx += Math.sin(m.sh) * 40 * dt; m.sy -= Math.cos(m.sh) * 40 * dt; }
-            if (m.phase >= 1) { m.phase = -1; m.next = R(2.2, 5.5); m.fx = m.sx; m.fy = m.sy; m.slick = 1; }
+            if (m.phase >= 1) { m.phase = -1; m.next = R(2.2, 5.5); m.fx = m.sx; m.fy = m.sy; m.slick = 1; m.ux = m.sx; m.uy = m.sy; m.uh = m.sh; m.down = 0; }
         }
     }
 
@@ -2019,6 +2038,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         return null;
     }
 
+    // The bait ball wanders a little and breathes: where it is NOW (drawBoil draws it here; a pelican dives at it).
+    const boilCentre = (B) => ({ x: B.x + Math.sin(T * 0.37 + B.seed) * 14, y: B.y + Math.cos(T * 0.29) * 12 });
     function updateFeeders(dt, me) {
         const f = flight;
         if (boil) {
@@ -2047,7 +2068,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             f.nextDive -= dt;
             if (f.nextDive <= 0) {
                 const idle = f.birds.filter(b => b.mode === 'fly');
-                if (idle.length) { const b = idle[Math.floor(rnd() * idle.length)]; b.mode = 'dive'; b.t = 0; b.dx = boil.x + R(-BOIL_R, BOIL_R) * 0.7; b.dy = boil.y + R(-BOIL_R, BOIL_R) * 0.7; }
+                if (idle.length) { const b = idle[Math.floor(rnd() * idle.length)]; b.mode = 'dive'; b.t = 0; b.sx0 = b.x; b.sy0 = b.y; const a = R(0, 6.283), r = Math.sqrt(R(0, 1)) * BOIL_R * 0.55; b.ox = Math.cos(a) * r; b.oy = Math.sin(a) * r; }   // a spot INSIDE the ball
                 f.nextDive = R(0.8, 1.6);
             }
             if (me && Math.hypot(me.x - boil.x, me.y - boil.y) < BOIL_R + 25) feat(f.cfg.feat);
@@ -2067,12 +2088,24 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     const d = Math.hypot(tx - b.x, ty - b.y);
                     steer(b, tx, ty, Math.min(190, 110 + d * 0.8), 2.4, dt);
                 }
-                b.z += (70 - b.z) * Math.min(1, dt * 1.5);
+                f.zp = (f.zp || 0) + dt * 0.04; const zt = Math.max(25, (f.zc || 70) + 22 * Math.sin(f.zp) + (b.zo || 0));
+                b.z += (zt - b.z) * Math.min(1, dt * 1.5); b.z0 = b.z;
             } else if (b.mode === 'dive') {
+                // (Wes, Oct 13: "the dive should end in the bait ball", "splash into the water instead of just disappearing".)
+                // It drops onto the ball as it is now — the ball wanders — closing on it all the way down, faster as it falls
+                // (so it always lands in it), bill first; it HITS in a burst of white and is gone under for a moment, then
+                // pops up on the ball to swallow its catch.
                 b.t += dt;
-                steer(b, b.dx, b.dy, 110, 5, dt);
-                b.z = Math.max(0, 70 * (1 - b.t / 0.75));
-                if (b.t >= 0.75) { b.mode = 'sit'; b.t = 0; b.x = b.dx; b.y = b.dy; b.z = 0; b.splash = 0; }
+                const C = boil ? boilCentre(boil) : { x: b.x, y: b.y }, tx = C.x + (b.ox || 0), ty = C.y + (b.oy || 0), u = Math.min(1, b.t / 0.75), e = u * u * (3 - 2 * u);
+                const nx = (b.sx0 ?? b.x) + (tx - (b.sx0 ?? b.x)) * e, ny = (b.sy0 ?? b.y) + (ty - (b.sy0 ?? b.y)) * e;
+                if (Math.hypot(nx - b.x, ny - b.y) > 0.3) b.h += angDiff(Math.atan2(nx - b.x, -(ny - b.y)), b.h) * Math.min(1, dt * 8);
+                b.x = nx; b.y = ny;
+                b.z = Math.max(0, (b.z0 || 70) * (1 - u * u));   // accelerating down: slow off the top, fast into the water
+                if (b.t >= 0.75) { b.mode = 'under'; b.t = 0; b.z = 0; splashes.push({ x: b.x, y: b.y, t: 0, life: 2.4, r: 20, big: true, bait: true }); }
+            } else if (b.mode === 'under') {
+                // under the surface, gulping: carried with the ball, then up
+                b.t += dt; if (boil) { const C = boilCentre(boil); b.x += (C.x + (b.ox || 0) * 0.7 - b.x) * Math.min(1, dt * 2); b.y += (C.y + (b.oy || 0) * 0.7 - b.y) * Math.min(1, dt * 2); }
+                if (b.t >= 0.9) { b.mode = 'sit'; b.t = 0.2; b.splash = 0; }   // (sitting's own crown of white plays from 0.2 on: popping up)
             } else if (b.mode === 'sit') {
                 b.t += dt; b.splash = b.t;
                 if (b.t > 1.9) { b.mode = 'fly'; b.t = 0; }
@@ -3258,13 +3291,32 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.closePath();
         return { wx, wy, tx, ty };
     }
+    // THE PAINTED HERRING GULL (Oct 13 2026): the sprites bay-gull-flying (wings cut at the shoulders by art/colsplit.py,
+    // flapping on wingStroke like the pelican) and bay-gull-perched. The JUVENILE (brown) still draws below until its painting arrives.
+    const GULL_SPR = { stem: 'bay-gull-flying', x0: 0.0918, x1: 0.9072, cx: 0.4995, cy: 0.5127, root: { 'wing-l': [0.4575, 0.5587], 'wing-r': [0.5415, 0.5584] } };
+    const GULL_PERCH = { file: 'assets/images/props/bay/bay-gull-perched.png', top: 0.1025, bot: 0.8965, cx: 0.4995 };
+    const gullImg = (p2) => sprImg('assets/images/props/bay/' + GULL_SPR.stem + '-' + p2 + '.png');
+    // the JUVENILE (first-year, mottled brown; a quarter of the Cove's gulls, a third of Clubhouse Point's rafts)
+    const GULL_JUV_SPR = { stem: 'bay-gull-juvenile-flying', x0: 0.0908, x1: 0.9092, cx: 0.5, cy: 0.5132, root: { 'wing-l': [0.458, 0.5595], 'wing-r': [0.542, 0.5588] } };
+    const GULL_JUV_PERCH = { file: 'assets/images/props/bay/bay-gull-juvenile-perched.png', top: 0.1016, bot: 0.8975, cx: 0.4995 };
+    const gullJuvImg = (p2) => sprImg('assets/images/props/bay/' + GULL_JUV_SPR.stem + '-' + p2 + '.png');
+    // sized by guidelines/scale.md's herring gull: span 1.4 m x3 = 42 (the painting's body comes out ~17 long, a real
+    // gull's 0.43 of its span); perched 0.6 m x3 = ~20 bill to wingtips
+    const GULL_B = { S: GULL_SPR, span: 42, img: gullImg }, GULL_JUV_B = { S: GULL_JUV_SPR, span: 42, img: gullJuvImg }, GULL_PERCH_LEN = 20;
     function drawGullFlying(ctx, x, y, h, z, flap, glide, juv) {
         // a gull flaps, and glides in between (a follower mostly glides behind the ship)
         const W = glide ? GLIDE : wingStroke(flap, 0.85), beat = W.flex;
-        const s = (1 + z * 0.004) * 1.2;
-        // shadow on the water: the same silhouette, dark, offset by height
-        ctx.save(); ctx.translate(x + z * 0.35, y + z * 0.55); ctx.rotate(h); ctx.scale(s * 0.95, s * 0.95);
-        ctx.fillStyle = `rgba(10,25,40,${0.2 * Math.max(0.3, 1 - z / 120)})`;
+        const GB = juv ? GULL_JUV_B : GULL_B;
+        if (PEL_PARTS.map(GB.img).every(imgReady)) {
+            const pose = () => pelicanPosed(ctx, W.pf, W.flex, 0, 25, GB), sz = zScale(z);
+            ctx.save(); ctx.translate(x + z * 0.35, y + z * 0.55); ctx.rotate(h); humpBlit(ctx, pose(), 'rgb(10,25,40)', airShadowA(z, 0.22)); ctx.restore();
+            ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(sz, sz); humpBlit(ctx, pose(), null, 1); ctx.restore();
+            return;
+        }
+        const s0 = 1.2, s = s0 * zScale(z);
+        // shadow on the water: the same silhouette at its true size, offset by height, fainter the higher it is
+        ctx.save(); ctx.translate(x + z * 0.35, y + z * 0.55); ctx.rotate(h); ctx.scale(s0, s0);
+        ctx.fillStyle = `rgba(10,25,40,${airShadowA(z, 0.22)})`;
         ctx.save(); ctx.scale(W.pf, 1); for (const sd of [-1, 1]) { gullWingPath(ctx, sd, beat); ctx.fill(); } ctx.restore();
         ctx.beginPath(); ctx.ellipse(0, 0.5, 2.4, 7.2, 0, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
@@ -3302,7 +3354,13 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     // Sitting: a white head forward, the grey folded wings making the back, black wingtips
     // crossed over the tail, a yellow bill. 18 units nose to tail — a third of a hull.
-    function drawGullPerched(ctx, x, y, h) {
+    function drawGullPerched(ctx, x, y, h, juv) {
+        const S = juv ? GULL_JUV_PERCH : GULL_PERCH, pim = sprImg(S.file);
+        if (imgReady(pim)) { const F = GULL_PERCH_LEN / (S.bot - S.top);
+            ctx.save(); ctx.translate(x, y); ctx.rotate(h);
+            ctx.fillStyle = 'rgba(10,25,40,0.22)'; ctx.beginPath(); ctx.ellipse(1.5, 2, 4.4, 7.6, 0, 0, Math.PI * 2); ctx.fill();   // its shadow on the rock
+            const k = Math.hypot(ctx.getTransform().a, ctx.getTransform().b); ctx.drawImage(humpMip(pim, 1.5 * k * F), -S.cx * F, -GULL_PERCH_LEN * 0.52 - S.top * F, F, F);
+            ctx.restore(); return; }
         ctx.save(); ctx.translate(x, y); ctx.rotate(h);
         ctx.fillStyle = 'rgba(10,25,40,0.22)';
         ctx.beginPath(); ctx.ellipse(1.5, 2, 5.2, 8.5, 0, 0, Math.PI * 2); ctx.fill();
@@ -3324,79 +3382,58 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // silvery grey-brown coverts over a dark trailing edge, the neck folded back so the pale
     // head sits close in with the long bill laid forward along it, and a short tail. Diving,
     // the wings sweep back into an arrowhead and the bill points the way down.
-    const PEL_OUT = 'rgba(40,36,32,0.55)';
-    function pelicanWing(ctx, sd, half, sweep) {
-        // sweep: 0 = spread, 1 = dive (hand swept back from the wrist into an arrowhead)
-        const wx = half * (0.45 - 0.12 * sweep), wy = -1 + 3 * sweep;
-        const tx = half * (1 - 0.45 * sweep), ty = -0.5 + 13 * sweep;
-        ctx.beginPath();
-        ctx.moveTo(sd * 2.4, -4.2);
-        ctx.quadraticCurveTo(sd * wx * 0.55, -6.2 + sweep * 2, sd * wx, wy - 3.6);       // leading edge, arm
-        ctx.quadraticCurveTo(sd * (wx + (tx - wx) * 0.6), wy - 3.4 + (ty - wy) * 0.5, sd * tx, ty - 2);   // leading edge, hand
-        ctx.lineTo(sd * tx, ty + 2);
-        ctx.quadraticCurveTo(sd * (wx + (tx - wx) * 0.4), ty + 2.6 + (wy - ty) * 0.3, sd * wx, wy + 4.2);  // trailing edge, hand
-        ctx.quadraticCurveTo(sd * wx * 0.5, 6.4 + sweep * 2, sd * 2.4, 5.4);          // trailing edge, arm: deep chord at the body
-        ctx.closePath();
-        return { wx, wy, tx, ty };
-    }
-    function pelicanShape(ctx, half, sweep, fill) {
-        for (const sd of [-1, 1]) {
-            const w = pelicanWing(ctx, sd, half, sweep);
-            ctx.fillStyle = fill || '#aaa194'; ctx.fill(); if (!fill) ctx.stroke();
-            if (fill) continue;
-            // the darker flight feathers along the trailing edge, a narrow band that widens out
-            // toward the hand
-            ctx.beginPath();
-            ctx.moveTo(sd * 3.5, 5.2);
-            ctx.quadraticCurveTo(sd * w.wx * 0.5, 6.2 + sweep * 2, sd * w.wx, w.wy + 4.1);
-            ctx.quadraticCurveTo(sd * (w.wx + (w.tx - w.wx) * 0.4), w.ty + 2.5 + (w.wy - w.ty) * 0.3, sd * w.tx, w.ty + 2);
-            ctx.lineTo(sd * (w.tx - 2), w.ty - 0.2);
-            ctx.quadraticCurveTo(sd * (w.wx + (w.tx - w.wx) * 0.4), w.ty + 0.4 + (w.wy - w.ty) * 0.3, sd * w.wx, w.wy + 2.4);
-            ctx.quadraticCurveTo(sd * w.wx * 0.5, 4.6 + sweep * 2, sd * 3.5, 4.2);
-            ctx.closePath(); ctx.fillStyle = '#5a5047'; ctx.fill();
-            // the fingers: five dark primaries splayed at the tip
-            // the dark hand, then the fingers: slim primary tips just separated at the end
-            ctx.beginPath(); ctx.moveTo(sd * (w.tx - 4.5), w.ty - 2.2 + 0.4); ctx.lineTo(sd * w.tx, w.ty - 2.2); ctx.lineTo(sd * w.tx, w.ty + 2.4); ctx.lineTo(sd * (w.tx - 4.5), w.ty + 1.6); ctx.closePath();
-            ctx.fillStyle = '#3d3630'; ctx.fill();
-            ctx.strokeStyle = '#3d3630'; ctx.lineCap = 'round'; ctx.lineWidth = 0.75;
-            for (let f = 0; f < 5; f++) {
-                const fy = w.ty - 1.9 + f * 1.05, fx = sd * w.tx;
-                ctx.beginPath(); ctx.moveTo(fx - sd * 0.5, fy); ctx.lineTo(fx + sd * (1.9 - Math.abs(f - 1.5) * 0.35), fy + (f - 2) * 0.55 + sweep * 1.6); ctx.stroke();
-            }
-            ctx.lineWidth = 1; ctx.strokeStyle = PEL_OUT;
+    // THE PAINTED PELICAN IN FLIGHT (Oct 13 2026): the sprite bay-pelican-flying, its wings cut at the shoulders
+    // (art/colsplit.py). Pelicans flap in bouts and glide between (a formation's leader starts and the rest follow):
+    // through a beat the span foreshortens (wingStroke's pf) and on the upstroke the hands sweep back (flex); in the
+    // PLUNGE DIVE the wings fold right back along the body like a dart. PEL_SPR: fractions of the frame.
+    const PEL_SPR = { stem: 'bay-pelican-flying', x0: 0.0771, x1: 0.9219, cx: 0.4995, cy: 0.5034, root: { 'wing-l': [0.4415, 0.561], 'wing-r': [0.5575, 0.561] } };
+    const PEL_PARTS = ['body', 'wing-l', 'wing-r'];
+    const pelImg = (p2) => sprImg('assets/images/props/bay/' + PEL_SPR.stem + '-' + p2 + '.png');
+    // (shared by the gull: B = { S: its table, span, img: part -> Image })
+    function pelicanPosed(ctx, pf, sweep, fold, slot, B) {
+        B = B || { S: PEL_SPR, span: PELICAN_SPAN, img: pelImg };
+        const S = B.S, imgs = PEL_PARTS.map(B.img); if (imgs.some(im => !imgReady(im))) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = B.span * 0.56;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = B.span / (S.x1 - S.x0), x0 = -S.cx * F, y0 = -S.cy * F, need = 1.5 * k * F;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        for (const p2 of ['wing-l', 'wing-r']) {
+            const sd = p2 === 'wing-l' ? -1 : 1, [rx, ry] = S.root[p2], X = x0 + rx * F, Y = y0 + ry * F;
+            // swept back (the upstroke's flex, or the dive's fold): turned about the shoulder toward the tail
+            const back = sweep * 0.45 + fold * 1.25, span = pf * (1 - 0.35 * fold);
+            g.save(); g.translate(X, Y); g.rotate(sd * back); g.scale(span, 1); g.translate(-X, -Y); g.drawImage(humpMip(imgs[PEL_PARTS.indexOf(p2)], need), x0, y0, F, F); g.restore();
         }
+        g.drawImage(humpMip(imgs[0], need), x0, y0, F, F);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
     }
-    function pelicanHead(ctx, billLen, y0) {
-        const y = y0 == null ? -7.5 : y0;
-        ctx.beginPath(); ctx.ellipse(0, y, 2.8, 3.4, 0, 0, Math.PI * 2); ctx.fillStyle = '#f6efdc'; ctx.fill(); ctx.stroke();
-        ctx.fillStyle = 'rgba(214,190,120,0.8)'; ctx.beginPath(); ctx.ellipse(0, y - 0.9, 1.5, 1.8, 0, 0, Math.PI * 2); ctx.fill();   // the yellow crown
-        ctx.beginPath(); ctx.moveTo(-1.3, y - 2.6); ctx.lineTo(-0.5, y - 2.6 - billLen); ctx.lineTo(0.5, y - 2.6 - billLen); ctx.lineTo(1.3, y - 2.6); ctx.closePath();
-        ctx.fillStyle = '#d9b77a'; ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#d0622a'; ctx.fillRect(-0.5, y - 2.6 - billLen, 1, 1.4);
-    }
-    function drawPelicanFlying(ctx, x, y, h, z, flap, fold) {
-        const s = (1 + z * 0.004) * 1.25;
+    // THE PLUNGE (painted Oct 13 2026): the sprite bay-pelican-diving — neck stretched, wings half-raised and swept
+    // back — bill tip to tail PEL_DIVE.len long. The dive cross-fades into it from the folding flyer in its first
+    // moment (dt: time into the dive), and like every bird it is drawn by its height, so it shrinks as it falls.
+    const PEL_DIVE = { file: 'assets/images/props/bay/bay-pelican-diving.png', top: 0.1455, bot: 0.8633, cx: 0.499, len: 32 };
+    function drawPelicanFlying(ctx, x, y, h, z, flap, fold, dt) {
+        if (PEL_PARTS.map(pelImg).some(im => !imgReady(im))) return;
+        const dim = sprImg(PEL_DIVE.file);
+        if (fold && imgReady(dim)) {
+            const k = Math.min(1, (dt || 0) / 0.12), S = PEL_DIVE, F = S.len / (S.bot - S.top), sz = zScale(z);
+            const one = (col, a) => { const t = ctx.getTransform(), kk = Math.max(0.25, Math.hypot(t.a, t.b)), R = F * 0.5, px = Math.ceil(2 * R * kk), c = humpScratch(24, px, px); if (!c) return;
+                const g = c.getContext('2d'); g.setTransform(kk, 0, 0, kk, R * kk, R * kk); g.drawImage(humpMip(dim, 1.5 * kk * F), -S.cx * F, -(S.top + S.bot) / 2 * F, F, F); g.setTransform(1, 0, 0, 1, 0, 0);
+                humpBlit(ctx, { c, R, px }, col, a); };
+            ctx.save(); ctx.translate(x + z * 0.35, y + z * 0.55); ctx.rotate(h); one('rgb(10,25,40)', airShadowA(z, 0.22) * k); ctx.restore();
+            ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(sz, sz); one(null, k); ctx.restore();
+            if (k >= 1) return;
+            ctx.save(); ctx.globalAlpha *= 1 - k; drawPelicanFlying(ctx, x, y, h, z, flap, k, 0); ctx.restore();   // the flyer folding, fading out under it
+            return;
+        }
+        const s = zScale(z);   // nearer the camera the higher it is
         // pelicans flap in bouts and glide between (a formation's leader starts and the rest follow)
-        const Wp = fold || Math.sin(flap * 0.12) < -0.2 ? GLIDE : wingStroke(flap, 0.85);
-        const sweep = fold ? 1 : Wp.flex * 0.28;   // the hand flexes back a little on the upstroke
-        const half = PELICAN_SPAN / 2 / 1.25 * (fold ? 1 : Wp.pf);
+        const Wp = fold || Math.sin(flap * 0.12) < -0.2 ? GLIDE : wingStroke(flap, 0.85), fd = +fold || 0;
+        const pose = () => pelicanPosed(ctx, fd ? 1 : Wp.pf, fd ? 0 : Wp.flex, fd, 23);
         // shadow: its own silhouette on the water, offset by height
-        ctx.save(); ctx.translate(x + z * 0.35, y + z * 0.55); ctx.rotate(h); ctx.scale(s * 0.95, s * 0.95);
-        pelicanShape(ctx, half, sweep, `rgba(10,25,40,${0.2 * Math.max(0.3, 1 - z / 120)})`);
-        ctx.beginPath(); ctx.ellipse(0, 1.5, 3.8, 8.5, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.restore();
-        ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(s, s);
-        ctx.lineJoin = 'round'; ctx.lineWidth = 1; ctx.strokeStyle = PEL_OUT;
-        // short tail
-        ctx.beginPath(); ctx.moveTo(-2.2, 7); ctx.lineTo(-2.6, 10.5); ctx.quadraticCurveTo(0, 11.5, 2.6, 10.5); ctx.lineTo(2.2, 7); ctx.closePath();
-        ctx.fillStyle = '#6e655b'; ctx.fill(); ctx.stroke();
-        pelicanShape(ctx, half, sweep);
-        ctx.beginPath(); ctx.ellipse(0, 1.5, 3.8, 8.5, 0, 0, Math.PI * 2); ctx.fillStyle = '#8d8377'; ctx.fill(); ctx.stroke();
-        ctx.fillStyle = 'rgba(210,200,184,0.5)'; ctx.beginPath(); ctx.ellipse(0, 0.5, 2, 5, 0, 0, Math.PI * 2); ctx.fill();
-        // neck folded back: the head sits close, bill laid forward (straight down the line in a dive)
-        pelicanHead(ctx, fold ? 13 : 11, fold ? -8.5 : -6.5);
-        ctx.restore();
+        ctx.save(); ctx.translate(x + z * 0.35, y + z * 0.55); ctx.rotate(h); humpBlit(ctx, pose(), 'rgb(10,25,40)', airShadowA(z, 0.22)); ctx.restore();   // (on the water: its true size)
+        ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(s, s); humpBlit(ctx, pose(), null, 1); ctx.restore();
     }
+    const PEL_SIT = { file: 'assets/images/props/bay/bay-pelican-sitting.png', top: 0.0997, bot: 0.8995, cx: 0.5 };
     function drawPelicanSitting(ctx, x, y, h, t) {
         ctx.save();
         // The splash as it hits: a crown of white, then a ring spreading from where it went in.
@@ -3412,21 +3449,32 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.beginPath(); ctx.arc(x, y, 14 + t * 14, 0, Math.PI * 2); ctx.stroke();
         // Sitting: wings folded along a boat-shaped body, darker primaries crossed over the tail,
         // the head up with the bill resting down its chest (seen from above: laid forward).
-        ctx.translate(x, y); ctx.rotate(h); ctx.scale(1.25, 1.25);
-        ctx.lineJoin = 'round'; ctx.lineWidth = 1; ctx.strokeStyle = PEL_OUT;
-        ctx.beginPath(); ctx.moveTo(0, -4); ctx.bezierCurveTo(7, -3, 7, 9, 0, 14); ctx.bezierCurveTo(-7, 9, -7, -3, 0, -4); ctx.closePath();
-        ctx.fillStyle = '#8f867a'; ctx.fill(); ctx.stroke();
-        ctx.fillStyle = '#aaa194'; ctx.beginPath(); ctx.ellipse(-2.4, 4, 2.6, 7.5, 0.08, 0, Math.PI * 2); ctx.ellipse(2.4, 4, 2.6, 7.5, -0.08, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = '#3b352f'; ctx.beginPath(); ctx.moveTo(-2.5, 9); ctx.lineTo(0.8, 15.5); ctx.lineTo(2.5, 9); ctx.lineTo(-0.8, 15.5); ctx.closePath(); ctx.fill();
-        pelicanHead(ctx, 10, -6);
+        // THE PAINTED SITTER (Oct 13 2026): the sprite bay-pelican-sitting, bill tip at -20 to tail +19.4 (the drawn
+        // sitter's span). Riding high and light like a cork, a soft shade on the water round it; bobbing a little.
+        const S = PEL_SIT, im = sprImg(S.file);
+        ctx.translate(x, y); ctx.rotate(h + Math.sin(t * 1.7 + x * 0.01) * 0.04);
+        ctx.fillStyle = 'rgba(8,24,30,0.22)'; ctx.beginPath(); ctx.ellipse(1.2, 4, 9.5, 16, 0, 0, Math.PI * 2); ctx.fill();
+        if (imgReady(im)) { const F = 39.4 / (S.bot - S.top), k = Math.hypot(ctx.getTransform().a, ctx.getTransform().b);
+            ctx.drawImage(humpMip(im, 1.5 * k * F), -S.cx * F, -20 - S.top * F, F, F); }
         ctx.restore();
     }
     // A porpoise roll, from above: a tapered dark back — blunt head forward, narrowing to the
     // tail stock — that rises and slides forward through the roll, the small triangular fin
     // at mid-roll, a puff of spray as the blowhole breaks, and a V of wash off the head.
+    const PORP_SPR = { file: 'assets/images/props/bay/bay-porpoise.png', top: 0.1143, bot: 0.877, cx: 0.499, stock: 0.6329, hinge: 0.7617, fin: 0.45 };
     function drawPorpoise(ctx, m) {
         // The footprint: a smooth slick left where it went down, fading.
         if (m.phase < 0) {
+            // under between breaths: the dim shape fading down after the roll and up again before the next one
+            const fade = Math.max(Math.max(0, 1 - (m.down || 0) / 1.4), Math.max(0, 1 - (m.next || 0) / 1.4));
+            if (fade > 0.01 && m.ux != null && imgReady(sprImg(PORP_SPR.file))) {
+                const beat = T * 10 + (m.i || 0) * 1.3, cb = Math.abs(Math.cos(beat));
+                ctx.save(); ctx.translate(m.ux, m.uy); ctx.rotate(m.uh);
+                const Pc = spinnerPosed(ctx, PORPOISE_LEN, 0.35 + 0.65 * cb, 0.1 * Math.sin(beat), 0.88 + 0.12 * cb, 21, PORP_SPR);
+                if (Pc) { const g = Pc.c.getContext('2d'); g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.55 + 0.25 * (1 - fade); g.fillStyle = `rgb(${waterTint()})`; g.fillRect(0, 0, Pc.px, Pc.px); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+                    humpBlit(ctx, Pc, null, 0.35 * fade * fade * (3 - 2 * fade)); }
+                ctx.restore();
+            }
             if (m.slick > 0) {
                 ctx.save(); ctx.translate(m.fx, m.fy); ctx.scale(PORPOISE_LEN / 40, PORPOISE_LEN / 40);
                 const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 18);
@@ -3437,51 +3485,33 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             return;
         }
         const p = m.phase, vis = Math.sin(Math.PI * p);
-        // (drawn at a native 40 and scaled, so the wash, fin and spray shrink with the body)
-        ctx.save(); ctx.translate(m.sx, m.sy); ctx.rotate(m.sh); ctx.scale(PORPOISE_LEN / 40, PORPOISE_LEN / 40);
-        // 1. The whole animal under the surface, faint: a spindle with flippers and flukes —
-        //    every overhead shot of a porpoise shows the body beyond the part that breaks water.
-        const L = 40;
-        ctx.globalAlpha = Math.min(1, 0.35 + vis * 0.5);
-        ctx.fillStyle = 'rgba(30,48,62,0.42)';
-        ctx.beginPath(); ctx.moveTo(0, -L * 0.52);
-        ctx.bezierCurveTo(L * 0.2, -L * 0.45, L * 0.2, L * 0.2, L * 0.05, L * 0.42);
-        ctx.lineTo(-L * 0.05, L * 0.42);
-        ctx.bezierCurveTo(-L * 0.2, L * 0.2, -L * 0.2, -L * 0.45, 0, -L * 0.52); ctx.fill();
-        for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * L * 0.2, -L * 0.18, L * 0.04, L * 0.12, sd * 0.7, 0, Math.PI * 2); ctx.fill(); }
-        ctx.beginPath(); ctx.moveTo(0, L * 0.4); ctx.quadraticCurveTo(L * 0.2, L * 0.46, L * 0.24, L * 0.56); ctx.quadraticCurveTo(L * 0.08, L * 0.52, 0, L * 0.5);
-        ctx.quadraticCurveTo(-L * 0.08, L * 0.52, -L * 0.24, L * 0.56); ctx.quadraticCurveTo(-L * 0.2, L * 0.46, 0, L * 0.4); ctx.fill();
-        ctx.globalAlpha = 1;
-        // 2. The part that breaks the surface: head, then back and fin, rolling forward.
-        const Lb = L * (0.5 + 0.5 * vis), W = 6.8 * (0.55 + 0.45 * vis);
-        const head = -Lb / 2 + L * (0.2 - 0.4 * p);
-        ctx.strokeStyle = `rgba(255,255,255,${0.55 * vis})`; ctx.lineWidth = 1.4; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(-W - 3, head + 10); ctx.quadraticCurveTo(-W * 0.4, head - 3, 0, head - 4);
-        ctx.quadraticCurveTo(W * 0.4, head - 3, W + 3, head + 10); ctx.stroke();
-        if (p < 0.22) {
-            const q = p / 0.22;
-            const g = ctx.createRadialGradient(0, head + 3, 0, 0, head + 3, 6 + q * 12);
-            g.addColorStop(0, `rgba(255,255,255,${0.85 * (1 - q)})`); g.addColorStop(1, 'rgba(255,255,255,0)');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, head + 3, 6 + q * 12, 0, Math.PI * 2); ctx.fill();
-        }
-        ctx.globalAlpha = Math.min(1, vis * 1.8);
-        ctx.lineJoin = 'round'; ctx.lineWidth = 1.3; ctx.strokeStyle = 'rgba(18,22,28,0.85)';
-        ctx.beginPath();
-        ctx.moveTo(0, head);
-        ctx.bezierCurveTo(W, head + 1, W, head + Lb * 0.45, W * 0.45, head + Lb * 0.8);
-        ctx.lineTo(0, head + Lb);
-        ctx.lineTo(-W * 0.45, head + Lb * 0.8);
-        ctx.bezierCurveTo(-W, head + Lb * 0.45, -W, head + 1, 0, head);
-        ctx.closePath();
-        ctx.fillStyle = '#39424d'; ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.ellipse(-W * 0.3, head + Lb * 0.35, W * 0.22, Lb * 0.25, 0, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(190,205,220,0.45)'; ctx.fill();
-        if (p > 0.3 && p < 0.75) {
-            const fy = head + Lb * 0.5;
-            // the fin stands up, so from above it shows as a small dark triangle with a shadow
-            ctx.fillStyle = 'rgba(10,20,30,0.3)'; ctx.beginPath(); ctx.moveTo(-1, fy + 3); ctx.lineTo(4, fy - 3); ctx.lineTo(3, fy + 4); ctx.closePath(); ctx.fill();
-            ctx.beginPath(); ctx.moveTo(-2.6, fy + 3); ctx.lineTo(0, fy - 6); ctx.lineTo(2.6, fy + 3); ctx.closePath();
-            ctx.fillStyle = '#20262e'; ctx.fill(); ctx.stroke();
+        if (!imgReady(sprImg(PORP_SPR.file))) return;
+        // THE PAINTED PORPOISE (Oct 13 2026): the sprite bay-porpoise, nose at -0.5 L to fluke tips +0.5 L, its flukes
+        // beating and its tail stock flexing as the spinner's do. Through the roll: the whole animal under the surface,
+        // veiled (every overhead shot shows the body beyond the part that breaks water); then the part that breaks the
+        // surface, crisp — head, then back and the little fin — sliding back through a soft window as it rolls forward.
+        const L = PORPOISE_LEN, beat = T * 10 + (m.i || 0) * 1.3, cb = Math.abs(Math.cos(beat));
+        const pose = (slot) => spinnerPosed(ctx, L, 0.35 + 0.65 * cb, 0.1 * Math.sin(beat), 0.88 + 0.12 * cb, slot, PORP_SPR);
+        ctx.save(); ctx.translate(m.sx, m.sy); ctx.rotate(m.sh);
+        const Pc = pose(21);
+        if (Pc) {
+            // 1. under the surface: the sea over the painting itself (a copy, so the crisp one stays for the window)
+            const V = humpScratch(22, Pc.px, Pc.px), gv = V.getContext('2d'); gv.clearRect(0, 0, V.width, V.height); gv.drawImage(Pc.c, 0, 0);
+            gv.globalCompositeOperation = 'source-atop'; gv.globalAlpha = 0.55; gv.fillStyle = `rgb(${waterTint()})`; gv.fillRect(0, 0, Pc.px, Pc.px); gv.globalAlpha = 1; gv.globalCompositeOperation = 'source-over';
+            humpBlit(ctx, { c: V, R: Pc.R, px: Pc.px }, null, Math.min(1, 0.35 + vis * 0.5));
+            // 2. what breaks the surface: a window sliding head -> tail through the roll, three widening rings so it melts in
+            const Lb = L * (0.3 + 0.3 * vis), c = -L * 0.38 + p * L * 0.62, wx = L * 0.16;
+            if (vis > 0.05) for (const [kx, ky, aa] of [[1.3, 1.25, 0.35], [1, 1, 0.6], [0.7, 0.75, 1]]) {
+                ctx.save(); ctx.beginPath(); ctx.ellipse(0, c, wx * kx, Lb * 0.5 * ky, 0, 0, Math.PI * 2); ctx.clip(); humpBlit(ctx, Pc, null, aa * Math.min(1, vis * 1.8)); ctx.restore(); }
+            // the wash off the head as it breaks through, and the puff of the blow at the very start
+            const head = c - Lb * 0.5;
+            foamBand(ctx, (t) => { const th = Math.PI * (1.1 + 0.8 * t); return [Math.cos(th) * wx * 1.05, head + L * 0.06 + Math.sin(th) * L * 0.08]; },
+                     (t) => { const th = Math.PI * (1.1 + 0.8 * t); return [Math.cos(th), Math.sin(th)]; }, (t) => L * 0.03 * (0.3 + Math.sin(Math.PI * t)), 0.55 * vis, (m.i || 0) * 1.3);
+            if (p < 0.22) { const q = p / 0.22, g = ctx.createRadialGradient(0, head + 2, 0, 0, head + 2, L * (0.15 + q * 0.3));
+                g.addColorStop(0, `rgba(255,255,255,${0.85 * (1 - q)})`); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, head + 2, L * (0.15 + q * 0.3), 0, Math.PI * 2); ctx.fill(); }
+            // the little fin stands up at mid-roll: its shadow thrown down-right, as anything standing up does
+            if (p > 0.3 && p < 0.75) { const fy = -L * 0.5 + (PORP_SPR.fin - PORP_SPR.top) / (PORP_SPR.bot - PORP_SPR.top) * L, ft = Math.sin(Math.PI * (p - 0.3) / 0.45);
+                ctx.fillStyle = `rgba(10,20,30,${0.3 * ft})`; ctx.beginPath(); ctx.moveTo(-0.6, fy - L * 0.06); ctx.lineTo(L * 0.1 * ft, fy + L * 0.06 * ft); ctx.lineTo(0.6, fy + L * 0.05); ctx.closePath(); ctx.fill(); }
         }
         ctx.restore();
     }
@@ -3495,7 +3525,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const r = mulberry(boil.seed);
         ctx.save();
         // The ball itself wanders a little and breathes.
-        const bx = boil.x + Math.sin(T * 0.37 + boil.seed) * 14, by = boil.y + Math.cos(T * 0.29) * 12;
+        const { x: bx, y: by } = boilCentre(boil);
         const R0 = BOIL_R * (0.9 + 0.08 * Math.sin(T * 0.8));
         // 1. The ball under the surface: a dense dark mass with a fairly crisp edge, deformed
         //    into slow lobes, and a paler hollow at its heart where the school turns (drone
@@ -4056,7 +4086,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // On the rock, over the land and under the fleet.
     function drawPerched(ctx) {
         if (!cfg) return;
-        for (const c of colonies) for (const g of c.birds) if (g.mode === 'perched') drawGullPerched(ctx, g.x, g.y, g.h);
+        for (const c of colonies) for (const g of c.birds) if (g.mode === 'perched') drawGullPerched(ctx, g.x, g.y, g.h, g.juv);
         for (const b of baskers) {
             if (b.cfg.kind === 'frog') { drawFrogGroup(ctx, b, 'perched'); continue; }
             for (const t of b.turtles) if (t.mode === 'bask' || t.mode === 'wait') drawTurtle(ctx, t.hx, t.hy, t.h, 1, t.wet, t.size);
@@ -4094,16 +4124,16 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function drawAir(ctx) {
         if (!cfg) return;
         for (const e of stalkers) if (e.mode === 'fly') drawEgret(ctx, e);
-        for (const c of colonies) for (const g of c.birds) if (g.mode !== 'perched') drawGullFlying(ctx, g.x, g.y, g.h, g.z, g.flap);
+        for (const c of colonies) for (const g of c.birds) if (g.mode !== 'perched') drawGullFlying(ctx, g.x, g.y, g.h, g.z, g.flap, false, g.juv);
         for (const f of followers) {
             if (!f.ship) continue;
             const s = f.ship, bx = s.x - Math.sin(s.heading) * (s.hullLen / 2 + 60), by = s.y + Math.cos(s.heading) * (s.hullLen / 2 + 60);
             for (const b of f.birds) {
                 const x = bx + Math.cos(b.a) * b.r, y = by + Math.sin(b.a) * b.r * 0.7;
-                drawGullFlying(ctx, x, y, b.a + (b.w > 0 ? Math.PI : 0), b.z, b.flap, Math.sin(b.gl * 0.35 + b.r) > -0.3);   // mostly gliding, a few beats now and then
+                drawGullFlying(ctx, x, y, b.a + (b.w > 0 ? Math.PI : 0), b.z, b.flap, Math.sin(b.gl * 0.35 + b.r) > -0.3, b.juv);   // mostly gliding, a few beats now and then
             }
         }
-        if (flight) for (const b of flight.birds) if (b.mode === 'fly' || b.mode === 'dive') drawPelicanFlying(ctx, b.x, b.y, b.h, b.z, b.flap, b.mode === 'dive');
+        if (flight) for (const b of flight.birds) if (b.mode === 'fly' || b.mode === 'dive') drawPelicanFlying(ctx, b.x, b.y, b.h, b.z, b.flap, b.mode === 'dive', b.t);
         for (const E of soarers) drawEagle(ctx, E);
         for (const f of flyfish) if (!f.caught) drawFlyfish(ctx, f);
         for (const P of flyPatches) if (P.pack) for (const m of P.pack) if (m.leap > 0) drawMahi(ctx, m);
@@ -4764,8 +4794,20 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // whiskered muzzle, the V of the nostrils; a ring of water round the neck. Under the water
     // between pop-ups: a dim plump seal-shaped shape, front flippers out, hind flippers
     // together, gliding — the shadow Wes asked for, so you can follow one.
+    // THE PAINTED HARBOUR SEAL (Oct 13 2026): bay-seal-swimming (the gliding shape, drawn veiled under the water, its
+    // rear body strip-bent so the hind flippers scull) and bay-seal-head (bottling), on the drawn seal's units.
+    const SEAL_SPR = { body: 'assets/images/props/bay/bay-seal-swimming.png', top: 0.0898, bot: 0.9102, cx: 0.4995,
+        head: 'assets/images/props/bay/bay-seal-head.png', htop: 0.1387, hbot: 0.8779, hcx: 0.4995 };
     function drawSealUnder(ctx, s, a) {
         if (a <= 0.02) return;
+        const im = sprImg(SEAL_SPR.body);
+        if (imgReady(im)) {
+            const L = 18.8 * SEAL_BODY, u = Math.sin(s.bob * 4) * 0.5 * Math.min(1, (s.spd || 0) / 10) * SEAL_BODY;
+            ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h);
+            const S = { file: SEAL_SPR.body, top: SEAL_SPR.top, bot: SEAL_SPR.bot, cx: SEAL_SPR.cx };
+            const Pc = mahiPosed(ctx, L, (q) => u * Math.pow(Math.max(0, (q - 0.55) / 0.45), 2), 0.5, waterTint(), 26, S);
+            humpBlit(ctx, Pc, null, 0.8 * a); ctx.restore(); return;
+        }
         ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h); ctx.scale(SEAL_BODY, SEAL_BODY);
         ctx.globalAlpha *= a;
         const u = Math.sin(s.bob * 4) * 0.5 * Math.min(1, (s.spd || 0) / 10);
@@ -4801,6 +4843,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.fillStyle = 'rgba(32,44,52,0.35)'; ctx.beginPath(); ctx.ellipse(0, 2.4, 2.6, 2.6, 0, 0, Math.PI * 2); ctx.fill();
         // the crown, and the muzzle standing forward of it (which way it is looking)
         ctx.translate(0, bob);
+        { const im = sprImg(SEAL_SPR.head);
+          if (imgReady(im)) { const S = SEAL_SPR, F = 7.5 / (S.hbot - S.htop), k = Math.hypot(ctx.getTransform().a, ctx.getTransform().b);
+            ctx.drawImage(humpMip(im, 1.5 * k * F), -S.hcx * F, -3.6 - S.htop * F, F, F); ctx.restore(); return; } }
         ctx.fillStyle = '#8c949a';
         ctx.beginPath(); ctx.moveTo(0, -3.6);
         ctx.bezierCurveTo(1.3, -3.6, 1.7, -2.6, 2.3, -1.4); ctx.bezierCurveTo(2.9, 0, 2.8, 2.6, 1.6, 3.3);
@@ -5602,8 +5647,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // The stroke shows from above in two places (Wes, Oct 13: "the tails should move more"): the flukes
     // foreshortening as they swing up and down through the stroke, and the tail stock behind the dorsal flexing
     // with them — so the stock is its own piece too, shortened about the base of the tail as it bends.
-    function spinnerPosed(ctx, L, fore, flick, stock, slot) {
-        const S = SPIN_SPR, im = sprImg(S.file); if (!imgReady(im)) return null;
+    // (shared by the porpoise: S is the sprite's table — file, top, bot, cx, stock, hinge)
+    function spinnerPosed(ctx, L, fore, flick, stock, slot, S) {
+        S = S || SPIN_SPR; const im = sprImg(S.file); if (!imgReady(im)) return null;
         const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = L * 0.62;
         const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
         const F = L / (S.bot - S.top), x0 = -S.cx * F, y0 = -0.5 * L - S.top * F, src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;   // (beak to fluke tips = L)
@@ -5683,8 +5729,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // when it is chasing. Laid in strips down the body (as the shark's is), each slid sideways by the wave and turned
     // to its slope. MAHI_SPR: the ink's top and bottom and the spine's x, fractions of the frame.
     const MAHI_SPR = { file: 'assets/images/props/ocean/mahi-mahi.png', top: 0.1328, bot: 0.8701, cx: 0.4995 };
-    function mahiPosed(ctx, L, sway, veil, tint, slot) {
-        const S = MAHI_SPR, im = sprImg(S.file); if (!imgReady(im)) return null;
+    // (shared by the harbour seal's glide: S, the sprite's table)
+    function mahiPosed(ctx, L, sway, veil, tint, slot, S) {
+        S = S || MAHI_SPR; const im = sprImg(S.file); if (!imgReady(im)) return null;
         const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = L * 0.62;
         const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
         const F = L / (S.bot - S.top), x0 = -S.cx * F, y0 = -0.5 * L - S.top * F, src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
@@ -5798,8 +5845,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function drawAlbatross(ctx, G) {
         if (ALB_PARTS.map(albImg).some(im => !imgReady(im))) return;
         // its shadow skimming the swell below, down-right by its height
-        ctx.save(); ctx.translate(G.x + G.z * 0.35, G.y + G.z * 0.55); ctx.rotate(G.h); humpBlit(ctx, albPosed(ctx, G.bank, 20), 'rgb(10,25,40)', 0.2); ctx.restore();
-        ctx.save(); ctx.translate(G.x, G.y); ctx.rotate(G.h); humpBlit(ctx, albPosed(ctx, G.bank, 20), null, 1); ctx.restore();
+        ctx.save(); ctx.translate(G.x + G.z * 0.35, G.y + G.z * 0.55); ctx.rotate(G.h); humpBlit(ctx, albPosed(ctx, G.bank, 20), 'rgb(10,25,40)', airShadowA(G.z, 0.22)); ctx.restore();
+        ctx.save(); ctx.translate(G.x, G.y); ctx.rotate(G.h); ctx.scale(zScale(G.z), zScale(G.z)); humpBlit(ctx, albPosed(ctx, G.bank, 20), null, 1); ctx.restore();
     }
 
     // THE WHALES AS OBSTACLES (Wes, Sep 25 2026: "colliding with a whale stops you — hard contact!
@@ -7557,6 +7604,15 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const q = (b.bob * 0.35 + b.j * 0.3) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.3 * (1 - q)})`; ctx.lineWidth = 0.6;
         for (const [a0, a1] of [[0.3, 1.4], [2.0, 3.0], [3.6, 4.6], [5.0, 5.9]]) { ctx.beginPath(); ctx.arc(0, 1, 7 + q * 6, a0, a1); ctx.stroke(); }
         ctx.rotate(b.h + (b.preen ? Math.sin(b.bob * 2) * 0.15 : 0) + Math.sin(b.bob * 1.3 + b.j) * 0.04); ctx.scale(GULL_FLOAT, GULL_FLOAT); ctx.lineJoin = 'round';
+        // THE PAINTED GULL AFLOAT (Oct 13 2026): the perched painting (adult or juvenile), riding low — the contact shade
+        // round it and the water over its rear half
+        { const S = b.juv ? GULL_JUV_PERCH : GULL_PERCH, pim = sprImg(S.file);
+          if (imgReady(pim)) { const L = 21, F = L / (S.bot - S.top), k = Math.hypot(ctx.getTransform().a, ctx.getTransform().b);
+            ctx.fillStyle = 'rgba(8,24,30,0.3)'; ctx.beginPath(); ctx.ellipse(0.5, 1.6, 4.4, 8.4, 0, 0, 6.283); ctx.fill();
+            ctx.drawImage(humpMip(pim, 1.5 * k * F), -S.cx * F, -L * 0.52 - S.top * F, F, F);
+            const gw = ctx.createLinearGradient(0, 2, 0, 10); gw.addColorStop(0, `rgba(${waterTint()},0)`); gw.addColorStop(1, `rgba(${waterTint()},0.35)`);
+            ctx.save(); ctx.beginPath(); ctx.ellipse(0, 5, 4.6, 6, 0, 0, 6.283); ctx.clip(); ctx.fillStyle = gw; ctx.fillRect(-6, 2, 12, 10); ctx.restore();
+            ctx.restore(); if (b.splash > 0) drawRing(ctx, b.sx, b.sy, b.splash, 4, 12, 0.5); return; } }
         const J = b.juv, body = J ? '#b9aa96' : '#fbfbf9', back = J ? '#8f7f6c' : '#b4bec8', tip = J ? '#3c3129' : '#16181c', edge = 'rgba(60,56,52,0.55)';
         // the contact shade, the body riding low (the rear half awash)
         ctx.fillStyle = 'rgba(8,24,30,0.3)'; ctx.beginPath(); ctx.ellipse(0.5, 1.6, 4.4, 8.4, 0, 0, 6.283); ctx.fill();

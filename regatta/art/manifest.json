@@ -7890,6 +7890,156 @@
         0.5,
         0.494
       ]
+    },
+    {
+      "key": "bay-gull-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a HERRING GULL flying, seen from directly overhead, head toward the TOP of the frame, its wings spread wide and held flat out to either side in a glide, the angle of the long narrow wings bent back slightly at the wrist, the primaries tapering to pointed tips, the tail a short rounded fan. the HERRING GULL's colours, exact: a clean WHITE head, neck, body and tail (about #F4F4F2); a pale blue-grey MANTLE and upper wings (about #A9B4BE); BLACK wingtips (about #1C1E22) with small white spots ('mirrors') near the very tips; a stout YELLOW bill (about #E8C23A) with a small red spot near the tip of the lower mandible. Flat hard-edged facets, crisp feather-edge facets along the trailing edge, no glossy highlights, no rim light, no glow, no sky, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "Replacing drawGullFlying (bay colony flushes, trawler followers; and the Cove set Wes approved). Span 38 (scale.md); world 46 = FRAME first guess, re-set from the ink. If accepted: wings cut at the shoulders (column cut, as the albatross) so they FLAP — foreshortened through the beat — and glide between. DELIVERED Oct 13: wingtip to wingtip spans 0.816 of the frame, drawn at scale.md's 42 span (1.4 m x3) — the painting's slim body then comes out ~17 long, a real gull's proportion — so world 52 (re-baked). Wings cut at the shoulders by art/colsplit.py: the beat foreshortens them, the hands sweep back on the upstroke.",
+      "anchorPx": [
+        0.5,
+        0.5128
+      ]
+    },
+    {
+      "key": "bay-gull-perched",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 26,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a HERRING GULL standing at rest on a rock, seen from directly overhead, head toward the TOP of the frame: the plump body seen from above, the round white head forward with the yellow bill pointing ahead, the long grey wings folded along the back with the black, white-spotted wingtips crossed over the tail and projecting past it; the pink feet tucked under, barely showing. the HERRING GULL's colours, exact: a clean WHITE head, neck, body and tail (about #F4F4F2); a pale blue-grey MANTLE and upper wings (about #A9B4BE); BLACK wingtips (about #1C1E22) with small white spots ('mirrors') near the very tips; a stout YELLOW bill (about #E8C23A) with a small red spot near the tip of the lower mandible. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "Replacing drawGullPerched (the gull-rock colony). 20-22 long (scale.md); world 26 = FRAME first guess. DELIVERED Oct 13: bill tip to wingtips spans 0.795 of the frame, drawn 20 long (scale.md: 0.6 m x3), so world 26 (re-baked).",
+      "anchorPx": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "key": "bay-gull-juvenile-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "subject": "the SAME HERRING GULL in flight as the adult flying gull, in the same pose, frame and scale — but a young bird in its first year: a JUVENILE (first-winter) herring gull's plumage, exact: the WHOLE bird a mottled grey-brown — the head and body a pale buff-brown (about #C9BBA8) streaked and flecked darker; the back and upper wings a warm grey-brown (about #9C8B77) chequered with dark brown feather centres (about #5A4A3C) and pale buff edges; the flight feathers and wingtips dark brown (about #3C3129), with no white spots; a broad dark-brown band across the tip of the pale tail; the bill dark, nearly black. Flat hard-edged facets, crisp feather-edge facets along the trailing edge, no glossy highlights, no rim light, no glow, no sky, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "The brown gulls: drawGullFlying's `juv` (a share of every colony and the trawler followers). DERIVE from the accepted bay-gull-flying — an edit that changes only the plumage — so the two are in register and the wing cut is shared. DELIVERED Oct 13: same frame as the adult (span 0.819), drawn at 42; wings cut by art/colsplit.py.",
+      "anchorPx": [
+        0.5,
+        0.5136
+      ]
+    },
+    {
+      "key": "bay-gull-juvenile-perched",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 26,
+      "anchor": "center",
+      "status": "art",
+      "subject": "the SAME HERRING GULL at rest as the adult perched gull, in the same pose, frame and scale — but a young bird in its first year: a JUVENILE (first-winter) herring gull's plumage, exact: the WHOLE bird a mottled grey-brown — the head and body a pale buff-brown (about #C9BBA8) streaked and flecked darker; the back and upper wings a warm grey-brown (about #9C8B77) chequered with dark brown feather centres (about #5A4A3C) and pale buff edges; the flight feathers and wingtips dark brown (about #3C3129), with no white spots; a broad dark-brown band across the tip of the pale tail; the bill dark, nearly black. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "The brown gulls at rest: drawGullPerched's `juv`, and the juveniles in the Clubhouse Point rafts (drawGullFloat's b.juv — a third of any raft). DERIVE from the accepted bay-gull-perched. DELIVERED Oct 13: same frame and scale as the adult (bill to tail 0.796 of the frame), drawn 20 long. Also the juveniles AFLOAT in the Clubhouse Point rafts (drawGullFloat).",
+      "anchorPx": [
+        0.5,
+        0.4996
+      ]
+    },
+    {
+      "key": "bay-pelican-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 74,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a BROWN PELICAN flying, seen from directly overhead, head toward the TOP of the frame: its long, broad wings spread wide in a glide, the long fingered primaries splayed at the tips; the neck folded back so the head rests on the shoulders and the huge long BILL points straight forward along the line of flight, past the front of the wings; the short square tail. the BROWN PELICAN's colours from above: the upper wing a frosted silvery grey-brown on the coverts (about #9C9890) with dark grey-black flight feathers (about #2E2C2A) along the whole trailing edge and the long fingered tips; the back and body a darker grey-brown (about #6E665E); the head white with a pale yellow crown (about #E7D9A0) and a dark chestnut-brown stripe down the back of the neck (about #5A3A28); the huge long BILL a dull grey-pink with a hooked reddish tip (about #B8A49A). Flat hard-edged facets, crisp feather-edge facets along the trailing edge, no glossy highlights, no rim light, no glow, no sky, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "Replacing drawPelicanFlying (the formations, the bait-boil feeders). Span 62 (scale.md); world 76 = FRAME first guess. If accepted: wings cut at the shoulders so pelicans flap in bouts and glide (the drawn bird does), and so the PLUNGE DIVE can sweep them back — or generate bay-pelican-diving. DELIVERED Oct 13: wingtip to wingtip spans 0.845 of the frame, so world 74 draws PELICAN_SPAN 62. Wings cut at the shoulders by art/colsplit.py: they flap in bouts (the span foreshortening through the beat, the hands swept back on the upstroke) and FOLD back for the plunge dive — so bay-pelican-diving is not needed.",
+      "anchorPx": [
+        0.4996,
+        0.5036
+      ]
+    },
+    {
+      "key": "bay-pelican-diving",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 45,
+      "anchor": "center",
+      "status": "art",
+      "subject": "the SAME BROWN PELICAN in a PLUNGE DIVE, seen from directly overhead as it drops head-first toward the sea, bill toward the TOP of the frame: its wings swept far back and half-folded against its body like a dart, the long bill and neck stretched straight forward, the whole bird narrow and streamlined. the BROWN PELICAN's colours from above: the upper wing a frosted silvery grey-brown on the coverts (about #9C9890) with dark grey-black flight feathers (about #2E2C2A) along the whole trailing edge and the long fingered tips; the back and body a darker grey-brown (about #6E665E); the head white with a pale yellow crown (about #E7D9A0) and a dark chestnut-brown stripe down the back of the neck (about #5A3A28); the huge long BILL a dull grey-pink with a hooked reddish tip (about #B8A49A). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no splash, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "DELIVERED Oct 13 (Wes made it after all): the plunge pose — neck stretched, wings half-raised and swept back. Bill tip to tail spans 0.718 of the frame, drawn 32 long (the flying bird's 28.6 with the neck out), so world 45. The game cross-fades into it from the folding flyer in the first moment of the dive, and it shrinks toward its true size as it falls (zScale).",
+      "anchorPx": [
+        0.5,
+        0.5048
+      ]
+    },
+    {
+      "key": "bay-pelican-sitting",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 50,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a BROWN PELICAN sitting on the water, seen from directly overhead, bill toward the TOP of the frame: a bulky boat-shaped body, the wings folded along the back, the neck drawn into an S so the white head sits close above the shoulders and the huge long BILL rests forward along the front of the neck, the short tail up behind. the BROWN PELICAN's colours from above: the upper wing a frosted silvery grey-brown on the coverts (about #9C9890) with dark grey-black flight feathers (about #2E2C2A) along the whole trailing edge and the long fingered tips; the back and body a darker grey-brown (about #6E665E); the head white with a pale yellow crown (about #E7D9A0) and a dark chestnut-brown stripe down the back of the neck (about #5A3A28); the huge long BILL a dull grey-pink with a hooked reddish tip (about #B8A49A). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ripples, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "Replacing drawPelicanSitting (resting after a dive, on the boil). ~41 long incl. the bill (scale.md body 39-41); world 50 = FRAME first guess. DELIVERED Oct 13: bill tip to tail spans 0.80 of the frame, laid on the drawn sitter's span (-20 to +19.4), so world 50.",
+      "anchorPx": [
+        0.5004,
+        0.4996
+      ]
+    },
+    {
+      "key": "bay-porpoise",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 32,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a HARBOUR PORPOISE swimming just beneath the surface, seen from directly overhead, head toward the TOP of the frame: a small, STOCKY, rounded little cetacean with NO beak — a blunt, rounded head — small rounded pectoral flippers, the small low TRIANGULAR dorsal fin at mid-back seen from straight above as only a short dark ridge on the midline, and small notched tail flukes spread flat. COLOUR: a dark slate-grey back (about #3A4148), paling to a lighter grey along the flanks at the edges of the body (about #7D868D); the belly white, hidden underneath. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "Replacing drawPorpoise (bow pods ahead of the cargo ships, the harbour pod). PORPOISE_LEN = lifeU(1.6) * 1.5 = 24 (PT-016); world 30 = FRAME first guess. If accepted: flukes hinged at the tail stock like the spinner's; the roll through the surface stays procedural. DELIVERED Oct 13: nose to fluke tips spans 0.762 of the frame, so world 32 draws PORPOISE_LEN 24. Drawn through its roll: the whole animal veiled under the surface, the painted back crisp where it breaks through; flukes hinged and the stock flexing, as the spinner's. RECOLOURED by Wes (Oct 13): darker, near-black back with a warmer grey flank — same outline (ink within 0.4%), so PORP_SPR stands.",
+      "anchorPx": [
+        0.4996,
+        0.496
+      ]
+    },
+    {
+      "key": "bay-seal-head",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 21,
+      "anchor": "center",
+      "status": "art",
+      "subject": "the HEAD of a HARBOUR SEAL held up out of the water ('bottling'), seen from directly overhead, muzzle toward the TOP of the frame: a ROUND head — the top of the skull seen from above, broad and rounded — with the two big dark eyes set on its front corners, a short, paler, whiskered muzzle with the V-shaped nostrils at the front, a few long pale whiskers; no ears showing. COLOUR: a soft blue-grey (about #8A9298) densely MOTTLED with small dark spots and rings (about #3E4246), the muzzle paler (about #B5B8B6). Only the head: no body, no water, no ring. Flat hard-edged facets, no glossy highlights, no rim light, no glow. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "Replacing drawSealHead (the poppers: bottling, turning to watch the nearest boat). ~12 (scale.md rule 7, read by its ring); world 16 = FRAME first guess. The water ring round the neck stays procedural. DELIVERED Oct 13: nose to the back of the crown spans 0.74 of the frame (the whiskers stand wider), laid on the drawn head (native -3.6..3.9 x SEAL_HEAD 2.1 = ~16), so world 21. The neck's water ring stays procedural.",
+      "anchorPx": [
+        0.5,
+        0.5084
+      ]
+    },
+    {
+      "key": "bay-seal-swimming",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "bay",
+      "world": 37,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a HARBOUR SEAL swimming just under the surface, seen from directly overhead, head toward the TOP of the frame: a plump, torpedo-shaped body, the round head stretched forward, the small fore flippers held back along the chest, the two hind flippers held together behind and fanned a little at the tips. COLOUR: a soft blue-grey (about #8A9298) densely MOTTLED with small dark spots and rings (about #3E4246) all over the back. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water. Naturalistically proportioned, never a cartoon mascot, no eye highlights",
+      "note": "Replacing drawSealUnder (the dim shape gliding between pop-ups, Wes asked for it). ~30 (scale.md); world 38 = FRAME first guess. Drawn veiled under the water; the hind flippers may be cut to scull. DELIVERED Oct 13: nose to hind-flipper tips spans 0.82 of the frame, laid on the drawn gliding shape (native -9.4..9.4 x SEAL_BODY 1.6 = 30), so world 37. Drawn veiled under the water; the rear body strip-bent so the hind flippers scull.",
+      "anchorPx": [
+        0.4996,
+        0.5008
+      ]
     }
   ],
   "scale": {

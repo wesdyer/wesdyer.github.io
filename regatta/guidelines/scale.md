@@ -85,8 +85,8 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Mallard duckling | School | 0.15 m | 1.5 | 20–22 | 22 | ✓ at the floor |
 | Painted turtle | School | 0.2 m | 2 | ~25 | 27 (19–27 by size) | ✓ resized Sep 25 (was 33) |
 | Great crested grebe | School | 0.5 m | 5 | ~29 | 29 | ✓ resized Sep 25 (was 55) |
-| Herring gull (perched) | Cove | 0.6 m | 6 | 20 | 22 | ✓ approved |
-| Herring gull (span) | Cove | 1.4 m | 14 | 42 | 38 | ✓ approved |
+| Herring gull (perched) | Cove | 0.6 m | 6 | 20 | 20 (painted sprite, Oct 13 — Wes: "realistic") | ✓ approved |
+| Herring gull (span) | Cove | 1.4 m | 14 | 42 | 42 (painted; its body ~17, a real gull's 0.43 of the span — Wes chose realistic over the drawn gull's chunkier ~25, Oct 13) | ✓ approved |
 | Common loon | Lake | 0.8 m | 8 | ~32 | 31 | ✓ resized Sep 25 (was 65) |
 | Beaver (with tail) | Lake | 1.2 m | 12 | 36 | 36 | ✓ resized Sep 25 (was 53) |
 | Brown pelican (body) | Cove | 1.3 m | 13 | 39 | 41 | ✓ approved |
