@@ -3,10 +3,22 @@
 // alpha > 40, so its thin whip tail counts: the eye reads it tip to tail). The
 // numbers guidelines/scale.md checks against (true size x 3, floor 20 units).
 //   node regatta/eval/_animal_sizes.js     (from the repo root)
-const { chromium } = require('playwright'); const path = require('path');
+//   (served over http: the painted sprites taint a file:// canvas and getImageData would throw)
+const { chromium } = require('playwright'); const path = require('path'); const { spawn } = require('child_process');
 (async () => {
+  const port = 8700 + Math.floor(Math.random() * 90);
+  const srv = spawn('python3', ['-m', 'http.server', String(port)], { cwd: path.resolve('.'), stdio: 'ignore' }); await new Promise(r => setTimeout(r, 800));
   const b = await chromium.launch(); const p = await b.newPage();
-  await p.goto('file://' + path.resolve('regatta/index.html')); await p.waitForFunction(() => window.Wildlife && Wildlife.art);
+  await p.goto(`http://localhost:${port}/regatta/index.html`); await p.waitForFunction(() => window.Wildlife && Wildlife.art);
+  // ask for the painted sprites, and give them a moment to load
+  await p.evaluate(() => { const g = document.createElement('canvas').getContext('2d'); const c = state.camera; state.camera = null;
+    Wildlife.art.drawWhiteShark(g, { x: 0, y: 0, h: 0, depth: 0, mode: 'patrol', ph: 0, trail: [], trailT: 0, z: 0, roll: 0, jaw: 0, slick: 0, turn: 0 }, 'water');
+    Wildlife.art.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'under', t: 10, depth: 0.5, ph: 0, fluke: 0, turn: 0, lunge: 0, sd: 1, mott: [] });
+    Wildlife.art.drawSpinner(g, { live: true, i: 0, x: 0, y: 0, h: 0, spin: 0, breath: 0 });
+    Wildlife.art.drawAlbatross(g, { x: 0, y: 0, h: 0, z: 0, bank: 0 });
+    Wildlife.art.drawFlyfish(g, { x0: 0, y0: 0, h: 0, len: 0.001, t: 0.5, dur: 1, z: 8, size: 1 }); Wildlife.art.drawMahi(g, { x: 0, y: 0, h: 0, size: 1, mode: 'patrol', t: 0, i: 0, leap: 0, trail: [] });
+    for (const calf of [false, true]) Wildlife.art.drawWhale(g, { j: 0, calf, len: 50, x: 0, y: 0, h: 0, mode: 'surface', depth: 0, ph: 0 }); state.camera = c; });
+  await p.waitForTimeout(900);
   const r = await p.evaluate(() => {
     const A = Wildlife.art;
     const mk = (o) => Object.assign({ x: 0, y: 0, h: 0, sink: 0, flap: 0, yaw: 0, trail: [], bob: 0, stick: false, splash: 0, slap: 0, rise: 0, swim: 0 }, o);
@@ -37,6 +49,12 @@ const { chromium } = require('playwright'); const path = require('path');
       'sea lion cow (nose to hind flippers)': g => A.drawSeaLion(g, { i: 0, x: 0, y: 0, h: 0, mode: 'lie', up: 0, bark: 0, wet: 0, curl: 0, bob: 0, bull: false, size: 1 }),
       'sea lion bull': g => A.drawSeaLion(g, { i: 0, x: 0, y: 0, h: 0, mode: 'lie', up: 0, bark: 0, wet: 0, curl: 0, bob: 0, bull: true, size: 1.25 }),
       'great white (snout to tail tip)': g => { const c = state.camera; state.camera = null; A.drawWhiteShark(g, { x: 0, y: 0, h: 0, depth: 0, mode: 'patrol', ph: 0, trail: [], trailT: 0, z: 0, roll: 0, jaw: 0, slick: 0, turn: 0 }, 'water'); state.camera = c; },
+      'spinner dolphin (beak to flukes)': g => { const c = state.camera; state.camera = null; A.drawSpinner(g, { live: true, i: 0, x: 0, y: 0, h: 0, spin: 0, breath: 0 }); state.camera = c; },
+      'flying fish (span, airborne)': g => { const c = state.camera; state.camera = null; A.drawFlyfish(g, { x0: 0, y0: 0, h: Math.PI / 2, len: 0.001, t: 0.5, dur: 1, z: 8, size: 1 }); state.camera = c; },
+      'mahi-mahi (leaping)': g => { const c = state.camera; state.camera = null; A.drawMahi(g, { x: 0, y: 0, h: 0, size: 1, mode: 'chase', t: 0, i: 0, leap: 0.5, trail: [] }); state.camera = c; },
+      'albatross (span)': g => { const c = state.camera; state.camera = null; A.drawAlbatross(g, { x: 0, y: 0, h: Math.PI / 2, z: 0, bank: 0 }); state.camera = c; },
+      'humpback (snout to flukes)': g => { const c = state.camera; state.camera = null; A.drawWhale(g, { j: 0, calf: false, len: 132, x: 0, y: 0, h: 0, mode: 'under', depth: 0, ph: 0, turn: 0 }); state.camera = c; },
+      'humpback calf (snout to flukes)': g => { const c = state.camera; state.camera = null; A.drawWhale(g, { j: 0, calf: true, len: 48, x: 0, y: 0, h: 0, mode: 'under', depth: 0, ph: 0, turn: 0 }); state.camera = c; },
       'blue whale (snout to flukes)': g => { const c = state.camera; state.camera = null; A.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'surface', t: 10, depth: 0, ph: 0, fluke: 0, rollT: 1.5, turn: 0, lunge: 0, sd: 1, mott: [] }); state.camera = c; },
     };
     const out = {};
@@ -49,5 +67,5 @@ const { chromium } = require('playwright'); const path = require('path');
     }
     return out;
   });
-  console.log(JSON.stringify(r, null, 1)); await b.close();
+  console.log(JSON.stringify(r, null, 1)); await b.close(); srv.kill();
 })();

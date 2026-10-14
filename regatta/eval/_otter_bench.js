@@ -7,7 +7,14 @@ const { chromium } = require('playwright'); const path = require('path');
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve('regatta/index.html'));
   await p.waitForFunction(() => window.state && window.Wildlife && typeof resetGame === 'function');
-  const url = await p.evaluate(() => { localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'otter', soundEnabled: false, musicEnabled: false, bgSoundEnabled: false })); resetGame();
+  // the white shark is a painted sprite (Oct 2026): ask for it once, and give it a moment to load
+  await p.evaluate(() => { const g = document.createElement('canvas').getContext('2d');
+    Wildlife.art.drawWhiteShark(g, { x: 0, y: 0, h: 0, depth: 0, mode: 'patrol', ph: 0, trail: [], trailT: 0, z: 0, roll: 0, jaw: 0, slick: 0, turn: 0 }, 'water');
+    Wildlife.art.drawSeaOtter(g, { i: 0, x: 0, y: 0, h: 0, size: 1, bob: 0, mode: 'float', head: 0.5 });
+    for (const bull of [false, true]) Wildlife.art.drawSeaLion(g, { i: 0, x: 0, y: 0, h: 0, mode: 'lie', t: 5, up: 0, bark: 0, wet: 0, curl: 0, bob: 1, bull, size: 1 }, {});
+    Wildlife.art.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'under', t: 10, depth: 0.5, ph: 0, fluke: 0, turn: 0, lunge: 0, sd: 1, mott: [] }); Wildlife.art.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'surface', t: 10, depth: 0.5, ph: 0, fluke: 0, turn: 0, lunge: 0.5, roll: 0.5, gape: 1, pouch: 1, sd: 1, mott: [] }); });
+  await p.waitForTimeout(800);
+  await p.evaluate(() => { localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'otter', soundEnabled: false, musicEnabled: false, bgSoundEnabled: false })); resetGame();
     const A = Wildlife.art, c = document.createElement('canvas'); c.width = 1600; c.height = 1450; const ctx = c.getContext('2d');
     const doc = state.course.doc, water = (doc.palette && (doc.palette.baseColor || doc.palette.heroColor)) || '#2a8f9a';
     ctx.fillStyle = water; ctx.fillRect(0, 0, 1600, 1450);
@@ -44,6 +51,7 @@ const { chromium } = require('playwright'); const path = require('path');
     whales.forEach(([n, o], i) => { const x = 250 + (i % 3) * 460, y = 930 + Math.floor(i / 3) * 170; at(x, y, 0.6, () => A.drawBlueWhale(ctx, o)); lab(n, x - 60, y + 55); });
     [0.15, 0.8, 2, 4].forEach((t, i) => { at(1000 + i * 150, 1110, 0.6, () => A.drawBlueBlow(ctx, { x: 0, y: 0, t, s: 1, seed: 1 })); lab('blow ' + t + 's', 970 + i * 150, 1215); });
     state.camera = oc;
-    return c.toDataURL('image/png'); });
-  require('fs').writeFileSync(out, Buffer.from(url.split(',')[1], 'base64'));
+    // (shown and screenshotted, not toDataURL: the painted sprites taint a file:// canvas)
+    c.style.cssText = 'position:fixed;left:0;top:0;width:1600px;height:1450px;z-index:99999'; document.body.appendChild(c); });
+  await p.screenshot({ path: out });
   console.log(errs.length ? 'errors: ' + errs.join(' | ') : 'ok', out); await b.close(); })();

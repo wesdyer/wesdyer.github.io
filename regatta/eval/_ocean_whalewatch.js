@@ -7,6 +7,10 @@ const { chromium } = require('playwright'); const path = require('path');
   const errs = []; p.on('pageerror', e => errs.push(e.message));
   await p.goto('file://' + path.resolve('regatta/index.html'));
   await p.waitForFunction(() => window.state && window.Wildlife && typeof resetGame === 'function');
+  // the humpbacks are painted sprites (Oct 2026): ask for them once, and give them a moment to load
+  await p.evaluate(() => { const g = document.createElement('canvas').getContext('2d');
+    for (const calf of [false, true]) Wildlife.art.drawWhale(g, { j: 0, calf, len: 50, x: 0, y: 0, h: 0, mode: 'surface', depth: 0, ph: 0 }); });
+  await p.waitForTimeout(800);
   await p.evaluate((pod) => { localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'ocean' })); resetGame();
     const d = Wildlife.debug(), W = d.whalePods.find(w => w.cfg.id === pod), me = state.boats[0];
     for (const bt of state.boats) { bt.x = 1e6; bt.y = 1e6; }

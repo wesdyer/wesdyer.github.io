@@ -110,7 +110,9 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.ffOutside === 0 && r.ffInside > 3, `none outside a patch (${r.ffOutside}), a burst through one (${r.ffInside})`);
     ok(r.albFar < 1500, `the albatross stay in view of the player (farthest ${r.albFar.toFixed(0)} u)`);
     ok(r.packs >= 3, `mahi-mahi hunt in most flying-fish patches (${r.packs})`);
-    ok(r.mahiChase && r.mahiKn > 25 && r.mahiKn < 40, `a hunt: the mahi chase the flying fish at ${r.mahiKn.toFixed(0)} kn`);
+    // (Oct 13 2026, researched: the flying fish glide at 28-36 kn on the game's clock and the mahi has to stay under them —
+    // 36-46 kn, under the oft-quoted 50 kn top speed; this bound was 25-40 for the earlier, slower tuning)
+    ok(r.mahiChase && r.mahiKn > 30 && r.mahiKn < 50, `a hunt: the mahi chase the flying fish at ${r.mahiKn.toFixed(0)} kn`);
     ok(r.hitSurface, 'a boat that sails into a whale at the surface is stopped and pushed clear');
     ok(r.passUnder, 'a whale cruising below is passed over');
     ok(r.link30 === 1, '30 s at 16 kn on the run: ocean:linked');
