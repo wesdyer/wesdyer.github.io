@@ -2374,6 +2374,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // open across the body's width; never step so that the nose, middle or tail lands on solid;
     // and if a drifting floe has come over it, get out from under — straight away from its centre.
     const SWIM_TRIES = [0, 0.35, -0.35, 0.7, -0.7, 1.05, -1.05, 1.5, -1.5, 2, -2, 2.6, -2.6, Math.PI];
+    const SWIM_TRIES_R = [0, 0.35, 0.7, 1.05, 1.5, 2, 2.6, Math.PI], SWIM_TRIES_L = SWIM_TRIES_R.map(a => -a);   // one way round only (see swimTo)
     // The body's footprint at a pose: nose, middle, tail, and the half-way points. Any on solid?
     function bodyHit(x, y, h, halfLen, ignore, noFloes) {
         const fx = Math.sin(h), fy = -Math.cos(h);
@@ -2413,24 +2414,64 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 // squeezed: it turns and slips out along the escape line; its body may not touch rock
                 // or fixed ice on the way (only the drifting ice it is escaping)
                 const ea = Math.atan2(q.x - o.x, -(q.y - o.y));
-                for (const h of [ea, o.h, q.a]) if (!bodyHit(nx, ny, h, halfLen, ignore, true)) { o.x = nx; o.y = ny; o.h = h; break; }
+                let moved = false;
+                for (const h of [ea, o.h, q.a]) if (!bodyHit(nx, ny, h, halfLen, ignore, true)) { o.x = nx; o.y = ny; o.h = h; moved = true; break; }
+                // (already part on the rock itself, every step out is still part on it — and it never moved:
+                // a leopard seal nose-in to a shore sat there for half a minute, PT-077. Out it goes anyway.)
+                if (!moved) { o.x = nx; o.y = ny; o.h += angDiff(ea, o.h) * Math.min(1, dt * 3); }
             }
             return;
         }
+        // GOING ROUND, NOT DITHERING (PT-077, Wes at Glacier Sound: "a lot of stuck orcas and other
+        // creatures"). The heading search alternates left and right of the way to the target, so in a
+        // concave pocket of ice the best open heading flipped side to side and the animal sat pressed
+        // to the edge — an orca for 95 s, a leopard seal bound for its floe for three minutes. A
+        // watchdog: if in 2 s it has made good under a third of its speed, it picks a side and keeps
+        // to it — the open headings searched one way round only, which follows the edge round the ice
+        // — for 6 s; stalled again, it tries the other side.
+        o._sw = (o._sw || 0) + dt;
+        if (o._ax == null) { o._ax = o.x; o._ay = o.y; o._sw = 0; }
+        if (o._sw >= 2) {
+            if (Math.hypot(o.x - o._ax, o.y - o._ay) < v * 2 / 3 && Math.hypot(tx - o.x, ty - o.y) > halfLen * 2) { o._side = o._side ? -o._side : (rnd() < 0.5 ? 1 : -1); o._follow = 6; }
+            o._ax = o.x; o._ay = o.y; o._sw = 0;
+        }
+        if (o._follow > 0) o._follow -= dt;
+        // BACKING OUT of a wedge for a moment, turning toward the open way as it goes — one frame back and
+        // the next forward again was a seal shuffling in place against the shore for half a minute
+        if (o._back > 0) {
+            o._back -= dt;
+            const bx = o.x - Math.sin(o.h) * v * 0.5 * dt, by = o.y + Math.cos(o.h) * v * 0.5 * dt;
+            if (!bodyHit(bx, by, o.h, halfLen, ignore, noFloes)) { o.x = bx; o.y = by; } else o._back = 0;
+            const w2 = Math.atan2(tx - o.x, -(ty - o.y)), h2 = o.h + Math.max(-turn * dt, Math.min(turn * dt, angDiff(w2, o.h)));
+            if (!bodyHit(o.x, o.y, h2, halfLen, ignore, noFloes)) o.h = h2;
+            return;
+        }
         const want = Math.atan2(tx - o.x, -(ty - o.y)); let go = null;
-        for (const da of SWIM_TRIES) {
+        const tries = o._follow > 0 ? (o._side > 0 ? SWIM_TRIES_R : SWIM_TRIES_L) : SWIM_TRIES;
+        for (const da of tries) {
             const a = want + da, sa = Math.sin(a), ca = Math.cos(a); let clear = true;
             for (const r of [halfLen + 10, halfLen + 45, halfLen + 90]) { for (const w of [-halfW, 0, halfW]) if (solidAt(o.x + sa * r + ca * w, o.y - ca * r + sa * w, ignore, noFloes)) { clear = false; break; } if (!clear) break; }
             if (clear) { go = a; break; }
         }
-        if (go === null) go = o.h + Math.PI;
+        if (go === null) go = o._follow > 0 ? o.h + o._side * Math.PI / 2 : o.h + Math.PI;
         // turn toward it — but only into a pose whose whole body is clear; then step, the same rule
         const h1 = o.h + Math.max(-turn * dt, Math.min(turn * dt, angDiff(go, o.h)));
         for (const h of [h1, o.h, o.h + (h1 - o.h) * 0.5]) {
             const nx = o.x + Math.sin(h) * v * dt, ny = o.y - Math.cos(h) * v * dt;
             if (!bodyHit(nx, ny, h, halfLen, ignore, noFloes)) { o.h = h; o.x = nx; o.y = ny; return; }
         }
-        if (!bodyHit(o.x, o.y, h1, halfLen, ignore, noFloes)) o.h = h1;   // can't go on: turn on the spot if the turn is clear
+        // can't go on: turn on the spot if the turn is clear — a real turn (the look-ahead starts past the
+        // nose, so a sliver of rock under it can leave the way 'clear' straight ahead and the step shut:
+        // a zero turn counted as a move, and the animal froze nose-in to the shore)
+        if (Math.abs(angDiff(h1, o.h)) > 1e-4 && !bodyHit(o.x, o.y, h1, halfLen, ignore, noFloes)) { o.h = h1; return; }
+        // WEDGED (PT-077: an orca nose-in to a notch of the shore, every step and every turn putting
+        // part of it on the rock — it sat there, frozen, while its pod swam a kilometre on): it backs
+        // out along its own line, and if even that is shut, slips toward the nearest water its whole
+        // body fits in, as a squeezed animal does.
+        const bx = o.x - Math.sin(o.h) * v * 0.5 * dt, by = o.y + Math.cos(o.h) * v * 0.5 * dt;
+        if (!bodyHit(bx, by, o.h, halfLen, ignore, noFloes)) { o.x = bx; o.y = by; o._back = 0.8; return; }   // (and keeps backing a moment — see above)
+        const q = nearestClear(o, halfLen, ignore, noFloes);
+        if (q) { const d = Math.hypot(q.x - o.x, q.y - o.y) || 1, k = Math.min(1, Math.max(v, 30) * dt / d); o.x += (q.x - o.x) * k; o.y += (q.y - o.y) * k; if (d < 4) o.h = q.a; }
     }
     function snapWater(x, y, m) {
         if (openWater(x, y, m)) return { x, y };
@@ -2466,6 +2507,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // look ahead: of the headings near the one to the waypoint, the closest whose next
             // 220 u (and the pod's width either side) is open water
             swimTo(W, tx, ty, ORCA_KNOTS, 0.7, dt, 60, 70, null, true);
+            // the pod's wake: where it has been, every 40 u — the way a member cut off behind the ice follows back
+            { const C = W.crumbs || (W.crumbs = []), c0 = C[C.length - 1]; if (!c0 || Math.hypot(W.x - c0.x, W.y - c0.y) > 40) { C.push({ x: W.x, y: W.y }); if (C.length > 80) C.shift(); } }
             W.leg = (W.leg || 0) + dt;
             if (Math.hypot(tx - W.x, ty - W.y) < 120 || W.leg > 60) { W.wi = (W.wi + 1) % W.pts.length; W.leg = 0; }
             // Travelling killer whales take ONE breath per surfacing, in bouts: a few short
@@ -2480,6 +2523,14 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 if (solidAt(tx2, ty2, null, true)) { tx2 = W.x - fx * (50 + m.j * 45); ty2 = W.y - fy * (50 + m.j * 45); }   // its slot is on the ice: in line astern
                 const d = Math.hypot(tx2 - m.x, ty2 - m.y), L2 = ARCTIC_SPR[m.kind].len * 0.5;
                 const v = Math.min(ORCA_KNOTS * 1.3, d * 1.5 + ORCA_KNOTS * 0.6);
+                // CUT OFF (PT-077: an orca sat behind a berg for minutes while its pod swam on): more than
+                // 220 u from its place, it follows the pod's own wake — water the pod has just swum, so it
+                // leads round the ice — from the nearest point of it, fast, until it is back in formation
+                if (d > 220 && W.crumbs && W.crumbs.length) {
+                    const C = W.crumbs; let k = 0, bd = 1e9; for (let i = 0; i < C.length; i++) { const dd = Math.hypot(C[i].x - m.x, C[i].y - m.y); if (dd < bd) { bd = dd; k = i; } }
+                    const c2 = C[Math.min(C.length - 1, k + 2)];
+                    swimTo(m, c2.x, c2.y, ORCA_KNOTS * 1.4, 1.6, dt, L2, 9, null, true);
+                } else
                 // steer for a point ahead of its slot, so it swims along with the pod, not at the slot
                 swimTo(m, tx2 + fx * 60, ty2 + fy * 60, v, 1.2, dt, L2, 9, null, !(m.up >= 0));   // at the surface it goes round the floes; under, it passes beneath
                 // the surfacing: u in [0,1] over the 4 s after the pod's cycle starts, per member offset
@@ -2730,9 +2781,20 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
         return out;
     }
+    // The seal's patrol point on its loop round its station — moved on along the loop past any stretch
+    // that lies on ice (PT-077: a loop crossing an island pinned the seal to the shore, pressing at a
+    // point it could never reach, for minutes). Under, only rock and fixed ice count.
+    function sealLoopPt(S, under) {
+        for (let k = 0; k < 24; k++) {
+            const r = 190 + 70 * Math.sin(S.a * 1.7), x = S.st.x + Math.cos(S.a) * r, y = S.st.y + Math.sin(S.a) * r;
+            if (!solidAt(x, y, null, under) && !solidAt(x + 30, y, null, under) && !solidAt(x - 30, y, null, under)) return { x, y };
+            S.a += 0.12;
+        }
+        return { x: S.st.x, y: S.st.y };
+    }
     function sealFloe(S, maxD) {
         const taken = penguinFloes(); for (const o of lseals) if (o !== S && o.floe && (o.mode === 'haul' || o.mode === 'launch' || o.mode === 'toFloe')) taken.add(o.floe);
-        return floeList().filter(f => f.radius >= 70 && !taken.has(f) && Math.hypot(f.x - S.st.x, f.y - S.st.y) < maxD).sort((a, b) => (Math.hypot(a.x - S.x, a.y - S.y) + laneDist(a.x, a.y)) - (Math.hypot(b.x - S.x, b.y - S.y) + laneDist(b.x, b.y)))[0];
+        return floeList().filter(f => f.radius >= 70 && !taken.has(f) && !(S.badFloe === f && T < S.badUntil) && Math.hypot(f.x - S.st.x, f.y - S.st.y) < maxD).sort((a, b) => (Math.hypot(a.x - S.x, a.y - S.y) + laneDist(a.x, a.y)) - (Math.hypot(b.x - S.x, b.y - S.y) + laneDist(b.x, b.y)))[0];
     }
     // No penguin shares a floe with a leopard seal (that floe would be empty in a moment).
     function sealFloes() { return new Set(lseals.filter(o => o.floe && (o.mode === 'haul' || o.mode === 'launch' || o.mode === 'toFloe')).map(o => o.floe)); }
@@ -2810,12 +2872,20 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             } else if (S.mode === 'deep') {
                 // gone: it swims back toward its station below, and comes up there
                 S.sw += dt * 2.2; S.a += dt * 0.09;
-                const r = 190 + 70 * Math.sin(S.a * 1.7), tx = S.st.x + Math.cos(S.a) * r, ty = S.st.y + Math.sin(S.a) * r;
+                const { x: tx, y: ty } = sealLoopPt(S, true);
                 swimTo(S, tx, ty, 45, 1.2, dt, 30, 10, null, true);
                 if (S.t <= 0 && !bodyHit(S.x, S.y, S.h, 36)) { S.mode = 'swim'; S.t = R(20, 40); S.ring = 1; S.depth = 0; }
             } else if (S.mode === 'toFloe') {
                 const F = S.floe; swimTo(S, F.x, F.y, 40, 2, dt, 30, 10, F); if (unstick(S, dt, 30, F)) S.ring = 1; S.sw += dt * 2.2; S.up = 0.4;
-                if (Math.hypot(F.x - S.x, F.y - S.y) < F.radius * 0.95) {
+                // AT THE FLOE once its nose is on it (PT-077): an irregular floe's edge can be well inside its
+                // radius, and a seal pressed to that edge never got "within 0.95 R" of the centre — it sat
+                // there for minutes. And no headway for 12 s (the pack closed round it): this floe is no good
+                // for a minute, and it goes back to its patrol.
+                const nose = solidAt(S.x + Math.sin(S.h) * 32, S.y - Math.cos(S.h) * 32);
+                const dF = Math.hypot(F.x - S.x, F.y - S.y);
+                if (S.fBest == null || dF < S.fBest - 10) { S.fBest = dF; S.fStall = 0; } else S.fStall = (S.fStall || 0) + dt;
+                if (S.fStall > 12 && nose !== F) { S.badFloe = F; S.badUntil = T + 60; S.floe = null; S.mode = 'swim'; S.t = R(6, 12); S.fBest = null; S.fStall = 0; continue; }
+                if (dF < F.radius * 0.95 || nose === F) { S.fBest = null; S.fStall = 0;
                     // hauling out: it heaves itself up over the edge where it touched, then humps in
                     const c = Math.cos(-(F.spin || 0)), sn = Math.sin(-(F.spin || 0)), dx = S.x - F.x, dy = S.y - F.y, lx = dx * c - dy * sn, ly = dx * sn + dy * c;
                     const L = Math.hypot(lx, ly) || 1; let e = { x: 0, y: 0 };
@@ -2828,7 +2898,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             } else {
                 // the patrol: a slow sinuous loop 120-260 u off the colony's way to the sea
                 S.sw += dt * 2.2; S.a += dt * 0.09;
-                const r = 190 + 70 * Math.sin(S.a * 1.7), tx = S.st.x + Math.cos(S.a) * r, ty = S.st.y + Math.sin(S.a) * r;
+                const { x: tx, y: ty } = sealLoopPt(S, false);
                 swimTo(S, tx, ty, 30, 1.2, dt, 30, 10);
                 if (unstick(S, dt, 30)) S.ring = 1;
                 S.up = 0.35 + 0.5 * Math.max(0, Math.sin(S.sw * 0.37)) ** 4;   // awash, the head lifting now and then
