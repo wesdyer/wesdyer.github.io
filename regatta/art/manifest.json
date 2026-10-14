@@ -8219,6 +8219,106 @@
         0.5215,
         0.5088
       ]
+    },
+    {
+      "key": "lagoon-sea-turtle",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 38,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GREEN SEA TURTLE swimming, seen from directly overhead, head toward the TOP of the frame: a smooth, broad, HEART-SHAPED shell, widest at the shoulders and narrowing to a point at the back; its big MOSAIC of plates — five down the spine, four along each side, a ring of small marginal plates round the rim — each plate a warm AMBER and olive-brown (about #8A6A3A to #B08A4E) radiating darker streaks from its centre, the seams between them PALE cream (about #E3D6B0); the LONG swept front flippers held out and back like wings, broad paddles, each scaled in a dark olive mosaic with pale edges; the small rear flippers short and rounded; the small blunt head stretched forward, covered in a mosaic of pale-edged dark scales. COLOUR overall: olive, amber and brown, the skin a darker olive-grey (about #5A5A3C) with cream scale edges. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "Replacing drawCruiser's sea turtle (4 cruising the reef flats; up to breathe). 26 long, 32 across the flippers (scale.md, ~2x). world 36 = FRAME first guess. If accepted: the four flippers cut (limbsplit-style) so the front ones SWEEP in the slow flight stroke and the rear ones steer. DELIVERED Oct 14: flipper tip to tip spans 0.833 of the frame, drawn 32 across the flippers (scale.md), so world 38. Front flippers cut by colour (the skin is olive, the shell amber) so they sweep.",
+      "anchorPx": [
+        0.5004,
+        0.5171
+      ]
+    },
+    {
+      "key": "lagoon-eagle-ray",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 54,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a SPOTTED EAGLE RAY swimming, seen from directly overhead, head toward the TOP of the frame: a broad, swept DIAMOND of a body — two long pointed wings swept back from a narrow middle — with a distinct rounded, duck-bill SNOUT LOBE projecting ahead of the wings at the front; the head a little raised between the front of the wings; and a very long, thin WHIP TAIL trailing straight behind, two to three times as long as the body. COLOUR: the whole upper side a deep inky blue-black (about #1C2430) covered all over in small WHITE SPOTS and little white RINGS (about #F2F4F2), denser toward the wing tips; the whip tail dark. The wings flat and spread. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "Replacing drawCruiser's eagle ray (a formation of 5; the wings bend in slow waves). 42 across the disc, ~58 snout to tail tip (scale.md); world 64 = FRAME first guess (the tail makes it long). If accepted: the wings cut along the body so their tips can rise and fall in the slow wave (from above, the span shortening), the whip tail swaying.",
+      "anchorPx": [
+        0.5,
+        0.5088
+      ]
+    },
+    {
+      "key": "lagoon-reef-shark",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 50,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a BLACKTIP REEF SHARK swimming, seen from directly overhead, snout toward the TOP of the frame: a slim, streamlined torpedo with a short, BLUNT, ROUNDED snout; the broad pectoral fins swept back like wings a third of the way down; the first dorsal fin, which stands upright, seen from above only as a thin dark blade on the midline at mid-back with its BLACK TIP; the tall tail, which stands vertical, only a narrow sliver behind, its lower lobe tipped black. COLOUR: a pale sandy TAN-grey back (about #B7A88E) paling to cream at the very edges of the flanks; the TIPS of the pectoral fins sharply BLACK (about #15161A). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "Replacing drawCruiser's reef shark (packs over the shallow sand by two coral heads; its crisp shadow on the sand is half the read). 40 long (scale.md); world 50 = FRAME first guess. If accepted: the rear body strip-bent so it swims in an S as the tail sweeps (as the white shark does).",
+      "anchorPx": [
+        0.5004,
+        0.4968
+      ]
+    },
+    {
+      "key": "lagoon-yellow-tang",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 14,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "a single YELLOW TANG seen from directly overhead, head toward the TOP of the frame — a fish this small is FLAT side to side, so from straight above it is only a slim fleck: the narrow back seen edge-on, the head at the top, a little of the flank colour at each edge, the tail fin standing vertical and so only a thin sliver: the whole fish a vivid lemon YELLOW (about #FFD21F), a tiny white spine at the tail. On a clean transparent background, centred. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "A school fish (26 round the staghorn by mark 3): ~10 long (scale.md, rule 7 — the school is the read). Drawn as one sprite many times, scattering and regathering. Optional: at ~10 px the drawn fleck may already serve. TRIED Oct 14 2026 and NOT USED: painted, the top view is a thin sliver (the blue tang a dark needle); Wes preferred the drawn plumper, brighter fish."
+    },
+    {
+      "key": "lagoon-blue-tang",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 14,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "a single BLUE TANG (regal tang) seen from directly overhead, head toward the TOP of the frame — a fish this small is FLAT side to side, so from straight above it is only a slim fleck: the narrow back seen edge-on, the head at the top, a little of the flank colour at each edge, the tail fin standing vertical and so only a thin sliver: a vivid royal BLUE (about #2F63EE) with a black band along the edge of the back and a bright YELLOW tail fin (about #FFD21F) showing as a small yellow sliver at the back. On a clean transparent background, centred. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "A school fish (20 round the pillar coral): ~10 long. Optional, as the yellow tang. TRIED Oct 14 2026 and NOT USED: painted, the top view is a thin sliver (the blue tang a dark needle); Wes preferred the drawn plumper, brighter fish."
+    },
+    {
+      "key": "lagoon-goldie",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 14,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "a single SEA GOLDIE (lyretail anthias) seen from directly overhead, head toward the TOP of the frame — a fish this small is FLAT side to side, so from straight above it is only a slim fleck: the narrow back seen edge-on, the head at the top, a little of the flank colour at each edge, the tail fin standing vertical and so only a thin sliver: glowing ORANGE-GOLD (about #FF6A10) with a pink cast, and a deep LYRE TAIL — two long, thin, PINK (about #FF2F86) tail streamers splayed behind. On a clean transparent background, centred. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "A school fish (28 at the brain coral): ~10 long, slimmer than the tangs. Optional."
+    },
+    {
+      "key": "lagoon-chromis",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 14,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "a single GREEN CHROMIS seen from directly overhead, head toward the TOP of the frame — a fish this small is FLAT side to side, so from straight above it is only a slim fleck: the narrow back seen edge-on, the head at the top, a little of the flank colour at each edge, the tail fin standing vertical and so only a thin sliver: small and slim, a glowing pale BLUE-GREEN (about #3FE0C0) with a lighter, almost aqua sheen (about #8FF4E0) along its flanks, a small forked tail. On a clean transparent background, centred. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "A school fish (30 hovering over the east staghorn, off the course): ~10 long. Optional."
+    },
+    {
+      "key": "lagoon-humbug",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lagoon",
+      "world": 14,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "a single HUMBUG DAMSELFISH (three-striped damselfish) seen from directly overhead, head toward the TOP of the frame — a fish this small is FLAT side to side, so from straight above it is only a slim fleck: the narrow back seen edge-on, the head at the top, a little of the flank colour at each edge, the tail fin standing vertical and so only a thin sliver: a chunky little fish, WHITE (about #F6F7F2) crossed by THREE bold BLACK bars (about #1A1A1A) running across its body, the black head bar over the eyes, a black tail. On a clean transparent background, centred. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "A school fish (18 in the west elkhorn, off the course): ~10 long, chunkier. Optional."
     }
   ],
   "scale": {

@@ -506,6 +506,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
         for (const d of cfg.divers || []) divers.push(makeDivers(d));
         if ((cfg.waders || []).some(w => w.kind === 'moose')) ['body', 'head', 'rack'].forEach(mooseImg);   // ask for the painted moose now
+        if ((cfg.cruisers || []).some(C => C.kind === 'seaturtle')) TURTLE_PARTS.forEach(turtleImg);   // ask for the painted turtle now
+        if ((cfg.cruisers || []).some(C => C.kind === 'reefshark')) sprImg(REEF_SPR.file);
+        if ((cfg.cruisers || []).some(C => C.kind === 'eagleray')) sprImg(RAY_SPR.file);
         if ((cfg.divers || []).length) { sprImg(LOON_SPR.swim.file); sprImg(LOON_SPR.wings.file); sprImg(BEAVER_SPR.file); }
         for (const w of cfg.waders || []) {
             const isl = (state.course.islands || []).find(x => x.id === w.shape);
@@ -890,12 +893,31 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
 
     // ── SHOALS: tangs round a coral head ──────────────────────────────────────────────
+    // DRY LAND, KEPT CLEAR BY A BODY (Wes, Oct 14: "sharks, rays and turtles, fish should not swim under the sandy
+    // islands"). The swimmers are drawn under the land, so a centre point kept off the sand still left half a shark
+    // under the beach. `dryWithin(m)` answers "is (x, y) on dry land or within m of it" — m the animal's half-length.
+    // Dry to a swimmer is only what stands out of the water (hard, not reef), and never a prop's collider (`.hit`).
+    function dryWithin(m) {
+        const traits = (s) => (typeof VenueDoc !== 'undefined' && VenueDoc.traits) ? VenueDoc.traits(s) : {};
+        const P = (state.course.islands || []).filter(s => !/\.hit$/.test(s.id || '') && s.vertices && s.vertices.length > 2 && traits(s).hard && !traits(s).reef).map(s => {
+            let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9; for (const v of s.vertices) { x0 = Math.min(x0, v.x); y0 = Math.min(y0, v.y); x1 = Math.max(x1, v.x); y1 = Math.max(y1, v.y); }
+            return { V: s.vertices, x0: x0 - m, y0: y0 - m, x1: x1 + m, y1: y1 + m }; });
+        return (x, y) => P.some(({ V, x0, y0, x1, y1 }) => {
+            if (x < x0 || x > x1 || y < y0 || y > y1) return false;
+            if (pointInPoly(x, y, V)) return true;
+            for (let i = 0, j = V.length - 1; i < V.length; j = i++) {
+                const ax = V[j].x, ay = V[j].y, bx = V[i].x - ax, by = V[i].y - ay, L2 = bx * bx + by * by || 1;
+                const t = Math.max(0, Math.min(1, ((x - ax) * bx + (y - ay) * by) / L2)), dx = x - ax - bx * t, dy = y - ay - by * t;
+                if (dx * dx + dy * dy < m * m) return true;
+            }
+            return false; });
+    }
     function makeShoal(c, pr) {
         const G = { cfg: c, hx: pr.x, hy: pr.y, cx: pr.x, cy: pr.y, a: R(0, 7), spread: 1, flee: 0, fx: 0, fy: 0, fish: [] };
         // Reef is water to a fish (the coral head sits on it); only sand and scrub are dry.
         // A coral head's own collider (a prop's `.hit` ring) is a wall to a boat, not to the fish
         // that live on it — the school starts inside it.
-        G.dry = (x, y) => (state.course.islands || []).some(s => { if (/\.hit$/.test(s.id)) return false; const k = VenueDoc.traits ? VenueDoc.traits(s) : {}; return k.hard && !k.reef && pointInPoly(x, y, s.vertices); });
+        G.dry = dryWithin(6); G.land = dryWithin(0);   // (a fish's half-length: none of it under the sand)
         for (let i = 0; i < c.count; i++) G.fish.push({ x: pr.x + R(-40, 40), y: pr.y + R(-40, 40), vx: 0, vy: 0, h: R(0, 7), ox: R(-1, 1), oy: R(-1, 1), ph: R(0, 7), sp: R(0.85, 1.15), size: R(0.8, 1.1) });
         return G;
     }
@@ -917,7 +939,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         G.spread += ((G.flee > 0 ? 1.8 : 1) - G.spread) * Math.min(1, dt * (G.flee > 0 ? 2 : 0.4));
         // the centre moves toward its target at a capped speed: ~4 u/s cruising, ~30 fleeing
         const cdx = tx - G.cx, cdy = ty - G.cy, cd = Math.hypot(cdx, cdy), cv = Math.min(cd, (G.flee > 0 ? 30 : 4) * dt);
-        if (cd > 0.01) { const nx = G.cx + cdx / cd * cv, ny = G.cy + cdy / cd * cv; if (!G.dry(nx, ny)) { G.cx = nx; G.cy = ny; } }
+        if (cd > 0.01) { const nx = G.cx + cdx / cd * cv, ny = G.cy + cdy / cd * cv; if (!G.dry(nx, ny) || (G.dry(G.cx, G.cy) && !G.land(nx, ny))) { G.cx = nx; G.cy = ny; } }
         const vmax = G.flee > 0 ? 45 : 12;
         for (const f of G.fish) {
             f.ph += dt * 2 * f.sp;
@@ -931,7 +953,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const k = Math.min(1, dt * (G.flee > 0 ? 3 : 1.2));
             f.vx += (wx - f.vx) * k; f.vy += (wy - f.vy) * k;
             const nx = f.x + f.vx * dt, ny = f.y + f.vy * dt;
-            if (!G.dry(nx, ny)) { f.x = nx; f.y = ny; }
+            if (!G.dry(nx, ny) || (G.dry(f.x, f.y) && !G.land(nx, ny))) { f.x = nx; f.y = ny; }   // (one already in the margin may swim out, never onto the sand)
             const spd = Math.hypot(f.vx, f.vy);
             if (spd > 1.5) f.h += angDiff(Math.atan2(f.vx, -f.vy), f.h) * Math.min(1, dt * 3);
             f.spd = spd;
@@ -1623,9 +1645,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const G = { cfg: c, cx, cy, r, fish: [], leapT: R(40, 80) };
         // DRY LAND to a swimmer is only what stands out of the water: a coral reef is a wall to
         // a boat (pointOnLand says so) but a ray or a shark swims straight over it.
-        const traits = (s) => (window.VenueDoc && VenueDoc.traits) ? VenueDoc.traits(s) : {};
-        const dryPolys = (state.course.islands || []).filter(s => { const k = traits(s); return k.hard && !k.reef; }).map(s => s.vertices);
-        G.dry = (x, y) => dryPolys.some(P => pointInPoly(x, y, P));
+        // Kept clear by the animal's half-length, so no part of it slides under a beach (see dryWithin).
+        G.dry = dryWithin(({ seaturtle: 18, eagleray: 26, reefshark: 24 })[c.kind] || 20); G.land = dryWithin(0);
         G.inArea = (x, y) => !G.dry(x, y) && (polys.length ? polys.some(P => near(x, y, P)) : Math.hypot(x - cx, y - cy) < r);
         G.point = () => { for (let k = 0; k < 60; k++) { const a = R(0, Math.PI * 2), d = Math.sqrt(rnd()) * r, x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d; if (G.inArea(x, y)) return { x, y }; } return null; };
         for (let i = 0; i < c.count; i++) {
@@ -1646,6 +1667,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function updateCruisers(G, dt) {
         const c = G.cfg, base = CRUISE[c.kind] || 30, lead = G.fish[0];
         for (const f of G.fish) {
+            f.dvT = (f.dvT ?? 99) + dt; f.brT = (f.brT ?? 99) + dt;
             f.t -= dt; f.splash = Math.max(0, f.splash - dt * 1.2); f.splash2 = Math.max(0, f.splash2 - dt * 1.2); f.ring = Math.max(0, f.ring - dt * 0.7);
             // Startled: any boat inside reactR sends it off, away and deeper, for a couple of seconds.
             let threat = null, td = c.reactR || 0;
@@ -1657,15 +1679,37 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             f.flee = Math.max(0, f.flee - dt);
             const fleeing = f.flee > 0 || (c.formation && f !== lead && lead.flee > 0);
             f.dT = fleeing ? 0.9 : (f.mode === 'rise' || f.mode === 'breathe') ? 0 : f.dT > 0.8 ? R(0.35, 0.65) : f.dT;
-            f.depth += (f.dT - f.depth) * Math.min(1, dt * (f.mode === 'rise' ? 0.9 : 1.6));
+            // BLACKTIPS FIN at the surface now and then (the reef-flat picture: the black-tipped dorsal and the top of
+            // the tail out of the water, each cutting its own wake). A clock per shark, varied by its index and by the
+            // count of surfacings — no draw from the venue's random stream.
+            if (c.kind === 'reefshark') {
+                const i = G.fish.indexOf(f);
+                f.sfT = (f.sfT ?? 8 + (i * 9.7) % 22) - dt;
+                if (fleeing) f.sfOn = false;
+                else if (f.sfT <= 0) { f.sfN = (f.sfN || 0) + 1; f.sfOn = !f.sfOn; f.sfT = f.sfOn ? 6 + (i * 3.1 + f.sfN * 5.7) % 6 : 20 + (i * 7 + f.sfN * 11.3) % 20; }
+                if (!fleeing) f.dT = f.sfOn ? 0.02 : f.dT < 0.2 ? 0.38 + (i % 3) * 0.09 : f.dT;
+            }
+            // a ray that means to leap swims up to the surface for it, then goes (a leap straight out of 3 m of water
+            // was a one-frame jump from dim to dry)
+            if (f.leapWant) { if (fleeing) f.leapWant = false; else { f.dT = 0.01; if (f.depth < 0.05) { f.leapWant = false; f.mode = 'leap'; f.t = 1.1; f.splash = 1; f.sx = f.x; f.sy = f.y; } } }
+            {   // eased toward its target, but no faster than a real animal climbs or sinks: ~0.4 m/s down, 0.3 up
+                // (fleeing, 1 m/s down). Depth is a fraction of the water under it, so the cap is in metres of that
+                // column — over 5 m of lagoon a drop from the surface to cruising depth takes seconds, not a frame
+                // (that snap read as a FLASH: the tan, the fins and the wake gone in 0.2 s — Wes, Oct 14).
+                let dd = (f.dT - f.depth) * Math.min(1, dt * (f.mode === 'rise' ? 0.9 : 1.6));
+                if (c.kind === 'reefshark' || c.kind === 'seaturtle' || c.kind === 'eagleray') { const col = Math.max(0.6, lagoonBedM(f.x, f.y) - 0.35), cap = (dd > 0 ? (fleeing ? 1 : 0.4) : 0.3) * dt / col; dd = Math.max(-cap, Math.min(cap, dd)); }
+                f.depth += dd;
+            }
             let spd = base * (fleeing ? FLEE_MUL : 1), turn = fleeing ? 3.2 : 0.9;
+            // a turtle rises in a slow climb and lies almost still at the surface for its breaths (Kyoto: they surface without swimming)
+            if (c.breathe && !fleeing) spd *= f.mode === 'breathe' ? 0.12 : f.mode === 'rise' ? 0.55 : 1;
             let tx = f.tx, ty = f.ty;
             if (f.mode === 'leap') {
                 // Out of the water and back: the arc is drawn from `z`; it carries on its heading.
                 f.z = Math.sin(Math.PI * Math.min(1, 1 - f.t / 1.1));
                 const lx = f.x + Math.sin(f.h) * base * 1.8 * dt, ly = f.y - Math.cos(f.h) * base * 1.8 * dt;
-                if (!G.dry(lx, ly)) { f.x = lx; f.y = ly; }
-                if (f.t <= 0) { f.mode = 'cruise'; f.z = 0; f.splash2 = 1; f.depth = 0.2; }
+                if (!G.dry(lx, ly) || (G.dry(f.x, f.y) && !G.land(lx, ly))) { f.x = lx; f.y = ly; }
+                if (f.t <= 0) { f.mode = 'cruise'; f.z = 0; f.splash2 = 1; f.depth = 0.03; if (f.dT0 != null) f.dT = f.dT0; }   // back in at the surface; it sinks from there at its own pace
                 continue;
             }
             if (f.flee > 0) { tx = f.x + f.fx * 4; ty = f.y + f.fy * 4; }
@@ -1679,16 +1723,23 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // it should not, take it back and turn instead.
             const ox = f.x, oy = f.y, oh = f.h;
             steer(f, tx, ty, spd, turn, dt);
-            if (G.dry(f.x, f.y) || (!fleeing && !G.inArea(f.x, f.y) && Math.hypot(f.x - G.cx, f.y - G.cy) > G.r * 1.25)) {
+            if ((G.dry(f.x, f.y) && (!G.dry(ox, oy) || G.land(f.x, f.y))) || (!fleeing && !G.inArea(f.x, f.y) && Math.hypot(f.x - G.cx, f.y - G.cy) > G.r * 1.25)) {
                 f.x = ox; f.y = oy; f.h = oh + 1.6 * dt;
             }
             f.ph += dt * (spd / base) * (c.kind === 'eagleray' ? 1.6 * WING_TIME : c.kind === 'reefshark' ? 5.5 : 2.2 * WING_TIME);
+            if (c.kind === 'reefshark') {
+                // the wakes: the dorsal's (at the body's middle) and the tail tip's (swinging), while they are out
+                const up = f.depth < 0.12 && Math.hypot(f.x - ox, f.y - oy) > 0.01, kk = CRUISER_SCALE.reefshark * (f.size || 1);
+                f.trail = f.trail || []; f.trailT = f.trailT || 0; recordTrail(f, dt, up);
+                const tl = f.tail = f.tail || { trail: [], trailT: 0 }, sw = 2.6 * Math.sin(f.ph - 3.2), ch = Math.cos(f.h), sh = Math.sin(f.h);
+                tl.x = f.x + (sw * ch - 15.5 * sh) * kk; tl.y = f.y + (sw * sh + 15.5 * ch) * kk; recordTrail(tl, dt, up);
+            }
             if (!(c.formation && f !== lead) && Math.hypot(f.tx - f.x, f.ty - f.y) < 30) { const q = G.point(); if (q) { f.tx = q.x; f.ty = q.y; } }
             // Turtles come up to breathe; only the head breaks the surface.
             if (c.breathe && !fleeing) {
                 if (f.mode === 'cruise' && f.t <= 0) { f.mode = 'rise'; f.t = 3; }
-                else if (f.mode === 'rise' && f.t <= 0) { f.mode = 'breathe'; f.t = R(2.2, 3.2); f.ring = 1; }
-                else if (f.mode === 'breathe' && f.t <= 0) { f.mode = 'cruise'; f.t = R(25, 45); f.dT = R(0.4, 0.65); f.ring = 0.7; }
+                else if (f.mode === 'rise' && f.t <= 0 && f.depth < 0.05) { f.mode = 'breathe'; f.t = R(2.2, 3.2); f.ring = 1; f.brT = 0; }
+                else if (f.mode === 'breathe' && f.t <= 0) { f.mode = 'cruise'; f.t = R(25, 45); f.dT = R(0.4, 0.65); f.ring = 0.7; f.dvT = 0; f.dvX = f.x + Math.sin(f.h) * 11; f.dvY = f.y - Math.cos(f.h) * 11; f.dvH = f.h; }   // down head first: the swirl it leaves
             }
         }
         // Now and then one of a formation leaps clear, if no boat is near.
@@ -1698,7 +1749,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 G.leapT = R(45, 100);
                 const quiet = !(state.boats || []).some(b => Math.hypot(b.x - G.fish[0].x, b.y - G.fish[0].y) < (c.reactR || 0) * 2);
                 const f = G.fish[1 + Math.floor(rnd() * (G.fish.length - 1))];
-                if (quiet && f && f.mode === 'cruise') { f.mode = 'leap'; f.t = 1.1; f.splash = 1; f.sx = f.x; f.sy = f.y; }
+                if (quiet && f && f.mode === 'cruise' && !f.leapWant) { f.leapWant = true; f.dT0 = f.dT; }   // it climbs to the surface first (below), then bursts out
             }
         }
     }
@@ -4170,7 +4221,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (g.ring > 0) { drawRing(ctx, g.x, g.y, g.ring, 10, 26, 0.5); drawRing(ctx, g.x, g.y, Math.max(0, g.ring - 0.3), 6, 16, 0.4); }
         }
         for (const a of perchers) if (a.mode === 'swim') drawAnhinga(ctx, a);
-        for (const G of cruisers) for (const f of G.fish) { if (f.mode === 'leap') drawCruiser(ctx, f); drawCruiserSplashes(ctx, f); }
+        for (const G of cruisers) for (const f of G.fish) { drawCruiserSplashes(ctx, f); if (f.mode === 'leap') drawCruiser(ctx, f); }   // (the water it left, then the animal in the air above it)
         drawBoil(ctx);
         for (const B of stripers) drawStriperBoil(ctx, B);
         for (const W of orcaPods) for (const m of W.members) drawOrca(ctx, m);
@@ -4326,8 +4377,200 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
         return _tint;
     }
+    // THE PAINTED GREEN SEA TURTLE (Oct 14 2026): lagoon-sea-turtle, cut by art/turtlesplit.py into the shell-and-head and
+    // four flippers; 32 across the front flippers (scale.md). The long front flippers do the swimming — a slow sweep, the
+    // turtle's 'flight' stroke — the small rear ones steer. Composed on a scratch canvas in the turtle's frame (head up).
+    const TURTLE_SPR = { stem: 'sea-turtle', x0: 0.084, x1: 0.916, cx: 0.5, cy: 0.5171,
+        root: { 'front-l': [0.3461, 0.46], 'front-r': [0.6632, 0.4032], 'rear-l': [0.3826, 0.7686], 'rear-r': [0.6233, 0.7755] } };
+    const TURTLE_PARTS = ['body', 'front-l', 'front-r', 'rear-l', 'rear-r'];
+    const turtleImg = (p2) => sprImg('assets/images/props/lagoon/' + TURTLE_SPR.stem + '-' + p2 + '.png');
+    // THE STROKE (wild green turtles filmed from above, Sci Rep 2022 'New insight into the swimming kinematics of wild green
+    // sea turtles'; earlier kinematics): both front flippers together — a fast POWER stroke sweeping the flipper tips back
+    // toward the shell (the downstroke about twice as fast as the recovery), a GLIDE with them held swept back, then a
+    // slow RECOVERY reaching forward again. The angle off the painting's pose, in radians (+ swept back).
+    function turtleStroke(ph) {
+        const u = ((ph / (Math.PI * 2)) % 1 + 1) % 1, e = (q) => q * q * (3 - 2 * q), fwd = -0.32, back = 0.55;
+        return u < 0.2 ? fwd + (back - fwd) * e(u / 0.2) : u < 0.5 ? back - 0.08 * e((u - 0.2) / 0.3) : (back - 0.08) + (fwd - back + 0.08) * e((u - 0.5) / 0.5);
+    }
+    // AN ANIMAL SEEN THROUGH THE WATER ABOVE IT (Wes, Oct 14: "research how the shark itself looks at different depths").
+    // Drone footage of blacktips over lagoon sand: in the top half-metre the shark is warm TAN, crisp, its black tips
+    // sharp; a couple of metres down the tan is gone — it takes the water's blue-green, flattens toward it, and its
+    // edges go soft; deeper still it is a featureless low-contrast shape (drone shark-spotting studies lose a
+    // decoy within ~1-2 m in less clear water: Butcher et al. 2021; Benavides et al. 2020). The physics, per colour:
+    // light goes down to the animal and back up (2z of water); clear tropical water takes red first (Kd ~0.25/m, pure water's own absorption at 600 nm), green
+    // far less (~0.07), blue least (~0.035) — so a multiply by the transmitted colour; then the water's own scattered
+    // light (path radiance) laid over it, growing with the path; then a soft box blur, the scattering spreading each
+    // point. In place on the composed pose P (its scratch canvas); `slot` is a free scratch for the work.
+    function seenThrough(P, zt, slot) {
+        if (!P || zt <= 0.03) return;
+        const L = 2 * zt, tr = Math.exp(-0.25 * L), tg = Math.exp(-0.07 * L), tb = Math.exp(-0.035 * L), veil = 1 - Math.exp(-0.06 * L);
+        const g = P.c.getContext('2d'), M = humpScratch(slot, P.px, P.px); if (!M) return; const gm = M.getContext('2d');
+        gm.fillStyle = `rgb(${Math.round(255 * tr)},${Math.round(255 * tg)},${Math.round(255 * tb)})`; gm.fillRect(0, 0, P.px, P.px);
+        gm.globalCompositeOperation = 'destination-in'; gm.drawImage(P.c, 0, 0); gm.globalCompositeOperation = 'source-over';
+        g.globalCompositeOperation = 'multiply'; g.drawImage(M, 0, 0);
+        g.globalCompositeOperation = 'source-atop'; g.globalAlpha = veil; g.fillStyle = `rgb(${waterTint()})`; g.fillRect(0, 0, P.px, P.px);
+        g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+        // the blur: eight copies round a small ring averaged ('lighter' at an eighth each = their mean) — a soft edge,
+        // never a double image; ~0.15 body units a metre, at most 2 px of the composite
+        const r = Math.min(2, 0.15 * zt * P.px / (2 * P.R));
+        if (r >= 0.2) { const B = humpScratch(slot, P.px, P.px), gb = B.getContext('2d'); gb.globalCompositeOperation = 'lighter'; gb.globalAlpha = 0.125;
+            for (let i = 0; i < 8; i++) gb.drawImage(P.c, r * Math.cos(i * 0.785 + 0.3), r * Math.sin(i * 0.785 + 0.3));
+            gb.globalAlpha = 1; gb.globalCompositeOperation = 'source-over';
+            g.clearRect(0, 0, P.px, P.px); g.drawImage(B, 0, 0); }
+    }
+    // The surface's ripples bend the picture of anything under them: the outline wavers, more the deeper it lies.
+    function refractWob(q, f, zt) { return Math.min(0.7, zt * 0.22) * Math.sin(T * 2.3 + q * 8 + (f.x + f.y) * 0.04) ; }
+    // The sea floor's depth (metres) under a point of the lagoon, from the painted zone it lies in: a reef ~1 m, a
+    // coral-sand bar ~1.5 m, the seagrass ~2.8 m, other bright shallows ~3.2 m, the open lagoon ~9 m. The zones are
+    // PAINTED with feathered edges (render/world.js: half the shape's feather either side of its outline), so the
+    // floor shelves across that same band — a shadow crossing the edge of a bar slides out with the colour, never jumps.
+    function lagoonBedM(x, y) {
+        let d = 9;
+        const sm = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
+        for (const s of (state.course && state.course.islands) || []) {
+            const V = s.vertices; if (!V || V.length < 3 || /\.hit$/.test(s.id || '')) continue;
+            const T = (typeof VenueDoc !== 'undefined' && VenueDoc.traits) ? VenueDoc.traits(s) : {};
+            const z = T.reef ? 1 : s.kind === 'tropicshoal' || (T.awash && T.drag > 0) ? 1.5 : T.veg === 'seagrass' ? 2.8 : T.paint ? 5 : null;
+            if (z == null || z >= d) continue;
+            const F = s.shoalFeather || (T.reef ? 40 : 120), r = (s.radius || 1e9) + F;
+            if (s.x != null && (x - s.x) * (x - s.x) + (y - s.y) * (y - s.y) > r * r) continue;
+            let e = Infinity;
+            for (let i = 0, j = V.length - 1; i < V.length; j = i++) {
+                const ax = V[j].x, ay = V[j].y, bx = V[i].x - ax, by = V[i].y - ay, L2 = bx * bx + by * by || 1;
+                const t = Math.max(0, Math.min(1, ((x - ax) * bx + (y - ay) * by) / L2)), dx = x - ax - bx * t, dy = y - ay - by * t;
+                e = Math.min(e, dx * dx + dy * dy);
+            }
+            const sd = (pointInPoly(x, y, V) ? 1 : -1) * Math.sqrt(e), w = sm((sd + F / 2) / F);
+            d = Math.min(d, 9 + (z - 9) * w);
+        }
+        return d;
+    }
+    function turtlePosed(ctx, f, slot) {
+        const S = TURTLE_SPR, ims = TURTLE_PARTS.map(turtleImg); if (!ims.every(imgReady)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), span = 32 / (CRUISER_SCALE.seaturtle * (f.size || 1)), R = span * 0.56;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = span / (S.x1 - S.x0), x0 = -S.cx * F, y0 = -S.cy * F, g = c.getContext('2d');
+        g.setTransform(k, 0, 0, k, R * k, R * k);
+        for (const p2 of ['rear-l', 'rear-r', 'front-l', 'front-r']) { const [rx, ry] = S.root[p2], sd = p2.endsWith('l') ? -1 : 1, X = x0 + rx * F, Y = y0 + ry * F;
+            const a = p2[0] === 'f' ? turtleStroke(f.ph || 0) : 0.12 * Math.sin((f.ph || 0) * 0.5);   // (the rear flippers trail and steer)
+            g.save(); g.translate(X, Y); g.rotate(sd * a); g.translate(-X, -Y); g.drawImage(humpMip(ims[TURTLE_PARTS.indexOf(p2)], 1.5 * k * F), x0, y0, F, F); g.restore(); }
+        g.drawImage(humpMip(ims[0], 1.5 * k * F), x0, y0, F, F);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
     function drawCruiser(ctx, f) {
         const k = CRUISER_SCALE[f.kind] * (f.size || 1);
+        if (f.kind === 'seaturtle' && TURTLE_PARTS.map(turtleImg).every(imgReady)) {
+            // DEPTH, AND THE SHADOW (Wes, Oct 14: "make sure the shadow varies with the depth of the turtle and the sea bed").
+            // The sea floor's depth here, from the zone it lies over (lagoonBedM); the turtle swims at `depth` of that
+            // column (0 at the surface). Its shadow lies on the bottom: offset down-right by its HEIGHT above the bottom,
+            // softer and fainter the higher it is (a wider penumbra), and fainter over deeper water (less light reaches
+            // the floor, and the floor is seen through more water). The turtle itself is veiled by the water ABOVE it.
+            const bed = f.bedM ?? lagoonBedM(f.x, f.y), breathing = f.mode === 'breathe';
+            const zt = Math.max(0.12, Math.max(0, Math.min(1, f.depth)) * (bed - 0.5));   // metres down (at the top, the shell lies under a film of water)
+            const hM = Math.max(0.3, bed - zt), hU = hM * 10;                                  // height above the floor
+            const clear = Math.max(0, 1 - bed / 14);                                          // how much shadow reaches the eye
+            const shA = (0.42 * clear) / (1 + hM * 0.18);
+            const pose = () => turtlePosed(ctx, f, 31);
+            for (const [grow, a] of [[1 + hM * 0.035, 0.45], [1, 0.55]]) {   // the penumbra, then the core
+                ctx.save(); ctx.translate(f.x + hU * 0.3, f.y + hU * 0.45); ctx.rotate(f.h); ctx.scale(k * grow, k * grow); humpBlit(ctx, pose(), 'rgb(10,25,40)', shA * a); ctx.restore(); }
+            // RISING it swims up at an angle, head first: seen from above it shortens a little (pitched up), head nearest
+            const pitch = f.mode === 'rise' ? Math.min(1, Math.max(0, 1 - f.t / 3)) * 0.1 : 0;
+            ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(k, k * (1 - pitch));
+            // the surface ripples bending the picture (as the shark's strips waver): a rigid sprite, so a slow shear and
+            // stretch, more the deeper it lies
+            ctx.transform(1 + refractWob(0.7, f, zt) * 0.02, 0, refractWob(0.3, f, zt) * 0.035, 1, 0, 0);
+            const Pc = pose();
+            if (Pc) { seenThrough(Pc, zt, 33); humpBlit(ctx, Pc, null, Math.max(0.8, 1 - zt * 0.04));
+                // BREATHING: only the head breaks the surface (the shell stays just under, in its thin film of water):
+                // the head crisp through a soft window, in a little lip of white
+                if (breathing) {
+                  for (const [kk, aa] of [[1.4, 0.4], [1, 0.7], [0.7, 1]]) { ctx.save(); ctx.beginPath(); ctx.ellipse(0, -11, 3.3 * kk, 4.2 * kk, 0, 0, Math.PI * 2); ctx.clip();
+                    const P2 = pose(); humpBlit(ctx, P2, null, aa); ctx.restore(); } } }
+            ctx.restore();
+            const hx = f.x + Math.sin(f.h) * 11 * k, hy = f.y - Math.cos(f.h) * 11 * k;
+            if (breathing) {
+                // the head in the surface: a lip of white round it; a BREATH every second or so (2 to 6 a time, the
+                // studies say) — the head lifts a touch, a puff of spray at the nostrils, a ring spreading from it
+                const bT = f.brT || 0, q = (bT * 1.1) % 1, lift = Math.max(0, 1 - q / 0.25);
+                ctx.save(); ctx.translate(hx, hy); ctx.rotate(f.h);
+                foamBand(ctx, (t) => { const th = Math.PI * (1.0 + 1.0 * t); return [Math.cos(th) * 3 * k, 1 * k + Math.sin(th) * 2.4 * k]; }, (t) => { const th = Math.PI * (1.0 + 1.0 * t); return [Math.cos(th), Math.sin(th)]; },
+                         (t) => 0.55 * k * (0.3 + Math.sin(Math.PI * t)), 0.55 + 0.3 * lift, 2);
+                if (lift > 0) { const gp = ctx.createRadialGradient(0, -2.5 * k, 0, 0, -2.5 * k, 2.6 * k); gp.addColorStop(0, `rgba(255,255,255,${0.7 * lift})`); gp.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gp; ctx.beginPath(); ctx.arc(0, -2.5 * k, 2.6 * k, 0, Math.PI * 2); ctx.fill(); }
+                ctx.restore();
+                for (let r = 0; r < 2; r++) { const age = q + r; if (age < bT) brokenRing(ctx, hx, hy, (4 + age * 9) * k, 1, f.h, 0.4 * Math.max(0, 1 - age / 2), 5 + r, 0.9); }
+            }
+            // coming up: the head breaking through (the start of the breath); going down: the swirl it leaves
+            if (f.mode === 'rise' && f.t < 0.4 && f.depth < 0.08) { const q = Math.min(1, 1 - Math.max(0, f.t) / 0.4) * Math.min(1, (0.08 - f.depth) / 0.03); brokenRing(ctx, hx, hy, (3 + q * 3) * k, 1, f.h, 0.4 * q, 9, 0.9); }
+            if ((f.dvT ?? 99) < 2.6 && f.dvX != null) diveWater(ctx, f.dvX, f.dvY, f.dvH, f.dvT, 5.5 * k, 4);
+            return;
+        }
+        if (f.kind === 'eagleray' && imgReady(sprImg(RAY_SPR.file))) {
+            // THE PAINTED SPOTTED EAGLE RAY (Oct 14 2026): the sprite posed by rayPosed — the wings in a slow flap,
+            // the whip swaying — seen through the water and shadowed on the bed exactly as the shark and the turtle are.
+            // Leaping, it clears the water: no veil, its shadow thrown on the surface below it.
+            const bed = f.bedM ?? lagoonBedM(f.x, f.y), leap = f.mode === 'leap';
+            const zt = leap ? 0 : Math.max(0.1, Math.max(0, Math.min(1, f.depth)) * (bed - 0.4));
+            const ph = f.ph || 0, A = 1.15;   // the tip's bend at the top and bottom of the beat (~65 degrees: from above, the span closes by a third)
+            const flap = (q) => A * Math.pow(q, 1.3) * Math.sin(ph - q * 0.9);
+            const sway = (q) => 1.8 * q * Math.sin(ph * 0.9 - q * 4) + (leap ? 0 : refractWob(q, f, zt) * 0.5);
+            ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(k, k);
+            const Pc = rayPosed(ctx, flap, sway, 34); ctx.restore();
+            if (!Pc) return;
+            if (leap) {
+                const z = f.z * 26, sc = 1 + 0.14 * f.z;
+                ctx.save(); ctx.translate(f.x + z * 0.35, f.y + z * 0.55); ctx.rotate(f.h); ctx.scale(k * 0.95, k * 0.95); humpBlit(ctx, Pc, 'rgb(10,25,40)', 0.22); ctx.restore();
+                ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(k * sc, k * sc); humpBlit(ctx, Pc, null, 1); ctx.restore();
+                return;
+            }
+            const hM = Math.max(0.25, bed - zt), hU = hM * 10, clear = Math.max(0, 1 - bed / 14), shA = (0.45 * clear) / (1 + hM * 0.18);
+            for (const [grow, a] of [[1 + hM * 0.035, 0.45], [1, 0.55]]) {
+                ctx.save(); ctx.translate(f.x + hU * 0.3, f.y + hU * 0.45); ctx.rotate(f.h); ctx.scale(k * grow, k * grow); humpBlit(ctx, Pc, 'rgb(10,25,40)', shA * a); ctx.restore(); }
+            seenThrough(Pc, zt, 33);
+            ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(k, k); humpBlit(ctx, Pc, null, Math.max(0.8, 1 - zt * 0.04)); ctx.restore();
+            return;
+        }
+        if (f.kind === 'reefshark' && f.mode !== 'leap' && imgReady(sprImg(REEF_SPR.file))) {
+            // THE PAINTED BLACKTIP (Oct 14 2026): the sprite lagoon-reef-shark, strip-bent as the white shark is,
+            // in the drawn shark's units (snout -14.6, 30.4 long). A carcharhinid swims with more of its body than a
+            // white shark: the wave runs from the shoulders back, growing to the tail (the drawn shark's s^1.5 sway).
+            // Its shadow lies on the sand as the turtle's does (lagoonBedM): over the reef flats, close and crisp.
+            const bed = f.bedM ?? lagoonBedM(f.x, f.y), zt = Math.max(0, Math.min(1, f.depth)) * (bed - 0.35);
+            const sway = (q) => 2.6 * Math.pow(q, 1.5) * Math.sin((f.ph || 0) - q * 3.2) + refractWob(q, f, zt);
+            const hM = Math.max(0.25, bed - zt), hU = hM * 10, clear = Math.max(0, 1 - bed / 14), shA = (0.45 * clear) / (1 + hM * 0.18);
+            for (const [grow, a] of [[1 + hM * 0.035, 0.45], [1, 0.55]]) {
+                ctx.save(); ctx.translate(f.x + hU * 0.3, f.y + hU * 0.45); ctx.rotate(f.h); ctx.scale(k * grow, k * grow); humpBlit(ctx, reefPosed(ctx, sway, 32), 'rgb(10,25,40)', shA * a); ctx.restore(); }
+            // the two wakes, under the fins: the dorsal's V (a narrow blade: a fine V), the tail's narrower, wavering
+            if (f.trail && f.trail.length > 1) drawWakeTrail(ctx, f, 0.7 * k, 0.75, 0.32);
+            if (f.tail && f.tail.trail.length > 1) drawWakeTrail(ctx, f.tail, 0.45 * k, 0.4, 0.2);
+            ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(k, k);
+            const Pc = reefPosed(ctx, sway, 32);
+            if (Pc) { seenThrough(Pc, zt + 0.15, 33); humpBlit(ctx, Pc, null, Math.max(0.8, 1 - zt * 0.04)); }   // (even finning, the back is a hand's depth under)
+            const surf = Math.max(0, 1 - f.depth / 0.12);
+            if (surf > 0 && Pc) {
+                // FINNING. Straight down a vertical fin is only its top edge — a narrow blade on the spine, raked back,
+                // its tip black — and its height shows in the shadow it throws on the WATER (down-right; turned into the
+                // shark's frame). The dorsal: s 0.45-0.53, the tip at 0.56. The tail's upper lobe slices the surface
+                // behind, swinging. White water heaped at each leading edge.
+                const P = (q) => ({ x: sway(q), y: -14.6 + q * 30.4 }), ch = Math.cos(f.h), sh = Math.sin(f.h);
+                const reach = (h) => [(0.35 * ch + 0.55 * sh) * h, (-0.35 * sh + 0.55 * ch) * h];
+                const blade = (A, B, Tp, w, tipC, hgt) => {
+                    const [lx, ly] = reach(hgt);
+                    ctx.fillStyle = `rgba(8,20,32,${0.32 * surf})`; ctx.beginPath(); ctx.moveTo(A.x, A.y); ctx.lineTo(Tp.x + lx, Tp.y + ly); ctx.lineTo(B.x, B.y); ctx.closePath(); ctx.fill();
+                    const wg = ctx.createRadialGradient(A.x, A.y - 0.5, 0, A.x, A.y - 0.5, 1.5); wg.addColorStop(0, `rgba(255,255,255,${0.6 * surf})`); wg.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = wg; ctx.beginPath(); ctx.arc(A.x, A.y - 0.5, 1.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalAlpha *= surf;
+                    ctx.fillStyle = '#7d6f58'; ctx.beginPath(); ctx.moveTo(A.x, A.y - 0.3); ctx.quadraticCurveTo(A.x - w, (A.y + Tp.y) / 2, Tp.x, Tp.y); ctx.quadraticCurveTo(A.x + w, (A.y + Tp.y) / 2, A.x + 0.2, A.y); ctx.closePath(); ctx.fill();
+                    const m = 0.62, mx = A.x + (Tp.x - A.x) * m, my = A.y + (Tp.y - A.y) * m;
+                    ctx.fillStyle = tipC; ctx.beginPath(); ctx.moveTo(mx - w * 0.45, my); ctx.lineTo(Tp.x, Tp.y); ctx.lineTo(mx + w * 0.45, my); ctx.closePath(); ctx.fill();
+                    ctx.globalAlpha /= surf;
+                };
+                blade(P(0.45), P(0.53), P(0.565), 0.75, '#15161a', 7);
+                const r0 = P(0.83), ang = Math.atan2(sway(0.97) - sway(0.88), 30.4 * 0.09) * 1.8, tt = { x: r0.x + Math.sin(ang) * 5.2, y: r0.y + Math.cos(ang) * 5.2 };
+                blade({ x: r0.x + (tt.x - r0.x) * 0.35, y: r0.y + (tt.y - r0.y) * 0.35 }, r0, tt, 0.5, '#15161a', 5);
+            }
+            ctx.restore();
+            return;
+        }
         const shape = f.kind === 'seaturtle' ? seaTurtleShape : f.kind === 'eagleray' ? eagleRayShape : reefSharkShape;
         if (f.mode === 'leap') {
             // Clear of the water: its shadow on the surface drops away with height; no veil.
@@ -4359,8 +4602,13 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
     }
     function drawCruiserSplashes(ctx, f) {
-        if (f.splash > 0) drawSlap(ctx, f.sx, f.sy, f.splash);
-        if (f.splash2 > 0) drawSlap(ctx, f.x, f.y, f.splash2);
+        // (house rules: torn white water and broken rings spreading, never a whole circle or a regular sunburst)
+        const burst = (x, y, v, seed) => { const q = 1 - v, sk = CRUISER_SCALE[f.kind] || 1;
+            whiteWater(ctx, x, y, (9 + q * 7) * sk, Math.min(1, v * 1.3) * 0.8, seed);
+            brokenRing(ctx, x, y, (10 + q * 20) * sk, 1, f.h, 0.5 * v, seed + 1, 0.9);
+            if (q > 0.3) brokenRing(ctx, x, y, (6 + (q - 0.3) * 18) * sk, 1, f.h + 1, 0.4 * v, seed + 2, 0.8); };
+        if (f.splash > 0) burst(f.sx, f.sy, f.splash, 3 + (Math.abs(Math.round(f.sx)) % 5));
+        if (f.splash2 > 0) burst(f.x, f.y, f.splash2, 11 + (Math.abs(Math.round(f.sx)) % 5));
     }
 
     // GREEN SEA TURTLE from above (drone references, Sep 25): a smooth broad heart of a shell,
@@ -9921,6 +10169,67 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // strips down its whole length, each slid sideways by the sway and turned to its slope, so it bends
     // the way the drawn one did — stiff in front, the rear third working, the head yawing a touch against
     // it — and the tail, cut at its root, hung off the last strip and swung harder, the stock flicking it.
+    // The blacktip reef shark (lagoon-reef-shark): fractions of its 1024 frame — the ink's top and bottom, the
+    // spine's x; `root` (a fraction of the ink) where the caudal fin's sliver begins.
+    const REEF_SPR = { file: 'assets/images/props/lagoon/reef-shark.png', top: 0.0889, bot: 0.9033, cx: 0.5005, root: 0.83 };
+    function reefPosed(ctx, sway, slot) {
+        const S = REEF_SPR, im = sprImg(S.file); if (!imgReady(im)) return null;
+        const L = 30.4, t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 22;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const span = S.bot - S.top, F = L / span, x0 = -S.cx * F, y0 = -14.6 - S.top * F;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
+        const sOf = (fy) => Math.max(0, Math.min(1, (fy - S.top) / span)), Yf = (fy) => y0 + fy * F;
+        const slope = (q) => (sway(q + 0.01) - sway(q - 0.01)) / (0.02 * L);
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const piece = (f0, f1) => g.drawImage(src, 0, f0 * n, n, (f1 - f0) * n, x0, Yf(f0), F, (f1 - f0) * F);
+        const fr = S.top + S.root * span, ang = Math.atan2(sway(0.97) - sway(0.88), L * 0.09) * 1.8;
+        g.save(); g.translate(sway(sOf(fr)), Yf(fr)); g.rotate(-ang); g.translate(0, -Yf(fr)); piece(fr - 0.01, Math.min(1, S.bot + 0.01)); g.restore();
+        const f0 = S.top - 0.01, N = 16, step = (fr - f0) / N, lap = 0.002;
+        for (let i = 0; i < N; i++) {
+            const a = f0 + i * step, mid = a + step / 2, q = sOf(mid);
+            g.save(); g.translate(sway(q), Yf(mid)); g.rotate(-Math.atan(slope(q))); g.translate(0, -Yf(mid)); piece(a - lap, a + step + lap); g.restore();
+        }
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
+    // THE SPOTTED EAGLE RAY (lagoon-eagle-ray, Oct 14 2026), in the drawn ray's units: 42 across the disc, the snout at
+    // -12.2. Fractions of its 1024 frame: the ink's top (snout), bottom (tail tip), sides; `tail` where the whip leaves
+    // the pelvic fins; `bh` the half-width of the column that stays rigid (head, raised back, pelvic fins).
+    const RAY_SPR = { file: 'assets/images/props/lagoon/eagle-ray.png', top: 0.0752, bot: 0.9404, x0: 0.0918, x1: 0.9072, cx: 0.4995, tail: 0.545, bh: 0.075 };
+    // Posed on a scratch canvas: the wings as columns, each set in from its neighbour by the cosine of how far the wing
+    // is bent there — from straight above a wing raised or lowered is only foreshortened — the bend growing to the tip
+    // and lagging outward (the wave runs out along the wing: eagle rays fly, a slow flap). `flap(s)` the angle at s
+    // (0 root .. 1 tip); the whip tail laid in rows, each slid sideways by `sway(q)` (q 0..1 down the tail).
+    function rayPosed(ctx, flap, sway, slot) {
+        const S = RAY_SPR, im = sprImg(S.file); if (!imgReady(im)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 36;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = 42 / (S.x1 - S.x0), Yf = (fy) => -12.2 + (fy - S.top) * F, Xf = (fx) => (fx - S.cx) * F;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const y0 = S.top - 0.005, y1 = S.tail + 0.004, hs = (S.x1 - S.x0) / 2 + 0.005, lap = 0.0015;
+        // the tail first, under the pelvic fins
+        // (each row turned to the whip's slope there, so it bends as one smooth line, never a staircase)
+        const TN = 28, tstep = (S.bot + 0.005 - S.tail) / TN, TL = (S.bot - S.tail) * F;
+        for (let i = 0; i < TN; i++) { const a = S.tail + i * tstep, q = (i + 0.5) / TN, ym = Yf(a + tstep / 2), sl = (sway(Math.min(1, q + 0.02)) - sway(Math.max(0, q - 0.02))) / (0.04 * TL);
+            g.save(); g.translate(sway(q), ym); g.rotate(-Math.atan(sl)); g.translate(0, -ym);
+            g.drawImage(src, (S.cx - 0.02) * n, (a - lap) * n, 0.04 * n, (tstep + 2 * lap) * n, Xf(S.cx - 0.02), Yf(a - lap), 0.04 * F, (tstep + 2 * lap) * F); g.restore(); }
+        // the wings, column by column out from the body
+        const WN = 14, wstep = (hs - S.bh) / WN;
+        for (const sd of [-1, 1]) {
+            let x = S.bh;   // where the next column starts, in frame units from the spine, after foreshortening
+            for (let i = 0; i < WN; i++) {
+                const u0 = S.bh + i * wstep, cs = Math.cos(flap((i + 0.5) / WN)), w = wstep * cs;
+                const fx = sd > 0 ? S.cx + u0 : S.cx - u0 - wstep, dx = sd > 0 ? S.cx + x : S.cx - x - w;
+                g.drawImage(src, (fx - lap) * n, y0 * n, (wstep + 2 * lap) * n, (y1 - y0) * n, Xf(dx - lap * cs), Yf(y0), (w + 2 * lap * cs) * F, (y1 - y0) * F);
+                x += w;
+            }
+        }
+        // the body column on top
+        g.drawImage(src, (S.cx - S.bh - lap) * n, y0 * n, (2 * S.bh + 2 * lap) * n, (y1 - y0) * n, Xf(S.cx - S.bh - lap), Yf(y0), (2 * S.bh + 2 * lap) * F, (y1 - y0) * F);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
     const WHITE_STRIPS = 18;
     function whitePosed(ctx, sway, slot) {
         const S = WHITE_SPR, im = sprImg(S.file); if (!imgReady(im)) return null;
@@ -10496,7 +10805,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // For tests: the solid/land queries, checked against a full scan (eval/_solid_index_check.js).
         _probe: { solidAt: (x, y, ig, nf) => solidAt(x, y, ig, nf), fixedLand: (x, y) => fixedLand(x, y) },
         // For tests and the venue card.
-        debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, leaps, shoals, poppers, fishers, runs, soarers, rompers, whalePods, blows, splashes, riders, flyfish, gliders, prints, flyPatches, stripers, condors, bands, coyotes, boilsHit, orcaPods, penguinColonies: colonies2, floeGroups, swimmers, treks, lseals, ternFlocks, visited: [...visited], jellyBloom, mantas, foxFlocks, hawksbills, dugongs, blood, foams, igHeaps, crabBeds, boobyFlocks, boobyLines, frigates, frigFish, hammerSchools, gsealCols, spoonFlocks, avoFlocks, scrabBeds, clubCorms, velFleets, mackBoils, clubTerns, clubGulls, seaOtterRafts, slHauls, slGroups, whites, bluePods, blueBlows, krill, huntCool, woken: [...lurkWoken], feats: [...feats] }),
+        debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, leaps, shoals, poppers, fishers, runs, soarers, rompers, whalePods, blows, splashes, riders, flyfish, gliders, prints, flyPatches, stripers, condors, bands, coyotes, boilsHit, orcaPods, penguinColonies: colonies2, floeGroups, swimmers, treks, lseals, ternFlocks, visited: [...visited], jellyBloom, mantas, foxFlocks, hawksbills, dugongs, blood, foams, igHeaps, crabBeds, boobyFlocks, boobyLines, frigates, frigFish, hammerSchools, gsealCols, spoonFlocks, avoFlocks, scrabBeds, clubCorms, velFleets, mackBoils, clubTerns, clubGulls, seaOtterRafts, slHauls, slGroups, whites, bluePods, blueBlows, krill, huntCool, woken: [...lurkWoken], feats: [...feats], bedAt: lagoonBedM }),
         forceBoil: (x, y) => { boil = { x, y, t: 0, life: 45, seed: 1 }; if (flight) flight.mode = 'transit'; },
         // The drawing functions, for a look-bench (eval/_wildlife_bench.js) — not used by the game.
         art: { drawBoilAt: (ctx, x, y, t) => { const o = boil, oT = T; boil = { x, y, t: 10, life: 60, seed: 3 }; T = t; drawBoil(ctx); boil = o; T = oT; }, drawGullFlying, drawGullPerched, drawPelicanFlying, drawPelicanSitting, drawPorpoise,
