@@ -1496,7 +1496,13 @@ const PROP_KINDS = {
     // chains the circles into a continuous line. That costs three times the sprites, so it is a
     // per-course decision and not a default. The proper fix is an oblong collider in
     // propTraits, and this entry is the second asset asking for one.
-    'lake-swim-line':         { label: 'Swim line',         world:  74, plane: 'float',   contact: 'soft', contactR: 12, srcBox: [0.456, 0, 0.088, 1], motion: 'fixed' },
+    // ...AND THE OBLONG COLLIDER ARRIVED: hard props collide on their TRACED OUTLINE
+    // (propHitRings), and the rope's is the rope — 5 u wide, the length of the segment. So it is
+    // HARD now (PT-039, Oct 13 2026, Wes: "I thought those were hard blocks,
+    // those swimming things. They should probably be hard obstacles"): a swim area is closed
+    // water, and the segments, laid end to end as they are placed, are one continuous line.
+    // `contactR` stays only as the circle a prop without an outline would fall back to.
+    'lake-swim-line':         { label: 'Swim line',         world:  74, plane: 'float',   contact: 'hard', contactR: 4, srcBox: [0.456, 0, 0.088, 1], motion: 'fixed' },
     'lake-cabin-b':           { label: 'Tin-roof cabin',    world:  72, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#743829' },
     'lake-camp-cabin':        { label: 'Camp bunkhouse',    world:  51, plane: 'surface', contact: 'none', srcBox: [0.314, 0.059, 0.373, 0.883], motion: 'fixed', chartBuilding: '#33432F' },
     'lake-canoe-rack':        { label: 'Canoe rack',        world:  51, plane: 'surface', contact: 'none', srcBox: [0.181, 0.059, 0.633, 0.883], motion: 'fixed' },
