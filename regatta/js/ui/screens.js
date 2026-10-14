@@ -1783,6 +1783,7 @@ function profileBandHTML(config, opts) {
                 <div style="padding:${compact ? '10px 12px 10px 0' : '16px 0'}; min-width:0;">
                     <div class="t-display text-white uppercase leading-tight truncate" style="font-size:${compact ? 26 : 36}px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
                     ${speciesLine(config.creature, compact ? 11 : 13)}
+                    ${o.story ? `<div class="t-mono truncate" style="margin-top:3px; font-size:${compact ? 10.5 : 11.5}px; color:#f2c14e; text-shadow: 0 1px 4px rgba(0,0,0,0.75); padding-right:${withBoat ? 142 : 0}px;" title="How you earned them: ${escapeHTMLText(o.story)}">&#10003; ${escapeHTMLText(o.story)}</div>` : ''}
                     ${o.label === undefined && !showArch && config.personality
                         // No archetype to name (the picker): who they are, in a line (Wes, Oct 12 2026: the brief
                         // description on the cards for now; their `quote` is kept for the pre-race brief).
@@ -2114,7 +2115,7 @@ function openCharacterPicker() {
         // shift the row.
         cell.className = 'block w-full text-left rounded-xl transition '
             + (me ? 'ring-2 ring-amber-400' : 'hover:ring-2 hover:ring-white/30');
-        cell.innerHTML = profileBandHTML(cfg, { archetype: false });
+        cell.innerHTML = profileBandHTML(cfg, { archetype: false, story: (window.Unlocks && Unlocks.gated(cfg.name)) ? Unlocks.storyLine(cfg.name) : '' });
         cell.addEventListener('click', () => pickCharacter(cfg.name));
         grid.appendChild(cell);
 
@@ -2227,6 +2228,7 @@ function renderUnlockCard(again) {
             ${cfg ? `<div class="t-mono" style="font-size:13px; color:#9fb2cc; margin-top:4px;">${cfg.creature}</div>` : ''}
             ${ach ? `<div class="t-display italic uppercase" style="font-size:19px; color:#f2c14e; margin-top:16px;">${ach.title}</div>
             <div style="font-size:14px; font-weight:700; color:#dce6f2; margin-top:4px;">${Unlocks.hintOf(ach)}</div>` : ''}
+            ${(() => { const st = Unlocks.storyLine(card.name); return st ? `<div class="t-mono" style="font-size:12.5px; color:#f2c14e; margin-top:8px;">&#10003; ${escapeHTMLText(st)}</div>` : ''; })()}
             <div style="font-size:12.5px; color:#7787a0; margin-top:12px;">Now in the picker, and racing against you from your next race.</div>`;
     }
     // The picker is offered once, on the last card of a pile — never earlier, where it would

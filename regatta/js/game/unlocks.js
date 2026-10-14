@@ -875,6 +875,8 @@ const Unlocks = {
             // A feat may carry a value — the passage you came through last, how many alligators
             // you have put down — kept per race, the latest value winning.
             vals: Object.assign({}, (state.race.unlocks && state.race.unlocks.vals) || {}),
+            featAt: Object.assign({}, (state.race.unlocks && state.race.unlocks.featAt) || {}),
+            totalLegs: state.race.totalLegs || 0,
             topSpeed: tops.length ? Math.max(...tops) : 0,
             // the distance you sailed this race, in world-scale metres — the SAME distance the results screen
             // shows (Wes, Oct 12 2026: a straight conversion of it)
@@ -1012,11 +1014,60 @@ const Unlocks = {
         if (got.length) { r.grantedNow = got.slice();
             for (const a of list) { if (got.includes(a.char)) continue; let v = false; try { v = a.test(r, c); } catch (e) { v = false; } if (v === true) got.push(a.char); } }
         ctx.pending = pending.filter(a => !got.includes(a.char));
-        if (got.length) this.grant(got, r.venue);
+        if (got.length) this.grant(got, r.venue, this._stories(got, r, c));
         return got;
     },
 
-    grant(names, venue) {
+    // THE STORY OF AN UNLOCK (PT-033, Wes: "Did I do that? It feels like that happened at the start" —
+    // and in the picker, "I don't remember how I got all these characters"). Which moment of the race
+    // earned it is found by asking the row's own test: take each feat this race recorded away in turn,
+    // and the one the test then fails without is the decisive one — its leg, its race clock and (for a
+    // feat that names boats) who. A row about the result or the career has no decisive feat; its story
+    // is the race it came in. No row needs to declare anything.
+    _stories(names, r, c) {
+        const out = {}, ids = [...new Set([...(r.feats || []), ...Object.keys(r.vals || {})])];
+        for (const n of names) {
+            const a = this.achievementFor(n), st = { kind: r.solo ? 'trial' : 'race', pos: r.pos || null, time: r.finished ? r.time : null, won: !!r.won, fleet: r.fleet || 0 };
+            let best = null;
+            if (a && typeof a.test === 'function') for (const id of ids) {
+                const at = r.featAt && r.featAt[id]; if (!at) continue;
+                const r2 = Object.assign({}, r, { feats: (r.feats || []).filter(f => f !== id), vals: Object.assign({}, r.vals) });
+                delete r2.vals[id];
+                let still = false; try { still = a.test(r2, c) === true; } catch (e) { still = false; }
+                if (!still && (!best || at.t >= best.t)) best = Object.assign({ id }, at);
+            }
+            if (best) { st.leg = best.leg; st.t = best.t; st.pre = !!best.pre; st.totalLegs = r.totalLegs || 0; const who = this._namesIn(best.v); if (who.length) st.who = who; }
+            out[n] = st;
+        }
+        return out;
+    },
+    // boat names carried by a feat's value ('Wake|Dart|Tangle', groups split by ';' — the latest group)
+    _namesIn(v) {
+        if (typeof v !== 'string' || typeof AI_CONFIG === 'undefined') return [];
+        const last = v.split(';').filter(Boolean).pop() || '';
+        return last.split('|').filter(n => AI_CONFIG.some(cf => cf.name === n));
+    },
+    // One line, for the card and the picker: where, when in the race, who — and the day.
+    storyLine(name) {
+        const e = this.store().earned[name]; if (!e) return '';
+        const where = e.venue ? ((typeof venueDisplayName === 'function' && venueDisplayName(e.venue)) || e.venue) : null;
+        const st = e.story || {}, bits = [];
+        const clock = (t) => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, '0')}`;
+        if (st.kind === 'series') bits.push('a series, sailed to the end');
+        else if (st.kind === 'school') bits.push('the Sailing School');
+        else if (st.leg != null) {
+            const when = st.pre ? 'before the start' : st.leg === 0 ? `at the start, ${clock(st.t)}` : (st.totalLegs && st.leg > st.totalLegs) ? `at the finish, ${clock(st.t)}` : `leg ${st.leg} at ${clock(st.t)}`;
+            bits.push(when + (st.who && st.who.length ? ` — ${st.who.join(', ')}` : ''));
+        } else if (st.time != null) {
+            const tm = typeof formatBestTime === 'function' ? formatBestTime(st.time) : clock(st.time);
+            bits.push(st.kind === 'trial' ? `a Time Trial in ${tm}` : st.won ? `won in ${tm}` : st.pos ? `${typeof _ordinal === 'function' ? _ordinal(st.pos) : st.pos} in ${tm}` : `a race in ${tm}`);
+        }
+        const day = e.at ? new Date(e.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+        const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+        return [where, ...bits.map(cap)].filter(Boolean).join(' · ') + (day ? ` · ${day}` : '');
+    },
+
+    grant(names, venue, stories) {
         const s = this.store();
         // Names without art yet are earned all the same (see `shipped`); the ceremony and the
         // rival guarantee wait for them — unseen() and the pool only ever hold shipped names.
@@ -1024,6 +1075,7 @@ const Unlocks = {
         if (!fresh.length) return [];
         for (const n of fresh) {
             s.earned[n] = { at: Date.now(), venue: venue || null };
+            if (stories && stories[n]) s.earned[n].story = stories[n];
             s.unseen.push(n);
             s.rivals.push({ name: n, left: RIVAL_RACES });
         }
@@ -1042,7 +1094,7 @@ const Unlocks = {
         const earned = this.store().earned, r = { series: S, venue: null, feats: [], vals: {} }, got = [];
         for (const a of ACHIEVEMENTS) { if (a.family !== 'series' || earned[a.char]) continue;
             let v = false; try { v = a.test(r, c); } catch (e) { v = false; } if (v === true) got.push(a.char); }
-        if (got.length) this.grant(got, null);
+        if (got.length) this.grant(got, null, Object.fromEntries(got.map(n => [n, { kind: 'series' }])));
         return got;
     },
 
@@ -1074,7 +1126,7 @@ const Unlocks = {
             try { v = a.test(r, c); } catch (e) { v = false; }
             if (v === true) got.push(a.char);
         }
-        if (got.length) this.grant(got, 'pond');
+        if (got.length) this.grant(got, 'pond', Object.fromEntries(got.map(n => [n, { kind: 'school' }])));
         return got;
     },
 
@@ -1105,5 +1157,11 @@ if (typeof GameEvents !== 'undefined') GameEvents.on('player-feat', (e) => {
     const ctx = state.race && state.race.unlocks;
     if (ctx) (ctx.feats || (ctx.feats = {}))[e.id] = true;
     if (ctx && e.value !== undefined) (ctx.vals || (ctx.vals = {}))[e.id] = e.value;
+    // ...and WHEN, for the story an unlock tells (PT-033): the race clock and the leg at its latest firing
+    if (ctx && state.race) {
+        const me = state.boats && state.boats[0];
+        (ctx.featAt || (ctx.featAt = {}))[e.id] = { t: state.race.status === 'racing' ? state.race.timer : 0, pre: state.race.status === 'prestart',
+            leg: me && me.raceState ? me.raceState.leg : 0, v: e.value };
+    }
     if (window.School && School.active) Unlocks._schoolFeats.add(e.id);
 });
