@@ -1860,12 +1860,17 @@ function competitorProfileHTML(config, asSelf, compact) {
         + (asSelf ? `` : `<div style="margin-top:${compact ? 12 : 16}px;">${scoutingNotesHTML(config, compact)}</div>`);
 }
 
-// Cockpit sole, wheel and mast, in the hull sprite's own coordinates. The sprite
+// Cockpit sole, tiller and mast, in the hull sprite's own coordinates. The sprite
 // bakes the coaming, deck hatch and trunk; the sole is painted here so every boat
-// keeps its own cockpit colour, and the wheel goes back on top of that paint —
-// the sprite's own wheel sits underneath it. Shared by the race and the profile
+// keeps its own cockpit colour, and the tiller goes on top of that paint — the
+// sprite's own baked wheel sits underneath the sole, out of sight. Shared by the race and the profile
 // card so the two can't drift apart.
-function drawCockpitFittings(g, cockpitColor) {
+// THE TILLER (Oct 13 2026, Wes: "switch the helm to a tiller… have the tiller move with the movement"): the
+// Spindrift 18 steers like the sportboats it is drawn from — a tiller off the rudder head at the transom,
+// reaching forward into the cockpit. `tiller` is its swing in radians (0 = centred); the race passes the
+// boat's helm (drawBoat), so it swings the way a real one does — to port to turn to starboard.
+const TILLER_PIVOT_Y = 28, TILLER_LEN = 15;
+function drawCockpitFittings(g, cockpitColor, tiller) {
     const c = cockpitColor || '#cbd5e1';
     g.save(); // lineWidth/lineCap here must not leak into the sails or the fly
     // Matches the sole the artwork outlines: template px x 376..648, y 580..861
@@ -1892,25 +1897,24 @@ function drawCockpitFittings(g, cockpitColor) {
     }
     g.restore();
 
-    // Wheel: dark on a pale sole, pale on a dark one, so it reads on any paint job
+    // Tiller: carbon like the rest of the rig. A dark sole would swallow it, so there it gets a fine pale
+    // rim — the old wheel's rule (dark on pale, pale on dark), kept as an outline rather than a colour.
     const hex = c.replace('#', '');
     const luma = 0.299 * parseInt(hex.substring(0, 2), 16)
                + 0.587 * parseInt(hex.substring(2, 4), 16)
                + 0.114 * parseInt(hex.substring(4, 6), 16);
-    const ink = (luma > 140 || !Number.isFinite(luma)) ? '#475569' : '#e2e8f0';
-    const cy = 19.5, r = 3.05;
-    g.strokeStyle = ink; g.fillStyle = ink;
-    g.lineWidth = 0.6; g.lineCap = 'round';
-    g.beginPath(); g.arc(0, cy, r, 0, Math.PI * 2); g.stroke();
-    g.beginPath();
-    for (const a of [-Math.PI / 2, Math.PI / 6, Math.PI * 5 / 6]) {
-        g.moveTo(0, cy); g.lineTo(Math.cos(a) * r, cy + Math.sin(a) * r);
+    const ta = tiller || 0, tx = -Math.sin(ta) * TILLER_LEN, ty = TILLER_PIVOT_Y - Math.cos(ta) * TILLER_LEN;
+    if (Number.isFinite(luma) && luma <= 140) {
+        g.strokeStyle = 'rgba(226,232,240,0.6)'; g.lineCap = 'round'; g.lineWidth = 2.3;
+        g.beginPath(); g.moveTo(0, TILLER_PIVOT_Y); g.lineTo(tx, ty); g.stroke();
     }
-    g.stroke();
-    g.beginPath(); g.arc(0, cy, 0.85, 0, Math.PI * 2); g.fill();
+    drawCarbonSpar(g, 0, TILLER_PIVOT_Y, tx, ty, 1.5);
+    g.fillStyle = CARBON; g.beginPath(); g.arc(0, TILLER_PIVOT_Y, 1.2, 0, Math.PI * 2); g.fill();   // the rudder head
 
     // Mast
-    g.fillStyle = '#475569'; g.beginPath(); g.arc(0, -5, 3, 0, Math.PI * 2); g.fill();
+    g.fillStyle = CARBON; g.beginPath(); g.arc(0, MAST_Y, 3, 0, Math.PI * 2); g.fill();      // carbon, its sheen
+    g.strokeStyle = CARBON_SHEEN; g.lineWidth = 0.8; g.lineCap = 'round';                     // catching the light
+    g.beginPath(); g.arc(0, MAST_Y, 1.9, Math.PI * 1.05, Math.PI * 1.55); g.stroke();
     g.restore();
 }
 
@@ -1925,26 +1929,28 @@ function drawProfileBoatArt(g, cfg) {
     const hull = getTintedBoatPart('hull', cfg.hull);
     if (hull) g.drawImage(hull, -512 / BOAT_SPRITE_SCALE, -472 / BOAT_SPRITE_SCALE, u, u);
     drawCockpitFittings(g, cfg.cockpit);
-    const sail = (sprite, tackY, rot, mirror) => {
+    drawBowsprit(g);
+    const sail = (sprite, tackY, rot, mirror, lenK = 1) => {
         if (!sprite) return;
         g.save();
         g.translate(0, tackY);
         g.rotate(rot);
-        g.scale(mirror, 1);
+        g.scale(mirror, lenK);
         g.globalAlpha = 0.95;
         g.drawImage(sprite, -512 / BOAT_SPRITE_SCALE, -112 / BOAT_SPRITE_SCALE, u, u);
         g.restore();
         g.globalAlpha = 1;
     };
-    // broad reach: main and kite both to starboard, set at the same angle
-    sail(getTintedBoatPart('main', cfg.sail), -5, -1.25, 1);
+    // broad reach: main and kite both to starboard, set at the same angle; the boom under the main
+    g.save(); g.translate(0, MAST_Y); g.rotate(-1.25); drawMainBoom(g); g.restore();
+    sail(getTintedBoatPart('main', cfg.sail), MAST_Y, -1.25, 1, MAIN_LEN_K);
     // spinPattern first: the player picks theirs explicitly, and SPIN_LOOKS is
     // keyed by competitor name so it would miss them (or worse, match if they
     // happened to name themselves after one).
     // ...and then the SAME fallback the race uses (applyBoatIdentity): a character with no pattern
     // of their own flies the one their name picks. This used to fall back to 'solid', so the picker
     // and the hub card drew a plain kite for boats that race a striped one (fixed Oct 12 2026).
-    sail(getSpinnakerSprite(cfg.spinPattern || SPIN_LOOKS[cfg.name] || spinPatternForName(cfg.name), cfg.spinnaker, cfg.spinnaker2 || cfg.hull, cfg.spinnaker3), -28, -1.25, 1);
+    sail(getSpinnakerSprite(cfg.spinPattern || SPIN_LOOKS[cfg.name] || spinPatternForName(cfg.name), cfg.spinnaker, cfg.spinnaker2 || cfg.hull, cfg.spinnaker3), BOWSPRIT_TIP_Y, -1.25, 1);   // tacked at the bowsprit
     g.restore();
 }
 
@@ -1953,7 +1959,7 @@ function drawProfileBoatArt(g, cfg) {
 // so this is a constant rather than a measurement — sniffing it from pixels
 // would mean getImageData, which throws on a file:// page's tainted canvas.
 // Re-derive it (alpha > 8 over a scratch render) if the pose or art changes.
-const PROFILE_BOAT_BOUNDS = { x: -26, y: -26, w: 77, h: 59 };
+const PROFILE_BOAT_BOUNDS = { x: -27, y: -28, w: 79, h: 61 };   // re-measured Oct 13 2026 (bowsprit, sail-plan main)
 
 // Can a profile boat be drawn at all yet? Both callers below need the answer: one to
 // re-schedule itself, the other to decide whether the result is worth caching.

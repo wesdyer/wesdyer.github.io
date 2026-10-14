@@ -484,6 +484,54 @@ function getLandPattern(ctx, style, base) {
 // Anchors: hull sprite has the boat origin at px (512,472); each sail sprite
 // has its tack/pivot at px (512,112) with the camber bulging toward +x.
 const BOAT_SPRITE_SCALE = 16;
+// THE BOWSPRIT (Oct 13 2026, Wes): the Spindrift 18's short carbon stub, as the sail plan draws it — about
+// 6.3% of the hull past the stem, as the side line art draws it. The hull sprite's stem is at -25.6 u; the stub runs out to BOWSPRIT_TIP_Y (js/scale.js),
+// and the spinnaker TACKS THERE (both the race's drawBoat and the profile boat). Drawn as a vector, not
+// painted into hull.png: the hull sprite is tinted to the paint job, and a spar is carbon whatever the hull.
+// RACING CARBON (Wes, Oct 13 2026: "the mast, boom, bowsprit and tiller … racing carbon fiber color"): every
+// spar is the same near-black carbon on every boat, whatever the paint job, with a narrow clear-coat sheen
+// down its length so it reads as a round lacquered tube rather than a flat black stroke. The bowsprit is past the hull the rules and collisions use (-25.6 u), so it must read as rig,
+// not as the bow growing longer: carbon does that on any hull colour but black, where the sheen carries it.
+const CARBON = '#1b1e23', CARBON_SHEEN = 'rgba(150,160,174,0.55)';
+// A carbon tube from (x0,y0) to (x1,y1), w wide, the sheen a little off its centreline (light from upper left).
+function drawCarbonSpar(g, x0, y0, x1, y1, w) {
+    const dx = x1 - x0, dy = y1 - y0, L = Math.hypot(dx, dy) || 1;
+    const ox = (dy / L) * w * 0.18, oy = (-dx / L) * w * 0.18;
+    g.save();
+    g.lineCap = 'round';
+    g.strokeStyle = CARBON; g.lineWidth = w;
+    g.beginPath(); g.moveTo(x0, y0); g.lineTo(x1, y1); g.stroke();
+    g.strokeStyle = CARBON_SHEEN; g.lineWidth = w * 0.28;
+    g.beginPath(); g.moveTo(x0 + ox, y0 + oy); g.lineTo(x1 + ox, y1 + oy); g.stroke();
+    g.restore();
+}
+// THE BOOM, UNDER THE MAIN (Wes, Oct 13 2026: "render the main on top of the boom"). Seen from above the main's
+// foot is laced along the top of the boom and the sail rises from it, so the cloth covers the boom's leeward
+// half and only its windward edge shows. The boom used to be painted INTO boat-parts/main.png, over the sail;
+// it is drawn here instead, before the main, in the main's own frame (tack at the origin, +y aft). The sprite's
+// clew is 46.75 u from the tack, so the boom ends a hand's width past it — the clew no longer pokes out
+// beyond the boom's end.
+// THE MAST'S STATION (Wes, Oct 14 2026: "move the mast aft a bit"): the mast — and with it the main's tack and the
+// gooseneck — 2 u aft of the sprite's -5, toward the line art's station; its disc's aft edge meets the cockpit's
+// front lip. THE MAIN'S LENGTH ("make the boom/main less long, maybe just longer than the hull"): the boom ends
+// just past the transom (+30.75) and the clew a hand's width inside that, so the main sprite is drawn MAIN_LEN_K
+// of its length (it was 46.75 u, reaching ~11 u past the transom).
+const MAST_Y = -3;
+const MAIN_CLEW_Y = 31, MAIN_BOOM_END_Y = 32;
+const MAIN_LEN_K = (MAIN_CLEW_Y - MAST_Y) / 46.75;
+const MAIN_BOOM_LEN = MAIN_BOOM_END_Y - MAST_Y;
+function drawMainBoom(g) {
+    const w = 3;
+    drawCarbonSpar(g, 0, 0, 0, MAIN_BOOM_LEN - w / 2, w);   // the round cap ends it at MAIN_BOOM_LEN
+}
+function drawBowsprit(g) {
+    // The round cap reaches half the spar's width past its end point, so the end point is set back by
+    // that much: the drawn sprit stops exactly at BOWSPRIT_TIP_Y, the point the rules measure. Plain carbon
+    // to the end — a pale fitting dot there read as a blob (Wes, Oct 13 2026).
+    const w = 1.7;
+    drawCarbonSpar(g, 0, -22, 0, BOWSPRIT_TIP_Y + w / 2, w);
+}
+
 // Tint bakes downsample to 4 px/world-unit (256^2): boats are ~55 px on screen,
 // so this stays ~4x oversampled for zoom while cutting texture memory and the
 // per-frame GPU downsample ~16x vs baking at the 1024^2 authoring size.

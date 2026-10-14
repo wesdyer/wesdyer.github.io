@@ -527,8 +527,9 @@
         venue: 'seatrials', anchor: 'openWater',
         boats: [
             // A owes a turn but sails straight; B is clear astern, bow on A's transom
+            // (dh -70, was -64: the bowsprit's 4.2 u past the rules' stem now counts toward the overlap — Oct 13 2026)
             { name: 'A', dl: 0, dh: 0, heading: 'stbdCH', penalty: true },
-            { name: 'B', dl: 6, dh: -64, heading: 'stbdCH' },
+            { name: 'B', dl: 6, dh: -70, heading: 'stbdCH' },
         ],
         phases: [
             {

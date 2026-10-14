@@ -4,6 +4,23 @@
 // state since the 2026-08-24 leak fixes — nothing sim-side reads them, the sim's
 // standing order is fleetRank/finish times), edge indicators, and the boat/rose HUD. Classic script; global scope.
 // Extracted verbatim from script.js (refactor 2026-08-24).
+// THE TILLER FOLLOWS THE HELM. The sim keeps no rudder, so the helm is read off the boat itself: how fast
+// she is turning, as a share of the fastest the helm turns her, smoothed so a single frame's twitch does
+// not flick it. The tiller swings AGAINST the turn (pushed to port, she turns to starboard), up to ~32°.
+// Render-side only (`_tiller*` on the boat, never raceState): the race cannot see it.
+function boatTiller(boat) {
+    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now()) / 1000;
+    if (boat._tillerT == null) { boat._tillerT = now; boat._tillerH = boat.heading; boat._tiller = 0; return 0; }
+    const dt = now - boat._tillerT;
+    if (dt > 0.004) {
+        const rate = normalizeAngle(boat.heading - boat._tillerH) / Math.min(dt, 0.25);   // rad/s
+        const max = (typeof getTurnSpeed === 'function' ? getTurnSpeed() : 0.03) * 60;
+        const want = 0.55 * Math.max(-1, Math.min(1, rate / Math.max(1e-6, max)));
+        boat._tiller += (want - boat._tiller) * Math.min(1, dt * 9);
+        boat._tillerT = now; boat._tillerH = boat.heading;
+    }
+    return boat._tiller;
+}
 function drawBoat(ctx, boat) {
     if (boat.opacity !== undefined && boat.opacity <= 0) return;
     ctx.save();
@@ -30,15 +47,16 @@ function drawBoat(ctx, boat) {
         ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.5; ctx.stroke();
     }
 
-    // Cockpit sole, wheel and mast
+    // Cockpit sole, tiller and mast
     const cockpitColor = boat.colors.cockpit;
-    drawCockpitFittings(ctx, cockpitColor);
+    drawCockpitFittings(ctx, cockpitColor, boatTiller(boat));
+    drawBowsprit(ctx);   // the stub the spinnaker tacks to
 
     // Sails
     const drawSailFunc = (isJib, scale = 1.0) => {
         ctx.save();
         if (isJib) { ctx.translate(0, -25); ctx.rotate(boat.sailAngle); }
-        else { ctx.translate(0, -5); ctx.rotate(boat.sailAngle); }
+        else { ctx.translate(0, MAST_Y); ctx.rotate(boat.sailAngle); drawMainBoom(ctx); }   // the boom under the sail
 
         const sailColor = boat.colors.sail;
         ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
@@ -66,14 +84,13 @@ function drawBoat(ctx, boat) {
             ctx.moveTo(0, 15); ctx.lineTo(controlX * 0.33, 12);
             ctx.moveTo(0, 30); ctx.lineTo(controlX * 0.6, 24);
             ctx.stroke();
-            ctx.strokeStyle = '#475569'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, 45); ctx.stroke();
         }
         ctx.restore();
     };
 
     const drawSpinnaker = (scale = 1.0) => {
         ctx.save();
-        ctx.translate(0, -28); ctx.rotate(boat.sailAngle);
+        ctx.translate(0, BOWSPRIT_TIP_Y); ctx.rotate(boat.sailAngle);   // tacked at the bowsprit's tip
         const spinColor = boat.colors.spinnaker;
         ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
         ctx.fillStyle = spinColor || '#ef4444';
@@ -113,12 +130,15 @@ function drawBoat(ctx, boat) {
         // Floor the camber squash — a sail scaled too thin reads as a broken sliver
         const flatten = Math.max(0.5, (0.6 + 0.4 * angleRatio) * (1 - luff * 0.8));
         if (luff > 0) ctx.transform(1, 0, Math.sin(state.time * 30) * 0.3 * luff, 1, 0, 0);
+        // The boom under the main: inside the luff's flutter, so the foot and the boom swing together (Wes, Oct 14
+        // 2026) — a luffing main shakes its boom — but outside the camber scale, which is the cloth's alone.
+        if (part === 'main') drawMainBoom(ctx);
         // boomSide lerps through 0 as the boom swings across in a tack/gybe —
         // use its sign for which side the camber bulges and floor the magnitude
         // so the sail keeps its body mid-swing instead of collapsing to a line
         const side = boat.boomSide < 0 ? -1 : 1;
         const body = Math.max(0.7, Math.abs(boat.boomSide));
-        ctx.scale(-side * body * flatten * scale, scale);
+        ctx.scale(-side * body * flatten * scale, scale * (part === 'main' ? MAIN_LEN_K : 1));   // the main: tack moved aft, clew kept
         ctx.globalAlpha = 0.9 * (boat.opacity !== undefined ? boat.opacity : 1.0);
         const u = 1024 / BOAT_SPRITE_SCALE;
         ctx.drawImage(sprite, -512 / BOAT_SPRITE_SCALE, -112 / BOAT_SPRITE_SCALE, u, u);
@@ -128,12 +148,12 @@ function drawBoat(ctx, boat) {
     const sailColor = boat.colors.sail;
     const spinColor = boat.colors.spinnaker;
 
-    if (!drawSailSprite('main', -5, sailColor, 1)) drawSailFunc(false);
+    if (!drawSailSprite('main', MAST_Y, sailColor, 1)) drawSailFunc(false);
     const progress = boat.spinnakerDeployProgress;
     const jibScale = Math.max(0, 1 - progress * 2);
     const spinScale = Math.max(0, (progress - 0.5) * 2);
     if (jibScale > 0.01 && !drawSailSprite('jib', -25, sailColor, jibScale)) drawSailFunc(true, jibScale);
-    if (spinScale > 0.01 && !drawSailSprite('spin', -28, spinColor, spinScale)) drawSpinnaker(spinScale);
+    if (spinScale > 0.01 && !drawSailSprite('spin', BOWSPRIT_TIP_Y, spinColor, spinScale)) drawSpinnaker(spinScale);   // at the bowsprit's tip
 
     // Masthead fly (wind pennant) — streams downwind with the APPARENT wind. You can
     // watch it swing forward as the boat accelerates ("the boat makes its own wind"),
@@ -179,11 +199,11 @@ function drawBoat(ctx, boat) {
         ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         // Travelling wave down the ribbon, amplitude growing toward the free end
         ctx.beginPath();
-        ctx.moveTo(0, -5);
+        ctx.moveTo(0, MAST_Y);
         for (let i = 1; i <= 6; i++) {
             const f = i / 6;
             const wave = Math.sin(t - f * 4.5) * f * f * amp;
-            ctx.lineTo(fx * len * f + px2 * wave, -5 + fy * len * f + py2 * wave);
+            ctx.lineTo(fx * len * f + px2 * wave, MAST_Y + fy * len * f + py2 * wave);
         }
         ctx.stroke();
         ctx.restore();

@@ -156,7 +156,7 @@
          * point of the other boat's hull and equipment in normal position.
          * The other boat is clear ahead."
          *
-         * Implementation: Projects the "behind" boat's bow onto the
+         * Implementation: Projects the "behind" boat's bowsprit tip onto the
          * "ahead" boat's abeam line at its stern. If the dot product
          * with the ahead boat's forward vector is negative, the bow is
          * behind the abeam line → clear astern.
@@ -180,9 +180,11 @@
             // bow, and the test then reports clear astern for a boat that is not.
             // Measured: that geometry holds for 22.6% of close bay pairs and 30.7%
             // of arctic ones. Project both ends and take the foremost.
+            // Her foremost EQUIPMENT is the bowsprit's tip, not the stem (Oct 13 2026): the sprit is
+            // equipment in normal position, so it makes an overlap the moment it passes the abeam line.
             const bH = behind.heading;
             const bSin = Math.sin(bH), bCos = Math.cos(bH);
-            const bowX = behind.x + 25 * bSin, bowY = behind.y - 25 * bCos;
+            const bowX = behind.x - BOWSPRIT_TIP_Y * bSin, bowY = behind.y + BOWSPRIT_TIP_Y * bCos;
             const aftX = behind.x - 30 * bSin, aftY = behind.y + 30 * bCos;
             const fwdMost = Math.max(
                 (bowX - sternX) * fwdX + (bowY - sternY) * fwdY,
