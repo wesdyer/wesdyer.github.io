@@ -8040,6 +8040,81 @@
         0.4996,
         0.5008
       ]
+    },
+    {
+      "key": "lake-moose",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lake",
+      "world": 104,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a MOOSE standing, seen from directly overhead, head toward the TOP of the frame. From above a moose is a long, heavy, even-bodied animal, a little deeper at the shoulders: the high HUMP over the shoulders, a dark MANE RIDGE running along the spine from the hump up the short thick neck; the huge long HEAD stretched forward, widening to the big overhanging, bulbous MUZZLE at the front; two big long EARS laid back and out from the crown, under the antlers; the long legs almost hidden under the body, only the tops of the shoulders and haunches showing at the sides; a stubby tail. This is a BULL: on the crown, a pair of huge PALMATE ANTLERS spread wide to either side — broad flat palms, each fringed along its outer edge with short pointed tines, reaching out well past the ears so the rack is nearly as wide as the body is long; seen from above the palms lie almost flat, their tines splayed. The antlers are a pale weathered tan-brown (about #B79A72), darker at the bases (about #7A6248). COLOUR: a dark chocolate-brown (about #4A3426), a paler grey-brown saddle over the middle of the back (about #6E5644), the legs and lower flanks darker, nearly black-brown (about #2E211A), the muzzle a slightly paler brown, the insides of the ears lighter. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "Replacing drawMoose (wading the shallows, feeding with the head under, walking up the bank into the forest). Drawn ~77 long with the head (scale.md: 3 m, target 90); world 95 = FRAME first guess, re-set from the ink. If accepted: the head and neck cut at the shoulders (limbsplit-style) so it can DIP under and come up streaming; the legs ashore stay procedural. A BULL with palmate antlers (Wes, Oct 13: 'I want a bull moose') — the rack spans nearly the body's length, so the frame is world 110 (first guess). When the head dips to feed, the ANTLERS STAY ABOVE THE WATER (the drawn-moose note): cut the head and the rack as one part, the muzzle going under while the palms ride on the surface. DELIVERED Oct 13: muzzle to tail spans 0.732 of the frame, laid on the drawn moose's units (muzzle -39 to tail +26 native, x1.1) so world 104; the painted rack is wider than the drawn one (~0.95 of the body's length against ~0.7). Cut into body / head / rack in wildlife.js's MOOSE_SPR: the head dips under to feed, the rack stays on the surface.",
+      "anchorPx": [
+        0.5,
+        0.5108
+      ]
+    },
+    {
+      "key": "lake-loon",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lake",
+      "world": 40,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a COMMON LOON swimming on the water, seen from directly overhead, bill toward the TOP of the frame: a long, low, heavy body riding low, the head and the long neck forward, the HEAVY, straight, pointed dagger BILL (dark grey, about #2E3236). COLOUR, its breeding plumage, exact: the head and neck BLACK with a dark green sheen (about #141A18), a striped WHITE NECKLACE — a band of fine vertical white stripes — round the neck; the back BLACK (about #15181A) boldly CHEQUERED with neat rows of square white spots (about #F2F2EE) across the back, finer white spotting toward the flanks and tail; the small red eyes barely visible from above. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "Replacing drawLoon (a pair; diving, surfacing, the wing-spread rear-up after a dive). Drawn ~31 long (scale.md: 0.8 m); world 38 = FRAME first guess. The rear-up spreads its wings: lake-loon-wings, an edit of this one. DELIVERED Oct 13: bill tip to tail spans 0.785 of the frame, drawn 31 long (scale.md), so world 40.",
+      "anchorPx": [
+        0.4996,
+        0.5144
+      ]
+    },
+    {
+      "key": "lake-loon-wings",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lake",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "subject": "the SAME COMMON LOON as the swimming loon, same plumage and scale, rearing up on the water with its WINGS SPREAD wide to either side, flapping after a dive: the black-and-white chequered back between them, the head and the dagger bill forward, the wings long and pointed, black above with fine white spotting, the flight feathers darker; seen from directly overhead, bill toward the TOP of the frame. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "The rear-up after a dive (drawLoon's `flap`). DERIVE from the accepted lake-loon (an edit: same bird, wings spread). If accepted, the wings may be cut at the shoulders (colsplit.py) to flap. DELIVERED Oct 13: the rear-up, wings spread; bill to tail 0.638 of the frame, its body drawn at the swimming loon's 31 so the two cross-fade in register; world 52.",
+      "anchorPx": [
+        0.5,
+        0.5116
+      ]
+    },
+    {
+      "key": "lake-beaver",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lake",
+      "world": 42,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a BEAVER swimming at the surface, seen from directly overhead, head toward the TOP of the frame: a stout, rounded, heavy-bodied rodent; the broad blunt head with small round ears and a short muzzle, small dark eyes, whiskers; the plump body; the small forepaws tucked under; the big webbed hind feet trailing; and the broad, FLAT, paddle-shaped, scaly TAIL trailing straight behind, as long as a third of the body. COLOUR: a rich dark brown fur (about #5A3A24), glossy-looking but flat-shaded, a little darker along the spine (about #3E2818); the TAIL a dark grey-black (about #2A2A2C) with a fine scaly cross-hatch. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "Replacing drawBeaver (swimming with the head and back out, the body and tail dark just under; towing a leafy branch; the tail-slap dive). Drawn 36 long with the tail (scale.md: 1.2 m); world 44 = FRAME first guess. The water over its rear, the moustache bow wave, the branch and the slap stay procedural. DELIVERED Oct 13 (1024x1536, padded to a square): nose to tail tip spans 0.876 of the frame, drawn 36 long (scale.md), so world 42. Head and back out of the water, the rest veiled under it.",
+      "anchorPx": [
+        0.499,
+        0.5007
+      ]
+    },
+    {
+      "key": "lake-bass",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "lake",
+      "world": 18,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a SMALLMOUTH / LARGEMOUTH BASS caught mid-LEAP, clear of the water, seen from directly overhead, head toward the TOP of the frame: its body twisted so its FLANK is turned half up toward the camera and bent in a C, the big mouth open, the spiny dorsal fin raised, the tail fanned. COLOUR: an olive-green back (about #5E6B3A) fading to bright silvery-gold flanks (about #C9C08A) with a dark, broken LATERAL STRIPE (about #3A3E26) running from the eye to the tail; the fins olive. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no spray, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "Replacing drawLeap's lake bass (it jumps near the player: a crown of spray out, another in, rings). ~14 (scale.md rule 7: read by its splash); world 18 = FRAME first guess. Rotated through the leap by the engine. DELIVERED Oct 13: snout to tail spans 0.795 of the frame (a curved C, mouth open), drawn BASS_LEN 14 long. Mirrored for every other leap, so they do not all curve the same way.",
+      "anchorPx": [
+        0.5215,
+        0.5088
+      ]
     }
   ],
   "scale": {

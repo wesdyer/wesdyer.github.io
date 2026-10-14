@@ -495,7 +495,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // a bank: a short stretch of mud at the water's edge, laid along heading h
             for (const [x, y, h] of c.banks || []) baskers.push(makeBaskers(c, { x, y, heading: h, kind: 'bank', scale: 0.55 }));
         }
-        if (cfg.leapers) nextLeap = R(2, 5);
+        if (cfg.leapers) { nextLeap = R(2, 5); if (cfg.leapers.kind === 'bass') sprImg(BASS_SPR.file); }
         if (cfg.poppers) poppers = cfg.poppers.at.map(([cx, cy, r], i) => {
             const p = popSpot(cx, cy, r) || { x: cx, y: cy };
             return { i, cx, cy, r, x: p.x, y: p.y, h: R(0, 7), look: R(0, 7), mode: i % 2 ? 'up' : 'under', t: R(1, 6), tx: p.x, ty: p.y, vis: i % 2 ? 1 : 0, bob: R(0, 7), ring: 0, ring2: 0, vx: 0, vy: 0 };
@@ -505,6 +505,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (pr) shoals.push(makeShoal(c, pr));
         }
         for (const d of cfg.divers || []) divers.push(makeDivers(d));
+        if ((cfg.waders || []).some(w => w.kind === 'moose')) ['body', 'head', 'rack'].forEach(mooseImg);   // ask for the painted moose now
+        if ((cfg.divers || []).length) { sprImg(LOON_SPR.swim.file); sprImg(LOON_SPR.wings.file); sprImg(BEAVER_SPR.file); }
         for (const w of cfg.waders || []) {
             const isl = (state.course.islands || []).find(x => x.id === w.shape);
             if (isl) waders.push(makeWader(w, isl));
@@ -1874,6 +1876,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 g.splash = Math.max(0, g.splash - dt * 1.3);
                 g.slap = Math.max(0, g.slap - dt * 1.1);
                 g.rise = Math.max(0, g.rise - dt * 1.5);
+                g.dvT = (g.dvT ?? 99) + dt; g.upT = (g.upT ?? 99) + dt;   // since it slipped under / broke the surface (the water's own clock)
                 let spooked = false;
                 if (reactR && g.mode !== 'under' && g.mode !== 'dive') for (const b of state.boats || []) { if (Math.hypot(b.x - g.x, b.y - g.y) < reactR) { spooked = true; break; } }
                 // The wake: a short history of where it has been — recorded only while it is
@@ -1918,7 +1921,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 } else if (g.mode === 'dive') {
                     g.sink = Math.min(1, g.sink + dt / 0.6);
                     g.x += Math.sin(g.h) * SWIM[kind] * dt; g.y -= Math.cos(g.h) * SWIM[kind] * dt;
-                    if (g.t <= 0) { g.mode = 'under'; g.t = R(4, 8); g.splash = 1; g.trail = []; }
+                    if (g.t <= 0) { g.mode = 'under'; g.t = R(4, 8); g.splash = 1; g.trail = []; g.dvT = 0; g.dvX = g.x; g.dvY = g.y; g.dvH = g.h; }
                 } else if (g.mode === 'under') {
                     // On along its heading, turning gently, until it runs out of breath.
                     const nx = g.x + Math.sin(g.h) * UNDER[kind] * dt, ny = g.y - Math.cos(g.h) * UNDER[kind] * dt;
@@ -1928,7 +1931,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                         const boatNear = (state.boats || []).some(b => Math.hypot(b.x - g.x, b.y - g.y) < reactR * 1.4);
                         if (onLand(g.x, g.y) || boatNear) { g.t = 0.8; }
                         else {
-                            g.mode = 'swim'; g.t = R(8, 16); g.splash = 1; g.rise = 1; g.sink = 0;
+                            g.mode = 'swim'; g.t = R(8, 16); g.splash = 1; g.rise = 1; g.sink = 0; g.upT = 0;
                             const q = waterPoint(G); if (q) { g.tx = q.x; g.ty = q.y; }
                             if (kind === 'loon' && rnd() < 0.3) { g.mode = 'flap'; g.t = 1.3; g.flap = 0; }
                             if (kind === 'beaver') g.stick = rnd() < 0.5;
@@ -3769,12 +3772,82 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // COMMON LOON from above: a long low body, black, chequered white across the back in bold
     // rows and finely spotted on the flanks; the black head with its striped white necklace,
     // the heavy grey dagger bill, red eyes. `flap` spreads its wings (the rear-up after a dive).
+    // GOING UNDER AND COMING UP (Wes, Oct 13: "make sure a loon going under has water effects; same for the beaver").
+    // A diving loon or beaver doesn't fade: it slips under HEAD FIRST — the water closing over it from the bill back, a
+    // line of white where the surface meets the body sliding down its length, a hump of water pushed up over the head
+    // as it goes; the tail or the paddle last. Behind it: a swirl, a smooth slick and a train of broken rings spreading
+    // for two seconds or so, a few bubbles breaking. Coming up, the reverse: the head breaks through in a little lip of
+    // white, water sheets off its back, rings spread out from it.
+    // slipUnder: veils the composite Pc (drawn in the animal's frame: head at yHead, tail at yTail) from the head back to
+    // the front y(front), and draws the waterline foam there; sink 0..1.
+    function slipUnder(ctx, Pc, sink, yHead, yTail, halfW, seed) {
+        if (!Pc || sink <= 0) return;
+        const soft = (yTail - yHead) * 0.18, front = yHead - soft + sink * (yTail - yHead + 2 * soft);
+        const g = Pc.c.getContext('2d'), k = Pc.px / (2 * Pc.R), Y = (y) => (Pc.R + y) * k;
+        g.globalCompositeOperation = 'source-atop';
+        const gr = g.createLinearGradient(0, Y(front - soft), 0, Y(front + soft));
+        gr.addColorStop(0, `rgba(${waterTint()},0.88)`); gr.addColorStop(1, `rgba(${waterTint()},0)`);
+        g.fillStyle = gr; g.fillRect(0, 0, Pc.px, Pc.px);
+        g.globalCompositeOperation = 'source-over';
+        return front;
+    }
+    function waterline(ctx, front, halfW, a, seed) {
+        if (a <= 0.01) return;
+        foamBand(ctx, (t) => [(t - 0.5) * 2 * halfW * 1.15, front + Math.sin(Math.PI * t) * -halfW * 0.35], () => [0, -1], (t) => halfW * 0.22 * (0.4 + Math.sin(Math.PI * t)), a, seed);
+    }
+    // the water left behind (at the spot, in world space): a swirl, a slick and broken rings; bubbles breaking
+    function diveWater(ctx, x, y, h, age, size, seed) {
+        if (age > 2.6) return;
+        const k = Math.max(0, 1 - age / 2.6), ang = h - Math.PI / 2;
+        // the swirl where it went: a churned patch, brightest at first
+        if (age < 0.9) { const q = 1 - age / 0.9; ctx.fillStyle = `rgba(240,248,250,${0.35 * q})`; lobedBlob(ctx, x, y, size * (0.45 + age * 0.4), size * (0.3 + age * 0.3), ang + age * 2, seed); ctx.fill(); }
+        // the smooth slick, spreading and fading
+        const g = ctx.createRadialGradient(x, y, 0, x, y, size * (0.6 + age * 0.3)); g.addColorStop(0, `rgba(200,225,232,${0.16 * k})`); g.addColorStop(1, 'rgba(200,225,232,0)');
+        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, size * (0.6 + age * 0.3), 0, Math.PI * 2); ctx.fill();
+        for (let r = 0; r < 3; r++) { const a2 = age - r * 0.25; if (a2 > 0) brokenRing(ctx, x, y, size * 0.4 + size * 0.6 * Math.sqrt(a2), 1, ang, 0.45 * Math.max(0, 1 - a2 / 2.2) * (1 - r * 0.22), seed + r, 0.8 - r * 0.15); }
+        // a few bubbles breaking: soft little blobs that swell and go (not a scatter of dots — two or three at a time)
+        for (let i = 0; i < 3; i++) { const t0 = 0.4 + i * 0.45, u = (age - t0) / 0.35; if (u > 0 && u < 1) { const j = Math.sin(i * 9.1 + seed), bx = x + Math.cos(j * 4) * size * 0.35, by = y + Math.sin(j * 5) * size * 0.35;
+            const gb = ctx.createRadialGradient(bx, by, 0, bx, by, size * 0.09 * (0.5 + u)); gb.addColorStop(0, `rgba(255,255,255,${0.7 * (1 - u)})`); gb.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = gb; ctx.beginPath(); ctx.arc(bx, by, size * 0.09 * (0.5 + u), 0, Math.PI * 2); ctx.fill(); } }
+    }
+    // coming up: the lip of white round the head, water streaming off the back, rings out from it (in the animal's frame)
+    function riseWater(ctx, age, yHead, yBack, halfW, size, seed) {
+        if (age > 2) return;
+        if (age < 0.6) { const q = 1 - age / 0.6;
+            foamBand(ctx, (t) => { const th = Math.PI * (1.1 + 0.8 * t); return [Math.cos(th) * halfW, yHead + halfW * 0.4 + Math.sin(th) * halfW * 0.6]; },
+                     (t) => { const th = Math.PI * (1.1 + 0.8 * t); return [Math.cos(th), Math.sin(th)]; }, (t) => halfW * 0.25 * (0.3 + Math.sin(Math.PI * t)), 0.75 * q, seed);
+            for (const sd of [-1, 1]) foamBand(ctx, (t) => [sd * halfW * (0.95 + 0.25 * t), yHead + (yBack - yHead) * t], () => [sd, 0], (t) => halfW * 0.18 * (1 - t), 0.5 * q, seed + sd); }
+        // the rings: from the head where it broke through, starting clear of the body, faint
+        for (let r = 0; r < 2; r++) { const a2 = age - 0.15 - r * 0.3; if (a2 > 0) brokenRing(ctx, 0, yHead + halfW, halfW * 2.2 + size * 0.55 * Math.sqrt(a2), 1, 0, 0.35 * Math.max(0, 1 - a2 / 1.6) * (1 - r * 0.25), seed + 7 + r, 0.7); }
+    }
+    const LOON_SPR = { swim: { file: 'assets/images/props/lake/loon.png', top: 0.1211, bot: 0.9062, cx: 0.499 },
+        wings: { file: 'assets/images/props/lake/loon-wings.png', top: 0.1924, bot: 0.8301, cx: 0.4995 } };
     function drawLoon(ctx, g) {
         const sink = g.sink || 0;
         if (sink >= 1) return;
         ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.h);
         const sc = LOON_SCALE * (1 - 0.3 * sink) * (1 + 0.08 * (g.flap || 0));
         ctx.scale(sc, sc); ctx.globalAlpha = 1 - sink;
+        // THE PAINTED LOON (Oct 13 2026): lake-loon swimming, bill tip at -19, 31 long (scale.md); rearing up after a dive
+        // it cross-fades into lake-loon-wings (the same bird, wings spread, body in register) by `flap`
+        { const sw = sprImg(LOON_SPR.swim.file), wg = sprImg(LOON_SPR.wings.file);
+          if (imgReady(sw)) { ctx.globalAlpha = 1; ctx.scale(1 / (1 - 0.3 * sink), 1 / (1 - 0.3 * sink));   // (it slips under, it does not fade or shrink)
+            const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 34, px = Math.ceil(2 * R * k), c = humpScratch(30, px, px);
+            if (c) { const gg = c.getContext('2d'); gg.setTransform(k, 0, 0, k, R * k, R * k);
+              const lay = (im, S, a) => { if (a <= 0.01) return; const F = 31 / (S.bot - S.top); gg.globalAlpha = a; gg.drawImage(humpMip(im, 1.5 * k * F), -S.cx * F, -19 - S.top * F, F, F); gg.globalAlpha = 1; };
+              lay(sw, LOON_SPR.swim, 1);
+              if ((g.flap || 0) > 0 && imgReady(wg)) lay(wg, LOON_SPR.wings, Math.min(1, g.flap * 1.4));
+              gg.setTransform(1, 0, 0, 1, 0, 0);
+              const Pc = { c, R, px };
+              // the contact shade on the water round it (less of it as it goes)
+              ctx.fillStyle = `rgba(8,24,30,${0.22 * (1 - sink)})`; ctx.beginPath(); ctx.ellipse(1, 2, 7, 13, 0, 0, Math.PI * 2); ctx.fill();
+              const front = slipUnder(ctx, Pc, sink, -19, 12, 5, 3);
+              humpBlit(ctx, Pc, null, 1 - 0.5 * sink * sink);
+              if (sink > 0) { waterline(ctx, front, 5.2, 0.8 * Math.sin(Math.PI * Math.min(1, sink * 1.1)), 4);
+                // the hump of water pushed up over the head as it goes
+                if (sink < 0.5) { const q = Math.sin(Math.PI * sink / 0.5); const gh = ctx.createRadialGradient(0, -15, 0, 0, -15, 6); gh.addColorStop(0, `rgba(240,250,252,${0.45 * q})`); gh.addColorStop(1, 'rgba(240,250,252,0)'); ctx.fillStyle = gh; ctx.beginPath(); ctx.ellipse(0, -15, 5, 6, 0, 0, Math.PI * 2); ctx.fill(); } }
+              if ((g.upT ?? 99) < 2) riseWater(ctx, g.upT, -17, 4, 4.2, 14, 5);
+            }
+            ctx.restore(); return; } }
         ctx.lineJoin = 'round'; ctx.lineWidth = 0.8; ctx.strokeStyle = 'rgba(10,12,14,0.55)';
         if (g.flap > 0) {
             const span = 16 * g.flap;
@@ -3818,11 +3891,33 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // BEAVER swimming: its head and the hump of its back just out of the water, glistening;
     // the body and the flat tail dark just under the surface behind. Half of them tow a
     // leafy branch in their teeth. `sink` takes it under.
+    const BEAVER_SPR = { file: 'assets/images/props/lake/beaver.png', top: 0.0625, bot: 0.9375, cx: 0.4985 };
     function drawBeaver(ctx, g) {
         const sink = g.sink || 0;
         if (sink >= 1) return;
         ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.h); ctx.scale(BEAVER_SCALE, BEAVER_SCALE);
         ctx.globalAlpha = 1 - sink;
+        // THE PAINTED BEAVER (Oct 13 2026): lake-beaver, nose at -5.8 to the tail tip, 36 long (scale.md). Its head and the
+        // hump of its back out of the water; behind them the sea laid over the rest — the body and the flat tail dark just
+        // under the surface. The moustache bow wave and the branch drawn over it.
+        { const im = sprImg(BEAVER_SPR.file);
+          if (imgReady(im)) { const S = BEAVER_SPR, L = 36 / BEAVER_SCALE, F = L / (S.bot - S.top), t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = L - 5.8 + 2;   // (the box must reach the tail tip: the nose is only 5.8 ahead of the origin, the tail ~22 behind)
+            const px = Math.ceil(2 * R * k), c = humpScratch(29, px, px);
+            if (c) { const gg = c.getContext('2d'); gg.setTransform(k, 0, 0, k, R * k, R * k); gg.drawImage(humpMip(im, 1.5 * k * F), -S.cx * F, -5.8 - S.top * F, F, F);
+              gg.globalCompositeOperation = 'source-atop'; const gw = gg.createLinearGradient(0, 3, 0, 12); gw.addColorStop(0, `rgba(${waterTint()},0)`); gw.addColorStop(1, `rgba(${waterTint()},0.6)`);
+              gg.fillStyle = gw; gg.fillRect(-R, -R, 2 * R, 2 * R); gg.globalCompositeOperation = 'source-over'; gg.setTransform(1, 0, 0, 1, 0, 0);
+              const Pc = { c, R, px }, front = slipUnder(ctx, Pc, sink, -5.8, 21.9, 4.5, 6);
+              ctx.globalAlpha = 1; humpBlit(ctx, Pc, null, 1 - 0.5 * sink * sink);   // (it slips under, it does not just fade)
+              if (sink > 0) waterline(ctx, front, 4.6, 0.8 * Math.sin(Math.PI * Math.min(1, sink * 1.1)), 7);
+              if ((g.upT ?? 99) < 2) riseWater(ctx, g.upT, -5, 6, 3.6, 12, 8); }
+            if (sink > 0.05) { ctx.restore(); return; }   // (going under: no bow wave, no branch dragging over the water)
+            // the bow wave: a white moustache curling back off the nose and along the cheeks, hugging the painted head
+            foamBand(ctx, (t) => { const th = Math.PI * (1.15 + 0.7 * t); return [Math.cos(th) * 2.2, -4.6 + Math.sin(th) * 1.6]; },
+                     (t) => { const th = Math.PI * (1.15 + 0.7 * t); return [Math.cos(th), Math.sin(th)]; }, (t) => 0.45 * (0.4 + Math.sin(Math.PI * t)), 0.75, 3);
+            for (const sd of [-1, 1]) foamBand(ctx, (t) => [sd * (2.3 + 2.2 * t), -4.4 + 6 * t], () => [sd, 0], (t) => 0.4 * (1 - t), 0.5, sd * 5);
+            if (g.stick) { ctx.strokeStyle = '#6a4a2c'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-1, -4.2); ctx.lineTo(6, 2); ctx.lineTo(9, 14); ctx.stroke(); ctx.fillStyle = '#5f8f3c';
+                for (const [lx, ly, a] of [[7.8, 7, 0.4], [10, 10, -0.5], [8.6, 13.5, 0.3], [10.6, 15.5, -0.2]]) { ctx.beginPath(); ctx.ellipse(lx, ly, 1.4, 2.4, a, 0, Math.PI * 2); ctx.fill(); } }
+            ctx.restore(); return; } }
         // under the surface: the long body and the flat tail trailing, clearly visible
         ctx.fillStyle = 'rgba(52,34,20,0.5)';
         ctx.beginPath(); ctx.ellipse(0, 10, 5.6, 11.5, 0, 0, Math.PI * 2); ctx.fill();
@@ -3876,6 +3971,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // MOOSE from above, knee-deep: a boxy dark body with the humped shoulders, the huge long
     // face widening to the overhanging muzzle, big ears, two short velvet stubs. Feeding, the
     // head goes under — just a dark shape and rings — and comes up streaming.
+    const MOOSE_SPR = { stem: 'moose', top: 0.1445, bot: 0.876, cx: 0.4995 };
+    const mooseImg = (p2) => sprImg('assets/images/props/lake/' + MOOSE_SPR.stem + '-' + p2 + '.png');
     function drawMoose(ctx, w) {
         const dip = w.dip || 0;
         const sway = Math.sin(w.sway || 0) * 0.05;
@@ -3897,9 +3994,34 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
         for (const [lx, ly] of (land ? [] : [[-9, -8], [9, -8], [-7, 21], [7, 21]])) {
             ctx.fillStyle = 'rgba(30,22,16,0.35)'; ctx.beginPath(); ctx.ellipse(lx, ly, 2.4, 2.4, 0, 0, Math.PI * 2); ctx.fill();   // the leg, seen through the water
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)'; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.ellipse(lx, ly, 4.8, 3.4, 0, 0, Math.PI * 2); ctx.stroke();
-            ctx.strokeStyle = `rgba(255,255,255,${0.3 * (1 - rp)})`; ctx.beginPath(); ctx.ellipse(lx, ly, 5 + rp * 7, 3.6 + rp * 5, 0, 0, Math.PI * 2); ctx.stroke();
+            // the water round the leg: a broken ring hugging it, and one breathing out from it (never perfect circles)
+            brokenRing(ctx, lx, ly, 4.8, 1.4, 0, 0.5, lx * 3 + ly, 1.1);
+            brokenRing(ctx, lx, ly, 5 + rp * 7, 1.4, 0, 0.3 * (1 - rp), lx * 3 + ly + 5, 1);
         }
+        // THE PAINTED BULL MOOSE (Oct 13 2026, Wes: "I want a bull moose"): the sprite lake-moose cut by art/racksplit.py into
+        // body, head and rack, on the drawn moose's units (muzzle -39 to tail +26). Feeding, the head reaches forward and
+        // goes under — veiled by the water, the rings round it — and the RACK STAYS OUT, riding on the surface with it.
+        { const S = MOOSE_SPR, ims = ['body', 'head', 'rack'].map(mooseImg);
+          if (ims.every(imgReady)) {
+            const F = 65 / (S.bot - S.top), x0 = -S.cx * F, y0 = -39 - S.top * F, k = Math.hypot(ctx.getTransform().a, ctx.getTransform().b);
+            const fwd = -dip * 7 - (w.mode === 'alert' ? 3 : 0), hy = -18 + fwd;
+            ctx.drawImage(humpMip(ims[0], 1.5 * k * F), x0, y0, F, F);
+            // the head: under the water it is the water's colour and dim; ashore it is never dipped
+            const Hc = (() => { const t = ctx.getTransform(), kk = Math.max(0.25, Math.hypot(t.a, t.b)), R = 46, px = Math.ceil(2 * R * kk), c = humpScratch(28, px, px); if (!c) return null;
+                const g = c.getContext('2d'); g.setTransform(kk, 0, 0, kk, R * kk, R * kk); g.drawImage(humpMip(ims[1], 1.5 * kk * F), x0, y0 + fwd, F, F); g.setTransform(1, 0, 0, 1, 0, 0);
+                if (dip > 0 && !land) { g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.65 * dip; g.fillStyle = `rgb(${waterTint()})`; g.fillRect(0, 0, px, px); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; }
+                return { c, R, px }; })();
+            humpBlit(ctx, Hc, null, 1 - 0.45 * dip);
+            if (dip > 0.3 && !land) { const q = (w.bob * 0.7) % 1; for (const sd of [-1, 1]) brokenRing(ctx, sd * 25, hy - 6, 6 + q * 8, 1.2, 0, 0.3 * dip * (1 - q), sd * 7, 1); }   // the water ringing the palms (the painted rack is wider)
+            ctx.drawImage(humpMip(ims[2], 1.5 * k * F), x0, y0 + fwd, F, F);
+            if (dip > 0.3 && !land) { const kq = ((w.bob * 0.8) % 1); brokenRing(ctx, 0, hy - 12, 7 + kq * 13, 1.1, 0, 0.55 * dip * (1 - kq), 3, 1.2); }
+            if (w.drip > 0) {
+                ctx.strokeStyle = `rgba(255,255,255,${0.75 * w.drip})`; ctx.lineWidth = 1; ctx.lineCap = 'round';
+                for (const sx of [-4, -1.5, 1.5, 4]) { ctx.beginPath(); ctx.moveTo(sx, hy - 17); ctx.lineTo(sx * 1.4, hy - 22 - (1 - w.drip) * 6); ctx.stroke(); }
+                brokenRing(ctx, 0, hy - 12, 9 + (1 - w.drip) * 15, 1.1, 0, 0.6 * w.drip, 4, 1.2);
+            }
+            ctx.restore(); return;
+          } }
         ctx.lineJoin = 'round'; ctx.lineWidth = 1.1; ctx.strokeStyle = SOFT;
         // the body: long and even, a touch deeper at the shoulders — seen from above a moose is
         // a long brown plank with a dark mane ridge running up to the head
@@ -4078,8 +4200,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 if (g.mode !== 'under') drawWakeTrail(ctx, g, kind === 'beaver' ? 7 : 5.5, kind === 'beaver' ? 2.4 : 1.3, kind === 'beaver' ? 0.6 : 0.4);
                 if (g.mode !== 'under') (kind === 'loon' ? drawLoon : kind === 'beaver' ? drawBeaver : drawGrebe)(ctx, g);
                 if (g.slap > 0) drawSlap(ctx, g.x, g.y, g.slap);
-                drawDiveRing(ctx, g.x, g.y, g.splash);
-                if (g.rise > 0) drawRing(ctx, g.x, g.y, g.rise, 10, 14, 0.5);
+                if ((kind === 'loon' || kind === 'beaver') && g.dvX != null) diveWater(ctx, g.dvX, g.dvY, g.dvH, g.dvT, kind === 'beaver' ? 18 : 14, (g.dvX * 0.07) % 7);
+                else { drawDiveRing(ctx, g.x, g.y, g.splash); if (g.rise > 0) drawRing(ctx, g.x, g.y, g.rise, 10, 14, 0.5); }
             }
         }
     }
@@ -4616,12 +4738,91 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // A LAKE BASS JUMPING from above: silver-olive with a dark lateral stripe, arcing clear —
     // its shadow on the water dropping away with height — a crown of spray as it leaves and
     // another as it goes back in, then rings spreading from the entry.
+    // A FISH JUMPING — THE WATER (Wes, Oct 13: "carefully think about the water effects, research what fish jumping look
+    // like"). From drone and high-speed footage, and the physics of a body entering water (a thin CROWN sheet thrown up round
+    // the impact, a cavity opening behind it, and as it collapses a JET shot up the middle — the Worthington jet):
+    //  · OUT: the fish tears the surface open — a ragged hole of white water, with a torn sheet of spray thrown FORWARD along
+    //    its path, which falls back as a lacy patch.
+    //  · IN THE AIR: water streams off it — drops falling from the fish toward its own shadow.
+    //  · BACK IN: a bass seldom goes in clean; it flops back ON ITS SIDE, so the slap is as long as the fish and the spray is
+    //    thrown out SIDEWAYS; a beat later the jet stands up out of the middle (from above, a bright knot throwing a small
+    //    shadow); then a patch of foam and bubbles that lingers.
+    //  · AFTER: a short train of RINGS from each spot, close and uneven, spreading and fading over two or three seconds —
+    //    broken and a little wobbly, never perfect circles (a perfect ring reads as UI).
+    // All of it sized to the fish (len), on the leap's own clock. (x0, y0) where it left, (x1, y1) where it goes back in.
+    function lobedBlob(ctx, x, y, rx, ry, ang, seed) {
+        ctx.beginPath();
+        for (let i = 0; i <= 28; i++) { const a = i / 28 * Math.PI * 2, n = 0.84 + 0.1 * Math.sin(a * 3 + seed) + 0.07 * Math.sin(a * 7 + seed * 2.3) + 0.04 * Math.sin(a * 13 + seed);
+            const lx = Math.cos(a) * rx * n, ly = Math.sin(a) * ry * n; ctx.lineTo(x + lx * Math.cos(ang) - ly * Math.sin(ang), y + lx * Math.sin(ang) + ly * Math.cos(ang)); }
+        ctx.closePath();
+    }
+    function brokenRing(ctx, x, y, r, stretch, ang, a, seed, w) {
+        if (a <= 0.01 || r <= 0) return;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.strokeStyle = `rgba(255,255,255,${a})`; ctx.lineWidth = w || 0.8; ctx.lineCap = 'round';
+        // four to five arcs with uneven gaps, the radius wavering a little round it
+        const segs = 5; for (let k = 0; k < segs; k++) { const g = Math.abs(Math.sin(k * 5.7 + seed)), a0 = (k + 0.15 * g) / segs * Math.PI * 2, a1 = a0 + (0.62 + 0.25 * g) / segs * Math.PI * 2;
+            ctx.beginPath(); for (let i = 0; i <= 10; i++) { const t = a0 + (a1 - a0) * i / 10, n = 1 + 0.05 * Math.sin(t * 3 + seed) + 0.03 * Math.sin(t * 7 + seed * 1.7);
+                ctx.lineTo(Math.cos(t) * r * n, Math.sin(t) * r * n / stretch); } ctx.stroke(); }
+        ctx.restore();
+    }
+    function drawJumpWater(ctx, L, x0, y0, x1, y1, len, airX, airY, z) {
+        const h = L.h, fx = Math.sin(h), fy = -Math.cos(h), seed = (L.x * 0.013 + L.y * 0.007) * 7;
+        const ang = h - Math.PI / 2;   // the heading as a canvas angle (x along the path)
+        // ── OUT ──
+        const te = L.t;
+        if (te < 0.6) { const k = 1 - te / 0.6, burst = Math.max(0, 1 - te / 0.3);
+            // the torn hole: a lobed sheet of white, pushed forward along the path
+            const cx = x0 + fx * len * 0.15 * (1 + te * 2), cy = y0 + fy * len * 0.15 * (1 + te * 2);
+            const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, len * 0.55);
+            g.addColorStop(0, `rgba(255,255,255,${0.85 * burst + 0.25 * k})`); g.addColorStop(0.6, `rgba(238,248,250,${0.4 * k})`); g.addColorStop(1, 'rgba(225,242,246,0)');
+            ctx.fillStyle = g; lobedBlob(ctx, cx, cy, len * (0.5 + 0.3 * te), len * (0.32 + 0.15 * te), ang, seed); ctx.fill();
+            // spray thrown forward: tapered tongues fanned ±50 deg round the path (sheets, not dots)
+            if (burst > 0) for (let i = 0; i < 6; i++) { const j = Math.abs(Math.sin(i * 12.99 + seed)), th = ang + (i / 5 - 0.5) * 1.7 + (j - 0.5) * 0.3, Lg = len * (0.55 + 0.4 * j) * (0.6 + 0.4 * (1 - burst)), w = len * 0.07;
+                ctx.fillStyle = `rgba(255,255,255,${0.8 * burst})`; ctx.beginPath(); ctx.moveTo(cx + Math.cos(th - 0.25) * len * 0.12, cy + Math.sin(th - 0.25) * len * 0.12);
+                ctx.quadraticCurveTo(cx + Math.cos(th) * Lg * 0.7 - Math.sin(th) * w, cy + Math.sin(th) * Lg * 0.7 + Math.cos(th) * w, cx + Math.cos(th) * Lg, cy + Math.sin(th) * Lg);
+                ctx.quadraticCurveTo(cx + Math.cos(th) * Lg * 0.7 + Math.sin(th) * w, cy + Math.sin(th) * Lg * 0.7 - Math.cos(th) * w, cx + Math.cos(th + 0.25) * len * 0.12, cy + Math.sin(th + 0.25) * len * 0.12); ctx.fill(); } }
+        // the lacy patch it leaves, and its rings
+        if (te < 2.2) { const k = Math.max(0, 1 - te / 2.2);
+            if (te > 0.2) { ctx.fillStyle = `rgba(232,245,248,${0.1 * k})`; lobedBlob(ctx, x0, y0, len * (0.35 + te * 0.12), len * (0.3 + te * 0.1), ang, seed + 3); ctx.fill(); }
+            for (let r = 0; r < 3; r++) { const age = te - 0.12 - r * 0.22; if (age > 0) brokenRing(ctx, x0, y0, len * 0.3 + len * 0.55 * Math.sqrt(age), 1, ang, 0.38 * Math.max(0, 1 - age / 1.9) * (1 - r * 0.25), seed + r, 0.7 - r * 0.12); } }
+        // ── IN THE AIR: water streaming off it, falling toward its shadow ──
+        if (L.t < L.dur && z > 0.5) { const p = L.t / L.dur;
+            for (let i = 0; i < 4; i++) { const f = (i + 0.5) / 4, back = len * (0.25 + 0.2 * i) * (0.4 + p), dx = airX - fx * back + z * 0.35 * f, dy = airY - fy * back + z * 0.55 * f;
+                ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - p * 0.6) * (1 - f * 0.5)})`; ctx.beginPath(); ctx.ellipse(dx, dy, len * 0.025, len * 0.07, ang + Math.PI / 2 + 0.6, 0, Math.PI * 2); ctx.fill(); } }
+        // ── BACK IN: on its side ──
+        const ti = L.t - L.dur;
+        if (ti >= 0) {
+            // the slap: a sheet the length of the fish, spray thrown out to both sides
+            if (ti < 0.5) { const k = 1 - ti / 0.5, burst = Math.max(0, 1 - ti / 0.22);
+                const g = ctx.createRadialGradient(x1, y1, 0, x1, y1, len * 0.65);
+                g.addColorStop(0, `rgba(255,255,255,${0.9 * burst + 0.3 * k})`); g.addColorStop(0.65, `rgba(238,248,250,${0.45 * k})`); g.addColorStop(1, 'rgba(225,242,246,0)');
+                ctx.fillStyle = g; lobedBlob(ctx, x1, y1, len * (0.5 + 0.3 * ti), len * (0.28 + 0.4 * ti), ang, seed + 5); ctx.fill();
+                if (burst > 0) for (const sd of [-1, 1]) for (let i = 0; i < 3; i++) { const j = Math.abs(Math.sin(i * 7.7 + sd + seed)), along = (i - 1) * len * 0.3, th = ang + sd * Math.PI / 2 + (j - 0.5) * 0.6, Lg = len * (0.3 + 0.3 * j) * (0.6 + 0.4 * (1 - burst)), w = len * 0.05;
+                    const bx = x1 + Math.cos(ang) * along, by = y1 + Math.sin(ang) * along;
+                    ctx.fillStyle = `rgba(255,255,255,${0.7 * burst})`; ctx.beginPath(); ctx.moveTo(bx + Math.cos(th - 0.3) * len * 0.1, by + Math.sin(th - 0.3) * len * 0.1);
+                    ctx.quadraticCurveTo(bx + Math.cos(th) * Lg * 0.7 - Math.sin(th) * w, by + Math.sin(th) * Lg * 0.7 + Math.cos(th) * w, bx + Math.cos(th) * Lg, by + Math.sin(th) * Lg);
+                    ctx.quadraticCurveTo(bx + Math.cos(th) * Lg * 0.7 + Math.sin(th) * w, by + Math.sin(th) * Lg * 0.7 - Math.cos(th) * w, bx + Math.cos(th + 0.3) * len * 0.1, by + Math.sin(th + 0.3) * len * 0.1); ctx.fill(); } }
+            // the jet standing up out of the middle: a bright knot, its small shadow thrown down-right
+            if (ti > 0.12 && ti < 0.55) { const q = Math.sin(Math.PI * (ti - 0.12) / 0.43), r = len * 0.08 * (0.6 + 0.4 * q);
+                ctx.fillStyle = `rgba(10,25,40,${0.18 * q})`; ctx.beginPath(); ctx.ellipse(x1 + len * 0.12 * q, y1 + len * 0.2 * q, r * 0.8, r * 1.6, -0.55, 0, Math.PI * 2); ctx.fill();
+                const g = ctx.createRadialGradient(x1, y1, 0, x1, y1, r * 1.6); g.addColorStop(0, `rgba(255,255,255,${0.95 * q})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+                ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x1, y1, r * 1.6, 0, Math.PI * 2); ctx.fill(); }
+            // the foam and bubbles left lying there, slowly spreading and thinning
+            if (ti > 0.25 && ti < 2.4) { const k = Math.min(1, (ti - 0.25) / 0.3) * Math.max(0, 1 - (ti - 0.25) / 2.15);
+                ctx.fillStyle = `rgba(236,246,248,${0.16 * k})`; lobedBlob(ctx, x1, y1, len * (0.45 + ti * 0.12), len * (0.3 + ti * 0.12), ang, seed + 9); ctx.fill();
+                ctx.fillStyle = `rgba(255,255,255,${0.2 * k})`; lobedBlob(ctx, x1, y1, len * (0.25 + ti * 0.08), len * (0.16 + ti * 0.08), ang, seed + 11); ctx.fill(); }
+            // the rings: a train of four, a little stretched along the body at first, rounding out as they spread
+            for (let r = 0; r < 4; r++) { const age = ti - 0.15 - r * 0.2; if (age > 0) brokenRing(ctx, x1, y1, len * 0.4 + len * 0.7 * Math.sqrt(age), 1 + 0.35 * Math.max(0, 1 - age), ang, 0.45 * Math.max(0, 1 - age / 2.1) * (1 - r * 0.2), seed + 20 + r, 0.8 - r * 0.12); }
+        }
+    }
+    const BASS_SPR = { file: 'assets/images/props/lake/bass.png', top: 0.1104, bot: 0.9062, cx: 0.521 };
     function drawLeap(ctx, L) {
         if (L.t < 0) return;   // one of a bunch, not off yet
         if (L.kind === 'carp') return drawCarpLeap(ctx, L);
         const p = Math.min(1, L.t / L.dur), z = Math.sin(Math.PI * p) * L.hop;
         const x = L.x + Math.sin(L.h) * (p - 0.5) * 26, y = L.y - Math.cos(L.h) * (p - 0.5) * 26;
         const x0 = L.x - Math.sin(L.h) * 13, y0 = L.y + Math.cos(L.h) * 13, x1 = L.x + Math.sin(L.h) * 13, y1 = L.y - Math.cos(L.h) * 13;
+        if (L.kind === 'bass' && imgReady(sprImg(BASS_SPR.file))) drawJumpWater(ctx, L, x0, y0, x1, y1, BASS_LEN * L.size, x, y, z);
         if (L.t < L.dur) {
             const len = (L.kind === 'salmon' ? SOCKEYE_LEN : BASS_LEN) * L.size, pitch = Math.cos(Math.PI * p);    // nose up, then down: foreshortened at the top
             const body = (fill, sx, sy) => {
@@ -4631,6 +4832,19 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 ctx.beginPath(); ctx.moveTo(0, l * 0.42); ctx.lineTo(-l * 0.2, l * 0.68); ctx.lineTo(0, l * 0.56); ctx.lineTo(l * 0.2, l * 0.68); ctx.closePath(); ctx.fill();
                 ctx.restore();
             };
+            // THE PAINTED LAKE BASS (Oct 13 2026): the sprite lake-bass — curved in a C, mouth open, flank turned up —
+            // nose up then down through the arc (foreshortened at the top), its tail still beating, drawn by its height; its
+            // shadow the same silhouette on the water. Mirrored for every other leap.
+            const bim = L.kind === 'bass' ? sprImg(BASS_SPR.file) : null;
+            if (bim && imgReady(bim)) {
+                const S = BASS_SPR, F = len / (S.bot - S.top), fore = 0.75 + 0.25 * Math.abs(pitch), mir = ((L.i || Math.round(L.x)) & 1) ? -1 : 1;
+                // the tail: still beating in the air, a quick flick side to side growing toward the tail (the head steady)
+                const ph = L.t * 30 + (L.i || 0), amp = len * 0.09, sway = (u) => amp * Math.pow(Math.max(0, (u - 0.35) / 0.65), 1.7) * Math.sin(ph - u * 3);
+                const one = (col, a, sx, sy, sz) => { ctx.save(); ctx.translate(sx, sy); ctx.rotate(L.h + Math.sin(L.t * 14) * 0.15); ctx.scale(mir * sz, fore * sz);
+                    humpBlit(ctx, mahiPosed(ctx, len, sway, 0, '0,0,0', 27, BASS_SPR), col, a); ctx.restore(); };
+                one('rgb(10,25,40)', 0.22, x + z * 0.35, y + z * 0.55, 1);
+                one(null, 1, x, y, zScale(z));
+            } else {
             body('rgba(10,25,40,0.22)', x + z * 0.35, y + z * 0.55);
             const salmon = L.kind === 'salmon';
             // a salmon clears white water, so it gets a dark rim to stand off the foam
@@ -4648,7 +4862,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 ctx.fillStyle = 'rgba(235,240,220,0.7)'; ctx.beginPath(); ctx.ellipse(0, -len * 0.1, len * 0.06, len * 0.25, 0, 0, Math.PI * 2); ctx.fill();
             }
             ctx.restore();
+            }
         }
+        if (L.kind === 'bass' && imgReady(sprImg(BASS_SPR.file))) return;   // (the painted bass's water is drawn with it: drawJumpWater)
         const out = 1 - Math.min(1, L.t / 0.45); if (out > 0) drawFishSplash(ctx, x0, y0, out, L.size, 1);
         const inT = L.t - L.dur;
         if (inT >= 0) {
@@ -10250,7 +10466,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         forceBoil: (x, y) => { boil = { x, y, t: 0, life: 45, seed: 1 }; if (flight) flight.mode = 'transit'; },
         // The drawing functions, for a look-bench (eval/_wildlife_bench.js) — not used by the game.
         art: { drawBoilAt: (ctx, x, y, t) => { const o = boil, oT = T; boil = { x, y, t: 10, life: 60, seed: 3 }; T = t; drawBoil(ctx); boil = o; T = oT; }, drawGullFlying, drawGullPerched, drawPelicanFlying, drawPelicanSitting, drawPorpoise,
-               drawTurtle, drawTurtleUnder, drawGrebe, drawLoon, drawBeaver, drawMoose, drawSlap, drawWakeTrail, drawDuckling, drawDucklings,
+               drawTurtle, drawTurtleUnder, drawGrebe, drawLoon, drawBeaver, drawDiveWaterProbe: (ctx, g, kind) => diveWater(ctx, g.dvX, g.dvY, g.dvH, g.dvT, kind === 'beaver' ? 18 : 14, 3), drawMoose, drawSlap, drawWakeTrail, drawDuckling, drawDucklings,
                drawCruiser, seaTurtleShape, eagleRayShape, reefSharkShape, drawGator, drawEgret, drawAnhinga, drawFrog, drawLeap, drawShoal, drawSeal, drawSealHead, drawSealUnder, drawBear, drawSockeye, drawEagle, drawOtter, drawWhale, drawBlow, drawSplash, drawSpinner, drawFlyfish, drawAlbatross, drawPrint, drawMahi, setT: (t) => { T = t; }, onCam: (x, y, pad) => onCam(x, y, pad), drawStriperBoil, drawStriper, drawCondor, drawBighorn, drawCoyote, drawOrca, drawSwimmers, drawLeopardSeal, drawTern, drawTreks, PENG: () => PENG, drawGoldJelly, drawManta, drawFlyingFox, drawHawksbill, drawTurtleTracks, drawDugong, drawArcticSprite, arcticImg, drawIguana, drawCrab, drawBooby, drawFrigate, drawFrigFish, drawGreySeal, drawGreySealSwim, drawGullFloat, drawGullFlying, drawCormorant, drawVelellaFleet, drawMackBoil, drawSpoonbill, drawAvocet, drawShoreCrab, drawHammer, drawSeaOtter, drawSeaOtterPup, drawSeaLion, drawSLSplash, drawWhiteShark, drawBlueWhale, drawBlueBlow, drawKrill },
         // Otter Point: set a shark hunting a given sea lion group now (probes and the bench)
         forceHunt: (wi, gi) => { const W = whites[wi], G = slGroups[gi]; if (!W || !G) return false; const q = G.members.find(m => !m.gone); W.mode = 'stalk'; W.t = 7; W.target = { G, q }; W.x = q.x - 300; W.y = q.y; return true; },
