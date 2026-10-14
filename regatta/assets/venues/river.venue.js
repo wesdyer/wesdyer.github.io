@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["river"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "river",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.",
   "card": {
@@ -89,6 +89,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-11",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           3253.9632422152736,
@@ -133,6 +134,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-22",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           5159.7,
@@ -208,6 +210,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-21",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           5132.55713344614,
@@ -304,6 +307,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-20",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           4197.536614037218,
@@ -348,6 +352,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-12",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           3718.1729023348194,
@@ -400,6 +405,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-4",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           -8.822765189811946,
@@ -464,6 +470,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-3",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           -1375.5749012216306,
@@ -528,6 +535,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-1",
       "kind": "cobble",
+      "smooth": true,
       "outer": [
         [
           -3309.9,
@@ -1259,11 +1267,12 @@ window.VENUE_DOC["river"] = {
         -813.3585635359116
       ],
       "r": 9121.588654053616,
-      "height": 1
+      "height": 0.5
     },
     {
       "id": "shape-46",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           -2986.2,
@@ -1819,12 +1828,13 @@ window.VENUE_DOC["river"] = {
         4877.488688487576
       ],
       "r": 19572.932671915103,
-      "height": 2,
+      "height": 1,
       "holes": []
     },
     {
       "id": "shape-2",
       "kind": "cobble",
+      "smooth": true,
       "outer": [
         [
           -5385.7,
@@ -2596,11 +2606,12 @@ window.VENUE_DOC["river"] = {
         -3573.8345827076746
       ],
       "r": 9373.674259124826,
-      "height": 1
+      "height": 0.5
     },
     {
       "id": "shape-49",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           1445,
@@ -3096,12 +3107,13 @@ window.VENUE_DOC["river"] = {
         -13447.438046472122
       ],
       "r": 10688.104490669664,
-      "height": 3,
+      "height": 1.5,
       "holes": []
     },
     {
       "id": "shape-47",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           -17476,
@@ -3713,12 +3725,13 @@ window.VENUE_DOC["river"] = {
         3498.856839292827
       ],
       "r": 15073.493717465633,
-      "height": 2,
+      "height": 1,
       "holes": []
     },
     {
       "id": "shape-44",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           -17492.489519870775,
@@ -4546,7 +4559,7 @@ window.VENUE_DOC["river"] = {
         -6499.273972905945
       ],
       "r": 22529.587162314816,
-      "height": 10,
+      "height": 5,
       "holes": []
     },
     {
@@ -5224,6 +5237,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-23",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           5294.170616560528,
@@ -5332,6 +5346,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-24",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           744.050752776606,
@@ -6268,6 +6283,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-42",
       "kind": "cobble",
+      "smooth": true,
       "outer": [
         [
           4734.765049567514,
@@ -6356,6 +6372,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-43",
       "kind": "cobble",
+      "smooth": true,
       "outer": [
         [
           5252.548268094488,
@@ -6488,6 +6505,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-48",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           6836.8,
@@ -7011,12 +7029,13 @@ window.VENUE_DOC["river"] = {
         -9395.987801768828
       ],
       "r": 11731.137969039877,
-      "height": 3,
+      "height": 1.5,
       "holes": []
     },
     {
       "id": "shape-45-2",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           1165.6,
@@ -7736,7 +7755,7 @@ window.VENUE_DOC["river"] = {
         -1865.2013471417092
       ],
       "r": 12836.992903550556,
-      "height": 10,
+      "height": 5,
       "holes": []
     },
     {
@@ -7842,7 +7861,7 @@ window.VENUE_DOC["river"] = {
         -3298.815255053871
       ],
       "r": 922.2406544601605,
-      "height": 4
+      "height": 2
     },
     {
       "id": "shape-56",
@@ -8047,6 +8066,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-50",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           5541.246100545425,
@@ -8163,7 +8183,7 @@ window.VENUE_DOC["river"] = {
         -6444.8022366585255
       ],
       "r": 530.4326847337582,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-54",
@@ -8284,7 +8304,7 @@ window.VENUE_DOC["river"] = {
         -3914.961583138585
       ],
       "r": 355.57865560809387,
-      "height": 4
+      "height": 2
     },
     {
       "id": "shape-58",
@@ -8373,7 +8393,7 @@ window.VENUE_DOC["river"] = {
         -4058.4145955590225
       ],
       "r": 474.34183151624393,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-51",
@@ -8710,7 +8730,7 @@ window.VENUE_DOC["river"] = {
         -3248.5613667400685
       ],
       "r": 167.53445428057054,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-57",
@@ -8803,7 +8823,7 @@ window.VENUE_DOC["river"] = {
         -4425.061320524996
       ],
       "r": 238.00187618514119,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-60",
@@ -8884,7 +8904,7 @@ window.VENUE_DOC["river"] = {
         -2430.927646557987
       ],
       "r": 127.75261242305072,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-62",
@@ -8993,6 +9013,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-65",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           4654.879550377697,
@@ -9197,6 +9218,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-66",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           5912.630743127468,
@@ -9289,11 +9311,12 @@ window.VENUE_DOC["river"] = {
         -6562.435602039083
       ],
       "r": 286.812139963637,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-67",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           5456.203101173565,
@@ -9398,7 +9421,7 @@ window.VENUE_DOC["river"] = {
         -6319.27361461772
       ],
       "r": 229.85860059872437,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-68",
@@ -9605,12 +9628,20 @@ window.VENUE_DOC["river"] = {
           -11223.845936787748
         ],
         [
+          1078.1209032030438,
+          -12676.618871141534
+        ],
+        [
           1080.299963646664,
           -12724.26929481073
         ],
         [
           1142.7994846297122,
           -12724.132313242764
+        ],
+        [
+          1140.6990304365138,
+          -12682.304537399516
         ],
         [
           1065.6289349861397,
@@ -9863,14 +9894,16 @@ window.VENUE_DOC["river"] = {
       ],
       "holes": [],
       "c": [
-        3236.7630255727113,
-        -5464.560921808562
+        3200.0845245597297,
+        -5588.955762885491
       ],
-      "r": 7573.222471213246
+      "r": 7443.533151908497,
+      "smooth": true
     },
     {
       "id": "shape-70",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           5222.831172029791,
@@ -10117,7 +10150,7 @@ window.VENUE_DOC["river"] = {
           -1723.1288723684106
         ],
         [
-          4517.1525681978965,
+          4521.097146442784,
           -1507.8458208727504
         ],
         [
@@ -10169,6 +10202,10 @@ window.VENUE_DOC["river"] = {
           3974.2270011080554
         ],
         [
+          4121.92380146694,
+          3473.203909479262
+        ],
+        [
           4424.958304135672,
           2548.1496021052717
         ],
@@ -10187,6 +10224,10 @@ window.VENUE_DOC["river"] = {
         [
           4485.025487313566,
           -1065.47028276032
+        ],
+        [
+          4484.495943343562,
+          -1504.8224347873584
         ],
         [
           4467.592234390378,
@@ -10291,14 +10332,16 @@ window.VENUE_DOC["river"] = {
       ],
       "holes": [],
       "c": [
-        4175.213936681752,
-        -1451.789944588141
+        4178.679756010976,
+        -1386.830459736565
       ],
-      "r": 7144.451783463492
+      "r": 7080.434191259142,
+      "smooth": true
     },
     {
       "id": "shape-61",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           7321.3014506874,
@@ -10391,6 +10434,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-45",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           -7152,
@@ -10742,12 +10786,13 @@ window.VENUE_DOC["river"] = {
         10102.148131856464
       ],
       "r": 7824.99388747064,
-      "height": 10,
+      "height": 5,
       "holes": []
     },
     {
       "id": "shape-71",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           4879.3769347263815,
@@ -10840,6 +10885,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-72",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           -4840.5555169910895,
@@ -10981,7 +11027,7 @@ window.VENUE_DOC["river"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-320da14f-suu",
+      "sig": "v3-b6698567-37go",
       "legs": [
         {
           "pts": []
@@ -11175,20 +11221,16 @@ window.VENUE_DOC["river"] = {
               -3358.7
             ],
             [
-              1332.5,
-              -3508.7
+              1432.5,
+              -3608.7
             ],
             [
-              1582.5,
-              -3658.7
-            ],
-            [
-              2032.5,
+              1832.5,
               -3708.7
             ],
             [
-              2932.5,
-              -3658.7
+              2882.5,
+              -3708.7
             ],
             [
               3232.5,
@@ -11223,8 +11265,8 @@ window.VENUE_DOC["river"] = {
               -4658.7
             ],
             [
-              5182.5,
-              -5608.7
+              5132.5,
+              -5558.7
             ],
             [
               6132.5,
@@ -113109,7 +113151,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "veg-15858",
       "kind": "river-spruce-sitka",
-      "x": 5675.8,
+      "x": 5622.866177309527,
       "y": -6316.2,
       "heading": 3.831,
       "scale": 2.982
@@ -113117,8 +113159,8 @@ window.VENUE_DOC["river"] = {
     {
       "id": "veg-15859",
       "kind": "river-spruce-sitka",
-      "x": 5640.3,
-      "y": -6315.2,
+      "x": 5724.6020139144575,
+      "y": -6413.225597574951,
       "heading": 3.472,
       "scale": 3.45
     },
@@ -113245,8 +113287,8 @@ window.VENUE_DOC["river"] = {
     {
       "id": "veg-15860",
       "kind": "river-spruce-sitka",
-      "x": 5670.8,
-      "y": -6287.5,
+      "x": 5819.7989083139255,
+      "y": -6556.090137355365,
       "heading": 5.474,
       "scale": 3.366
     },
@@ -154803,7 +154845,7 @@ window.VENUE_DOC["river"] = {
         "falloff": 150,
         "count": 2,
         "gustKt": 5,
-        "sizeM": 300,
+        "sizeM": 150,
         "lifeS": 40,
         "bias": 0.6,
         "veer": 10
@@ -154847,7 +154889,7 @@ window.VENUE_DOC["river"] = {
         "falloff": 150,
         "count": 1,
         "gustKt": 5,
-        "sizeM": 300,
+        "sizeM": 150,
         "lifeS": 40,
         "bias": 0.6,
         "veer": 10

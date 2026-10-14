@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["flats"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "flats",
   "note": "BUILT by art/build_flats.js (Sep 16 2026) — the Wantij design, guidelines/flats-design.md. A one-way race: short beat to a rounding mark at sea, bear away through the mouth, then the deep channel round the outside of a braided basin in an S to a finish inland. The flats between the channels and the marsh are a tidal elevation field (js/tide.js) the tide floods and drains on a 60 s clock, HW 8 s after the gun and every minute after. Three choices on that clock: the WANTIJ (a corridor across the first loop with a pool to wait in and a sill at its exit), the POINT BAR (the inside of the west bend shelves, so higher water cuts tighter), and the FLOOD CREEK (a shallow branch round the diamond bar with a stronger flood stream and a sill at its head). Re-running the script overwrites hand edits.",
   "card": {
@@ -1139,6 +1139,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea",
       "kind": "flats-channel",
+      "smooth": true,
       "outer": [
         [
           -14228.87901494759,
@@ -1276,6 +1277,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "channel-main",
       "kind": "flats-channel",
+      "smooth": true,
       "outer": [
         [
           -3028,
@@ -2109,6 +2111,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "creek-flood",
       "kind": "flats-channel",
+      "smooth": true,
       "outer": [
         [
           1524.5,
@@ -2202,6 +2205,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "spit-beach",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           -3600.1,
@@ -2364,6 +2368,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "spit-recurve",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           -414.1,
@@ -2482,6 +2487,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "east-beach",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           3400.1,
@@ -2604,6 +2610,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "flood-margin-w",
       "kind": "flats-channel",
+      "smooth": true,
       "outer": [
         [
           -2508.6,
@@ -2706,6 +2713,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "flood-margin-e",
       "kind": "flats-channel",
+      "smooth": true,
       "outer": [
         [
           2750.5482690107674,
@@ -2812,6 +2820,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "delta-bar-w",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           -2100.1,
@@ -2938,6 +2947,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "delta-bar-e",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           999.5,
@@ -3068,6 +3078,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-wantij",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           2126.6,
@@ -3244,6 +3255,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-west-flat",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           -844.9,
@@ -3464,6 +3476,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-sw",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           -1909.5,
@@ -3608,6 +3621,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-east",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           2801.6,
@@ -3732,6 +3746,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-upper",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           -128,
@@ -3884,6 +3899,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-mid",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           1392.5,
@@ -4020,6 +4036,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-diamond",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           719.8,
@@ -4200,6 +4217,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-nw",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           -1057.4,
@@ -4320,6 +4338,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-ne",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           2523.2,
@@ -4456,6 +4475,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "wantij-creek",
       "kind": "flats-channel",
+      "smooth": true,
       "outer": [
         [
           813.4,
@@ -4505,6 +4525,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "wantij-pool",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           1045.3,
@@ -4558,6 +4579,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "wantij-corridor",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           998.1,
@@ -4612,6 +4634,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "wantij-sill",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           78.3,
@@ -4693,6 +4716,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "point-bar",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           -1500,
@@ -4770,6 +4794,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "point-bar-traverse",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           1350,
@@ -4831,6 +4856,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "point-bar-diamond",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           550,
@@ -4924,6 +4950,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "point-bar-finish",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           25.004730223815102,
@@ -4998,6 +5025,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "creek-sill",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           600.4,
@@ -5092,6 +5120,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-mid",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           -48.9,
@@ -5141,6 +5170,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-east",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           1945.9,
@@ -5186,6 +5216,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-head",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           -428.3,
@@ -5231,6 +5262,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-sw",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           -870.3,
@@ -5288,6 +5320,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "gamble-creek",
       "kind": "flats-channel",
+      "smooth": true,
       "outer": [
         [
           336.4,
@@ -5382,6 +5415,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "gamble-shelf",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           -969.2,
@@ -5468,6 +5502,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "gamble-out",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           -137.2,
@@ -5501,6 +5536,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "gamble-sill",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           -1012.7,
@@ -5570,6 +5606,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-neck",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           -1055.3,
@@ -5619,6 +5656,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "neck-s",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           -941.8,
@@ -5652,6 +5690,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "neck-n",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           -1070.9,
@@ -5710,6 +5749,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "neck-sill",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           -1414.2,
@@ -5787,6 +5827,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "head-cut",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           -528.9,
@@ -5849,6 +5890,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "head-sill",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           -864.1,
@@ -5926,6 +5968,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-delta",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           1153.8,
@@ -6046,6 +6089,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-delta",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           388.2,
@@ -6091,6 +6135,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "delta-cut",
       "kind": "flats-flat",
+      "smooth": true,
       "outer": [
         [
           563.8,
@@ -6136,6 +6181,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "delta-sill",
       "kind": "flats-bar",
+      "smooth": true,
       "outer": [
         [
           -263.5,
@@ -6229,6 +6275,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "isle-head-w",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           -752.6,
@@ -6369,6 +6416,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "marsh-shore-2",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           272,
@@ -7274,6 +7322,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-delta-e",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           2119.3,
@@ -7323,6 +7372,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-loop1-e",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           2125.9,
@@ -7368,6 +7418,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-heron",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           -1783.8,
@@ -7417,6 +7468,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-egret",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           1403.6,
@@ -7466,6 +7518,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "pool-nw",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           -1443.1,
@@ -7519,6 +7572,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "eel-traverse",
       "kind": "flats-eelgrass",
+      "smooth": true,
       "outer": [
         [
           -81.8,
@@ -7567,6 +7621,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "eel-west",
       "kind": "flats-eelgrass",
+      "smooth": true,
       "outer": [
         [
           -2111.3,
@@ -7619,6 +7674,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "eel-basin",
       "kind": "flats-eelgrass",
+      "smooth": true,
       "outer": [
         [
           1302,
@@ -7663,6 +7719,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "eel-head",
       "kind": "flats-eelgrass",
+      "smooth": true,
       "outer": [
         [
           847,
@@ -7711,6 +7768,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "eel-east",
       "kind": "flats-eelgrass",
+      "smooth": true,
       "outer": [
         [
           2019.8,
@@ -7759,6 +7817,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "eel-lower",
       "kind": "flats-eelgrass",
+      "smooth": true,
       "outer": [
         [
           129.8,
@@ -7811,6 +7870,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "shape-1",
       "kind": "flats-pool",
+      "smooth": true,
       "outer": [
         [
           673.6224082485811,
@@ -7907,6 +7967,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "marsh-shore",
       "kind": "flats-marsh",
+      "smooth": true,
       "outer": [
         [
           -27440,
@@ -8907,7 +8968,7 @@ window.VENUE_DOC["flats"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-b2989182-dog",
+      "sig": "v3-950c8fc-1dy0",
       "legs": [
         {
           "pts": []
@@ -8986,31 +9047,31 @@ window.VENUE_DOC["flats"] = {
             ],
             [
               2325,
-              1125
+              1275
             ],
             [
-              1975,
-              825
+              2075,
+              875
             ],
             [
               -1825,
               -725
             ],
             [
-              -2325,
-              -1325
+              -2275,
+              -1225
             ],
             [
               -2375,
-              -1875
+              -1575
             ],
             [
-              -2225,
-              -2625
+              -2275,
+              -2575
             ],
             [
-              -1575,
-              -3175
+              -1675,
+              -3125
             ],
             [
               1125,
@@ -9021,8 +9082,8 @@ window.VENUE_DOC["flats"] = {
               -4675
             ],
             [
-              1175,
-              -5175
+              1225,
+              -5125
             ],
             [
               -575,
@@ -9033,8 +9094,8 @@ window.VENUE_DOC["flats"] = {
               -6575
             ],
             [
-              -575,
-              -6825
+              -625,
+              -6775
             ],
             [
               1175,
@@ -9070,7 +9131,7 @@ window.VENUE_DOC["flats"] = {
             ],
             [
               -325,
-              -9975
+              -9925
             ],
             [
               -600,
@@ -10750,7 +10811,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-51",
       "kind": "flats-sea-lavender",
-      "x": 3410,
+      "x": 3450.856720767015,
       "y": 2271,
       "heading": 3.22,
       "scale": 0.98
@@ -11174,8 +11235,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-147",
       "kind": "flats-sea-lavender",
-      "x": -309,
-      "y": -12634,
+      "x": -526.0513290747668,
+      "y": -13121.727104156242,
       "heading": 1.74,
       "scale": 1.22
     },
@@ -11302,8 +11363,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-174",
       "kind": "flats-sea-lavender",
-      "x": -3127,
-      "y": 1482,
+      "x": -3282.8383766509332,
+      "y": 1319.0780607740244,
       "heading": 2.27,
       "scale": 1.01
     },
@@ -11318,8 +11379,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-176",
       "kind": "flats-sea-lavender",
-      "x": 2772,
-      "y": -2848,
+      "x": 2800.088995527323,
+      "y": -2855.660635143815,
       "heading": 0.6,
       "scale": 1.12
     },
@@ -11854,16 +11915,16 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-321",
       "kind": "flats-sea-lavender",
-      "x": 3036,
-      "y": -5657,
+      "x": 3127.9276217257834,
+      "y": -5613.589734185047,
       "heading": 5.68,
       "scale": 0.89
     },
     {
       "id": "sea-lavender-325",
       "kind": "flats-sea-lavender",
-      "x": 2131,
-      "y": 4299,
+      "x": 2176.963810862892,
+      "y": 4337.3031757190765,
       "heading": 5.19,
       "scale": 1.07
     },
@@ -11934,8 +11995,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-348",
       "kind": "flats-sea-lavender",
-      "x": -3540,
-      "y": -1594,
+      "x": -3579.626637134861,
+      "y": -1614.9140584878432,
       "heading": 0.26,
       "scale": 0.83
     },
@@ -11950,8 +12011,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-351",
       "kind": "flats-sea-lavender",
-      "x": -1068,
-      "y": 1202,
+      "x": -1084.1904919015146,
+      "y": 1287.0000824829508,
       "heading": 2.52,
       "scale": 1.01
     },
@@ -12430,8 +12491,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-474",
       "kind": "flats-sea-lavender",
-      "x": -2031,
-      "y": 1375,
+      "x": -1976.3570898323887,
+      "y": 1441.7857790937471,
       "heading": 3.91,
       "scale": 1.15
     },
@@ -12458,14 +12519,6 @@ window.VENUE_DOC["flats"] = {
       "y": -964,
       "heading": 3.88,
       "scale": 1.15
-    },
-    {
-      "id": "sea-lavender-480",
-      "kind": "flats-sea-lavender",
-      "x": 1822,
-      "y": -9791,
-      "heading": 4.27,
-      "scale": 1.27
     },
     {
       "id": "sea-lavender-481",
@@ -12654,8 +12707,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-525",
       "kind": "flats-sea-lavender",
-      "x": 1175,
-      "y": 2598,
+      "x": 1243.3935442989928,
+      "y": 2541.398446097385,
       "heading": 3.46,
       "scale": 1.1
     },
@@ -12694,8 +12747,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-534",
       "kind": "flats-sea-lavender",
-      "x": 2130,
-      "y": 2148,
+      "x": 2082.832038414488,
+      "y": 2152.716796158551,
       "heading": 5.35,
       "scale": 1.2
     },
@@ -12798,8 +12851,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-556",
       "kind": "flats-sea-lavender",
-      "x": -1661,
-      "y": -12093,
+      "x": -1132.4161750767444,
+      "y": -11886.162851116987,
       "heading": 0.93,
       "scale": 1.3
     },
@@ -13326,8 +13379,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-689",
       "kind": "flats-sea-lavender",
-      "x": 2150,
-      "y": 4556,
+      "x": 2211.2850811505227,
+      "y": 4487.054283705663,
       "heading": 3.84,
       "scale": 1.36
     },
@@ -13422,7 +13475,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-711",
       "kind": "flats-sea-lavender",
-      "x": 3360,
+      "x": 3400.856720767015,
       "y": 2099,
       "heading": 4.15,
       "scale": 1.34
@@ -13702,8 +13755,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-779",
       "kind": "flats-sea-lavender",
-      "x": -2170,
-      "y": 1862,
+      "x": -2155.833319586175,
+      "y": 1795.2142209062529,
       "heading": 0.97,
       "scale": 0.86
     },
@@ -14148,14 +14201,6 @@ window.VENUE_DOC["flats"] = {
       "scale": 1.29
     },
     {
-      "id": "sea-lavender-896",
-      "kind": "flats-sea-lavender",
-      "x": 2036,
-      "y": -9602,
-      "heading": 0.61,
-      "scale": 1.24
-    },
-    {
       "id": "sea-lavender-898",
       "kind": "flats-sea-lavender",
       "x": -3530,
@@ -14270,8 +14315,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-924",
       "kind": "flats-sea-lavender",
-      "x": -821,
-      "y": -9065,
+      "x": -950.2010707030889,
+      "y": -9162.397730222328,
       "heading": 2.69,
       "scale": 1.02
     },
@@ -14518,8 +14563,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-981",
       "kind": "flats-sea-lavender",
-      "x": -812,
-      "y": -2066,
+      "x": -778.5566030499989,
+      "y": -2110.591195933335,
       "heading": 4.78,
       "scale": 1.34
     },
@@ -14578,14 +14623,6 @@ window.VENUE_DOC["flats"] = {
       "y": -8367,
       "heading": 4.67,
       "scale": 0.96
-    },
-    {
-      "id": "sea-lavender-992",
-      "kind": "flats-sea-lavender",
-      "x": 2106,
-      "y": -9461,
-      "heading": 3.85,
-      "scale": 1.18
     },
     {
       "id": "sea-lavender-993",
@@ -14758,8 +14795,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1027",
       "kind": "flats-sea-lavender",
-      "x": -2140,
-      "y": 4773,
+      "x": -2242.9434687279427,
+      "y": 4724.959714593627,
       "heading": 4.71,
       "scale": 0.87
     },
@@ -15038,8 +15075,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1101",
       "kind": "flats-sea-lavender",
-      "x": -388,
-      "y": -12737,
+      "x": -605.0513290747668,
+      "y": -13224.727104156242,
       "heading": 3.45,
       "scale": 0.8
     },
@@ -15134,8 +15171,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1125",
       "kind": "flats-sea-lavender",
-      "x": 2881,
-      "y": -2531,
+      "x": 2949.945716294338,
+      "y": -2528.4464549520617,
       "heading": 4.24,
       "scale": 0.98
     },
@@ -15206,8 +15243,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1140",
       "kind": "flats-sea-lavender",
-      "x": -2548,
-      "y": 4404,
+      "x": -2551.541781287521,
+      "y": 4473.064735106664,
       "heading": 1.85,
       "scale": 1.48
     },
@@ -15270,8 +15307,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1161",
       "kind": "flats-sea-lavender",
-      "x": 1768,
-      "y": 2662,
+      "x": 1718.473640335212,
+      "y": 2598.3232518595582,
       "heading": 5.65,
       "scale": 1.07
     },
@@ -15374,8 +15411,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1179",
       "kind": "flats-sea-lavender",
-      "x": -496,
-      "y": -12373,
+      "x": -713.0513290747667,
+      "y": -12860.727104156242,
       "heading": 4.17,
       "scale": 1.13
     },
@@ -15414,8 +15451,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1187",
       "kind": "flats-sea-lavender",
-      "x": 3450,
-      "y": 956,
+      "x": 3613.42688306806,
+      "y": 917.6968242809236,
       "heading": 2.01,
       "scale": 1.27
     },
@@ -15582,8 +15619,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1223",
       "kind": "flats-sea-lavender",
-      "x": 2892,
-      "y": -2375,
+      "x": 2922.642540575261,
+      "y": -2397.9819054314457,
       "heading": 0.3,
       "scale": 0.76
     },
@@ -15782,8 +15819,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1267",
       "kind": "flats-sea-lavender",
-      "x": -1932,
-      "y": 2021,
+      "x": -1905.690450660039,
+      "y": 1984.5713932215924,
       "heading": 5.84,
       "scale": 1.42
     },
@@ -16734,8 +16771,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1524",
       "kind": "flats-sea-lavender",
-      "x": -1540,
-      "y": 2221,
+      "x": -1497.4999587585246,
+      "y": 2140.0475404924277,
       "heading": 2.66,
       "scale": 1.48
     },
@@ -16862,8 +16899,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1545",
       "kind": "flats-sea-lavender",
-      "x": 3627,
-      "y": 4671,
+      "x": 3678.0709009587686,
+      "y": 4640.357459424738,
       "heading": 5.12,
       "scale": 1.27
     },
@@ -16958,8 +16995,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1569",
       "kind": "flats-sea-lavender",
-      "x": 1385,
-      "y": -12839,
+      "x": 1106.6635897747112,
+      "y": -12093.364846001976,
       "heading": 3.99,
       "scale": 1.1
     },
@@ -17134,8 +17171,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1608",
       "kind": "flats-sea-lavender",
-      "x": 2072,
-      "y": 2143,
+      "x": 2024.8320384144877,
+      "y": 2147.716796158551,
       "heading": 0.85,
       "scale": 1.18
     },
@@ -17222,8 +17259,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1633",
       "kind": "flats-sea-lavender",
-      "x": 2156,
-      "y": -837,
+      "x": 2297.4174209051703,
+      "y": -792.3418670825778,
       "heading": 2.51,
       "scale": 1.31
     },
@@ -17484,14 +17521,6 @@ window.VENUE_DOC["flats"] = {
       "scale": 0.78
     },
     {
-      "id": "sea-lavender-1701",
-      "kind": "flats-sea-lavender",
-      "x": 2092,
-      "y": -9554,
-      "heading": 3.07,
-      "scale": 0.99
-    },
-    {
       "id": "sea-lavender-1705",
       "kind": "flats-sea-lavender",
       "x": -4485,
@@ -17710,16 +17739,16 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-1755",
       "kind": "flats-sea-lavender",
-      "x": -3107,
-      "y": 3590,
+      "x": -3144.188703518973,
+      "y": 3556.3530777685487,
       "heading": 5.53,
       "scale": 0.97
     },
     {
       "id": "sea-lavender-1758",
       "kind": "flats-sea-lavender",
-      "x": 1300,
-      "y": 2609,
+      "x": 1358.9599519818903,
+      "y": 2597.2080096036216,
       "heading": 2.28,
       "scale": 1.21
     },
@@ -18582,8 +18611,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2000",
       "kind": "flats-sea-lavender",
-      "x": -3100,
-      "y": 1522,
+      "x": -3255.8383766509332,
+      "y": 1359.0780607740244,
       "heading": 6.09,
       "scale": 0.83
     },
@@ -18758,8 +18787,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2050",
       "kind": "flats-sea-lavender",
-      "x": 3394,
-      "y": 1448,
+      "x": 3437.410265814953,
+      "y": 1499.0709009587686,
       "heading": 4.95,
       "scale": 0.8
     },
@@ -18830,8 +18859,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2064",
       "kind": "flats-sea-lavender",
-      "x": 3028,
-      "y": 3093,
+      "x": 3050.9819054314457,
+      "y": 3110.8748153355687,
       "heading": 3.96,
       "scale": 1.49
     },
@@ -19102,8 +19131,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2130",
       "kind": "flats-sea-lavender",
-      "x": -1664,
-      "y": -12024,
+      "x": -1135.4161750767444,
+      "y": -11817.162851116987,
       "heading": 2.07,
       "scale": 0.76
     },
@@ -19270,8 +19299,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2168",
       "kind": "flats-sea-lavender",
-      "x": -361,
-      "y": -12805,
+      "x": -578.0513290747668,
+      "y": -13292.727104156242,
       "heading": 5.74,
       "scale": 1.13
     },
@@ -19742,8 +19771,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2292",
       "kind": "flats-sea-lavender",
-      "x": 1166,
-      "y": -12786,
+      "x": 887.6635897747105,
+      "y": -12040.364846001976,
       "heading": 2.78,
       "scale": 0.94
     },
@@ -20038,8 +20067,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2362",
       "kind": "flats-sea-lavender",
-      "x": 929,
-      "y": -1831,
+      "x": 956.9113330733888,
+      "y": -1814.2532001559666,
       "heading": 4.93,
       "scale": 0.92
     },
@@ -20350,8 +20379,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2436",
       "kind": "flats-sea-lavender",
-      "x": 1151,
-      "y": -12608,
+      "x": 872.6635897747105,
+      "y": -11862.364846001976,
       "heading": 1.56,
       "scale": 0.86
     },
@@ -20486,8 +20515,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2471",
       "kind": "flats-sea-lavender",
-      "x": 2301,
-      "y": -6175,
+      "x": 2278.0180945685543,
+      "y": -6231.177991054646,
       "heading": 2.68,
       "scale": 1.16
     },
@@ -20662,18 +20691,10 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2513",
       "kind": "flats-sea-lavender",
-      "x": -3131,
-      "y": 3372,
+      "x": -3175.2722660940153,
+      "y": 3334.811296481027,
       "heading": 1.13,
       "scale": 1.29
-    },
-    {
-      "id": "sea-lavender-2514",
-      "kind": "flats-sea-lavender",
-      "x": -3094,
-      "y": -3223,
-      "heading": 2,
-      "scale": 1.2
     },
     {
       "id": "sea-lavender-2516",
@@ -20846,16 +20867,16 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2555",
       "kind": "flats-sea-lavender",
-      "x": -356,
-      "y": -1792,
+      "x": -374.5796649722229,
+      "y": -1855.1708609055577,
       "heading": 4.46,
       "scale": 1.38
     },
     {
       "id": "sea-lavender-2556",
       "kind": "flats-sea-lavender",
-      "x": -3537,
-      "y": -1664,
+      "x": -3588.734776259402,
+      "y": -1673.9066592837153,
       "heading": 3.09,
       "scale": 0.89
     },
@@ -21014,8 +21035,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2601",
       "kind": "flats-sea-lavender",
-      "x": 1364,
-      "y": -1322,
+      "x": 1332.3671558501592,
+      "y": -1281.0633781590295,
       "heading": 4.82,
       "scale": 1.35
     },
@@ -21086,7 +21107,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2626",
       "kind": "flats-sea-lavender",
-      "x": 3330,
+      "x": 3370.856720767015,
       "y": 2222,
       "heading": 4.63,
       "scale": 0.99
@@ -21130,14 +21151,6 @@ window.VENUE_DOC["flats"] = {
       "y": 4185,
       "heading": 0.96,
       "scale": 1.11
-    },
-    {
-      "id": "sea-lavender-2646",
-      "kind": "flats-sea-lavender",
-      "x": 2050,
-      "y": -9500,
-      "heading": 2.02,
-      "scale": 1.42
     },
     {
       "id": "sea-lavender-2650",
@@ -21238,8 +21251,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2681",
       "kind": "flats-sea-lavender",
-      "x": -815,
-      "y": -9340,
+      "x": -868.668137061283,
+      "y": -9407.582098521616,
       "heading": 0.26,
       "scale": 1.3
     },
@@ -21886,8 +21899,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2845",
       "kind": "flats-sea-lavender",
-      "x": 1258,
-      "y": -12701,
+      "x": 979.6635897747105,
+      "y": -11955.364846001976,
       "heading": 3.21,
       "scale": 0.79
     },
@@ -21974,8 +21987,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2871",
       "kind": "flats-sea-lavender",
-      "x": -548,
-      "y": -12657,
+      "x": -765.0513290747667,
+      "y": -13144.727104156242,
       "heading": 5.48,
       "scale": 1.19
     },
@@ -22342,8 +22355,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2971",
       "kind": "flats-sea-lavender",
-      "x": -3087,
-      "y": 3724,
+      "x": -3147.2102818878607,
+      "y": 3773.584938025297,
       "heading": 0.13,
       "scale": 1.25
     },
@@ -22422,8 +22435,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2990",
       "kind": "flats-sea-lavender",
-      "x": -606,
-      "y": -1823,
+      "x": -589.2783015249994,
+      "y": -1891.7447603972246,
       "heading": 2.5,
       "scale": 0.97
     },
@@ -22446,8 +22459,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-2995",
       "kind": "flats-sea-lavender",
-      "x": 1077,
-      "y": -12820,
+      "x": 798.6635897747105,
+      "y": -12074.364846001976,
       "heading": 4.31,
       "scale": 0.92
     },
@@ -22526,8 +22539,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3011",
       "kind": "flats-sea-lavender",
-      "x": -1648,
-      "y": 1247,
+      "x": -1496.2141384233018,
+      "y": 1362.3572547982903,
       "heading": 1.59,
       "scale": 1.2
     },
@@ -22918,8 +22931,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3104",
       "kind": "flats-sea-lavender",
-      "x": -2219,
-      "y": 2936,
+      "x": -2198.7232111689123,
+      "y": 3077.9375218176156,
       "heading": 0.58,
       "scale": 0.96
     },
@@ -23142,8 +23155,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3160",
       "kind": "flats-sea-lavender",
-      "x": 1172,
-      "y": -12872,
+      "x": 893.6635897747105,
+      "y": -12126.364846001976,
       "heading": 5.88,
       "scale": 1.17
     },
@@ -23262,8 +23275,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3193",
       "kind": "flats-sea-lavender",
-      "x": 2308,
-      "y": -707,
+      "x": 2341.4935996880668,
+      "y": -727.4683109204851,
       "heading": 0.97,
       "scale": 1.08
     },
@@ -23446,8 +23459,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3235",
       "kind": "flats-sea-lavender",
-      "x": 501,
-      "y": -1529,
+      "x": 541.9366218409705,
+      "y": -1545.7467998440334,
       "heading": 2.1,
       "scale": 0.93
     },
@@ -23822,8 +23835,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3323",
       "kind": "flats-sea-lavender",
-      "x": 922,
-      "y": -1772,
+      "x": 949.9113330733888,
+      "y": -1755.2532001559666,
       "heading": 4.06,
       "scale": 0.86
     },
@@ -24006,8 +24019,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3370",
       "kind": "flats-sea-lavender",
-      "x": 3243,
-      "y": 2609,
+      "x": 3263.4283603835074,
+      "y": 2657.5173559108302,
       "heading": 5.28,
       "scale": 1.2
     },
@@ -24038,8 +24051,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3378",
       "kind": "flats-sea-lavender",
-      "x": 2843,
-      "y": 3610,
+      "x": 2891.51735591083,
+      "y": 3617.660635143815,
       "heading": 1.41,
       "scale": 0.98
     },
@@ -24102,8 +24115,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3388",
       "kind": "flats-sea-lavender",
-      "x": 2983,
-      "y": -5651,
+      "x": 3074.9276217257834,
+      "y": -5607.589734185047,
       "heading": 0.46,
       "scale": 1.03
     },
@@ -24182,8 +24195,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3403",
       "kind": "flats-sea-lavender",
-      "x": -1590,
-      "y": -5061,
+      "x": -1560.3931709367175,
+      "y": -5037.032566948771,
       "heading": 3.81,
       "scale": 0.79
     },
@@ -24486,8 +24499,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3471",
       "kind": "flats-sea-lavender",
-      "x": -947,
-      "y": -9563,
+      "x": -976.8156317007129,
+      "y": -9503.368736598573,
       "heading": 5.61,
       "scale": 0.97
     },
@@ -24502,8 +24515,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3476",
       "kind": "flats-sea-lavender",
-      "x": 1144,
-      "y": -12925,
+      "x": 865.6635897747105,
+      "y": -12179.364846001976,
       "heading": 5.35,
       "scale": 0.83
     },
@@ -24594,14 +24607,6 @@ window.VENUE_DOC["flats"] = {
       "y": -9907,
       "heading": 2.06,
       "scale": 0.84
-    },
-    {
-      "id": "sea-lavender-3502",
-      "kind": "flats-sea-lavender",
-      "x": -3282,
-      "y": -2654,
-      "heading": 3.02,
-      "scale": 1.19
     },
     {
       "id": "sea-lavender-3504",
@@ -24830,8 +24835,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3560",
       "kind": "flats-sea-lavender",
-      "x": 1267,
-      "y": -1196,
+      "x": 1023.241024492404,
+      "y": -1233.2151107645184,
       "heading": 2.36,
       "scale": 1.07
     },
@@ -24998,8 +25003,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3609",
       "kind": "flats-sea-lavender",
-      "x": 917,
-      "y": -1667,
+      "x": 944.9113330733888,
+      "y": -1650.2532001559666,
       "heading": 4.2,
       "scale": 1.11
     },
@@ -25686,8 +25691,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3765",
       "kind": "flats-sea-lavender",
-      "x": 3117,
-      "y": -1671,
+      "x": 3188.499261342276,
+      "y": -1714.4102658149532,
       "heading": 3.55,
       "scale": 0.96
     },
@@ -26118,8 +26123,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3864",
       "kind": "flats-sea-lavender",
-      "x": 709,
-      "y": -1749,
+      "x": 736.9113330733888,
+      "y": -1732.2532001559666,
       "heading": 2.87,
       "scale": 1.11
     },
@@ -26278,8 +26283,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3903",
       "kind": "flats-sea-lavender",
-      "x": 1135,
-      "y": -10603,
+      "x": 1160.5354504793843,
+      "y": -10648.963810862891,
       "heading": 1.07,
       "scale": 0.78
     },
@@ -26478,8 +26483,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3944",
       "kind": "flats-sea-lavender",
-      "x": 2983,
-      "y": -5703,
+      "x": 3074.9276217257834,
+      "y": -5659.589734185047,
       "heading": 4.96,
       "scale": 1.02
     },
@@ -26502,8 +26507,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3948",
       "kind": "flats-sea-lavender",
-      "x": -1971,
-      "y": 4799,
+      "x": -1874.9194291872536,
+      "y": 4747.528265636029,
       "heading": 1.84,
       "scale": 1.22
     },
@@ -26558,8 +26563,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3970",
       "kind": "flats-sea-lavender",
-      "x": -1707,
-      "y": -11992,
+      "x": -1178.4161750767441,
+      "y": -11785.162851116987,
       "heading": 1.33,
       "scale": 1.06
     },
@@ -26590,8 +26595,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3975",
       "kind": "flats-sea-lavender",
-      "x": -2166,
-      "y": 3641,
+      "x": -2198.179534311121,
+      "y": 3602.384558826655,
       "heading": 3.73,
       "scale": 0.89
     },
@@ -26614,8 +26619,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-3985",
       "kind": "flats-sea-lavender",
-      "x": -322,
-      "y": -12869,
+      "x": -539.0513290747668,
+      "y": -13356.727104156242,
       "heading": 5.26,
       "scale": 0.96
     },
@@ -26706,14 +26711,6 @@ window.VENUE_DOC["flats"] = {
       "y": -12221,
       "heading": 1.22,
       "scale": 0.85
-    },
-    {
-      "id": "sea-lavender-4004",
-      "kind": "flats-sea-lavender",
-      "x": 2038,
-      "y": -9703,
-      "heading": 1.66,
-      "scale": 0.94
     },
     {
       "id": "sea-lavender-4005",
@@ -26926,8 +26923,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4058",
       "kind": "flats-sea-lavender",
-      "x": 2651,
-      "y": -1178,
+      "x": 2729.1517326054886,
+      "y": -1004.9497349449889,
       "heading": 0.94,
       "scale": 0.9
     },
@@ -27174,8 +27171,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4125",
       "kind": "flats-sea-lavender",
-      "x": 1135,
-      "y": -12738,
+      "x": 856.6635897747105,
+      "y": -11992.364846001976,
       "heading": 6.22,
       "scale": 1.27
     },
@@ -27270,7 +27267,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4152",
       "kind": "flats-sea-lavender",
-      "x": 3335,
+      "x": 3375.856720767015,
       "y": 2163,
       "heading": 0.69,
       "scale": 1.49
@@ -27470,8 +27467,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4206",
       "kind": "flats-sea-lavender",
-      "x": 2063,
-      "y": 1776,
+      "x": 1987.5312614631803,
+      "y": 1747.6992230486926,
       "heading": 1.66,
       "scale": 0.96
     },
@@ -27518,8 +27515,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4215",
       "kind": "flats-sea-lavender",
-      "x": -2060,
-      "y": 2989,
+      "x": -2097.908779118991,
+      "y": 3056.883162608425,
       "heading": 4.76,
       "scale": 0.91
     },
@@ -27638,8 +27635,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4245",
       "kind": "flats-sea-lavender",
-      "x": 1085,
-      "y": -12770,
+      "x": 806.6635897747105,
+      "y": -12024.364846001976,
       "heading": 3.78,
       "scale": 0.84
     },
@@ -27774,8 +27771,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4275",
       "kind": "flats-sea-lavender",
-      "x": 2778,
-      "y": -2742,
+      "x": 2806.088995527323,
+      "y": -2749.660635143815,
       "heading": 4.76,
       "scale": 1.44
     },
@@ -27838,8 +27835,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4291",
       "kind": "flats-sea-lavender",
-      "x": 1232,
-      "y": -1164,
+      "x": 988.2410244924039,
+      "y": -1201.2151107645184,
       "heading": 0.51,
       "scale": 0.92
     },
@@ -28198,7 +28195,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4375",
       "kind": "flats-sea-lavender",
-      "x": 692,
+      "x": 695.975417560095,
       "y": -8338,
       "heading": 4.36,
       "scale": 0.76
@@ -28270,8 +28267,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4391",
       "kind": "flats-sea-lavender",
-      "x": 2592,
-      "y": -611,
+      "x": 2603.1645332293556,
+      "y": -653.7973773791962,
       "heading": 5.87,
       "scale": 1.1
     },
@@ -28350,8 +28347,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4406",
       "kind": "flats-sea-lavender",
-      "x": 3406,
-      "y": 1376,
+      "x": 3449.410265814953,
+      "y": 1427.0709009587686,
       "heading": 6.15,
       "scale": 1.2
     },
@@ -28454,8 +28451,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4436",
       "kind": "flats-sea-lavender",
-      "x": -2031,
-      "y": 4353,
+      "x": -1967.2479368246184,
+      "y": 4393.730484806493,
       "heading": 5.44,
       "scale": 1.13
     },
@@ -28662,8 +28659,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4480",
       "kind": "flats-sea-lavender",
-      "x": 1131,
-      "y": -12827,
+      "x": 852.6635897747105,
+      "y": -12081.364846001976,
       "heading": 4.47,
       "scale": 0.85
     },
@@ -28818,14 +28815,6 @@ window.VENUE_DOC["flats"] = {
       "y": -5669,
       "heading": 0.38,
       "scale": 0.83
-    },
-    {
-      "id": "sea-lavender-4511",
-      "kind": "flats-sea-lavender",
-      "x": -2722,
-      "y": -3675,
-      "heading": 5.71,
-      "scale": 1.1
     },
     {
       "id": "sea-lavender-4512",
@@ -29084,14 +29073,6 @@ window.VENUE_DOC["flats"] = {
       "scale": 0.75
     },
     {
-      "id": "sea-lavender-4590",
-      "kind": "flats-sea-lavender",
-      "x": 2009,
-      "y": -9666,
-      "heading": 2.79,
-      "scale": 0.81
-    },
-    {
       "id": "sea-lavender-4593",
       "kind": "flats-sea-lavender",
       "x": 3706,
@@ -29310,8 +29291,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4649",
       "kind": "flats-sea-lavender",
-      "x": 409,
-      "y": -4665,
+      "x": 152.77711715775575,
+      "y": -4803.498855590403,
       "heading": 0.53,
       "scale": 1.01
     },
@@ -29342,8 +29323,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4657",
       "kind": "flats-sea-lavender",
-      "x": -3107,
-      "y": 1593,
+      "x": -3262.8383766509332,
+      "y": 1430.0780607740244,
       "heading": 1.1,
       "scale": 1
     },
@@ -29540,14 +29521,6 @@ window.VENUE_DOC["flats"] = {
       "scale": 0.75
     },
     {
-      "id": "sea-lavender-4714",
-      "kind": "flats-sea-lavender",
-      "x": -2285,
-      "y": -4686,
-      "heading": 6,
-      "scale": 1.09
-    },
-    {
       "id": "sea-lavender-4716",
       "kind": "flats-sea-lavender",
       "x": 3771,
@@ -29614,8 +29587,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4729",
       "kind": "flats-sea-lavender",
-      "x": 1234,
-      "y": -12877,
+      "x": 955.6635897747105,
+      "y": -12131.364846001976,
       "heading": 5.79,
       "scale": 0.83
     },
@@ -29646,8 +29619,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4736",
       "kind": "flats-sea-lavender",
-      "x": 2841,
-      "y": -2506,
+      "x": 2909.945716294338,
+      "y": -2503.4464549520617,
       "heading": 3.96,
       "scale": 0.79
     },
@@ -29958,8 +29931,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4825",
       "kind": "flats-sea-lavender",
-      "x": -349,
-      "y": -12525,
+      "x": -566.0513290747668,
+      "y": -13012.727104156242,
       "heading": 2.99,
       "scale": 1.33
     },
@@ -30054,7 +30027,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4852",
       "kind": "flats-sea-lavender",
-      "x": 3329,
+      "x": 3369.856720767015,
       "y": 2271,
       "heading": 5.78,
       "scale": 0.99
@@ -30318,8 +30291,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4912",
       "kind": "flats-sea-lavender",
-      "x": 844,
-      "y": -1796,
+      "x": 871.9113330733888,
+      "y": -1779.2532001559666,
       "heading": 3.8,
       "scale": 0.96
     },
@@ -30350,8 +30323,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4923",
       "kind": "flats-sea-lavender",
-      "x": -3138,
-      "y": 1785,
+      "x": -3157.4797970813665,
+      "y": 1717.706155537097,
       "heading": 1.85,
       "scale": 0.81
     },
@@ -30366,8 +30339,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4926",
       "kind": "flats-sea-lavender",
-      "x": -1794,
-      "y": -11886,
+      "x": -1265.4161750767441,
+      "y": -11679.162851116987,
       "heading": 6.07,
       "scale": 0.98
     },
@@ -30390,8 +30363,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4932",
       "kind": "flats-sea-lavender",
-      "x": 715,
-      "y": -8257,
+      "x": 752.7664668209029,
+      "y": -8423.967537523991,
       "heading": 1.76,
       "scale": 0.86
     },
@@ -30590,16 +30563,16 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-4984",
       "kind": "flats-sea-lavender",
-      "x": 2316,
-      "y": -1116,
+      "x": 2397.8732436819405,
+      "y": -987.6078678624112,
       "heading": 1.26,
       "scale": 1.23
     },
     {
       "id": "sea-lavender-4985",
       "kind": "flats-sea-lavender",
-      "x": -1930,
-      "y": 3396,
+      "x": -1955.5663859174588,
+      "y": 3402.171196600766,
       "heading": 6.28,
       "scale": 0.82
     },
@@ -30694,8 +30667,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5017",
       "kind": "flats-sea-lavender",
-      "x": 3061,
-      "y": 2881,
+      "x": 3132.499261342276,
+      "y": 2875.892909904123,
       "heading": 1.93,
       "scale": 1.19
     },
@@ -31526,8 +31499,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5220",
       "kind": "flats-sea-lavender",
-      "x": 2120,
-      "y": 2079,
+      "x": 2072.832038414488,
+      "y": 2083.716796158551,
       "heading": 4.07,
       "scale": 1.05
     },
@@ -31734,8 +31707,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5291",
       "kind": "flats-sea-lavender",
-      "x": -486,
-      "y": -12530,
+      "x": -703.0513290747667,
+      "y": -13017.727104156242,
       "heading": 3.66,
       "scale": 0.77
     },
@@ -31766,8 +31739,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5301",
       "kind": "flats-sea-lavender",
-      "x": -977,
-      "y": 4821,
+      "x": -1018.177387491177,
+      "y": 4766.0968166784305,
       "heading": 5.86,
       "scale": 0.94
     },
@@ -31838,8 +31811,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5318",
       "kind": "flats-sea-lavender",
-      "x": 3331,
-      "y": 4660,
+      "x": 3356.5354504793845,
+      "y": 4606.375553993294,
       "heading": 1.57,
       "scale": 0.99
     },
@@ -31862,8 +31835,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5322",
       "kind": "flats-sea-lavender",
-      "x": 1202,
-      "y": -1208,
+      "x": 958.2410244924039,
+      "y": -1245.2151107645184,
       "heading": 6.07,
       "scale": 0.82
     },
@@ -32198,8 +32171,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5393",
       "kind": "flats-sea-lavender",
-      "x": -1482,
-      "y": -9288,
+      "x": -1440.2581156190022,
+      "y": -9280.049164879809,
       "heading": 0.31,
       "scale": 0.89
     },
@@ -32246,8 +32219,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5410",
       "kind": "flats-sea-lavender",
-      "x": -413,
-      "y": -12778,
+      "x": -630.0513290747668,
+      "y": -13265.727104156242,
       "heading": 3.04,
       "scale": 0.93
     },
@@ -32270,8 +32243,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5419",
       "kind": "flats-sea-lavender",
-      "x": -2339,
-      "y": 2928,
+      "x": -2328.4208058272584,
+      "y": 2962.3823810614103,
       "heading": 2.65,
       "scale": 1.03
     },
@@ -32334,8 +32307,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5445",
       "kind": "flats-sea-lavender",
-      "x": -786,
-      "y": -9282,
+      "x": -835.6927195011881,
+      "y": -9276.036873659858,
       "heading": 4.16,
       "scale": 1.2
     },
@@ -32510,16 +32483,16 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5500",
       "kind": "flats-sea-lavender",
-      "x": -3097,
-      "y": 3671,
+      "x": -3141.272266094015,
+      "y": 3704.6469222314513,
       "heading": 1.5,
       "scale": 0.99
     },
     {
       "id": "sea-lavender-5501",
       "kind": "flats-sea-lavender",
-      "x": 543,
-      "y": -1619,
+      "x": 648.9040903416701,
+      "y": -1622.7159329944445,
       "heading": 0.8,
       "scale": 1.14
     },
@@ -32590,8 +32563,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5513",
       "kind": "flats-sea-lavender",
-      "x": -3539,
-      "y": -1550,
+      "x": -3585.231076657338,
+      "y": -1554.4029596816513,
       "heading": 4.85,
       "scale": 1.03
     },
@@ -32622,16 +32595,16 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5519",
       "kind": "flats-sea-lavender",
-      "x": -325,
-      "y": -12982,
+      "x": -542.0513290747668,
+      "y": -13469.727104156242,
       "heading": 1.7,
       "scale": 0.92
     },
     {
       "id": "sea-lavender-5521",
       "kind": "flats-sea-lavender",
-      "x": 722,
-      "y": -1698,
+      "x": 749.9113330733888,
+      "y": -1681.2532001559666,
       "heading": 5.2,
       "scale": 0.86
     },
@@ -32766,8 +32739,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5552",
       "kind": "flats-sea-lavender",
-      "x": -3458,
-      "y": -1021,
+      "x": -3555.3659757355545,
+      "y": -872.8343847502432,
       "heading": 0.97,
       "scale": 0.9
     },
@@ -33206,8 +33179,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5654",
       "kind": "flats-sea-lavender",
-      "x": -3247,
-      "y": 3028,
+      "x": -3289.5013754502543,
+      "y": 3020.9164374249576,
       "heading": 5.78,
       "scale": 0.97
     },
@@ -33302,8 +33275,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5675",
       "kind": "flats-sea-lavender",
-      "x": 2814,
-      "y": -851,
+      "x": 2780.5064003119337,
+      "y": -893.7973773791962,
       "heading": 5.12,
       "scale": 0.83
     },
@@ -33414,8 +33387,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5698",
       "kind": "flats-sea-lavender",
-      "x": 1356,
-      "y": -12991,
+      "x": 1077.6635897747112,
+      "y": -12245.364846001976,
       "heading": 4.09,
       "scale": 0.76
     },
@@ -33686,8 +33659,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5772",
       "kind": "flats-sea-lavender",
-      "x": 2455,
-      "y": -6211,
+      "x": 2398.8220089453544,
+      "y": -6262.070900958769,
       "heading": 3.25,
       "scale": 0.88
     },
@@ -33778,14 +33751,6 @@ window.VENUE_DOC["flats"] = {
       "y": 3568,
       "heading": 2.48,
       "scale": 1.01
-    },
-    {
-      "id": "sea-lavender-5796",
-      "kind": "flats-sea-lavender",
-      "x": 1725,
-      "y": -9725,
-      "heading": 0.71,
-      "scale": 0.89
     },
     {
       "id": "sea-lavender-5798",
@@ -33910,8 +33875,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5832",
       "kind": "flats-sea-lavender",
-      "x": -2423,
-      "y": 4375,
+      "x": -2477.8976099565784,
+      "y": 4412.188703518972,
       "heading": 4.78,
       "scale": 0.77
     },
@@ -34158,8 +34123,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5895",
       "kind": "flats-sea-lavender",
-      "x": 3206,
-      "y": 2653,
+      "x": 3226.4283603835074,
+      "y": 2701.5173559108302,
       "heading": 0.3,
       "scale": 0.83
     },
@@ -34206,8 +34171,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-5905",
       "kind": "flats-sea-lavender",
-      "x": -380,
-      "y": -12697,
+      "x": -597.0513290747668,
+      "y": -13184.727104156242,
       "heading": 2.34,
       "scale": 0.76
     },
@@ -34330,14 +34295,6 @@ window.VENUE_DOC["flats"] = {
       "y": -10546,
       "heading": 2.66,
       "scale": 0.88
-    },
-    {
-      "id": "sea-lavender-5938",
-      "kind": "flats-sea-lavender",
-      "x": -2165,
-      "y": -4983,
-      "heading": 2.42,
-      "scale": 1.17
     },
     {
       "id": "sea-lavender-5943",
@@ -34590,8 +34547,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6027",
       "kind": "flats-sea-lavender",
-      "x": 2845,
-      "y": -2466,
+      "x": 2913.945716294338,
+      "y": -2463.4464549520617,
       "heading": 4.7,
       "scale": 0.8
     },
@@ -34730,14 +34687,6 @@ window.VENUE_DOC["flats"] = {
       "y": -3526,
       "heading": 5.15,
       "scale": 0.9
-    },
-    {
-      "id": "sea-lavender-6062",
-      "kind": "flats-sea-lavender",
-      "x": 1709,
-      "y": -9678,
-      "heading": 0.3,
-      "scale": 0.86
     },
     {
       "id": "sea-lavender-6063",
@@ -35038,8 +34987,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6157",
       "kind": "flats-sea-lavender",
-      "x": 786,
-      "y": -1782,
+      "x": 813.9113330733888,
+      "y": -1765.2532001559666,
       "heading": 3.57,
       "scale": 0.75
     },
@@ -35790,7 +35739,7 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6319",
       "kind": "flats-sea-lavender",
-      "x": 2143,
+      "x": 2072.2480576217317,
       "y": 2384,
       "heading": 4.98,
       "scale": 0.9
@@ -35846,8 +35795,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6333",
       "kind": "flats-sea-lavender",
-      "x": -281,
-      "y": -12741,
+      "x": -498.05132907476684,
+      "y": -13228.727104156242,
       "heading": 3.61,
       "scale": 0.87
     },
@@ -35990,8 +35939,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6365",
       "kind": "flats-sea-lavender",
-      "x": -378,
-      "y": -12865,
+      "x": -595.0513290747668,
+      "y": -13352.727104156242,
       "heading": 2.21,
       "scale": 1.09
     },
@@ -36014,8 +35963,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6370",
       "kind": "flats-sea-lavender",
-      "x": -3520,
-      "y": -1429,
+      "x": -3536.5110988061924,
+      "y": -1348.6459858098651,
       "heading": 0.97,
       "scale": 0.96
     },
@@ -36102,16 +36051,16 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6387",
       "kind": "flats-sea-lavender",
-      "x": 2174,
-      "y": 2185,
+      "x": 2126.832038414488,
+      "y": 2189.716796158551,
       "heading": 0.22,
       "scale": 0.92
     },
     {
       "id": "sea-lavender-6388",
       "kind": "flats-sea-lavender",
-      "x": 782,
-      "y": -8204,
+      "x": 787.9631263401426,
+      "y": -8317.299400462709,
       "heading": 1.61,
       "scale": 0.98
     },
@@ -36286,8 +36235,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6424",
       "kind": "flats-sea-lavender",
-      "x": 2934,
-      "y": -7774,
+      "x": 3015.71344153403,
+      "y": -7784.214180191754,
       "heading": 4.42,
       "scale": 0.86
     },
@@ -36534,8 +36483,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6483",
       "kind": "flats-sea-lavender",
-      "x": 1141,
-      "y": 2275,
+      "x": 1181.0927673476854,
+      "y": 2286.791990396378,
       "heading": 0.27,
       "scale": 0.81
     },
@@ -36574,8 +36523,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6491",
       "kind": "flats-sea-lavender",
-      "x": 2072,
-      "y": 2199,
+      "x": 2024.8320384144877,
+      "y": 2203.716796158551,
       "heading": 5.64,
       "scale": 1.05
     },
@@ -36590,8 +36539,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6497",
       "kind": "flats-sea-lavender",
-      "x": 3024,
-      "y": -6743,
+      "x": 3110.820531629907,
+      "y": -6714.911004472677,
       "heading": 3.61,
       "scale": 0.95
     },
@@ -36718,8 +36667,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6527",
       "kind": "flats-sea-lavender",
-      "x": -1094,
-      "y": -9585,
+      "x": -1141.7050107211405,
+      "y": -9493.565396117814,
       "heading": 1.16,
       "scale": 0.91
     },
@@ -36782,8 +36731,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6539",
       "kind": "flats-sea-lavender",
-      "x": -433,
-      "y": -12719,
+      "x": -650.0513290747668,
+      "y": -13206.727104156242,
       "heading": 4.72,
       "scale": 0.95
     },
@@ -36854,8 +36803,8 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "sea-lavender-6559",
       "kind": "flats-sea-lavender",
-      "x": 1349,
-      "y": 1728,
+      "x": 1407.9599519818905,
+      "y": 1730.3583980792757,
       "heading": 1.53,
       "scale": 0.9
     }
@@ -36920,7 +36869,7 @@ window.VENUE_DOC["flats"] = {
         "falloff": 250,
         "count": 4,
         "gustKt": 5,
-        "sizeM": 500,
+        "sizeM": 250,
         "lifeS": 70,
         "bias": 0.6,
         "veer": 15
@@ -36964,7 +36913,7 @@ window.VENUE_DOC["flats"] = {
         "falloff": 250,
         "count": 4,
         "gustKt": 5,
-        "sizeM": 500,
+        "sizeM": 250,
         "lifeS": 70,
         "bias": 0.6,
         "veer": 15

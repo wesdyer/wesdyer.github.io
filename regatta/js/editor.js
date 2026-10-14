@@ -297,6 +297,9 @@ function rebake(l) {
     l.r = Math.max.apply(null, l.outer.map(p => Math.hypot(p[0] - c.x, p[1] - c.y)));
 }
 const eachRing = (l) => [l.outer].concat(l.holes || []);
+// What a shape LOOKS like: a curved shape (`smooth`) is the flattened curve the game builds, not its control
+// points — so the editor draws what the race will meet. Editing still moves the control points (eachRing).
+const drawnRings = (l) => (l.smooth && window.VenueDoc.smoothed) ? eachRing(window.VenueDoc.smoothed(l)) : eachRing(l);
 
 // The types ISLAND_STYLES can already draw. `style` picks the look, `cls` the
 // behaviour class — granite grounds you, everything else is currently soft. Adding a
@@ -770,7 +773,7 @@ function loadDoc(src, handle) {
     // writes that, and so does any copy saved before shapes existed — so it is normalised
     // here, at the one place a document enters the editor. Everything below assumes
     // `doc.shapes`, and saving writes it back in the new form.
-    doc.shapes = window.VenueDoc.shapes(doc);
+    doc.shapes = window.VenueDoc.authoredShapes(doc);   // the control points, never the flattened curves
     delete doc['land']; delete doc['ice'];   // bracketed: a bare rename swept these too
     // Land on the COURSE layer: the first question about a venue you have just opened is what
     // the course is, not which coastline you feel like reshaping.
@@ -2122,7 +2125,7 @@ function drawLandLayer() {
         for (const l of shapes) {
             const kind = TR(l).kind;
             ctx.beginPath();
-            for (const ring of eachRing(l)) ringPath(ring);
+            for (const ring of drawnRings(l)) ringPath(ring);
             ctx.fillStyle = KIND_FILL[kind] || KIND_FILL.isle;
             ctx.fill('evenodd');                            // holes
             const selected = inOsel({ kind: 'shape', id: l.id }) || sel.shape === l.id;
@@ -2139,7 +2142,7 @@ function drawLandLayer() {
         // Map-only scenery (wholly past VenueDoc.mapLine — never raced) wears a dotted outline.
         if (window.VenueDoc && window.VenueDoc.isMapOnly) {
             ctx.save(); ctx.setLineDash([3, 4]); ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
-            for (const l of shapes) { if (!window.VenueDoc.isMapOnly(doc, l)) continue; ctx.beginPath(); for (const ring of eachRing(l)) ringPath(ring); ctx.stroke(); }
+            for (const l of shapes) { if (!window.VenueDoc.isMapOnly(doc, l)) continue; ctx.beginPath(); for (const ring of drawnRings(l)) ringPath(ring); ctx.stroke(); }
             ctx.restore();
         }
         // Vertices of the SELECTED shape only — 137 dots everywhere is noise, and a handle
@@ -2147,17 +2150,24 @@ function drawLandLayer() {
         if (sel.shape && mode === 'shape' && sub === 'direct') {
             for (const l of shapes) {
                 if (sel.shape !== l.id) continue;
+                // A CURVED shape's points are control points, not its outline: the polygon through them is
+                // drawn faint and dashed under the handles, so you can see what each point is pulling on.
+                if (l.smooth) {
+                    ctx.save(); ctx.setLineDash([4, 4]); ctx.lineWidth = 1; ctx.strokeStyle = 'rgba(125,211,252,0.55)';
+                    ctx.beginPath(); for (const ring of eachRing(l)) ringPath(ring); ctx.stroke(); ctx.restore();
+                }
                 for (const ring of eachRing(l)) {
                     ring.forEach((p, i) => {
                         const s = toS(p[0], p[1]);
                         const on = hover.shape === l.id && hover.vert === i;
                         const rad = on ? 8 : 5.5;
+                        // A CORNER of a curved shape (K toggles it) is a square: the curve keeps its point there.
+                        const sq = l.smooth && p[2];
+                        const mark = (r) => { ctx.beginPath(); if (sq) ctx.rect(s.x - r, s.y - r, 2 * r, 2 * r); else ctx.arc(s.x, s.y, r, 0, Math.PI * 2); };
                         // Dark ring under the fill: a handle has to be visible against
                         // white land AND navy water, and a single flat colour is not.
-                        ctx.beginPath(); ctx.arc(s.x, s.y, rad + 1.5, 0, Math.PI * 2);
-                        ctx.fillStyle = 'rgba(8,15,30,0.75)'; ctx.fill();
-                        ctx.beginPath(); ctx.arc(s.x, s.y, rad, 0, Math.PI * 2);
-                        ctx.fillStyle = on ? '#7dd3fc' : '#38bdf8'; ctx.fill();
+                        mark(rad + 1.5); ctx.fillStyle = 'rgba(8,15,30,0.75)'; ctx.fill();
+                        mark(rad); ctx.fillStyle = on ? '#7dd3fc' : '#38bdf8'; ctx.fill();
                     });
                 }
             }
@@ -4218,6 +4228,13 @@ function inspectorRefresh() {
         const val = +x || 0;
         if (Array.isArray(q)) q[2] = val; else q.speed = val;
     }, 'waypoint speed');
+    // Curved or straight: the outline's own property, beside the shape's other facts.
+    const smo = obj.querySelector('#in-smooth');
+    if (smo) smo.addEventListener('change', () => {
+        const l = shapeById(sel.shape); if (!l) return;
+        if (smo.checked) l.smooth = true; else delete l.smooth;
+        afterEdit(true, smo.checked ? 'curved outline' : 'straight outline');
+    });
     // Material and softness are the shape's own properties, so they live in its inspector
     // rather than in a panel off to the side.
     const mat = obj.querySelector('#in-mat');
@@ -4406,6 +4423,16 @@ ${T.tide ? `<div class="in-sect"><span class="k">Tide</span>
   </div>
   <div class="in-sub">${leeSays(l)}</div>
 </div>`}
+<div class="in-sect"><span class="k">Outline</span>
+  <div class="in-grid" style="align-items:center">
+    <label class="k" for="in-smooth">curved</label>
+    <input id="in-smooth" type="checkbox" class="in-check"${l.smooth ? ' checked' : ''}
+           title="a smooth curve through the points, instead of straight edges between them">
+  </div>
+  <div class="in-sub">${l.smooth
+    ? `A curve through the points${(() => { const n = l.outer.filter(p => p[2]).length; return n ? ` · ${n} corner${n === 1 ? '' : 's'}` : ''; })()}. With Direct (A), hover a point and press <b>K</b> to make it a corner, or a corner back into curve.`
+    : 'Straight edges between the points.'}</div>
+</div>
 <div class="in-sect"><span class="k">Transform</span>
   <div class="in-grid">
     ${numF('X', 'shape.x', f1(uToM(bb.cx)), 'm')}
@@ -8471,6 +8498,16 @@ window.addEventListener('keydown', (e) => {
         hintBar(); draw();
         return;
     }
+    // K (a kink): a curved shape's hovered point becomes a corner (the curve keeps its point there), or back
+    // into curve. Not C — C is the current field, as W is the wind's.
+    if (e.key.toLowerCase() === 'k' && !mod && mode === 'shape' && hover.shape && hover.vert >= 0) {
+        const l = shapeById(hover.shape), p = l && l.outer[hover.vert];
+        if (p && l.smooth) {
+            if (p[2]) p.length = 2; else p[2] = 1;
+            afterEdit(true, p[2] ? 'corner' : 'curve point');
+            return;
+        }
+    }
     if (e.key.toLowerCase() === 'w') { showField = !showField; syncFieldButtons(); fieldProbe(); draw(); return; }
     if (e.key.toLowerCase() === 'c' && !mod) { showCurField = !showCurField; syncFieldButtons(); fieldProbe(); draw(); return; }
     // L for the tide's Level (T is Traffic): off / low water / mean / high water.
@@ -9316,6 +9353,7 @@ window.EditorApp = { resize, fitView, loadVenue, loadBlank, newDoc, draw, buildK
     _openDocText: (text, name) => openDocText(text, null, name),
     _venueLabel: () => $('venue-label').textContent,
     _view: () => ({ x: view.x, y: view.y, scale: view.scale }),
+    _hover: () => Object.assign({}, hover),
     _setView: (x, y, sc) => { view.x = x; view.y = y; view.scale = sc;
         if (boatProbe) { boatProbe.x = x; boatProbe.y = y; } boatInfo(); draw(); },
     _addIce: (x, y, r) => addIce(x, y, r),

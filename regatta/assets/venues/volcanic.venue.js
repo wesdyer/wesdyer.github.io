@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["volcanic"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "volcanic",
   "note": "FIRST CUT, Sep 2 2026 — a hand-laid round-the-cans course so the venue exists, opens in editor.html and races: three cone islets rounded in order (port, starboard, starboard), the main isle and a lava delta as scenery. Eruption cycles, submerged vents, pumice rafts and steam columns are NOT built (guidelines/venues.md §12); the cones here are plain rock. Sep 4 2026: re-kinded onto the venue's own ground set — the three cones are `cinder`, the main isle `basalt`, the delta and the beach `blacksand` (the direct swap for the cobble/humus stand-ins, plus cones-are-cinder). No `lava` shape is placed yet: the kind exists and animates, so draw a tongue in the editor where a flow meets the sea. All three tiles were delivered and ingested the same day. Redesign freely — nothing here is measured.",
   "card": {
@@ -73,6 +73,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-22",
       "kind": "blacksand",
+      "smooth": true,
       "outer": [
         [
           1692.0754358536822,
@@ -309,11 +310,12 @@ window.VENUE_DOC["volcanic"] = {
         -5912.75728571525
       ],
       "r": 626.9674794321269,
-      "height": 15
+      "height": 7.5
     },
     {
       "id": "shape-18",
       "kind": "blacksand",
+      "smooth": true,
       "outer": [
         [
           3146.7121360112606,
@@ -466,6 +468,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-19",
       "kind": "blacksand",
+      "smooth": true,
       "outer": [
         [
           137.93235063536287,
@@ -678,6 +681,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-20",
       "kind": "blacksand",
+      "smooth": true,
       "outer": [
         [
           1797.9403558038123,
@@ -1218,11 +1222,12 @@ window.VENUE_DOC["volcanic"] = {
         -2810.8873914782403
       ],
       "r": 3087.6902016224158,
-      "height": 30
+      "height": 15
     },
     {
       "id": "shape-21",
       "kind": "blacksand",
+      "smooth": true,
       "outer": [
         [
           -1940.3506414702729,
@@ -1447,7 +1452,7 @@ window.VENUE_DOC["volcanic"] = {
         -3684.6940603996213
       ],
       "r": 855.7809161998366,
-      "height": 20
+      "height": 10
     },
     {
       "id": "shape-3",
@@ -1608,7 +1613,7 @@ window.VENUE_DOC["volcanic"] = {
         -3645.2433127200175
       ],
       "r": 532.1554254791282,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-4",
@@ -1705,7 +1710,7 @@ window.VENUE_DOC["volcanic"] = {
         -6570.734243053569
       ],
       "r": 239.2099962530148,
-      "height": 7.5
+      "height": 3.75
     },
     {
       "id": "shape-5",
@@ -1818,7 +1823,7 @@ window.VENUE_DOC["volcanic"] = {
         -518.7876219396117
       ],
       "r": 783.2051482394329,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-6",
@@ -1915,7 +1920,7 @@ window.VENUE_DOC["volcanic"] = {
         -456.68223177625174
       ],
       "r": 580.4921549276448,
-      "height": 15
+      "height": 7.5
     },
     {
       "id": "shape-7",
@@ -1972,7 +1977,7 @@ window.VENUE_DOC["volcanic"] = {
         1990.0645816744918
       ],
       "r": 444.57213729329436,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-8",
@@ -2049,11 +2054,12 @@ window.VENUE_DOC["volcanic"] = {
         814.7153448318677
       ],
       "r": 282.9703136066248,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-23",
       "kind": "cinder",
+      "smooth": true,
       "outer": [
         [
           811.6187623510409,
@@ -2154,6 +2160,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-9",
       "kind": "lava",
+      "smooth": true,
       "outer": [
         [
           2025.5197956550917,
@@ -2230,6 +2237,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-10",
       "kind": "lava",
+      "smooth": true,
       "outer": [
         [
           2699.972345053658,
@@ -2306,6 +2314,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-11",
       "kind": "lava",
+      "smooth": true,
       "outer": [
         [
           1022.4410292432531,
@@ -2370,6 +2379,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-12",
       "kind": "lava",
+      "smooth": true,
       "outer": [
         [
           2407.7619532856006,
@@ -2422,6 +2432,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-13",
       "kind": "lava",
+      "smooth": true,
       "outer": [
         [
           2448.5134734011667,
@@ -2494,6 +2505,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-14",
       "kind": "lava",
+      "smooth": true,
       "outer": [
         [
           414.89528354080045,
@@ -2582,6 +2594,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-15",
       "kind": "lava",
+      "smooth": true,
       "outer": [
         [
           2954.7573726168243,
@@ -2658,6 +2671,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-16",
       "kind": "lava",
+      "smooth": true,
       "outer": [
         [
           2998.914028390443,
@@ -2738,6 +2752,7 @@ window.VENUE_DOC["volcanic"] = {
     {
       "id": "shape-17",
       "kind": "lava",
+      "smooth": true,
       "outer": [
         [
           -919.4433972351947,
@@ -2924,7 +2939,7 @@ window.VENUE_DOC["volcanic"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-4388e59c-e01",
+      "sig": "v3-3f8dec0a-nun",
       "legs": [
         {
           "pts": []
@@ -4027,7 +4042,7 @@ window.VENUE_DOC["volcanic"] = {
         "falloff": 300,
         "count": 10,
         "gustKt": 8,
-        "sizeM": 450,
+        "sizeM": 225,
         "lifeS": 45,
         "bias": 0.75,
         "veer": 20

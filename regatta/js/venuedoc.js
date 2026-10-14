@@ -85,6 +85,10 @@ function segmentsProperlyIntersect(a1, a2, b1, b2) {
 // load and in the editor, never per frame.
 function ringSelfIntersects(ring) {
     const n = ring.length;
+    // A curved shape's flattened ring runs to hundreds of points, and n^2 pairs of them is real load time.
+    // Two edges can only cross where their boxes overlap, so on a long ring only pairs sharing a grid cell
+    // are tested — and the answer is the SAME first pair, (i, j) in the plain loop's order.
+    if (n > 64) return ringSelfIntersectsGrid(ring);
     for (let i = 0; i < n; i++) {
         for (let j = i + 2; j < n; j++) {
             if (i === 0 && j === n - 1) continue;      // adjacent through the wrap
@@ -94,6 +98,30 @@ function ringSelfIntersects(ring) {
         }
     }
     return null;
+}
+
+function ringSelfIntersectsGrid(ring) {
+    const n = ring.length;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const p of ring) { if (p[0] < x0) x0 = p[0]; if (p[0] > x1) x1 = p[0]; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+    const side = Math.max(1e-6, Math.max(x1 - x0, y1 - y0) / Math.ceil(Math.sqrt(n)));
+    const cells = new Map();
+    for (let i = 0; i < n; i++) {
+        const a = ring[i], b = ring[(i + 1) % n];
+        const gx0 = Math.floor((Math.min(a[0], b[0]) - x0) / side), gx1 = Math.floor((Math.max(a[0], b[0]) - x0) / side);
+        const gy0 = Math.floor((Math.min(a[1], b[1]) - y0) / side), gy1 = Math.floor((Math.max(a[1], b[1]) - y0) / side);
+        for (let gy = gy0; gy <= gy1; gy++) for (let gx = gx0; gx <= gx1; gx++) {
+            const k = gx + gy * 100003; let c = cells.get(k); if (!c) cells.set(k, c = []); c.push(i);
+        }
+    }
+    let best = null;
+    for (const c of cells.values()) for (let p = 0; p < c.length; p++) for (let q = p + 1; q < c.length; q++) {
+        const i = Math.min(c[p], c[q]), j = Math.max(c[p], c[q]);
+        if (j < i + 2 || (i === 0 && j === n - 1)) continue;
+        if (best && (i > best[0] || (i === best[0] && j >= best[1]))) continue;
+        if (segmentsProperlyIntersect(ring[i], ring[(i + 1) % n], ring[j], ring[(j + 1) % n])) best = [i, j];
+    }
+    return best;
 }
 
 const ringArea = (ring) => {
@@ -3331,29 +3359,80 @@ const SHOAL_FEATHER = 120;
 // Smoothstep, like every other soft edge in this game. A linear ramp has a corner at each
 // end, and a boat holding station on that corner is a boat whose speed oscillates with its
 // own leeway; the eased one has zero gradient where it meets deep water.
+// A shoal's edges bucketed by cell (cell = its feather), built once per shoal; null for a short ring, which is
+// cheaper to walk. An edge lands in every cell its box touches, so a feather-wide window misses none in reach.
+// Kept in a WeakMap beside the island rather than on it, so the island objects keep their shape for the hot
+// loops that walk them.
+const _shoalGrids = new WeakMap();
+function shoalEdgeGrid(isl, f) {
+    const hit = _shoalGrids.get(isl);
+    if (hit !== undefined && hit.f === f) return hit.g;
+    let n = 0; for (const r of isl.shoalRings) n += r.length;
+    let g = null;
+    if (n >= 48) {
+        const cell = Math.max(10, f), cells = new Map();
+        for (const ring of isl.shoalRings) for (let i = 0; i < ring.length; i++) {
+            const a = ring[i], b = ring[(i + 1) % ring.length];
+            const c0 = Math.floor(Math.min(a[0], b[0]) / cell), c1 = Math.floor(Math.max(a[0], b[0]) / cell);
+            const r0 = Math.floor(Math.min(a[1], b[1]) / cell), r1 = Math.floor(Math.max(a[1], b[1]) / cell);
+            for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const k = c + ',' + r; let E = cells.get(k); if (!E) cells.set(k, E = []); E.push([a, b]); }
+        }
+        // and each ring's edges by horizontal BAND, for the inside test: the same crossing test, asked only of
+        // the edges whose y-span holds the point's y
+        const bands = isl.shoalRings.map(ring => {
+            let y0 = Infinity, y1 = -Infinity; for (const q of ring) { if (q[1] < y0) y0 = q[1]; if (q[1] > y1) y1 = q[1]; }
+            const h = Math.max(1e-6, (y1 - y0) / Math.max(1, Math.ceil(Math.sqrt(ring.length)))), B = new Map();
+            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+                const b0 = Math.floor((Math.min(ring[i][1], ring[j][1]) - y0) / h), b1 = Math.floor((Math.max(ring[i][1], ring[j][1]) - y0) / h);
+                for (let k = b0; k <= b1; k++) { let L = B.get(k); if (!L) B.set(k, L = []); L.push(i, j); }
+            }
+            return { y0, h, B };
+        });
+        g = { cell, cells, bands };
+    }
+    _shoalGrids.set(isl, { f, g });
+    return g;
+}
 function shoalMulAt(isl, x, y) {
     if (!isl.awash || !isl.shoalRings) return 1;
     const dx = x - isl.x, dy = y - isl.y;
     if (dx * dx + dy * dy > isl.radius * isl.radius) return 1;   // outside the bounding disc
+    const f = isl.shoalFeather || SHOAL_FEATHER;
+    const G = shoalEdgeGrid(isl, f);
     // Inside the outer ring and outside every hole — the same evenodd rule the renderer
     // fills with, so what you see slow is what slows you.
-    if (!pointInRing(x, y, isl.shoalRings[0])) return 1;
+    const inR = (h) => {
+        if (!G) return pointInRing(x, y, isl.shoalRings[h]);
+        const ring = isl.shoalRings[h], bd = G.bands[h], L = bd.B.get(Math.floor((y - bd.y0) / bd.h));
+        let inside = false;
+        if (L) for (let k = 0; k < L.length; k += 2) {
+            const xi = ring[L[k]][0], yi = ring[L[k]][1], xj = ring[L[k + 1]][0], yj = ring[L[k + 1]][1];
+            if (((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi)) inside = !inside;
+        }
+        return inside;
+    };
+    if (!inR(0)) return 1;
     for (let h = 1; h < isl.shoalRings.length; h++) {
-        if (pointInRing(x, y, isl.shoalRings[h])) return 1;
+        if (inR(h)) return 1;
     }
     let d = Infinity;
-    for (const ring of isl.shoalRings) {
-        for (let i = 0; i < ring.length; i++) {
-            const a = ring[i], b = ring[(i + 1) % ring.length];
-            const ex = b[0] - a[0], ey = b[1] - a[1], l2 = ex * ex + ey * ey;
-            let t = l2 ? ((x - a[0]) * ex + (y - a[1]) * ey) / l2 : 0;
-            t = t < 0 ? 0 : t > 1 ? 1 : t;
-            const px = x - (a[0] + t * ex), py = y - (a[1] + t * ey);
-            const dd = px * px + py * py;
-            if (dd < d) d = dd;
-        }
+    const edge = (a, b) => {
+        const ex = b[0] - a[0], ey = b[1] - a[1], l2 = ex * ex + ey * ey;
+        let t = l2 ? ((x - a[0]) * ex + (y - a[1]) * ey) / l2 : 0;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const px = x - (a[0] + t * ex), py = y - (a[1] + t * ey);
+        const dd = px * px + py * py;
+        if (dd < d) d = dd;
+    };
+    // Only an edge within the feather can change the answer (past it the shoal is at full depth), so a long
+    // ring — a curved shoal is hundreds of edges, and every boat asks every frame — is searched only in the
+    // grid cells within a feather of the point. The nearest such edge is the same edge, the same number.
+    if (G) {
+        const c0 = Math.floor((x - f) / G.cell), c1 = Math.floor((x + f) / G.cell), r0 = Math.floor((y - f) / G.cell), r1 = Math.floor((y + f) / G.cell);
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const E = G.cells.get(c + ',' + r); if (E) for (const e of E) edge(e[0], e[1]); }
+    } else {
+        for (const ring of isl.shoalRings) for (let i = 0; i < ring.length; i++) edge(ring[i], ring[(i + 1) % ring.length]);
     }
-    const f = isl.shoalFeather || SHOAL_FEATHER;
     const t = Math.min(1, Math.sqrt(d) / f);
     return 1 - (1 - isl.shoalMul) * (t * t * (3 - 2 * t));
 }
@@ -3776,7 +3855,90 @@ function previewGuideRect(doc) {
 // The shapes the RACE reads: every shape that is not map-only.
 function raceShapes(doc) { return migrateShapes(doc).filter(sh => !isMapOnly(doc, sh)); }
 
+// ── CURVED SHAPES (Wes, Oct 14 2026: "can we make curved surfaces?") ──────────────────────────────────────
+// A shape with `smooth: true` is a closed CURVE through its authored vertices — a centripetal Catmull-Rom
+// spline, which passes through every vertex and never loops or cusps — rather than straight edges between
+// them. Corners stay corners: a vertex flagged as one — a third value, [x, y, 1], so the flag travels with its
+// vertex through inserts, deletes and moves (the editor toggles it with K) — and any spike sharper than
+// SMOOTH_SPIKE keeps its point (the curve leaves it along the edge).
+// The curve is FLATTENED HERE, once, to a polyline within SMOOTH_TOL of it — about half a pixel at race zoom —
+// splitting only where it bends, so a gentle sweep costs few vertices. Everything downstream (collision, the
+// shoal and lee fields, surf, the nav grid, the router, the chart) meets ordinary vertices and needs no curve
+// maths, and what the boat hits is what is drawn. The AUTHORED vertices stay in the document as the curve's
+// control points (the editor edits those). A venue with no smooth shape is byte-identical: migrateShapes
+// hands back its own array.
+const SMOOTH_TOL = 0.5;
+const SMOOTH_SPIKE = 70 * Math.PI / 180;      // an interior angle tighter than this stays a corner
+function crPoint(p0, p1, p2, p3, u) {          // centripetal (alpha 0.5) Catmull-Rom, u in [0,1] across p1..p2
+    const d = (a, b) => Math.max(1e-6, Math.sqrt(Math.hypot(b[0] - a[0], b[1] - a[1])));
+    const t0 = 0, t1 = t0 + d(p0, p1), t2 = t1 + d(p1, p2), t3 = t2 + d(p2, p3);
+    const t = t1 + (t2 - t1) * u;
+    const L = (a, b, ta, tb) => { const k = (t - ta) / (tb - ta); return [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k]; };
+    const A1 = L(p0, p1, t0, t1), A2 = L(p1, p2, t1, t2), A3 = L(p2, p3, t2, t3);
+    const B1 = L(A1, A2, t0, t2), B2 = L(A2, A3, t1, t3);
+    return L(B1, B2, t1, t2);
+}
+function smoothRing(ring0) {
+    // A repeated point (two control points on the same spot — harmless in a straight ring) would leave a
+    // zero-length edge in the curve that the validator reads as the ring crossing itself. Drop repeats first.
+    const ring = ring0.filter((p, i) => { const q = ring0[(i + ring0.length - 1) % ring0.length]; return i === 0 ? !(ring0.length > 1 && p[0] === q[0] && p[1] === q[1]) : !(p[0] === q[0] && p[1] === q[1]); });
+    const n = ring.length;
+    if (n < 3) return ring0.map(p => [p[0], p[1]]);
+    const corner = ring.map(p => !!p[2]);
+    for (let i = 0; i < n; i++) {
+        const a = ring[(i + n - 1) % n], b = ring[i], c = ring[(i + 1) % n];
+        const ux = a[0] - b[0], uy = a[1] - b[1], vx = c[0] - b[0], vy = c[1] - b[1];
+        const ang = Math.acos(Math.max(-1, Math.min(1, (ux * vx + uy * vy) / (Math.hypot(ux, uy) * Math.hypot(vx, vy) || 1))));
+        if (ang < SMOOTH_SPIKE) corner[i] = true;
+    }
+    const out = [];
+    for (let i = 0; i < n; i++) {
+        const p1 = ring[i], p2 = ring[(i + 1) % n];
+        // At a corner the curve leaves along the edge: mirror the far neighbour through the corner.
+        const p0 = corner[i] ? [2 * p1[0] - p2[0], 2 * p1[1] - p2[1]] : ring[(i + n - 1) % n];
+        const p3 = corner[(i + 1) % n] ? [2 * p2[0] - p1[0], 2 * p2[1] - p1[1]] : ring[(i + 2) % n];
+        out.push([p1[0], p1[1]]);
+        const rec = (u0, q0, u1, q1, depth) => {
+            const um = (u0 + u1) / 2, qm = crPoint(p0, p1, p2, p3, um);
+            const dev = (q) => {
+                const ex = q1[0] - q0[0], ey = q1[1] - q0[1], L = Math.hypot(ex, ey) || 1;
+                return Math.abs((q[0] - q0[0]) * ey - (q[1] - q0[1]) * ex) / L;
+            };
+            const off = Math.max(dev(qm), dev(crPoint(p0, p1, p2, p3, (u0 + um) / 2)), dev(crPoint(p0, p1, p2, p3, (um + u1) / 2)));
+            if (depth < 9 && off > SMOOTH_TOL) {
+                rec(u0, q0, um, qm, depth + 1);
+                out.push(qm);
+                rec(um, qm, u1, q1, depth + 1);
+            }
+        };
+        rec(0, p1, 1, p2, 0);
+    }
+    return out;
+}
+// One smooth shape's flattened copy, kept until its vertices change (the editor moves them in place).
+const _smoothCache = new WeakMap();
+function smoothedShape(sh) {
+    let key = '' + sh.outer.length;
+    for (const ring of [sh.outer].concat(sh.holes || [])) for (const p of ring) key += ',' + p[0] + ',' + p[1] + (p[2] ? 'c' : '');
+    const hit = _smoothCache.get(sh);
+    if (hit && hit.key === key) return hit.shape;
+    const shape = Object.assign({}, sh, {
+        outer: smoothRing(sh.outer),
+        holes: (sh.holes || []).map(h => smoothRing(h)),
+    });
+    _smoothCache.set(sh, { key, shape });
+    return shape;
+}
+
+// The shapes AS THE RACE MEETS THEM: authored shapes, with every curved one flattened. Everything at runtime
+// reads this; the editor must NOT — it edits the control points, and taking these would write the flattened
+// rings back into the document (authoredShapes is its door).
 function migrateShapes(doc) {
+    const base = authoredShapes(doc);
+    return base.some(sh => sh.smooth) ? base.map(sh => sh.smooth ? smoothedShape(sh) : sh) : base;
+}
+// The shapes AS AUTHORED: the document's own list, or the legacy land/ice fields migrated to it.
+function authoredShapes(doc) {
     if (doc.shapes) return doc.shapes;
     const out = [];
     for (const l of (doc.land || [])) {
@@ -3918,6 +4080,8 @@ function compileVenueDoc(doc, light) {
             // it as "invisible" is what hid the cove's lanes for a release: unrouted and
             // undrawn are separate facts, and `hidden` above is the one the renderer asks.
             isBank: !T.nav,
+            // A CURVED shape (flattened finely for the eye and the hull) — the router takes a leaner ring of it.
+            smooth: !!l.smooth,
             // SUBMERGED. Read by the collision pass (skips it), the renderer (paints it
             // under the water instead of over it), the nav-island filter (it is no
             // obstacle) and the router (it is a cost). `shoalMul` is the speed multiplier
@@ -4750,7 +4914,7 @@ window.VenueDoc = {
     shoalGrab: () => _shoalGrab,
     regionWeight: regionWeight,
     traits: shapeTraits,
-    shapes: migrateShapes,
+    shapes: migrateShapes, authoredShapes, smoothRing, smoothed: smoothedShape,
     resolveRefs: resolveRefs,
     pointInRing: pointInRing,
     keyholeRings: keyholeRings,

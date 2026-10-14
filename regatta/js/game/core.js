@@ -70,11 +70,30 @@ function pointInPoly(x, y, verts) {
 }
 
 // Is this position open water on a mask venue? Margin pushes it clear of the shore.
+// A ring's bounding box, cached BESIDE the ring (rebuilt if its length changes). A WeakMap, not a property on
+// the array: a property changes the array's hidden class, and the hot loops over vertex arrays (collision,
+// the swimmers' land tests) slowed by ~2 ms a frame on Otter Point seeing several shapes of array.
+const _maskBoxes = new WeakMap();
+function maskRingBox(verts) {
+    let b = _maskBoxes.get(verts);
+    if (b && b.n === verts.length) return b;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const v of verts) { if (v.x < x0) x0 = v.x; if (v.x > x1) x1 = v.x; if (v.y < y0) y0 = v.y; if (v.y > y1) y1 = v.y; }
+    b = { n: verts.length, x0, y0, x1, y1 };
+    _maskBoxes.set(verts, b);
+    return b;
+}
 function inMaskWater(x, y, margin = 0) {
     const land = state.course.landShapes;
     if (!land) return true;
     for (const isl of land) {
-        if (pointInPoly(x, y, isl.vertices)) return false;
+        // Outside the ring's box, grown by the margin, the point can be neither in it nor within margin of its
+        // edge — the answer the full tests below would give, without walking the ring (every particle and every
+        // comet asks this of every shape on the venue, every frame).
+        const bx = maskRingBox(isl.vertices);
+        if (x < bx.x0 - margin || x > bx.x1 + margin || y < bx.y0 - margin || y > bx.y1 + margin) continue;
+        // a CURVED shape's dense ring takes collision's gridded test (see wildlife's landPip); straight ones the plain
+        if ((isl.smooth && typeof pointInPolyFast === 'function') ? pointInPolyFast(x, y, isl.vertices) : pointInPoly(x, y, isl.vertices)) return false;
         if (margin > 0) {
             // near-shore rejection: distance to the polygon edge
             for (let i = 0, j = isl.vertices.length - 1; i < isl.vertices.length; j = i++) {

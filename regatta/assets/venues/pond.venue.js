@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["pond"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "pond",
   "note": "The tutorial pond. Seven knots from due north, no shifts, no gusts, flat water: when the boat stalls it is because you pointed too high, never because the wind moved. The graduation course is a one-lap windward-leeward at a third of standard leg length.",
   "card": {
@@ -28,6 +28,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-6",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -1989.750420098545,
@@ -53,8 +54,8 @@ window.VENUE_DOC["pond"] = {
             -782.14988978151
           ],
           [
-            -891.7976660497455,
-            -390.76609250423263
+            -948.6948573117529,
+            -530.1642110961507
           ],
           [
             -702.5856316044393,
@@ -231,6 +232,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-1",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           1063.8151414961087,
@@ -287,6 +289,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-3",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           363.90673727481493,
@@ -327,6 +330,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-4",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -1067.827718265812,
@@ -367,6 +371,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-5",
       "kind": "isle",
+      "smooth": true,
       "outer": [
         [
           -867.96077950509,
@@ -459,11 +464,12 @@ window.VENUE_DOC["pond"] = {
         -1896.3573773097828
       ],
       "r": 641.0597239767309,
-      "height": 1
+      "height": 0.5
     },
     {
       "id": "shape-2",
       "kind": "lawn",
+      "smooth": true,
       "outer": [
         [
           -6223.99043864452,
@@ -667,7 +673,7 @@ window.VENUE_DOC["pond"] = {
         378.4517530625467
       ],
       "r": 10160.319402409506,
-      "height": 3
+      "height": 1.5
     }
   ],
   "course": {
@@ -741,7 +747,7 @@ window.VENUE_DOC["pond"] = {
     "startTime": 30,
     "cutoff": 600,
     "paths": {
-      "sig": "v3-b3ad3aff-1nv",
+      "sig": "v3-aac448f4-7ez",
       "legs": [
         {
           "pts": []

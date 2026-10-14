@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["lagoon"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "lagoon",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.",
   "card": {
@@ -93,6 +93,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-3",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -1840.9884598132871,
@@ -349,6 +350,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-6",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           -2354.2062351158306,
@@ -505,6 +507,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-7",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           1808.0479320653947,
@@ -729,6 +732,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-1",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           1319.5678827318784,
@@ -789,11 +793,12 @@ window.VENUE_DOC["lagoon"] = {
         -1799.0372828543545
       ],
       "r": 630.381843536482,
-      "height": 2
+      "height": 1
     },
     {
       "id": "shape-4",
       "kind": "coralreef",
+      "smooth": true,
       "outer": [
         [
           -1686.9973529397662,
@@ -1018,6 +1023,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-8",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           -871.8471255168287,
@@ -1158,6 +1164,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-9",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           -769.2478073601162,
@@ -1246,6 +1253,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-10",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           -253.02395592604205,
@@ -1354,6 +1362,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-11",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           474.23531828131536,
@@ -1438,6 +1447,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-12",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           -816.2671081113722,
@@ -1534,11 +1544,12 @@ window.VENUE_DOC["lagoon"] = {
         -799.6983769189432
       ],
       "r": 459.9719482941232,
-      "height": 2
+      "height": 1
     },
     {
       "id": "shape-13",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           -264.81424654009965,
@@ -1607,11 +1618,12 @@ window.VENUE_DOC["lagoon"] = {
         -917.5483896943323
       ],
       "r": 186.36064130596515,
-      "height": 2
+      "height": 1
     },
     {
       "id": "shape-5",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           -914.0563238700187,
@@ -1684,11 +1696,12 @@ window.VENUE_DOC["lagoon"] = {
         1710.7947180715537
       ],
       "r": 399.1849057956047,
-      "height": 2
+      "height": 1
     },
     {
       "id": "shape-14",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           1730.9713512877372,
@@ -1789,6 +1802,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-15",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           1626.0588101133792,
@@ -1865,11 +1879,12 @@ window.VENUE_DOC["lagoon"] = {
         1204.6594400028225
       ],
       "r": 207.63518261922002,
-      "height": 2
+      "height": 1
     },
     {
       "id": "shape-16",
       "kind": "coralreef",
+      "smooth": true,
       "outer": [
         [
           1201.054873670908,
@@ -1954,6 +1969,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-2",
       "kind": "coralreef",
+      "smooth": true,
       "outer": [
         [
           -2433.411744162215,
@@ -2130,6 +2146,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-17",
       "kind": "coralreef",
+      "smooth": true,
       "outer": [
         [
           -2300.982353876599,
@@ -2190,6 +2207,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-18",
       "kind": "coralreef",
+      "smooth": true,
       "outer": [
         [
           -830.4335154158798,
@@ -2262,6 +2280,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-19",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           -1031.2693980271476,
@@ -2374,11 +2393,12 @@ window.VENUE_DOC["lagoon"] = {
         -2345.8231999985587
       ],
       "r": 694.2668714156049,
-      "height": 2
+      "height": 1
     },
     {
       "id": "shape-20",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           -2243.773498755597,
@@ -2463,11 +2483,12 @@ window.VENUE_DOC["lagoon"] = {
         180.64111411200582
       ],
       "r": 444.09412874865615,
-      "height": 2
+      "height": 1
     },
     {
       "id": "shape-21",
       "kind": "tropicscrub",
+      "smooth": true,
       "outer": [
         [
           1359.439512962547,
@@ -2572,11 +2593,12 @@ window.VENUE_DOC["lagoon"] = {
         -1979.3453849090185
       ],
       "r": 378.6913452037844,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-22",
       "kind": "tropicscrub",
+      "smooth": true,
       "outer": [
         [
           1304.3552232353034,
@@ -2649,11 +2671,12 @@ window.VENUE_DOC["lagoon"] = {
         -1482.8456258961426
       ],
       "r": 152.0711872945355,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-23",
       "kind": "tropicscrub",
+      "smooth": true,
       "outer": [
         [
           1062.2138663092953,
@@ -2734,11 +2757,12 @@ window.VENUE_DOC["lagoon"] = {
         -1727.151209798985
       ],
       "r": 146.07047213851396,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-24",
       "kind": "tropicscrub",
+      "smooth": true,
       "outer": [
         [
           -1779.7683771166721,
@@ -2891,11 +2915,12 @@ window.VENUE_DOC["lagoon"] = {
         -2369.4237576132264
       ],
       "r": 596.3409393371844,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-25",
       "kind": "reed",
+      "smooth": true,
       "outer": [
         [
           1478.4401741297168,
@@ -2960,11 +2985,12 @@ window.VENUE_DOC["lagoon"] = {
         1214.6779635777025
       ],
       "r": 133.31525186866577,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-26",
       "kind": "seagrass",
+      "smooth": true,
       "outer": [
         [
           -442.67585603919315,
@@ -3129,6 +3155,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-27",
       "kind": "seagrass",
+      "smooth": true,
       "outer": [
         [
           1932.5830235931528,
@@ -3245,6 +3272,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-28",
       "kind": "seagrass",
+      "smooth": true,
       "outer": [
         [
           -66.92267553744409,
@@ -3369,6 +3397,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-29",
       "kind": "seagrass",
+      "smooth": true,
       "outer": [
         [
           -1989.2375513907014,
@@ -3469,6 +3498,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-31",
       "kind": "coralreef",
+      "smooth": true,
       "outer": [
         [
           1439.8252744514357,
@@ -3561,6 +3591,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-32",
       "kind": "seagrass",
+      "smooth": true,
       "outer": [
         [
           66.3771,
@@ -3669,6 +3700,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-33",
       "kind": "seagrass",
+      "smooth": true,
       "outer": [
         [
           789.180930262539,
@@ -3761,6 +3793,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-34",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           1558.953,
@@ -3799,16 +3832,20 @@ window.VENUE_DOC["lagoon"] = {
           253.8047
         ],
         [
-          1041.6924,
-          168.3863
+          1052.8386243634814,
+          185.10563654522224
         ],
         [
-          1177.2085,
-          253.9369
+          1153.0583472124567,
+          235.35985939419757
         ],
         [
-          1210.5503,
-          111.4019
+          1208.6925959394198,
+          168.9907258779876
+        ],
+        [
+          1287.9959538563776,
+          173.9192670123855
         ],
         [
           1315.8001,
@@ -3837,14 +3874,15 @@ window.VENUE_DOC["lagoon"] = {
       ],
       "holes": [],
       "c": [
-        1279.645,
-        484.991
+        1279.302364282723,
+        471.5520625699891
       ],
-      "r": 436.3359
+      "r": 446.9579040418272
     },
     {
       "id": "shape-35",
       "kind": "seagrass",
+      "smooth": true,
       "outer": [
         [
           -153.3773509127716,
@@ -3905,6 +3943,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-30",
       "kind": "coralreef",
+      "smooth": true,
       "outer": [
         [
           -371.232312005427,
@@ -3945,6 +3984,7 @@ window.VENUE_DOC["lagoon"] = {
     {
       "id": "shape-30-2",
       "kind": "coralreef",
+      "smooth": true,
       "outer": [
         [
           386.97597006727074,
@@ -4119,7 +4159,7 @@ window.VENUE_DOC["lagoon"] = {
       }
     ],
     "paths": {
-      "sig": "v3-ac074f7a-em5",
+      "sig": "v3-7eb582b3-vn1",
       "legs": [
         {
           "pts": []
@@ -5644,7 +5684,7 @@ window.VENUE_DOC["lagoon"] = {
         "falloff": 500,
         "count": 4,
         "gustKt": 4,
-        "sizeM": 500,
+        "sizeM": 250,
         "lifeS": 90,
         "bias": 0.75,
         "veer": 15

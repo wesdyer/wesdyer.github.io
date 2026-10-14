@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["glowtide"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "glowtide",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.",
   "card": {
@@ -109,6 +109,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-27",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           138.56994055522966,
@@ -177,6 +178,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-28",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           108.97843057746707,
@@ -265,6 +267,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-29",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           1466.7,
@@ -340,6 +343,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-31",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -141.389788556729,
@@ -384,6 +388,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-32",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           193.63906576894323,
@@ -440,6 +445,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-35",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           1564.2227884108966,
@@ -492,6 +498,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-36",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           2622.3006381101313,
@@ -540,6 +547,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-41",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -20.037076465856387,
@@ -584,6 +592,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-43",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           764.8032718264747,
@@ -680,6 +689,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-64",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           464.56937413710625,
@@ -796,6 +806,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-61",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           1605.046007784667,
@@ -868,6 +879,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-26",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -1562.9418831661205,
@@ -936,6 +948,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-30",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -1987.0868595140514,
@@ -992,6 +1005,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-33",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -564.5223034809691,
@@ -1036,6 +1050,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-34",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -1018.1762375403429,
@@ -1092,6 +1107,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-37",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -6655.610949506546,
@@ -1171,6 +1187,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-38",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -4775.5,
@@ -1278,6 +1295,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-63",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           -1815.7949584662806,
@@ -1378,6 +1396,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-62",
       "kind": "tropicshoal",
+      "smooth": true,
       "outer": [
         [
           -3502.667420942141,
@@ -1458,6 +1477,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-40",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -772.2181861219054,
@@ -1598,7 +1618,7 @@ window.VENUE_DOC["glowtide"] = {
         -1581.3363188769906
       ],
       "r": 171.2907777399296,
-      "height": 6
+      "height": 3
     },
     {
       "id": "shape-4",
@@ -1651,7 +1671,7 @@ window.VENUE_DOC["glowtide"] = {
         -1210.3566397184063
       ],
       "r": 130.2533469439044,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-5",
@@ -1700,7 +1720,7 @@ window.VENUE_DOC["glowtide"] = {
         -1584.1454491547274
       ],
       "r": 57.26345110223268,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-6",
@@ -1737,7 +1757,7 @@ window.VENUE_DOC["glowtide"] = {
         -981.739424026039
       ],
       "r": 66.05379086028034,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-7",
@@ -1790,7 +1810,7 @@ window.VENUE_DOC["glowtide"] = {
         -1276.3677105421043
       ],
       "r": 72.26648196874685,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-8",
@@ -1839,7 +1859,7 @@ window.VENUE_DOC["glowtide"] = {
         1865.7914176116528
       ],
       "r": 112.44285377603256,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-9",
@@ -1884,7 +1904,7 @@ window.VENUE_DOC["glowtide"] = {
         1670.8100503108612
       ],
       "r": 51.53680161577996,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-10",
@@ -1929,7 +1949,7 @@ window.VENUE_DOC["glowtide"] = {
         819.6285916682258
       ],
       "r": 83.66367752316125,
-      "height": 4
+      "height": 2
     },
     {
       "id": "shape-11",
@@ -1970,11 +1990,12 @@ window.VENUE_DOC["glowtide"] = {
         752.4675946374583
       ],
       "r": 79.10185921157827,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-39",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -193.75219370353113,
@@ -2055,7 +2076,7 @@ window.VENUE_DOC["glowtide"] = {
         195.01472058548583
       ],
       "r": 138.34349002697053,
-      "height": 7
+      "height": 3.5
     },
     {
       "id": "shape-52",
@@ -2152,7 +2173,7 @@ window.VENUE_DOC["glowtide"] = {
         2183.7314261065844
       ],
       "r": 238.405893271484,
-      "height": 7.5
+      "height": 3.75
     },
     {
       "id": "shape-14",
@@ -2201,7 +2222,7 @@ window.VENUE_DOC["glowtide"] = {
         3334.5961449697998
       ],
       "r": 237.56806682234213,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-15",
@@ -2258,7 +2279,7 @@ window.VENUE_DOC["glowtide"] = {
         3073.300175321281
       ],
       "r": 207.41962965054552,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-16",
@@ -2307,11 +2328,12 @@ window.VENUE_DOC["glowtide"] = {
         60.375124142234625
       ],
       "r": 162.51720402170704,
-      "height": 6
+      "height": 3
     },
     {
       "id": "shape-42",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -1507.253431886631,
@@ -2408,7 +2430,7 @@ window.VENUE_DOC["glowtide"] = {
         1267.7853280766408
       ],
       "r": 149.9470520199754,
-      "height": 4
+      "height": 2
     },
     {
       "id": "shape-18",
@@ -2445,7 +2467,7 @@ window.VENUE_DOC["glowtide"] = {
         -1464.971662623354
       ],
       "r": 145.19716905818743,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-19",
@@ -2482,7 +2504,7 @@ window.VENUE_DOC["glowtide"] = {
         -1718.0011321390764
       ],
       "r": 165.20110421092045,
-      "height": 6
+      "height": 3
     },
     {
       "id": "shape-20",
@@ -2519,7 +2541,7 @@ window.VENUE_DOC["glowtide"] = {
         2640.6406074657184
       ],
       "r": 134.27410623529892,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-21",
@@ -2552,7 +2574,7 @@ window.VENUE_DOC["glowtide"] = {
         2534.659300254339
       ],
       "r": 73.06174065888773,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-22",
@@ -2613,7 +2635,7 @@ window.VENUE_DOC["glowtide"] = {
         -1991.7140359281054
       ],
       "r": 109.20821097164534,
-      "height": 8
+      "height": 4
     },
     {
       "id": "shape-23",
@@ -2654,7 +2676,7 @@ window.VENUE_DOC["glowtide"] = {
         -1879.2687670420244
       ],
       "r": 146.71607954764733,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-24",
@@ -2687,7 +2709,7 @@ window.VENUE_DOC["glowtide"] = {
         -1978.6346966507542
       ],
       "r": 77.03459470742942,
-      "height": 2.5
+      "height": 1.25
     },
     {
       "id": "shape-25",
@@ -2736,7 +2758,7 @@ window.VENUE_DOC["glowtide"] = {
         385.9802371784201
       ],
       "r": 114.95943782298008,
-      "height": 4
+      "height": 2
     },
     {
       "id": "shape-44",
@@ -2785,7 +2807,7 @@ window.VENUE_DOC["glowtide"] = {
         170.7353735004879
       ],
       "r": 101.98477517853034,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-45",
@@ -3183,6 +3205,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-59",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           -4494,
@@ -3254,6 +3277,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-56",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           -1865.2224481661874,
@@ -3382,6 +3406,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-60",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           -3487.5676767006134,
@@ -4040,7 +4065,7 @@ window.VENUE_DOC["glowtide"] = {
           3585.1
         ]
       ],
-      "height": 15,
+      "height": 7.5,
       "c": [
         -3194.4576475804097,
         1626.3396372867935
@@ -4050,6 +4075,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-57",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           270.11478642131726,
@@ -4174,6 +4200,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-58",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           1609.687666901312,
@@ -4784,7 +4811,7 @@ window.VENUE_DOC["glowtide"] = {
           -1287.8902059375455
         ]
       ],
-      "height": 10,
+      "height": 5,
       "c": [
         2110.507520887647,
         720.8013541465391
@@ -4794,6 +4821,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "sur-tropicsand-3",
       "kind": "tropicsand",
+      "smooth": true,
       "outer": [
         [
           -14151,
@@ -5209,6 +5237,7 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "shape-65",
       "kind": "jungle",
+      "smooth": true,
       "outer": [
         [
           -14151,
@@ -5859,8 +5888,8 @@ window.VENUE_DOC["glowtide"] = {
           2901.9
         ],
         [
-          -1576.4,
-          2954.8
+          -1621.8710863491194,
+          2921.571129206413
         ],
         [
           -1684,
@@ -5879,8 +5908,8 @@ window.VENUE_DOC["glowtide"] = {
           2739.7
         ],
         [
-          -2433.7,
-          2693.4
+          -2384.558460354289,
+          2704.3203421434914
         ],
         [
           -2554.5,
@@ -6224,16 +6253,17 @@ window.VENUE_DOC["glowtide"] = {
         ]
       ],
       "c": [
-        -5096.412987511791,
-        2753.7932500608786
+        -5096.398479791252,
+        2753.705074058309
       ],
-      "r": 12972.081868760877,
-      "height": 15,
+      "r": 12972.15513748169,
+      "height": 7.5,
       "holes": []
     },
     {
       "id": "shape-66",
       "kind": "jungle",
+      "smooth": true,
       "outer": [
         [
           12.072785243650832,
@@ -7301,7 +7331,7 @@ window.VENUE_DOC["glowtide"] = {
         -325.1296691821895
       ],
       "r": 13654.516825130268,
-      "height": 20,
+      "height": 10,
       "holes": []
     }
   ],
@@ -7403,7 +7433,7 @@ window.VENUE_DOC["glowtide"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-ce8dbb50-fmz",
+      "sig": "v3-907552af-1hm1",
       "legs": [
         {
           "pts": []
@@ -13302,8 +13332,8 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "veg-273",
       "kind": "glowtide-pemphis",
-      "x": 1400,
-      "y": -1980,
+      "x": 1470.7587321182837,
+      "y": -1950.7205246407102,
       "heading": 2.732,
       "scale": 2.487
     },
@@ -29108,8 +29138,8 @@ window.VENUE_DOC["glowtide"] = {
     {
       "id": "veg-2220",
       "kind": "ocean-pandanus",
-      "x": 1400,
-      "y": -1940,
+      "x": 1426.839519079349,
+      "y": -1889.9808962612133,
       "heading": 3.701,
       "scale": 2.855,
       "plane": "canopy"
@@ -44316,7 +44346,7 @@ window.VENUE_DOC["glowtide"] = {
         "falloff": 250,
         "count": 2,
         "gustKt": 4,
-        "sizeM": 200,
+        "sizeM": 100,
         "lifeS": 70,
         "bias": 0.55,
         "veer": 15
@@ -44368,7 +44398,7 @@ window.VENUE_DOC["glowtide"] = {
         "falloff": 250,
         "count": 2,
         "gustKt": 4,
-        "sizeM": 200,
+        "sizeM": 100,
         "lifeS": 70,
         "bias": 0.55,
         "veer": 15
@@ -44412,7 +44442,7 @@ window.VENUE_DOC["glowtide"] = {
         "falloff": 250,
         "count": 1,
         "gustKt": 4,
-        "sizeM": 200,
+        "sizeM": 100,
         "lifeS": 70,
         "bias": 0.55,
         "veer": 15
@@ -44440,7 +44470,7 @@ window.VENUE_DOC["glowtide"] = {
         "falloff": 250,
         "count": 1,
         "gustKt": 4,
-        "sizeM": 200,
+        "sizeM": 100,
         "lifeS": 70,
         "bias": 0.55,
         "veer": 15

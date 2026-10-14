@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["lake"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "lake",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.",
   "card": {
@@ -169,11 +169,12 @@ window.VENUE_DOC["lake"] = {
         689.1246210565726
       ],
       "r": 352.63126062427665,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-3",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           1442.0728711058046,
@@ -270,11 +271,12 @@ window.VENUE_DOC["lake"] = {
         -486.1473234187322
       ],
       "r": 339.9435833582785,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-38",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           -786.8060869030785,
@@ -339,6 +341,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-4",
       "kind": "forestfloor",
+      "smooth": true,
       "outer": [
         [
           -1085.3844694179038,
@@ -411,11 +414,12 @@ window.VENUE_DOC["lake"] = {
         -963.0527906770208
       ],
       "r": 343.2158398241494,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-6",
       "kind": "forestfloor",
+      "smooth": true,
       "outer": [
         [
           -1247.1972883013066,
@@ -500,11 +504,12 @@ window.VENUE_DOC["lake"] = {
         -66.38471139921273
       ],
       "r": 282.8131472160351,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-33",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           -100.83739132848868,
@@ -589,6 +594,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-5",
       "kind": "forestfloor",
+      "smooth": true,
       "outer": [
         [
           118.20517889164225,
@@ -713,11 +719,12 @@ window.VENUE_DOC["lake"] = {
         -340.49295710304665
       ],
       "r": 329.0328700186863,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-7",
       "kind": "forestfloor",
+      "smooth": true,
       "outer": [
         [
           374.46321460585807,
@@ -826,11 +833,12 @@ window.VENUE_DOC["lake"] = {
         -877.9714078638433
       ],
       "r": 423.5751870642109,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-12",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           214.05711231773446,
@@ -883,6 +891,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-8",
       "kind": "forestfloor",
+      "smooth": true,
       "outer": [
         [
           331.8457522737743,
@@ -971,11 +980,12 @@ window.VENUE_DOC["lake"] = {
         539.0276893045059
       ],
       "r": 456.84404626668635,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-10",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -993.9473329590903,
@@ -1048,6 +1058,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-11",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           -2508.867291231916,
@@ -1132,6 +1143,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-13",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           2329.921588153295,
@@ -1192,6 +1204,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-9",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           1105.2152514617458,
@@ -1248,6 +1261,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-28",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           1619.4813055871473,
@@ -1300,6 +1314,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-29",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           138.73365840981216,
@@ -1401,6 +1416,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-34",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           -1701.9251393261795,
@@ -1457,6 +1473,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-36",
       "kind": "lakesand",
+      "smooth": true,
       "outer": [
         [
           -969.4268498078909,
@@ -1517,6 +1534,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-2",
       "kind": "forestfloor",
+      "smooth": true,
       "outer": [
         [
           -9411,
@@ -2343,7 +2361,7 @@ window.VENUE_DOC["lake"] = {
           ]
         ]
       ],
-      "height": 10,
+      "height": 5,
       "c": [
         196.25,
         25.625
@@ -2429,7 +2447,7 @@ window.VENUE_DOC["lake"] = {
         789.7662251723891
       ],
       "r": 365.05172205006454,
-      "height": 20
+      "height": 10
     },
     {
       "id": "shape-15",
@@ -2490,7 +2508,7 @@ window.VENUE_DOC["lake"] = {
         742.7560916209695
       ],
       "r": 146.01181144279346,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-16",
@@ -2583,7 +2601,7 @@ window.VENUE_DOC["lake"] = {
         1430.2905117867099
       ],
       "r": 349.1405748284267,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-17",
@@ -2696,7 +2714,7 @@ window.VENUE_DOC["lake"] = {
         -990.2358107044519
       ],
       "r": 261.24947406388935,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-19",
@@ -2869,11 +2887,12 @@ window.VENUE_DOC["lake"] = {
         -1017.67846506679
       ],
       "r": 112.14292407066044,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-22",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -739.2652439608753,
@@ -2958,6 +2977,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-23",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           1518.4852797586295,
@@ -3186,7 +3206,7 @@ window.VENUE_DOC["lake"] = {
         -697.6497498973318
       ],
       "r": 273.0432923424058,
-      "height": 7.5
+      "height": 3.75
     },
     {
       "id": "shape-27",
@@ -3431,7 +3451,7 @@ window.VENUE_DOC["lake"] = {
         -511.9314160820623
       ],
       "r": 75.09697265921737,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-35",
@@ -3492,11 +3512,12 @@ window.VENUE_DOC["lake"] = {
         577.1702415138301
       ],
       "r": 177.25785135360502,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-37",
       "kind": "forestfloor",
+      "smooth": true,
       "outer": [
         [
           1594.0219209324089,
@@ -3593,11 +3614,12 @@ window.VENUE_DOC["lake"] = {
         -501.59277792383676
       ],
       "r": 299.5700769083577,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-39",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -2284.2620807776498,
@@ -3742,47 +3764,93 @@ window.VENUE_DOC["lake"] = {
         1088.5985058343263
       ],
       "r": 376.13812086400384,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-41",
       "kind": "reed",
       "outer": [
         [
-          -499.2550643070118,
-          2433.84451124318
+          -492.5130844908861,
+          2432.9651225715115
+        ],
+        [
+          -480.28033180680455,
+          2413.1709560112636
+        ],
+        [
+          -316.6257673775801,
+          2266.2116384969268
         ],
         [
           -298.68118412691155,
           2255.319532785006
         ],
         [
+          -290.4844794200183,
+          2272.2992013132384
+        ],
+        [
           -246.04832195199162,
           2360.5852571348455
+        ],
+        [
+          -182.80704692576668,
+          2411.162877540041
+        ],
+        [
+          -123.5859198860903,
+          2467.2590547565587
         ],
         [
           44.14367490432363,
           2612.3694897013543
         ],
         [
-          97.48779197349924,
-          2714.7901944741716
+          75.3311019323962,
+          2672.2493495952535
         ],
         [
-          -58.9882847627492,
-          2862.7312124793516
+          93.20781286082169,
+          2714.5226957796294
+        ],
+        [
+          54.193450028553976,
+          2746.5900640060727
+        ],
+        [
+          -13.729179704517072,
+          2816.2886972623137
+        ],
+        [
+          -60.05988573743206,
+          2855.230005656572
+        ],
+        [
+          -101.71233957032763,
+          2830.391057512589
+        ],
+        [
+          -378.81555305178125,
+          2561.8555011938442
+        ],
+        [
+          -475.4734130316455,
+          2459.1212056659074
         ]
       ],
       "holes": [],
       "c": [
-        -160.2235647118069,
-        2539.9400329696514
+        -187.87885102092102,
+        2538.093629822525
       ],
-      "r": 355.2444474558126
+      "r": 341.9256772506205,
+      "smooth": true
     },
     {
       "id": "shape-42",
       "kind": "reed",
+      "smooth": true,
       "outer": [
         [
           -862.3486698881171,
@@ -3843,7 +3911,7 @@ window.VENUE_DOC["lake"] = {
         -1670.1498183219908
       ],
       "r": 389.8849647813441,
-      "height": 1
+      "height": 0.5
     },
     {
       "id": "shape-26",
@@ -3892,11 +3960,12 @@ window.VENUE_DOC["lake"] = {
         -1818.0353184229582
       ],
       "r": 136.4008147505589,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-43",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           2423.5596279986034,
@@ -3969,6 +4038,7 @@ window.VENUE_DOC["lake"] = {
     {
       "id": "shape-44",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           702.3623970610364,
@@ -4098,7 +4168,7 @@ window.VENUE_DOC["lake"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-ae91656d-j2m",
+      "sig": "v3-6b0ada41-1ayy",
       "legs": [
         {
           "pts": []
@@ -4110,8 +4180,8 @@ window.VENUE_DOC["lake"] = {
               2180.5
             ],
             [
-              -940.4,
-              -205.5
+              -990.4,
+              -255.5
             ],
             [
               -2356.4,
@@ -4156,8 +4226,8 @@ window.VENUE_DOC["lake"] = {
               -1341.5
             ],
             [
-              -140.4,
-              -1155.5
+              -190.4,
+              -1205.5
             ],
             [
               509.6,
@@ -4215,11 +4285,11 @@ window.VENUE_DOC["lake"] = {
             ],
             [
               759.6,
-              594.5
+              544.5
             ],
             [
-              559.6,
-              1044.5
+              609.6,
+              994.5
             ],
             [
               309.6,
@@ -4402,7 +4472,7 @@ window.VENUE_DOC["lake"] = {
         "falloff": 264.59999999999997,
         "count": 8,
         "gustKt": 6,
-        "sizeM": 420,
+        "sizeM": 210,
         "lifeS": 75,
         "bias": 0.45,
         "veer": 20
@@ -4430,7 +4500,7 @@ window.VENUE_DOC["lake"] = {
         "falloff": 220.5,
         "count": 4,
         "gustKt": 5,
-        "sizeM": 550,
+        "sizeM": 275,
         "lifeS": 90,
         "bias": 0.2,
         "veer": 12
@@ -4458,7 +4528,7 @@ window.VENUE_DOC["lake"] = {
         "falloff": 132.29999999999998,
         "count": 2,
         "gustKt": 5,
-        "sizeM": 450,
+        "sizeM": 225,
         "lifeS": 60,
         "bias": 0.1,
         "veer": 12

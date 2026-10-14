@@ -2393,12 +2393,41 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(slim, 1); ctx.globalAlpha *= alpha; ctx.drawImage(im, -w / 2, -hh / 2, w, hh); ctx.restore();
     }
     const ORCA_KNOTS = 70;   // ~5 kn cruising
+    // A CURVED shape is flattened to half a unit — five times the vertices of its straight-edged self, and the
+    // swimmers ask "on land?" thousands of times a frame (Otter Point's sim went 2.7 -> 5.9 ms/frame). Those
+    // take collision's gridded test; straight-edged land keeps the plain one, answer for answer.
+    const landPip = (x, y, s) => (s.smooth && typeof pointInPolyFast === 'function') ? pointInPolyFast(x, y, s.vertices) : pointInPoly(x, y, s.vertices);
     // Land that isn't ice drifting: authored shapes only (floes move; swimmers pass under them).
+    // AN INDEX OF THE FIXED ISLANDS, so "what is solid here?" visits only the islands whose bounding circle
+    // reaches this cell — the swimmers ask it many times a frame of a venue with hundreds of shapes and prop
+    // colliders. Floes move, and anything without a usable radius, stay on a short list visited every time.
+    // Candidates are visited in the islands' own order, so the first hit is the one a full scan would find.
+    const ISL_CELL = 300, ISL_ROW = 1 << 20;
+    let _islIdx = null;
+    const NO_ISL = [];
+    function islIndex() {
+        const arr = (state.course && state.course.islands) || [];
+        if (_islIdx && _islIdx.arr === arr && _islIdx.n === arr.length) return _islIdx;
+        const cells = new Map(), loose = [];
+        arr.forEach((s, i) => {
+            if (s.isFloe || !(s.radius > 0) || !isFinite(s.x) || !isFinite(s.y)) { loose.push(i); return; }
+            const c0 = Math.floor((s.x - s.radius) / ISL_CELL), c1 = Math.floor((s.x + s.radius) / ISL_CELL);
+            const r0 = Math.floor((s.y - s.radius) / ISL_CELL), r1 = Math.floor((s.y + s.radius) / ISL_CELL);
+            for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const k = r * ISL_ROW + c; let L = cells.get(k); if (!L) cells.set(k, L = []); L.push(i); }
+        });
+        return (_islIdx = { arr, n: arr.length, cells, loose });
+    }
+    // The candidates for (x, y): the cell's islands (A) and the loose list (B), both in index order; the
+    // callers walk the two merged, so the first hit is the one a full scan would find.
+    function islCell(I, x, y) { return I.cells.get(Math.floor(y / ISL_CELL) * ISL_ROW + Math.floor(x / ISL_CELL)) || NO_ISL; }
     function fixedLand(x, y) {
-        for (const s of (state.course && state.course.islands) || []) {
+        const I = islIndex(), A = islCell(I, x, y), B = I.loose, arr = I.arr;
+        let a = 0, b = 0;
+        while (a < A.length || b < B.length) {
+            const s = arr[(b >= B.length || (a < A.length && A[a] < B[b])) ? A[a++] : B[b++]];
             if (s.isFloe || s.awash || !s.vertices || (s.id || '').endsWith('.hit')) continue;
             if (Math.hypot(x - s.x, y - s.y) > (s.radius || 1e9)) continue;
-            if (pointInPoly(x, y, s.vertices)) return true;
+            if (landPip(x, y, s)) return true;
         }
         return false;
     }
@@ -2415,10 +2444,13 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // where it is now let floes slide over the animals.
     const FLOE_LOOK = 0.9;
     function solidAt(x, y, ignore, noFloes) {
-        for (const s of (state.course && state.course.islands) || []) {
+        const I = islIndex(), A = islCell(I, x, y), B = I.loose, arr = I.arr;
+        let a = 0, b = 0;
+        while (a < A.length || b < B.length) {
+            const s = arr[(b >= B.length || (a < A.length && A[a] < B[b])) ? A[a++] : B[b++]];
             if (s === ignore || (noFloes && s.isFloe) || s.awash || !s.vertices || s.vertices.length < 3) continue;
             const r = (s.radius || 1e9) + (s.isFloe ? 20 : 0), dx = x - s.x, dy = y - s.y; if (dx * dx + dy * dy > r * r) continue;
-            if (pointInPoly(x, y, s.vertices)) return s;
+            if (landPip(x, y, s)) return s;
             if (s.isFloe) for (const k of [0.35, 1]) {
                 // where this point sits on the floe as it will be: undo its drift and its spin
                 const tt = FLOE_LOOK * k, w = -(s.spinRate || 0) * tt, px = x - (s.driftVx || 0) * tt - s.x, py = y - (s.driftVy || 0) * tt - s.y;
@@ -10461,6 +10493,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         },
         // The Sailing School's ducklings (school.js owns their motion).
         drawDucklings,
+        // For tests: the solid/land queries, checked against a full scan (eval/_solid_index_check.js).
+        _probe: { solidAt: (x, y, ig, nf) => solidAt(x, y, ig, nf), fixedLand: (x, y) => fixedLand(x, y) },
         // For tests and the venue card.
         debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, leaps, shoals, poppers, fishers, runs, soarers, rompers, whalePods, blows, splashes, riders, flyfish, gliders, prints, flyPatches, stripers, condors, bands, coyotes, boilsHit, orcaPods, penguinColonies: colonies2, floeGroups, swimmers, treks, lseals, ternFlocks, visited: [...visited], jellyBloom, mantas, foxFlocks, hawksbills, dugongs, blood, foams, igHeaps, crabBeds, boobyFlocks, boobyLines, frigates, frigFish, hammerSchools, gsealCols, spoonFlocks, avoFlocks, scrabBeds, clubCorms, velFleets, mackBoils, clubTerns, clubGulls, seaOtterRafts, slHauls, slGroups, whites, bluePods, blueBlows, krill, huntCool, woken: [...lurkWoken], feats: [...feats] }),
         forceBoil: (x, y) => { boil = { x, y, t: 0, life: 45, seed: 1 }; if (flight) flight.mode = 'transit'; },

@@ -2729,6 +2729,54 @@ function vegTone(base, spec) {
     return t.map((c, i) => Math.round(c * (1 - spec.wash) + w[i] * spec.wash));
 }
 
+// INDEXED RING QUERIES for a bake that asks, per pixel or per scatter point, "inside the bed?" and "how far
+// in from its edge?" of a ring that may run to hundreds of edges (a curved bed). The same answers as walking
+// every edge: inside is the same crossing test on the edges whose y-span holds y, and the distance is the
+// nearest edge within `cap` (past which every caller's ramp, smooth(d / feather), is already 1) — `cap` itself
+// when none is that near.
+function ringQuery(rings, cap) {
+    let n = 0, y0 = Infinity, y1 = -Infinity;
+    for (const r of rings) for (const p of r) { n++; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+    const band = Math.max(1e-6, (y1 - y0) / Math.max(1, Math.ceil(Math.sqrt(n)))), cell = Math.max(8, cap);
+    const bands = rings.map(() => new Map()), cells = new Map();
+    rings.forEach((ring, ri) => {
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const a = ring[i], b = ring[j];
+            const b0 = Math.floor((Math.min(a[1], b[1]) - y0) / band), b1 = Math.floor((Math.max(a[1], b[1]) - y0) / band);
+            for (let k = b0; k <= b1; k++) { let L = bands[ri].get(k); if (!L) bands[ri].set(k, L = []); L.push(i, j); }
+            const c0 = Math.floor(Math.min(a[0], b[0]) / cell), c1 = Math.floor(Math.max(a[0], b[0]) / cell);
+            const r0 = Math.floor(Math.min(a[1], b[1]) / cell), r1 = Math.floor(Math.max(a[1], b[1]) / cell);
+            for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const k = c + ',' + r; let E = cells.get(k); if (!E) cells.set(k, E = []); E.push(b, a); }
+        }
+    });
+    const inRing = (x, y, ri) => {
+        const ring = rings[ri], L = bands[ri].get(Math.floor((y - y0) / band));
+        let inside = false;
+        if (L) for (let k = 0; k < L.length; k += 2) {
+            const [xi, yi] = ring[L[k]], [xj, yj] = ring[L[k + 1]];
+            if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+        }
+        return inside;
+    };
+    const edgeDist = (x, y) => {
+        let d2 = cap * cap;
+        const c0 = Math.floor((x - cap) / cell), c1 = Math.floor((x + cap) / cell), r0 = Math.floor((y - cap) / cell), r1 = Math.floor((y + cap) / cell);
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+            const E = cells.get(c + ',' + r); if (!E) continue;
+            for (let k = 0; k < E.length; k += 2) {
+                const [x1, y1] = E[k], [x2, y2] = E[k + 1];
+                const dx = x2 - x1, dy = y2 - y1;
+                const L2 = dx * dx + dy * dy || 1;
+                const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
+                const px_ = x1 + t * dx - x, py_ = y1 + t * dy - y;
+                const dd = px_ * px_ + py_ * py_;
+                if (dd < d2) d2 = dd;
+            }
+        }
+        return Math.sqrt(d2);
+    };
+    return { inRing, edgeDist };
+}
 function bakeVegSprite(isl, spec) {
     const tones = spec.tones.map(t => vegTone(t, spec));
     const R = isl.radius + 10;
@@ -2763,32 +2811,11 @@ function bakeVegSprite(isl, spec) {
     // The unkeyholed rings (outer + holes), same source of truth the shoal depth read
     // uses — the keyholed trace's zero-width slit would put a false edge across the bed.
     const rings = isl.shoalRings || [isl.vertices.map(v => [v.x, v.y])];
-    const inRing = (x, y, ring) => {
-        let inside = false;
-        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-            const [xi, yi] = ring[i], [xj, yj] = ring[j];
-            if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
-        }
-        return inside;
-    };
-    const edgeDist = (x, y) => {
-        let d2 = Infinity;
-        for (const ring of rings) {
-            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-                const [x1, y1] = ring[j], [x2, y2] = ring[i];
-                const dx = x2 - x1, dy = y2 - y1;
-                const L2 = dx * dx + dy * dy || 1;
-                const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
-                const px_ = x1 + t * dx - x, py_ = y1 + t * dy - y;
-                const dd = px_ * px_ + py_ * py_;
-                if (dd < d2) d2 = dd;
-            }
-        }
-        return Math.sqrt(d2);
-    };
+    // the bed's edge queries, indexed (ringQuery) — every caller reads edgeDist through smooth(d / feather)
+    const RQ = ringQuery(rings, isl.shoalFeather || 120), edgeDist = RQ.edgeDist;
     const inside = (x, y) => {
-        if (!inRing(x, y, rings[0])) return false;
-        for (let h = 1; h < rings.length; h++) if (inRing(x, y, rings[h])) return false;
+        if (!RQ.inRing(x, y, 0)) return false;
+        for (let h = 1; h < rings.length; h++) if (RQ.inRing(x, y, h)) return false;
         return true;
     };
 
@@ -3129,26 +3156,9 @@ function bakeReefSprite(isl) {
         return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
     };
     const ring = isl.vertices.map(v => [v.x, v.y]);
-    const inRing = (x, y) => {
-        let inside = false;
-        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-            const [xi, yi] = ring[i], [xj, yj] = ring[j];
-            if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
-        }
-        return inside;
-    };
-    const edgeDist = (x, y) => {
-        let d2 = Infinity;
-        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-            const [x1, y1] = ring[j], [x2, y2] = ring[i];
-            const dx = x2 - x1, dy = y2 - y1;
-            const L2 = dx * dx + dy * dy || 1;
-            const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
-            const qx = x1 + t * dx - x, qy = y1 + t * dy - y;
-            if (qx * qx + qy * qy < d2) d2 = qx * qx + qy * qy;
-        }
-        return Math.sqrt(d2);
-    };
+    // indexed edge queries (ringQuery): the reef reads edgeDist through smooth(d / feather) below
+    const RQ = ringQuery([ring], Math.min(40, isl.radius * 0.3)), edgeDist = RQ.edgeDist;   // cap = the reef's feather (below)
+    const inRing = (x, y) => RQ.inRing(x, y, 0);
     const smooth = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
     const minX = isl.x - isl.radius, minY = isl.y - isl.radius;
     const cells = Math.max(1, Math.ceil((isl.radius * 2) / REEF_SPACING));

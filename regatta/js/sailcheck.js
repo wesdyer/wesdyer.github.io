@@ -45,6 +45,36 @@ function pointInRing(x, y, ring) {
     }
     return inside;
 }
+// A CURVED shape reaches the grid flattened to half a unit — four to eight times the edges, and the grid's cost
+// is cells x edges (river's build went 1.7 s -> 10.7 s). The 50 u grid needs nothing that fine: its rings are
+// thinned to within GRID_TOL (Douglas-Peucker, closed) and GRID_TOL is added to the clearance it tests them at,
+// so the thinning never admits a cell the true curve would refuse. Straight-edged shapes are untouched.
+const GRID_TOL = 3;
+const _thinned = new WeakMap();
+function thinRing(ring) {
+    let hit = _thinned.get(ring);
+    if (hit) return hit;
+    const n = ring.length;
+    if (n < 8) { _thinned.set(ring, ring); return ring; }
+    let far = 0, fd = -1;
+    for (let i = 1; i < n; i++) { const d = (ring[i][0] - ring[0][0]) ** 2 + (ring[i][1] - ring[0][1]) ** 2; if (d > fd) { fd = d; far = i; } }
+    const keep = new Uint8Array(n); keep[0] = keep[far] = 1;
+    const stack = [[0, far], [far, n]];
+    while (stack.length) {
+        const [i0, i1] = stack.pop();
+        const p = ring[i0], q = ring[i1 % n], ex = q[0] - p[0], ey = q[1] - p[1], L = Math.hypot(ex, ey) || 1;
+        let best = -1, bd = GRID_TOL;
+        for (let k = i0 + 1; k < i1; k++) {
+            const v = ring[k], d = Math.abs((v[0] - p[0]) * ey - (v[1] - p[1]) * ex) / L;
+            if (d > bd) { bd = d; best = k; }
+        }
+        if (best >= 0) { keep[best] = 1; stack.push([i0, best], [best, i1]); }
+    }
+    hit = ring.filter((_, i) => keep[i]);
+    if (hit.length < 3) hit = ring;
+    _thinned.set(ring, hit);
+    return hit;
+}
 function segDist(px, py, a, b) {
     const dx = b[0] - a[0], dy = b[1] - a[1];
     const l2 = dx * dx + dy * dy;
@@ -154,6 +184,42 @@ function buildGrid(land, arena, obstacles, opts) {
     return grid;
 }
 
+// EDGE BUCKETS for a shape with many edges: the same point-in-ring parity and the same edge distances as the
+// plain loops in admitShape, asked only of the edges that could matter — those whose y-span holds the point's y
+// (parity) and those whose box comes within the clearance (distance). Every answer is identical; a cell just
+// stops scanning a 300-edge coast for a point a kilometre from most of it.
+const EB = 100;
+function edgeBuckets(rings) {
+    let n = 0; for (const r of rings) n += r.length;
+    if (n < 48) return null;
+    const rows = new Map(), cells = new Map();
+    rings.forEach((ring, ri) => {
+        for (let e = 0; e < ring.length; e++) {
+            const a = ring[e], b = ring[(e + 1) % ring.length], ed = [a, b, ri];
+            const y0 = Math.floor(Math.min(a[1], b[1]) / EB), y1 = Math.floor(Math.max(a[1], b[1]) / EB);
+            const x0 = Math.floor(Math.min(a[0], b[0]) / EB), x1 = Math.floor(Math.max(a[0], b[0]) / EB);
+            for (let y = y0; y <= y1; y++) {
+                let r = rows.get(y); if (!r) rows.set(y, r = []); r.push(ed);
+                for (let x = x0; x <= x1; x++) { const k = x + ',' + y; let c = cells.get(k); if (!c) cells.set(k, c = []); c.push(ed); }
+            }
+        }
+    });
+    return { rows, cells };
+}
+function admitBucketed(sh, wx, wy, clr) {
+    // inside the outer ring and not in a hole = land: the parity per ring, from the edges spanning y
+    const par = new Uint8Array(sh.rings.length);
+    for (const [a, b, ri] of (sh.eb.rows.get(Math.floor(wy / EB)) || [])) {
+        const xi = b[0], yi = b[1], xj = a[0], yj = a[1];
+        if (((yi > wy) !== (yj > wy)) && (wx < (xj - xi) * (wy - yi) / ((yj - yi) || 1e-9) + xi)) par[ri] ^= 1;
+    }
+    if (par[0] && !par.some((v, i) => i > 0 && v)) return false;
+    const x0 = Math.floor((wx - clr) / EB), x1 = Math.floor((wx + clr) / EB), y0 = Math.floor((wy - clr) / EB), y1 = Math.floor((wy + clr) / EB);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        for (const [a, b] of (sh.eb.cells.get(x + ',' + y) || [])) if (segDist(wx, wy, a, b) < clr) return false;
+    }
+    return true;
+}
 function buildGridRaw(land, arena, obstacles, opts) {
     const ex = window.Arena.extent(arena);
     const n = Math.ceil(Math.max(ex.maxX - ex.minX, ex.maxY - ex.minY) / RES) + 1;
@@ -163,7 +229,9 @@ function buildGridRaw(land, arena, obstacles, opts) {
 
     const shapes = [];
     for (const l of (land || [])) {
-        const rings = [l.outer].concat(l.holes || []);
+        const thin = !!l.smooth;
+        const outer = thin ? thinRing(l.outer) : l.outer, holes = (l.holes || []).map(h => thin ? thinRing(h) : h);
+        const rings = [outer].concat(holes);
         let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
         for (const p of l.outer) {
             if (p[0] < a) a = p[0]; if (p[1] < b) b = p[1];
@@ -173,16 +241,18 @@ function buildGridRaw(land, arena, obstacles, opts) {
         // that mixes ice into the land list — the stamp-equivalence checker
         // does): those must be judged at the cell CENTRE exactly as stampFloes
         // judges them, or the fast stamp and the full rebuild disagree.
-        shapes.push({ rings, outer: l.outer, holes: l.holes || [], bb: { a, b, c, d },
-                      centerOnly: !!l.centerOnly });
+        shapes.push({ rings, outer, holes, bb: { a, b, c, d }, pad: thin ? GRID_TOL : 0,
+                      centerOnly: !!l.centerOnly, eb: (opts && opts.noBuckets) ? null : edgeBuckets(rings) });   // noBuckets: the equality check's reference
     }
     // Drifting ice counts: a berg in a channel closes it just as land does.
     const circles = (obstacles || []).map(o => ({ x: o.x, y: o.y, r: o.radius || 0 }));
 
     const admitShape = (sh, wx, wy, clr) => {
         const bb = sh.bb;
+        clr += sh.pad;
         if (wx < bb.a - clr || wx > bb.c + clr
             || wy < bb.b - clr || wy > bb.d + clr) return true;
+        if (sh.eb) return admitBucketed(sh, wx, wy, clr);
         if (pointInRing(wx, wy, sh.outer) && !sh.holes.some(h => pointInRing(wx, wy, h))) return false;
         for (const ring of sh.rings) {
             for (let e = 0; e < ring.length; e++) {
@@ -1224,7 +1294,7 @@ function pathSailable(grid, from, to) {
 
 window.SailCheck = {
     HULL_R, CLEARANCE, TIGHT_CLEAR, RES,
-    buildGrid, stampFloes, pathBetween, smoothPath, losClear, nearestNav, roundingArc, routeWaypoints,
+    buildGrid, _buildGridRaw: buildGridRaw, stampFloes, pathBetween, smoothPath, losClear, nearestNav, roundingArc, routeWaypoints,
     legVMG, routeEstimate, pathSailable, clearanceField, segClearGeom
 };
 })();
