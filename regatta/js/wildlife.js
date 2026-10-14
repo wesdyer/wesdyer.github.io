@@ -7736,9 +7736,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function updateFlatsWaders(list, c, dt) {
         for (const F of list) {
             F.t -= dt;
+            F.down = (F.down || 0) + dt;   // (seconds since the flock last came down)
             if (F.mode === 'feed') {
                 const threat = boatNear(F.cx, F.cy, c.flushR);
-                if (threat || F.t <= 0) {
+                // (just landed: they settle a few seconds before they judge the water — the tide moved while they
+                // flew, and a patch already a little deep on arrival sent them straight back up, wings out again)
+                if (threat || (F.t <= 0 && F.down > 3)) {
                     // (the tide here runs a metre in ~15 s, so they look often, and ahead: on the flood they
                     // want the shallow end of their depth, on the ebb the deep end)
                     F.t = R(1.2, 2.2);
@@ -7776,9 +7779,23 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     b.swim = Math.max(0, Math.min(1, (b.swim || 0) + (F.kind === 'avo' && dh > 0.2 && !F.roosting ? 1 : -1) * dt * 1.5));
                     if (b.swim > 0.5) { b.upT = (b.upT == null ? R(2, 6) : b.upT) - dt; if (b.upT <= 0) { b.up = b.up ? 0 : 1; b.upT = b.up ? R(1, 2.2) : R(3, 8); if (b.up) b.ring = 0.7; } } else b.up = 0;
                     b.upV = (b.upV || 0) + ((b.up ? 1 : 0) - (b.upV || 0)) * Math.min(1, dt * 4);
-                    if (!F.roosting && F.mode === 'feed' && dh > c.depth[1] + 0.25 && !swimOK) { b.mode = 'up'; b.delay = 0; b.hop = true; continue; }
+                    // PT-090 (Wes at the Flats: the flock "changed all at once to wings out", "the birds flashed"): a hop
+                    // only while the flock's own patch is still wadeable — when the flood is drowning the whole patch
+                    // every bird in it crossed the line in the same frame and hopped together, back onto the same
+                    // drowned water, landing and hopping again every frame (the flash). Then it is the FLOCK that
+                    // moves (its staggered take-off); a bird that has just hopped waits before it hops again; and a
+                    // hop goes after a beat of its own, so the birds peel off one by one.
+                    b.hopCool = Math.max(0, (b.hopCool || 0) - dt);
+                    if (!F.roosting && F.mode === 'feed' && dh > c.depth[1] + 0.25 && !swimOK) {
+                        const pd = depthAtT(F.gx != null ? F.gx : F.cx, F.gy != null ? F.gy : F.cy);
+                        if (pd > (F.kind === 'avo' ? 0.45 : c.depth[1] + 0.08)) F.t = Math.min(F.t, 0);   // (the flock's own 'too deep', as its patch check reads it — it moves once settled)
+                        else if (b.hopCool <= 0) { b.mode = 'up'; b.delay = R(0.1, 0.9); b.hop = true; continue; }
+                    }
                     // to its place about the patch, a slow wading walk, the head sweeping as it goes
-                    const pk = F.roosting ? 0.55 : 1, tx = F.cx + b.ox * pk, ty = F.cy + b.oy * pk, d = Math.hypot(tx - b.x, ty - b.y);
+                    // (while the flock is still coming in, a bird already down takes its place about the NEW patch —
+                    // the old centre is behind it, often over the marsh, and walking back there made it hop, land, hop)
+                    const fcx = F.mode === 'fly' && F.tx != null ? F.tx : F.cx, fcy = F.mode === 'fly' && F.ty != null ? F.ty : F.cy;
+                    const pk = F.roosting ? 0.55 : 1, tx = fcx + b.ox * pk, ty = fcy + b.oy * pk, d = Math.hypot(tx - b.x, ty - b.y);
                     b.roost = F.roosting;
                     if (!F.roosting && (F.kind !== 'spoon' || depthAtT(b.x, b.y) < 0.25)) b.sw += dt * c.sweepHz * 6.283 * b.swR; else b.sw *= 0.9;   // (a spoonbill sweeps only in shallow water)
                     if (d > 2) { const a = Math.atan2(tx - b.x, -(ty - b.y)); b.h += angDiff(a, b.h) * Math.min(1, dt * 2); const v = Math.min(d, c.walk) * dt, nx = b.x + Math.sin(b.h) * v, ny = b.y - Math.cos(b.h) * v;
@@ -7793,7 +7810,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     let ex = 0, ey = 0;
                     if (F.kind === 'spoon' && !b.hop && F.tx != null) { const fh = Math.atan2(F.tx - F.cx, -(F.ty - F.cy)), far = Math.min(1, Math.max(0, (Math.hypot(F.tx - b.x, F.ty - b.y) - 80) / 150)), back = b.j * 13 * far, side = b.j * 9 * far * (F.fi % 2 ? 1 : -1);
                         ex = -Math.sin(fh) * back + Math.cos(fh) * side; ey = Math.cos(fh) * back + Math.sin(fh) * side; }
-                    let tx = ex + (b.hop ? (F.gx != null ? F.gx : F.cx) + b.ox : (F.tx != null ? F.tx : F.cx) + b.ox * 1.5); let ty = ey + (b.hop ? (F.gy != null ? F.gy : F.cy) + b.oy : (F.ty != null ? F.ty : F.cy) + b.oy * 1.5);
+                    let tx = ex + (b.hop ? (F.gx != null ? F.gx : F.cx) + b.ox * 0.4 : (F.tx != null ? F.tx : F.cx) + b.ox * 1.5); let ty = ey + (b.hop ? (F.gy != null ? F.gy : F.cy) + b.oy * 0.4 : (F.ty != null ? F.ty : F.cy) + b.oy * 1.5);   // (a hop: in toward the patch's middle, whose depth the flock has checked)
                     if (onLand(tx, ty)) { tx = b.hop ? (F.gx != null ? F.gx : F.cx) : (F.tx != null ? F.tx : F.cx); ty = b.hop ? (F.gy != null ? F.gy : F.cy) : (F.ty != null ? F.ty : F.cy); }   // (its own spot on the marsh: the flock's centre)
                     const d = Math.hypot(tx - b.x, ty - b.y), a = Math.atan2(tx - b.x, -(ty - b.y));
                     // on final approach (inside 60 u) it turns straight in — never orbits its spot
@@ -7804,10 +7821,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     if (b.mode === 'up' && (b.z > 5 || d < 60)) b.mode = 'fly';
                     // down: at its spot — or, a long flight, wherever it is over water once it is low (never a jump; Wes saw
                     // birds vanish mid-air when a 14 s timeout put them on their spot)
-                    if (b.mode === 'fly' && ((d < 10 && b.z < 3) || (b.hop && d < 10) || (F.flyT > 14 && d < 80 && b.z < 3 && !onLand(b.x, b.y)))) { b.mode = 'wade'; b.z = 0; b.ring = 1; b.hop = false; }
+                    if (b.mode === 'fly' && ((d < 10 && b.z < 3) || (b.hop && d < 10) || (F.flyT > 14 && d < 80 && b.z < 3 && !onLand(b.x, b.y)))) { b.mode = 'wade'; b.z = 0; b.ring = 1; b.hop = false; b.hopCool = 2; }
                 }
             }
-            if (F.mode === 'fly' && F.birds.every(b => b.mode === 'wade')) { F.mode = 'feed'; F.cx = F.gx = F.tx; F.cy = F.gy = F.ty; F.t = R(1, 2); }
+            if (F.mode === 'fly' && F.birds.every(b => b.mode === 'wade')) { F.mode = 'feed'; F.cx = F.gx = F.tx; F.cy = F.gy = F.ty; F.t = R(1, 2); F.down = 0; }
         }
     }
     // ROSEATE SPOONBILL (Wes's references, Sep 26 2026: wading, standing, landing, a flock and singles in
