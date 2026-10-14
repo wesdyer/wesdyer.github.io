@@ -1688,12 +1688,12 @@ function buildCoursePaths() {
                 // keyed the same way, so a venue that gains a vent rebuilds its costs.
                 const vents = (state.volcano && window.Volcano) ? state.volcano.vents : [];
                 let sKey = '';
-                for (const s of shoals) sKey += `|${s.id},${s.shoalMul},${s.shoalFeather},${s.x | 0},${s.y | 0},${s.radius | 0}`;
+                for (const s of shoals) sKey += `|${s.id},${s.shoalMul},${s.shoalFeather},${s.shoalGrab || 0},${s.x | 0},${s.y | 0},${s.radius | 0}`;
                 for (const b of vents) sKey += `|vent,${b.x | 0},${b.y | 0},${b.a | 0},${b.b | 0},${b.ang.toFixed(2)},${b.strength}`;
                 if (grid._shoalKey !== sKey) {
                     grid._shoalKey = sKey;
                     if (!shoals.length && !vents.length) {
-                        grid._shoal = null;
+                        grid._shoal = null; grid._kelp = null;
                     } else {
                         // ── PRICE THE TRANSIT, NOT THE EQUILIBRIUM ──────────
                         // `1/shoalMul` is the STEADY-STATE cost: what a cell costs a
@@ -1730,7 +1730,7 @@ function buildCoursePaths() {
                         // equilibrium, so it keeps the full price it has today. The
                         // venues that need opposite answers get them from one formula.
                         const N = grid.n, sc = new Float32Array(N * N);
-                        const mm = new Float32Array(N * N);
+                        const mm = new Float32Array(N * N), gg = new Float32Array(N * N);
                         // distance INTO the shoal, in cells: 0 outside, then a two-pass
                         // chamfer from the rim. Cheap, and exact enough at res-scale
                         // beside a crossover length of hundreds of units.
@@ -1739,7 +1739,8 @@ function buildCoursePaths() {
                             for (let i = 0; i < N; i++) {
                                 const [wx, wy] = grid.world(i, j);
                                 let m = window.VenueDoc.shoalField(shoals, wx, wy);
-                                if (vents.length) m = Math.min(m, Volcano.boilMul(wx, wy));
+                                gg[j * N + i] = window.VenueDoc.shoalGrab ? window.VenueDoc.shoalGrab() : 0;
+                                if (vents.length) { const bm = Volcano.boilMul(wx, wy); if (bm < m) { m = bm; gg[j * N + i] = 0; } }
                                 mm[j * N + i] = m;
                                 if (m >= 0.999) dist[j * N + i] = 0;   // open water = the rim
                             }
@@ -1825,7 +1826,12 @@ function buildCoursePaths() {
                             // factor is a consequence of the geometry, not a knob,
                             // and it needs no knowledge of W.
                             const s = 2 * (dist[k] === Infinity ? 0 : dist[k]) * grid.res;
-                            const u = invU(s / scale, m);
+                            // KELP GRABS (PT-084, Wes: the planner and the rest of the AI "should properly cost
+                            // it"): a grabbing bed takes the way off at the physics' bite, not the nine-second
+                            // carry — retention D^(1 + bite·(1−m)·grab) a frame — so its crossover is that much
+                            // shorter and a crossing costs what it really does. Ungrabbed water: untouched.
+                            const g = gg[k];
+                            const u = g > 0 ? invU(s / (scale / (1 + (typeof PLANE_DRAG !== 'undefined' ? PLANE_DRAG.bite : 6) * (1 - m) * g)), m) : invU(s / scale, m);
                             sc[k] = 1 / Math.max(m, Math.min(1, u));
                         }
                         // ⚠️ A BOIL IS PRICED AT ITS STEADY STATE, NOT ITS TRANSIT. The lag
@@ -1844,6 +1850,13 @@ function buildCoursePaths() {
                             }
                         }
                         grid._shoal = sc;
+                        // THE KELP'S HEART, for the helm (PT-084): cells of grabbing kelp that cost a
+                        // quarter more than open water — the bed, not its feathered rim. The bots' carrot
+                        // keeps its chord off them (navigation.js), as it keeps off the Flats' mud. Only
+                        // kelp venues carry it.
+                        let kelpAny = false; const kc = new Uint8Array(N * N);
+                        for (let k = 0; k < N * N; k++) if (gg[k] > 0 && sc[k] >= 1.25) { kc[k] = 1; kelpAny = true; }
+                        grid._kelp = kelpAny ? kc : null;
                     }
                 }
             }

@@ -772,6 +772,7 @@ function updateBoat(boat, dt) {
     // THE WATER, read before the plane — PLANE_DRAG. Applied to the target at the shoal and
     // rapids slots below, as before; read here because the plane has to know about it.
     const shoalNow = state.course._hasShoals ? window.VenueDoc.shoalField(state.course.islands, boat.x, boat.y) : 1;
+    const shoalGrab = state.course._hasShoals ? window.VenueDoc.shoalGrab() : 0;   // (kelp: see the bite below)
     const tideNow = (state.tide && window.Tide) ? Tide.speedMul(boat) : 1;
     const rapidsNow = rapidsTurbAt(boat.x, boat.y);
     const boilNow = (state.volcano && window.Volcano) ? Volcano.boilAt(boat.x, boat.y) : 0;
@@ -1047,7 +1048,11 @@ function updateBoat(boat, dt) {
         // to a crawl (swamp, 8 seeds: 59 finishers → 0-38 under the earlier forms).
         if (boat.speed > targetGameSpeed * PLANE_DRAG.margin) {
             const u = Math.max(0, Math.min(1, (boat.speed * 4 - PLANE_DRAG.hullKt) / (PLANE_DRAG.biteKt - PLANE_DRAG.hullKt)));
-            const bite = Math.max(bottomDrag, RAPIDS_DRAG * rapidsNow) * u * u * (3 - 2 * u);
+            // (GRAB — kelp — lifts the planing-speed gate by its share: it wraps the keel at any speed, PT-084.
+            // The ungrabbed expression is kept exactly as it was, operand order and all: reordering the
+            // multiply moved a lagoon trace by a rounding.)
+            let bite = Math.max(bottomDrag, RAPIDS_DRAG * rapidsNow) * u * u * (3 - 2 * u);
+            if (shoalGrab > 0) bite = Math.max(bite, bottomDrag * shoalGrab);
             if (bite > 0) speedAlpha = 1 - (1 - speedAlpha) * Math.pow(SPEED_DECAY_DOWN, timeScale * PLANE_DRAG.bite * bite);
         }
     }

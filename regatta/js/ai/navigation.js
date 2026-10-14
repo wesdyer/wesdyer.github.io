@@ -1106,6 +1106,24 @@ Object.assign(BotController.prototype, {
                     let jj2 = j;
                     while (jj2 > 1 && chordDry(w.x, w.y)) { jj2 = Math.max(1, Math.floor(jj2 * 0.6)); w = pts[jj2]; }
                 }
+                // ...AND OFF THE KELP (PT-084, Wes: the AI "should properly cost it"). The router
+                // prices a grabbing bed and goes round it, and the chord to a carrot 300-900 u on
+                // cut back across the bend — the fleet clipped every bed it had planned past. The
+                // same pull-in as the mud, against the kelp's heart (botGrid._kelp), only where the
+                // plan itself stays off it.
+                if (botGrid._kelp && j > 0) {
+                    const kelpChord = (tx, ty) => {
+                        const n = Math.max(2, Math.ceil(Math.hypot(tx - boat.x, ty - boat.y) / (botGrid.res * 0.7)));
+                        for (let s = 1; s <= n; s++) {
+                            const cc = botGrid.cell(boat.x + (tx - boat.x) * s / n, boat.y + (ty - boat.y) * s / n);
+                            if (cc[0] < 0 || cc[1] < 0 || cc[0] >= botGrid.n || cc[1] >= botGrid.n) continue;
+                            if (botGrid._kelp[cc[1] * botGrid.n + cc[0]]) return true;
+                        }
+                        return false;
+                    };
+                    const planIn = (() => { for (let q = 0; q <= j; q++) { const cc = botGrid.cell(pts[q].x, pts[q].y); if (cc[0] >= 0 && cc[1] >= 0 && cc[0] < botGrid.n && cc[1] < botGrid.n && botGrid._kelp[cc[1] * botGrid.n + cc[0]]) return true; } return false; })();
+                    if (!planIn) { let jk = j; while (jk > 1 && kelpChord(w.x, w.y)) { jk = Math.max(1, Math.floor(jk * 0.6)); w = pts[jk]; } }
+                }
                 // Holding for the tide: the carrot is the hold point until the sill opens.
                 if (this.tideWait && state.tide && window.Tide && Tide.clock() < this.tideWait.until) {
                     w = { x: this.tideWait.x, y: this.tideWait.y };

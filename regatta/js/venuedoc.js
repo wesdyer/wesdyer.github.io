@@ -3248,8 +3248,14 @@ const SHAPE_KINDS = {
     // prices it. The swell damping the card promises is in swell.js (kelpMul): a venue's
     // `swell.kelp { floor, reach }` flattens the swell over and in the lee of every kelp bed —
     // on at Otter Point since Sep 26 2026 (floor 0.15, reach 450).
+    // PT-084 (Oct 13 2026, Wes: "Kelp should matter more… it should be more than now for sure"):
+    // drag 0.85 and GRAB 1. At 0.65 a boat at 7 kt crossed a 470 u bed losing ONE second — the
+    // keelboat's nine-second carry took it through before the drag could bite, the bite being
+    // gated to planing speed. Grab takes that gate away for kelp: crossing the same bed now costs
+    // ~4 s and halves the speed (eval/rl/_pt084_drag.js), more than going round, so the new
+    // patches on the racing line (kelp-r*, kelp-b*) are threaded, not ignored.
     kelp:     { motion: 'fixed', hard: false, look: 'shoal', hidden: false, nav: true, height: 0,
-               awash: true, drag: 0.65, paint: true, veg: 'kelp' },
+               awash: true, drag: 0.85, grab: 1, paint: true, veg: 'kelp' },
 
     // ── SPOONBILL FLATS: THE TIDAL ESTUARY (Sep 16 2026) ─────────────────────
     // The flats are not shapes with a drag — they are a continuous ELEVATION FIELD that the
@@ -3351,17 +3357,21 @@ function shoalMulAt(isl, x, y) {
 // would invent water shallower than either, which is exactly the "deepest shadow wins"
 // rule the wind lees already follow, for the same reason.
 function shoalFieldAt(islands, x, y) {
-    let mul = 1;
+    let mul = 1, grab = 0;
     for (const isl of (islands || [])) {
         if (!isl.awash) continue;
         // A painted shallows zone (or any 0-drag shape) contributes nothing — skip the
         // ring walk rather than computing a multiplier of 1.
         if (isl.shoalMul >= 1) continue;
         const m = shoalMulAt(isl, x, y);
-        if (m < mul) mul = m;
+        if (m < mul) { mul = m; grab = isl.shoalGrab || 0; }
     }
+    _shoalGrab = mul < 1 ? grab : 0;
     return mul;
 }
+// The `grab` of the shape that set the last shoalFieldAt reading (0 for none) — read right after
+// it, by the physics, so the field is walked once.
+let _shoalGrab = 0;
 
 // What a shape IS, after its kind's preset and its own overrides. One place, so nothing has
 // to remember that `soft` is the negation of `hard` or that `isBank` means two things.
@@ -3405,6 +3415,12 @@ function shapeTraits(s) {
         // it is floating over, with no collision to explain why, and every escape from it
         // is upwind of nothing. 0.9 leaves a knot to crawl out on.
         drag:   Math.max(0, Math.min(0.9, s.drag !== undefined ? +s.drag : (k.drag || 0))),
+        // HOW HARD IT GRABS A HULL THAT IS NOT PLANING, 0..1. Drag sets the speed the boat is
+        // heading for; a keelboat sheds speed over ~9 s, and the fast slow-down (physics
+        // PLANE_DRAG.bite) is gated to planing speed — so at 7 kt a boat coasted through a
+        // 470 u kelp bed losing one second (PT-084, Wes: kelp should matter more). `grab` lifts
+        // that gate by its share: weed that wraps the keel takes the way off whatever the speed.
+        grab:   Math.max(0, Math.min(1, s.grab !== undefined ? +s.grab : (k.grab || 0))),
         // THE TIDAL FIELD (Spoonbill Flats). `tide` names which anchor of the elevation
         // field this polygon is (channel / pool / bar / flat), kind-level like `paint`;
         // `elev` is its height in metres above mean water — a bar's crest, a pool's bed,
@@ -3915,6 +3931,7 @@ function compileVenueDoc(doc, light) {
             tide: T.tide,
             elev: T.elev,
             shoalMul: T.awash ? 1 - T.drag : 1,
+            shoalGrab: T.awash ? T.grab : 0,
             // The kind's own feather now, not the global — mud shelves nothing like
             // sand does. Still clamped to half the radius for the same reason as
             // before: a small bar must reach its full drag somewhere in the middle
@@ -4724,6 +4741,7 @@ window.VenueDoc = {
     // price a shoal crossing identically — see shoalMulAt.
     shoalMul: shoalMulAt,
     shoalField: shoalFieldAt,
+    shoalGrab: () => _shoalGrab,
     regionWeight: regionWeight,
     traits: shapeTraits,
     shapes: migrateShapes,
