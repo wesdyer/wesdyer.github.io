@@ -3527,6 +3527,51 @@ function drawIslandsCached(ctx) {
         scale);
 }
 
+// LABELS GO UNDER THE SPANS (PT-018, Wes at Lighthouse Cove: "the angle still displays on top of
+// the bridge… too high of a layer" — and at Otter Point's arches too). A hull that sails beneath an
+// OPAQUE canopy — a bridge deck, an arch's span — disappears under it; the labels that ride with
+// boats (your TWA pill, the fleet's name tags) are drawn later, in their own passes, and floated
+// over the deck. Drawn instead into an offscreen layer that the spans' own sprites erase
+// (destination-out), so they vanish under exactly the painted deck and nothing else about the
+// layering moves — not the comets, not a squall's shadow on the deck. Only while an opaque span
+// is near the view; everywhere else the labels draw straight through, as they always have.
+let _spanLabelCv = null;
+function opaqueSpansInView(ctx) {
+    const c = state.course;
+    if (!c || !c.props || !c.props.length) return false;
+    if (c._opaqueProps === undefined) {
+        const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+        c._opaqueProps = c.props.filter(p => (reg[p.kind] || {}).opaque);
+    }
+    if (!c._opaqueProps.length) return false;
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {}, R = cullRadius(ctx);
+    for (const p of c._opaqueProps) {
+        const half = ((reg[p.kind] || {}).world || 0) * (p.scale != null ? +p.scale : 1) * 0.75;
+        if (Math.hypot(p.x - state.camera.x, p.y - state.camera.y) < R + half) return true;
+    }
+    return false;
+}
+function drawUnderSpans(ctx, drawLabels) {
+    if (typeof document === 'undefined' || !opaqueSpansInView(ctx)) { drawLabels(ctx); return; }
+    const W = ctx.canvas.width, H = ctx.canvas.height;
+    if (!_spanLabelCv) _spanLabelCv = document.createElement('canvas');
+    if (_spanLabelCv.width !== W || _spanLabelCv.height !== H) { _spanLabelCv.width = W; _spanLabelCv.height = H; }
+    const g = _spanLabelCv.getContext('2d');
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, W, H);
+    g.setTransform(ctx.getTransform());
+    g.globalAlpha = ctx.globalAlpha;
+    drawLabels(g);
+    // the spans, in the world's own transform (as draw() lays it), cutting the labels away
+    const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
+    g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.translate(W / 2, H / 2); g.rotate(-state.camera.rotation); g.translate(-state.camera.x, -state.camera.y);
+    g.globalAlpha = 1; g.globalCompositeOperation = 'destination-out';
+    drawProps(g, 'canopy', p => !!(reg[p.kind] || {}).opaque);
+    g.restore();
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalAlpha = 1; ctx.drawImage(_spanLabelCv, 0, 0); ctx.restore();
+}
+
 // THE CANOPY draws live: canopyAlpha is player-relative and its range (20 hulls)
 // exceeds the view radius, so ANY crown that overhangs water can be mid-fade on any
 // frame — there is nothing static enough here to be worth a tile.

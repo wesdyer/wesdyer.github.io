@@ -739,15 +739,18 @@ function draw() {
     // Draw Indicators. Not on the First Sail: the classmates are scenery there, and a name
     // tag pointing off-screen is one more thing for a beginner to wonder about.
     const firstSail = window.School && School.active && School.s && School.s.kind === 'sail';
-    for (const boat of state.boats) {
-        if (firstSail && !boat.isPlayer) continue;
-        if (boat.opacity === undefined || boat.opacity > 0.1) {
-             ctx.save();
-             if (boat.opacity !== undefined) ctx.globalAlpha = boat.opacity;
-             drawBoatIndicator(ctx, boat);
-             ctx.restore();
+    // (under any bridge deck or arch span — see drawUnderSpans, PT-018)
+    drawUnderSpans(ctx, (lc) => {
+        for (const boat of state.boats) {
+            if (firstSail && !boat.isPlayer) continue;
+            if (boat.opacity === undefined || boat.opacity > 0.1) {
+                 lc.save();
+                 if (boat.opacity !== undefined) lc.globalAlpha = boat.opacity;
+                 drawBoatIndicator(lc, boat);
+                 lc.restore();
+            }
         }
-    }
+    });
 
     drawDebugWorld(ctx);
 
@@ -915,7 +918,8 @@ function draw() {
         }
     }
 
-    if (!(window.School && School.active && School.panelHidden)) drawBoatInstruments(ctx, player);
+    // (your TWA pill goes under a bridge deck or an arch's span with your hull — PT-018)
+    if (!(window.School && School.active && School.panelHidden)) drawUnderSpans(ctx, (lc) => drawBoatInstruments(lc, player));
     if (!(window.School && School.hudHidden)) drawMinimap();
     drawWindDebug(ctx);
 
