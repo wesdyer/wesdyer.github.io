@@ -8,6 +8,14 @@ const SPINDRIFT_FT = 18;
 const M_PER_FT = 0.3048;
 const WORLD_M_PER_U = 0.1;                                                    // 10 cm a unit
 const BOAT_LEN_U = Math.round(SPINDRIFT_FT * M_PER_FT / WORLD_M_PER_U);      // 55
+// THE BOWSPRIT'S TIP, in the hull's own frame (bow up, y forward is negative): the foremost point of the
+// Spindrift 18's short carbon sprit. The side line art is the reference (Wes, Oct 13 2026): there it runs
+// 6.3% of the hull's length past the stem, which on the sprite's 56.4 u hull (stem -25.6) puts the end at
+// -29.2; the top-down line art is drawn to the same share. It is EQUIPMENT IN NORMAL POSITION, so it counts where the
+// rules say "hull and equipment" (Clear Astern / Overlap, rules.js isClearAstern) and NOT where they say
+// "hull" (starting, OCS and finishing: physics.js hullCrossedLine), nor in collisions, which stay on the
+// hull polygon. The spinnaker tacks here (render/sprites.js drawBowsprit). Wes, Oct 13 2026.
+const BOWSPRIT_TIP_Y = -29.2;
 // The racing rules' ZONE round a mark: three hull lengths (RRS Definitions, "Zone") — 165
 const ZONE_U = 3 * BOAT_LEN_U;
 // A thing's real length in metres, in world units (an animal's true size, before scale.md's ×k)
