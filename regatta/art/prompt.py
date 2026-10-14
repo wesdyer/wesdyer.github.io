@@ -207,6 +207,58 @@ ORTHO_BASE = (
     "viewer. Every part of the subject is the SAME distance from the camera, so nothing is "
     "larger for being nearer and no edge converges. "
 )
+# ⚠️ AN ANIMAL LYING ON ITS BACK IS SEEN FACE-UP. ORTHO_BASE forbids "a face, a chest" and says a
+# head from above is "the back of a skull" — true of nearly everything, and exactly wrong for a sea
+# otter floating belly-up, where the camera looking straight down sees its chest and its face looking
+# up. Left in, the prompt would argue with its own subject, and a generator settles that by dropping
+# one half at random. So an asset flagged `supine` gets the camera clause with that sentence swapped
+# for the true one; the geometry of the camera is unchanged.
+ORTHO_SIDE_SENTENCE = (
+    "NOTHING OF ANY SIDE MAY APPEAR: no length of trunk, no bark surface running away from "
+    "you, no face, no chest, no flank of a hull. You see the top surface and the ground "
+    "immediately around it, and nothing else. A head seen from above is the back of a skull, "
+    "with the nose or beak foreshortened and pointing away, never a face looking at the "
+    "viewer. "
+)
+ORTHO_SUPINE_SENTENCE = (
+    "THIS ANIMAL LIES ON ITS BACK, so the camera looking straight down sees its UNDERSIDE — chest, "
+    "belly and a face looking straight UP into the lens, flat-on, the crown toward the top of the "
+    "frame and the chin toward the chest. Nothing of its sides may appear: no flank, no profile, no "
+    "three-quarter turn of the head, no back. "
+)
+assert ORTHO_SIDE_SENTENCE in ORTHO_BASE
+# ⚠️ AN ANIMAL ROLLED ONTO ITS SIDE (the blue whale's lunge) is the third: the overhead camera sees one
+# FLANK, the opened jaws and the belly turned out sideways. `onSide` swaps the sentence the same way.
+ORTHO_ONSIDE_SENTENCE = (
+    "THIS ANIMAL HAS ROLLED ONTO ITS SIDE at the surface, so the camera looking straight down sees its "
+    "upturned FLANK along the body, its back turned to one side of the frame and its belly and throat "
+    "turned out to the other, and its open mouth from the side of the head. It is still a picture taken "
+    "from directly above: nothing is larger for being nearer, nothing recedes into the distance, no "
+    "underside view from below, no horizon. "
+)
+# ⚠️ AN ANIMAL LEAPING STRAIGHT UP AT THE CAMERA (the white shark's breach) is the other exception,
+# and a bigger one: the overhead camera looks INTO its face and open mouth, the body behind foreshortened
+# away to almost nothing. So `towardLens` swaps the side sentence for that, replaces the long/round
+# acceptance test (neither is true of a head-on head with its fins flung out) with the one that is —
+# the snout points into the lens, so the head is seen dead-on and symmetric — and lifts "foreshortening"
+# and "depth" from the negatives, since the subject IS foreshortened. The three-quarter terms stay: a
+# breach shot from the side is exactly the default this has to refuse.
+ORTHO_TOWARD_SENTENCE = (
+    "THIS ANIMAL IS LEAPING STRAIGHT UP OUT OF THE WATER TOWARD THE CAMERA, so the camera looking "
+    "straight down looks INTO its face: the tip of the snout is the nearest point to the lens, the "
+    "head is seen dead-on, and the body behind it drops away down into the water, foreshortened to "
+    "almost nothing. Nothing of its side may appear: no profile, no length of flank, no three-quarter "
+    "turn of the head. "
+)
+ORTHO_TOWARD_TEST = (
+    "THE ACCEPTANCE TEST IS SYMMETRY, because a tilted camera shows up as one side of the head: seen "
+    "dead-on, the head is MIRROR-SYMMETRIC left to right — both eyes equally visible at the same "
+    "height, both sides of the open jaw the same width, both fins flung out at the same angle. If one "
+    "side of the face shows more than the other, or any length of the body can be seen running away, "
+    "the camera was not overhead and the image is wrong however good it looks. "
+)
+TOWARD_NEGATIVE = ", side view, profile, shark seen from the side, horizontal shark, full length of the body visible"
+
 # ⚠️ THE ROUNDNESS TEST IS NOT UNIVERSAL, and asserting it as though it were was a real bug:
 # for one afternoon every world-prop and element carried "the silhouette must be AS TALL AS IT
 # IS WIDE" and a matching "wider than tall" negative. That is the correct test for a tree crown
@@ -716,7 +768,12 @@ def build(asset, profiles, bg="transparent"):
     # The camera clause, plus WHICHEVER acceptance test is true of this subject — see the
     # ORTHO_ROUND / ORTHO_LONG note. Same `planRound` flag ingest measures against, so the
     # prompt and the delivery check can never disagree about what shape this thing is.
-    ortho = ORTHO_BASE + (ORTHO_ROUND if asset.get("planRound") else ORTHO_LONG)
+    if asset.get("towardLens"):
+        ortho = ORTHO_BASE.replace(ORTHO_SIDE_SENTENCE, ORTHO_TOWARD_SENTENCE) + ORTHO_TOWARD_TEST
+    else:
+        base_cam = (ORTHO_BASE.replace(ORTHO_SIDE_SENTENCE, ORTHO_SUPINE_SENTENCE) if asset.get("supine")
+                    else ORTHO_BASE.replace(ORTHO_SIDE_SENTENCE, ORTHO_ONSIDE_SENTENCE) if asset.get("onSide") else ORTHO_BASE)
+        ortho = base_cam + (ORTHO_ROUND if asset.get("planRound") else ORTHO_LONG)
     addon = CLASS_ADDON[asset["class"]].format(
         display=display, bg=BACKGROUNDS[bg], tileworld=tile, minfeature=minfeature,
         ortho=ortho)
@@ -888,6 +945,8 @@ def emit(asset, profiles, bg="transparent"):
         # Only a subject that claims to be round in plan can be faulted for not being round.
         if asset.get("planRound"):
             neg += ROUND_NEGATIVE
+        if asset.get("towardLens"):
+            neg = neg.replace(", depth, receding ground, vanishing point, foreshortening", ", receding ground, vanishing point") + TOWARD_NEGATIVE
     print("\nNEGATIVE: " + neg)
     if asset.get("rework"):
         # AFTER the prompt, never inside it: this is a note to whoever is running the queue,

@@ -107,8 +107,8 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Sockeye salmon | River | 0.6 m | 6 | ~18 (a run, rule 7) | 17 | ✓ Sep 25 |
 | Bald eagle (span × body) | River | 2 m; 0.9 m | 20; 9 | ~58; ~27 | 58; 29 (span 2× body, per the soaring refs) | ✓ Sep 25 |
 | River otter (with tail) | River | 1.1 m | 11 | ~32 | 36 | ✓ Sep 25 |
-| Humpback whale (mother; calf) | Ocean | 14 m; 5 m | 140; 50 | **true size** ~132; ~48 — ×3 would fill the screen, and at true size it is already 2.4 hulls | 132; 48 | ✓ Sep 25 |
-| Spinner dolphin | Ocean | 2 m | 20 | ~40 | 40 | ✓ Sep 25 |
+| Humpback whale (mother; calf) | Ocean | 14 m; 5 m | 140; 50 | **true size** ~132; ~48 — ×3 would fill the screen, and at true size it is already 2.4 hulls | 132; 48 (134; 49 as the painted sprites, Oct 13) | ✓ Sep 25 |
+| Spinner dolphin | Ocean | 2 m | 20 | 30 (`lifeU(2) * 1.5`: the porpoise's 1.5×, the same bow-riding role, PT-016; was ~40 and drew ~23) | 30 (painted sprite) | ✓ Oct 13 |
 | Flying fish (wing-fins) | Ocean | 0.3 m | 3 | ~13 (a group, rule 7) | 13 | ✓ Sep 25 |
 | Laysan albatross (span) | Ocean | 2 m | 20 | ~60 (the pelican's) | 60 | ✓ Sep 25 |
 | California condor (span × body) | Redrock | 2.9 m; 1.2 m | 29; 12 | ~80; ~34 (bigger than the eagle's 58, as it should be) | 80; 34 | ✓ Sep 25 |
@@ -139,8 +139,8 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Atlantic mackerel | Clubhouse Point | 35 cm | 3.5 | ~9 (a ball of dozens) | ~9 | ✓ Sep 26 |
 | Sea otter (on its back) | Otter Point | 1.3 m | 13 | ~30 (broad floater, ~2.3×) | 32 | ✓ Sep 26 |
 | California sea lion (cow / bull) | Otter Point | 1.9 m (2.4 m) | 19 (24) | ~38 (2×: about half the white shark, Wes's refs; slim, a quarter as wide as long) | ~39 (~49) | ✓ Sep 26 |
-| Great white shark | Otter Point | 5 m | 50 | ~76 (1.5×: bigger than a hull ON PURPOSE — the venue's showpiece) | 76 | ✓ Sep 26 |
-| Blue whale | Otter Point | 25 m | 250 | 360 (~1.45×: at true size it read too small beside the 1.5-2.3× animals — Wes, Sep 26) | ~345 | ✓ Sep 26 |
+| Great white shark | Otter Point | 5 m | 50 | ~76 (1.5×: bigger than a hull ON PURPOSE — the venue's showpiece) | 76 (73 as the painted sprite, Oct 13: the needle tail tip falls under the alpha-150 count) | ✓ Sep 26 |
+| Blue whale | Otter Point | 25 m | 250 | 360 (~1.45×: at true size it read too small beside the 1.5-2.3× animals — Wes, Sep 26) | ~345 (340 as the painted sprite, Oct 13, drawn at 0.72 of its painted width) | ✓ Sep 26 |
 
 The four resized animals were all from the pond and lake round, the one Wes said looked worse
 than the Cove. They had been iterated at 3× on the bench with no length target and ran 1.5–2×

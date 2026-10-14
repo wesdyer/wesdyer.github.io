@@ -10,6 +10,11 @@ const path = require('path');
     const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1500, height: 1500 } });
     await p.goto('file://' + path.resolve('regatta/index.html'));
     await p.waitForFunction(() => window.state && window.Wildlife && typeof resetGame === 'function');
+    // the humpbacks are painted sprites (Oct 2026): ask for them once, and give them a moment to load
+    await p.evaluate(() => { const g = document.createElement('canvas').getContext('2d');
+        for (const calf of [false, true]) Wildlife.art.drawWhale(g, { j: 0, calf, len: 50, x: 0, y: 0, h: 0, mode: 'surface', depth: 0, ph: 0 });
+        Wildlife.art.drawSpinner(g, { live: true, i: 0, x: 0, y: 0, h: 0, spin: 0, breath: 0 }); });
+    await p.waitForTimeout(800);
     await p.evaluate(() => {
         localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'ocean', soundEnabled: false, musicEnabled: false, bgSoundEnabled: false }));
         resetGame();
@@ -38,7 +43,7 @@ const path = require('path');
             ['pec slap', (x, y) => A.drawWhale(g, W({ x, y, ev: 'pecslap', roll: 1, fin: 1, sd: 1 }))],
             ['feeding', (x, y) => { A.drawSplash(g, { x, y: y - 46, t: 0.5, life: 5, r: 40, bait: true }); A.drawWhale(g, W({ x, y, ev: 'feed', lift: 1 })); }],
             ['blow', (x, y) => A.drawBlow(g, { x, y, t: 0.6, size: 1 })],
-            ['bow riders', (x, y) => { hull(x, y + 48); for (let i = 0; i < 5; i++) { const row = Math.floor((i + 1) / 2), sd = i === 0 ? 0 : (i % 2 ? -1 : 1); A.drawSpinner(g, { live: true, i, x: x + sd * (7 + row * 7), y: y + 16 - row * 13, h: 0, spin: 0, breath: i === 2 ? 0.8 : 0 }); } }],
+            ['bow riders', (x, y) => { hull(x, y + 48); for (let i = 0; i < 5; i++) { const row = Math.floor((i + 1) / 2), sd = i === 0 ? 0 : (i % 2 ? -1 : 1); const ds = 30 / 26; A.drawSpinner(g, { live: true, i, x: x + sd * (7 + row * 7) * ds, y: y + 16 - row * 13 * ds, h: 0, spin: 0, breath: i === 2 ? 0.8 : 0 }); } }],
             ['flying fish', (x, y) => { for (let i = 0; i < 3; i++) A.drawFlyfish(g, { x0: x - 60 + i * 20, y0: y + 30 - i * 12, h: 0.5, len: 120, t: 0.4 + i * 0.05, dur: 1, z: 8, size: 1 }); }],
             ['albatross', (x, y) => A.drawAlbatross(g, { x, y, h: 1.2, z: 18, bank: 0.3 })],
         ];
