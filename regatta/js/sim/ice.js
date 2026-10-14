@@ -316,7 +316,7 @@ function refreshBotGrid() {
     // Shoals do not drift and are not stamped, so the field carries straight over. Left
     // off, every floe rebuild would silently hand the router a course with no bars in it
     // and the fleet's route would flip back and forth on a two-second cadence.
-    g._shoal = c._botGridStatic._shoal;
+    g._shoal = c._botGridStatic._shoal; g._kelp = c._botGridStatic._kelp || null;   // (the kelp hearts ride along — PT-084)
     // FLOE RISK: water near drifting ice is worth avoiding when open water is
     // affordable — the router should go AROUND a pack unless threading it is
     // clearly cheaper on the polar (this is what lets a route be "wider than the

@@ -101,11 +101,65 @@ async function saveScreenshot() {
         showToast("Screenshot Saved");
     } catch (err) {
         console.warn('Screenshot failed:', err);
-        showToast("Screenshot Failed");
+        // Over file:// the race canvas is built from pictures read off the disk, and the browser will
+        // not let a page export those (PT-079) — say so, rather than a bare failure.
+        showToast(location.protocol === 'file:' && err && err.name === 'SecurityError'
+            ? 'Screenshots need the online game (local files can\'t be saved)' : 'Screenshot Failed');
     } finally {
         _screenshotBusy = false;
     }
 }
+
+// SAVE THE RESULTS AS AN IMAGE (PT-079, Wes at Glacier Sound: "a way to save results… an image of
+// results… this is my best score"). The whole results page — header, the chart with every track, your
+// race, the legs, the trace, the fleet — not just what is on screen, at the screen's pixel ratio, without
+// the footer's buttons. Named for the venue and the day, so a folder of them sorts.
+//
+// ⚠️ OVER file:// the browser will not let a page read back any picture it loaded from disk (every file
+// is its own origin), which is why F12 failed there ("Tainted canvases may not be exported"). Leaving
+// the portraits out was tried and refused (Wes: "We shouldn't remove art"): a result without its art
+// is not the result. So off the hosted game it saves nothing and says why; on http/https, everything.
+let _resultsShotBusy = false;
+function resultsImageFileName() {
+    const d = new Date(), p = (n) => String(n).padStart(2, '0');
+    const v = (typeof settings !== 'undefined' && settings.venue) || 'race';
+    const name = (typeof venueDisplayName === 'function' && venueDisplayName(v)) || v;
+    const slug = String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    return `regatta-${slug}-${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}.png`;
+}
+async function saveResultsImage() {
+    const root = document.querySelector('#results-overlay > div');
+    if (!window.htmlToImage || !root || _resultsShotBusy) return;
+    _resultsShotBusy = true;
+    try {
+        const fontEmbedCSS = await screenshotFontCSS();
+        // down to the footer, which is left out (its buttons are no part of a result)
+        const foot = document.getElementById('res-footer');
+        const H = foot ? Math.ceil(foot.getBoundingClientRect().top - root.getBoundingClientRect().top) + 8 : root.scrollHeight;
+        const c = await htmlToImage.toCanvas(root, {
+            width: root.scrollWidth, height: H,
+            pixelRatio: window.devicePixelRatio || 1,
+            backgroundColor: '#0c1322',
+            fontEmbedCSS,
+            filter: (n) => n.nodeType !== 1 || (n.tagName !== 'SCRIPT' && n.id !== 'res-footer' && getComputedStyle(n).display !== 'none'),
+        });
+        const blob = await new Promise((res) => c.toBlob(res, 'image/png'));
+        if (!blob) throw new Error('no image');
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = resultsImageFileName();
+        link.href = url;
+        link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 30000);
+        showToast('Results saved');
+    } catch (err) {
+        console.warn('Results image failed:', err);
+        showToast(location.protocol === 'file:' ? 'Saving images needs the online game (local files can\'t be saved)' : 'Results image failed');
+    } finally {
+        _resultsShotBusy = false;
+    }
+}
+window.saveResultsImage = saveResultsImage;
 
 window.addEventListener('keydown', (e) => {
     // An unlock card owns the keyboard: Enter, Space or Esc moves to the next card, and

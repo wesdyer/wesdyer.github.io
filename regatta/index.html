@@ -1571,9 +1571,12 @@
                 </div>
             </div>
 
-            <div class="flex items-center justify-between gap-6" style="margin:18px 36px 32px; background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px 16px 16px 24px;">
+            <div id="res-footer" class="flex items-center justify-between gap-6" style="margin:18px 36px 32px; background:#101a2e; border:1px solid rgba(255,255,255,0.09); border-radius:16px; padding:16px 16px 16px 24px;">
                 <div id="res-footnote" style="font-size:13px; font-weight:700; color:#9fb2cc;"></div>
                 <div class="flex gap-2.5 shrink-0">
+                    <!-- PT-079 (Wes: "a way to save results… an image… this is my best score"): the page
+                         above, as a PNG — js/ui/input.js saveResultsImage. The footer is left out of it. -->
+                    <button id="results-save-button" class="res-btn" onclick="saveResultsImage()">Save image &#8681;</button>
                     <button id="results-restart-button" class="res-btn">Back to Clubhouse</button>
                     <button id="results-rematch-button" class="res-btn res-btn-primary">Rematch &#8635;</button>
                 </div>
