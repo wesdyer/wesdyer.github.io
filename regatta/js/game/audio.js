@@ -542,6 +542,52 @@ const Sound = {
         osc.stop(now + 1.0);
     },
 
+    // ── THE START SEQUENCE (PT-021, Wes at Lighthouse Cove: real races sound signals at 5, 4 and 1
+    // minutes, and "a signal on each second for the final 10 seconds… increase some drama") ──────────
+    // The game's prestart is 30 s, so the sequence keeps its SHAPE, compressed: the warning horn as the
+    // prestart opens, the preparatory at 20 s, one long horn at 10 s (the "one minute"), then a tick each
+    // second, brighter for the last three, into the existing gun. A 20 s prestart (the School's start
+    // practice) opens on the preparatory. Kept under the music — horns near the gate chime's level, ticks
+    // quieter than it — so every venue's track still carries the moment.
+    countdown: function(prev, now, dur) {
+        if (!settings.soundEnabled || !(now > 0)) return;
+        const crossed = (k) => prev > k && now <= k;
+        if (prev >= dur - 1e-6 && now < dur) { this.playHorn(dur > 20.5 ? 0.85 : 0.6, 0.20); return; }  // the opening signal
+        if (dur > 20.5 && crossed(20)) { this.playHorn(0.6, 0.20); return; }
+        if (crossed(10)) { this.playHorn(1.5, 0.24); return; }
+        for (let k = 9; k >= 1; k--) if (crossed(k)) { this.playTick(k <= 3); return; }
+    },
+    // A committee-boat air horn: two detuned saws through a lowpass, a fast attack, a held body, a
+    // short tail. Synthesized, like the gun, so it costs no download and never waits on one.
+    playHorn: function(len, vol) {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const g = this.ctx.createGain(), f = this.ctx.createBiquadFilter();
+        f.type = 'lowpass'; f.frequency.value = 1100; f.Q.value = 0.8;
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(vol, now + 0.04);
+        g.gain.setValueAtTime(vol, now + len);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + len + 0.18);
+        f.connect(g); g.connect(this.ctx.destination);
+        for (const hz of [233, 236.5]) {
+            const o = this.ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.value = hz;
+            o.connect(f); o.start(now); o.stop(now + len + 0.2);
+        }
+    },
+    playTick: function(last) {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+        o.type = 'sine'; o.frequency.value = last ? 1320 : 880;
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(last ? 0.16 : 0.09, now + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + (last ? 0.16 : 0.09));
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(now); o.stop(now + 0.2);
+    },
+
     playFinish: function() {
         if (!settings.soundEnabled) return;
         this.init();

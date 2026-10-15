@@ -139,7 +139,10 @@ function update(dt) {
 
     // Global Race Timer
     if (state.race.status === 'prestart') {
+        const _prevTimer = state.race.timer;
         state.race.timer -= dt;
+        // The start sequence's signals (PT-021) — sound only, read off the clock it just stepped.
+        if (Sound.countdown) Sound.countdown(_prevTimer, state.race.timer, state.race.startTimerDuration);
         if (state.race.timer <= 0) {
             state.race.status = 'racing';
             state.race.timer = 0;
