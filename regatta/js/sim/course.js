@@ -596,8 +596,11 @@ function _sweepAdd(S, x, y, cx, cy) {
     if (S.a != null) { let d = a - S.a; d = Math.atan2(Math.sin(d), Math.cos(d)); S.sum += d; }
     S.a = a;
 }
-//   pond:raft   Pip's "Round the Raft": a full turn round the Sailing School's swim raft (prop-44), inside
-//               raftR, during any section — the school's objective is judged when the section ends.
+//   pond:raft   Pip's "Round the Raft": sail ROUND the Sailing School's swim raft (prop-44) as you would a
+//               mark, inside raftR, during any section — the school's objective is judged when the section ends.
+//               Half a turn about it, not a full circle (PT-107, Wes Oct 14 2026: "just make it go around the
+//               raft"). A straight line past a point sweeps strictly less than π however close it passes, so
+//               only a track that bends round the raft earns it.
 const POND_RAFT = { venue: 'pond', prop: 'prop-44', r: 260 };
 let _pondRaft = null;
 function checkPondRaft() {
@@ -608,7 +611,7 @@ function checkPondRaft() {
     const R = _pondRaft;
     if (Math.hypot(me.x - pr.x, me.y - pr.y) > POND_RAFT.r) { R.S = { sum: 0, a: null }; return; }   // left the raft: start over
     _sweepAdd(R.S, me.x, me.y, pr.x, pr.y);
-    if (!R.sent && Math.abs(R.S.sum) >= Math.PI * 2 * 0.95 && typeof GameEvents !== 'undefined') { R.sent = true; GameEvents.emit('player-feat', { id: 'pond:raft' }); }
+    if (!R.sent && Math.abs(R.S.sum) >= Math.PI && typeof GameEvents !== 'undefined') { R.sent = true; GameEvents.emit('player-feat', { id: 'pond:raft' }); }
 }
 //   lake:islands  Barbel's "Round Every Island": the whole race's track, closed from the finish back to the
 //                 start, goes round every island in the lake — each ISLAND is a connected clump of hard land

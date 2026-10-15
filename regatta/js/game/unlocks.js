@@ -664,9 +664,9 @@ const ACHIEVEMENTS = [
     { char: 'Oar', venue: 'pond', rung: 'start', title: 'Off the Mark',
       hint: 'In start practice, cross within 2 seconds of the gun without being over early.',
       test: (r) => r.school === 'start' && r.startOk },
-    // Sep 27 2026 (Wes): the pond's Explorer — Pip the pumpkinseed; a full turn round the swim raft (sim/course.js).
+    // Sep 27 2026 (Wes): the pond's Explorer — Pip the pumpkinseed; round the swim raft like a mark (sim/course.js, PT-107).
     { char: 'Pip', venue: 'pond', rung: 'explorer', title: 'Round the Raft',
-      hint: 'Sail a full circle round the swim raft in Sailing School, then finish that section.',
+      hint: 'Sail round the swim raft in Sailing School, as you would a mark, then finish that section.',
       test: (r) => !!r.school && r.sectionDone && r.feats.includes('pond:raft') },
     { char: 'Bask', venue: 'pond', rung: 'wildlife', title: 'Sunbathers',
       hint: 'Send the turtles sliding off their log in Sailing School, then finish that section.',

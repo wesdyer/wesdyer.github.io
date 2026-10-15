@@ -4572,9 +4572,17 @@ function drawIslands(ctx, only, pending) {
             if (isl.magma) { drawMagma(ctx, isl); drawn++; continue; }
             ctx.save();
             ctx.beginPath();
-            ctx.moveTo(isl.vertices[0].x, isl.vertices[0].y);
-            for (let i = 1; i < isl.vertices.length; i++) ctx.lineTo(isl.vertices[i].x, isl.vertices[i].y);
-            ctx.closePath();
+            // A shape with holes: the outer and each hole as SEPARATE subpaths (even-odd), never the
+            // keyholed ring. That ring joins a hole to the outer by a bridge edge walked both ways; the
+            // fill cancels it but the coast stroke below drew it — a straight line across the pond's
+            // lawn, 6 km from the map corner to the beach (PT-106). Same rings as the charts' (hud.js).
+            const rings = (isl.holes && isl.holes.length && isl.outerRing) ? [isl.outerRing].concat(isl.holes) : [isl.vertices];
+            for (const r of rings) {
+                if (!r || r.length < 3) continue;
+                ctx.moveTo(r[0].x, r[0].y);
+                for (let i = 1; i < r.length; i++) ctx.lineTo(r[i].x, r[i].y);
+                ctx.closePath();
+            }
             const st = ISLAND_STYLES[isl.style] || ISLAND_STYLES.ice;
             // A style with a LAND_TEXTURES entry gets the tiling surface; everything
             // else stays a flat fill. This is the FIXED-land path, so a floe never

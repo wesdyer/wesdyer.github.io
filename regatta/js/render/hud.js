@@ -2227,13 +2227,18 @@ function drawMinimap() {
     // map, which is what makes the player findable at a glance.
     for (const boat of state.boats) {
         if (boat.isPlayer) continue;
+        // A finished rival fades off the water, and off the chart with it (PT-013): gone once it is gone.
+        const fading = boat.raceState.finished;
+        if (fading && boat.fadeTimer <= 0) continue;
         const pos = t(boat.x, boat.y);
+        if (fading) ctx.globalAlpha = Math.max(0, Math.min(1, boat.opacity));
         // Ink outline: hull colors alone don't separate from water or gust blobs
         // at this size, and dark hulls disappeared entirely.
         ctx.beginPath(); ctx.arc(pos.x, pos.y, 4.6 * mk, 0, Math.PI * 2);
         ctx.fillStyle = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
         ctx.fill();
         ctx.strokeStyle = 'rgba(11, 28, 43, 0.85)'; ctx.lineWidth = 1.4 * mk; ctx.stroke();
+        if (fading) ctx.globalAlpha = 1;
     }
 
     // TIME TRIALS: your ghost, as a hollow arrow the size of yours — the same shape says "you",

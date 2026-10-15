@@ -1403,6 +1403,18 @@ function updateBoatRaceState(boat, dt) {
             if (boat.isPlayer) hideRaceMessage();
         }
     }
+    // THE PRESTART'S "OVER EARLY" BANNER CLEARS ON POSITION TOO (PT-073). Only a crossing back through the
+    // line cleared it, so a player who returned round an END of the line — or slid back under it between
+    // two frames — kept "RETURN TO PRE-START!" up though already behind it. The gun judges by position
+    // (the starting signal in update()), so the banner does: the whole hull on the pre-start side of the
+    // line or its extensions. The player only — the AI's prestart is left exactly as it was.
+    if (state.race.status === 'prestart' && boat.isPlayer && boat.raceState.ocs && marks && marks.length >= 2) {
+        const [m0, m1] = startLinePts();
+        if (m0 && m1 && hullLineOffset(boat, m0, m1, true) <= 0) {
+            boat.raceState.ocs = false;
+            hideRaceMessage();
+        }
+    }
 
     // Island course waypoint: the HUD arrow and distance should point at the
     // mountain while outbound and at the finish line coming home. The gate-based
