@@ -133,17 +133,17 @@ const SURF_ON = 0.30;        // surf01 where the sheet starts — the HUD calls 
 const SURF_SPAN = 0.45;      // ...and full sheet this much above it
 const SURF_RATE = 56;        // droplets per second at a full ride
 const PUNCH_RATE = 95;       // droplets per second at a full push-through
-const SLAM_FALL_MIN = 6;     // units/s of bow fall below which nothing is thrown
-const SLAM_FALL_FULL = 16;   // ...and at which the burst is at full size (a typical beat in Bluewater's swell is ~15)
+const SLAM_FALL_MIN = 4;     // units/s of bow fall below which nothing is thrown
+const SLAM_FALL_FULL = 12;   // ...and at which the burst is at full size (a beat: ~15 in Bluewater's swell, ~8 in Otter's)
 // THE WHITE WATER OVER THE DROPLETS (PT-066, Oct 14 2026: "more splashing as we go into and over a wave
 // upwind"). Measured on Bluewater: a slam every ~4.4 s and ~11 live droplets, each a 4-9 px dash — the
 // effect was there and nobody could see it. Dashes alone read as rain, so the volume goes into CONNECTED
 // sheets, the same way the surfing wings carry it: a crown thrown off the stem at each slam, and the
 // push-through sheet peeling off the lee bow while she drives into the face.
-const CROWN_LIFE = 0.85;     // seconds a slam's crown stays on the water
-const CROWN_REACH = 30;      // units each lobe throws at a light slam...
-const CROWN_REACH_SEV = 34;  // ...plus this at a full one (the boat is 55 long)
-const PUNCH_SHEET = 0.85;    // push-through sheet intensity at a full push-through (the surfing wings' scale)
+const CROWN_LIFE = 1.1;      // seconds a slam's crown stays on the water
+const CROWN_REACH = 40;      // units each lobe throws at a light slam...
+const CROWN_REACH_SEV = 44;  // ...plus this at a full one (the boat is 55 long)
+const PUNCH_SHEET = 1.0;     // push-through sheet intensity at a full push-through (the surfing wings' scale)
 
 let caps = [];
 let spray = [];
@@ -814,7 +814,8 @@ function drawCrowns(ctx, state, cam, cullR2) {
             ctx.rotate(k.h);
             for (let pass = 0; pass < 2; pass++) {
                 const reach = pass === 0 ? 1 : 0.6;
-                ctx.globalAlpha = fade * (pass === 0 ? 0.20 : 0.30) * (0.55 + 0.45 * k.sev);
+                // (Oct 14: Wes did not notice the first cut in play — 0.20/0.30 × 0.55-1.0 — so brighter and steadier)
+                ctx.globalAlpha = fade * (pass === 0 ? 0.34 : 0.46) * (0.75 + 0.25 * k.sev);
                 for (let side = -1; side <= 1; side += 2) {
                     const R = (CROWN_REACH + CROWN_REACH_SEV * k.sev) * (side === k.lee ? 1 : 0.6) * grow * reach;
                     // ⚠️ FINGERS, NOT A PUFF. A filled lobe with a churned rim read as a cloud parked on
