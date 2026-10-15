@@ -5396,13 +5396,39 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // The wake is kept on the duck object from what the draw sees (school.js owns the motion):
     // a point each few units moved, stamped with the sim clock, aged out after ~1.2 s, so a
     // duck that stops lets its V run out behind it and a paused game freezes it.
+    // OUT OF THE BOW'S WAY (PT-108, Wes: "I ran over the ducklings"). A hull bearing down on a duckling —
+    // it in the track from amidships to ~1.5 lengths ahead — and it paddles sideways clear of the track,
+    // then eases back once the boat has gone by. DRAWN, not moved: school.js owns where a duckling is, and
+    // "reached" (a boat length) is judged on that; the dodge (≤ ~40u) only changes where it is painted.
+    const DUCK_CLEAR = 36;   // units off the boat's centreline a duckling paddles out to
+    function duckDodge(d, t) {
+        const dt = Math.max(0, Math.min(0.1, t - (d._dt0 == null ? t : d._dt0))); d._dt0 = t;
+        let tx = 0, ty = 0;
+        for (const b of ((window.state && state.boats) || [])) {
+            if (!b || (b.speed || 0) < 0.05 || (b.opacity !== undefined && b.opacity < 0.2)) continue;
+            const fx = Math.sin(b.heading), fy = -Math.cos(b.heading);          // forward
+            const rx = d.x + (d.ox || 0) - b.x, ry = d.y + (d.oy || 0) - b.y;
+            const along = rx * fx + ry * fy, lat = rx * -fy + ry * fx;          // right = (-fy, fx)
+            if (along < -25 || along > 85 || Math.abs(lat) >= DUCK_CLEAR) continue;
+            // the side it is already on (or the duckling's own pick if dead ahead), out to DUCK_CLEAR
+            const side = Math.abs(lat) > 2 ? Math.sign(lat) : (d._side || (d._side = ((d.x * 7 + d.y * 3) & 1) ? 1 : -1));
+            const need = side * DUCK_CLEAR - lat;
+            tx += -fy * need; ty += fx * need;
+        }
+        d.ox = d.ox || 0; d.oy = d.oy || 0;
+        if (tx || ty) { const k = 1 - Math.exp(-dt * 7); d.ox += tx * k; d.oy += ty * k; }      // scramble out fast...
+        else { const k = 1 - Math.exp(-dt * 1.2); d.ox -= d.ox * k; d.oy -= d.oy * k; }        // ...drift back slow
+        const m = Math.hypot(d.ox, d.oy); if (m > 44) { d.ox *= 44 / m; d.oy *= 44 / m; }
+    }
     function trackDuckling(d, t) {
+        duckDodge(d, t);
+        const px = d.x + (d.ox || 0), py = d.y + (d.oy || 0);   // where it is drawn, wake and all
         const tr = d.trail || (d.trail = []);
         const last = tr[0];
         // a restart (the clock went back) or a teleport to a new section: start clean
-        if (last && (last.t > t || Math.hypot(d.x - last.x, d.y - last.y) > 60)) tr.length = 0;
+        if (last && (last.t > t || Math.hypot(px - last.x, py - last.y) > 60)) tr.length = 0;
         while (tr.length && t - tr[tr.length - 1].t > 1.2) tr.pop();
-        if (!tr.length || Math.hypot(d.x - tr[0].x, d.y - tr[0].y) > 3.5) { tr.unshift({ x: d.x, y: d.y, t }); if (tr.length > 14) tr.pop(); }
+        if (!tr.length || Math.hypot(px - tr[0].x, py - tr[0].y) > 3.5) { tr.unshift({ x: px, y: py, t }); if (tr.length > 14) tr.pop(); }
         // how much it is swimming, 0..1: a fresh head point means it is moving
         const fresh = tr.length > 1 ? Math.max(0, 1 - (t - tr[0].t) / 0.35) : 0;
         d.swim = (d.swim || 0) + (fresh - (d.swim || 0)) * 0.2;
@@ -5416,13 +5442,18 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     function drawDuckling(ctx, d, t, i) {
         const sw = d.swim || 0;
-        ctx.save(); ctx.translate(d.x, d.y);
+        // SWIMMING, A DUCKLING WADDLES (PT-108: "move a little side to side… more like ducks moving"):
+        // each paddle stroke rocks the body and the line of travel weaves a little either side of
+        // the course — small, fast, and only while it swims; at rest the slow drift below takes over.
+        const wv = Math.sin(t * 5.2 + i * 1.9) * sw;
+        const wx = Math.cos(d.h) * wv * 1.6, wy = Math.sin(d.h) * wv * 1.6;
+        ctx.save(); ctx.translate(d.x + (d.ox || 0) + wx, d.y + (d.oy || 0) + wy);
         // at rest: a slow ring breathing out from the bob; swimming: the bow ripple
         const ph = (t * 0.6 + i * 0.37) % 1;
         ctx.save(); ctx.globalAlpha *= 1 - sw;
         drawRing(ctx, 0, 0, 1 - ph, 7, 9, 0.3);
         ctx.restore();
-        ctx.rotate(d.h + Math.sin(t * 0.9 + i * 1.7) * 0.06 * (1 - sw));
+        ctx.rotate(d.h + Math.sin(t * 0.9 + i * 1.7) * 0.06 * (1 - sw) + Math.sin(t * 10.4 + i * 1.9) * 0.10 * sw + wv * 0.08);
         ctx.scale(DUCKLING_SCALE, DUCKLING_SCALE);
         // the contact shade: the body sits IN the water
         ctx.fillStyle = 'rgba(8,24,30,0.28)';
