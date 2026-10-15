@@ -1086,32 +1086,37 @@ function pathSailable(grid, from, to) {
     const gScore = new Float64Array(size).fill(Infinity);
     const prev = new Int32Array(size).fill(-1);
     const si = s[1] * N + s[0], gi = g[1] * N + g[0];
-    // Binary heap of [f, id]
-    const heap = [];
+    // Binary heap of (f, id), as two parallel arrays — the same sift, the same comparisons and so
+    // the same pop order as the [f, id] pairs it replaced, without an allocation per push (Oct 2026
+    // perf pass: a bot replan is one of these searches, and they were the game's biggest hitches).
+    const hf = [], hid = [];
+    let popF = 0, popId = 0;
     const push = (f, id) => {
-        heap.push([f, id]);
-        let k = heap.length - 1;
+        hf.push(f); hid.push(id);
+        let k = hf.length - 1;
         while (k > 0) {
             const p = (k - 1) >> 1;
-            if (heap[p][0] <= heap[k][0]) break;
-            const t = heap[p]; heap[p] = heap[k]; heap[k] = t; k = p;
+            if (hf[p] <= hf[k]) break;
+            const tf = hf[p]; hf[p] = hf[k]; hf[k] = tf;
+            const ti = hid[p]; hid[p] = hid[k]; hid[k] = ti; k = p;
         }
     };
     const pop = () => {
-        const top = heap[0], last = heap.pop();
-        if (heap.length) {
-            heap[0] = last;
+        popF = hf[0]; popId = hid[0];
+        const lastF = hf.pop(), lastId = hid.pop();
+        if (hf.length) {
+            hf[0] = lastF; hid[0] = lastId;
             let k = 0;
             for (;;) {
                 const l = 2 * k + 1, r = l + 1;
                 let m = k;
-                if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
-                if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+                if (l < hf.length && hf[l] < hf[m]) m = l;
+                if (r < hf.length && hf[r] < hf[m]) m = r;
                 if (m === k) break;
-                const t = heap[m]; heap[m] = heap[k]; heap[k] = t; k = m;
+                const tf = hf[m]; hf[m] = hf[k]; hf[k] = tf;
+                const ti = hid[m]; hid[m] = hid[k]; hid[k] = ti; k = m;
             }
         }
-        return top;
     };
     if (_tfTab === null && grid._wbin) _tfTab = buildTimeCost();
     const TF = grid._wbin ? _tfTab : null;
@@ -1126,23 +1131,28 @@ function pathSailable(grid, from, to) {
     };
     gScore[si] = 0;
     push(h(si), si);
-    while (heap.length) {
-        const [f, cur] = pop();
+    // Loop-invariant: the cell tests and whether this is drifting-ice water (they were rebuilt for
+    // every neighbour of every expanded cell).
+    // SOFT cells (floe-plugged water, land-free) are passable at a stiff
+    // multiplier — grinding through a drifted plug beats waiting minutes
+    // for it to open, and this venue is designed around that trade.
+    const soft = grid._soft ? (id2) => grid._soft[id2] === 1 : null;
+    const passStock = (ai, bi) => grid.at(ai, bi) ||
+        (soft && ai >= 0 && bi >= 0 && ai < N && bi < N && soft(bi * N + ai));
+    const passable = (ai, bi) => passStock(ai, bi) ||
+        (ai >= 0 && bi >= 0 && ai < N && bi < N &&
+            (grid._tight && grid._tight[bi * N + ai] || (tideDry && tideDry[bi * N + ai])));
+    const icyG = !!(typeof state !== 'undefined' && state.course
+        && state.course._floeObjs && state.course._floeObjs.length);
+    while (hf.length) {
+        pop();
+        const f = popF, cur = popId;
         if (cur === gi) break;
         const ci = cur % N, cj = (cur - ci) / N;
         if (f - h(cur) > gScore[cur] + 1e-6) continue;   // stale heap entry
         for (let k = 0; k < 8; k++) {
             const di = NB[k][0], dj = NB[k][1];
             const a = ci + di, b = cj + dj;
-            // SOFT cells (floe-plugged water, land-free) are passable at a stiff
-            // multiplier — grinding through a drifted plug beats waiting minutes
-            // for it to open, and this venue is designed around that trade.
-            const soft = grid._soft ? (id2) => grid._soft[id2] === 1 : null;
-            const passStock = (ai, bi) => grid.at(ai, bi) ||
-                (soft && ai >= 0 && bi >= 0 && ai < N && bi < N && soft(bi * N + ai));
-            const passable = (ai, bi) => passStock(ai, bi) ||
-                (ai >= 0 && bi >= 0 && ai < N && bi < N &&
-                    (grid._tight && grid._tight[bi * N + ai] || (tideDry && tideDry[bi * N + ai])));
             if (!passable(a, b)) continue;
             const nid = b * N + a;
             let tideMul = 1, tideWait = 0, tideWaitUntil = 0;
@@ -1212,8 +1222,6 @@ function pathSailable(grid, from, to) {
                 // shore-grind: lake land contacts 8.1 -> 15.4 per boat-race and
                 // redrock finishers 10 -> 6 under the unscoped law. Non-icy venues
                 // price exactly as stock, by construction.
-                const icyG = !!(typeof state !== 'undefined' && state.course
-                    && state.course._floeObjs && state.course._floeObjs.length);
                 if (icyG && W < 140 && fUp > 1.05) fUp *= (140 / W) * (140 / W);
                 base = Math.min(icyG && fUp > 1.05 && W < 140 ? 90 : 20, base * fUp);
             }

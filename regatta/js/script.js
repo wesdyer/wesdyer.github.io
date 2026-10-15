@@ -1128,6 +1128,16 @@ function loop(timestamp) {
             return;
         }
         if (resultsUp) { requestAnimationFrame(loop); return; }   // nothing left to sail; nothing to draw under it
+        // A race not yet started, under the clubhouse or the board: the boats are held (physics.js),
+        // nothing is visible, and Start resets the day anyway — so the wind, the traffic and the
+        // animals are not stepped behind a solid page. At page load this was ~300 ms of the first
+        // second (the waiting fleet sampling the wind built the lee field under the hub).
+        // The one thing update() does that IS felt behind a menu: the wind bed fading out
+        // (Sound.windAudible says no on the board and the clubhouse; test_audio).
+        if (state.race.status === 'waiting' && opaqueBoardUp()) {
+            if (typeof Sound !== 'undefined' && Sound.updateWindSound) Sound.updateWindSound(Sound.playerWindSpeed());
+            requestAnimationFrame(loop); return;
+        }
 
         let iterations = 1;
         // The Sailing School's own results screen (E) keeps the sim running behind it, drawn,
@@ -1169,12 +1179,33 @@ function loop(timestamp) {
             if (window.School && School.active) School.onResults();
             else showResults();
         }
-        draw();
+        // NOTHING IS DRAWN UNDER AN OPAQUE PAGE (Oct 2026 perf pass). The clubhouse screens and the
+        // race board cover the whole canvas, and drawing the race behind them cost a full frame —
+        // at page load the first second was 1.3 s of draw() for a picture nobody could see. The
+        // sim still steps (the board's wind is live); the first draw after the board comes down is
+        // primed behind it (primeRaceFrame), so the bakes do not land on the race's first frame.
+        if (!opaqueBoardUp()) draw();
     }
     requestAnimationFrame(loop);
 }
 
-function resetGame() {
+// Is a full-screen, opaque page over the canvas? The clubhouse screens and the pre-race board
+// both paint a solid #0c1322 background over everything.
+function opaqueBoardUp() {
+    if (typeof UI === 'undefined') return false;
+    if (UI.preRaceOverlay && !UI.preRaceOverlay.classList.contains('hidden')) return true;
+    return typeof clubhouseUp === 'function' && clubhouseUp();
+}
+
+// One draw while the board still covers the canvas: the first frame of a course pays for its
+// world-tile bakes, surf tables and sprite tints, and this puts that under the board (or the
+// loading card) rather than on the first frame the player sees.
+function primeRaceFrame() {
+    if (!state.boats.length) return;
+    try { draw(); } catch (e) { console.error(e); }
+}
+
+function resetGame(opts) {
     // Leaving a race whose place never settled on the results page (Rematch straight away,
     // with a penalty's +15s still pending) still counts it — with the order as it stands.
     if (window.Unlocks && state.boats.length && typeof finishOrder === 'function') Unlocks.flush(finishOrder());
@@ -1251,10 +1282,16 @@ function resetGame() {
 
     state.race.timer = state.race.startTimerDuration;
 
-    initCourse();
+    // The page's first reset builds LIGHT (Oct 2026 perf pass): the clubhouse is the first screen
+    // and shows no course, and the full build (router, goal field, lee field — ~1 s on Bay) was the
+    // biggest single cost of opening the page. Start pays for it behind the loading card, as it
+    // already does for any venue only browsed (startRace upgrades a light course).
+    initCourse(opts && opts.light ? { light: true } : undefined);
     // The wind shadows for every angle, now rather than mid-race (leeWarm; cached by content, so a
     // rematch costs nothing). A light course never races.
     if (state.course.loadState === 'full' && typeof leeWarm === 'function') leeWarm();
+    // ...and its art on the way (fetched on demand; asking for it starts the downloads).
+    if (state.course.loadState === 'full' && typeof venueArtImages === 'function') venueArtImages();
 
     // Init Water Renderer
     if (window.WaterRenderer) window.WaterRenderer.init();
@@ -1358,7 +1395,10 @@ function resetGame() {
     if (window.TimeTrial && TimeTrial.solo()) state.boats.length = 1;
     if (window.TimeTrial) TimeTrial.onReset();
     if (window.RaceLog) RaceLog.onReset();
-    repositionBoats();
+    // The page-load reset is light and goes straight to the clubhouse: its fleet is never drawn and
+    // never raced (Start rebuilds the course full and places the boats then, loadVenueWorld), and
+    // placing it here sampled the wind along the line — building the lee field, ~100 ms on Bay.
+    if (!(opts && opts.boot)) repositionBoats();
     // THE CAMERA IS PART OF SETTING THE COURSE. It follows the player by lerping 10% a
     // frame, so a race that starts with it parked over the LAST race's finish line spends
     // its first seconds flying across the water and spinning to the new wind — which is
@@ -1371,10 +1411,15 @@ function resetGame() {
 
     hideRaceMessage();
 
-    setupPreRaceOverlay();
+    // The board renders itself whenever it is opened (showRaceBoard, selectVenue); a reset that is
+    // about to show the clubhouse instead skips painting a board nobody will see — at page load that
+    // render fetched the whole fleet's portraits and every venue thumbnail behind the hub.
+    if (!(opts && opts.noBoard)) setupPreRaceOverlay();
 
-    if (settings.soundEnabled || settings.musicEnabled) Sound.init();
-    else Sound.updateMusic();
+    // At page load the audio context (~80 ms to create) waits until the first frame is up; it could
+    // not make a sound before the first gesture anyway, and the click/keydown handlers start it then.
+    const audio = () => { if (settings.soundEnabled || settings.musicEnabled) Sound.init(); else Sound.updateMusic(); };
+    if (opts && opts.boot) requestAnimationFrame(() => setTimeout(audio, 0)); else audio();
 }
 
 // Put the view where the race is, with no travel: the same answer the follow camera would
@@ -1415,8 +1460,11 @@ function restartRace() { resetGame(); togglePause(false); if (typeof showClubhou
 // and the leaderboard all come up exactly as they do from the clubhouse.
 function rematchRace() { resetGame(); togglePause(false); startRace(); }
 
-resetGame();
+resetGame({ boot: true, light: true, noBoard: typeof showClubhouse === 'function' });
 if (typeof showClubhouse === 'function') showClubhouse();   // the hub is the first screen
+// The opening venue's art once the hub's own pictures are in (the window's load event) — fetched
+// then, it never competes with the first screen, and the first Start rarely waits on it.
+window.addEventListener('load', () => setTimeout(() => { if (typeof venueArtImages === 'function') venueArtImages(); }, 0), { once: true });
 requestAnimationFrame(loop);
 
 // Water Debug Logic

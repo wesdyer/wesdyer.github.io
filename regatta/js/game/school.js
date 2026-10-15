@@ -2390,7 +2390,7 @@ const School = {
         img.style.cssText = `width:${size}px; height:${size}px; object-fit:cover; border-radius:14px; border:2px solid rgba(148,163,184,0.25); box-shadow:0 12px 30px rgba(0,0,0,0.4); display:block;`;
         img.alt = 'Duckling Pond';
         img.onerror = () => { img.remove(); this.chartPreview(host, true, size); };
-        img.src = `assets/images/venues/${this.venueKey}.png`;
+        img.src = `assets/images/venues/${this.venueKey}.jpg`;   // the JPEG ingest writes beside the card
         host.appendChild(img);
     },
     // The school's characters to earn, listed in full on the first screen — they moved here

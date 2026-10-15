@@ -839,7 +839,7 @@ const VOLCANO = {
         ctx.restore();
     }
 
-    let _boilScratch = null, _boilMaskScratch = null;
+    const _boilScratches = new WeakMap();   // vent -> { g, m } scratch canvases (see drawBoils)
     function drawBoils(ctx) {
         const v = V();
         if (!v || !v.vents.length) return;
@@ -853,7 +853,12 @@ const VOLCANO = {
             // Where the sheet is drawn: a scratch square round the ellipse, 1 px per unit, so
             // it can be clipped to the lava mask before it touches the frame.
             const half = Math.ceil(b.r + 40), S = half * 2;
-            if (!_boilScratch || _boilScratch.width < S) { _boilScratch = document.createElement('canvas'); _boilMaskScratch = document.createElement('canvas'); _boilScratch.width = _boilScratch.height = _boilMaskScratch.width = _boilMaskScratch.height = S; }
+            // EACH VENT ITS OWN PAIR (Oct 2026 perf pass): one shared scratch cleared and redrawn for the next
+            // vent, while the frame still held the last vent's copy, made the browser copy the texture every
+            // time. Kept per vent across frames, so nothing is allocated after the first sight of it.
+            let sc = _boilScratches.get(b);
+            if (!sc || sc.g.width < S) { sc = { g: document.createElement('canvas'), m: document.createElement('canvas') }; sc.g.width = sc.g.height = sc.m.width = sc.m.height = S; _boilScratches.set(b, sc); }
+            const _boilScratch = sc.g, _boilMaskScratch = sc.m;
             const g = _boilScratch.getContext('2d');
             g.setTransform(1, 0, 0, 1, 0, 0);
             g.clearRect(0, 0, _boilScratch.width, _boilScratch.height);

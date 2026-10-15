@@ -34,6 +34,7 @@
       "background": "opaque",
       "thumb": 256,
       "thumbMid": 640,
+      "jpeg": 88,
       "out": "assets/images/venues",
       "note": "Venue cards. Bottom fifth stays simple for the name scrim."
     },
@@ -42,6 +43,7 @@
       "master": 500,
       "background": "transparent",
       "reduceTest": 64,
+      "thumb": 384,
       "out": "assets/images/competitors",
       "note": "Bust crop, centered for circular use, face within central 70%."
     },
@@ -58,6 +60,7 @@
       "master": 1024,
       "background": "transparent",
       "reduceTest": 112,
+      "thumb": 512,
       "out": "assets/images/trophies",
       "note": "Cup trophies (Sep 2026 clubhouse), GOLD. Shown at 96-120px on the hub's Cup door, the cup picker and the podium, and later up to ~220px on a trophy shelf. ONE MASTER PER CUP: won = the gold master with a glow; a best finish of 2nd or 3rd = the same image filtered to silver or bronze; not yet placed = a dark ghost of it (screens.js trophyHTML) — never a second asset. The game keeps drawing an SVG placeholder until the cup's `art` flag in js/game/series.js is flipped after ingest."
     },

@@ -384,10 +384,27 @@ const LAND_TEXTURES = {
     // and a shelf is a thin band round exposed rock, never a whole landmass.
     tidepool:       { src: 'assets/images/terrain/otter/tidepool.png',     tile: 256, alpha: 0.28 }
 };
+// LOADED ON FIRST USE (Oct 2026 perf pass). The table is every venue's ground — 36 masters,
+// ~52 MB — and building an Image per row here fetched all of it on every page load, for a
+// clubhouse that shows none of them. `t.img` is now made the first time something asks for it
+// (a land bake, the lava crust, preloadVenueArt behind the loading card); everything that reads
+// it already copes with an image still in flight (flat fill now, rebake when it lands).
+// AND AT THE SIZE IT IS DRAWN: every use squashes the master into a `tile`-pixel pattern, so the game
+// asks for the tile-size copy art/terrain_tiles.py writes beside it (<name>.t<tile>.png, ~30 KB where the
+// 1024² master is ~1.5 MB). Missing — a ground delivered since the script last ran — it takes the master.
+function tileSizedImage(src, tile) {
+    const img = new Image();
+    img.onerror = () => { img.onerror = null; img.src = src; };
+    img.src = src.replace(/\.png$/, `.t${tile}.png`);
+    return img;
+}
 for (const k in LAND_TEXTURES) {
     const t = LAND_TEXTURES[k];
-    t.img = new Image();
-    t.img.src = t.src;
+    let img = null;
+    Object.defineProperty(t, 'img', { enumerable: true, get() {
+        if (!img) img = tileSizedImage(t.src, t.tile);
+        return img;
+    } });
     t.patterns = {};   // keyed by the base colour it is blended over
 }
 
@@ -403,8 +420,11 @@ const LAVA_TILES = {
     bed:   { src: 'assets/images/terrain/volcanic/lava-bed.png', tile: 256 },
     crust: { from: 'basalt', tile: 256 }
 };
-LAVA_TILES.bed.img = new Image();
-LAVA_TILES.bed.img.src = LAVA_TILES.bed.src;
+// Lazy like the ground table above: only the volcano ever draws lava.
+{ let img = null; Object.defineProperty(LAVA_TILES.bed, 'img', { enumerable: true, get() {
+    if (!img) img = tileSizedImage(LAVA_TILES.bed.src, LAVA_TILES.bed.tile);
+    return img;
+} }); }
 function lavaTileCanvas(t, img) {
     if (t.canvas) return t.canvas;
     if (!img || !img.complete || !img.naturalWidth) return null;

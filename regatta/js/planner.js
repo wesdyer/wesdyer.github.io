@@ -1,12 +1,13 @@
 
 // Geometry Helpers
+// (one function, not a closure made per call — segmentIntersect runs in the bots' replans' inner loop)
+function _ccw(p1, p2, p3) { return (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x); }
 // How finely the router follows a CURVED shape (see Geom.simplifyRing): within 4 u, the ring pushed out by the same.
 const ROUTE_TOL = 4;
 const Geom = {
     // Check if segment AB intersects segment CD
     segmentIntersect: function(a, b, c, d) {
-        const ccw = (p1, p2, p3) => (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x);
-        return (ccw(a, c, d) !== ccw(b, c, d)) && (ccw(a, b, c) !== ccw(a, b, d));
+        return (_ccw(a, c, d) !== _ccw(b, c, d)) && (_ccw(a, b, c) !== _ccw(a, b, d));
     },
 
     // Point in Polygon (Ray casting)
@@ -164,10 +165,18 @@ class RoutePlanner {
 
     // Check if a straight line is safe
     isLineSafe(start, end) {
+        // The segment's box, for a cheaper first reject (Oct 2026 perf pass — this runs for every
+        // node a bot's replan expands, against every island): a centre more than its radius outside
+        // the box is more than its radius from the segment, so the circle test below would skip it
+        // anyway. Same answer; the answer is "is ANY island in the way", so order never mattered.
+        const bx0 = Math.min(start.x, end.x), bx1 = Math.max(start.x, end.x);
+        const by0 = Math.min(start.y, end.y), by1 = Math.max(start.y, end.y);
         for (const isl of this.inflatedIslands) {
+            const r = isl.radius;
+            if (isl.x < bx0 - r || isl.x > bx1 + r || isl.y < by0 - r || isl.y > by1 + r) continue;
             // Optimization: Bounding Circle Check
             // Dist from segment to circle center
-            const dist = Geom.distToSegment({x: isl.x, y: isl.y}, start, end);
+            const dist = Geom.distToSegment(isl, start, end);
             if (dist > isl.radius) continue;
 
             // Detailed Polygon Check

@@ -128,6 +128,22 @@ const UI = {
 // tile on a Retina display already does). `cssPx` is the tile's rendered CSS width, which
 // is what the browser needs to choose — approximate is fine, it only has to land the same
 // side of 256 device pixels as the truth.
+// PORTRAITS AT THE SIZE THEY ARE SHOWN (Oct 2026 perf pass). Every portrait ships a 384 px thumb beside
+// its ~1,340 px master (the portrait profile's `thumb`, written by ingest into competitors/thumbs/), and
+// through srcset the browser fetches the master only where a display needs more pixels than the thumb
+// has — a fleet of ten on the leaderboard was ~13 MB of masters for 36 px faces. A thumb that is
+// missing falls back to the master (onerror drops the srcset), never to an empty frame.
+function portraitURL(name) { return `assets/images/competitors/${String(name).toLowerCase()}.png`; }
+function portraitSrcset(name) { const k = String(name).toLowerCase(); return `assets/images/competitors/thumbs/${k}.png 384w, assets/images/competitors/${k}.png 1340w`; }
+function portraitAttrs(name, cssPx) {
+    return `src="${portraitURL(name)}" srcset="${portraitSrcset(name)}" sizes="${Math.round(cssPx)}px" onerror="this.onerror=null;this.removeAttribute('srcset')"`;
+}
+function setPortrait(img, name, cssPx) {
+    img.onerror = () => { img.onerror = null; img.removeAttribute('srcset'); };
+    img.sizes = Math.round(cssPx) + 'px';
+    img.srcset = portraitSrcset(name);
+    img.src = portraitURL(name);
+}
 function venueThumb(key, alt, cssPx) {
     const base = `assets/images/venues/thumbs/${key}`;
     return `<img src="${base}.png" srcset="${base}.png 256w, ${base}-640.jpg 640w" sizes="${Math.round(cssPx || 150)}px" alt="${alt || ''}" draggable="false">`;
@@ -319,7 +335,7 @@ function renderVenueDetail(key) {
         // opacity over a quarter of the frame it was eating the picture's left side.
         const seam = mixHex(deep, '#0c1322', 0.55).replace('rgb(', 'rgba(').replace(')', ',0.5)');
         art.innerHTML = `
-            <img src="assets/images/venues/${key}.png" alt="${c.name || c.tag || key}" draggable="false"
+            <img src="assets/images/venues/${key}.jpg" alt="${c.name || c.tag || key}" draggable="false"
                  style="width:100%; height:100%; object-fit:cover; display:block;">
             <div style="position:absolute; inset:0; pointer-events:none;
                         background:linear-gradient(90deg, ${seam} 0%, rgba(12,19,34,0) 14%);"></div>`;
@@ -449,7 +465,7 @@ function venueObjectiveFace(a, size) {
     if (!Unlocks.shipped(a.char)) {
         return `<span title="Coming soon" style="width:${size}px;height:${size}px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.08);color:#7787a0;font-weight:800;font-size:${Math.round(size * 0.45)}px;">?</span>`;
     }
-    return `<img src="assets/images/competitors/${a.char.toLowerCase()}.png" alt="" draggable="false"
+    return `<img ${portraitAttrs(a.char, size)} alt="" draggable="false"
                  style="width:${size}px;height:${size}px;border-radius:50%;background:${earned ? 'rgba(242,193,78,0.18)' : 'rgba(255,255,255,0.06)'};
                         ${earned ? 'box-shadow:0 0 0 2px #f2c14e;' : 'filter:brightness(0) opacity(0.55);'}">`;
 }
@@ -1778,7 +1794,7 @@ function profileBandHTML(config, opts) {
              style="background: linear-gradient(105deg, ${bandColor} 0%, ${bandColor}66 45%, rgba(15,23,42,0.92) 100%)">
             ${withBoat ? `<canvas class="profile-boat-canvas absolute right-0 top-1/2 -translate-y-1/2 pointer-events-none" width="176" height="130" data-boat="${config.name}"></canvas>` : ''}
             <div class="flex items-center relative" style="gap:${compact ? 14 : 20}px;">
-                <img src="assets/images/competitors/${config.name.toLowerCase()}.png" alt="${config.name}" class="object-cover shrink-0" draggable="false"
+                <img ${portraitAttrs(config.name, compact ? 92 : 128)} alt="${config.name}" class="object-cover shrink-0" draggable="false"
                      style="width:${compact ? 92 : 128}px; height:${compact ? 92 : 128}px;">
                 <div style="padding:${compact ? '10px 12px 10px 0' : '16px 0'}; min-width:0;">
                     <div class="t-display text-white uppercase leading-tight truncate" style="font-size:${compact ? 26 : 36}px; text-shadow: 0 2px 8px rgba(0,0,0,0.6)">${config.name}</div>
@@ -2159,7 +2175,7 @@ function lockedBandHTML(ach, cfg, career) {
     return `
         <div class="rounded-xl overflow-hidden border border-white/10 relative" style="background:linear-gradient(105deg, #1c2638 0%, #141d2d 60%, rgba(15,23,42,0.92) 100%);">
             <div class="flex items-center relative" style="gap:20px;">
-                <img src="assets/images/competitors/${cfg.name.toLowerCase()}.png" alt="" class="object-cover shrink-0" draggable="false"
+                <img ${portraitAttrs(cfg.name, 128)} alt="" class="object-cover shrink-0" draggable="false"
                      style="width:128px; height:128px; filter:brightness(0) opacity(0.55);">
                 <div style="padding:16px 16px 16px 0; min-width:0;">
                     <div class="t-label" style="font-size:10.5px; letter-spacing:0.22em; color:#66748c;">&#128274; Locked</div>
@@ -2204,7 +2220,7 @@ function _joinUnlockQueue() {
 // empty band where the portrait goes (PT-012, Dart's card).
 const _unlockArt = {};
 function _preloadUnlockArt(names) {
-    for (const n of names) { const k = n.toLowerCase(); if (_unlockArt[k]) continue; const im = new Image(); im.src = `assets/images/competitors/${k}.png`; _unlockArt[k] = im; }
+    for (const n of names) { const k = n.toLowerCase(); if (_unlockArt[k]) continue; const im = new Image(); setPortrait(im, k, 190); _unlockArt[k] = im; }   // the card's own choice (190 px)
 }
 function renderUnlockCard(again) {
     const host = document.getElementById('unlock-screen');
@@ -2217,7 +2233,7 @@ function renderUnlockCard(again) {
     if (count) count.textContent = total > 1 ? `${q.i + 1} of ${total}` : '';
     const seeBtn = document.getElementById('unlock-see');
     if (card.more) {
-        const faces = card.more.map(n => `<img src="assets/images/competitors/${n.toLowerCase()}.png" alt="${n}" title="${n}" style="width:64px;height:64px;border-radius:12px;background:rgba(255,255,255,0.06);">`).join('');
+        const faces = card.more.map(n => `<img ${portraitAttrs(n, 64)} alt="${n}" title="${n}" style="width:64px;height:64px;border-radius:12px;background:rgba(255,255,255,0.06);">`).join('');
         body.innerHTML = `
             <div class="flex flex-wrap justify-center" style="gap:8px; margin-top:14px;">${faces}</div>
             <div class="t-display uppercase" style="font-size:32px; margin-top:14px;">+${card.more.length} more</div>
@@ -2228,7 +2244,7 @@ function renderUnlockCard(again) {
         const band = cfg ? bandColorFor(cfg.hull, cfg.spinnaker) : '#1c2638';
         body.innerHTML = `
             <div class="rounded-xl" style="margin-top:14px; padding:14px 0 6px; background:linear-gradient(180deg, ${band} 0%, ${band}55 60%, transparent 100%);">
-                <img class="unlock-portrait" src="assets/images/competitors/${card.name.toLowerCase()}.png" alt="${card.name}" draggable="false" style="width:190px;height:190px;margin:0 auto;display:block;transition:opacity .18s ease;">
+                <img class="unlock-portrait" ${portraitAttrs(card.name, 190)} alt="${card.name}" draggable="false" style="width:190px;height:190px;margin:0 auto;display:block;transition:opacity .18s ease;">
             </div>
             <div class="t-display uppercase" style="font-size:40px; line-height:1; margin-top:8px;">${card.name}</div>
             ${cfg ? `<div class="t-mono" style="font-size:13px; color:#9fb2cc; margin-top:4px;">${cfg.creature}</div>` : ''}
@@ -2345,6 +2361,9 @@ function loadVenueWorld(opts) {
     // designed venue now like everything else.)
     applyVenueConditions();
     initCourse(opts);
+    // The venue's ground and prop art, asked for now — browsing the board is the cue that this may be
+    // raced, and the downloads then overlap the reading of it instead of waiting behind Start's card.
+    if (typeof venueArtImages === 'function') venueArtImages();
     if (window.WaterRenderer) window.WaterRenderer.init();
     // Clear stale gusts and reseed at the new venue's density/strength
     state.gusts = [];
@@ -2365,6 +2384,10 @@ function loadVenueWorld(opts) {
     // two venues disagree about the course axis, which is why it read as intermittent.
     // Consumes no RNG, so the golden traces are untouched.
     repositionBoats();
+    // ...and the camera with them (see snapCameraToStart): it was parked over wherever the boats stood
+    // before — (0,0) after the light page-load build, which never places a fleet — and the follow lerp
+    // then flew it across the venue in the race's first second.
+    if (typeof snapCameraToStart === 'function') snapCameraToStart();
 
     // The race's wind shadows, every wind angle it can swing to, built here behind the loading
     // card rather than mid-race (see leeWarm). Only a full build races; browsing never pays it.
@@ -2539,6 +2562,23 @@ function renderCompetitorGrid() {
 function startRace() {
     if (state.race.status !== 'waiting' || _venueLoading) return;
     if (state.course && state.course.venueKey === settings.venue && state.course.loadState === 'full') {
+        // Built already (a rematch, a series' next race). Synchronous on purpose — the eval
+        // harnesses call resetGame(); startRace() and step at once. The full build started the
+        // art's fetches (resetGame), so by the time anyone clicks Start it is normally in.
+        beginRace();
+        return;
+    }
+    // DRIVEN BY A SCRIPT, NOT A PERSON: build now and go. The loading card is for someone who just
+    // pressed Start; the eval harnesses and tests (playwright, so navigator.webdriver) call startRace()
+    // and step the race on the next line, expecting it started on return — and since the page now
+    // opens on a LIGHT course (Oct 2026 perf pass), that includes the boot venue, which used to be
+    // built full at load. The world is the same either way; only the card is skipped.
+    // (Not navigator.userActivation: playwright's evaluate runs with a user gesture granted.)
+    if (typeof navigator !== 'undefined' && navigator.webdriver) {
+        _venueLoadToken++;
+        loadVenueWorld();
+        venueArtImages();        // start the art's downloads; the tiles rebake as it lands
+        renderVenuePicker();
         beginRace();
         return;
     }
@@ -2552,13 +2592,40 @@ function startRace() {
     (async () => {
         try {
             await step('Charting the course…', () => loadVenueWorld());
+            // The venue's ground and prop art is fetched on demand (nothing loads at page open),
+            // so it is waited for here, behind the card, bounded — a slow image still lands later
+            // and the tile that drew without it rebakes.
+            setVenueLoadingMsg('Loading the scenery…');
+            await preloadVenueArt(5000);
+            renderVenuePicker();     // the board's numbers upgrade to the priced ones
+            beginRace();             // primes the first frame while the card still covers it
         } finally {
             _venueLoading = false;
             hideVenueLoading();
         }
-        renderVenuePicker();     // the board's numbers upgrade to the priced ones
-        beginRace();
     })();
+}
+
+// Every image the course's first frames will ask for: the ground textures of its land, the
+// lava tiles, its props' sprites. Resolves when all have settled or after maxMs.
+function venueArtImages() {
+    const imgs = new Set();
+    const c = state.course || {};
+    if (typeof LAND_TEXTURES !== 'undefined') {
+        for (const isl of c.islands || []) {
+            const t = LAND_TEXTURES[isl.style]; if (t) imgs.add(t.img);
+            if (isl.lava && typeof LAVA_TILES !== 'undefined') { imgs.add(LAVA_TILES.bed.img); if (LAND_TEXTURES.basalt) imgs.add(LAND_TEXTURES.basalt.img); }
+        }
+    }
+    if (typeof propSprite === 'function') for (const p of c.props || []) { const s = propSprite(p.kind); if (s && s.img) imgs.add(s.img); }
+    return imgs;
+}
+function preloadVenueArt(maxMs) {
+    const waits = [...venueArtImages()].filter(i => !i.complete).map(i => new Promise(res => {
+        i.addEventListener('load', res, { once: true }); i.addEventListener('error', res, { once: true });
+    }));
+    if (!waits.length) return Promise.resolve();
+    return Promise.race([Promise.all(waits), new Promise(res => setTimeout(res, maxMs))]);
 }
 
 // The loading card: a dark curtain with the venue's name and one line of what is
@@ -2594,6 +2661,8 @@ function beginRace() {
     // switched venue with a light build and never sent the last race's fleet home; resetGame trims to
     // one boat, and this is the same trim at the moment the race actually begins.
     if (window.TimeTrial && TimeTrial.solo() && state.boats.length > 1) state.boats.length = 1;
+    // The first frame's bakes, while the board still hides the canvas (see primeRaceFrame).
+    if (typeof primeRaceFrame === 'function') primeRaceFrame();
     if (UI.preRaceOverlay) UI.preRaceOverlay.classList.add('hidden');
     if (typeof hideClubhouseOverlays === 'function') hideClubhouseOverlays();
     // Starting race one of a cup or series is what locks the fleet: these nine, and you as
@@ -3778,7 +3847,7 @@ function renderResultsHero(sorted, player, leader) {
     }
     host.innerHTML = `
         <div class="rh-por" style="filter:drop-shadow(0 6px 22px ${boatGlow(player, 0.5)});">
-            <img src="assets/images/competitors/${player.name.toLowerCase()}.png" alt="${escapeHTMLText(player.name)}" draggable="false">
+            <img ${portraitAttrs(player.name, 132)} alt="${escapeHTMLText(player.name)}" draggable="false">
         </div>
         ${cells.join('')}`;
 }
@@ -3978,7 +4047,7 @@ function renderResultsRows(sorted, leader, ext, gapScale) {
                          everyone else — the colour of the numeral is the whole signal. -->
                     <div class="res-pos t-display italic" style="font-size:16px;"></div>
                     <div style="width:32px;height:32px;">
-                        <img class="res-face" src="assets/images/competitors/${boat.name.toLowerCase()}.png"
+                        <img class="res-face" ${portraitAttrs(boat.name, 32)}
                              alt="${escapeHTMLText(boat.name)}" draggable="false"
                              style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
                     </div>
@@ -4309,7 +4378,10 @@ function trophyHTML(cup, size, state) {
     if (!cup || !cup.art) return trophySVG(cup ? cup.form : 'cup', size, st);
     const filt = { won: 'drop-shadow(0 0 16px rgba(242,193,78,0.45))', silver: 'grayscale(1) brightness(1.08)',
                    bronze: 'sepia(0.6) hue-rotate(-18deg) saturate(1.1) brightness(0.72)', none: 'grayscale(1) brightness(0.55) opacity(0.45)' }[st];
-    return `<img src="assets/images/trophies/trophy-${cup.id}.png" alt="" draggable="false" style="width:${size}px; height:${size}px; object-fit:contain; filter:${filt};">`;
+    // the 512 px thumb (ingest's trophy `thumb`) wherever it is enough — every size the game shows — and the
+    // master otherwise; a missing thumb falls back to the master (Oct 2026 perf pass)
+    const T = `assets/images/trophies/trophy-${cup.id}.png`, Tt = `assets/images/trophies/thumbs/trophy-${cup.id}.png`;
+    return `<img src="${T}" srcset="${Tt} 512w, ${T} 1024w" sizes="${Math.round(size)}px" onerror="this.onerror=null;this.removeAttribute('srcset')" alt="" draggable="false" style="width:${size}px; height:${size}px; object-fit:contain; filter:${filt};">`;
 }
 
 // A venue tile as a picture of where you are going: thumb, name on the scrim, a tag.
@@ -4559,7 +4631,7 @@ function refreshClubhouse() {
             const layer = document.createElement('div');
             layer.className = 'tt-slide';
             layer.style.cssText = `position:absolute; inset:0; opacity:${fade ? 0 : 1}; transition:opacity 0.6s ease;`;
-            layer.innerHTML = `<img src="assets/images/venues/${v}.png" alt="${name}" draggable="false" style="width:100%; height:100%; object-fit:cover; display:block;">`
+            layer.innerHTML = `<img src="assets/images/venues/${v}.jpg" alt="${name}" draggable="false" style="width:100%; height:100%; object-fit:cover; display:block;">`
                 + `<span class="ch-chip" style="position:absolute; left:12px; top:12px; background:rgba(6,14,26,0.72); color:#dbeafe;">${name}</span>`
                 + `<span class="ch-chip" style="position:absolute; right:12px; bottom:12px; display:inline-flex; align-items:center; gap:8px; background:rgba(6,14,26,0.8); color:${rec.gold ? '#ff9a3c' : rec.t != null ? '#dbeafe' : '#9fb2cc'}; border:1px solid ${rec.gold ? 'rgba(255,154,60,0.55)' : 'rgba(255,255,255,0.22)'};">${rec.label}${rec.t != null ? ` <span class="t-mono" style="font-size:13px; letter-spacing:0; text-transform:none;">${fmtT(rec.t)}</span>` : ''}</span>`;
             if (!fade) racePic.innerHTML = '';
@@ -4848,7 +4920,8 @@ function fillSkipperCard(me) {
         chg.style.setProperty('--chg-hover-ink', apca(WHITE, stripeColour) >= apca(BLACK, stripeColour) ? WHITE : BLACK);
     }
     const img = $('hub-skipper-img');
-    if (img) { img.src = `assets/images/competitors/${me.name.toLowerCase()}.png`; img.alt = `${me.name}, ${me.creature}`; }
+    // (184 px on the 1600 x 1000 stage, which is zoomed to the window: the zoom counts toward the pixels it needs)
+    if (img) { setPortrait(img, me.name, 184 * (window._hubZoom || 1)); img.alt = `${me.name}, ${me.creature}`; }
     const name = $('hub-skipper-name');
     if (name) {
         name.textContent = me.name;
@@ -5152,7 +5225,7 @@ function renderStandings(final) {
         return `<div class="ch-grid ch-row${r.isPlayer ? ' me' : (i % 2 ? ' alt' : '')}" style="${cols}${r.isPlayer ? meStyle : ''}">
             <div class="t-mono" style="font-size:16px; color:#eef3fb;">${r.rank}</div>
             <div>${medal(i)}</div>
-            <div><img src="assets/images/competitors/${escapeHTMLText(r.name.toLowerCase())}.png" alt="" style="width:42px; height:42px; object-fit:cover; border-radius:10px; background:${cfg ? bandColorFor(cfg.hull, cfg.spinnaker) : '#1f2937'}33;" draggable="false"></div>
+            <div><img ${portraitAttrs(escapeHTMLText(r.name), 42)} alt="" style="width:42px; height:42px; object-fit:cover; border-radius:10px; background:${cfg ? bandColorFor(cfg.hull, cfg.spinnaker) : '#1f2937'}33;" draggable="false"></div>
             <div style="min-width:0;"><div class="t-display uppercase truncate" style="font-size:20px; line-height:1;">${escapeHTMLText(r.name)}${r.isPlayer ? meBadge : ''}</div><div class="t-mono" style="font-size:11px; color:#9fb2cc; margin-top:3px;">${escapeHTMLText(cfg ? cfg.creature : '')}</div></div>
             ${cells.join('')}
             <div class="t-mono" style="font-size:20px; text-align:right; color:#fff;">${r.total}</div>

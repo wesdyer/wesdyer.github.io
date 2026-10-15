@@ -4203,7 +4203,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (!cfg) return;
         for (const G of shoals) drawShoal(ctx, G);
         for (const s of poppers) drawSeal(ctx, s);
-        for (const G of cruisers) for (const f of G.fish) if (f.mode !== 'leap') drawCruiser(ctx, f);
+        // Only the ones in view (Oct 2026 perf pass): each painted cruiser composes its pose, shadow and water veil on
+        // scratch canvases, ~0.5 ms apiece, and all fourteen of Pearl Lagoon's were composed every frame wherever the
+        // camera was. The pad covers the body, the bed shadow (≤ ~50 u off) and the wake trail.
+        for (const G of cruisers) for (const f of G.fish) if (f.mode !== 'leap' && onCam(f.x, f.y, 300)) drawCruiser(ctx, f);
         for (const b of baskers) if (b.cfg.kind === 'frog') drawFrogGroup(ctx, b, 'water');
         for (const F of prints) drawPrint(ctx, F);
         for (const W of whalePods) for (const m of W.members) drawWhaleSlick(ctx, m);
@@ -4221,7 +4224,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (g.ring > 0) { drawRing(ctx, g.x, g.y, g.ring, 10, 26, 0.5); drawRing(ctx, g.x, g.y, Math.max(0, g.ring - 0.3), 6, 16, 0.4); }
         }
         for (const a of perchers) if (a.mode === 'swim') drawAnhinga(ctx, a);
-        for (const G of cruisers) for (const f of G.fish) { drawCruiserSplashes(ctx, f); if (f.mode === 'leap') drawCruiser(ctx, f); }   // (the water it left, then the animal in the air above it)
+        for (const G of cruisers) for (const f of G.fish) { drawCruiserSplashes(ctx, f); if (f.mode === 'leap' && onCam(f.x, f.y, 300)) drawCruiser(ctx, f); }   // (the water it left, then the animal in the air above it)
         drawBoil(ctx);
         for (const B of stripers) drawStriperBoil(ctx, B);
         for (const W of orcaPods) for (const m of W.members) drawOrca(ctx, m);
@@ -4424,15 +4427,30 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // coral-sand bar ~1.5 m, the seagrass ~2.8 m, other bright shallows ~3.2 m, the open lagoon ~9 m. The zones are
     // PAINTED with feathered edges (render/world.js: half the shape's feather either side of its outline), so the
     // floor shelves across that same band — a shadow crossing the edge of a bar slides out with the colour, never jumps.
-    function lagoonBedM(x, y) {
-        let d = 9;
-        const sm = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
-        for (const s of (state.course && state.course.islands) || []) {
+    // The shapes that shallow the bed, with their depth and feather, worked out once per course (Oct 2026 perf
+    // pass): the traits lookup per shape per call was most of lagoonBedM's cost, and it runs per animal per frame.
+    let _bedShapes = null;
+    function bedShapes() {
+        const arr = (state.course && state.course.islands) || [];
+        if (_bedShapes && _bedShapes.arr === arr && _bedShapes.n === arr.length) return _bedShapes.list;
+        const list = [];
+        for (const s of arr) {
             const V = s.vertices; if (!V || V.length < 3 || /\.hit$/.test(s.id || '')) continue;
             const T = (typeof VenueDoc !== 'undefined' && VenueDoc.traits) ? VenueDoc.traits(s) : {};
             const z = T.reef ? 1 : s.kind === 'tropicshoal' || (T.awash && T.drag > 0) ? 1.5 : T.veg === 'seagrass' ? 2.8 : T.paint ? 5 : null;
-            if (z == null || z >= d) continue;
-            const F = s.shoalFeather || (T.reef ? 40 : 120), r = (s.radius || 1e9) + F;
+            if (z == null) continue;
+            const F = s.shoalFeather || (T.reef ? 40 : 120);
+            list.push({ s, V, z, F, r: (s.radius || 1e9) + F });
+        }
+        _bedShapes = { arr, n: arr.length, list };
+        return list;
+    }
+    function lagoonBedM(x, y) {
+        let d = 9;
+        const sm = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
+        for (const B of bedShapes()) {
+            const s = B.s, V = B.V, z = B.z, F = B.F, r = B.r;
+            if (z >= d) continue;
             if (s.x != null && (x - s.x) * (x - s.x) + (y - s.y) * (y - s.y) > r * r) continue;
             let e = Infinity;
             for (let i = 0, j = V.length - 1; i < V.length; j = i++) {
@@ -5919,10 +5937,20 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // overlap, and drawn straight at a shadow's or the water's alpha every overlap would print as a
     // rib across the back. A silhouette is the same composite, recoloured (source-in) on another.
     // Slots: 0 body+flukes, 2 flippers, 3 a one-off pose, 1 the recolour.
-    const _humpCv = [];
+    // ⚠️ A SLOT IS NEVER REDRAWN WHILE THE FRAME STILL HOLDS IT (Oct 2026 perf pass). A scratch canvas drawn into
+    // the game canvas stays referenced until that frame is flushed, so clearing and re-posing the same slot for the
+    // next pass (the turtle's two shadow passes, its body, its breath; every recolour on slot 1) made the browser
+    // copy the whole texture each time — near Pearl Lagoon's cruisers that was ~10 ms of GPU a frame. So each use
+    // of a slot within one frame gets its own canvas, pooled and reused from the next frame on. Same pixels.
+    const _humpCv = new Map();
+    let _humpFrame = -1, _humpUses = new Map();
     function humpScratch(i, w, h) {
         if (typeof document === 'undefined') return null;
-        let c = _humpCv[i]; if (!c) c = _humpCv[i] = document.createElement('canvas');
+        const fr = typeof frameCount !== 'undefined' ? frameCount : -1;
+        if (fr !== _humpFrame) { _humpFrame = fr; _humpUses.clear(); }
+        const n = (_humpUses.get(i) || 0) + 1; _humpUses.set(i, n);
+        const key = i + ':' + n;
+        let c = _humpCv.get(key); if (!c) { c = document.createElement('canvas'); _humpCv.set(key, c); }
         if (c.width < w || c.height < h) { c.width = Math.max(c.width, w); c.height = Math.max(c.height, h); }
         const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
         return c;

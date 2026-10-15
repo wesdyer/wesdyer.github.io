@@ -2473,7 +2473,7 @@ function updateLeaderboard() {
             const faceName = boat.face || boat.name;
             if (faceImg && faceImg.dataset.face !== faceName) {
                 faceImg.dataset.face = faceName;
-                faceImg.src = "assets/images/competitors/" + faceName.toLowerCase() + ".png";
+                setPortrait(faceImg, faceName, 36);   // screens.js: the 384 px thumb for a 36 px face
             }
             if (faceImg) faceImg.style.opacity = boat.isGhost ? '0.45' : '';
 

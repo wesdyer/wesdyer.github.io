@@ -190,11 +190,38 @@ function pointInVerts(x, y, verts) {
     return inside;
 }
 
+// LAND CANDIDATES BY CELL (Oct 2026 perf pass). pointOnLand and crestOnLand are asked thousands
+// of times a frame (Glowtide's 520-jelly bloom alone, every frame) and each call walked every
+// shape on the course to its bounding circle. Fixed shapes are bucketed by their bounding circle
+// into LAND_CELL squares; floes, and anything without a usable circle, stay on a list that is
+// always tested — the same split as wildlife.js islIndex. The answers are unchanged: a shape not
+// in a point's cell is one whose bounding circle cannot contain it. Rebuilt when the course's
+// islands array (or its length) changes.
+const LAND_CELL = 300, LAND_ROW = 1 << 20, NO_LAND = [];
+let _landIdx = null;
+function landIndex() {
+    const arr = (state.course && state.course.islands) || NO_LAND;
+    if (_landIdx && _landIdx.arr === arr && _landIdx.n === arr.length) return _landIdx;
+    const cells = new Map(), loose = [];
+    for (const s of arr) {
+        if (s.isFloe || !(s.radius > 0) || !isFinite(s.x) || !isFinite(s.y)) { loose.push(s); continue; }
+        const c0 = Math.floor((s.x - s.radius) / LAND_CELL), c1 = Math.floor((s.x + s.radius) / LAND_CELL);
+        const r0 = Math.floor((s.y - s.radius) / LAND_CELL), r1 = Math.floor((s.y + s.radius) / LAND_CELL);
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const k = r * LAND_ROW + c; let L = cells.get(k); if (!L) cells.set(k, L = []); L.push(s); }
+    }
+    return (_landIdx = { arr, n: arr.length, cells, loose });
+}
+function landCell(I, x, y) { return I.cells.get(Math.floor(y / LAND_CELL) * LAND_ROW + Math.floor(x / LAND_CELL)) || NO_LAND; }
+
 // AWASH SHAPES ARE WATER. A shoal, a lily bed, a weed bed is something you sail over, so a
 // crown reaching across one is still reaching over water and still has to get out of the way.
 function pointOnLand(x, y) {
-    const islands = (state.course && state.course.islands) || [];
-    for (const isl of islands) {
+    const I = landIndex();
+    return landHitIn(landCell(I, x, y), x, y) || landHitIn(I.loose, x, y);
+}
+function landHitIn(islands, x, y) {
+    for (let n = 0; n < islands.length; n++) {
+        const isl = islands[n];
         if (isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
         const dx = x - isl.x, dy = y - isl.y;
         if (dx * dx + dy * dy > isl.radius * isl.radius) continue;   // bounding circle first
@@ -202,7 +229,7 @@ function pointOnLand(x, y) {
         if (!(typeof pointInPolyFast === 'function' ? pointInPolyFast(x, y, isl.vertices) : pointInVerts(x, y, isl.vertices))) continue;
         let inHole = false;
         for (const h of (isl.holes || [])) {
-            if (h && h.length >= 3 && pointInVerts(x, y, h)) { inHole = true; break; }
+            if (h && h.length >= 3 && (typeof pointInPolyFast === 'function' ? pointInPolyFast(x, y, h) : pointInVerts(x, y, h))) { inHole = true; break; }
         }
         if (!inHole) return true;
     }
