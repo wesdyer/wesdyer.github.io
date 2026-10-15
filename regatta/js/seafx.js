@@ -134,7 +134,16 @@ const SURF_SPAN = 0.45;      // ...and full sheet this much above it
 const SURF_RATE = 56;        // droplets per second at a full ride
 const PUNCH_RATE = 95;       // droplets per second at a full push-through
 const SLAM_FALL_MIN = 6;     // units/s of bow fall below which nothing is thrown
-const SLAM_FALL_FULL = 20;   // ...and at which the burst is at full size
+const SLAM_FALL_FULL = 16;   // ...and at which the burst is at full size (a typical beat in Bluewater's swell is ~15)
+// THE WHITE WATER OVER THE DROPLETS (PT-066, Oct 14 2026: "more splashing as we go into and over a wave
+// upwind"). Measured on Bluewater: a slam every ~4.4 s and ~11 live droplets, each a 4-9 px dash — the
+// effect was there and nobody could see it. Dashes alone read as rain, so the volume goes into CONNECTED
+// sheets, the same way the surfing wings carry it: a crown thrown off the stem at each slam, and the
+// push-through sheet peeling off the lee bow while she drives into the face.
+const CROWN_LIFE = 0.85;     // seconds a slam's crown stays on the water
+const CROWN_REACH = 30;      // units each lobe throws at a light slam...
+const CROWN_REACH_SEV = 34;  // ...plus this at a full one (the boat is 55 long)
+const PUNCH_SHEET = 0.85;    // push-through sheet intensity at a full push-through (the surfing wings' scale)
 
 let caps = [];
 let spray = [];
@@ -395,7 +404,13 @@ function detectImpacts(boat, tr, dt, ups, s, c, wind, leeSide) {
         const crossed = (tr.q > 0) !== (q > 0);
         // Guard the wrap at ±π: a crest crossing also flips the sign of q, and it is not a
         // slam. A genuine trough crossing moves q by a small step; the wrap moves it by ~2π.
-        if (crossed && Math.abs(q - tr.q) < 1.5) spawnSlam(boat, sev, ups, s, c, wind);
+        if (crossed && Math.abs(q - tr.q) < 1.5) {
+            spawnSlam(boat, sev, ups, s, c, wind);
+            // The crown: thrown where the stem is NOW and left there — the boat drives on out of
+            // it — drifting off on the air like the droplets do.
+            if (tr.crowns.length < 3) tr.crowns.push({ x: boat.x + s * BOW, y: boat.y - c * BOW, h: boat.heading,
+                sev, lee: leeSide, t: 0, seed: rnd() * 100, wx: wind.x * SPRAY_WIND, wy: wind.y * SPRAY_WIND });
+        }
     }
     tr.q = q;
 
@@ -405,6 +420,7 @@ function detectImpacts(boat, tr, dt, ups, s, c, wind, leeSide) {
     const rising = (-Math.sin(ph) * dphdt) > 0;
     if (e < -0.10 && rising && sev > 0.05) {
         const hard = sev * clamp01((-e - 0.10) / 0.55 + 0.35);
+        tr.punchT = hard;
         tr.punchAcc += PUNCH_RATE * hard * dt;
         let n = Math.floor(tr.punchAcc);
         tr.punchAcc -= n;
@@ -428,7 +444,7 @@ function updateBoats(dt, state) {
         if (cdx * cdx + cdy * cdy > spawnR2) { track.delete(boat); continue; }
 
         let tr = track.get(boat);
-        if (!tr) { tr = { surf: 0, surfAcc: 0, punchAcc: 0, q: null }; track.set(boat, tr); }
+        if (!tr) { tr = { surf: 0, surfAcc: 0, punchAcc: 0, q: null, punch: 0, punchT: 0, lee: 1, crowns: [] }; track.set(boat, tr); }
 
         const h = boat.heading;
         const s = Math.sin(h), c = Math.cos(h);
@@ -439,6 +455,11 @@ function updateBoats(dt, state) {
         // Which side is leeward: the side the wind is blowing towards. Boat right is
         // (cos h, sin h), so the sign of its dot with the wind vector is the answer.
         const leeSide = (c * wind.x + s * wind.y) >= 0 ? 1 : -1;
+        tr.lee = leeSide;
+        for (let i = tr.crowns.length - 1; i >= 0; i--) {
+            const k = tr.crowns[i]; k.t += dt; k.x += k.wx * dt; k.y += k.wy * dt;
+            if (k.t >= CROWN_LIFE) tr.crowns.splice(i, 1);
+        }
 
         // ── 1. SURFING ──────────────────────────────────────────────────────
         // Smoothed, because surf01 swings at the wave frequency and a sheet that strobes
@@ -460,7 +481,10 @@ function updateBoats(dt, state) {
         }
 
         // ── 2 & 3. THE BOW ──────────────────────────────────────────────────
+        tr.punchT = 0;
         if (!boat.raceState.finished) detectImpacts(boat, tr, dt, ups, s, c, wind, leeSide);
+        // Rises fast as the stem buries, falls a little slower: one pulse a wave, not a strobe.
+        tr.punch += (tr.punchT - tr.punch) * Math.min(1, dt * (tr.punchT > tr.punch ? 10 : 4));
     }
 }
 
@@ -710,21 +734,24 @@ function drawWings(ctx, state, cam, cullR2) {
     const T = (window.Swell.now ? window.Swell.now() : 0);
     for (const boat of state.boats) {
         const tr = track.get(boat);
-        if (!tr || tr.surf < 0.10) continue;
+        if (!tr || (tr.surf < 0.10 && tr.punch * PUNCH_SHEET < 0.10)) continue;
         if (boat.opacity !== undefined && boat.opacity <= 0.1) continue;
         const dx = boat.x - cam.x, dy = boat.y - cam.y;
         if (dx * dx + dy * dy > cullR2) continue;
 
-        const d = tr.surf;
         const seed = (boat.x * 0.013 + boat.y * 0.007);
-        const aft = 6 + 18 * d;                   // how far aft along the hull the sheet runs
         ctx.save();
         ctx.translate(boat.x, boat.y);
         ctx.rotate(boat.heading);
         for (let pass = 0; pass < 2; pass++) {
             const reach = pass === 0 ? 1 : 0.55;
-            ctx.globalAlpha = (pass === 0 ? 0.14 : 0.21) + 0.27 * d;
             for (let side = -1; side <= 1; side += 2) {
+                // Surfing throws both sheets alike; the PUSH-THROUGH goes over the lee bow (the 70/30
+                // of spawnPunchSheet), so its windward sheet is the smaller one.
+                const d = Math.max(tr.surf, tr.punch * PUNCH_SHEET * (side === tr.lee ? 1 : 0.45));
+                if (d < 0.10) continue;
+                const aft = 6 + 18 * d;               // how far aft along the hull the sheet runs
+                ctx.globalAlpha = (pass === 0 ? 0.14 : 0.21) + 0.27 * d;
                 const flare = (16 + 44 * d) * reach;      // beam gained between stem and tip
                 const N = 6;
                 ctx.beginPath();
@@ -764,6 +791,58 @@ function drawWings(ctx, state, cam, cullR2) {
             }
         }
         ctx.restore();
+    }
+    ctx.globalAlpha = 1;
+}
+
+// THE SLAM'S CROWN: two churned lobes thrown off the stem, out sideways and forward of where it
+// landed, the lee one the bigger. They bloom fast and fade slow, and stay where they were thrown
+// while the hull drives on through — which is what makes it read as water landing, not as a halo
+// on the boat. Two passes, faint wide and brighter core, as the wings.
+function drawCrowns(ctx, state, cam, cullR2) {
+    for (const boat of state.boats) {
+        const tr = track.get(boat);
+        if (!tr || !tr.crowns.length) continue;
+        for (const k of tr.crowns) {
+            const dx = k.x - cam.x, dy = k.y - cam.y;
+            if (dx * dx + dy * dy > cullR2) continue;
+            const u = k.t / CROWN_LIFE;
+            const grow = 1 - Math.exp(-k.t * 9);                  // out in ~0.25 s
+            const fade = Math.min(1, u * 14) * Math.pow(1 - u, 1.6);
+            ctx.save();
+            ctx.translate(k.x, k.y);
+            ctx.rotate(k.h);
+            for (let pass = 0; pass < 2; pass++) {
+                const reach = pass === 0 ? 1 : 0.6;
+                ctx.globalAlpha = fade * (pass === 0 ? 0.20 : 0.30) * (0.55 + 0.45 * k.sev);
+                for (let side = -1; side <= 1; side += 2) {
+                    const R = (CROWN_REACH + CROWN_REACH_SEV * k.sev) * (side === k.lee ? 1 : 0.6) * grow * reach;
+                    // ⚠️ FINGERS, NOT A PUFF. A filled lobe with a churned rim read as a cloud parked on
+                    // the bow. A splash crown seen from above is a connected root breaking into jets:
+                    // the rim swings between the root (r ≈ 0.35R) and the tips, five times a lobe, each
+                    // tip on its own length so no two crowns are the same star.
+                    const N = 30, F = 5;
+                    ctx.beginPath();
+                    ctx.moveTo(0, 2);
+                    for (let i = 0; i <= N; i++) {
+                        const v = i / N;
+                        // From just forward of dead ahead round to abaft the beam: thrown out and
+                        // forward, falling back as the boat passes.
+                        const a = (-0.25 + v * 2.05);
+                        const f = v * F, fi = Math.floor(f), ff = f - fi;
+                        const tipLen = 0.65 + 0.35 * Math.abs(Math.sin(fi * 2.7 + k.seed));
+                        const finger = Math.pow(Math.sin(Math.PI * ff), 2.2);   // narrow tips, wide gaps
+                        const env = 0.5 + 0.5 * Math.sin(Math.PI * Math.min(1, v * 1.1));
+                        const churn = Math.sin(v * 11.3 + k.t * 6 + k.seed) * 0.08;
+                        const r = R * env * (0.35 + 0.65 * finger * tipLen + churn);
+                        ctx.lineTo(side * Math.sin(a) * r, -Math.cos(a) * r * 0.8);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                }
+            }
+            ctx.restore();
+        }
     }
     ctx.globalAlpha = 1;
 }
@@ -889,6 +968,7 @@ function draw(ctx, state) {
     // event, still under the fleet's own spray.
     drawShoalBreaks(ctx, cam, cullR2);
     drawWings(ctx, state, cam, cullR2);
+    drawCrowns(ctx, state, cam, cullR2);
     drawSpray(ctx, cam, cullR2);
     ctx.restore();
 }
