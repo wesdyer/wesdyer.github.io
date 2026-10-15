@@ -261,8 +261,62 @@ function buildGridRaw(land, arena, obstacles, opts) {
         }
         return true;
     };
+    // DEEP IN LAND (PT-046, Oct 14 2026): a cell whose centre is inside a land shape and DEEP_R clear of
+    // every one of that shape's edges has every sub-sample below (the quarter-offsets, the tight tier's 5x5,
+    // all within 2·RES/5·√2 = 28.3u of the centre) on the same side of every ring — inside the land, where
+    // admitShape refuses at any clearance. So both tiers are 0 there, exactly, and the ~29 admits a land
+    // cell used to pay to learn it are skipped. The Bayou is mostly land: its build was 1.5 s of this.
+    // ⚠️ EXACT, NOT A HEURISTIC — eval/_grid_deep_check.js builds every venue both ways (opts.noDeep is the
+    // reference) and asserts the grids equal cell for cell.
+    const DEEP_R = RES * 2 / 5 * Math.SQRT2 + 0.5;
+    const deepInShape = (sh, wx, wy) => {
+        const bb = sh.bb;
+        if (wx < bb.a + DEEP_R || wx > bb.c - DEEP_R || wy < bb.b + DEEP_R || wy > bb.d - DEEP_R) return false;
+        if (sh.eb) {
+            const par = new Uint8Array(sh.rings.length);
+            for (const [a, b, ri] of (sh.eb.rows.get(Math.floor(wy / EB)) || [])) {
+                const xi = b[0], yi = b[1], xj = a[0], yj = a[1];
+                if (((yi > wy) !== (yj > wy)) && (wx < (xj - xi) * (wy - yi) / ((yj - yi) || 1e-9) + xi)) par[ri] ^= 1;
+            }
+            if (!par[0] || par.some((v, i) => i > 0 && v)) return false;
+            const x0 = Math.floor((wx - DEEP_R) / EB), x1 = Math.floor((wx + DEEP_R) / EB), y0 = Math.floor((wy - DEEP_R) / EB), y1 = Math.floor((wy + DEEP_R) / EB);
+            for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+                for (const [a, b] of (sh.eb.cells.get(x + ',' + y) || [])) if (segDist(wx, wy, a, b) < DEEP_R) return false;
+            }
+            return true;
+        }
+        if (!pointInRing(wx, wy, sh.outer) || sh.holes.some(h => pointInRing(wx, wy, h))) return false;
+        for (const ring of sh.rings) for (let e = 0; e < ring.length; e++) if (segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) < DEEP_R) return false;
+        return true;
+    };
+    // SHAPES BY PLACE (PT-046): admitShape answers "clear" for any point outside a shape's box grown by the
+    // clearance, so a point need only ask the shapes whose grown box holds it. The Bayou hands this 3,181
+    // shapes (its banks and ~3,100 tree and prop colliders), and every sample used to walk all of them to
+    // reject them by box. Bucketed by SB-unit squares, each shape filed in every square its box grown by
+    // the largest clearance asked (CLEARANCE + its pad) touches — the same answers, in list order.
+    // ⚠️ opts.noDeep (the equality check's reference) walks the full list, as before.
+    const SB = 250, sbKey = (x, y) => (x + 32768) * 65536 + (y + 32768);   // exact, not hashed: a collision would hand back another square's shapes
+    const sb = new Map();
+    shapes.forEach((sh, k) => {
+        if (sh.centerOnly) return;
+        const g = CLEARANCE + sh.pad + 1, bb = sh.bb;
+        const x0 = Math.floor((bb.a - g) / SB), x1 = Math.floor((bb.c + g) / SB), y0 = Math.floor((bb.b - g) / SB), y1 = Math.floor((bb.d + g) / SB);
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const key = sbKey(x, y); let L = sb.get(key); if (!L) sb.set(key, L = []); L.push(k); }
+    });
+    const near = (opts && opts.noDeep) ? null : (wx, wy) => sb.get(sbKey(Math.floor(wx / SB), Math.floor(wy / SB)));
+    const deepInLand = (wx, wy) => {
+        if (!near) return false;
+        const L = near(wx, wy); if (!L) return false;
+        for (const k of L) if (deepInShape(shapes[k], wx, wy)) return true;
+        return false;
+    };
     const admit = (wx, wy, clr) => {
         if (!window.Arena.contains(arena, wx, wy)) return false;
+        if (near) {
+            const L = near(wx, wy);
+            if (L) for (const k of L) if (!admitShape(shapes[k], wx, wy, clr)) return false;
+            return true;
+        }
         for (let k = 0; k < shapes.length; k++) {
             if (shapes[k].centerOnly) continue;
             if (!admitShape(shapes[k], wx, wy, clr)) return false;
@@ -288,6 +342,7 @@ function buildGridRaw(land, arena, obstacles, opts) {
             // arctic horizon/margin constant was priced on centre-sampled land
             // (measured here: arctic land contacts +42%, floe +19% unscoped).
             let ok = admit(wx, wy, CLEARANCE);
+            if (!ok && deepInLand(wx, wy)) continue;           // both tiers 0 — see DEEP IN LAND
             if (!ok && !(opts && opts.noSubsample)) {
                 const Q = RES / 4;
                 for (const [ox, oy] of [[-Q, -Q], [Q, -Q], [-Q, Q], [Q, Q]]) {
