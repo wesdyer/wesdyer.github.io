@@ -254,6 +254,8 @@ window.addEventListener('keydown', (e) => {
 
     // Map: M enlarges the minimap 3x (and back), as a click on it does (Wes, Sep 26 2026).
     if (e.key.toLowerCase() === 'm') toggleMinimapSize();
+    // Tide chart: T enlarges it (and back), as a click on it does (PT-091) — only where there is a tide.
+    if (e.key.toLowerCase() === 't' && state.tide && typeof toggleTideSize === 'function') toggleTideSize();
     // Audio: V for volume, Shift+V for music (moved off M, which is the map now).
     if (e.key.toLowerCase() === 'v') {
         if (e.shiftKey) {

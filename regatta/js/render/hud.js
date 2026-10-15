@@ -2986,13 +2986,34 @@ function tileStatus(id, st) {
 // number. Under it, small, the echo sounder — blue with clearance, amber while the mud is
 // taking speed, red just afloat, AGROUND with the refloat countdown when she sits.
 // Hidden on every other venue.
+// THE BIG TIDE CHART (PT-091, Wes on the Flats: "I wish I could click my tide chart and see a bigger
+// version… just like the map if I click it or press M"). The same drawing, scaled: the plot is laid out
+// in its own 250 x 84 units and the canvas transform does the rest, so the two sizes can never disagree.
+// It grows up and to the left from its corner, the way the map grows from its own.
+const TIDE_BIG_SCALE = 2.4;
+let tideBig = false;
+function toggleTideSize(big) {
+    tideBig = typeof big === 'boolean' ? big : !tideBig;
+    const row = UI.tideRow, cv = UI.tideCanvas;
+    if (!row || !cv) return;
+    const S = tideBig ? TIDE_BIG_SCALE : 1;
+    cv.style.width = (250 * S) + 'px'; cv.style.height = (84 * S) + 'px';
+    row.style.cursor = tideBig ? 'zoom-out' : 'zoom-in';
+    row.title = tideBig ? 'Shrink tide chart (T)' : 'Enlarge tide chart (T)';
+    if (state.boats && state.boats[0]) { try { drawTideReadout(state.boats[0]); } catch (e) {} }
+}
+if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => {
+    const row = document.getElementById('hud-tide');
+    if (row) row.addEventListener('click', (e) => { e.stopPropagation(); toggleTideSize(); });
+});
+
 function drawTideReadout(player) {
     if (!UI.tideRow || !UI.tideCanvas) return;
     const info = (window.Tide && state.tide) ? Tide.hudInfo(player) : null;
     if (!info) { if (!UI.tideRow.classList.contains('hidden')) UI.tideRow.classList.add('hidden'); return; }
     UI.tideRow.classList.remove('hidden');
     const cv = UI.tideCanvas, T = state.tide;
-    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const dpr = Math.min(3, window.devicePixelRatio || 1) * (tideBig ? TIDE_BIG_SCALE : 1);
     const W = 250, H = 84;
     if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     const g = cv.getContext('2d');

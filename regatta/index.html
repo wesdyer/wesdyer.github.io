@@ -901,6 +901,7 @@
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Nav aids</span><span class="ov-key">N</span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Sailing rules</span><span class="ov-key">P</span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Enlarge map</span><span class="ov-key">M</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Enlarge tide chart</span><span class="ov-key">T</span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Mute / music</span><span><span class="ov-key">V</span> <span class="ov-key">SHIFT+V</span></span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Screenshot</span><span class="ov-key">F12</span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Settings</span><span class="ov-key">F2</span></div>
@@ -1757,7 +1758,7 @@
             <!-- THE TIDE (Spoonbill Flats only; hidden elsewhere; Wes, Sep 16 2026: the curve
                  and the point, with the height as a number — in place of the rose row and the
                  pill under the boat). Drawn by drawTideReadout in js/render/hud.js. -->
-            <div id="hud-tide" class="hidden bg-slate-900/70 backdrop-blur-sm rounded-lg border border-slate-400/30 shadow-2xl overflow-hidden">
+            <div id="hud-tide" title="Enlarge tide chart (T)" style="pointer-events:auto; cursor:zoom-in;" class="hidden bg-slate-900/70 backdrop-blur-sm rounded-lg border border-slate-400/30 shadow-2xl overflow-hidden">
                 <canvas id="hud-tide-canvas" width="250" height="84" style="width:250px;height:84px;display:block"></canvas>
             </div>
             <div id="hud-leg-times" class="flex flex-col gap-1 items-end">
