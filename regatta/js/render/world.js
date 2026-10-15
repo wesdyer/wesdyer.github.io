@@ -269,9 +269,53 @@ function _crownWet(x, y) {
     const b = state.course && state.course.boundary;
     return !(b && window.Arena) || Arena.contains(b, x, y);
 }
+// ⚠️ THE PAINTED CROWN, NOT THE SPRITE'S FRAME (Wes, Oct 15 2026: Pearl Lagoon's palms "shouldn't be transparent
+// unless they overlap the water"). The rim samples below sit on a circle as wide as the sprite's square frame,
+// and a palm is a star: between its fronds that circle is empty air, so a palm standing wholly on a sand cay
+// read as overhanging the lagoon and faded around the player. Measured: 7 of the lagoon's 16 fading palms had
+// no leaf over water, and every fading cypress on Otter Point (5 of 5). So where the kind has a traced paint
+// silhouette (PROP_OUTLINES, art/prop_outlines.py) the test samples THE PAINT: its outline's vertices and edge
+// midpoints, and its inside on a grid no coarser than CROWN_GRID — under half a hull, so no hull-sized patch of
+// leaf over water can fall between samples. The circle stays for a kind with no tracing.
+const CROWN_GRID = 20;
+function crownPaintPoints(p, worldW) {
+    const reg = (window.VenueDoc && VenueDoc.PROP_KINDS) || {};
+    const K = reg[p.kind] || {};
+    const ck = (K.parts && K.parts.canopy) || p.kind;
+    const O = window.PROP_OUTLINES && (PROP_OUTLINES[ck] || PROP_OUTLINES[p.kind]);
+    if (!O || !O.paint || !O.paint.length || !(O.world > 0)) return null;
+    const k = worldW / O.world, h = p.heading || 0, c = Math.cos(h), s = Math.sin(h);
+    const x0 = p.x + (p._dx || 0), y0 = p.y + (p._dy || 0);
+    const pts = [];
+    const put = (lx, ly) => { lx *= k; ly *= k; pts.push(x0 + lx * c - ly * s, y0 + lx * s + ly * c); };
+    let a = Infinity, b = Infinity, cc = -Infinity, d = -Infinity;
+    for (const ring of O.paint) for (let i = 0; i < ring.length; i++) {
+        const q = ring[i], n = ring[(i + 1) % ring.length];
+        put(q[0], q[1]); put((q[0] + n[0]) / 2, (q[1] + n[1]) / 2);
+        if (q[0] < a) a = q[0]; if (q[0] > cc) cc = q[0]; if (q[1] < b) b = q[1]; if (q[1] > d) d = q[1];
+    }
+    const step = CROWN_GRID / k;   // the grid in the outline's own units
+    const inPaint = (u, v) => O.paint.some(ring => {
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+            if (((yi > v) !== (yj > v)) && (u < (xj - xi) * (v - yi) / (yj - yi) + xi)) inside = !inside;
+        }
+        return inside;
+    });
+    for (let v = b + step / 2; v < d; v += step) for (let u = a + step / 2; u < cc; u += step) if (inPaint(u, v)) put(u, v);
+    return pts;
+}
 function crownOverWater(p, worldW) {
     if (p._overWater !== undefined) return p._overWater;
     const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
+    const paint = crownPaintPoints(p, worldW);
+    if (paint) {
+        let over = false;
+        for (let i = 0; !over && i < paint.length; i += 2) if (_crownWet(paint[i], paint[i + 1])) over = true;
+        if (p.motion !== 'drift') p._overWater = over;
+        return over;
+    }
     const r = worldW * 0.5;
     let over = _crownWet(x, y);
     for (let k = 0; !over && k < CANOPY_RIM_SAMPLES; k++) {
