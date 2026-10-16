@@ -211,6 +211,7 @@ window.addEventListener('keydown', (e) => {
     // repeat — physics applies the queue and holds the continuous turn while Shift is down.
     if (e.shiftKey && (key === 'ArrowLeft' || key === 'ArrowRight') && !state.paused) {
         state.helmNudge = (state.helmNudge || 0) + (key === 'ArrowLeft' ? -1 : 1);
+        if (window.School && School.onFineHelm) School.onFineHelm();   // the School's fine-steering lesson counts these
         e.preventDefault();
     }
 
