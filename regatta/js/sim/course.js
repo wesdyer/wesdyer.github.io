@@ -951,8 +951,14 @@ function repositionBoats() {
         const laneY = cy + (m1.y - m0.y) * (pct - 0.5);
         const scatter = (Math.random() - 0.5) * 120;   // depth (along-wind) scatter
         const jitterLat = (Math.random() - 0.5) * 20;  // small lateral jitter
-        const sx = laneX + backX * (distBack + scatter) + rx * jitterLat;
-        const sy = laneY + backY * (distBack + scatter) + ry * jitterLat;
+        // A SOLO TIME TRIAL STARTS FROM ONE SPOT (PT-022): the run is compared with your ghost
+        // and the course record, so every run begins at the same place, the line's middle
+        // 400 back, pointed straight at the line. No favoured-end bias, no scatter, and the
+        // heading is the line's, not the wind's, so it doesn't change with the run's breeze.
+        // The random draws above still happen, so the stream is the same length either way.
+        const ttSpot = boat.isPlayer && window.TimeTrial && TimeTrial.solo();
+        const sx = ttSpot ? cx + backX * distBack : laneX + backX * (distBack + scatter) + rx * jitterLat;
+        const sy = ttSpot ? cy + backY * distBack : laneY + backY * (distBack + scatter) + ry * jitterLat;
 
         boat.x = sx;
         boat.y = sy;
@@ -965,7 +971,7 @@ function repositionBoats() {
         const lw = getWindAt(sx, sy).direction;
 
         if (boat.isPlayer) {
-            boat.heading = lw; // Head to wind — the wind HERE
+            boat.heading = ttSpot ? Math.atan2(cross.x, -cross.y) : lw; // Head to wind — the wind HERE (a time trial: at the line)
             boat.velocity = { x: 0, y: 0 };
             boat.speed = 0;
         } else {
