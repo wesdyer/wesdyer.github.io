@@ -1397,6 +1397,8 @@ function resetGame(opts) {
     // does not change length, and then sent home — just you, the course and your ghost.
     if (window.TimeTrial && TimeTrial.solo()) state.boats.length = 1;
     if (window.TimeTrial) TimeTrial.onReset();
+    // Which boats sail for a reason (PT-034's TARGET / NEW tags), read before the gun spends a race.
+    if (window.Unlocks) Unlocks.tagFleet(school ? [] : state.boats.filter(b => !b.isPlayer).map(b => b.name));
     if (window.RaceLog) RaceLog.onReset();
     // The page-load reset is light and goes straight to the clubhouse: its fleet is never drawn and
     // never raced (Start rebuilds the course full and places the boats then, loadVenueWorld), and

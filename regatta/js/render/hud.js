@@ -2452,7 +2452,24 @@ function updateLeaderboard() {
 
                 row.appendChild(rank);
                 row.appendChild(iconContainer);
-                row.appendChild(nameDiv);
+                // THE RIVAL (PT-034): the shark your next rung asks you to beat says so UNDER its
+                // name, in the fleet page's coral — stacked, so it takes none of the row's width
+                // (a pill beside the name ran over it on a long one). Nobody else is tagged.
+                const tag = !boat.isPlayer && window.Unlocks ? Unlocks.tagFor(boat.name) : null;
+                if (tag && tag.kind === 'target') {
+                    const stack = document.createElement('div');
+                    stack.className = "flex-1 min-w-0 flex flex-col justify-center";
+                    nameDiv.className = "lb-name t-display truncate uppercase";
+                    const rivalDiv = document.createElement('div');
+                    rivalDiv.className = "lb-rival t-label";
+                    rivalDiv.style.cssText = "font-size:8.5px; line-height:1; letter-spacing:0.16em; color:#ff7a5c; margin-top:2px;";
+                    rivalDiv.textContent = 'RIVAL';
+                    stack.appendChild(nameDiv);
+                    stack.appendChild(rivalDiv);
+                    row.appendChild(stack);
+                } else {
+                    row.appendChild(nameDiv);
+                }
                 row.appendChild(penDiv);
                 row.appendChild(trendDiv);
                 row.appendChild(distDiv);

@@ -724,6 +724,14 @@
         .pr-fleet-item.sel { box-shadow: 0 0 0 2px #eef3fb; }
         .pr-fleet-item.me.sel { box-shadow: 0 0 0 2px #f2c14e; }
         .pr-fleet-notes { padding: 12px 14px 14px; background: #141d31; border-radius: 0 0 12px 12px; }
+        /* PT-034: why a RIVAL or NEW boat is in the fleet. Coral and teal, clear of your own colour and of first-place gold. */
+        .pr-fleet-why { display: flex; align-items: baseline; gap: 8px; padding: 7px 12px 9px; font-size: 12.5px; line-height: 1.4; color: #c9d6e8; }
+        .pr-fleet-why b { color: #eef3fb; }
+        .pr-why-prog { color: #9fb2cc; white-space: nowrap; }
+        .pr-tag { flex: none; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1; padding: 3px 7px; border-radius: 4px; color: #0b1322; }
+        .pr-tag-rival { background: #ff7a5c; }
+        .pr-tag-new { background: #4fd1c5; }
+        .pr-why-note { font-size: 12.5px; line-height: 1.45; color: #c9d6e8; margin-bottom: 10px; }
         /* The badge inside an item squares off its bottom corners when notes are open, so
            the two read as one card rather than a card with a tray under it. */
         .pr-fleet-item.sel > button > div { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }

@@ -11,6 +11,7 @@
 //   marks      the effect fades to nothing inside a mark's zone
 //   penalty    a bot doing penalty turns is untouched
 //   setting    off with settings.adaptiveAI = false, and the player's boat is never touched
+//   rival      the tagged rival (PT-034) runs the curve doubled both ways on its own gap, from leg 1, no mark fade
 // End to end: the fleet races with the player parked far ahead (so every bot is well behind);
 //   with the band on, the fleet past the first mark sails at about the boost (finish times are
 //   reported, not gated — three races swing ±5 s run to run).
@@ -81,6 +82,15 @@ async function open(browser, venue) {
             stage(mid + 1500, [mid - 1500]); bots[0].raceState.penalty = true; step(30); out.penalty = bots[0]._adaptMul;
             // setting off
             stage(mid + 1500, [mid - 1500]); settings.adaptiveAI = false; step(30); out.off = bots[0]._adaptMul; settings.adaptiveAI = true;
+            // THE RIVAL (PT-034): bots[0] tagged as the hunt's target — doubled both ways on its own gap,
+            // on from leg 1, no mark fade; bots[1] beside it stays on the normal rules. The leg-1 and at-mark
+            // stagings read the rival as AHEAD (held back), so those two check that it is engaged at all
+            Unlocks._tags = { [bots[0].name]: { kind: 'target' } };
+            stage(mid + far, [mid - far]); step(32); out.rivalBehind = bots[0]._adaptMul;
+            stage(mid - far, [mid + far]); step(32); out.rivalAhead = bots[0]._adaptMul;
+            stage(mid + 1500, [mid - 1500], 1); P.raceState.leg = 1; step(30); out.rivalStart = bots[0]._adaptMul; out.otherStart = bots[1]._adaptMul;
+            stage(mid + 1500, [mid - 1500]); bots[0].x = rm.x + 40; bots[0].y = rm.y; step(32); out.rivalAtMark = bots[0]._adaptMul;
+            Unlocks._tags = null;
             return out;
         });
         const near = (v, x, tol) => v != null && Math.abs(v - x) < tol;
@@ -95,6 +105,10 @@ async function open(browser, venue) {
         check('it fades out at a mark', r.atMark == null || near(r.atMark, 1, 1e-6), `×${r.atMark}`);
         check('a bot in penalty turns is untouched', r.penalty == null || near(r.penalty, 1, 1e-6), `×${r.penalty}`);
         check('the setting turns it off', r.off == null || near(r.off, 1, 1e-6), `×${r.off}`);
+        check('the rival far behind gains +20% (double)', near(r.rivalBehind, 1.20, 0.003), `×${r.rivalBehind}`);
+        check('the rival far ahead is held back −10% (double, on its own gap)', near(r.rivalAhead, 0.90, 0.003), `×${r.rivalAhead}`);
+        check('the rival is on from leg 1; the rest of the fleet is not', r.rivalStart != null && Math.abs(r.rivalStart - 1) > 0.05 && (r.otherStart == null || near(r.otherStart, 1, 1e-6)), `rival ×${r.rivalStart}, other ×${r.otherStart}`);
+        check('the rival does not fade at a mark', r.rivalAtMark != null && Math.abs(r.rivalAtMark - 1) > 0.05, `×${r.rivalAtMark}`);
         check('no page errors', errs.length === 0, errs[0]);
         await page.close();
     }

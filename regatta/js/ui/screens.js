@@ -2491,6 +2491,15 @@ function setupPreRaceOverlay() {
 // kept showing the character you had just taken over, still racing against you. The swap
 // underneath was working the whole time. A typeof guard around a name you own is not a
 // safety net, it is a silent failure.
+// The tag line for a RIVAL or NEW boat (Unlocks.tagFor): a word chip, then the reason in a few words.
+function fleetTagHTML(tag) {
+    if (tag.kind === 'target') {
+        const prog = tag.prog ? ` <span class="pr-why-prog">· ${tag.prog[0]} of ${tag.prog[1]}</span>` : '';
+        return `<span class="pr-tag pr-tag-rival">Rival</span><span>${tag.goal ? escapeHTMLText(tag.goal.replace(/\.$/, '')) + ' to unlock' : 'Beat them to unlock'} <b>${escapeHTMLText(tag.reward || '')}</b>${prog}</span>`;
+    }
+    return `<span class="pr-tag pr-tag-new">New</span><span>Just unlocked · race ${tag.n} of ${tag.of} in your fleet</span>`;
+}
+
 function renderCompetitorGrid() {
     if (!UI.prCompetitorsGrid) return;
     const scrollTop = UI.prCompetitorsGrid.scrollTop;   // survive a re-render on selection
@@ -2533,12 +2542,24 @@ function renderCompetitorGrid() {
             : selectCompetitor(key));
         item.appendChild(badge);
 
+        // WHY THIS BOAT IS HERE (PT-034): the rival and a new unlock say so under their badge;
+        // the rest of the fleet stays plain.
+        const tag = !boat.isPlayer && window.Unlocks ? Unlocks.tagFor(boat.name) : null;
+        if (tag) {
+            const why = document.createElement('div');
+            why.className = 'pr-fleet-why';
+            why.innerHTML = fleetTagHTML(tag);
+            item.appendChild(why);
+        }
+
         // YOUR badge does not open scouting notes. There is nothing to scout — you take no
         // stats from the character, and "how to beat them" would be about you.
         if (selected && !boat.isPlayer) {
             const notes = document.createElement('div');
             notes.className = 'pr-fleet-notes';
-            notes.innerHTML = scoutingNotesHTML(config);
+            notes.innerHTML = (tag ? `<div class="pr-why-note">${tag.kind === 'target'
+                ? `The next rung of the Shark Pack. ${escapeHTMLText(boat.name)} sails in every race until you've done it.`
+                : 'Newly unlocked skippers race you in their first three races.'}</div>` : '') + scoutingNotesHTML(config);
             item.appendChild(notes);
         }
         UI.prCompetitorsGrid.appendChild(item);
@@ -3763,7 +3784,9 @@ function renderResultsHero(sorted, player, leader) {
                  rs.totalPenalties, rs.legTimes.length,
                  best && best.isBest, best && best.isBestPos,
                  // the standings move as the rest of the fleet comes home
-                 sorted.filter(b => b.raceState.finished).length].join('|');
+                 sorted.filter(b => b.raceState.finished).length,
+                 // ...and the Rival cell waits for the race to be counted (Unlocks.poll)
+                 !!(state.race.unlocks && state.race.unlocks.counted)].join('|');
     if (host.dataset.sig === sig) return;
     host.dataset.sig = sig;
 
@@ -3837,6 +3860,23 @@ function renderResultsHero(sorted, player, leader) {
         const pts = POINTS_FOR_PLACE(pos), scored = !dnf;
         cells.push(cell('Points', big(scored ? '+' + pts : '0', scored && pos === 1 ? '#f2c14e' : null), `${look.me ? look.me.total : 0} after ${look.done} race${look.done === 1 ? '' : 's'}`));
         cells.push(cell('Series', big(rank), line));
+    }
+
+    // THE RIVAL (PT-034): how this race moved the rung you're hunting, once it has been counted.
+    // Shown only when the target sailed; the unlock card itself still makes the reveal.
+    const tA = !solo && window.Unlocks && state.race.unlocks && state.race.unlocks.counted ? Unlocks.targetAfter() : null;
+    const tBoat = tA && sorted.find(b => b.name === tA.prey);
+    if (tBoat) {
+        const beat = !dnf && sorted.indexOf(tBoat) > pos - 1;
+        const prey = escapeHTMLText(tA.prey), reward = escapeHTMLText(tA.reward);
+        cells.push(cell('Rival',
+            big(tA.earned ? '&#10003;' : tA.prog ? `${tA.prog[0]} of ${tA.prog[1]}` : '&mdash;', '#ff7a5c'),
+            tA.earned ? `${reward} unlocked`
+                // beating the rival without moving the rung: a rung that counts only some venues (Fresh Water),
+                // or only clean races (Harder Fish)
+                : beat && tA.prog && tA.before && tA.prog[0] <= tA.before[0]
+                    ? `Ahead of ${prey} · ${rs.totalPenalties > 0 && /penalt/i.test(tA.goal) ? 'a penalty, so it didn’t count' : 'doesn’t count here'}`
+                : `${beat ? 'Ahead of' : 'Behind'} ${prey} · toward ${reward}`));
     }
 
     // The band's wash is the PLAYER'S colour, not a gold that belongs to first place. It is
@@ -4057,6 +4097,7 @@ function renderResultsRows(sorted, leader, ext, gapScale) {
                     <div class="flex items-center gap-2" style="min-width:0;">
                         <span class="res-name t-display-8 t-display uppercase truncate" style="font-size:14px;letter-spacing:0.03em;"></span>
                         <span class="res-you t-label" style="font-size:9px;letter-spacing:0.12em;color:#0c1322;background:#f2c14e;border-radius:4px;padding:2px 5px;line-height:1.15;display:none;">You</span>
+                        <span class="res-rival t-label" style="font-size:9px;letter-spacing:0.12em;color:#0c1322;background:#ff7a5c;border-radius:4px;padding:2px 5px;line-height:1.15;display:none;">Rival</span>
                     </div>
                     <!-- The finish, drawn. The number beside it is exact; this is the one
                          place on the page you can see the shape of the race — who sailed
@@ -4093,6 +4134,9 @@ function renderResultsRows(sorted, leader, ext, gapScale) {
                 you.style.background = c;
                 you.style.display = '';
             }
+            // ...and the RIVAL (PT-034) carries its tag here too, the same coral as the fleet page.
+            const tag = !boat.isPlayer && window.Unlocks ? Unlocks.tagFor(boat.name) : null;
+            if (tag && tag.kind === 'target') row.querySelector('.res-rival').style.display = '';
             UI.resultRows[boat.id] = row;
         }
 
