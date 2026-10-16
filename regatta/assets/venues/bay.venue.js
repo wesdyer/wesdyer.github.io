@@ -10873,7 +10873,7 @@ window.VENUE_DOC["bay"] = {
       "end": "wrap",
       "height": 1,
       "name": "Motorboat West",
-      "scale": 1.5
+      "scale": 1.1
     },
     {
       "id": "ship-4",
@@ -10904,7 +10904,7 @@ window.VENUE_DOC["bay"] = {
       "firstSpawn": 0,
       "name": "Motorboat East",
       "end": "wrap",
-      "scale": 1.5
+      "scale": 1.1
     },
     {
       "id": "ship-5",
@@ -11273,7 +11273,7 @@ window.VENUE_DOC["bay"] = {
       "firstSpawn": -7.1,
       "end": "wrap",
       "name": "Motorboat Center",
-      "scale": 1.5
+      "scale": 1.1
     },
     {
       "id": "ship-10",
@@ -11332,10 +11332,10 @@ window.VENUE_DOC["bay"] = {
     {
       "id": "prop-1",
       "kind": "bay-cove-lighthouse",
-      "x": 5018.743253688603,
-      "y": 3805.410985126118,
+      "x": 5092.238458149615,
+      "y": 3751.6607609680636,
       "heading": 0,
-      "scale": 2.4568310363006494
+      "scale": 1.15
     },
     {
       "id": "veg-3734",
@@ -83308,18 +83308,18 @@ window.VENUE_DOC["bay"] = {
     {
       "id": "prop-18",
       "kind": "bay-cove-motorboat",
-      "x": -702.1544332134265,
-      "y": -1828.5113844978282,
+      "x": -712.9242999402267,
+      "y": -1806.9716510442279,
       "heading": 3.619799484269011,
-      "scale": 1.8
+      "scale": 1.1
     },
     {
       "id": "prop-19",
       "kind": "bay-cove-motorboat",
-      "x": -855.3980485830166,
-      "y": -1903.5110690412246,
+      "x": -863.7746115927501,
+      "y": -1892.7412023144245,
       "heading": 3.651161915022552,
-      "scale": 1.5
+      "scale": 1.1
     },
     {
       "id": "prop-20",
@@ -83364,10 +83364,10 @@ window.VENUE_DOC["bay"] = {
     {
       "id": "prop-25",
       "kind": "bay-cove-lighthouse",
-      "x": 2803.639194988822,
-      "y": -2161.92534723086,
+      "x": 2779.2475444348647,
+      "y": -2176.273376968482,
       "heading": 0,
-      "scale": 2.4568310363006494
+      "scale": 1.15
     },
     {
       "id": "prop-26",

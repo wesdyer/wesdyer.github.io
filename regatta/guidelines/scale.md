@@ -176,9 +176,14 @@ tail slap is about a body length across.
 - **PT-015 prop review (Oct 15 2026):** every prop measured against the hull; see
   `~/Desktop/regatta-issues/scale-review/`. The Cove's town and harbour vessels were upscaled
   by their kind `world` (church 24 m, cottages 11–12 m, tug 26 m, ferry 45 m, …), not by
-  placement scale, so traffic and new placements come out right too. Still to do: the later
-  venues' overshoots (2–4× life) down to ~1–1.3×; the practice raft, pontoon and mooring
-  buoys to true size; trees to 1.5–2× life (keep oversized for coverage).
+  placement scale, so traffic and new placements come out right too.
+- **Overshoots fixed (Oct 16 2026, PT-015):** the later venues' built things were placed at
+  ×2–4 over kinds already drawn near true size at ×1, so the fix was PLACEMENT scale (log
+  cabin 9 m, lodge 20 m, boathouse 18 m, pontoon 12 m, tent 4 m, houseboat 15 m, Point Pinos
+  16 m, lighthouse 8 m, fire rings 1.6 m, mooring buoys 1 m, …). Anything tied to a shore was
+  shrunk about its shore end, not its centre, so slipways, pontoons and steps still land.
+  The tide mill stays at ×3: its house is already ~13 × 22 m and its sluice walls span the
+  creek. Still to do: trees to 1.5–2× life (keep oversized for coverage).
 
 ## Quick reference
 

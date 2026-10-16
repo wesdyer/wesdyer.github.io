@@ -8968,7 +8968,7 @@ window.VENUE_DOC["flats"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-950c8fc-1dy0",
+      "sig": "v3-e8dfe91b-1dy0",
       "legs": [
         {
           "pts": []
@@ -10555,18 +10555,18 @@ window.VENUE_DOC["flats"] = {
     {
       "id": "houseboat-17",
       "kind": "flats-houseboat",
-      "x": 3093.5055515057907,
-      "y": 1638.0723457243587,
+      "x": 3064.1,
+      "y": 1637.3,
       "heading": 0.027406531253385324,
-      "scale": 3
+      "scale": 1.45
     },
     {
       "id": "oyster-shed-18",
       "kind": "flats-oyster-shed",
-      "x": 1829.3080289684688,
-      "y": 4236.88415506651,
+      "x": 1819.5584200962353,
+      "y": 4294.837031234645,
       "heading": 0.5850822550437336,
-      "scale": 2.5
+      "scale": 1.43
     },
     {
       "id": "tide-mill-19",
