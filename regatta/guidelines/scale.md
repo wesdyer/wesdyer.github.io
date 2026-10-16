@@ -169,6 +169,16 @@ tail slap is about a body length across.
   four-pixel floor at ~0.43 m, i.e. about 9 units per metre.
 - **Ships**: a real cargo ship is 150–200 m, which is 1500–2000 units (30+ boat lengths).
   The Cove's current freighter is 700 units, a 70 m coaster at this ruler.
+- **Capped for gameplay (Wes, Oct 15 2026, PT-015):** the Cove's bridges (72–110 m) stay below
+  true size. The cargo ships went up the same day (blue 96 m, rust 86 m, green 72 m, cruise ship
+  110 m; real 120–200 m) so every freighter outranks the 45 m ferry; their limit is the Bay
+  bridge's 30.6 m tower gap, which the routes must pass centred and square.
+- **PT-015 prop review (Oct 15 2026):** every prop measured against the hull; see
+  `~/Desktop/regatta-issues/scale-review/`. The Cove's town and harbour vessels were upscaled
+  by their kind `world` (church 24 m, cottages 11–12 m, tug 26 m, ferry 45 m, …), not by
+  placement scale, so traffic and new placements come out right too. Still to do: the later
+  venues' overshoots (2–4× life) down to ~1–1.3×; the practice raft, pontoon and mooring
+  buoys to true size; trees to 1.5–2× life (keep oversized for coverage).
 
 ## Quick reference
 

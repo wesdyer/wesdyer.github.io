@@ -923,9 +923,9 @@ const PROP_KINDS = {
     // MOTION fixed, and that is a statement of what exists rather than of what these are. The
     // design calls for slow predictable traffic dragging a moving wind shadow; the engine has
     // no 'underway' motion and no prop-borne wind shadow, so a placed ship stands still.
-    'bay-cove-cargo-ship':   { label: 'Cargo ship',       world: 720, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.24], wake: { kind: 'kelvin' } },
-    'bay-cove-cargo-ship-b': { label: 'Cargo ship (rust)', world: 608, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.24], wake: { kind: 'kelvin' } },
-    'bay-cove-cargo-ship-c': { label: 'Cargo ship (green)', world: 496, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.262], wake: { kind: 'kelvin' } },
+    'bay-cove-cargo-ship':   { label: 'Cargo ship',       world: 1044, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.24], wake: { kind: 'kelvin' } },
+    'bay-cove-cargo-ship-b': { label: 'Cargo ship (rust)', world: 942, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.24], wake: { kind: 'kelvin' } },
+    'bay-cove-cargo-ship-c': { label: 'Cargo ship (green)', world: 785, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.262], wake: { kind: 'kelvin' } },
     // The tug is the family's short-and-beamy one — 2.4:1 against the ships' 3.5:1, a proportion
     // the manifest reserves for it exclusively because 'reads as a toy tug' was the cargo ships'
     // worst round-1 failure. Its collider geometry is better than theirs and still not good:
@@ -938,25 +938,25 @@ const PROP_KINDS = {
     // water, and that is the unfairness the shoal note argues against — you cannot decide to
     // avoid something you cannot see. 16 fits the beam exactly and covers the middle ~40% of the
     // length.
-    'bay-cove-tugboat':      { label: 'Tugboat',           world:  76, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.375], wake: { kind: 'kelvin' } },
+    'bay-cove-tugboat':      { label: 'Tugboat',           world: 284, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.375], wake: { kind: 'kelvin' } },
     // The biggest hull in the game at 820u — over the 720u lead cargo ship, under the 870/920u
     // bridges it is meant to pass beneath. contact none for the family's reason and for the
     // geometric one: at 4.69:1 a circle fits it no better than it fits the ships.
-    'bay-cove-cruise-ship':  { label: 'Cruise ship',       world: 820, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.92, 0.192], wake: { kind: 'kelvin' } },
+    'bay-cove-cruise-ship':  { label: 'Cruise ship',       world: 1200, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.92, 0.192], wake: { kind: 'kelvin' } },
     // The cove's small craft, and the traffic contract's hardest case: at 48u against a 32u
     // racing dinghy it is the only vessel here anywhere near a competitor's size, so it cannot
     // win 'never confusable' on size and wins it on silhouette — no rig, an open cockpit full
     // of seats, an outboard on the transom. contact none like the rest of the harbour; at 2.78:1
     // and only 48u a circle would fit it better than any of them, so this is the one to revisit
     // first if the family ever gets colliders (contactR 8, half the beam).
-    'bay-cove-motorboat':    { label: 'Motorboat',         world:  48, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.927, 0.333], wake: { kind: 'ribbon' } },
+    'bay-cove-motorboat':    { label: 'Motorboat',         world:  66, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.927, 0.333], wake: { kind: 'ribbon' } },
     // The working boat between the tug and the freighters. NOTE THE TUG'S RESERVED SILHOUETTE
     // SURVIVES ON SIZE AND CLUTTER, NOT ON PROPORTION: the delivered trawler measures 2.26:1
     // against the tug's 2.45:1, so it is fractionally the stubbier of the two and the slot's own
     // "ships are long, the tug is short" distinction does not hold here. It does not need to —
     // 140u against 76u, teal against ochre, and a deck full of drum, gantry, booms and floats
     // against a bare one. Told apart at a glance on three axes, just not that one.
-    'bay-cove-trawler':      { label: 'Fishing trawler',   world: 140, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.359], wake: { kind: 'kelvin' } },
+    'bay-cove-trawler':      { label: 'Fishing trawler',   world: 218, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.359], wake: { kind: 'kelvin' } },
     // ── THE TWO FERRIES: THE FIRST KINDS DRAWN FOR THE TRAFFIC ENGINE ───────
     // Every vessel above predates it and was adapted; these two were specified against it,
     // and the two entries below are all it takes to make them authorable — the editor gates
@@ -975,14 +975,14 @@ const PROP_KINDS = {
     // MOTION fixed is likewise a statement about a PLACED prop. The trait only has
     // fixed | drift and neither means 'underway'; the cargo family's note that the engine
     // has no such motion is now out of date — the motion lives in `doc.traffic`, not here.
-    'bay-cove-ferry':        { label: 'Ferry',              world: 300, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.920, 0.279], wake: { kind: 'kelvin', symmetric: true } },
+    'bay-cove-ferry':        { label: 'Ferry',              world: 490, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.920, 0.279], wake: { kind: 'kelvin', symmetric: true } },
     // THE CAPSULE SPANS THE TUNNEL, DELIBERATELY. This is the only hull in the game that is
     // not one oblong, and its tunnel measures 39u at the widest — wider than the 32u racing
     // dinghy, so "too narrow to enter" is NOT the argument (the manifest slot claimed it was
     // and the delivered art disproved it). It is open on 18% of the length, at the bow notch
     // and the stern gap only, because the bridging deck closes it amidships: there is no
     // through-passage to sail, so one capsule over the whole footprint is honest.
-    'bay-cove-fast-ferry':   { label: 'Fast ferry',         world: 200, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.310], wake: { kind: 'ribbon', hulls: [-0.102, 0.102], beam: 0.0925 } },
+    'bay-cove-fast-ferry':   { label: 'Fast ferry',         world: 348, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.310], wake: { kind: 'ribbon', hulls: [-0.102, 0.102], beam: 0.0925 } },
     // ── THE COVE'S SHORE TREES ──────────────────────────────────────────────
     // Black oak, pitch pine and eastern red cedar — the real coastal-plain association of
     // Nantucket, the Vineyard and the outer Cape, and the cheapest way to make "green
@@ -1030,20 +1030,20 @@ const PROP_KINDS = {
     // `prop-spin` checkbox OFF and set `heading °` per placement from the prop inspector.
     // cove-boatshed, when it lands, is the one whose heading is not merely tidy but MEANS
     // something: its door canopy faces the water.
-    'bay-cove-church':       { label: 'Church',              world: 184, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#63666F' },
-    'bay-cove-house-captains': { label: "Captain's house",   world: 129, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#81786E' },
+    'bay-cove-church':       { label: 'Church',              world: 354, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#63666F' },
+    'bay-cove-house-captains': { label: "Captain's house",   world: 175, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#81786E' },
     'bay-cove-cottage-ell':  { label: 'Cottage with ell',    world: 118, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#676F75' },
-    'bay-cove-cottage':      { label: 'Cape cottage',        world:  80, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#837A71' },
+    'bay-cove-cottage':      { label: 'Cape cottage',        world: 128, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#837A71' },
     // The waterfront's smallest building and the only one with no ridge — a single shed slope.
     // Its stove pipe is a CIRCLE where every other chimney in the town is a rectangle, which is
     // correct rather than decorative: a metal flue is round and a brick stack is not.
-    'bay-cove-shanty':       { label: 'Fish shanty',         world:  55, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#4C443E' },
-    'bay-cove-cottage-dormer': { label: 'Dormered cottage',  world: 100, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#AAA198' },
+    'bay-cove-shanty':       { label: 'Fish shanty',         world:  74, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#4C443E' },
+    'bay-cove-cottage-dormer': { label: 'Dormered cottage',  world: 140, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#AAA198' },
     // ⚠️ THE ONE BUILDING WHOSE HEADING MEANS SOMETHING RATHER THAN MERELY LOOKING TIDY: the
     // boat shed's door canopy projects from one gable end, and that end faces the WATER. Point
     // it inland and the building is backwards. Everything else in this town only needs its
     // ridges to agree with its neighbours.
-    'bay-cove-boatshed':     { label: 'Boat shed',           world: 150, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#594F45' },
+    'bay-cove-boatshed':     { label: 'Boat shed',           world: 232, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#594F45' },
     // ── THE COVE'S CROSSINGS ────────────────────────────────────────────────
     // ⚠️ `canopy`, AND IT IS THE ONLY THING IN THIS VENUE THAT BELONGS THERE. Everything else
     // the cove owns stands on land or floats; a bridge deck is 30m up and the fleet sails
@@ -1100,7 +1100,7 @@ const PROP_KINDS = {
     // Club's own burgee — painted flat on the seaward roof slope, which is why it survives a
     // camera that deletes anything vertical. LANDMARK: venue identity, on land, never an
     // obstacle in the water. Place it facing the water with cove-marina in front of it.
-    'bay-cove-yacht-club':   { label: 'Yacht club',          world: 168, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#A89E92' },
+    'bay-cove-yacht-club':   { label: 'Yacht club',          world: 256, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#A89E92' },
     // The cove's waterfront begins here. A single sawn pile top — place these with the
     // editor's `prop-spin` ON and a `count`, because addProps' "ONE DRAG LAYS A STAND" is
     // what a row of pilings actually is; a baked cluster would stamp one arrangement and
@@ -1126,7 +1126,7 @@ const PROP_KINDS = {
     // the safer error (a pass-through is a missed collision; an oversized circle is an
     // invisible wall in open water). For a run of several sections, do what the river does:
     // lay ONE HIDDEN HARD SHAPE along the whole face and override these to contact none.
-    'bay-cove-pier':         { label: 'Pier',                world: 150, plane: 'surface', contact: 'hard', contactR: 12, motion: 'fixed' },
+    'bay-cove-pier':         { label: 'Pier',                world: 233, plane: 'surface', contact: 'hard', contactR: 19, motion: 'fixed' },
     // The quay TILES: sections butt end to end, so its two short ends are plain by design.
     'bay-cove-quay':         { label: 'Quay section',        world: 200, plane: 'surface', contact: 'hard', contactR: 16, motion: 'fixed' },
     // A block of sixteen 20ft boxes standing on the quay. `ambient` and contact none — it is
@@ -1136,7 +1136,7 @@ const PROP_KINDS = {
     // The ferry berth, and the biggest structure on the waterfront. Its transfer ramp
     // projects from ONE end and that end faces the water — like the boat shed's canopy, this
     // is a heading that MEANS something rather than merely looking tidy.
-    'bay-cove-pier-ferry':   { label: 'Ferry terminal',      world: 320, plane: 'surface', contact: 'hard', contactR: 24, motion: 'fixed' },
+    'bay-cove-pier-ferry':   { label: 'Ferry terminal',      world: 517, plane: 'surface', contact: 'hard', contactR: 39, motion: 'fixed' },
     // A floating dinghy landing, chained rather than piled — so `float`, the plane that draws
     // AFTER every mark the water makes (no wake ripples across something floating on top of
     // them) and BEHIND the land. `soft`: a float gives when you nudge it.
@@ -1160,10 +1160,10 @@ const PROP_KINDS = {
     // seals six slips of open water a boat can legitimately enter, sized smaller it stops
     // nothing. A wrong collider is worse than none. If a placement ever needs teeth, lay
     // hidden hard shapes down the fingers — the river's 82-bank precedent.
-    'bay-cove-marina':       { label: 'Marina',              world: 240, plane: 'float',   contact: 'none', motion: 'fixed' },
-    'bay-cove-shop-row':     { label: 'Shop row',            world: 200, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#847C73' },
-    'bay-cove-store-general': { label: 'General store',      world: 124, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#7B746C' },
-    'bay-cove-cafe':         { label: 'Cafe',                world:  88, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#877C70' },
+    'bay-cove-marina':       { label: 'Marina',              world: 518, plane: 'float',   contact: 'none', motion: 'fixed' },
+    'bay-cove-shop-row':     { label: 'Shop row',            world: 349, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#847C73' },
+    'bay-cove-store-general': { label: 'General store',      world: 186, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#7B746C' },
+    'bay-cove-cafe':         { label: 'Cafe',                world: 139, plane: 'surface', contact: 'none', motion: 'fixed', chartBuilding: '#877C70' },
     // The town's one CIRCLE. Place it with prop-spin ON — a parasol has no front, and rotating
     // the green/cream wedges is free variety that stops a terrace of four reading as one stamp.
     // It is the only cove building-set prop that wants spin on.
