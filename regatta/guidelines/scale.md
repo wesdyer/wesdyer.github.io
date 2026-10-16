@@ -183,7 +183,14 @@ tail slap is about a body length across.
   16 m, lighthouse 8 m, fire rings 1.6 m, mooring buoys 1 m, …). Anything tied to a shore was
   shrunk about its shore end, not its centre, so slipways, pontoons and steps still land.
   The tide mill stays at ×3: its house is already ~13 × 22 m and its sluice walls span the
-  creek. Still to do: trees to 1.5–2× life (keep oversized for coverage).
+  creek.
+- **Trees (Oct 16 2026, PT-015):** kept oversized for coverage (Wes), but nothing over ~1.8×
+  life: the kinds above it came down to ~1.6× by their `world` (sea hibiscus, the Glowtide
+  palms, coconut palm, pandanus, Lake red pine/birch/aspen/fir, Sitka spruce, hemlock, Bayou
+  cypress). Outlines rescale on their own. Where the shrink opened real holes in the canopy
+  (Glowtide's jungle, the River's spruce) the same species were infilled — 165 and 317 trees,
+  each slotted beside a same-kind tree of similar size so the draw order stays height-sorted.
+  The Cove's trees (~1–1.5×) are now the truest; Pond and Otter sit at ~1.1–1.7×.
 
 ## Quick reference
 

@@ -21446,6 +21446,46 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 1.5481841231472977
     },
     {
+      "id": "veg-4095",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 1639.9,
+      "y": 381.6,
+      "heading": 6.187,
+      "scale": 1.934
+    },
+    {
+      "id": "veg-4096",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3142.9,
+      "y": 1414.2,
+      "heading": 5.685,
+      "scale": 1.878
+    },
+    {
+      "id": "veg-4097",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2946.3,
+      "y": 1.5,
+      "heading": 5.857,
+      "scale": 1.917
+    },
+    {
+      "id": "veg-4098",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4183.1,
+      "y": 2214.9,
+      "heading": 4.655,
+      "scale": 1.824
+    },
+    {
+      "id": "veg-4099",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4237.5,
+      "y": 4293.1,
+      "heading": 0.789,
+      "scale": 1.848
+    },
+    {
       "id": "veg-1276",
       "kind": "ocean-naupaka",
       "x": 4999,
@@ -22901,6 +22941,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.007
     },
     {
+      "id": "veg-4100",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 3112.1,
+      "y": 2935.3,
+      "heading": 5.473,
+      "scale": 2.009
+    },
+    {
       "id": "veg-1450",
       "kind": "glowtide-hibiscus-sea",
       "x": -3675.5,
@@ -22922,6 +22970,14 @@ window.VENUE_DOC["glowtide"] = {
       "x": 5199.8,
       "y": 2828.7,
       "heading": 5.226,
+      "scale": 2.02
+    },
+    {
+      "id": "veg-4101",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -1506.1,
+      "y": 1714.5,
+      "heading": 1.498,
       "scale": 2.02
     },
     {
@@ -22966,6 +23022,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.045
     },
     {
+      "id": "veg-4102",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2508.5,
+      "y": 97.1,
+      "heading": 0.364,
+      "scale": 2.046
+    },
+    {
       "id": "veg-1457",
       "kind": "glowtide-hibiscus-sea",
       "x": 4635.1,
@@ -22990,12 +23054,28 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.051
     },
     {
+      "id": "veg-4103",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2863.8,
+      "y": -311.9,
+      "heading": 2.153,
+      "scale": 2.052
+    },
+    {
       "id": "veg-1461",
       "kind": "glowtide-hibiscus-sea",
       "x": 5766.8,
       "y": 1792.7,
       "heading": 5.13,
       "scale": 2.053
+    },
+    {
+      "id": "veg-4104",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4441.1,
+      "y": 2319.2,
+      "heading": 4.513,
+      "scale": 2.058
     },
     {
       "id": "veg-2083",
@@ -23013,6 +23093,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": -48.1,
       "heading": 2.079,
       "scale": 2.059
+    },
+    {
+      "id": "veg-4105",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4593.9,
+      "y": 2993,
+      "heading": 4.296,
+      "scale": 2.06
     },
     {
       "id": "veg-1463",
@@ -23143,6 +23231,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.109
     },
     {
+      "id": "veg-4106",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3389,
+      "y": 2855.8,
+      "heading": 0.906,
+      "scale": 2.11
+    },
+    {
       "id": "veg-1479",
       "kind": "glowtide-hibiscus-sea",
       "x": 4752.2,
@@ -23180,6 +23276,14 @@ window.VENUE_DOC["glowtide"] = {
       "x": -4480.1,
       "y": 5114.8,
       "heading": 4.404,
+      "scale": 2.132
+    },
+    {
+      "id": "veg-4107",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 551.4,
+      "y": -810.6,
+      "heading": 2.393,
       "scale": 2.132
     },
     {
@@ -23271,6 +23375,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.161
     },
     {
+      "id": "veg-4108",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2997.8,
+      "y": -2012.1,
+      "heading": 1.098,
+      "scale": 2.164
+    },
+    {
       "id": "veg-1495",
       "kind": "glowtide-hibiscus-sea",
       "x": 3474,
@@ -23311,12 +23423,28 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.188
     },
     {
+      "id": "veg-4109",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3041.9,
+      "y": -207.5,
+      "heading": 2.632,
+      "scale": 2.191
+    },
+    {
       "id": "veg-1500",
       "kind": "glowtide-hibiscus-sea",
       "x": -5170.7,
       "y": 3675.3,
       "heading": 1.072,
       "scale": 2.196
+    },
+    {
+      "id": "veg-4110",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2304.8,
+      "y": -792,
+      "heading": 3.142,
+      "scale": 2.197
     },
     {
       "id": "veg-1501",
@@ -23368,6 +23496,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 1.822,
       "scale": 1.844,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4111",
+      "kind": "ocean-pandanus",
+      "x": -3091,
+      "y": 1094.6,
+      "heading": 2.208,
+      "scale": 1.845
     },
     {
       "id": "veg-1507",
@@ -23488,6 +23624,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4112",
+      "kind": "ocean-pandanus",
+      "x": 147.5,
+      "y": -956.7,
+      "heading": 2.69,
+      "scale": 1.866
+    },
+    {
       "id": "veg-1521",
       "kind": "ocean-pandanus",
       "x": 1926.7,
@@ -23554,6 +23698,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.248
     },
     {
+      "id": "veg-4113",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 1603,
+      "y": -102.4,
+      "heading": 3.777,
+      "scale": 2.248
+    },
+    {
       "id": "veg-1530",
       "kind": "ocean-pandanus",
       "x": -4317.6,
@@ -23578,6 +23730,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 586.6,
       "heading": 2.995,
       "scale": 2.252
+    },
+    {
+      "id": "veg-4114",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 2980.3,
+      "y": 2753.9,
+      "heading": 1.544,
+      "scale": 2.255
     },
     {
       "id": "veg-1532",
@@ -23797,6 +23957,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.295
     },
     {
+      "id": "veg-4115",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2381.2,
+      "y": -420.3,
+      "heading": 1.13,
+      "scale": 2.298
+    },
+    {
       "id": "veg-1560",
       "kind": "ocean-pandanus",
       "x": -4007.9,
@@ -23950,6 +24118,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4116",
+      "kind": "ocean-pandanus",
+      "x": -2214.2,
+      "y": -96.2,
+      "heading": 3.325,
+      "scale": 1.942
+    },
+    {
       "id": "veg-1578",
       "kind": "glowtide-hibiscus-sea",
       "x": 2846.1,
@@ -24026,6 +24202,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4117",
+      "kind": "ocean-pandanus",
+      "x": -3015.4,
+      "y": -1133.5,
+      "heading": 6.107,
+      "scale": 1.955
+    },
+    {
       "id": "veg-1589",
       "kind": "glowtide-hibiscus-sea",
       "x": -3122.5,
@@ -24049,6 +24233,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 3365.2,
       "heading": 3.245,
       "scale": 2.348
+    },
+    {
+      "id": "veg-4118",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 2724.9,
+      "y": 1557.8,
+      "heading": 5.821,
+      "scale": 2.352
     },
     {
       "id": "veg-1592",
@@ -24150,6 +24342,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 1147.3,
       "heading": 2.445,
       "scale": 2.364
+    },
+    {
+      "id": "veg-4119",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3000.8,
+      "y": -126.7,
+      "heading": 0.076,
+      "scale": 2.367
     },
     {
       "id": "veg-1604",
@@ -24262,6 +24462,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.389
     },
     {
+      "id": "veg-4120",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4354.8,
+      "y": 2548.3,
+      "heading": 0.813,
+      "scale": 2.391
+    },
+    {
       "id": "veg-1617",
       "kind": "glowtide-hibiscus-sea",
       "x": -3086.3,
@@ -24302,12 +24510,28 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.398
     },
     {
+      "id": "veg-4121",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2092.9,
+      "y": -1094.5,
+      "heading": 5.499,
+      "scale": 2.4
+    },
+    {
       "id": "veg-1622",
       "kind": "glowtide-hibiscus-sea",
       "x": -4719.1,
       "y": 2561.4,
       "heading": 6.058,
       "scale": 2.402
+    },
+    {
+      "id": "veg-4122",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3230.3,
+      "y": -423.6,
+      "heading": 5.507,
+      "scale": 2.405
     },
     {
       "id": "veg-1623",
@@ -24407,6 +24631,14 @@ window.VENUE_DOC["glowtide"] = {
       "x": -3077.9,
       "y": -291.3,
       "heading": 6.062,
+      "scale": 2.422
+    },
+    {
+      "id": "veg-4123",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4359.8,
+      "y": 4799.8,
+      "heading": 3.183,
       "scale": 2.422
     },
     {
@@ -24694,6 +24926,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4124",
+      "kind": "ocean-pandanus",
+      "x": 890.6,
+      "y": 607.2,
+      "heading": 4.084,
+      "scale": 2.072
+    },
+    {
       "id": "veg-1671",
       "kind": "glowtide-hibiscus-sea",
       "x": -3660.9,
@@ -24768,6 +25008,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4125",
+      "kind": "ocean-pandanus",
+      "x": -4038.9,
+      "y": 4387.9,
+      "heading": 1.289,
+      "scale": 2.083
+    },
+    {
       "id": "veg-1681",
       "kind": "glowtide-hibiscus-sea",
       "x": -3124.4,
@@ -24782,6 +25030,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 2344,
       "heading": 0.834,
       "scale": 2.5
+    },
+    {
+      "id": "veg-4126",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 377,
+      "y": -1153.4,
+      "heading": 1.988,
+      "scale": 2.502
     },
     {
       "id": "veg-1683",
@@ -25080,6 +25336,22 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.54
     },
     {
+      "id": "veg-4127",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2134.9,
+      "y": -755.6,
+      "heading": 1.403,
+      "scale": 2.543
+    },
+    {
+      "id": "veg-4128",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2370.9,
+      "y": -185.6,
+      "heading": 1.552,
+      "scale": 2.551
+    },
+    {
       "id": "veg-1721",
       "kind": "ocean-pandanus",
       "x": 3168.4,
@@ -25192,6 +25464,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.561
     },
     {
+      "id": "veg-4129",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4580.9,
+      "y": 5182.3,
+      "heading": 6.146,
+      "scale": 2.561
+    },
+    {
       "id": "veg-1736",
       "kind": "ocean-pandanus",
       "x": 364.1,
@@ -25201,11 +25481,27 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4130",
+      "kind": "ocean-pandanus",
+      "x": 1354.6,
+      "y": -35.9,
+      "heading": 4.876,
+      "scale": 2.135
+    },
+    {
       "id": "veg-1737",
       "kind": "glowtide-hibiscus-sea",
       "x": 4546.1,
       "y": 3333.6,
       "heading": 1.605,
+      "scale": 2.562
+    },
+    {
+      "id": "veg-4131",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4293.8,
+      "y": 4375.2,
+      "heading": 1.352,
       "scale": 2.562
     },
     {
@@ -25287,6 +25583,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4132",
+      "kind": "ocean-pandanus",
+      "x": 1056.3,
+      "y": -892.4,
+      "heading": 3.149,
+      "scale": 2.151
+    },
+    {
       "id": "veg-1747",
       "kind": "glowtide-hibiscus-sea",
       "x": -5178.6,
@@ -25354,6 +25658,30 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.594
     },
     {
+      "id": "veg-4133",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4443.3,
+      "y": 4751.3,
+      "heading": 2.481,
+      "scale": 2.594
+    },
+    {
+      "id": "veg-4134",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4718.3,
+      "y": 2447.8,
+      "heading": 1.425,
+      "scale": 2.598
+    },
+    {
+      "id": "veg-4135",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 2290.9,
+      "y": 1214.8,
+      "heading": 4.713,
+      "scale": 2.596
+    },
+    {
       "id": "veg-1756",
       "kind": "ocean-pandanus",
       "x": -4102.3,
@@ -25403,6 +25731,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 4.799,
       "scale": 2.173,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4136",
+      "kind": "ocean-pandanus",
+      "x": 1909.5,
+      "y": 1215.3,
+      "heading": 3.502,
+      "scale": 2.174
     },
     {
       "id": "veg-1763",
@@ -25520,6 +25856,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4137",
+      "kind": "ocean-pandanus",
+      "x": -2836.2,
+      "y": 462.5,
+      "heading": 5.72,
+      "scale": 2.196
+    },
+    {
       "id": "veg-1777",
       "kind": "glowtide-hibiscus-sea",
       "x": -5421.6,
@@ -25553,6 +25897,22 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.643
     },
     {
+      "id": "veg-4138",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3018.2,
+      "y": 404.2,
+      "heading": 2.507,
+      "scale": 2.647
+    },
+    {
+      "id": "veg-4139",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2460.9,
+      "y": -1061.8,
+      "heading": 0.824,
+      "scale": 2.644
+    },
+    {
       "id": "veg-1782",
       "kind": "ocean-pandanus",
       "x": 1513.8,
@@ -25569,6 +25929,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 1.519,
       "scale": 2.205,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4140",
+      "kind": "ocean-pandanus",
+      "x": -2459.9,
+      "y": -642.3,
+      "heading": 4.058,
+      "scale": 2.208
     },
     {
       "id": "veg-1784",
@@ -25592,6 +25960,14 @@ window.VENUE_DOC["glowtide"] = {
       "x": -3177.4,
       "y": -481.3,
       "heading": 1.524,
+      "scale": 2.655
+    },
+    {
+      "id": "veg-4141",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2878.4,
+      "y": -1062.9,
+      "heading": 5.121,
       "scale": 2.655
     },
     {
@@ -25677,6 +26053,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.666
     },
     {
+      "id": "veg-4142",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3151.4,
+      "y": 2580.5,
+      "heading": 5.657,
+      "scale": 2.672
+    },
+    {
       "id": "veg-2296",
       "kind": "ocean-pandanus",
       "x": -319.47551475339156,
@@ -25702,6 +26086,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 4.628,
       "scale": 2.228,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4143",
+      "kind": "ocean-pandanus",
+      "x": 2229.4,
+      "y": -1042.8,
+      "heading": 0.408,
+      "scale": 2.235
     },
     {
       "id": "veg-1798",
@@ -25752,6 +26144,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.677
     },
     {
+      "id": "veg-4144",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3611.4,
+      "y": 3832.5,
+      "heading": 4.879,
+      "scale": 2.682
+    },
+    {
       "id": "veg-1804",
       "kind": "glowtide-hibiscus-sea",
       "x": -4725.5,
@@ -25767,6 +26167,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 0.326,
       "scale": 2.238,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4145",
+      "kind": "ocean-pandanus",
+      "x": 2678.3,
+      "y": 3028.2,
+      "heading": 2.082,
+      "scale": 2.238
     },
     {
       "id": "veg-1806",
@@ -25852,12 +26260,28 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4146",
+      "kind": "ocean-pandanus",
+      "x": 1047,
+      "y": 673.6,
+      "heading": 0.031,
+      "scale": 2.25
+    },
+    {
       "id": "veg-1817",
       "kind": "glowtide-hibiscus-sea",
       "x": -4362,
       "y": 3237,
       "heading": 2.692,
       "scale": 2.699
+    },
+    {
+      "id": "veg-4147",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3590.8,
+      "y": 3904.6,
+      "heading": 1.744,
+      "scale": 2.701
     },
     {
       "id": "veg-1818",
@@ -25890,6 +26314,14 @@ window.VENUE_DOC["glowtide"] = {
       "x": -868.4,
       "y": 2714.2,
       "heading": 6.022,
+      "scale": 2.706
+    },
+    {
+      "id": "veg-4148",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 1460.5,
+      "y": 213.2,
+      "heading": 1.657,
       "scale": 2.706
     },
     {
@@ -25983,6 +26415,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.721
     },
     {
+      "id": "veg-4149",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3063.5,
+      "y": -1770.7,
+      "heading": 0.769,
+      "scale": 2.722
+    },
+    {
       "id": "veg-1834",
       "kind": "glowtide-hibiscus-sea",
       "x": 1521.2,
@@ -26071,6 +26511,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.74
     },
     {
+      "id": "veg-4150",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2616.2,
+      "y": 392.5,
+      "heading": 0.312,
+      "scale": 2.745
+    },
+    {
       "id": "veg-1845",
       "kind": "ocean-pandanus",
       "x": 4145.2,
@@ -26112,6 +26560,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 2794.7,
       "heading": 0.455,
       "scale": 2.749
+    },
+    {
+      "id": "veg-4151",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3069.6,
+      "y": 2174.8,
+      "heading": 6.261,
+      "scale": 2.75
     },
     {
       "id": "veg-1850",
@@ -26178,6 +26634,14 @@ window.VENUE_DOC["glowtide"] = {
       "x": -3549.5,
       "y": 2356.5,
       "heading": 4.872,
+      "scale": 2.758
+    },
+    {
+      "id": "veg-4152",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 2777,
+      "y": 2074.9,
+      "heading": 1.753,
       "scale": 2.758
     },
     {
@@ -26275,6 +26739,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.768
     },
     {
+      "id": "veg-4153",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4455.5,
+      "y": 5020.8,
+      "heading": 3.546,
+      "scale": 2.77
+    },
+    {
       "id": "veg-1869",
       "kind": "ocean-pandanus",
       "x": 4394.6,
@@ -26323,6 +26795,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 4748.4,
       "heading": 1.792,
       "scale": 2.775
+    },
+    {
+      "id": "veg-4154",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 3224.9,
+      "y": 2606.1,
+      "heading": 5.572,
+      "scale": 2.776
     },
     {
       "id": "veg-1875",
@@ -26471,6 +26951,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 0.642,
       "scale": 2.334,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4155",
+      "kind": "ocean-pandanus",
+      "x": -4219.4,
+      "y": -502.6,
+      "heading": 0.642,
+      "scale": 2.335
     },
     {
       "id": "veg-1893",
@@ -26622,6 +27110,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.832
     },
     {
+      "id": "veg-4156",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3200.8,
+      "y": 1365.8,
+      "heading": 0.709,
+      "scale": 2.835
+    },
+    {
       "id": "veg-2271",
       "kind": "ocean-pandanus",
       "x": -444.7429716286235,
@@ -26663,6 +27159,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.844
     },
     {
+      "id": "veg-4157",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2558.1,
+      "y": -18.7,
+      "heading": 0.17,
+      "scale": 2.846
+    },
+    {
       "id": "veg-1915",
       "kind": "ocean-pandanus",
       "x": -3969.2,
@@ -26696,6 +27200,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 3114.3,
       "heading": 1.831,
       "scale": 2.851
+    },
+    {
+      "id": "veg-4158",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 540.3,
+      "y": 509.4,
+      "heading": 1.273,
+      "scale": 2.855
     },
     {
       "id": "veg-1919",
@@ -26815,6 +27327,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 0.95,
       "scale": 2.387,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4159",
+      "kind": "ocean-pandanus",
+      "x": -3232.1,
+      "y": 854.3,
+      "heading": 5.151,
+      "scale": 2.389
     },
     {
       "id": "veg-1934",
@@ -26997,6 +27517,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.893
     },
     {
+      "id": "veg-4160",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4351.8,
+      "y": 2690.1,
+      "heading": 0.419,
+      "scale": 2.893
+    },
+    {
       "id": "veg-1956",
       "kind": "ocean-pandanus",
       "x": -4097.1,
@@ -27077,6 +27605,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 3.21,
       "scale": 2.422,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4161",
+      "kind": "ocean-pandanus",
+      "x": 596.1,
+      "y": 542.4,
+      "heading": 5.941,
+      "scale": 2.423
     },
     {
       "id": "veg-1966",
@@ -27371,6 +27907,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.956
     },
     {
+      "id": "veg-4162",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4751.5,
+      "y": 2655.1,
+      "heading": 1.788,
+      "scale": 2.956
+    },
+    {
       "id": "veg-2003",
       "kind": "ocean-pandanus",
       "x": 1768.2,
@@ -27421,6 +27965,30 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.97
     },
     {
+      "id": "veg-4163",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 2422.5,
+      "y": 1296.2,
+      "heading": 1.669,
+      "scale": 2.978
+    },
+    {
+      "id": "veg-4164",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 3036,
+      "y": 2954.9,
+      "heading": 3.748,
+      "scale": 2.975
+    },
+    {
+      "id": "veg-4165",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2369.2,
+      "y": -851.2,
+      "heading": 0.309,
+      "scale": 2.98
+    },
+    {
       "id": "veg-2009",
       "kind": "ocean-pandanus",
       "x": 5875.6,
@@ -27444,6 +28012,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": -845.4,
       "heading": 2.452,
       "scale": 2.982
+    },
+    {
+      "id": "veg-4166",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 4682.9,
+      "y": 3153.2,
+      "heading": 6.018,
+      "scale": 2.985
     },
     {
       "id": "veg-2012",
@@ -27604,12 +28180,28 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4167",
+      "kind": "ocean-pandanus",
+      "x": -4343.6,
+      "y": -533,
+      "heading": 4.686,
+      "scale": 2.531
+    },
+    {
       "id": "veg-2031",
       "kind": "glowtide-hibiscus-sea",
       "x": -5389.3,
       "y": 3737,
       "heading": 3.287,
       "scale": 3.027
+    },
+    {
+      "id": "veg-4168",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2713.8,
+      "y": -967.4,
+      "heading": 3.457,
+      "scale": 3.029
     },
     {
       "id": "veg-2032",
@@ -27697,6 +28289,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4169",
+      "kind": "ocean-pandanus",
+      "x": -1805.7,
+      "y": 1858,
+      "heading": 0.442,
+      "scale": 2.54
+    },
+    {
       "id": "veg-2043",
       "kind": "ocean-pandanus",
       "x": 1337.6,
@@ -27749,6 +28349,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4170",
+      "kind": "ocean-pandanus",
+      "x": -1447.5,
+      "y": 90.1,
+      "heading": 2.822,
+      "scale": 2.558
+    },
+    {
       "id": "veg-2049",
       "kind": "glowtide-hibiscus-sea",
       "x": -3229.3,
@@ -27781,6 +28389,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 5129.4,
       "heading": 0.355,
       "scale": 3.074
+    },
+    {
+      "id": "veg-4171",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 2993.4,
+      "y": 3242.8,
+      "heading": 0.685,
+      "scale": 3.086
     },
     {
       "id": "veg-2053",
@@ -27836,6 +28452,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4172",
+      "kind": "ocean-pandanus",
+      "x": 193.9,
+      "y": -897.3,
+      "heading": 4.55,
+      "scale": 2.583
+    },
+    {
       "id": "veg-2061",
       "kind": "glowtide-hibiscus-sea",
       "x": -3073.1,
@@ -27885,6 +28509,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4173",
+      "kind": "ocean-pandanus",
+      "x": 1707.1,
+      "y": -724.9,
+      "heading": 0.468,
+      "scale": 2.588
+    },
+    {
       "id": "veg-2067",
       "kind": "ocean-pandanus",
       "x": 4398,
@@ -27900,6 +28532,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 5319.6,
       "heading": 1.853,
       "scale": 3.109
+    },
+    {
+      "id": "veg-4174",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -4589.1,
+      "y": 2776.9,
+      "heading": 6.144,
+      "scale": 3.113
     },
     {
       "id": "veg-2069",
@@ -27970,6 +28610,14 @@ window.VENUE_DOC["glowtide"] = {
       "x": -2897.7,
       "y": -1443.5,
       "heading": 0.542,
+      "scale": 3.132
+    },
+    {
+      "id": "veg-4175",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2963.9,
+      "y": 2673.3,
+      "heading": 1.971,
       "scale": 3.132
     },
     {
@@ -28065,6 +28713,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 4587.4,
       "heading": 2.52,
       "scale": 3.159
+    },
+    {
+      "id": "veg-4176",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2775.3,
+      "y": -1194.7,
+      "heading": 4.765,
+      "scale": 3.16
     },
     {
       "id": "veg-2089",
@@ -28248,6 +28904,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4177",
+      "kind": "ocean-pandanus",
+      "x": -2359.2,
+      "y": -1437.6,
+      "heading": 6.045,
+      "scale": 2.688
+    },
+    {
       "id": "veg-2110",
       "kind": "ocean-pandanus",
       "x": 4065.9,
@@ -28290,12 +28954,36 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 3.199
     },
     {
+      "id": "veg-4178",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 4683.3,
+      "y": 3274.5,
+      "heading": 0.137,
+      "scale": 3.199
+    },
+    {
       "id": "veg-2115",
       "kind": "glowtide-hibiscus-sea",
       "x": 307.1,
       "y": -911.4,
       "heading": 0.822,
       "scale": 3.2
+    },
+    {
+      "id": "veg-4179",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 3829.2,
+      "y": 2982.3,
+      "heading": 0.939,
+      "scale": 3.206
+    },
+    {
+      "id": "veg-4180",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3100,
+      "y": 2054.6,
+      "heading": 3.223,
+      "scale": 3.201
     },
     {
       "id": "veg-2116",
@@ -28312,6 +29000,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 1369.9,
       "heading": 5.941,
       "scale": 3.213
+    },
+    {
+      "id": "veg-4181",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3860.7,
+      "y": 2394.9,
+      "heading": 1.338,
+      "scale": 3.215
     },
     {
       "id": "veg-2118",
@@ -28346,6 +29042,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 4.689,
       "scale": 2.695,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4182",
+      "kind": "ocean-pandanus",
+      "x": 4227.6,
+      "y": 2770.7,
+      "heading": 0.871,
+      "scale": 2.697
     },
     {
       "id": "veg-2122",
@@ -28560,6 +29264,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4183",
+      "kind": "ocean-pandanus",
+      "x": -3446.5,
+      "y": 188,
+      "heading": 5.102,
+      "scale": 2.743
+    },
+    {
       "id": "veg-2148",
       "kind": "ocean-pandanus",
       "x": -2147.2,
@@ -28702,6 +29414,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 5.977,
       "scale": 2.765,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4184",
+      "kind": "ocean-pandanus",
+      "x": 1997.2,
+      "y": 1214,
+      "heading": 4.966,
+      "scale": 2.765
     },
     {
       "id": "veg-2165",
@@ -28938,6 +29658,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 3.37
     },
     {
+      "id": "veg-4185",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3718.9,
+      "y": 5373.7,
+      "heading": 6.084,
+      "scale": 3.38
+    },
+    {
       "id": "veg-2197",
       "kind": "glowtide-hibiscus-sea",
       "x": 274.4,
@@ -29094,6 +29822,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 3.416
     },
     {
+      "id": "veg-4186",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -3174.5,
+      "y": 1918.6,
+      "heading": 2.476,
+      "scale": 3.419
+    },
+    {
       "id": "veg-2215",
       "kind": "ocean-pandanus",
       "x": 4052.6,
@@ -29230,6 +29966,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": -1053.9,
       "heading": 0.466,
       "scale": 3.457
+    },
+    {
+      "id": "veg-4187",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2909.2,
+      "y": 238.3,
+      "heading": 0.8,
+      "scale": 3.46
     },
     {
       "id": "veg-2231",
@@ -29396,6 +30140,22 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 3.516
     },
     {
+      "id": "veg-4188",
+      "kind": "glowtide-hibiscus-sea",
+      "x": 3007.3,
+      "y": 2183.7,
+      "heading": 0.527,
+      "scale": 1.471
+    },
+    {
+      "id": "veg-4189",
+      "kind": "glowtide-hibiscus-sea",
+      "x": -2454.2,
+      "y": -832.3,
+      "heading": 2.388,
+      "scale": 3.528
+    },
+    {
       "id": "veg-2254",
       "kind": "ocean-pandanus",
       "x": -3783.4,
@@ -29502,6 +30262,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 4.563,
       "scale": 3.035,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4190",
+      "kind": "ocean-pandanus",
+      "x": 518.3,
+      "y": -1036.3,
+      "heading": 3.768,
+      "scale": 3.036
     },
     {
       "id": "veg-2266",
@@ -29666,6 +30434,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4191",
+      "kind": "ocean-pandanus",
+      "x": -2642,
+      "y": -1288.7,
+      "heading": 3.496,
+      "scale": 3.161
+    },
+    {
       "id": "veg-2286",
       "kind": "ocean-pandanus",
       "x": -1369.1,
@@ -29700,6 +30476,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 4.239,
       "scale": 3.184,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4192",
+      "kind": "ocean-pandanus",
+      "x": -4345,
+      "y": 5047.5,
+      "heading": 3.654,
+      "scale": 3.186
     },
     {
       "id": "veg-2290",
@@ -29756,6 +30540,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4193",
+      "kind": "ocean-pandanus",
+      "x": -2661.5,
+      "y": -1160.2,
+      "heading": 0.898,
+      "scale": 3.262
+    },
+    {
       "id": "veg-2297",
       "kind": "ocean-pandanus",
       "x": -2436.4,
@@ -29765,6 +30557,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4194",
+      "kind": "ocean-pandanus",
+      "x": -1431.3,
+      "y": 2681.1,
+      "heading": 3.193,
+      "scale": 3.27
+    },
+    {
       "id": "veg-2298",
       "kind": "ocean-pandanus",
       "x": -2371.1,
@@ -29772,6 +30572,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 0.468,
       "scale": 3.283,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4195",
+      "kind": "ocean-pandanus",
+      "x": 2052.5,
+      "y": 1573,
+      "heading": 3.567,
+      "scale": 3.284
     },
     {
       "id": "veg-2299",
@@ -29817,6 +30625,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 2.863,
       "scale": 3.306,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4196",
+      "kind": "ocean-pandanus",
+      "x": 2915.2,
+      "y": 1548.3,
+      "heading": 1.897,
+      "scale": 3.31
     },
     {
       "id": "veg-2304",
@@ -29889,6 +30705,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 1.766,
       "scale": 3.375,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4197",
+      "kind": "ocean-pandanus",
+      "x": 907.1,
+      "y": 683.2,
+      "heading": 0.804,
+      "scale": 3.378
     },
     {
       "id": "veg-2312",
@@ -29999,6 +30823,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4198",
+      "kind": "ocean-pandanus",
+      "x": -2633.7,
+      "y": -1475.4,
+      "heading": 0.381,
+      "scale": 3.485
+    },
+    {
       "id": "veg-2325",
       "kind": "ocean-pandanus",
       "x": -1578.9,
@@ -30015,6 +30847,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 1.431,
       "scale": 3.488,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4199",
+      "kind": "ocean-pandanus",
+      "x": 1240.6,
+      "y": 891.8,
+      "heading": 4.805,
+      "scale": 3.495
     },
     {
       "id": "veg-2327",
@@ -32066,6 +32906,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 1.799
     },
     {
+      "id": "veg-4200",
+      "kind": "glowtide-palm-dense",
+      "x": -3616.4,
+      "y": 2975,
+      "heading": 4.159,
+      "scale": 1.818
+    },
+    {
       "id": "veg-2583",
       "kind": "glowtide-laurel-amanu",
       "x": 2366.4,
@@ -32216,6 +33064,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": -850,
       "heading": 4.051,
       "scale": 1.817
+    },
+    {
+      "id": "veg-4201",
+      "kind": "glowtide-palm",
+      "x": 3161.4,
+      "y": 2655.9,
+      "heading": 4.644,
+      "scale": 1.828
     },
     {
       "id": "veg-2605",
@@ -32722,12 +33578,28 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 1.876
     },
     {
+      "id": "veg-4202",
+      "kind": "glowtide-palm-dense",
+      "x": -3911.6,
+      "y": 4824.2,
+      "heading": 3.67,
+      "scale": 1.879
+    },
+    {
       "id": "veg-2671",
       "kind": "glowtide-palm",
       "x": 3351.4,
       "y": 1706.7,
       "heading": 4.507,
       "scale": 1.876
+    },
+    {
+      "id": "veg-4203",
+      "kind": "glowtide-palm",
+      "x": -1912.4,
+      "y": 2672.3,
+      "heading": 2.627,
+      "scale": 1.879
     },
     {
       "id": "veg-2672",
@@ -32856,6 +33728,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 3253.8,
       "heading": 1.641,
       "scale": 1.89
+    },
+    {
+      "id": "veg-4204",
+      "kind": "glowtide-palm-dense",
+      "x": -3409.6,
+      "y": 2794.5,
+      "heading": 1.157,
+      "scale": 1.899
     },
     {
       "id": "veg-2689",
@@ -33274,6 +34154,38 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 1.924
     },
     {
+      "id": "veg-4205",
+      "kind": "glowtide-palm",
+      "x": 3081.4,
+      "y": 1561.2,
+      "heading": 3.849,
+      "scale": 1.956
+    },
+    {
+      "id": "veg-4206",
+      "kind": "glowtide-palm",
+      "x": -2886.5,
+      "y": 2596.4,
+      "heading": 0.106,
+      "scale": 1.926
+    },
+    {
+      "id": "veg-4207",
+      "kind": "glowtide-palm",
+      "x": -3461.2,
+      "y": -1034.3,
+      "heading": 1.887,
+      "scale": 1.96
+    },
+    {
+      "id": "veg-4208",
+      "kind": "glowtide-palm",
+      "x": 2958.5,
+      "y": 2126.3,
+      "heading": 4.193,
+      "scale": 1.956
+    },
+    {
       "id": "veg-2744",
       "kind": "glowtide-palm",
       "x": 1541.4,
@@ -33376,6 +34288,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": -874.1,
       "heading": 2.217,
       "scale": 1.932
+    },
+    {
+      "id": "veg-4209",
+      "kind": "glowtide-palm-dense",
+      "x": -3463.4,
+      "y": 3351.8,
+      "heading": 3.145,
+      "scale": 1.942
     },
     {
       "id": "veg-2758",
@@ -33712,6 +34632,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": -1386.6,
       "heading": 0.83,
       "scale": 1.962
+    },
+    {
+      "id": "veg-4210",
+      "kind": "glowtide-palm",
+      "x": -4274.4,
+      "y": 4093.4,
+      "heading": 5.023,
+      "scale": 1.965
     },
     {
       "id": "veg-2805",
@@ -34378,6 +35306,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.033
     },
     {
+      "id": "veg-4211",
+      "kind": "glowtide-palm-dense",
+      "x": 1567.5,
+      "y": -484.5,
+      "heading": 5.477,
+      "scale": 2.034
+    },
+    {
       "id": "veg-2898",
       "kind": "glowtide-laurel-amanu",
       "x": 4188.9,
@@ -34858,6 +35794,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.077
     },
     {
+      "id": "veg-4212",
+      "kind": "glowtide-palm-dense",
+      "x": 2911.4,
+      "y": 2342.1,
+      "heading": 4.852,
+      "scale": 2.08
+    },
+    {
       "id": "veg-2961",
       "kind": "glowtide-laurel-amanu",
       "x": -3289.1,
@@ -35242,6 +36186,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.105
     },
     {
+      "id": "veg-4213",
+      "kind": "glowtide-palm-dense",
+      "x": -3368.4,
+      "y": 977.9,
+      "heading": 2.711,
+      "scale": 2.107
+    },
+    {
       "id": "veg-3012",
       "kind": "glowtide-laurel-amanu",
       "x": -4704.3,
@@ -35298,12 +36250,28 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.108
     },
     {
+      "id": "veg-4214",
+      "kind": "glowtide-palm-dense",
+      "x": 2648.7,
+      "y": 2637.9,
+      "heading": 0.579,
+      "scale": 2.11
+    },
+    {
       "id": "veg-3020",
       "kind": "glowtide-palm-fan",
       "x": -4986.3,
       "y": 4890.9,
       "heading": 1.353,
       "scale": 2.11
+    },
+    {
+      "id": "veg-4215",
+      "kind": "glowtide-palm-fan",
+      "x": 1646.7,
+      "y": -933.8,
+      "heading": 5.152,
+      "scale": 2.122
     },
     {
       "id": "veg-3021",
@@ -36634,6 +37602,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.216
     },
     {
+      "id": "veg-4216",
+      "kind": "glowtide-palm-dense",
+      "x": 1797.6,
+      "y": 1534.9,
+      "heading": 4.895,
+      "scale": 2.234
+    },
+    {
       "id": "veg-3199",
       "kind": "glowtide-laurel-amanu",
       "x": 2985.5,
@@ -36720,6 +37696,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 3787.7,
       "heading": 0.514,
       "scale": 2.224
+    },
+    {
+      "id": "veg-4217",
+      "kind": "glowtide-palm",
+      "x": 1208.8,
+      "y": -747.2,
+      "heading": 1.645,
+      "scale": 2.236
     },
     {
       "id": "veg-3210",
@@ -36912,6 +37896,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 2857.4,
       "heading": 2.151,
       "scale": 2.241
+    },
+    {
+      "id": "veg-4218",
+      "kind": "glowtide-palm-fan",
+      "x": -4302.2,
+      "y": 1513.4,
+      "heading": 1.22,
+      "scale": 2.247
     },
     {
       "id": "veg-3234",
@@ -37586,6 +38578,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.302
     },
     {
+      "id": "veg-4219",
+      "kind": "glowtide-palm",
+      "x": -3689.3,
+      "y": 5057.7,
+      "heading": 3.297,
+      "scale": 2.308
+    },
+    {
       "id": "veg-3324",
       "kind": "glowtide-laurel-amanu",
       "x": -4237.7,
@@ -37640,6 +38640,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 1540.6,
       "heading": 1.945,
       "scale": 2.309
+    },
+    {
+      "id": "veg-4220",
+      "kind": "glowtide-palm-fan",
+      "x": -4336.1,
+      "y": 1729.3,
+      "heading": 4.642,
+      "scale": 2.31
     },
     {
       "id": "veg-3332",
@@ -38170,6 +39178,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.368
     },
     {
+      "id": "veg-4221",
+      "kind": "glowtide-palm-dense",
+      "x": -4612.1,
+      "y": 2115.2,
+      "heading": 3.579,
+      "scale": 2.371
+    },
+    {
       "id": "veg-2822",
       "kind": "glowtide-palm",
       "x": 2806.1,
@@ -38456,6 +39472,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 2639.1,
       "heading": 1.271,
       "scale": 2.399
+    },
+    {
+      "id": "veg-4222",
+      "kind": "glowtide-palm",
+      "x": -3431.4,
+      "y": 2624.5,
+      "heading": 0.591,
+      "scale": 2.401
     },
     {
       "id": "veg-3432",
@@ -38925,6 +39949,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.452
     },
     {
+      "id": "veg-4223",
+      "kind": "glowtide-palm-dense",
+      "x": 1848.6,
+      "y": 1698,
+      "heading": 6.268,
+      "scale": 2.469
+    },
+    {
       "id": "veg-3494",
       "kind": "ocean-palm-coconut",
       "x": 3343,
@@ -39331,6 +40363,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.503
     },
     {
+      "id": "veg-4224",
+      "kind": "glowtide-palm",
+      "x": 3788.2,
+      "y": 2709.7,
+      "heading": 2.288,
+      "scale": 2.512
+    },
+    {
       "id": "veg-3549",
       "kind": "glowtide-palm-dense",
       "x": 3108.1,
@@ -39540,6 +40580,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.524
     },
     {
+      "id": "veg-4225",
+      "kind": "glowtide-palm-fan",
+      "x": -1487.2,
+      "y": 2607.7,
+      "heading": 1.512,
+      "scale": 2.528
+    },
+    {
       "id": "veg-3578",
       "kind": "glowtide-palm",
       "x": 3775.5,
@@ -39711,6 +40759,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4226",
+      "kind": "ocean-palm-coconut",
+      "x": 1083.9,
+      "y": 610.8,
+      "heading": 2.233,
+      "scale": 2.174
+    },
+    {
       "id": "veg-3599",
       "kind": "ocean-palm-coconut",
       "x": 5284.1,
@@ -39798,6 +40854,22 @@ window.VENUE_DOC["glowtide"] = {
       "y": 4495.6,
       "heading": 0.762,
       "scale": 2.548
+    },
+    {
+      "id": "veg-4227",
+      "kind": "glowtide-palm-fan",
+      "x": -2741.9,
+      "y": -1736.7,
+      "heading": 0.114,
+      "scale": 2.558
+    },
+    {
+      "id": "veg-4228",
+      "kind": "glowtide-palm-fan",
+      "x": 3287.7,
+      "y": 2483.3,
+      "heading": 2.475,
+      "scale": 2.559
     },
     {
       "id": "veg-3610",
@@ -40106,6 +41178,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4229",
+      "kind": "ocean-palm-coconut",
+      "x": -2927.9,
+      "y": 991,
+      "heading": 0.232,
+      "scale": 2.185
+    },
+    {
       "id": "veg-3648",
       "kind": "glowtide-laurel-amanu",
       "x": 4007.3,
@@ -40170,6 +41250,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.585
     },
     {
+      "id": "veg-4230",
+      "kind": "glowtide-palm",
+      "x": -1783.6,
+      "y": 2732.8,
+      "heading": 0.456,
+      "scale": 2.585
+    },
+    {
       "id": "veg-3656",
       "kind": "glowtide-laurel-amanu",
       "x": -4003.3,
@@ -40193,6 +41281,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 5098.4,
       "heading": 3.075,
       "scale": 2.586
+    },
+    {
+      "id": "veg-4231",
+      "kind": "glowtide-palm",
+      "x": -3232,
+      "y": -997,
+      "heading": 2.289,
+      "scale": 2.591
     },
     {
       "id": "veg-3658",
@@ -40274,6 +41370,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 2.071,
       "scale": 2.194,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4232",
+      "kind": "ocean-palm-coconut",
+      "x": 1370.7,
+      "y": 714.3,
+      "heading": 4.964,
+      "scale": 2.208
     },
     {
       "id": "veg-3111",
@@ -40492,6 +41596,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.613
     },
     {
+      "id": "veg-4233",
+      "kind": "glowtide-palm-dense",
+      "x": 1706.1,
+      "y": 169.8,
+      "heading": 2.927,
+      "scale": 2.635
+    },
+    {
       "id": "veg-3696",
       "kind": "glowtide-laurel-amanu",
       "x": -4764.9,
@@ -40634,6 +41746,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": -1657.8,
       "heading": 2.744,
       "scale": 2.626
+    },
+    {
+      "id": "veg-4234",
+      "kind": "glowtide-palm-fan",
+      "x": 1739.2,
+      "y": -956.8,
+      "heading": 2.625,
+      "scale": 2.632
     },
     {
       "id": "veg-3714",
@@ -41282,6 +42402,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4235",
+      "kind": "ocean-palm-coconut",
+      "x": 2458.4,
+      "y": 1913.7,
+      "heading": 1.641,
+      "scale": 2.296
+    },
+    {
       "id": "veg-3796",
       "kind": "glowtide-laurel-amanu",
       "x": 2955,
@@ -41320,6 +42448,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 3673.5,
       "heading": 4.051,
       "scale": 2.708
+    },
+    {
+      "id": "veg-4236",
+      "kind": "glowtide-palm",
+      "x": 1793.6,
+      "y": 1413.2,
+      "heading": 3.509,
+      "scale": 2.709
     },
     {
       "id": "veg-3802",
@@ -41383,6 +42519,14 @@ window.VENUE_DOC["glowtide"] = {
       "x": -3533.1,
       "y": 2749.5,
       "heading": 0.716,
+      "scale": 2.712
+    },
+    {
+      "id": "veg-4237",
+      "kind": "glowtide-palm",
+      "x": -2599.7,
+      "y": -385.7,
+      "heading": 6.189,
       "scale": 2.712
     },
     {
@@ -41504,6 +42648,30 @@ window.VENUE_DOC["glowtide"] = {
       "y": 4.4,
       "heading": 5.482,
       "scale": 2.728
+    },
+    {
+      "id": "veg-4238",
+      "kind": "glowtide-palm",
+      "x": -2515.2,
+      "y": -479.7,
+      "heading": 0.534,
+      "scale": 2.728
+    },
+    {
+      "id": "veg-4239",
+      "kind": "glowtide-palm",
+      "x": -2348.5,
+      "y": 108,
+      "heading": 0.954,
+      "scale": 2.728
+    },
+    {
+      "id": "veg-4240",
+      "kind": "glowtide-palm",
+      "x": -2828.6,
+      "y": -763,
+      "heading": 3.291,
+      "scale": 2.735
     },
     {
       "id": "veg-3822",
@@ -41805,6 +42973,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4241",
+      "kind": "ocean-palm-coconut",
+      "x": -2036.2,
+      "y": 1919.2,
+      "heading": 0.263,
+      "scale": 2.365
+    },
+    {
       "id": "veg-3857",
       "kind": "glowtide-palm",
       "x": -4166.7,
@@ -41859,6 +43035,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 3985,
       "heading": 5.765,
       "scale": 2.793
+    },
+    {
+      "id": "veg-4242",
+      "kind": "glowtide-palm-dense",
+      "x": -3817.1,
+      "y": 4281.4,
+      "heading": 0.001,
+      "scale": 2.794
     },
     {
       "id": "veg-3863",
@@ -42063,6 +43247,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 2.867
     },
     {
+      "id": "veg-4243",
+      "kind": "glowtide-palm-fan",
+      "x": -4740,
+      "y": 3317,
+      "heading": 6.217,
+      "scale": 2.87
+    },
+    {
       "id": "veg-3426",
       "kind": "glowtide-palm",
       "x": 2670,
@@ -42077,6 +43269,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 813.4,
       "heading": 3.642,
       "scale": 2.871
+    },
+    {
+      "id": "veg-4244",
+      "kind": "glowtide-palm-dense",
+      "x": -3619.4,
+      "y": 2864.8,
+      "heading": 1.841,
+      "scale": 2.882
     },
     {
       "id": "veg-3428",
@@ -42221,6 +43421,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4245",
+      "kind": "ocean-palm-coconut",
+      "x": 1484.1,
+      "y": -474.8,
+      "heading": 3.239,
+      "scale": 2.452
+    },
+    {
       "id": "veg-3450",
       "kind": "glowtide-palm",
       "x": 3364.3,
@@ -42267,6 +43475,14 @@ window.VENUE_DOC["glowtide"] = {
       "x": -4972.2,
       "y": 1679.9,
       "heading": 1.593,
+      "scale": 2.927
+    },
+    {
+      "id": "veg-4246",
+      "kind": "glowtide-palm-fan",
+      "x": -4243,
+      "y": 1504.3,
+      "heading": 6.109,
       "scale": 2.927
     },
     {
@@ -42358,6 +43574,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 1471,
       "heading": 4.883,
       "scale": 2.954
+    },
+    {
+      "id": "veg-4247",
+      "kind": "glowtide-palm-fan",
+      "x": -4279.8,
+      "y": -141,
+      "heading": 5.032,
+      "scale": 2.96
     },
     {
       "id": "veg-3923",
@@ -42680,6 +43904,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 3.019
     },
     {
+      "id": "veg-4248",
+      "kind": "glowtide-palm-fan",
+      "x": -2838.8,
+      "y": -1724.8,
+      "heading": 0.432,
+      "scale": 3.022
+    },
+    {
       "id": "veg-3955",
       "kind": "glowtide-palm-dense",
       "x": 3432.7,
@@ -42703,6 +43935,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 2.298,
       "scale": 2.558,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4249",
+      "kind": "ocean-palm-coconut",
+      "x": -2092.1,
+      "y": -571.6,
+      "heading": 6.067,
+      "scale": 2.569
     },
     {
       "id": "veg-3959",
@@ -42793,6 +44033,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 4.459,
       "scale": 2.576,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4250",
+      "kind": "ocean-palm-coconut",
+      "x": 1355.9,
+      "y": 435.8,
+      "heading": 1.983,
+      "scale": 2.584
     },
     {
       "id": "veg-3967",
@@ -43115,6 +44363,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 3.148
     },
     {
+      "id": "veg-4251",
+      "kind": "glowtide-palm-fan",
+      "x": -4321.6,
+      "y": 4461.9,
+      "heading": 4.13,
+      "scale": 3.161
+    },
+    {
       "id": "veg-4003",
       "kind": "ocean-palm-coconut",
       "x": 2828.5,
@@ -43434,6 +44690,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4252",
+      "kind": "ocean-palm-coconut",
+      "x": -3763.8,
+      "y": 4920.8,
+      "heading": 0.625,
+      "scale": 2.799
+    },
+    {
       "id": "veg-4031",
       "kind": "ocean-palm-coconut",
       "x": -3823.6,
@@ -43449,6 +44713,14 @@ window.VENUE_DOC["glowtide"] = {
       "y": 4164.5,
       "heading": 5.081,
       "scale": 3.311
+    },
+    {
+      "id": "veg-4253",
+      "kind": "glowtide-palm",
+      "x": 2848,
+      "y": 2181.9,
+      "heading": 2.183,
+      "scale": 3.312
     },
     {
       "id": "veg-4032",
@@ -43677,6 +44949,14 @@ window.VENUE_DOC["glowtide"] = {
       "scale": 3.449
     },
     {
+      "id": "veg-4254",
+      "kind": "glowtide-palm",
+      "x": 4330.7,
+      "y": 2641.5,
+      "heading": 2.81,
+      "scale": 3.455
+    },
+    {
       "id": "veg-4050",
       "kind": "ocean-palm-coconut",
       "x": 2724.5,
@@ -43784,6 +45064,22 @@ window.VENUE_DOC["glowtide"] = {
       "y": 1778.1,
       "heading": 0.396,
       "scale": 3.546
+    },
+    {
+      "id": "veg-4255",
+      "kind": "glowtide-palm",
+      "x": 1607.6,
+      "y": 613.7,
+      "heading": 4.041,
+      "scale": 3.548
+    },
+    {
+      "id": "veg-4256",
+      "kind": "glowtide-palm",
+      "x": -2862.4,
+      "y": -511.1,
+      "heading": 3.11,
+      "scale": 3.551
     },
     {
       "id": "veg-4055",
@@ -43981,6 +45277,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4257",
+      "kind": "ocean-palm-coconut",
+      "x": 433.6,
+      "y": -900.3,
+      "heading": 1.974,
+      "scale": 3.202
+    },
+    {
       "id": "veg-4007",
       "kind": "glowtide-palm",
       "x": -5728.1,
@@ -44095,6 +45399,14 @@ window.VENUE_DOC["glowtide"] = {
       "plane": "canopy"
     },
     {
+      "id": "veg-4258",
+      "kind": "ocean-palm-coconut",
+      "x": 1403.6,
+      "y": -465.1,
+      "heading": 4.521,
+      "scale": 3.295
+    },
+    {
       "id": "veg-4076",
       "kind": "ocean-palm-coconut",
       "x": -5302.3,
@@ -44201,6 +45513,14 @@ window.VENUE_DOC["glowtide"] = {
       "heading": 4.723,
       "scale": 3.369,
       "plane": "canopy"
+    },
+    {
+      "id": "veg-4259",
+      "kind": "ocean-palm-coconut",
+      "x": 1541.8,
+      "y": -1244.6,
+      "heading": 0.578,
+      "scale": 3.372
     },
     {
       "id": "veg-4088",

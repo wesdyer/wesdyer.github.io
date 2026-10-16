@@ -1285,7 +1285,7 @@ const PROP_KINDS = {
     // the water draws OVER the prop, which is right for a lily pad and wrong for a six-metre
     // tree — the plane comment's own lily-pad line, read in the other direction.
     'glowtide-laurel-amanu':       { label: 'Alexandrian laurel', world: 120, plane: 'canopy' , contact: 'none', motion: 'fixed' },
-    'glowtide-hibiscus-sea':       { label: 'Sea hibiscus',       world:  78, plane: 'canopy' , contact: 'none', motion: 'fixed' },
+    'glowtide-hibiscus-sea':       { label: 'Sea hibiscus',       world:  50, plane: 'canopy' , contact: 'none', motion: 'fixed' },
     // ⚠️ THE MANGROVE IS TWO PROPS, NOT ONE, and the split is the whole reason a fringe can be
     // built rather than stamped: a band of root patches along the waterline, crowns set behind
     // and over them at whatever density the shore wants, and a bare root field at the seaward
@@ -1347,9 +1347,9 @@ const PROP_KINDS = {
     // whose plan view is genuinely hard, and its manifest note records why: it was the only
     // palm in the game missing `planRound`, so it was handed the LONG acceptance test, whose
     // "two long edges must run parallel for its whole length" describes a trunk in elevation.
-    'glowtide-palm':         { label: 'Glowtide palm',         world: 70, plane: 'canopy' , contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm.png' },
-    'glowtide-palm-dense':   { label: 'Glowtide palm, dense',  world: 74, plane: 'canopy' , contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-dense.png' },
-    'glowtide-palm-fan':     { label: 'Glowtide palm, fan',    world: 60, plane: 'canopy' , contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-fan.png' },
+    'glowtide-palm':         { label: 'Glowtide palm',         world: 59, plane: 'canopy' , contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm.png' },
+    'glowtide-palm-dense':   { label: 'Glowtide palm, dense',  world: 56, plane: 'canopy' , contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-dense.png' },
+    'glowtide-palm-fan':     { label: 'Glowtide palm, fan',    world: 36, plane: 'canopy' , contact: 'none', motion: 'fixed', src: 'assets/images/props/lagoon/palm-fan.png' },
     // ── THE BEACH BONFIRE ───────────────────────────────────────────────────
     // The venue's one human site. The vegetation brief treats the coconut palm as a
     // human-influence indicator and the planting put 152 of them on five pocket beaches;
@@ -1409,8 +1409,8 @@ const PROP_KINDS = {
     // pandanus's measured 3.9% interior alpha holes — the best of any tree in the game —
     // is now a free bonus rather than a requirement. Anyone re-planing any of these to
     // `canopy` has to restore the openings requirement first.
-    'ocean-palm-coconut':    { label: 'Coconut palm',   world:  70, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
-    'ocean-pandanus':        { label: 'Pandanus',       world:  52, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
+    'ocean-palm-coconut':    { label: 'Coconut palm',   world:  59, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
+    'ocean-pandanus':        { label: 'Pandanus',       world:  42, plane: 'surface', contact: 'none', motion: 'fixed', overhang: true, fadeMin: 0.3 },
     'ocean-almond-tropical': { label: 'Tropical almond', world: 110, plane: 'surface', contact: 'none', motion: 'fixed' },
     // ── AND ITS THREE UNDERBRUSH PLANTS ─────────────────────────────────────
     // Delivered and registered 2026-08-14. What goes UNDER the trees: the default coastal
@@ -1457,10 +1457,10 @@ const PROP_KINDS = {
     // Anyone adding a sixth tree checks BOTH axes against its neighbours, because size alone
     // can no longer carry one.
     'lake-pine-white':       { label: 'Eastern white pine', world: 110, plane: 'canopy', contact: 'none', motion: 'fixed' },
-    'lake-pine-red':         { label: 'Red pine',           world:  88, plane: 'canopy', contact: 'none', motion: 'fixed' },
-    'lake-birch-paper':      { label: 'Paper birch',        world:  80, plane: 'canopy', contact: 'none', motion: 'fixed' },
-    'lake-aspen-quaking':    { label: 'Quaking aspen',      world:  68, plane: 'canopy', contact: 'none', motion: 'fixed' },
-    'lake-fir-balsam':       { label: 'Balsam fir',         world:  55, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-pine-red':         { label: 'Red pine',           world:  74, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-birch-paper':      { label: 'Paper birch',        world:  67, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-aspen-quaking':    { label: 'Quaking aspen',      world:  58, plane: 'canopy', contact: 'none', motion: 'fixed' },
+    'lake-fir-balsam':       { label: 'Balsam fir',         world:  40, plane: 'canopy', contact: 'none', motion: 'fixed' },
     'lake-alder-speckled':   { label: 'Speckled alder',     world:  48, plane: 'canopy', contact: 'none', motion: 'fixed' },
     // The ground layer. Bracken is what the open floor of a northern pine wood is actually
     // made of and will be placed most; the blueberry is for thin ground between the pines and
@@ -1577,8 +1577,8 @@ const PROP_KINDS = {
     // there is nothing worth skipping; the mat is 0.63 tall because it is honestly oblong, and its
     // box is measured off the shipped bake with a 1% margin. Re-measure it on any re-ingest.
     'river-cottonwood-black': { label: 'Black cottonwood',  world: 128, plane: 'canopy',  contact: 'none', motion: 'fixed' },
-    'river-spruce-sitka':     { label: 'Sitka spruce',      world: 104, plane: 'canopy',  contact: 'none', motion: 'fixed' },
-    'river-hemlock-western':  { label: 'Western hemlock',   world:  84, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-spruce-sitka':     { label: 'Sitka spruce',      world:  76, plane: 'canopy',  contact: 'none', motion: 'fixed' },
+    'river-hemlock-western':  { label: 'Western hemlock',   world:  69, plane: 'canopy',  contact: 'none', motion: 'fixed' },
     'river-alder-red':        { label: 'Red alder',         world:  56, plane: 'canopy',  contact: 'none', motion: 'fixed' },
     'river-willow':           { label: 'River willow',      world:  30, plane: 'canopy',  contact: 'none', motion: 'fixed' },
     'river-moss-mat':         { label: 'Moss mat',          world:  26, plane: 'surface', contact: 'none', srcBox: [0.057, 0.173, 0.885, 0.655], motion: 'fixed' },
@@ -2169,7 +2169,7 @@ const PROP_KINDS = {
     // two thirds of the visible trunk: a cypress draws its trunk 0.231 of a 90u frame (r 10.4)
     // against a contactR of 7. Raising it toward the drawn trunk makes contact look right and
     // costs finish rate; lowering it does the reverse. That is the dial — soft/hard is not.
-    'swamp-cypress':        { label: 'Cypress tree',   world:  90, plane: 'surface', contact: 'hard', contactR: 7, wash: 0.092, motion: 'fixed',
+    'swamp-cypress':        { label: 'Cypress tree',   world:  68, plane: 'surface', contact: 'hard', contactR: 7, wash: 0.092, motion: 'fixed',
                               parts: { surface: 'swamp-cypress-trunk', canopy: 'swamp-cypress-canopy' } },
     'swamp-oak':            { label: 'Live oak tree',  world: 110, plane: 'surface', contact: 'hard', contactR: 9, motion: 'fixed',
                               parts: { surface: 'swamp-oak-trunk',     canopy: 'swamp-oak-canopy' } },
