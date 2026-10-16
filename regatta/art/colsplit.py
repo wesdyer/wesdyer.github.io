@@ -11,6 +11,9 @@ WHY. A bird's body seen from above is a narrow column (head, back, tail) and its
 so everything further than --half (a fraction of the frame) from the spine is wing. The albatross was cut this way
 by hand first; this is that cut as a tool. Each wing carries a hidden STUB under the body (its root column carried
 inward), so a wing that swings back or shortens through a beat never opens a gap at the shoulder.
+
+--tail ROW (a fraction of the frame): below that row, pixels LIGHTER than the wing (luma > 150) stay with the body even
+outside the column — a bald eagle's white tail fan is wider than its body, and must not go with the wings.
 """
 import argparse
 import json
@@ -29,6 +32,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("key")
     ap.add_argument("--half", type=float, required=True, help="the body column's half-width, as a fraction of the frame")
+    ap.add_argument("--tail", type=float, default=None, help="below this row (fraction), light pixels stay with the body")
     args = ap.parse_args()
     m = json.loads((ROOT / "manifest.json").read_text())
     asset = {a["key"]: a for a in m["assets"]}[args.key]
@@ -41,6 +45,10 @@ def main():
     X = np.arange(n)[None, :]
     half = args.half * n
     body = al & (np.abs(X - cx) <= half)
+    if args.tail is not None:
+        a = img.astype(float); lum = 0.299 * a[:, :, 0] + 0.587 * a[:, :, 1] + 0.114 * a[:, :, 2]
+        Y = np.arange(n)[:, None]
+        body |= al & (Y >= args.tail * n) & (lum > 150)
     out = {"key": args.key, "x0": round(xs.min() / n, 4), "x1": round(xs.max() / n, 4), "top": round(ys.min() / n, 4), "bot": round(ys.max() / n, 4), "cx": round(cx / n, 4)}
     parts, stub = {}, int(STUB * n)
     for nm, sd in (("wing-l", -1), ("wing-r", 1)):

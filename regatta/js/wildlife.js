@@ -446,11 +446,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     const angDiff = (a, b) => { let d = a - b; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI; return d; };
     const onLand = (x, y) => (typeof pointOnLand === 'function') ? pointOnLand(x, y) : false;
     // Is (x, y) under a tree's crown? An animal there is drawn under the canopy and nobody sees it.
-    function underCrown(x, y) {
+    function underCrown(x, y, except) {
         const K = (window.VenueDoc && VenueDoc.PROP_KINDS) || {};
         // a tree is a trunk on the surface plane with a CROWN part drawn over everything
         const crowned = (k) => k && (k.plane === 'canopy' || (k.parts && k.parts.canopy));
-        return ((state.course && state.course.props) || []).some(t => crowned(K[t.kind])
+        return ((state.course && state.course.props) || []).some(t => t !== except && crowned(K[t.kind])
             && Math.hypot(t.x - x, t.y - y) < (K[t.kind].world || 100) * (t.scale || 1) * 0.5 + 10);
     }
 
@@ -509,13 +509,23 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if ((cfg.cruisers || []).some(C => C.kind === 'seaturtle')) TURTLE_PARTS.forEach(turtleImg);   // ask for the painted turtle now
         if ((cfg.cruisers || []).some(C => C.kind === 'reefshark')) sprImg(REEF_SPR.file);
         if ((cfg.cruisers || []).some(C => C.kind === 'eagleray')) sprImg(RAY_SPR.file);
+        if (cfg.fishers) { sprImg(BEAR_SPR.file); ['body', 'fore-l', 'fore-r'].forEach(bearPart); }
+        if (cfg.soarers && cfg.soarers.kind === 'eagle') ['body', 'wing-l', 'wing-r'].forEach(eagleImg);
+        if (cfg.rompers && cfg.rompers.kind === 'otter') { sprImg(ROTTER_SPR.file); sprImg(OTTER_REST.file); ['body', 'fore-l', 'fore-r', 'hind-l', 'hind-r'].forEach(otterPart); }
+        if (cfg.lurkers) { sprImg(GATOR_SPR.file); ['body', 'fore-l', 'fore-r', 'hind-l', 'hind-r'].forEach(gatorPart); }
+        if (cfg.stalkers) { sprImg(EGRET_SPR.file); ['body', 'wing-l', 'wing-r'].forEach(egretFlyImg); }
+        if (cfg.perchers) { sprImg(ANHINGA_DRY.file); sprImg(ANHINGA_SWIM.file); }
+        if ((cfg.baskers || []).some(b => b.kind === 'frog')) sprImg(FROG_SPR.file);
         if ((cfg.divers || []).length) { sprImg(LOON_SPR.swim.file); sprImg(LOON_SPR.wings.file); sprImg(BEAVER_SPR.file); }
         for (const w of cfg.waders || []) {
             const isl = (state.course.islands || []).find(x => x.id === w.shape);
             if (isl) waders.push(makeWader(w, isl));
         }
         for (const c of cfg.cruisers || []) { const G = makeCruisers(c); if (G) cruisers.push(G); }
-        if (cfg.lurkers) lurkers = cfg.lurkers.at.map(([x, y, h], i) => ({ i, hx: x, hy: y, x, y, h: h + R(-0.3, 0.3), mode: 'float', t: R(4, 12), sink: 0, ring: 0, bob: R(0, 7), trail: [], trailT: 0 }));
+        // (each fitted off the bank on its FIRST UPDATE, not here: at init the land may not be ready to answer onLand —
+        // gator 14 kept its tail on the mud in some runs and not others)
+        if (cfg.lurkers) lurkers = cfg.lurkers.at.map(([x, y, h0], i) => { const h = h0 + R(-0.3, 0.3);
+            return { i, hx: x, hy: y, x, y, h, h0: h, fitted: false, mode: 'float', t: R(4, 12), sink: 0, ring: 0, bob: R(0, 7), trail: [], trailT: 0 }; });
         if (cfg.stalkers) stalkers = cfg.stalkers.at.map(([x, y], i) => ({ i, x, y, h: R(0, 7), mode: 'stand', t: R(2, 6), z: 0, flap: 0, neck: 0, tx: x, ty: y, bob: R(0, 7) }));
         if (cfg.whales) {
             whalePods = cfg.whales.pods.map((P, i) => makeWhalePod(P, i));
@@ -585,7 +595,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (cfg.whites) whites = makeWhites(cfg.whites);
         if (cfg.blues) bluePods = makeBluePods(cfg.blues);
         if (cfg.perchers) for (const [px, py] of cfg.perchers.at) {
-            perchers.push({ px, py, x: px, y: py, h: R(0, 7), ph: R(-0.8, 0.8), snag: R(0, 7), mode: 'dry', t: 0, flap: R(0, 7), sink: 0, splash: 0, trail: [], trailT: 0 });
+            perchers.push({ px, py, x: px, y: py, h: R(0, 7), ph: R(-0.8, 0.8), snag: R(0, 7), mode: 'dry', t: 0, flap: R(0, 7), sink: 0, splash: 0, trail: [], trailT: 0, ex: px, ey: py, dh: 0, dAge: 9, upT: 9 });
         }
     }
 
@@ -972,10 +982,56 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
 
     // ── LURKERS: alligators ────────────────────────────────────────────────────────────
+    // An alligator is ~50 long and lies 45-75 off the banks, so testing its centre lets its snout or its tail slide in
+    // under the mud (drawn in the water layer, it vanishes under the land). gatorClear tests the whole body at (x, y)
+    // heading h — the spine and its flanks snout to tail tip (the tail at either side of its sweep), the splayed legs —
+    // grown by `pad` units of water all round (along the body: pad / 25 of its length), so a corner of bank cannot poke in
+    // between two test points.
+    const GATOR_PTS = (() => { const P = []; for (let y = -17; y <= 18; y += 2) P.push([0, y], [-1.6, y], [1.6, y]); for (let y = 9; y <= 18; y += 1.5) P.push([-3.5, y], [3.5, y]);   // (the swimming tail's whip reaches 3.2)
+        // the legs splayed (afloat): toes and elbows, dense enough that a corner of bank cannot slip between them
+        for (const x of [3.4, 4.2, 5, 5.8]) for (const y of [-3.5, -2.5, -1.5, 0.5, 4, 5, 6]) P.push([-x, y], [x, y]); return P; })();
+    // (PERFORMANCE: pointOnLand walks every shape in the venue, and ~120 points a test, every frame, for 21 gators came to
+    // 70 ms a frame. So each gator keeps the few land shapes within reach of its home — `near` — and tests only those,
+    // the same way pointOnLand does: bounding circle, the polygon, its holes.)
+    function landNear(x, y, r) {
+        return ((state.course && state.course.islands) || []).filter(s => !s.awash && s.vertices && s.vertices.length > 2 && Math.hypot(s.x - x, s.y - y) < (s.radius || 0) + r);
+    }
+    function onNear(x, y, L) {
+        for (const isl of L) {
+            const dx = x - isl.x, dy = y - isl.y; if (dx * dx + dy * dy > isl.radius * isl.radius) continue;
+            if (!(typeof pointInPolyFast === 'function' ? pointInPolyFast(x, y, isl.vertices) : pointInPoly(x, y, isl.vertices))) continue;
+            if (!(isl.holes || []).some(hv => hv && hv.length >= 3 && pointInPoly(x, y, hv))) return true;
+        }
+        return false;
+    }
+    function gatorClear(x, y, h, pad, near) {
+        const ch = Math.cos(h), sh = Math.sin(h), s = GATOR_SCALE, q = 1 + (pad || 0) / 25, test = near ? (X, Y) => onNear(X, Y, near) : onLand;
+        if (near && !near.length) return true;
+        return !GATOR_PTS.some(([px, py]) => test(x + (px * ch - py * sh) * s * q, y + (px * sh + py * ch) * s * q));
+    }
+    // A clear pose near (x, y): its own heading first, then turned, then shifted out round it — so a gator whose
+    // authored spot puts its tail on the bank lies along the bank instead.
+    function gatorFit(x, y, h, near) {
+        if (gatorClear(x, y, h, 6, near)) return { x, y, h };
+        for (const pad of [6, 3]) for (const d of [0, 10, 20, 30, 45, 60, 80, 100, 130]) for (let k = 0; k < 16; k++) {
+            const a = k * Math.PI / 8, X = x + Math.cos(a) * d, Y = y + Math.sin(a) * d;
+            for (let j = 0; j < 8; j++) { const H = h + (j % 2 ? -1 : 1) * Math.ceil(j / 2) * Math.PI / 4; if (gatorClear(X, Y, H, pad, near)) return { x: X, y: Y, h: H }; }
+        }
+        return { x, y, h };
+    }
     function updateLurkers(dt, me) {
         const c = cfg.lurkers;
         for (const g of lurkers) {
+            // the whole body off the bank: fitted on the first update, and re-checked every 2 s while it lies still — the
+            // venue's land arrives in two stages (a light build, then the full shapes), and a bank that came late left
+            // gator 14 with its tail on the mud in some runs
+            g.chk = (g.chk || 0) - dt;
+            const isl = (state.course && state.course.islands) || [], landSig = isl.length + ':' + (state.course && state.course.loadState);
+            if (g.landSig !== landSig) { g.landSig = landSig; g.fitted = false; }   // (the land changed — the full build arrived: look again)
+            if (!g.fitted || (g.chk <= 0 && g.mode === 'float' && !gatorClear(g.x, g.y, g.h, 1, g.near))) { g.near = landNear(g.hx, g.hy, 400); const f = gatorFit(g.fitted ? g.x : g.hx, g.fitted ? g.y : g.hy, g.h, g.near); if (!g.fitted) { g.hx = f.x; g.hy = f.y; g.h0 = f.h; } g.x = f.x; g.y = f.y; g.h = f.h; g.fitted = true; g.near = landNear(g.hx, g.hy, 400); }
+            if (g.chk <= 0) g.chk = 2;
             g.t -= dt; g.bob += dt; g.ring = Math.max(0, g.ring - dt * 0.9);
+            g.fold = (g.fold || 0) + ((g.mode === 'float' ? 0 : 1) - (g.fold || 0)) * Math.min(1, dt * 2.5);   // legs: splayed afloat, folded back swimming (and diving)
             const moving = g.mode === 'swim';
             recordTrail(g, dt, moving);
             if (g.mode === 'float' || g.mode === 'swim') {
@@ -991,9 +1047,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 }
                 if (g.mode === 'float' && g.t <= 0) { g.mode = 'swim'; g.t = R(3, 6); g.th = g.h + R(-0.9, 0.9); }
                 else if (g.mode === 'swim') {
-                    g.h += angDiff(g.th, g.h) * Math.min(1, dt * 1.5);
-                    const nx = g.x + Math.sin(g.h) * 9 * dt, ny = g.y - Math.cos(g.h) * 9 * dt;
-                    if (!onLand(nx, ny) && Math.hypot(nx - g.hx, ny - g.hy) < 70) { g.x = nx; g.y = ny; } else g.th = Math.atan2(g.hx - g.x, -(g.hy - g.y));
+                    const nh = g.h + angDiff(g.th, g.h) * Math.min(1, dt * 1.5);
+                    const nx = g.x + Math.sin(nh) * 9 * dt, ny = g.y - Math.cos(nh) * 9 * dt;
+                    if (gatorClear(nx, ny, nh, 3, g.near) && Math.hypot(nx - g.hx, ny - g.hy) < 70) { g.x = nx; g.y = ny; g.h = nh; }
+                    else { g.th = Math.atan2(g.hx - g.x, -(g.hy - g.y)); if (gatorClear(g.x, g.y, nh, 3, g.near)) g.h = nh; else g.th = g.h + Math.PI; }
                     if (g.t <= 0) { g.mode = 'float'; g.t = R(8, 18); }
                 }
             } else if (g.mode === 'sink') {
@@ -1004,8 +1061,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 if (g.t <= 0) {
                     if (boatNear(g.x, g.y, c.reactR * 1.6)) { g.t = 1.5; continue; }
                     let nx = g.x, ny = g.y;
-                    for (let k = 0; k < 12; k++) { const a = R(0, Math.PI * 2), d = R(40, 120), x = g.hx + Math.cos(a) * d, y = g.hy + Math.sin(a) * d; if (!onLand(x, y)) { nx = x; ny = y; break; } }
-                    g.x = nx; g.y = ny; g.h += R(-1.2, 1.2); g.mode = 'rise'; g.t = 1.2;
+                    let nh = g.h + R(-1.2, 1.2), ok = false;
+                    for (let k = 0; k < 24 && !ok; k++) { const a = R(0, Math.PI * 2), d = R(40, 120), x = g.hx + Math.cos(a) * d, y = g.hy + Math.sin(a) * d, h = k < 12 ? nh : R(0, Math.PI * 2); if (gatorClear(x, y, h, 6, g.near)) { nx = x; ny = y; nh = h; ok = true; } }
+                    if (!ok) { nx = g.hx; ny = g.hy; nh = g.h0; }   // (its own spot, which gatorFit made clear)
+                    g.x = nx; g.y = ny; g.h = nh; g.mode = 'rise'; g.t = 1.2;
                 }
             } else if (g.mode === 'rise') {
                 g.sink = Math.max(0, g.sink - dt / 1.2);
@@ -1053,21 +1112,34 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function updatePerchers(dt, me) {
         const c = cfg.perchers;
         for (const a of perchers) {
-            a.t += dt; a.flap += dt * WING_TIME; a.splash = Math.max(0, a.splash - dt * 1.2);
+            a.t += dt; a.flap += dt * WING_TIME; a.splash = Math.max(0, a.splash - dt * 1.2); a.dAge = Math.min(9, a.dAge + dt); a.upT = Math.min(9, a.upT + dt);
             recordTrail(a, dt, a.mode === 'swim');
             if (a.mode === 'dry') {
                 const b = boatNear(a.px, a.py, c.flushR);
-                if (b) { a.mode = 'drop'; a.t = 0; if (b === me) feat(c.feat); }
+                if (b) {
+                    // Off the end of its branch, head first: it goes in a little beyond the branch tip, heading on out
+                    a.mode = 'drop'; a.t = 0; if (b === me) feat(c.feat);
+                    const [bx, by] = anhingaPerch(a), d = a.snag;
+                    a.ex = bx + Math.cos(d) * 14; a.ey = by + Math.sin(d) * 14; a.dh = d + Math.PI / 2;
+                }
             } else if (a.mode === 'drop') {
-                a.sink = Math.min(1, a.t / 0.5);
-                if (a.t >= 0.5) { a.mode = 'swim'; a.t = 0; a.splash = 1; a.sink = 0; a.x = a.px + R(-20, 20); a.y = a.py + R(-20, 20); a.h = R(0, 7); a.dur = R(22, 38); }
+                if (a.t >= ANHINGA_DROP) {
+                    // Under: it swims on beneath the surface and comes up 30-50 further on with only its neck out
+                    a.mode = 'under'; a.t = 0; a.dAge = 0; a.splash = 1; a.ut = R(1.2, 2.2); a.trail = [];
+                    let ok = false;
+                    for (let k = 0; k < 10 && !ok; k++) { const dd = a.dh - Math.PI / 2 + R(-0.6, 0.6), r = R(30, 50), x = a.ex + Math.cos(dd) * r, y = a.ey + Math.sin(dd) * r;
+                        if (!onLand(x, y)) { a.x = x; a.y = y; a.h = dd + Math.PI / 2; ok = true; } }
+                    if (!ok) { a.x = a.ex; a.y = a.ey; a.h = a.dh; }
+                }
+            } else if (a.mode === 'under') {
+                if (a.t >= a.ut) { a.mode = 'swim'; a.t = 0; a.upT = 0; a.dur = R(22, 38); }
             } else if (a.mode === 'swim') {
                 // The snakebird: body under, neck up, gliding about near its perch.
                 const home = Math.hypot(a.x - a.px, a.y - a.py) > 140;
                 const tx = home || a.t > a.dur ? a.px : a.x + Math.sin(a.h + Math.sin(a.t * 0.4)) * 50, ty = home || a.t > a.dur ? a.py : a.y - Math.cos(a.h + Math.sin(a.t * 0.4)) * 50;
                 const nx = a.x + Math.sin(a.h) * 16 * dt, ny = a.y - Math.cos(a.h) * 16 * dt;
                 if (!onLand(nx, ny)) steer(a, tx, ty, 16, 1.2, dt); else a.h += 1.5 * dt;
-                if (a.t > a.dur && Math.hypot(a.x - a.px, a.y - a.py) < 18 && !boatNear(a.px, a.py, c.flushR * 1.3)) { a.mode = 'climb'; a.t = 0; }
+                if (a.t > a.dur && Math.hypot(a.x - a.px, a.y - a.py) < 18 && !boatNear(a.px, a.py, c.flushR * 1.3)) { a.mode = 'climb'; a.t = 0; a.cx0 = a.x; a.cy0 = a.y; a.ch0 = a.h; }
             } else if (a.mode === 'climb') {
                 if (a.t >= 0.8) { a.mode = 'dry'; a.t = 0; a.x = a.px; a.y = a.py; }
             }
@@ -1101,16 +1173,19 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 const dx = B.hx - B.x, dy = B.hy - B.y, d = Math.hypot(dx, dy);
                 if (d > 1) { const v = Math.min(d, 8 * dt); B.x += dx / d * v; B.y += dy / d * v; }
                 B.h += angDiff(B.up, B.h) * Math.min(1, dt * 1.2);
-                if (B.t <= 0 && B.rear < 0.2) { B.mode = 'lunge'; B.t = 0.55; B.lunge = 0; }
+                if (B.t <= 0 && B.rear < 0.2) { B.mode = 'lunge'; B.t = BEAR_POUNCE; B.lunge = 0; B.pinned = false; }
                 else if (B.t <= 0) B.t = 1;
             } else if (B.mode === 'lunge') {
-                B.lunge = Math.min(1, B.lunge + dt / 0.55);
-                const [fx, fy] = fwd(B.h), v = 34 * Math.sin(Math.PI * B.lunge);
+                // THE POUNCE (see BEAR_POUNCE): forward only in the leap; at the pin the paws come down on the fish
+                // in a burst of white water and the head goes under to bite; it comes up — half the time with one
+                B.lunge = Math.min(1, B.lunge + dt / BEAR_POUNCE);
+                const u = B.lunge, [fx, fy] = fwd(B.h), v = u > 0.2 && u < 0.5 ? 80 * Math.sin(Math.PI * (u - 0.2) / 0.3) : 0;
                 const nx = B.x + fx * v * dt, ny = B.y + fy * v * dt;
                 if (!onLand(nx, ny)) { B.x = nx; B.y = ny; }
+                if (u >= 0.5 && !B.pinned) { B.pinned = true; B.splash = 1; B.catch = rnd() < 0.5; const d = 28; B.sx = B.x + fx * d; B.sy = B.y + fy * d; }
                 if (B.t <= 0) {
-                    B.splash = 1; B.lunge = 0;
-                    if (rnd() < 0.5) { B.mode = 'eat'; B.fish = 1; B.t = R(5, 9); } else { B.mode = 'watch'; B.t = R(4, 10); }
+                    B.lunge = 0;
+                    if (B.catch) { B.mode = 'eat'; B.fish = 1; B.t = R(5, 9); } else { B.mode = 'watch'; B.t = R(4, 10); }
                 }
             } else if (B.mode === 'eat') {
                 if (B.t <= 0) { B.mode = 'watch'; B.fish = 0; B.t = R(5, 11); }
@@ -1159,7 +1234,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // ── SOARERS: bald eagles ──────────────────────────────────────────────────────────
     function updateSoarers(dt) {
         for (const E of soarers) {
-            E.t -= dt; E.flap += dt * WING_TIME * (E.mode === 'climb' || E.mode === 'grab' ? 15 : 0); E.splash = Math.max(0, E.splash - dt * 1.2);
+            E.t -= dt; E.flap += dt * WING_TIME * (E.mode === 'climb' || E.mode === 'grab' || E.brake ? 15 : 0); E.splash = Math.max(0, E.splash - dt * 1.2);
             if (E.mode === 'soar') {
                 E.a += E.dir * EAGLE_SOAR / E.r * dt;
                 const x = E.cx + Math.cos(E.a) * E.r, y = E.cy + Math.sin(E.a) * E.r;
@@ -1174,13 +1249,19 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     else E.t = R(8, 15);
                 }
             } else if (E.mode === 'stoop') {
-                const d = Math.hypot(E.tx - E.x, E.ty - E.y);
-                steer(E, E.tx, E.ty, 75, 2.2, dt);
-                E.z = Math.max(2, E.z0 * Math.min(1, d / E.d0));
-                if (d < 10) { E.mode = 'grab'; E.t = 0.45; E.splash = 1; E.sx = E.x; E.sy = E.y; }
+                // HOW A BALD EAGLE TAKES A FISH (Wes, Oct 15: "check the eagle stoop"): not an osprey's plunge — it comes
+                // down fast from its soaring height with the wings half-folded, levels out a few metres over the water
+                // on a long shallow run-in, and at the last brakes — wings up and beating, feet swung forward, talons
+                // out — snatching the fish from the surface as it flies past, the feet dipping in; then labours away.
+                const d = Math.hypot(E.tx - E.x, E.ty - E.y), RUN = 150;
+                E.brake = d < 45;
+                steer(E, E.tx, E.ty, d > RUN ? 75 : 75 - 30 * (1 - d / RUN), 2.2, dt);
+                E.z = d > RUN ? 8 + (E.z0 - 8) * Math.min(1, (d - RUN) / Math.max(1, E.d0 - RUN)) : 3 + 5 * d / RUN;
+                if (d < 12) { E.mode = 'grab'; E.t = 0.35; E.splash = 1; E.sx = E.tx; E.sy = E.ty; }
             } else if (E.mode === 'grab') {
-                E.z = 2;
-                if (E.t <= 0) { E.mode = 'climb'; E.fish = 1; E.t = 0; }
+                // still flying: the feet through the water, the fish lifted out of it
+                E.z = 2; E.x += Math.sin(E.h) * 42 * dt; E.y -= Math.cos(E.h) * 42 * dt;
+                if (E.t <= 0) { E.mode = 'climb'; E.fish = 1; E.t = 0; E.brake = false; }
             } else if (E.mode === 'climb') {
                 // back up to its circle, labouring, the salmon in its talons
                 const x = E.cx + Math.cos(E.a) * E.r, y = E.cy + Math.sin(E.a) * E.r;
@@ -1220,6 +1301,25 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
         return F;
     }
+    // Open water all the way from (x0, y0) to (x1, y1), with `pad` either side (sampled every 8 u).
+    function waterLine(x0, y0, x1, y1, pad) {
+        const d = Math.hypot(x1 - x0, y1 - y0), n = Math.max(1, Math.ceil(d / 8)), nx = -(y1 - y0) / (d || 1), ny = (x1 - x0) / (d || 1);
+        for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n, y = y0 + (y1 - y0) * i / n;
+            if (onLand(x, y) || onLand(x + nx * pad, y + ny * pad) || onLand(x - nx * pad, y - ny * pad)) return false; }
+        return true;
+    }
+    // The family's next bank spot: one the leader can SEE over open water (a goal across a point of land kept the
+    // leader turning between the bank and the goal — a 30 u circle for the whole swim, the family piled round it).
+    // Heading home, the reachable spot nearest the jam's entry, until the entry itself is in view.
+    function rompGoal(F, home) {
+        const L = F.members[0], see = (s) => waterLine(L.x, L.y, s.x, s.y, 6);
+        if (home) { if (see(F.entry)) return F.entry;
+            let best = null, bd = Math.hypot(F.entry.x - L.x, F.entry.y - L.y) - 20;
+            for (const s of F.spots) { const d = Math.hypot(F.entry.x - s.x, F.entry.y - s.y); if (d < bd && see(s)) { bd = d; best = s; } }
+            return best || F.entry; }
+        const ok = F.spots.filter(s => Math.hypot(s.x - L.x, s.y - L.y) > 60 && see(s));
+        return ok.length ? ok[Math.floor(rnd() * ok.length)] : F.spots[Math.floor(rnd() * F.spots.length)];
+    }
     function updateRompers(F, dt) {
         const c = F.cfg, M = F.members;
         F.t -= dt;
@@ -1227,8 +1327,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (F.mode === 'rest') {
             if (F.t <= 0 && !boatNear(F.jam.x, F.jam.y, c.reactR * 2)) {
                 F.mode = 'swim'; F.t = R(25, 45); F.crumbs = [];
-                F.goal = F.spots[Math.floor(rnd() * F.spots.length)];
-                for (const m of M) { m.x = F.entry.x + R(-8, 8); m.y = F.entry.y + R(-8, 8); m.ring = 1; m.trail = []; m.h = Math.atan2(F.goal.x - m.x, -(F.goal.y - m.y)); }
+                for (const m of M) { let x = F.entry.x, y = F.entry.y; for (let k = 0; k < 8; k++) { const qx = F.entry.x + R(-8, 8), qy = F.entry.y + R(-8, 8); if (!onLand(qx, qy)) { x = qx; y = qy; break; } }   // (in the water: the jam's collider is beside the entry)
+                    m.x = x; m.y = y; m.ring = 1; m.trail = []; }
+                F.goal = rompGoal(F, false); F.prog = null;
+                for (const m of M) m.h = Math.atan2(F.goal.x - m.x, -(F.goal.y - m.y));
             }
             return;
         }
@@ -1242,26 +1344,40 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 if (!onLand(nx, ny)) { m.x = nx; m.y = ny; m.h += angDiff(Math.atan2(F.ux, -F.uy), m.h) * Math.min(1, dt * 4); }
                 recordTrail(m, dt, false);
             }
-            if (F.under <= 0 && !boatNear(lead.x, lead.y, c.reactR * 1.3)) { F.mode = 'swim'; F.crumbs = []; for (const m of M) { m.ring = 1; m.trail = []; } F.goal = F.spots[Math.floor(rnd() * F.spots.length)]; }
+            if (F.under <= 0 && !boatNear(lead.x, lead.y, c.reactR * 1.3)) { F.mode = 'swim'; F.crumbs = []; for (const m of M) { m.ring = 1; m.trail = []; } F.goal = rompGoal(F, false); F.prog = null; }
             else if (F.under <= 0) F.under = 0.8;
             return;
         }
         // swimming: the leader heads for a bank spot (then another); the rest follow its track
         const home = F.t <= 0;
-        const goal = home ? F.entry : F.goal;
-        const gd = Math.hypot(goal.x - lead.x, goal.y - lead.y);
-        if (!home && gd < 25) F.goal = F.spots[Math.floor(rnd() * F.spots.length)];
+        if (home && !F.homing) { F.homing = true; F.goal = rompGoal(F, true); F.prog = null; }
+        if (!home) F.homing = false;
+        let gd = Math.hypot(F.goal.x - lead.x, F.goal.y - lead.y);
+        if (gd < 25 && F.goal !== F.entry) { F.goal = rompGoal(F, home); F.prog = null; gd = Math.hypot(F.goal.x - lead.x, F.goal.y - lead.y); }
+        // no headway on it for 3 s (a current, a corner): another
+        if (!F.prog) F.prog = { t: 0, d: gd };
+        F.prog.t += dt; if (F.prog.t > 3) { if (gd > F.prog.d - 15) F.goal = rompGoal(F, home); F.prog = { t: 0, d: Math.hypot(F.goal.x - lead.x, F.goal.y - lead.y) }; }
+        const goal = F.goal; gd = Math.hypot(goal.x - lead.x, goal.y - lead.y);
+        // toward the goal; where that heading meets land within a few body lengths, the open heading nearest to it
+        // (turning away and steering straight back made a leader beside its logjam dither in place)
+        const want = Math.atan2(goal.x - lead.x, -(goal.y - lead.y)), clear = (h) => waterLine(lead.x, lead.y, lead.x + Math.sin(h) * 24, lead.y - Math.cos(h) * 24, 4);
+        let aim = want; if (!clear(want)) { aim = null; for (let k = 1; k <= 12 && aim === null; k++) for (const sd of [1, -1]) { const h = want + sd * k * 0.26; if (clear(h)) { aim = h; break; } } if (aim === null) aim = lead.h + Math.PI; }
+        steer(lead, lead.x + Math.sin(aim) * 50, lead.y - Math.cos(aim) * 50, 0, 2.2, dt);
         const nx = lead.x + Math.sin(lead.h) * OTTER_SWIM * dt, ny = lead.y - Math.cos(lead.h) * OTTER_SWIM * dt;
-        if (onLand(nx, ny)) lead.h += 2.5 * dt * (lead.i % 2 ? 1 : -1); else steer(lead, goal.x, goal.y, OTTER_SWIM, 1.8, dt);
+        if (!onLand(nx, ny) || onLand(lead.x, lead.y)) { lead.x = nx; lead.y = ny; }   // (one already on land may always swim out)
         F.crumbs.unshift({ x: lead.x, y: lead.y, h: lead.h }); if (F.crumbs.length > 400) F.crumbs.pop();
         for (let j = 1; j < M.length; j++) {
             // each a body length and a bit behind the one ahead, a little off its line — the
             // references show separate heads, each with its own V, never nose to tail
-            const m = M[j]; let acc = 0, want = j * 30, p = F.crumbs[0];
+            const m = M[j]; let acc = 0, want = j * 44, p = F.crumbs[0];   // (a body length, 36, and a gap)
             for (let q = 1; q < F.crumbs.length; q++) { const a = F.crumbs[q - 1], b = F.crumbs[q]; acc += Math.hypot(a.x - b.x, a.y - b.y); p = b; if (acc >= want) break; }
-            const side = (j % 2 ? 1 : -1) * 9, px = p.x - Math.cos(p.h) * side, py = p.y - Math.sin(p.h) * side;
+            const side = (j % 2 ? 1 : -1) * 12, px = p.x - Math.cos(p.h) * side, py = p.y - Math.sin(p.h) * side;
             const dx = px - m.x, dy = py - m.y, d = Math.hypot(dx, dy);
-            if (d > 0.3) { const v = Math.min(d, OTTER_SWIM * 1.4 * dt); m.x += dx / d * v; m.y += dy / d * v; m.h += angDiff(Math.atan2(dx, -dy), m.h) * Math.min(1, dt * 5); }
+            // facing along the track; a place that has fallen BEHIND it (the leader turning) is waited for, not
+            // turned round and chased — that crossed the family over itself
+            const to = Math.atan2(dx, -dy), back = d > 0.3 && Math.abs(angDiff(to, m.h)) > 1.7;
+            if (d > 0.3 && !back) { const v = Math.min(d, OTTER_SWIM * 1.4 * dt); m.x += dx / d * v; m.y += dy / d * v; }
+            m.h += angDiff(d > 8 && !back ? to : p.h, m.h) * Math.min(1, dt * 3);
         }
         for (const m of M) {
             recordTrail(m, dt, true);
@@ -1269,7 +1385,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (m.dipT <= 0 && m.dip <= 0) { m.dip = 1; m.dipT = R(2.5, 6); }
             if (m.dip > 0) { m.dip = Math.max(0, m.dip - dt / 0.9); if (m.dip === 0) m.ring = 0.8; }
         }
-        if (home && gd < 20) { F.mode = 'rest'; F.t = R(20, 45); for (const m of M) { m.x = m.rx; m.y = m.ry; m.ring = 0; m.trail = []; } }
+        if (home && F.goal === F.entry && gd < 20) { F.mode = 'rest'; F.homing = false; F.t = R(20, 45); for (const m of M) { m.x = m.rx; m.y = m.ry; m.ring = 0; m.trail = []; } }
     }
 
     // ── WHALES: humpback pods ──────────────────────────────────────────────────────────
@@ -4181,14 +4297,24 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const S of riders) for (const m of S.members) drawSpinner(ctx, m);
         for (const P of flyPatches) if (P.pack) for (const m of P.pack) if (!(m.leap > 0)) drawMahi(ctx, m);
         for (const G of runs) drawRun(ctx, G);
-        for (const F of rompers) if (F.mode !== 'rest') for (const m of F.members) { if (F.mode === 'swim' && (m.dip || 0) < 0.3) drawWakeTrail(ctx, m, 3.6, 1.2, 0.65); drawOtter(ctx, m, false); }
+        for (const F of rompers) if (F.mode !== 'rest') for (const m of F.members) { if (F.mode === 'swim' && (m.dip || 0) < 0.3) drawWakeTrail(ctx, m, 3.6, 1.2, imgReady(sprImg(ROTTER_SPR.file)) ? 0.4 : 0.65); drawOtter(ctx, m, false, F); }
         for (const L of leaps) drawLeap(ctx, L);
         for (const g of lurkers) {
-            if (g.mode === 'swim' && g.trail.length > 2) drawWakeTrail(ctx, g, 4.5, 1.2, 0.35);
+            // the V comes off the SNOUT, where the head pushes the water (its track recorded at the body's middle, so
+            // carried forward along the heading to the snout, 24 u ahead)
+            if (g.mode === 'swim' && g.trail.length > 2) { const sx = Math.sin(g.h) * 22, sy = -Math.cos(g.h) * 22;
+                drawWakeTrail(ctx, { x: g.x + sx, y: g.y + sy, trail: g.trail.map(q => ({ x: q.x + sx, y: q.y + sy })) }, 3.2, 1.2, 0.35); }
             drawGator(ctx, g);
             if (g.ring > 0) { drawRing(ctx, g.x, g.y, g.ring, 10, 26, 0.5); drawRing(ctx, g.x, g.y, Math.max(0, g.ring - 0.3), 6, 16, 0.4); }
         }
-        for (const a of perchers) if (a.mode === 'swim') drawAnhinga(ctx, a);
+        for (const a of perchers) {
+            // where it went in, head first and slim: a small burst of white water as it knifes in, then the swirl, the
+            // slick and broken rings (diveWater) — no spray crown, an anhinga slips in rather than plunging
+            if (a.dAge < 0.5) whiteWater(ctx, a.ex, a.ey, 4 + a.dAge * 12, 0.75 * (1 - a.dAge / 0.5), 11);
+            if (a.dAge < 2.6) diveWater(ctx, a.ex, a.ey, a.dh, a.dAge, 12, 11);
+            if (a.mode === 'climb') diveWater(ctx, a.cx0, a.cy0, a.ch0, 0.4 + a.t * 1.6, 14, 17);   // the water it climbs out of
+            if (a.mode === 'swim') drawAnhinga(ctx, a);
+        }
         for (const G of cruisers) for (const f of G.fish) { drawCruiserSplashes(ctx, f); if (f.mode === 'leap') drawCruiser(ctx, f); }   // (the water it left, then the animal in the air above it)
         drawBoil(ctx);
         for (const B of stripers) drawStriperBoil(ctx, B);
@@ -4271,8 +4397,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const e of stalkers) if (e.mode !== 'fly') drawEgret(ctx, e);
         for (const a of perchers) drawSnag(ctx, a);
         for (const a of perchers) if (a.mode !== 'swim') drawAnhinga(ctx, a);
-        // otters lying up on their logjam; the bears standing in the shallows
-        for (const F of rompers) if (F.mode === 'rest') for (const m of F.members) drawOtter(ctx, m, true);
+        // the bears standing in the shallows (the otters lying up on their logjams are drawn with the air layer: a
+        // logjam is drawn in the canopy plane, over the fleet, and covered them)
         for (const B of fishers) drawBear(ctx, B);
         for (const G of bands) for (const s of G.members) drawBighorn(ctx, s);
         for (const K of coyotes) drawCoyote(ctx, K);
@@ -4295,6 +4421,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     // In the air, over the fleet.
     function drawAir(ctx) {
+        // otters lying up ON their logjam (it is a canopy-plane prop, so they must come after it); not one under a
+        // tree's crown, which would cover it
+        for (const F of rompers) if (F.mode === 'rest') { if (F.crowned === undefined) F.crowned = underCrown(F.jam.x, F.jam.y, F.jam); if (!F.crowned) for (const m of F.members) drawOtter(ctx, m, true); }
         if (!cfg) return;
         for (const e of stalkers) if (e.mode === 'fly') drawEgret(ctx, e);
         for (const c of colonies) for (const g of c.birds) if (g.mode !== 'perched') drawGullFlying(ctx, g.x, g.y, g.h, g.z, g.flap, false, g.juv);
@@ -4743,6 +4872,106 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.strokeStyle = ink; ctx.beginPath(); ctx.moveTo(D1.x, D1.y); ctx.lineTo(D2.x, D2.y); ctx.stroke();
     }
 
+    // ── THE PAINTED BAYOU (Oct 14 2026) ─────────────────────────────────────────────────────────────
+    // Six sprites from Wes's generations: the alligator, the great egret (standing and flying), the anhinga (drying on
+    // its snag, and swimming), the bullfrog sitting. Each table holds fractions of its frame measured off the art: the
+    // ink's top and bottom (the bill or snout, the tail), the spine's x, and the rows the posing cuts at.
+    const SW = 'assets/images/props/swamp/';
+    // The alligator: snout at the top; `root` the row where the tail leaves the hind legs; `head` the row behind the
+    // eye bumps (the end of what breaks the surface at the front).
+    const GATOR_SPR = { file: SW + 'alligator.png', top: 0.0455, bot: 0.95, cx: 0.4955, root: 0.585, head: 0.27,
+        // the legs, cut out by art/feetsplit.py: where each joins the body (its pivot)
+        legs: { 'fore-l': [0.4, 0.31], 'fore-r': [0.599, 0.31], 'hind-l': [0.412, 0.5], 'hind-r': [0.5875, 0.5] } };
+    const gatorPart = (p2) => sprImg(SW + 'alligator-' + p2 + '.png');
+    // HOW AN ALLIGATOR SWIMS (Wes, Oct 15: "fix the alligator swimming"). Fish & Lauder (juvenile American alligators):
+    // ANGUILLIFORM — a wave travels back down the body, growing to the tail, "the posterior quarter of the tail moved in
+    // a whip-like manner ... nearly perpendicular to the axis of progression"; the head and trunk stay steady. The LEGS
+    // are folded back along the sides while it swims and do almost nothing (Fish 1984, Copeia, via a secondary
+    // account); floating still, a gator holds them splayed out for balance — the way they are painted. gatorWave(g) is
+    // the tail's sideways offset at s (0 the tail's root .. 1 its tip).
+    function gatorWave(g) {
+        const swim = g.mode === 'swim', f = swim ? 0.9 : 0.25, A = swim ? 3.2 : 0.5, ph = (g.bob || 0) * Math.PI * 2 * f;
+        return (s) => A * Math.pow(s, 1.5) * Math.sin(ph - s * Math.PI * 1.3);
+    }
+    // The standing egret: bill tip at the top, the plumes at the bottom; `head` the row where the head meets the neck,
+    // `shoulder` where the neck meets the body.
+    const EGRET_SPR = { file: SW + 'egret.png', top: 0.08, bot: 0.93, cx: 0.495, head: 0.235, shoulder: 0.44 };
+    // The flying egret, cut at the shoulders by art/colsplit.py (body with the trailing legs, two wings).
+    const EGRET_FLY = { x0: 0.1035, x1: 0.8965, cx: 0.5, cy: 0.5293, root: { 'wing-l': [0.442, 0.5293], 'wing-r': [0.558, 0.5293] } };
+    const egretFlyImg = (p2) => sprImg(SW + 'egret-flying-' + p2 + '.png');
+    const ANHINGA_DRY = { file: SW + 'anhinga-drying.png', x0: 0.0946, x1: 0.8986, cx: 0.4966, cy: 0.53 };
+    // The swimming anhinga: `neck` the row where the neck widens into the body (what stays out of the water is above it).
+    const ANHINGA_SWIM = { file: SW + 'anhinga-swim.png', top: 0.0789, bot: 0.9211, cx: 0.4967, neck: 0.41 };
+    const FROG_SPR = { file: SW + 'bullfrog.png', top: 0.1429, bot: 0.8452, cx: 0.494 };
+    // One sprite laid on a fresh scratch canvas in the animal's frame: the frame scaled F units across, its point
+    // (fx, fy) at the origin; R the box's half-size. Returns the pose for humpBlit, or null until the art has loaded.
+    function sprPosed(ctx, im, F, fx, fy, R, slot) {
+        if (!imgReady(im)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k); g.drawImage(humpMip(im, 1.5 * k * F), -fx * F, -fy * F, F, F); g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
+    // The alligator posed, in the drawn gator's units (snout -16.2, tail tip 17): the body rigid, the tail laid in
+    // strips each slid sideways by tailX and turned to its slope, so it sweeps in a curve as the drawn one did.
+    function gatorPosed(ctx, tailX, slot, fold) {
+        const S = GATOR_SPR, parts = ['body', 'fore-l', 'fore-r', 'hind-l', 'hind-r'].map(gatorPart), cut = parts.every(imgReady), im = cut ? parts[0] : sprImg(S.file); if (!imgReady(im)) return null;
+        const L = 33.2, t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 19;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const span = S.bot - S.top, F = L / span, x0 = -S.cx * F, y0 = -16.2 - S.top * F, Yf = (fy) => y0 + fy * F;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const piece = (f0, f1) => g.drawImage(src, 0, f0 * n, n, (f1 - f0) * n, x0, Yf(f0), F, (f1 - f0) * F);
+        // the legs, under the body: splayed (fold 0) or folded back along the flanks toward the tail (fold 1)
+        if (cut) for (const [nm, idx] of [['fore-l', 1], ['fore-r', 2], ['hind-l', 3], ['hind-r', 4]]) {
+            const sd = nm.endsWith('l') ? -1 : 1, hind = nm[0] === 'h', [rx, ry] = S.legs[nm], X = x0 + rx * F, Y = Yf(ry), f = fold || 0;
+            g.save(); g.translate(X, Y); g.rotate(sd * f * (hind ? 1.15 : 1.3)); g.scale(1 - 0.18 * f, 1 - 0.1 * f); g.translate(-X, -Y);
+            g.drawImage(humpMip(parts[idx], 1.5 * k * F), x0, Yf(0), F, F); g.restore();
+        }
+        const tl = (fy) => Math.max(0, Math.min(1, (fy - S.root) / (S.bot - S.root)));   // 0 at the root .. 1 at the tip
+        const N = 12, step = (S.bot + 0.01 - S.root) / N, lap = 0.003;
+        for (let i = N - 1; i >= 0; i--) {
+            const a = S.root + i * step, mid = a + step / 2, q = tl(mid), sl = (tailX(Math.min(1, q + 0.02)) - tailX(Math.max(0, q - 0.02))) / (0.04 * (S.bot - S.root) * F);
+            g.save(); g.translate(tailX(q), Yf(mid)); g.rotate(-Math.atan(sl)); g.translate(0, -Yf(mid)); piece(a - lap, a + step + lap); g.restore();
+        }
+        piece(S.top - 0.01, S.root + lap);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px, F, x0, y0 };
+    }
+    // Keep only what breaks the surface, softly edged: the top of the head back past the eye bumps and the band of
+    // scutes down the spine, narrowing along the tail. In place on the pose P (the gator's units).
+    function gatorAwash(P, tailX, slot) {
+        const M = humpScratch(slot, P.px, P.px); if (!M) return;
+        const m = M.getContext('2d'), k = P.px / (2 * P.R), S = GATOR_SPR, Yf = (fy) => P.y0 + fy * P.F;
+        m.setTransform(k, 0, 0, k, P.R * k, P.R * k);
+        for (const [grow, a] of [[1.35, 0.3], [1.15, 0.45], [1, 1]]) {
+            m.globalAlpha = a; m.fillStyle = '#fff';
+            m.beginPath(); m.ellipse(0, (Yf(S.top) + Yf(S.head)) / 2, 2.3 * grow, (Yf(S.head) - Yf(S.top)) / 2 + 0.4 * grow, 0, 0, Math.PI * 2); m.fill();
+            m.beginPath(); m.moveTo(-1.5 * grow, Yf(S.head) - 1);
+            for (let i = 0; i <= 10; i++) { const fy = S.head + (0.86 - S.head) * i / 10, q = Math.max(0, (fy - S.root) / (S.bot - S.root)); m.lineTo(tailX(q) - (1.5 - 0.9 * q) * grow, Yf(fy)); }
+            for (let i = 10; i >= 0; i--) { const fy = S.head + (0.86 - S.head) * i / 10, q = Math.max(0, (fy - S.root) / (S.bot - S.root)); m.lineTo(tailX(q) + (1.5 - 0.9 * q) * grow, Yf(fy)); }
+            m.closePath(); m.fill();
+        }
+        m.globalAlpha = 1; m.setTransform(1, 0, 0, 1, 0, 0);
+        const g = P.c.getContext('2d'); g.globalCompositeOperation = 'destination-in'; g.drawImage(M, 0, 0); g.globalCompositeOperation = 'source-over';
+    }
+    // The standing egret posed (world units, bill tip at -13.5, plumes 26 behind it): the neck strip stretched and the
+    // head slid forward by `strike` (0..1) — the stab at a fish — the head swaying a little (`hx`) when it is still.
+    function egretPosed(ctx, strike, hx, slot) {
+        const S = EGRET_SPR, im = sprImg(S.file); if (!imgReady(im)) return null;
+        const L = 26, t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 20;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = L / (S.bot - S.top), x0 = -S.cx * F, y0 = -13.5 - S.top * F, Yf = (fy) => y0 + fy * F;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const neck = (S.shoulder - S.head) * F, grow = 1 + 1.2 * strike, lap = 0.004;
+        g.drawImage(src, 0, (S.shoulder - lap) * n, n, (1 - S.shoulder + lap) * n, x0, Yf(S.shoulder - lap), F, (1 - S.shoulder + lap) * F);
+        g.save(); g.translate(hx * 0.5, Yf(S.shoulder)); g.scale(1, grow); g.translate(0, -Yf(S.shoulder));
+        g.drawImage(src, 0, (S.head - lap) * n, n, (S.shoulder - S.head + 2 * lap) * n, x0, Yf(S.head - lap), F, (S.shoulder - S.head + 2 * lap) * F); g.restore();
+        g.save(); g.translate(hx, -neck * (grow - 1)); g.drawImage(src, 0, 0, n, (S.head + lap) * n, x0, Yf(0), F, (S.head + lap) * F); g.restore();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
+
     // AMERICAN ALLIGATOR from above (drone references, Sep 25): long and low, most of it under
     // the water; what breaks the surface is the top of the broad U-snouted head (eyes and
     // nostrils) and the band of pale-tipped scute rows down the back and tail — a zipper.
@@ -4750,6 +4979,29 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function drawGator(ctx, g) {
         const vis = 1 - (g.sink || 0);
         if (g.mode === 'under') return;
+        if (imgReady(sprImg(GATOR_SPR.file))) {
+            // THE PAINTED ALLIGATOR: the whole animal seen through a hand of dark bayou water — legs, flanks and tail dim
+            // and soft (seenThrough, and the swamp's own murk over it) — and over that, crisp, only what breaks the
+            // surface: the top of the head and the band of scutes down the back. Going down, the crisp part goes first.
+            const tailX = gatorWave(g), fold = g.fold || 0;
+            const sink = g.sink || 0, up = Math.max(0, 1 - sink * 1.6);
+            ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.h); ctx.scale(GATOR_SCALE, GATOR_SCALE);
+            const D = gatorPosed(ctx, tailX, 50, fold);
+            if (D) {
+                seenThrough(D, 0.35 + sink * 1.4, 51);
+                const gd = D.c.getContext('2d'); gd.globalCompositeOperation = 'source-atop'; gd.globalAlpha = 0.3 + 0.45 * sink; gd.fillStyle = `rgb(${waterTint()})`; gd.fillRect(0, 0, D.px, D.px); gd.globalAlpha = 1; gd.globalCompositeOperation = 'source-over';
+                humpBlit(ctx, D, null, vis * 0.9);
+                if (up > 0) { const C = gatorPosed(ctx, tailX, 52, fold); if (C) { gatorAwash(C, tailX, 53); humpBlit(ctx, C, null, up); } }
+            }
+            if (up > 0) {
+                // the waterline round the head: short broken arcs, drifting out
+                const q = (T * 0.35 + g.i * 0.37) % 1;
+                ctx.strokeStyle = `rgba(255,255,255,${0.18 * (1 - q) * up})`; ctx.lineWidth = 0.5;
+                for (const [a0, a1] of [[-2.9, -2.2], [-0.9, -0.2], [0.9, 1.6], [2.3, 2.9]]) { ctx.beginPath(); ctx.ellipse(0, -11.5, 4.8 + q * 3.5, 6 + q * 3.5, 0, a0, a1); ctx.stroke(); }
+            }
+            ctx.restore();
+            return;
+        }
         ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.h); ctx.scale(GATOR_SCALE, GATOR_SCALE);
         const sw = g.mode === 'swim' ? Math.sin(g.bob * 3) : Math.sin(g.bob * 0.6) * 0.25;
         const tailX = (s) => sw * 2.2 * Math.pow(s, 1.6);          // the tail's sweep, s 0..1 along it
@@ -4802,6 +5054,27 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // shadow they cast. In flight: broad rounded white wings, neck tucked, legs trailing.
     function drawEgret(ctx, e) {
         const k = EGRET_SCALE;
+        if (e.mode === 'fly' && ['body', 'wing-l', 'wing-r'].every(p2 => imgReady(egretFlyImg(p2)))) {
+            // THE PAINTED EGRET FLYING: wings cut at the shoulders, beating slow and deep (wingStroke: the span
+            // foreshortens, the hands sweep back on the upstroke); neck tucked, legs trailing. Its shadow on the water.
+            const We = wingStroke(e.flap, 0.9), z = e.z, B = { S: EGRET_FLY, span: 42, img: egretFlyImg };
+            const pose = () => pelicanPosed(ctx, We.pf, We.flex, 0, 54, B);
+            ctx.save(); ctx.translate(e.x + z * 0.35, e.y + z * 0.55); ctx.rotate(e.h); ctx.scale(0.95, 0.95); humpBlit(ctx, pose(), 'rgb(10,25,40)', 0.2 * Math.max(0.3, 1 - z / 120)); ctx.restore();
+            ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.h); ctx.scale(zScale(z), zScale(z)); humpBlit(ctx, pose(), null, 1); ctx.restore();
+            return;
+        }
+        if (e.mode !== 'fly' && imgReady(sprImg(EGRET_SPR.file))) {
+            // THE PAINTED EGRET STANDING: its shadow cast down-right on the water (a bird a metre tall throws it well
+            // clear), joined to it by the thin dark lines of its legs; the neck stretching out when it strikes.
+            const strike = e.neck || 0, hx = Math.sin(e.bob * 0.7) * 0.6 * (1 - strike) * k, sx = 4.6 * k, sy = 7.2 * k;
+            ctx.save(); ctx.translate(e.x, e.y);
+            ctx.strokeStyle = 'rgba(10,20,15,0.32)'; ctx.lineWidth = 0.5 * k; ctx.lineCap = 'round';
+            for (const sd of [-0.6, 0.6]) { ctx.beginPath(); ctx.moveTo(sd * k, 1.5 * k); ctx.lineTo(sx + sd * k, sy + 1.5 * k); ctx.stroke(); }
+            ctx.translate(sx, sy); ctx.rotate(e.h); humpBlit(ctx, egretPosed(ctx, strike, hx, 55), 'rgb(10,20,15)', 0.22);
+            ctx.restore();
+            ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.h); humpBlit(ctx, egretPosed(ctx, strike, hx, 55), null, 1); ctx.restore();
+            return;
+        }
         if (e.mode === 'fly') {
             // slow, deep, bowed beats (herons and egrets: ~2.6 Hz, the downstroke deep)
             const We = wingStroke(e.flap, 0.9), beat = -Math.cos(e.flap) * 0.6 + We.flex * 0.8, z = e.z;
@@ -4856,6 +5129,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.restore();
     }
 
+    // Where it sits: out on the snag's branch, so the pale stump shows beside it. The drop off it lasts ANHINGA_DROP s.
+    const ANHINGA_DROP = 0.6;
+    function anhingaPerch(a) { return [a.px + Math.cos(a.snag) * 13 - Math.sin(a.snag) * -4, a.py + Math.sin(a.snag) * 13 + Math.cos(a.snag) * -4]; }
     // ANHINGA from above: the snakebird. Drying on a perch: a dark body with the wings held
     // wide, the upper wings streaked silver-white, the long fan tail, the thin neck and a
     // dagger bill. Swimming: only the S of the neck and head above the water, the body a dim
@@ -4877,6 +5153,23 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     function drawAnhinga(ctx, a) {
         const k = ANHINGA_SCALE;
+        if (a.mode === 'swim' && imgReady(sprImg(ANHINGA_SWIM.file))) {
+            // THE PAINTED ANHINGA SWIMMING: the snakebird, body under — the water laid over everything behind the neck,
+            // deepening to the tail — and only the S of the neck and the head out, a small V from the neck.
+            if (a.trail.length > 2) drawWakeTrail(ctx, a, 2.4, 0.9, 0.35);
+            const S = ANHINGA_SWIM, F = 32 / (S.bot - S.top), yb = -14 + (S.neck - S.top) * F;
+            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.h);
+            const P = sprPosed(ctx, sprImg(S.file), F, S.cx, S.top + 14 / F, 20, 56);
+            if (P) { const g = P.c.getContext('2d'), kk = P.px / (2 * P.R), Y = (y) => (P.R + y) * kk;
+                g.globalCompositeOperation = 'source-atop'; const gw = g.createLinearGradient(0, Y(yb - 1), 0, Y(yb + 7));
+                gw.addColorStop(0, `rgba(${waterTint()},0)`); gw.addColorStop(0.35, `rgba(${waterTint()},0.6)`); gw.addColorStop(1, `rgba(${waterTint()},0.78)`);
+                g.fillStyle = gw; g.fillRect(0, 0, P.px, P.px); g.globalCompositeOperation = 'source-over';
+                humpBlit(ctx, P, null, 1); }
+            if (a.upT < 2) riseWater(ctx, a.upT, -14, yb, 2.6, 12, 9);   // coming up: the neck breaks through first
+            ctx.scale(k, k); drawRing(ctx, 0, yb / k, 0.6 + 0.4 * Math.sin(a.t * 2), 1.4, 1.5, 0.35);
+            ctx.restore();
+            return;
+        }
         if (a.mode === 'swim') {
             if (a.trail.length > 2) drawWakeTrail(ctx, a, 2.4, 0.9, 0.35);
             ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.h); ctx.scale(k, k);
@@ -4892,9 +5185,39 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             ctx.restore();
             return;
         }
-        const vis = a.mode === 'drop' ? 1 - a.sink : a.mode === 'climb' ? Math.min(1, a.t / 0.8) : 1;
+        if (a.mode === 'under') return;
+        const vis = a.mode === 'drop' ? 1 - Math.min(1, a.t / ANHINGA_DROP) : a.mode === 'climb' ? Math.min(1, a.t / 0.8) : 1;
         // It sits out on the snag's branch, so the pale stump shows beside it.
         const bx = a.px + Math.cos(a.snag) * 13 - Math.sin(a.snag) * -4, by = a.py + Math.sin(a.snag) * 13 + Math.cos(a.snag) * -4;
+        if (imgReady(sprImg(ANHINGA_DRY.file)) && imgReady(sprImg(ANHINGA_SWIM.file))) {
+            // THE PAINTED ANHINGA DRYING: wings held open to the sun, settling a little now and then; its shadow below,
+            // a metre down on the water. FLUSHED it drops off the end of its branch head first — the wings closing as it
+            // falls (the drier cross-fading into the folded swimmer), its shadow running in to meet it — and slides
+            // under head first. CLIMBING OUT is the same backwards: up out of the water onto the branch, wings opening.
+            if (a.mode === 'under') return;
+            const S = ANHINGA_DRY, F = 30 / (S.x1 - S.x0), SS = ANHINGA_SWIM, FS = 32 / (SS.bot - SS.top);
+            const sm = (e0, e1, q) => { q = Math.max(0, Math.min(1, (q - e0) / (e1 - e0))); return q * q * (3 - 2 * q); };
+            let x = bx, y = by, rot = a.ph, z = 10, open = 1, wet = 0, sink = 0;   // wet: the swimmer's share; sink: how far it is under
+            if (a.mode === 'drop' || a.mode === 'climb') {
+                const out = a.mode === 'drop', k = Math.min(1, a.t / (out ? ANHINGA_DROP : 0.8)), u = out ? k : 1 - k, e = sm(0, 1, u);
+                const wx = out ? a.ex : a.cx0, wy = out ? a.ey : a.cy0, wh = out ? a.dh : a.ch0;
+                x = bx + (wx - bx) * e; y = by + (wy - by) * e; rot = a.ph + angDiff(wh, a.ph) * e;
+                z = 10 * (1 - e) + 3 * Math.sin(Math.PI * e); open = 1 - 0.75 * sm(0, 0.6, u); wet = sm(0.25, 0.6, u); sink = sm(0.62, 1, u);
+            }
+            const sh = open * (1 + 0.02 * Math.sin(a.flap * 1.3));
+            const dry = () => sprPosed(ctx, sprImg(S.file), F, S.cx, S.cy, 21, 57);
+            const swim = () => { const P = sprPosed(ctx, sprImg(SS.file), FS, SS.cx, (SS.top + SS.bot) / 2, 20, 56); if (P && sink > 0) slipUnder(ctx, P, sink, -16, 16, 3, 5); return P; };
+            const shA = 0.18 * (1 - sink);
+            ctx.save(); ctx.translate(x + z * 0.43, y + z * 0.68); ctx.rotate(rot);
+            if (wet < 1) { ctx.save(); ctx.scale(sh, 1); humpBlit(ctx, dry(), 'rgb(10,20,15)', shA * (1 - wet)); ctx.restore(); }
+            if (wet > 0) humpBlit(ctx, swim(), 'rgb(10,20,15)', shA * wet);
+            ctx.restore();
+            ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+            if (wet < 1) { ctx.save(); ctx.scale(sh, 1); humpBlit(ctx, dry(), null, 1 - wet); ctx.restore(); }
+            if (wet > 0) { humpBlit(ctx, swim(), null, wet * (1 - 0.6 * sink * sink)); if (sink > 0 && sink < 1) waterline(ctx, -16 + sink * 32, 2.6, 0.7 * Math.sin(Math.PI * sink), 3); }
+            ctx.restore();
+            return;
+        }
         ctx.save(); ctx.translate(bx, by); ctx.rotate(a.ph); ctx.scale(k, k); ctx.globalAlpha *= vis;
         const flex = Math.sin(a.flap * 1.3) * 0.5;
         const wings = (dark) => {
@@ -4934,6 +5257,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             ctx.fillStyle = 'rgba(60,80,40,0.35)'; ctx.beginPath(); ctx.ellipse(0, 0.8, 2.3, 3.4, 0, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#5b7438'; ctx.beginPath(); ctx.ellipse(0, -2.4, 1.9, 1.1, 0, 0, Math.PI * 2); ctx.fill();
             for (const sd of [-1, 1]) { ctx.fillStyle = '#6d8a41'; ctx.beginPath(); ctx.arc(sd * 1.1, -2.6, 0.75, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#d8b33a'; ctx.beginPath(); ctx.arc(sd * 1.15, -2.7, 0.3, 0, Math.PI * 2); ctx.fill(); }
+            ctx.restore(); return;
+        }
+        if (mode === 'sit' && imgReady(sprImg(FROG_SPR.file))) {
+            // THE PAINTED BULLFROG sitting: snout at -4.4, the spread hind feet at 6.2 (the drawn frog's units)
+            const S = FROG_SPR, F = 10.6 / (S.bot - S.top), kk = Math.hypot(ctx.getTransform().a, ctx.getTransform().b);
+            ctx.drawImage(humpMip(sprImg(S.file), 1.5 * kk * F), -S.cx * F, -4.4 - S.top * F, F, F);
             ctx.restore(); return;
         }
         const stretch = mode === 'hop' ? k : 0;              // legs trailing straight back mid-hop
@@ -5488,6 +5817,105 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.fillStyle = '#2a1d15'; ctx.beginPath(); ctx.ellipse(0, -3.95, 0.5, 0.3, 0, 0, Math.PI * 2); ctx.fill();
         for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * 1.35, -1.6, 0.22, 0.16, 0, 0, Math.PI * 2); ctx.fill(); }
     }
+    // ── THE PAINTED SOCKEYE RUN (Oct 14 2026) ──────────────────────────────────────────────────────
+    // Wes's generations: the brown bear, the bald eagle (cut at the shoulders by art/colsplit.py, its white tail kept
+    // with the body by --tail), the river otter swimming and lying up. Fractions of each frame measured off the art.
+    const RV = 'assets/images/props/river/';
+    // The bear: nose at the top. `neck` the row the head is cut at (it turns about it); `collar` the body's share of
+    // the neck kept under the head, so a turned head never opens a gap at its base.
+    const BEAR_SPR = { file: RV + 'brown-bear.png', top: 0.0596, bot: 0.9268, cx: 0.5, neck: 0.29, collar: 0.25,
+        // the forepaws, cut out by art/feetsplit.py --dark (they lie on the corners of the shoulders): their roots
+        paws: { 'fore-l': [0.3655, 0.3237], 'fore-r': [0.6355, 0.3237] } };
+    const bearPart = (p2) => sprImg(RV + 'brown-bear-' + p2 + '.png');
+    // HOW A BROWN BEAR CATCHES A SALMON in the shallows (Wes, Oct 15: "check the grizzly bear lunge"; Katmai NPS, the
+    // Brooks River bears: "dash and grab" — "bears often chase fish and attempt to pin them to the river bottom with
+    // their paws" — then bite it; or they sit and wait and "quickly pin it to the stream bottom or against their body
+    // with their paws, bite it, and begin to eat"). Ours stand at the edge of the fast water and POUNCE, in four
+    // beats over BEAR_POUNCE s: GATHER (the forequarters rise — from above it shortens), LEAP (a lunge forward, the
+    // body stretching, the forepaws reaching out ahead), PIN (the paws slam down on the fish in a burst of white
+    // water and the head plunges under between them to bite), UP (the head comes out, a salmon crosswise in its jaws
+    // half the time, and it stands there and eats).
+    const BEAR_POUNCE = 1.2;
+    function bearPounce(u) {
+        const e = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
+        const leap = e((u - 0.2) / 0.3), back = e((u - 0.8) / 0.2);
+        return { L: 1 - 0.1 * e(u / 0.2) + 0.2 * leap - 0.1 * back, reach: 7 * leap * (1 - back), spread: 1.2 * leap * (1 - back),
+                 dunk: e((u - 0.5) / 0.1) * (1 - back), rise: 4 * e(u / 0.2) * (1 - leap) };
+    }
+    const EAGLE_SPR = { x0: 0.085, x1: 0.9141, cx: 0.4995, cy: 0.5052, root: { 'wing-l': [0.4555, 0.5052], 'wing-r': [0.5435, 0.5047] } };
+    const eagleImg = (p2) => sprImg(RV + 'bald-eagle-' + p2 + '.png');
+    // The otter: `head` the row behind the ears (what breaks the surface at the front), `root` where the tail leaves
+    // the hind feet.
+    const ROTTER_SPR = { file: RV + 'otter.png', top: 0.0625, bot: 0.9307, cx: 0.5, head: 0.23, root: 0.75,
+        // its four feet, cut out by art/feetsplit.py so it can paddle: each part's file and its root (pivot)
+        feet: { 'fore-l': [0.412, 0.355], 'fore-r': [0.588, 0.3545], 'hind-l': [0.444, 0.665], 'hind-r': [0.556, 0.665] } };
+    const otterPart = (p2) => sprImg(RV + 'otter-' + p2 + '.png');
+    // HOW A RIVER OTTER SWIMS (Wes, Oct 15: "I don't think they doggy paddle"). Fish 1994 (J Mammal 75: 989-997, six
+    // river otters filmed from above and below): paddling — four-footed, fore-only, alternate or simultaneous hind
+    // feet — is the slow and manoeuvring repertoire; for TRAVEL in a straight line the body and tail undulate
+    // DORSOVENTRALLY, the otter shifting into it by stroking BOTH hind feet together with the body flexing, a wave
+    // running back down the tail at ~1.6x the swimming speed. The giant river otter the same (Duff & Fish): hind feet
+    // stroking together in time with the flattened tail's waves. Ours travel at ~3 m/s, an otter's top speed, so they
+    // undulate: from above, the hump of back and then the tail break the surface in turn as the wave runs down them;
+    // the head stays level and out; the fore feet are tucked back along the body; the two hind feet push back together
+    // as the wave reaches the hips. Almost no side-to-side swing — the bending is up and down.
+    const OTTER_WAVE = { f: 1.35, lam: 0.75 };   // waves a second, and the wave's length in body lengths (1.6 x 30 u/s / 36 u ~ 1.35)
+    // the hind feet at wave phase p (0..1): the power stroke back with the web spread, the recovery forward folded
+    function otterFoot(p) {
+        const e = (q) => q * q * (3 - 2 * q);
+        if (p < 0.4) { const q = e(p / 0.4); return { dy: -1.5 + 3 * q, w: 1.05, a: 0.18 - 0.3 * q }; }
+        const q = e((p - 0.4) / 0.6); return { dy: 1.5 - 3 * q, w: 0.55, a: -0.12 + 0.3 * q };
+    }
+    const OTTER_REST = { file: RV + 'otter-resting.png', cx: 0.5098, cy: 0.494 };
+    // The bear posed in the drawn bear's units (nose -13.4, rump 9.6): the body, then the head turned `look` about the
+    // neck. Returns the pose and the pivot's y.
+    function bearPosed(ctx, look, slot, P2) {
+        const S = BEAR_SPR, paws = ['body', 'fore-l', 'fore-r'].map(bearPart), cut = paws.every(imgReady), im = cut ? paws[0] : sprImg(S.file); if (!imgReady(im)) return null;
+        P2 = P2 || { reach: 0, spread: 0, dunk: 0 };
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 15;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = 23 / (S.bot - S.top), x0 = -S.cx * F, y0 = -13.4 - S.top * F, Yf = (fy) => y0 + fy * F;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        // the forepaws, under the body (their stubs reach in under the shoulders): out ahead in the pounce
+        if (cut) for (const [nm, idx] of [['fore-l', 1], ['fore-r', 2]]) {
+            const sd = nm.endsWith('l') ? -1 : 1, [rx, ry] = S.paws[nm], X = x0 + rx * F, Y = Yf(ry);
+            // reaching out, the forearm shows between the shoulder and the paw (a dark furred limb, tapering)
+            if (P2.reach > 0.4) { g.strokeStyle = '#4a2e1c'; g.lineCap = 'round'; g.lineWidth = 3.0; g.beginPath(); g.moveTo(X - sd * 0.8, Y + 2); g.lineTo(X + sd * P2.spread, Y - P2.reach + 0.6); g.stroke();
+                g.strokeStyle = 'rgba(120,78,46,0.55)'; g.lineWidth = 1.1; g.beginPath(); g.moveTo(X - sd * 1.2, Y + 2); g.lineTo(X + sd * (P2.spread - 0.4), Y - P2.reach + 0.6); g.stroke(); }
+            g.save(); g.translate(sd * P2.spread, -P2.reach); g.drawImage(humpMip(paws[idx], 1.5 * k * F), x0, Yf(0), F, F); g.restore();
+        }
+        g.drawImage(src, 0, S.collar * n, n, (1 - S.collar) * n, x0, Yf(S.collar), F, (1 - S.collar) * F);
+        const py = Yf(S.neck);
+        // the head: turned to what it watches; pointing DOWN into the water to bite, it foreshortens and the river
+        // closes over it
+        g.save(); g.translate(0, py); g.rotate(look); g.scale(1, 1 - 0.25 * P2.dunk); g.translate(0, -py - P2.reach * 0.35 * P2.dunk);
+        g.drawImage(src, 0, 0, n, S.neck * n, x0, Yf(0), F, S.neck * F);
+        if (P2.dunk > 0.01) { g.globalCompositeOperation = 'source-atop'; g.globalAlpha = 0.7 * P2.dunk; g.fillStyle = `rgb(${waterTint()})`; g.fillRect(-R, Yf(0) - 1, 2 * R, py - Yf(0) - 1.5); g.globalAlpha = 1; g.globalCompositeOperation = 'source-over'; }
+        g.restore();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px, py, Yf };
+    }
+    // A long animal posed in strips (the otter): rigid down to `root`, the tail laid in strips each slid sideways by
+    // sway(q) (q 0 at the root .. 1 at the tip) and turned to its slope. L its length, yN its nose, in the caller's units.
+    function tailPosed(ctx, S, L, yN, R, sway, slot, im, pre) {
+        im = im || sprImg(S.file); if (!imgReady(im)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = L / (S.bot - S.top), x0 = -S.cx * F, y0 = yN - S.top * F, Yf = (fy) => y0 + fy * F;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const piece = (f0, f1) => g.drawImage(src, 0, f0 * n, n, (f1 - f0) * n, x0, Yf(f0), F, (f1 - f0) * F);
+        if (pre) pre(g, F, x0, Yf, k);   // (parts that go UNDER the body: the feet)
+        const tl = (fy) => Math.max(0, Math.min(1, (fy - S.root) / (S.bot - S.root)));
+        const N = 10, step = (S.bot + 0.01 - S.root) / N, lap = 0.003;
+        for (let i = N - 1; i >= 0; i--) {
+            const a = S.root + i * step, mid = a + step / 2, q = tl(mid), sl = (sway(Math.min(1, q + 0.02)) - sway(Math.max(0, q - 0.02))) / (0.04 * (S.bot - S.root) * F);
+            g.save(); g.translate(sway(q), Yf(mid)); g.rotate(-Math.atan(sl)); g.translate(0, -Yf(mid)); piece(a - lap, a + step + lap); g.restore();
+        }
+        piece(S.top - 0.01, S.root + lap);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px, F, y0, Yf };
+    }
     function drawBear(ctx, B) {
         const rear = B.rear, lunge = B.mode === 'lunge' ? Math.sin(Math.PI * B.lunge) : 0;
         const L = 1 - rear * 0.36 + lunge * 0.1;
@@ -5525,6 +5953,63 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
         // its shadow, down-right; longer when it stands up
         const sh = 2.5 + rear * 7;
+        if (imgReady(sprImg(BEAR_SPR.file))) {
+            // THE PAINTED BEAR: standing in the shallows, out of the water but for a darker, water-washed rim where the
+            // stream laps its sides and paws; the head turned to whatever it watches (cut free at the neck), a salmon
+            // crosswise in its jaws; rearing to look, it foreshortens (L) and throws a longer shadow, forepaws out.
+            const pc = B.mode === 'lunge' ? bearPounce(B.lunge) : { L: 1, reach: 0, spread: 0, dunk: 0, rise: 0 };
+            const Lp = (1 - rear * 0.36) * pc.L, look = B.mode === 'lunge' ? 0 : B.look;
+            // rearing to look at a boat, the forepaws come up in front of it
+            const P2 = { reach: pc.reach + rear * 3, spread: pc.spread + rear * 0.6, dunk: pc.dunk }, shp = sh + pc.rise;
+            ctx.save(); ctx.translate(B.x + shp * 0.35 * k, B.y + shp * 0.55 * k); ctx.rotate(B.h); ctx.scale(k, k * Lp);
+            humpBlit(ctx, bearPosed(ctx, look, 59, P2), 'rgb(10,25,30)', 0.22); ctx.restore();
+            ctx.save(); ctx.translate(B.x, B.y); ctx.rotate(B.h); ctx.scale(k, k);
+            ctx.save(); ctx.scale(1, Lp);
+            const P = bearPosed(ctx, look, 59, P2);
+            if (P) {
+                if (B.fish > 0 || (B.mode === 'lunge' && B.catch && B.lunge > 0.85)) {
+                    // a sockeye held crosswise in its jaws, under the painted head so the snout lies over its middle
+                    ctx.save(); ctx.translate(0, P.py); ctx.rotate(look); ctx.translate(0, P.Yf(0.105) - P.py); ctx.rotate(Math.PI / 2 + Math.sin(T * 9) * 0.15);
+                    ctx.fillStyle = SOCKEYE.body; ctx.beginPath(); ctx.ellipse(0, 0, 0.9, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = SOCKEYE.head; ctx.beginPath(); ctx.ellipse(0, -2.6, 0.8, 1.1, 0, 0, Math.PI * 2); ctx.fill();
+                    ctx.fillStyle = SOCKEYE.tail; ctx.beginPath(); ctx.moveTo(0, 3); ctx.lineTo(-1, 4.4 + Math.sin(T * 12) * 0.4); ctx.lineTo(1, 4.4 - Math.sin(T * 12) * 0.4); ctx.closePath(); ctx.fill();
+                    ctx.restore();
+                }
+                // the wet rim: the bear's own outline washed with the stream, its inside cut away
+                if (rear < 0.95) { const M = humpScratch(60, P.px, P.px), gm = M.getContext('2d');
+                    gm.drawImage(P.c, 0, 0); gm.globalCompositeOperation = 'source-in'; gm.fillStyle = `rgb(${waterTint()})`; gm.fillRect(0, 0, P.px, P.px);
+                    gm.globalCompositeOperation = 'destination-out'; const kk = P.px / (2 * P.R), ox = P.px / 2, oy = (P.R - 1.5) * kk;   // (shrunk about the middle of the body, a little ahead of the origin)
+                    gm.setTransform(0.86, 0, 0, 0.93, ox * 0.14, oy * 0.07); gm.drawImage(P.c, 0, 0); gm.setTransform(1, 0, 0, 1, 0, 0);
+                    gm.clearRect(0, 0, P.px, (P.R + P.py + 1.5) * kk);   // (the rim only along the body: across the neck it read as a collar)
+                    gm.globalCompositeOperation = 'source-over';
+                    humpBlit(ctx, P, null, 1); humpBlit(ctx, { c: M, R: P.R, px: P.px }, null, 0.45 * (1 - rear)); }
+                else humpBlit(ctx, P, null, 1);
+            }
+            ctx.restore();
+            // foam where the water meets its sides (in to the painted bear's slimmer flanks)
+            ctx.save(); ctx.scale(0.85, 1); ctx.globalAlpha *= (1 - rear) * (0.35 + 0.65 * flow); ctx.lineCap = 'round';
+            ctx.strokeStyle = 'rgba(255,255,255,0.6)'; ctx.lineWidth = 1.5;
+            // (on the chest and shoulders: the painted head reaches back over where the drawn bear's neck was; soft —
+            // stronger read as a collar)
+            ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1.1;
+            ctx.beginPath(); ctx.ellipse(0, -0.8, 6.9, 6.4 * L, 0, Math.PI * 1.22, Math.PI * 1.78); ctx.stroke();
+            for (const sd of [-1, 1]) for (const [y0, y1, a] of [[-3.2, 0.8, 0.5], [2, 5, 0.35], [6.2, 8.6, 0.22]]) {
+                const w = (T * 1.3 + y0 * 0.3 + sd) % 1;
+                ctx.strokeStyle = `rgba(255,255,255,${a * (0.7 + 0.3 * Math.sin(w * 6.283))})`; ctx.lineWidth = 0.8;
+                ctx.beginPath(); ctx.moveTo(sd * (6.0 + (y0 + 4) * 0.1), y0 * L); ctx.quadraticCurveTo(sd * 7.3, (y0 + y1) / 2 * L, sd * (6.8 + (y1 + 4) * 0.05), y1 * L); ctx.stroke();
+            }
+            ctx.restore();
+            ctx.restore();
+            // the pin: white water bursting up round the paws as they come down, then broken rings spreading; while its
+            // head is under, the river churning round its muzzle
+            if (B.splash > 0) { const q = 1 - B.splash;
+                // a broad low sheet of churned white thrown out round the paws (a pin, not a plunge: no jets)
+                if (q < 0.5) { const s = 1 - q / 0.5; ctx.fillStyle = `rgba(245,250,250,${0.75 * s})`; lobedBlob(ctx, B.sx, B.sy, 8 + 14 * q, 6 + 10 * q, B.h, B.i + 3); ctx.fill();
+                    ctx.fillStyle = `rgba(255,255,255,${0.5 * s})`; lobedBlob(ctx, B.sx, B.sy, 5 + 8 * q, 4 + 6 * q, B.h + 0.7, B.i + 4); ctx.fill(); }
+                for (let r = 0; r < 2; r++) { const a2 = q - r * 0.2; if (a2 > 0) brokenRing(ctx, B.sx, B.sy, 12 + 30 * Math.sqrt(a2), 1.15, B.h, 0.5 * (1 - a2) * (1 - r * 0.3), B.i * 5 + r, 0.9); } }
+            if (pc.dunk > 0.05) { const [fx, fy] = fwd(B.h), d = 22 * Lp; ctx.fillStyle = `rgba(240,248,250,${0.4 * pc.dunk})`; lobedBlob(ctx, B.x + fx * d, B.y + fy * d, 6, 5, B.h + T * 2, B.i + 9); ctx.fill(); }
+            return;
+        }
         ctx.save(); ctx.translate(B.x + sh * 0.35 * k, B.y + sh * 0.55 * k); ctx.rotate(B.h); ctx.scale(k, k);
         ctx.fillStyle = 'rgba(10,25,30,0.22)'; bearShape(ctx, L); ctx.fill();
         ctx.beginPath(); ctx.ellipse(0, -8.3 * L - 1.4, 3.8, 3.2, 0, 0, Math.PI * 2); ctx.fill();
@@ -5693,16 +6178,49 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.beginPath(); ctx.moveTo(-1.1, 4); ctx.lineTo(-2.7, 8.2); ctx.quadraticCurveTo(0, 9.6, 2.7, 8.2); ctx.lineTo(1.1, 4); ctx.closePath(); ctx.fill();
     }
     function drawEagle(ctx, E) {
-        const k = EAGLE_SCALE, fold = E.mode === 'stoop' ? 1 : E.mode === 'grab' ? 0.4 : 0;
+        const k = EAGLE_SCALE, painted = ['body', 'wing-l', 'wing-r'].every(p2 => imgReady(eagleImg(p2)));
+        // (the painted bird: half-folded only on the way down, open on the run-in; the drawn one kept its old stoop)
+        const fold = painted ? (E.mode === 'stoop' && !E.brake && E.z > 9 ? 0.55 : 0) : E.mode === 'stoop' ? 1 : E.mode === 'grab' ? 0.4 : 0;
         // soaring it does NOT flap — wings held flat, fingers spread; climbing away with a fish it
         // labours, deep beats at ~2.4 Hz
-        const Wg = E.mode === 'climb' || E.mode === 'grab' ? wingStroke(E.flap, 1.0) : GLIDE, beat = Wg.flex;
+        const Wg = E.mode === 'climb' || E.mode === 'grab' || E.brake ? wingStroke(E.flap, 1.0) : GLIDE, beat = Wg.flex;
         _eaglePF = Wg.pf;
         // Its shadow on the water (Wes, Sep 25: "make sure the eagle casts a shadow"): its own
         // silhouette, down-right. Height pushes it out, but only so far — at a true 105 u it
         // fell 60 u off and at 7% was never seen — and it stays dark enough to read: ~16% at
         // soaring height, ~24% as it comes down to the water.
         const z = E.z, zo = Math.min(z, 55);
+        if (painted) {
+            // THE PAINTED EAGLE: wings cut at the shoulders — held flat and still soaring, beating deep climbing away
+            // with a fish, swept right back in the stoop — and its shadow on the water, the same pose.
+            const B2 = { S: EAGLE_SPR, span: 58, img: eagleImg }, pose = () => pelicanPosed(ctx, Wg.pf, beat, fold, 61, B2);
+            ctx.save(); ctx.translate(E.x + zo * 0.35, E.y + zo * 0.55); ctx.rotate(E.h); ctx.scale(0.97, 0.97);
+            humpBlit(ctx, pose(), 'rgb(10,22,26)', 0.16 + 0.08 * Math.max(0, 1 - z / 105)); ctx.restore();
+            // where the feet went in: a small burst of white water torn along its line, then broken rings
+            if (E.splash > 0) { const q = 1 - E.splash;
+                if (q < 0.5) { ctx.fillStyle = `rgba(245,250,250,${0.7 * (1 - q / 0.5)})`; lobedBlob(ctx, E.sx, E.sy, 5 + 8 * q, 3 + 4 * q, E.h + Math.PI / 2, E.i + 11); ctx.fill(); }
+                for (let r = 0; r < 2; r++) { const a2 = q - r * 0.2; if (a2 > 0) brokenRing(ctx, E.sx, E.sy, 6 + 22 * Math.sqrt(a2), 1.2, E.h, 0.45 * (1 - a2) * (1 - r * 0.3), E.i * 3 + r, 0.8); } }
+            ctx.save(); ctx.translate(E.x, E.y); ctx.rotate(E.h);
+            if (E.fish > 0) {
+                // the salmon hangs head-first under the body, gripped in its yellow feet
+                ctx.save(); ctx.scale(k, k); ctx.translate(0, 3.2); ctx.rotate(Math.sin(T * 5) * 0.12); ctx.globalAlpha *= Math.min(1, E.fish * 4);
+                ctx.fillStyle = SOCKEYE.body; ctx.beginPath(); ctx.ellipse(0, 1.5, 0.75, 2.8, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = SOCKEYE.head; ctx.beginPath(); ctx.ellipse(0, -0.8, 0.6, 0.9, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#e8b930'; for (const [fx, fy] of [[-0.55, 0.2], [0.55, 2.4]]) { ctx.beginPath(); ctx.ellipse(fx, fy, 0.55, 0.45, 0, 0, Math.PI * 2); ctx.fill(); }
+                ctx.restore();
+            }
+            if (E.brake || E.mode === 'grab') {
+                // the feet swung forward under the chest, talons spread, yellow — drawn UNDER the body, so only the toes show beside it
+                ctx.save(); ctx.scale(k, k);
+                for (const sd of [-1, 1]) { ctx.fillStyle = '#e8b930'; ctx.beginPath(); ctx.ellipse(sd * 1.5, -2.6, 0.6, 0.95, sd * 0.25, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = '#2a2420'; ctx.lineWidth = 0.22; ctx.lineCap = 'round';
+                    for (const a of [-0.5, 0, 0.5]) { ctx.beginPath(); ctx.moveTo(sd * 1.5 + a * 0.5, -3.3); ctx.lineTo(sd * 1.6 + a * 1.0, -4.1); ctx.stroke(); } }
+                ctx.restore();
+            }
+            humpBlit(ctx, pose(), null, 1);
+            ctx.restore();
+            return;
+        }
         ctx.save(); ctx.translate(E.x + zo * 0.35, E.y + zo * 0.55); ctx.rotate(E.h); ctx.scale(k * 0.97, k * 0.97);
         ctx.fillStyle = `rgba(10,22,26,${0.16 + 0.08 * Math.max(0, 1 - z / 105)})`; eagleShape(ctx, fold, beat, false);
         ctx.restore();
@@ -5750,10 +6268,73 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.closePath();
         return pts;
     }
-    function drawOtter(ctx, m, onJam) {
+    function drawOtter(ctx, m, onJam, fam) {
         const k = OTTER_SCALE * m.size;
         const bend = onJam ? 0 : Math.sin((m.trailT + m.i) * 3) * 0.25, curl = onJam ? m.curl : 0;
         const under = onJam ? 0 : Math.sin(Math.PI * (m.dip || 0));
+        if (onJam && imgReady(sprImg(OTTER_REST.file))) {
+            // THE PAINTED OTTER LYING UP on the logjam: a loose curl in the sun, its shadow on the logs
+            const F = 35 / OTTER_SCALE, P = () => sprPosed(ctx, sprImg(OTTER_REST.file), F, OTTER_REST.cx, OTTER_REST.cy, F * 0.55, 62);
+            // (every other one the mirror image, so a family lying together is not four copies of one otter)
+            ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.rh); ctx.scale(k * (m.i % 2 ? -1 : 1), k);
+            ctx.save(); ctx.translate(0.8 * (m.i % 2 ? -1 : 1), 1.2); humpBlit(ctx, P(), 'rgb(10,20,15)', 0.25); ctx.restore();
+            humpBlit(ctx, P(), null, 1);
+            ctx.restore();
+            if (m.ring > 0) drawRing(ctx, m.x, m.y, m.ring, 5, 16, 0.5);
+            return;
+        }
+        if (!onJam && imgReady(sprImg(ROTTER_SPR.file))) {
+            // THE PAINTED OTTER SWIMMING: the whole animal dim under the river, the tail sweeping; crisp over it, only
+            // the head and a line of back where they break the surface; porpoising (dip), it all goes under and up again.
+            // Undulating (see OTTER_WAVE): the wave's phase at a point s down the body (0 nose .. 1 tail tip) is
+            // f*T - s/lam; it is UP (breaking the surface) where sin > 0. Fleeing under, faster and deeper.
+            const S = ROTTER_SPR, fleeing = m.dip > 0 || (fam && fam.mode === 'under'), W = OTTER_WAVE, fr = W.f * (fleeing ? 1.4 : 1);
+            const wave = (s) => Math.sin(Math.PI * 2 * (fr * T + m.i * 0.29 - s / W.lam)), pp = (((fr * T + m.i * 0.29 - 0.62 / W.lam) % 1) + 1) % 1;   // (the hips, s 0.62)
+            const sway = (q) => 0.25 * Math.sin(Math.PI * 2 * (fr * T + m.i * 0.29) - q * 3) * q;   // (a trace of side-to-side; the bend is up and down)
+            const feetIm = ['body', 'fore-l', 'fore-r', 'hind-l', 'hind-r'].map(otterPart), parts = feetIm.every(imgReady);
+            const pre = parts ? (g, F, x0, Yf, kk) => {
+                for (const [nm, idx] of [['hind-l', 3], ['hind-r', 4], ['fore-l', 1], ['fore-r', 2]]) {
+                    const sd = nm.endsWith('l') ? -1 : 1, hind = nm[0] === 'h', [rx, ry] = S.feet[nm], X = x0 + rx * F, Y = Yf(ry);
+                    // both hind feet together, stroking as the wave reaches the hips; the fore feet tucked back along the body
+                    const f = hind ? otterFoot(pp) : { dy: 0.9, w: 0.55, a: -0.3 }, sc = 1;
+                    g.save(); g.translate(X, Y + f.dy * sc); g.rotate(sd * -f.a * sc); g.scale(1 - (1 - f.w) * (hind ? 1 : 0.6), 1); g.translate(-X, -Y);
+                    g.drawImage(humpMip(feetIm[idx], 1.5 * kk * F), x0, Yf(0), F, F); g.restore();
+                } } : null;
+            ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.h); ctx.scale(k, k);
+            const D = tailPosed(ctx, S, 17.9, -8.9, 11, sway, 63, parts ? feetIm[0] : null, pre);
+            if (D) {
+                // under the surface the body goes DARKER and takes the river's colour (seenThrough, as the Lagoon's
+                // animals: the light down to it and back), never paler than the head out of the water
+                seenThrough(D, 0.45 + 1.2 * under, 66);
+                humpBlit(ctx, D, null, 0.85 * (1 - 0.7 * under));
+                if (under < 0.95) { const C = tailPosed(ctx, S, 17.9, -8.9, 11, sway, 64, parts ? feetIm[0] : null), M = C && humpScratch(65, C.px, C.px);
+                    if (M) { const mg = M.getContext('2d'), kk = C.px / (2 * C.R); mg.setTransform(kk, 0, 0, kk, C.R * kk, C.R * kk); mg.fillStyle = '#fff';
+                        for (const [gr, a] of [[1.3, 0.3], [1.12, 0.5], [1, 1]]) { mg.globalAlpha = a;
+                            mg.beginPath(); mg.ellipse(0, (C.Yf(S.top) + C.Yf(S.head)) / 2, 2.4 * gr, (C.Yf(S.head) - C.Yf(S.top)) / 2 + 0.3 * gr, 0, 0, Math.PI * 2); mg.fill(); }
+                        // down the back and tail, each short stretch as much out of the water as the wave holds it up
+                        for (let i = 0; i < 14; i++) { const s0 = (S.head - S.top) / (S.bot - S.top) + i * 0.052, s = s0 + 0.026, up = Math.max(0, wave(s)) * (1 - 0.35 * s), y = C.Yf(S.top + s * (S.bot - S.top));
+                            if (up <= 0.02) continue; const q = Math.max(0, (S.top + s * (S.bot - S.top) - S.root) / (S.bot - S.root)), w = s < 0.62 ? 1.7 : 1.5 * (1 - q * 0.8);
+                            mg.globalAlpha = up; mg.beginPath(); mg.ellipse(sway(q), y, w, 1.05, 0, 0, Math.PI * 2); mg.fill(); }
+                        mg.globalAlpha = 1; mg.setTransform(1, 0, 0, 1, 0, 0);
+                        const gc = C.c.getContext('2d'); gc.globalCompositeOperation = 'destination-in'; gc.drawImage(M, 0, 0); gc.globalCompositeOperation = 'source-over';
+                        humpBlit(ctx, C, null, 1 - under); } }
+            }
+            ctx.restore();
+            if (under < 0.6) {
+                // the bow wave: a lip of white water pushed up round the chin and curling back along the cheeks into
+                // the V (connected foam, never a pair of arcs), in the otter's frame
+                // (the beaver's moustache, in the otter's units: a thin crescent hugging the nose, short arms down the cheeks)
+                ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.h); ctx.scale(k, k);
+                const q = (1 - under / 0.6);
+                foamBand(ctx, (s) => { const th = Math.PI * (1.15 + 0.7 * s); return [Math.cos(th) * 1.5, -7.9 + Math.sin(th) * 1.15]; },
+                         (s) => { const th = Math.PI * (1.15 + 0.7 * s); return [Math.cos(th), Math.sin(th)]; }, (s) => 0.32 * (0.4 + Math.sin(Math.PI * s)), 0.75 * q, m.i * 3 + 1);
+                for (const sd of [-1, 1]) foamBand(ctx, (s) => [sd * (1.55 + 1.3 * s), -7.7 + 4 * s], () => [sd, 0], (s) => 0.28 * (1 - s), 0.45 * q, m.i * 3 + sd * 5);
+                ctx.restore();
+            }
+            // where it went under or came up: broken rings spreading (never one perfect circle)
+            if (m.ring > 0) for (let r = 0; r < 2; r++) { const u = 1 - m.ring - r * 0.25; if (u > 0) brokenRing(ctx, m.x, m.y, 6 + 16 * Math.sqrt(u), 1, m.h, 0.45 * m.ring * (1 - r * 0.3), m.i * 7 + r, 0.8); }
+            return;
+        }
         ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(onJam ? m.rh : m.h); ctx.scale(k, k);
         if (onJam) { ctx.fillStyle = 'rgba(10,20,15,0.25)'; ctx.save(); ctx.translate(0.8, 1.2); otterShape(ctx, 0, curl); ctx.fill(); ctx.restore(); }
         // under the water: the whole animal as one dim shape
@@ -9892,10 +10473,48 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (!nose(h1, ahead) && !side(h1, ahead - 6, halfW * 0.7) && !side(h1, ahead - 6, -halfW * 0.7) && !nose(h1, halfLen * 0.4)) { o.h = h1; o.x += Math.sin(h1) * v * dt; o.y -= Math.cos(h1) * v * dt; }
         else { o.h = h1; o.steerT = 0; }
     }
+    // A patrol leg planned through OPEN water, once, at setup (Wes, Oct 15: "make sure they don't get stuck by rocks").
+    // The authored patrol points are snapped clear of rock, but the water BETWEEN two of them was never checked, and
+    // steerTo only looks a body length or two ahead: shark 0 swam a 35 u loop at bird rock indefinitely, every
+    // heading toward its next point (430 u off, beyond the rocks) blocked. So: an A* over 30 u cells — a cell is
+    // water if the shark's body fits there, `clr` of clear water round its centre — then pulled tight into straight
+    // runs that keep the same clearance. Falls back to the straight leg if no route is found.
+    function waterRoute(a, b, clr) {
+        const C = 30, memo = new Map(), x0 = Math.min(a.x, b.x) - 900, y0 = Math.min(a.y, b.y) - 900;
+        const W = Math.ceil((Math.abs(a.x - b.x) + 1800) / C), H = Math.ceil((Math.abs(a.y - b.y) + 1800) / C);
+        const fits = (x, y) => !solidAt(x, y, null, true) && !solidAt(x + clr, y, null, true) && !solidAt(x - clr, y, null, true) && !solidAt(x, y + clr, null, true) && !solidAt(x, y - clr, null, true)
+            && !solidAt(x + clr * 0.7, y + clr * 0.7, null, true) && !solidAt(x - clr * 0.7, y - clr * 0.7, null, true) && !solidAt(x + clr * 0.7, y - clr * 0.7, null, true) && !solidAt(x - clr * 0.7, y + clr * 0.7, null, true);
+        const open = (i, j) => { if (i < 0 || j < 0 || i >= W || j >= H) return false; const k = j * W + i; let v = memo.get(k); if (v === undefined) { v = fits(x0 + (i + 0.5) * C, y0 + (j + 0.5) * C); memo.set(k, v); } return v; };
+        const sees = (p, q) => { const d = Math.hypot(q.x - p.x, q.y - p.y), m = Math.ceil(d / 15); for (let s = 1; s < m; s++) if (!fits(p.x + (q.x - p.x) * s / m, p.y + (q.y - p.y) * s / m)) return false; return true; };
+        if (sees(a, b)) return [b];   // (most legs are open water end to end: no search)
+        const cell = (q) => [Math.floor((q.x - x0) / C), Math.floor((q.y - y0) / C)], [si, sj] = cell(a), [ei, ej] = cell(b);
+        const g = new Map([[sj * W + si, 0]]), from = new Map(), heap = [[0, si, sj]], done = new Set();
+        let found = false;
+        for (let n = 0; heap.length && n < 30000; n++) {
+            let bi = 0; for (let q = 1; q < heap.length; q++) if (heap[q][0] < heap[bi][0]) bi = q;
+            const [, i, j] = heap[bi]; heap[bi] = heap[heap.length - 1]; heap.pop();
+            const k = j * W + i; if (done.has(k)) continue; done.add(k);
+            if (i === ei && j === ej) { found = true; break; }
+            for (const [di, dj] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+                const ni = i + di, nj = j + dj, nk = nj * W + ni; if (done.has(nk) || !(open(ni, nj) || (ni === ei && nj === ej))) continue;
+                const ng = g.get(k) + Math.hypot(di, dj); if (ng < (g.get(nk) ?? 1e9)) { g.set(nk, ng); from.set(nk, k); heap.push([ng + Math.hypot(ei - ni, ej - nj), ni, nj]); }
+            }
+        }
+        if (!found) return [b];
+        const cells = []; for (let k = ej * W + ei; k !== undefined; k = from.get(k)) cells.push({ x: x0 + (k % W + 0.5) * C, y: y0 + (Math.floor(k / W) + 0.5) * C });
+        cells.reverse(); cells[0] = a; cells[cells.length - 1] = b;
+        // pulled tight: from each kept point, the farthest point still in sight with the body's clearance all the way
+        const out = []; let i = 0;
+        while (i < cells.length - 1) { let j = cells.length - 1; while (j > i + 1 && !sees(cells[i], cells[j])) j--; out.push(cells[j]); i = j; }
+        return out;
+    }
     function makeWhites(list) {
         sprImg(WHITE_SPR.file); sprImg(WHITE_BREACH.file);   // ask for the painted shark now, not when it first swims into view
         return list.map((P, i) => {
-            const pts = P.path.map(([x, y]) => snapOpen(x, y, 70));
+            const way = P.path.map(([x, y]) => snapOpen(x, y, 70)), pts = [way[0]];
+            // each leg planned through open water (the last one back to the start too, unless it swims there and back)
+            for (let k = 0; k < way.length - (P.pingpong ? 1 : 0); k++) { const a = way[k], b = way[(k + 1) % way.length]; for (const q of waterRoute(a, b, 40)) pts.push(q); }
+            if (!P.pingpong) pts.pop();   // (the loop's closing leg ends on its first point)
             return { i, pts, wi: 1, dir: 1, pingpong: !!P.pingpong, x: pts[0].x, y: pts[0].y, h: 0, depth: 0.55, want: 0.55, mode: 'patrol', t: R(8, 25), ph: R(0, 7), cool: R(0, 6), trail: [], trailT: 0, scanT: R(0, 0.5),
                      z: 0, roll: 0, jaw: 0, target: null, splash: 0, sx: 0, sy: 0, slick: 0, lx: 0, ly: 0, spd: WHITE_CRUISE, caught: false, bd: 0 };
         });
@@ -10012,7 +10631,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             W.splash = Math.max(0, W.splash - dt / 3); W.slick = Math.max(0, W.slick - dt / 20);
             let tx = W.pts[W.wi].x, ty = W.pts[W.wi].y, spd = WHITE_CRUISE;
             if (W.mode === 'patrol' || W.mode === 'fin') {
-                if (Math.hypot(tx - W.x, ty - W.y) < 120) {
+                // on to the next point of its planned route when it is close — or, as a last resort, when it has made
+                // no headway toward this one for 10 s
+                const dw = Math.hypot(tx - W.x, ty - W.y);
+                if (W.bestD == null || dw < W.bestD - 20) { W.bestD = dw; W.headT = 0; } else W.headT = (W.headT || 0) + dt;
+                if (dw < 70 || W.headT > 10) { W.bestD = null; W.headT = 0;
                     if (!W.pingpong) W.wi = (W.wi + 1) % W.pts.length;
                     else { if (W.wi + W.dir < 0 || W.wi + W.dir >= W.pts.length) W.dir = -W.dir; W.wi += W.dir; } }
                 // mostly cruising a few metres down; now and then it comes up and the fin cuts the surface
@@ -10072,13 +10695,20 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 // down deep and in under it, unseen
                 const q = W.target.q; if (q.gone || q.flung > 0) { W.mode = 'patrol'; W.cool = 20; continue; }
                 tx = q.x - Math.sin(q.h) * 40; ty = q.y + Math.cos(q.h) * 40; spd = 90; W.want = 1;
-                if (Math.hypot(q.x - W.x, q.y - W.y) < 170 || W.t <= 0) { W.mode = openAround(q.x, q.y, 90) ? 'sprint' : 'patrol'; W.t = 1.6; if (W.mode === 'patrol') W.cool = 15; }
+                // (in under it — or, out of time, it gives up: never a sprint from far off, which struck a sea lion 100+ u away)
+                const dq = Math.hypot(q.x - W.x, q.y - W.y);
+                if (dq < 170) { W.mode = openAround(q.x, q.y, 90) ? 'sprint' : 'patrol'; W.t = 1.6; if (W.mode === 'patrol') W.cool = 15; }
+                else if (W.t <= 0) { W.mode = 'patrol'; W.t = R(10, 20); W.cool = 15; W.target = null; }
             } else if (W.mode === 'sprint') {
                 // THE SPRINT: the last second and a half, in from behind and below — the shape firming up
                 // fast as it rises, three times its cruising speed, no fin
                 const q = W.target.q; if (q.gone || q.flung > 0) { W.mode = 'patrol'; W.cool = 15; continue; }
                 tx = q.x; ty = q.y; spd = 150; W.want = 0.12; W.depth = Math.max(0.12, W.depth - dt * 0.6);
-                if (Math.hypot(q.x - W.x, q.y - W.y) < 26 || W.t <= 0) strike(W, q, 0.47, false);
+                // the strike only when it is ON the sea lion; a sprint that runs out short (it jinked, or rock was in the
+                // way) is a miss — no white water erupting at a seal the shark never reached
+                const dq = Math.hypot(q.x - W.x, q.y - W.y);
+                if (dq < 30) strike(W, q, 0.47, false);
+                else if (W.t <= 0) { W.mode = 'patrol'; W.t = R(10, 20); W.cool = R(15, 25); W.target = null; W.want = 0.7; }
             } else if (W.mode === 'strike') {
                 // the hit: rolled, at the surface, carried on a length by its own speed
                 spd = 60; W.want = 0; W.roll = Math.max(0, W.t / 0.55);
@@ -10112,8 +10742,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const moved = Math.hypot(o.x - ox0, o.y - oy0);
             W.turn = (W.turn || 0) * 0.9 + angDiff(o.h, oh0) / Math.max(dt, 1e-3) * 0.1;
             W.spd = moved / Math.max(dt, 1e-3);
-            // the tail: a slow sweep cruising, quicker when it speeds up (the body stiff, the tail stock working)
-            W.ph += dt * (4.2 + W.spd * 0.03);
+            // the tail: a slow sweep cruising, quicker when it speeds up (the body stiff, the tail stock working). Measured on
+            // tagged white sharks (accelerometers): ~0.4 tail beats a second in ordinary swimming; ~3.3 in the burst at a
+            // seal (Watanabe et al. 2019, MEPS 621: 3.3 Hz at ~6.7 m/s); up to ~2.5 breaching. So 0.4 Hz at the cruise
+            // (36 u/s) rising to 3 Hz at the sprint's 150 u/s.
+            W.ph += dt * Math.PI * 2 * Math.max(0.3, Math.min(3, 0.4 + (W.spd - WHITE_CRUISE) / (150 - WHITE_CRUISE) * 2.6));
             recordTrail(W, dt, W.depth < 0.15 && W.mode !== 'breach');
         }
     }
