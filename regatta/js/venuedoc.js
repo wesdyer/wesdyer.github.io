@@ -938,7 +938,7 @@ const PROP_KINDS = {
     // water, and that is the unfairness the shoal note argues against — you cannot decide to
     // avoid something you cannot see. 16 fits the beam exactly and covers the middle ~40% of the
     // length.
-    'bay-cove-tugboat':      { label: 'Tugboat',           world: 284, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.921, 0.375], wake: { kind: 'kelvin' } },
+    'bay-cove-tugboat':      { label: 'Tugboat',           world: 284, plane: 'surface', contact: 'none', motion: 'fixed', hull: [0.919, 0.44], wake: { kind: 'kelvin' } },
     // The biggest hull in the game at 820u — over the 720u lead cargo ship, under the 870/920u
     // bridges it is meant to pass beneath. contact none for the family's reason and for the
     // geometric one: at 4.69:1 a circle fits it no better than it fits the ships.
