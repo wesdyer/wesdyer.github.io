@@ -700,7 +700,10 @@ const School = {
               done: (s) => s.snake && s.snake.count >= 3,
               exitLine: "Nice! That's a <em>reach</em> — sailing with the wind from the side. Fast and easy." },
             { id: 'upwind', timeout: Infinity,
-              enter: (s) => { S.spawnUpwindDucks(); s.up = { phase: 'sail', zoneT: 0, tacks0: s.tacks }; },
+              // Fine steering is taught here (PT-024): upwind is sailed along the edge of the red
+              // zone, the first place a degree matters. Shift works with the arrows only (input.js).
+              enter: (s) => { S.spawnUpwindDucks(); s.up = { phase: 'sail', zoneT: 0, tacks0: s.tacks };
+                              S.hint('hold ' + S.kbd('Shift') + ' with ' + S.kbd('&larr;') + S.kbd('&rarr;') + ' to steer finely'); },
               lines: [{ t: 0, text: "Now let's sail <em>upwind</em>. Follow the ducklings." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickUpwind(s, r),
