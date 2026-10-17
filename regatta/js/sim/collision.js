@@ -239,14 +239,14 @@ function checkBoatCollisions(dt) {
                         }
                     }
                     if (r19Flip) {
-                        triggerPenalty(effectiveRow, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'contact' });
+                        triggerPenalty(effectiveRow, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'contact', with: loser19 });
                     } else if (r15 && effectiveRow) {
-                        triggerPenalty(effectiveRow, { rule: 'Rule 15', reason: 'No Room to Respond', kind: 'contact' });
-                    } else if (effectiveRow === b1) triggerPenalty(b2, Object.assign({ other: b1.name }, pInfo));
-                    else if (effectiveRow === b2) triggerPenalty(b1, Object.assign({ other: b2.name }, pInfo));
+                        triggerPenalty(effectiveRow, { rule: 'Rule 15', reason: 'No Room to Respond', kind: 'contact', with: effectiveRow === b1 ? b2 : b1 });
+                    } else if (effectiveRow === b1) triggerPenalty(b2, Object.assign({ other: b1.name, with: b1 }, pInfo));
+                    else if (effectiveRow === b2) triggerPenalty(b1, Object.assign({ other: b2.name, with: b2 }, pInfo));
                     else {
-                        triggerPenalty(b1, pInfo);
-                        triggerPenalty(b2, pInfo);
+                        triggerPenalty(b1, Object.assign({ with: b2 }, pInfo));
+                        triggerPenalty(b2, Object.assign({ with: b1 }, pInfo));
                     }
                 }
             }
@@ -329,7 +329,7 @@ function checkMarkCollisions(dt) {
                         exon31 = true; break;
                     }
                 }
-                if (state.race.status === 'racing' && !exon31) triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact' });
+                if (state.race.status === 'racing' && !exon31) triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact', with: 'mark:' + state.course.marks.indexOf(mark) });
                 // One response per MARK, not per circle: hitting a committee boat is
                 // one Rule 31 touch, however many circles of its capsule you are in.
                 break;
@@ -935,7 +935,7 @@ function checkIslandCollisions(dt) {
                      }
                  }
                  if (squeezer) {
-                     triggerPenalty(squeezer, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'no-contact' });
+                     triggerPenalty(squeezer, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'no-contact', with: boat });
                  }
 
                  // ── NO PENALTY FOR RUNNING AGROUND ──────────────────────────

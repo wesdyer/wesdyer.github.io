@@ -4264,12 +4264,14 @@ const PENALTY_PLAIN = {
     'Rule 15': 'You gained right of way too close', 'Rule 18': 'You must give mark-room',
     'Rule 19': 'You must give room at an obstruction', 'Rule 31': "Don't touch a mark"
 };
-function showPenaltyBanner(info, remainingDeg) {
+function showPenaltyBanner(info, remainingDeg, owed) {
     const el = UI.message; if (!el) return;
     const rule = info && info.rule ? info.rule : null;
     const plain = rule && PENALTY_PLAIN[rule] ? PENALTY_PLAIN[rule] : (info && info.reason) || 'A rule was broken';
     const done = Math.max(0, Math.min(1, 1 - remainingDeg / 360));
-    const sig = (rule || '') + '|' + plain;
+    // PENALTIES STACK (PT-064): the reason is the OLDEST owed (the one this turn clears), and the badge counts them.
+    const n = Math.max(1, owed || 1);
+    const sig = (rule || '') + '|' + plain + '|' + n;
     delete el.dataset.aground;   // a penalty takes the line; the aground banner stops ticking it
     if (el.dataset.pen !== sig) {
         el.dataset.pen = sig;
@@ -4277,8 +4279,8 @@ function showPenaltyBanner(info, remainingDeg) {
         el.innerHTML = `
             <div class="hud-pen-ring"><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" class="track"/><circle cx="22" cy="22" r="18" class="fill" pathLength="100"/></svg><span class="hud-pen-deg"></span></div>
             <div class="hud-pen-body">
-                <div class="hud-pen-head"><span class="hud-pen-badge">Penalty</span><span class="hud-pen-why">${rule ? `<b>${rule}</b> · ` : ''}${plain}</span></div>
-                <div class="hud-pen-do">Turn a full circle to clear it <span class="hud-pen-alt">or take +15&thinsp;s at the finish</span></div>
+                <div class="hud-pen-head"><span class="hud-pen-badge">${n > 1 ? `${n} Penalties` : 'Penalty'}</span><span class="hud-pen-why">${rule ? `<b>${rule}</b> · ` : ''}${plain}</span></div>
+                <div class="hud-pen-do">${n > 1 ? `Turn a full circle to clear one · ${n - 1} more after it` : 'Turn a full circle to clear it'} <span class="hud-pen-alt">or take +15&thinsp;s ${n > 1 ? 'each ' : ''}at the finish</span></div>
             </div>`;
     }
     el.classList.remove('hidden');

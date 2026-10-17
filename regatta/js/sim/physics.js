@@ -447,36 +447,70 @@ function steerageFactor(boat) {
     return Math.min(1.0, Math.max(0.6, 0.6 + 0.4 * (spdKnots / 3.5)));
 }
 
+// PENALTIES STACK, ONE PER INCIDENT (PT-064, Wes Oct 16 2026). A second foul used to be free while a turn
+// was owed, so holding a penalty paid. Now every INCIDENT owes its own turn, cleared one 360 at a time,
+// oldest first, and each one not taken is +15 s at the finish (the finish adds 15 per owed turn).
+//
+// THE UNIT IS THE INCIDENT, NOT THE CALL (RRS 44.1: one penalty "when she may have broken one or more
+// rules of Part 2 in an incident"; 44.1(a) folds a rule 31 touch into it). The detectors call this every
+// frame of grinding contact — 12 AI races logged 1,516 calls for 48 real incidents — so:
+//   · an incident is this boat against ONE opponent (a boat, or one mark: `info.with`). It stays open
+//     while calls keep coming and closes INCIDENT_GAP after the last one; any call against the same
+//     opponent while it is open, whatever the rule, is the same incident. (Measured: the same pair's
+//     repeat calls come within 1.85 s, or 6 s or more apart.)
+//   · a PILE-UP is one incident: a call against a different opponent within PILEUP_GAP of a new penalty
+//     folds into it (iRacing counts only the worst of incidents "in quick succession").
+//   · a mark touched while a boat incident is open is that incident's (44.1(a)).
+// The bookkeeping lives on the boat, not raceState: the golden traces hash raceState's primitives.
+const INCIDENT_GAP = 2.0, PILEUP_GAP = 1.0;
 function triggerPenalty(boat, info) {
     if (boat.raceState.finished) return;
     if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('penalty', { boat, kind: info && info.kind, rule: info && info.rule, reason: info && info.reason, other: info && info.other });
     if (!settings.penaltiesEnabled) return;
 
-    // One-Turn Penalty (RRS 44 style): the foul flags the boat and owes a
-    // 360° turn. No speed is taken away — the cost is the turn itself, taken
-    // when the sailor chooses (Rule 21 keep-clear applies while flagged, and
-    // an un-taken turn costs +15s at the finish). Sustained/grinding contact
-    // re-triggers every frame, so counting is per flagged EPISODE (same
-    // debounce semantics as the old 10s-timer design): while flagged, further
-    // fouls neither add turns nor inflate totalPenalties.
+    const w = info && info.with;
+    const key = w == null ? 'unknown' : typeof w === 'string' ? w : 'boat:' + w.id;
+    const now = state.time / WORLD_CLOCK;   // real sim seconds (state.time is the world clock, at WORLD_CLOCK of them)
+    const open = boat._incidents || (boat._incidents = {});
+    const last = open[key];
+    open[key] = now;
+    // An open incident only holds while its penalty is still OWED: a 360 takes longer than the window, so in a
+    // race this never cuts one short — but a boat whose slate was wiped (the School's re-start, a test phase)
+    // starts clean.
     const rs = boat.raceState;
+    if (rs.penalty) {
+        if (last != null && now - last < INCIDENT_GAP) return;                                    // the same incident, still playing out
+        if (boat._lastPenaltyAt != null && now - boat._lastPenaltyAt < PILEUP_GAP) return;       // a pile-up: one incident
+        if (key.startsWith('mark:') && Object.keys(open).some(k => k.startsWith('boat:') && now - open[k] < INCIDENT_GAP)) return;   // 44.1(a)
+    }
+    boat._lastPenaltyAt = now;
+
+    // One-Turn Penalty (RRS 44 style): the foul owes a 360° turn, taken when the sailor chooses. No speed is
+    // taken away — the cost is the turn itself (or +15 s at the finish for each one left).
+    rs.totalPenalties++;
+    const entry = { rule: info && info.rule, reason: info && info.reason, other: info && (info.other || (w && w.name)) };
     if (!rs.penalty) {
         rs.penalty = true;
-        rs.totalPenalties++;
         rs.penaltyTurnsOwed = 1;
         rs.penaltyFlagTime = 0;
         rs.penaltyRot = 0;
         rs.penaltyLastHeading = boat.heading;
-        // Announce, don't call upward: audio and the banner subscribe to this in
-        // game/audio.js and ui/screens.js. Same frame, same order as the old
-        // direct calls (sound first, banner second — registration order).
-        // WHY, kept for the turn-countdown banner (a string on the boat, not raceState: the
-        // trace hash reads raceState's numbers). PT-067: the reason used to show for one frame
-        // before the countdown replaced it, so "why did I get a penalty?" had no answer.
-        boat._penaltyWhy = info && info.rule ? `${info.rule}${info.reason ? ' — ' + info.reason : ''}` : null;
-        boat._penaltyInfo = info ? { rule: info.rule, reason: info.reason } : null;
-        if (boat.isPlayer) GameEvents.emit('player-penalty', info);
+        boat._penQueue = [entry];
+    } else {
+        rs.penaltyTurnsOwed++;
+        (boat._penQueue || (boat._penQueue = [])).push(entry);
     }
+    // WHY, for the banner: always the OLDEST owed penalty — the one the next turn clears (a string on the
+    // boat, not raceState). PT-067: the reason has to stay up, so "why did I get a penalty?" has an answer.
+    setPenaltyWhy(boat);
+    // Announce, don't call upward: audio and the banner subscribe in game/audio.js and ui/screens.js.
+    if (boat.isPlayer) GameEvents.emit('player-penalty', info);
+}
+// The banner's reason: the oldest owed penalty (boat._penQueue[0]).
+function setPenaltyWhy(boat) {
+    const e = boat._penQueue && boat._penQueue[0];
+    boat._penaltyWhy = e && e.rule ? `${e.rule}${e.reason ? ' — ' + e.reason : ''}` : null;
+    boat._penaltyInfo = e ? { rule: e.rule, reason: e.reason } : null;
 }
 
 // Update Boat Physics & Race Status
@@ -1735,6 +1769,8 @@ function updateBoatRaceState(boat, dt) {
 
         if (Math.abs(rs.penaltyRot) >= Math.PI * 2) {
             rs.penaltyTurnsOwed--;
+            // Oldest first: the turn just sailed clears the first penalty owed, and the banner moves to the next.
+            if (boat._penQueue && boat._penQueue.length) { boat._penQueue.shift(); setPenaltyWhy(boat); }
             // A turn actually sailed — achievements count it (Wiggle). An event, not a
             // raceState field: every raceState primitive is in the golden traces' hash.
             if (boat.isPlayer) GameEvents.emit('player-penalty-served');
@@ -1750,7 +1786,7 @@ function updateBoatRaceState(boat, dt) {
             }
         } else if (boat.isPlayer) {
             const remaining = Math.ceil((Math.PI * 2 - Math.abs(rs.penaltyRot)) * 180 / Math.PI);
-            if (typeof showPenaltyBanner === 'function') showPenaltyBanner(boat._penaltyInfo, remaining);
+            if (typeof showPenaltyBanner === 'function') showPenaltyBanner(boat._penaltyInfo, remaining, rs.penaltyTurnsOwed);
         }
     }
 

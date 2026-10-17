@@ -920,7 +920,10 @@ class BotController {
         if (isRacing && this.avoidanceRole === 'STAND_ON' &&
             (this.riskState === 'HIGH' || this.riskState === 'IMMINENT') &&
             this.threatBoat && !this.threatBoat.raceState.finished &&
-            !this.threatBoat.raceState.penalty &&
+            // PENALTIES STACK (PT-064): owing a turn no longer makes a boat immune to a new foul. Only a boat
+            // actually TAKING one (spinning) is left alone here — her keep-clear is Rule 21's, judged in rules.js.
+            !(this.threatBoat.controller && this.threatBoat.controller.penaltySpin) &&
+            !(this.threatBoat.raceState.penalty && Math.abs(this.threatBoat.raceState.penaltyRot || 0) >= 2.1) &&
             !(this.threatRowRes && this.threatRowRes.markRoom === this.threatBoat.id)) {
             const cd = (this.foulCooldowns && this.foulCooldowns[this.threatBoat.id]) || 0;
             const eligible = this.roleStableTime > GRACE && !(this.rule16Grace > 0) && state.time > cd;
@@ -933,7 +936,7 @@ class BotController {
             if (eligible && needed && this.lastAvoidDeviation > DEV) {
                 this.forcedAvoidTimer = Math.min((this.forcedAvoidTimer || 0) + 0.1, 1.5);
                 if (this.forcedAvoidTimer >= HOLD) {
-                    const info = this.threatRowRes ? { rule: this.threatRowRes.rule, reason: this.threatRowRes.reason, kind: 'no_contact' } : { kind: 'no_contact' };
+                    const info = this.threatRowRes ? { rule: this.threatRowRes.rule, reason: this.threatRowRes.reason, kind: 'no_contact', with: this.boat } : { kind: 'no_contact', with: this.boat };
                     triggerPenalty(this.threatBoat, info);
                     this.foulCooldowns = this.foulCooldowns || {};
                     this.foulCooldowns[this.threatBoat.id] = state.time + 20;

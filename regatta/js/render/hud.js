@@ -2527,7 +2527,13 @@ function updateLeaderboard() {
             rankDiv.style.color = me ? me : dnx ? '#475569' : '#64748b';
             nameDiv.style.color = boat.isGhost ? '#94a3b8'
                                 : dnx && !me ? '#64748b' : '#ffffff';
-            if (penDiv) penDiv.style.display = boat.raceState.penalty && !boat.raceState.finished ? '' : 'none';
+            if (penDiv) {
+                const owing = boat.raceState.penalty && !boat.raceState.finished;
+                penDiv.style.display = owing ? '' : 'none';
+                // PENALTIES STACK (PT-064): one tag, with the count when more than one is owed
+                const penTxt = owing && boat.raceState.penaltyTurnsOwed > 1 ? `PEN ×${boat.raceState.penaltyTurnsOwed}` : 'PEN';
+                if (penDiv.textContent !== penTxt) penDiv.textContent = penTxt;
+            }
             if (boat.isGhost) row.style.background = 'rgba(148,163,184,0.10)';
             nameDiv.textContent = boat.name;
             rankDiv.textContent = index + 1;

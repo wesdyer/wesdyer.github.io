@@ -1117,7 +1117,7 @@ const School = {
         // Reset the player's race state for a fresh crossing.
         const rs = player.raceState;
         rs.leg = 0; rs.ocs = false; rs.finished = false; rs.startTimeDisplayTimer = 0;
-        rs.penaltyTurnsOwed = 0; rs.penalty = false;
+        rs.penaltyTurnsOwed = 0; rs.penalty = false; player._penQueue = []; player._incidents = {}; player._lastPenaltyAt = null;
         // Close to the line, reaching along it: the natural, unthinking thing is to be early.
         const [m0, m1] = startLinePts();
         const cross = startCrossNormal();
