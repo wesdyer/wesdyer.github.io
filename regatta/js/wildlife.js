@@ -4600,9 +4600,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             return;
         }
         const d = Math.max(0, Math.min(1, f.depth));
-        const hgt = 6 + (1 - d) * 18;                    // height above the sand
-        ctx.save(); ctx.translate(f.x + hgt * 0.35, f.y + hgt * 0.55); ctx.rotate(f.h); ctx.scale(k, k);
-        ctx.globalAlpha *= 0.2 + 0.12 * d;               // darker the nearer the bottom; over pale sand it is half the read
+        // (the drawn stand-in until the sprite loads) its shadow by its height above the BED, as the painted ones (PT-043)
+        const bed = f.bedM ?? lagoonBedM(f.x, f.y), hM = Math.max(0.25, bed - d * (bed - 0.4)), hgt = hM * 10;
+        ctx.save(); ctx.translate(f.x + hgt * 0.3, f.y + hgt * 0.45); ctx.rotate(f.h); ctx.scale(k, k);
+        ctx.globalAlpha *= 0.42 * Math.max(0, 1 - bed / 14) / (1 + hM * 0.18);   // fainter the higher it is, and over deeper water
         ctx.fillStyle = 'rgb(10,25,40)'; shape(ctx, f, 'flat'); ctx.restore();
         ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(k, k);
         const a0 = ctx.globalAlpha;
@@ -5283,10 +5284,16 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function drawShoal(ctx, G) {
         const look = SHOAL_LOOK[G.cfg.kind] || SHOAL_LOOK.yellowtang, lyre = G.cfg.kind === 'goldie';
         const tint = waterTint();
+        // THE SHADOW BY THE BED (PT-043, as the turtle's, ray's and shark's): a reef fish keeps within a metre and a half
+        // of the bottom, so its shadow lies close under it over the coral and slides out a little over the sand — and
+        // fades as the floor drops away (less light reaches it, seen through more water). Read once per school at its
+        // centre: a school spans a few metres, and lagoonBedM per fish would be ~120 calls a frame.
+        const bed = lagoonBedM(G.cx, G.cy), hM = Math.max(0.3, Math.min(1.5, bed - 0.5)), hU = hM * 10;
+        const shX = hU * 0.3, shY = hU * 0.45, shA = 0.2 * Math.max(0.15, 1 - bed / 14) / (1 + hM * 0.18);
         for (const f of G.fish) {
             const s = TANG_SCALE * f.size, w = Math.sin(f.ph * 3) * 0.12 * Math.min(1, 0.3 + (f.spd || 0) / 12);
-            ctx.save(); ctx.translate(f.x + 2.2, f.y + 3.4); ctx.rotate(f.h); ctx.scale(s, s);
-            ctx.fillStyle = 'rgba(10,25,40,0.16)'; ctx.beginPath(); ctx.ellipse(0, 0, 1.1, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.save(); ctx.translate(f.x + shX, f.y + shY); ctx.rotate(f.h); ctx.scale(s, s);
+            ctx.fillStyle = `rgba(10,25,40,${shA.toFixed(3)})`; ctx.beginPath(); ctx.ellipse(0, 0, 1.1, 3.4, 0, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
             ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(s, s);
             ctx.globalAlpha *= 0.9;
