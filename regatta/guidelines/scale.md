@@ -169,6 +169,28 @@ tail slap is about a body length across.
   four-pixel floor at ~0.43 m, i.e. about 9 units per metre.
 - **Ships**: a real cargo ship is 150–200 m, which is 1500–2000 units (30+ boat lengths).
   The Cove's current freighter is 700 units, a 70 m coaster at this ruler.
+- **Capped for gameplay (Wes, Oct 15 2026, PT-015):** the Cove's bridges (72–110 m) stay below
+  true size. The cargo ships went up the same day (blue 96 m, rust 86 m, green 72 m, cruise ship
+  110 m; real 120–200 m) so every freighter outranks the 45 m ferry; their limit is the Bay
+  bridge's 30.6 m tower gap, which the routes must pass centred and square.
+- **PT-015 prop review (Oct 15 2026):** every prop measured against the hull; see
+  `~/Desktop/regatta-issues/scale-review/`. The Cove's town and harbour vessels were upscaled
+  by their kind `world` (church 24 m, cottages 11–12 m, tug 26 m, ferry 45 m, …), not by
+  placement scale, so traffic and new placements come out right too.
+- **Overshoots fixed (Oct 16 2026, PT-015):** the later venues' built things were placed at
+  ×2–4 over kinds already drawn near true size at ×1, so the fix was PLACEMENT scale (log
+  cabin 9 m, lodge 20 m, boathouse 18 m, pontoon 12 m, tent 4 m, houseboat 15 m, Point Pinos
+  16 m, lighthouse 8 m, fire rings 1.6 m, mooring buoys 1 m, …). Anything tied to a shore was
+  shrunk about its shore end, not its centre, so slipways, pontoons and steps still land.
+  The tide mill stays at ×3: its house is already ~13 × 22 m and its sluice walls span the
+  creek.
+- **Trees (Oct 16 2026, PT-015):** kept oversized for coverage (Wes), but nothing over ~1.8×
+  life: the kinds above it came down to ~1.6× by their `world` (sea hibiscus, the Glowtide
+  palms, coconut palm, pandanus, Lake red pine/birch/aspen/fir, Sitka spruce, hemlock, Bayou
+  cypress). Outlines rescale on their own. Where the shrink opened real holes in the canopy
+  (Glowtide's jungle, the River's spruce) the same species were infilled — 165 and 317 trees,
+  each slotted beside a same-kind tree of similar size so the draw order stays height-sorted.
+  The Cove's trees (~1–1.5×) are now the truest; Pond and Otter sit at ~1.1–1.7×.
 
 ## Quick reference
 

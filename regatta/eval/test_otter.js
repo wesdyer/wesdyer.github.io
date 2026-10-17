@@ -70,7 +70,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
           G.x = sp.x; G.y = sp.y; G.tx = sp.x; G.ty = sp.y; G.mode = 'raft'; G.t = 100; G.H = Object.assign({}, G.H, { sea: sp }); G.from = null; for (const q of G.members) { q.x = sp.x + q.ox * 0.5; q.y = sp.y + q.oy * 0.5; q.leap = 0; q.z = 0; } const me = state.boats[0]; me.x = G.x; me.y = G.y + 100; me.opacity = 0.05;
           state.camera.x = G.x; state.camera.y = G.y;
           Wildlife.forceHunt(0, gi); const W = d.whites[0]; let breach = false, crash = true, n = 0;
-          const modes = []; while (n++ < 30 * 30 && !(breach && W.mode !== 'breach')) { Wildlife.update(1 / 30); if (modes[modes.length - 1] !== W.mode) modes.push(W.mode); if (W.mode === 'breach' || W.mode === 'strike') breach = true; } out.foam = Wildlife.debug().foams.length; out.modes = modes.join('>');
+          const modes = []; while (n++ < 30 * 30 && !(breach && W.mode !== 'breach')) { Wildlife.update(1 / 30); if (modes[modes.length - 1] !== W.mode) modes.push(W.mode); if (W.mode === 'breach' || W.mode === 'strike') breach = true; } out.foam = Wildlife.debug().foams.length; out.splash = Wildlife.debug().splashes.length; out.modes = modes.join('>');
           out.breach = breach; out.crash = crash; out.outcome = W.caught ? 'taken' : 'thrown'; away(me); }
         // a shark comes up to shadow the player's boat as it sails past its patch
         { const W = d.whites[2]; W.cool = 0; W.mode = 'patrol'; const me = state.boats[0]; me.opacity = 1; me.heading = -Math.PI / 2; me.x = W.x + 380; me.y = W.y + 40;
@@ -140,7 +140,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.otterReact >= 1, `otters dive or swim off from a close boat (${r.otterReact})`);
     ok(r.flushed >= 1, `a boat puts sea lions off the bird rock (${r.flushed})`);
     ok(+r.back.split('/')[0] >= +r.back.split('/')[1] - 1, `and they haul out again (${r.back} of them back on the rock; a shark may take one)`);
-    ok(r.breach && r.foam >= 1, `a great white sprints in and strikes: foam (${r.outcome}; ${r.modes})`);
+    ok(r.breach && (r.foam >= 1 || (r.modes.includes('breach') && r.splash >= 1)), `a great white sprints in and strikes: foam, or (one in eight) a full breach and its splash (${r.outcome}; ${r.modes})`);
     ok(r.shadow >= 3 && r.shadowNear < 200, `a great white shadows the player's boat (${r.shadow.toFixed(1)} s, closest ${r.shadowNear} u)`);
     ok(r.underOtter <= 3, `otters get out of a boat's way (${r.underOtter} frames under the hull)`);
     ok(r.underLion <= 3, `sea lions get out of a boat's way (${r.underLion} frames under the hull)`);

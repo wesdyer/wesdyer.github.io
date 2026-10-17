@@ -54,7 +54,9 @@ const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart
         // creek sill, laid across the creek on purpose.
         out.headSillInChannel = +Tide.groundAt(-593, -6610).toFixed(2);
         out.creekSillCrest = +Tide.groundAt(1250, -7150).toFixed(2);
-        out.creekBedAway = +Tide.groundAt(1350, -6600).toFixed(2);
+        // (1350,-6640), not -6600: that point sat on the creek's bank slope, and when the creek became a curve
+        // (Oct 14 2026) the bank moved ~10 u and the sample read the slope (-1.00) instead of the bed.
+        out.creekBedAway = +Tide.groundAt(1350, -6640).toFixed(2);
         // The channel is deep along the baked path; the marsh is never wet.
         const paths = doc.course && doc.course.paths;
         let deepest = -9, pathN = 0;

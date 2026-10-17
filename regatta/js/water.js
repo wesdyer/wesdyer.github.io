@@ -143,7 +143,37 @@ class WaterRenderer {
     // Check if config changed requiring texture rebuild
     getConfigHash() {
         const c = window.WATER_CONFIG;
-        return `${c.rippleSpacing || 26}-${c.rippleOpacity || 0.9}-${c.chunkSize}`;
+        // The swell masses are tinted from the venue's own water (swellTints), so a new
+        // base colour rebuilds the tile.
+        return `${c.rippleSpacing || 26}-${c.rippleOpacity || 0.9}-${c.chunkSize}-${c.baseColor}`;
+    }
+
+    // THE SWELL MASSES ARE THIS WATER, LIGHTER AND DARKER (PT-035). They were white and navy
+    // on every venue: white over blue washes it toward a pale grey-blue, navy over the
+    // Bayou's olive turns it to mud, and where a few masses overlapped the water "read gray
+    // at times". Now each is the base colour moved in LIGHTNESS only, with its saturation
+    // held (a touch raised) — the drift still reads as light and shade, never as grey.
+    // `k` keeps the same tonal swing the old white/navy alphas gave.
+    swellTints() {
+        const hex = String(window.WATER_CONFIG.baseColor || '#0ea5e9').replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16) / 255, g = parseInt(hex.substring(2, 4), 16) / 255, b = parseInt(hex.substring(4, 6), 16) / 255;
+        const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+        const sat = d === 0 ? 0 : (l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn));
+        let h = 0;
+        if (d) h = mx === r ? ((g - b) / d + (g < b ? 6 : 0)) / 6 : mx === g ? ((b - r) / d + 2) / 6 : ((r - g) / d + 4) / 6;
+        const toRgb = (L, S) => {
+            if (S === 0) { const v = Math.round(L * 255); return [v, v, v]; }
+            const q = L < 0.5 ? L * (1 + S) : L + S - L * S, p = 2 * L - q;
+            const f = (t) => { t = (t + 1) % 1; return t < 1 / 6 ? p + (q - p) * 6 * t : t < 1 / 2 ? q : t < 2 / 3 ? p + (q - p) * (2 / 3 - t) * 6 : p; };
+            return [f(h + 1 / 3), f(h), f(h - 1 / 3)].map(v => Math.round(v * 255));
+        };
+        const DL = 0.16;
+        return {
+            light: toRgb(Math.min(0.92, l + DL), Math.min(1, sat * 1.12)),
+            dark: toRgb(Math.max(0.04, l - DL), Math.min(1, sat * 1.12)),
+            // white sat 0.52 above a mid base and navy about as far below it: same swing, 1/DL as strong
+            k: 0.5 / DL,
+        };
     }
 
     updateTextures() {
@@ -182,16 +212,18 @@ class WaterRenderer {
 
         // A) soft swell masses: elongated diagonal tonal drifts, two families
         // (±~35°), very low contrast — the big gentle undulation of the sea.
+        const tint = this.swellTints();
         for (let i = 0; i < 14; i++) {
             const cx = rand() * size, cy = rand() * size;
             const rx = 110 + rand() * 130, ry = rx * (0.30 + rand() * 0.25);
             const rot = (rand() < 0.5 ? 1 : -1) * (0.5 + rand() * 0.35); // ±~29-49°
             const light = rand() < 0.5;
-            const a = 0.030 + rand() * 0.030;
+            const a = Math.min(1, (0.030 + rand() * 0.030) * tint.k);
+            const c = light ? tint.light : tint.dark;
             wrap((dx, dy) => {
                 const grd = g.createRadialGradient(0, 0, 0, 0, 0, rx);
-                grd.addColorStop(0, light ? `rgba(255,255,255,${a.toFixed(3)})` : `rgba(0,20,90,${a.toFixed(3)})`);
-                grd.addColorStop(1, 'rgba(0,0,0,0)');
+                grd.addColorStop(0, `rgba(${c[0]},${c[1]},${c[2]},${a.toFixed(3)})`);
+                grd.addColorStop(1, `rgba(${c[0]},${c[1]},${c[2]},0)`);
                 g.save(); g.translate(cx + dx, cy + dy); g.rotate(rot); g.scale(1, ry / rx);
                 g.fillStyle = grd;
                 g.beginPath(); g.arc(0, 0, rx, 0, Math.PI * 2); g.fill();

@@ -443,6 +443,39 @@ const School = {
             this.goal(this.goalCount('Follow the ducklings', Math.min(3, n.count), 3));
         }
     },
+    // ── FINE STEERING: the flock at the screen's edge, FINE_OFFSET off the beam (away from the
+    // wind, so it stays a reach). It holds station there — moving with the boat — until the bow
+    // is within FINE_TOL of it AND Shift has turned the boat at least once in this lesson; then
+    // it waits and the boat sails up to it. The plain helm turns several degrees a tap, so it
+    // gets close and Shift finishes the job.
+    FINE_TOL: 1.5 * Math.PI / 180,
+    FINE_OFFSET: 5 * Math.PI / 180,
+    spawnFineDucks() {
+        const s = this.s, p = state.boats[0], w = this.wd();
+        s.snake = null;                                                          // its turn arrow is done
+        const a = normalizeAngle(w + Math.PI / 2), b = normalizeAngle(w - Math.PI / 2);
+        const beam = Math.abs(normalizeAngle(p.heading - a)) <= Math.abs(normalizeAngle(p.heading - b)) ? a : b;
+        const away = normalizeAngle(beam - w) > 0 ? 1 : -1;                      // the side that bears away from the wind
+        s.fine = { taps: 0, offT: 0, nearT: 0, said: false };
+        this.spawnDucksAt(normalizeAngle(beam + away * this.FINE_OFFSET));
+        s.duckMode = 'fine';
+    },
+    // input.js calls this on every Shift turn (one degree each).
+    onFineHelm() { if (this.active && this.s && this.s.fine) this.s.fine.taps++; },
+    fineAligned() {
+        const s = this.s, p = state.boats[0];
+        return s.fine.taps > 0 && Math.abs(normalizeAngle(p.heading - s.beamBearing)) < this.FINE_TOL;
+    },
+    tickFine(s) {
+        const f = s.fine, p = state.boats[0];
+        const off = Math.abs(normalizeAngle(p.heading - s.beamBearing));
+        // Close with the plain helm but no Shift yet: say what finishes it, once.
+        f.nearT = off < 6 * Math.PI / 180 && !f.taps ? f.nearT + 1 / 60 : 0;
+        if (f.nearT > 1.5 && !f.said) {
+            f.said = true;
+            this.instruct('Close! Now hold <em>Shift</em> and tap the arrows — <em>one degree</em> a tap.', 'Line up exactly');
+        }
+    },
     updateSnake(dt) {
         const s = this.s, p = state.boats[0], n = s.snake, head = s.ducks[0];
         if (!head) return;
@@ -699,12 +732,26 @@ const School = {
               tick: (s) => S.tickSnake(s),
               done: (s) => s.snake && s.snake.count >= 3,
               exitLine: "Nice! That's a <em>reach</em> — sailing with the wind from the side. Fast and easy." },
+            // FINE STEERING (PT-024, Wes): one more line-up, a few degrees off the reach, that only
+            // Shift can finish — the flock holds the screen's edge until the bow is within ±1.5° of
+            // it AND Shift has been used (updateFine). A tap of the plain helm turns several degrees.
+            { id: 'fine', timeout: Infinity,
+              enter: (s) => { S.spawnFineDucks();
+                              S.hint('hold ' + S.kbd('Shift') + ' and tap ' + S.kbd('&larr;') + S.kbd('&rarr;') + ' to turn one degree at a time'); },
+              lines: [{ t: 0, text: 'Now line up <em>exactly</em> on the ducklings. Hold <em>Shift</em> to steer one degree at a time.' }],
+              goal: 'Line up exactly',
+              tick: (s) => S.tickFine(s),
+              done: (s) => S.ducksReached(),
+              exitLine: 'Spot on. <em>Shift</em> is your fine helm — use it whenever a degree matters.',
+              exit: (s) => { S.hint(null); } },
             { id: 'upwind', timeout: Infinity,
               enter: (s) => { S.spawnUpwindDucks(); s.up = { phase: 'sail', zoneT: 0, tacks0: s.tacks }; },
               lines: [{ t: 0, text: "Now let's sail <em>upwind</em>. Follow the ducklings." }],
               goal: 'Follow the ducklings',
               tick: (s, r) => S.tickUpwind(s, r),
-              done: (s) => S.ducksReached() },
+              // ...and after a tack: the flock holds the edge until the first one anyway, and the fine
+              // lesson before this ends with the ducklings at the bow, which read as reached at once.
+              done: (s) => S.ducksReached() && (s.tacks - s.up.tacks0) >= 1 },
             { id: 'downwind', timeout: Infinity,
               enter: (s) => { s.coneOn = false; S.spawnDucksAt(normalizeAngle(S.wd() + Math.PI)); s.dw = { phase: 'sail' }; s.duckHoldOff = true; },
               lines: [{ t: 0, text: "Great! Now let's sail <em>downwind</em>." }],
@@ -1070,7 +1117,7 @@ const School = {
         // Reset the player's race state for a fresh crossing.
         const rs = player.raceState;
         rs.leg = 0; rs.ocs = false; rs.finished = false; rs.startTimeDisplayTimer = 0;
-        rs.penaltyTurnsOwed = 0; rs.penalty = false;
+        rs.penaltyTurnsOwed = 0; rs.penalty = false; player._penQueue = []; player._incidents = {}; player._lastPenaltyAt = null;
         // Close to the line, reaching along it: the natural, unthinking thing is to be early.
         const [m0, m1] = startLinePts();
         const cross = startCrossNormal();
@@ -1396,12 +1443,16 @@ const School = {
         // The ducklings: a chain following a leader point.
         let lead;
         if (s.duckMode === 'snake') { this.updateSnake(dt); return; }
-        if (s.duckMode === 'beam') {
+        if (s.duckMode === 'beam' || s.duckMode === 'fine') {
             // Heading at them (within ~14°) and they stay put, so the boat closes; anywhere
             // else and they slide to keep station at the screen's edge on the beam.
             // `duckHoldOff`: a beat that still has something to teach before the ducks may be
             // reached (hoist the kite, drop it) keeps them at the edge even when aimed at.
-            const aligned = !s.duckHoldOff && Math.abs(normalizeAngle(p.heading - s.beamBearing)) < 14 * Math.PI / 180;
+            // The FINE lesson asks ±1.5° and Shift (fineAligned), and keeps the off-aim clock for its arrow.
+            const fine = s.duckMode === 'fine';
+            const aligned = fine ? this.fineAligned()
+                : !s.duckHoldOff && Math.abs(normalizeAngle(p.heading - s.beamBearing)) < 14 * Math.PI / 180;
+            if (fine) s.fine.offT = aligned ? 0 : s.fine.offT + dt;
             if (!aligned) this.swim(s.duckLead, this.beamTarget(), this.DUCK_SWIM, dt);
             lead = s.duckLead;
             // Facing away from the boat, whether or not they are moving.
@@ -1438,7 +1489,7 @@ const School = {
         } else {
             lead = s.ducks[0] ? { x: s.ducks[0].x, y: s.ducks[0].y } : { x: p.x, y: p.y };
         }
-        const faceAway = s.duckMode === 'beam' || s.duckMode === 'upwind';
+        const faceAway = s.duckMode === 'beam' || s.duckMode === 'fine' || s.duckMode === 'upwind';
         let prev = lead;
         for (const d of s.ducks) {
             const dx = prev.x - d.x, dy = prev.y - d.y, dd = Math.hypot(dx, dy);
@@ -1686,6 +1737,9 @@ const School = {
             const hd = this.s.ducks[0];
             this.drawTurnArrow(ctx, state.boats[0], Math.atan2(hd.x - state.boats[0].x, -(hd.y - state.boats[0].y)), sn.offAimT);
         }
+        // The fine lesson's, at its own ±1.5°: which way to tap.
+        const fn = this.s && this.s.duckMode === 'fine' && this.s.fine;
+        if (fn && fn.offT >= 1) this.drawTurnArrow(ctx, state.boats[0], this.s.beamBearing, fn.offT, this.FINE_TOL);
         // The upwind lesson's nudge, same shape: out of the red zone, or onto the making
         // board — tickUpwind decides the heading to show and how long they have been off it.
         const up = this.s && this.s.up;
@@ -1728,13 +1782,14 @@ const School = {
         ctx.fill();
         ctx.restore();
     },
-    drawTurnArrow(ctx, p, target, offT) {
+    drawTurnArrow(ctx, p, target, offT, tol) {
         let d = normalizeAngle(target - p.heading);
+        tol = tol || this.SNAKE_AIM_TOL;
         // The SAME test that freezes the S: if the boat is not aimed, the arrow shows —
         // an arrow that gave up early left a dead band (10°–12.6°) where the ducklings
         // never came closer and nothing said why. Near the threshold the true arc is a
         // stub, so the drawn sweep has a floor; the direction is still the real one.
-        if (Math.abs(d) < this.SNAKE_AIM_TOL) return;
+        if (Math.abs(d) < tol) return;
         if (Math.abs(d) < 0.35) d = Math.sign(d) * 0.35;
         const R = 88;
         const fade = Math.min(1, (offT - 1) / 0.35);
@@ -2390,7 +2445,7 @@ const School = {
         img.style.cssText = `width:${size}px; height:${size}px; object-fit:cover; border-radius:14px; border:2px solid rgba(148,163,184,0.25); box-shadow:0 12px 30px rgba(0,0,0,0.4); display:block;`;
         img.alt = 'Duckling Pond';
         img.onerror = () => { img.remove(); this.chartPreview(host, true, size); };
-        img.src = `assets/images/venues/${this.venueKey}.png`;
+        img.src = `assets/images/venues/${this.venueKey}.jpg`;   // the JPEG ingest writes beside the card
         host.appendChild(img);
     },
     // The school's characters to earn, listed in full on the first screen — they moved here

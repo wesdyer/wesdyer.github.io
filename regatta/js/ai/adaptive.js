@@ -27,6 +27,15 @@
 //     mark or gate (no boosted boats in mark traffic — but no wider, or on a short-leg venue the
 //     fade resets the band before it builds), and off for a bot doing penalty turns or in stuck
 //     recovery.
+//   * THE TARGET PULLS TWICE AS HARD (Wes, Oct 16 2026, with PT-034's tags): the shark your next
+//     rung asks you to beat runs the curve doubled BOTH ways, on ITS OWN gap — up to +10% at 12 s
+//     and +20% at 20 s behind you, and −5% / −10% ahead (the whole curve, not the pack's half) —
+//     so the duel the rung asks for happens on screen. The 1%/s rate cap still applies. NEW boats
+//     and the rest of the fleet are unchanged. And it starts EARLIER and holds THROUGH the marks:
+//     on from the gun (both of you across the line, leg >= 1) with no mark fade — measured on
+//     Pearl Lagoon, the first-mark gate and the fades left a doubled rival boosted only ~70% of
+//     its race, ~+11% on average, and the first beat is where the gap opens. Inert in the evals
+//     all the same: no tags are taken there (Unlocks.tagFleet), so there is no rival to boost.
 //   * Stars, feats and series points count normally; records are the player's own times.
 //
 // Inert for the evals by construction: the rating harness and the golden traces never drive
@@ -40,6 +49,7 @@ const ADAPTIVE = {
     boost1: 0.05,      // +5% at 12 s
     boost2: 0.10,      // +10% at 20 s
     holdBack: 0.5,     // bots ahead: this fraction of the same curve (−2.5% at 12 s, −5% at 20 s)
+    targetMul: 2,      // the tagged TARGET boat: the whole effect doubled, both ways, on its own gap
     rate: 0.01,        // max change of the multiplier per second
     gapTau: 5,         // seconds, the smoothing on each gap
     paceTau: 10,       // seconds, the smoothing on the fleet's pace
@@ -83,10 +93,12 @@ const Adaptive = {
     update(dt) {
         const boats = state.boats || [];
         const me = boats.find(b => b.isPlayer);
-        // Nothing is measured until the player has rounded the first mark — the band cannot engage
-        // before then, and reading the fleet's progress every frame would cost time and stamp the
-        // ranking's caches onto every raceState (which the golden traces hash).
-        const on = this.active() && me && !me.raceState.finished && me.raceState.leg >= 2;
+        // Nothing is measured until the player has rounded the first mark (or, with a rival in the
+        // fleet, crossed the line) — the band cannot engage before then, and reading the fleet's
+        // progress every frame would cost time and stamp the ranking's caches onto every raceState
+        // (which the golden traces hash; they never carry a rival).
+        const hunted = window.Unlocks && Unlocks.targetName ? Unlocks.targetName() : null;
+        const on = this.active() && me && !me.raceState.finished && (me.raceState.leg >= 2 || (hunted && me.raceState.leg >= 1));
         if (!on) {
             for (const b of boats) if (!b.isPlayer && b._adaptMul != null) this._ease(b, 1, dt);
             if (!state.race || state.race.status !== 'racing') this.reset();
@@ -132,11 +144,15 @@ const Adaptive = {
             if (b.isPlayer) continue;
             const rs = b.raceState;
             let target = 1;
-            if (!rs.finished && meRounded && rs.leg >= 2 && !rs.penalty
+            const rival = b.name === hunted;
+            const started = rival ? (me.raceState.leg >= 1 && rs.leg >= 1) : (meRounded && rs.leg >= 2);
+            if (!rs.finished && started && !rs.penalty
                 && !(b.controller && (b.controller.penaltySpin || b.controller.wiggleActive || b.controller.escActive))) {
                 const g = this._gap.get(b) || 0;
-                const eff = g > 0 ? curve(g) : -A.holdBack * curve(-aheadAvg);
-                target = 1 + eff * this._markFade(b);
+                const eff = rival
+                    ? (g > 0 ? A.targetMul * curve(g) : -A.targetMul * A.holdBack * curve(-g))
+                    : (g > 0 ? curve(g) : -A.holdBack * curve(-aheadAvg));
+                target = 1 + eff * (rival ? 1 : this._markFade(b));
             }
             this._ease(b, target, dt);
         }

@@ -1,10 +1,13 @@
 
 // Geometry Helpers
+// (one function, not a closure made per call — segmentIntersect runs in the bots' replans' inner loop)
+function _ccw(p1, p2, p3) { return (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x); }
+// How finely the router follows a CURVED shape (see Geom.simplifyRing): within 4 u, the ring pushed out by the same.
+const ROUTE_TOL = 4;
 const Geom = {
     // Check if segment AB intersects segment CD
     segmentIntersect: function(a, b, c, d) {
-        const ccw = (p1, p2, p3) => (p3.y - p1.y) * (p2.x - p1.x) > (p2.y - p1.y) * (p3.x - p1.x);
-        return (ccw(a, c, d) !== ccw(b, c, d)) && (ccw(a, b, c) !== ccw(a, b, d));
+        return (_ccw(a, c, d) !== _ccw(b, c, d)) && (_ccw(a, b, c) !== _ccw(a, b, d));
     },
 
     // Point in Polygon (Ray casting)
@@ -41,6 +44,35 @@ const Geom = {
     // buys almost no perpendicular room. Measured against an intended 100 units: median 83,
     // p10 29, MINIMUM 2, against a 30-unit hull. The inflated ring never self-intersected, so
     // nothing complained; the boats simply believed in clearance they did not have.
+    // A closed ring thinned by Douglas-Peucker to within `tol` of itself. For the router only: a CURVED shape is
+    // flattened to half a unit for the eye and the hull, and every one of those vertices would be a node in the
+    // visibility graph — four to eight times the nodes for no better route (river's course build went 1.7 s ->
+    // 10.7 s). Thinned to a few units and pushed out by the same amount, the ring stays conservative.
+    simplifyRing: function(verts, tol) {
+        const n = verts.length;
+        if (n < 8) return verts;
+        // split at the vertex farthest from vertex 0, so the two halves are open chains
+        let far = 0, fd = -1;
+        for (let i = 1; i < n; i++) { const d = (verts[i].x - verts[0].x) ** 2 + (verts[i].y - verts[0].y) ** 2; if (d > fd) { fd = d; far = i; } }
+        const keep = new Uint8Array(n); keep[0] = keep[far] = 1;
+        const chain = (a, b) => {                       // indices a..b going forward round the ring
+            const stack = [[a, b]];
+            while (stack.length) {
+                const [i0, i1] = stack.pop();
+                const p = verts[i0], q = verts[i1 % n], ex = q.x - p.x, ey = q.y - p.y, L = Math.hypot(ex, ey) || 1;
+                let best = -1, bd = tol;
+                for (let k = i0 + 1; k < i1; k++) {
+                    const v = verts[k % n], d = Math.abs((v.x - p.x) * ey - (v.y - p.y) * ex) / L;
+                    if (d > bd) { bd = d; best = k; }
+                }
+                if (best >= 0) { keep[best % n] = 1; stack.push([i0, best], [best, i1]); }
+            }
+        };
+        chain(0, far); chain(far, n);
+        const out = [];
+        for (let i = 0; i < n; i++) if (keep[i]) out.push(verts[i]);
+        return out.length >= 3 ? out : verts;
+    },
     offsetRing: function(verts, margin) {
         const n = verts.length;
         if (n < 3) return verts.map(v => ({ x: v.x, y: v.y }));
@@ -123,8 +155,9 @@ class RoutePlanner {
                 // Still the BOUNDING circle, and still only a broad-phase reject. A mitred
                 // corner can sit slightly further out than this, which costs a missed reject,
                 // never a missed collision — the polygon test behind it is the real answer.
-                radius: isl.radius + MARGIN,
-                vertices: Geom.offsetRing(isl.vertices, MARGIN)
+                radius: isl.radius + MARGIN + (isl.smooth ? ROUTE_TOL : 0),
+                vertices: isl.smooth ? Geom.offsetRing(Geom.simplifyRing(isl.vertices, ROUTE_TOL), MARGIN + ROUTE_TOL)
+                                     : Geom.offsetRing(isl.vertices, MARGIN)
             };
         });
         this.islandsDirty = false;
@@ -132,10 +165,18 @@ class RoutePlanner {
 
     // Check if a straight line is safe
     isLineSafe(start, end) {
+        // The segment's box, for a cheaper first reject (Oct 2026 perf pass — this runs for every
+        // node a bot's replan expands, against every island): a centre more than its radius outside
+        // the box is more than its radius from the segment, so the circle test below would skip it
+        // anyway. Same answer; the answer is "is ANY island in the way", so order never mattered.
+        const bx0 = Math.min(start.x, end.x), bx1 = Math.max(start.x, end.x);
+        const by0 = Math.min(start.y, end.y), by1 = Math.max(start.y, end.y);
         for (const isl of this.inflatedIslands) {
+            const r = isl.radius;
+            if (isl.x < bx0 - r || isl.x > bx1 + r || isl.y < by0 - r || isl.y > by1 + r) continue;
             // Optimization: Bounding Circle Check
             // Dist from segment to circle center
-            const dist = Geom.distToSegment({x: isl.x, y: isl.y}, start, end);
+            const dist = Geom.distToSegment(isl, start, end);
             if (dist > isl.radius) continue;
 
             // Detailed Polygon Check

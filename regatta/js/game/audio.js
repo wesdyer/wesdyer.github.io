@@ -542,6 +542,46 @@ const Sound = {
         osc.stop(now + 1.0);
     },
 
+    // ── THE START COUNTDOWN (PT-021, Wes at Lighthouse Cove: "a signal on each second for the final 10
+    // seconds… increase some drama") ─────────────────────────────────────────────────────────────────
+    // A soft bell at 10 s, then a tick each second, brighter for the last three, into the existing gun.
+    // NO HORNS: a first cut sounded the real start sequence (warning, preparatory, a long horn at 10) and
+    // Wes found it too much (Oct 14 2026) — the ticks were the part that worked. Kept under the music.
+    countdown: function(prev, now, dur) {
+        if (!settings.soundEnabled || !(now > 0)) return;
+        const crossed = (k) => prev > k && now <= k;
+        if (crossed(10)) { this.playBell(); return; }
+        for (let k = 9; k >= 1; k--) if (crossed(k)) { this.playTick(k <= 3); return; }
+    },
+    // Ten seconds: one struck bell — a fundamental and its bright partial, a quick strike, a slow ring.
+    // Pitched a fifth under the tick (880) so it reads as the head of the same countdown.
+    playBell: function() {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        for (const [hz, vol, ring] of [[587.33, 0.12, 0.9], [1174.66, 0.05, 0.5], [1760, 0.02, 0.25]]) {
+            const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+            o.type = 'sine'; o.frequency.value = hz;
+            g.gain.setValueAtTime(0.0001, now);
+            g.gain.exponentialRampToValueAtTime(vol, now + 0.006);
+            g.gain.exponentialRampToValueAtTime(0.0001, now + ring);
+            o.connect(g); g.connect(this.ctx.destination);
+            o.start(now); o.stop(now + ring + 0.05);
+        }
+    },
+    playTick: function(last) {
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const o = this.ctx.createOscillator(), g = this.ctx.createGain();
+        o.type = 'sine'; o.frequency.value = last ? 1320 : 880;
+        g.gain.setValueAtTime(0.0001, now);
+        g.gain.exponentialRampToValueAtTime(last ? 0.16 : 0.09, now + 0.005);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + (last ? 0.16 : 0.09));
+        o.connect(g); g.connect(this.ctx.destination);
+        o.start(now); o.stop(now + 0.2);
+    },
+
     playFinish: function() {
         if (!settings.soundEnabled) return;
         this.init();

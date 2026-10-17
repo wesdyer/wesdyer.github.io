@@ -70,18 +70,84 @@ function pointInPoly(x, y, verts) {
 }
 
 // Is this position open water on a mask venue? Margin pushes it clear of the shore.
+// A ring's bounding box, cached BESIDE the ring (rebuilt if its length changes). A WeakMap, not a property on
+// the array: a property changes the array's hidden class, and the hot loops over vertex arrays (collision,
+// the swimmers' land tests) slowed by ~2 ms a frame on Otter Point seeing several shapes of array.
+const _maskBoxes = new WeakMap();
+function maskRingBox(verts) {
+    let b = _maskBoxes.get(verts);
+    if (b && b.n === verts.length) return b;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const v of verts) { if (v.x < x0) x0 = v.x; if (v.x > x1) x1 = v.x; if (v.y < y0) y0 = v.y; if (v.y > y1) y1 = v.y; }
+    b = { n: verts.length, x0, y0, x1, y1 };
+    _maskBoxes.set(verts, b);
+    return b;
+}
+// One shape's verdict: false when (x, y) is on it or within `margin` of its edge.
+function maskShapeBlocks(isl, x, y, margin) {
+    // Outside the ring's box, grown by the margin, the point can be neither in it nor within margin of its
+    // edge — the answer the full tests below would give, without walking the ring.
+    const bx = maskRingBox(isl.vertices);
+    if (x < bx.x0 - margin || x > bx.x1 + margin || y < bx.y0 - margin || y > bx.y1 + margin) return false;
+    // a CURVED shape's dense ring takes collision's gridded test (see wildlife's landPip); straight ones the plain
+    if ((isl.smooth && typeof pointInPolyFast === 'function') ? pointInPolyFast(x, y, isl.vertices) : pointInPoly(x, y, isl.vertices)) return true;
+    if (margin > 0) {
+        // near-shore rejection: distance to the polygon edge
+        for (let i = 0, j = isl.vertices.length - 1; i < isl.vertices.length; j = i++) {
+            if (Geom.distToSegment({ x, y }, isl.vertices[j], isl.vertices[i]) < margin) return true;
+        }
+    }
+    return false;
+}
+// THE SHAPES BY PLACE (PT-046, Oct 14 2026). Every particle, comet and pressure sample asks this of the
+// venue's land, and it walked every shape to reject most by box — on the Bayou 3,181 of them, nearly all
+// tree and prop colliders. Filed by MI-unit squares (each shape in every square its box touches), a query
+// asks only the squares its margin-grown box touches: the same shapes that could answer, so the same
+// answer. Built per landShapes array (set once per course build, never edited in place).
+// ⚠️ EXACT — eval/_mask_index_check.js asks inMaskWater and inMaskWaterRef (the plain walk) the same points.
+const MI = 400;
+let _maskIdx = null;
+function maskIndex(land) {
+    if (_maskIdx && _maskIdx.land === land && _maskIdx.n === land.length) return _maskIdx;
+    const cells = new Map(), key = (cx, cy) => (cx + 32768) * 65536 + (cy + 32768);
+    land.forEach((isl, k) => {
+        const b = maskRingBox(isl.vertices);
+        for (let cy = Math.floor(b.y0 / MI); cy <= Math.floor(b.y1 / MI); cy++)
+            for (let cx = Math.floor(b.x0 / MI); cx <= Math.floor(b.x1 / MI); cx++) {
+                const kk = key(cx, cy); let L = cells.get(kk); if (!L) cells.set(kk, L = []); L.push(k);
+            }
+    });
+    return (_maskIdx = { land, n: land.length, cells, key, seen: new Uint32Array(land.length), stamp: 0 });
+}
 function inMaskWater(x, y, margin = 0) {
     const land = state.course.landShapes;
     if (!land) return true;
-    for (const isl of land) {
-        if (pointInPoly(x, y, isl.vertices)) return false;
-        if (margin > 0) {
-            // near-shore rejection: distance to the polygon edge
-            for (let i = 0, j = isl.vertices.length - 1; i < isl.vertices.length; j = i++) {
-                if (Geom.distToSegment({ x, y }, isl.vertices[j], isl.vertices[i]) < margin) return false;
-            }
+    if (land.length < 24) { for (const isl of land) if (maskShapeBlocks(isl, x, y, margin)) return false; return true; }
+    const X = maskIndex(land);
+    const cx0 = Math.floor((x - margin) / MI), cx1 = Math.floor((x + margin) / MI);
+    const cy0 = Math.floor((y - margin) / MI), cy1 = Math.floor((y + margin) / MI);
+    if (cx0 === cx1 && cy0 === cy1) {
+        const L = X.cells.get(X.key(cx0, cy0));
+        if (L) for (const k of L) if (maskShapeBlocks(land[k], x, y, margin)) return false;
+        return true;
+    }
+    // A margin spanning squares: a shape filed in two of them is asked once.
+    if (++X.stamp === 0xffffffff) { X.seen.fill(0); X.stamp = 1; }
+    for (let cy = cy0; cy <= cy1; cy++) for (let cx = cx0; cx <= cx1; cx++) {
+        const L = X.cells.get(X.key(cx, cy)); if (!L) continue;
+        for (const k of L) {
+            if (X.seen[k] === X.stamp) continue;
+            X.seen[k] = X.stamp;
+            if (maskShapeBlocks(land[k], x, y, margin)) return false;
         }
     }
+    return true;
+}
+// The plain walk over every shape — the reference eval/_mask_index_check.js holds inMaskWater to.
+function inMaskWaterRef(x, y, margin = 0) {
+    const land = state.course.landShapes;
+    if (!land) return true;
+    for (const isl of land) if (maskShapeBlocks(isl, x, y, margin)) return false;
     return true;
 }
 

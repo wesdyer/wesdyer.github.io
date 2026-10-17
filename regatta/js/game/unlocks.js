@@ -664,9 +664,9 @@ const ACHIEVEMENTS = [
     { char: 'Oar', venue: 'pond', rung: 'start', title: 'Off the Mark',
       hint: 'In start practice, cross within 2 seconds of the gun without being over early.',
       test: (r) => r.school === 'start' && r.startOk },
-    // Sep 27 2026 (Wes): the pond's Explorer — Pip the pumpkinseed; a full turn round the swim raft (sim/course.js).
+    // Sep 27 2026 (Wes): the pond's Explorer — Pip the pumpkinseed; round the swim raft like a mark (sim/course.js, PT-107).
     { char: 'Pip', venue: 'pond', rung: 'explorer', title: 'Round the Raft',
-      hint: 'Sail a full circle round the swim raft in Sailing School, then finish that section.',
+      hint: 'Sail round the swim raft in Sailing School, as you would a mark, then finish that section.',
       test: (r) => !!r.school && r.sectionDone && r.feats.includes('pond:raft') },
     { char: 'Bask', venue: 'pond', rung: 'wildlife', title: 'Sunbathers',
       hint: 'Send the turtles sliding off their log in Sailing School, then finish that section.',
@@ -813,13 +813,44 @@ const Unlocks = {
         return out;
     },
     // The shark the ladder's next unearned rung asks you to beat (its `prey`), once you have it; else null.
-    huntTarget() {
+    huntTarget() { const a = this.huntRung(); return a ? a.prey : null; },
+    // ...and the rung itself: what beating it asks, and who it unlocks.
+    huntRung() {
         const earned = this.store().earned;
         for (const a of ACHIEVEMENTS) {
             if (a.family !== 'sharks' || !a.prey || earned[a.char]) continue;
-            return (STARTING_TEN.includes(a.prey) || earned[a.prey]) ? a.prey : null;
+            return (STARTING_TEN.includes(a.prey) || earned[a.prey]) ? a : null;
         }
         return null;
+    },
+
+    // THE TAGGED BOATS (PT-034): a playtester saw Blaze in his fleet and didn't know why. The
+    // one or two boats that sail for a reason say so, the way racing games tag a nemesis or a
+    // challenger and leave the rest of the field plain: TARGET (the shark your next rung asks
+    // you to beat) and NEW (a fresh unlock in its first three races). Taken once, when the fleet
+    // is drawn: a new rival's race is spent at the gun (onRaceStart), so a later read would be
+    // one race out. Empty unless unlocks are enforced, so the evals' fleets carry no tags.
+    _tags: null,
+    tagFleet(names) {
+        this._tags = null;
+        if (!this.enforced() || !names || !names.length) return;
+        const t = {}, s = this.store();
+        for (const r of s.rivals) if (names.includes(r.name)) t[r.name] = { kind: 'new', n: RIVAL_RACES - r.left + 1, of: RIVAL_RACES };
+        const a = this.huntRung();
+        if (a && names.includes(a.prey)) {
+            const prog = a.progress ? a.progress(this.career()) : null;
+            t[a.prey] = { kind: 'target', reward: a.char, goal: this.hintOf(a), prog };   // a boat both new and hunted is the TARGET
+        }
+        this._tags = t;
+    },
+    tagFor(name) { return (this._tags && this._tags[name]) || null; },
+    targetName() { if (!this._tags) return null; for (const n in this._tags) if (this._tags[n].kind === 'target') return n; return null; },
+    // The target's rung after this race was counted: [have, need], and whether it was just earned.
+    targetAfter() {
+        const n = this.targetName(), tag = n && this._tags[n];
+        if (!tag) return null;
+        const a = this.achievementFor(tag.reward);
+        return { prey: n, reward: tag.reward, earned: this.isEarned(tag.reward), before: tag.prog || null, goal: tag.goal || '', prog: a && a.progress ? a.progress(this.career()) : null };
     },
     onRaceStart(boats) {
         if (!this.enforced()) return;

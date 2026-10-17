@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["redrock"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "redrock",
   "card": {
     "name": "Redrock Reservoir",
@@ -92,6 +92,7 @@ window.VENUE_DOC["redrock"] = {
     {
       "id": "shape-2",
       "kind": "desertsand",
+      "smooth": true,
       "outer": [
         [
           -771.7932132732769,
@@ -136,11 +137,12 @@ window.VENUE_DOC["redrock"] = {
         -96.89511298484003
       ],
       "r": 202.77924476572426,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-3",
       "kind": "desertsand",
+      "smooth": true,
       "outer": [
         [
           -973.2918659654495,
@@ -225,11 +227,12 @@ window.VENUE_DOC["redrock"] = {
         -827.2266646339622
       ],
       "r": 236.78944169624228,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-4",
       "kind": "desertsand",
+      "smooth": true,
       "outer": [
         [
           -642.894000711693,
@@ -278,7 +281,7 @@ window.VENUE_DOC["redrock"] = {
         703.372636034069
       ],
       "r": 211.85439668097226,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-5",
@@ -343,11 +346,12 @@ window.VENUE_DOC["redrock"] = {
         270.1550786618423
       ],
       "r": 159.491615365008,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-6",
       "kind": "desertsand",
+      "smooth": true,
       "outer": [
         [
           -234.73476358989404,
@@ -432,7 +436,7 @@ window.VENUE_DOC["redrock"] = {
         -977.9076413802454
       ],
       "r": 116.07828327230814,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-7",
@@ -481,7 +485,7 @@ window.VENUE_DOC["redrock"] = {
         -1373.4221756948841
       ],
       "r": 62.29745197304824,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-8",
@@ -542,7 +546,7 @@ window.VENUE_DOC["redrock"] = {
         -1983.3411981797879
       ],
       "r": 158.06539041379057,
-      "height": 20
+      "height": 10
     },
     {
       "id": "shape-9",
@@ -583,7 +587,7 @@ window.VENUE_DOC["redrock"] = {
         -454.5145833381631
       ],
       "r": 117.80148178708237,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-1-2",
@@ -624,7 +628,7 @@ window.VENUE_DOC["redrock"] = {
         -506.4799902804512
       ],
       "r": 183.58616591753673,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-1-2-2",
@@ -709,11 +713,12 @@ window.VENUE_DOC["redrock"] = {
         258.7280446866442
       ],
       "r": 419.03977735607276,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-10",
       "kind": "desertsand",
+      "smooth": true,
       "outer": [
         [
           1408.6093935240124,
@@ -758,7 +763,7 @@ window.VENUE_DOC["redrock"] = {
         1287.2964537660644
       ],
       "r": 238.84555108954936,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-11",
@@ -819,7 +824,7 @@ window.VENUE_DOC["redrock"] = {
         -194.57370967286468
       ],
       "r": 362.32783013679216,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-12",
@@ -872,11 +877,12 @@ window.VENUE_DOC["redrock"] = {
         -1490.666955004871
       ],
       "r": 396.6892741760318,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-17",
       "kind": "desertsand",
+      "smooth": true,
       "outer": [
         [
           -1461.4828021991336,
@@ -949,6 +955,7 @@ window.VENUE_DOC["redrock"] = {
     {
       "id": "shape-18",
       "kind": "desertsand",
+      "smooth": true,
       "outer": [
         [
           670.9932634903757,
@@ -1077,11 +1084,12 @@ window.VENUE_DOC["redrock"] = {
         56.32322165358635
       ],
       "r": 306.6243916694422,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-19",
       "kind": "desertsand",
+      "smooth": true,
       "outer": [
         [
           -1057.4363308905245,
@@ -1202,11 +1210,12 @@ window.VENUE_DOC["redrock"] = {
         -1310.234346247718
       ],
       "r": 339.23508891073635,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-1",
       "kind": "desertsand",
+      "smooth": true,
       "outer": [
         [
           -2761.9861595331,
@@ -1251,7 +1260,7 @@ window.VENUE_DOC["redrock"] = {
         -712.126418153167
       ],
       "r": 272.39486253950656,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-13",
@@ -1308,7 +1317,7 @@ window.VENUE_DOC["redrock"] = {
         -200.51947458169235
       ],
       "r": 194.62838195324252,
-      "height": 10
+      "height": 5
     },
     {
       "id": "shape-15",
@@ -2047,7 +2056,7 @@ window.VENUE_DOC["redrock"] = {
           1152.3
         ]
       ],
-      "height": 20,
+      "height": 10,
       "c": [
         -795.7,
         1773.9
@@ -2863,7 +2872,7 @@ window.VENUE_DOC["redrock"] = {
           -2490.3
         ]
       ],
-      "height": 20,
+      "height": 10,
       "c": [
         356,
         -1659.8
@@ -3059,7 +3068,7 @@ window.VENUE_DOC["redrock"] = {
           679.9
         ]
       ],
-      "height": 20,
+      "height": 10,
       "c": [
         1787.3,
         1042.5
@@ -3189,7 +3198,7 @@ window.VENUE_DOC["redrock"] = {
         -832.432063293124
       ],
       "r": 581.5280704453337,
-      "height": 20
+      "height": 10
     },
     {
       "id": "shape-14",
@@ -8149,7 +8158,7 @@ window.VENUE_DOC["redrock"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-bcb55dd-j7s",
+      "sig": "v3-f6323263-n8y",
       "legs": [
         {
           "pts": []
@@ -8963,7 +8972,7 @@ window.VENUE_DOC["redrock"] = {
         "falloff": 150,
         "count": 5,
         "gustKt": 8,
-        "sizeM": 320,
+        "sizeM": 160,
         "lifeS": 40,
         "bias": 0.65,
         "veer": 20
@@ -9019,7 +9028,7 @@ window.VENUE_DOC["redrock"] = {
         "falloff": 150,
         "count": 5,
         "gustKt": 8,
-        "sizeM": 320,
+        "sizeM": 160,
         "lifeS": 40,
         "bias": 0.65,
         "veer": 20
@@ -9055,7 +9064,7 @@ window.VENUE_DOC["redrock"] = {
         "falloff": 225,
         "count": 5,
         "gustKt": 8,
-        "sizeM": 320,
+        "sizeM": 160,
         "lifeS": 40,
         "bias": 0.65,
         "veer": 20

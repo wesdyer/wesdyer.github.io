@@ -2227,13 +2227,18 @@ function drawMinimap() {
     // map, which is what makes the player findable at a glance.
     for (const boat of state.boats) {
         if (boat.isPlayer) continue;
+        // A finished rival fades off the water, and off the chart with it (PT-013): gone once it is gone.
+        const fading = boat.raceState.finished;
+        if (fading && boat.fadeTimer <= 0) continue;
         const pos = t(boat.x, boat.y);
+        if (fading) ctx.globalAlpha = Math.max(0, Math.min(1, boat.opacity));
         // Ink outline: hull colors alone don't separate from water or gust blobs
         // at this size, and dark hulls disappeared entirely.
         ctx.beginPath(); ctx.arc(pos.x, pos.y, 4.6 * mk, 0, Math.PI * 2);
         ctx.fillStyle = isVeryDark(boat.colors.hull) ? boat.colors.spinnaker : boat.colors.hull;
         ctx.fill();
         ctx.strokeStyle = 'rgba(11, 28, 43, 0.85)'; ctx.lineWidth = 1.4 * mk; ctx.stroke();
+        if (fading) ctx.globalAlpha = 1;
     }
 
     // TIME TRIALS: your ghost, as a hollow arrow the size of yours — the same shape says "you",
@@ -2447,7 +2452,24 @@ function updateLeaderboard() {
 
                 row.appendChild(rank);
                 row.appendChild(iconContainer);
-                row.appendChild(nameDiv);
+                // THE RIVAL (PT-034): the shark your next rung asks you to beat says so UNDER its
+                // name, in the fleet page's coral — stacked, so it takes none of the row's width
+                // (a pill beside the name ran over it on a long one). Nobody else is tagged.
+                const tag = !boat.isPlayer && window.Unlocks ? Unlocks.tagFor(boat.name) : null;
+                if (tag && tag.kind === 'target') {
+                    const stack = document.createElement('div');
+                    stack.className = "flex-1 min-w-0 flex flex-col justify-center";
+                    nameDiv.className = "lb-name t-display truncate uppercase";
+                    const rivalDiv = document.createElement('div');
+                    rivalDiv.className = "lb-rival t-label";
+                    rivalDiv.style.cssText = "font-size:8.5px; line-height:1; letter-spacing:0.16em; color:#ff7a5c; margin-top:2px;";
+                    rivalDiv.textContent = 'RIVAL';
+                    stack.appendChild(nameDiv);
+                    stack.appendChild(rivalDiv);
+                    row.appendChild(stack);
+                } else {
+                    row.appendChild(nameDiv);
+                }
                 row.appendChild(penDiv);
                 row.appendChild(trendDiv);
                 row.appendChild(distDiv);
@@ -2473,7 +2495,7 @@ function updateLeaderboard() {
             const faceName = boat.face || boat.name;
             if (faceImg && faceImg.dataset.face !== faceName) {
                 faceImg.dataset.face = faceName;
-                faceImg.src = "assets/images/competitors/" + faceName.toLowerCase() + ".png";
+                setPortrait(faceImg, faceName, 36);   // screens.js: the 384 px thumb for a 36 px face
             }
             if (faceImg) faceImg.style.opacity = boat.isGhost ? '0.45' : '';
 
@@ -2505,7 +2527,13 @@ function updateLeaderboard() {
             rankDiv.style.color = me ? me : dnx ? '#475569' : '#64748b';
             nameDiv.style.color = boat.isGhost ? '#94a3b8'
                                 : dnx && !me ? '#64748b' : '#ffffff';
-            if (penDiv) penDiv.style.display = boat.raceState.penalty && !boat.raceState.finished ? '' : 'none';
+            if (penDiv) {
+                const owing = boat.raceState.penalty && !boat.raceState.finished;
+                penDiv.style.display = owing ? '' : 'none';
+                // PENALTIES STACK (PT-064): one tag, with the count when more than one is owed
+                const penTxt = owing && boat.raceState.penaltyTurnsOwed > 1 ? `PEN ×${boat.raceState.penaltyTurnsOwed}` : 'PEN';
+                if (penDiv.textContent !== penTxt) penDiv.textContent = penTxt;
+            }
             if (boat.isGhost) row.style.background = 'rgba(148,163,184,0.10)';
             nameDiv.textContent = boat.name;
             rankDiv.textContent = index + 1;
@@ -2981,13 +3009,34 @@ function tileStatus(id, st) {
 // number. Under it, small, the echo sounder — blue with clearance, amber while the mud is
 // taking speed, red just afloat, AGROUND with the refloat countdown when she sits.
 // Hidden on every other venue.
+// THE BIG TIDE CHART (PT-091, Wes on the Flats: "I wish I could click my tide chart and see a bigger
+// version… just like the map if I click it or press M"). The same drawing, scaled: the plot is laid out
+// in its own 250 x 84 units and the canvas transform does the rest, so the two sizes can never disagree.
+// It grows up and to the left from its corner, the way the map grows from its own.
+const TIDE_BIG_SCALE = 2.4;
+let tideBig = false;
+function toggleTideSize(big) {
+    tideBig = typeof big === 'boolean' ? big : !tideBig;
+    const row = UI.tideRow, cv = UI.tideCanvas;
+    if (!row || !cv) return;
+    const S = tideBig ? TIDE_BIG_SCALE : 1;
+    cv.style.width = (250 * S) + 'px'; cv.style.height = (84 * S) + 'px';
+    row.style.cursor = tideBig ? 'zoom-out' : 'zoom-in';
+    row.title = tideBig ? 'Shrink tide chart (T)' : 'Enlarge tide chart (T)';
+    if (state.boats && state.boats[0]) { try { drawTideReadout(state.boats[0]); } catch (e) {} }
+}
+if (typeof document !== 'undefined') document.addEventListener('DOMContentLoaded', () => {
+    const row = document.getElementById('hud-tide');
+    if (row) row.addEventListener('click', (e) => { e.stopPropagation(); toggleTideSize(); });
+});
+
 function drawTideReadout(player) {
     if (!UI.tideRow || !UI.tideCanvas) return;
     const info = (window.Tide && state.tide) ? Tide.hudInfo(player) : null;
     if (!info) { if (!UI.tideRow.classList.contains('hidden')) UI.tideRow.classList.add('hidden'); return; }
     UI.tideRow.classList.remove('hidden');
     const cv = UI.tideCanvas, T = state.tide;
-    const dpr = Math.min(3, window.devicePixelRatio || 1);
+    const dpr = Math.min(3, window.devicePixelRatio || 1) * (tideBig ? TIDE_BIG_SCALE : 1);
     const W = 250, H = 84;
     if (cv.width !== Math.round(W * dpr) || cv.height !== Math.round(H * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
     const g = cv.getContext('2d');

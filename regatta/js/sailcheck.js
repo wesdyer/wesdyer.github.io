@@ -45,6 +45,36 @@ function pointInRing(x, y, ring) {
     }
     return inside;
 }
+// A CURVED shape reaches the grid flattened to half a unit — four to eight times the edges, and the grid's cost
+// is cells x edges (river's build went 1.7 s -> 10.7 s). The 50 u grid needs nothing that fine: its rings are
+// thinned to within GRID_TOL (Douglas-Peucker, closed) and GRID_TOL is added to the clearance it tests them at,
+// so the thinning never admits a cell the true curve would refuse. Straight-edged shapes are untouched.
+const GRID_TOL = 3;
+const _thinned = new WeakMap();
+function thinRing(ring) {
+    let hit = _thinned.get(ring);
+    if (hit) return hit;
+    const n = ring.length;
+    if (n < 8) { _thinned.set(ring, ring); return ring; }
+    let far = 0, fd = -1;
+    for (let i = 1; i < n; i++) { const d = (ring[i][0] - ring[0][0]) ** 2 + (ring[i][1] - ring[0][1]) ** 2; if (d > fd) { fd = d; far = i; } }
+    const keep = new Uint8Array(n); keep[0] = keep[far] = 1;
+    const stack = [[0, far], [far, n]];
+    while (stack.length) {
+        const [i0, i1] = stack.pop();
+        const p = ring[i0], q = ring[i1 % n], ex = q[0] - p[0], ey = q[1] - p[1], L = Math.hypot(ex, ey) || 1;
+        let best = -1, bd = GRID_TOL;
+        for (let k = i0 + 1; k < i1; k++) {
+            const v = ring[k], d = Math.abs((v[0] - p[0]) * ey - (v[1] - p[1]) * ex) / L;
+            if (d > bd) { bd = d; best = k; }
+        }
+        if (best >= 0) { keep[best] = 1; stack.push([i0, best], [best, i1]); }
+    }
+    hit = ring.filter((_, i) => keep[i]);
+    if (hit.length < 3) hit = ring;
+    _thinned.set(ring, hit);
+    return hit;
+}
 function segDist(px, py, a, b) {
     const dx = b[0] - a[0], dy = b[1] - a[1];
     const l2 = dx * dx + dy * dy;
@@ -154,6 +184,42 @@ function buildGrid(land, arena, obstacles, opts) {
     return grid;
 }
 
+// EDGE BUCKETS for a shape with many edges: the same point-in-ring parity and the same edge distances as the
+// plain loops in admitShape, asked only of the edges that could matter — those whose y-span holds the point's y
+// (parity) and those whose box comes within the clearance (distance). Every answer is identical; a cell just
+// stops scanning a 300-edge coast for a point a kilometre from most of it.
+const EB = 100;
+function edgeBuckets(rings) {
+    let n = 0; for (const r of rings) n += r.length;
+    if (n < 48) return null;
+    const rows = new Map(), cells = new Map();
+    rings.forEach((ring, ri) => {
+        for (let e = 0; e < ring.length; e++) {
+            const a = ring[e], b = ring[(e + 1) % ring.length], ed = [a, b, ri];
+            const y0 = Math.floor(Math.min(a[1], b[1]) / EB), y1 = Math.floor(Math.max(a[1], b[1]) / EB);
+            const x0 = Math.floor(Math.min(a[0], b[0]) / EB), x1 = Math.floor(Math.max(a[0], b[0]) / EB);
+            for (let y = y0; y <= y1; y++) {
+                let r = rows.get(y); if (!r) rows.set(y, r = []); r.push(ed);
+                for (let x = x0; x <= x1; x++) { const k = x + ',' + y; let c = cells.get(k); if (!c) cells.set(k, c = []); c.push(ed); }
+            }
+        }
+    });
+    return { rows, cells };
+}
+function admitBucketed(sh, wx, wy, clr) {
+    // inside the outer ring and not in a hole = land: the parity per ring, from the edges spanning y
+    const par = new Uint8Array(sh.rings.length);
+    for (const [a, b, ri] of (sh.eb.rows.get(Math.floor(wy / EB)) || [])) {
+        const xi = b[0], yi = b[1], xj = a[0], yj = a[1];
+        if (((yi > wy) !== (yj > wy)) && (wx < (xj - xi) * (wy - yi) / ((yj - yi) || 1e-9) + xi)) par[ri] ^= 1;
+    }
+    if (par[0] && !par.some((v, i) => i > 0 && v)) return false;
+    const x0 = Math.floor((wx - clr) / EB), x1 = Math.floor((wx + clr) / EB), y0 = Math.floor((wy - clr) / EB), y1 = Math.floor((wy + clr) / EB);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        for (const [a, b] of (sh.eb.cells.get(x + ',' + y) || [])) if (segDist(wx, wy, a, b) < clr) return false;
+    }
+    return true;
+}
 function buildGridRaw(land, arena, obstacles, opts) {
     const ex = window.Arena.extent(arena);
     const n = Math.ceil(Math.max(ex.maxX - ex.minX, ex.maxY - ex.minY) / RES) + 1;
@@ -163,7 +229,9 @@ function buildGridRaw(land, arena, obstacles, opts) {
 
     const shapes = [];
     for (const l of (land || [])) {
-        const rings = [l.outer].concat(l.holes || []);
+        const thin = !!l.smooth;
+        const outer = thin ? thinRing(l.outer) : l.outer, holes = (l.holes || []).map(h => thin ? thinRing(h) : h);
+        const rings = [outer].concat(holes);
         let a = Infinity, b = Infinity, c = -Infinity, d = -Infinity;
         for (const p of l.outer) {
             if (p[0] < a) a = p[0]; if (p[1] < b) b = p[1];
@@ -173,16 +241,18 @@ function buildGridRaw(land, arena, obstacles, opts) {
         // that mixes ice into the land list — the stamp-equivalence checker
         // does): those must be judged at the cell CENTRE exactly as stampFloes
         // judges them, or the fast stamp and the full rebuild disagree.
-        shapes.push({ rings, outer: l.outer, holes: l.holes || [], bb: { a, b, c, d },
-                      centerOnly: !!l.centerOnly });
+        shapes.push({ rings, outer, holes, bb: { a, b, c, d }, pad: thin ? GRID_TOL : 0,
+                      centerOnly: !!l.centerOnly, eb: (opts && opts.noBuckets) ? null : edgeBuckets(rings) });   // noBuckets: the equality check's reference
     }
     // Drifting ice counts: a berg in a channel closes it just as land does.
     const circles = (obstacles || []).map(o => ({ x: o.x, y: o.y, r: o.radius || 0 }));
 
     const admitShape = (sh, wx, wy, clr) => {
         const bb = sh.bb;
+        clr += sh.pad;
         if (wx < bb.a - clr || wx > bb.c + clr
             || wy < bb.b - clr || wy > bb.d + clr) return true;
+        if (sh.eb) return admitBucketed(sh, wx, wy, clr);
         if (pointInRing(wx, wy, sh.outer) && !sh.holes.some(h => pointInRing(wx, wy, h))) return false;
         for (const ring of sh.rings) {
             for (let e = 0; e < ring.length; e++) {
@@ -191,8 +261,62 @@ function buildGridRaw(land, arena, obstacles, opts) {
         }
         return true;
     };
+    // DEEP IN LAND (PT-046, Oct 14 2026): a cell whose centre is inside a land shape and DEEP_R clear of
+    // every one of that shape's edges has every sub-sample below (the quarter-offsets, the tight tier's 5x5,
+    // all within 2·RES/5·√2 = 28.3u of the centre) on the same side of every ring — inside the land, where
+    // admitShape refuses at any clearance. So both tiers are 0 there, exactly, and the ~29 admits a land
+    // cell used to pay to learn it are skipped. The Bayou is mostly land: its build was 1.5 s of this.
+    // ⚠️ EXACT, NOT A HEURISTIC — eval/_grid_deep_check.js builds every venue both ways (opts.noDeep is the
+    // reference) and asserts the grids equal cell for cell.
+    const DEEP_R = RES * 2 / 5 * Math.SQRT2 + 0.5;
+    const deepInShape = (sh, wx, wy) => {
+        const bb = sh.bb;
+        if (wx < bb.a + DEEP_R || wx > bb.c - DEEP_R || wy < bb.b + DEEP_R || wy > bb.d - DEEP_R) return false;
+        if (sh.eb) {
+            const par = new Uint8Array(sh.rings.length);
+            for (const [a, b, ri] of (sh.eb.rows.get(Math.floor(wy / EB)) || [])) {
+                const xi = b[0], yi = b[1], xj = a[0], yj = a[1];
+                if (((yi > wy) !== (yj > wy)) && (wx < (xj - xi) * (wy - yi) / ((yj - yi) || 1e-9) + xi)) par[ri] ^= 1;
+            }
+            if (!par[0] || par.some((v, i) => i > 0 && v)) return false;
+            const x0 = Math.floor((wx - DEEP_R) / EB), x1 = Math.floor((wx + DEEP_R) / EB), y0 = Math.floor((wy - DEEP_R) / EB), y1 = Math.floor((wy + DEEP_R) / EB);
+            for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+                for (const [a, b] of (sh.eb.cells.get(x + ',' + y) || [])) if (segDist(wx, wy, a, b) < DEEP_R) return false;
+            }
+            return true;
+        }
+        if (!pointInRing(wx, wy, sh.outer) || sh.holes.some(h => pointInRing(wx, wy, h))) return false;
+        for (const ring of sh.rings) for (let e = 0; e < ring.length; e++) if (segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) < DEEP_R) return false;
+        return true;
+    };
+    // SHAPES BY PLACE (PT-046): admitShape answers "clear" for any point outside a shape's box grown by the
+    // clearance, so a point need only ask the shapes whose grown box holds it. The Bayou hands this 3,181
+    // shapes (its banks and ~3,100 tree and prop colliders), and every sample used to walk all of them to
+    // reject them by box. Bucketed by SB-unit squares, each shape filed in every square its box grown by
+    // the largest clearance asked (CLEARANCE + its pad) touches — the same answers, in list order.
+    // ⚠️ opts.noDeep (the equality check's reference) walks the full list, as before.
+    const SB = 250, sbKey = (x, y) => (x + 32768) * 65536 + (y + 32768);   // exact, not hashed: a collision would hand back another square's shapes
+    const sb = new Map();
+    shapes.forEach((sh, k) => {
+        if (sh.centerOnly) return;
+        const g = CLEARANCE + sh.pad + 1, bb = sh.bb;
+        const x0 = Math.floor((bb.a - g) / SB), x1 = Math.floor((bb.c + g) / SB), y0 = Math.floor((bb.b - g) / SB), y1 = Math.floor((bb.d + g) / SB);
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const key = sbKey(x, y); let L = sb.get(key); if (!L) sb.set(key, L = []); L.push(k); }
+    });
+    const near = (opts && opts.noDeep) ? null : (wx, wy) => sb.get(sbKey(Math.floor(wx / SB), Math.floor(wy / SB)));
+    const deepInLand = (wx, wy) => {
+        if (!near) return false;
+        const L = near(wx, wy); if (!L) return false;
+        for (const k of L) if (deepInShape(shapes[k], wx, wy)) return true;
+        return false;
+    };
     const admit = (wx, wy, clr) => {
         if (!window.Arena.contains(arena, wx, wy)) return false;
+        if (near) {
+            const L = near(wx, wy);
+            if (L) for (const k of L) if (!admitShape(shapes[k], wx, wy, clr)) return false;
+            return true;
+        }
         for (let k = 0; k < shapes.length; k++) {
             if (shapes[k].centerOnly) continue;
             if (!admitShape(shapes[k], wx, wy, clr)) return false;
@@ -218,6 +342,7 @@ function buildGridRaw(land, arena, obstacles, opts) {
             // arctic horizon/margin constant was priced on centre-sampled land
             // (measured here: arctic land contacts +42%, floe +19% unscoped).
             let ok = admit(wx, wy, CLEARANCE);
+            if (!ok && deepInLand(wx, wy)) continue;           // both tiers 0 — see DEEP IN LAND
             if (!ok && !(opts && opts.noSubsample)) {
                 const Q = RES / 4;
                 for (const [ox, oy] of [[-Q, -Q], [Q, -Q], [-Q, Q], [Q, Q]]) {
@@ -1016,32 +1141,37 @@ function pathSailable(grid, from, to) {
     const gScore = new Float64Array(size).fill(Infinity);
     const prev = new Int32Array(size).fill(-1);
     const si = s[1] * N + s[0], gi = g[1] * N + g[0];
-    // Binary heap of [f, id]
-    const heap = [];
+    // Binary heap of (f, id), as two parallel arrays — the same sift, the same comparisons and so
+    // the same pop order as the [f, id] pairs it replaced, without an allocation per push (Oct 2026
+    // perf pass: a bot replan is one of these searches, and they were the game's biggest hitches).
+    const hf = [], hid = [];
+    let popF = 0, popId = 0;
     const push = (f, id) => {
-        heap.push([f, id]);
-        let k = heap.length - 1;
+        hf.push(f); hid.push(id);
+        let k = hf.length - 1;
         while (k > 0) {
             const p = (k - 1) >> 1;
-            if (heap[p][0] <= heap[k][0]) break;
-            const t = heap[p]; heap[p] = heap[k]; heap[k] = t; k = p;
+            if (hf[p] <= hf[k]) break;
+            const tf = hf[p]; hf[p] = hf[k]; hf[k] = tf;
+            const ti = hid[p]; hid[p] = hid[k]; hid[k] = ti; k = p;
         }
     };
     const pop = () => {
-        const top = heap[0], last = heap.pop();
-        if (heap.length) {
-            heap[0] = last;
+        popF = hf[0]; popId = hid[0];
+        const lastF = hf.pop(), lastId = hid.pop();
+        if (hf.length) {
+            hf[0] = lastF; hid[0] = lastId;
             let k = 0;
             for (;;) {
                 const l = 2 * k + 1, r = l + 1;
                 let m = k;
-                if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
-                if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+                if (l < hf.length && hf[l] < hf[m]) m = l;
+                if (r < hf.length && hf[r] < hf[m]) m = r;
                 if (m === k) break;
-                const t = heap[m]; heap[m] = heap[k]; heap[k] = t; k = m;
+                const tf = hf[m]; hf[m] = hf[k]; hf[k] = tf;
+                const ti = hid[m]; hid[m] = hid[k]; hid[k] = ti; k = m;
             }
         }
-        return top;
     };
     if (_tfTab === null && grid._wbin) _tfTab = buildTimeCost();
     const TF = grid._wbin ? _tfTab : null;
@@ -1056,23 +1186,28 @@ function pathSailable(grid, from, to) {
     };
     gScore[si] = 0;
     push(h(si), si);
-    while (heap.length) {
-        const [f, cur] = pop();
+    // Loop-invariant: the cell tests and whether this is drifting-ice water (they were rebuilt for
+    // every neighbour of every expanded cell).
+    // SOFT cells (floe-plugged water, land-free) are passable at a stiff
+    // multiplier — grinding through a drifted plug beats waiting minutes
+    // for it to open, and this venue is designed around that trade.
+    const soft = grid._soft ? (id2) => grid._soft[id2] === 1 : null;
+    const passStock = (ai, bi) => grid.at(ai, bi) ||
+        (soft && ai >= 0 && bi >= 0 && ai < N && bi < N && soft(bi * N + ai));
+    const passable = (ai, bi) => passStock(ai, bi) ||
+        (ai >= 0 && bi >= 0 && ai < N && bi < N &&
+            (grid._tight && grid._tight[bi * N + ai] || (tideDry && tideDry[bi * N + ai])));
+    const icyG = !!(typeof state !== 'undefined' && state.course
+        && state.course._floeObjs && state.course._floeObjs.length);
+    while (hf.length) {
+        pop();
+        const f = popF, cur = popId;
         if (cur === gi) break;
         const ci = cur % N, cj = (cur - ci) / N;
         if (f - h(cur) > gScore[cur] + 1e-6) continue;   // stale heap entry
         for (let k = 0; k < 8; k++) {
             const di = NB[k][0], dj = NB[k][1];
             const a = ci + di, b = cj + dj;
-            // SOFT cells (floe-plugged water, land-free) are passable at a stiff
-            // multiplier — grinding through a drifted plug beats waiting minutes
-            // for it to open, and this venue is designed around that trade.
-            const soft = grid._soft ? (id2) => grid._soft[id2] === 1 : null;
-            const passStock = (ai, bi) => grid.at(ai, bi) ||
-                (soft && ai >= 0 && bi >= 0 && ai < N && bi < N && soft(bi * N + ai));
-            const passable = (ai, bi) => passStock(ai, bi) ||
-                (ai >= 0 && bi >= 0 && ai < N && bi < N &&
-                    (grid._tight && grid._tight[bi * N + ai] || (tideDry && tideDry[bi * N + ai])));
             if (!passable(a, b)) continue;
             const nid = b * N + a;
             let tideMul = 1, tideWait = 0, tideWaitUntil = 0;
@@ -1142,8 +1277,6 @@ function pathSailable(grid, from, to) {
                 // shore-grind: lake land contacts 8.1 -> 15.4 per boat-race and
                 // redrock finishers 10 -> 6 under the unscoped law. Non-icy venues
                 // price exactly as stock, by construction.
-                const icyG = !!(typeof state !== 'undefined' && state.course
-                    && state.course._floeObjs && state.course._floeObjs.length);
                 if (icyG && W < 140 && fUp > 1.05) fUp *= (140 / W) * (140 / W);
                 base = Math.min(icyG && fUp > 1.05 && W < 140 ? 90 : 20, base * fUp);
             }
@@ -1224,7 +1357,7 @@ function pathSailable(grid, from, to) {
 
 window.SailCheck = {
     HULL_R, CLEARANCE, TIGHT_CLEAR, RES,
-    buildGrid, stampFloes, pathBetween, smoothPath, losClear, nearestNav, roundingArc, routeWaypoints,
+    buildGrid, _buildGridRaw: buildGridRaw, stampFloes, pathBetween, smoothPath, losClear, nearestNav, roundingArc, routeWaypoints,
     legVMG, routeEstimate, pathSailable, clearanceField, segClearGeom
 };
 })();

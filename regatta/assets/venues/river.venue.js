@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["river"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "river",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.",
   "card": {
@@ -89,6 +89,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-11",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           3253.9632422152736,
@@ -133,6 +134,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-22",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           5159.7,
@@ -208,6 +210,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-21",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           5132.55713344614,
@@ -304,6 +307,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-20",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           4197.536614037218,
@@ -348,6 +352,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-12",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           3718.1729023348194,
@@ -400,6 +405,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-4",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           -8.822765189811946,
@@ -464,6 +470,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-3",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           -1375.5749012216306,
@@ -528,6 +535,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-1",
       "kind": "cobble",
+      "smooth": true,
       "outer": [
         [
           -3309.9,
@@ -1259,11 +1267,12 @@ window.VENUE_DOC["river"] = {
         -813.3585635359116
       ],
       "r": 9121.588654053616,
-      "height": 1
+      "height": 0.5
     },
     {
       "id": "shape-46",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           -2986.2,
@@ -1819,12 +1828,13 @@ window.VENUE_DOC["river"] = {
         4877.488688487576
       ],
       "r": 19572.932671915103,
-      "height": 2,
+      "height": 1,
       "holes": []
     },
     {
       "id": "shape-2",
       "kind": "cobble",
+      "smooth": true,
       "outer": [
         [
           -5385.7,
@@ -2596,11 +2606,12 @@ window.VENUE_DOC["river"] = {
         -3573.8345827076746
       ],
       "r": 9373.674259124826,
-      "height": 1
+      "height": 0.5
     },
     {
       "id": "shape-49",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           1445,
@@ -3096,12 +3107,13 @@ window.VENUE_DOC["river"] = {
         -13447.438046472122
       ],
       "r": 10688.104490669664,
-      "height": 3,
+      "height": 1.5,
       "holes": []
     },
     {
       "id": "shape-47",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           -17476,
@@ -3713,12 +3725,13 @@ window.VENUE_DOC["river"] = {
         3498.856839292827
       ],
       "r": 15073.493717465633,
-      "height": 2,
+      "height": 1,
       "holes": []
     },
     {
       "id": "shape-44",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           -17492.489519870775,
@@ -4546,7 +4559,7 @@ window.VENUE_DOC["river"] = {
         -6499.273972905945
       ],
       "r": 22529.587162314816,
-      "height": 10,
+      "height": 5,
       "holes": []
     },
     {
@@ -5224,6 +5237,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-23",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           5294.170616560528,
@@ -5332,6 +5346,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-24",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           744.050752776606,
@@ -6268,6 +6283,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-42",
       "kind": "cobble",
+      "smooth": true,
       "outer": [
         [
           4734.765049567514,
@@ -6356,6 +6372,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-43",
       "kind": "cobble",
+      "smooth": true,
       "outer": [
         [
           5252.548268094488,
@@ -6488,6 +6505,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-48",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           6836.8,
@@ -7011,12 +7029,13 @@ window.VENUE_DOC["river"] = {
         -9395.987801768828
       ],
       "r": 11731.137969039877,
-      "height": 3,
+      "height": 1.5,
       "holes": []
     },
     {
       "id": "shape-45-2",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           1165.6,
@@ -7736,7 +7755,7 @@ window.VENUE_DOC["river"] = {
         -1865.2013471417092
       ],
       "r": 12836.992903550556,
-      "height": 10,
+      "height": 5,
       "holes": []
     },
     {
@@ -7842,7 +7861,7 @@ window.VENUE_DOC["river"] = {
         -3298.815255053871
       ],
       "r": 922.2406544601605,
-      "height": 4
+      "height": 2
     },
     {
       "id": "shape-56",
@@ -8047,6 +8066,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-50",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           5541.246100545425,
@@ -8163,7 +8183,7 @@ window.VENUE_DOC["river"] = {
         -6444.8022366585255
       ],
       "r": 530.4326847337582,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-54",
@@ -8284,7 +8304,7 @@ window.VENUE_DOC["river"] = {
         -3914.961583138585
       ],
       "r": 355.57865560809387,
-      "height": 4
+      "height": 2
     },
     {
       "id": "shape-58",
@@ -8373,7 +8393,7 @@ window.VENUE_DOC["river"] = {
         -4058.4145955590225
       ],
       "r": 474.34183151624393,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-51",
@@ -8710,7 +8730,7 @@ window.VENUE_DOC["river"] = {
         -3248.5613667400685
       ],
       "r": 167.53445428057054,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-57",
@@ -8803,7 +8823,7 @@ window.VENUE_DOC["river"] = {
         -4425.061320524996
       ],
       "r": 238.00187618514119,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-60",
@@ -8884,7 +8904,7 @@ window.VENUE_DOC["river"] = {
         -2430.927646557987
       ],
       "r": 127.75261242305072,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-62",
@@ -8993,6 +9013,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-65",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           4654.879550377697,
@@ -9197,6 +9218,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-66",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           5912.630743127468,
@@ -9289,11 +9311,12 @@ window.VENUE_DOC["river"] = {
         -6562.435602039083
       ],
       "r": 286.812139963637,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-67",
       "kind": "meadow",
+      "smooth": true,
       "outer": [
         [
           5456.203101173565,
@@ -9398,7 +9421,7 @@ window.VENUE_DOC["river"] = {
         -6319.27361461772
       ],
       "r": 229.85860059872437,
-      "height": 3
+      "height": 1.5
     },
     {
       "id": "shape-68",
@@ -9605,12 +9628,20 @@ window.VENUE_DOC["river"] = {
           -11223.845936787748
         ],
         [
+          1078.1209032030438,
+          -12676.618871141534
+        ],
+        [
           1080.299963646664,
           -12724.26929481073
         ],
         [
           1142.7994846297122,
           -12724.132313242764
+        ],
+        [
+          1140.6990304365138,
+          -12682.304537399516
         ],
         [
           1065.6289349861397,
@@ -9863,14 +9894,16 @@ window.VENUE_DOC["river"] = {
       ],
       "holes": [],
       "c": [
-        3236.7630255727113,
-        -5464.560921808562
+        3200.0845245597297,
+        -5588.955762885491
       ],
-      "r": 7573.222471213246
+      "r": 7443.533151908497,
+      "smooth": true
     },
     {
       "id": "shape-70",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           5222.831172029791,
@@ -10117,7 +10150,7 @@ window.VENUE_DOC["river"] = {
           -1723.1288723684106
         ],
         [
-          4517.1525681978965,
+          4521.097146442784,
           -1507.8458208727504
         ],
         [
@@ -10169,6 +10202,10 @@ window.VENUE_DOC["river"] = {
           3974.2270011080554
         ],
         [
+          4121.92380146694,
+          3473.203909479262
+        ],
+        [
           4424.958304135672,
           2548.1496021052717
         ],
@@ -10187,6 +10224,10 @@ window.VENUE_DOC["river"] = {
         [
           4485.025487313566,
           -1065.47028276032
+        ],
+        [
+          4484.495943343562,
+          -1504.8224347873584
         ],
         [
           4467.592234390378,
@@ -10291,14 +10332,16 @@ window.VENUE_DOC["river"] = {
       ],
       "holes": [],
       "c": [
-        4175.213936681752,
-        -1451.789944588141
+        4178.679756010976,
+        -1386.830459736565
       ],
-      "r": 7144.451783463492
+      "r": 7080.434191259142,
+      "smooth": true
     },
     {
       "id": "shape-61",
       "kind": "cobbleshoal",
+      "smooth": true,
       "outer": [
         [
           7321.3014506874,
@@ -10391,6 +10434,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-45",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           -7152,
@@ -10742,12 +10786,13 @@ window.VENUE_DOC["river"] = {
         10102.148131856464
       ],
       "r": 7824.99388747064,
-      "height": 10,
+      "height": 5,
       "holes": []
     },
     {
       "id": "shape-71",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           4879.3769347263815,
@@ -10840,6 +10885,7 @@ window.VENUE_DOC["river"] = {
     {
       "id": "shape-72",
       "kind": "humus",
+      "smooth": true,
       "outer": [
         [
           -4840.5555169910895,
@@ -10981,7 +11027,7 @@ window.VENUE_DOC["river"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-320da14f-suu",
+      "sig": "v3-b6698567-37go",
       "legs": [
         {
           "pts": []
@@ -11175,20 +11221,16 @@ window.VENUE_DOC["river"] = {
               -3358.7
             ],
             [
-              1332.5,
-              -3508.7
+              1432.5,
+              -3608.7
             ],
             [
-              1582.5,
-              -3658.7
-            ],
-            [
-              2032.5,
+              1782.5,
               -3708.7
             ],
             [
-              2932.5,
-              -3658.7
+              2882.5,
+              -3708.7
             ],
             [
               3232.5,
@@ -11223,12 +11265,12 @@ window.VENUE_DOC["river"] = {
               -4658.7
             ],
             [
-              5182.5,
-              -5608.7
+              5032.5,
+              -5508.7
             ],
             [
               6132.5,
-              -6608.7
+              -6558.7
             ],
             [
               6268.3,
@@ -73957,8 +73999,8 @@ window.VENUE_DOC["river"] = {
     {
       "id": "veg-1953",
       "kind": "river-willow",
-      "x": -2019.1891463078975,
-      "y": 2921.800775624525,
+      "x": -2008.1309561481264,
+      "y": 3015.1810480848158,
       "heading": 4.79,
       "scale": 1.75
     },
@@ -94995,6 +95037,182 @@ window.VENUE_DOC["river"] = {
       "scale": 2.65
     },
     {
+      "id": "veg-17607",
+      "kind": "river-hemlock-western",
+      "x": 387.7,
+      "y": -2236.2,
+      "heading": 1.971,
+      "scale": 2.733
+    },
+    {
+      "id": "veg-17608",
+      "kind": "river-hemlock-western",
+      "x": 4492.3,
+      "y": -8076.3,
+      "heading": 3.839,
+      "scale": 1.859
+    },
+    {
+      "id": "veg-17609",
+      "kind": "river-hemlock-western",
+      "x": 3890,
+      "y": -1868.3,
+      "heading": 4.162,
+      "scale": 2.742
+    },
+    {
+      "id": "veg-17610",
+      "kind": "river-hemlock-western",
+      "x": 573.2,
+      "y": -3435.1,
+      "heading": 3.95,
+      "scale": 2.756
+    },
+    {
+      "id": "veg-17611",
+      "kind": "river-hemlock-western",
+      "x": 4557.2,
+      "y": -7106,
+      "heading": 4.655,
+      "scale": 1.942
+    },
+    {
+      "id": "veg-17612",
+      "kind": "river-hemlock-western",
+      "x": -1941.8,
+      "y": 4596.1,
+      "heading": 3.748,
+      "scale": 2.697
+    },
+    {
+      "id": "veg-17613",
+      "kind": "river-hemlock-western",
+      "x": 929.6,
+      "y": -4110.7,
+      "heading": 3.128,
+      "scale": 1.927
+    },
+    {
+      "id": "veg-17614",
+      "kind": "river-hemlock-western",
+      "x": 4279,
+      "y": -2253.5,
+      "heading": 2.741,
+      "scale": 2.771
+    },
+    {
+      "id": "veg-17615",
+      "kind": "river-hemlock-western",
+      "x": -1696.5,
+      "y": 4652.6,
+      "heading": 2.873,
+      "scale": 2.689
+    },
+    {
+      "id": "veg-17616",
+      "kind": "river-hemlock-western",
+      "x": 2731.3,
+      "y": -2503.7,
+      "heading": 3.319,
+      "scale": 1.938
+    },
+    {
+      "id": "veg-17617",
+      "kind": "river-hemlock-western",
+      "x": 914.1,
+      "y": -2260.8,
+      "heading": 3.295,
+      "scale": 1.885
+    },
+    {
+      "id": "veg-17618",
+      "kind": "river-hemlock-western",
+      "x": 4293.2,
+      "y": -7869.3,
+      "heading": 0.007,
+      "scale": 2.699
+    },
+    {
+      "id": "veg-17619",
+      "kind": "river-hemlock-western",
+      "x": -104.2,
+      "y": -2390.2,
+      "heading": 3.131,
+      "scale": 1.761
+    },
+    {
+      "id": "veg-17620",
+      "kind": "river-hemlock-western",
+      "x": 3721.8,
+      "y": -4563.1,
+      "heading": 1.219,
+      "scale": 2.689
+    },
+    {
+      "id": "veg-17621",
+      "kind": "river-hemlock-western",
+      "x": 5111.5,
+      "y": -7497,
+      "heading": 0.278,
+      "scale": 1.854
+    },
+    {
+      "id": "veg-17622",
+      "kind": "river-hemlock-western",
+      "x": -2989,
+      "y": 683.2,
+      "heading": 4.196,
+      "scale": 2.778
+    },
+    {
+      "id": "veg-17623",
+      "kind": "river-hemlock-western",
+      "x": 4155.5,
+      "y": -2621.9,
+      "heading": 4.224,
+      "scale": 2.72
+    },
+    {
+      "id": "veg-17624",
+      "kind": "river-hemlock-western",
+      "x": -173.2,
+      "y": 2293.6,
+      "heading": 0.55,
+      "scale": 2.685
+    },
+    {
+      "id": "veg-17625",
+      "kind": "river-hemlock-western",
+      "x": 900,
+      "y": -1465,
+      "heading": 3.963,
+      "scale": 2.771
+    },
+    {
+      "id": "veg-17626",
+      "kind": "river-hemlock-western",
+      "x": 3255,
+      "y": -2371.3,
+      "heading": 4.731,
+      "scale": 2.685
+    },
+    {
+      "id": "veg-17627",
+      "kind": "river-hemlock-western",
+      "x": 4454.7,
+      "y": -1595.5,
+      "heading": 1.967,
+      "scale": 1.888
+    },
+    {
+      "id": "veg-17628",
+      "kind": "river-hemlock-western",
+      "x": 5051.8,
+      "y": -4154.4,
+      "heading": 6.037,
+      "scale": 2.669
+    },
+    {
       "id": "veg-13567",
       "kind": "river-hemlock-western",
       "x": 4413.9,
@@ -95307,6 +95525,14 @@ window.VENUE_DOC["river"] = {
       "scale": 1.988
     },
     {
+      "id": "veg-17629",
+      "kind": "river-hemlock-western",
+      "x": 214.6,
+      "y": -3458.1,
+      "heading": 0.648,
+      "scale": 1.988
+    },
+    {
       "id": "veg-4177",
       "kind": "river-hemlock-western",
       "x": 9227.5,
@@ -95336,6 +95562,14 @@ window.VENUE_DOC["river"] = {
       "x": 3052.6,
       "y": -6994.6,
       "heading": 3.814,
+      "scale": 2.242
+    },
+    {
+      "id": "veg-17630",
+      "kind": "river-hemlock-western",
+      "x": 2612.9,
+      "y": -2483.1,
+      "heading": 2.415,
       "scale": 2.242
     },
     {
@@ -95459,6 +95693,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.095
     },
     {
+      "id": "veg-17631",
+      "kind": "river-hemlock-western",
+      "x": 5978.4,
+      "y": -9534.4,
+      "heading": 5.318,
+      "scale": 2.095
+    },
+    {
       "id": "veg-8256",
       "kind": "river-hemlock-western",
       "x": 3443.9,
@@ -95488,6 +95730,14 @@ window.VENUE_DOC["river"] = {
       "x": 2694.3,
       "y": -6745.6,
       "heading": 2.265,
+      "scale": 2.352
+    },
+    {
+      "id": "veg-17632",
+      "kind": "river-hemlock-western",
+      "x": 3797.1,
+      "y": -6497.3,
+      "heading": 2.757,
       "scale": 2.352
     },
     {
@@ -95539,6 +95789,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.228
     },
     {
+      "id": "veg-17633",
+      "kind": "river-hemlock-western",
+      "x": 4161.6,
+      "y": -7364.8,
+      "heading": 3.712,
+      "scale": 2.228
+    },
+    {
       "id": "veg-4157",
       "kind": "river-hemlock-western",
       "x": 3842.3,
@@ -95571,11 +95829,27 @@ window.VENUE_DOC["river"] = {
       "scale": 2.64
     },
     {
+      "id": "veg-17634",
+      "kind": "river-hemlock-western",
+      "x": 4865.1,
+      "y": -4146.5,
+      "heading": 5.716,
+      "scale": 2.64
+    },
+    {
       "id": "veg-9308",
       "kind": "river-hemlock-western",
       "x": 3123.3,
       "y": -6573.4,
       "heading": 4.132,
+      "scale": 2.307
+    },
+    {
+      "id": "veg-17635",
+      "kind": "river-hemlock-western",
+      "x": 4302.5,
+      "y": -6997.3,
+      "heading": 4.726,
       "scale": 2.307
     },
     {
@@ -95608,6 +95882,14 @@ window.VENUE_DOC["river"] = {
       "x": 2924.5,
       "y": -6541.3,
       "heading": 2.777,
+      "scale": 2.452
+    },
+    {
+      "id": "veg-17636",
+      "kind": "river-hemlock-western",
+      "x": 130,
+      "y": 2378.6,
+      "heading": 1.641,
       "scale": 2.452
     },
     {
@@ -95723,6 +96005,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.22
     },
     {
+      "id": "veg-17637",
+      "kind": "river-hemlock-western",
+      "x": 432,
+      "y": -1483.9,
+      "heading": 4.652,
+      "scale": 2.22
+    },
+    {
       "id": "veg-9304",
       "kind": "river-hemlock-western",
       "x": 3277,
@@ -95776,6 +96066,14 @@ window.VENUE_DOC["river"] = {
       "x": 2042.4,
       "y": -6342,
       "heading": 5.421,
+      "scale": 2.57
+    },
+    {
+      "id": "veg-17638",
+      "kind": "river-hemlock-western",
+      "x": 4403.2,
+      "y": -1384.4,
+      "heading": 0.24,
       "scale": 2.57
     },
     {
@@ -95939,6 +96237,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.54
     },
     {
+      "id": "veg-17639",
+      "kind": "river-hemlock-western",
+      "x": -2502.1,
+      "y": 206.7,
+      "heading": 1.252,
+      "scale": 2.54
+    },
+    {
+      "id": "veg-17640",
+      "kind": "river-hemlock-western",
+      "x": -641.7,
+      "y": 2699.6,
+      "heading": 2.663,
+      "scale": 2.54
+    },
+    {
       "id": "veg-16682",
       "kind": "river-hemlock-western",
       "x": 1661.5,
@@ -95953,6 +96267,14 @@ window.VENUE_DOC["river"] = {
       "y": -6203.9,
       "heading": 5.029,
       "scale": 2.067
+    },
+    {
+      "id": "veg-17641",
+      "kind": "river-hemlock-western",
+      "x": 4604.9,
+      "y": -3007.5,
+      "heading": 0.286,
+      "scale": 2.068
     },
     {
       "id": "veg-11801",
@@ -96008,6 +96330,14 @@ window.VENUE_DOC["river"] = {
       "x": 502.6,
       "y": -6153.2,
       "heading": 3.85,
+      "scale": 2.514
+    },
+    {
+      "id": "veg-17642",
+      "kind": "river-hemlock-western",
+      "x": -2971.8,
+      "y": 4504.5,
+      "heading": 4.121,
       "scale": 2.514
     },
     {
@@ -96395,6 +96725,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.241
     },
     {
+      "id": "veg-17643",
+      "kind": "river-hemlock-western",
+      "x": 2889.5,
+      "y": -5639,
+      "heading": 0.871,
+      "scale": 2.241
+    },
+    {
       "id": "veg-5828",
       "kind": "river-hemlock-western",
       "x": 593.6,
@@ -96488,6 +96826,14 @@ window.VENUE_DOC["river"] = {
       "x": 1469.7,
       "y": -6009.7,
       "heading": 0.274,
+      "scale": 2.618
+    },
+    {
+      "id": "veg-17644",
+      "kind": "river-hemlock-western",
+      "x": 3637.9,
+      "y": -1565.3,
+      "heading": 3.325,
       "scale": 2.618
     },
     {
@@ -96635,6 +96981,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.504
     },
     {
+      "id": "veg-17645",
+      "kind": "river-hemlock-western",
+      "x": 438.3,
+      "y": 1555.4,
+      "heading": 4.418,
+      "scale": 2.505
+    },
+    {
       "id": "veg-12525",
       "kind": "river-hemlock-western",
       "x": 7519.3,
@@ -96656,6 +97010,14 @@ window.VENUE_DOC["river"] = {
       "x": 755.7,
       "y": -5975.7,
       "heading": 2.958,
+      "scale": 2.543
+    },
+    {
+      "id": "veg-17646",
+      "kind": "river-hemlock-western",
+      "x": 4354.2,
+      "y": -2170.7,
+      "heading": 3.062,
       "scale": 2.543
     },
     {
@@ -96787,6 +97149,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.379
     },
     {
+      "id": "veg-17647",
+      "kind": "river-hemlock-western",
+      "x": 2494.3,
+      "y": -1679.3,
+      "heading": 1.662,
+      "scale": 2.379
+    },
+    {
+      "id": "veg-17648",
+      "kind": "river-hemlock-western",
+      "x": 6212.6,
+      "y": -3786.1,
+      "heading": 3.853,
+      "scale": 2.379
+    },
+    {
       "id": "veg-6389",
       "kind": "river-hemlock-western",
       "x": 7678.3,
@@ -96809,6 +97187,14 @@ window.VENUE_DOC["river"] = {
       "y": -5942.8,
       "heading": 2.418,
       "scale": 2.16
+    },
+    {
+      "id": "veg-17649",
+      "kind": "river-hemlock-western",
+      "x": -2794.1,
+      "y": -511.2,
+      "heading": 2.642,
+      "scale": 2.161
     },
     {
       "id": "veg-10013",
@@ -96971,6 +97357,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.096
     },
     {
+      "id": "veg-17650",
+      "kind": "river-hemlock-western",
+      "x": 1048.4,
+      "y": 2285.8,
+      "heading": 3.773,
+      "scale": 2.097
+    },
+    {
       "id": "veg-15743",
       "kind": "river-hemlock-western",
       "x": 2658.2,
@@ -97001,6 +97395,14 @@ window.VENUE_DOC["river"] = {
       "y": -5903.3,
       "heading": 5.297,
       "scale": 2.501
+    },
+    {
+      "id": "veg-17651",
+      "kind": "river-hemlock-western",
+      "x": 5952,
+      "y": -8778.2,
+      "heading": 3.37,
+      "scale": 2.502
     },
     {
       "id": "veg-5830",
@@ -97139,6 +97541,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.219
     },
     {
+      "id": "veg-17652",
+      "kind": "river-hemlock-western",
+      "x": 6043.9,
+      "y": -9595.9,
+      "heading": 6.183,
+      "scale": 2.219
+    },
+    {
       "id": "veg-1775",
       "kind": "river-hemlock-western",
       "x": 538.7,
@@ -97192,6 +97602,22 @@ window.VENUE_DOC["river"] = {
       "x": 737.8,
       "y": -5868.2,
       "heading": 6.216,
+      "scale": 2.483
+    },
+    {
+      "id": "veg-17653",
+      "kind": "river-hemlock-western",
+      "x": -89.1,
+      "y": -3291.2,
+      "heading": 1.13,
+      "scale": 2.484
+    },
+    {
+      "id": "veg-17654",
+      "kind": "river-hemlock-western",
+      "x": -130.4,
+      "y": -2076.9,
+      "heading": 4.555,
       "scale": 2.483
     },
     {
@@ -97555,6 +97981,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.154
     },
     {
+      "id": "veg-17655",
+      "kind": "river-hemlock-western",
+      "x": -363.5,
+      "y": -2563,
+      "heading": 5.888,
+      "scale": 2.154
+    },
+    {
       "id": "veg-5531",
       "kind": "river-hemlock-western",
       "x": 8061.9,
@@ -97731,6 +98165,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.471
     },
     {
+      "id": "veg-17656",
+      "kind": "river-hemlock-western",
+      "x": -90.6,
+      "y": 2525.7,
+      "heading": 5.853,
+      "scale": 2.471
+    },
+    {
       "id": "veg-129",
       "kind": "river-hemlock-western",
       "x": 1284,
@@ -97840,6 +98282,14 @@ window.VENUE_DOC["river"] = {
       "x": 621.6,
       "y": -5755.6,
       "heading": 4.266,
+      "scale": 2.347
+    },
+    {
+      "id": "veg-17657",
+      "kind": "river-hemlock-western",
+      "x": 336.9,
+      "y": -3433.7,
+      "heading": 0.615,
       "scale": 2.347
     },
     {
@@ -97960,6 +98410,14 @@ window.VENUE_DOC["river"] = {
       "x": 8367,
       "y": -5736.7,
       "heading": 6.134,
+      "scale": 2.094
+    },
+    {
+      "id": "veg-17658",
+      "kind": "river-hemlock-western",
+      "x": 683.3,
+      "y": -2814.8,
+      "heading": 3.027,
       "scale": 2.094
     },
     {
@@ -98171,6 +98629,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.458
     },
     {
+      "id": "veg-17659",
+      "kind": "river-hemlock-western",
+      "x": 6909.2,
+      "y": -4294.9,
+      "heading": 3.221,
+      "scale": 2.458
+    },
+    {
       "id": "veg-13648",
       "kind": "river-hemlock-western",
       "x": 7163,
@@ -98243,6 +98709,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.515
     },
     {
+      "id": "veg-17660",
+      "kind": "river-hemlock-western",
+      "x": 25.3,
+      "y": -1596,
+      "heading": 3.509,
+      "scale": 2.515
+    },
+    {
       "id": "veg-6317",
       "kind": "river-hemlock-western",
       "x": 7281.2,
@@ -98273,6 +98747,14 @@ window.VENUE_DOC["river"] = {
       "y": -5692.8,
       "heading": 2.611,
       "scale": 2.56
+    },
+    {
+      "id": "veg-17661",
+      "kind": "river-hemlock-western",
+      "x": 814.2,
+      "y": -2346.2,
+      "heading": 3.205,
+      "scale": 2.561
     },
     {
       "id": "veg-10278",
@@ -98467,6 +98949,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.129
     },
     {
+      "id": "veg-17662",
+      "kind": "river-hemlock-western",
+      "x": 3460,
+      "y": -3014.7,
+      "heading": 6.011,
+      "scale": 2.129
+    },
+    {
       "id": "veg-17100",
       "kind": "river-hemlock-western",
       "x": 7877.4,
@@ -98600,6 +99090,14 @@ window.VENUE_DOC["river"] = {
       "x": 1975.1,
       "y": -5655.1,
       "heading": 0.647,
+      "scale": 2.639
+    },
+    {
+      "id": "veg-17663",
+      "kind": "river-hemlock-western",
+      "x": -533.6,
+      "y": 2554.8,
+      "heading": 0.573,
       "scale": 2.639
     },
     {
@@ -98763,6 +99261,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.18
     },
     {
+      "id": "veg-17664",
+      "kind": "river-hemlock-western",
+      "x": 3948.4,
+      "y": -6970.4,
+      "heading": 5.244,
+      "scale": 2.18
+    },
+    {
       "id": "veg-11886",
       "kind": "river-hemlock-western",
       "x": 8036.5,
@@ -98784,6 +99290,14 @@ window.VENUE_DOC["river"] = {
       "x": 7514.8,
       "y": -5638.6,
       "heading": 2.753,
+      "scale": 2.168
+    },
+    {
+      "id": "veg-17665",
+      "kind": "river-hemlock-western",
+      "x": 8849.3,
+      "y": -6498.7,
+      "heading": 1.654,
       "scale": 2.168
     },
     {
@@ -98883,6 +99397,14 @@ window.VENUE_DOC["river"] = {
       "scale": 1.969
     },
     {
+      "id": "veg-17666",
+      "kind": "river-hemlock-western",
+      "x": 4190.2,
+      "y": -1929.3,
+      "heading": 1.382,
+      "scale": 1.969
+    },
+    {
       "id": "veg-9229",
       "kind": "river-hemlock-western",
       "x": 2295.1,
@@ -98912,6 +99434,14 @@ window.VENUE_DOC["river"] = {
       "x": 1083.8,
       "y": -5626.4,
       "heading": 6.103,
+      "scale": 2.503
+    },
+    {
+      "id": "veg-17667",
+      "kind": "river-hemlock-western",
+      "x": 4028.4,
+      "y": -1514.6,
+      "heading": 0.139,
       "scale": 2.503
     },
     {
@@ -98963,6 +99493,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.23
     },
     {
+      "id": "veg-17668",
+      "kind": "river-hemlock-western",
+      "x": 3431.7,
+      "y": -2452.8,
+      "heading": 0.862,
+      "scale": 2.23
+    },
+    {
       "id": "veg-14189",
       "kind": "river-hemlock-western",
       "x": 708.6,
@@ -98995,6 +99533,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.407
     },
     {
+      "id": "veg-17669",
+      "kind": "river-hemlock-western",
+      "x": 664.2,
+      "y": -1307.8,
+      "heading": 4.894,
+      "scale": 2.408
+    },
+    {
       "id": "veg-6564",
       "kind": "river-hemlock-western",
       "x": 7979.1,
@@ -99017,6 +99563,14 @@ window.VENUE_DOC["river"] = {
       "y": -5615,
       "heading": 5.505,
       "scale": 2.074
+    },
+    {
+      "id": "veg-17670",
+      "kind": "river-hemlock-western",
+      "x": -83.1,
+      "y": 2027.9,
+      "heading": 4.974,
+      "scale": 2.075
     },
     {
       "id": "veg-8622",
@@ -99088,6 +99642,14 @@ window.VENUE_DOC["river"] = {
       "x": 8243,
       "y": -5606.3,
       "heading": 2.521,
+      "scale": 2.237
+    },
+    {
+      "id": "veg-17671",
+      "kind": "river-hemlock-western",
+      "x": 514.2,
+      "y": 1317.6,
+      "heading": 5.745,
       "scale": 2.237
     },
     {
@@ -99200,6 +99762,14 @@ window.VENUE_DOC["river"] = {
       "x": 1093.6,
       "y": -5595.6,
       "heading": 2.947,
+      "scale": 2.015
+    },
+    {
+      "id": "veg-17672",
+      "kind": "river-hemlock-western",
+      "x": 5424.6,
+      "y": -3928.9,
+      "heading": 0.147,
       "scale": 2.015
     },
     {
@@ -99680,6 +100250,14 @@ window.VENUE_DOC["river"] = {
       "x": 1265.2,
       "y": -5538.8,
       "heading": 3.791,
+      "scale": 2.38
+    },
+    {
+      "id": "veg-17673",
+      "kind": "river-hemlock-western",
+      "x": 6458.4,
+      "y": -3881.8,
+      "heading": 6.067,
       "scale": 2.38
     },
     {
@@ -100203,6 +100781,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.58
     },
     {
+      "id": "veg-17674",
+      "kind": "river-hemlock-western",
+      "x": -3934,
+      "y": 1454.8,
+      "heading": 4.217,
+      "scale": 2.58
+    },
+    {
       "id": "veg-2236",
       "kind": "river-hemlock-western",
       "x": 6530.1,
@@ -100232,6 +100818,14 @@ window.VENUE_DOC["river"] = {
       "x": 8656.5,
       "y": -5456.3,
       "heading": 6.278,
+      "scale": 2.199
+    },
+    {
+      "id": "veg-17675",
+      "kind": "river-hemlock-western",
+      "x": 771.8,
+      "y": -1348.2,
+      "heading": 3.784,
       "scale": 2.199
     },
     {
@@ -100635,6 +101229,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.485
     },
     {
+      "id": "veg-17676",
+      "kind": "river-hemlock-western",
+      "x": 3808.3,
+      "y": -5729.8,
+      "heading": 4.798,
+      "scale": 2.485
+    },
+    {
+      "id": "veg-17677",
+      "kind": "river-hemlock-western",
+      "x": -447.6,
+      "y": -3441,
+      "heading": 2.701,
+      "scale": 2.485
+    },
+    {
       "id": "veg-10728",
       "kind": "river-hemlock-western",
       "x": 6315.3,
@@ -100907,6 +101517,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.62
     },
     {
+      "id": "veg-17678",
+      "kind": "river-hemlock-western",
+      "x": 1056.4,
+      "y": -2292.6,
+      "heading": 5.97,
+      "scale": 2.62
+    },
+    {
       "id": "veg-16910",
       "kind": "river-hemlock-western",
       "x": 56.8,
@@ -101064,6 +101682,14 @@ window.VENUE_DOC["river"] = {
       "x": 3355.6,
       "y": -5343.9,
       "heading": 2.871,
+      "scale": 2.329
+    },
+    {
+      "id": "veg-17679",
+      "kind": "river-hemlock-western",
+      "x": 4386.9,
+      "y": -8069.8,
+      "heading": 3.172,
       "scale": 2.329
     },
     {
@@ -101339,6 +101965,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.297
     },
     {
+      "id": "veg-17680",
+      "kind": "river-hemlock-western",
+      "x": 4728.1,
+      "y": -3817.4,
+      "heading": 4.489,
+      "scale": 2.297
+    },
+    {
       "id": "veg-16913",
       "kind": "river-hemlock-western",
       "x": 131.9,
@@ -101491,12 +102125,28 @@ window.VENUE_DOC["river"] = {
       "scale": 2.441
     },
     {
+      "id": "veg-17681",
+      "kind": "river-hemlock-western",
+      "x": -2082.2,
+      "y": 264.3,
+      "heading": 2.565,
+      "scale": 2.441
+    },
+    {
       "id": "veg-8343",
       "kind": "river-hemlock-western",
       "x": 2242.6,
       "y": -5287.9,
       "heading": 4.97,
       "scale": 1.999
+    },
+    {
+      "id": "veg-17682",
+      "kind": "river-hemlock-western",
+      "x": 175.8,
+      "y": 1871.8,
+      "heading": 1.24,
+      "scale": 2
     },
     {
       "id": "veg-6387",
@@ -101560,6 +102210,14 @@ window.VENUE_DOC["river"] = {
       "x": 76.3,
       "y": -5281.3,
       "heading": 0.816,
+      "scale": 2.023
+    },
+    {
+      "id": "veg-17683",
+      "kind": "river-hemlock-western",
+      "x": 2727.9,
+      "y": -1974.1,
+      "heading": 3.668,
       "scale": 2.023
     },
     {
@@ -101635,6 +102293,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.53
     },
     {
+      "id": "veg-17684",
+      "kind": "river-hemlock-western",
+      "x": 4382.7,
+      "y": -1492.8,
+      "heading": 0.364,
+      "scale": 2.53
+    },
+    {
+      "id": "veg-17685",
+      "kind": "river-hemlock-western",
+      "x": 4699.8,
+      "y": -7529.2,
+      "heading": 4.05,
+      "scale": 2.53
+    },
+    {
       "id": "veg-3423",
       "kind": "river-hemlock-western",
       "x": 5310.1,
@@ -101656,6 +102330,14 @@ window.VENUE_DOC["river"] = {
       "x": 1812,
       "y": -5269.1,
       "heading": 5.796,
+      "scale": 2.079
+    },
+    {
+      "id": "veg-17686",
+      "kind": "river-hemlock-western",
+      "x": -382.8,
+      "y": -667.1,
+      "heading": 2.677,
       "scale": 2.079
     },
     {
@@ -101859,6 +102541,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.312
     },
     {
+      "id": "veg-17687",
+      "kind": "river-hemlock-western",
+      "x": 877.3,
+      "y": -2525,
+      "heading": 5.588,
+      "scale": 2.312
+    },
+    {
       "id": "veg-16665",
       "kind": "river-hemlock-western",
       "x": 1017.5,
@@ -102051,6 +102741,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.157
     },
     {
+      "id": "veg-17688",
+      "kind": "river-hemlock-western",
+      "x": 2444.4,
+      "y": -3204,
+      "heading": 0.387,
+      "scale": 2.157
+    },
+    {
       "id": "veg-12295",
       "kind": "river-hemlock-western",
       "x": 1318.2,
@@ -102169,6 +102867,14 @@ window.VENUE_DOC["river"] = {
       "y": -5201,
       "heading": 2.476,
       "scale": 2.051
+    },
+    {
+      "id": "veg-17689",
+      "kind": "river-hemlock-western",
+      "x": 3676.5,
+      "y": -5386.1,
+      "heading": 4.379,
+      "scale": 2.053
     },
     {
       "id": "veg-15649",
@@ -102416,6 +103122,14 @@ window.VENUE_DOC["river"] = {
       "x": 2830,
       "y": -5176.7,
       "heading": 4.149,
+      "scale": 1.977
+    },
+    {
+      "id": "veg-17690",
+      "kind": "river-hemlock-western",
+      "x": -1700.2,
+      "y": 4525.2,
+      "heading": 1.079,
       "scale": 1.977
     },
     {
@@ -102736,6 +103450,14 @@ window.VENUE_DOC["river"] = {
       "x": 7896,
       "y": -5134.3,
       "heading": 0.682,
+      "scale": 2.203
+    },
+    {
+      "id": "veg-17691",
+      "kind": "river-hemlock-western",
+      "x": 417.4,
+      "y": -3424.2,
+      "heading": 0.008,
       "scale": 2.203
     },
     {
@@ -103115,6 +103837,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.343
     },
     {
+      "id": "veg-17692",
+      "kind": "river-hemlock-western",
+      "x": 3886.4,
+      "y": -1502.4,
+      "heading": 6.159,
+      "scale": 2.343
+    },
+    {
       "id": "veg-14474",
       "kind": "river-hemlock-western",
       "x": 50.2,
@@ -103280,6 +104010,14 @@ window.VENUE_DOC["river"] = {
       "x": 1200,
       "y": -5047.8,
       "heading": 1.454,
+      "scale": 2.277
+    },
+    {
+      "id": "veg-17693",
+      "kind": "river-hemlock-western",
+      "x": -4425.5,
+      "y": 694,
+      "heading": 3.033,
       "scale": 2.277
     },
     {
@@ -103464,6 +104202,14 @@ window.VENUE_DOC["river"] = {
       "x": 6668.6,
       "y": -5021,
       "heading": 2.319,
+      "scale": 2.315
+    },
+    {
+      "id": "veg-17694",
+      "kind": "river-hemlock-western",
+      "x": 699,
+      "y": -3831.4,
+      "heading": 6.107,
       "scale": 2.315
     },
     {
@@ -103795,6 +104541,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.309
     },
     {
+      "id": "veg-17695",
+      "kind": "river-hemlock-western",
+      "x": 3575.2,
+      "y": -5528.4,
+      "heading": 0.688,
+      "scale": 2.309
+    },
+    {
       "id": "veg-9722",
       "kind": "river-hemlock-western",
       "x": 6981.8,
@@ -103928,6 +104682,14 @@ window.VENUE_DOC["river"] = {
       "x": 7092,
       "y": -4930,
       "heading": 4.82,
+      "scale": 2.29
+    },
+    {
+      "id": "veg-17696",
+      "kind": "river-hemlock-western",
+      "x": -4273.5,
+      "y": 1404.5,
+      "heading": 1.531,
       "scale": 2.29
     },
     {
@@ -104859,6 +105621,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.184
     },
     {
+      "id": "veg-17697",
+      "kind": "river-hemlock-western",
+      "x": -23.6,
+      "y": -3624.5,
+      "heading": 5.61,
+      "scale": 2.184
+    },
+    {
       "id": "veg-13371",
       "kind": "river-hemlock-western",
       "x": 513.9,
@@ -105000,6 +105770,14 @@ window.VENUE_DOC["river"] = {
       "x": 7579.9,
       "y": -4703.7,
       "heading": 5.976,
+      "scale": 2.213
+    },
+    {
+      "id": "veg-17698",
+      "kind": "river-hemlock-western",
+      "x": -4039.8,
+      "y": 1818.6,
+      "heading": 4.142,
       "scale": 2.213
     },
     {
@@ -105395,6 +106173,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.32
     },
     {
+      "id": "veg-17699",
+      "kind": "river-hemlock-western",
+      "x": 2748.5,
+      "y": -1583.7,
+      "heading": 0.249,
+      "scale": 2.32
+    },
+    {
       "id": "veg-12350",
       "kind": "river-hemlock-western",
       "x": 7218.1,
@@ -105480,6 +106266,14 @@ window.VENUE_DOC["river"] = {
       "x": 280.6,
       "y": -4579.9,
       "heading": 1.433,
+      "scale": 2.472
+    },
+    {
+      "id": "veg-17700",
+      "kind": "river-hemlock-western",
+      "x": 5202.7,
+      "y": -2207.2,
+      "heading": 4.852,
       "scale": 2.472
     },
     {
@@ -105611,6 +106405,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.137
     },
     {
+      "id": "veg-17701",
+      "kind": "river-hemlock-western",
+      "x": 3343.6,
+      "y": -2168.8,
+      "heading": 2.633,
+      "scale": 2.137
+    },
+    {
       "id": "veg-1281",
       "kind": "river-hemlock-western",
       "x": 6328.6,
@@ -105632,6 +106434,22 @@ window.VENUE_DOC["river"] = {
       "x": 25,
       "y": -4532.7,
       "heading": 4.251,
+      "scale": 2.188
+    },
+    {
+      "id": "veg-17702",
+      "kind": "river-hemlock-western",
+      "x": 4035.8,
+      "y": -5406.8,
+      "heading": 4.857,
+      "scale": 2.188
+    },
+    {
+      "id": "veg-17703",
+      "kind": "river-hemlock-western",
+      "x": 4160.5,
+      "y": -1461.1,
+      "heading": 1.566,
       "scale": 2.188
     },
     {
@@ -106499,6 +107317,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.018
     },
     {
+      "id": "veg-17704",
+      "kind": "river-hemlock-western",
+      "x": 468.2,
+      "y": -2072.6,
+      "heading": 3.887,
+      "scale": 2.018
+    },
+    {
       "id": "veg-14180",
       "kind": "river-hemlock-western",
       "x": 6207,
@@ -106547,6 +107373,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.265
     },
     {
+      "id": "veg-17705",
+      "kind": "river-hemlock-western",
+      "x": 3533,
+      "y": -4883.4,
+      "heading": 0.578,
+      "scale": 2.265
+    },
+    {
       "id": "veg-13035",
       "kind": "river-hemlock-western",
       "x": 224.6,
@@ -106571,6 +107405,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.519
     },
     {
+      "id": "veg-17706",
+      "kind": "river-hemlock-western",
+      "x": 2540.7,
+      "y": -2146.6,
+      "heading": 1.711,
+      "scale": 2.52
+    },
+    {
       "id": "veg-8828",
       "kind": "river-hemlock-western",
       "x": -223.1,
@@ -106592,6 +107434,14 @@ window.VENUE_DOC["river"] = {
       "x": 6576.6,
       "y": -4050.4,
       "heading": 5.486,
+      "scale": 2.327
+    },
+    {
+      "id": "veg-17707",
+      "kind": "river-hemlock-western",
+      "x": -105.2,
+      "y": -2259.2,
+      "heading": 5.087,
       "scale": 2.327
     },
     {
@@ -107067,6 +107917,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.057
     },
     {
+      "id": "veg-17708",
+      "kind": "river-hemlock-western",
+      "x": 3651.6,
+      "y": -1392.4,
+      "heading": 3.089,
+      "scale": 2.057
+    },
+    {
       "id": "veg-10402",
       "kind": "river-hemlock-western",
       "x": 343.9,
@@ -107144,6 +108002,14 @@ window.VENUE_DOC["river"] = {
       "x": -311.9,
       "y": -3520.4,
       "heading": 3.77,
+      "scale": 2.491
+    },
+    {
+      "id": "veg-17709",
+      "kind": "river-hemlock-western",
+      "x": 2750.2,
+      "y": -2278.4,
+      "heading": 3.723,
       "scale": 2.491
     },
     {
@@ -107483,11 +108349,27 @@ window.VENUE_DOC["river"] = {
       "scale": 2.496
     },
     {
+      "id": "veg-17710",
+      "kind": "river-hemlock-western",
+      "x": 6505.6,
+      "y": -3940.1,
+      "heading": 5.024,
+      "scale": 2.496
+    },
+    {
       "id": "veg-5294",
       "kind": "river-hemlock-western",
       "x": -663.3,
       "y": -3357.1,
       "heading": 3.67,
+      "scale": 2.252
+    },
+    {
+      "id": "veg-17711",
+      "kind": "river-hemlock-western",
+      "x": 1007.9,
+      "y": -2515.2,
+      "heading": 4.923,
       "scale": 2.252
     },
     {
@@ -107656,6 +108538,14 @@ window.VENUE_DOC["river"] = {
       "x": 5254.1,
       "y": -3253.4,
       "heading": 3.635,
+      "scale": 2.031
+    },
+    {
+      "id": "veg-17712",
+      "kind": "river-hemlock-western",
+      "x": 3948.3,
+      "y": -1548.2,
+      "heading": 3.496,
       "scale": 2.031
     },
     {
@@ -107955,6 +108845,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.274
     },
     {
+      "id": "veg-17713",
+      "kind": "river-hemlock-western",
+      "x": -2349.8,
+      "y": 5317.5,
+      "heading": 1.749,
+      "scale": 2.274
+    },
+    {
       "id": "veg-11970",
       "kind": "river-hemlock-western",
       "x": 5970.6,
@@ -108072,6 +108970,14 @@ window.VENUE_DOC["river"] = {
       "x": 5822.1,
       "y": -2940.5,
       "heading": 3.804,
+      "scale": 2.603
+    },
+    {
+      "id": "veg-17714",
+      "kind": "river-hemlock-western",
+      "x": -286.1,
+      "y": -1654.3,
+      "heading": 4.521,
       "scale": 2.603
     },
     {
@@ -108768,6 +109674,22 @@ window.VENUE_DOC["river"] = {
       "x": -187.3,
       "y": -2332.5,
       "heading": 0.699,
+      "scale": 2.444
+    },
+    {
+      "id": "veg-17715",
+      "kind": "river-hemlock-western",
+      "x": 3141.2,
+      "y": -1347.1,
+      "heading": 6.045,
+      "scale": 2.445
+    },
+    {
+      "id": "veg-17716",
+      "kind": "river-hemlock-western",
+      "x": -518.3,
+      "y": -2623.9,
+      "heading": 1.167,
       "scale": 2.444
     },
     {
@@ -109923,6 +110845,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.572
     },
     {
+      "id": "veg-17717",
+      "kind": "river-hemlock-western",
+      "x": -202.3,
+      "y": 2886.9,
+      "heading": 3.188,
+      "scale": 2.572
+    },
+    {
       "id": "veg-7022",
       "kind": "river-hemlock-western",
       "x": -2283.2,
@@ -109976,6 +110906,14 @@ window.VENUE_DOC["river"] = {
       "x": -1796.3,
       "y": 4924.8,
       "heading": 0.108,
+      "scale": 2.383
+    },
+    {
+      "id": "veg-17718",
+      "kind": "river-hemlock-western",
+      "x": 3989.9,
+      "y": -1892.8,
+      "heading": 1.255,
       "scale": 2.383
     },
     {
@@ -110051,6 +110989,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.077
     },
     {
+      "id": "veg-17719",
+      "kind": "river-hemlock-western",
+      "x": -3574.7,
+      "y": 458.1,
+      "heading": 2.363,
+      "scale": 2.078
+    },
+    {
       "id": "veg-10936",
       "kind": "river-hemlock-western",
       "x": -2322.9,
@@ -110112,6 +111058,14 @@ window.VENUE_DOC["river"] = {
       "x": -3036.2,
       "y": 5400.6,
       "heading": 5.4,
+      "scale": 2.576
+    },
+    {
+      "id": "veg-17720",
+      "kind": "river-hemlock-western",
+      "x": 5554.6,
+      "y": -9233.4,
+      "heading": 3.719,
       "scale": 2.576
     },
     {
@@ -110291,11 +111245,131 @@ window.VENUE_DOC["river"] = {
       "scale": 3.45
     },
     {
+      "id": "veg-17721",
+      "kind": "river-spruce-sitka",
+      "x": -616.2,
+      "y": -2735.9,
+      "heading": 0.948,
+      "scale": 3.601
+    },
+    {
+      "id": "veg-17722",
+      "kind": "river-spruce-sitka",
+      "x": 3947.7,
+      "y": -4054.8,
+      "heading": 0.97,
+      "scale": 3.569
+    },
+    {
+      "id": "veg-17723",
+      "kind": "river-spruce-sitka",
+      "x": -4010.7,
+      "y": 400.8,
+      "heading": 3.572,
+      "scale": 3.495
+    },
+    {
+      "id": "veg-17724",
+      "kind": "river-spruce-sitka",
+      "x": 1888,
+      "y": -2098.3,
+      "heading": 4.246,
+      "scale": 3.463
+    },
+    {
+      "id": "veg-17725",
+      "kind": "river-spruce-sitka",
+      "x": 1938.7,
+      "y": -3517.6,
+      "heading": 4.122,
+      "scale": 3.756
+    },
+    {
+      "id": "veg-17726",
+      "kind": "river-spruce-sitka",
+      "x": 3070.9,
+      "y": -4968.2,
+      "heading": 2.594,
+      "scale": 3.493
+    },
+    {
+      "id": "veg-17727",
+      "kind": "river-spruce-sitka",
+      "x": -411.3,
+      "y": -3114.9,
+      "heading": 0.684,
+      "scale": 3.608
+    },
+    {
+      "id": "veg-17728",
+      "kind": "river-spruce-sitka",
+      "x": 3365.4,
+      "y": -7620.9,
+      "heading": 0.2,
+      "scale": 3.491
+    },
+    {
+      "id": "veg-17729",
+      "kind": "river-spruce-sitka",
+      "x": 2898.3,
+      "y": -2656.2,
+      "heading": 6.207,
+      "scale": 3.562
+    },
+    {
+      "id": "veg-17730",
+      "kind": "river-spruce-sitka",
+      "x": -646.4,
+      "y": -2461.8,
+      "heading": 0.233,
+      "scale": 3.878
+    },
+    {
+      "id": "veg-17731",
+      "kind": "river-spruce-sitka",
+      "x": 3993.8,
+      "y": -5453.9,
+      "heading": 2.602,
+      "scale": 3.562
+    },
+    {
+      "id": "veg-17732",
+      "kind": "river-spruce-sitka",
+      "x": 1160.3,
+      "y": -1620.8,
+      "heading": 4.637,
+      "scale": 3.548
+    },
+    {
+      "id": "veg-17733",
+      "kind": "river-spruce-sitka",
+      "x": 2371.2,
+      "y": -1276.2,
+      "heading": 4.682,
+      "scale": 3.564
+    },
+    {
+      "id": "veg-17734",
+      "kind": "river-spruce-sitka",
+      "x": -108.6,
+      "y": -3083.8,
+      "heading": 4.607,
+      "scale": 3.516
+    },
+    {
       "id": "veg-8913",
       "kind": "river-spruce-sitka",
       "x": 4476.2,
       "y": -8998.4,
       "heading": 4.464,
+      "scale": 2.739
+    },
+    {
+      "id": "veg-17735",
+      "kind": "river-spruce-sitka",
+      "x": -4310.6,
+      "y": 661.1,
+      "heading": 4.112,
       "scale": 2.739
     },
     {
@@ -110313,6 +111387,14 @@ window.VENUE_DOC["river"] = {
       "y": -8953,
       "heading": 5.848,
       "scale": 2.523
+    },
+    {
+      "id": "veg-17736",
+      "kind": "river-spruce-sitka",
+      "x": -195.8,
+      "y": -3967.1,
+      "heading": 4.817,
+      "scale": 2.524
     },
     {
       "id": "veg-8912",
@@ -110376,6 +111458,14 @@ window.VENUE_DOC["river"] = {
       "x": 4153.5,
       "y": -8446,
       "heading": 5.573,
+      "scale": 2.854
+    },
+    {
+      "id": "veg-17737",
+      "kind": "river-spruce-sitka",
+      "x": 4063.3,
+      "y": -4535,
+      "heading": 1.849,
       "scale": 2.854
     },
     {
@@ -110467,6 +111557,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.049
     },
     {
+      "id": "veg-17738",
+      "kind": "river-spruce-sitka",
+      "x": 5599.5,
+      "y": -3995.8,
+      "heading": 2.744,
+      "scale": 3.049
+    },
+    {
       "id": "veg-17317",
       "kind": "river-spruce-sitka",
       "x": 3608.9,
@@ -110488,6 +111586,14 @@ window.VENUE_DOC["river"] = {
       "x": 4133.5,
       "y": -7948.7,
       "heading": 2.974,
+      "scale": 2.803
+    },
+    {
+      "id": "veg-17739",
+      "kind": "river-spruce-sitka",
+      "x": 2128.9,
+      "y": -2803.3,
+      "heading": 0.021,
       "scale": 2.803
     },
     {
@@ -110544,6 +111650,14 @@ window.VENUE_DOC["river"] = {
       "x": 3698.2,
       "y": -7852.4,
       "heading": 3.509,
+      "scale": 3.14
+    },
+    {
+      "id": "veg-17740",
+      "kind": "river-spruce-sitka",
+      "x": 2553.2,
+      "y": -1597.6,
+      "heading": 4.82,
       "scale": 3.14
     },
     {
@@ -110672,6 +111786,14 @@ window.VENUE_DOC["river"] = {
       "x": 3719.9,
       "y": -7608.6,
       "heading": 2.881,
+      "scale": 2.828
+    },
+    {
+      "id": "veg-17741",
+      "kind": "river-spruce-sitka",
+      "x": 5192.5,
+      "y": -5182.4,
+      "heading": 1.337,
       "scale": 2.828
     },
     {
@@ -110947,6 +112069,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.528
     },
     {
+      "id": "veg-17742",
+      "kind": "river-spruce-sitka",
+      "x": -2696,
+      "y": 4775.6,
+      "heading": 5.775,
+      "scale": 2.528
+    },
+    {
+      "id": "veg-17743",
+      "kind": "river-spruce-sitka",
+      "x": 2896.1,
+      "y": -2510.7,
+      "heading": 4.749,
+      "scale": 2.528
+    },
+    {
       "id": "veg-12531",
       "kind": "river-spruce-sitka",
       "x": 4653.2,
@@ -110987,6 +112125,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.536
     },
     {
+      "id": "veg-17744",
+      "kind": "river-spruce-sitka",
+      "x": 1140.1,
+      "y": -1780.7,
+      "heading": 1.821,
+      "scale": 2.536
+    },
+    {
       "id": "veg-5618",
       "kind": "river-spruce-sitka",
       "x": 4321.9,
@@ -111016,6 +112162,14 @@ window.VENUE_DOC["river"] = {
       "x": 3623.2,
       "y": -7279.6,
       "heading": 5.803,
+      "scale": 3.165
+    },
+    {
+      "id": "veg-17745",
+      "kind": "river-spruce-sitka",
+      "x": 1124.1,
+      "y": -1997,
+      "heading": 0.312,
       "scale": 3.165
     },
     {
@@ -111147,6 +112301,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.728
     },
     {
+      "id": "veg-17746",
+      "kind": "river-spruce-sitka",
+      "x": -2114.4,
+      "y": 4654.6,
+      "heading": 2.291,
+      "scale": 2.728
+    },
+    {
       "id": "veg-2176",
       "kind": "river-spruce-sitka",
       "x": 3845.6,
@@ -111211,6 +112373,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.793
     },
     {
+      "id": "veg-17747",
+      "kind": "river-spruce-sitka",
+      "x": 8244,
+      "y": -6181.9,
+      "heading": 1.512,
+      "scale": 2.793
+    },
+    {
       "id": "veg-8486",
       "kind": "river-spruce-sitka",
       "x": 3320.7,
@@ -111227,6 +112397,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.682
     },
     {
+      "id": "veg-17748",
+      "kind": "river-spruce-sitka",
+      "x": 3842.6,
+      "y": -1368.3,
+      "heading": 0.116,
+      "scale": 2.682
+    },
+    {
+      "id": "veg-17749",
+      "kind": "river-spruce-sitka",
+      "x": 2934.4,
+      "y": -2958.7,
+      "heading": 4.041,
+      "scale": 2.682
+    },
+    {
       "id": "veg-2689",
       "kind": "river-spruce-sitka",
       "x": 3500.7,
@@ -111235,11 +112421,35 @@ window.VENUE_DOC["river"] = {
       "scale": 2.574
     },
     {
+      "id": "veg-17750",
+      "kind": "river-spruce-sitka",
+      "x": 1869.4,
+      "y": -2465.1,
+      "heading": 5.499,
+      "scale": 2.574
+    },
+    {
       "id": "veg-2175",
       "kind": "river-spruce-sitka",
       "x": 3646,
       "y": -7036,
       "heading": 2.133,
+      "scale": 2.756
+    },
+    {
+      "id": "veg-17751",
+      "kind": "river-spruce-sitka",
+      "x": 2669.7,
+      "y": -1903.3,
+      "heading": 0.134,
+      "scale": 2.756
+    },
+    {
+      "id": "veg-17752",
+      "kind": "river-spruce-sitka",
+      "x": 1935.4,
+      "y": -376.3,
+      "heading": 2.78,
       "scale": 2.756
     },
     {
@@ -111323,6 +112533,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.597
     },
     {
+      "id": "veg-17753",
+      "kind": "river-spruce-sitka",
+      "x": 3879.2,
+      "y": -1616.9,
+      "heading": 1.641,
+      "scale": 2.597
+    },
+    {
       "id": "veg-15329",
       "kind": "river-spruce-sitka",
       "x": 2885.2,
@@ -111355,11 +112573,27 @@ window.VENUE_DOC["river"] = {
       "scale": 2.492
     },
     {
+      "id": "veg-17754",
+      "kind": "river-spruce-sitka",
+      "x": 2148.5,
+      "y": -1312.9,
+      "heading": 1.847,
+      "scale": 2.492
+    },
+    {
       "id": "veg-14502",
       "kind": "river-spruce-sitka",
       "x": 2936.3,
       "y": -6969.3,
       "heading": 0.68,
+      "scale": 2.876
+    },
+    {
+      "id": "veg-17755",
+      "kind": "river-spruce-sitka",
+      "x": 2077.8,
+      "y": -1777.3,
+      "heading": 2.244,
       "scale": 2.876
     },
     {
@@ -111376,6 +112610,14 @@ window.VENUE_DOC["river"] = {
       "x": 2716.6,
       "y": -6963.8,
       "heading": 0.461,
+      "scale": 3.09
+    },
+    {
+      "id": "veg-17756",
+      "kind": "river-spruce-sitka",
+      "x": -2599.8,
+      "y": 4499.4,
+      "heading": 6.246,
       "scale": 3.09
     },
     {
@@ -111555,6 +112797,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.697
     },
     {
+      "id": "veg-17757",
+      "kind": "river-spruce-sitka",
+      "x": 264,
+      "y": -1971.8,
+      "heading": 5.873,
+      "scale": 2.697
+    },
+    {
       "id": "veg-4391",
       "kind": "river-spruce-sitka",
       "x": 2817.5,
@@ -111635,11 +112885,27 @@ window.VENUE_DOC["river"] = {
       "scale": 2.762
     },
     {
+      "id": "veg-17758",
+      "kind": "river-spruce-sitka",
+      "x": 971.6,
+      "y": -1197.8,
+      "heading": 5.454,
+      "scale": 2.762
+    },
+    {
       "id": "veg-12261",
       "kind": "river-spruce-sitka",
       "x": 4216.8,
       "y": -6862.5,
       "heading": 0.723,
+      "scale": 3.388
+    },
+    {
+      "id": "veg-17759",
+      "kind": "river-spruce-sitka",
+      "x": 2169.4,
+      "y": -2960.8,
+      "heading": 2.312,
       "scale": 3.388
     },
     {
@@ -111664,6 +112930,14 @@ window.VENUE_DOC["river"] = {
       "x": 3969.5,
       "y": -6859.5,
       "heading": 1.699,
+      "scale": 2.993
+    },
+    {
+      "id": "veg-17760",
+      "kind": "river-spruce-sitka",
+      "x": 2379,
+      "y": -2938.4,
+      "heading": 6.019,
       "scale": 2.993
     },
     {
@@ -111819,6 +113093,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.958
     },
     {
+      "id": "veg-17761",
+      "kind": "river-spruce-sitka",
+      "x": 3032.3,
+      "y": -1013.7,
+      "heading": 3.084,
+      "scale": 2.958
+    },
+    {
       "id": "veg-7585",
       "kind": "river-spruce-sitka",
       "x": 2688.2,
@@ -111872,6 +113154,14 @@ window.VENUE_DOC["river"] = {
       "x": 3901.4,
       "y": -6731.2,
       "heading": 6.073,
+      "scale": 2.983
+    },
+    {
+      "id": "veg-17762",
+      "kind": "river-spruce-sitka",
+      "x": -1131,
+      "y": -1639.3,
+      "heading": 1.764,
       "scale": 2.983
     },
     {
@@ -111992,6 +113282,14 @@ window.VENUE_DOC["river"] = {
       "x": 3806.2,
       "y": -6640.6,
       "heading": 4.612,
+      "scale": 2.52
+    },
+    {
+      "id": "veg-17763",
+      "kind": "river-spruce-sitka",
+      "x": 2740.1,
+      "y": -2592.3,
+      "heading": 4.333,
       "scale": 2.52
     },
     {
@@ -112299,6 +113597,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.33
     },
     {
+      "id": "veg-17764",
+      "kind": "river-spruce-sitka",
+      "x": -4587.7,
+      "y": 722.3,
+      "heading": 3.995,
+      "scale": 3.33
+    },
+    {
       "id": "veg-15636",
       "kind": "river-spruce-sitka",
       "x": 2345,
@@ -112387,6 +113693,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.723
     },
     {
+      "id": "veg-17765",
+      "kind": "river-spruce-sitka",
+      "x": 1916.1,
+      "y": -1924.5,
+      "heading": 2.514,
+      "scale": 2.723
+    },
+    {
       "id": "veg-12259",
       "kind": "river-spruce-sitka",
       "x": 4067,
@@ -112400,6 +113714,14 @@ window.VENUE_DOC["river"] = {
       "x": 4135.8,
       "y": -6499.3,
       "heading": 4.148,
+      "scale": 2.477
+    },
+    {
+      "id": "veg-17766",
+      "kind": "river-spruce-sitka",
+      "x": -3925.7,
+      "y": 548.7,
+      "heading": 5.261,
       "scale": 2.477
     },
     {
@@ -112432,6 +113754,14 @@ window.VENUE_DOC["river"] = {
       "x": 3230.5,
       "y": -6493.2,
       "heading": 4.031,
+      "scale": 3.405
+    },
+    {
+      "id": "veg-17767",
+      "kind": "river-spruce-sitka",
+      "x": -1474.2,
+      "y": -2160.3,
+      "heading": 5.545,
       "scale": 3.405
     },
     {
@@ -112547,6 +113877,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.247
     },
     {
+      "id": "veg-17768",
+      "kind": "river-spruce-sitka",
+      "x": -333.9,
+      "y": -1938.6,
+      "heading": 5.125,
+      "scale": 3.247
+    },
+    {
       "id": "veg-5760",
       "kind": "river-spruce-sitka",
       "x": 3081.7,
@@ -112560,6 +113898,14 @@ window.VENUE_DOC["river"] = {
       "x": 1254.2,
       "y": -6459.8,
       "heading": 0.768,
+      "scale": 2.641
+    },
+    {
+      "id": "veg-17769",
+      "kind": "river-spruce-sitka",
+      "x": 677.6,
+      "y": -1785.3,
+      "heading": 1.783,
       "scale": 2.641
     },
     {
@@ -112715,6 +114061,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.494
     },
     {
+      "id": "veg-17770",
+      "kind": "river-spruce-sitka",
+      "x": -1749.8,
+      "y": -788.1,
+      "heading": 1.252,
+      "scale": 2.494
+    },
+    {
+      "id": "veg-17771",
+      "kind": "river-spruce-sitka",
+      "x": 4890,
+      "y": -4830.4,
+      "heading": 3.945,
+      "scale": 2.494
+    },
+    {
       "id": "veg-5072",
       "kind": "river-spruce-sitka",
       "x": 1075,
@@ -112811,6 +114173,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.59
     },
     {
+      "id": "veg-17772",
+      "kind": "river-spruce-sitka",
+      "x": -4419.2,
+      "y": 2979.3,
+      "heading": 2.455,
+      "scale": 2.59
+    },
+    {
+      "id": "veg-17773",
+      "kind": "river-spruce-sitka",
+      "x": -120.1,
+      "y": -3761.1,
+      "heading": 0.422,
+      "scale": 2.59
+    },
+    {
       "id": "veg-14486",
       "kind": "river-spruce-sitka",
       "x": 1901,
@@ -112856,6 +114234,14 @@ window.VENUE_DOC["river"] = {
       "x": 1676.9,
       "y": -6384.9,
       "heading": 4.132,
+      "scale": 2.996
+    },
+    {
+      "id": "veg-17774",
+      "kind": "river-spruce-sitka",
+      "x": 609.4,
+      "y": -1503.9,
+      "heading": 5.202,
       "scale": 2.996
     },
     {
@@ -112912,6 +114298,14 @@ window.VENUE_DOC["river"] = {
       "x": 1224,
       "y": -6377.5,
       "heading": 0.795,
+      "scale": 2.573
+    },
+    {
+      "id": "veg-17775",
+      "kind": "river-spruce-sitka",
+      "x": 2060.6,
+      "y": -3324.8,
+      "heading": 1.189,
       "scale": 2.573
     },
     {
@@ -113051,6 +114445,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.064
     },
     {
+      "id": "veg-17776",
+      "kind": "river-spruce-sitka",
+      "x": 2911,
+      "y": -1194.4,
+      "heading": 0.906,
+      "scale": 3.064
+    },
+    {
       "id": "veg-7812",
       "kind": "river-spruce-sitka",
       "x": 1073.8,
@@ -113109,16 +114511,24 @@ window.VENUE_DOC["river"] = {
     {
       "id": "veg-15858",
       "kind": "river-spruce-sitka",
-      "x": 5675.8,
+      "x": 5622.866177309527,
       "y": -6316.2,
       "heading": 3.831,
       "scale": 2.982
     },
     {
+      "id": "veg-17777",
+      "kind": "river-spruce-sitka",
+      "x": -1830.5,
+      "y": 4687.8,
+      "heading": 4.688,
+      "scale": 2.982
+    },
+    {
       "id": "veg-15859",
       "kind": "river-spruce-sitka",
-      "x": 5640.3,
-      "y": -6315.2,
+      "x": 5724.6020139144575,
+      "y": -6413.225597574951,
       "heading": 3.472,
       "scale": 3.45
     },
@@ -113168,6 +114578,14 @@ window.VENUE_DOC["river"] = {
       "x": 2879.4,
       "y": -6298.7,
       "heading": 4.07,
+      "scale": 2.703
+    },
+    {
+      "id": "veg-17778",
+      "kind": "river-spruce-sitka",
+      "x": -2471.7,
+      "y": 4663.8,
+      "heading": 4.296,
       "scale": 2.703
     },
     {
@@ -113245,8 +114663,8 @@ window.VENUE_DOC["river"] = {
     {
       "id": "veg-15860",
       "kind": "river-spruce-sitka",
-      "x": 5670.8,
-      "y": -6287.5,
+      "x": 5819.7989083139255,
+      "y": -6556.090137355365,
       "heading": 5.474,
       "scale": 3.366
     },
@@ -113459,6 +114877,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.837
     },
     {
+      "id": "veg-17779",
+      "kind": "river-spruce-sitka",
+      "x": 2287.7,
+      "y": -955.3,
+      "heading": 0.527,
+      "scale": 2.837
+    },
+    {
       "id": "veg-15286",
       "kind": "river-spruce-sitka",
       "x": 2621.9,
@@ -113528,6 +114954,14 @@ window.VENUE_DOC["river"] = {
       "x": 646.7,
       "y": -6215.9,
       "heading": 5.633,
+      "scale": 2.689
+    },
+    {
+      "id": "veg-17780",
+      "kind": "river-spruce-sitka",
+      "x": -492.4,
+      "y": -3124.9,
+      "heading": 3.442,
       "scale": 2.689
     },
     {
@@ -113699,6 +115133,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.011
     },
     {
+      "id": "veg-17781",
+      "kind": "river-spruce-sitka",
+      "x": 3475.2,
+      "y": -6142.4,
+      "heading": 5.78,
+      "scale": 3.011
+    },
+    {
       "id": "veg-7801",
       "kind": "river-spruce-sitka",
       "x": 3328.5,
@@ -113827,11 +115269,27 @@ window.VENUE_DOC["river"] = {
       "scale": 3.102
     },
     {
+      "id": "veg-17782",
+      "kind": "river-spruce-sitka",
+      "x": -2896.6,
+      "y": 5172.4,
+      "heading": 3.561,
+      "scale": 3.102
+    },
+    {
       "id": "veg-1961",
       "kind": "river-spruce-sitka",
       "x": 1830.4,
       "y": -6160.3,
       "heading": 4.41,
+      "scale": 2.527
+    },
+    {
+      "id": "veg-17783",
+      "kind": "river-spruce-sitka",
+      "x": 720.9,
+      "y": -2159.8,
+      "heading": 5.866,
       "scale": 2.527
     },
     {
@@ -113899,6 +115357,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.229
     },
     {
+      "id": "veg-17784",
+      "kind": "river-spruce-sitka",
+      "x": 3284.2,
+      "y": -4213.1,
+      "heading": 2.061,
+      "scale": 3.229
+    },
+    {
       "id": "veg-16415",
       "kind": "river-spruce-sitka",
       "x": 2225.8,
@@ -113928,6 +115394,14 @@ window.VENUE_DOC["river"] = {
       "x": 3264.5,
       "y": -6139.7,
       "heading": 1.326,
+      "scale": 2.747
+    },
+    {
+      "id": "veg-17785",
+      "kind": "river-spruce-sitka",
+      "x": 740.8,
+      "y": -2255.8,
+      "heading": 0.184,
       "scale": 2.747
     },
     {
@@ -114163,6 +115637,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.234
     },
     {
+      "id": "veg-17786",
+      "kind": "river-spruce-sitka",
+      "x": 4060.5,
+      "y": -7666.1,
+      "heading": 1.586,
+      "scale": 3.234
+    },
+    {
       "id": "veg-12567",
       "kind": "river-spruce-sitka",
       "x": 763.9,
@@ -114176,6 +115658,14 @@ window.VENUE_DOC["river"] = {
       "x": 8473.1,
       "y": -6085.6,
       "heading": 2.171,
+      "scale": 2.49
+    },
+    {
+      "id": "veg-17787",
+      "kind": "river-spruce-sitka",
+      "x": 4221.6,
+      "y": -8241.2,
+      "heading": 4.084,
       "scale": 2.49
     },
     {
@@ -114248,6 +115738,14 @@ window.VENUE_DOC["river"] = {
       "x": 2558.4,
       "y": -6080.5,
       "heading": 2.888,
+      "scale": 2.479
+    },
+    {
+      "id": "veg-17788",
+      "kind": "river-spruce-sitka",
+      "x": 1404.6,
+      "y": -2981.2,
+      "heading": 3.918,
       "scale": 2.479
     },
     {
@@ -114355,6 +115853,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.515
     },
     {
+      "id": "veg-17789",
+      "kind": "river-spruce-sitka",
+      "x": 2112,
+      "y": -588.1,
+      "heading": 3.351,
+      "scale": 2.515
+    },
+    {
       "id": "veg-11947",
       "kind": "river-spruce-sitka",
       "x": 817.4,
@@ -114403,11 +115909,27 @@ window.VENUE_DOC["river"] = {
       "scale": 2.731
     },
     {
+      "id": "veg-17790",
+      "kind": "river-spruce-sitka",
+      "x": 93.2,
+      "y": -2267.4,
+      "heading": 5.975,
+      "scale": 2.731
+    },
+    {
       "id": "veg-12967",
       "kind": "river-spruce-sitka",
       "x": 1072.8,
       "y": -6057.2,
       "heading": 3.061,
+      "scale": 2.773
+    },
+    {
+      "id": "veg-17791",
+      "kind": "river-spruce-sitka",
+      "x": 2156.5,
+      "y": -776.2,
+      "heading": 1.971,
       "scale": 2.773
     },
     {
@@ -114619,6 +116141,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.804
     },
     {
+      "id": "veg-17792",
+      "kind": "river-spruce-sitka",
+      "x": 3589.3,
+      "y": -967.9,
+      "heading": 0.568,
+      "scale": 2.804
+    },
+    {
       "id": "veg-7803",
       "kind": "river-spruce-sitka",
       "x": 3365,
@@ -114688,6 +116218,14 @@ window.VENUE_DOC["river"] = {
       "x": 7689.2,
       "y": -6019.5,
       "heading": 2.334,
+      "scale": 2.894
+    },
+    {
+      "id": "veg-17793",
+      "kind": "river-spruce-sitka",
+      "x": 2447.4,
+      "y": -1847.6,
+      "heading": 0.031,
       "scale": 2.894
     },
     {
@@ -114851,6 +116389,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.118
     },
     {
+      "id": "veg-17794",
+      "kind": "river-spruce-sitka",
+      "x": 35.3,
+      "y": -2077.4,
+      "heading": 5.494,
+      "scale": 3.118
+    },
+    {
       "id": "veg-16889",
       "kind": "river-spruce-sitka",
       "x": 1834.5,
@@ -114875,11 +116421,27 @@ window.VENUE_DOC["river"] = {
       "scale": 2.858
     },
     {
+      "id": "veg-17795",
+      "kind": "river-spruce-sitka",
+      "x": 2037.8,
+      "y": -2272.2,
+      "heading": 4.694,
+      "scale": 2.858
+    },
+    {
       "id": "veg-11942",
       "kind": "river-spruce-sitka",
       "x": 924.6,
       "y": -5995.6,
       "heading": 2.228,
+      "scale": 2.724
+    },
+    {
+      "id": "veg-17796",
+      "kind": "river-spruce-sitka",
+      "x": 2914.6,
+      "y": -801.5,
+      "heading": 4.593,
       "scale": 2.724
     },
     {
@@ -114963,6 +116525,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.881
     },
     {
+      "id": "veg-17797",
+      "kind": "river-spruce-sitka",
+      "x": -2143.7,
+      "y": 4418.8,
+      "heading": 5.897,
+      "scale": 2.881
+    },
+    {
       "id": "veg-16136",
       "kind": "river-spruce-sitka",
       "x": 1347.4,
@@ -115003,6 +116573,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.654
     },
     {
+      "id": "veg-17798",
+      "kind": "river-spruce-sitka",
+      "x": 501.6,
+      "y": -3003,
+      "heading": 5.442,
+      "scale": 2.654
+    },
+    {
       "id": "veg-14997",
       "kind": "river-spruce-sitka",
       "x": 1177.6,
@@ -115024,6 +116602,14 @@ window.VENUE_DOC["river"] = {
       "x": 1168.1,
       "y": -5978.2,
       "heading": 4.442,
+      "scale": 2.58
+    },
+    {
+      "id": "veg-17799",
+      "kind": "river-spruce-sitka",
+      "x": 4329.2,
+      "y": -8596.5,
+      "heading": 4.611,
       "scale": 2.58
     },
     {
@@ -115139,6 +116725,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.651
     },
     {
+      "id": "veg-17800",
+      "kind": "river-spruce-sitka",
+      "x": 3687.5,
+      "y": -1885,
+      "heading": 2.824,
+      "scale": 2.651
+    },
+    {
       "id": "veg-16888",
       "kind": "river-spruce-sitka",
       "x": 1520.4,
@@ -115251,6 +116845,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.792
     },
     {
+      "id": "veg-17801",
+      "kind": "river-spruce-sitka",
+      "x": 2290.9,
+      "y": -1038.5,
+      "heading": 3.43,
+      "scale": 2.792
+    },
+    {
       "id": "veg-17297",
       "kind": "river-spruce-sitka",
       "x": 3147.1,
@@ -115331,6 +116933,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.956
     },
     {
+      "id": "veg-17802",
+      "kind": "river-spruce-sitka",
+      "x": 3875,
+      "y": -3792.3,
+      "heading": 5.599,
+      "scale": 2.956
+    },
+    {
       "id": "veg-15083",
       "kind": "river-spruce-sitka",
       "x": 7917.9,
@@ -115344,6 +116954,22 @@ window.VENUE_DOC["river"] = {
       "x": 8567.1,
       "y": -5952.1,
       "heading": 3.977,
+      "scale": 3.13
+    },
+    {
+      "id": "veg-17803",
+      "kind": "river-spruce-sitka",
+      "x": 5680.2,
+      "y": -7971.1,
+      "heading": 2.975,
+      "scale": 3.13
+    },
+    {
+      "id": "veg-17804",
+      "kind": "river-spruce-sitka",
+      "x": 186.5,
+      "y": -2105.9,
+      "heading": 5.119,
       "scale": 3.13
     },
     {
@@ -115400,6 +117026,14 @@ window.VENUE_DOC["river"] = {
       "x": 1140.5,
       "y": -5945.1,
       "heading": 5.955,
+      "scale": 3.175
+    },
+    {
+      "id": "veg-17805",
+      "kind": "river-spruce-sitka",
+      "x": -1699.5,
+      "y": 4932,
+      "heading": 2.277,
       "scale": 3.175
     },
     {
@@ -115467,6 +117101,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.127
     },
     {
+      "id": "veg-17806",
+      "kind": "river-spruce-sitka",
+      "x": 2148.7,
+      "y": -2538.9,
+      "heading": 2.481,
+      "scale": 3.127
+    },
+    {
       "id": "veg-8336",
       "kind": "river-spruce-sitka",
       "x": 2220.6,
@@ -115480,6 +117122,14 @@ window.VENUE_DOC["river"] = {
       "x": 7625.8,
       "y": -5940.2,
       "heading": 0.26,
+      "scale": 2.98
+    },
+    {
+      "id": "veg-17807",
+      "kind": "river-spruce-sitka",
+      "x": -2598,
+      "y": 5098.8,
+      "heading": 2.476,
       "scale": 2.98
     },
     {
@@ -115635,6 +117285,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.62
     },
     {
+      "id": "veg-17808",
+      "kind": "river-spruce-sitka",
+      "x": 1554.6,
+      "y": -2983.8,
+      "heading": 3.746,
+      "scale": 2.62
+    },
+    {
       "id": "veg-6395",
       "kind": "river-spruce-sitka",
       "x": 7574.6,
@@ -115696,6 +117354,14 @@ window.VENUE_DOC["river"] = {
       "x": 1000.5,
       "y": -5919.1,
       "heading": 0.542,
+      "scale": 2.467
+    },
+    {
+      "id": "veg-17809",
+      "kind": "river-spruce-sitka",
+      "x": 1243.4,
+      "y": -2959.8,
+      "heading": 1.671,
       "scale": 2.467
     },
     {
@@ -115907,6 +117573,22 @@ window.VENUE_DOC["river"] = {
       "scale": 3.323
     },
     {
+      "id": "veg-17810",
+      "kind": "river-spruce-sitka",
+      "x": -1779,
+      "y": 4295.4,
+      "heading": 6.211,
+      "scale": 3.323
+    },
+    {
+      "id": "veg-17811",
+      "kind": "river-spruce-sitka",
+      "x": -1583.7,
+      "y": 2757.8,
+      "heading": 1.436,
+      "scale": 3.323
+    },
+    {
       "id": "veg-17376",
       "kind": "river-spruce-sitka",
       "x": 1455.8,
@@ -115963,6 +117645,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.295
     },
     {
+      "id": "veg-17812",
+      "kind": "river-spruce-sitka",
+      "x": 2995,
+      "y": -1620.8,
+      "heading": 5.102,
+      "scale": 3.295
+    },
+    {
       "id": "veg-9660",
       "kind": "river-spruce-sitka",
       "x": 3009.7,
@@ -116008,6 +117698,14 @@ window.VENUE_DOC["river"] = {
       "x": 7612.9,
       "y": -5896.6,
       "heading": 5.775,
+      "scale": 2.836
+    },
+    {
+      "id": "veg-17813",
+      "kind": "river-spruce-sitka",
+      "x": 4352.6,
+      "y": -7458.4,
+      "heading": 3.849,
       "scale": 2.836
     },
     {
@@ -116283,6 +117981,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.845
     },
     {
+      "id": "veg-17814",
+      "kind": "river-spruce-sitka",
+      "x": 1264.1,
+      "y": -1277.3,
+      "heading": 4.876,
+      "scale": 2.845
+    },
+    {
       "id": "veg-9726",
       "kind": "river-spruce-sitka",
       "x": 1762.6,
@@ -116464,6 +118170,14 @@ window.VENUE_DOC["river"] = {
       "x": 7142,
       "y": -5868.7,
       "heading": 1.805,
+      "scale": 2.874
+    },
+    {
+      "id": "veg-17815",
+      "kind": "river-spruce-sitka",
+      "x": 4024.6,
+      "y": -2332.8,
+      "heading": 0.704,
       "scale": 2.874
     },
     {
@@ -116715,6 +118429,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.999
     },
     {
+      "id": "veg-17816",
+      "kind": "river-spruce-sitka",
+      "x": 2328.2,
+      "y": -2795.9,
+      "heading": 2.475,
+      "scale": 2.999
+    },
+    {
       "id": "veg-15435",
       "kind": "river-spruce-sitka",
       "x": 3258.7,
@@ -116728,6 +118450,14 @@ window.VENUE_DOC["river"] = {
       "x": 7074.8,
       "y": -5851.6,
       "heading": 1.993,
+      "scale": 3.166
+    },
+    {
+      "id": "veg-17817",
+      "kind": "river-spruce-sitka",
+      "x": -20.4,
+      "y": -2567.8,
+      "heading": 5.332,
       "scale": 3.166
     },
     {
@@ -116963,6 +118693,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.843
     },
     {
+      "id": "veg-17818",
+      "kind": "river-spruce-sitka",
+      "x": 3686.9,
+      "y": -7526.5,
+      "heading": 5.702,
+      "scale": 2.843
+    },
+    {
       "id": "veg-15062",
       "kind": "river-spruce-sitka",
       "x": 3585.9,
@@ -117040,6 +118778,14 @@ window.VENUE_DOC["river"] = {
       "x": 964.7,
       "y": -5832.3,
       "heading": 2.733,
+      "scale": 2.844
+    },
+    {
+      "id": "veg-17819",
+      "kind": "river-spruce-sitka",
+      "x": 2357,
+      "y": -1926.6,
+      "heading": 0.39,
       "scale": 2.844
     },
     {
@@ -117395,6 +119141,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.933
     },
     {
+      "id": "veg-17820",
+      "kind": "river-spruce-sitka",
+      "x": 4423.4,
+      "y": -8620.1,
+      "heading": 0.862,
+      "scale": 2.933
+    },
+    {
       "id": "veg-11174",
       "kind": "river-spruce-sitka",
       "x": 7720.5,
@@ -117472,6 +119226,14 @@ window.VENUE_DOC["river"] = {
       "x": 3167.7,
       "y": -5809.3,
       "heading": 5.681,
+      "scale": 2.987
+    },
+    {
+      "id": "veg-17821",
+      "kind": "river-spruce-sitka",
+      "x": 2097.5,
+      "y": -1665.2,
+      "heading": 4.764,
       "scale": 2.987
     },
     {
@@ -118203,6 +119965,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.306
     },
     {
+      "id": "veg-17822",
+      "kind": "river-spruce-sitka",
+      "x": -1096.1,
+      "y": 2594,
+      "heading": 2.169,
+      "scale": 3.306
+    },
+    {
       "id": "veg-10082",
       "kind": "river-spruce-sitka",
       "x": 8386.1,
@@ -118267,6 +120037,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.542
     },
     {
+      "id": "veg-17823",
+      "kind": "river-spruce-sitka",
+      "x": 3980.5,
+      "y": -7307.3,
+      "heading": 3.983,
+      "scale": 2.542
+    },
+    {
       "id": "veg-6392",
       "kind": "river-spruce-sitka",
       "x": 7261.7,
@@ -118296,6 +120074,14 @@ window.VENUE_DOC["river"] = {
       "x": 8110.3,
       "y": -5761.5,
       "heading": 1.72,
+      "scale": 2.905
+    },
+    {
+      "id": "veg-17824",
+      "kind": "river-spruce-sitka",
+      "x": 2405.3,
+      "y": -2700.6,
+      "heading": 5.272,
       "scale": 2.905
     },
     {
@@ -118576,6 +120362,14 @@ window.VENUE_DOC["river"] = {
       "x": 984.2,
       "y": -5746.7,
       "heading": 0.159,
+      "scale": 3.171
+    },
+    {
+      "id": "veg-17825",
+      "kind": "river-spruce-sitka",
+      "x": 3719.5,
+      "y": -4782.5,
+      "heading": 2.967,
       "scale": 3.171
     },
     {
@@ -119587,6 +121381,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.96
     },
     {
+      "id": "veg-17826",
+      "kind": "river-spruce-sitka",
+      "x": 2940.3,
+      "y": -2735.9,
+      "heading": 5.635,
+      "scale": 2.96
+    },
+    {
+      "id": "veg-17827",
+      "kind": "river-spruce-sitka",
+      "x": 2608.6,
+      "y": -1818.4,
+      "heading": 0.124,
+      "scale": 2.961
+    },
+    {
       "id": "veg-14857",
       "kind": "river-spruce-sitka",
       "x": 1824.5,
@@ -120147,6 +121957,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.549
     },
     {
+      "id": "veg-17828",
+      "kind": "river-spruce-sitka",
+      "x": 3896.7,
+      "y": -4317.3,
+      "heading": 5.92,
+      "scale": 2.549
+    },
+    {
+      "id": "veg-17829",
+      "kind": "river-spruce-sitka",
+      "x": -2855.1,
+      "y": 4988.2,
+      "heading": 3.163,
+      "scale": 2.549
+    },
+    {
       "id": "veg-15893",
       "kind": "river-spruce-sitka",
       "x": 7612.9,
@@ -120200,6 +122026,14 @@ window.VENUE_DOC["river"] = {
       "x": 7996.4,
       "y": -5664.4,
       "heading": 0.036,
+      "scale": 3.089
+    },
+    {
+      "id": "veg-17830",
+      "kind": "river-spruce-sitka",
+      "x": 2698.7,
+      "y": -799.2,
+      "heading": 4.915,
       "scale": 3.089
     },
     {
@@ -120419,6 +122253,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.878
     },
     {
+      "id": "veg-17831",
+      "kind": "river-spruce-sitka",
+      "x": 82.2,
+      "y": -2497.1,
+      "heading": 4.671,
+      "scale": 2.878
+    },
+    {
       "id": "veg-16238",
       "kind": "river-spruce-sitka",
       "x": 8155.5,
@@ -120480,6 +122322,14 @@ window.VENUE_DOC["river"] = {
       "x": 8000.2,
       "y": -5652.6,
       "heading": 0.619,
+      "scale": 2.559
+    },
+    {
+      "id": "veg-17832",
+      "kind": "river-spruce-sitka",
+      "x": -364.4,
+      "y": -2168.6,
+      "heading": 4.55,
       "scale": 2.559
     },
     {
@@ -120576,6 +122426,14 @@ window.VENUE_DOC["river"] = {
       "x": 1136.1,
       "y": -5649.9,
       "heading": 5.162,
+      "scale": 3.167
+    },
+    {
+      "id": "veg-17833",
+      "kind": "river-spruce-sitka",
+      "x": 1848.4,
+      "y": -2915.4,
+      "heading": 5.142,
       "scale": 3.167
     },
     {
@@ -120744,6 +122602,22 @@ window.VENUE_DOC["river"] = {
       "x": 6776.2,
       "y": -5644.8,
       "heading": 3.091,
+      "scale": 3.084
+    },
+    {
+      "id": "veg-17834",
+      "kind": "river-spruce-sitka",
+      "x": 3628.9,
+      "y": -1965.2,
+      "heading": 5.85,
+      "scale": 3.084
+    },
+    {
+      "id": "veg-17835",
+      "kind": "river-spruce-sitka",
+      "x": -2083.6,
+      "y": 2959.2,
+      "heading": 1.144,
       "scale": 3.084
     },
     {
@@ -121131,6 +123005,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.253
     },
     {
+      "id": "veg-17836",
+      "kind": "river-spruce-sitka",
+      "x": -1589.9,
+      "y": 2666.4,
+      "heading": 2.578,
+      "scale": 3.253
+    },
+    {
       "id": "veg-17126",
       "kind": "river-spruce-sitka",
       "x": 8020.2,
@@ -121288,6 +123170,14 @@ window.VENUE_DOC["river"] = {
       "x": 2576.1,
       "y": -5622.6,
       "heading": 5.161,
+      "scale": 2.757
+    },
+    {
+      "id": "veg-17837",
+      "kind": "river-spruce-sitka",
+      "x": 4066.3,
+      "y": -7829,
+      "heading": 5.338,
       "scale": 2.757
     },
     {
@@ -121691,6 +123581,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.585
     },
     {
+      "id": "veg-17838",
+      "kind": "river-spruce-sitka",
+      "x": 4676.9,
+      "y": -7141.8,
+      "heading": 3.188,
+      "scale": 2.585
+    },
+    {
       "id": "veg-16377",
       "kind": "river-spruce-sitka",
       "x": 6951.4,
@@ -121816,6 +123714,14 @@ window.VENUE_DOC["river"] = {
       "x": 2038.8,
       "y": -5599.6,
       "heading": 5.502,
+      "scale": 3.257
+    },
+    {
+      "id": "veg-17839",
+      "kind": "river-spruce-sitka",
+      "x": 1532,
+      "y": -2769.6,
+      "heading": 5.883,
       "scale": 3.257
     },
     {
@@ -122603,6 +124509,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.556
     },
     {
+      "id": "veg-17840",
+      "kind": "river-spruce-sitka",
+      "x": -377.3,
+      "y": -2839.7,
+      "heading": 0.954,
+      "scale": 2.556
+    },
+    {
       "id": "veg-14972",
       "kind": "river-spruce-sitka",
       "x": 2247.6,
@@ -122643,11 +124557,27 @@ window.VENUE_DOC["river"] = {
       "scale": 2.669
     },
     {
+      "id": "veg-17841",
+      "kind": "river-spruce-sitka",
+      "x": 4450.2,
+      "y": -7319.1,
+      "heading": 2.627,
+      "scale": 2.669
+    },
+    {
       "id": "veg-16766",
       "kind": "river-spruce-sitka",
       "x": 1690.7,
       "y": -5562.9,
       "heading": 1.362,
+      "scale": 2.918
+    },
+    {
+      "id": "veg-17842",
+      "kind": "river-spruce-sitka",
+      "x": 4097.1,
+      "y": -5354.8,
+      "heading": 2.205,
       "scale": 2.918
     },
     {
@@ -122779,6 +124709,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.475
     },
     {
+      "id": "veg-17843",
+      "kind": "river-spruce-sitka",
+      "x": -662.6,
+      "y": -3663.7,
+      "heading": 0.468,
+      "scale": 2.475
+    },
+    {
       "id": "veg-14965",
       "kind": "river-spruce-sitka",
       "x": 7117.7,
@@ -122808,6 +124746,14 @@ window.VENUE_DOC["river"] = {
       "x": 1222.9,
       "y": -5558,
       "heading": 5.749,
+      "scale": 2.545
+    },
+    {
+      "id": "veg-17844",
+      "kind": "river-spruce-sitka",
+      "x": 1832.3,
+      "y": -673.2,
+      "heading": 0.684,
       "scale": 2.545
     },
     {
@@ -123483,6 +125429,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.783
     },
     {
+      "id": "veg-17845",
+      "kind": "river-spruce-sitka",
+      "x": 1676.1,
+      "y": -3290.5,
+      "heading": 4.792,
+      "scale": 2.783
+    },
+    {
       "id": "veg-11763",
       "kind": "river-spruce-sitka",
       "x": 189.3,
@@ -123971,11 +125925,27 @@ window.VENUE_DOC["river"] = {
       "scale": 2.541
     },
     {
+      "id": "veg-17846",
+      "kind": "river-spruce-sitka",
+      "x": -181.8,
+      "y": -3270.3,
+      "heading": 5.119,
+      "scale": 2.541
+    },
+    {
       "id": "veg-12496",
       "kind": "river-spruce-sitka",
       "x": 6721.6,
       "y": -5504.3,
       "heading": 4.851,
+      "scale": 3.441
+    },
+    {
+      "id": "veg-17847",
+      "kind": "river-spruce-sitka",
+      "x": 3132.1,
+      "y": -2868.9,
+      "heading": 2.928,
       "scale": 3.441
     },
     {
@@ -124048,6 +126018,14 @@ window.VENUE_DOC["river"] = {
       "x": 6228,
       "y": -5501.5,
       "heading": 4.745,
+      "scale": 3.404
+    },
+    {
+      "id": "veg-17848",
+      "kind": "river-spruce-sitka",
+      "x": 4127,
+      "y": -2839.7,
+      "heading": 2.264,
       "scale": 3.404
     },
     {
@@ -124507,6 +126485,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.136
     },
     {
+      "id": "veg-17849",
+      "kind": "river-spruce-sitka",
+      "x": 3886.4,
+      "y": -4465.5,
+      "heading": 4.408,
+      "scale": 3.136
+    },
+    {
       "id": "veg-11730",
       "kind": "river-spruce-sitka",
       "x": 5894.7,
@@ -124600,6 +126586,14 @@ window.VENUE_DOC["river"] = {
       "x": 7798.8,
       "y": -5481.8,
       "heading": 1.774,
+      "scale": 2.557
+    },
+    {
+      "id": "veg-17850",
+      "kind": "river-spruce-sitka",
+      "x": -1468.4,
+      "y": 4705.1,
+      "heading": 0.432,
       "scale": 2.557
     },
     {
@@ -124840,6 +126834,14 @@ window.VENUE_DOC["river"] = {
       "x": 756.8,
       "y": -5469.2,
       "heading": 3.604,
+      "scale": 2.943
+    },
+    {
+      "id": "veg-17851",
+      "kind": "river-spruce-sitka",
+      "x": 5598.2,
+      "y": -8494.2,
+      "heading": 4.6,
       "scale": 2.943
     },
     {
@@ -125203,6 +127205,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.314
     },
     {
+      "id": "veg-17852",
+      "kind": "river-spruce-sitka",
+      "x": 7925.6,
+      "y": -6314.2,
+      "heading": 3.898,
+      "scale": 3.314
+    },
+    {
       "id": "veg-10135",
       "kind": "river-spruce-sitka",
       "x": 3290.4,
@@ -125312,6 +127322,14 @@ window.VENUE_DOC["river"] = {
       "x": 7113,
       "y": -5451.3,
       "heading": 1.098,
+      "scale": 2.925
+    },
+    {
+      "id": "veg-17853",
+      "kind": "river-spruce-sitka",
+      "x": 1899,
+      "y": -1783.2,
+      "heading": 4.83,
       "scale": 2.925
     },
     {
@@ -125520,6 +127538,14 @@ window.VENUE_DOC["river"] = {
       "x": 102,
       "y": -5438.8,
       "heading": 4.367,
+      "scale": 3.337
+    },
+    {
+      "id": "veg-17854",
+      "kind": "river-spruce-sitka",
+      "x": 2805.1,
+      "y": -995.2,
+      "heading": 1.561,
       "scale": 3.337
     },
     {
@@ -125883,6 +127909,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.152
     },
     {
+      "id": "veg-17855",
+      "kind": "river-spruce-sitka",
+      "x": 4380,
+      "y": -7828.8,
+      "heading": 2.666,
+      "scale": 3.152
+    },
+    {
       "id": "veg-10676",
       "kind": "river-spruce-sitka",
       "x": 7545,
@@ -125987,6 +128021,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.25
     },
     {
+      "id": "veg-17856",
+      "kind": "river-spruce-sitka",
+      "x": 2579,
+      "y": -3087.7,
+      "heading": 3.986,
+      "scale": 3.25
+    },
+    {
       "id": "veg-15471",
       "kind": "river-spruce-sitka",
       "x": 345.6,
@@ -126016,6 +128058,14 @@ window.VENUE_DOC["river"] = {
       "x": 1718.9,
       "y": -5416.9,
       "heading": 1.297,
+      "scale": 2.57
+    },
+    {
+      "id": "veg-17857",
+      "kind": "river-spruce-sitka",
+      "x": 3057.9,
+      "y": -1537.4,
+      "heading": 1.502,
       "scale": 2.57
     },
     {
@@ -126547,6 +128597,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.778
     },
     {
+      "id": "veg-17858",
+      "kind": "river-spruce-sitka",
+      "x": 2137,
+      "y": -2918.9,
+      "heading": 5.898,
+      "scale": 2.778
+    },
+    {
       "id": "veg-15205",
       "kind": "river-spruce-sitka",
       "x": 6676.3,
@@ -126955,6 +129013,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.721
     },
     {
+      "id": "veg-17859",
+      "kind": "river-spruce-sitka",
+      "x": 1200.6,
+      "y": -1152.5,
+      "heading": 2.46,
+      "scale": 2.721
+    },
+    {
       "id": "veg-15401",
       "kind": "river-spruce-sitka",
       "x": 7535.3,
@@ -127000,6 +129066,14 @@ window.VENUE_DOC["river"] = {
       "x": -32.1,
       "y": -5369.4,
       "heading": 3.895,
+      "scale": 3.208
+    },
+    {
+      "id": "veg-17860",
+      "kind": "river-spruce-sitka",
+      "x": 2758.8,
+      "y": -2985.4,
+      "heading": 3.768,
       "scale": 3.208
     },
     {
@@ -127200,6 +129274,14 @@ window.VENUE_DOC["river"] = {
       "x": -103.5,
       "y": -5359,
       "heading": 3.638,
+      "scale": 2.491
+    },
+    {
+      "id": "veg-17861",
+      "kind": "river-spruce-sitka",
+      "x": 3130.8,
+      "y": 99,
+      "heading": 1.907,
       "scale": 2.491
     },
     {
@@ -127515,6 +129597,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.582
     },
     {
+      "id": "veg-17862",
+      "kind": "river-spruce-sitka",
+      "x": 5465.6,
+      "y": -2723.4,
+      "heading": 2.691,
+      "scale": 2.582
+    },
+    {
       "id": "veg-10125",
       "kind": "river-spruce-sitka",
       "x": 6783.1,
@@ -127728,6 +129818,14 @@ window.VENUE_DOC["river"] = {
       "x": 7550.9,
       "y": -5335.3,
       "heading": 1.308,
+      "scale": 3.212
+    },
+    {
+      "id": "veg-17863",
+      "kind": "river-spruce-sitka",
+      "x": 397,
+      "y": -2911.5,
+      "heading": 2.424,
       "scale": 3.212
     },
     {
@@ -128307,6 +130405,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.953
     },
     {
+      "id": "veg-17864",
+      "kind": "river-spruce-sitka",
+      "x": 1951.9,
+      "y": -1213.7,
+      "heading": 4.496,
+      "scale": 2.953
+    },
+    {
       "id": "veg-13464",
       "kind": "river-spruce-sitka",
       "x": 7039.4,
@@ -128691,6 +130797,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.114
     },
     {
+      "id": "veg-17865",
+      "kind": "river-spruce-sitka",
+      "x": 4253.8,
+      "y": -8720,
+      "heading": 4.351,
+      "scale": 3.114
+    },
+    {
       "id": "veg-10960",
       "kind": "river-spruce-sitka",
       "x": 488.8,
@@ -128744,6 +130858,14 @@ window.VENUE_DOC["river"] = {
       "x": 8193.1,
       "y": -5288.2,
       "heading": 4.297,
+      "scale": 3.23
+    },
+    {
+      "id": "veg-17866",
+      "kind": "river-spruce-sitka",
+      "x": 621.6,
+      "y": -1936.1,
+      "heading": 1.841,
       "scale": 3.23
     },
     {
@@ -129467,6 +131589,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.074
     },
     {
+      "id": "veg-17867",
+      "kind": "river-spruce-sitka",
+      "x": 4068.6,
+      "y": -5253.4,
+      "heading": 4.181,
+      "scale": 3.074
+    },
+    {
       "id": "veg-15165",
       "kind": "river-spruce-sitka",
       "x": 1171.1,
@@ -129579,6 +131709,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.321
     },
     {
+      "id": "veg-17868",
+      "kind": "river-spruce-sitka",
+      "x": 1881,
+      "y": -2575.4,
+      "heading": 4.18,
+      "scale": 3.321
+    },
+    {
       "id": "veg-14976",
       "kind": "river-spruce-sitka",
       "x": 2827.1,
@@ -129659,6 +131797,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.595
     },
     {
+      "id": "veg-17869",
+      "kind": "river-spruce-sitka",
+      "x": 2669.6,
+      "y": -2768.7,
+      "heading": 1.556,
+      "scale": 2.595
+    },
+    {
       "id": "veg-16814",
       "kind": "river-spruce-sitka",
       "x": 2331.6,
@@ -129680,6 +131826,22 @@ window.VENUE_DOC["river"] = {
       "x": 7400.8,
       "y": -5249.6,
       "heading": 1.738,
+      "scale": 3.116
+    },
+    {
+      "id": "veg-17870",
+      "kind": "river-spruce-sitka",
+      "x": -550.1,
+      "y": -2109,
+      "heading": 4.103,
+      "scale": 3.116
+    },
+    {
+      "id": "veg-17871",
+      "kind": "river-spruce-sitka",
+      "x": 2094.5,
+      "y": -1224.8,
+      "heading": 4.403,
       "scale": 3.116
     },
     {
@@ -129827,6 +131989,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.482
     },
     {
+      "id": "veg-17872",
+      "kind": "river-spruce-sitka",
+      "x": 3446.3,
+      "y": -1682,
+      "heading": 2.825,
+      "scale": 2.482
+    },
+    {
       "id": "veg-11343",
       "kind": "river-spruce-sitka",
       "x": 8208.4,
@@ -129848,6 +132018,14 @@ window.VENUE_DOC["river"] = {
       "x": 6073.1,
       "y": -5242.8,
       "heading": 3.955,
+      "scale": 3.324
+    },
+    {
+      "id": "veg-17873",
+      "kind": "river-spruce-sitka",
+      "x": 1399.2,
+      "y": -1469.1,
+      "heading": 1.118,
       "scale": 3.324
     },
     {
@@ -129944,6 +132122,14 @@ window.VENUE_DOC["river"] = {
       "x": 7954.2,
       "y": -5239.5,
       "heading": 5.351,
+      "scale": 2.63
+    },
+    {
+      "id": "veg-17874",
+      "kind": "river-spruce-sitka",
+      "x": 67.1,
+      "y": -863.4,
+      "heading": 1.962,
       "scale": 2.63
     },
     {
@@ -130163,6 +132349,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.381
     },
     {
+      "id": "veg-17875",
+      "kind": "river-spruce-sitka",
+      "x": 3528.3,
+      "y": -3895.5,
+      "heading": 4.895,
+      "scale": 3.381
+    },
+    {
       "id": "veg-16463",
       "kind": "river-spruce-sitka",
       "x": 1202.2,
@@ -130224,6 +132418,14 @@ window.VENUE_DOC["river"] = {
       "x": 6739.7,
       "y": -5229,
       "heading": 5.624,
+      "scale": 2.553
+    },
+    {
+      "id": "veg-17876",
+      "kind": "river-spruce-sitka",
+      "x": -317.1,
+      "y": -3251.4,
+      "heading": 6.217,
       "scale": 2.553
     },
     {
@@ -130440,6 +132642,14 @@ window.VENUE_DOC["river"] = {
       "x": 7612.2,
       "y": -5217.2,
       "heading": 1.882,
+      "scale": 3.268
+    },
+    {
+      "id": "veg-17877",
+      "kind": "river-spruce-sitka",
+      "x": 3861.3,
+      "y": -7317.4,
+      "heading": 5.705,
       "scale": 3.268
     },
     {
@@ -131064,6 +133274,14 @@ window.VENUE_DOC["river"] = {
       "x": 386.2,
       "y": -5193.5,
       "heading": 4.073,
+      "scale": 3.182
+    },
+    {
+      "id": "veg-17878",
+      "kind": "river-spruce-sitka",
+      "x": -502.4,
+      "y": -3927.2,
+      "heading": 4.101,
       "scale": 3.182
     },
     {
@@ -133443,6 +135661,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.453
     },
     {
+      "id": "veg-17879",
+      "kind": "river-spruce-sitka",
+      "x": 1146.3,
+      "y": -1505.3,
+      "heading": 1.403,
+      "scale": 2.453
+    },
+    {
       "id": "veg-12229",
       "kind": "river-spruce-sitka",
       "x": 8067.2,
@@ -133811,6 +136037,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.157
     },
     {
+      "id": "veg-17880",
+      "kind": "river-spruce-sitka",
+      "x": 1394.8,
+      "y": -3192.2,
+      "heading": 3.456,
+      "scale": 3.157
+    },
+    {
       "id": "veg-12995",
       "kind": "river-spruce-sitka",
       "x": 8146.9,
@@ -134011,11 +136245,27 @@ window.VENUE_DOC["river"] = {
       "scale": 2.727
     },
     {
+      "id": "veg-17881",
+      "kind": "river-spruce-sitka",
+      "x": 2257.8,
+      "y": -2073.8,
+      "heading": 0.567,
+      "scale": 2.727
+    },
+    {
       "id": "veg-16949",
       "kind": "river-spruce-sitka",
       "x": 479.7,
       "y": -5051.6,
       "heading": 1.336,
+      "scale": 3.278
+    },
+    {
+      "id": "veg-17882",
+      "kind": "river-spruce-sitka",
+      "x": -1980.9,
+      "y": 4198.5,
+      "heading": 6.173,
       "scale": 3.278
     },
     {
@@ -134272,6 +136522,14 @@ window.VENUE_DOC["river"] = {
       "x": 1210.6,
       "y": -5038.3,
       "heading": 5.778,
+      "scale": 2.964
+    },
+    {
+      "id": "veg-17883",
+      "kind": "river-spruce-sitka",
+      "x": 5805.7,
+      "y": -8440.3,
+      "heading": 6.004,
       "scale": 2.964
     },
     {
@@ -134867,6 +137125,22 @@ window.VENUE_DOC["river"] = {
       "scale": 3.279
     },
     {
+      "id": "veg-17884",
+      "kind": "river-spruce-sitka",
+      "x": 489.2,
+      "y": -2481.2,
+      "heading": 2.06,
+      "scale": 3.279
+    },
+    {
+      "id": "veg-17885",
+      "kind": "river-spruce-sitka",
+      "x": -3953.7,
+      "y": 742.5,
+      "heading": 2.747,
+      "scale": 3.279
+    },
+    {
       "id": "veg-10128",
       "kind": "river-spruce-sitka",
       "x": 6799.9,
@@ -134896,6 +137170,14 @@ window.VENUE_DOC["river"] = {
       "x": 7884,
       "y": -5003.9,
       "heading": 2.973,
+      "scale": 3.355
+    },
+    {
+      "id": "veg-17886",
+      "kind": "river-spruce-sitka",
+      "x": 5721.7,
+      "y": -6639.3,
+      "heading": 4.879,
       "scale": 3.355
     },
     {
@@ -136568,6 +138850,14 @@ window.VENUE_DOC["river"] = {
       "x": 6414.4,
       "y": -4912.2,
       "heading": 3.799,
+      "scale": 3.119
+    },
+    {
+      "id": "veg-17887",
+      "kind": "river-spruce-sitka",
+      "x": -4282.4,
+      "y": 2224.4,
+      "heading": 1.06,
       "scale": 3.119
     },
     {
@@ -140587,6 +142877,22 @@ window.VENUE_DOC["river"] = {
       "scale": 2.653
     },
     {
+      "id": "veg-17888",
+      "kind": "river-spruce-sitka",
+      "x": 2244.3,
+      "y": -1960.3,
+      "heading": 0.148,
+      "scale": 2.653
+    },
+    {
+      "id": "veg-17889",
+      "kind": "river-spruce-sitka",
+      "x": 3624.3,
+      "y": -7388.6,
+      "heading": 1.254,
+      "scale": 2.653
+    },
+    {
       "id": "veg-16079",
       "kind": "river-spruce-sitka",
       "x": -218.6,
@@ -141200,6 +143506,14 @@ window.VENUE_DOC["river"] = {
       "x": -244.5,
       "y": -4590.9,
       "heading": 2.416,
+      "scale": 3.162
+    },
+    {
+      "id": "veg-17890",
+      "kind": "river-spruce-sitka",
+      "x": 2614.2,
+      "y": -691.3,
+      "heading": 4.544,
       "scale": 3.162
     },
     {
@@ -142355,6 +144669,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.075
     },
     {
+      "id": "veg-17891",
+      "kind": "river-spruce-sitka",
+      "x": 2179.3,
+      "y": -2307.5,
+      "heading": 0.395,
+      "scale": 3.075
+    },
+    {
       "id": "veg-14673",
       "kind": "river-spruce-sitka",
       "x": 7116.7,
@@ -142432,6 +144754,14 @@ window.VENUE_DOC["river"] = {
       "x": 1087.7,
       "y": -4460.6,
       "heading": 5.662,
+      "scale": 3.272
+    },
+    {
+      "id": "veg-17892",
+      "kind": "river-spruce-sitka",
+      "x": 2242,
+      "y": -3356.3,
+      "heading": 4.633,
       "scale": 3.272
     },
     {
@@ -143899,6 +146229,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.163
     },
     {
+      "id": "veg-17893",
+      "kind": "river-spruce-sitka",
+      "x": 3276.6,
+      "y": -1600.5,
+      "heading": 5.771,
+      "scale": 3.163
+    },
+    {
       "id": "veg-9972",
       "kind": "river-spruce-sitka",
       "x": -271.1,
@@ -143976,6 +146314,14 @@ window.VENUE_DOC["river"] = {
       "x": -428.1,
       "y": -4180.8,
       "heading": 1.592,
+      "scale": 3.328
+    },
+    {
+      "id": "veg-17894",
+      "kind": "river-spruce-sitka",
+      "x": 133.9,
+      "y": -2827.6,
+      "heading": 2.46,
       "scale": 3.328
     },
     {
@@ -146643,6 +148989,14 @@ window.VENUE_DOC["river"] = {
       "scale": 2.679
     },
     {
+      "id": "veg-17895",
+      "kind": "river-spruce-sitka",
+      "x": 5962.1,
+      "y": -5719,
+      "heading": 0.838,
+      "scale": 2.679
+    },
+    {
       "id": "veg-4702",
       "kind": "river-spruce-sitka",
       "x": 506.7,
@@ -148393,6 +150747,14 @@ window.VENUE_DOC["river"] = {
       "x": 3861.4,
       "y": -2678.2,
       "heading": 1.581,
+      "scale": 3.416
+    },
+    {
+      "id": "veg-17896",
+      "kind": "river-spruce-sitka",
+      "x": 4108.5,
+      "y": -8571.5,
+      "heading": 2.384,
       "scale": 3.416
     },
     {
@@ -152748,6 +155110,14 @@ window.VENUE_DOC["river"] = {
       "scale": 3.036
     },
     {
+      "id": "veg-17897",
+      "kind": "river-spruce-sitka",
+      "x": -968,
+      "y": -1891.1,
+      "heading": 4.901,
+      "scale": 3.036
+    },
+    {
       "id": "veg-1054",
       "kind": "river-spruce-sitka",
       "x": -2502.5,
@@ -154020,6 +156390,214 @@ window.VENUE_DOC["river"] = {
       "scale": 4
     },
     {
+      "id": "veg-17898",
+      "kind": "river-spruce-sitka",
+      "x": 975.1,
+      "y": -1730.1,
+      "heading": 1.974,
+      "scale": 2.362
+    },
+    {
+      "id": "veg-17899",
+      "kind": "river-spruce-sitka",
+      "x": 1056.5,
+      "y": -1698.4,
+      "heading": 2.524,
+      "scale": 2.266
+    },
+    {
+      "id": "veg-17900",
+      "kind": "river-spruce-sitka",
+      "x": 4144,
+      "y": -7624.5,
+      "heading": 5.222,
+      "scale": 2.209
+    },
+    {
+      "id": "veg-17901",
+      "kind": "river-spruce-sitka",
+      "x": 2394.2,
+      "y": -2087.2,
+      "heading": 2.32,
+      "scale": 2.359
+    },
+    {
+      "id": "veg-17902",
+      "kind": "river-spruce-sitka",
+      "x": 4073.9,
+      "y": -2732.8,
+      "heading": 1.312,
+      "scale": 2.252
+    },
+    {
+      "id": "veg-17903",
+      "kind": "river-spruce-sitka",
+      "x": 1502.1,
+      "y": -3167.5,
+      "heading": 4.537,
+      "scale": 2.322
+    },
+    {
+      "id": "veg-17904",
+      "kind": "river-spruce-sitka",
+      "x": 2685.1,
+      "y": -2908.6,
+      "heading": 5.752,
+      "scale": 2.359
+    },
+    {
+      "id": "veg-17905",
+      "kind": "river-spruce-sitka",
+      "x": 952.6,
+      "y": -1928.5,
+      "heading": 2.393,
+      "scale": 2.449
+    },
+    {
+      "id": "veg-17906",
+      "kind": "river-spruce-sitka",
+      "x": 658.8,
+      "y": -2548.2,
+      "heading": 2.288,
+      "scale": 2.206
+    },
+    {
+      "id": "veg-17907",
+      "kind": "river-spruce-sitka",
+      "x": 1035.5,
+      "y": -1398.7,
+      "heading": 0.263,
+      "scale": 2.383
+    },
+    {
+      "id": "veg-17908",
+      "kind": "river-spruce-sitka",
+      "x": 2182.7,
+      "y": -2081.3,
+      "heading": 5.154,
+      "scale": 2.336
+    },
+    {
+      "id": "veg-17909",
+      "kind": "river-spruce-sitka",
+      "x": 2587.3,
+      "y": -1082,
+      "heading": 5.815,
+      "scale": 2.233
+    },
+    {
+      "id": "veg-17910",
+      "kind": "river-spruce-sitka",
+      "x": -1403,
+      "y": 2696.8,
+      "heading": 1.24,
+      "scale": 2.234
+    },
+    {
+      "id": "veg-17911",
+      "kind": "river-spruce-sitka",
+      "x": 2070.5,
+      "y": -1471.4,
+      "heading": 5.819,
+      "scale": 2.315
+    },
+    {
+      "id": "veg-17912",
+      "kind": "river-spruce-sitka",
+      "x": -1589.6,
+      "y": -239.5,
+      "heading": 5.393,
+      "scale": 2.223
+    },
+    {
+      "id": "veg-17913",
+      "kind": "river-spruce-sitka",
+      "x": 948.1,
+      "y": -1824.5,
+      "heading": 2.301,
+      "scale": 2.428
+    },
+    {
+      "id": "veg-17914",
+      "kind": "river-spruce-sitka",
+      "x": 3859.2,
+      "y": -4627.1,
+      "heading": 5.158,
+      "scale": 2.226
+    },
+    {
+      "id": "veg-17915",
+      "kind": "river-spruce-sitka",
+      "x": 3905.8,
+      "y": -6273.2,
+      "heading": 1.42,
+      "scale": 2.39
+    },
+    {
+      "id": "veg-17916",
+      "kind": "river-spruce-sitka",
+      "x": -760.3,
+      "y": -2321.2,
+      "heading": 5.6,
+      "scale": 2.379
+    },
+    {
+      "id": "veg-17917",
+      "kind": "river-spruce-sitka",
+      "x": 3605.8,
+      "y": -2581.4,
+      "heading": 0.169,
+      "scale": 2.432
+    },
+    {
+      "id": "veg-17918",
+      "kind": "river-spruce-sitka",
+      "x": -2693.3,
+      "y": 4336.2,
+      "heading": 1.807,
+      "scale": 2.439
+    },
+    {
+      "id": "veg-17919",
+      "kind": "river-spruce-sitka",
+      "x": -4440.1,
+      "y": 1284.8,
+      "heading": 4.857,
+      "scale": 2.365
+    },
+    {
+      "id": "veg-17920",
+      "kind": "river-spruce-sitka",
+      "x": 3715.8,
+      "y": -7738.6,
+      "heading": 4.038,
+      "scale": 2.42
+    },
+    {
+      "id": "veg-17921",
+      "kind": "river-spruce-sitka",
+      "x": 607.3,
+      "y": -1624.6,
+      "heading": 4.134,
+      "scale": 2.265
+    },
+    {
+      "id": "veg-17922",
+      "kind": "river-spruce-sitka",
+      "x": 6435.8,
+      "y": -4188.7,
+      "heading": 4.97,
+      "scale": 2.352
+    },
+    {
+      "id": "veg-17923",
+      "kind": "river-spruce-sitka",
+      "x": 8712.7,
+      "y": -7146.3,
+      "heading": 4.507,
+      "scale": 2.439
+    },
+    {
       "id": "veg-17573",
       "kind": "river-spruce-sitka",
       "x": 2595.8884438816876,
@@ -154321,26 +156899,26 @@ window.VENUE_DOC["river"] = {
     {
       "id": "prop-12",
       "kind": "river-tent",
-      "x": -1804.4897169426963,
-      "y": 2986.8596118013515,
+      "x": -1915.8065165496876,
+      "y": 2926.995112587734,
       "heading": 0,
-      "scale": 3
+      "scale": 1.05
     },
     {
       "id": "prop-13",
       "kind": "river-tent",
-      "x": -1993.073221520954,
-      "y": 3007.5365471338737,
+      "x": -2028.9065165496877,
+      "y": 2939.3951125877343,
       "heading": 2.5529448758338837,
-      "scale": 3
+      "scale": 1.05
     },
     {
       "id": "prop-14",
       "kind": "lake-firering",
-      "x": -1910.7254199656497,
-      "y": 2966.102052047502,
+      "x": -1979.5319365153373,
+      "y": 2914.4971646352365,
       "heading": 0,
-      "scale": 2.5
+      "scale": 1.25
     },
     {
       "id": "veg-17601",
@@ -154803,7 +157381,7 @@ window.VENUE_DOC["river"] = {
         "falloff": 150,
         "count": 2,
         "gustKt": 5,
-        "sizeM": 300,
+        "sizeM": 150,
         "lifeS": 40,
         "bias": 0.6,
         "veer": 10
@@ -154847,7 +157425,7 @@ window.VENUE_DOC["river"] = {
         "falloff": 150,
         "count": 1,
         "gustKt": 5,
-        "sizeM": 300,
+        "sizeM": 150,
         "lifeS": 40,
         "bias": 0.6,
         "veer": 10

@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["swamp"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "swamp",
   "note": "Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.",
   "card": {
@@ -93,6 +93,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-40",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -1907.958746898271,
@@ -185,6 +186,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-86",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -1210.1520775356312,
@@ -261,6 +263,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-1",
       "kind": "marsh",
+      "smooth": true,
       "outer": [
         [
           -1523.0073082128574,
@@ -366,6 +369,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-41",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -3213.5312265647526,
@@ -422,6 +426,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-100",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -3042.258826250135,
@@ -462,6 +467,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-101",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -3985.436292266005,
@@ -514,6 +520,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-4",
       "kind": "marsh",
+      "smooth": true,
       "outer": [
         [
           -3220.918502650063,
@@ -598,6 +605,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-35",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           -863.0716999729744,
@@ -646,6 +654,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-50",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -2357.098142740197,
@@ -710,6 +719,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-57",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -1306.8887511865314,
@@ -782,6 +792,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-84",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -2306.3701757230374,
@@ -834,6 +845,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-98",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -1523.5759269161156,
@@ -890,6 +902,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-2",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -2445.4627489678137,
@@ -1030,6 +1043,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-96",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -388.8130554673503,
@@ -1078,6 +1092,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-28",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           31.361839120274933,
@@ -1130,6 +1145,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-39",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           805.8030137109108,
@@ -1186,6 +1202,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-44",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           516.935209107581,
@@ -1254,6 +1271,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-81",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           96.73253022488905,
@@ -1354,6 +1372,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-7",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -293.8845836699267,
@@ -1434,6 +1453,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-27",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           -4948.25200072077,
@@ -1494,6 +1514,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-33",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           -2507.2693689050298,
@@ -1578,6 +1599,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-51",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -3594.217841293797,
@@ -1674,6 +1696,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-26",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           -3851.633607319203,
@@ -1734,6 +1757,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-42",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -3838.191966042073,
@@ -1782,6 +1806,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-54",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -4604.633110643276,
@@ -1846,6 +1871,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-66",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -2591.1517264440204,
@@ -1926,6 +1952,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-78",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -4143.759941795445,
@@ -2022,6 +2049,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-102",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -4434.713756069984,
@@ -2062,6 +2090,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-103",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -4582.961599998861,
@@ -2114,6 +2143,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-104",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -4551.194204871244,
@@ -2174,6 +2204,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-108",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -3437.994273274073,
@@ -2214,6 +2245,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-111",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -3598.611564832609,
@@ -2270,6 +2302,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-6",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -5209.59816660723,
@@ -2562,6 +2595,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-46",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           2997.5917155174666,
@@ -2630,6 +2664,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-63",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           1695.649711106876,
@@ -2706,6 +2741,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-92",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           989.2529159176667,
@@ -2754,6 +2790,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-109",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           788.8860492612567,
@@ -2814,6 +2851,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-9",
       "kind": "marsh",
+      "smooth": true,
       "outer": [
         [
           645.718630939183,
@@ -2954,6 +2992,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-89",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -2691.949643245792,
@@ -3022,6 +3061,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-12",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -4802.873699031823,
@@ -3122,6 +3162,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-49",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -3285.596690914056,
@@ -3210,6 +3251,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-107",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -3576.994087624338,
@@ -3262,6 +3304,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-11",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -5110.433281814084,
@@ -3426,6 +3469,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-23",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           -2971.0158065573382,
@@ -3482,6 +3526,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-32",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           193.33403200946506,
@@ -3550,6 +3595,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-55",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -2057.5149441388876,
@@ -3606,6 +3652,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-58",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -672.4069970418298,
@@ -3686,6 +3733,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-69",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           2609.032089263239,
@@ -3758,6 +3806,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-87",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -1551.9497851369556,
@@ -3822,6 +3871,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-70",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -1694.8117004290805,
@@ -3886,6 +3936,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-3",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -3210.6387469582096,
@@ -4202,6 +4253,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-34",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           73.48476865527151,
@@ -4258,6 +4310,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-38",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           4175.60859732299,
@@ -4302,6 +4355,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-47",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           1742.7280583054335,
@@ -4374,6 +4428,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-73",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           911.3483298943305,
@@ -4422,6 +4477,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-74",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           4189.973218161109,
@@ -4498,6 +4554,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-93",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           1788.9450966977095,
@@ -4566,6 +4623,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-105",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           4438.978616244226,
@@ -4634,6 +4692,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-106",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           2935.3219135370446,
@@ -4678,6 +4737,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-10",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -2524.0001894654233,
@@ -5106,6 +5166,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-77",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -1742.1938838137535,
@@ -5158,6 +5219,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-13",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -3179.8625944334854,
@@ -5270,6 +5332,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-14",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -2395.3973462318404,
@@ -5338,6 +5401,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-15",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           1720.0280327952532,
@@ -5430,6 +5494,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-76",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           4782.2231268057985,
@@ -5502,6 +5567,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-16",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           5050.988163620701,
@@ -5586,6 +5652,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-71",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           1462.816975260062,
@@ -5678,6 +5745,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-17",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           1382.1045412622368,
@@ -5834,6 +5902,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-18",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -4290.182638041968,
@@ -5926,6 +5995,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-19",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -5714.288780931109,
@@ -5990,6 +6060,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-20",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           5328.568174522821,
@@ -6046,6 +6117,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-21",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -1224.733821992462,
@@ -6114,6 +6186,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-22",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -5726.357477057288,
@@ -6190,6 +6263,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-82",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -447.6203448531537,
@@ -6242,6 +6316,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-36",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           -319.9011840087746,
@@ -6286,6 +6361,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-43",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -41.87454936950718,
@@ -6346,6 +6422,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-62",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           1231.4136116362486,
@@ -6426,6 +6503,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-90",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           2006.079563019875,
@@ -6470,6 +6548,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-8",
       "kind": "marsh",
+      "smooth": true,
       "outer": [
         [
           -417.12083968474474,
@@ -6582,6 +6661,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-31",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           3221.5254194254217,
@@ -6626,6 +6706,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-91",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           2971.9212504514016,
@@ -6694,6 +6775,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-8-2",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           2556.950979328051,
@@ -6762,6 +6844,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-5-2",
       "kind": "marsh",
+      "smooth": true,
       "outer": [
         [
           -1478.8345252960617,
@@ -6826,6 +6909,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-37",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           22.199211986210436,
@@ -6870,6 +6954,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-83",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -131.92955546334997,
@@ -6958,6 +7043,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-48",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -130.18982229893857,
@@ -7050,6 +7136,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-95",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -250.50655961115694,
@@ -7106,6 +7193,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-5-2-2",
       "kind": "marsh",
+      "smooth": true,
       "outer": [
         [
           -520.9474794413426,
@@ -7214,6 +7302,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-94",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -870.3862973755688,
@@ -7262,6 +7351,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-24",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -1138.1885461640452,
@@ -7350,6 +7440,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-25",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           -1563.196731194246,
@@ -7406,6 +7497,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-112",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -2815.489104591128,
@@ -7454,6 +7546,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-6-2",
       "kind": "marsh",
+      "smooth": true,
       "outer": [
         [
           -2910.2516553370842,
@@ -7566,6 +7659,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-110",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           28.681109086720426,
@@ -7618,6 +7712,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-67",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -396.6791715612569,
@@ -7674,6 +7769,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-80",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           557.815498911837,
@@ -7746,6 +7842,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-97",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           132.29870719117352,
@@ -7790,6 +7887,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-99",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -651.5872091464944,
@@ -7846,6 +7944,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-5",
       "kind": "mud",
+      "smooth": true,
       "outer": [
         [
           -1532.246668532063,
@@ -8026,6 +8125,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-29",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           -2988.791147155871,
@@ -8074,6 +8174,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-30",
       "kind": "mudflat",
+      "smooth": true,
       "outer": [
         [
           -2729.3460936727665,
@@ -8114,6 +8215,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-45",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           1439.3930782829464,
@@ -8178,6 +8280,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-52",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           443.0181188330949,
@@ -8246,6 +8349,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-53",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           2161.328093192359,
@@ -8310,6 +8414,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-56",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -450.68849557380616,
@@ -8370,6 +8475,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-59",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -2610.405769970646,
@@ -8438,6 +8544,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-60",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           63.21464179604453,
@@ -8502,6 +8609,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-61",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           1327.1363532241317,
@@ -8566,6 +8674,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-64",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -4014.093772794506,
@@ -8618,6 +8727,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-65",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -3086.702606633154,
@@ -8674,6 +8784,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-68",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           878.8254926803246,
@@ -8722,6 +8833,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-72",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           1159.1310850547634,
@@ -8766,6 +8878,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-75",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           3830.324325439778,
@@ -8826,6 +8939,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-79",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           1853.0784737271886,
@@ -8890,6 +9004,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-85",
       "kind": "weedmat",
+      "smooth": true,
       "outer": [
         [
           -3277.964987570355,
@@ -8946,6 +9061,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-88",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -1543.9275415057882,
@@ -8998,6 +9114,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-113",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -834.5897888298456,
@@ -9062,6 +9179,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-114",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -1495.2042294255,
@@ -9114,6 +9232,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-115",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           169.3373497710405,
@@ -9158,6 +9277,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-116",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           3510.8200501882625,
@@ -9206,6 +9326,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-117",
       "kind": "duckweed",
+      "smooth": true,
       "outer": [
         [
           -2043.8230862907608,
@@ -9298,6 +9419,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-118",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -3036.2540165267146,
@@ -9350,6 +9472,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-119",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -2055.5315591163326,
@@ -9394,6 +9517,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-120",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -1446.916014806996,
@@ -9450,6 +9574,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-121",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -4544.932163985359,
@@ -9502,6 +9627,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-122",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -3676.0919014155274,
@@ -9546,6 +9672,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-123",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           3310.805015916369,
@@ -9626,6 +9753,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-124",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           2577.7515848714743,
@@ -9678,6 +9806,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-125",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           1601.4140457068768,
@@ -9734,6 +9863,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-126",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -1371.2591479444836,
@@ -9806,6 +9936,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-127",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -45.552124885851754,
@@ -9858,6 +9989,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-128",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -1820.9358758582002,
@@ -9954,6 +10086,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-129",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           1927.0844697160605,
@@ -10010,6 +10143,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-130",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -5812.382226847623,
@@ -10082,6 +10216,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-131",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -3860.5492159114056,
@@ -10158,6 +10293,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-132",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -301.58955483463296,
@@ -10202,6 +10338,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-133",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           2353.946933492406,
@@ -10266,6 +10403,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-134",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -588.8210525516392,
@@ -10322,6 +10460,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-135",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           3584.6433909016746,
@@ -10378,6 +10517,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-136",
       "kind": "swampgrass",
+      "smooth": true,
       "outer": [
         [
           -3145.043710146037,
@@ -10430,6 +10570,7 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "shape-137",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -2588.7332604245544,
@@ -10511,6 +10652,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-1",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -3324,
@@ -10588,6 +10730,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-2",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -2293,
@@ -10665,6 +10808,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-3",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -2889,
@@ -10742,6 +10886,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-4",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           2081,
@@ -10807,6 +10952,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-5",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           1500,
@@ -10872,6 +11018,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-6",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           3527,
@@ -10945,6 +11092,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-7",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           2733,
@@ -11022,6 +11170,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-8",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -783,
@@ -11091,6 +11240,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-9",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           3119,
@@ -11156,6 +11306,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-10",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -3937,
@@ -11229,6 +11380,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-11",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -834,
@@ -11294,6 +11446,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-12",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           656,
@@ -11359,6 +11512,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-13",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -272,
@@ -11420,6 +11574,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-14",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           3100,
@@ -11485,6 +11640,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-15",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -765,
@@ -11550,6 +11706,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-16",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           342,
@@ -11611,6 +11768,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-17",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           3172,
@@ -11676,6 +11834,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-18",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -1541,
@@ -11741,6 +11900,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-19",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           2185,
@@ -11810,6 +11970,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-20",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -959,
@@ -11875,6 +12036,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-21",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           3304,
@@ -11940,6 +12102,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-22",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           923,
@@ -12017,6 +12180,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-23",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -2161,
@@ -12094,6 +12258,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-24",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           2025,
@@ -12155,6 +12320,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-25",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -1053,
@@ -12216,6 +12382,7 @@ window.VENUE_DOC["swamp"] = {
       "id": "weed-26",
       "name": "Weed bed",
       "kind": "weedbed",
+      "smooth": true,
       "outer": [
         [
           -2331,
@@ -12340,7 +12507,7 @@ window.VENUE_DOC["swamp"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-d19f4bd6-9s2y",
+      "sig": "v3-bc58a3b0-brku",
       "legs": [
         {
           "pts": []
@@ -12361,7 +12528,7 @@ window.VENUE_DOC["swamp"] = {
             ],
             [
               -733.4,
-              610.6
+              660.6
             ],
             [
               -733.4,
@@ -12404,11 +12571,27 @@ window.VENUE_DOC["swamp"] = {
               -2189.4
             ],
             [
-              -333.4,
+              -383.4,
               -2289.4
             ],
             [
-              66.6,
+              -283.4,
+              -2289.4
+            ],
+            [
+              -233.4,
+              -2289.4
+            ],
+            [
+              -183.4,
+              -2289.4
+            ],
+            [
+              -133.4,
+              -2289.4
+            ],
+            [
+              116.6,
               -2289.4
             ],
             [
@@ -16128,18 +16311,18 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "prop-1",
       "kind": "swamp-shack",
-      "x": -3013.2648164979,
-      "y": 2762.007297436097,
+      "x": -3015.6323898230135,
+      "y": 2756.088364123313,
       "heading": 3.4400034131010564,
-      "scale": 1.2561750000130079
+      "scale": 0.7
     },
     {
       "id": "prop-2",
       "kind": "swamp-shack-b",
-      "x": 377.94126996271314,
-      "y": 767.6316711251569,
+      "x": 361.4932427940853,
+      "y": 792.5690026388829,
       "heading": 3.0373888226011676,
-      "scale": 1.9212654119619859
+      "scale": 1
     },
     {
       "id": "knee-1",

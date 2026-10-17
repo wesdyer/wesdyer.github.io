@@ -724,6 +724,14 @@
         .pr-fleet-item.sel { box-shadow: 0 0 0 2px #eef3fb; }
         .pr-fleet-item.me.sel { box-shadow: 0 0 0 2px #f2c14e; }
         .pr-fleet-notes { padding: 12px 14px 14px; background: #141d31; border-radius: 0 0 12px 12px; }
+        /* PT-034: why a RIVAL or NEW boat is in the fleet. Coral and teal, clear of your own colour and of first-place gold. */
+        .pr-fleet-why { display: flex; align-items: baseline; gap: 8px; padding: 7px 12px 9px; font-size: 12.5px; line-height: 1.4; color: #c9d6e8; }
+        .pr-fleet-why b { color: #eef3fb; }
+        .pr-why-prog { color: #9fb2cc; white-space: nowrap; }
+        .pr-tag { flex: none; font-size: 10px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; line-height: 1; padding: 3px 7px; border-radius: 4px; color: #0b1322; }
+        .pr-tag-rival { background: #ff7a5c; }
+        .pr-tag-new { background: #4fd1c5; }
+        .pr-why-note { font-size: 12.5px; line-height: 1.45; color: #c9d6e8; margin-bottom: 10px; }
         /* The badge inside an item squares off its bottom corners when notes are open, so
            the two read as one card rather than a card with a tray under it. */
         .pr-fleet-item.sel > button > div { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
@@ -901,6 +909,7 @@
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Nav aids</span><span class="ov-key">N</span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Sailing rules</span><span class="ov-key">P</span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Enlarge map</span><span class="ov-key">M</span></div>
+                        <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Enlarge tide chart</span><span class="ov-key">T</span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Mute / music</span><span><span class="ov-key">V</span> <span class="ov-key">SHIFT+V</span></span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Screenshot</span><span class="ov-key">F12</span></div>
                         <div class="ov-setting" style="padding: 8px 0;"><span class="ov-setting-label" style="font-size: 13px;">Settings</span><span class="ov-key">F2</span></div>
@@ -1165,7 +1174,7 @@
                  (fitClubhouse, screens.js) — the reference-resolution scaling games use, so the
                  composition is the same on a laptop and a 4K screen. The stage widens from 16:10 to
                  16:9; past that it is centred and the painting, blurred, fills the rest. -->
-            <img id="hub-backdrop" src="assets/images/venues/bay.png" alt="" draggable="false" aria-hidden="true">
+            <img id="hub-backdrop" src="assets/images/hero/hero-clubhouse-trio.jpg" alt="" draggable="false" aria-hidden="true">
             <div id="clubhouse-stage" class="ch-stage">
             <div class="ch-header" style="border-bottom:none; padding:14px 32px 12px;">
                 <div class="flex items-center gap-4">
@@ -1183,7 +1192,7 @@
                 <!-- The painting, whole: its panel is locked to the painting's own 3:2, so it is never
                      cropped and never barred (Wes, Sep 7: the painting is shown whole). -->
                 <div id="hub-hero" class="ch-hero">
-                    <img id="hub-hero-img" src="assets/images/venues/bay.png" alt="The fleet racing past the clubhouse" draggable="false">
+                    <img id="hub-hero-img" src="assets/images/hero/hero-clubhouse-trio.jpg" alt="The fleet racing past the clubhouse" draggable="false">
                 </div>
                 <!-- YOU AND YOUR BOAT, one card (the lobby pattern: your character, on your boat). The band
                      is your colours with your portrait, name and motto and your boat from above; below it
@@ -1253,7 +1262,7 @@
                         </div>
                     </button>
                     <button id="door-school" class="ch-door compact" style="--door-accent:#7ff0d4; --door-ink:#0c1322;">
-                        <div class="ch-door-pic"><img src="assets/images/venues/pond.png" alt="Duckling Pond"><span id="door-school-chip" class="ch-chip" style="position:absolute; top:12px; left:12px; background:#2f6bff; color:#fff;">Start here</span></div>
+                        <div class="ch-door-pic"><img src="assets/images/venues/pond.jpg" alt="Duckling Pond"><span id="door-school-chip" class="ch-chip" style="position:absolute; top:12px; left:12px; background:#2f6bff; color:#fff;">Start here</span></div>
                         <div class="ch-door-body">
                             <div class="t-display ch-door-name">Sailing School</div>
                             <div class="ch-door-foot"><span id="door-school-state" class="t-label t-label-sm"></span><span id="door-school-cta" class="ch-cta">Start school <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline-block; vertical-align:-3px;"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></span></div>
@@ -1757,7 +1766,7 @@
             <!-- THE TIDE (Spoonbill Flats only; hidden elsewhere; Wes, Sep 16 2026: the curve
                  and the point, with the height as a number — in place of the rose row and the
                  pill under the boat). Drawn by drawTideReadout in js/render/hud.js. -->
-            <div id="hud-tide" class="hidden bg-slate-900/70 backdrop-blur-sm rounded-lg border border-slate-400/30 shadow-2xl overflow-hidden">
+            <div id="hud-tide" title="Enlarge tide chart (T)" style="pointer-events:auto; cursor:zoom-in;" class="hidden bg-slate-900/70 backdrop-blur-sm rounded-lg border border-slate-400/30 shadow-2xl overflow-hidden">
                 <canvas id="hud-tide-canvas" width="250" height="84" style="width:250px;height:84px;display:block"></canvas>
             </div>
             <div id="hud-leg-times" class="flex flex-col gap-1 items-end">

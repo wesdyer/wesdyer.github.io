@@ -211,6 +211,7 @@ window.addEventListener('keydown', (e) => {
     // repeat — physics applies the queue and holds the continuous turn while Shift is down.
     if (e.shiftKey && (key === 'ArrowLeft' || key === 'ArrowRight') && !state.paused) {
         state.helmNudge = (state.helmNudge || 0) + (key === 'ArrowLeft' ? -1 : 1);
+        if (window.School && School.onFineHelm) School.onFineHelm();   // the School's fine-steering lesson counts these
         e.preventDefault();
     }
 
@@ -254,6 +255,8 @@ window.addEventListener('keydown', (e) => {
 
     // Map: M enlarges the minimap 3x (and back), as a click on it does (Wes, Sep 26 2026).
     if (e.key.toLowerCase() === 'm') toggleMinimapSize();
+    // Tide chart: T enlarges it (and back), as a click on it does (PT-091) — only where there is a tide.
+    if (e.key.toLowerCase() === 't' && state.tide && typeof toggleTideSize === 'function') toggleTideSize();
     // Audio: V for volume, Shift+V for music (moved off M, which is the map now).
     if (e.key.toLowerCase() === 'v') {
         if (e.shiftKey) {

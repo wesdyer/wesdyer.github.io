@@ -1001,6 +1001,12 @@ const TIDE = {
         }
         return [a, b, c, d];
     }
+    function picImage(o, key, g, w, h) {
+        let im = o[key];
+        if (!im || im.width !== w || im.height !== h) return (o[key] = g.createImageData(w, h));
+        im.data.fill(0);
+        return im;
+    }
     function refreshPicture(ctx) {
         usePic();
         const T = state.tide, F = drawField();
@@ -1019,7 +1025,9 @@ const TIDE = {
         const pw = Math.max(1, Math.round(w / C.pxU)), ph = Math.max(1, Math.round(h / C.pxU));
         const cvW = ensureCanvas(pic, 'cvWet', pw, ph), cvD = ensureCanvas(pic, 'cvDry', pw, ph);
         const gW = cvW.getContext('2d'), gD = cvD.getContext('2d');
-        const imW = gW.createImageData(pw, ph), imD = gD.createImageData(pw, ph);
+        // The three pixel buffers are kept between refreshes and zeroed, exactly what createImageData hands
+        // back (Oct 2026 perf pass: three full-view allocations every ~20 frames were GC churn).
+        const imW = picImage(pic, 'imW', gW, pw, ph), imD = picImage(pic, 'imD', gD, pw, ph);
         const AW = imW.data, AD = imD.data;
         const base = hexRgb(water.baseColor || '#3a6394');
         const shal = hexRgb(water.shallowColor || '#7aa6d4');
@@ -1028,7 +1036,10 @@ const TIDE = {
         const mot = mottle(), mx0 = Math.round(x0 / C.pxU), my0 = Math.round(y0 / C.pxU);
         tileLuma('mud'); tileLuma('sand');                       // kick the loads
         const cvS = ensureCanvas(pic, 'cvSand', pw, ph), gS = cvS.getContext('2d');
-        const imS = gS.createImageData(pw, ph), AS = imS.data;
+        const imS = picImage(pic, 'imS', gS, pw, ph), AS = imS.data;
+        const MU0 = COL.mud[0], MU1 = COL.mud[1], MU2 = COL.mud[2], SA0 = COL.sand[0], SA1 = COL.sand[1], SA2 = COL.sand[2];
+        const MW0 = COL.mudWet[0], MW1 = COL.mudWet[1], MW2 = COL.mudWet[2], SW0 = COL.sandWet[0], SW1 = COL.sandWet[1], SW2 = COL.sandWet[2];
+        const SH0 = COL.shallow[0], SH1 = COL.shallow[1], SH2 = COL.shallow[2];
         for (let py = 0; py < ph; py++) {
             const wy = y0 + (py + 0.5) * C.pxU;
             const fy = (wy - F.y0) / res - 0.5, j = Math.floor(fy), ty = fy - j;
@@ -1043,8 +1054,9 @@ const TIDE = {
                 if (F.mMask[k] && F.mMask[k + 1] && F.mMask[k + W] && F.mMask[k + W + 1]) { AW[o + 3] = 0; AD[o + 3] = 0; continue; }
                 // the material, blended like the height so sand and mud meet in a soft seam
                 const sf = (mat[k] * (1 - tx) + mat[k + 1] * tx) * (1 - ty) + (mat[k + W] * (1 - tx) + mat[k + W + 1] * tx) * ty;
-                const dry = [COL.mud[0] + (COL.sand[0] - COL.mud[0]) * sf, COL.mud[1] + (COL.sand[1] - COL.mud[1]) * sf, COL.mud[2] + (COL.sand[2] - COL.mud[2]) * sf];
-                const wetc = [COL.mudWet[0] + (COL.sandWet[0] - COL.mudWet[0]) * sf, COL.mudWet[1] + (COL.sandWet[1] - COL.mudWet[1]) * sf, COL.mudWet[2] + (COL.sandWet[2] - COL.mudWet[2]) * sf];
+                // (scalars, not arrays: the same arithmetic in the same order, without three allocations a pixel)
+                const dry0 = MU0 + (SA0 - MU0) * sf, dry1 = MU1 + (SA1 - MU1) * sf, dry2 = MU2 + (SA2 - MU2) * sf;
+                const wet0 = MW0 + (SW0 - MW0) * sf, wet1 = MW1 + (SW1 - MW1) * sf, wet2 = MW2 + (SW2 - MW2) * sf;
                 if (d <= 0) {
                     // exposed ground: dark and gleaming at the water's edge, paler with height
                     const hgt = -d;
@@ -1053,7 +1065,7 @@ const TIDE = {
                     const pale = Math.min(0.14, hgt * 0.10) + mo * 0.10 * (1 - 0.5 * wf);
                     // the sand mask for the tile overlay: how much of this pixel is sand
                     AS[o + 3] = Math.round(255 * sf);
-                    const r = (dry[0] + (wetc[0] - dry[0]) * wf) * (1 + pale), gg = (dry[1] + (wetc[1] - dry[1]) * wf) * (1 + pale), b = (dry[2] + (wetc[2] - dry[2]) * wf) * (1 + pale);
+                    const r = (dry0 + (wet0 - dry0) * wf) * (1 + pale), gg = (dry1 + (wet1 - dry1) * wf) * (1 + pale), b = (dry2 + (wet2 - dry2) * wf) * (1 + pale);
                     AD[o] = Math.min(255, r); AD[o + 1] = Math.min(255, gg); AD[o + 2] = Math.min(255, b); AD[o + 3] = 255;
                     AW[o] = AD[o]; AW[o + 1] = AD[o + 1]; AW[o + 2] = AD[o + 2]; AW[o + 3] = 255;
                 } else if (d < see) {
@@ -1062,13 +1074,13 @@ const TIDE = {
                     // band the bottom is plainly there under a skin of pale water, and above
                     // it the tint thins to the open water — so "will it take my speed" is a
                     // colour, not a guess. The dashed line marks the draft exactly.
-                    const bottom = [ dry[0] * 0.6 + COL.shallow[0] * 0.4, dry[1] * 0.6 + COL.shallow[1] * 0.4, dry[2] * 0.6 + COL.shallow[2] * 0.4 ];
-                    const pale = [ (shal[0] + bottom[0]) / 2, (shal[1] + bottom[1]) / 2, (shal[2] + bottom[2]) / 2 ];
-                    let c, a;
-                    if (d < DRAFT) { const u = d / DRAFT; c = [ wetc[0] + (bottom[0] - wetc[0]) * u, wetc[1] + (bottom[1] - wetc[1]) * u, wetc[2] + (bottom[2] - wetc[2]) * u ]; a = 0.96 - 0.16 * u; }
-                    else if (d < DRAFT + FREE) { const u = (d - DRAFT) / FREE; c = [ bottom[0] + (pale[0] - bottom[0]) * u, bottom[1] + (pale[1] - bottom[1]) * u, bottom[2] + (pale[2] - bottom[2]) * u ]; a = 0.8 - 0.25 * u; }
-                    else { const u = Math.min(1, (d - DRAFT - FREE) / (see - DRAFT - FREE)); const s = (1 - u) * (1 - u); c = [ base[0] + (pale[0] - base[0]) * s, base[1] + (pale[1] - base[1]) * s, base[2] + (pale[2] - base[2]) * s ]; a = 0.55 * s; }
-                    AW[o] = c[0]; AW[o + 1] = c[1]; AW[o + 2] = c[2]; AW[o + 3] = Math.round(255 * a);
+                    const bo0 = dry0 * 0.6 + SH0 * 0.4, bo1 = dry1 * 0.6 + SH1 * 0.4, bo2 = dry2 * 0.6 + SH2 * 0.4;
+                    const pa0 = (shal[0] + bo0) / 2, pa1 = (shal[1] + bo1) / 2, pa2 = (shal[2] + bo2) / 2;
+                    let c0, c1, c2, a;
+                    if (d < DRAFT) { const u = d / DRAFT; c0 = wet0 + (bo0 - wet0) * u; c1 = wet1 + (bo1 - wet1) * u; c2 = wet2 + (bo2 - wet2) * u; a = 0.96 - 0.16 * u; }
+                    else if (d < DRAFT + FREE) { const u = (d - DRAFT) / FREE; c0 = bo0 + (pa0 - bo0) * u; c1 = bo1 + (pa1 - bo1) * u; c2 = bo2 + (pa2 - bo2) * u; a = 0.8 - 0.25 * u; }
+                    else { const u = Math.min(1, (d - DRAFT - FREE) / (see - DRAFT - FREE)); const s = (1 - u) * (1 - u); c0 = base[0] + (pa0 - base[0]) * s; c1 = base[1] + (pa1 - base[1]) * s; c2 = base[2] + (pa2 - base[2]) * s; a = 0.55 * s; }
+                    AW[o] = c0; AW[o + 1] = c1; AW[o + 2] = c2; AW[o + 3] = Math.round(255 * a);
                     AD[o + 3] = 0;
                 } else { AW[o + 3] = 0; AD[o + 3] = 0; }
             }
@@ -1258,12 +1270,24 @@ const TIDE = {
             } else {
                 // the squares the tide has left: the dry meadow, flat and still
                 const T = EELB.tile;
+                // Each square's highest ground of its five samples, once per bed and field (Oct 2026 perf pass):
+                // depth is level − ground, so the shallowest sample is level − that max — the same number,
+                // without five ground lookups and five tide-clock evaluations per square per frame.
+                const F0 = state.tide.field, L = level();
+                if (!B.gmx || B.gmxF !== F0) {
+                    const g = [];
+                    for (let ty = iy; ty < iy + ih; ty += T) for (let tx = ix; tx < ix + iw; tx += T)
+                        g.push(Math.max(groundAt(tx + T / 2, ty + T / 2), groundAt(tx, ty), groundAt(tx + T, ty), groundAt(tx, ty + T), groundAt(tx + T, ty + T)));
+                    B.gmx = g; B.gmxF = F0;
+                }
+                let q = -1;
                 for (let ty = iy; ty < iy + ih; ty += T) for (let tx = ix; tx < ix + iw; tx += T) {
+                    q++;
                     if (tx + T < va || tx > vc || ty + T < vb || ty > vd) continue;
                     // any part of the square out of the water draws it: the mud picture covers a square the
                     // moment its corner dries, and waiting for the middle left bare mud that then popped full
                     // (at the waterline the shallow-water look is the dry one, so the overlap does not show)
-                    if (Math.min(depthAt(tx + T / 2, ty + T / 2), depthAt(tx, ty), depthAt(tx + T, ty), depthAt(tx, ty + T), depthAt(tx + T, ty + T)) > 0.03) continue;
+                    if (L - B.gmx[q] > 0.03) continue;
                     const sx = (tx - ix) * B.S, sy = (ty - iy) * B.S, sw = Math.min(T * B.S, B.W - sx), sh = Math.min(T * B.S, B.H - sy);
                     if (sw <= 0 || sh <= 0) continue;
                     ctx.drawImage(B.cvDry, sx, sy, sw, sh, tx, ty, sw / B.S, sh / B.S);

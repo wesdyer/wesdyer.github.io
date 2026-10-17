@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["arctic"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "arctic",
   "note": "Imported once from arctic-geo.js by art/export_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-importing replaces land and discards edits.",
   "card": {
@@ -798,7 +798,8 @@ window.VENUE_DOC["arctic"] = {
         604.2819725296567
       ],
       "r": 10412.584166714425,
-      "height": 10
+      "height": 5,
+      "smooth": true
     },
     {
       "id": "isle-1",
@@ -875,7 +876,8 @@ window.VENUE_DOC["arctic"] = {
         1838.59375
       ],
       "r": 869.1411271065966,
-      "height": 10
+      "height": 5,
+      "smooth": true
     },
     {
       "id": "isle-2",
@@ -1084,7 +1086,8 @@ window.VENUE_DOC["arctic"] = {
         3929.0970230941043
       ],
       "r": 673.7539607724024,
-      "height": 5
+      "height": 2.5,
+      "smooth": true
     },
     {
       "id": "isle-3",
@@ -1205,7 +1208,8 @@ window.VENUE_DOC["arctic"] = {
         -1061.984914284718
       ],
       "r": 513.5149939966689,
-      "height": 10
+      "height": 5,
+      "smooth": true
     },
     {
       "id": "isle-4",
@@ -1318,7 +1322,8 @@ window.VENUE_DOC["arctic"] = {
         2949.020084520162
       ],
       "r": 397.13866873623004,
-      "height": 5
+      "height": 2.5,
+      "smooth": true
     },
     {
       "id": "granite-isle",
@@ -1415,7 +1420,7 @@ window.VENUE_DOC["arctic"] = {
         -3113.1456165736695
       ],
       "r": 398.4813401366994,
-      "height": 20
+      "height": 10
     },
     {
       "id": "shape-1",
@@ -1472,7 +1477,7 @@ window.VENUE_DOC["arctic"] = {
         -2793.6087208988743
       ],
       "r": 108.48068519222808,
-      "height": 5
+      "height": 2.5
     },
     {
       "id": "shape-2",
@@ -1533,7 +1538,7 @@ window.VENUE_DOC["arctic"] = {
         -3165.5706873504146
       ],
       "r": 125.16803808505429,
-      "height": 10
+      "height": 5
     },
     {
       "id": "ice-1",
@@ -12136,7 +12141,7 @@ window.VENUE_DOC["arctic"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-d83a6c84-4sb",
+      "sig": "v3-fd6ee4b9-n42",
       "legs": [
         {
           "pts": []
@@ -12148,7 +12153,7 @@ window.VENUE_DOC["arctic"] = {
               1653.7
             ],
             [
-              -158.2,
+              -108.2,
               2886.4
             ],
             [
@@ -12164,8 +12169,8 @@ window.VENUE_DOC["arctic"] = {
               636.4
             ],
             [
-              -1708.2,
-              -1363.6
+              -1758.2,
+              -1313.6
             ],
             [
               -528.1,
@@ -12230,8 +12235,8 @@ window.VENUE_DOC["arctic"] = {
               1286.4
             ],
             [
-              -1508.2,
-              1636.4
+              -1458.2,
+              1686.4
             ],
             [
               -608.2,
@@ -12242,8 +12247,8 @@ window.VENUE_DOC["arctic"] = {
               2886.4
             ],
             [
-              1741.8,
-              2736.4
+              1691.8,
+              2786.4
             ],
             [
               2828.5,
@@ -12487,7 +12492,7 @@ window.VENUE_DOC["arctic"] = {
         "bias": 0.65,
         "veer": 25,
         "gustKt": 7,
-        "sizeM": 450,
+        "sizeM": 225,
         "lifeS": 90
       }
     ]
@@ -12611,7 +12616,7 @@ window.VENUE_DOC["arctic"] = {
       "x": 2539.3010801808236,
       "y": 847.9477411468938,
       "heading": 0.3268783234883186,
-      "scale": 1.471
+      "scale": 1
     },
     {
       "id": "prop-16",
@@ -12720,8 +12725,8 @@ window.VENUE_DOC["arctic"] = {
     {
       "id": "prop-29",
       "kind": "arctic-peak-pyramid",
-      "x": -4296.233069368951,
-      "y": 87.775838581588,
+      "x": -4282.961518967439,
+      "y": 61.23273777856326,
       "heading": 6.1180366297649496,
       "scale": 1.228543633518753
     },

@@ -596,8 +596,11 @@ function _sweepAdd(S, x, y, cx, cy) {
     if (S.a != null) { let d = a - S.a; d = Math.atan2(Math.sin(d), Math.cos(d)); S.sum += d; }
     S.a = a;
 }
-//   pond:raft   Pip's "Round the Raft": a full turn round the Sailing School's swim raft (prop-44), inside
-//               raftR, during any section — the school's objective is judged when the section ends.
+//   pond:raft   Pip's "Round the Raft": sail ROUND the Sailing School's swim raft (prop-44) as you would a
+//               mark, inside raftR, during any section — the school's objective is judged when the section ends.
+//               Half a turn about it, not a full circle (PT-107, Wes Oct 14 2026: "just make it go around the
+//               raft"). A straight line past a point sweeps strictly less than π however close it passes, so
+//               only a track that bends round the raft earns it.
 const POND_RAFT = { venue: 'pond', prop: 'prop-44', r: 260 };
 let _pondRaft = null;
 function checkPondRaft() {
@@ -608,7 +611,7 @@ function checkPondRaft() {
     const R = _pondRaft;
     if (Math.hypot(me.x - pr.x, me.y - pr.y) > POND_RAFT.r) { R.S = { sum: 0, a: null }; return; }   // left the raft: start over
     _sweepAdd(R.S, me.x, me.y, pr.x, pr.y);
-    if (!R.sent && Math.abs(R.S.sum) >= Math.PI * 2 * 0.95 && typeof GameEvents !== 'undefined') { R.sent = true; GameEvents.emit('player-feat', { id: 'pond:raft' }); }
+    if (!R.sent && Math.abs(R.S.sum) >= Math.PI && typeof GameEvents !== 'undefined') { R.sent = true; GameEvents.emit('player-feat', { id: 'pond:raft' }); }
 }
 //   lake:islands  Barbel's "Round Every Island": the whole race's track, closed from the finish back to the
 //                 start, goes round every island in the lake — each ISLAND is a connected clump of hard land
@@ -948,8 +951,14 @@ function repositionBoats() {
         const laneY = cy + (m1.y - m0.y) * (pct - 0.5);
         const scatter = (Math.random() - 0.5) * 120;   // depth (along-wind) scatter
         const jitterLat = (Math.random() - 0.5) * 20;  // small lateral jitter
-        const sx = laneX + backX * (distBack + scatter) + rx * jitterLat;
-        const sy = laneY + backY * (distBack + scatter) + ry * jitterLat;
+        // A SOLO TIME TRIAL STARTS FROM ONE SPOT (PT-022): the run is compared with your ghost
+        // and the course record, so every run begins at the same place, the line's middle
+        // 400 back, pointed straight at the line. No favoured-end bias, no scatter, and the
+        // heading is the line's, not the wind's, so it doesn't change with the run's breeze.
+        // The random draws above still happen, so the stream is the same length either way.
+        const ttSpot = boat.isPlayer && window.TimeTrial && TimeTrial.solo();
+        const sx = ttSpot ? cx + backX * distBack : laneX + backX * (distBack + scatter) + rx * jitterLat;
+        const sy = ttSpot ? cy + backY * distBack : laneY + backY * (distBack + scatter) + ry * jitterLat;
 
         boat.x = sx;
         boat.y = sy;
@@ -962,7 +971,7 @@ function repositionBoats() {
         const lw = getWindAt(sx, sy).direction;
 
         if (boat.isPlayer) {
-            boat.heading = lw; // Head to wind — the wind HERE
+            boat.heading = ttSpot ? Math.atan2(cross.x, -cross.y) : lw; // Head to wind — the wind HERE (a time trial: at the line)
             boat.velocity = { x: 0, y: 0 };
             boat.speed = 0;
         } else {

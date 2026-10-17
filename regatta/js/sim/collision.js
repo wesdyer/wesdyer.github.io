@@ -239,14 +239,14 @@ function checkBoatCollisions(dt) {
                         }
                     }
                     if (r19Flip) {
-                        triggerPenalty(effectiveRow, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'contact' });
+                        triggerPenalty(effectiveRow, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'contact', with: loser19 });
                     } else if (r15 && effectiveRow) {
-                        triggerPenalty(effectiveRow, { rule: 'Rule 15', reason: 'No Room to Respond', kind: 'contact' });
-                    } else if (effectiveRow === b1) triggerPenalty(b2, Object.assign({ other: b1.name }, pInfo));
-                    else if (effectiveRow === b2) triggerPenalty(b1, Object.assign({ other: b2.name }, pInfo));
+                        triggerPenalty(effectiveRow, { rule: 'Rule 15', reason: 'No Room to Respond', kind: 'contact', with: effectiveRow === b1 ? b2 : b1 });
+                    } else if (effectiveRow === b1) triggerPenalty(b2, Object.assign({ other: b1.name, with: b1 }, pInfo));
+                    else if (effectiveRow === b2) triggerPenalty(b1, Object.assign({ other: b2.name, with: b2 }, pInfo));
                     else {
-                        triggerPenalty(b1, pInfo);
-                        triggerPenalty(b2, pInfo);
+                        triggerPenalty(b1, Object.assign({ with: b2 }, pInfo));
+                        triggerPenalty(b2, Object.assign({ with: b1 }, pInfo));
                     }
                 }
             }
@@ -329,7 +329,7 @@ function checkMarkCollisions(dt) {
                         exon31 = true; break;
                     }
                 }
-                if (state.race.status === 'racing' && !exon31) triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact' });
+                if (state.race.status === 'racing' && !exon31) triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact', with: 'mark:' + state.course.marks.indexOf(mark) });
                 // One response per MARK, not per circle: hitting a committee boat is
                 // one Rule 31 touch, however many circles of its capsule you are in.
                 break;
@@ -421,9 +421,23 @@ function polyGrid(verts) {
             const k = cy * cw + cx; (cells[k] || (cells[k] = [])).push(j);
         }
     }
-    const inside = new Uint8Array(cw * ch);
-    for (let cy = 0; cy < ch; cy++) for (let cx = 0; cx < cw; cx++) {
-        inside[cy * cw + cx] = pointInPoly((cx0 + cx + 0.5) * POLY_CELL, (cy0 + cy + 0.5) * POLY_CELL, verts) ? 1 : 0;
+    // Each cell centre's inside flag, a ROW at a time: the crossings of the row's line with every edge, by
+    // pointInPoly's own formula, then each centre counts the crossings to its right — the same parity, edge for
+    // edge, that pointInPoly(centre) would find, without walking the whole ring once per cell (a curved coast's
+    // ring and its hundreds of cells made this a few hundred ms of a race build).
+    const inside = new Uint8Array(cw * ch), xs = [];
+    for (let cy = 0; cy < ch; cy++) {
+        const y = (cy0 + cy + 0.5) * POLY_CELL;
+        xs.length = 0;
+        for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+            const xi = verts[i].x, yi = verts[i].y, xj = verts[j].x, yj = verts[j].y;
+            if ((yi > y) !== (yj > y)) xs.push(((xj - xi) * (y - yi)) / (yj - yi || 1e-9) + xi);
+        }
+        for (let cx = 0; cx < cw; cx++) {
+            const x = (cx0 + cx + 0.5) * POLY_CELL;
+            let c = 0; for (let k = 0; k < xs.length; k++) if (x < xs[k]) c++;
+            inside[cy * cw + cx] = c & 1;
+        }
     }
     g = { n: verts.length, cx0, cy0, cw, ch, cells, inside };
     Object.defineProperty(verts, '_grid', { value: g, enumerable: false, writable: true, configurable: true });
@@ -921,7 +935,7 @@ function checkIslandCollisions(dt) {
                      }
                  }
                  if (squeezer) {
-                     triggerPenalty(squeezer, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'no-contact' });
+                     triggerPenalty(squeezer, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'no-contact', with: boat });
                  }
 
                  // ── NO PENALTY FOR RUNNING AGROUND ──────────────────────────

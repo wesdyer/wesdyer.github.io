@@ -190,11 +190,38 @@ function pointInVerts(x, y, verts) {
     return inside;
 }
 
+// LAND CANDIDATES BY CELL (Oct 2026 perf pass). pointOnLand and crestOnLand are asked thousands
+// of times a frame (Glowtide's 520-jelly bloom alone, every frame) and each call walked every
+// shape on the course to its bounding circle. Fixed shapes are bucketed by their bounding circle
+// into LAND_CELL squares; floes, and anything without a usable circle, stay on a list that is
+// always tested — the same split as wildlife.js islIndex. The answers are unchanged: a shape not
+// in a point's cell is one whose bounding circle cannot contain it. Rebuilt when the course's
+// islands array (or its length) changes.
+const LAND_CELL = 300, LAND_ROW = 1 << 20, NO_LAND = [];
+let _landIdx = null;
+function landIndex() {
+    const arr = (state.course && state.course.islands) || NO_LAND;
+    if (_landIdx && _landIdx.arr === arr && _landIdx.n === arr.length) return _landIdx;
+    const cells = new Map(), loose = [];
+    for (const s of arr) {
+        if (s.isFloe || !(s.radius > 0) || !isFinite(s.x) || !isFinite(s.y)) { loose.push(s); continue; }
+        const c0 = Math.floor((s.x - s.radius) / LAND_CELL), c1 = Math.floor((s.x + s.radius) / LAND_CELL);
+        const r0 = Math.floor((s.y - s.radius) / LAND_CELL), r1 = Math.floor((s.y + s.radius) / LAND_CELL);
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const k = r * LAND_ROW + c; let L = cells.get(k); if (!L) cells.set(k, L = []); L.push(s); }
+    }
+    return (_landIdx = { arr, n: arr.length, cells, loose });
+}
+function landCell(I, x, y) { return I.cells.get(Math.floor(y / LAND_CELL) * LAND_ROW + Math.floor(x / LAND_CELL)) || NO_LAND; }
+
 // AWASH SHAPES ARE WATER. A shoal, a lily bed, a weed bed is something you sail over, so a
 // crown reaching across one is still reaching over water and still has to get out of the way.
 function pointOnLand(x, y) {
-    const islands = (state.course && state.course.islands) || [];
-    for (const isl of islands) {
+    const I = landIndex();
+    return landHitIn(landCell(I, x, y), x, y) || landHitIn(I.loose, x, y);
+}
+function landHitIn(islands, x, y) {
+    for (let n = 0; n < islands.length; n++) {
+        const isl = islands[n];
         if (isl.awash || !isl.vertices || isl.vertices.length < 3) continue;
         const dx = x - isl.x, dy = y - isl.y;
         if (dx * dx + dy * dy > isl.radius * isl.radius) continue;   // bounding circle first
@@ -202,7 +229,7 @@ function pointOnLand(x, y) {
         if (!(typeof pointInPolyFast === 'function' ? pointInPolyFast(x, y, isl.vertices) : pointInVerts(x, y, isl.vertices))) continue;
         let inHole = false;
         for (const h of (isl.holes || [])) {
-            if (h && h.length >= 3 && pointInVerts(x, y, h)) { inHole = true; break; }
+            if (h && h.length >= 3 && (typeof pointInPolyFast === 'function' ? pointInPolyFast(x, y, h) : pointInVerts(x, y, h))) { inHole = true; break; }
         }
         if (!inHole) return true;
     }
@@ -242,9 +269,53 @@ function _crownWet(x, y) {
     const b = state.course && state.course.boundary;
     return !(b && window.Arena) || Arena.contains(b, x, y);
 }
+// ⚠️ THE PAINTED CROWN, NOT THE SPRITE'S FRAME (Wes, Oct 15 2026: Pearl Lagoon's palms "shouldn't be transparent
+// unless they overlap the water"). The rim samples below sit on a circle as wide as the sprite's square frame,
+// and a palm is a star: between its fronds that circle is empty air, so a palm standing wholly on a sand cay
+// read as overhanging the lagoon and faded around the player. Measured: 7 of the lagoon's 16 fading palms had
+// no leaf over water, and every fading cypress on Otter Point (5 of 5). So where the kind has a traced paint
+// silhouette (PROP_OUTLINES, art/prop_outlines.py) the test samples THE PAINT: its outline's vertices and edge
+// midpoints, and its inside on a grid no coarser than CROWN_GRID — under half a hull, so no hull-sized patch of
+// leaf over water can fall between samples. The circle stays for a kind with no tracing.
+const CROWN_GRID = 20;
+function crownPaintPoints(p, worldW) {
+    const reg = (window.VenueDoc && VenueDoc.PROP_KINDS) || {};
+    const K = reg[p.kind] || {};
+    const ck = (K.parts && K.parts.canopy) || p.kind;
+    const O = window.PROP_OUTLINES && (PROP_OUTLINES[ck] || PROP_OUTLINES[p.kind]);
+    if (!O || !O.paint || !O.paint.length || !(O.world > 0)) return null;
+    const k = worldW / O.world, h = p.heading || 0, c = Math.cos(h), s = Math.sin(h);
+    const x0 = p.x + (p._dx || 0), y0 = p.y + (p._dy || 0);
+    const pts = [];
+    const put = (lx, ly) => { lx *= k; ly *= k; pts.push(x0 + lx * c - ly * s, y0 + lx * s + ly * c); };
+    let a = Infinity, b = Infinity, cc = -Infinity, d = -Infinity;
+    for (const ring of O.paint) for (let i = 0; i < ring.length; i++) {
+        const q = ring[i], n = ring[(i + 1) % ring.length];
+        put(q[0], q[1]); put((q[0] + n[0]) / 2, (q[1] + n[1]) / 2);
+        if (q[0] < a) a = q[0]; if (q[0] > cc) cc = q[0]; if (q[1] < b) b = q[1]; if (q[1] > d) d = q[1];
+    }
+    const step = CROWN_GRID / k;   // the grid in the outline's own units
+    const inPaint = (u, v) => O.paint.some(ring => {
+        let inside = false;
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
+            if (((yi > v) !== (yj > v)) && (u < (xj - xi) * (v - yi) / (yj - yi) + xi)) inside = !inside;
+        }
+        return inside;
+    });
+    for (let v = b + step / 2; v < d; v += step) for (let u = a + step / 2; u < cc; u += step) if (inPaint(u, v)) put(u, v);
+    return pts;
+}
 function crownOverWater(p, worldW) {
     if (p._overWater !== undefined) return p._overWater;
     const x = p.x + (p._dx || 0), y = p.y + (p._dy || 0);
+    const paint = crownPaintPoints(p, worldW);
+    if (paint) {
+        let over = false;
+        for (let i = 0; !over && i < paint.length; i += 2) if (_crownWet(paint[i], paint[i + 1])) over = true;
+        if (p.motion !== 'drift') p._overWater = over;
+        return over;
+    }
     const r = worldW * 0.5;
     let over = _crownWet(x, y);
     for (let k = 0; !over && k < CANOPY_RIM_SAMPLES; k++) {
@@ -2729,6 +2800,54 @@ function vegTone(base, spec) {
     return t.map((c, i) => Math.round(c * (1 - spec.wash) + w[i] * spec.wash));
 }
 
+// INDEXED RING QUERIES for a bake that asks, per pixel or per scatter point, "inside the bed?" and "how far
+// in from its edge?" of a ring that may run to hundreds of edges (a curved bed). The same answers as walking
+// every edge: inside is the same crossing test on the edges whose y-span holds y, and the distance is the
+// nearest edge within `cap` (past which every caller's ramp, smooth(d / feather), is already 1) — `cap` itself
+// when none is that near.
+function ringQuery(rings, cap) {
+    let n = 0, y0 = Infinity, y1 = -Infinity;
+    for (const r of rings) for (const p of r) { n++; if (p[1] < y0) y0 = p[1]; if (p[1] > y1) y1 = p[1]; }
+    const band = Math.max(1e-6, (y1 - y0) / Math.max(1, Math.ceil(Math.sqrt(n)))), cell = Math.max(8, cap);
+    const bands = rings.map(() => new Map()), cells = new Map();
+    rings.forEach((ring, ri) => {
+        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+            const a = ring[i], b = ring[j];
+            const b0 = Math.floor((Math.min(a[1], b[1]) - y0) / band), b1 = Math.floor((Math.max(a[1], b[1]) - y0) / band);
+            for (let k = b0; k <= b1; k++) { let L = bands[ri].get(k); if (!L) bands[ri].set(k, L = []); L.push(i, j); }
+            const c0 = Math.floor(Math.min(a[0], b[0]) / cell), c1 = Math.floor(Math.max(a[0], b[0]) / cell);
+            const r0 = Math.floor(Math.min(a[1], b[1]) / cell), r1 = Math.floor(Math.max(a[1], b[1]) / cell);
+            for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const k = c + ',' + r; let E = cells.get(k); if (!E) cells.set(k, E = []); E.push(b, a); }
+        }
+    });
+    const inRing = (x, y, ri) => {
+        const ring = rings[ri], L = bands[ri].get(Math.floor((y - y0) / band));
+        let inside = false;
+        if (L) for (let k = 0; k < L.length; k += 2) {
+            const [xi, yi] = ring[L[k]], [xj, yj] = ring[L[k + 1]];
+            if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
+        }
+        return inside;
+    };
+    const edgeDist = (x, y) => {
+        let d2 = cap * cap;
+        const c0 = Math.floor((x - cap) / cell), c1 = Math.floor((x + cap) / cell), r0 = Math.floor((y - cap) / cell), r1 = Math.floor((y + cap) / cell);
+        for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) {
+            const E = cells.get(c + ',' + r); if (!E) continue;
+            for (let k = 0; k < E.length; k += 2) {
+                const [x1, y1] = E[k], [x2, y2] = E[k + 1];
+                const dx = x2 - x1, dy = y2 - y1;
+                const L2 = dx * dx + dy * dy || 1;
+                const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
+                const px_ = x1 + t * dx - x, py_ = y1 + t * dy - y;
+                const dd = px_ * px_ + py_ * py_;
+                if (dd < d2) d2 = dd;
+            }
+        }
+        return Math.sqrt(d2);
+    };
+    return { inRing, edgeDist };
+}
 function bakeVegSprite(isl, spec) {
     const tones = spec.tones.map(t => vegTone(t, spec));
     const R = isl.radius + 10;
@@ -2763,32 +2882,11 @@ function bakeVegSprite(isl, spec) {
     // The unkeyholed rings (outer + holes), same source of truth the shoal depth read
     // uses — the keyholed trace's zero-width slit would put a false edge across the bed.
     const rings = isl.shoalRings || [isl.vertices.map(v => [v.x, v.y])];
-    const inRing = (x, y, ring) => {
-        let inside = false;
-        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-            const [xi, yi] = ring[i], [xj, yj] = ring[j];
-            if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
-        }
-        return inside;
-    };
-    const edgeDist = (x, y) => {
-        let d2 = Infinity;
-        for (const ring of rings) {
-            for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-                const [x1, y1] = ring[j], [x2, y2] = ring[i];
-                const dx = x2 - x1, dy = y2 - y1;
-                const L2 = dx * dx + dy * dy || 1;
-                const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
-                const px_ = x1 + t * dx - x, py_ = y1 + t * dy - y;
-                const dd = px_ * px_ + py_ * py_;
-                if (dd < d2) d2 = dd;
-            }
-        }
-        return Math.sqrt(d2);
-    };
+    // the bed's edge queries, indexed (ringQuery) — every caller reads edgeDist through smooth(d / feather)
+    const RQ = ringQuery(rings, isl.shoalFeather || 120), edgeDist = RQ.edgeDist;
     const inside = (x, y) => {
-        if (!inRing(x, y, rings[0])) return false;
-        for (let h = 1; h < rings.length; h++) if (inRing(x, y, rings[h])) return false;
+        if (!RQ.inRing(x, y, 0)) return false;
+        for (let h = 1; h < rings.length; h++) if (RQ.inRing(x, y, h)) return false;
         return true;
     };
 
@@ -3129,26 +3227,9 @@ function bakeReefSprite(isl) {
         return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
     };
     const ring = isl.vertices.map(v => [v.x, v.y]);
-    const inRing = (x, y) => {
-        let inside = false;
-        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-            const [xi, yi] = ring[i], [xj, yj] = ring[j];
-            if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / (yj - yi) + xi) inside = !inside;
-        }
-        return inside;
-    };
-    const edgeDist = (x, y) => {
-        let d2 = Infinity;
-        for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-            const [x1, y1] = ring[j], [x2, y2] = ring[i];
-            const dx = x2 - x1, dy = y2 - y1;
-            const L2 = dx * dx + dy * dy || 1;
-            const t = Math.max(0, Math.min(1, ((x - x1) * dx + (y - y1) * dy) / L2));
-            const qx = x1 + t * dx - x, qy = y1 + t * dy - y;
-            if (qx * qx + qy * qy < d2) d2 = qx * qx + qy * qy;
-        }
-        return Math.sqrt(d2);
-    };
+    // indexed edge queries (ringQuery): the reef reads edgeDist through smooth(d / feather) below
+    const RQ = ringQuery([ring], Math.min(40, isl.radius * 0.3)), edgeDist = RQ.edgeDist;   // cap = the reef's feather (below)
+    const inRing = (x, y) => RQ.inRing(x, y, 0);
     const smooth = (t) => t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t);
     const minX = isl.x - isl.radius, minY = isl.y - isl.radius;
     const cells = Math.max(1, Math.ceil((isl.radius * 2) / REEF_SPACING));
@@ -4535,9 +4616,17 @@ function drawIslands(ctx, only, pending) {
             if (isl.magma) { drawMagma(ctx, isl); drawn++; continue; }
             ctx.save();
             ctx.beginPath();
-            ctx.moveTo(isl.vertices[0].x, isl.vertices[0].y);
-            for (let i = 1; i < isl.vertices.length; i++) ctx.lineTo(isl.vertices[i].x, isl.vertices[i].y);
-            ctx.closePath();
+            // A shape with holes: the outer and each hole as SEPARATE subpaths (even-odd), never the
+            // keyholed ring. That ring joins a hole to the outer by a bridge edge walked both ways; the
+            // fill cancels it but the coast stroke below drew it — a straight line across the pond's
+            // lawn, 6 km from the map corner to the beach (PT-106). Same rings as the charts' (hud.js).
+            const rings = (isl.holes && isl.holes.length && isl.outerRing) ? [isl.outerRing].concat(isl.holes) : [isl.vertices];
+            for (const r of rings) {
+                if (!r || r.length < 3) continue;
+                ctx.moveTo(r[0].x, r[0].y);
+                for (let i = 1; i < r.length; i++) ctx.lineTo(r[i].x, r[i].y);
+                ctx.closePath();
+            }
             const st = ISLAND_STYLES[isl.style] || ISLAND_STYLES.ice;
             // A style with a LAND_TEXTURES entry gets the tiling surface; everything
             // else stays a flat fill. This is the FIXED-land path, so a floe never

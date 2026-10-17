@@ -3,7 +3,7 @@
 // Edited in editor.html.
 window.VENUE_DOC = window.VENUE_DOC || {};
 window.VENUE_DOC["pond"] = {
-  "schema": 1,
+  "schema": 2,
   "venue": "pond",
   "note": "The tutorial pond. Seven knots from due north, no shifts, no gusts, flat water: when the boat stalls it is because you pointed too high, never because the wind moved. The graduation course is a one-lap windward-leeward at a third of standard leg length.",
   "card": {
@@ -28,6 +28,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-6",
       "kind": "shallows",
+      "smooth": true,
       "outer": [
         [
           -1989.750420098545,
@@ -53,8 +54,8 @@ window.VENUE_DOC["pond"] = {
             -782.14988978151
           ],
           [
-            -891.7976660497455,
-            -390.76609250423263
+            -948.6948573117529,
+            -530.1642110961507
           ],
           [
             -702.5856316044393,
@@ -231,6 +232,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-1",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           1063.8151414961087,
@@ -287,6 +289,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-3",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           363.90673727481493,
@@ -327,6 +330,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-4",
       "kind": "lilybed",
+      "smooth": true,
       "outer": [
         [
           -1067.827718265812,
@@ -367,6 +371,7 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "shape-5",
       "kind": "isle",
+      "smooth": true,
       "outer": [
         [
           -867.96077950509,
@@ -459,11 +464,12 @@ window.VENUE_DOC["pond"] = {
         -1896.3573773097828
       ],
       "r": 641.0597239767309,
-      "height": 1
+      "height": 0.5
     },
     {
       "id": "shape-2",
       "kind": "lawn",
+      "smooth": true,
       "outer": [
         [
           -6223.99043864452,
@@ -667,7 +673,7 @@ window.VENUE_DOC["pond"] = {
         378.4517530625467
       ],
       "r": 10160.319402409506,
-      "height": 3
+      "height": 1.5
     }
   ],
   "course": {
@@ -741,7 +747,7 @@ window.VENUE_DOC["pond"] = {
     "startTime": 30,
     "cutoff": 600,
     "paths": {
-      "sig": "v3-b3ad3aff-1nv",
+      "sig": "v3-aac448f4-7ez",
       "legs": [
         {
           "pts": []
@@ -1095,10 +1101,10 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "prop-43",
       "kind": "pond-pontoon",
-      "x": -853.9769208298743,
-      "y": 320.4621101393276,
+      "x": -894.4,
+      "y": 373.7,
       "heading": 3.791214464837184,
-      "scale": 4,
+      "scale": 1.9,
       "contact": "hard"
     },
     {
@@ -1107,7 +1113,7 @@ window.VENUE_DOC["pond"] = {
       "x": -536.940862858226,
       "y": -1611.3162005254292,
       "heading": 2.948195375638136,
-      "scale": 3,
+      "scale": 1.25,
       "contact": "hard"
     },
     {
@@ -1116,7 +1122,7 @@ window.VENUE_DOC["pond"] = {
       "x": -973.1989661361915,
       "y": -1363.3560307689602,
       "heading": 2.035579540022855,
-      "scale": 4
+      "scale": 1.45
     },
     {
       "id": "prop-46",
@@ -1124,7 +1130,7 @@ window.VENUE_DOC["pond"] = {
       "x": -1023.0265635397459,
       "y": -1233.3547052123183,
       "heading": 1.4899244854958749,
-      "scale": 4
+      "scale": 1.45
     },
     {
       "id": "prop-47",
@@ -1132,7 +1138,7 @@ window.VENUE_DOC["pond"] = {
       "x": 1016.2191359173266,
       "y": -1727.5147209412285,
       "heading": 3.9623336049857,
-      "scale": 4
+      "scale": 1.45
     },
     {
       "id": "prop-48",
@@ -1140,7 +1146,7 @@ window.VENUE_DOC["pond"] = {
       "x": 1116.5508407411799,
       "y": -1549.9796645584843,
       "heading": 4.322577751596594,
-      "scale": 4
+      "scale": 1.45
     },
     {
       "id": "prop-49",
@@ -1148,7 +1154,7 @@ window.VENUE_DOC["pond"] = {
       "x": 92.28465521180038,
       "y": 867.1422301973269,
       "heading": 3.077709468973559,
-      "scale": 4
+      "scale": 1.45
     },
     {
       "id": "prop-50",
@@ -1156,7 +1162,7 @@ window.VENUE_DOC["pond"] = {
       "x": -255.32730093674462,
       "y": 818.2886579818556,
       "heading": 3.802764377662637,
-      "scale": 4
+      "scale": 1.45
     },
     {
       "id": "prop-52",
@@ -1449,10 +1455,10 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "prop-80",
       "kind": "pond-boathouse",
-      "x": -1183.1151429636072,
-      "y": 476.1182532425638,
+      "x": -1097.6,
+      "y": 372.1,
       "heading": 0.6881783193973989,
-      "scale": 3
+      "scale": 1.2
     },
     {
       "id": "prop-81",
@@ -1665,10 +1671,10 @@ window.VENUE_DOC["pond"] = {
     {
       "id": "prop-107",
       "kind": "pond-dinghy-rack",
-      "x": -1005.2667514270447,
-      "y": 634.6625051936966,
+      "x": -1026.4,
+      "y": 435.5,
       "heading": 2.219182363511294,
-      "scale": 3.5
+      "scale": 1.3
     },
     {
       "id": "prop-108",

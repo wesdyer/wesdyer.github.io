@@ -2566,12 +2566,41 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.globalAlpha *= alpha; ctx.drawImage(im, -w / 2, -hh / 2, w, hh); ctx.restore();
     }
     const ORCA_KNOTS = 50;   // ~3.3 kn: travelling orcas 1.7-1.9 m/s (McRae et al. 2024; CWR "medium" 3-5 kn)
+    // A CURVED shape is flattened to half a unit — five times the vertices of its straight-edged self, and the
+    // swimmers ask "on land?" thousands of times a frame (Otter Point's sim went 2.7 -> 5.9 ms/frame). Those
+    // take collision's gridded test; straight-edged land keeps the plain one, answer for answer.
+    const landPip = (x, y, s) => (s.smooth && typeof pointInPolyFast === 'function') ? pointInPolyFast(x, y, s.vertices) : pointInPoly(x, y, s.vertices);
     // Land that isn't ice drifting: authored shapes only (floes move; swimmers pass under them).
+    // AN INDEX OF THE FIXED ISLANDS, so "what is solid here?" visits only the islands whose bounding circle
+    // reaches this cell — the swimmers ask it many times a frame of a venue with hundreds of shapes and prop
+    // colliders. Floes move, and anything without a usable radius, stay on a short list visited every time.
+    // Candidates are visited in the islands' own order, so the first hit is the one a full scan would find.
+    const ISL_CELL = 300, ISL_ROW = 1 << 20;
+    let _islIdx = null;
+    const NO_ISL = [];
+    function islIndex() {
+        const arr = (state.course && state.course.islands) || [];
+        if (_islIdx && _islIdx.arr === arr && _islIdx.n === arr.length) return _islIdx;
+        const cells = new Map(), loose = [];
+        arr.forEach((s, i) => {
+            if (s.isFloe || !(s.radius > 0) || !isFinite(s.x) || !isFinite(s.y)) { loose.push(i); return; }
+            const c0 = Math.floor((s.x - s.radius) / ISL_CELL), c1 = Math.floor((s.x + s.radius) / ISL_CELL);
+            const r0 = Math.floor((s.y - s.radius) / ISL_CELL), r1 = Math.floor((s.y + s.radius) / ISL_CELL);
+            for (let r = r0; r <= r1; r++) for (let c = c0; c <= c1; c++) { const k = r * ISL_ROW + c; let L = cells.get(k); if (!L) cells.set(k, L = []); L.push(i); }
+        });
+        return (_islIdx = { arr, n: arr.length, cells, loose });
+    }
+    // The candidates for (x, y): the cell's islands (A) and the loose list (B), both in index order; the
+    // callers walk the two merged, so the first hit is the one a full scan would find.
+    function islCell(I, x, y) { return I.cells.get(Math.floor(y / ISL_CELL) * ISL_ROW + Math.floor(x / ISL_CELL)) || NO_ISL; }
     function fixedLand(x, y) {
-        for (const s of (state.course && state.course.islands) || []) {
+        const I = islIndex(), A = islCell(I, x, y), B = I.loose, arr = I.arr;
+        let a = 0, b = 0;
+        while (a < A.length || b < B.length) {
+            const s = arr[(b >= B.length || (a < A.length && A[a] < B[b])) ? A[a++] : B[b++]];
             if (s.isFloe || s.awash || !s.vertices || (s.id || '').endsWith('.hit')) continue;
             if (Math.hypot(x - s.x, y - s.y) > (s.radius || 1e9)) continue;
-            if (pointInPoly(x, y, s.vertices)) return true;
+            if (landPip(x, y, s)) return true;
         }
         return false;
     }
@@ -2588,10 +2617,13 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // where it is now let floes slide over the animals.
     const FLOE_LOOK = 0.9;
     function solidAt(x, y, ignore, noFloes) {
-        for (const s of (state.course && state.course.islands) || []) {
+        const I = islIndex(), A = islCell(I, x, y), B = I.loose, arr = I.arr;
+        let a = 0, b = 0;
+        while (a < A.length || b < B.length) {
+            const s = arr[(b >= B.length || (a < A.length && A[a] < B[b])) ? A[a++] : B[b++]];
             if (s === ignore || (noFloes && s.isFloe) || s.awash || !s.vertices || s.vertices.length < 3) continue;
             const r = (s.radius || 1e9) + (s.isFloe ? 20 : 0), dx = x - s.x, dy = y - s.y; if (dx * dx + dy * dy > r * r) continue;
-            if (pointInPoly(x, y, s.vertices)) return s;
+            if (landPip(x, y, s)) return s;
             if (s.isFloe) for (const k of [0.35, 1]) {
                 // where this point sits on the floe as it will be: undo its drift and its spin
                 const tt = FLOE_LOOK * k, w = -(s.spinRate || 0) * tt, px = x - (s.driftVx || 0) * tt - s.x, py = y - (s.driftVy || 0) * tt - s.y;
@@ -4617,7 +4649,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (!cfg) return;
         for (const G of shoals) drawShoal(ctx, G);
         for (const s of poppers) drawSeal(ctx, s);
-        for (const G of cruisers) for (const f of G.fish) if (f.mode !== 'leap') drawCruiser(ctx, f);
+        // Only the ones in view (Oct 2026 perf pass): each painted cruiser composes its pose, shadow and water veil on
+        // scratch canvases, ~0.5 ms apiece, and all fourteen of Pearl Lagoon's were composed every frame wherever the
+        // camera was. The pad covers the body, the bed shadow (≤ ~50 u off) and the wake trail.
+        for (const G of cruisers) for (const f of G.fish) if (f.mode !== 'leap' && onCam(f.x, f.y, 300)) drawCruiser(ctx, f);
         for (const b of baskers) if (b.cfg.kind === 'frog') drawFrogGroup(ctx, b, 'water');
         for (const F of prints) drawPrint(ctx, F);
         for (const W of whalePods) for (const m of W.members) drawWhaleSlick(ctx, m);
@@ -4645,7 +4680,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (a.mode === 'climb') diveWater(ctx, a.cx0, a.cy0, a.ch0, 0.4 + a.t * 1.6, 14, 17);   // the water it climbs out of
             if (a.mode === 'swim') drawAnhinga(ctx, a);
         }
-        for (const G of cruisers) for (const f of G.fish) { drawCruiserSplashes(ctx, f); if (f.mode === 'leap') drawCruiser(ctx, f); }   // (the water it left, then the animal in the air above it)
+        for (const G of cruisers) for (const f of G.fish) { drawCruiserSplashes(ctx, f); if (f.mode === 'leap' && onCam(f.x, f.y, 300)) drawCruiser(ctx, f); }   // (the water it left, then the animal in the air above it)
         drawBoil(ctx);
         for (const B of stripers) drawStriperBoil(ctx, B);
         // orcas: the prints on the sea, then the animals deepest first (a calf in infant position passes under its mother), then the blows above
@@ -4857,15 +4892,30 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // coral-sand bar ~1.5 m, the seagrass ~2.8 m, other bright shallows ~3.2 m, the open lagoon ~9 m. The zones are
     // PAINTED with feathered edges (render/world.js: half the shape's feather either side of its outline), so the
     // floor shelves across that same band — a shadow crossing the edge of a bar slides out with the colour, never jumps.
-    function lagoonBedM(x, y) {
-        let d = 9;
-        const sm = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
-        for (const s of (state.course && state.course.islands) || []) {
+    // The shapes that shallow the bed, with their depth and feather, worked out once per course (Oct 2026 perf
+    // pass): the traits lookup per shape per call was most of lagoonBedM's cost, and it runs per animal per frame.
+    let _bedShapes = null;
+    function bedShapes() {
+        const arr = (state.course && state.course.islands) || [];
+        if (_bedShapes && _bedShapes.arr === arr && _bedShapes.n === arr.length) return _bedShapes.list;
+        const list = [];
+        for (const s of arr) {
             const V = s.vertices; if (!V || V.length < 3 || /\.hit$/.test(s.id || '')) continue;
             const T = (typeof VenueDoc !== 'undefined' && VenueDoc.traits) ? VenueDoc.traits(s) : {};
             const z = T.reef ? 1 : s.kind === 'tropicshoal' || (T.awash && T.drag > 0) ? 1.5 : T.veg === 'seagrass' ? 2.8 : T.paint ? 5 : null;
-            if (z == null || z >= d) continue;
-            const F = s.shoalFeather || (T.reef ? 40 : 120), r = (s.radius || 1e9) + F;
+            if (z == null) continue;
+            const F = s.shoalFeather || (T.reef ? 40 : 120);
+            list.push({ s, V, z, F, r: (s.radius || 1e9) + F });
+        }
+        _bedShapes = { arr, n: arr.length, list };
+        return list;
+    }
+    function lagoonBedM(x, y) {
+        let d = 9;
+        const sm = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
+        for (const B of bedShapes()) {
+            const s = B.s, V = B.V, z = B.z, F = B.F, r = B.r;
+            if (z >= d) continue;
             if (s.x != null && (x - s.x) * (x - s.x) + (y - s.y) * (y - s.y) > r * r) continue;
             let e = Infinity;
             for (let i = 0, j = V.length - 1; i < V.length; j = i++) {
@@ -5015,9 +5065,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             return;
         }
         const d = Math.max(0, Math.min(1, f.depth));
-        const hgt = 6 + (1 - d) * 18;                    // height above the sand
-        ctx.save(); ctx.translate(f.x + hgt * 0.35, f.y + hgt * 0.55); ctx.rotate(f.h); ctx.scale(k, k);
-        ctx.globalAlpha *= 0.2 + 0.12 * d;               // darker the nearer the bottom; over pale sand it is half the read
+        // (the drawn stand-in until the sprite loads) its shadow by its height above the BED, as the painted ones (PT-043)
+        const bed = f.bedM ?? lagoonBedM(f.x, f.y), hM = Math.max(0.25, bed - d * (bed - 0.4)), hgt = hM * 10;
+        ctx.save(); ctx.translate(f.x + hgt * 0.3, f.y + hgt * 0.45); ctx.rotate(f.h); ctx.scale(k, k);
+        ctx.globalAlpha *= 0.42 * Math.max(0, 1 - bed / 14) / (1 + hM * 0.18);   // fainter the higher it is, and over deeper water
         ctx.fillStyle = 'rgb(10,25,40)'; shape(ctx, f, 'flat'); ctx.restore();
         ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(k, k);
         const a0 = ctx.globalAlpha;
@@ -5898,10 +5949,16 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function drawShoal(ctx, G) {
         const look = SHOAL_LOOK[G.cfg.kind] || SHOAL_LOOK.yellowtang, lyre = G.cfg.kind === 'goldie';
         const tint = waterTint();
+        // THE SHADOW BY THE BED (PT-043, as the turtle's, ray's and shark's): a reef fish keeps within a metre and a half
+        // of the bottom, so its shadow lies close under it over the coral and slides out a little over the sand — and
+        // fades as the floor drops away (less light reaches it, seen through more water). Read once per school at its
+        // centre: a school spans a few metres, and lagoonBedM per fish would be ~120 calls a frame.
+        const bed = lagoonBedM(G.cx, G.cy), hM = Math.max(0.3, Math.min(1.5, bed - 0.5)), hU = hM * 10;
+        const shX = hU * 0.3, shY = hU * 0.45, shA = 0.2 * Math.max(0.15, 1 - bed / 14) / (1 + hM * 0.18);
         for (const f of G.fish) {
             const s = TANG_SCALE * f.size, w = Math.sin(f.ph * 3) * 0.12 * Math.min(1, 0.3 + (f.spd || 0) / 12);
-            ctx.save(); ctx.translate(f.x + 2.2, f.y + 3.4); ctx.rotate(f.h); ctx.scale(s, s);
-            ctx.fillStyle = 'rgba(10,25,40,0.16)'; ctx.beginPath(); ctx.ellipse(0, 0, 1.1, 3.4, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.save(); ctx.translate(f.x + shX, f.y + shY); ctx.rotate(f.h); ctx.scale(s, s);
+            ctx.fillStyle = `rgba(10,25,40,${shA.toFixed(3)})`; ctx.beginPath(); ctx.ellipse(0, 0, 1.1, 3.4, 0, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
             ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.h); ctx.scale(s, s);
             ctx.globalAlpha *= 0.9;
@@ -6011,13 +6068,39 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // The wake is kept on the duck object from what the draw sees (school.js owns the motion):
     // a point each few units moved, stamped with the sim clock, aged out after ~1.2 s, so a
     // duck that stops lets its V run out behind it and a paused game freezes it.
+    // OUT OF THE BOW'S WAY (PT-108, Wes: "I ran over the ducklings"). A hull bearing down on a duckling —
+    // it in the track from amidships to ~1.5 lengths ahead — and it paddles sideways clear of the track,
+    // then eases back once the boat has gone by. DRAWN, not moved: school.js owns where a duckling is, and
+    // "reached" (a boat length) is judged on that; the dodge (≤ ~40u) only changes where it is painted.
+    const DUCK_CLEAR = 36;   // units off the boat's centreline a duckling paddles out to
+    function duckDodge(d, t) {
+        const dt = Math.max(0, Math.min(0.1, t - (d._dt0 == null ? t : d._dt0))); d._dt0 = t;
+        let tx = 0, ty = 0;
+        for (const b of ((window.state && state.boats) || [])) {
+            if (!b || (b.speed || 0) < 0.05 || (b.opacity !== undefined && b.opacity < 0.2)) continue;
+            const fx = Math.sin(b.heading), fy = -Math.cos(b.heading);          // forward
+            const rx = d.x + (d.ox || 0) - b.x, ry = d.y + (d.oy || 0) - b.y;
+            const along = rx * fx + ry * fy, lat = rx * -fy + ry * fx;          // right = (-fy, fx)
+            if (along < -25 || along > 85 || Math.abs(lat) >= DUCK_CLEAR) continue;
+            // the side it is already on (or the duckling's own pick if dead ahead), out to DUCK_CLEAR
+            const side = Math.abs(lat) > 2 ? Math.sign(lat) : (d._side || (d._side = ((d.x * 7 + d.y * 3) & 1) ? 1 : -1));
+            const need = side * DUCK_CLEAR - lat;
+            tx += -fy * need; ty += fx * need;
+        }
+        d.ox = d.ox || 0; d.oy = d.oy || 0;
+        if (tx || ty) { const k = 1 - Math.exp(-dt * 7); d.ox += tx * k; d.oy += ty * k; }      // scramble out fast...
+        else { const k = 1 - Math.exp(-dt * 1.2); d.ox -= d.ox * k; d.oy -= d.oy * k; }        // ...drift back slow
+        const m = Math.hypot(d.ox, d.oy); if (m > 44) { d.ox *= 44 / m; d.oy *= 44 / m; }
+    }
     function trackDuckling(d, t) {
+        duckDodge(d, t);
+        const px = d.x + (d.ox || 0), py = d.y + (d.oy || 0);   // where it is drawn, wake and all
         const tr = d.trail || (d.trail = []);
         const last = tr[0];
         // a restart (the clock went back) or a teleport to a new section: start clean
-        if (last && (last.t > t || Math.hypot(d.x - last.x, d.y - last.y) > 60)) tr.length = 0;
+        if (last && (last.t > t || Math.hypot(px - last.x, py - last.y) > 60)) tr.length = 0;
         while (tr.length && t - tr[tr.length - 1].t > 1.2) tr.pop();
-        if (!tr.length || Math.hypot(d.x - tr[0].x, d.y - tr[0].y) > 3.5) { tr.unshift({ x: d.x, y: d.y, t }); if (tr.length > 14) tr.pop(); }
+        if (!tr.length || Math.hypot(px - tr[0].x, py - tr[0].y) > 3.5) { tr.unshift({ x: px, y: py, t }); if (tr.length > 14) tr.pop(); }
         // how much it is swimming, 0..1: a fresh head point means it is moving
         const fresh = tr.length > 1 ? Math.max(0, 1 - (t - tr[0].t) / 0.35) : 0;
         d.swim = (d.swim || 0) + (fresh - (d.swim || 0)) * 0.2;
@@ -6031,13 +6114,18 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     function drawDuckling(ctx, d, t, i) {
         const sw = d.swim || 0;
-        ctx.save(); ctx.translate(d.x, d.y);
+        // SWIMMING, A DUCKLING WADDLES (PT-108: "move a little side to side… more like ducks moving"):
+        // each paddle stroke rocks the body and the line of travel weaves a little either side of
+        // the course — small, fast, and only while it swims; at rest the slow drift below takes over.
+        const wv = Math.sin(t * 5.2 + i * 1.9) * sw;
+        const wx = Math.cos(d.h) * wv * 1.6, wy = Math.sin(d.h) * wv * 1.6;
+        ctx.save(); ctx.translate(d.x + (d.ox || 0) + wx, d.y + (d.oy || 0) + wy);
         // at rest: a slow ring breathing out from the bob; swimming: the bow ripple
         const ph = (t * 0.6 + i * 0.37) % 1;
         ctx.save(); ctx.globalAlpha *= 1 - sw;
         drawRing(ctx, 0, 0, 1 - ph, 7, 9, 0.3);
         ctx.restore();
-        ctx.rotate(d.h + Math.sin(t * 0.9 + i * 1.7) * 0.06 * (1 - sw));
+        ctx.rotate(d.h + Math.sin(t * 0.9 + i * 1.7) * 0.06 * (1 - sw) + Math.sin(t * 10.4 + i * 1.9) * 0.10 * sw + wv * 0.08);
         ctx.scale(DUCKLING_SCALE, DUCKLING_SCALE);
         // the contact shade: the body sits IN the water
         ctx.fillStyle = 'rgba(8,24,30,0.28)';
@@ -6806,10 +6894,20 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // overlap, and drawn straight at a shadow's or the water's alpha every overlap would print as a
     // rib across the back. A silhouette is the same composite, recoloured (source-in) on another.
     // Slots: 0 body+flukes, 2 flippers, 3 a one-off pose, 1 the recolour.
-    const _humpCv = [];
+    // ⚠️ A SLOT IS NEVER REDRAWN WHILE THE FRAME STILL HOLDS IT (Oct 2026 perf pass). A scratch canvas drawn into
+    // the game canvas stays referenced until that frame is flushed, so clearing and re-posing the same slot for the
+    // next pass (the turtle's two shadow passes, its body, its breath; every recolour on slot 1) made the browser
+    // copy the whole texture each time — near Pearl Lagoon's cruisers that was ~10 ms of GPU a frame. So each use
+    // of a slot within one frame gets its own canvas, pooled and reused from the next frame on. Same pixels.
+    const _humpCv = new Map();
+    let _humpFrame = -1, _humpUses = new Map();
     function humpScratch(i, w, h) {
         if (typeof document === 'undefined') return null;
-        let c = _humpCv[i]; if (!c) c = _humpCv[i] = document.createElement('canvas');
+        const fr = typeof frameCount !== 'undefined' ? frameCount : -1;
+        if (fr !== _humpFrame) { _humpFrame = fr; _humpUses.clear(); }
+        const n = (_humpUses.get(i) || 0) + 1; _humpUses.set(i, n);
+        const key = i + ':' + n;
+        let c = _humpCv.get(key); if (!c) { c = document.createElement('canvas'); _humpCv.set(key, c); }
         if (c.width < w || c.height < h) { c.width = Math.max(c.width, w); c.height = Math.max(c.height, h); }
         const g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height);
         return c;
@@ -11948,6 +12046,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         },
         // The Sailing School's ducklings (school.js owns their motion).
         drawDucklings,
+        // For tests: the solid/land queries, checked against a full scan (eval/_solid_index_check.js).
+        _probe: { solidAt: (x, y, ig, nf) => solidAt(x, y, ig, nf), fixedLand: (x, y) => fixedLand(x, y) },
         // For tests and the venue card.
         debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, leaps, shoals, poppers, fishers, runs, soarers, rompers, whalePods, blows, splashes, riders, flyfish, gliders, prints, flyPatches, stripers, condors, bands, coyotes, boilsHit, orcaPods, penguinColonies: colonies2, floeGroups, swimmers, treks, lseals, ternFlocks, visited: [...visited], jellyBloom, mantas, foxFlocks, hawksbills, dugongs, blood, foams, igHeaps, crabBeds, boobyFlocks, boobyLines, frigates, frigFish, hammerSchools, gsealCols, spoonFlocks, avoFlocks, scrabBeds, clubCorms, velFleets, mackBoils, clubTerns, clubGulls, seaOtterRafts, slHauls, slGroups, whites, bluePods, blueBlows, krill, huntCool, woken: [...lurkWoken], feats: [...feats], bedAt: lagoonBedM }),
         forceBoil: (x, y) => { boil = { x, y, t: 0, life: 45, seed: 1 }; if (flight) flight.mode = 'transit'; },

@@ -86,7 +86,12 @@ function updateParticles(dt) {
                  if (p.beach <= 0) p.life = 0;
              }
         } else if (p.type === 'current' || p.type === 'mark-wake') {
-             const c = getCurrentAt(p.x, p.y);
+             // TWENTY TIMES A SECOND, like the wind streaks above (Oct 2026 perf pass): on
+             // Glowtide's tide several hundred streaks each walking every current region and the
+             // shadow casters was 8 ms of a frame — the dearest thing in the whole update — for a
+             // field that changes over seconds. Born on different frames, so they stagger.
+             if (!p.cur || (p.curT = (p.curT || 0) - dt) <= 0) { p.cur = getCurrentAt(p.x, p.y); p.curT = 0.05; }
+             const c = p.cur;
              const speed = c ? c.speed : 0;
              const dir = c ? c.direction : 0;
              // Move with current (Game Units = Knots / 4)
@@ -786,16 +791,21 @@ function drawNightWash(ctx) {
 // pointOnLand excludes only the first, because its own job — deciding whether a tree crown
 // can hide a hull — has different answers for the other two.
 function crestOnLand(x, y) {
-    const islands = (state.course && state.course.islands) || [];
-    for (const isl of islands) {
+    const I = landIndex();   // world.js: only the shapes whose bounding circle can hold (x, y)
+    return crestHitIn(landCell(I, x, y), x, y) || crestHitIn(I.loose, x, y);
+}
+function crestHitIn(islands, x, y) {
+    for (let n = 0; n < islands.length; n++) {
+        const isl = islands[n];
         if (isl.awash || isl.reef || isl.hidden) continue;
         if (!isl.vertices || isl.vertices.length < 3) continue;
         const dx = x - isl.x, dy = y - isl.y;
         if (dx * dx + dy * dy > isl.radius * isl.radius) continue;   // bounding circle first
-        if (!pointInVerts(x, y, isl.vertices)) continue;
+        // the grid-backed exact test for big rings, as pointOnLand (collision.js pointInPolyFast)
+        if (!pointInPolyFast(x, y, isl.vertices)) continue;
         let inHole = false;
         for (const h of (isl.holes || [])) {
-            if (h && h.length >= 3 && pointInVerts(x, y, h)) { inHole = true; break; }
+            if (h && h.length >= 3 && pointInPolyFast(x, y, h)) { inHole = true; break; }
         }
         if (!inHole) return true;
     }

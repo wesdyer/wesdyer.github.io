@@ -50,13 +50,17 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         out.two = feats.includes('lagoon:shoals');
         me.x = S[S.length - 1].cx + 60; me.y = S[S.length - 1].cy; for (let k = 0; k < 3; k++) update(1 / 30);
         out.three = feats.includes('lagoon:shoals');
-        // POND (Sailing School, section 2 on the pond itself): a full circle round the raft inside 260 u earns it;
-        // three-quarters does not
+        // POND (Sailing School, section 2 on the pond itself): going round the raft (half a turn
+        // about it) inside 260 u earns it; a straight pass and 150° do not (PT-107)
         School.begin(); School.start(2); feats.length = 0; out.pondKey = state.course.venueKey;
         let pm = state.boats[0]; const raft = VenueDoc.get('pond').props.find(q => q.id === 'prop-44');
         const ring = (from, to) => { for (let i = from; i <= to; i++) { const a = i / 60 * Math.PI * 2; pm.x = raft.x + Math.cos(a) * 150; pm.y = raft.y + Math.sin(a) * 150; checkPondRaft(); } };
-        ring(0, 44); out.raftPart = feats.includes('pond:raft');
-        ring(45, 60); out.raftFull = feats.includes('pond:raft');
+        // A straight pass close by the raft sweeps under half a turn: not round it.
+        for (let k = 0; k <= 60; k++) { pm.x = raft.x - 250 + k * 500 / 60; pm.y = raft.y + 60; checkPondRaft(); }
+        out.raftPass = feats.includes('pond:raft');
+        pm.x = raft.x + 400; checkPondRaft();   // out of the circle: the sweep starts over
+        ring(0, 25); out.raftPart = feats.includes('pond:raft');
+        ring(26, 32); out.raftFull = feats.includes('pond:raft');
         out.raftSchool = Unlocks._schoolFeats.has('pond:raft');
         // ROWS
         const T = (ch, o, c) => Unlocks.ACHIEVEMENTS.find(a => a.char === ch).test(Object.assign({ finished: true, feats: [], vals: {} }, o), c || {});
@@ -70,7 +74,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     });
     ok(r.order, `every venue reads First win · Mechanic · Explorer · Target · Four stars · Wildlife (${r.counts})`);
     ok(r.pond === 'first-win,lessons,start,explorer,wildlife,report', `the pond's six (${r.pond})`);
-    ok(r.pondKey === 'pond' && !r.raftPart && r.raftFull && r.raftSchool, 'Pip: a full turn round the swim raft in Sailing School, not three-quarters');
+    ok(r.pondKey === 'pond' && !r.raftPass && !r.raftPart && r.raftFull && r.raftSchool, 'Pip: round the swim raft (half a turn) in Sailing School — not a straight pass, not 150°');
     ok(r.lakeN === 7 && r.lakeAll && r.lakeSome, `Barbel: a loop round all ${r.lakeN} islands earns it; a loop round the middle does not`);
     ok(r.right === 'river:route:keep-right' && r.left === 'river:route:keep-left' && r.mixed === '', `Pennant: islands on your left = right channel (${r.right}); the mirror (${r.left}); mixed = neither (${r.mixed || 'none'})`);
     ok(!r.bear1 && r.bear2, 'Grizzle: both bears, not one');
