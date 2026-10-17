@@ -459,10 +459,13 @@ let frameCount = 0;
 //
 // The straight-axis version this replaces only worked on alternating windward/leeward
 // courses. See the note on CoursePath for what it did to an island rounding.
-// THE RACE CLOCK at the top of the screen. Every tenth frame with the rest of the HUD, and EVERY frame in the
-// prestart: the countdown's signals (Sound.countdown) fire on the frame the second turns, and a clock refreshed
-// six times a second could still show the old second as the bell rang. Writes only when the text changes.
+// THE RACE CLOCK at the top of the screen, EVERY frame. Refreshed with the rest of the HUD (every tenth frame)
+// it showed the old second for up to a sixth of a second after each countdown signal — "-00:01" still up as
+// the gun went — and the millisecond clock ran in 0.17 s steps. Writes only when the text changes; the volcano's
+// static alone keeps the slower beat, or it would flicker at frame rate.
 function renderRaceClock(player) {
+    const fried = !!(state.volcano && window.Volcano && Volcano.hudFried('timer'));
+    if (fried && frameCount % 10 !== 0) return;
     if (UI.timer) {
         let displayTime = state.race.timer;
         let timerClass = 'text-white';
@@ -983,7 +986,7 @@ function draw() {
         }
     }
 
-    if (state.race.status === 'prestart' && frameCount % 10 !== 0) renderRaceClock(player);
+    renderRaceClock(player);
     if (frameCount % 10 === 0) {
         updateLeaderboard();
 
@@ -1010,8 +1013,6 @@ function draw() {
         // rather than being dropped: SOG's planing and penalty colours, the TWS pressure
         // comparison against the course's own p10/p90, and the dirty-air arrow are all in
         // boatInstrumentData. VMG is the one number that did not survive the move.
-        renderRaceClock(player);
-
         if (UI.startTime) {
             if (player.raceState.legSplitTimer > 0) {
                 UI.startTime.textContent = formatSplitTime(player.raceState.lastLegDuration);
