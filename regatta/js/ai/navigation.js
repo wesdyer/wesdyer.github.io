@@ -2001,6 +2001,38 @@ Object.assign(BotController.prototype, {
 
 });
 Object.assign(BotController.prototype, {
+    // TIME TO THE LINE (PT-068), from where she is, at full speed: getApproachTime's acceleration, but the
+    // distance is the PERPENDICULAR gap closed at her real run angle to the line (`cosRun`, not a fixed 40°
+    // — a skewed line made runs ±20% off), with the stream across the line added (`curN`, u/frame, + toward
+    // the course side) and her upwind stat on the target speed (±6%, as the physics applies it).
+    getLineTime(behind, currentSpeed, cosRun, curN, stats) {
+        const w = getWindAt(this.boat.x, this.boat.y).speed;
+        const target = getTargetSpeed(0.7, false, w) * 0.25 * (1 + (stats.upwind || 0) * 0.012);
+        const accelMod = 1.0 + stats.acceleration * 0.024;
+        let speed = currentSpeed, gap = behind, time = 0;
+        const step = 0.1;
+        while (gap > 0 && time < 30) {
+            let alpha = 1 - Math.pow(0.9970, step * 60);
+            if (target > speed) alpha *= accelMod;
+            speed = speed * (1 - alpha) + target * alpha;
+            gap -= (speed * cosRun + curN) * 60 * step;
+            time += step;
+        }
+        return time;
+    },
+    // HOW HARD TO SAIL THE RUN once committed (PT-068). The run used to be open loop: commit at the planned
+    // moment, then full speed whatever happened. A boat whose run went cleanly arrived exactly the commit
+    // buffer EARLY — every OCS at the gun was one — and nothing could hold her back. Now she keeps timing
+    // the line all the way in, as a sailor does, and eases the sails to burn the time she has in hand.
+    // The bot's throttle only acts below 0.9 (updateAI eases the sheets by 1 − throttle there), so anything
+    // in hand starts at 0.85: a proportional 1 − slack·K sat at 0.9-0.98 for the last few tenths and did nothing.
+    runThrottle(slack) {
+        const P = (typeof window !== 'undefined' && window.__START) ? window.__START : {};
+        const DEAD = P.burnDead != null ? P.burnDead : 0.05;
+        if (slack <= DEAD) return 1.0;                              // on time or late: everything she has
+        const K = P.burnK != null ? P.burnK : 0.5, MIN = P.burnMin != null ? P.burnMin : 0.2;
+        return Math.max(MIN, Math.min(0.85, 0.85 - (slack - DEAD) * K));
+    },
     getStartCommand() {
         const boat = this.boat;
         const timer = state.race.timer;
@@ -2095,23 +2127,44 @@ Object.assign(BotController.prototype, {
             // of that risk".
             const nerve = boat.traits && boat.traits.nerve != null ? boat.traits.nerve : 2;
             const riskAdj = nerve >= 3 ? 0.35 : nerve === 2 ? 0.1 : nerve === 1 ? -0.15 : -0.4;   // ~zero over the roster's nerve mix
-            const tRun = this.getApproachTime(behind / cosT, boat.speed, boat.stats) + BUF + riskAdj;
+            // ── THE TIMED RUN (PT-068, Oct 17 2026) ─────────────────────────────────────────────
+            // AIM AFTER THE GUN. The run used to aim BUF (+ nerve) seconds BEFORE it and was open loop, so a
+            // clean run was over by construction and only traffic made boats late (fleet: 1-6 s late on
+            // average, 7-22% over at the gun). Now: aim AIM seconds after the gun (a sailor's "cross just
+            // after the gun at full speed"), commit MARGIN seconds before that is needed — time in hand for
+            // traffic — and burn the margin off with eased sheets when the run goes cleanly (runThrottle).
+            // Nerve still moves the aim: bold boats cut it finer.
+            const nC = startCrossNormal();
+            // the run angle: the starboard close-hauled course before she commits, and once on the run the course
+            // she is actually steering (she points 33-39° up it, not the 45° of hS — the model ran 0.3-0.4 s long)
+            const hRun = this.startCommitted && Math.abs(normalizeAngle(boat.heading - hS)) < 0.5 ? boat.heading : hS;
+            const cosRun = Math.max(0.3, Math.min(1, Math.sin(hRun) * nC.x - Math.cos(hRun) * nC.y));
+            const cS2 = getCurrentAt(boat.x, boat.y);
+            const curN = cS2 && cS2.speed > 0.01 ? (Math.sin(cS2.direction) * nC.x - Math.cos(cS2.direction) * nC.y) * cS2.speed / 4 : 0;
+            const tLine = this.getLineTime(behind, boat.speed, cosRun, curN, boat.stats);
+            // (startBufAdj, the archetype's and the School's deliberate over-early Sunshine, moves it the same way)
+            const AIM = (P.aim != null ? P.aim : 0.4) - riskAdj - (boat.traits ? boat.traits.startBufAdj || 0 : 0);
+            const MARGIN = P.margin != null ? P.margin : 1.5;
+            const tRun = tLine - AIM + MARGIN;                   // commit when the clock reaches this
             const myPct = ((boat.x - m0.x) * dx + (boat.y - m0.y) * dy) / (lineLen * lineLen);
             if (this.startCommitted || timer <= tRun) {
                 this.startCommitted = true;
+                const throttle = this.runThrottle(timer + AIM - tLine);   // + = she would be early
                 // up across the line on starboard, from wherever she is — unless that run would
                 // carry her outside the segment (a crossing there is no start), then at her lane
                 const run = behind / cosT + PAST;
                 const ex = boat.x + sx * (behind / cosT), ey = boat.y + sy * (behind / cosT);
                 const ePct = ((ex - m0.x) * dx + (ey - m0.y) * dy) / (lineLen * lineLen);
-                if (ePct < 0.06 || ePct > 0.94) return { target: { x: aimX, y: aimY }, speed: 1.0 };
-                return { target: { x: boat.x + sx * run, y: boat.y + sy * run }, speed: 1.0 };
+                if (ePct < 0.06 || ePct > 0.94) return { target: { x: aimX, y: aimY }, speed: throttle };
+                return { target: { x: boat.x + sx * run, y: boat.y + sy * run }, speed: throttle };
             }
             // the hold sits a little toward the starboard end of the lane: the slow drift to port
             // on starboard carries her back through it
             const rx = Math.sin(wd + Math.PI / 2), ry = -Math.cos(wd + Math.PI / 2);
             const rightward = (dx * rx + dy * ry) >= 0 ? 1 : -1;     // +pct is toward the starboard end
-            const holdPct = Math.max(0.12, Math.min(0.88, this.startLinePct + 0.2 * rightward));
+            // her own hold, where she spawned (PT-030: distinct spots, two rows — see repositionBoats)
+            const SH = boat._startHold;
+            const holdPct = SH ? SH.pct : Math.max(0.12, Math.min(0.88, this.startLinePct + 0.2 * rightward));
             // drifted well past her lane to port with time in hand: reach back and set up again
             if (this.startHold === true && timer > Math.max(15, tRun + 8) && (this.startLinePct - myPct) * rightward > 0.15) this.startHold = false;
             // Deeper than the old stage (one boat length): a hold that creeps up the line goes over,
@@ -2119,7 +2172,7 @@ Object.assign(BotController.prototype, {
             // ⚠️ A FAIR STREAM IS STILL OPEN: Glowtide's 1-1.6 kt sweeps eased-sail holds over the
             // line before the gun (3.3 OCS a race). Tried and dropped, no measured gain: a hold
             // deeper by ~60u per knot of set, and the set added to the run's timing.
-            const HOLD = STAGE * 1.6;
+            const HOLD = SH ? SH.depth : STAGE * 1.6;
             const hx = m0.x + dx * holdPct - Math.sin(wd) * HOLD, hy = m0.y + dy * holdPct + Math.cos(wd) * HOLD;
             if (this.startHold !== true) {
                 const dH = Math.hypot(boat.x - hx, boat.y - hy);
@@ -2132,7 +2185,8 @@ Object.assign(BotController.prototype, {
                     const brg = Math.atan2(hx - boat.x, -(hy - boat.y));        // the game's heading convention
                     const onStbd = Math.abs(normalizeAngle(brg - hS)) < 0.45;
                     if (onStbd || behind < 40) return { target: { x: hx, y: hy }, speed: 0.85 };
-                    return { target: { x: hx - sx * 110, y: hy - sy * 110 }, speed: 0.9 };
+                    const SR = P.setupR != null ? P.setupR : 110;
+                    return { target: { x: hx - sx * SR, y: hy - sy * SR }, speed: 0.9 };
                 }
             }
             // HOLD: on starboard, PINCHED ~35° off the wind with the sails eased — moving and
@@ -2144,13 +2198,51 @@ Object.assign(BotController.prototype, {
             // the stream and measured worse everywhere else: boats ran off, gybed onto port and
             // crossed late, port share 8% → 28%. The fair stream is handled by the depth instead.)
             const err = (behind - HOLD) / HOLD;                    // + too deep, − too close
-            const offW = err >= 0 ? 0.62 + Math.min(0.16, err * 0.4) : 0.62 + Math.min(0.9, -err * 1.1);
-            return { heading: wd - offW, speed: 0.4 };
+            // A FAIR STREAM (PT-068, Glowtide): eased sheets cannot hold a boat against 1-1.6 kt setting her onto
+            // the line — every Glowtide bot crossed it in the hold, before she had even committed. Too close
+            // in a fair stream, she works back down on a broad reach, still on starboard, with the sails
+            // drawing, and comes up to her hold again once she has the depth. Gated on the stream: the same
+            // bear-away measured worse on still water (boats ran off and gybed onto port).
+            // Only when the stream has carried her well inside her hold (half its depth), and back to 70% of it,
+            // on the starboard heading that leaves the line most directly — a fixed broad reach also ran her
+            // down the line with Glowtide's along-line set, past the pin, and the reset sent her off on port.
+            const fairKt = curN * 4;
+            const backIn = P.fairBack != null ? P.fairBack : 0.5, backOut = P.fairBackOut != null ? P.fairBackOut : 0.7;
+            if (fairKt > (P.fairKt != null ? P.fairKt : 0.4) && (behind < HOLD * backIn || (this._fairBack && behind < HOLD * backOut))) {
+                this._fairBack = true;
+                let best = 1.6, bestC = Infinity;
+                for (let o = 1.6; o <= 2.6; o += 0.1) { const c = Math.sin(wd - o) * nC.x - Math.cos(wd - o) * nC.y; if (c < bestC) { bestC = c; best = o; } }
+                return { heading: wd - best, speed: 0.9 };
+            }
+            this._fairBack = false;
+            let offW = err >= 0 ? 0.62 + Math.min(0.16, err * 0.4) : 0.62 + Math.min(0.9, -err * 1.1);
+            // ...BY THE LINE, NOT THE WIND (PT-068). Those angles assume a line square to the breeze, where a beam
+            // reach runs along it. On a skewed line (swamp) a "beam reach" closes on it at 10 u/s and the hold
+            // sailed over before the gun. Keep the closing rate those angles would have on a square line: the
+            // most pinched starboard heading that closes on THIS line no faster.
+            if (P.windHold !== true) {
+                const cT = Math.cos(offW), closing = (o) => Math.sin(wd - o) * nC.x - Math.cos(wd - o) * nC.y;
+                let o = 0.55;
+                while (o < 2.4 && closing(o) > cT) o += 0.05;
+                offW = o;
+            }
+            // A boat stopped in her hold (she arrived head to wind, or bled off all her way) trims in until she
+            // is moving: the 0.4 throttle eases the sails, and from a standstill that never gets her going.
+            return { heading: wd - offW, speed: boat.speed * 4 < (P.holdMinKt != null ? P.holdMinKt : 0.8) ? 0.9 : 0.4 };
         }
-        const tCross = this.getApproachTime(STAGE / cosT, boat.speed, boat.stats) + BUF;
+        // The way-on plan (a foul stream: River) times its run the same way (PT-068): the line time from where
+        // she actually is, stream included, commit with margin in hand, and burn it off if the run goes clean.
+        const nW = startCrossNormal();
+        const dAx = aimX - boat.x, dAy = aimY - boat.y, dAl = Math.hypot(dAx, dAy) || 1;
+        const cosW = Math.max(0.3, Math.min(1, (dAx * nW.x + dAy * nW.y) / dAl));
+        const cW = getCurrentAt(boat.x, boat.y);
+        const curW = cW && cW.speed > 0.01 ? (Math.sin(cW.direction) * nW.x - Math.cos(cW.direction) * nW.y) * cW.speed / 4 : 0;
+        const tLineW = this.getLineTime(behind, boat.speed, cosW, curW, boat.stats);
+        const AIMW = (P.aim != null ? P.aim : 0.4) - (BUF - 0.5);
+        const tCross = tLineW - AIMW + (P.margin != null ? P.margin : 1.5);
         if (this.startCommitted || timer <= tCross) {
             this.startCommitted = true;
-            return { target: { x: aimX, y: aimY }, speed: 1.0 };
+            return { target: { x: aimX, y: aimY }, speed: this.runThrottle(timer + AIMW - tLineW) };
         }
 
         // ---- Pre-cross ----
@@ -2200,15 +2292,16 @@ Object.assign(BotController.prototype, {
         // own lane comment records what happens otherwise — a boat that wanders
         // off its lane crosses outside the marks and never starts.
         const REACHP = P.reachPct != null ? P.reachPct : 0.18;
-        if (this.startReachSide == null) this.startReachSide = this.startLinePct > 0.5 ? -1 : 1;
         const myPct = ((boat.x - m0.x) * dx + (boat.y - m0.y) * dy) / (lineLen * lineLen);
-        let holdPct = this.startLinePct + this.startReachSide * REACHP;
-        if (holdPct > 0.88 || holdPct < 0.12
-            || (myPct - this.startLinePct) * this.startReachSide > REACHP * 0.8) {
-            this.startReachSide = -this.startReachSide;
-            holdPct = this.startLinePct + this.startReachSide * REACHP;
-        }
-        holdPct = Math.max(0.12, Math.min(0.88, holdPct));
+        // THE WHOLE FLEET REACHES THE SAME WAY AND TURNS TOGETHER (PT-030). Each boat used to start toward
+        // the middle (left half right, right half left) and turn when she reached her own end, so the two
+        // halves sailed through each other — River's prestart was a third of the fleet's prestart fouls once
+        // the rules applied. Now the side is the countdown's: a shared clock flips every boat at once, and
+        // the fleet moves like one shape. A boat whose reach would leave the segment holds at its edge.
+        const PERIOD = P.reachPeriod != null ? P.reachPeriod : 8;
+        const since = Math.max(0, (state.race.startTimerDuration || 30) - timer);
+        this.startReachSide = (Math.floor(since / PERIOD) % 2 === 0) ? 1 : -1;
+        let holdPct = Math.max(0.12, Math.min(0.88, this.startLinePct + this.startReachSide * REACHP));
         if (behind > STAGE + 35) {
             return { target: { x: stageX, y: stageY }, speed: 1.0 };
         }

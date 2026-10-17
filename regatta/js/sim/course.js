@@ -941,6 +941,27 @@ function repositionBoats() {
     // shuffled them independent of their target lane, so most crossed outside the
     // segment and never started cleanly.) The start controller stages each boat just
     // behind the line in its lane and times a short crossing on the gun.
+    // ── THE PRESTART LAYOUT (PT-030, Oct 16 2026) ───────────────────────────────────────
+    // With the racing rules on before the gun, the fleet has to set up without fouling, so every
+    // boat now SPAWNS AT HER OWN HOLD, head to wind and stopped (Wes): all she has to do is bear
+    // away onto starboard, and the whole fleet does that at once, moving in parallel. Before, she
+    // spawned in her lane and the hold was 0.2 of the line to starboard of it — half the fleet
+    // reached across on port to get there, through the half already holding on starboard, and
+    // the clamp at 0.88 stacked the three or four starboard-end lanes on ONE spot.
+    //   · holds are DISTINCT: the lanes map onto 0.30–0.88 of the line, toward the starboard end
+    //     (the slow drift to port while holding carries a boat back toward her lane);
+    //   · two ROWS, alternate boats a row deeper, so neighbours in a row are two lanes apart.
+    // The hold depth is the bots' own (1.6 × a 200 stage — the controller's default; see
+    // `boat._startHold`, which the start controller reads). `window.__START.oldSpawn` keeps the old layout.
+    const newLayout = !(window.__START && window.__START.oldSpawn);
+    const HOLD0 = 320, ROW_GAP = (window.__START && window.__START.rowGap != null) ? window.__START.rowGap : 110;
+    const wdC = getWindAt(cx, cy).direction;
+    const rightward = (lDx * Math.sin(wdC + Math.PI / 2) - lDy * Math.cos(wdC + Math.PI / 2)) >= 0 ? 1 : -1;
+    const holdPctFor = (lane) => {
+        const u = rightward > 0 ? lane : 1 - lane;
+        const h = 0.30 + (Math.max(0.1, Math.min(0.9, u)) - 0.1) * 0.725;
+        return rightward > 0 ? h : 1 - h;
+    };
     let bi = 0;
     for (const boat of state.boats) {
         const k = laneIdx[bi++];
@@ -949,7 +970,7 @@ function repositionBoats() {
 
         const laneX = cx + (m1.x - m0.x) * (pct - 0.5);
         const laneY = cy + (m1.y - m0.y) * (pct - 0.5);
-        const scatter = (Math.random() - 0.5) * 120;   // depth (along-wind) scatter
+        const scatter = (Math.random() - 0.5) * 120 * (window.__START && window.__START.scatter != null ? window.__START.scatter : 1);   // depth (along-wind) scatter
         const jitterLat = (Math.random() - 0.5) * 20;  // small lateral jitter
         // A SOLO TIME TRIAL STARTS FROM ONE SPOT (PT-022): the run is compared with your ghost
         // and the course record, so every run begins at the same place, the line's middle
@@ -957,8 +978,16 @@ function repositionBoats() {
         // heading is the line's, not the wind's, so it doesn't change with the run's breeze.
         // The random draws above still happen, so the stream is the same length either way.
         const ttSpot = boat.isPlayer && window.TimeTrial && TimeTrial.solo();
-        const sx = ttSpot ? cx + backX * distBack : laneX + backX * (distBack + scatter) + rx * jitterLat;
-        const sy = ttSpot ? cy + backY * distBack : laneY + backY * (distBack + scatter) + ry * jitterLat;
+        let sx = ttSpot ? cx + backX * distBack : laneX + backX * (distBack + scatter) + rx * jitterLat;
+        let sy = ttSpot ? cy + backY * distBack : laneY + backY * (distBack + scatter) + ry * jitterLat;
+        boat._startHold = null;
+        if (newLayout && !ttSpot) {
+            const hp = holdPctFor(pct), depth = HOLD0 + (k % 2) * ROW_GAP + scatter * 0.15;
+            const hx = cx + lDx * (hp - 0.5), hy = cy + lDy * (hp - 0.5);
+            sx = hx + backX * depth + rx * jitterLat * 0.5;
+            sy = hy + backY * depth + ry * jitterLat * 0.5;
+            boat._startHold = { pct: hp, depth: HOLD0 + (k % 2) * ROW_GAP };
+        }
 
         boat.x = sx;
         boat.y = sy;
@@ -974,6 +1003,18 @@ function repositionBoats() {
             boat.heading = ttSpot ? Math.atan2(cross.x, -cross.y) : lw; // Head to wind — the wind HERE (a time trial: at the line)
             boat.velocity = { x: 0, y: 0 };
             boat.speed = 0;
+        } else if (newLayout) {
+            // EVERY BOAT STARTS HEAD TO WIND AND STOPPED (PT-030, Wes): the player always has, and with the
+            // rules on in the prestart nobody is already sailing at a neighbour when the clock starts.
+            // Each boat bears away onto the tack her plan wants, with the fleet still spread out.
+            if (boat.ai) boat.ai.startLinePct = pct;
+            if (boat.controller) {
+                boat.controller.startLinePct = pct;
+                boat.controller.startStageDepth = 60;
+            }
+            boat.heading = lw;
+            boat.speed = 0;
+            boat.velocity = { x: 0, y: 0 };
         } else {
             if (boat.ai) boat.ai.startLinePct = pct;
             if (boat.controller) {

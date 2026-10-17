@@ -798,7 +798,12 @@ class BotController {
         // and no imminent threat. Once spinning, commit; pause only for an
         // IMMINENT collision (accumulator keeps net progress across pauses).
         const rsP = this.boat.raceState;
-        if (rsP.penalty && isRacing && rsP.leg >= 1 && !rsP.finished) {
+        // A FOUL IN THE PRESTART (PT-030) is cleared before the gun when there is time for it: a turn
+        // started with PRE_SPIN_T or more on the clock, abandoned below PRE_SPIN_ABORT (spinning at the gun
+        // costs more than the turn — the rotation already sailed is kept, and she finishes it after the start).
+        const PRE_SPIN_T = 20, PRE_SPIN_ABORT = 6;
+        const preSpin = isPrestart && rulesInForce() && (this.penaltySpin ? state.race.timer > PRE_SPIN_ABORT : state.race.timer > PRE_SPIN_T);
+        if (rsP.penalty && ((isRacing && rsP.leg >= 1) || preSpin) && !rsP.finished) {
             if (!this.penaltySpin) {
                 let nearest = Infinity; let nbBoat = null;
                 for (const other of state.boats) {
@@ -908,7 +913,7 @@ class BotController {
         //    boat gets room to respond).
         //  - Rule 16: no claim within 1.5s of our own sharp course change.
         //  - Rule 18: no claim against a boat entitled to mark-room from us.
-        //  - per-pair 20s cooldown; racing only (prestart is too dense).
+        //  - per-pair 20s cooldown; from the prestart on (PT-030), like every other rule.
         const RU = (typeof window !== 'undefined' && window.__RULES) ? window.__RULES : {};
         const DEV = RU.dev != null ? RU.dev : 0.35;
         const HOLD = RU.hold != null ? RU.hold : 0.8;
@@ -917,7 +922,7 @@ class BotController {
         // a give-way boat that kept forcing for HOLD seconds had room and
         // time to respond and didn't take it.
         const GRACE = RU.grace != null ? RU.grace : 0.3;
-        if (isRacing && this.avoidanceRole === 'STAND_ON' &&
+        if (rulesInForce() && this.avoidanceRole === 'STAND_ON' &&
             (this.riskState === 'HIGH' || this.riskState === 'IMMINENT') &&
             this.threatBoat && !this.threatBoat.raceState.finished &&
             // PENALTIES STACK (PT-064): owing a turn no longer makes a boat immune to a new foul. Only a boat
