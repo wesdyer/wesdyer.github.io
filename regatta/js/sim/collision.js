@@ -184,7 +184,7 @@ function checkBoatCollisions(dt) {
                 b2.speed *= (friction - (friction - impactFactor) * impact2);
 
                 // No penalties if either boat is finished
-                if (state.race.status === 'racing' && !b1.raceState.finished && !b2.raceState.finished) {
+                if (rulesInForce() && !b1.raceState.finished && !b2.raceState.finished) {
                     const res = getRightOfWay(b1, b2);
                     const rowBoat = res.boat;
 
@@ -314,7 +314,7 @@ function checkMarkCollisions(dt) {
                 // moment of the touch. A lone boat hitting the buoy is still
                 // her own foul — exoneration needs the squeeze.
                 let exon31 = false;
-                if (state.race.status === 'racing' && window.Rules && window.Rules.interactions) {
+                if (rulesInForce() && window.Rules && window.Rules.interactions) {
                     const mIdx31 = state.course.marks.indexOf(mark);
                     const dSelf31 = Math.hypot(boat.x - mark.x, boat.y - mark.y);
                     for (const o31 of state.boats) {
@@ -329,7 +329,7 @@ function checkMarkCollisions(dt) {
                         exon31 = true; break;
                     }
                 }
-                if (state.race.status === 'racing' && !exon31) triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact', with: 'mark:' + state.course.marks.indexOf(mark) });
+                if (rulesInForce() && !exon31) triggerPenalty(boat, { rule: 'Rule 31', reason: 'Touched a Mark', kind: 'contact', with: 'mark:' + state.course.marks.indexOf(mark) });
                 // One response per MARK, not per circle: hitting a committee boat is
                 // one Rule 31 touch, however many circles of its capsule you are in.
                 break;

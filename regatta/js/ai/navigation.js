@@ -2111,7 +2111,9 @@ Object.assign(BotController.prototype, {
             // on starboard carries her back through it
             const rx = Math.sin(wd + Math.PI / 2), ry = -Math.cos(wd + Math.PI / 2);
             const rightward = (dx * rx + dy * ry) >= 0 ? 1 : -1;     // +pct is toward the starboard end
-            const holdPct = Math.max(0.12, Math.min(0.88, this.startLinePct + 0.2 * rightward));
+            // her own hold, where she spawned (PT-030: distinct spots, two rows — see repositionBoats)
+            const SH = boat._startHold;
+            const holdPct = SH ? SH.pct : Math.max(0.12, Math.min(0.88, this.startLinePct + 0.2 * rightward));
             // drifted well past her lane to port with time in hand: reach back and set up again
             if (this.startHold === true && timer > Math.max(15, tRun + 8) && (this.startLinePct - myPct) * rightward > 0.15) this.startHold = false;
             // Deeper than the old stage (one boat length): a hold that creeps up the line goes over,
@@ -2119,7 +2121,7 @@ Object.assign(BotController.prototype, {
             // ⚠️ A FAIR STREAM IS STILL OPEN: Glowtide's 1-1.6 kt sweeps eased-sail holds over the
             // line before the gun (3.3 OCS a race). Tried and dropped, no measured gain: a hold
             // deeper by ~60u per knot of set, and the set added to the run's timing.
-            const HOLD = STAGE * 1.6;
+            const HOLD = SH ? SH.depth : STAGE * 1.6;
             const hx = m0.x + dx * holdPct - Math.sin(wd) * HOLD, hy = m0.y + dy * holdPct + Math.cos(wd) * HOLD;
             if (this.startHold !== true) {
                 const dH = Math.hypot(boat.x - hx, boat.y - hy);
@@ -2132,7 +2134,8 @@ Object.assign(BotController.prototype, {
                     const brg = Math.atan2(hx - boat.x, -(hy - boat.y));        // the game's heading convention
                     const onStbd = Math.abs(normalizeAngle(brg - hS)) < 0.45;
                     if (onStbd || behind < 40) return { target: { x: hx, y: hy }, speed: 0.85 };
-                    return { target: { x: hx - sx * 110, y: hy - sy * 110 }, speed: 0.9 };
+                    const SR = P.setupR != null ? P.setupR : 110;
+                    return { target: { x: hx - sx * SR, y: hy - sy * SR }, speed: 0.9 };
                 }
             }
             // HOLD: on starboard, PINCHED ~35° off the wind with the sails eased — moving and
@@ -2145,7 +2148,9 @@ Object.assign(BotController.prototype, {
             // crossed late, port share 8% → 28%. The fair stream is handled by the depth instead.)
             const err = (behind - HOLD) / HOLD;                    // + too deep, − too close
             const offW = err >= 0 ? 0.62 + Math.min(0.16, err * 0.4) : 0.62 + Math.min(0.9, -err * 1.1);
-            return { heading: wd - offW, speed: 0.4 };
+            // A boat stopped in her hold (she arrived head to wind, or bled off all her way) trims in until she
+            // is moving: the 0.4 throttle eases the sails, and from a standstill that never gets her going.
+            return { heading: wd - offW, speed: boat.speed * 4 < (P.holdMinKt != null ? P.holdMinKt : 0.8) ? 0.9 : 0.4 };
         }
         const tCross = this.getApproachTime(STAGE / cosT, boat.speed, boat.stats) + BUF;
         if (this.startCommitted || timer <= tCross) {
@@ -2200,15 +2205,16 @@ Object.assign(BotController.prototype, {
         // own lane comment records what happens otherwise — a boat that wanders
         // off its lane crosses outside the marks and never starts.
         const REACHP = P.reachPct != null ? P.reachPct : 0.18;
-        if (this.startReachSide == null) this.startReachSide = this.startLinePct > 0.5 ? -1 : 1;
         const myPct = ((boat.x - m0.x) * dx + (boat.y - m0.y) * dy) / (lineLen * lineLen);
-        let holdPct = this.startLinePct + this.startReachSide * REACHP;
-        if (holdPct > 0.88 || holdPct < 0.12
-            || (myPct - this.startLinePct) * this.startReachSide > REACHP * 0.8) {
-            this.startReachSide = -this.startReachSide;
-            holdPct = this.startLinePct + this.startReachSide * REACHP;
-        }
-        holdPct = Math.max(0.12, Math.min(0.88, holdPct));
+        // THE WHOLE FLEET REACHES THE SAME WAY AND TURNS TOGETHER (PT-030). Each boat used to start toward
+        // the middle (left half right, right half left) and turn when she reached her own end, so the two
+        // halves sailed through each other — River's prestart was a third of the fleet's prestart fouls once
+        // the rules applied. Now the side is the countdown's: a shared clock flips every boat at once, and
+        // the fleet moves like one shape. A boat whose reach would leave the segment holds at its edge.
+        const PERIOD = P.reachPeriod != null ? P.reachPeriod : 8;
+        const since = Math.max(0, (state.race.startTimerDuration || 30) - timer);
+        this.startReachSide = (Math.floor(since / PERIOD) % 2 === 0) ? 1 : -1;
+        let holdPct = Math.max(0.12, Math.min(0.88, this.startLinePct + this.startReachSide * REACHP));
         if (behind > STAGE + 35) {
             return { target: { x: stageX, y: stageY }, speed: 1.0 };
         }

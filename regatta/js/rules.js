@@ -445,6 +445,13 @@
                             // at that shore belongs to rule 19, which the avoidance
                             // layer builds separately (rule19Pairs in script.js).
                             if (this.isContinuingObstruction(mark)) continue;
+                            // RRS 18.1(a)(1): rule 18 "does not apply ... at a starting mark surrounded by
+                            // navigable water ... from the time boats are approaching them to start until they
+                            // have passed them." A boat still on leg 0 is approaching to start, so the start
+                            // line's marks give no mark-room — the reason a boat can be shut out at the
+                            // committee boat ("no room at the boat"). With the rules on in the prestart
+                            // (PT-030) a zone snapshot here would hand room to every boat milling below the line.
+                            if ((b1.raceState.leg === 0 || b2.raceState.leg === 0) && (typeof startLineMarks === 'function') && startLineMarks().indexOf(mIdx) !== -1) continue;
                             if (d1 < this.zoneOf(mark) || d2 < this.zoneOf(mark)) {
                                 // RRS 18.1(a)(3): rule 18 "does not apply ... between a boat
                                 // approaching a mark and one leaving it." A boat whose CURRENT
@@ -660,19 +667,22 @@
             // a tack or a gybe, and the decay (~7°/s) keeps ordinary sailing below it.
             const taking = (b) => !!b.raceState.penalty && (
                 !!(b.controller && b.controller.penaltySpin) || Math.abs(b.raceState.penaltyRot || 0) >= TAKING_PENALTY_ROT);
-            const b1Returning = b1.raceState.ocs || taking(b1);
-            const b2Returning = b2.raceState.ocs || taking(b2);
+            // ...and returning to start is AFTER her starting signal: a boat over the line in the prestart
+            // has no rule 21 duty, only the ordinary rules (she just has to be back by the gun).
+            const afterGun = state.race.status !== 'prestart';
+            const b1Returning = (afterGun && b1.raceState.ocs) || taking(b1);
+            const b2Returning = (afterGun && b2.raceState.ocs) || taking(b2);
 
             if (b1Returning && !b2Returning) {
                 result.rowBoat = b2;
                 result.rule = "Rule 21";
-                result.reason = b1.raceState.ocs ? "Returning to Start" : "Taking Penalty";
+                result.reason = (afterGun && b1.raceState.ocs) ? "Returning to Start" : "Taking Penalty";
                 return result;
             }
             if (b2Returning && !b1Returning) {
                 result.rowBoat = b1;
                 result.rule = "Rule 21";
-                result.reason = b2.raceState.ocs ? "Returning to Start" : "Taking Penalty";
+                result.reason = (afterGun && b2.raceState.ocs) ? "Returning to Start" : "Taking Penalty";
                 return result;
             }
 

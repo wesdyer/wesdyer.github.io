@@ -447,6 +447,16 @@ function steerageFactor(boat) {
     return Math.min(1.0, Math.max(0.6, 0.6 + 0.4 * (spdKnots / 3.5)));
 }
 
+// THE RULES IN THE PRESTART (PT-030). The racing rules apply from the preparatory signal (RRS: a boat is
+// "racing" from then), so right of way, mark touches and the penalties they bring run through the
+// countdown too, not only after the gun. Contacts in the prestart used to cost speed and nothing else,
+// and a player could sail over the fleet with impunity. `window.__PRESTART_RULES = 'off'` restores
+// the old gun-only rules (benches, A/B).
+function rulesInForce() {
+    const s = state.race.status;
+    return s === 'racing' || (s === 'prestart' && !(typeof window !== 'undefined' && window.__PRESTART_RULES === 'off'));
+}
+
 // PENALTIES STACK, ONE PER INCIDENT (PT-064, Wes Oct 16 2026). A second foul used to be free while a turn
 // was owed, so holding a penalty paid. Now every INCIDENT owes its own turn, cleared one 360 at a time,
 // oldest first, and each one not taken is +15 s at the finish (the finish adds 15 per owed turn).
@@ -1752,7 +1762,7 @@ function updateBoatRaceState(boat, dt) {
     // 360° (net, so a wobble unwinds) clears one owed turn. Direction is the
     // sailor's choice — RRS asks for a tack and a gybe, and any net full
     // rotation includes both.
-    if (boat.raceState.penalty && state.race.status === 'racing') {
+    if (boat.raceState.penalty && rulesInForce()) {
         const rs = boat.raceState;
         rs.penaltyFlagTime += dt;
         if (rs.penaltyLastHeading == null) rs.penaltyLastHeading = boat.heading;
