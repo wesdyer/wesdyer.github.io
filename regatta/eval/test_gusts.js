@@ -148,7 +148,7 @@ const check = (name, cond, detail) => {
         // The three are stated in KNOTS, METRES and SECONDS now, so each is checked against
         // the quantity it names rather than against a multiple of an unstated base.
         o.gustIsKnots   = Math.abs(shapeOf({ gustKt: 12 }).sd - base.sd * (12 / 5)) < 1e-3;   // default 5 kt
-        o.sizeIsMetres  = Math.abs(shapeOf({ sizeM: 600 }).rx - base.rx * 2) < 1e-3;          // default 300 m
+        o.sizeIsMetres  = Math.abs(shapeOf({ sizeM: 600 }).rx - base.rx * 4) < 1e-3;          // default 150 m (halved with the world scale, 4475cc6)
         o.lifeIsSeconds = Math.abs(shapeOf({ lifeS: 180 }).dur - base.dur * 2) < 1e-3;        // default 90 s
         // The stated number is the MEAN of what comes out, which is what makes it checkable
         // against the course. Sampled across many births rather than asserted on one.
@@ -156,7 +156,7 @@ const check = (name, cond, detail) => {
         const many = state.gusts;
         const mean = (f) => many.reduce((a, g) => a + f(g), 0) / many.length;
         o.meanKt    = +mean(g => Math.abs(g.speedDelta)).toFixed(2);
-        o.meanSizeM = +(mean(g => g.maxRadiusX) * 2 / 5).toFixed(0);
+        o.meanSizeM = +(mean(g => g.maxRadiusX) * 2 * WORLD_M_PER_U).toFixed(0);   // (units to metres at the world scale, 10 u a metre)
         o.meanLifeS = +mean(g => g.duration).toFixed(0);
         o.meansAreStated = Math.abs(o.meanKt - 10) < 1.2 && Math.abs(o.meanSizeM - 400) < 60 && Math.abs(o.meanLifeS - 120) < 15;
         // A hole is the shallower half of the same signal.

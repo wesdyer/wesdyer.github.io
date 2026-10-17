@@ -41,7 +41,7 @@ const COURSE = () => ({
             { kind: 'gate', lineId: 'sf', dir: -1, role: 'leeward', finish: true }]
 });
 const mkShapes = (shapes) => ({
-    schema: 1, venue: 'shoaltest',
+    schema: 2, venue: 'shoaltest',   // (the world-scale schema, 4475cc6: the validator takes 2 only; compile migrates a 1)
     card: { name: 'Shoal Test', tag: 'Test', blurb: '', conditions: '', hazards: '' },
     world: { size: 4000, boundary: { poly: [[-2000, -2000], [2000, -2000], [2000, 2000], [-2000, 2000]], circle: null } },
     shapes, course: COURSE(), gusts: { regions: [] },

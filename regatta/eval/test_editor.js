@@ -1721,7 +1721,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         r.hasTransformFields = !!el;
         el.value = '1000'; el.dispatchEvent(new Event('change'));
         const b1 = bpBox();
-        r.widthDriven = b1.w === 5000 && b1.n === b0.n;      // 1000 m at 5 units/m
+        r.widthDriven = b1.w === 1000 * window.VenueDoc.U_PER_M && b1.n === b0.n;      // 1000 m at the world scale (10 u/m since 4475cc6)
         r.areaRowFollows = row() !== r.layerRow;
         return r;
     });
@@ -2067,7 +2067,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         o.noStrayWind = (A._state().doc.wind.regions || []).length === windBefore;
         // Neutral by construction: drawing says WHERE and nothing else.
         const r0 = regs()[iNew];
-        o.neutral = r0.count === 8 && r0.gustKt === 5 && r0.sizeM === 300 && r0.lifeS === 90
+        o.neutral = r0.count === 8 && r0.gustKt === 5 && r0.sizeM === 150 && r0.lifeS === 90
                  && r0.bias === 0.5 && r0.veer === 15;
         o.selected = JSON.stringify(A._osel()) === JSON.stringify([{ kind: 'gust', i: iNew }]);
 
@@ -2510,12 +2510,16 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
                         const xi = ring[i][0], yi = ring[i][1], xj = ring[j][0], yj = ring[j][1];
                         if (((yi > y) !== (yj > y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)) inside = !inside;
                     } return inside; };
+                // The WHOLE dragged circle has to be open water, judged as the editor's onLand does (holes
+                // are water): testing two points let a spot whose circle ran over a coastline through, and
+                // whether a six-piece scatter then fitted more than one floe was down to the draw — a flake.
+                const wet = (x, y) => !doc.shapes.some(l => inRing(x, y, l.outer) && !(l.holes || []).some(h => inRing(x, y, h)));
+                const clear = (x, y) => wet(x, y) && [...Array(12)].every((_, i) => { const a = i / 12 * Math.PI * 2;
+                    return wet(x + Math.cos(a) * 950, y + Math.sin(a) * 950) && wet(x + Math.cos(a) * 500, y + Math.sin(a) * 500); });
                 let spot = null;
                 for (let gx = -4000; gx <= 4000 && !spot; gx += 250)
                     for (let gy = -4000; gy <= 4000 && !spot; gy += 250)
-                        if (!doc.shapes.some(l => inRing(gx, gy, l.outer))
-                            && !doc.shapes.some(l => inRing(gx + 800, gy + 800, l.outer)))
-                            spot = { x: gx, y: gy };
+                        if (clear(gx, gy)) spot = { x: gx, y: gy };
                 if (!spot) return null;
                 const before = doc.shapes.length;
                 const place = (n) => {
@@ -2818,9 +2822,10 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
             const a = mk(ln.marks[0]), b = mk(ln.marks[1]);
             return { w: Math.hypot(b.x - a.x, b.y - a.y),
                      ang: Math.atan2(b.x - a.x, -(b.y - a.y)) }; };
-        // Metres from the start line's midpoint to the windward gate's midpoint. 5u = 1m.
+        // Metres from the start line's midpoint to the windward gate's midpoint, at the world scale (10 u a metre since
+        // 4475cc6; the beat's 4000 u were "800 m" at the old 5 u a metre — nothing on the water moved).
         const beatM = () => { const s = midOf('sf'), g = midOf('wg');
-            return Math.hypot(g.x - s.x, g.y - s.y) / 5; };
+            return Math.hypot(g.x - s.x, g.y - s.y) / window.VenueDoc.U_PER_M; };
 
         document.querySelector('#layer-list [data-layer="route"]').click();
         const pick = () => document.querySelector('#obj-list .ob[data-i="1"]').click();
@@ -2861,8 +2866,8 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
         return o;
     });
     check('a leg states its length and its bearing', legGeom.hasFields === true);
-    check('Sea Trial Bay ships an 800 m beat, dead upwind',
-          legGeom.shipped === 800 && /dead upwind/.test(legGeom.saysBeat),
+    check('Sea Trial Bay ships a 400 m beat, dead upwind',
+          legGeom.shipped === 400 && /dead upwind/.test(legGeom.saysBeat),
           `${legGeom.shipped} m · ${legGeom.saysBeat}`);
     check('typing a length puts the gate at exactly that distance',
           legGeom.exact === true && legGeom.reads === '1250', `reads ${legGeom.reads}`);
@@ -2877,7 +2882,7 @@ const near = (a, b, tol) => Math.abs(a - b) <= tol;
           legGeom.lenSurvivedUpwind === true && /dead upwind/.test(legGeom.saysUpwind),
           legGeom.saysUpwind);
     check('every step is one undo', legGeom.undoOneStep === true);
-    check('...and undoing back restores the venue', legGeom.restored === 800,
+    check('...and undoing back restores the venue', legGeom.restored === 400,
           `${legGeom.restored} m`);
     await page.evaluate(() => { window.EditorApp.loadVenue('arctic'); });
 

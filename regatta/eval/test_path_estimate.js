@@ -112,9 +112,18 @@ const check = (name, cond, detail) => {
             await new Promise(r => setTimeout(r, 600));
             const doc = A._state().doc, course = window.state.course;
             const est = A._estimate();
-            const solid = VD.shapes(doc).filter(sh => {
+            const solid = VD.raceShapes(doc).filter(sh => {
                 const t = VD.traits(sh); return t.motion === 'fixed' && !t.awash;
             });
+            // hard props are walls to the estimate since 341e354 (a pier's traced outline, a moored ship): the same
+            // rings, or this rebuild routes through the Cove's ferry terminal and comes up ~7% short of the estimate
+            for (const p of (doc.props || [])) {
+                if (!VD.PROP_KINDS[p.kind]) continue;
+                const T = VD.propTraits(p);
+                if (T.contact !== 'hard' || T.motion !== 'fixed') continue;
+                VD.propHitRings(p).rings.forEach((ring, i) =>
+                    solid.push({ id: p.id + (i ? `.hit${i + 1}` : '.hit'), kind: 'isle', outer: ring, holes: [], hidden: true }));
+            }
             const grid = S.buildGrid(solid, course.boundary, null,
                 VD.shapes(doc).some(sh => VD.traits(sh).motion !== 'fixed') ? { noSubsample: true } : null);
             const wps = S.routeWaypoints(course.marks, course.route, grid);

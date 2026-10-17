@@ -239,7 +239,9 @@ const check = (name, cond, detail) => {
         // while the detour cost the fleet 10 s/boat-race on Emberfall (treeVF3ND).
         {
             const ctrl = bot.controller;
-            for (let i = 0; i < 12; i++) update(1 / 60);
+            // (a full second to settle first: the fried test above leaves it on a held intent, and its first live
+            // ticks re-plan — a 1.3 rad turn in the old 0.2 s settle, identical with no strike marked at all)
+            for (let i = 0; i < 60; i++) update(1 / 60);
             const th0 = ctrl.targetHeading;
             const sx = bot.x + 220, sy = bot.y;
             aimed.pending = { ox: sx, oy: sy - 300, x: sx, y: sy, at: V.t + 2.8, seed: 12345, aimed: true, boat: bot };

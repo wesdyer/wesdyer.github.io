@@ -274,7 +274,8 @@ const nearAng = (a, b, tol) => Math.abs(((a - b + Math.PI * 3) % (Math.PI * 2)) 
             i.height = 0; delete i.windShadow;          // isolate: only the coast casts
             if (!coast || i.radius > coast.radius) coast = i;
         }
-        coast.height = 20;                              // 20 m of shelf and shore
+        coast.height = 10;                              // 10 m of shelf and shore (the 20 this test was tuned on, before 4475cc6
+                                                        // put the world at 10 u/m and halved every authored height)
         __leeField.reset();
         o.coastRadius = Math.round(coast.radius);
         const b = state.course.boundary, dA = state.wind.direction;

@@ -135,9 +135,11 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.scythe, 'Chart the Flats: all six named passages across races (a point bar is not one of them)');
     ok(r.scytheProg === '2/6', `Chart the Flats shows its progress (${r.scytheProg})`);
     ok(r.zee, 'Keep Your Distance reads flats:seals');
-    ok(r.target === 195, `the target is 3:15 (${r.target})`);
+    ok(r.target === 190, `the target is 3:10 (${r.target})`);   // (owner's playtest intake, 96a0804: 3:15 -> 3:10)
     ok(r.wes.every(w => w.routes.some(q => ['wantij', 'gamble', 'neck', 'creek', 'headcut', 'delta'].includes(q))), `each of Wes's laps sailed a named passage (${r.wes.map(w => w.routes.join('+')).join(' | ')})`);
-    ok(r.wes.every(w => w.mud >= 35 && w.mud < 70), `...and 35-70 s over the flats (${r.wes.map(w => w.mud).join(', ')})`);
+    // (the band was 35-70 s on his first five laps; the six playtest laps of 96a0804 run 33.5-80.5 s — a lap over the
+    // flats reads tens of seconds of mud, never none and never the whole race)
+    ok(r.wes.every(w => w.mud >= 30 && w.mud < 90), `...and 30-90 s over the flats (${r.wes.map(w => w.mud).join(', ')})`);
     ok(r.channel === 0, `the deep channel is not the flats (${r.channel} feats)`);
     ok(/NECK/.test(r.banner), `a passage is named as you sail onto it ("${r.banner}")`);
     ok(r.touched === 1 && r.agFeat, 'a grounding is counted and is a feat (flats:aground)');

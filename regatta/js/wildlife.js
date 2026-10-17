@@ -3362,6 +3362,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // and swims on under the ice, as seals do, and comes up again elsewhere
             if ((S.mode === 'swim' || S.mode === 'toFloe') && bodyHit(S.x, S.y, S.h, 26)) { S.uIce = (S.uIce || 0) + dt;
                 if (S.uIce > 0.15) { S.mode = 'dive'; S.depth = 0.3; S.v = 40; S.t = R(6, 11); S.floe = null; S.uIce = 0; S.sx = undefined; } }
+            // ...and one just plunged off its floe, still at the top, that a drifting floe slides over: it goes on down
+            // under it (out of sight below the ice) rather than lie at the surface beneath it while it sinks
+            else if (S.mode === 'dive' && S.depth < 0.3 && solidAt(S.x, S.y)) { S.uIce = (S.uIce || 0) + dt; if (S.uIce > 0.15) { S.depth = 0.3; S.uIce = 0; } }
             else S.uIce = 0;
         }
     }
@@ -8602,7 +8605,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 // the water, in quick sideways bursts
                 const b = boatNear(c.x, c.y, 250) || (boatThreat(c.x, c.y, 2, 180) || {}).b;
                 const wave = spray && Math.hypot(c.x - c.hx, c.y - c.hy) < 20 && rnd() < 0.5;
-                if ((b || wave) && c.flee <= 0) c.flee = b ? R(2.5, 4) : R(0.6, 1.2);
+                if ((b || wave) && c.flee <= 0) { c.flee = b ? R(2.5, 4) : R(0.6, 1.2); c.t = 0; c.burst = 0; }   // (it bolts now — not after the pause it was picking through)
                 if (c.flee > 0) c.flee -= dt;
                 if (c.burst > 0) {
                     c.burst -= dt; c.leg += dt * 40;
@@ -9816,7 +9819,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     if (b.mode === 'up' && (b.z > 5 || d < 60)) b.mode = 'fly';
                     // down: at its spot — or, a long flight, wherever it is over water once it is low (never a jump; Wes saw
                     // birds vanish mid-air when a 14 s timeout put them on their spot)
-                    if (b.mode === 'fly' && ((d < 10 && b.z < 3) || (b.hop && d < 10) || (F.flyT > 14 && d < 80 && b.z < 3 && !onLand(b.x, b.y)))) { b.mode = 'wade'; b.z = 0; b.ring = 1; b.hop = false; b.hopCool = 2; }
+                    // (down only on water — never on the marsh, but at the roost)
+                    if (b.mode === 'fly' && ((d < 10 && b.z < 3 && (F.roosting || !onLand(b.x, b.y))) || (b.hop && d < 10 && !onLand(b.x, b.y)) || (F.flyT > 14 && d < 80 && b.z < 3 && !onLand(b.x, b.y)))) { b.mode = 'wade'; b.z = 0; b.ring = 1; b.hop = false; b.hopCool = 2; }
                 }
             }
             if (F.mode === 'fly' && F.birds.every(b => b.mode === 'wade')) { F.mode = 'feed'; F.cx = F.gx = F.tx; F.cy = F.gy = F.ty; F.t = R(1, 2); F.down = 0; }
@@ -10195,7 +10199,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const base = R(0, Math.PI * 2), members = [];
             for (let tries = 0; members.length < n && tries < 400; tries++) {
                 const a = R(0, Math.PI * 2), d = Math.sqrt(rnd()) * (26 + n * 9), x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d;
-                if (!pointInPoly(x, y, V) || members.some(m => Math.hypot(m.hx - x, m.hy - y) < 22)) continue;
+                // (and off the rock: a sea stack can stand in the middle of a bed — its collider is not water)
+                if (!pointInPoly(x, y, V) || members.some(m => Math.hypot(m.hx - x, m.hy - y) < 22) || [0, 1, 2, 3, 4, 5, 6, 7].some(j => solidAt(x + Math.cos(j * 0.785) * 14, y + Math.sin(j * 0.785) * 14, null, true)) || solidAt(x, y, null, true)) continue;
                 const i = members.length;
                 members.push({ i, hx: x, hy: y, x, y, h: base + R(-2.2, 2.2), mode: 'float', t: R(3, 18), bob: R(0, 7), roll: 0, paws: 'rest', food: null, tap: 0,
                     ring: 0, ring2: 0, look: 0, kelp: rnd() < 0.45, size: R(0.86, 1.06), head: R(0.55, 1), trail: [], trailT: 0, tx: x, ty: y, dive: 0, vis: 1,
@@ -10208,7 +10213,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     // somewhere else in the same bed, for a dive to come up at
     function kelpSpot(G, x, y, r) {
-        for (let k = 0; k < 20; k++) { const a = R(0, Math.PI * 2), d = R(r * 0.4, r), px = x + Math.cos(a) * d, py = y + Math.sin(a) * d; if (pointInPoly(px, py, G.V) && !onLand(px, py)) return { x: px, y: py }; }
+        for (let k = 0; k < 20; k++) { const a = R(0, Math.PI * 2), d = R(r * 0.4, r), px = x + Math.cos(a) * d, py = y + Math.sin(a) * d; if (pointInPoly(px, py, G.V) && !onLand(px, py) && !solidAt(px, py, null, true)) return { x: px, y: py }; }
         return { x, y };
     }
     const inKelp = (x, y) => kelpBeds.some(K => Math.hypot(x - K.x, y - K.y) < (K.radius || 1e9) && pointInPoly(x, y, K.vertices));
@@ -10262,7 +10267,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // resting ones go down or swim off square to the boat's line; moving ones veer out of it
             const th = m.mode !== 'under' && m.mode !== 'dive' && m.mode !== 'roll' ? boatThreat(m.x, m.y, 2.5, 70) : null;
             if (th && (m.mode === 'travel' || m.mode === 'bolt' || m.mode === 'swim' || (m.mode === 'back' && m.t <= 0))) {
-                const dd = dodgeDir(th); if (dd && !(m.shoveT > 0)) { m.shoveT = 1.2; m.svx = dd.x * 55; m.svy = dd.y * 55; m.ring2 = 1; }
+                const dd = dodgeDir(th);
+                // (its way out is the shore it is swimming along: it dives under the boat instead, holding its place,
+                // and comes up to carry on where it was going)
+                if (dd && !(m.shoveT > 0) && (m.mode === 'travel' || m.mode === 'swim') && solidAt(m.x + dd.x * 30, m.y + dd.y * 30, null, true)) {
+                    m.resume = { mode: m.mode, tx: m.tx, ty: m.ty, t: m.t }; m.mode = 'dive'; m.t = 0.7; m.quick = true; m.tx = m.x; m.ty = m.y; m.paws = 'rest'; m.food = null; }
+                else if (dd && !(m.shoveT > 0)) { m.shoveT = 1.2; m.svx = dd.x * 55; m.svy = dd.y * 55; m.ring2 = 1; }
             }
             if ((th || (b && bd < c.reactR)) && (m.mode === 'float' || m.mode === 'eat' || m.mode === 'back')) {
                 const dd = th && dodgeDir(th), away = dd ? Math.atan2(dd.x, -dd.y) : Math.atan2(m.x - b.x, -(m.y - b.y));
@@ -10297,12 +10307,13 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 // the forward roll down: head first, the back arching, the hind flippers flicked up last
                 m.dive = 1 - m.t / (m.quick ? 0.7 : 0.9);
                 if (m.pup && !m.pupAlone) { m.pupAlone = true; m.px = m.x; m.py = m.y; }   // a pup can't dive: she leaves it floating
-                if (m.t <= 0) { m.mode = 'under'; m.ut = 0; m.dive = 0; m.ring = 1; m.t = m.quick ? R(7, 12) : R(10, 18); m.food = null; }
+                if (m.t <= 0) { m.mode = 'under'; m.ut = 0; m.dive = 0; m.ring = 1; m.t = m.resume ? R(3, 5) : m.quick ? R(7, 12) : R(10, 18); m.food = null; }
             } else if (m.mode === 'under') {
                 m.ut += dt;
                 const d = Math.hypot(m.tx - m.x, m.ty - m.y);
                 if (d > 2) { const v = Math.min(d, (m.quick ? 22 : 8) * dt); m.x += (m.tx - m.x) / d * v; m.y += (m.ty - m.y) / d * v; m.h += angDiff(Math.atan2(m.tx - m.x, -(m.ty - m.y)), m.h) * Math.min(1, dt * 2); }
-                if (m.t <= 0 && !boatNear(m.x, m.y, 50)) {
+                if (m.t <= 0 && !boatNear(m.x, m.y, 50) && m.resume) { const q = m.resume; m.resume = null; m.mode = q.mode; m.tx = q.tx; m.ty = q.ty; m.t = q.t; m.ring = 1; m.ring2 = 1; }
+                else if (m.t <= 0 && !boatNear(m.x, m.y, 50)) {
                     m.mode = m.quick ? 'back' : 'eat'; m.ring = 1; m.ring2 = 1; m.t = R(10, 20);
                     if (!m.quick) { const f = rnd(); m.food = f < 0.5 ? 'urchin' : f < 0.8 ? 'crab' : 'clam'; m.paws = 'hold'; }
                     // a mother comes straight back to her pup
@@ -10774,8 +10785,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 }
                 if (q.exit) {
                     const ex = q.exit.x - q.x, ey = q.exit.y - q.y, ed = Math.hypot(ex, ey);
-                    if (ed < 3) q.exit = null;
-                    else { q.h = Math.atan2(ex, -ey); const st = Math.min(ed, SL_SWIM * dt); q.x += ex / ed * st; q.y += ey / ed * st; recordTrail(q, dt, true); continue; }
+                    // (the straight leg out ignores the rock it came off, but not another in its way — a sea stack
+                    // standing off the haul-out: there it ends, and the steering takes it round)
+                    if (q.exitRock === undefined) q.exitRock = solidAt(q.x, q.y, null, true);
+                    const hx = Math.atan2(ex, -ey), ahead = ed >= 3 && solidAt(q.x + Math.sin(hx) * 22, q.y - Math.cos(hx) * 22, null, true);
+                    if (ed < 3 || (ahead && ahead !== q.exitRock)) q.exit = null;
+                    else { q.h = hx; const st = Math.min(ed, SL_SWIM * dt); q.x += ex / ed * st; q.y += ey / ed * st; recordTrail(q, dt, true); continue; }
                 }
                 const ox = G.mode === 'raft' ? q.ox * 0.8 : q.ox, oy = G.mode === 'raft' ? q.oy * 0.8 : q.oy;
                 const tx = G.x + -fy * ox + fx * oy, ty = G.y + fx * ox + fy * oy;

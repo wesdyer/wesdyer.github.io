@@ -66,7 +66,7 @@ const check = (name, ok, detail) => {
     check('a pulse 1 s old is over', r.old === 1, `scale ${r.old}`);
     check('restartRace clears the stamp', r.restart[0] == null && r.restart[1] == null, JSON.stringify(r.restart));
     check('a gate\'s two buoys at one edge point draw one chip, the nearer distance',
-        r.schoolChips.length === 1 && r.schoolChips[0] === '254m', JSON.stringify(r.schoolChips));
+        r.schoolChips.length === 1 && r.schoolChips[0] === '127m', JSON.stringify(r.schoolChips));   // 1270 u at 10 u/m (4475cc6; was 254 m at 5)
     check('no page errors', errs.length === 0, errs.slice(0, 3).join(' | '));
 
     await browser.close();

@@ -358,8 +358,9 @@ check('one knot is 15 u/s, the fleet\'s own clock', KT === 15,
 
         // hull, measured off the bake
         setClock(first + dur * 0.5);
+        // (959 x 251 u: the cargo ship at true size, ~96 m, since 8d9281b put the Cove's props to scale; it was 662 x 173)
         ok('the hull is the measured oblong, not the sprite frame',
-           Math.abs(v.hullLen - 662) < 4 && Math.abs(v.hullBeam - 173) < 4,
+           Math.abs(v.hullLen - 959) < 4 && Math.abs(v.hullBeam - 251) < 4,
            `${v.hullLen.toFixed(0)} x ${v.hullBeam.toFixed(0)}u`);
 
         // ── WIND SHADOW: the cove's promised mechanic ───────────────────────

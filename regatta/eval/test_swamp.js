@@ -118,7 +118,7 @@ const EAST = track('traj_swamp_1788850706135.json'), CUT = track('traj_swamp_178
     ok(r.egretFlew, 'an egret flies off from a boat');
     ok(r.anhingaDropped && !r.botAnhinga, 'a bot drops the anhingas into the water, and earns nobody anything');
     ok(r.playerAnhinga, 'the player putting them up earns swamp:anhingas');
-    ok(r.frogGroups === 7, `bullfrogs on the four open drift logs and three banks (${r.frogGroups} groups)`);
+    ok(r.frogGroups === 8, `bullfrogs on the five open drift logs and three banks (${r.frogGroups} groups)`);   // (five since PT-015 shrank the cypresses: prop-7 came out from under a crown)
     ok(r.frogsInOpen, 'no frog group sits under a tree crown');
     ok(r.frogsHopped, 'a boat alongside sends the frogs hopping in');
     ok(r.gates === 'cut:cut east:east west:west longway:longway', `each gate names its passage (${r.gates})`);
