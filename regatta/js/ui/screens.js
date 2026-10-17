@@ -3784,9 +3784,7 @@ function renderResultsHero(sorted, player, leader) {
                  rs.totalPenalties, rs.legTimes.length,
                  best && best.isBest, best && best.isBestPos,
                  // the standings move as the rest of the fleet comes home
-                 sorted.filter(b => b.raceState.finished).length,
-                 // ...and the Rival cell waits for the race to be counted (Unlocks.poll)
-                 !!(state.race.unlocks && state.race.unlocks.counted)].join('|');
+                 sorted.filter(b => b.raceState.finished).length].join('|');
     if (host.dataset.sig === sig) return;
     host.dataset.sig = sig;
 
@@ -3860,23 +3858,6 @@ function renderResultsHero(sorted, player, leader) {
         const pts = POINTS_FOR_PLACE(pos), scored = !dnf;
         cells.push(cell('Points', big(scored ? '+' + pts : '0', scored && pos === 1 ? '#f2c14e' : null), `${look.me ? look.me.total : 0} after ${look.done} race${look.done === 1 ? '' : 's'}`));
         cells.push(cell('Series', big(rank), line));
-    }
-
-    // THE RIVAL (PT-034): how this race moved the rung you're hunting, once it has been counted.
-    // Shown only when the target sailed; the unlock card itself still makes the reveal.
-    const tA = !solo && window.Unlocks && state.race.unlocks && state.race.unlocks.counted ? Unlocks.targetAfter() : null;
-    const tBoat = tA && sorted.find(b => b.name === tA.prey);
-    if (tBoat) {
-        const beat = !dnf && sorted.indexOf(tBoat) > pos - 1;
-        const prey = escapeHTMLText(tA.prey), reward = escapeHTMLText(tA.reward);
-        cells.push(cell('Rival',
-            big(tA.earned ? '&#10003;' : tA.prog ? `${tA.prog[0]} of ${tA.prog[1]}` : '&mdash;', '#ff7a5c'),
-            tA.earned ? `${reward} unlocked`
-                // beating the rival without moving the rung: a rung that counts only some venues (Fresh Water),
-                // or only clean races (Harder Fish)
-                : beat && tA.prog && tA.before && tA.prog[0] <= tA.before[0]
-                    ? `Ahead of ${prey} · ${rs.totalPenalties > 0 && /penalt/i.test(tA.goal) ? 'a penalty, so it didn’t count' : 'doesn’t count here'}`
-                : `${beat ? 'Ahead of' : 'Behind'} ${prey} · toward ${reward}`));
     }
 
     // The band's wash is the PLAYER'S colour, not a gold that belongs to first place. It is
@@ -5265,6 +5246,9 @@ function renderStandings(final) {
     const pb = state.boats.find(b => b.isPlayer);
     const meStyle = pb ? `background:${boatGlow(pb, 0.10)}; box-shadow:0 0 0 2px ${boatGlow(pb, 0.55)}, 0 0 18px ${boatGlow(pb, 0.30)};` : '';
     const meBadge = pb ? `<span class="t-label" style="font-size:9px; letter-spacing:0.12em; color:#0c1322; background:${deepBandFor(pb.colors.hull, pb.colors.spinnaker, pb.colors.spinAccent)}; border-radius:4px; padding:2px 5px; line-height:1.15; vertical-align:middle; margin-left:6px;">You</span>` : ' <span class="t-label t-label-sm">You</span>';
+    // THE RIVAL (PT-034) keeps its coral tag here, the same chip as the fleet page and the results.
+    const rival = window.Unlocks && Unlocks.enforced() ? Unlocks.huntTarget() : null;
+    const rivalTag = `<span class="t-label" style="font-size:9px; letter-spacing:0.12em; color:#0c1322; background:#ff7a5c; border-radius:4px; padding:2px 5px; line-height:1.15; vertical-align:middle; margin-left:6px;">Rival</span>`;
     const rows = table.map((r, i) => {
         const cfg = (typeof AI_CONFIG !== 'undefined') ? AI_CONFIG.find(c => c.name === r.name) : null;
         const cells = s.venues.map((k, j) => { const p = r.pts[j]; const sailed = j < done; return `<div class="t-mono" style="font-size:15px; text-align:right; color:${sailed ? '#eef3fb' : '#3d4a63'};">${sailed ? p : '&mdash;'}</div>`; });
@@ -5272,7 +5256,7 @@ function renderStandings(final) {
             <div class="t-mono" style="font-size:16px; color:#eef3fb;">${r.rank}</div>
             <div>${medal(i)}</div>
             <div><img ${portraitAttrs(escapeHTMLText(r.name), 42)} alt="" style="width:42px; height:42px; object-fit:cover; border-radius:10px; background:${cfg ? bandColorFor(cfg.hull, cfg.spinnaker) : '#1f2937'}33;" draggable="false"></div>
-            <div style="min-width:0;"><div class="t-display uppercase truncate" style="font-size:20px; line-height:1;">${escapeHTMLText(r.name)}${r.isPlayer ? meBadge : ''}</div><div class="t-mono" style="font-size:11px; color:#9fb2cc; margin-top:3px;">${escapeHTMLText(cfg ? cfg.creature : '')}</div></div>
+            <div style="min-width:0;"><div class="t-display uppercase truncate" style="font-size:20px; line-height:1;">${escapeHTMLText(r.name)}${r.isPlayer ? meBadge : r.name === rival ? rivalTag : ''}</div><div class="t-mono" style="font-size:11px; color:#9fb2cc; margin-top:3px;">${escapeHTMLText(cfg ? cfg.creature : '')}</div></div>
             ${cells.join('')}
             <div class="t-mono" style="font-size:20px; text-align:right; color:#fff;">${r.total}</div>
         </div>`;
