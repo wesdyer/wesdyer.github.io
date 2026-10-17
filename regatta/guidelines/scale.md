@@ -116,7 +116,7 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Coyote (nose to tail tip) | Redrock | 1.6 m | 16 | ~32 (≈2×) | 32 | ✓ Sep 25 |
 | Striped bass, in a boil | Redrock | 0.8 m | 8 | ~18 (a school, rule 7) | 18 | ✓ Sep 25 |
 | Common carp, jumping | Redrock | 0.7 m | 7 | ~21 (bigger than the Lake's bass 14 and the salmon 17) | 21 | ✓ Sep 25 |
-| Orca (male; female; calf) | Glacier | 7.6 m; 6 m; 3.2 m | 76; 60; 32 | **true size**, like the humpbacks | 76; 60; 32 (were 72; 66; 36 — the female was over life) | ✓ Sep 25 |
+| Orca (male; female; calf) | Glacier | 7.6 m; 6 m; 3.2 m | 76; 60; 32 | **true size**, like the humpbacks | 76; 60; 32 (were 72; 66; 36 — the female was over life); painted roll 2 measured 76; 60; 32 nose to fluke tips, flipper spans 38; 24; 16 | ✓ Oct 15 |
 | Emperor; gentoo; macaroni; Adélie penguin | Glacier | 1.15; 0.8; 0.7; 0.7 m | 12; 8; 7; 7 | floor 20 + ~15% rank steps: 30; 24; 21; 20 | 30; 24; 21; 20 (were 22; 16; 17; 15 — under the floor) | ✓ Sep 25 |
 | Leopard seal | Glacier | 3.2 m | 32 | ~64 (broad, ~2×) | 60 (was 44) | ✓ Sep 25 |
 | Antarctic tern (bill to tail; span) | Glacier | 0.4 m; 0.8 m | 4; 8 | floor 20; span ~2× the body, as a tern's is | 20; 38 (was 15; 24, then 32) | ✓ Sep 26 |

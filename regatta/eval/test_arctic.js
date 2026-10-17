@@ -3,7 +3,7 @@
 //
 //   node regatta/eval/test_arctic.js     (from the repo root, like every suite)
 //
-// Checks: three orca pods, four fixed penguin colonies (emperor, two gentoo, macaroni) on their
+// Checks: four orca pods, four fixed penguin colonies (emperor, two gentoo, macaroni) on their
 // shapes, Adélies on floes, three leopard seals, tern flocks; no Math.random; orcas stay off
 // fixed land and surface; Adélies slide in from a close boat; Four Colonies counts species once
 // each, only racing; the glacier face only within 350 u; "iced" from ice but not granite.
@@ -64,7 +64,8 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         // species: every penguin party in ten minutes — walkers on rock, tobogganers on ice
         { const seenT = new Map(), seenS = new Set();
           for (let i = 0; i < 30 * 400; i++) { Wildlife.update(1 / 30);
-            for (const T of Wildlife.debug().treks) if (!T.floe) seenT.set(T.species + ':' + T.dir, T.slide);
+            // (a travelling party mixes walkers and tobogganers — Taylor 1962 — so a party 'slides' if any bird in it does)
+            for (const T of Wildlife.debug().treks) if (!T.floe) seenT.set(T.species + ':' + T.dir, T.slide || T.birds.some(b => b.slide));
             for (const S of Wildlife.debug().swimmers) seenS.add(S.species); }
           out.treks = [...seenT].map(([k, v]) => k + (v ? '/slide' : '/walk')).sort().join(',');
           out.swimSp = [...seenS].sort().join(','); }
@@ -94,7 +95,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         out.chime = T('Chime', { feats: ['arctic:face'] }) && !T('Chime', {});
         return out;
     });
-    ok(r.pods === '4,3,5', `three orca pods (${r.pods})`);
+    ok(r.pods === '4,3,5,3', `four orca pods (${r.pods})`);
     ok(r.colonies === 'emperor:18,gentoo:7,gentoo:6,macaroni:18' && r.onShape, `four fixed colonies on their shapes (${r.colonies})`);
     ok(r.floeGroups >= 5 && r.seals === 4 && r.terns === 5, `Adélies on ${r.floeGroups} floes, ${r.seals} leopard seals, ${r.terns} tern flocks`);
     ok(r.randomCalls === 0, `wildlife never calls Math.random (${r.randomCalls})`);
