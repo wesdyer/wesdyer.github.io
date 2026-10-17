@@ -261,6 +261,9 @@
                 { id: 'A', kinds: ['orca', 'orca-b', 'orca-b', 'orca-calf'], at: [[1700, 1900], [400, 2700], [-900, 3000], [-300, 2350], [900, 2250]] },
                 { id: 'B', kinds: ['orca', 'orca-b', 'orca'], at: [[-1900, 700], [-1650, -400], [-1350, -1500], [-2000, -1100], [-2250, 100], [-2100, 1500]] },
                 { id: 'C', kinds: ['orca', 'orca-b', 'orca-b', 'orca', 'orca-calf'], at: [[-900, -2200], [250, -2000], [900, -2600], [-300, -3500], [-1400, -2600]] },
+                // Pod D (Wes, Oct 16: "one more orca group around isle-1"): a small family — a bull, a cow and her calf —
+                // travelling round the big ice island of the west basin (swinging wide of its south shore).
+                { id: 'D', kinds: ['orca', 'orca-b', 'orca-calf'], at: [[-1110,1840], [-1450,2650], [-2260,3400], [-3370,2950], [-3410,1840], [-3070,1030], [-2260,690], [-1450,1030]] },
             ] },
             // PENGUINS, each species where it lives: an emperor huddle on the fast ice of isle-4,
             // gentoos on the two granite skerries by the rounding, a dense macaroni colony on the
@@ -2524,12 +2527,29 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // 0.7 m -> 21, Adélie 0.7 m -> 20; the leopard seal 3.2 m -> 60 (a broad animal, ~2x); the tern
     // 0.4 m -> 20 bill to tail streamers, spanning 32.
     const ARCTIC_SPR = {
-        orca: { ink: 307, len: 76, parts: true, hinge: 0.7998 }, 'orca-b': { ink: 287, len: 60, parts: true, hinge: 0.7988 },
-        'orca-calf': { ink: 168, len: 32, parts: true, hinge: 0.7715 },
-        emperor: { file: 'penguin-emperor', ink: 94, len: 30 }, adelie: { file: 'penguin-adelie', ink: 76, len: 20 },
-        gentoo: { file: 'penguin-gentoo', ink: 79, len: 24 }, macaroni: { file: 'penguin-macaroni', ink: 98, len: 21 },
-        porpoise: { file: 'penguin-porpoising', ink: 76, len: 20 }, seal: { file: 'seal', ink: 154, len: 60 },
+        orca: { ink: 303, len: 76 }, 'orca-b': { ink: 241, len: 60 }, 'orca-calf': { ink: 127, len: 32 },
+        emperor: { file: 'penguin-emperor', ink: 124, len: 14 }, adelie: { file: 'penguin-adelie', ink: 113, len: 9.5 },   // (the painted standing birds, Oct 16: see PENG_SPR)
+        gentoo: { file: 'penguin-gentoo', ink: 98, len: 12 }, macaroni: { file: 'penguin-macaroni', ink: 97, len: 10.5 },
+        porpoise: { file: 'penguin-porpoising', ink: 76, len: 20 }, seal: { file: 'seal', ink: 241, len: 60 },   // (the painted leopard seal, Oct 16)
     };
+    // THE PAINTED ORCAS (Oct 15 2026, roll 2 from Wes's drone references: the white flank lobes framing the fin, the
+    // narrow eye slivers, the grey saddle wash). Each is cut by feetsplit.py into a body and two pectoral flippers, in
+    // register, and posed by the humpback's kit (humpPose): the flippers held at the art's own angle (`rest`, radians off
+    // the tail-ward axis) and the flukes hinged at the narrowest row of the tail stock. Rows are fractions of the frame;
+    // `fin` and `hole` place the standing dorsal fin's base and the blowhole as u (snout -0.5 .. fluke tips +0.5).
+    const ORCA_SPR = {
+        orca: { dir: 'arctic', file: 'orca', parts: ['body', 'fore-l', 'fore-r'], top: 0.1709, bot: 0.8662, cx: 0.5, hinge: 0.769,
+            fin: { l: [0.42, 0.3965], r: [0.58, 0.3979] }, finAng: 45.9, rest: 0.801, dorsal: -0.027, hole: -0.379 },
+        'orca-b': { dir: 'arctic', file: 'orca-b', parts: ['body', 'fore-l', 'fore-r'], top: 0.1719, bot: 0.8633, cx: 0.4995, hinge: 0.770,
+            fin: { l: [0.4315, 0.3862], r: [0.5675, 0.3857] }, finAng: 44.3, rest: 0.773, dorsal: -0.04, hole: -0.377 },
+        'orca-calf': { dir: 'arctic', file: 'orca-calf', parts: ['body', 'fore-l', 'fore-r'], top: 0.2178, bot: 0.8301, cx: 0.5, hinge: 0.745,
+            fin: { l: [0.43, 0.4238], r: [0.57, 0.4243] }, finAng: 46.2, rest: 0.806, dorsal: -0.006, hole: -0.366 },
+    };
+    // The orca's half-width along its body (fraction of its length), measured off the bull's master: the water effects lie
+    // on the WATERLINE just outside it, never painted over the back. u: -0.5 snout .. 0.5 fluke tips.
+    const ORCA_HW = [[-0.5, 0], [-0.458, 0.053], [-0.4, 0.078], [-0.314, 0.104], [-0.257, 0.106], [-0.027, 0.113], [0.045, 0.105], [0.117, 0.088], [0.189, 0.066], [0.261, 0.041], [0.333, 0.022], [0.5, 0.02]];
+    const ORCA_HWK = { orca: 1, 'orca-b': 0.84, 'orca-calf': 1.08 };
+    function orcaHW(u, kind) { let i = 1; while (i < ORCA_HW.length - 1 && ORCA_HW[i][0] < u) i++; const [u0, w0] = ORCA_HW[i - 1], [u1, w1] = ORCA_HW[i], q = Math.max(0, Math.min(1, (u - u0) / (u1 - u0))); return (w0 + (w1 - w0) * q) * (ORCA_HWK[kind] || 1); }
     const _arcticImg = {};
     function arcticImg(name) {
         if (!_arcticImg[name] && typeof Image !== 'undefined') { const im = new Image(); im.src = 'assets/images/props/arctic/' + name + '.png'; _arcticImg[name] = im; }
@@ -2537,29 +2557,15 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     const imgReady = (im) => im && im.complete && im.naturalWidth > 0;
     // A sprite by key, centred, nose along h, scaled so its ink is `len` long.
-    // THE LEOPARD SEAL'S BACK (review against references, Sep 25 2026): from above a leopard
-    // seal is a long, slim, dark slate-grey animal — the leopard spotting is on the PALE THROAT and
-    // flanks, barely on the back — with a huge flat reptilian head. The August sprite is a stout
-    // pale seal with white blotches over the back (a harbour seal from above), so it is drawn
-    // slimmer (0.82 across) and its back darkened toward slate, the spots subdued to a faint mottle.
-    let _sealBack = null;
-    function sealBackImg(im) {
-        if (!_sealBack && typeof document !== 'undefined') {
-            const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight; const g = c.getContext('2d');
-            g.drawImage(im, 0, 0);
-            g.globalCompositeOperation = 'multiply'; g.fillStyle = 'rgb(118,128,140)'; g.fillRect(0, 0, c.width, c.height);   // slate, the pale blotches knocked back
-            g.globalCompositeOperation = 'destination-in'; g.drawImage(im, 0, 0);                                           // keep the silhouette
-            _sealBack = c;
-        }
-        return _sealBack || im;
-    }
+    // THE LEOPARD SEAL (Sep 25 2026 the August sprite was a stout pale Weddell seal, so it was drawn slimmed to 0.82 and its
+    // back multiplied toward slate; Oct 16 Wes's painted leopard seal replaces it — long, slim, a dark slate back, the black
+    // spots on the pale flanks — and is drawn as painted, posed by sealPosed).
     function drawArcticSprite(ctx, key, x, y, h, alpha, lenMul) {
         const S = ARCTIC_SPR[key]; let im = arcticImg(S.file || key); if (!imgReady(im)) return;
         const k = S.len * (lenMul || 1) / S.ink, w = im.naturalWidth * k, hh = im.naturalHeight * k;
-        const slim = key === 'seal' ? 0.82 : 1; if (key === 'seal') im = sealBackImg(im);
-        ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(slim, 1); ctx.globalAlpha *= alpha; ctx.drawImage(im, -w / 2, -hh / 2, w, hh); ctx.restore();
+        ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.globalAlpha *= alpha; ctx.drawImage(im, -w / 2, -hh / 2, w, hh); ctx.restore();
     }
-    const ORCA_KNOTS = 70;   // ~5 kn cruising
+    const ORCA_KNOTS = 50;   // ~3.3 kn: travelling orcas 1.7-1.9 m/s (McRae et al. 2024; CWR "medium" 3-5 kn)
     // Land that isn't ice drifting: authored shapes only (floes move; swimmers pass under them).
     function fixedLand(x, y) {
         for (const s of (state.course && state.course.islands) || []) {
@@ -2710,6 +2716,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (let i = 0; i < L.length - 1; i++) { const [ax, ay] = L[i], [bx, by] = L[i + 1], dx = bx - ax, dy = by - ay, t = Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / (dx * dx + dy * dy))); best = Math.min(best, Math.hypot(x - ax - t * dx, y - ay - t * dy)); }
         return best;
     }
+    // A floe spot at least `gap` from the birds already there (Adelies keep about a nest apart, ~1 m — ~18 u drawn).
+    function floeSpotApart(F, birds, gap) {
+        let p = floeSpot(F, 0.45);
+        for (let k = 0; k < 20 && birds.some(b => Math.hypot(b.lx - p.x, b.ly - p.y) < gap); k++) p = floeSpot(F, 0.45);
+        return p;
+    }
     // A spot on a floe's surface, well inside its snow (localVeg is the snow cap, 0.7 of the art).
     function floeSpot(F, inset) {
         const V = F.localVeg || F.localArt || []; if (V.length < 3) return { x: 0, y: 0 };
@@ -2717,61 +2729,231 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         return { x: 0, y: 0 };
     }
 
-    // ORCAS. A pod steers round its loop; members hold a loose side-by-side formation. Each
-    // surfaces on a shared rhythm (a little out of step): rise, a short blow, the back rolling
-    // through, down again; between, they travel a few metres under, seen as dim shapes.
+    // ORCAS (Oct 15 2026, Wes: "Research how they swim, how they surface, how they blow. How they swim together").
+    // Field and lab numbers, carried onto the game's clock (scale.md: speeds in knots at 15 u/s a knot, so the game runs
+    // ~3x real time — every rhythm tied to the swim runs 3x too, or the whale would slide through its own strokes):
+    //  - TRAVEL ~1.7-1.9 m/s (McRae et al. 2024, tag + drone, Southern Residents; CWR's "medium" 3-5 kn): ~3.7 kn here.
+    //  - ONE BREATH A SURFACING, in bouts: short dives (~10-18 s; 90% of dives under a minute) then a long dive
+    //    (travelling 1.5-2.1 min); adults ~1.8 breaths a minute travelling (McRae 2024; Spina et al. 2024 drone video:
+    //    mean 23 s under). Tagged animals travelling did NOT breathe in lockstep, so each surfaces a little apart.
+    //    Mothers with calves breathe more often (Behav Ecol Sociobiol 2024): the pair stays shallower on the long dive
+    //    and comes up once in the middle of it.
+    //  - THE SURFACING, in order: the blowhole and head break and the blow goes at once; the back rolls through with the
+    //    dorsal fin; the tail stock arches and sinks. Travelling, the flukes are NOT raised; the last breath before a long
+    //    dive arches higher (more tail stock shows) and leaves a smooth "footprint" slick where it went down.
+    //  - FORMATION: neighbours >2 m apart in 91% of drone frames (Spina 2024) — a loose line abreast, the bull on the
+    //    outside; a young calf in ECHELON at its mother's mid-flank by the dorsal fin (~40% of the time), or in INFANT
+    //    POSITION under her tail stock (~30%), switching between.
+    // ONE STEP for an orca toward heading `want` at speed `sp`, turning at most `tr` rad/s: never a step that puts its nose
+    // on rock or the fixed ice; blocked, it turns for the nearest heading to `want` with open water ahead (it never sits
+    // pressed to the shore), slowing while it comes round.
+    function orcaStep(m, want, sp, tr, dt, L2) {
+        const open = (a) => [L2 + 6, L2 + 25, L2 + 70].every(r => !fixedLand(m.x + Math.sin(a) * r, m.y - Math.cos(a) * r));   // (the same nose the step checks)
+        if (!open(want)) { for (let k = 1; k <= 18; k++) { let f = false; for (const sg of [1, -1]) { const a = want + sg * k * 0.175; if (open(a)) { want = a; f = true; break; } } if (f) break; } }
+        // turning: the short way round, unless that swings its nose across the land — then the long way, through open water
+        let off = angDiff(want, m.h);
+        if (Math.abs(off) > 0.3) { const nose = (h) => fixedLand(m.x + Math.sin(h) * (L2 + 6), m.y - Math.cos(h) * (L2 + 6));
+            for (let q = 0.2; q < Math.abs(off); q += 0.2) if (nose(m.h + Math.sign(off) * q)) { off = off - Math.sign(off) * 2 * Math.PI; break; } }
+        // (a turn that would swing its snout over the land is not made — turned in place, it could lay its head on the shore)
+        { const h0 = m.h, sn = (h) => [L2 * 0.8, L2 + 6].some(r => fixedLand(m.x + Math.sin(h) * r, m.y - Math.cos(h) * r));
+          m.h += Math.max(-tr * dt, Math.min(tr * dt, off)); if (sn(m.h) && !sn(h0)) m.h = h0; }
+        const v = sp * Math.max(0.25, Math.cos(Math.min(Math.PI / 2, Math.abs(off)))), nx = m.x + Math.sin(m.h) * v * dt, ny = m.y - Math.cos(m.h) * v * dt;
+        // how much of it (nose, middle, tail) is on the land: a step is taken if it leaves it no MORE on the land than now — so
+        // clear water stays clear, and one caught on a corner of the shore can always work its way off
+        const onL = (x, y) => (fixedLand(x + Math.sin(m.h) * (L2 + 6), y - Math.cos(m.h) * (L2 + 6)) ? 1 : 0) + (fixedLand(x, y) ? 1 : 0) + (fixedLand(x - Math.sin(m.h) * L2 * 0.8, y + Math.cos(m.h) * L2 * 0.8) ? 1 : 0);
+        const now = onL(m.x, m.y), then = onL(nx, ny);
+        if (then === 0 || then < now) { m.x = nx; m.y = ny; return then === 0; }
+        // nose up against the shore: it backs off a little (sculling with its flippers) while it comes round, if there is
+        // water behind it — so it can always turn away
+        const bx = m.x - Math.sin(m.h) * sp * 0.3 * dt, by = m.y + Math.cos(m.h) * sp * 0.3 * dt;
+        if (!fixedLand(bx - Math.sin(m.h) * (L2 + 6), by + Math.cos(m.h) * (L2 + 6)) && !fixedLand(bx, by)) { m.x = bx; m.y = by; }
+        return false;
+    }
+    // A point on a pod's route `s` units along it (wrapping), and the route's heading there (over ±70 u, so it is smooth).
+    function orcaRouteAt(W, s) {
+        const L = W.len, c = W.cum, r = W.route; s = ((s % L) + L) % L;
+        let lo = 0, hi = c.length - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (c[mid] <= s) lo = mid; else hi = mid; }
+        const a = r[lo], b = r[(lo + 1) % r.length], q = (s - c[lo]) / Math.max(1e-6, c[lo + 1] - c[lo]);
+        return { x: a.x + (b.x - a.x) * q, y: a.y + (b.y - a.y) * q };
+    }
+    function orcaRouteH(W, s) { const a = orcaRouteAt(W, s - 70), b = orcaRouteAt(W, s + 70); return Math.atan2(b.x - a.x, -(b.y - a.y)); }
     function makeOrcaPod(P, i) {
         const pts = P.at.map(([x, y]) => snapWater(x, y, 90));
-        const members = P.kinds.map((kind, j) => ({ j, kind, x: pts[0].x, y: pts[0].y, h: 0, sd: (j % 2 ? 1 : -1) * Math.ceil(j / 2), back: (j >> 1) * 34 + R(-8, 8) + (kind === 'orca-calf' ? 16 : 0),
-            ph: R(0, 0.25), beat: R(0, 7), blow: 0, trail: [], trailT: 0 }));
-        return { i, cfg: P, pts, wi: 1, x: pts[0].x, y: pts[0].y, h: 0, members, cycle: R(0, 8), period: R(7, 11), breaths: Math.round(R(1, 4)) };
+        const mk = (kind) => ({ kind, x: pts[0].x, y: pts[0].y, h: 0, z: 3, up: -1, rt: -1, rise: Infinity, beat: R(0, 7), blow: 0, v: 0, turn: 0, trail: [], trailT: 0, stroke: 0 });
+        // cows in the middle of the line, bulls outside; each calf beside a cow
+        const adults = P.kinds.filter(k => k !== 'orca-calf').sort((a, b) => (a === 'orca') - (b === 'orca')), members = [];
+        adults.forEach((k, n) => { const m = mk(k); m.sd = n === 0 ? 0 : (n % 2 ? 1 : -1) * Math.ceil(n / 2); m.back = Math.abs(m.sd) * R(6, 26) + R(-8, 8); members.push(m); });
+        for (const k of P.kinds.filter(k => k === 'orca-calf')) {
+            const mom = members.find(m => m.kind === 'orca-b' && !m.calf) || members[0], c = mk(k);
+            c.mom = mom; mom.calf = c; c.side = mom.sd >= 0 ? 1 : -1; c.pos = 'echelon'; c.posT = R(10, 25); members.push(c);
+        }
+        members.forEach((m, j) => { m.j = j; });
+        for (const k of new Set(P.kinds)) humpSet(ORCA_SPR[k]);   // ask for the painted parts now
+        // TRAVELLING IS DIRECTIONAL (Center for Whale Research's definition: a steady heading, 3-5 kn, for long stretches):
+        // the pod's whole circuit is planned once through open water — clear of rock and the fixed ice by a body length,
+        // the drifting floes ignored, since they pass under those between breaths — and it follows a point well ahead on
+        // it, turning gradually, so it holds a heading and rounds the corners in wide arcs.
+        const route = []; for (let k = 0; k < pts.length; k++) for (const q of waterRoute(pts[k], pts[(k + 1) % pts.length], 70)) route.push(q);
+        const dense = []; for (let k = 0; k < route.length; k++) { const a = route[k], b = route[(k + 1) % route.length], d = Math.hypot(b.x - a.x, b.y - a.y), n = Math.max(1, Math.ceil(d / 40));
+            for (let s = 0; s < n; s++) dense.push({ x: a.x + (b.x - a.x) * s / n, y: a.y + (b.y - a.y) * s / n }); }
+        // rounded (Chaikin) so it turns in arcs — a smoothed point that would come too near the land keeps its original place
+        let rt = dense;
+        for (let it = 0; it < 3; it++) { const o = []; for (let k = 0; k < rt.length; k++) { const a = rt[k], b = rt[(k + 1) % rt.length];
+            for (const f of [0.25, 0.75]) { const q = { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f }; o.push([0, 40, -40].every(ox => [0, 40, -40].every(oy => !fixedLand(q.x + ox, q.y + oy))) ? q : (f < 0.5 ? a : b)); } } rt = o; }
+        const cum = [0]; for (let k = 1; k <= rt.length; k++) cum.push(cum[k - 1] + Math.hypot(rt[k % rt.length].x - rt[k - 1].x, rt[k % rt.length].y - rt[k - 1].y));
+        const W0 = { i, cfg: P, pts, route: rt, cum, len: cum[cum.length - 1], s: 0, ri: 0, members, t: 0, next: R(1, 5), bout: Math.round(R(3, 5)), prints: [] };
+        const p0 = orcaRouteAt(W0, 0), h0 = orcaRouteH(W0, 0); W0.x = p0.x; W0.y = p0.y; W0.h = h0;
+        for (const m of members) { const q = orcaRouteAt(W0, -(40 + m.j * 50)); m.x = q.x; m.y = q.y; m.h = h0; }
+        return W0;
+    }
+    const ORCA_ROLL = { orca: 0.85, 'orca-b': 0.8, 'orca-calf': 0.65 };   // seconds at the surface, a breath (~2-2.5 s real; field 1-3 s)
+    function orcaBreath(W, terminal, only) {
+        for (const m of W.members) {
+            if (only && !only.includes(m)) continue;
+            if (m.mom) continue;
+            m.rise = W.t + R(0, 1.5); m.term = terminal;
+            if (m.calf) { m.calf.rise = m.rise + R(0.15, 0.45); m.calf.term = terminal; }
+        }
     }
     function updateOrcas(dt) {
         for (const W of orcaPods) {
-            const [tx, ty] = [W.pts[W.wi].x, W.pts[W.wi].y];
-            // look ahead: of the headings near the one to the waypoint, the closest whose next
-            // 220 u (and the pod's width either side) is open water
-            swimTo(W, tx, ty, ORCA_KNOTS, 0.7, dt, 60, 70, null, true);
+            W.t += dt;
+            // the pod rides its route: clear of the land by design, its heading the route's own, turning in arcs
+            // (a pod waits for its stragglers: it eases off while the furthest member is well behind its place)
+            { let lag = 0; for (const m of W.members) if (!m.mom && m.slotD != null) lag = Math.max(lag, m.slotD);
+              const sp = ORCA_KNOTS * Math.max(0.45, Math.min(1, 1 - (lag - 90) / 260)); W.sp = (W.sp || ORCA_KNOTS) + (sp - (W.sp || ORCA_KNOTS)) * Math.min(1, dt * 0.8);
+              W.s = (W.s + W.sp * dt) % W.len; const q = orcaRouteAt(W, W.s); W.x = q.x; W.y = q.y; W.h = orcaRouteH(W, W.s); }
+            const tx = W.x, ty = W.y;
             // the pod's wake: where it has been, every 40 u — the way a member cut off behind the ice follows back
             { const C = W.crumbs || (W.crumbs = []), c0 = C[C.length - 1]; if (!c0 || Math.hypot(W.x - c0.x, W.y - c0.y) > 40) { C.push({ x: W.x, y: W.y }); if (C.length > 80) C.shift(); } }
             W.leg = (W.leg || 0) + dt;
-            if (Math.hypot(tx - W.x, ty - W.y) < 120 || W.leg > 60) { W.wi = (W.wi + 1) % W.pts.length; W.leg = 0; }
-            // Travelling killer whales take ONE breath per surfacing, in bouts: a few short
-            // surfacings close together, then a longer dive (research on BC residents: ~1.6
-            // breaths a minute travelling). Game time runs ~3x: bouts of 3-5 breaths 7-11 s
-            // apart, then 35-60 s down.
-            W.cycle += dt; if (W.cycle > W.period) { W.cycle -= W.period; W.breaths--; if (W.breaths <= 0) { W.breaths = Math.round(R(4, 6)) + 1; W.period = R(20, 32); } else W.period = R(6, 9); }
-            W.diving = W.breaths === 1 && W.period > 18;   // (the long dive: no surfacing this cycle)
-            const fx = Math.sin(W.h), fy = -Math.cos(W.h), rx = -fy, ry = fx;
-            for (const m of W.members) {
-                let tx2 = W.x + rx * m.sd * 46 - fx * m.back, ty2 = W.y + ry * m.sd * 46 - fy * m.back;
-                if (solidAt(tx2, ty2, null, true)) { tx2 = W.x - fx * (50 + m.j * 45); ty2 = W.y - fy * (50 + m.j * 45); }   // its slot is on the ice: in line astern
-                const d = Math.hypot(tx2 - m.x, ty2 - m.y), L2 = ARCTIC_SPR[m.kind].len * 0.5;
-                const v = Math.min(ORCA_KNOTS * 1.3, d * 1.5 + ORCA_KNOTS * 0.6);
-                // CUT OFF (PT-077: an orca sat behind a berg for minutes while its pod swam on): more than
-                // 220 u from its place, it follows the pod's own wake — water the pod has just swum, so it
-                // leads round the ice — from the nearest point of it, fast, until it is back in formation
-                if (d > 220 && W.crumbs && W.crumbs.length) {
-                    const C = W.crumbs; let k = 0, bd = 1e9; for (let i = 0; i < C.length; i++) { const dd = Math.hypot(C[i].x - m.x, C[i].y - m.y); if (dd < bd) { bd = dd; k = i; } }
-                    const c2 = C[Math.min(C.length - 1, k + 2)];
-                    swimTo(m, c2.x, c2.y, ORCA_KNOTS * 1.4, 1.6, dt, L2, 9, null, true);
-                } else
-                // steer for a point ahead of its slot, so it swims along with the pod, not at the slot
-                swimTo(m, tx2 + fx * 60, ty2 + fy * 60, v, 1.2, dt, L2, 9, null, !(m.up >= 0));   // at the surface it goes round the floes; under, it passes beneath
-                // the surfacing: u in [0,1] over the 4 s after the pod's cycle starts, per member offset
-                const t = W.cycle - m.ph * 4;
-                const was = m.up || 0, L3 = ARCTIC_SPR[m.kind].len * 0.5;
-                if (was < 0 && t >= 0 && t < 0.2 && bodyHit(m.x, m.y, m.h, L3)) m.hold = true;          // ice overhead: it can't come up here
-                if (m.hold && !bodyHit(m.x, m.y, m.h, L3)) m.hold = false;
-                if (was >= 0 && bodyHit(m.x, m.y, m.h, L3)) { m.hold = true; }                            // a floe drifting over it at the surface: it goes down
-                m.up = !W.diving && !m.hold && t >= 0 && t < 4 ? t / 4 : -1;
-                // the blow goes as the blowhole breaks the surface (a third of the way into the roll),
-                // and hangs where it was blown while the whale travels on
-                if (m.up >= 0.28 && was < 0.28) { m.blow = 1; const L = ARCTIC_SPR[m.kind].len; m.bx = m.x + Math.sin(m.h) * L * 0.22; m.by = m.y - Math.cos(m.h) * L * 0.22; m.bh = m.kind === 'orca' ? 1 : m.kind === 'orca-b' ? 0.85 : 0.55; }
-                m.blow = Math.max(0, m.blow - dt / 2.2);
-                m.beat += dt * (m.up >= 0 ? 2.2 : 3.2);
-                m.trailT += dt; if (m.trailT > 0.12) { m.trailT = 0; if (m.up >= 0) { m.trail.unshift({ x: m.x, y: m.y }); if (m.trail.length > 12) m.trail.pop(); } else if (m.trail.length) m.trail.pop(); }
+
+            // THE BREATHING: a bout of short dives (10-18 s real), the last breath the deep one, then the long dive (70-120 s real)
+            if (W.t >= W.next) {
+                W.bout--;
+                const last = W.bout <= 0;
+                orcaBreath(W, last);
+                if (last) { const long = R(23, 40); W.next = W.t + long; W.bout = Math.round(R(3, 5));
+                    W.mid = W.t + long * R(0.4, 0.6); }                                  // a mother with a calf comes up once mid-dive
+                else W.next = W.t + R(4, 7.3);   // (12-22 s real)
             }
+            if (W.mid && W.t >= W.mid) { W.mid = 0; orcaBreath(W, false, W.members.filter(m => m.calf)); }
+            const fx = Math.sin(W.h), fy = -Math.cos(W.h), rx = -fy, ry = fx;
+            // adults first (a calf keeps station on its mother as she is now)
+            for (const pass of [0, 1]) for (const m of W.members) {
+                if (!!m.mom !== !!pass) continue;
+                const L = ARCTIC_SPR[m.kind].len, L2 = L * 0.5, x0 = m.x, y0 = m.y, h0 = m.h;
+                if (m.rt >= 0 && bodyHit(m.x, m.y, m.h, L2)) { m.rt = -1; m.up = -1; }   // a floe drifting over it at the surface: it goes down
+                const atTop = m.rt >= 0;   // only rolling at the surface do the floes stand in its way; any lower it passes beneath them
+                if (!m.mom) {
+                    // ITS SLOT, laid off the route: behind the pod by its place in the line, out to the side by its offset —
+                    // narrowed until there is clear water for its body, down to single file on the route itself
+                    const sb = W.s - m.back - 10, sq = orcaRouteAt(W, sb), sh = orcaRouteH(W, sb), snx = Math.cos(sh), sny = Math.sin(sh);
+                    let kk = 0;
+                    if (m.sd) for (const k of [1, 0.75, 0.5, 0.25]) { const lat = m.sd * 85 * k, px = sq.x + snx * lat, py = sq.y + sny * lat, cl = L2 + 25;
+                        if ([[0, 0], [cl, 0], [-cl, 0], [0, cl], [0, -cl]].every(([ox, oy]) => !fixedLand(px + ox, py + oy))) { kk = k; break; } }
+                    // (the offset eases in and out as the water narrows and widens — a jump in its slot would be a jink)
+                    m.latK = m.latK == null ? kk : m.latK + Math.max(-0.25 * dt, Math.min(0.25 * dt, kk - m.latK)); if (kk < m.latK) m.latK = Math.max(kk, m.latK - 0.6 * dt);
+                    let tx2 = sq.x + snx * m.sd * 85 * m.latK, ty2 = sq.y + sny * m.sd * 85 * m.latK; m.astern = m.latK < 0.99;
+                    const d = Math.hypot(tx2 - m.x, ty2 - m.y); m.slotD = d;
+                    const v = Math.min(ORCA_KNOTS * 1.3, d * 1.5 + ORCA_KNOTS * 0.6);
+                    // CUT OFF (PT-077: an orca sat behind a berg for minutes while its pod swam on): more than 220 u from its
+                    // place, it follows the pod's own wake — water the pod has just swum — fast, until it is back in formation
+                    const ahead0 = d <= 220 && (fixedLand(m.x + Math.sin(m.h) * (L2 + 90), m.y - Math.cos(m.h) * (L2 + 90)) || fixedLand(m.x + Math.sin(W.h) * (L2 + 90), m.y - Math.cos(W.h) * (L2 + 90)));
+                    if (d > 220 || ahead0) {
+                        // FALLEN BEHIND (cut off by ice, or a long dive): it rejoins along the pod's own planned route — water
+                        // clear of land by a body length — making for the furthest route point ahead of it it can reach in a
+                        // clear straight line, at a sprint, turning smoothly; under, the floes don't stop it.
+                        const clear = (p, q) => { const dd = Math.hypot(q.x - p.x, q.y - p.y), k = Math.ceil(dd / 20); for (let s2 = 1; s2 <= k; s2++) if (fixedLand(p.x + (q.x - p.x) * s2 / k, p.y + (q.y - p.y) * s2 / k)) return false; return true; };
+                        // aim along ITS OWN leg (the route can run out and back past itself: the nearest route point may be
+                        // on the other leg, going the other way): the point nearest behind its slot it can reach in a clear line
+                        if (m.rjT == null || m.rjT <= 0) { m.rjT = 1; m.rjP = null; const s0 = W.s - m.back - 10;
+                            for (let k = 0; k <= 30 && !m.rjP; k++) { const q = orcaRouteAt(W, s0 - k * 40); if (clear(m, q)) m.rjP = q; }
+                            if (!m.rjP) { let bd = 1e9; for (let k = 0; k <= 30; k++) { const q = orcaRouteAt(W, s0 - k * 40), dd = Math.hypot(q.x - m.x, q.y - m.y); if (dd < bd) { bd = dd; m.rjP = q; } } } }
+                        m.rjT -= dt; const tg = m.rjP;
+                        if (!orcaStep(m, Math.atan2(tg.x - m.x, -(tg.y - m.y)), ORCA_KNOTS * (d > 220 ? 1.4 : 1), ahead0 ? 0.8 : 0.45, dt, L2)) m.rjT = 0;
+                    } else {
+                        // KEEPING STATION WITHOUT ZIGZAGGING (Wes, Oct 16: "it sometimes reads as wiggling" — steering at its
+                        // slot it overshot and steered back, yawing every few seconds): it holds the pod's heading, eases a
+                        // little across toward its slot (at most ~0.3 rad off, turning ≤0.35 rad/s), and closes the distance
+                        // with speed. Land ahead: the old obstacle-aware steering takes over.
+                        const ex = tx2 - m.x, ey = tx2 === tx2 ? ty2 - m.y : 0, lat = ex * rx + ey * ry, lon = ex * fx + ey * fy;
+                        const want = W.h + Math.max(-0.3, Math.min(0.3, lat / 120));
+                        { const sp = Math.max(ORCA_KNOTS * 0.6, Math.min(ORCA_KNOTS * 1.35, ORCA_KNOTS + lon * 0.8)), hx = m.x, hy = m.y;
+                            orcaStep(m, want, sp, 0.35, dt, L2);
+                            if (atTop && bodyHit(m.x, m.y, m.h, L2)) { m.x = hx; m.y = hy; } }   // (at the surface a floe is in its way)
+                    }
+                } else {
+                    // THE CALF keeps station on its mother: in echelon, beside her mid-flank with its head by her dorsal fin;
+                    // or in infant position, under her tail stock. It must come up beside her, never under her.
+                    const M = m.mom, mfx = Math.sin(M.h), mfy = -Math.cos(M.h), mrx = -mfy, mry = mfx;
+                    m.posT -= dt;
+                    if (m.posT <= 0) { m.pos = m.pos === 'echelon' ? (rnd() < 0.7 ? 'infant' : 'echelon') : 'echelon'; m.posT = m.pos === 'infant' ? R(18, 35) : R(10, 22); }
+                    const soon = m.rt >= 0 || m.rise - W.t < 2.5;
+                    let pos = soon ? 'echelon' : m.pos;
+                    let sx = M.x + mrx * m.side * 12 - mfx * 7, sy = M.y + mry * m.side * 12 - mfy * 7;
+                    if (pos === 'echelon' && fixedLand(sx, sy)) { m.side = -m.side; sx = M.x + mrx * m.side * 12 - mfx * 7; sy = M.y + mry * m.side * 12 - mfy * 7; }
+                    if (pos === 'infant') { sx = M.x - mfx * 20; sy = M.y - mfy * 20; }
+                    const k = Math.min(1, dt * 2.5);
+                    let nx = m.x + (M.vx || 0) * dt + (sx - m.x) * k, ny = m.y + (M.vy || 0) * dt + (sy - m.y) * k, nh = m.h + angDiff(M.h, m.h) * Math.min(1, dt * 3);
+                    // never onto rock or the fixed ice: it drops back toward her tail stock (her own wake: water she has just swum)
+                    // — smoothly, at the speed it can swim, never a hop
+                    if (bodyHit(nx, ny, nh, L2, null, true)) { m.pos = 'infant'; m.posT = R(4, 8);
+                        const ix = M.x - mfx * 20, iy = M.y - mfy * 20, d = Math.hypot(ix - m.x, iy - m.y), st = Math.min(d, ORCA_KNOTS * 1.5 * dt);
+                        nx = m.x + (ix - m.x) / (d || 1) * st; ny = m.y + (iy - m.y) / (d || 1) * st; }
+                    m.x = nx; m.y = ny; m.h = nh;
+                    m.inf = pos === 'infant' ? Math.min(1, (m.inf || 0) + dt) : Math.max(0, (m.inf || 0) - dt);
+                }
+                // NEVER A JUMP (Wes, Oct 15: "make sure the orcas never change position suddenly"): whatever moved it this frame —
+                // the formation, a slide out from under ice, a calf changing sides — it moves no faster than an orca can swim
+                // (a sprint, 1.6x its travelling speed) and turns no faster than ~2.5 rad/s
+                { const d = Math.hypot(m.x - x0, m.y - y0), cap = ORCA_KNOTS * 1.6 * dt; if (d > cap) { m.x = x0 + (m.x - x0) * cap / d; m.y = y0 + (m.y - y0) * cap / d; }
+                  const dh = angDiff(m.h, h0), hc = 2.5 * dt; if (Math.abs(dh) > hc) m.h = h0 + Math.sign(dh) * hc; }
+                // and never onto rock or the fixed ice: a step that would put its snout, middle or flukes there is not taken
+                { const onRock = (x, y, h) => [0.8, 0, -0.8].some(k => fixedLand(x + Math.sin(h) * L2 * k, y - Math.cos(h) * L2 * k));
+                  if (onRock(m.x, m.y, m.h) && !onRock(x0, y0, h0)) { m.x = x0; m.y = y0; m.h = h0; } }
+                // how it is moving: speed, the turn (for the bend and the flippers)
+                m.vx = (m.x - x0) / Math.max(dt, 1e-3); m.vy = (m.y - y0) / Math.max(dt, 1e-3);
+                m.v = m.v * 0.85 + Math.hypot(m.vx, m.vy) * 0.15;
+                m.turn = m.turn * 0.9 + angDiff(m.h, h0) / Math.max(dt, 1e-3) * 0.1;
+                // THE SURFACING. Ice overhead when it is due: it waits, and comes up when it is clear.
+                if (m.rt < 0 && W.t >= m.rise) {
+                    if (bodyHit(m.x, m.y, m.h, L2)) m.rise = W.t + 0.3;
+                    else { m.rt = 0; m.rise = Infinity; m.deep = false; m.blew = false; }
+                }
+                if (m.rt >= 0) {
+                    m.rt += dt;
+                    m.up = Math.min(1, m.rt / (ORCA_ROLL[m.kind] * (m.term ? 1.3 : 1)));
+                    // the blow goes as the blowhole clears — the head is the first of it out
+                    if (!m.blew && m.up >= 0.06) { m.blew = true; m.blow = 1; const S = ORCA_SPR[m.kind]; m.bx = m.x - Math.sin(m.h) * S.hole * L; m.by = m.y + Math.cos(m.h) * S.hole * L; m.bh = m.kind === 'orca' ? 1 : m.kind === 'orca-b' ? 0.85 : 0.5; }
+                    if (m.up >= 1) {
+                        m.up = -1; m.rt = -1;
+                        if (m.term) { m.deep = true;   // gone down for the long dive: the footprint where the flukes went under
+                            W.prints.push({ x: m.x - Math.sin(m.h) * L * 0.35, y: m.y + Math.cos(m.h) * L * 0.35, h: m.h, r: L * 0.32, t: 0, life: 9 }); }
+                    }
+                } else m.up = -1;
+                // DEPTH (metres to the back): at the surface while it rolls; climbing in time for its breath; a few metres
+                // down between breaths in a bout; deep on the long dive (a mother and calf stay shallower)
+                const due = m.rise - W.t, zc = m.mom ? 1.4 + 1.0 * (m.inf || 0) : 1.6;   // (cruising just under — drone shots show them plainly a metre or two down)
+                let zt = m.rt >= 0 ? 0 : m.deep ? (m.calf || m.mom ? 5 : 14) : zc;
+                if (m.rt < 0 && due < m.z / 4 + 0.5) zt = bodyHit(m.x, m.y, m.h, L2) ? 1.5 : 0.6;   // (under a floe it waits below it)
+                m.z += Math.max(-4 * dt, Math.min(4 * dt, zt - m.z));
+                // THE STROKE: up-and-down beats of the flukes, the front of the body still (Fish 1998: snout 0.02-0.06 L,
+                // flukes 0.2 L peak to peak). Rate from Fish's f = 0.892 + 0.613 U/L, scaled to the wild cruise (drone:
+                // mean 0.55 Hz, Spina 2024), x3 for the clock; a calf in echelon rides its mother's flow and strokes little.
+                // Held at the slow end of that cruise (x0.38, ~0.4 Hz real; Wes: "the tail should beat a little slower").
+                const U = m.v / 30, f = 3 * 0.38 * (0.892 + 0.613 * U / (L / 10)) * (0.25 + 0.75 * Math.min(1, m.v / 35)) * (m.mom && m.pos === 'echelon' ? 0.6 : 1);
+                m.beat += Math.PI * 2 * f * dt;
+                // FLUKE PRINTS: swimming just under, each downstroke pushes up a smooth round upwelling behind it
+                const st = Math.floor(m.beat / (Math.PI * 2));
+                if (st !== m.stroke) { m.stroke = st;
+                    if (m.rt < 0 && m.z < 3.2 && onCam(m.x, m.y, 200)) W.prints.push({ x: m.x - Math.sin(m.h) * L * 0.47, y: m.y + Math.cos(m.h) * L * 0.47, h: m.h, r: L * 0.13, t: 0, life: 3, a: 0.35 * (1 - m.z / 3.2), seed: st * 1.7 + m.j }); }
+                m.blow = Math.max(0, m.blow - dt / 0.7);   // a blow hangs ~1-2 s real
+                // the fin's wake while it is out
+                m.trailT += dt; if (m.trailT > 0.08) { m.trailT = 0; if (m.up >= 0) { const S = ORCA_SPR[m.kind]; m.trail.unshift({ x: m.x - Math.sin(m.h) * S.dorsal * L, y: m.y + Math.cos(m.h) * S.dorsal * L }); if (m.trail.length > 10) m.trail.pop(); } else if (m.trail.length) m.trail.pop(); }
+            }
+            for (const F of W.prints) F.t += dt;
+            W.prints = W.prints.filter(F => F.t < F.life); if (W.prints.length > 40) W.prints.splice(0, W.prints.length - 40);
         }
     }
 
@@ -2785,16 +2967,25 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     //    every second or two at 2-3 m/s (7-10 km/h), breathing without slowing; gentoos are the
     //    fastest. Emperors do NOT porpoise: they swim low and deep, a back or a head breaking
     //    the surface now and then, and ROCKET out onto the ice.
-    // Gaits in drawn body lengths a second (scale.md rule 8, the game's ~3x clock): emperors walk
-    // slowly and stately (0.6 BL/s) on a slow rock (~1.5 steps a second); Adélies bustle (1 BL/s,
-    // ~3 steps a second); gentoos stride; macaronis HOP on rock, feet together. Tobogganing is
-    // about twice walking. Swimming: porpoisers ~3 BL/s, gentoos fastest and leaping highest;
-    // emperors cruise ~1.7 BL/s. `rock` is the waddle's angular rate, `amp` its roll.
+    // GAITS, re-checked against the literature Oct 16 2026 (Wes: "research penguin movement and behavior"). Speeds are in
+    // drawn body lengths (scale.md: small animals drawn ~3x, ~1-2 BL/s), and a gait's rhythm keeps its REAL stride per body
+    // length, so the feet never skate under the drawn bird:
+    //  - WALK: emperors ~0.5 m/s at ~1.4 steps/s (Griffin & Kram 2000, Nature; Pinshow), a step ~0.3 BL; Adelies
+    //    ~0.3-1.1 m/s, ~2.2 steps/s of ~15 cm, a step ~0.2 BL (Levick 1915; Taylor 1962); gentoos between. `rock` =
+    //    2π x steps a second here (one surge a step; the waddle's roll one each two). Macaronis HOP on rock, feet together.
+    //  - TOBOGGAN: Adelies slide on the breast pushing with the feet at the SAME speed as walking — in a travelling party
+    //    some walk while others slide — and fast only when frightened (Taylor 1962). Emperors slide too, pushing with the
+    //    flippers as well in soft snow (WHOI). Gentoos and macaronis on rock only walk.
+    //  - SWIM: all ~2-2.3 m/s, both flippers together; stroke rates emperor 1.47, gentoo 2.18, Adelie 2.33, macaroni
+    //    2.29 Hz (Sato et al. 2010, Proc R Soc B) — ~1.3 body lengths a stroke; game BL/s ~ real BL/s, so the real rates.
+    //  - PORPOISE: Adelies leap for only ~3.8% of the distance, between leaps ~0.9 m down (Yoda et al. 1999), mainly as
+    //    they set out and come home; gentoos always porpoise leaving and approaching the beach (Auk 103:777). Emperors
+    //    travel low and are not reported porpoising.
     const PENG = {
-        emperor: { walk: 18, slide: 45, swim: 50, porp: null, toboggan: true, rock: 4.8, amp: 0.08 },
-        adelie: { walk: 22, slide: 40, swim: 60, porp: [1.2, 1.7], hop: 7, toboggan: true, rock: 9.4, amp: 0.16 },
-        gentoo: { walk: 24, slide: 0, swim: 72, porp: [1.0, 1.4], hop: 9, toboggan: false, rock: 8, amp: 0.13 },
-        macaroni: { walk: 21, slide: 0, swim: 60, porp: [1.2, 1.6], hop: 7, toboggan: false, rock: 7, amp: 0.05, hops: true },
+        emperor: { walk: 15, slide: 20, swim: 50, porp: null, toboggan: true, rock: 11.9, amp: 0.1, stroke: 1.47, flipPush: true },
+        adelie: { walk: 21, slide: 21, rush: 45, swim: 60, porp: true, hop: 7, toboggan: true, rock: 31.4, amp: 0.09, stroke: 2.33 },
+        gentoo: { walk: 22, slide: 0, swim: 70, porp: true, hop: 9, toboggan: false, rock: 25, amp: 0.09, stroke: 2.18 },
+        macaroni: { walk: 18, slide: 0, swim: 60, porp: true, hop: 7, toboggan: false, rock: 9, amp: 0.05, hops: true, stroke: 2.29 },
     };
     function colonySpot(isl, m) {
         // on the shape, near its water edge on the side the course sees
@@ -2824,15 +3015,18 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const F of c.fixed) {
             const isl = (state.course.islands || []).find(s => s.id === F.shape); if (!isl) continue;
             const home = colonySpot(isl, F.huddle ? 30 : 16), birds = [];
-            const sp = F.huddle ? 7.5 : F.species === 'macaroni' ? 11 : 15;
+            // spacing about a body width (the painted standing birds, Oct 16): a huddle presses shoulder to shoulder
+            // (Adelie nests ~1 m apart, just past pecking reach; gentoos farther apart; macaronis packed close)
+            const sp = F.huddle ? 9 : F.species === 'macaroni' ? 17 : 24;
+            const lee = (state.wind ? state.wind.direction : 0) + Math.PI;   // huddled emperors stand backs to the wind, all facing the lee — never a ring facing in
             for (let i = 0; i < F.n; i++) {
-                for (let k = 0; k < 40; k++) {
-                    const a = R(0, 7), d = Math.sqrt(rnd()) * sp * Math.sqrt(F.n) * 0.62, x = home.x + Math.cos(a) * d, y = home.y + Math.sin(a) * d;
+                for (let k = 0; k < 80; k++) {
+                    const a = R(0, 7), d = Math.sqrt(rnd()) * sp * Math.sqrt(F.n) * 0.62 * (1 + k / 60), x = home.x + Math.cos(a) * d, y = home.y + Math.sin(a) * d;
                     if (!pointInPoly(x, y, isl.vertices) || birds.some(b => Math.hypot(b.x - x, b.y - y) < sp * 0.72)) continue;
-                    birds.push({ x, y, hx: x, hy: y, h: F.huddle ? Math.atan2(x - home.x, -(y - home.y)) + Math.PI : R(0, 7), t: R(1, 6), bob: R(0, 7) }); break;
+                    birds.push({ x, y, hx: x, hy: y, h: F.huddle ? lee + R(-0.35, 0.35) : R(0, 7), t: R(1, 6), bob: R(0, 7) }); break;
                 }
             }
-            const C = { species: F.species, isl, home, birds, huddle: !!F.huddle, nextSea: R(10, 40), ice: isl.style === 'ice' };
+            const C = { species: F.species, isl, home, birds, huddle: !!F.huddle, lee, nextSea: R(10, 40), ice: isl.style === 'ice' };
             C.shore = colonyShore(C);
             out.push(C);
         }
@@ -2845,13 +3039,32 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (out.length >= c.adelieFloes) break;
             if (laneDist(F.x, F.y) > 700 || out.some(G => Math.hypot(G.floe.x - F.x, G.floe.y - F.y) < 700)) continue;
             const n = Math.round(R(c.adelieN[0], c.adelieN[1]));
-            out.push({ floe: F, birds: Array.from({ length: n }, () => { const p = floeSpot(F, 0.4); return { lx: p.x, ly: p.y, lh: R(0, 7), t: R(1, 5), bob: R(0, 7), slideT: R(20, 60) }; }) });
+            const birds = []; for (let i = 0; i < n; i++) { const p = floeSpotApart(F, birds, 13); birds.push({ lx: p.x, ly: p.y, lh: R(0, 7), t: R(1, 5), bob: R(0, 7), slideT: R(20, 60) }); }
+            out.push({ floe: F, birds });
         }
         return out;
     }
+    // A swimmer's place in the water (its slot in the group, eased in from where it went in — never a pop into place).
+    function swimPos(S, b) {
+        const fx = Math.sin(S.h), fy = -Math.cos(S.h);
+        const ox = b.ox + Math.sin(S.t * 0.8 + b.ph * 3) * 5, oy = b.oy + Math.sin(S.t * 0.6 + b.ph * 5) * 3;
+        let x = S.x + fx * oy + -fy * ox, y = S.y + fy * oy + fx * ox;
+        if (b.ease != null && b.ease < 1) { const e = b.ease * b.ease * (3 - 2 * b.ease); x = b.ex + (x - b.ex) * e; y = b.ey + (y - b.ey) * e; }
+        return { x, y };
+    }
+    // A bird going in joins its party's swimming group THE MOMENT IT IS IN, from the spot where it went in (Wes, Oct 16:
+    // "some penguins are appearing and disappearing" — each vanished at the edge until the last of the party was in, and
+    // the group then appeared 30 u out).
+    function joinSwim(T, b) {
+        if (b.joined || !T.mkS) return; b.joined = true;
+        const S = T.mkS(), i = S.birds.length, P = PENG[S.species];
+        S.birds.push({ ox: R(-16, 16), oy: -i * 13 + R(-5, 5), ph: R(0, 1.6), lt: R(0.6, 1.8), leap: -1, st: R(1, 4), sur: -1, ex: b.sx, ey: b.sy, ease: 0 });
+        if (S.party && b.home) S.party.push(b.home);
+    }
     function swimGroupFrom(species, x, y, awayH, n) {
         const P = PENG[species];
-        const birds = Array.from({ length: n }, (_, i) => ({ ox: R(-16, 16), oy: -i * 13 + R(-5, 5), ph: R(0, 1.6), per: P.porp ? R(P.porp[0], P.porp[1]) : R(3, 5) }));
+        // each bird: lt the time to its next leap (porpoising), st to its next breath at the surface (swimming under)
+        const birds = Array.from({ length: n }, (_, i) => ({ ox: R(-16, 16), oy: -i * 13 + R(-5, 5), ph: R(0, 1.6), lt: R(0.2, 1.8), leap: -1, st: R(1, 4), sur: -1 }));
         return { species, x, y, h: awayH, t: 0, out: R(10, 18), back: null, birds };
     }
     // A TREK: birds moving over the ice or rock one after another along one path — out to the
@@ -2873,17 +3086,35 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const T of treks) {
             const L = trekLen(T); let all = true;
             for (const b of T.birds) {
-                b.delay -= dt; if (b.delay > 0) { all = false; continue; }
+                b.delay -= dt;
+                if (b.delay > 0) { all = false;
+                    if (T.dir === 'in' && b.wx != null) { const p = trekPos(T, 0), tx = p.x - Math.sin(p.h) * 12, ty = p.y + Math.cos(p.h) * 12, d = Math.hypot(tx - b.wx, ty - b.wy), st = Math.min(d, 45 * dt);
+                        if (d > 0.5) { b.wx += (tx - b.wx) / d * st; b.wy += (ty - b.wy) / d * st; b.wh = Math.atan2(tx - b.wx, -(ty - b.wy)); } }
+                    continue; }
                 b.splash = Math.max(0, (b.splash || 0) - dt / 0.9);
                 if (b.done) continue;
-                if (T.dir === 'in' && !b.leapt) { b.leapt = true; b.splash = 1; const p = trekPos(T, 0); b.sx = p.x; b.sy = p.y; }
+                // OUT OF THE WATER with a leap onto the ice (an Adelie clears ~2 m; an emperor only ~0.6 m after its rocket
+                // run): the leap first, then the walk
+                if (T.dir === 'in' && !b.leapt) { b.leapt = true; b.splash = 1; b.lp = 0; const p = trekPos(T, 0); b.sx = p.x - Math.sin(p.h) * 10; b.sy = p.y + Math.cos(p.h) * 10; }
+                if (b.lp != null && b.lp < 1) { b.lp = Math.min(1, b.lp + dt / 0.45); all = false; continue; }
+                // AT THE EDGE (Adelies are famously slow to go first; the crowd presses until one is in, then the rest follow):
+                // a calm party gathers in a bunch and hesitates, then one goes, a pause, and the others in a rush
+                if (b.wait) { all = false; if (b.go != null && (b.go -= dt) <= 0) { b.done = true; b.wait = false; b.splash = 1; const p = trekPos(T, L); b.sx = p.x + Math.sin(p.h) * 8; b.sy = p.y - Math.cos(p.h) * 8; joinSwim(T, b); } continue; }
                 b.step = (b.step || 0) + dt;
-                const G = PENG[T.species];
-                // the waddle surges twice a rock; a macaroni hops — a bound, then a pause
-                const v = T.slide ? T.speed : G.hops ? T.speed * 2.2 * Math.max(0, Math.sin(b.step * G.rock)) : T.speed * (0.75 + 0.5 * Math.max(0, Math.sin(b.step * G.rock)));
+                const G = PENG[T.species], slide = b.slide != null ? b.slide : T.slide, sp = b.speed || T.speed;
+                // the waddle surges once a step; a macaroni hops — a bound, then a pause
+                const v = slide ? sp : G.hops ? sp * 2.2 * Math.max(0, Math.sin(b.step * G.rock)) : sp * (0.75 + 0.5 * Math.max(0, Math.sin(b.step * G.rock)));
                 b.s += v * dt;
-                if (b.s >= L) { b.done = true; b.s = L; if (T.dir === 'out') { b.splash = 1; const p = trekPos(T, L); b.sx = p.x; b.sy = p.y; } }
+                if (b.s >= L) {
+                    b.s = L;
+                    if (T.dir === 'out' && T.gather) { b.wait = true; b.qi = T.nq = (T.nq || 0) + 1; all = false; continue; }
+                    b.done = true; if (T.dir === 'out') { b.splash = 1; const p = trekPos(T, L); b.sx = p.x; b.sy = p.y; joinSwim(T, b); }
+                }
                 if (!b.done) all = false;
+            }
+            if (T.gather && !T.released && T.birds.every(b => b.wait)) {
+                T.hes = (T.hes == null ? R(2.5, 5) : T.hes) - dt;
+                if (T.hes <= 0) { T.released = true; T.birds.slice().sort((p, q) => p.qi - q.qi).forEach((b, i) => { b.go = i === 0 ? 0 : 1 + i * R(0.2, 0.4); }); }
             }
             T.t = (T.t || 0) + dt;
             if (all && T.birds.every(b => !(b.splash > 0))) { T.done = true; T.onEnd && T.onEnd(T); }
@@ -2899,13 +3130,48 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             for (const G of floeGroups) if (G.birds.length) seen('adelie', G.floe.x, G.floe.y);
         }
         for (const C of colonies2) {
-            for (const b of C.birds) { b.t -= dt; b.bob += dt; if (b.t <= 0) { b.t = R(2, 7); if (!C.huddle) b.h += R(-1.2, 1.2); } }
-            // An emperor huddle ROLLS: birds on the windward edge shuffle round the outside to the
-            // lee and push in, so the mass creeps and turns (a few cm a second — here a slow drift).
-            if (C.huddle) for (const b of C.birds) {
-                const dx = b.hx - C.home.x, dy = b.hy - C.home.y, r = Math.hypot(dx, dy) || 1, w = 0.03 * (r / 20);
-                const nx = C.home.x + dx * Math.cos(w * dt) - dy * Math.sin(w * dt), ny = C.home.y + dx * Math.sin(w * dt) + dy * Math.cos(w * dt);
-                if (pointInPoly(nx, ny, C.isl.vertices)) { b.hx = nx; b.hy = ny; b.x = nx; b.y = ny; }
+            // standing birds shift round now and then — a turn eased over a second or so, never a snap
+            for (const b of C.birds) { b.t -= dt; b.bob += dt; if (b.ht == null) b.ht = b.h; if (b.t <= 0) { b.t = R(4, 10); if (!C.huddle) b.ht = b.h + R(-0.6, 0.6); }
+                b.h += Math.max(-0.9 * dt, Math.min(0.9 * dt, angDiff(b.ht, b.h))); }
+            // AN EMPEROR HUDDLE (Zitterbart et al. 2011, ~21 birds a m²: every 30-60 s every bird takes one small step, the
+            // steps passing through the huddle as a WAVE; Le Maho / Gilbert: birds on the exposed windward edge walk along the
+            // sides to the lee and push in, so the whole huddle creeps DOWNWIND). All face the same way (`lee`). On the
+            // game's clock: a wave every 10-20 s, crossing in ~2.5 s, each step ~2 u; a windward bird walking round every ~12 s.
+            if (C.huddle) {
+                const lx = Math.sin(C.lee), ly = -Math.cos(C.lee), proj = (b) => (b.hx - C.home.x) * lx + (b.hy - C.home.y) * ly;
+                C.waveT = (C.waveT == null ? R(3, 10) : C.waveT) - dt;
+                if (C.waveT <= 0) { C.waveT = R(10, 20); C.wave = Math.min(...C.birds.map(proj)) - 4; }
+                if (C.wave != null) {
+                    const w0 = C.wave; C.wave += 16 * dt;
+                    for (const b of C.birds) { const p = proj(b); if (p > w0 && p <= C.wave && !b.walk) { const nx = b.hx + lx * 1.2, ny = b.hy + ly * 1.2; if (pointInPoly(nx + lx * 22, ny + ly * 22, C.isl.vertices)) {   // (never stepping up to the ice edge)
+                         b.stepT = 0.35; b.sx0 = b.hx; b.sy0 = b.hy; b.hx = nx; b.hy = ny; } } }
+                    if (C.wave > Math.max(...C.birds.map(proj)) + 4) C.wave = null;
+                }
+                C.walkT = (C.walkT == null ? R(6, 14) : C.walkT) - dt;
+                if (C.walkT <= 0 && C.birds.length > 5) {
+                    C.walkT = R(9, 16);
+                    // the most windward bird walks round the side of the huddle to its lee edge
+                    const by = C.birds.filter(b => !b.walk).sort((p, q) => proj(p) - proj(q)), b = by[0], front = proj(by[by.length - 1]);
+                    if (b) { const cx = C.birds.reduce((a, q) => a + q.hx, 0) / C.birds.length, cy = C.birds.reduce((a, q) => a + q.hy, 0) / C.birds.length;
+                        const half = Math.max(...C.birds.map(q => Math.abs((q.hx - cx) * -ly + (q.hy - cy) * lx))) + 8;
+                        let sx = (b.hx - cx) * -ly + (b.hy - cy) * lx >= 0 ? 1 : -1;
+                        if (!pointInPoly(cx - ly * sx * half, cy + lx * sx * half, C.isl.vertices)) sx = -sx;   // its own side runs off the ice: round the other way
+                        const side = { x: cx - ly * sx * half, y: cy + lx * sx * half }, ins = (q) => pointInPoly(q.x, q.y, C.isl.vertices) && pointInPoly(q.x + lx * 6, q.y + ly * 6, C.isl.vertices);
+                        // its new place: on the lee edge if the ice runs on there, else as far to the lee along the side as the ice allows
+                        // (against the ice edge the huddle can drift no further: the bird squeezes in on the lee half of the flank)
+                        let to = null; for (const ahead of [12, 4, -4, -12, -20, -28]) for (const k of [0.45, 0.8, 1]) { if (to) break; const lat = k * half, q = { x: C.home.x + lx * (front + ahead) - ly * sx * lat, y: C.home.y + ly * (front + ahead) + lx * sx * lat };
+                            if (ins(q) && !C.birds.some(o => o !== b && Math.hypot(o.hx - q.x, o.hy - q.y) < 6.5)) to = q; }
+                        if (to && pointInPoly(side.x, side.y, C.isl.vertices)) b.walk = { pts: [{ x: b.hx, y: b.hy }, side, to], s: 0 }; }
+                }
+                for (const b of C.birds) {
+                    if (b.stepT > 0) { b.stepT -= dt; const k = 1 - Math.max(0, b.stepT) / 0.35; b.x = b.sx0 + (b.hx - b.sx0) * k; b.y = b.sy0 + (b.hy - b.sy0) * k; b.stepPh = k * Math.PI; }
+                    else if (b.walk) {
+                        const W = b.walk; W.s += PENG.emperor.walk * dt; const p = trekPos({ pts: W.pts }, W.s), L = trekLen({ pts: W.pts });
+                        b.x = b.hx = p.x; b.y = b.hy = p.y; b.stepPh = W.s * PENG.emperor.rock * 0.5 / PENG.emperor.walk;
+                        b.h += Math.max(-2 * dt, Math.min(2 * dt, angDiff(W.s < L - 4 ? p.h : C.lee, b.h))); b.ht = b.h;
+                        if (W.s >= L) { b.walk = null; b.ht = C.lee + R(-0.3, 0.3); b.stepPh = 0; }
+                    } else { b.x = b.hx; b.y = b.hy; b.stepPh = 0; if (Math.abs(angDiff(b.h, C.lee)) > 0.5) b.ht = C.lee + R(-0.3, 0.3); }
+                }
             }
             C.nextSea -= dt;
             if (C.nextSea <= 0 && C.shore && C.birds.length > 4) {
@@ -2915,18 +3181,20 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 const party = C.birds.slice().sort((a, b) => Math.hypot(a.x - C.shore.e.x, a.y - C.shore.e.y) - Math.hypot(b.x - C.shore.e.x, b.y - C.shore.e.y)).slice(0, n);
                 C.birds = C.birds.filter(b => !party.includes(b));
                 const start = party[0], slide = C.ice && P.toboggan;
-                treks.push({ species: C.species, dir: 'out', slide, speed: slide ? P.slide : P.walk, pts: [{ x: start.x, y: start.y }, C.shore.e],
-                    birds: party.map((b, i) => ({ delay: i * R(0.6, 1.1), s: 0, home: b })),
-                    onEnd: (T) => { const S = swimGroupFrom(C.species, C.shore.w.x, C.shore.w.y, C.shore.h, T.birds.length); S.home = C; S.party = T.birds.map(q => q.home); swimmers.push(S); } });
+                treks.push({ species: C.species, dir: 'out', slide: false, gather: true, speed: P.walk, pts: [{ x: start.x, y: start.y }, C.shore.e],
+                    birds: party.map((b, i) => { const sl = slide && (i === 0 || rnd() < 0.5); return { delay: i * R(0.6, 1.1), s: 0, home: b, slide: sl, speed: sl ? P.slide : P.walk }; }),   // (on the ice the leader slides; the rest walk or slide)
+                    mkS: function () { if (!this.S) { this.S = swimGroupFrom(C.species, C.shore.w.x, C.shore.w.y, C.shore.h, 0); this.S.home = C; this.S.party = []; this.S.placed = true; swimmers.push(this.S); } return this.S; } });
             }
         }
         for (const G of floeGroups) {
             if (!G.birds.length || G.leaving) continue;
             for (const b of G.birds) {
-                b.t -= dt; b.bob += dt; if (b.t <= 0) { b.t = R(2, 6); b.lh += R(-1, 1); }
+                b.t -= dt; b.bob += dt; if (b.lht == null) b.lht = b.lh; if (b.t <= 0) { b.t = R(4, 9); b.lht = b.lh + R(-0.6, 0.6); }
+                if (!b.sliding) b.lh += Math.max(-0.9 * dt, Math.min(0.9 * dt, angDiff(b.lht, b.lh)));
                 // now and then one toboggans across its floe to a new spot
-                b.slideT -= dt; if (b.slideT <= 0 && !b.sliding) { const p = floeSpot(G.floe, 0.4); b.sliding = { x0: b.lx, y0: b.ly, x1: p.x, y1: p.y, u: 0 }; b.slideT = R(25, 70); }
-                if (b.sliding) { const S = b.sliding, L = Math.hypot(S.x1 - S.x0, S.y1 - S.y0) || 1; S.u += dt * 26 / L; b.lh = Math.atan2(S.x1 - S.x0, -(S.y1 - S.y0));
+                b.slideT -= dt; if (b.slideT <= 0 && !b.sliding) { const p = floeSpotApart(G.floe, G.birds.filter(o => o !== b), 13); b.sliding = { x0: b.lx, y0: b.ly, x1: p.x, y1: p.y, u: 0 }; b.slideT = R(25, 70); }
+                if (b.sliding) { const S = b.sliding, L = Math.hypot(S.x1 - S.x0, S.y1 - S.y0) || 1, want = Math.atan2(S.x1 - S.x0, -(S.y1 - S.y0)), d = angDiff(want, b.lh);
+                    b.lh += Math.max(-3 * dt, Math.min(3 * dt, d)); b.lht = b.lh; if (Math.abs(d) < 0.3) S.u += dt * PENG.adelie.slide / L;   // turns to face the way, then slides
                     b.lx = S.x0 + (S.x1 - S.x0) * Math.min(1, S.u); b.ly = S.y0 + (S.y1 - S.y0) * Math.min(1, S.u); if (S.u >= 1) b.sliding = null; }
             }
             const bt = boatNear(G.floe.x, G.floe.y, G.floe.radius + c.reactR);
@@ -2936,11 +3204,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 let e = { x: Math.sin(la) * G.floe.radius * 0.5, y: -Math.cos(la) * G.floe.radius * 0.5 };
                 for (let r = 0.5; r < 1.3; r += 0.05) { const x = Math.sin(la) * G.floe.radius * r, y = -Math.cos(la) * G.floe.radius * r; if (!pointInPoly(x, y, G.floe.localArt || G.floe.localVeg)) break; e = { x, y }; }
                 const order = G.birds.slice().sort((a, b) => Math.hypot(a.lx - e.x, a.ly - e.y) - Math.hypot(b.lx - e.x, b.ly - e.y));
-                const n = order.length, floe = G.floe;
+                const n = order.length, floe = G.floe, grp = {};
+                const mkS = () => { if (!grp.S) { const w = floeToWorld(floe, e.x * 1.25, e.y * 1.25); grp.S = Object.assign(swimGroupFrom('adelie', w.x, w.y, away, 0), { toFloe: true, placed: true }); swimmers.push(grp.S); } return grp.S; };
                 for (let i = 0; i < n; i++) {
                     const b = order[i];
-                    treks.push({ species: 'adelie', dir: 'out', slide: true, speed: PENG.adelie.slide * 1.3, floe, pts: [{ x: b.lx, y: b.ly }, e], birds: [{ delay: i * R(0.2, 0.4), s: 0 }],
-                        onEnd: i === n - 1 ? () => { const w = floeToWorld(floe, e.x * 1.25, e.y * 1.25); swimmers.push(Object.assign(swimGroupFrom('adelie', w.x, w.y, away, n), { toFloe: true })); } : null });
+                    treks.push({ species: 'adelie', dir: 'out', slide: true, speed: PENG.adelie.rush, floe, pts: [{ x: b.lx, y: b.ly }, e], birds: [{ delay: i * R(0.2, 0.4), s: 0 }], mkS });
                 }
                 G.birds = [];
             }
@@ -2962,6 +3230,18 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // the group is ~2 birds wide and ~4 long; home water is by the shore, so let it in to its colony's shape
             swimTo(S, tx, ty, P.swim, 1.6, dt, 22, 18, S.back && S.back.floe ? S.back.floe : S.home ? S.home.isl : null);
             unstick(S, dt, 22, S.back && S.back.floe ? S.back.floe : S.home ? S.home.isl : null);
+            // PORPOISING only as they set out and as they come home (Yoda 1999; gentoos always, leaving and approaching the
+            // beach): a leap clear every couple of seconds — ~1.2 body lengths of air, ~0.4 s — and between, ~1 m down. Out
+            // in the open they swim under and come up a moment to breathe. An emperor coming home dives deep and shoots up
+            // at the edge trailing a stream of bubbles (Davenport et al. 2011): S.rocket.
+            const home = S.back ? Math.hypot(tx - S.x, ty - S.y) : 1e9, porping = P.porp && (S.t < 7 || home < 320);
+            S.rocket = !P.porp && home < 160;
+            for (const b of S.birds) {
+                if (b.leap >= 0) { b.leap += dt / 0.4; if (b.leap >= 1) b.leap = -1; }
+                else if (porping) { b.lt -= dt; if (b.lt <= 0) { b.leap = 0; b.lt = R(1.6, 3); } }
+                if (b.sur >= 0) { b.sur += dt / 0.7; if (b.sur >= 1) b.sur = -1; }
+                else if (!porping && b.leap < 0) { b.st -= dt; if (b.st <= 0) { b.sur = 0; b.st = P.porp ? R(2.5, 4.5) : R(4, 7); } }
+            }
             // home: its landing water, or anywhere against its own shore; and if the pack has walled
             // the landing off for a minute, they come ashore anyway (they would find a way in)
             const arrive = S.back && (S.back.floe ? Math.hypot(tx - S.x, ty - S.y) < S.back.floe.radius + 15 : (Math.hypot(tx - S.x, ty - S.y) < 45 || S.t > S.out + 60));
@@ -2972,18 +3252,21 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     let G = floeGroups.find(q => q.floe === F); if (!G) { G = { floe: F, birds: [] }; floeGroups.push(G); }
                     let e = { x: 0, y: 0 }; for (let r = 0.2; r < 1.3; r += 0.05) { const x = Math.sin(la) * F.radius * r, y = -Math.cos(la) * F.radius * r; if (!pointInPoly(x, y, F.localArt || F.localVeg)) break; e = { x, y }; }
                     G.leaving = true;
-                    S.birds.forEach((q, i) => { const p = floeSpot(F, 0.4);
-                        treks.push({ species: 'adelie', dir: 'in', slide: false, speed: PENG.adelie.walk, floe: F, pts: [e, p], birds: [{ delay: i * R(0.3, 0.6), s: 0 }],
+                    S.birds.forEach((q, i) => { const p = floeSpotApart(F, G.birds, 13), wp = swimPos(S, q), ew = floeToWorld(F, e.x, e.y);
+                        treks.push({ species: 'adelie', dir: 'in', slide: false, speed: PENG.adelie.walk, floe: F, pts: [e, p], birds: [{ delay: Math.max(i * R(0.3, 0.6), Math.hypot(ew.x - wp.x, ew.y - wp.y) / 45), s: 0, wx: wp.x, wy: wp.y, wh: S.h }],
                             onEnd: () => { G.birds.push({ lx: p.x, ly: p.y, lh: R(0, 7), t: R(1, 5), bob: R(0, 7), slideT: R(20, 60) }); if (i === S.birds.length - 1) G.leaving = false; } }); });
                 } else if (S.home) {
                     // back up the shore in single file (an emperor rockets out first), to their places
                     const C = S.home, Pp = PENG[C.species];
-                    (S.party || []).forEach((b, i) => treks.push({ species: C.species, dir: 'in', slide: false, speed: Pp.walk, pts: [C.shore.e, { x: b.hx, y: b.hy }], birds: [{ delay: i * R(0.5, 0.9), s: 0 }],
-                        onEnd: () => { C.birds.push(b); } }));
+                    (S.party || []).forEach((b, i) => { const q = S.birds[i] || S.birds[0], wp = q ? swimPos(S, q) : { x: S.x, y: S.y };
+                        treks.push({ species: C.species, dir: 'in', slide: false, speed: Pp.walk, pts: [C.shore.e, { x: b.hx, y: b.hy }], birds: [{ delay: Math.max(i * R(0.5, 0.9), Math.hypot(C.shore.e.x - wp.x, C.shore.e.y - wp.y) / 45), s: 0, wx: wp.x, wy: wp.y, wh: S.h }],
+                        onEnd: () => { C.birds.push(b); } }); });
                 }
                 S.done = true;
             }
+            if (S.t > 118 && !S.home) S.fade = Math.max(0, (120 - S.t) / 2);   // diving away: it fades into the depth
             if (S.t > 120 && !S.home) S.done = true;
+            for (const q of S.birds) if (q.ease != null && q.ease < 1) q.ease = Math.min(1, q.ease + dt / 1.2);
         }
         swimmers = swimmers.filter(S => !S.done);
     }
@@ -3031,12 +3314,49 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     function updateSeals(dt) {
         for (const S of lseals) {
+            const x0 = S.x, y0 = S.y, h0 = S.h, m0 = S.mode;
+            stepSeal(S, dt);
+            // NEVER A JUMP (Wes, Oct 16: "the seals are teleporting around when under the ice edge" — unstick() put a seal
+            // pinned under the ice straight into the nearest open water, the ice-cover slide-out moved it at twice its speed
+            // with its heading snapped): whatever moved it, no faster than a seal can burst (~110 u/s) or turn (~3 rad/s),
+            // and never onto rock or the fixed ice (it slips under a drifting floe instead, out of sight, as seals do).
+            if (S.mode !== 'launch' && m0 !== 'launch' && x0 != null) {   // (mode changes too: a new errand never snaps it round)
+                const d = Math.hypot(S.x - x0, S.y - y0), cap = 110 * dt; if (d > cap) { S.x = x0 + (S.x - x0) * cap / d; S.y = y0 + (S.y - y0) * cap / d; }
+                const dh = angDiff(S.h, h0), hc = 3 * dt; if (Math.abs(dh) > hc) S.h = h0 + Math.sign(dh) * hc;
+                const onRock = (x, y, h) => [0, 0.8, -0.8].some(k => fixedLand(x + Math.sin(h) * 30 * k, y - Math.cos(h) * 30 * k));
+                if (S.mode !== 'haul' && onRock(S.x, S.y, S.h) && !onRock(x0, y0, h0)) { S.x = x0; S.y = y0; S.h = h0; }
+            }
+            // caught under a drifting floe at the surface (it can no longer pop out into open water): it simply goes down
+            // and swims on under the ice, as seals do, and comes up again elsewhere
+            if ((S.mode === 'swim' || S.mode === 'toFloe') && bodyHit(S.x, S.y, S.h, 26)) { S.uIce = (S.uIce || 0) + dt;
+                if (S.uIce > 0.15) { S.mode = 'dive'; S.depth = 0.3; S.v = 40; S.t = R(6, 11); S.floe = null; S.uIce = 0; S.sx = undefined; } }
+            else S.uIce = 0;
+        }
+    }
+    function stepSeal(S, dt) {
+            // SWIMMING (Hocking et al. 2021: leopard seals have wing-like fore-flippers and stroke with them much as sea lions
+            // do; cruising they also scull with the hind flippers, the body's sway): now and then, and to turn or speed up, one
+            // stroke of both fore-flippers together — reach forward, a fast sweep back, then held back along the body to glide.
+            if (S.mode === 'swim' || S.mode === 'toFloe' || S.mode === 'dive') {
+                if (S.fs != null) { S.fs += dt / 0.9; if (S.fs >= 1) S.fs = null; }
+                else if ((S.fsT = (S.fsT == null ? R(1, 4) : S.fsT) - dt) <= 0) { S.fs = 0; S.fsT = R(2.5, 6); }
+            } else S.fs = null;
             S.t -= dt; S.ring = Math.max(0, S.ring - dt / (S.mode === 'dive' ? 2 : 1.4)); S.plop = Math.max(0, S.plop - dt / 1.2);
             if (S.mode === 'haul') {
+                // ALIVE ON THE ICE: now and then it lifts its head to look about (a slow turn one way, a pause, back), or flicks
+                // a fore-flipper (scratching, shifting) — a resting leopard seal is never a still, straight shape for long
+                if (!S.hauling) { S.lkT = (S.lkT == null ? R(1, 4) : S.lkT) - dt; if (S.lkT <= 0) { S.lkT = R(2.5, 7); S.lkW = rnd() < 0.35 ? 0 : (rnd() < 0.5 ? -1 : 1) * R(0.25, 0.5); }
+                    S.look = (S.look || 0) + ((S.lkW || 0) - (S.look || 0)) * Math.min(1, dt * 1.6);
+                    S.fkT = (S.fkT == null ? R(3, 9) : S.fkT) - dt; if (S.fkT <= 0) { S.fkT = R(5, 12); S.fk = 0; S.fkS = rnd() < 0.5 ? 'L' : 'R'; }
+                    if (S.fk != null) { S.fk += dt / 0.8; const v = Math.sin(Math.PI * Math.min(1, S.fk)) * 0.6; S.flkL = S.fkS === 'L' ? v : 0; S.flkR = S.fkS === 'R' ? v : 0; if (S.fk >= 1) { S.fk = null; S.flkL = S.flkR = 0; } } }
+                if (!S.hauling) { S.slT = (S.slT == null ? 0 : S.slT) - dt; if (S.slT <= 0) { S.slT = R(12, 30); S.slW = (rnd() < 0.5 ? -1 : 1) * R(0.35, 0.6); }
+                    S.slump = (S.slump || 0) + ((S.slW || 0) - (S.slump || 0)) * Math.min(1, dt * 0.8); }   // settling, and now and then shifting to lie the other way
+                else S.slump = 0;
                 if (S.hauling) {   // humping in from the edge, heave by heave
                     const Hh = S.hauling, dx = Hh.x - S.lx, dy = Hh.y - S.ly, d = Math.hypot(dx, dy); Hh.s += dt;
                     const v = 26 * Math.max(0.15, Math.sin(Hh.s * 7.5)) ** 0.7;
-                    if (d < 2) { S.hauling = null; S.heave = 0; } else { S.lx += dx / d * Math.min(d, v * dt); S.ly += dy / d * Math.min(d, v * dt); S.heave = Math.sin(Hh.s * 7.5); }
+                    if (d < 2) { S.hauling = null; S.heave = 0; } else { S.lx += dx / d * Math.min(d, v * dt); S.ly += dy / d * Math.min(d, v * dt); S.heave = Math.sin(Hh.s * 7.5);
+                        S.lh += Math.max(-1.6 * dt, Math.min(1.6 * dt, angDiff(Math.atan2(dx, -dy), S.lh))); }   // it turns in as it heaves itself up
                 }
                 const w = floeToWorld(S.floe, S.lx, S.ly); S.x = w.x; S.y = w.y; S.h = S.lh + (S.floe.spin || 0);
                 // back to the station when the rest is over, a boat comes close, or the floe drifts off
@@ -3069,7 +3389,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     const d = angDiff(S.la, S.lh); S.lh += Math.max(-1.6 * dt, Math.min(1.6 * dt, d));
                     const w = floeToWorld(F, S.lx, S.ly); S.x = w.x; S.y = w.y; S.h = S.lh + (F.spin || 0); S.heave = Math.sin(S.lh * 8) * 0.5;
                     if (Math.abs(d) < 0.08) S.faced = true;
-                    continue;
+                    return;
                 }
                 S.lt += dt; S.lh = S.la;
                 if (S.lt < H) {
@@ -3109,14 +3429,15 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 const nose = solidAt(S.x + Math.sin(S.h) * 32, S.y - Math.cos(S.h) * 32);
                 const dF = Math.hypot(F.x - S.x, F.y - S.y);
                 if (S.fBest == null || dF < S.fBest - 10) { S.fBest = dF; S.fStall = 0; } else S.fStall = (S.fStall || 0) + dt;
-                if (S.fStall > 12 && nose !== F) { S.badFloe = F; S.badUntil = T + 60; S.floe = null; S.mode = 'swim'; S.t = R(6, 12); S.fBest = null; S.fStall = 0; continue; }
+                if (S.fStall > 12 && nose !== F) { S.badFloe = F; S.badUntil = T + 60; S.floe = null; S.mode = 'swim'; S.t = R(6, 12); S.fBest = null; S.fStall = 0; return; }
                 if (dF < F.radius * 0.95 || nose === F) { S.fBest = null; S.fStall = 0;
                     // hauling out: it heaves itself up over the edge where it touched, then humps in
                     const c = Math.cos(-(F.spin || 0)), sn = Math.sin(-(F.spin || 0)), dx = S.x - F.x, dy = S.y - F.y, lx = dx * c - dy * sn, ly = dx * sn + dy * c;
                     const L = Math.hypot(lx, ly) || 1; let e = { x: 0, y: 0 };
                     for (let d = 0; d < L + 40; d += 3) { const x = lx / L * d, y = ly / L * d; if (!pointInPoly(x, y, F.localArt || F.localVeg)) break; e = { x, y }; }
                     const ein = R(28, 48), ee = Math.hypot(e.x, e.y) || 1, p = { x: e.x - e.x / ee * Math.min(ein, ee), y: e.y - e.y / ee * Math.min(ein, ee) };   // a body length or so in from the edge
-                    S.lx = e.x; S.ly = e.y; S.lh = Math.atan2(p.x - e.x, -(p.y - e.y)); S.hauling = { x: p.x, y: p.y, s: 0 };
+                    // from where it is (its nose on the edge, its body still in the water), facing the way it came — no jump
+                    S.lx = lx; S.ly = ly; S.lh = S.h - (F.spin || 0); S.hauling = { x: p.x, y: p.y, s: 0 };
                     S.mode = 'haul'; S.t = R(60, 120); S.plop = 1;
                 }
                 if (S.t < -40) S.mode = 'swim';
@@ -3130,7 +3451,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 if (S.up > 0.8 && S.ring <= 0) S.ring = 1;
                 if (S.t <= 0) { const F = sealFloe(S, 700); if (F) { S.floe = F; S.mode = 'toFloe'; S.t = 0; } else S.t = R(10, 20); }
             }
-        }
+        
+
     }
 
     // TERNS. A flock over each spot: they beat into the wind hovering, head down, drift, and one
@@ -3172,18 +3494,26 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 b.x += (tx - b.x) * Math.min(1, dt * 0.6); b.y += (ty - b.y) * Math.min(1, dt * 0.6);
                 b.h += angDiff(wd, b.h) * Math.min(1, dt * 2);   // hovering, bill into the wind
                 b.z += (b.zh - b.z) * Math.min(1, dt);
-                if (b.t <= 0) { if (rnd() < 0.45 && !onLand(b.x, b.y)) { b.mode = 'dive'; b.t = 0.35; } else { b.mode = 'shift'; b.t = R(1.5, 3); b.a += R(-0.8, 0.8); b.d = Math.sqrt(rnd()) * F.r; } }
+                // a hover ends in a full PLUNGE, a CONTACT DIP (down to the surface, bill in, and away without stopping — 40%
+                // of attempts in a chop: Sagar & Sagar 1989, Antarctic terns at the Snares), or it is given up and the bird
+                // slides off to hover again elsewhere. Flocks over a swarm make ~7 attempts a minute (real).
+                if (b.t <= 0) { const q = rnd(); if (q < 0.4 && !onLand(b.x, b.y)) { b.mode = 'dive'; b.t = 0.35; } else if (q < 0.62 && !onLand(b.x, b.y)) { b.mode = 'dip'; b.t = 0; }
+                    else { b.mode = 'shift'; b.t = R(0.8, 1.8); b.a += R(-0.8, 0.8); b.d = Math.sqrt(rnd()) * F.r; } }
             } else if (b.mode === 'shift') {
                 b.flap += dt * 22 * WING_TIME; steer(b, tx, ty, 60, 3, dt); b.z += (b.zh - b.z) * Math.min(1, dt);
-                if (b.t <= 0) { b.mode = 'hover'; b.t = R(2, 6); }
+                if (b.t <= 0) { b.mode = 'hover'; b.t = R(1.2, 2.6); }   // hovers of a few seconds (real), bill into the wind
+            } else if (b.mode === 'dip') {
+                // the contact dip: a shallow swoop to the surface, a touch, and straight back up — it never stops flying
+                b.flap += dt * 24 * WING_TIME; b.x += Math.sin(b.h) * 20 * dt; b.y -= Math.cos(b.h) * 20 * dt; b.z = Math.max(1, b.z - dt * 90);
+                if (b.z <= 1.5) { b.mode = 'climb'; b.t = 0.9; b.splash = 0.45; b.sx = b.x; b.sy = b.y; }
             } else if (b.mode === 'dive') {
                 b.z = Math.max(0, b.z - dt * (F.sooty ? 90 : 140));
                 // a sooty tern never plunges: it DIPS — skims down, snatches at the surface and climbs away
                 if (b.z <= 2 && onLand(b.x, b.y)) { b.mode = 'climb'; b.t = 1.2; }
                 else if (F.sooty && b.z <= 2) { b.mode = 'climb'; b.t = 1.2; b.splash = 0.5; b.sx = b.x; b.sy = b.y; }
-                else if (b.z <= 0) { b.mode = 'sit'; b.t = R(0.5, 1); b.splash = 1; b.sx = b.x; b.sy = b.y; }
+                else if (b.z <= 0) { b.mode = 'sit'; b.t = R(0.2, 0.4); b.splash = 1; b.sx = b.x; b.sy = b.y; }   // under for less than a second (real), then out
             } else if (b.mode === 'sit') { if (b.t <= 0) { b.mode = 'climb'; b.t = 1.2; } }
-            else if (b.mode === 'climb') { b.flap += dt * 26 * WING_TIME; b.z = Math.min(b.zh, b.z + dt * 40); b.x += Math.sin(b.h) * 12 * dt; b.y -= Math.cos(b.h) * 12 * dt; if (b.t <= 0) { b.mode = 'hover'; b.t = R(2, 6); } }
+            else if (b.mode === 'climb') { b.flap += dt * 26 * WING_TIME; b.z = Math.min(b.zh, b.z + dt * 40); b.x += Math.sin(b.h) * 12 * dt; b.y -= Math.cos(b.h) * 12 * dt; if (b.t <= 0) { b.mode = 'hover'; b.t = R(1.2, 2.6); } }
         }
     }
 
@@ -4318,7 +4648,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const G of cruisers) for (const f of G.fish) { drawCruiserSplashes(ctx, f); if (f.mode === 'leap') drawCruiser(ctx, f); }   // (the water it left, then the animal in the air above it)
         drawBoil(ctx);
         for (const B of stripers) drawStriperBoil(ctx, B);
-        for (const W of orcaPods) for (const m of W.members) drawOrca(ctx, m);
+        // orcas: the prints on the sea, then the animals deepest first (a calf in infant position passes under its mother), then the blows above
+        for (const W of orcaPods) { drawOrcaPrints(ctx, W); for (const m of W.members.slice().sort((p, q) => q.z - p.z)) drawOrca(ctx, m); }
+        for (const W of orcaPods) for (const m of W.members) if (m.blow > 0 && m.bx !== undefined) drawOrcaBlow(ctx, m);
         if (jellyBloom) { const cam = state.camera, hw = (ctx.canvas ? ctx.canvas.width : 2000) * 0.6 + 60, hh = (ctx.canvas ? ctx.canvas.height : 2000) * 0.6 + 60; for (const j of jellyBloom.jel) if (!cam || (Math.abs(j.x - cam.x) < hw && Math.abs(j.y - cam.y) < hh)) drawGoldJelly(ctx, j); }
         for (const G of dugongs) drawDugong(ctx, G);
         for (const H of hawksbills) if (H.mode === 'swim') drawHawksbill(ctx, H);
@@ -4498,22 +4830,26 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // far less (~0.07), blue least (~0.035) — so a multiply by the transmitted colour; then the water's own scattered
     // light (path radiance) laid over it, growing with the path; then a soft box blur, the scattering spreading each
     // point. In place on the composed pose P (its scratch canvas); `slot` is a free scratch for the work.
-    function seenThrough(P, zt, slot) {
+    // `murk` scales the water's own scatter for water less clear than a tropical lagoon (the Sound's plankton-green
+    // water: a few metres down a drone sees an orca as a soft slate-blue shape, not a black one).
+    function seenThrough(P, zt, slot, murk) {
         if (!P || zt <= 0.03) return;
-        const L = 2 * zt, tr = Math.exp(-0.25 * L), tg = Math.exp(-0.07 * L), tb = Math.exp(-0.035 * L), veil = 1 - Math.exp(-0.06 * L);
+        const L = 2 * zt, tr = Math.exp(-0.25 * L), tg = Math.exp(-0.07 * L), tb = Math.exp(-0.035 * L), veil = 1 - Math.exp(-0.06 * (murk || 1) * L);
         const g = P.c.getContext('2d'), M = humpScratch(slot, P.px, P.px); if (!M) return; const gm = M.getContext('2d');
         gm.fillStyle = `rgb(${Math.round(255 * tr)},${Math.round(255 * tg)},${Math.round(255 * tb)})`; gm.fillRect(0, 0, P.px, P.px);
-        gm.globalCompositeOperation = 'destination-in'; gm.drawImage(P.c, 0, 0); gm.globalCompositeOperation = 'source-over';
-        g.globalCompositeOperation = 'multiply'; g.drawImage(M, 0, 0);
+        gm.globalCompositeOperation = 'destination-in'; gm.drawImage(P.c, 0, 0, P.px, P.px, 0, 0, P.px, P.px); gm.globalCompositeOperation = 'source-over';
+        g.globalCompositeOperation = 'multiply'; g.drawImage(M, 0, 0, P.px, P.px, 0, 0, P.px, P.px);
         g.globalCompositeOperation = 'source-atop'; g.globalAlpha = veil; g.fillStyle = `rgb(${waterTint()})`; g.fillRect(0, 0, P.px, P.px);
         g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
         // the blur: eight copies round a small ring averaged ('lighter' at an eighth each = their mean) — a soft edge,
-        // never a double image; ~0.15 body units a metre, at most 2 px of the composite
-        const r = Math.min(2, 0.15 * zt * P.px / (2 * P.R));
-        if (r >= 0.2) { const B = humpScratch(slot, P.px, P.px), gb = B.getContext('2d'); gb.globalCompositeOperation = 'lighter'; gb.globalAlpha = 0.125;
-            for (let i = 0; i < 8; i++) gb.drawImage(P.c, r * Math.cos(i * 0.785 + 0.3), r * Math.sin(i * 0.785 + 0.3));
+        // never a double image; ~0.15 body units a metre, at most 2 px of the composite. Under half a pixel it cannot be
+        // seen and is skipped. (Only the pose's own square is copied: the scratch canvases only ever grow, and copying a
+        // whole one cost the Sound's orcas 5 ms a frame.)
+        const r = Math.min(2, 0.15 * zt * Math.sqrt(murk || 1) * P.px / (2 * P.R));
+        if (r >= 0.5) { const B = humpScratch(slot, P.px, P.px), gb = B.getContext('2d'); gb.globalCompositeOperation = 'lighter'; gb.globalAlpha = 0.125;
+            for (let i = 0; i < 8; i++) gb.drawImage(P.c, 0, 0, P.px, P.px, r * Math.cos(i * 0.785 + 0.3), r * Math.sin(i * 0.785 + 0.3), P.px, P.px);
             gb.globalAlpha = 1; gb.globalCompositeOperation = 'source-over';
-            g.clearRect(0, 0, P.px, P.px); g.drawImage(B, 0, 0); }
+            g.clearRect(0, 0, P.px, P.px); g.drawImage(B, 0, 0, P.px, P.px, 0, 0, P.px, P.px); }
     }
     // The surface's ripples bend the picture of anything under them: the outline wavers, more the deeper it lies.
     function refractWob(q, f, zt) { return Math.min(0.7, zt * 0.22) * Math.sin(T * 2.3 + q * 8 + (f.x + f.y) * 0.04) ; }
@@ -6421,7 +6757,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const sd of [-1, 1]) {
             if (parts.indexOf(sd < 0 ? 'l' : 'r') < 0) continue;
             const im = sd < 0 ? set.l : set.r, root = S.fin[sd < 0 ? 'l' : 'r'];
-            const want = 1.05 - (_W.out[sd] || 0) * 0.35, rot = -sd * (want - S.finAng * Math.PI / 180);
+            const want = (S.rest || 1.05) - (_W.out[sd] || 0) * 0.35, rot = -sd * (want - S.finAng * Math.PI / 180);
             const rx = x0 + root[0] * F + _wx(U(root[1])) * L, ry = Y(root[1]);
             ctx.save(); ctx.translate(rx, ry); ctx.rotate(rot); ctx.translate(-rx, -ry); ctx.drawImage(im, x0 + _wx(U(root[1])) * L, y0, F, F); ctx.restore();
         }
@@ -6458,8 +6794,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             i++;
         }
     }
+    // (S.dir / S.parts: another venue's whale cut the same way — the Sound's orcas, by feetsplit.py)
     function humpSet(S, need) {
-        const b = humpImg(S.file + '-body'), l = humpImg(S.file + '-flipper-l'), r = humpImg(S.file + '-flipper-r');
+        const im = S.dir ? (n) => sprImg('assets/images/props/' + S.dir + '/' + n + '.png') : humpImg, P = S.parts || ['body', 'flipper-l', 'flipper-r'];
+        const b = im(S.file + '-' + P[0]), l = im(S.file + '-' + P[1]), r = im(S.file + '-' + P[2]);
         if (!imgReady(b) || !imgReady(l) || !imgReady(r)) return null;
         if (!need || typeof document === 'undefined') return { body: b, l, r };
         return { body: humpMip(b, need), l: humpMip(l, need), r: humpMip(r, need) };
@@ -7176,94 +7514,207 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
 
     // ── drawing Glacier Sound's animals ──────────────────────────────────────────────────
-    // An ORCA: dim under the water; surfacing, the back and dorsal roll through as a band that
-    // travels nose to tail (the head, then the fin, then the tail stock), with a short bushy blow
-    // and a V off the fin. The flukes beat on their own part, foreshortened about the hinge.
+    // AN ORCA, the painted parts posed by the humpback's kit (humpPose). Seen from above:
+    //  - THE STROKE is up and down, so it shows as the flukes FORESHORTENING, never a side-to-side sway: their pitch
+    //    leads the heave by a quarter cycle (steepest mid-stroke, flat at the top and bottom). The body bends sideways
+    //    only in a turn.
+    //  - THE FLIPPERS are passive stabilisers (Fish, Peacock & Rohr 2003: they lag the flukes 61-123°): a small lagging
+    //    sway; in a turn both draw in toward the body, the inside one most.
+    //  - UNDER, it is seen through the water (seenThrough): a few metres down between breaths the black goes blue-green
+    //    and soft and the white patches glow turquoise, as in the drone frames; on the long dive it is gone.
+    //  - SURFACING, a window of back rolls out head to tail — the head and blow, the back and the tall fin, the tail
+    //    stock arching (higher on the last breath before a long dive) — in a broken rim of white water.
     function drawOrca(ctx, m) {
-        const S = ARCTIC_SPR[m.kind], body = arcticImg(m.kind + '-body'), fl = arcticImg(m.kind + '-flukes');
-        if (!imgReady(body) || !imgReady(fl)) return;
-        const k = S.len / S.ink, W = body.naturalWidth * k, H = body.naturalHeight * k, hy = -H / 2 + S.hinge * H;
-        const up = m.up >= 0 ? Math.sin(Math.PI * m.up) : 0;
-        const one = (alpha, clipY0, clipY1) => {
-            ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.h); ctx.globalAlpha *= alpha;
-            if (clipY0 !== undefined) { ctx.beginPath(); ctx.rect(-W, clipY0, W * 2, clipY1 - clipY0); ctx.clip(); }
-            const tilt = Math.sin(m.beat) * 0.9;
-            ctx.save(); ctx.translate(0, hy); ctx.scale(1, Math.max(0.35, Math.cos(tilt))); ctx.translate(0, -hy); ctx.drawImage(fl, -W / 2, -H / 2, W, H); ctx.restore();
-            ctx.drawImage(body, -W / 2, -H / 2, W, H);
-            ctx.restore();
-        };
-        one(0.3);   // the whole animal, under the water
-        if (up > 0) {
-            // the band of back that is out: centred from the head (u=0) back to the tail stock (u=1)
-            const c = -H * 0.4 + m.up * H * 0.62, half = S.len * 0.34 * up;
-            one(0.75, c - half, c + half); one(1, c - half * 0.7, c + half * 0.7);
-            // where the head breaks: a crescent of white pushed ahead of the band; behind the
-            // band, the smooth flattened slick the back leaves as it rolls down
-            ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.h);
-            const fw = S.len * 0.13;
-            if (m.up < 0.75) {
-                // the bow wave: white water peeling back off each side of the head, broken, not an arc
-                ctx.lineCap = 'round';
-                for (const sd of [-1, 1]) for (const [a0, w, al] of [[0, 1.5, 0.65], [0.35, 1, 0.4]]) {
-                    ctx.strokeStyle = `rgba(255,255,255,${al * up})`; ctx.lineWidth = w;
-                    ctx.beginPath(); ctx.moveTo(sd * fw * (0.35 + a0), c - half + fw * (0.1 + a0));
-                    ctx.quadraticCurveTo(sd * fw * (1.05 + a0), c - half + fw * (0.4 + a0), sd * fw * (1.3 + a0), c - half + fw * (1.6 + a0 * 2)); ctx.stroke();
-                }
-            }
-            const g = ctx.createLinearGradient(0, c + half, 0, c + half + S.len * 0.45);
-            g.addColorStop(0, `rgba(210,228,240,${0.1 * up})`); g.addColorStop(1, 'rgba(210,228,240,0)');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(0, c + half + S.len * 0.14, fw * 0.8, S.len * 0.16, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.restore();
+        const S = ORCA_SPR[m.kind]; if (!humpSet(S)) return;
+        const L = ARCTIC_SPR[m.kind].len;
+        if (!onCam(m.x, m.y, L + 40)) return;
+        const turn = Math.max(-1, Math.min(1, (m.turn || 0) * 3)), b = m.beat, pull = 0.3 * Math.abs(turn), sway = 0.03 * Math.sin(b - 1.6);
+        _W = { bend: 0.06 * turn, fore: Math.cos(0.95 * Math.cos(b)),   // (pitch ±55° mid-stroke: the flukes narrow to ~0.6 of their width, flat at the top and bottom)
+               out: { '-1': sway + pull + (turn < 0 ? -0.2 * turn : 0), '1': sway + pull + (turn > 0 ? 0.2 * turn : 0) } };
+        const z = Math.max(0, m.z), seen = Math.max(0, Math.min(1, 1.25 - z / 12));
+        ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.h);
+        // (Wes, Oct 16: "does it show part of the orca above water and some below?") — while it rolls, all of it but the window of
+        // back that is out lies a metre or so under, seen through the water; only the window is drawn dry and crisp over it
+        const zSeen = m.up >= 0 ? Math.max(z, 1.1) : Math.max(0.35, z);
+        if (seen > 0) { const B = humpPosed(ctx, S, L, 'bflr', 0); seenThrough(B, zSeen, 5, 2.2); humpBlit(ctx, B, null, seen);
+            // THE HEAVE: the flukes rise and fall ~0.2 of a length each stroke (Fish 1998); a few metres down, the upstroke
+            // brings them up through the water — clearer, nearer — and the downstroke takes them back into the blue
+            const hv = Math.max(0, Math.sin(b)); if (hv > 0.05 && zSeen < 6) { const Fp = humpPosed(ctx, S, L, 'f', 6); seenThrough(Fp, Math.max(0.3, zSeen - 1.2 * hv), 7, 2.2);
+                ctx.save(); const hy = -0.5 * L + (S.hinge - S.top) / (S.bot - S.top) * L, kz = 1 + 0.05 * hv; ctx.translate(0, hy); ctx.scale(kz, kz); ctx.translate(0, -hy); humpBlit(ctx, Fp, null, seen * 0.85 * hv); ctx.restore(); } }
+        let c = 0, half = 0;   // (the window of back that is out, while it rolls)
+        const up = m.up >= 0 ? m.up : -1;
+        if (up >= 0) {
+            const reach = m.term ? 0.88 : 0.64, wx = L * 0.085; c = -0.46 * L + up * reach * L; half = L * 0.24 * Math.sin(Math.PI * Math.min(1, up * 1.1 + 0.06));
+            const wash = ctx.createRadialGradient(0, c - half * 0.3, half * 0.2, 0, c, half * 1.2);
+            wash.addColorStop(0, 'rgba(235,248,250,0.1)'); wash.addColorStop(1, 'rgba(235,248,250,0)');
+            ctx.fillStyle = wash; ctx.beginPath(); ctx.ellipse(0, c, wx * 1.7, half * 1.2, 0, 0, Math.PI * 2); ctx.fill();
+            // the back that is out: the painted animal, crisp, through three widening windows at falling strength
+            const P = humpPosed(ctx, S, L, 'bf', 4);
+            for (const [kx, ky, a] of [[1.35, 1.25, 0.35], [1, 1, 0.55], [0.65, 0.75, 1]]) {
+                ctx.save(); ctx.beginPath(); ctx.ellipse(0, c, wx * kx, half * ky, 0, 0, Math.PI * 2); ctx.clip(); humpBlit(ctx, P, null, a); ctx.restore(); }
+            ctx.save(); ctx.beginPath(); ctx.ellipse(0, c, wx * 0.9, half * 0.9, 0, 0, Math.PI * 2); ctx.clip();
+            ctx.fillStyle = 'rgba(200,215,225,0.12)'; ctx.fillRect(-wx * 0.22, c - half, wx * 0.44, 2 * half); ctx.restore();   // wet sheen on the spine
+            // THE WATER IT MOVES (Wes, Oct 16: "good wakes for their dorsals, head wakes, tail effects"), all of it on the
+            // waterline OUTSIDE the body, never over the back: (1) the head breaking through pushes a cushion of white
+            // ahead of the snout that wraps back along the cheeks; (2) along the back that is out, water sheets off both
+            // flanks in thin bands, heaviest where the back is rising at the front of the window, peeling away behind it;
+            // (3) the fin cuts a V of its own (below); (4) going down, a smooth glassy fluke print (drawOrcaPrints).
+            const sc = L / 76, rise = Math.min(1, (1 - up) * 2.5), seed = m.j * 3.1 + (m.kind.length), hw = (yy) => orcaHW(yy / L, m.kind) * L;
+            if (up < 0.4) { const k = 1 - up / 0.4, ang = (t) => Math.PI * (1.08 + 0.84 * t);
+                // an arc round the snout, out ahead of it, its ends reaching back along the cheeks
+                foamBand(ctx, (t) => { const a = ang(t); return [Math.cos(a) * (0.075 * L + 3 * sc), -0.42 * L + Math.sin(a) * (0.09 * L + 2 * sc)]; },
+                    (t) => { const a = ang(t); return [Math.cos(a), Math.sin(a)]; }, (t) => (0.6 + 2.2 * Math.sin(Math.PI * t)) * sc * k, 0.85 * k, seed); }
+            const yA = Math.max(-0.42 * L, c - half), yB = Math.min(0.4 * L, c + half);
+            if (yB > yA) for (const sd of [-1, 1]) foamBand(ctx, (t) => { const yy = yA + (yB - yA) * t; return [sd * (hw(yy) + 1.2 * sc + t * t * 5 * sc), yy + t * t * 6 * sc]; }, () => [sd, 0],
+                (t) => (1.6 - 1.2 * t) * sc, 0.65 * rise, seed + sd);
         }
-        // THE DORSAL FIN — the orca's signature from any angle: a tall black blade standing at
-        // ~40% of the length (an adult male's is 1.8 m, straight and triangular; a female's and a
-        // calf's shorter and curved back). From above it is a thin dark sliver along the back,
-        // and out of the water it throws a long shadow down-right.
-        const finPos = -H * 0.5 + H * 0.37, finT = Math.max(0, Math.min(1, (m.up - 0.15) / 0.2)) * Math.max(0, Math.min(1, (0.95 - m.up) / 0.25));
-        const finH = (m.kind === 'orca' ? 18 : m.kind === 'orca-b' ? 9 : 5) * finT;
-        if (up > 0 && finH > 0.5) {
-            ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.h);
-            const chord = S.len * 0.1;
-            // the shadow (in the animal's frame, pointing to the world's down-right)
-            const wx = 0.54, wy = 0.84, c0 = Math.cos(-m.h), s0 = Math.sin(-m.h), lx = wx * c0 - wy * s0, ly = wx * s0 + wy * c0;   // world down-right, in the whale's frame
+        // THE DORSAL FIN stands up as the window passes it (a bull's 1.8 m, straight; a cow's ~1 m and a calf's short,
+        // both curved back): from above a dark blade with a sunlit leading edge, throwing its shadow down-right, and
+        // the last of the animal to go under
+        // (Wes, Oct 16: "shouldn't the dorsal fin make the first wake?" — yes, for a bull: his fin is ~1.8 m tall, its tip
+        // breaks the surface well before the rest of him (field guides: "the tip of a full grown male's fin will surface
+        // some time before the rest of the whale"), and cruising with his back ~1.6 m down it slices the surface all the
+        // while. So the fin shows whenever its tip is above the water — its height less the depth of the back.)
+        const fu = S.dorsal * L, finH = (m.kind === 'orca' ? 18 : m.kind === 'orca-b' ? 10 : 5), finM = finH / 10;
+        const sc = L / 76, seed = m.j * 3.1 + (m.kind.length), hw = (yy) => orcaHW(yy / L, m.kind) * L;
+        const rollT = up >= 0 ? Math.max(0, Math.min(1, (half + finH * 0.4 - Math.abs(fu - c)) / (L * 0.08))) * Math.min(1, (1 - up) * 6 + 0.2) : 0;
+        const tipT = Math.max(0, Math.min(1, (finM - Math.max(0, m.z)) / finM));   // the share of the fin above the water
+        const finT = Math.max(rollT, tipT), fh = finH * finT;
+        if (fh > 0.5) {
+            // the fin's own V: two thin arms of disturbed water peeling back from where it cuts the surface, and a
+            // little white at its leading edge (a bull's tall fin throws the most)
+            const vk = finT * (m.kind === 'orca' ? 1 : 0.7), vl = L * 0.42, vw = L * 0.16; ctx.lineCap = 'round';
+            // each arm a soft feathered band of foam, thickest at the fin, thinning and fading as it spreads (never a ray)
+            for (const sd of [-1, 1]) foamBand(ctx, (t) => { const yy = fu - L * 0.02 + vl * t; return [sd * (hw(yy) + 1.2 * sc + vw * (0.35 * t + 0.65 * t * t)), yy]; }, () => [sd, -0.4],   // (on the water beside the back)
+                (t) => (1 - t) * (1 - t) * 1.6 * sc, 0.5 * vk, seed + 5 + sd);
+            ctx.fillStyle = `rgba(255,255,255,${0.45 * vk})`; lobedBlob(ctx, 0, fu - L * 0.055, 2.4 * sc, 1.6 * sc, 0, seed + 9); ctx.fill();   // white where its leading edge cuts the water
+            const chord = L * 0.1, wxr = 0.54, wyr = 0.84, c0 = Math.cos(-m.h), s0 = Math.sin(-m.h), lx = wxr * c0 - wyr * s0, ly = wxr * s0 + wyr * c0;
             ctx.fillStyle = 'rgba(8,16,28,0.35)'; ctx.beginPath();
-            ctx.moveTo(0, finPos - chord * 0.5); ctx.lineTo(lx * finH, finPos + ly * finH + (m.kind === 'orca' ? 0 : chord * 0.3)); ctx.lineTo(0, finPos + chord * 0.5); ctx.closePath(); ctx.fill();
-            const fwid = 1.2 + finH * 0.09;   // a tall fin leans a little and shows more of its side
-            ctx.fillStyle = '#0b0d10'; ctx.beginPath(); ctx.moveTo(0, finPos - chord * 0.55); ctx.quadraticCurveTo(fwid, finPos, 0, finPos + chord * 0.55); ctx.quadraticCurveTo(-fwid, finPos, 0, finPos - chord * 0.55); ctx.fill();
-            // its sunlit leading edge (light from the upper left) — how a fin reads from above
-            ctx.strokeStyle = `rgba(200,215,230,${0.75 * finT})`; ctx.lineWidth = 0.8; ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.moveTo(0, finPos - chord * 0.55); ctx.quadraticCurveTo(-fwid, finPos - chord * 0.1, -fwid * 0.3, finPos + chord * 0.4); ctx.stroke();
-            ctx.restore();
+            ctx.moveTo(0, fu - chord * 0.5); ctx.lineTo(lx * fh, fu + ly * fh + (m.kind === 'orca' ? 0 : chord * 0.3)); ctx.lineTo(0, fu + chord * 0.5); ctx.closePath(); ctx.fill();
+            const fw = 1.2 + fh * 0.09;
+            ctx.fillStyle = '#0b0d10'; ctx.beginPath(); ctx.moveTo(0, fu - chord * 0.55); ctx.quadraticCurveTo(fw, fu, 0, fu + chord * 0.55); ctx.quadraticCurveTo(-fw, fu, 0, fu - chord * 0.55); ctx.fill();
+            ctx.strokeStyle = `rgba(120,135,150,${0.55 * finT})`; ctx.lineWidth = 0.6;
+            ctx.beginPath(); ctx.moveTo(0, fu - chord * 0.55); ctx.quadraticCurveTo(-fw, fu - chord * 0.1, -fw * 0.3, fu + chord * 0.4); ctx.stroke();
         }
-        if (m.blow > 0 && m.bx !== undefined) drawOrcaBlow(ctx, m);
+        ctx.restore();
+
     }
-    // AN ORCA'S BLOW (references: a low bushy column, ~3.5 m, briefly visible, dispersing fast in
-    // wind). From above: a dense white core over the blowhole that bursts out into a ragged cloud
-    // of a few lobes, carried downwind and thinning; the spray's faint shadow on the water, down-right
-    // as for anything that stands up.
+    // FLUKE PRINTS and the dive's footprint: smooth round upwellings, glassier than the sea around them, fading
+    function drawOrcaPrints(ctx, W) {
+        for (const F of W.prints) { if (!onCam(F.x, F.y, 60)) continue;
+            const k = F.t / F.life, a = (F.a == null ? 1 : F.a) * 0.26 * (1 - k) * Math.min(1, F.t * 4), r = F.r * (0.7 + 0.6 * k);
+            const g = ctx.createRadialGradient(F.x, F.y, 0, F.x, F.y, r);
+            g.addColorStop(0, `rgba(160,200,222,${a * 0.55})`); g.addColorStop(0.75, `rgba(160,200,222,${a * 0.35})`); g.addColorStop(1, 'rgba(160,200,222,0)');   // glassy, not foam
+            ctx.fillStyle = g; lobedBlob(ctx, F.x, F.y, r * 1.15, r * 0.75, F.h, F.seed || 0); ctx.fill(); }
+    }
+    // AN ORCA'S BLOW: low and bushy (much lower than a humpback's), fired the instant the blowhole clears, briefly
+    // visible in cold air. From above: a dense white core over the blowhole bursting into a ragged cloud of a few lobes,
+    // a couple of metres across, carried downwind and thinning; its faint shadow down-right.
     function drawOrcaBlow(ctx, m) {
         const q = 1 - m.blow, k = m.bh || 1, wd = state.wind ? state.wind.direction : 0;
-        const dx = Math.sin(wd + Math.PI) * q * 26, dy = -Math.cos(wd + Math.PI) * q * 26;   // downwind drift
-        const a = Math.min(1, m.blow * 1.6) * (q < 0.08 ? q / 0.08 : 1);                     // bursts, then fades
-        const R0 = (7 + 16 * Math.sqrt(q)) * k, rr = mulberry(Math.floor((m.bx + m.by) * 10) >>> 0);
-        const lobes = Array.from({ length: 6 }, () => ({ a: rr() * Math.PI * 2, d: 0.2 + rr() * 0.55, r: 0.45 + rr() * 0.35 }));
-        // the shadow of the column, on the water
-        ctx.fillStyle = `rgba(8,18,30,${0.16 * a})`;
-        ctx.beginPath(); ctx.ellipse(m.bx + dx * 0.6 + 10 * k, m.by + dy * 0.6 + 16 * k, R0 * 0.8, R0 * 0.55, 0.6, 0, Math.PI * 2); ctx.fill();
-        for (const L of lobes) {
-            const x = m.bx + dx + Math.cos(L.a) * R0 * L.d * (0.6 + q), y = m.by + dy + Math.sin(L.a) * R0 * L.d * (0.6 + q), r = R0 * L.r;
+        const ux = Math.sin(wd + Math.PI), uy = -Math.cos(wd + Math.PI), dx = ux * q * 16, dy = uy * q * 16;   // carried downwind
+        const a = Math.min(1, m.blow * 1.8) * (q < 0.06 ? q / 0.06 : 1);                                     // bursts, then thins
+        const R0 = (3.5 + 8 * Math.sqrt(q)) * k, rr = mulberry(Math.floor((m.bx + m.by) * 10) >>> 0), ang = Math.atan2(uy, ux);
+        // its shadow on the water, down-right of the column
+        ctx.fillStyle = `rgba(8,18,30,${0.12 * a})`; lobedBlob(ctx, m.bx + dx * 0.5 + 6 * k, m.by + dy * 0.5 + 9 * k, R0 * 0.9, R0 * 0.6, ang, 2); ctx.fill();
+        // the cloud: a few soft irregular lobes, drawn out along the wind as it goes
+        for (let i = 0; i < 4; i++) {
+            const t = rr(), off = (i / 3 - 0.3) * R0 * (0.4 + q), x = m.bx + dx + ux * off + (rr() - 0.5) * R0 * 0.5, y = m.by + dy + uy * off + (rr() - 0.5) * R0 * 0.5, r = R0 * (0.55 + 0.35 * t);
             const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-            g.addColorStop(0, `rgba(248,251,255,${0.55 * a})`); g.addColorStop(0.6, `rgba(240,246,252,${0.25 * a})`); g.addColorStop(1, 'rgba(240,246,252,0)');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+            g.addColorStop(0, `rgba(248,251,255,${0.34 * a})`); g.addColorStop(0.6, `rgba(240,246,252,${0.14 * a})`); g.addColorStop(1, 'rgba(240,246,252,0)');
+            ctx.fillStyle = g; lobedBlob(ctx, x, y, r * (1.15 + 0.5 * q), r * 0.95, ang, i * 1.7 + t * 5); ctx.fill();
         }
-        // the dense core over the blowhole, brief
-        if (q < 0.45) { const c = 1 - q / 0.45, g = ctx.createRadialGradient(m.bx + dx * 0.3, m.by + dy * 0.3, 0, m.bx + dx * 0.3, m.by + dy * 0.3, 6 * k);
-            g.addColorStop(0, `rgba(255,255,255,${0.9 * c})`); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(m.bx + dx * 0.3, m.by + dy * 0.3, 6 * k, 0, Math.PI * 2); ctx.fill(); }
+        // the dense burst over the blowhole, brief
+        if (q < 0.3) { const c = 1 - q / 0.3, x = m.bx + dx * 0.3, y = m.by + dy * 0.3, g = ctx.createRadialGradient(x, y, 0, x, y, 3.5 * k);
+            g.addColorStop(0, `rgba(255,255,255,${0.6 * c})`); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = g; lobedBlob(ctx, x, y, 3.5 * k, 3 * k, ang, 1); ctx.fill(); }
     }
-    function drawPenguinOn(ctx, species, x, y, h, bob) {
-        drawArcticSprite(ctx, species, x, y, h + Math.sin(bob * 3) * 0.05, 1);
+    // THE PAINTED PENGUINS (Oct 16 2026, after a reference check: drone colonies, swimming kings from above, tobogganing
+    // emperors). Two sprites a species: STANDING — from straight above an upright bird is compact, the round crown with
+    // the bill forward, a crescent of breast ahead and of back behind — and PRONE, the torpedo that shows the whole back,
+    // lying flat to swim or toboggan. Each cut by feetsplit.py into a body and two flippers (full frame, in register);
+    // `l`/`r` are the flippers' roots (where each leaves the body), top/bot the ink (bill tip .. back or feet), and len
+    // the drawn length in world units. ONE SCALE PER BIRD (Wes, Oct 16: "when they porpoise and go prone they look like a
+    // different scale"): prone is the bird's length, bill to feet, sized by scale.md's rule (true x ~3, floor 20) — 30, 24,
+    // 21, 20 — and standing is the SAME bird at the SAME scale seen from straight above: its footprint, bill tip to back,
+    // ~0.45 of its length (an emperor 1.15 m tall stands ~0.5 m deep and as wide as it lies) — 14, 12, 10.5, 9.5. The
+    // floor is for an animal's length; applied to the standing footprint it had drawn them twice the size they lie.
+    const PENG_SPR = {
+        emperor: { up: { f: 'penguin-emperor', top: 0.1094, bot: 0.8516, cx: 0.5, l: [0.255, 0.6], r: [0.745, 0.6], len: 14 },
+                   prone: { f: 'penguin-emperor-prone', top: 0.0449, bot: 0.9453, cx: 0.5, l: [0.37, 0.38], r: [0.63, 0.38], len: 30 } },
+        adelie: { up: { f: 'penguin-adelie', top: 0.1992, bot: 0.8184, cx: 0.5, l: [0.302, 0.53], r: [0.698, 0.53], len: 9.5 },
+                  prone: { f: 'penguin-adelie-prone', top: 0.084, bot: 0.8955, cx: 0.5, l: [0.375, 0.37], r: [0.625, 0.37], len: 20 } },
+        gentoo: { up: { f: 'penguin-gentoo', top: 0.1064, bot: 0.8848, cx: 0.5, l: [0.264, 0.56], r: [0.736, 0.56], len: 12 },
+                  prone: { f: 'penguin-gentoo-prone', top: 0.0908, bot: 0.9375, cx: 0.4995, l: [0.3635, 0.5], r: [0.6355, 0.5], len: 24 } },
+        macaroni: { up: { f: 'penguin-macaroni', top: 0.1094, bot: 0.8242, cx: 0.499, l: [0.247, 0.61], r: [0.751, 0.61], len: 10.5 },
+                    prone: { f: 'penguin-macaroni-prone', top: 0.0479, bot: 0.9414, cx: 0.4995, l: [0.3695, 0.44], r: [0.6295, 0.44], len: 21 } },
+    };
+    // The posed bird: flippers first, each turned about its root by its angle (+ = swung back toward the tail), the body
+    // over them. False when this species has no painted pair (or it has not loaded): the caller draws the old sprite.
+    function penguinPosed(ctx, sp, prone, x, y, h, alpha, al, ar) {
+        const T = PENG_SPR[sp], S = T && (prone ? T.prone : T.up); if (!S) return false;
+        return limbsPosed(ctx, S, x, y, h, alpha, al, ar);
     }
-    function drawColony(ctx, C) { for (const b of C.birds) drawPenguinOn(ctx, C.species, b.x, b.y, b.h, b.bob); }
+    // THE PAINTED LEOPARD SEAL (Oct 16 2026): cut by feetsplit.py into a body and its long fore-flippers, posed like the
+    // penguins (roots where each flipper leaves the body; top/bot nose .. hind flippers; drawn 60 long, scale.md).
+    const LSEAL_SPR = { f: 'seal', top: 0.1865, bot: 0.8193, cx: 0.5, l: [0.428, 0.40], r: [0.572, 0.40], len: 60 };
+    const sealPosed = (ctx, x, y, h, alpha, al, ar, bend) => limbsPosed(ctx, LSEAL_SPR, x, y, h, alpha, al, ar, bend);
+    // A body and two limbs from the Sound's parts (S.f + -body/-fore-l/-fore-r), each limb turned about its root by its
+    // angle (+ = swung back toward the tail), the body over them. False until the parts have loaded.
+    // `bend` (optional): the body flexed along a SPINE. bend(U) is the spine's angle (radians; + curves to the animal's
+    // right) at U, from -0.5 at the nose to 0.5 at the tail; the middle (U = 0) stays put. The body is laid in thin strips
+    // END TO END along that curve, each turned to it, so it stays one continuous animal however it flexes (Wes, Oct 16:
+    // the strips slid sideways had left the seal in gapped, mismatched pieces — "a dead fish"). Limbs ride their root's
+    // place and angle on the spine. Composed on a scratch canvas and laid down in one blit (fades and shadows cleanly).
+    function limbsCompose(ctx, S, al, ar, bend, slot) {
+        const b = arcticImg(S.f + '-body'), l = arcticImg(S.f + '-fore-l'), r = arcticImg(S.f + '-fore-r');
+        if (!imgReady(b) || !imgReady(l) || !imgReady(r)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), Rr = S.len * 0.75, px = Math.ceil(2 * Rr * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, Rr * k, Rr * k);
+        const F = S.len / (S.bot - S.top), x0 = -S.cx * F, y0 = -(S.top + S.bot) / 2 * F, need = 1.5 * k * F;
+        const th = bend || (() => 0), N = 32, du = 1 / N;
+        // the spine: points at strip boundaries, integrated out from the middle; pos(U) and ang(U) by interpolation
+        const pts = new Array(N + 1); pts[N / 2] = { x: 0, y: 0 };
+        for (let i = N / 2; i < N; i++) { const u = -0.5 + (i + 0.5) * du, a = th(u); pts[i + 1] = { x: pts[i].x + Math.sin(a) * du * S.len, y: pts[i].y + Math.cos(a) * du * S.len }; }
+        for (let i = N / 2; i > 0; i--) { const u = -0.5 + (i - 0.5) * du, a = th(u); pts[i - 1] = { x: pts[i].x - Math.sin(a) * du * S.len, y: pts[i].y - Math.cos(a) * du * S.len }; }
+        const at = (u) => { const f = Math.max(0, Math.min(N - 1e-6, (u + 0.5) * N)), i = Math.floor(f), q = f - i; return { x: pts[i].x + (pts[i + 1].x - pts[i].x) * q, y: pts[i].y + (pts[i + 1].y - pts[i].y) * q }; };
+        const U = (fy) => (fy - S.top) / (S.bot - S.top) - 0.5;   // frame row -> U
+        const yU = (u) => (u + 0.5) * S.len - S.len / 2;          // where row U sits along the straight body (the middle at 0)
+        for (const [sd, im, root, a] of [[-1, l, S.l, al], [1, r, S.r, ar]]) {
+            const u = U(root[1]), p = at(u), X = x0 + root[0] * F, Y = y0 + root[1] * F;
+            g.save(); g.translate(p.x, p.y); g.rotate(-th(u)); g.translate(0, -yU(u)); g.translate(X, Y); g.rotate(sd * a); g.translate(-X, -Y); g.drawImage(humpMip(im, need), x0, y0, F, F); g.restore();
+        }
+        const bm = humpMip(b, need), src = bm.naturalWidth || bm.width, st = (S.bot - S.top) / N, lap = st * 0.35;
+        for (let i = 0; i < N; i++) {
+            const u = -0.5 + (i + 0.5) * du, p = at(u), a0 = S.top + i * st, s0 = i ? a0 - lap : 0, s1 = i === N - 1 ? 1 : a0 + st + lap;
+            // the strip's own centre row sits on the spine point, turned to the spine
+            const cy = y0 + (a0 + st / 2) * F; g.save(); g.translate(p.x, p.y); g.rotate(-th(u)); g.translate(0, -cy);
+            g.drawImage(bm, 0, s0 * src, src, (s1 - s0) * src, x0, y0 + s0 * F, F, (s1 - s0) * F); g.restore();
+        }
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R: Rr, px };
+    }
+    function limbsPosed(ctx, S, x, y, h, alpha, al, ar, bend) {
+        if (bend) { const P = limbsCompose(ctx, S, al, ar, bend, 33); if (!P) return false;
+            ctx.save(); ctx.translate(x, y); ctx.rotate(h); humpBlit(ctx, P, null, alpha); ctx.restore(); return true; }
+        // unflexed (every penguin): three straight draws, no scratch canvas
+        const b = arcticImg(S.f + '-body'), l = arcticImg(S.f + '-fore-l'), r = arcticImg(S.f + '-fore-r');
+        if (!imgReady(b) || !imgReady(l) || !imgReady(r)) return false;
+        const F = S.len / (S.bot - S.top), x0 = -S.cx * F, y0 = -(S.top + S.bot) / 2 * F;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.globalAlpha *= alpha;
+        for (const [sd, im, root, a] of [[-1, l, S.l, al], [1, r, S.r, ar]]) {
+            const X = x0 + root[0] * F, Y = y0 + root[1] * F;
+            ctx.save(); ctx.translate(X, Y); ctx.rotate(sd * a); ctx.translate(-X, -Y); ctx.drawImage(im, x0, y0, F, F); ctx.restore();
+        }
+        ctx.drawImage(b, x0, y0, F, F);
+        ctx.restore(); return true;
+    }
+    // Standing or walking: the flippers held a little out, swaying with the waddle (step: the walk's phase; 0 at rest).
+    function drawPenguinOn(ctx, species, x, y, h, bob, step) {
+        const hh = h + Math.sin(bob * 3) * 0.05, s = step ? Math.sin(step) : 0, idle = 0.05 * Math.sin(bob * 1.7);
+        if (penguinPosed(ctx, species, false, x, y, hh, 1, -0.1 + idle + 0.18 * s, -0.1 + idle - 0.18 * s)) return;
+        drawArcticSprite(ctx, species, x, y, hh, 1);
+    }
+    function drawColony(ctx, C) { for (const b of C.birds) drawPenguinOn(ctx, C.species, b.x, b.y, b.h, b.bob, b.stepPh || 0); }
     function drawFloeGroup(ctx, G) {
         for (const b of G.birds) { const w = floeToWorld(G.floe, b.lx, b.ly), h = b.lh + (G.floe.spin || 0);
             if (b.sliding) drawToboggan(ctx, 'adelie', w.x, w.y, h, 1); else drawPenguinOn(ctx, 'adelie', w.x, w.y, h, b.bob); }
@@ -7276,20 +7727,44 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.strokeStyle = 'rgba(150,170,190,0.35)'; ctx.lineWidth = L * 0.25; ctx.lineCap = 'round';
         ctx.beginPath(); ctx.moveTo(0, L * 0.4); ctx.lineTo(0, L * 1.6); ctx.stroke();
         ctx.restore();
+        // on its belly (the prone sprite), pushing with its flippers in turn
+        const ph = (T || 0) * 7 + (x + y) * 0.05, push = (q) => 0.25 + 0.55 * Math.max(0, Math.sin(q));
+        if (penguinPosed(ctx, species, true, x, y, h, k, push(ph), push(ph + Math.PI))) return;
         ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(0.85, 1.22); drawArcticSprite(ctx, species, 0, 0, 0, k); ctx.restore();
     }
+    const G0 = (T) => PENG[T.species];
     function drawTreks(ctx, list) {
         for (const T of list || treks) {
             const L = trekLen(T);
             for (const b of T.birds) {
-                if (b.delay > 0) { if (T.dir === 'out') { const p = trekPos(T, 0); drawPenguinOn(ctx, T.species, p.x, p.y, p.h, 0); } continue; }
-                if (b.splash > 0) { whiteSheet(ctx, b.sx, b.sy, 9 * (1.4 - b.splash * 0.4), 6 * (1.4 - b.splash * 0.4), 0, b.sx, 0.6 * b.splash); drawFishSplash(ctx, b.sx, b.sy, b.splash, 0.8, b.sy); }
+                if (b.delay > 0) { if (T.dir === 'out') { const p = trekPos(T, 0); drawPenguinOn(ctx, T.species, p.x, p.y, p.h, 0); }
+                    // swimming in under the water to its landing, waiting its turn to leap out
+                    else if (b.wx != null) { const fl = -0.15 + 0.5 * Math.sin((T.t || 0) * Math.PI * 2 * G0(T).stroke); if (!penguinPosed(ctx, T.species, true, b.wx, b.wy, b.wh || 0, 0.45, fl, fl)) drawArcticSprite(ctx, T.species, b.wx, b.wy, b.wh || 0, 0.45); }
+                    continue; }
+                // white water where a bird went in or came out: torn and connected, never a spray of dots
+                if (b.splash > 0) { whiteSheet(ctx, b.sx, b.sy, 9 * (1.4 - b.splash * 0.4), 6 * (1.4 - b.splash * 0.4), 0, b.sx, 0.6 * b.splash); whiteWater(ctx, b.sx, b.sy, 7.5, 0.9 * b.splash, b.sy, 0); }
                 if (b.done) continue;
-                const p = trekPos(T, Math.min(L, b.s));
-                if (T.slide) drawToboggan(ctx, T.species, p.x, p.y, p.h, 1);
-                else { const G = PENG[T.species], st = b.step || 0;
-                    if (G.hops) { const up = Math.max(0, Math.sin(st * G.rock)); ctx.save(); ctx.globalAlpha *= 0.3; drawArcticSprite(ctx, T.species, p.x + up * 2, p.y + up * 3, p.h, 1); ctx.restore(); ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1 + up * 0.08, 1 + up * 0.08); drawPenguinOn(ctx, T.species, 0, 0, p.h, 0); ctx.restore(); }
-                    else drawPenguinOn(ctx, T.species, p.x, p.y, p.h + Math.sin(st * G.rock * 0.5) * G.amp, 0); }   // the waddle: a side-to-side roll, one per two steps
+                const G = PENG[T.species];
+                // the leap out of the water onto the ice: up from the sea in front of the edge, landing on its feet
+                if (b.lp != null && b.lp < 1) {
+                    const p = trekPos(T, 0), q = b.lp, z = Math.sin(Math.PI * q) * (T.species === 'emperor' ? 6 : 16), back = (1 - q) * 10;
+                    const x = p.x - Math.sin(p.h) * back, y = p.y + Math.cos(p.h) * back;
+                    ctx.fillStyle = 'rgba(8,18,30,0.22)'; ctx.beginPath(); ctx.ellipse(x + z * 0.35, y + z * 0.55, 4, 7, p.h, 0, Math.PI * 2); ctx.fill();
+                    ctx.save(); ctx.translate(x, y); ctx.scale(1 + z * 0.012, 1 + z * 0.012);
+                    if (q < 0.6) { if (!penguinPosed(ctx, T.species, true, 0, 0, p.h, 1, 0.55, 0.55)) drawArcticSprite(ctx, T.species, 0, 0, p.h, 1); } else drawPenguinOn(ctx, T.species, 0, 0, p.h, 0, 0.001);
+                    ctx.restore(); continue;
+                }
+                // gathered at the edge: a bunch pressing forward, the first-come at the front
+                if (b.wait) { const p = trekPos(T, L), r = (b.qi || 1) - 1, row = Math.floor(r / 3), col = (r % 3) - 1, g = (PENG_SPR[T.species] ? PENG_SPR[T.species].up.len : ARCTIC_SPR[T.species].len) * 0.72, d = 3 + row * g, w = col * g + (row % 2) * g * 0.5;   // pressed close, about three quarters of a body apart
+                    const x = p.x - Math.sin(p.h) * d + Math.cos(p.h) * w, y = p.y + Math.cos(p.h) * d + Math.sin(p.h) * w;
+                    drawPenguinOn(ctx, T.species, x, y, p.h + Math.sin((b.step || 0) * 1.3 + r) * 0.15, b.step || 0, 0); continue; }
+                const p = trekPos(T, Math.min(L, b.s)), slide = b.slide != null ? b.slide : T.slide;
+                if (slide) drawToboggan(ctx, T.species, p.x, p.y, p.h, 1);
+                else { const st = b.step || 0;
+                    // a macaroni's two-footed hop on rock: up, with its shadow dropping away down-right
+                    if (G.hops) { const up = Math.max(0, Math.sin(st * G.rock)); ctx.fillStyle = `rgba(8,18,30,${0.25 - up * 0.08})`; const Ls = PENG_SPR[T.species] ? PENG_SPR[T.species].up.len : 10; ctx.beginPath(); ctx.ellipse(p.x + up * 2, p.y + up * 3, Ls * 0.32, Ls * 0.38, p.h, 0, Math.PI * 2); ctx.fill();
+                        ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1 + up * 0.08, 1 + up * 0.08); drawPenguinOn(ctx, T.species, 0, 0, p.h, 0); ctx.restore(); }
+                    else drawPenguinOn(ctx, T.species, p.x, p.y, p.h + Math.sin(st * G.rock * 0.5) * G.amp, 0, st * G.rock * 0.5 + 0.001); }   // the waddle: a side-to-side roll, one per two steps
             }
         }
     }
@@ -7299,23 +7774,38 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // now and then the back and head breaking the surface with a V behind.
     function drawSwimmers(ctx, S) {
         const P = PENG[S.species], fx = Math.sin(S.h), fy = -Math.cos(S.h), sp = S.species;
-        const under = (x, y, a) => { ctx.save(); ctx.translate(x, y); ctx.rotate(S.h); ctx.scale(0.8, 1.2); drawArcticSprite(ctx, sp, 0, 0, 0, a); ctx.restore(); };
+        // swimming they FLY with both flippers together at the species' own stroke rate (Sato et al. 2010)
+        let f = 0;
+        const under = (x, y, a) => {
+            if (penguinPosed(ctx, sp, true, x, y, S.h, a, f, f)) return;
+            ctx.save(); ctx.translate(x, y); ctx.rotate(S.h); ctx.scale(0.8, 1.2); drawArcticSprite(ctx, sp, 0, 0, 0, a); ctx.restore(); };
+        ctx.save(); if (S.fade != null) ctx.globalAlpha *= S.fade;
         for (const b of S.birds) {
-            const ox = b.ox + Math.sin(S.t * 0.8 + b.ph * 3) * 5, oy = b.oy + Math.sin(S.t * 0.6 + b.ph * 5) * 3;
-            const x = S.x + fx * oy + -fy * ox, y = S.y + fy * oy + fx * ox, u = ((S.t + b.ph) % b.per) / b.per;
-            if (P.porp && u < 0.3) {
-                const q = u / 0.3, z = Math.sin(Math.PI * q) * P.hop, px = x + fx * (q - 0.5) * 10, py = y + fy * (q - 0.5) * 10;
+            const { x, y } = swimPos(S, b);
+            f = -0.15 + 0.5 * Math.sin((S.t + b.ph * 3) * Math.PI * 2 * P.stroke);
+            // an emperor's rocket run home: the stream of bubbles off its plumage, a fizzing pale streak behind it
+            if (S.rocket) { const g = ctx.createLinearGradient(x, y, x - fx * 34, y - fy * 34); g.addColorStop(0, 'rgba(235,248,252,0.55)'); g.addColorStop(1, 'rgba(235,248,252,0)');
+                ctx.strokeStyle = g; ctx.lineCap = 'round'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x - fx * 6, y - fy * 6); ctx.quadraticCurveTo(x - fx * 20 + -fy * 2, y - fy * 20 + fx * 2, x - fx * 34, y - fy * 34); ctx.stroke(); }
+            if (b.leap >= 0) {
+                // a leap clear: out and back in with a small patch of torn white water, the bird in the air above its shadow,
+                // flippers swept back
+                const q = b.leap, z = Math.sin(Math.PI * q) * P.hop, px = x + fx * (q - 0.5) * 14, py = y + fy * (q - 0.5) * 14;
+                // (Wes, Oct 16: "when they leap in the water they should splash") — a burst of torn white water where it breaks
+                // out and where it goes back in, lying on the sea a moment as a lacy patch
+                const k0 = Math.max(0, 1 - q / 0.45), k1 = Math.max(0, (q - 0.6) / 0.4);
+                if (k0 > 0) { whiteSheet(ctx, x - fx * 7, y - fy * 7, 7, 5, S.h, b.ph * 7, 0.5 * k0); whiteWater(ctx, x - fx * 7, y - fy * 7, 6.5, 0.9 * k0, b.ph * 7, 0); }
+                if (k1 > 0) { whiteSheet(ctx, x + fx * 7, y + fy * 7, 7, 5, S.h, b.ph * 9, 0.5 * k1); whiteWater(ctx, x + fx * 7, y + fy * 7, 6.5, 0.9 * k1, b.ph * 9, 0); }
                 ctx.fillStyle = 'rgba(8,16,28,0.25)'; ctx.beginPath(); ctx.ellipse(px + z * 0.35, py + z * 0.55, 3, 7, S.h, 0, Math.PI * 2); ctx.fill();
-                under(px, py, 1);
-                if (q < 0.25) drawFishSplash(ctx, x - fx * 5, y - fy * 5, 1 - q / 0.25, 0.7, b.ph * 7);
-                if (q > 0.75) drawFishSplash(ctx, x + fx * 5, y + fy * 5, (q - 0.75) / 0.25, 0.7, b.ph * 9);
-            } else if (!P.porp && u < 0.18) {
-                const q = Math.sin(Math.PI * u / 0.18);
-                under(x, y, 0.35 + 0.55 * q);
-                ctx.strokeStyle = `rgba(255,255,255,${0.45 * q})`; ctx.lineWidth = 0.9;
-                for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + fx * 9, y + fy * 9); ctx.lineTo(x - fx * 10 + -fy * sd * 7, y - fy * 10 + fx * sd * 7); ctx.stroke(); }
-            } else under(x, y, 0.28);
+                f = 0.55; ctx.save(); ctx.translate(px, py); ctx.scale(1 + z * 0.015, 1 + z * 0.015); under(0, 0, 1); ctx.restore();
+            } else if (b.sur >= 0) {
+                // up a moment to breathe: the back and head break the surface, a small V off them
+                const q = Math.sin(Math.PI * b.sur);
+                under(x, y, 0.45 + 0.5 * q);
+                ctx.strokeStyle = `rgba(255,255,255,${0.4 * q})`; ctx.lineWidth = 0.8;
+                for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + fx * 8, y + fy * 8); ctx.lineTo(x - fx * 9 + -fy * sd * 6, y - fy * 9 + fx * sd * 6); ctx.stroke(); }
+            } else under(x, y, sp === 'emperor' ? 0.3 : 0.45);   // ~1 m down (an emperor deeper): a dim shape
         }
+        ctx.restore();
     }
     // The seal as a dark shape under the water: its own silhouette, tinted to the deep (cached).
     let _sealShade = null;
@@ -7339,38 +7829,65 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const k = S.plop, a = S.splashA;
         if (k > 0) {
             whiteSheet(ctx, S.sx, S.sy, 9 + 12 * (1 - k), 14 + 10 * (1 - k), a, S.sx, 0.6 * k);
-            drawFishSplash(ctx, S.sx + Math.sin(a) * 10, S.sy - Math.cos(a) * 10, k, 2.2, S.sy);
-            drawFishSplash(ctx, S.sx - Math.sin(a) * 6 + Math.cos(a) * 7, S.sy + Math.cos(a) * 6 + Math.sin(a) * 7, k * 0.8, 1.4, S.sx);
+            whiteWater(ctx, S.sx + Math.sin(a) * 10, S.sy - Math.cos(a) * 10, 9 * (1.3 - 0.3 * k), 0.8 * k, S.sy, 0);   // torn white water, never a spray of dots
         }
         for (let r = 0; r < 3; r++) { const q = S.ring - r * 0.25; if (q > 0 && q < 1) { ctx.strokeStyle = `rgba(255,255,255,${0.4 * q})`; ctx.lineWidth = 1.1;
             for (const [a0, a1] of [[0.2, 1.4], [1.9, 3.1], [3.6, 4.6], [5.0, 6.0]]) { ctx.beginPath(); ctx.ellipse(S.sx, S.sy, 10 + (1 - q) * 28, 12 + (1 - q) * 30, a, a0 + r, a1 + r); ctx.stroke(); } } }
     }
+    // The fore-flippers' angle (+ = swept back toward the tail): resting and on the ice they lie back along the body (it
+    // inchworms on the ice, hardly using them); swimming, a stroke now and then (S.fs), between strokes held back to glide.
+    function sealFlip(S) {
+        if (S.fs == null) return 0.45;
+        const q = S.fs, e = (u) => u * u * (3 - 2 * u);
+        return q < 0.3 ? 0.45 - 0.95 * e(q / 0.3) : q < 0.55 ? -0.5 + 1.2 * e((q - 0.3) / 0.25) : 0.7 - 0.25 * e((q - 0.55) / 0.45);
+    }
+    // shadow: on the ice it casts one, down-right, which is what sits it ON the ice rather than printed on it
+    function sealDraw(ctx, x, y, h, alpha, a, bend, shadow, ar) {
+        const P = limbsCompose(ctx, LSEAL_SPR, a, ar == null ? a : ar, bend || ((u) => 0), 33);
+        if (!P) { drawArcticSprite(ctx, 'seal', x, y, h, alpha); return; }
+        if (shadow) { ctx.save(); ctx.translate(x + 3, y + 4.5); ctx.rotate(h); humpBlit(ctx, P, 'rgb(40,60,85)', shadow * alpha); ctx.restore(); }
+        ctx.save(); ctx.translate(x, y); ctx.rotate(h); humpBlit(ctx, P, null, alpha); ctx.restore();
+    }
+    // SWIMMING it is not a stiff rod (Wes, Oct 16): true seals swim by a wave travelling down the rear body, the hind
+    // flippers sweeping side to side, the head held nearly steady — the wave's amplitude grows toward the tail.
+    const sealWave = (S, amp) => (u) => amp * 6 * Math.max(0, (u + 0.12) / 0.62) ** 1.5 * Math.sin(S.sw * 2.5 - 5.5 * u);   // (spine angle: ±~0.5 rad at the hind flippers)
+    // HAULED OUT: the slump (a banana curve) and the head turned to look about (only the neck and head flex)
+    const sm01 = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
+    // spine angles: the slump an even arc (nose and tail curving the same way), the look a turn at the neck
+    const sealRest = (S) => (u) => (S.slump || 0) * 2 * u - (S.look || 0) * 1.6 * sm01((-0.2 - u) / 0.12);
     function drawLeopardSeal(ctx, S) {
         if (S.mode === 'deep') return;
-        if (S.mode === 'haul') { const hv = S.hauling ? S.heave || 0 : 0; ctx.save(); ctx.translate(S.x, S.y); ctx.rotate(S.h); ctx.scale(1 + 0.04 * hv, 1 - 0.07 * hv); drawArcticSprite(ctx, 'seal', 0, 0, 0, 1); ctx.restore(); }
+        if (S.mode === 'haul') { const hv = S.hauling ? S.heave || 0 : 0; ctx.save(); ctx.translate(S.x, S.y); ctx.rotate(S.h); ctx.scale(1.1 + 0.04 * hv, 1 - 0.05 * hv); sealDraw(ctx, 0, 0, 0, 1, 0.3 - (S.flkL || 0), S.hauling ? (u) => 0.24 * hv * u : sealRest(S), 0.28, 0.3 - (S.flkR || 0)); ctx.restore(); }
+            // (Wes, Oct 16: "they look like dead fish at this scale" — a slim dark spindle with a forked tail. Lying on the ice a
+            // seal spreads, so it is drawn ~22% wider than it swims, and its fore-flippers rest on the ice a little out from
+            // the body where they show: what reads as a seal and not a fish is the four limbs.)   // HAULED OUT a leopard seal lies slumped: curved like a banana, flippers tucked along its flanks, its relaxed body spread a little
         else if (S.mode === 'launch') {
             const z = S.z || 0;
             if (z > 0.5) drawSealShade(ctx, S.x + z * 0.35, S.y + z * 0.55, S.h, 0.3, 1);   // its shadow as it leaves the ice
             // humping: the body bunches and stretches heave by heave; leaping, it stretches out long
             const hv = S.heave || 0, sy = z > 0.5 ? 1.06 - 0.1 * (1 - Math.abs(S.pitch || 0)) : 1 - 0.07 * hv, sx = z > 0.5 ? 0.94 : 1 + 0.04 * hv;
-            ctx.save(); ctx.translate(S.x, S.y); ctx.rotate(S.h); ctx.scale(sx * (1 + z / 70), sy * (1 + z / 70)); drawArcticSprite(ctx, 'seal', 0, 0, 0, 1); ctx.restore();
+            ctx.save(); ctx.translate(S.x, S.y); ctx.rotate(S.h); ctx.scale(sx * (1 + z / 70), sy * (1 + z / 70)); sealDraw(ctx, 0, 0, 0, 1, 0.55); ctx.restore();
         } else if (S.mode === 'dive') {
             drawSealEntry(ctx, S);
             const d = S.depth, fx = Math.sin(S.h), fy = -Math.cos(S.h), hd = S.h + Math.sin(S.sw) * 0.2 * (1 - d);
             // the body going under: the sprite fades in the first moments while the dark shape
             // takes over, then that shrinks a little and thins into the depth
             drawSealShade(ctx, S.x, S.y, hd, 0.55 * (1 - d) * Math.min(1, d * 6 + 0.3), 1 - 0.12 * d);
-            if (d < 0.25) drawArcticSprite(ctx, 'seal', S.x, S.y, hd, 1 - d / 0.25);
+            if (d < 0.25) sealDraw(ctx, S.x, S.y, hd, 1 - d / 0.25, sealFlip(S), sealWave(S, 0.07));
             // the V it pushes while it is still near the top
             if (d < 0.5) { ctx.strokeStyle = `rgba(255,255,255,${0.4 * (1 - d / 0.5)})`; ctx.lineWidth = 1;
-                for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(S.x + fx * 20, S.y + fy * 20); ctx.quadraticCurveTo(S.x - fx * 4 - fy * sd * 8, S.y - fy * 4 + fx * sd * 8, S.x - fx * 18 - fy * sd * 14, S.y - fy * 18 + fx * sd * 14); ctx.stroke(); } }
+                for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(S.x + fx * 32, S.y + fy * 32); ctx.quadraticCurveTo(S.x + fx * 16 - fy * sd * 12, S.y + fy * 16 + fx * sd * 12, S.x - fx * 6 - fy * sd * 18, S.y - fy * 6 + fx * sd * 18); ctx.stroke(); } }
         }
         else {
-            const hd = S.h + Math.sin(S.sw) * 0.25;
-            drawArcticSprite(ctx, 'seal', S.x, S.y, hd, 0.6 + 0.4 * S.up);
+            const hd = S.h + Math.sin(S.sw * 2.5 + 1.2) * 0.04;   // (the head nearly steady; the wave does the swimming)
+            sealDraw(ctx, S.x, S.y, hd, 0.6 + 0.4 * S.up, sealFlip(S), sealWave(S, 0.12));
             // awash: a low V off the head as it cruises
-            const fx = Math.sin(S.h), fy = -Math.cos(S.h); ctx.strokeStyle = `rgba(255,255,255,${0.3 * S.up})`; ctx.lineWidth = 0.9;
-            for (const sd of [-1, 1]) { ctx.beginPath(); ctx.moveTo(S.x + fx * 18, S.y + fy * 18); ctx.lineTo(S.x - fx * 8 - fy * sd * 10, S.y - fy * 8 + fx * sd * 10); ctx.stroke(); }
+            // the ripple it pushes off its nose: two soft curling arms along the body as drawn (it sways as it sculls),
+            // fading as they peel back — never a hard chevron
+            const fx = Math.sin(hd), fy = -Math.cos(hd), nx = S.x + fx * 30, ny = S.y + fy * 30; ctx.lineCap = 'round';
+            for (const sd of [-1, 1]) { const g = ctx.createLinearGradient(nx, ny, S.x + fx * 8 - fy * sd * 14, S.y + fy * 8 + fx * sd * 14);
+                g.addColorStop(0, `rgba(255,255,255,${0.32 * S.up})`); g.addColorStop(1, 'rgba(255,255,255,0)'); ctx.strokeStyle = g; ctx.lineWidth = 1.1;
+                ctx.beginPath(); ctx.moveTo(nx - fy * sd * 2, ny + fx * sd * 2); ctx.quadraticCurveTo(S.x + fx * 22 - fy * sd * 9, S.y + fy * 22 + fx * sd * 9, S.x + fx * 8 - fy * sd * 14, S.y + fy * 8 + fx * sd * 14); ctx.stroke(); }
             if (S.ring > 0) for (let r = 0; r < 2; r++) { const q = S.ring - r * 0.3; if (q > 0) { ctx.strokeStyle = `rgba(255,255,255,${0.4 * q})`; ctx.lineWidth = 1; for (const [a0, a1] of [[0.3, 1.6], [2.1, 3.3], [3.8, 5.6]]) { ctx.beginPath(); ctx.ellipse(S.x + Math.sin(S.h) * 16, S.y - Math.cos(S.h) * 16, 6 + (1 - q) * 16, 5 + (1 - q) * 13, S.h, a0, a1); ctx.stroke(); } } }
         }
         if (S.mode !== 'dive' && S.plop > 0) whiteSheet(ctx, S.x, S.y, 22 * (1.3 - S.plop * 0.3), 12 * (1.3 - S.plop * 0.3), S.h, S.lx + S.ly, 0.6 * S.plop);
@@ -7402,6 +7919,19 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             ctx.closePath(); ctx.fill();
         }
     }
+    // THE PAINTED ANTARCTIC TERN (Oct 16 2026): the sprite arctic-tern, its wings cut at the shoulders (colsplit.py),
+    // posed by the gull's and pelican's pelicanPosed: through a stroke the span foreshortens (pf) and on the upstroke the
+    // hands sweep back (flex); hovering, the downstroke sweeps them forward; plunging, they fold back into a dart. Span 38.
+    const TERN_SPR = { stem: 'tern', x0: 0.0723, x1: 0.9268, cx: 0.4995, cy: 0.5108, root: { 'wing-l': [0.4495, 0.4977], 'wing-r': [0.5495, 0.4973] } };
+    const TERN_B = { S: TERN_SPR, span: 38, img: (p2) => arcticImg('tern-' + p2) };
+    function ternPose(b, flying, fold) {
+        const ph = flying ? b.flap : 1.9, hover = b.mode === 'hover', elev = (hover ? 1.05 : 0.8) * Math.cos(ph);
+        const down = Math.max(0, Math.sin(ph)), up = Math.max(0, -Math.sin(ph));
+        const pf = 0.35 + 0.65 * Math.cos(elev), flex = Math.min(1, up * 0.9 + (1 - Math.cos(elev)) * 0.3);
+        // (the upstroke folds the hand at the wrist, so the wing comes up shorter as well as swept back; HOVERING the
+        // downstroke drives the wings well forward of the shoulders — the hover's lift)
+        return { pf: fold >= 1 ? 1 : pf * (1 - 0.22 * flex), sweep: fold >= 1 ? 0 : flex - (hover ? down * 1.3 : 0), fold };
+    }
     const TERN_SCALE = 1.35, SOOTY_SCALE = 1.1, SOOTY = { wing: '#1f1d20', body: '#19181b', cap: '#0f0f11', white: '#f1f0ea' };
     function drawTern(ctx, b) {
         if (b.mode === 'roost') {
@@ -7419,6 +7949,18 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const flying = b.mode === 'hover' || b.mode === 'climb' || b.mode === 'shift' || b.mode === 'land' || b.mode === 'wheel' || b.mode === 'dip', fold = b.mode === 'dive' ? 1 : b.mode === 'dip' ? 0.25 : 0;
         const W = ternWing(flying ? (b.sooty && b.gliding && Math.sin(b.flap) >= 0.9 && b.mode === 'wheel' ? Math.PI / 2 : b.flap) : 1.9, fold, b.mode === 'hover');
         const zo = Math.min(b.z, 45);
+        if (!b.sooty) {
+            const Q = ternPose(b, flying, fold), pose = () => pelicanPosed(ctx, Q.pf, Q.sweep, Q.fold, 27, TERN_B);
+            if (TERN_B.img('body') && imgReady(TERN_B.img('body'))) {
+                // its shadow on the water, offset by its height; then the bird, a touch larger the higher it is
+                // hovering it hangs tilted nose-up 30-45° with its head down, so from above its body is foreshortened (its shadow too)
+                const tilt = b.mode === 'hover' ? 0.8 : 1;
+                ctx.save(); ctx.translate(b.x + zo * 0.35, b.y + zo * 0.55); ctx.rotate(b.h); ctx.scale(1, tilt); humpBlit(ctx, pose(), 'rgb(4,10,20)', 0.34 * Math.max(0.45, 1 - b.z / 120)); ctx.restore();
+                ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.h); const sz = zScale(b.z); ctx.scale(sz, sz * tilt); humpBlit(ctx, pose(), null, 1); ctx.restore();
+                if (b.splash > 0) whiteWater(ctx, b.sx, b.sy, 3 + 3 * (1 - b.splash), 0.7 * b.splash, b.a * 5, 0);   // where it hit the water: torn white, not dots
+                return;
+            }
+        }
         const ks = b.sooty ? SOOTY_SCALE : TERN_SCALE; ctx.save(); ctx.translate(b.x + zo * 0.35, b.y + zo * 0.55); ctx.rotate(b.h); ctx.scale(ks * 0.95, ks * 0.95); ctx.fillStyle = `rgba(4,10,20,${0.34 * Math.max(0.45, 1 - b.z / 120)})`; ternShape(ctx, W);
         ctx.beginPath(); ctx.ellipse(0, 1, 1.1, 4, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
         ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.h); ctx.scale(TERN_SCALE, TERN_SCALE);
@@ -11032,15 +11574,18 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             ctx.closePath(); ctx.fill();
         }
     }
-    function whiteWater(ctx, x, y, r, a, seed) {
+    // `jets` (default 9): the spray tongues thrown out round the patch. 0 = the torn patch alone — for a back or a head
+    // breaking the surface, or a small bird going in, where a ring of jets reads as a sunburst (Wes's rule).
+    function whiteWater(ctx, x, y, r, a, seed, jets) {
         ctx.save(); ctx.translate(x, y);
         const g = ctx.createRadialGradient(0, 0, r * 0.2, 0, 0, r);
         g.addColorStop(0, `rgba(255,255,255,${0.9 * a})`); g.addColorStop(0.6, `rgba(235,248,250,${0.6 * a})`); g.addColorStop(1, 'rgba(220,240,245,0)');
         ctx.fillStyle = g; ctx.beginPath();
         for (let i = 0; i <= 40; i++) { const t = i / 40 * Math.PI * 2, n = 0.82 + 0.12 * Math.sin(t * 3 + seed) + 0.08 * Math.sin(t * 7 + seed * 2.3); ctx.lineTo(Math.cos(t) * r * n, Math.sin(t) * r * n); }
         ctx.fill();
-        for (let i = 0; i < 9; i++) {
-            const j = Math.abs(Math.sin(i * 12.99 + seed * 3.1)), t = (i + 0.7 * j) / 9 * Math.PI * 2, L = r * (0.9 + 0.7 * j), w = r * (0.08 + 0.06 * j);
+        const NJ = jets == null ? 9 : jets;
+        for (let i = 0; i < NJ; i++) {
+            const j = Math.abs(Math.sin(i * 12.99 + seed * 3.1)), t = (i + 0.7 * j) / NJ * Math.PI * 2, L = r * (0.9 + 0.7 * j), w = r * (0.08 + 0.06 * j);
             ctx.fillStyle = `rgba(255,255,255,${0.75 * a * (0.6 + 0.4 * j)})`; ctx.beginPath();
             ctx.moveTo(Math.cos(t - 0.12) * r * 0.5, Math.sin(t - 0.12) * r * 0.5);
             ctx.quadraticCurveTo(Math.cos(t) * L * 0.8 - Math.sin(t) * w, Math.sin(t) * L * 0.8 + Math.cos(t) * w, Math.cos(t) * L, Math.sin(t) * L);
@@ -11160,7 +11705,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // BLUE_SPR, fractions of the frame: the ink's top (snout) and bottom (fluke tips), the spine's x, the
     // tail stock where the flukes hinge. `slim`: the painting came back 1.6x stouter than Wes's aerial
     // references (body a sixth of its length across where they show a tenth; flukes a quarter where they
-    // show a fifth), so it is drawn at 0.72 of its painted width — the leopard seal's fix (sealBackImg).
+    // show a fifth), so it is drawn at 0.72 of its painted width (as the August leopard seal once was).
     const BLUE_SPR = { file: 'assets/images/props/otter/blue-whale.png', top: 0.0247, bot: 0.9681, cx: 0.5, hinge: 0.8313, slim: 0.72 };
     const BLUE_STRIPS = 10;
     // The posed whale on a scratch canvas (see humpPosed): the rear body in strips flexing with _bwx from

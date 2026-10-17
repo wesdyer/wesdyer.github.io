@@ -94,8 +94,9 @@ def main():
     stem = paths.rel(asset, pref).name
     pdir = paths.store(ROOT / "parts", asset, pref).parent
     pdir.mkdir(parents=True, exist_ok=True)
-    adir = ROOT.parent / m["profiles"][asset["class"]]["out"] / asset["venue"]
-    bake = asset["world"] * m["profiles"][asset["class"]]["bake"]
+    prof = m["profiles"][asset["class"]]
+    if "bake" in prof: adir, bake = ROOT.parent / prof["out"] / asset["venue"], asset["world"] * prof["bake"]
+    else: adir, bake = ROOT.parent / "assets/images/props" / asset["venue"], asset["world"] * 4   # a shipped element (ships:true): baked 4x, as ingest does
     for nm, arr in parts.items():
         im = Image.fromarray(arr)
         im.save(pdir / f"{stem}-{nm}.png")

@@ -13,6 +13,7 @@ const { chromium } = require('playwright'); const path = require('path'); const 
   // ask for the painted sprites, and give them a moment to load
   await p.evaluate(() => { const g = document.createElement('canvas').getContext('2d'); const c = state.camera; state.camera = null;
     Wildlife.art.drawWhiteShark(g, { x: 0, y: 0, h: 0, depth: 0, mode: 'patrol', ph: 0, trail: [], trailT: 0, z: 0, roll: 0, jaw: 0, slick: 0, turn: 0 }, 'water');
+    for (const k of ['orca', 'orca-b', 'orca-calf']) Wildlife.art.drawOrca(g, { kind: k, x: 0, y: 0, h: 0, z: 0, up: -1, beat: 0, turn: 0, trail: [], j: 0 });
     Wildlife.art.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'under', t: 10, depth: 0.5, ph: 0, fluke: 0, turn: 0, lunge: 0, sd: 1, mott: [] });
     Wildlife.art.drawSpinner(g, { live: true, i: 0, x: 0, y: 0, h: 0, spin: 0, breath: 0 });
     Wildlife.art.drawAlbatross(g, { x: 0, y: 0, h: 0, z: 0, bank: 0 });
@@ -48,6 +49,9 @@ const { chromium } = require('playwright'); const path = require('path'); const 
       'sea otter (on its back, nose to hind feet)': g => A.drawSeaOtter(g, { i: 0, x: 0, y: 0, h: 0, mode: 'float', t: 5, bob: 0, roll: 0, paws: 'rest', food: null, tap: 0, ring: 0, ring2: 0, look: 0, kelp: false, size: 1, head: 0.8, trail: [], trailT: 0, dive: 0, pup: false, ph: 0 }),
       'sea lion cow (nose to hind flippers)': g => A.drawSeaLion(g, { i: 0, x: 0, y: 0, h: 0, mode: 'lie', up: 0, bark: 0, wet: 0, curl: 0, bob: 0, bull: false, size: 1 }),
       'sea lion bull': g => A.drawSeaLion(g, { i: 0, x: 0, y: 0, h: 0, mode: 'lie', up: 0, bark: 0, wet: 0, curl: 0, bob: 0, bull: true, size: 1.25 }),
+      'orca bull (snout to fluke tips)': g => { const c = state.camera; state.camera = null; A.drawOrca(g, { kind: 'orca', x: 0, y: 0, h: 0, z: 0, up: 0.5, term: true, beat: Math.PI / 2, turn: 0, trail: [], j: 0 }); state.camera = c; },
+      'orca cow': g => { const c = state.camera; state.camera = null; A.drawOrca(g, { kind: 'orca-b', x: 0, y: 0, h: 0, z: 0, up: 0.5, term: true, beat: Math.PI / 2, turn: 0, trail: [], j: 0 }); state.camera = c; },
+      'orca calf': g => { const c = state.camera; state.camera = null; A.drawOrca(g, { kind: 'orca-calf', x: 0, y: 0, h: 0, z: 0, up: 0.5, term: true, beat: Math.PI / 2, turn: 0, trail: [], j: 0 }); state.camera = c; },
       'great white (snout to tail tip)': g => { const c = state.camera; state.camera = null; A.drawWhiteShark(g, { x: 0, y: 0, h: 0, depth: 0, mode: 'patrol', ph: 0, trail: [], trailT: 0, z: 0, roll: 0, jaw: 0, slick: 0, turn: 0 }, 'water'); state.camera = c; },
       'spinner dolphin (beak to flukes)': g => { const c = state.camera; state.camera = null; A.drawSpinner(g, { live: true, i: 0, x: 0, y: 0, h: 0, spin: 0, breath: 0 }); state.camera = c; },
       'flying fish (span, airborne)': g => { const c = state.camera; state.camera = null; A.drawFlyfish(g, { x0: 0, y0: 0, h: Math.PI / 2, len: 0.001, t: 0.5, dur: 1, z: 8, size: 1 }); state.camera = c; },
