@@ -4,6 +4,7 @@
 //   node regatta/eval/start_bench.js [seeds=6] [seedBase=7100]     (VENUES=bay,lagoon to narrow)
 //   JSON=out.json …                                                 also write the per-venue rows
 //   RULES=off  the prestart without racing rules (PT-030's before);  SPAWN=old  bots spawn sailing on starboard
+//   START='{"margin":2.5}'  any window.__START knob (aim, margin, burnK, fairKt, …) for a sweep
 //
 // Per venue, over every bot in every race:
 //   port10   share of the fleet on PORT 10 s before the gun (the approach the player meets)
@@ -25,7 +26,7 @@ const VENUES = (process.env.VENUES || 'bay,seatrials,lake,lagoon,swamp,river,oce
     const results = await Promise.all(VENUES.map(async (venue) => {
         const page = await browser.newPage();
         const errs = []; page.on('pageerror', e => errs.push(e.message));
-        await page.addInitScript(({ R, S }) => { if (R) window.__PRESTART_RULES = R; if (S === 'old') window.__START = { oldSpawn: true }; }, { R: process.env.RULES || '', S: process.env.SPAWN || '' });
+        await page.addInitScript(({ R, S, J }) => { if (R) window.__PRESTART_RULES = R; window.__START = Object.assign(J ? JSON.parse(J) : {}, S === 'old' ? { oldSpawn: true } : {}); }, { R: process.env.RULES || '', S: process.env.SPAWN || '', J: process.env.START || '' });
         await page.goto('file://' + path.resolve('regatta/index.html'));
         await page.evaluate(v => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), venue);
         await page.addScriptTag({ content: fs.readFileSync('regatta/eval/rate_harness.js', 'utf8') });
