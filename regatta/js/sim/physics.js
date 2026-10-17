@@ -475,7 +475,8 @@ function rulesInForce() {
 const INCIDENT_GAP = 2.0, PILEUP_GAP = 1.0;
 function triggerPenalty(boat, info) {
     if (boat.raceState.finished) return;
-    if (window.onRaceEvent && state.race.status === 'racing') window.onRaceEvent('penalty', { boat, kind: info && info.kind, rule: info && info.rule, reason: info && info.reason, other: info && info.other });
+    // logged from the prestart on, like the rules themselves (PT-030)
+    if (window.onRaceEvent && rulesInForce()) window.onRaceEvent('penalty', { boat, kind: info && info.kind, rule: info && info.rule, reason: info && info.reason, other: info && info.other });
     if (!settings.penaltiesEnabled) return;
 
     const w = info && info.with;

@@ -94,7 +94,7 @@ function recordTrajectory(dt) {
                     });
                     return h;
                 } catch (e) { return null; } })(),
-                events: [], // [t, type] — penalties and ice contacts
+                events: [], // [t, type, …] — penalties and contacts; t is race time, negative before the gun
                 // ⚠️ BARE column names only — a consumer indexed F.rivals against the
                 // old decorated name 'rivals[x,y,...]', read undefined, and published
                 // "the human sailed alone" from a column that does not exist. The
@@ -133,10 +133,14 @@ function recordTrajectory(dt) {
                             && recTraj.events.length < 2000) {
                             // Contact events fire per overlap frame — a sustained
                             // grind would flood the log. One entry per type per 0.5s.
+                            // Race time, NEGATIVE before the gun (the countdown clock's −00:12): the prestart
+                            // timer counts down, so a prestart penalty (PT-030) would otherwise collide with the
+                            // same second after the gun, and the 0.5 s throttle below would never re-arm.
+                            const tEv = state.race.status === 'prestart' ? -state.race.timer : state.race.timer;
                             const last = recTraj._evT && recTraj._evT[ty];
-                            if (last == null || state.race.timer - last >= 0.5) {
-                                (recTraj._evT = recTraj._evT || {})[ty] = state.race.timer;
-                                const ev = [+state.race.timer.toFixed(1), ty];
+                            if (last == null || tEv - last >= 0.5) {
+                                (recTraj._evT = recTraj._evT || {})[ty] = tEv;
+                                const ev = [+tEv.toFixed(1), ty];
                                 if (ty === 'collision_boat' && d.other) ev.push(d.other.name);
                                 // the CALL, so a penalty can be explained from the record (PT-067)
                                 if (ty === 'penalty') ev.push(`${d.rule || '?'}${d.reason ? ' — ' + d.reason : ''}${d.other ? ' vs ' + d.other : ''}`);
