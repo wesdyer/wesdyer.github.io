@@ -459,6 +459,37 @@ let frameCount = 0;
 //
 // The straight-axis version this replaces only worked on alternating windward/leeward
 // courses. See the note on CoursePath for what it did to an island rounding.
+// THE RACE CLOCK at the top of the screen. Every tenth frame with the rest of the HUD, and EVERY frame in the
+// prestart: the countdown's signals (Sound.countdown) fire on the frame the second turns, and a clock refreshed
+// six times a second could still show the old second as the bell rang. Writes only when the text changes.
+function renderRaceClock(player) {
+    if (UI.timer) {
+        let displayTime = state.race.timer;
+        let timerClass = 'text-white';
+
+        if (state.race.status === 'prestart') {
+            // A COUNTDOWN ROUNDS UP: it reads 10 until 9 s are left. Floored, the clock flipped to 9 at the
+            // instant the 10 s bell rang, so every signal (Sound.countdown) landed a second late on the
+            // display — the bell on "9", the bright 3-2-1 on 2, 1, 0. The millisecond clock stays exact.
+            displayTime = settings.clockMillis ? -state.race.timer : -Math.ceil(state.race.timer - 1e-9);
+            if (state.race.timer < 10) timerClass = 'text-orange-400';
+        } else if (player.raceState.finished) {
+            displayTime = player.raceState.finishTime;
+            timerClass = 'text-green-400';
+        } else if (state.race.status === 'finished') {
+            timerClass = 'text-green-400';
+        }
+
+        // Fried electronics (volcano.js): the clock goes to static with the rest of them.
+        const timerFried = !!(state.volcano && window.Volcano && Volcano.hudFried('timer'));
+        const clock = settings.clockMillis ? formatClockTime(displayTime) : formatTime(displayTime);
+        const text = timerFried ? Volcano.garble(clock, 1) : clock;
+        const cls = `t-mono text-4xl tracking-widest drop-shadow-md ${timerFried ? 'text-rose-400 fried' : timerClass}`;
+        if (UI.timer.textContent !== text) UI.timer.textContent = text;
+        if (UI.timer.className !== cls) UI.timer.className = cls;
+    }
+}
+
 function draw() {
     frameCount++;
 
@@ -952,6 +983,7 @@ function draw() {
         }
     }
 
+    if (state.race.status === 'prestart' && frameCount % 10 !== 0) renderRaceClock(player);
     if (frameCount % 10 === 0) {
         updateLeaderboard();
 
@@ -978,26 +1010,7 @@ function draw() {
         // rather than being dropped: SOG's planing and penalty colours, the TWS pressure
         // comparison against the course's own p10/p90, and the dirty-air arrow are all in
         // boatInstrumentData. VMG is the one number that did not survive the move.
-        if (UI.timer) {
-            let displayTime = state.race.timer;
-            let timerClass = 'text-white';
-
-            if (state.race.status === 'prestart') {
-                displayTime = -state.race.timer;
-                if (state.race.timer < 10) timerClass = 'text-orange-400';
-            } else if (player.raceState.finished) {
-                displayTime = player.raceState.finishTime;
-                timerClass = 'text-green-400';
-            } else if (state.race.status === 'finished') {
-                timerClass = 'text-green-400';
-            }
-
-            // Fried electronics (volcano.js): the clock goes to static with the rest of them.
-            const timerFried = !!(state.volcano && window.Volcano && Volcano.hudFried('timer'));
-            const clock = settings.clockMillis ? formatClockTime(displayTime) : formatTime(displayTime);
-            UI.timer.textContent = timerFried ? Volcano.garble(clock, 1) : clock;
-            UI.timer.className = `t-mono text-4xl tracking-widest drop-shadow-md ${timerFried ? 'text-rose-400 fried' : timerClass}`;
-        }
+        renderRaceClock(player);
 
         if (UI.startTime) {
             if (player.raceState.legSplitTimer > 0) {
