@@ -274,6 +274,60 @@ Object.assign(BotController.prototype, {
         }
         return h;
     },
+
+    // THE WIGGLE AMONG PROPS (PT-050 push, TH2). A stuck boat wiggles a beam reach ±100° off
+    // the wind for seconds with the land probe's help or not — against a coast that finds
+    // water, in a cypress grove it reaches across the trunks (a quarter of the threading
+    // contacts were taken in the wiggle). Among prop-sized obstacles, wiggle down the
+    // longest CLEAR run instead: every sailable heading (outside the no-go by a margin a
+    // stopped hull can power up on) is rolled out on the true rings, scored by how far it
+    // stays a hull clear (to 150u) plus a pull toward the plan ahead. Returns null (the
+    // stock wiggle) away from props or when nothing runs clear for 40u.
+    propWiggleHeading() {
+        const boat = this.boat;
+        const g = state.course._botGridStatic || state.course.botGrid;
+        if (!g || !window.SailCheck || !SailCheck.trueClear) return null;
+        if (state.course._floeObjs && state.course._floeObjs.length) return null;
+        const P = (typeof window !== 'undefined' && window.__THREAD) ? window.__THREAD : {};
+        if (P.noWiggle) return null;
+        const sm = { v: false };
+        const c0 = SailCheck.trueClear(g, boat.x, boat.y, 90, sm);
+        if (!(c0 < 90 && sm.v)) return null;                        // not among props
+        const CLR = 28, wd = getWindAt(boat.x, boat.y).direction;
+        let pullH = null;
+        const path = this.gridPath;
+        if (path && path.length) {
+            let k = 0, bd = Infinity;
+            for (let i = 0; i < Math.min(path.length, 40); i++) { const d = (path[i].x - boat.x) ** 2 + (path[i].y - boat.y) ** 2; if (d < bd) { bd = d; k = i; } }
+            const q = path[Math.min(path.length - 1, k + 3)];
+            pullH = Math.atan2(q.x - boat.x, -(q.y - boat.y));
+        }
+        // ...and not into a rival: TH2 alone backed stuck boats out into one another (boat
+        // contacts 3.6 → 4.9, penalties 1.17 → 1.37 per boat). Each candidate run is also
+        // rolled against every rival within reach on its current velocity, 0.5-4 s at a
+        // stalled hull's ~35 u/s, and a pass inside two hulls costs it the run beyond.
+        const rivals = [];
+        for (const o of state.boats) { if (o === boat || o.raceState.finished) continue; if ((o.x - boat.x) ** 2 + (o.y - boat.y) ** 2 < 260 * 260) rivals.push(o); }
+        const V = 35;
+        let best = null, bestS = -Infinity, bestD = 0;
+        for (let a = 0; a < 24; a++) {
+            const h = -Math.PI + a * Math.PI / 12;
+            if (Math.abs(normalizeAngle(h - wd)) < 0.85) continue;
+            let d = 0;
+            for (let s = 10; s <= 150; s += 10) { if (SailCheck.trueClear(g, boat.x + Math.sin(h) * s, boat.y - Math.cos(h) * s, CLR) < CLR) break; d = s; }
+            if (!(P.wiggleBoats === false)) for (const o of rivals) {
+                const ovx = Math.sin(o.heading) * o.speed * 60, ovy = -Math.cos(o.heading) * o.speed * 60;
+                for (let t = 0.5; t <= 4; t += 0.5) {
+                    const s = V * t; if (s > d) break;
+                    const dx = boat.x + Math.sin(h) * s - (o.x + ovx * t), dy = boat.y - Math.cos(h) * s - (o.y + ovy * t);
+                    if (dx * dx + dy * dy < 60 * 60) { d = Math.min(d, Math.max(0, s - 20)); break; }
+                }
+            }
+            const sc = d + (pullH != null ? 40 * Math.cos(normalizeAngle(h - pullH)) : 0);
+            if (sc > bestS) { bestS = sc; best = h; bestD = d; }
+        }
+        return bestD >= 40 ? best : null;
+    },
 });
 Object.assign(BotController.prototype, {
     planFloeTrajectory(desiredHeading, navTarget) {

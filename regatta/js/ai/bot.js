@@ -737,6 +737,10 @@ class BotController {
             } else {
                 // Beam Reach +/- 100 degrees (Slightly downwind to shed power if needed)
                 desiredHeading = normalizeAngle(windDir + this.wiggleSide * 1.75); // ~100 degrees
+                // ...unless among props, where the beam reach crosses the trunks: wiggle down
+                // the longest clear run (PT-050, propWiggleHeading)
+                const pw = this.propWiggleHeading();
+                if (pw != null) desiredHeading = pw;
             }
 
             // FORCE SPEED BOOST to overcome friction/pinning
