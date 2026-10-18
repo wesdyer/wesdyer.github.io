@@ -12507,7 +12507,7 @@ window.VENUE_DOC["swamp"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-bc58a3b0-brku",
+      "sig": "v3-c65cafdc-brkf",
       "legs": [
         {
           "pts": []
@@ -12563,15 +12563,11 @@ window.VENUE_DOC["swamp"] = {
               -1639.4
             ],
             [
-              -633.4,
-              -1989.4
+              -583.4,
+              -2089.4
             ],
             [
-              -533.4,
-              -2189.4
-            ],
-            [
-              -383.4,
+              -433.4,
               -2289.4
             ],
             [
@@ -17567,8 +17563,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "knee-156",
       "kind": "swamp-cypress-knee",
-      "x": 758.1,
-      "y": 1516.6,
+      "x": 783.5,
+      "y": 1500.7,
       "heading": 1.176,
       "scale": 1.459
     },
@@ -27935,8 +27931,8 @@ window.VENUE_DOC["swamp"] = {
     {
       "id": "tree-910",
       "kind": "swamp-tupelo",
-      "x": 1089.8,
-      "y": 765.9,
+      "x": 1119.7,
+      "y": 763.2,
       "heading": 4.859,
       "scale": 1.63
     },
