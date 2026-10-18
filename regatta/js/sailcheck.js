@@ -424,6 +424,55 @@ function buildGridRaw(land, arena, obstacles, opts) {
              at: (i, j) => (i < 0 || j < 0 || i >= n || j >= n) ? 0 : nav[j * n + i] };
 }
 
+// ── TRUE CLEARANCE (PT-050 threading, Oct 17 2026) ──────────────────────────
+// The grid answers "is this 50u cell water" — too coarse to steer a hull between two
+// cypress trunks 90u apart. This answers the continuous question on the same rings the
+// grid was built from: distance from (wx, wy) to the nearest fixed land or hard-prop
+// ring, capped at R (≤ TC_PAD), and -1 inside one. `small` (optional out-param) reports
+// whether the nearest ring belongs to a prop-sized shape. Lazily bucketed on the grid.
+const TC_S = 200, TC_PAD = 100, TC_SMALL = 160;
+function trueClear(grid, wx, wy, R, small) {
+    const shapes = grid && grid._shapes;
+    if (!shapes) return R;
+    let bk = grid._tcBk;
+    if (!bk) {
+        bk = grid._tcBk = new Map();
+        shapes.forEach((sh, k) => {
+            if (sh.centerOnly) return;
+            const bb = sh.bb, g = TC_PAD + sh.pad;
+            const x0 = Math.floor((bb.a - g) / TC_S), x1 = Math.floor((bb.c + g) / TC_S), y0 = Math.floor((bb.b - g) / TC_S), y1 = Math.floor((bb.d + g) / TC_S);
+            for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const key = x + ',' + y; let L = bk.get(key); if (!L) bk.set(key, L = []); L.push(k); }
+        });
+    }
+    const L = bk.get(Math.floor(wx / TC_S) + ',' + Math.floor(wy / TC_S));
+    let m = R, nearSmall = false;
+    if (L) for (const k of L) {
+        const sh = shapes[k], bb = sh.bb, p = sh.pad;
+        if (wx < bb.a - m - p || wx > bb.c + m + p || wy < bb.b - m - p || wy > bb.d + m + p) continue;
+        const isSmall = Math.max(bb.c - bb.a, bb.d - bb.b) < TC_SMALL;
+        if (sh.eb) {
+            const par = new Uint8Array(sh.rings.length);
+            for (const [a, b, ri] of (sh.eb.rows.get(Math.floor(wy / EB)) || [])) {
+                const xi = b[0], yi = b[1], xj = a[0], yj = a[1];
+                if (((yi > wy) !== (yj > wy)) && (wx < (xj - xi) * (wy - yi) / ((yj - yi) || 1e-9) + xi)) par[ri] ^= 1;
+            }
+            if (par[0] && !par.some((v, i) => i > 0 && v)) { if (small) small.v = isSmall; return -1; }
+            const r = m + p, x0 = Math.floor((wx - r) / EB), x1 = Math.floor((wx + r) / EB), y0 = Math.floor((wy - r) / EB), y1 = Math.floor((wy + r) / EB);
+            for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+                for (const [a, b] of (sh.eb.cells.get(x + ',' + y) || [])) { const d = segDist(wx, wy, a, b) - p; if (d < m) { m = d; nearSmall = isSmall; } }
+            }
+        } else {
+            if (pointInRing(wx, wy, sh.outer) && !sh.holes.some(h => pointInRing(wx, wy, h))) { if (small) small.v = isSmall; return -1; }
+            for (const ring of sh.rings) for (let e = 0; e < ring.length; e++) {
+                const d = segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) - p;
+                if (d < m) { m = d; nearSmall = isSmall; }
+            }
+        }
+    }
+    if (small) small.v = nearSmall;
+    return Math.max(0, m);
+}
+
 // ── STAMPING THE ICE ONTO A GRID THAT ALREADY KNOWS THE LAND ────────────────
 // The bots' floe map is `static land AND NOT under ice`, and the land half of that
 // never changes. Rebuilding the whole grid to find out where the ice is re-tests all
@@ -1358,6 +1407,6 @@ function pathSailable(grid, from, to) {
 window.SailCheck = {
     HULL_R, CLEARANCE, TIGHT_CLEAR, RES,
     buildGrid, _buildGridRaw: buildGridRaw, stampFloes, pathBetween, smoothPath, losClear, nearestNav, roundingArc, routeWaypoints,
-    legVMG, routeEstimate, pathSailable, clearanceField, segClearGeom
+    legVMG, routeEstimate, pathSailable, clearanceField, segClearGeom, trueClear
 };
 })();
