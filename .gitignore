@@ -85,3 +85,7 @@ regatta/eval/rl/*.out
 regatta/eval/*.png
 # Playwright's last-run marker
 test-results/
+
+# art/grade.py's ungraded copies of the parts and bakes it grades (local scratch; the master's original is kept
+# beside it as <name>.orig.png and is committed)
+regatta/art/graded-src/

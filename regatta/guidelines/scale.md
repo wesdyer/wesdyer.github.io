@@ -120,11 +120,12 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Emperor; gentoo; macaroni; Adélie penguin | Glacier | 1.15; 0.8; 0.7; 0.7 m | 12; 8; 7; 7 | floor 20 + ~15% rank steps: 30; 24; 21; 20 | 30; 24; 21; 20 (were 22; 16; 17; 15 — under the floor) | ✓ Sep 25 |
 | Leopard seal | Glacier | 3.2 m | 32 | ~64 (broad, ~2×) | 60 (was 44) | ✓ Sep 25 |
 | Antarctic tern (bill to tail; span) | Glacier | 0.4 m; 0.8 m | 4; 8 | floor 20; span ~2× the body, as a tern's is | 20; 38 (was 15; 24, then 32) | ✓ Sep 26 |
-| Golden jellyfish (bell) | Glowtide | 0.1-0.2 m | 1-2 | ~9 across (a bloom, rule 7) | 5-11 | ✓ Sep 26 |
-| Manta ray (span) | Glowtide | 4.5 m | 45 | ~70 (broad, ~1.5×) | 70 | ✓ Sep 26 |
-| Palau flying fox (span) | Glowtide | 1.1 m | 11 | ~33 (×3) | 36 | ✓ Sep 26 |
-| Hawksbill turtle | Glowtide | 0.8 m | 8 | ~24 (broad) | 24 | ✓ Sep 26 |
-| Dugong (calf) | Glowtide | 2.7 m (1.5 m) | 27 | ~54 (broad, ~2×) | 52 (29) | ✓ Sep 26 |
+| Golden jellyfish (bell) | Glowtide | 0.1-0.2 m | 1-2 | ~9 across (a bloom, rule 7) | 5-11 (Oct 18: 6-12 measured, bell end-on) | ✓ Sep 26 |
+| Moon jellyfish drifts (bell; small kind) | Glowtide | 0.1-0.4 m | 1-4 | ~10-20 (×3 at most; under the hawksbill, rule 3) | 9-22; 6-14 (venuedoc `world` 17 / 11 × scale 0.72-1.27 × depth 0.82-1.12; were 17-40 and 10-25 — up to ~16× true and bigger than the hawksbill) | ✓ Oct 18 |
+| Manta ray (span) | Glowtide | 4.5 m | 45 | ~70 (broad, ~1.5×) | 70; painted Oct 17: 66-69 × 37-40 | ✓ Sep 26 |
+| Palau flying fox (span) | Glowtide | 1.1 m | 11 | ~33 (×3) | 36; painted Oct 17: 36 spread, 17 at the top of the upstroke | ✓ Sep 26 |
+| Hawksbill turtle | Glowtide | 0.8 m | 8 | ~24 (broad) | 24; painted Oct 17: 23 × 23 | ✓ Sep 26 |
+| Dugong (calf) | Glowtide | 2.7 m (1.5 m) | 27 | ~54 (broad, ~2×) | 52 (29); painted Oct 17: 51 × 20 (27 × 13) | ✓ Sep 26 |
 | Marine iguana (with tail) | Emberfall | 1.2 m | 12 | ~36 (×3) | ~36 | ✓ Sep 26 |
 | Sally Lightfoot crab (legs) | Emberfall | 8 cm | 1 | ~7 (a scatter of red, rule 7) | ~7 | ✓ Sep 26 |
 | Blue-footed booby (span) | Emberfall | 1.5 m | 15 | ~44 (×3) | 44 | ✓ Sep 26 |

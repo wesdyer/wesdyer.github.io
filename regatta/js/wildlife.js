@@ -4025,29 +4025,48 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     const MANTA_SPAN = 70, FOX_SPAN = 36, HAWK_LEN = 24, DUGONG_LEN = 52;
     // GOLDEN JELLIES. References (Jellyfish Lake, Palau; spotted lagoon jelly): a domed bell,
     // golden-amber, dotted with cream spots; beneath it eight frilly oral arms bunched into a pale
-    // cauliflower cluster with club ends — from above it shows through the bell as a pale lobed
-    // rosette. They pulse about twice a second, swim slowly and bump along together in a dense
-    // swarm, bigger and smaller mixed, some near the surface (bright, sharp) and some deeper
-    // (smaller, fainter, bluer).
+    // cauliflower cluster — the golden jelly has all but LOST the club-shaped tips its ocean
+    // ancestor carries (and, like every rhizostome, it has no marginal tentacles at all) — from
+    // above it shows through the bell as a pale lobed rosette. Swimming in a dense swarm, bigger
+    // and smaller mixed, some near the surface (bright, sharp) and some deeper (smaller, fainter, bluer).
+    // HOW THEY MOVE (Oct 18 2026; Hamner & Hauri 1981 and the UC Merced marine-lakes notes on Jellyfish
+    // Lake): they NEVER stop swimming, day or night. By day they follow the sun across the lake; AT NIGHT
+    // (this venue) they make REPEATED TRIPS UP AND DOWN between the surface and the deep layer (the
+    // chemocline, ~15 m in the lake) where their algae take up nitrogen — each animal on its own clock,
+    // so the swarm is a column of jellies going both ways. A jelly swims bell-first: going down, the
+    // bell leads and the oral arms trail UP behind it, toward the camera; going up, the dome faces the
+    // camera and the arms hang out of sight beneath it. The stroke is burst-and-coast (as the moon
+    // jellies' in render/effects.js): a quick contraction, a passive reopening, a glide.
+    // Speeds on the game clock: ~1.5 u/s along the swim axis (~5 cm/s real); a trip to the deep and back
+    // takes about a minute and a half here. Depth is in metres; past ~7 m a jelly is lost to the dark.
+    const GJ_CONTRACT = 0.24, GJ_RELAX = 0.36, GJ_DEEP = 7;
+    function gjSqueeze(ph) { const u = ph - Math.floor(ph); return u < GJ_CONTRACT ? Math.sin(u / GJ_CONTRACT * Math.PI / 2) : u < GJ_CONTRACT + GJ_RELAX ? Math.cos((u - GJ_CONTRACT) / GJ_RELAX * Math.PI / 2) : 0; }
     function makeBloom(c) {
         const [cx, cy] = c.c, out = [];
         for (let i = 0; i < c.n; i++) {
             let x, y; for (let k = 0; k < 20; k++) { const a = R(0, 7), d = c.r * Math.sqrt(-2 * Math.log(Math.max(1e-3, rnd()))) * 0.42; x = cx + Math.cos(a) * d; y = cy + Math.sin(a) * d; if (Math.hypot(x - cx, y - cy) < c.r * 1.25 && !onLand(x, y)) break; }
-            out.push({ x, y, h: R(0, 7), v: R(1, 3), size: R(0.6, 1.25), depth: rnd() ** 1.5, ph: R(0, 7), rate: R(9, 12.5), spots: Math.floor(R(0, 1e6)) });
+            const dir = rnd() < 0.5 ? 1 : -1, z = R(0.2, 9);
+            out.push({ x, y, h: R(0, 7), v: 0, push: R(2.2, 3.4), size: R(0.6, 1.25), z, zd: R(5, 10), dir, pitch: dir * R(0.9, 1.3), ph: R(0, 1), rate: R(1.2, 1.7), sq: 0, spots: Math.floor(R(0, 1e6)), depth: Math.min(1, z / GJ_DEEP) });
         }
         return { cx, cy, r: c.r, jel: out };
     }
     function updateBloom(dt) {
         const B = jellyBloom;
         for (const j of B.jel) {
-            j.ph += dt * j.rate;
-            const push = 0.6 + 0.8 * Math.max(0, Math.sin(j.ph));   // each contraction a small shove
+            // the stroke: thrust only while the bell closes, then the glide (drag gentle, or there is no coast)
+            j.ph += dt * j.rate; const sq = gjSqueeze(j.ph);
+            if (sq > j.sq) j.v += (sq - j.sq) * j.push; j.sq = sq; j.v *= Math.pow(0.5, dt);
+            // up and down: turn at the bottom of its trip and again just under the surface, a few pulses to come round
+            if (j.dir < 0 && j.z >= j.zd) { j.dir = 1; j.zd = R(5, 10); } else if (j.dir > 0 && j.z <= 0.35) j.dir = -1;
+            const want = j.dir * (1.0 + 0.3 * Math.sin(j.spots + T * 0.05));
+            j.pitch += Math.max(-dt * 0.6, Math.min(dt * 0.6, want - j.pitch));
             j.h += Math.sin(T * 0.13 + j.spots) * 0.25 * dt;
             // they keep together: past the edge of the swarm they turn back in
             const dc = Math.hypot(j.x - B.cx, j.y - B.cy); if (dc > B.r) j.h += angDiff(Math.atan2(B.cx - j.x, -(B.cy - j.y)), j.h) * Math.min(1, dt * 0.8);
-            const nx = j.x + Math.sin(j.h) * j.v * push * dt, ny = j.y - Math.cos(j.h) * j.v * push * dt;
+            const hv = j.v * Math.cos(j.pitch), nx = j.x + Math.sin(j.h) * hv * dt, ny = j.y - Math.cos(j.h) * hv * dt;
             if (!onLand(nx, ny)) { j.x = nx; j.y = ny; } else j.h += 1.5;
-            j.depth = Math.min(1, Math.max(0, j.depth + Math.sin(T * 0.07 + j.spots * 1.7) * 0.01 * dt));
+            j.z = Math.max(0.15, j.z - j.v * Math.sin(j.pitch) * 0.1 * dt);   // (u/s along the axis -> m/s up)
+            j.depth = Math.min(1, j.z / GJ_DEEP);
         }
     }
     // MANTA RAYS. At night they feed on plankton near the surface: slow loops, and bouts of
@@ -4055,35 +4074,59 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // shows its white belly with dark spots, and comes back over. The flapping wings stir the
     // plankton into light (drawGlow).
     function makeMantas(c) { return c.routes.map((pts, i) => { const P = pts.map(([x, y]) => snapWater(x, y, 50)); return { i, P, wi: 1, cx: P[0].x, cy: P[0].y, r: R(90, 140), x: P[0].x, y: P[0].y, h: 0, a: R(0, 7), dir: -1, beat: R(0, 7), mode: 'feed',   // feeding circles run anticlockwise from above, as cyclone feeding does
-                 t: R(20, 40), loopT: R(4, 10), pitch: 0, sparks: [], sparkT: 0 }; }); }
+                 t: R(20, 40), loopT: R(4, 10), pitch: 0, sparks: [], sparkT: 0, style: 'circle' }; }); }
+    // THE PAINTED MANTA'S RHYTHMS (Oct 17 2026; Fong, Hoffmann & Pate 2022, Drones 6:111 — mantas filmed from a drone:
+    // travelling and feeding go at about the same speed, but FEEDING beats the wings faster; Fish et al. 2018: a slow
+    // deep stroke; feeding-pattern notes from the Red Sea video study and the Manta Trust: horizontal and inclined
+    // circles, chain and cyclone feeding anticlockwise, backward somersaults again and again in one spot, and SURFACE
+    // feeding — mouth just under the surface, a straight pass, a dip and a 180° turn, and back). Speeds are knots on
+    // the game clock (~1.2 m/s); the stroke keeps the real advance per beat, ~0.7 of the disc a stroke (scale.md's
+    // clock rule), so 34 u/s with a 70 u disc is ~0.7 Hz here.
+    const MANTA_GAIT = { travel: { v: 34, hz: 0.65 }, feed: { v: 26, hz: 0.85 }, loop: { hz: 1.0 } };
     function updateMantas(dt) {
         for (const M of mantas) {
             M.t -= dt;
-            // ~0.3 Hz (Fish et al. 2018): one slow deep stroke every three seconds, and when
-            // cruising a glide now and then, wings flat; faster through the somersaults
+            const h0 = M.h;
+            // when cruising a glide now and then, wings flat
             M.glide = (M.glide || 0) - dt; if (M.mode === 'travel' && M.glide <= -R(8, 16) && Math.cos(M.beat) > 0.95) M.glide = R(2, 4);
-            if (!(M.glide > 0)) M.beat += dt * WING_TIME * (M.mode === 'loop' ? 2.6 : 1.9);
+            if (!(M.glide > 0)) M.beat += dt * Math.PI * 2 * MANTA_GAIT[M.mode].hz;
             // feeding at the surface, the wingtips break it at the top of each stroke
             M.surfTip = Math.max(0, (M.surfTip || 0) - dt / 0.8);
-            if (M.mode === 'feed' && Math.sin(M.beat) > 0.97 && !(M.surfTip > 0.5) && (Math.sin(T * 0.05 + M.i * 3) > 0.2)) M.surfTip = 1;
+            M.dip = Math.max(0, (M.dip || 0) - dt / 2.5);
+            if (M.mode === 'feed' && M.style === 'pass' && !(M.dip > 0.2) && Math.sin(M.beat) > 0.97 && !(M.surfTip > 0.5)) M.surfTip = 1;
             if (M.mode === 'travel') {
-                // on to the next feeding spot at ~2 kn, steady, the wings in long slow strokes
-                const T2 = M.P[M.wi]; swimTo(M, T2.x, T2.y, 34, 0.8, dt, 18, 36);
+                // on to the next feeding spot, steady, the wings in long slow strokes
+                const T2 = M.P[M.wi]; swimTo(M, T2.x, T2.y, MANTA_GAIT.travel.v, 0.8, dt, 18, 36);
                 M.pitch += (0 - M.pitch) * Math.min(1, dt * 2);
-                if (Math.hypot(T2.x - M.x, T2.y - M.y) < 60) { M.mode = 'feed'; M.cx = T2.x; M.cy = T2.y; M.a = Math.atan2(M.y - M.cy, M.x - M.cx); M.t = R(25, 45); M.loopT = R(3, 8); }
+                if (Math.hypot(T2.x - M.x, T2.y - M.y) < 60) { M.mode = 'feed'; M.cx = T2.x; M.cy = T2.y; M.a = Math.atan2(M.y - M.cy, M.x - M.cx); M.t = R(25, 45); M.loopT = R(3, 8);
+                    // circles over the plankton, or passes along the surface (an open lane either way along the axis)
+                    M.style = 'circle';
+                    if (rnd() < 0.45) for (let k = 0; k < 8; k++) { const a = R(0, Math.PI); if ([-1, 1].every(sd => [30, 60, 90].every(r => !onLand(M.cx + Math.sin(a) * sd * r, M.cy - Math.cos(a) * sd * r)))) { M.style = 'pass'; M.pa = a; M.pdir = Math.cos(angDiff(M.h, a)) > 0 ? 1 : -1; break; } } }
             } else if (M.mode === 'feed') {
-                // feeding: slow circles over the plankton, and bouts of backflips in place
-                M.a += M.dir * 18 / M.r * dt;   // mouth open is slow going
-                swimTo(M, M.cx + Math.cos(M.a) * M.r, M.cy + Math.sin(M.a) * M.r, 18, 0.9, dt, 18, 36);
+                const v = MANTA_GAIT.feed.v;
+                if (M.style === 'pass') {
+                    // SURFACE FEEDING: a straight pass, mouth just under the surface; at the end of the lane a dip down and
+                    // a 180° turn, and back the other way
+                    const ex = M.cx + Math.sin(M.pa) * M.pdir * 75, ey = M.cy - Math.cos(M.pa) * M.pdir * 75;
+                    swimTo(M, ex, ey, v, 1.1, dt, 18, 36);
+                    if (Math.hypot(ex - M.x, ey - M.y) < 14) { M.pdir = -M.pdir; M.dip = 1; }
+                } else {
+                    // circles over the plankton, anticlockwise as cyclone feeding goes
+                    M.a += M.dir * v / M.r * dt;
+                    swimTo(M, M.cx + Math.cos(M.a) * M.r, M.cy + Math.sin(M.a) * M.r, v, 0.9, dt, 18, 36);
+                }
                 M.pitch += (0 - M.pitch) * Math.min(1, dt * 2);
-                M.loopT -= dt; if (M.loopT <= 0) { M.mode = 'loop'; M.lt = R(6, 12); }
+                M.loopT -= dt; if (M.loopT <= 0 && !(M.dip > 0)) { M.mode = 'loop'; M.lt = R(4, 9); }
                 if (M.t <= 0) { M.mode = 'travel'; M.wi = (M.wi + 1) % M.P.length; }
             } else {
-                // somersaulting in place, ~3.5 s a loop, drifting forward a little
+                // somersaulting backward in one spot, ~3.5 s a loop, drifting forward a little
                 M.pitch += dt * (Math.PI * 2 / 3.5); M.lt -= dt;
                 const nx = M.x + Math.sin(M.h) * 6 * dt, ny = M.y - Math.cos(M.h) * 6 * dt; if (!onLand(nx, ny)) { M.x = nx; M.y = ny; }
-                if (M.lt <= 0 && Math.cos(M.pitch) > 0.95) { M.mode = 'feed'; M.pitch = 0; M.loopT = R(6, 14); }
+                if (M.lt <= 0 && Math.cos(M.pitch) > 0.95) { M.mode = 'feed'; M.pitch = 0; M.loopT = R(10, 20); }
             }
+            // banking into its turns, eased (a turn of 0.5 rad/s leans it ~0.3 rad)
+            const tr = dt > 0 ? angDiff(M.h, h0) / dt : 0;
+            M.bank = (M.bank || 0) + (Math.max(-0.45, Math.min(0.45, tr * 0.6)) - (M.bank || 0)) * Math.min(1, dt * 2.5);
             // sparks: where the wingtips and the rolling body churn the plankton
             M.sparkT += dt;
             if (M.sparkT > 0.09) { M.sparkT = 0; const fx = Math.sin(M.h), fy = -Math.cos(M.h), span = MANTA_SPAN * 0.5;
@@ -4105,7 +4148,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const F = { A, B: Bp, to: k % 2 ? A : Bp, mode: 'cross', t: 0, bats: [] };
         const from = F.to === A ? Bp : A, h = Math.atan2(F.to.x - from.x, -(F.to.y - from.y)), u = R(0.1, 0.8);
         for (let i = 0; i < n; i++) F.bats.push({ x: from.x + (F.to.x - from.x) * u - Math.sin(h) * i * R(30, 60) + Math.cos(h) * R(-50, 50), y: from.y + (F.to.y - from.y) * u + Math.cos(h) * i * R(30, 60) + Math.sin(h) * R(-50, 50),
-            h, z: R(c.z[0], c.z[1]), flap: R(0, 7), rate: R(15.5, 18), v: R(42, 52), wob: R(0, 7), ca: R(0, 7), cr: R(50, 110) });   // ~2.5-2.9 Hz
+            h, z: R(c.z[0], c.z[1]), flap: R(0, 7), rate: R(2.0, 2.3) * Math.PI * 2, v: R(165, 200), wob: R(0, 7), ca: R(0, 7), cr: R(120, 190) });
+        // (Oct 17 2026: REAL airspeed on the game clock, as the condor — flying foxes commute at ~20-24 km/h, ~12 kn, on
+        // their own wings (Sydney Bats; the GPS-tracked grey-headed flying foxes), 165-200 u/s here. The wingbeat keeps
+        // the real advance per stroke, ~2.4 spans (large pteropodids beat ~2.5 Hz at ~6 m/s: Carpenter 1985): ~2.1 Hz
+        // for a 36 u span. The old 42-52 u/s at 2.7 Hz flew them at a walking pace, rowing on the spot.)
         return F;
     }
     function updateFoxes(dt) {
@@ -4118,11 +4165,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 // steady rowing flight with a short glide now and then (wings held spread)
                 b.glideT = (b.glideT || 0) - dt; b.nextGlide = (b.nextGlide === undefined ? R(3, 12) : b.nextGlide) - dt;
                 if (b.nextGlide <= 0 && Math.sin(b.flap) > 0.9) { b.glideT = R(0.6, 1.4); b.nextGlide = R(5, 14); }
-                if (!(b.glideT > 0)) b.flap += dt * b.rate * WING_TIME; b.wob += dt;
+                if (!(b.glideT > 0)) b.flap += dt * b.rate; b.wob += dt;
                 let tx = F.to.x, ty = F.to.y;
                 if (F.mode === 'circle') { b.ca += dt * b.v / b.cr; tx += Math.cos(b.ca) * b.cr; ty += Math.sin(b.ca) * b.cr; }
                 const want = Math.atan2(tx - b.x, -(ty - b.y)) + (F.mode === 'cross' ? Math.sin(b.wob * 0.7) * 0.15 : 0);
-                b.h += angDiff(want, b.h) * Math.min(1, dt * (F.mode === 'circle' ? 2 : 0.8));
+                const h0 = b.h; b.h += angDiff(want, b.h) * Math.min(1, dt * (F.mode === 'circle' ? 3 : 0.8));
+                b.bank = (b.bank || 0) + (Math.max(-0.6, Math.min(0.6, (dt > 0 ? angDiff(b.h, h0) / dt : 0) * 0.35)) - (b.bank || 0)) * Math.min(1, dt * 3);
                 b.x += Math.sin(b.h) * b.v * dt; b.y -= Math.cos(b.h) * b.v * dt;
             }
         }
@@ -4159,8 +4207,31 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const H of hawksbills) {
             H.t -= dt; H.ring = Math.max(0, (H.ring || 0) - dt / 1.5);
             if (H.mode === 'swim') {
-                H.beat += dt * 3.2 * WING_TIME;   // ~0.5 Hz real
-                if (Math.hypot(H.tx - H.x, H.ty - H.y) < 20 || H.t <= 0) { for (let k = 0; k < 12; k++) { const a = R(0, 7), d = Math.sqrt(rnd()) * H.r, x = H.cx + Math.cos(a) * d, y = H.cy + Math.sin(a) * d; if (!onLand(x, y)) { H.tx = x; H.ty = y; break; } } H.t = R(8, 16); }
+                // FORAGING (Oct 17 2026; van Dam & Diez 1997, hawksbills on Caribbean reef with time-depth recorders: long
+                // foraging dives, most of the day spent at the reef face tearing at encrusting sponges): it swims a short way,
+                // then stops nose-down at the reef, nearly still, the front flippers held back and sculling a little to hold
+                // its place; every couple of seconds it tears a mouthful off — one sharp pull back of the head and shell and
+                // a puff of grit — then settles in again; on to the next.
+                // (Oct 18, Wes: "the hawksbills seem to wiggle in the water". They did: the first version yawed the whole
+                // shell side to side 14° at 1.4 Hz the whole time it fed, ~40% of its time. A tug is a pull BACK, seldom.)
+                H.feed = Math.max(0, (H.feed || 0) - dt);
+                if (H.feed > 0) {
+                    H.beat += dt * 0.6;
+                    H.grit = (H.grit || 0) - dt; if (H.grit <= 0) { H.grit = R(1.6, 3.4); H.puff = 1; H.tugT = 0; H.tugSd = rnd() < 0.5 ? -1 : 1; }
+                    H.tugT = (H.tugT === undefined ? 9 : H.tugT) + dt;
+                    const k = H.tugT < 0.12 ? H.tugT / 0.12 : Math.max(0, 1 - (H.tugT - 0.12) / 0.5);   // a quick pull, a slow settle
+                    const pull = 1.2 * k, yaw = 0.035 * k * (H.tugSd || 1);
+                    H.x += (-Math.sin(H.h) * pull - (H.pullX || 0)); H.y += (Math.cos(H.h) * pull - (H.pullY || 0)); H.pullX = -Math.sin(H.h) * pull; H.pullY = Math.cos(H.h) * pull;
+                    H.h += (yaw - (H.yaw || 0)); H.yaw = yaw;
+                    H.puff = Math.max(0, (H.puff || 0) - dt / 1.4); H.up = Math.max(0, (H.up || 0) - dt);
+                    if (H.feed <= dt) { H.h -= H.yaw || 0; H.yaw = 0; H.x -= H.pullX || 0; H.y -= H.pullY || 0; H.pullX = H.pullY = 0; }
+                    continue;
+                }
+                H.puff = Math.max(0, (H.puff || 0) - dt / 1.4);
+                H.beat += dt * 3.2 * WING_TIME;   // ~0.25 Hz: the real advance per stroke, ~2 shell lengths
+                if (Math.hypot(H.tx - H.x, H.ty - H.y) < 20 || H.t <= 0) {
+                    if (H.t > 0 && rnd() < 0.6) { H.feed = R(6, 14); H.grit = R(0.5, 1.5); H.tugT = 9; H.t = R(8, 16); continue; }
+                    for (let k = 0; k < 12; k++) { const a = R(0, 7), d = Math.sqrt(rnd()) * H.r, x = H.cx + Math.cos(a) * d, y = H.cy + Math.sin(a) * d; if (!onLand(x, y) && !onLand((x + H.x) / 2, (y + H.y) / 2)) { H.tx = x; H.ty = y; break; } } H.t = R(8, 16); }
                 swimTo(H, H.tx, H.ty, 16 * (0.6 + 0.4 * Math.max(0, Math.sin(H.beat))), 1.2, dt, 12, 8);
                 H.up = Math.max(0, Math.sin(T * 0.18 + H.i * 2)) ** 6;   // up to breathe now and then (every ~35 s)
                 if (H.up > 0.9 && H.ring <= 0) H.ring = 1;
@@ -4169,8 +4240,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const B = H.B;
             if (H.mode === 'nestwait') { if (H.t <= 0) { H.mode = 'crawlup'; H.x = B.water.x; H.y = B.water.y; H.h = B.inland; H.tracks.push([]); } continue; }
             if (H.mode === 'crawlup' || H.mode === 'crawldown') {
-                // heaving: both front flippers pull together, the body lurches, rests — ~3 u/s
-                H.beat += dt * 2.4; const lurch = Math.max(0, Math.sin(H.beat)), v = 7 * lurch;
+                // heaving up the sand on ALTERNATE front flippers (a hawksbill's crawl, unlike a green turtle's both-together
+                // heave): each pull a lurch forward, ~3 u/s
+                H.beat += dt * 1.6; const lurch = Math.abs(Math.sin(H.beat)), v = 5 * lurch;
                 const T2 = H.mode === 'crawlup' ? B.nest : B.water, want = Math.atan2(T2.x - H.x, -(T2.y - H.y));
                 H.h += angDiff(want, H.h) * Math.min(1, dt * 1.5); H.x += Math.sin(H.h) * v * dt; H.y -= Math.cos(H.h) * v * dt;
                 const tr = H.tracks[H.tracks.length - 1]; if (onLand(H.x, H.y) && (!tr.length || Math.hypot(tr[tr.length - 1].x - H.x, tr[tr.length - 1].y - H.y) > 2.2)) tr.push({ x: H.x, y: H.y, h: H.h, side: tr.length % 2 ? 1 : -1 });
@@ -4222,8 +4294,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 if (G.t <= 0) { G.mode = 'graze'; G.t = R(45, 75); G.breathed = false; }
             }
             for (const q of G.trail) q.age += dt; G.trail = G.trail.filter(q => q.age < 80);
+            const tr = dt > 0 && G.h0 !== undefined ? angDiff(G.h, G.h0) / dt : 0; G.h0 = G.h; G.turn = (G.turn || 0) + (Math.max(-1, Math.min(1, tr * 2)) - (G.turn || 0)) * Math.min(1, dt * 2);
             if (G.calf) { const C = G.calf, fx = Math.sin(G.h), fy = -Math.cos(G.h), tx = G.x - fy * 16 - fx * 8, ty = G.y + fx * 16 - fy * 8;
-                C.h += angDiff(G.h, C.h) * Math.min(1, dt * 2); C.x += (tx - C.x) * Math.min(1, dt * 1.5); C.y += (ty - C.y) * Math.min(1, dt * 1.5); C.beat += dt * 2.4; C.up = G.up; }
+                C.h += angDiff(G.h, C.h) * Math.min(1, dt * 2); C.x += (tx - C.x) * Math.min(1, dt * 1.5); C.y += (ty - C.y) * Math.min(1, dt * 1.5); C.beat += dt * 2.4; C.up = G.up; C.turn = G.turn; }
         }
     }
 
@@ -8765,20 +8838,38 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // cream spots in rings, the pale lobed rosette of the oral arms showing through at the centre;
     // squeezing narrower on each pulse. Deeper ones smaller, fainter and bluer.
     function drawGoldJelly(ctx, j) {
-        const sq = Math.max(0, Math.sin(j.ph)), d = j.depth, r = 4.6 * j.size * (1 - 0.14 * sq) * (1 - 0.25 * d), a = 0.95 - 0.5 * d;
+        const sq = j.sq || 0, d = j.depth, r = 4.6 * j.size * (1 - 0.14 * sq) * (1 - 0.25 * d), a = 0.95 - 0.5 * d - 0.5 * Math.max(0, Math.min(1, ((j.z || 0) - GJ_DEEP) / 5));   // (past ~7 m fading into the dark)
+        if (a <= 0.12) return;
         const rr = mulberry(j.spots);
+        // tilted along its swim axis: from above a bell pointing straight up or down is round, one swimming
+        // across is seen half side-on (a dome about half as tall as it is wide)
+        const cp = Math.cos(j.pitch || 0), fa = 1 - 0.42 * cp, back = cp * r;   // `back`: how far behind it the arms trail
+        const armA = (j.pitch || 0) < 0 ? 0.85 : 0.45, armUp = (j.pitch || 0) < 0;
         ctx.save(); ctx.translate(j.x, j.y); ctx.rotate(j.h); ctx.globalAlpha *= a;
+        // the oral arms: a frilly cream cluster, gathering as the bell fires; going UP they hang beneath (only what
+        // trails out behind the rim shows), going DOWN they trail up toward the camera, over the bell
+        // (one bunch from under the bell's middle out along the trail — never a separate rosette floating behind it:
+        // lobes paired either side of the trail line, smaller toward the tip, the bunch narrowing as the bell fires)
+        const arms = (over) => { const k = 1 - 0.25 * sq, L = back * (over ? 0.7 : 1.15) + r * 0.25;
+            ctx.fillStyle = over ? 'rgba(250,236,200,0.85)' : 'rgba(235,215,170,0.6)';
+            for (let q = 0; q < 12; q++) { const f = (q >> 1) / 5, sd = q & 1 ? 1 : -1, w = r * (0.27 - 0.11 * f) * k, wob = Math.sin(j.ph * 3.14 + q) * r * 0.03;
+                ctx.beginPath(); ctx.ellipse(sd * r * (0.17 - 0.08 * f) * k + wob, L * f, w, w * 0.9, sd * 0.5, 0, Math.PI * 2); ctx.fill(); } };
+        if (!armUp && back > r * 0.3) { ctx.globalAlpha *= armA; arms(false); ctx.globalAlpha /= armA; }
+        ctx.save(); ctx.scale(1, fa);
         const g = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
         g.addColorStop(0, d > 0.5 ? 'rgba(201,176,122,0.85)' : 'rgba(246,206,120,0.9)'); g.addColorStop(0.75, d > 0.5 ? 'rgba(154,138,102,0.7)' : 'rgba(214,150,60,0.75)'); g.addColorStop(1, 'rgba(235,200,130,0.35)');
         ctx.fillStyle = g; ctx.beginPath();
-        for (let k = 0; k <= 16; k++) { const q = k / 16 * Math.PI * 2, rk = r * (1 + 0.05 * Math.sin(q * 8 + j.ph)); k ? ctx.lineTo(Math.cos(q) * rk, Math.sin(q) * rk) : ctx.moveTo(Math.cos(q) * rk, Math.sin(q) * rk); }
+        for (let k = 0; k <= 16; k++) { const q = k / 16 * Math.PI * 2, rk = r * (1 + 0.05 * Math.sin(q * 8 + j.ph * 6.28)); k ? ctx.lineTo(Math.cos(q) * rk, Math.sin(q) * rk) : ctx.moveTo(Math.cos(q) * rk, Math.sin(q) * rk); }
         ctx.closePath(); ctx.fill();
-        // the oral arms' rosette showing through, eight pale lobes
-        ctx.fillStyle = 'rgba(250,236,200,0.75)';
-        for (let k = 0; k < 8; k++) { const q = k / 8 * Math.PI * 2 + 0.2; ctx.beginPath(); ctx.arc(Math.cos(q) * r * 0.28, Math.sin(q) * r * 0.28, r * 0.2, 0, Math.PI * 2); ctx.fill(); }
+        // the oral arms' rosette showing through the bell, eight pale lobes (going up: they hang right under it)
+        if (!armUp) { ctx.fillStyle = 'rgba(250,236,200,0.75)';
+            for (let k = 0; k < 8; k++) { const q = k / 8 * Math.PI * 2 + 0.2; ctx.beginPath(); ctx.arc(Math.cos(q) * r * 0.28, Math.sin(q) * r * 0.28, r * 0.2, 0, Math.PI * 2); ctx.fill(); } }
         // cream spots
         ctx.fillStyle = 'rgba(255,248,225,0.85)';
         ctx.globalAlpha *= 0.7; for (let k = 0; k < 7; k++) { const q = rr() * Math.PI * 2, dd = r * (0.55 + rr() * 0.35); ctx.beginPath(); ctx.arc(Math.cos(q) * dd, Math.sin(q) * dd, Math.max(0.3, r * 0.06), 0, Math.PI * 2); ctx.fill(); }
+        ctx.globalAlpha /= 0.7;
+        ctx.restore();
+        if (armUp) { ctx.globalAlpha *= armA; arms(true); }
         ctx.restore();
     }
     // MANTA RAY from above (references: drone shots over reefs, night-feeding reef mantas, the
@@ -8803,11 +8894,89 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.lineTo(0, len * 0.44);
         ctx.closePath();
     }
+    // THE PAINTED REEF MANTA (glowtide-manta, Oct 17 2026), three paintings in one frame: gliding (horns rolled), feeding
+    // (the cephalic fins unrolled into paddles, the mouth open) and belly-up (white, five pairs of gill slits, spots —
+    // seen through the somersault). 70 across the wingtips (scale.md). `bh` the half-width of the column that stays
+    // flat (head, horns or paddles, body); `cy` the disc's centre.
+    const MANTA_SPR = { top: 'assets/images/props/glowtide/manta.png', feed: 'assets/images/props/glowtide/manta-feeding.png', belly: 'assets/images/props/glowtide/manta-belly.png',
+        x0: 0.0912, x1: 0.9059, cx: 0.4985, cy: 0.49, bh: 0.066 };
+    // Posed as the eagle ray is: the wings in columns, each set in from its neighbour by the cosine of its elevation there
+    // (straight above, a wing raised or lowered is only foreshortened). `flap(s, sd)` the elevation at s (0 root .. 1 tip)
+    // on side sd. `u` blends the feeding painting over the gliding one (same frame: only the head changes).
+    function mantaPosed(ctx, flap, belly, u, slot, sweep) {
+        const S = MANTA_SPR, top = sprImg(S.top), feed = sprImg(S.feed), bel = sprImg(S.belly);
+        if (!imgReady(top) || !imgReady(feed) || !imgReady(bel)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 40;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = MANTA_SPAN / (S.x1 - S.x0), Xf = (fx) => (fx - S.cx) * F, Yf = (fy) => (fy - S.cy) * F;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const y0 = 0.25, y1 = 0.78, hs = 0.43, lap = 0.0015, WN = 16, wstep = (hs - S.bh) / WN;
+        const layers = belly ? [[bel, 1]] : u >= 0.98 ? [[feed, 1]] : u > 0.02 ? [[top, 1], [feed, u]] : [[top, 1]], shade = [];
+        for (const [im, a] of layers) {
+            const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
+            g.globalAlpha = a;
+            for (const sd of [-1, 1]) {
+                let x = S.bh;
+                for (let i = 0; i < WN; i++) {
+                    const s2 = (i + 0.5) / WN, el = flap(s2, sd), u0 = S.bh + i * wstep, cs = Math.cos(el), w = wstep * cs;
+                    const fx = sd > 0 ? S.cx + u0 : S.cx - u0 - wstep, dx = sd > 0 ? S.cx + x : S.cx - x - w;
+                    // the wave runs out along the wing and back across it: the outer wing swings a little back and forth
+                    // as it rises and falls, so the hooked tips trail and lead
+                    const dy = sweep ? sweep(s2, sd) : 0;
+                    g.drawImage(src, (fx - lap) * n, y0 * n, (wstep + 2 * lap) * n, (y1 - y0) * n, Xf(dx - lap * cs), Yf(y0) + dy, (w + 2 * lap * cs) * F, (y1 - y0) * F);
+                    if (im === layers[0][0] && Math.abs(el) > 0.05) shade.push([Xf(dx), Yf(y0) + dy, w * F, (y1 - y0) * F, sd * Math.sin(el)]);
+                    x += w;
+                }
+            }
+            g.drawImage(src, (S.cx - S.bh - lap) * n, y0 * n, (2 * S.bh + 2 * lap) * n, (y1 - y0) * n, Xf(S.cx - S.bh - lap), Yf(y0), (2 * S.bh + 2 * lap) * F, (y1 - y0) * F);
+        }
+        // THE LIGHT ON A TILTED WING tells up from down, which the outline cannot (it narrows the same at the top and the
+        // bottom of the stroke). The light comes from the upper left: a wing tilted toward it brightens, one tilted away
+        // darkens — so a raised LEFT wing (tilted to the right) goes dark while the raised right wing lights up, and the
+        // other way round on the downstroke. `k` = sd·sin(elevation): + toward the light. Laid after every painting, so
+        // the feeding one blended over is lit too.
+        g.globalAlpha = 1; g.globalCompositeOperation = 'source-atop';
+        for (const [sx, sy, sw, sh, k] of shade) { g.fillStyle = k < 0 ? `rgba(0,0,0,${(-0.55 * k).toFixed(3)})` : `rgba(200,215,225,${(0.3 * k).toFixed(3)})`; g.fillRect(sx, sy, sw, sh); }
+        g.globalCompositeOperation = 'source-over'; g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
     function drawManta(ctx, M) {
         const span = MANTA_SPAN, len = span * 0.46, cp = Math.cos(M.pitch), belly = cp < 0, feeding = M.mode !== 'travel';
         const stroke = Math.sin(M.beat), tipLag = Math.sin(M.beat - 0.9);
         M.ceph = (M.ceph === undefined ? 0 : M.ceph) + ((feeding ? 1 : 0) - (M.ceph || 0)) * 0.05;   // fins unfurl as it starts to feed
         const u = M.ceph;
+        if (!window.__MANTA_DRAWN && [MANTA_SPR.top, MANTA_SPR.feed, MANTA_SPR.belly].map(sprImg).every(imgReady)) {   // (all three asked for at once: && would load them one after another)
+            if (!onCam(M.x, M.y, 80)) return;
+            // THE STROKE: a travelling wave out along the wing — the tip lags the root, and the bend grows to the tip. Banked
+            // in a turn, the wings tilt with it.
+            // (Oct 18, Wes: "the manta rays never move their wings, which is wrong". They did, ±40° at the tip, but from
+            // straight above a wing raised or lowered is only FORESHORTENED, and cos 40° is 0.77 — a quarter off the outer
+            // wing, lost at 70 px. Drone footage of mantas reads by three things at once, all here now: the tips swing
+            // high (±75° at the tip: the outer wing drops to a quarter of its width at each end of the stroke), the light
+            // on the tilted wing (see mantaPosed: one wing darkens as the other brightens, and they swap each half-stroke),
+            // and the tips trail back and come forward through the stroke.)
+            const glide = M.glide > 0, bank = M.bank || 0;
+            const flap = (s, sd) => (glide ? 0 : 1.3 * Math.pow(s, 1.2) * Math.sin(M.beat - 1.1 * s)) + sd * bank;
+            const sweep = glide ? null : (s, sd) => 3.2 * s * s * Math.cos(M.beat - 1.1 * s);
+            // THE SOMERSAULT: a vertical loop backward, ~1 m across. From above it is foreshortened by the pitch, slides
+            // forward and back again over the loop, and shows the belly at the top, head pointing back the way it came.
+            const lx = M.mode === 'loop' ? Math.sin(M.pitch) * 20 : 0, ox = M.x + Math.sin(M.h) * lx, oy = M.y - Math.cos(M.h) * lx;
+            // depth (m): feeding at the surface just under it, dipping at the end of a pass; travelling ~1.5 m; the loop's
+            // top (belly up) nearest the surface
+            const zt = M.mode === 'loop' ? 1.3 - 0.9 * (1 - cp) / 2 : M.mode === 'travel' ? 1.5 : M.style === 'pass' ? 0.25 + 1.2 * Math.sin(Math.PI * (M.dip || 0)) : 0.7;
+            ctx.save(); ctx.translate(ox, oy); ctx.rotate(M.h); ctx.scale(1, Math.max(0.12, Math.abs(cp)));
+            if (belly) ctx.scale(1, -1);   // on its back the head leads the other way round the loop
+            const P = mantaPosed(ctx, flap, belly, u, 74, sweep);
+            if (P) { seenThrough(P, zt, 75); humpBlit(ctx, P, null, Math.max(0.78, 1 - zt * 0.08)); }
+            ctx.restore();
+            // the wingtips breaking the surface at the top of the stroke: a small torn curl of white at each tip, left
+            // behind as it swims on, and a broken ring spreading from it
+            if (M.surfTip > 0) for (const sd of [-1, 1]) { const k2 = M.surfTip, w = span * 0.5 * Math.cos(0.7), back = (1 - k2) * 10;
+                const x = M.x + Math.cos(M.h) * sd * w - Math.sin(M.h) * back, y = M.y + Math.sin(M.h) * sd * w + Math.cos(M.h) * back, seed = sd * 3 + M.i;
+                ctx.fillStyle = `rgba(235,245,250,${0.6 * k2})`; lobedBlob(ctx, x, y, 2.4 * (0.5 + 0.5 * k2), 1.1, M.h + sd * 0.3, seed); ctx.fill();
+                brokenRing(ctx, x, y, 2.5 + 9 * (1 - k2), 1.4, M.h, 0.35 * k2, seed, 0.7); }
+            return;
+        }
         ctx.save(); ctx.translate(M.x, M.y); ctx.rotate(M.h); ctx.scale(1, Math.max(0.2, Math.abs(cp)));
         if (belly) ctx.scale(1, -1);   // on its back the head leads the other way round the loop
         ctx.globalAlpha *= 0.85;
@@ -8850,6 +9019,46 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // membranous wings, dark brown and a little translucent, the four long finger bones fanning
     // to a scalloped trailing edge between them, the thumb claw at the wrist; a dark furry body
     // with a GOLDEN-ORANGE MANTLE over the shoulders and neck, a fox's face with small ears; no tail.
+    // THE PAINTED PALAU FLYING FOX (glowtide-flying-fox + -upstroke, Oct 17 2026): wings spread (the downstroke) and wings
+    // raised over the back (the top of the upstroke; roll 2 Oct 17 — roll 1 wrapped them down round the body like a cape), one frame; 36 across the wingtips (scale.md). `bh` keeps the golden mantle and
+    // the body in the column that stays flat; `cy` the shoulders.
+    const FOX_SPR = { spread: 'assets/images/props/glowtide/flying-fox.png', folded: 'assets/images/props/glowtide/flying-fox-upstroke.png',
+        x0: 0.0814, x1: 0.9128, cx: 0.4971, cy: 0.47, bh: 0.085 };
+    function foxPosed(ctx, elev, fold, fwd, bank, slot) {
+        const S = FOX_SPR, sp = sprImg(S.spread), fo = sprImg(S.folded);
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 22;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = FOX_SPAN / (S.x1 - S.x0), Xf = (fx) => (fx - S.cx) * F, Yf = (fy) => (fy - S.cy) * F;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        if (fold > 0.7) {
+            // the raised-wing painting (roll 2: wings lifted over the back, half the span). Coming into it, its wings are
+            // drawn a little wider — out to where the folding columns had reached — and settle to its own width at the
+            // top of the stroke, so the change of painting never jumps; the body column is never stretched.
+            const im = humpMip(fo, 1.5 * k * F), n = im.naturalWidth || im.width, sx = 1 + 0.35 * (1 - fold) / 0.3, lap = 0.002;
+            for (const sd of [-1, 1]) { const a0 = sd > 0 ? S.cx + S.bh : 0, a1 = sd > 0 ? 1 : S.cx - S.bh, w = (a1 - a0) * sx;
+                g.drawImage(im, a0 * n, 0, (a1 - a0) * n, n, sd > 0 ? Xf(S.cx + S.bh) - lap * F : Xf(S.cx - S.bh) - w * F, Yf(0), w * F + lap * F, F); }
+            g.drawImage(im, (S.cx - S.bh) * n, 0, 2 * S.bh * n, n, Xf(S.cx - S.bh), Yf(0), 2 * S.bh * F, F);
+            g.setTransform(1, 0, 0, 1, 0, 0); return { c, R, px };
+        }
+        const src = humpMip(sp, 1.5 * k * F), n = src.naturalWidth || src.width;
+        const y0 = 0.34, y1 = 0.67, hs = 0.43, lap = 0.002, WN = 14, wstep = (hs - S.bh) / WN;
+        const sm = (q) => { q = Math.max(0, Math.min(1, q)); return q * q * (3 - 2 * q); };
+        for (const sd of [-1, 1]) {
+            let x = S.bh;
+            for (let i = 0; i < WN; i++) {
+                const s = (i + 0.5) / WN, hf = fold * sm((s - 0.3) / 0.7);
+                const cs = Math.cos(elev + sd * bank) * (1 - 0.85 * hf), w = wstep * cs;
+                // the hand sweeps back along the arm as it folds; on the downstroke the wrist reaches forward
+                const dy = fold * s * s * 7 - fwd * Math.sin(Math.PI * s) * 1.4;
+                const u0 = S.bh + i * wstep, fx = sd > 0 ? S.cx + u0 : S.cx - u0 - wstep, dx = sd > 0 ? S.cx + x : S.cx - x - w;
+                g.drawImage(src, (fx - lap) * n, y0 * n, (wstep + 2 * lap) * n, (y1 - y0) * n, Xf(dx - lap * cs), Yf(y0) + dy, (w + 2 * lap * cs) * F, (y1 - y0) * F);
+                x += w;
+            }
+        }
+        g.drawImage(src, (S.cx - S.bh - lap) * n, y0 * n, (2 * S.bh + 2 * lap) * n, (y1 - y0) * n, Xf(S.cx - S.bh - lap), Yf(y0), (2 * S.bh + 2 * lap) * F, (y1 - y0) * F);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
     function drawFlyingFox(ctx, b) {
         // THE STROKE (references: flying foxes overhead and in flight sequences; bat-flight
         // kinematics — Riskin et al. 2012, "Upstroke wing flexion and the inertial cost of bat
@@ -8862,6 +9071,17 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const ph = glide ? Math.PI * 0.5 : b.flap, elev = 0.9 * Math.cos(ph);
         const up = glide ? 0 : Math.max(0, -Math.sin(ph));                              // 0..1 through the upstroke
         const fold = Math.min(1, up * 1.15), fwd = glide ? 0.3 : Math.max(0, Math.sin(ph));   // folded / swept forward
+        if (!window.__FOX_DRAWN && [FOX_SPR.spread, FOX_SPR.folded].map(sprImg).every(imgReady)) {
+            if (!onCam(b.x, b.y, 60 + b.z)) return;
+            // the same stroke on the paintings: the spread wing posed in columns, through the upstroke folding (the hand
+            // collapsing and sweeping back along the arm); at the top of the upstroke, the folded painting. Banked in a
+            // turn, the wings tilt with it (the inner one foreshortened more as it drops).
+            const zo = Math.min(b.z, 50);
+            ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.h); const P = foxPosed(ctx, elev, fold, fwd, b.bank || 0, 76); ctx.restore();
+            ctx.save(); ctx.translate(b.x + zo * 0.35, b.y + zo * 0.55); ctx.rotate(b.h); humpBlit(ctx, P, 'rgb(4,10,20)', 0.3); ctx.restore();
+            ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.h); humpBlit(ctx, P, null, 1); ctx.restore();
+            return;
+        }
         const H = FOX_SPAN * 0.5 * (0.45 + 0.55 * Math.cos(elev));
         const L = (a, c) => a + (c - a) * fold;
         // key poses in (fraction of half-span, y): spread → folded
@@ -8933,9 +9153,56 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.strokeStyle = 'rgba(60,30,12,0.6)'; ctx.lineWidth = 0.35;
         for (const [x, y] of sc) for (let k = 0; k < 3; k++) { const a = -0.8 + k * 0.8; ctx.beginPath(); ctx.moveTo(x * L, y * L - 0.8); ctx.lineTo(x * L + Math.sin(a) * 2.2, y * L + Math.cos(a) * 2); ctx.stroke(); }
     }
+    // THE PAINTED HAWKSBILL (glowtide-hawksbill, Oct 17 2026), cut by art/turtlesplit.py --plates 110 into the shell-and-head
+    // and four flippers; 24 nose to the shell's tip (scale.md). Posed as the Lagoon's green turtle is.
+    const HAWK_SPR = { stem: 'hawksbill', top: 0.1143, bot: 0.9023, cx: 0.5, cy: 0.5,
+        root: { 'front-l': [0.3434, 0.4768], 'front-r': [0.6544, 0.4696], 'rear-l': [0.3916, 0.7498], 'rear-r': [0.6087, 0.7488] } };
+    const hawkImg = (p2) => sprImg('assets/images/props/glowtide/' + HAWK_SPR.stem + '-' + p2 + '.png');
+    // `fl`/`fr` the front flippers' angles off the painting (+ swept back), `rr` the rear ones'
+    function hawkPosed(ctx, fl, fr, rr, slot) {
+        const S = HAWK_SPR, ims = TURTLE_PARTS.map(hawkImg); if (!ims.every(imgReady)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), F = HAWK_LEN / (S.bot - S.top), R = F * 0.5;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const x0 = -S.cx * F, y0 = -S.cy * F, g = c.getContext('2d');
+        g.setTransform(k, 0, 0, k, R * k, R * k);
+        for (const p2 of ['rear-l', 'rear-r', 'front-l', 'front-r']) { const [rx, ry] = S.root[p2], sd = p2.endsWith('l') ? -1 : 1, X = x0 + rx * F, Y = y0 + ry * F;
+            const a = p2 === 'front-l' ? fl : p2 === 'front-r' ? fr : rr * sd;
+            g.save(); g.translate(X, Y); g.rotate(sd * a); g.translate(-X, -Y); g.drawImage(humpMip(ims[TURTLE_PARTS.indexOf(p2)], 1.5 * k * F), x0, y0, F, F); g.restore(); }
+        g.drawImage(humpMip(ims[0], 1.5 * k * F), x0, y0, F, F);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
     function drawHawksbill(ctx, H) {
         if (H.mode === 'nestwait') return;
         const onSand = H.mode !== 'swim';
+        if (!window.__HAWK_DRAWN && TURTLE_PARTS.map(hawkImg).every(imgReady)) {
+            if (!onCam(H.x, H.y, 40)) return;
+            if (!onSand) {
+                // swimming, both front flippers together in the turtle's flight stroke; feeding, held back and sculling.
+                // Seen through the water over the reef top (~0.9 m down), rising to the surface to breathe.
+                const feeding = H.feed > 0, a = feeding ? 0.45 + 0.1 * Math.sin(H.beat * 3) : turtleStroke(H.beat);
+                const zt = 0.1 + 0.8 * (1 - (H.up || 0));
+                const bx = H.x + Math.sin(H.h) * HAWK_LEN * 0.45, by = H.y - Math.cos(H.h) * HAWK_LEN * 0.45;
+                // its shadow on the reef just below, and the grit it tears loose
+                ctx.save(); ctx.translate(H.x, H.y); ctx.rotate(H.h); const P = hawkPosed(ctx, a, a, 0.12 * Math.sin(H.beat * 0.5), 77); ctx.restore(); if (!P) return;
+                ctx.save(); ctx.translate(H.x + 3 + zt * 2, H.y + 4.5 + zt * 3); ctx.rotate(H.h); humpBlit(ctx, P, 'rgb(10,25,40)', 0.22 / (1 + zt * 0.4)); ctx.restore();
+                if (H.puff > 0) { const r = 3 + 6 * (1 - H.puff), g = ctx.createRadialGradient(bx, by, 0, bx, by, r); g.addColorStop(0, `rgba(205,195,160,${0.3 * H.puff})`); g.addColorStop(1, 'rgba(205,195,160,0)'); ctx.fillStyle = g; ctx.beginPath(); lobedBlob(ctx, bx, by, r, r * 0.8, H.h, H.i); ctx.fill(); }
+                ctx.save(); ctx.translate(H.x, H.y); ctx.rotate(H.h);
+                seenThrough(P, zt, 78); humpBlit(ctx, P, null, Math.max(0.8, 1 - zt * 0.06));
+                ctx.restore();
+                if (H.ring > 0) brokenRing(ctx, bx, by, 3 + 10 * (1 - H.ring), 1, H.h, 0.4 * H.ring, H.i, 0.8);
+                return;
+            }
+            // on the sand: the front flippers ALTERNATE (the hawksbill's crawl), each heaving back in turn; the body pit
+            // when it nests; the shell's own shadow; flung sand
+            const L2 = (H.beat || 0), fl = turtleStroke(L2) * 0.8, fr = turtleStroke(L2 + Math.PI) * 0.8, rr = H.mode === 'nest' ? 0.35 * Math.sin(H.dig * 5) : 0.15 * Math.sin(L2);
+            if (H.mode === 'nest') { ctx.fillStyle = 'rgba(150,120,80,0.35)'; lobedBlob(ctx, H.x, H.y, HAWK_LEN * 0.55, HAWK_LEN * 0.62, H.h, H.i); ctx.fill(); }   // the body pit
+            ctx.save(); ctx.translate(H.x, H.y); ctx.rotate(H.h); const P = hawkPosed(ctx, fl, fr, rr, 77); ctx.restore();
+            ctx.save(); ctx.translate(H.x + 1.5, H.y + 2.4); ctx.rotate(H.h); humpBlit(ctx, P, 'rgb(30,20,10)', 0.3); ctx.restore();
+            ctx.save(); ctx.translate(H.x, H.y); ctx.rotate(H.h); humpBlit(ctx, P, null, 1); ctx.restore();
+            ctx.fillStyle = 'rgba(225,205,160,0.8)'; for (const s2 of H.sand) { ctx.beginPath(); ctx.arc(s2.x, s2.y, 1.1 * (1 - s2.age), 0, Math.PI * 2); ctx.fill(); }   // flung sand
+            return;
+        }
         if (!onSand) {
             const a = 0.72 + 0.28 * (H.up || 0);
             ctx.save(); ctx.translate(H.x, H.y); ctx.rotate(H.h); ctx.globalAlpha *= a; hawksbillShape(ctx, H, false); ctx.restore();
@@ -8975,7 +9242,60 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.quadraticCurveTo(-w * 0.8 * fs, len * 0.44, -w * 2.1 * fs, len * 0.5); ctx.quadraticCurveTo(-w * 1.8 * fs, len * 0.4, 0, len * 0.36); ctx.fill();
         for (const sd of [-1, 1]) { ctx.beginPath(); ctx.ellipse(sd * w * 1.15, -len * 0.2, w * 0.45, w * 0.18, sd * 0.6, 0, Math.PI * 2); ctx.fill(); }   // flippers
     }
+    // THE PAINTED DUGONG (glowtide-dugong + -calf, Oct 17 2026): 52 nose to fluke tips, the calf 29 (scale.md). `root` the
+    // row where the tail stock starts to beat; nose at `top`.
+    const DUGONG_SPR = { adult: { file: 'assets/images/props/glowtide/dugong.png', top: 0.0938, bot: 0.9062, cx: 0.498, root: 0.70 },
+        calf: { file: 'assets/images/props/glowtide/dugong-calf.png', top: 0.1833, bot: 0.8278, cx: 0.5, root: 0.69 } };
+    // THE STROKE from above (as the whales': a sirenian swims with an up-and-down fluke, Kojeszewski & Fish 2007 on
+    // manatees; a dugong's crescent fluke beats like a cetacean's): the tail stock and fluke FORESHORTEN as they rise and
+    // fall — no sideways sway — and bend aside only in a turn. Composed on a scratch canvas: the body, then the tail in
+    // rows, each pulled up toward the root by the cosine of its pitch and slid aside by the turn.
+    function dugongPosed(ctx, S, len, beat, turn, slot) {
+        const im = sprImg(S.file); if (!imgReady(im)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), F = len / (S.bot - S.top), R = len * 0.56;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width, g = c.getContext('2d');
+        const Yf = (fy) => (fy - (S.top + S.bot) / 2) * F, x0 = -S.cx * F;
+        g.setTransform(k, 0, 0, k, R * k, R * k);
+        const N = 12, step = (S.bot + 0.01 - S.root) / N, lap = 0.002;
+        let y = Yf(S.root);
+        for (let i = 0; i < N; i++) {
+            const q = (i + 0.5) / N, pitch = 0.75 * q * Math.sin(beat - 1.2 * q), cs = Math.cos(pitch), h = step * F * cs, a = S.root + i * step;
+            const sx = turn * len * 0.12 * q * q;
+            g.drawImage(src, 0, (a - lap) * n, n, (step + 2 * lap) * n, x0 + sx, y - lap * F, F, h + 2 * lap * F);
+            y += h;
+        }
+        g.drawImage(src, 0, 0, n, (S.root + lap) * n, x0, Yf(0), F, (S.root + lap) * F);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
     function drawDugong(ctx, G) {
+        if (!window.__DUGONG_DRAWN && [DUGONG_SPR.adult.file, DUGONG_SPR.calf.file].map(sprImg).every(imgReady)) {
+            if (!onCam(G.x, G.y, 80)) return;
+            for (const q of G.trail) { const k = 1 - q.age / 80, j = Math.sin(q.x * 3.7 + q.y) * 2; ctx.fillStyle = `rgba(190,200,175,${0.12 * k})`; lobedBlob(ctx, q.x + j, q.y - j * 0.5, 3.6, 2.4, q.h + j, q.x); ctx.fill(); }   // the feeding trail: grass pulled up in soft patches
+            const bed = 2.6;   // the seagrass shallows, metres
+            for (const A of G.calf ? [G.calf, G] : [G]) {
+                const S = A === G ? DUGONG_SPR.adult : DUGONG_SPR.calf, up = A.up || 0;
+                // grazing it lies on the grass (its back ~0.6 m under the surface less than the bed); rising, it comes up to a film
+                const zt = 0.12 + (bed - 0.7) * (1 - up), hU = Math.max(0.2, bed - zt - 0.3) * 10;
+                const pose = () => dugongPosed(ctx, S, A.len, A.beat, A.turn || 0, A === G ? 79 : 80);
+                // (one pose for the shadow and the animal: the shadow is cut from it before the water is laid over it)
+                ctx.save(); ctx.translate(A.x, A.y); ctx.rotate(A.h); const P = pose(); ctx.restore(); if (!P) continue;
+                ctx.save(); ctx.translate(A.x + hU * 0.3, A.y + hU * 0.45); ctx.rotate(A.h); humpBlit(ctx, P, 'rgb(10,25,40)', 0.3 / (1 + hU * 0.04)); ctx.restore();
+                ctx.save(); ctx.translate(A.x, A.y); ctx.rotate(A.h);
+                seenThrough(P, zt, 81); humpBlit(ctx, P, null, Math.max(0.75, 1 - zt * 0.08));
+                // the head out at the breath: crisp in a soft window
+                if (up > 0.85) for (const [kk, aa] of [[1.4, 0.35], [1, 0.7]]) { ctx.save(); ctx.beginPath(); ctx.ellipse(0, -A.len * 0.4, A.len * 0.12 * kk, A.len * 0.1 * kk, 0, 0, Math.PI * 2); ctx.clip(); humpBlit(ctx, pose(), null, aa * (up - 0.85) / 0.15); ctx.restore(); }
+                ctx.restore();
+            }
+            if (G.silt) { const mx = G.x + Math.sin(G.h) * G.len * 0.5, my = G.y - Math.cos(G.h) * G.len * 0.5, r = 10 + 2 * Math.sin(T * 0.7 + G.x), g = ctx.createRadialGradient(mx, my, 0, mx, my, r);
+                g.addColorStop(0, 'rgba(200,190,150,0.25)'); g.addColorStop(1, 'rgba(200,190,150,0)'); ctx.fillStyle = g; lobedBlob(ctx, mx, my, r, r * 0.8, G.h, G.x); ctx.fill(); }   // silt at the muzzle
+            // the breath: the nostrils break, a low puff of spray (a dugong's blow is small), and a broken ring
+            if (G.ring > 0) { const hx = G.x + Math.sin(G.h) * G.len * 0.4, hy = G.y - Math.cos(G.h) * G.len * 0.4;
+                brokenRing(ctx, hx, hy, 4 + 14 * (1 - G.ring), 1.2, G.h, 0.45 * G.ring, G.x, 0.9);
+                if (G.puff > 0) { ctx.fillStyle = `rgba(235,242,245,${0.45 * G.puff})`; lobedBlob(ctx, hx, hy - (1 - G.puff) * 3, 2.5 + 4 * (1 - G.puff), 2 + 3 * (1 - G.puff), G.h, G.x); ctx.fill(); } }
+            return;
+        }
         for (const q of G.trail) { const k = 1 - q.age / 80, j = Math.sin(q.x * 3.7 + q.y) * 2; ctx.fillStyle = `rgba(190,200,175,${0.12 * k})`; ctx.beginPath(); ctx.ellipse(q.x + j, q.y - j * 0.5, 3.4, 2.4, q.h + j, 0, Math.PI * 2); ctx.fill(); }   // the feeding trail: grass pulled up in soft patches
         for (const A of G.calf ? [G, G.calf] : [G]) {
             const up = A.up || 0, a = 0.6 + 0.4 * up;

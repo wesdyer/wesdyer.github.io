@@ -18,7 +18,12 @@ const { chromium } = require('playwright'); const path = require('path'); const 
     Wildlife.art.drawSpinner(g, { live: true, i: 0, x: 0, y: 0, h: 0, spin: 0, breath: 0 });
     Wildlife.art.drawAlbatross(g, { x: 0, y: 0, h: 0, z: 0, bank: 0 });
     Wildlife.art.drawFlyfish(g, { x0: 0, y0: 0, h: 0, len: 0.001, t: 0.5, dur: 1, z: 8, size: 1 }); Wildlife.art.drawMahi(g, { x: 0, y: 0, h: 0, size: 1, mode: 'patrol', t: 0, i: 0, leap: 0, trail: [] });
-    for (const calf of [false, true]) Wildlife.art.drawWhale(g, { j: 0, calf, len: 50, x: 0, y: 0, h: 0, mode: 'surface', depth: 0, ph: 0 }); state.camera = c; });
+    for (const calf of [false, true]) Wildlife.art.drawWhale(g, { j: 0, calf, len: 50, x: 0, y: 0, h: 0, mode: 'surface', depth: 0, ph: 0 });
+    // Glowtide's paintings (Oct 18 2026)
+    Wildlife.art.drawManta(g, { x: 0, y: 0, h: 0, mode: 'travel', beat: 0, pitch: 0, i: 0, sparks: [] });
+    Wildlife.art.drawFlyingFox(g, { x: 0, y: 0, h: 0, z: 0, flap: 0 });
+    Wildlife.art.drawHawksbill(g, { x: 0, y: 0, h: 0, mode: 'swim', beat: 0, i: 0, sand: [], tracks: [] });
+    Wildlife.art.drawDugong(g, { x: 0, y: 0, h: 0, len: 52, beat: 0, trail: [], calf: { x: 0, y: 0, h: 0, len: 28.6, beat: 0 } }); state.camera = c; });
   await p.waitForTimeout(900);
   const r = await p.evaluate(() => {
     const A = Wildlife.art;
@@ -59,6 +64,18 @@ const { chromium } = require('playwright'); const path = require('path'); const 
       'albatross (span)': g => { const c = state.camera; state.camera = null; A.drawAlbatross(g, { x: 0, y: 0, h: Math.PI / 2, z: 0, bank: 0 }); state.camera = c; },
       'humpback (snout to flukes)': g => { const c = state.camera; state.camera = null; A.drawWhale(g, { j: 0, calf: false, len: 132, x: 0, y: 0, h: 0, mode: 'under', depth: 0, ph: 0, turn: 0 }); state.camera = c; },
       'humpback calf (snout to flukes)': g => { const c = state.camera; state.camera = null; A.drawWhale(g, { j: 0, calf: true, len: 48, x: 0, y: 0, h: 0, mode: 'under', depth: 0, ph: 0, turn: 0 }); state.camera = c; },
+      // GLOWTIDE (Oct 18 2026). Painted animals drawn with the camera off (their own culling), each in its widest pose:
+      // the manta and the flying fox gliding, wings flat; a dugong alone (its calf drawn far off the canvas) and a calf alone.
+      'manta (span × head to tail, gliding)': g => { const c = state.camera; state.camera = null; A.drawManta(g, { x: 0, y: 0, h: 0, mode: 'travel', glide: 1, beat: 0, pitch: 0, bank: 0, i: 0, sparks: [], surfTip: 0, ceph: 0 }); state.camera = c; },
+      'manta belly-up (somersault)': g => { const c = state.camera; state.camera = null; A.drawManta(g, { x: 0, y: 0, h: 0, mode: 'loop', glide: 1, beat: 0, pitch: Math.PI, bank: 0, i: 0, sparks: [], surfTip: 0, ceph: 1 }); state.camera = c; },
+      'flying fox (span, gliding)': g => { const c = state.camera; state.camera = null; A.drawFlyingFox(g, { x: 0, y: 0, h: 0, z: 0, flap: 0, glideT: 1, bank: 0 }); state.camera = c; },
+      'flying fox (top of the upstroke)': g => { const c = state.camera; state.camera = null; A.drawFlyingFox(g, { x: 0, y: 0, h: 0, z: 0, flap: -Math.PI / 2, glideT: 0, bank: 0 }); state.camera = c; },
+      'hawksbill (swimming)': g => { const c = state.camera; state.camera = null; A.drawHawksbill(g, { x: 0, y: 0, h: 0, mode: 'swim', beat: 0, up: 1, i: 0, ring: 0, puff: 0, sand: [], tracks: [] }); state.camera = c; },
+      'hawksbill (on the sand)': g => { const c = state.camera; state.camera = null; A.drawHawksbill(g, { x: 0, y: 0, h: 0, mode: 'crawlup', beat: 0, i: 0, sand: [], tracks: [] }); state.camera = c; },
+      'dugong (muzzle to fluke tips)': g => { const c = state.camera; state.camera = null; A.drawDugong(g, { x: 0, y: 0, h: 0, len: 52, beat: Math.PI / 2, up: 1, trail: [], silt: 0, ring: 0, calf: { x: 9999, y: 0, h: 0, len: 28.6, beat: 0, up: 1 } }); state.camera = c; },
+      'dugong calf': g => { const c = state.camera; state.camera = null; A.drawDugong(g, { x: 9999, y: 0, h: 0, len: 52, beat: 0, up: 1, trail: [], silt: 0, ring: 0, calf: { x: 0, y: 0, h: 0, len: 28.6, beat: Math.PI / 2, up: 1 } }); state.camera = c; },
+      'golden jelly (largest bell, at the surface)': g => A.drawGoldJelly(g, { x: 0, y: 0, h: 0, size: 1.25, depth: 0, z: 0.3, pitch: 1.4, sq: 0, ph: 0, spots: 1 }),
+      'golden jelly (smallest)': g => A.drawGoldJelly(g, { x: 0, y: 0, h: 0, size: 0.6, depth: 0, z: 0.3, pitch: 1.4, sq: 0, ph: 0, spots: 1 }),
       'blue whale (snout to flukes)': g => { const c = state.camera; state.camera = null; A.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'surface', t: 10, depth: 0, ph: 0, fluke: 0, rollT: 1.5, turn: 0, lunge: 0, sd: 1, mott: [] }); state.camera = c; },
     };
     const out = {};
@@ -66,7 +83,7 @@ const { chromium } = require('playwright'); const path = require('path'); const 
       const c = document.createElement('canvas'); c.width = c.height = 400; const g = c.getContext('2d');
       g.translate(200, 200); try { fn(g); } catch (e) { out[k] = 'err ' + e.message; continue; }
       const d = g.getImageData(0, 0, 400, 400).data; let x0 = 400, x1 = -1, y0 = 400, y1 = -1;
-      for (let y = 0; y < 400; y++) for (let x = 0; x < 400; x++) if (d[(y * 400 + x) * 4 + 3] > (/ray|alligator/.test(k) ? 40 : 150)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      for (let y = 0; y < 400; y++) for (let x = 0; x < 400; x++) if (d[(y * 400 + x) * 4 + 3] > (/ray|alligator|jelly/.test(k) ? 40 : 150)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
       out[k] = x1 < 0 ? 'empty' : `${x1 - x0 + 1} wide × ${y1 - y0 + 1} long`;
     }
     return out;

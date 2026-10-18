@@ -377,7 +377,7 @@ function drawNightWater(ctx) {
 // any other object. The LIGHT is emissive and goes on after the wash, along with the
 // trailing arms, which are drawn rather than baked so they can stream with the current.
 const JELLY_TINTS = ['#5aa9ff', '#a879ff', '#ff9247', '#ff62a8'];   // blue, purple, orange, pink
-const JELLY_PERIOD = 10.5;        // seconds for a full rise and fall
+const JELLY_ZMAX = 4;             // metres: the deepest a drift's members go (and where they are faintest)
 const JELLY_SPREAD = 190;         // how far members scatter from the placement
 
 function jellyHash(a, b) {
@@ -413,15 +413,13 @@ function jellyMembers(p) {
             // in a minute. This lands near 1.5 u/s average: visible movement over a race
             // (a few boat lengths) with the drift still a drift at the finish.
             push: 4.5 + h2 * 3,         // thrust per unit of squeeze
+            // THE WATER COLUMN (Oct 18 2026): its own depth and the tilt of its swim axis, integrated with the
+            // swimming in updateJellyDrifts — see "UP AND DOWN" there.
+            z: JELLY_ZMAX * (0.5 + 0.5 * Math.sin(h3 * Math.PI * 2)), dir: h1 > 0.5 ? 1 : -1, pitch: 0, flips: 0,
         });
     }
     p._jelly = out;
     return out;
-}
-// 0 = deep and dim, 1 = just under the surface. Drives scale, alpha AND glow together,
-// because depth in water changes all three at once — a jelly does not merely get smaller.
-function jellyDepth(m, t) {
-    return 0.5 + 0.5 * Math.sin((t / JELLY_PERIOD) * Math.PI * 2 + m.phase);
 }
 
 // ── HOW A JELLYFISH ACTUALLY MOVES ──────────────────────────────────────────
@@ -467,8 +465,10 @@ function jellySqueeze(m, t) {
 
 // 0 = deep and dim, 1 = just under the surface. Drives scale, alpha AND glow together,
 // because depth in water changes all three at once — a jelly does not merely get smaller.
-function jellyDepth(m, t) {
-    return 0.5 + 0.5 * Math.sin((t / JELLY_PERIOD) * Math.PI * 2 + m.phase);
+// (Was a 10.5 s sine of its own — a surface-to-depth trip ten times faster than a moon jelly swims, and
+// rising or sinking whichever way its bell pointed. Now it is where its own swimming has taken it.)
+function jellyDepth(m) {
+    return 1 - Math.max(0, Math.min(1, m.z / JELLY_ZMAX));
 }
 
 // ── SWIMMING, INTEGRATED ONCE A FRAME ───────────────────────────────────────
@@ -493,6 +493,16 @@ function updateJellyDrifts(dt) {
         const k = reg[p.kind];
         if (!k || k.scatter !== 'jelly') continue;
         for (const m of jellyMembers(p)) {
+            // UP AND DOWN (Oct 18 2026). A moon jelly swims bell-first along an axis it tilts slowly, a few
+            // pulses to come round — mostly OBLIQUE, up and across, then over and down; it is only slightly
+            // heavier than water, so its depth is where its own swimming takes it, at its own few cm/s (Aurelia:
+            // ~2 cm/s for a 4 cm animal, larger ones faster but disproportionately slow). Each member turns at
+            // the top and bottom of its own range, so a drift is always going both ways. On the game clock a
+            // trip from the surface to the bottom of the range is about a minute.
+            if (m.dir < 0 && m.z >= JELLY_ZMAX * (0.7 + 0.3 * jellyHash(m.beat, m.flips))) { m.dir = 1; m.flips++; }
+            else if (m.dir > 0 && m.z <= 0.3 + 0.4 * jellyHash(m.phase, m.flips)) { m.dir = -1; m.flips++; }
+            const want = m.dir * (0.45 + 0.5 * jellyHash(m.beat + 0.3, m.flips));
+            m.pitch += Math.max(-dt * 0.5, Math.min(dt * 0.5, want - m.pitch));
             // They turn slowly and never hold a straight line for long.
             m.head += (Math.sin(t * 0.19 + m.beat * 6.28) * 0.5 + Math.sin(t * 0.07 + m.phase) * 0.3) * dt;
             const sq = jellySqueezeAt(m, t);
@@ -504,8 +514,10 @@ function updateJellyDrifts(dt) {
             // Drag: gentle, or the coast would not exist. This is the phase that carries a
             // third of the distance.
             m.v *= Math.pow(0.62, dt);
-            m.sx += Math.sin(m.head) * m.v * dt;
-            m.sy += -Math.cos(m.head) * m.v * dt;
+            const hv = m.v * Math.cos(m.pitch);
+            m.sx += Math.sin(m.head) * hv * dt;
+            m.sy += -Math.cos(m.head) * hv * dt;
+            m.z = Math.max(0.1, m.z - m.v * Math.sin(m.pitch) * 0.1 * dt + 0.004 * dt);   // (u/s along the axis -> m/s; a slow sink)
         }
     }
 }
@@ -547,9 +559,17 @@ function eachJelly(fn) {
         for (const m of jellyMembers(p)) {
             const x = px + m.ox + m.sx, y = py + m.oy + m.sy;
             if (Math.abs(x - cam.x) > halfW || Math.abs(y - cam.y) > halfH) continue;
-            fn(m, x, y, jellyDepth(m, t), t, jellySqueeze(m, t));
+            fn(m, x, y, jellyDepth(m), t, jellySqueeze(m, t));
         }
     }
+}
+
+// TILTED ALONG ITS SWIM AXIS. From straight above a bell pointing up or down is round; one swimming across is
+// seen partly side-on, so it shortens along its heading (a moon jelly's bell is a flat saucer, so not by much).
+function jellyTilt(ctx, m) {
+    ctx.rotate(m.head);
+    ctx.scale(1, 1 - 0.3 * Math.cos(m.pitch || 0));
+    ctx.rotate(m.spin - m.head);
 }
 
 // PASS 1 — the bodies, with the water. Called from the seabed plane.
@@ -565,7 +585,7 @@ function drawJellyDrifts(ctx) {
         ctx.save();
         ctx.globalAlpha = 0.30 + 0.45 * d;
         ctx.translate(x, y);
-        ctx.rotate(m.spin);
+        jellyTilt(ctx, m);
         ctx.drawImage(img, -w / 2, -w / 2, w, w);
         ctx.restore();
     });
@@ -666,39 +686,49 @@ function drawJellyGlow(ctx) {
         // stream has no water moving past it, so there is nothing to stream in. What the
         // arms lag behind is the creature's own swimming — so they trail opposite its
         // heading, and stretch with how hard it is going.
+        // ⚠️ AND THEY ARE SHORT (Oct 18 2026). A moon jelly's four oral arms hang about a bell's radius, frilly; its
+        // marginal tentacles are a short fine fringe round the rim, already in the painting. The arms here had
+        // streamed out a bell's DIAMETER and more, which reads as long tentacles it does not have.
+        // ⚠️ AND THEY TRAIL ALONG THE SWIM AXIS, IN THREE DIMENSIONS. Seen from above only the across part of the
+        // trail shows (cos of the tilt): swimming up, they hang down under the bell, hidden but for what trails
+        // out behind; swimming down, they stream UP toward the camera, over the bell — drawn after it, below.
         const flow = m.head + Math.PI;
         const pull = Math.min(1, m.v / 6);
-        const len = world * (0.62 + 0.5 * d) * (0.8 + 0.45 * pull) * (1 + 0.28 * pz.lag);
-        const arms = m.small ? 5 : 4;
-        const fx = Math.sin(flow), fy = -Math.cos(flow);          // downstream
-        const px = Math.cos(flow), py = Math.sin(flow);           // across the flow
-        const SEG = 7;
-        ctx.globalAlpha = Math.min(1, (0.07 + 0.20 * d) * n);
-        ctx.strokeStyle = rgb;
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.lineWidth = m.small ? 1.2 : 1.8;
-        for (let a = 0; a < arms; a++) {
-            const u = arms > 1 ? (a / (arms - 1) - 0.5) : 0;      // -0.5..0.5 across the bell
-            // Roots sit UNDER the bell, well inside its rim.
-            const rx = x + px * u * world * 0.2;
-            const ry = y + py * u * world * 0.2;
-            ctx.beginPath();
-            ctx.moveTo(rx, ry);
-            for (let k = 1; k <= SEG; k++) {
-                const f = k / SEG;                                 // 0 at the root, 1 at the tip
-                // The wave travels outward; amplitude grows with the cube of the distance
-                // along, so the root is nearly still and only the last third really moves.
-                const wave = Math.sin(f * 4.2 - t * 3.1 + m.beat * 6.28 + a * 1.5);
-                const amp = world * 0.16 * f * f * (0.6 + 0.6 * pz.lag);
-                // Arms gather together as the bell fires and spread as it opens.
-                const spread = u * (0.5 - 0.28 * pz.lag) * world * 0.5 * f;
-                const dx = fx * len * f + px * (spread + wave * amp);
-                const dy = fy * len * f + py * (spread + wave * amp);
-                ctx.lineTo(rx + dx, ry + dy);
+        const len = world * 0.42 * (0.85 + 0.3 * pull) * (1 + 0.2 * pz.lag) * (0.25 + 0.75 * Math.cos(m.pitch || 0));
+        const armsOver = (m.pitch || 0) < -0.15;
+        const drawArms = () => {
+            const arms = m.small ? 5 : 4;
+            const fx = Math.sin(flow), fy = -Math.cos(flow);          // downstream
+            const px = Math.cos(flow), py = Math.sin(flow);           // across the flow
+            const SEG = 7;
+            ctx.globalAlpha = Math.min(1, (0.07 + 0.20 * d) * n);
+            ctx.strokeStyle = rgb;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.lineWidth = m.small ? 1.2 : 1.8;
+            for (let a = 0; a < arms; a++) {
+                const u = arms > 1 ? (a / (arms - 1) - 0.5) : 0;      // -0.5..0.5 across the bell
+                // Roots sit UNDER the bell, well inside its rim.
+                const rx = x + px * u * world * 0.2;
+                const ry = y + py * u * world * 0.2;
+                ctx.beginPath();
+                ctx.moveTo(rx, ry);
+                for (let k = 1; k <= SEG; k++) {
+                    const f = k / SEG;                                 // 0 at the root, 1 at the tip
+                    // The wave travels outward; amplitude grows with the cube of the distance
+                    // along, so the root is nearly still and only the last third really moves.
+                    const wave = Math.sin(f * 4.2 - t * 3.1 + m.beat * 6.28 + a * 1.5);
+                    const amp = world * 0.09 * f * f * (0.6 + 0.6 * pz.lag);
+                    // Arms gather together as the bell fires and spread as it opens.
+                    const spread = u * (0.5 - 0.28 * pz.lag) * world * 0.5 * f;
+                    const dx = fx * len * f + px * (spread + wave * amp);
+                    const dy = fy * len * f + py * (spread + wave * amp);
+                    ctx.lineTo(rx + dx, ry + dy);
+                }
+                ctx.stroke();
             }
-            ctx.stroke();
-        }
+        };
+        if (!armsOver) drawArms();
         // ⚠️ THE BELL IS ALSO A LIGHT, and leaving it out of this pass was the whole reason
         // a drift read as coloured BLOBS. The body alone is dimmed twice — once for being
         // under water on the seabed plane, again by the ambient wash — so all that survived
@@ -712,10 +742,11 @@ function drawJellyGlow(ctx) {
             ctx.save();
             ctx.globalAlpha = Math.min(1, (0.16 + 0.5 * d) * flare * n);
             ctx.translate(x, y);
-            ctx.rotate(m.spin);
+            jellyTilt(ctx, m);
             ctx.drawImage(img, -w / 2, -w / 2, w, w);
             ctx.restore();
         }
+        if (armsOver) drawArms();
     });
     ctx.restore();
 }

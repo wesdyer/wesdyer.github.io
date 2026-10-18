@@ -30,6 +30,10 @@ FRONT_BOT, STUB, RIM = 0.66, 0.05, 30
 
 def main():
     key = sys.argv[1]
+    # --plates T (the hawksbill, Oct 17 2026): its tortoiseshell is amber plates broken up by dark streaks, so no one
+    # piece is the shell — take the hull of EVERY plate warmer than T (its flippers' cream net and dark scales are far
+    # less warm), and since its marginal plates are amber too, a thin rim
+    plates = float(sys.argv[sys.argv.index("--plates") + 1]) if "--plates" in sys.argv else None
     m = json.loads((ROOT / "manifest.json").read_text())
     asset = {a["key"]: a for a in m["assets"]}[key]
     pref = paths.venue_prefixes(m["assets"])
@@ -40,6 +44,7 @@ def main():
     warm = al & (a[:, :, 0] - a[:, :, 2] > 75)
     lab, k = ndimage.label(warm)
     shell = lab == 1 + int(np.argmax(ndimage.sum(warm, lab, range(1, k + 1))))
+    if plates is not None: shell = ndimage.binary_opening(al & (a[:, :, 0] - a[:, :, 2] > plates) & (a[:, :, 0] - a[:, :, 2] > 0.55 * a[:, :, 0]), iterations=4)   # (opened: no thin warm seam of the flippers' net reaches the hull)
     # the shell is CONVEX: its outer ring of marginal plates is olive like the skin, so take the hull of the warm plates
     # and grow it by the rim's width
     from scipy.spatial import ConvexHull
@@ -48,7 +53,7 @@ def main():
     hull = ConvexHull(np.c_[px, py])
     hm = Image.new("L", (n, n), 0)
     ImageDraw.Draw(hm).polygon([(float(px[i]), float(py[i])) for i in hull.vertices], fill=255)
-    shell = ndimage.binary_dilation(np.array(hm) > 0, iterations=RIM) & al
+    shell = ndimage.binary_dilation(np.array(hm) > 0, iterations=RIM if plates is None else 3) & al
     ys, xs = np.where(img[:, :, 3] > 40)
     cx = (xs.min() + xs.max()) / 2
     sx = np.where(shell.any(axis=0))[0]
