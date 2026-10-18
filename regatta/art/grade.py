@@ -15,6 +15,11 @@ was off against the overhead references —
         but the golden mantle: darker, less saturated, a touch less red.
   hawk: the hawksbill pushed bright — shell a saturated orange (#C47C29), flipper net a bright cream-yellow (#EFC786).
         Shell less saturated, the pale net much less so, both a shade darker.
+  spoon: (Oct 18, Wes: "Check the colors especially of the spoonbill") the roseate spoonbills pushed bright: the wing pink
+        at HSV value 0.93 (the references' birds 0.75-0.89, and the aerial flocks in daylight pale shell-pink, saturation
+        0.2-0.33, not the painted 0.35-0.48), the carmine bright scarlet (references a deeper crimson). The pinks less
+        saturated and a shade darker, the carmine deeper still, the orange tail a touch muted; the white neck, the
+        buff-green head, the grey bill and the legs as painted.
 """
 import json
 import pathlib
@@ -59,6 +64,13 @@ def grade(img, preset):
     elif preset == "hawk":
         cream = l > 0.62
         s, l = np.where(cream, s * 0.55, s * 0.82), l * 0.9
+    elif preset == "spoon":
+        deg = h * 360
+        pink = ((deg > 300) | (deg < 12)) & (s > 0.1) & (l > 0.12)
+        deep = pink & (s > 0.55) & (l < 0.62)   # the carmine shoulder, rump and leading-edge bar
+        tail = (deg >= 18) & (deg < 45) & (s > 0.4)
+        s = np.where(deep, s * 0.85, np.where(pink, s * 0.72, np.where(tail, s * 0.85, s)))
+        l = np.where(deep, l * 0.84, np.where(pink, l * 0.95, np.where(tail, l * 0.95, l)))
     else:
         raise SystemExit(f"unknown preset {preset}")
     out = a.copy()

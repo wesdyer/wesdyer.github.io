@@ -8808,6 +8808,170 @@
         0.5004,
         0.5088
       ]
+    },
+    {
+      "key": "flats-grey-seal-cow",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GREY SEAL COW hauled out, lying flat on her belly, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A PLUMP, smooth torpedo, thickest at the shoulders and chest and tapering to the hips, its width about a QUARTER of its length (never fat, never a barrel); the head long and heavy with the grey seal's straight 'Roman' muzzle — from above a long, broad, flat-topped head with the nostrils at the very front, no visible ear; the two short FORE FLIPPERS lying flat against the sides just behind the head, their dark claws showing; the two HIND FLIPPERS held together behind as a small dark fan. COLOUR, the Wadden cow from the air: a SANDY GREY-TAN coat (about #A69B88), paler toward the flanks (about #C6BBA7), finely MOTTLED all over with small irregular darker blotches and rings (about #6B6254), the mottle soft, never spots in rows; a slightly darker band down the spine; the muzzle a shade paler; the flipper claws dark. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawGreySeal for the cows (a loose colony strung along a drying sandbank; hauled out, sliding down as the flood covers the bank, swimming and bottling in the channel). ~42 u (GSEAL_LEN 46 x size 0.82-1.0; scale.md ~40); world 52 = FRAME first guess. If accepted: the body strip-bent for the hump-and-slide on land, seenThrough when swimming; the coat variants as EDITS.",
+      "anchorPx": [
+        0.5004,
+        0.4825
+      ]
+    },
+    {
+      "key": "flats-grey-seal-cow-side",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "flats-grey-seal-cow",
+      "subject": "the SAME GREY SEAL COW (an EDIT of the accepted belly-down cow) now lying on her SIDE in the grey seal's resting 'banana', seen from directly overhead, head toward the TOP of the frame, same frame and scale. The body CURVED into a gentle C, head and hind flippers both lifted a little toward the same side, so from above the outline is a crescent; the pale BELLY (about #D5CBB9) showing as a broad band along the INSIDE edge of the curve, the mottled sandy back along the outside; the uppermost fore flipper lying across the chest, the hind flippers together. Same coat, same mottle. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Two seals in three lie on their side in the banana (Wes's Sep 26 references) — from above a C with the pale belly along one edge. An EDIT of the accepted cow; the game mirrors it for the other side.",
+      "anchorPx": [
+        0.506,
+        0.4928
+      ]
+    },
+    {
+      "key": "flats-grey-seal-cow-silver",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "flats-grey-seal-cow",
+      "subject": "the SAME GREY SEAL COW (an EDIT of the accepted belly-down cow), identical pose, frame and scale, only the COAT changed: a pale SILVER-GREY cow (about #9EA1A4), paler and almost cream toward the flanks (about #C8C9CA), with darker grey blotches (about #65686B) in the same fine irregular mottle. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. OPTIONAL: a second cow coat so the colony is not one seal repeated (the drawn colony mixes silver, cream and sandy cows). An EDIT of the accepted cow.",
+      "anchorPx": [
+        0.5008,
+        0.4825
+      ]
+    },
+    {
+      "key": "flats-grey-seal-bull",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 66,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GREY SEAL BULL hauled out, lying flat on his belly, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A PLUMP, smooth torpedo, thickest at the shoulders and chest and tapering to the hips, its width about a QUARTER of its length (never fat, never a barrel); the head long and heavy with the grey seal's straight 'Roman' muzzle — from above a long, broad, flat-topped head with the nostrils at the very front, no visible ear; the two short FORE FLIPPERS lying flat against the sides just behind the head, their dark claws showing; the two HIND FLIPPERS held together behind as a small dark fan. A bull is bigger and heavier in the FRONT than a cow: a thick, deep NECK and broad shoulders with heavy folds, the head longer and broader with the high arched 'Roman' muzzle, the hips narrower — still about a quarter as wide as long overall. COLOUR: a DARK charcoal-brown coat (about #4B4C4F), with scattered PALE irregular blotches and rings (about #86888B), the neck and shoulders darkest and scarred with a few pale lines; the belly edge a little paler. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawGreySeal for the bulls (a quarter of the colony; dark charcoal or brown). ~53 u (GSEAL_LEN x 1.05-1.2; scale.md ~53); world 66 = FRAME first guess.",
+      "anchorPx": [
+        0.5012,
+        0.4976
+      ]
+    },
+    {
+      "key": "flats-grey-seal-pup",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 30,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a newborn GREY SEAL PUP lying on its belly, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A small, ROUND, plump pup — about a third as wide as it is long — a big rounded head with a short muzzle, short fore flippers at the sides, the hind flippers together behind. COLOUR: thick fluffy WHITE natal fur with a faint cream-yellow tinge (about #EFEAD9), soft cool-grey shadows in the fur folds (about #D3CCBD), the muzzle and the flipper claws dark grey. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. The winter pups (white lanugo) beside a quarter of the cows. ~24 u (size 0.45-0.55); world 30 = FRAME first guess.",
+      "anchorPx": [
+        0.5016,
+        0.5068
+      ]
+    },
+    {
+      "key": "flats-grey-seal-head",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 18,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "the HEAD of a GREY SEAL above the water, 'bottling' — floating upright with only its head and the top of its neck out — seen from directly overhead, muzzle toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. From above: the broad, flat-topped crown of the head, the long straight muzzle running forward to the two nostrils, the thick neck behind widening as it goes down out of sight. COLOUR: wet and darker than when dry — a dark grey-brown (about #5A554E) with faint darker mottling, a soft paler sheen along the top of the muzzle (about #8A847B). Only the head and neck: nothing below the waterline, no water. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. OPTIONAL: the bottling head (drawGreySealSwim draws a head up, turning to watch the nearest boat, the body a dim shape under the water) — as the Cove's bay-seal-head. ~12 u; world 18 = FRAME first guess."
+    },
+    {
+      "key": "flats-spoonbill",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 33,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a ROSEATE SPOONBILL standing in shallow water, wading, seen from directly overhead, head toward the TOP of the frame, the long neck and bill stretched forward and slightly down as it feeds. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The plump oval body, about a third as wide as the bird's whole length from bill tip to tail (never fat); the neck reaching forward; the long flat BILL pointing straight up the frame and widening at its tip into the round SPOON; the folded wings lying along the body and crossing over the tail; the legs straight down UNDER the body, out of sight but for the feet just peeking at the sides. COLOUR: the neck and upper back WHITE (about #F6F3EE); the folded wings pale pink (about #F2B3C6) deepening to rose pink behind (about #E77FA0), with a vivid CARMINE patch on each shoulder (about #D6214A); the tail orange-buff (about #EBA24F) showing past the wingtips; the bald head buff-green (about #CFC38C) with a black band across the nape; the bill grey-green (about #8D9884). True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawSpoonbill (flocks of 5-9 wading the shallow edge, sweeping the bill side to side ~1.2 Hz, leapfrogging the tide edge; at high water a packed roost on the saltmarsh). ~26 u bill to tail (scale.md); world 33 = FRAME first guess. If accepted: the head and neck cut to sweep (as the egret's neck); the roost pose as an EDIT.",
+      "anchorPx": [
+        0.5,
+        0.4765
+      ]
+    },
+    {
+      "key": "flats-spoonbill-resting",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 33,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "flats-spoonbill",
+      "subject": "the SAME ROSEATE SPOONBILL (an EDIT of the accepted wading spoonbill) RESTING at the high-tide roost, seen from directly overhead, same frame and scale, body facing the TOP of the frame: the neck pulled back and folded down onto the shoulders, the head turned back and the long bill laid along the back, tucked between the folded wings, so the bird is a compact rounded oval with the spoon tip lying on the pink of the back. Same colours as before. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. The high-tide roost (packed on the saltmarsh, facing the wind; the drawn bird lays the bill back along the back). An EDIT of the accepted wading spoonbill.",
+      "anchorPx": [
+        0.4996,
+        0.6116
+      ]
+    },
+    {
+      "key": "flats-spoonbill-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 48,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a ROSEATE SPOONBILL in flight, seen from directly overhead, head toward the TOP of the frame, wings FULLY SPREAD level. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The NECK stretched dead straight forward and the long spoon BILL straight ahead of it; the dark red LEGS trailing straight back well past the tail; the wings BROAD and ROUNDED, each with five separated finger-tip primaries at the end, the span about one and a half times the bird's length from bill to toes. COLOUR from above: the wings pink (about #F0A0BB), paler toward the leading edge (about #F7D3DF) and deepening toward the trailing edge (about #E0708F); a vivid CARMINE bar along the inner LEADING edge of each wing (about #D6214A); a carmine rump patch; the tail orange-buff (about #EBA24F); the neck and upper back white; the bald head buff-green with a black nape band; the bill grey-green; the legs and feet dark red (about #C83A4E). Each wing stands clear of the body so it can be cut at the shoulder. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawSpoonbillFly (necks out, in a loose diagonal line, ~2.6 Hz, flushed by a boat or leapfrogging the tide). 40 u span (scale.md); world 48 = FRAME first guess. If accepted: colsplit at the shoulders, pelicanPosed.",
+      "anchorPx": [
+        0.5,
+        0.5207
+      ]
+    },
+    {
+      "key": "flats-avocet",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 25,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a PIED AVOCET standing in shallow water, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A slim, elegant wader — the body about a QUARTER as wide as the bird's whole length from bill tip to tail; the neck reaching forward; the long, thin, black BILL pointing up the frame and CURVING UPWARD toward its fine tip; the folded wings crossing over the short tail; the long legs straight down under the body, only the blue-grey feet peeking out. COLOUR, crisp black and white: WHITE body and neck (about #F6F6F3); a BLACK CAP (about #16171A) from the forehead over the crown and down the BACK OF THE NECK; two black STRIPES down the back, one either side (the scapulars); a black bar across each folded wing; the black wingtips crossing past the white tail. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawAvocet (tight flocks of 10-20 working the shallowest water, scything the bill side to side ~2 Hz, leapfrogging the tide edge). 20 u bill to tail (scale.md floor); world 25 = FRAME first guess.",
+      "anchorPx": [
+        0.5004,
+        0.4884
+      ]
+    },
+    {
+      "key": "flats-avocet-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 41,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a PIED AVOCET in flight, seen from directly overhead, head toward the TOP of the frame, wings FULLY SPREAD level. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The neck out and the thin up-curved black bill straight ahead; the long blue-grey LEGS (about #7FA2BB) trailing straight back well past the white tail; NARROW, POINTED wings, the span about one and a half times the bird's length. COLOUR from above, the avocet's pied pattern: the wings WHITE (about #F6F6F3) crossed by three blacks (about #16171A) — the OUTER HAND black from the wrist to the pointed tip, a black BAR slanting from the back out to the wrist across the middle of each wing, and the two black STRIPES down the back; the black cap running down the nape; the body and tail white. Each wing stands clear of the body so it can be cut at the shoulder. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawAvocetFly (flocks wheeling off a boat flashing black and white, ~4.2 Hz). 34 u span (scale.md); world 41 = FRAME first guess. If accepted: colsplit + pelicanPosed.",
+      "anchorPx": [
+        0.5,
+        0.5156
+      ]
     }
   ],
   "scale": {

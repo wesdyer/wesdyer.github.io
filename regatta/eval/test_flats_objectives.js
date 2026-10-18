@@ -153,7 +153,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.calls === 0, `the Flats' wildlife never calls Math.random (${r.calls})`);
     ok(r.lowHauled > r.sealTotal * 0.6 && r.highHauled < r.sealTotal * 0.15, `seals haul out at low water and are in the sea at high (${r.lowHauled.toFixed(1)} vs ${r.highHauled.toFixed(1)} of ${r.sealTotal})`);
     ok(r.sealsDry === 0, `a swimming seal is always in the water (${r.sealsDry})`);
-    ok(r.jumpMax < 8, `a wader never jumps — it flies, walks or hops (the most any moved in a frame: ${r.jumpMax} u; the loop steps the wildlife twice a frame, so top flight speed reads 5)`);
+    ok(r.jumpMax < 30, `a wader never jumps — it flies, walks or hops (the most any moved in a frame: ${r.jumpMax} u; the loop steps the wildlife twice a frame, so the spoonbill's real airspeed, 410 u/s since Oct 18, reads 27)`);
     ok(r.landBirds === 0, `feeding waders are never on the marsh (${r.landBirds} samples; they roost there only at high water)`);
     ok(r.landCrabs === 0, `crabs never on the marsh (${r.landCrabs})`);
     ok(r.crabJump < 0.12 && r.sealJump < 0.12, `nothing pops with the tide: the largest one-frame change in a crab's visibility ${r.crabJump}, a seal's crossfade ${r.sealJump}`);

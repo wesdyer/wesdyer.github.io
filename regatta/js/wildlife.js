@@ -319,8 +319,11 @@
         flats: {
             // Spoonbill Flats (Sep 26 2026, Wes): all four ride the tide (js/tide.js)
             greySeals: { colonies: 8, spacing: 1200, lineMin: 300, lineMax: 520, n: [10, 16], spread: 210, gap: 48, pups: 0.25, flushR: 160, watchR: 400, ringR: 560, watchS: 3, feat: 'flats:seals' },
-            spoonbills: { flocks: 9, spacing: 1100, lineMax: 420, n: [5, 9], spread: 34, depth: [0.05, 0.3], flushR: 230, walk: 7, fly: 60, alt: 45, sweepHz: 1.2, flapHz: 2.6 },
-            avocets: { flocks: 9, spacing: 1100, lineMax: 420, n: [10, 20], spread: 26, depth: [0.02, 0.18], flushR: 200, walk: 9, fly: 75, alt: 30, sweepHz: 2.0, flapHz: 4.2 },
+            spoonbills: { flocks: 9, spacing: 1100, lineMax: 420, n: [5, 9], spread: 34, depth: [0.05, 0.3], flushR: 230, walk: 7, feed: 11, fly: 410, alt: 45, sweepHz: 0.8, flapHz: 3.6, glides: true },
+            // (Oct 18 research, on the game clock — real speeds as knots × 15 u/s: the Eurasian spoonbill's radar airspeed 14.1 m/s
+            // (Alerstam 2007) = 410; a waders' ~13 m/s for the avocet = 380. A feeding spoonbill walks 0.39 m/s sweeping ~1.6 times
+            // a second (Swennen & Yu 2005) = 11 u/s and a 0.8 Hz sweep cycle; wingbeats near Pennycuick's, and the house ×WING_TIME)
+            avocets: { flocks: 9, spacing: 1100, lineMax: 420, n: [10, 20], spread: 38, depth: [0.02, 0.18], flushR: 200, walk: 9, feed: 12, fly: 380, alt: 30, sweepHz: 2.0, flapHz: 5.5 },
             shoreCrabs: { beds: 40, spacing: 700, n: [4, 8], depth: [-0.05, 0.3], threatR: 140 },
         },
         volcanic: {
@@ -573,7 +576,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (cfg.mackerel) mackBoils = makeMack(cfg.mackerel);
         if (cfg.clubTerns) clubTerns = makeClubTerns(cfg.clubTerns);
         if (cfg.gulls) clubGulls = makeClubGulls(cfg.gulls);
+        if (cfg.greySeals && tideReady()) gsealSprites();   // ask for the painted seals now
         if (cfg.greySeals && tideReady()) gsealCols = makeGreySeals(cfg.greySeals);
+        if ((cfg.spoonbills || cfg.avocets) && tideReady()) waderSprites();   // ask for the painted waders now
         if (cfg.spoonbills && tideReady()) spoonFlocks = makeFlatsWaders(cfg.spoonbills, 'spoon');
         if (cfg.avocets && tideReady()) avoFlocks = makeFlatsWaders(cfg.avocets, 'avo');
         if (cfg.shoreCrabs && tideReady()) scrabBeds = makeShoreCrabs(cfg.shoreCrabs);
@@ -10443,6 +10448,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // SIZES (guidelines/scale.md): grey seal ~2.3 m -> 46 (broad, ~2x; bulls to ~56); roseate spoonbill
     // 0.8 m -> 26 (span ~40); pied avocet 0.44 m -> 20 (the floor; span ~34); shore crab 15 cm legspan
     // -> 8 (as the Sally Lightfoot, Wes).
+    const FL = 'assets/images/props/flats/';   // (the painted Flats animals)
     const GSEAL_LEN = 46, SPOON_LEN = 26, SPOON_SPAN = 40, AVOCET_LEN = 20, AVOCET_SPAN = 34, SCRAB_SPAN = 9;
     // Grey seal coats (the Blasket colony from the air): bulls dark charcoal with pale mottling, cows
     // silver-grey to cream-tan with dark blotches; all of them dark and glossy when wet.
@@ -10522,22 +10528,62 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             for (let tries = 0; seals.length < n && tries < 600; tries++) {
                 const a = R(0, 6.283), d = Math.sqrt(rnd()) * c.spread, hx = S.x + Math.cos(a) * d, hy = S.y + Math.sin(a) * d;
                 const gz = Tide.groundAt(hx, hy); if (onLand(hx, hy) || gz < S.z - 0.4 || gz > 0.3 || seals.some(q => Math.hypot(q.hx - hx, q.hy - hy) < c.gap)) continue;   // (and a bank the flood covers)
-                seals.push(mk(hx, hy, false));
-                // a white pup beside a cow now and then (the winter pupping)
-                const cow = seals[seals.length - 1];
-                if (cow.pal >= 2 && rnd() < c.pups) { const pa = R(0, 6.283), px = hx + Math.cos(pa) * 22, py = hy + Math.sin(pa) * 22; if (!onLand(px, py) && Tide.groundAt(px, py) >= S.z - 0.4 && Tide.groundAt(px, py) <= 0.3) { const p = mk(px, py, true); p.h = cow.h + R(-0.6, 0.6); seals.push(p); } }
+                const cow = mk(hx, hy, false);
+                if (!gsealSettle({ seals }, cow)) continue;   // (no heading leaves it clear of its neighbours: another spot)
+                cow.hh = cow.h; seals.push(cow);
+                // a white pup beside a cow now and then (the winter pupping): lying alongside her, a hand clear of her flank
+                if (cow.pal >= 2 && rnd() < c.pups) { const sd = rnd() < 0.5 ? 1 : -1, off = GSEAL_LEN * (cow.size + 0.5) * 0.125 + 2.5, px = hx + Math.cos(cow.h) * off * sd, py = hy + Math.sin(cow.h) * off * sd;
+                    if (!onLand(px, py) && Tide.groundAt(px, py) >= S.z - 0.4 && Tide.groundAt(px, py) <= 0.3) { const p = mk(px, py, true); p.h = cow.h + R(-0.25, 0.25); p.x += Math.sin(cow.h) * 4; p.y -= Math.cos(cow.h) * 4; p.hx = p.x; p.hy = p.y; if (gsealSettle({ seals: [...seals] }, p)) { p.hh = p.h; cow.pupOf = p.i; seals.push(p); } } }
             }
             return { ci, cx: S.x, cy: S.y, z: S.z, seals, watch: 0, inRing: false, flushedByPlayer: false };
         });
+    }
+    // a seal's body as a capsule: its spine from 0.36 L ahead of its point to 0.36 L behind, a quarter of its length wide
+    function gsealSeg(q, x, y, h) { const L = GSEAL_LEN * q.size, a = L * 0.36, dx = Math.sin(h) * a, dy = -Math.cos(h) * a; return [x + dx, y + dy, x - dx, y - dy, L * 0.125]; }
+    function segDist(a, b) {
+        const d = (px, py, x0, y0, x1, y1) => { const vx = x1 - x0, vy = y1 - y0, t = Math.max(0, Math.min(1, ((px - x0) * vx + (py - y0) * vy) / (vx * vx + vy * vy || 1))); return Math.hypot(px - x0 - vx * t, py - y0 - vy * t); };
+        return Math.min(d(a[0], a[1], b[0], b[1], b[2], b[3]), d(a[2], a[3], b[0], b[1], b[2], b[3]), d(b[0], b[1], a[0], a[1], a[2], a[3]), d(b[2], b[3], a[0], a[1], a[2], a[3]));
+    }
+    // lying down: its own heading if that is clear of the colony's other bodies, else the nearest clear one (false: none is)
+    function gsealSettle(C, s) {
+        for (let k = 0; k < 16; k++) { const h = s.h + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.39, A = gsealSeg(s, s.x, s.y, h);
+            if (C.seals.every(o => o === s || o.mode === 'swim' || segDist(A, gsealSeg(o, o.x, o.y, o.h)) >= A[4] + GSEAL_LEN * o.size * 0.125 + 1)) { s.h = h; return true; } }
+        return false;
+    }
+    // is the seal s, moved to x, y, h, clear of the colony's other bodies on the sand? (one already overlapping it — they
+    // started that way — counts only if the step brings them closer)
+    function gsealClear(C, s, x, y, h) {
+        const A = gsealSeg(s, x, y, h), A0 = gsealSeg(s, s.x, s.y, s.h);
+        for (const o of C.seals) { if (o === s || o.mode === 'swim') continue;
+            const B = gsealSeg(o, o.x, o.y, o.h), need = A[4] + B[4], d = segDist(A, B);
+            if (d < need && d < segDist(A0, B) - 1e-6) return false; }
+        return true;
     }
     // the way down to the water from a point: the lowest of eight directions, 40 u out
     function flatsDownhill(x, y) { let best = 0, bz = 1e9; for (let k = 0; k < 8; k++) { const a = k / 8 * 6.283, z = Tide.groundAt(x + Math.sin(a) * 40, y - Math.cos(a) * 40); if (z < bz) { bz = z; best = a; } } return best; }
     // (a feat sent just after the line still counts: the race is tallied when its results settle)
     function gsealJudge(C, c) { if (C.watch >= c.watchS && !C.flushedByPlayer) feat(c.feat); }
+    // each boat's speed over the ground (u/s), measured here frame to frame (the wildlife never touches a boat)
+    const _gsBoat = new WeakMap();
+    function gsealBoatSpeeds(dt) { for (const b of state.boats || []) { const p = _gsBoat.get(b); _gsBoat.set(b, { x: b.x, y: b.y, v: p && dt > 0 ? Math.min(400, Math.hypot(b.x - p.x, b.y - p.y) / dt) : 0 }); } }
+    const gsealBoatV = (b) => (_gsBoat.get(b) || { v: 0 }).v;
+    // DISTURBANCE (the research, Oct 18): a hauled-out seal first comes ALERT — head up, turned to watch the boat — well
+    // before it flees, and the faster the boat the further out (Britton, Isle of Man grey seals; Yellow Island harbour
+    // seals); seals at the waterline are the most vigilant and go first. One going sets off its neighbours (the stampede).
+    // A boat that LINGERS flushes them in the end even outside the flight distance (every interaction of four minutes or
+    // more did). A white-coat PUP stays on the sand when its mother is spooked into the water — she waits close inshore,
+    // watching, and is first back.
+    function gsealAlertR(c, b, edge) { return c.flushR * (1.6 + 0.8 * Math.min(1, gsealBoatV(b) / 150)) * (edge ? 1.2 : 1); }
+    function gsealFlightR(c, b, edge) { return c.flushR * (0.85 + 0.3 * Math.min(1, gsealBoatV(b) / 150)) * (edge ? 1.15 : 1); }
     function updateGreySeals(dt, me) {
         const c = cfg.greySeals;
+        gsealBoatSpeeds(dt);
         for (const C of gsealCols) {
             let hauled = 0;
+            // a boat about the colony: how long it has hung about (reset once it has been gone a while)
+            const near = boatNear(C.cx, C.cy, c.flushR * 2.6 + 120);
+            if (near) { C.linger = (C.linger || 0) + dt; C.gone = 0; } else if ((C.gone = (C.gone || 0) + dt) > 10) C.linger = 0;
+            const lingerFlush = near && C.linger > 80;   // (4 min real on the game clock)
             // entering the colony's ring starts a clean watch — BEFORE the seals react this frame, so a flush on the way in counts.
             // LEAVING it is when the watch is judged (PT-087): a watch of watchS with not one seal flushed by you from the
             // moment you came in to the moment you left. It used to be awarded during the approach, at 3 s, so sailing on
@@ -10560,41 +10606,88 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 if (s.mode === 'haul') {
                     hauled++;
                     s.wet = Math.max(0, s.wet - dt / 60);
+                    // back on its spot it shuffles the last bit into place, lying as it lay (its spot and heading were
+                    // chosen clear of the rest — a pup alongside its mother — and arriving on the slant it lay across her)
+                    if (s.hh != null) { const e = Math.min(1, dt * 1.5); s.x += (s.hx - s.x) * e; s.y += (s.hy - s.y) * e; s.h += angDiff(s.hh, s.h) * e; }   // (always: the spots were laid clear)
                     // now and then the head comes up and looks about, and goes down again (the "banana")
                     s.liftT -= dt; if (s.liftT <= 0) { s.lift = s.lift ? 0 : 1; s.liftT = s.lift ? R(1.5, 4) : R(5, 16); }
                     // a fore flipper lifted and waved, or scratching (the references), now and then
                     s.flipT -= dt; if (s.flipT <= 0) { s.flip = s.flip ? 0 : 1; s.flipT = s.flip ? R(1.5, 3) : R(8, 30); }
                     // (the research: they lie on as the flood laps round them — some go early, some wait to be floated off)
                     if (s.floatAt == null) s.floatAt = R(0.1, 0.32);
-                    if (dSpot > s.floatAt || boat) {
+                    // alert: the head up and turned to the nearest boat within its alert distance
+                    const edge = depthAtT(s.x, s.y) > -0.15, ab = boatNear(s.x, s.y, c.flushR * 2.9), alertB = ab && Math.hypot(ab.x - s.x, ab.y - s.y) < gsealAlertR(c, ab, edge) ? ab : null;
+                    s.alert = Math.max(0, Math.min(1, (s.alert || 0) + (alertB ? dt * 2 : -dt * 0.4)));
+                    if (alertB) s.watch = Math.atan2(alertB.x - s.x, -(alertB.y - s.y));
+                    // flight: inside its flight distance, or set off by a neighbour going (after a beat), or a boat hanging about
+                    const fb = alertB && (Math.hypot(alertB.x - s.x, alertB.y - s.y) < gsealFlightR(c, alertB, edge) || lingerFlush) ? alertB : null;
+                    if (s.panic != null) { s.panic -= dt; if (s.panic > 0 || !alertB) { if (!alertB) s.panic = null; } }
+                    const go = fb || (s.panic != null && s.panic <= 0 && alertB ? alertB : null);
+                    if (s.pup && go) { s.alert = 1; }   // (a white-coat pup stays where it lies, head up)
+                    else if (dSpot > s.floatAt || go) {
+                        const boat = go;
+                        if (boat) for (const o of C.seals) if (o !== s && o.mode === 'haul' && o.panic == null && Math.hypot(o.x - s.x, o.y - s.y) < GSEAL_LEN * 3) o.panic = R(0.3, 1.5);
+                        s.panic = null;
                         if (boat && boat.isPlayer) C.flushedByPlayer = true;
+                        // (flushed by a boat they stay off a good while — counts back only half the colony in ~30 min, 94% in
+                        // 4 h (Paterson et al. 2019); on the game clock, a minute to three. Floated off by the tide they come
+                        // back as the ebb uncovers the bank)
+                        if (boat) s.back = R(60, 180);
+                        const pup = s.pupOf != null ? C.seals[s.pupOf] : null;
+                        if (boat && pup && pup.mode === 'haul') { s.back = R(20, 45); s.waitPup = true; }
                         s.mode = 'slide'; s.h = flatsDownhill(s.x, s.y); s.t = 8;
                     }
                 } else if (s.mode === 'slide' || s.mode === 'climb') {
                     // the hump-along: a galumph down to the water (or up to its place), body rippling
-                    const up = s.mode === 'climb';
-                    if (up) { const d = Math.hypot(s.hx - s.x, s.hy - s.y); if (d < 3) { s.mode = 'haul'; s.t = R(4, 10); continue; } s.h += angDiff(Math.atan2(s.hx - s.x, -(s.hy - s.y)), s.h) * Math.min(1, dt * 3); }
+                    const up = s.mode === 'climb', h0 = s.h;
+                    if (up) { const d = Math.hypot(s.hx - s.x, s.hy - s.y); if (d < 3) { s.mode = 'haul'; s.t = R(4, 10); s.waitPup = false; continue; } s.h += angDiff(Math.atan2(s.hx - s.x, -(s.hy - s.y)), s.h) * Math.min(1, dt * 3); }
                     else s.h += angDiff(flatsDownhill(s.x, s.y), s.h) * Math.min(1, dt * 2);
-                    const v = up ? 10 : 26; s.x += Math.sin(s.h) * v * dt; s.y -= Math.cos(s.h) * v * dt;
-                    if (!up && (depthAtT(s.x, s.y) > 0.35 || s.t <= 0)) { s.mode = 'swim'; s.t = R(6, 12); s.ring = 1; s.wet = 1; s.vis = 1; const a = R(0, 6.283); s.tx = s.x + Math.cos(a) * 60; s.ty = s.y + Math.sin(a) * 60; }
+                    if (!gsealClear(C, s, s.x, s.y, s.h)) s.h = h0;   // (turning swings a long body: that is checked too)
+                    // (Oct 18: they humped straight through each other on the way up. A seal on the move keeps its body
+                    // clear of the others' — it bears off round one in its way, and if both sides are blocked it waits; a
+                    // seal waiting long gets by anyway, as they do, shouldering past — never a freeze)
+                    // (the research, Oct 18 — Garrett & Fish 2015: a grey seal on land humps along at a mean 0.84 body lengths a
+                    // second, its spine flexing ~2.35 Hz, ~0.36 BL a heave. Down to the water, flushed, near its best, ~1 BL/s;
+                    // hauling up it goes in bouts — a few heaves, then a rest with the head down — at ~0.6 BL/s while moving)
+                    const L = GSEAL_LEN * s.size;
+                    if (up) { s.boutT = (s.boutT == null ? R(2, 4) : s.boutT) - dt; if (s.boutT <= 0) { s.rest = !s.rest; s.boutT = s.rest ? R(1.5, 4) : R(2, 5); } } else s.rest = false;
+                    const v = s.rest ? 0 : (up ? 0.6 : 1.0) * L, step = v * dt;
+                    s.hv = (s.hv || 0) + dt * 6.283 * v / (0.36 * L);   // (the heave's phase: one per 0.36 BL travelled)
+                    let mv = null;
+                    for (const tw of [0, 0.4, -0.4, 0.8, -0.8, 1.3, -1.3, 1.9, -1.9]) { const h2 = s.h + tw, nx = s.x + Math.sin(h2) * step, ny = s.y - Math.cos(h2) * step;
+                        if (gsealClear(C, s, nx, ny, h2)) { mv = [nx, ny, h2]; break; } }
+                    if (mv) { s.x = mv[0]; s.y = mv[1]; const h1 = s.h + angDiff(mv[2], s.h) * Math.min(1, dt * 4); if (gsealClear(C, s, s.x, s.y, h1)) s.h = h1; s.wait = 0; }
+                    else if ((s.wait = (s.wait || 0) + dt) > 8) { s.x += Math.sin(s.h) * step * 0.5; s.y -= Math.cos(s.h) * step * 0.5; }
+                    if (!up && (depthAtT(s.x, s.y) > 0.35 || s.t <= 0)) { s.mode = 'swim'; s.t = R(6, 12); s.ring = 1; s.wet = 1; s.vis = 1; const a = R(0, 6.283); s.tx = s.x + Math.cos(a) * (s.waitPup ? 8 : 60); s.ty = s.y + Math.sin(a) * (s.waitPup ? 8 : 60); }   // (a mother off her pup waits just offshore)
                     if (up && (dSpot > 0.05 || boat)) { s.mode = 'slide'; s.t = 6; }
                 } else if (depthAtT(s.x, s.y) < 0.1) {
                     // the ebb has left it: up to its place if that is dry, otherwise down the sand after the water
-                    if (dSpot < -0.05 && !boat) { s.mode = 'climb'; } else { s.mode = 'slide'; s.h = flatsDownhill(s.x, s.y); s.t = 6; }
+                    if (dSpot < -0.05 && !boat && !s.back) { s.mode = 'climb'; } else { s.mode = 'slide'; s.h = flatsDownhill(s.x, s.y); s.t = 6; }
                 } else {
                     // in the water: bottling, head up and turning to watch the nearest boat, then under and away a little
                     const d = Math.hypot(s.tx - s.x, s.ty - s.y);
                     if (d > 3) { const a = Math.atan2(s.tx - s.x, -(s.ty - s.y)); s.h += angDiff(a, s.h) * Math.min(1, dt * 1.5); const v = Math.min(d, 8) * dt; if (depthAtT(s.x + Math.sin(s.h) * 6, s.y - Math.cos(s.h) * 6) > 0.3) { s.x += Math.sin(s.h) * v; s.y -= Math.cos(s.h) * v; } else { s.tx = s.x; s.ty = s.y; } }
-                    const nb = boatNear(s.x, s.y, 500); if (nb && d <= 3) s.h += angDiff(Math.atan2(nb.x - s.x, -(nb.y - s.y)), s.h) * Math.min(1, dt * 1.2);
+                    const nb = boatNear(s.x, s.y, 500), pupW = s.waitPup && s.pupOf != null ? C.seals[s.pupOf] : null, lookAt = nb || pupW; if (lookAt && d <= 3) s.h += angDiff(Math.atan2(lookAt.x - s.x, -(lookAt.y - s.y)), s.h) * Math.min(1, dt * 1.2);   // (watching the boat — or, a mother, her pup)
                     s.vis += ((Math.sin(s.bob * 0.5 + s.i) > -0.6 ? 1 : 0) - s.vis) * Math.min(1, dt * 1.5);   // under now and then
+                    s.back = Math.max(0, (s.back || 0) - dt);
                     if (s.t <= 0) {
                         s.t = R(5, 11);
-                        // its place is dry again and no boat about: back up the bank
-                        if (dSpot < -0.05 && !boatNear(s.hx, s.hy, c.flushR * 1.5)) { s.mode = 'climb'; s.ring = 1; }
+                        // its place is dry again and no boat about (and, flushed by one, it has stayed off long enough): back up the bank
+                        if (dSpot < -0.05 && !s.back && !boatNear(s.hx, s.hy, c.flushR * 1.5)) { s.mode = 'climb'; s.ring = 1; }
                         else { const q = bestDepthSpot(C.cx, C.cy, 220, 1.2, 8); if (q) { s.tx = q.x; s.ty = q.y; } }
                     }
                 }
             }
+            // ROOM on the sand: a seal on the move that overlaps another's body (two out of the water at the one spot, humping up
+            // side by side) is eased off it — a lying seal never moved, two movers each give half; no faster than a slow hump
+            for (let i = 0; i < C.seals.length; i++) { const A = C.seals[i]; if (A.mode === 'swim') continue;
+                for (let j = i + 1; j < C.seals.length; j++) { const B = C.seals[j]; if (B.mode === 'swim') continue;
+                    const mA = A.mode !== 'haul', mB = B.mode !== 'haul'; if (!mA && !mB) continue;
+                    const SA = gsealSeg(A, A.x, A.y, A.h), SB = gsealSeg(B, B.x, B.y, B.h), need = SA[4] + SB[4] + 0.5 - segDist(SA, SB);
+                    if (need <= 0) continue;
+                    let ux = B.x - A.x, uy = B.y - A.y; const d = Math.hypot(ux, uy) || 1; ux /= d; uy /= d;
+                    const push = Math.min(need, 10 * dt), sa = mA && mB ? 0.5 : mA ? 1 : 0;
+                    A.x -= ux * push * sa; A.y -= uy * push * sa; B.x += ux * push * (1 - sa); B.y += uy * push * (1 - sa); } }
             // KEEP YOUR DISTANCE (Zee): within watchR of a colony with three or more hauled out, for 3 s, and not one of
             // them flushed by the player between coming within ringR and leaving it — judged on the way OUT (above), or
             // at the finish line if the race ends with you still watching.
@@ -10630,7 +10723,71 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.beginPath(); GS_W.forEach(([u, w], i) => { const y = -10 + 20 * u; i ? ctx.lineTo(off(u) + w * wm, y) : ctx.moveTo(off(u) + w * wm, y); });
         for (let i = GS_W.length - 1; i >= 0; i--) { const [u, w] = GS_W[i]; ctx.lineTo(off(u) - w * wm, -10 + 20 * u); } ctx.closePath();
     }
+    // THE PAINTED GREY SEALS (Oct 18 2026): flats-grey-seal-cow (sandy), -cow-silver, -cow-side (the banana, an edit of
+    // the cow), -bull, -pup. Each lies on the drawn seal's frame (20 long, nose at -10, scaled by GSEAL_LEN and its size)
+    // and is posed by waderPosed: the head and neck cut off at two rows and turned, so it still lifts its head and looks
+    // about. A side-lying cow takes the banana, mirrored for the other side (its belly along the inside of the C); bulls
+    // and pups lie belly-down. Sliding down to the water and humping back up it galumphs: the body bunches and stretches.
+    const GS = FL + 'grey-seal-';
+    const GSEAL_SPR = {
+        cow: { file: GS + 'cow.png', top: 0.0996, bot: 0.8643, cx: 0.5, shoulder: 0.36 },
+        silver: { file: GS + 'cow-silver.png', top: 0.0986, bot: 0.8652, cx: 0.5, shoulder: 0.36 },
+        side: { file: GS + 'cow-side.png', top: 0.1006, bot: 0.8838, cx: 0.5054, shoulder: 0.36 },
+        bull: { file: GS + 'bull.png', top: 0.0859, bot: 0.9092, cx: 0.501, shoulder: 0.36 },
+        pup: { file: GS + 'pup.png', top: 0.1445, bot: 0.8672, cx: 0.501, shoulder: 0.40 },
+    };
+    for (const S of Object.values(GSEAL_SPR)) S.mid = (S.top + S.bot) / 2;
+    function gsealSprites() { for (const S of Object.values(GSEAL_SPR)) sprImg(S.file); }
+    // which painting a seal wears: pups and bulls their own; a silver cow (pal 2) hers, lying flat (the banana is painted
+    // in the sandy coat only — she would change colour as she got up); a sandy or cream cow on her side the banana
+    function gsealSpr(s) { return s.pup ? GSEAL_SPR.pup : s.pal < 2 ? GSEAL_SPR.bull : s.pal === 2 ? GSEAL_SPR.silver : s.side && s.mode === 'haul' ? GSEAL_SPR.side : GSEAL_SPR.cow; }
+    // the seal posed on a scratch canvas, 20 long on its frame: below the shoulder the body as painted; above it the head
+    // and neck in thin rows, each slid sideways by `bend` (world units at the nose) the more the nearer the nose, so the
+    // neck curves smoothly as the head turns — rows abut (no overlap: a doubled soft edge shows on a neck this wide)
+    function gsealPosed(ctx, S, bend, slot) {
+        const im = sprImg(S.file); if (!imgReady(im)) return null;
+        const L = 20, t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 17;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = L / (S.bot - S.top), x0 = -S.cx * F, Yf = (fy) => (fy - S.mid) * F;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        g.drawImage(src, 0, S.shoulder * n, n, (1 - S.shoulder) * n, x0, Yf(S.shoulder), F, (1 - S.shoulder) * F);
+        // rows about 1.5 device px tall, each drawn a hair taller than its step so no hairline opens between them
+        const rows = Math.max(4, Math.ceil((S.shoulder - S.top) * F * k / 1.5)), st = (S.shoulder - S.top) / rows, hair = 0.6 / (k * F);
+        for (let i = 0; i < rows; i++) { const r0 = S.top + i * st, q = Math.pow(1 - (r0 + st / 2 - S.top) / (S.shoulder - S.top), 1.6);
+            g.drawImage(src, 0, r0 * n, n, (st + hair) * n, x0 + bend * q, Yf(r0), F, (st + hair) * F); }
+        g.drawImage(src, 0, 0, n, S.top * n, x0 + bend, Yf(0), F, S.top * F);   // (the frame's empty top, for completeness)
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
+    function drawGreySealPainted(ctx, s) {
+        const S = gsealSpr(s); if (!imgReady(sprImg(S.file))) return false;
+        const k = GSEAL_LEN / 20 * s.size, move = s.mode === 'slide' || s.mode === 'climb', wet = s.wet || 0, mir = S === GSEAL_SPR.side && s.side < 0 ? -1 : 1;
+        // looking about: the head comes up and swings slowly side to side; hauling along, it nods with each heave
+        // alert, the head comes up and round to watch the boat (up to ~60° off the body), the idle looking-about stilled
+        const al = s.mode === 'haul' ? (s.alert || 0) : 0, rel = al > 0.01 && s.watch != null ? Math.max(-1.1, Math.min(1.1, angDiff(s.watch, s.h))) : 0;
+        const look = s.lift ? (Math.sin(s.bob * 0.7) * 0.3 + 0.12 * (s.side || 1)) * (1 - al) : 0, heave = move && !s.rest ? Math.sin(s.hv || 0) : 0;
+        ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h); ctx.scale(k, k);
+        // the galumph: the body bunched short and broad, then stretched long and narrow, the head thrown forward with it
+        if (move) ctx.scale(1 + 0.05 * heave, 1 - 0.07 * heave);
+        ctx.scale(mir, 1);
+        const P = gsealPosed(ctx, S, (look * 3.2 + heave * 0.4 + rel * al * 3.6) * mir, 85);
+        if (!P) { ctx.restore(); return false; }
+        ctx.save(); ctx.translate(0.9 * mir, 1.2); humpBlit(ctx, P, 'rgb(40,32,20)', 0.3); ctx.restore();   // its shadow on the sand
+        humpBlit(ctx, P, null, 1);
+        if (wet > 0.02) humpBlit(ctx, P, 'rgb(30,34,40)', 0.45 * wet);   // wet: dark and glossy all over
+        // AWASH: the flood lapping round it — the water film over the body and small broken ripples lapping its edge
+        const aw = s.awashOv != null ? s.awashOv : (typeof Tide !== 'undefined' && state.tide ? Tide.depthAt(s.x, s.y) : 0);
+        if (aw > 0.005) { const f = Math.min(1, aw / 0.3);
+            humpBlit(ctx, P, `rgb(${waterTint()})`, 0.55 * f);
+            const q = (T * 0.5 + s.i * 0.37) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.4 * (1 - q) * Math.min(1, f * 3)})`; ctx.lineWidth = 0.3;
+            for (const [a0, a1] of [[0.2, 1.2], [1.8, 2.7], [3.4, 4.3], [4.9, 5.8]]) { ctx.beginPath(); ctx.ellipse(0, 0, 3.6 + q * 1.5, 10.5 + q * 1.5, 0, a0, a1); ctx.stroke(); } }
+        ctx.restore();
+        if (s.ring > 0) drawRing(ctx, s.x, s.y, s.ring, 5, 18, 0.5);
+        return true;
+    }
     function drawGreySeal(ctx, s) {
+        if (drawGreySealPainted(ctx, s)) return;
         const k = GSEAL_LEN / 20 * s.size, P = GSEAL[s.pal], move = s.mode === 'slide' || s.mode === 'climb';
         const u0 = move ? Math.sin(s.bob * 7) * 0.9 : 0, wet = s.wet || 0;
         const lift = s.lift ? 0.6 + Math.sin(s.bob * 0.7) * 0.25 : 0;
@@ -10679,7 +10836,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function drawGreySealSwim(ctx, s) {
         const k = GSEAL_LEN / 20 * s.size, P = GSEAL[s.pal];
         ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h); ctx.scale(k, k);
-        ctx.fillStyle = 'rgba(28,38,46,0.4)'; ctx.globalAlpha *= 0.55 + 0.45 * (1 - s.vis); gsealBody(ctx, 0); ctx.fill(); ctx.globalAlpha /= 0.55 + 0.45 * (1 - s.vis);
+        { const S = gsealSpr(s), U = gsealPosed(ctx, S, 0, 86), va = 0.55 + 0.45 * (1 - s.vis);   // the body a dim shape below (the painted outline, or the drawn)
+            if (U) humpBlit(ctx, U, 'rgb(28,38,46)', 0.4 * va); else { ctx.fillStyle = 'rgba(28,38,46,0.4)'; ctx.globalAlpha *= va; gsealBody(ctx, 0); ctx.fill(); ctx.globalAlpha /= va; } }
         if (s.vis > 0.05) {
             ctx.globalAlpha *= s.vis;
             const q = (T * 0.4 + s.i * 0.3) % 1;
@@ -10707,7 +10865,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // the high-tide roost: the nearest saltmarsh, a little way in from its edge
             for (let r = 100; r <= 1600 && !F.roost; r += 60) for (let k = 0; k < 24 && !F.roost; k++) { const a = k / 24 * 6.283, x = S.x + Math.cos(a) * r, y = S.y + Math.sin(a) * r;
                 if (onLand(x, y) && onLand(x + Math.cos(a) * 50, y + Math.sin(a) * 50)) F.roost = { x: x + Math.cos(a) * 30, y: y + Math.sin(a) * 30 }; }
-            for (let j = 0; j < n; j++) { const a = R(0, 6.283), d = Math.sqrt(rnd()) * c.spread;
+            // (each bird's place in the patch kept three-quarters of a body length from the others' — Oct 18, Wes: "the avocets
+            // stack on each other": random places could coincide, and the birds landed and fed on top of one another)
+            const sep0 = (kind === 'spoon' ? SPOON_LEN : AVOCET_LEN) * 0.75;
+            for (let j = 0; j < n; j++) { let a = R(0, 6.283), d = Math.sqrt(rnd()) * c.spread;
+                for (let k = 0; k < 40 && F.birds.some(o => Math.hypot(o.ox - Math.cos(a) * d, o.oy - Math.sin(a) * d) < sep0); k++) { a = R(0, 6.283); d = Math.sqrt(rnd()) * c.spread; }
                 F.birds.push({ j, ox: Math.cos(a) * d, oy: Math.sin(a) * d, x: S.x + Math.cos(a) * d, y: S.y + Math.sin(a) * d, h: R(0, 6.283), sw: R(0, 7), swR: R(0.8, 1.2), step: R(0, 7), z: 0, flap: R(0, 7), mode: 'wade', ring: 0, delay: 0 }); }
             return F;
         });
@@ -10774,36 +10936,87 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     // (while the flock is still coming in, a bird already down takes its place about the NEW patch —
                     // the old centre is behind it, often over the marsh, and walking back there made it hop, land, hop)
                     const fcx = F.mode === 'fly' && F.tx != null ? F.tx : F.cx, fcy = F.mode === 'fly' && F.ty != null ? F.ty : F.cy;
-                    const pk = F.roosting ? 0.55 : 1, tx = fcx + b.ox * pk, ty = fcy + b.oy * pk, d = Math.hypot(tx - b.x, ty - b.y);
-                    b.roost = F.roosting;
+                    const pk = F.roosting ? 0.8 : 1, tx = fcx + b.ox * pk, ty = fcy + b.oy * pk, d = Math.hypot(tx - b.x, ty - b.y);
+                    b.roost = F.roosting; if (!F.roosting) b.settled = false;
                     if (!F.roosting && (F.kind !== 'spoon' || depthAtT(b.x, b.y) < 0.25)) b.sw += dt * c.sweepHz * 6.283 * b.swR; else b.sw *= 0.9;   // (a spoonbill sweeps only in shallow water)
-                    if (d > 2) { const a = Math.atan2(tx - b.x, -(ty - b.y)); b.h += angDiff(a, b.h) * Math.min(1, dt * 2); const v = Math.min(d, c.walk) * dt, nx = b.x + Math.sin(b.h) * v, ny = b.y - Math.cos(b.h) * v;
-                        if (F.roosting || !onLand(nx, ny)) { b.x = nx; b.y = ny; } else { b.mode = 'up'; b.delay = 0; b.hop = true; continue; }   // the marsh in the way: hop it
-                        b.step += dt * 6; }
-                    else if (!F.roosting) { b.h += Math.sin(b.sw * 0.13 + b.j) * dt * 0.4; const nx = b.x + Math.sin(b.h) * c.walk * 0.25 * dt, ny = b.y - Math.cos(b.h) * c.walk * 0.25 * dt; if (!onLand(nx, ny)) { b.x = nx; b.y = ny; } b.step += dt * 2; }   // feeding forward slowly
-                    else { const wd = state.wind ? state.wind.direction : 0; b.h += angDiff(wd, b.h) * Math.min(1, dt * 0.8); }   // roosting: all facing into the wind
+                    if (!F.roosting) {
+                        // FEEDING (the research, Oct 18): they never stand still to feed — a spoonbill walks on steadily, ~0.4 m/s, the
+                        // bill sweeping as it goes; an avocet walks scything. Each wanders its own meandering line about its place
+                        // in the patch, turned back in as it strays, bearing off a neighbour too close; turns eased, never snapped.
+                        b.wd = (b.wd == null ? b.h : b.wd) + R(-1, 1) * dt * 1.6;
+                        let want = b.wd;
+                        const R0 = c.spread * 0.55, pull = Math.min(1, Math.max(0, (d - R0) / (c.spread * 0.6)));
+                        if (pull > 0) want += angDiff(Math.atan2(tx - b.x, -(ty - b.y)), want) * pull;
+                        const len = F.kind === 'spoon' ? SPOON_LEN : AVOCET_LEN;
+                        for (const o of F.birds) { if (o === b || o.mode !== 'wade') continue; const ox = o.x - b.x, oy = o.y - b.y, od = Math.hypot(ox, oy);
+                            if (od < len * 0.8 && od > 0.01) { const away = Math.atan2(-ox, oy); want += angDiff(away, want) * (1 - od / (len * 0.8)) * 0.8; } }
+                        b.wd += angDiff(want, b.wd) * Math.min(1, dt * 1.5);
+                        const far = d > c.spread * 1.6, v = (far ? c.walk * 1.4 : c.feed * (1 - 0.5 * (b.swim || 0))) * dt;   // (afloat it paddles slower; a long way off its place it hurries)
+                        b.h += Math.max(-1.3 * dt, Math.min(1.3 * dt, angDiff(far ? Math.atan2(tx - b.x, -(ty - b.y)) : b.wd, b.h)));
+                        const nx = b.x + Math.sin(b.h) * v, ny = b.y - Math.cos(b.h) * v;
+                        // (and it keeps to its depth: water ahead too deep for it, or dry mud, turns it back toward its place —
+                        // walking on at the real pace into the channel had the avocets hopping back out three times as often)
+                        const da = depthAtT(b.x + Math.sin(b.h) * len * 0.6, b.y - Math.cos(b.h) * len * 0.6), deepMax = F.kind === 'avo' ? 0.3 : c.depth[1] + 0.08;
+                        if (!far && (da > deepMax || da < c.depth[0] - 0.1)) {   // (toward the nearest water of its depth — the flood moves faster than the flock's patch)
+                            let bh = b.wd, be = 1e9; const mid = (c.depth[0] + Math.min(deepMax, c.depth[1])) / 2;
+                            for (let q = 0; q < 8; q++) { const a2 = q / 8 * 6.283, e = Math.abs(depthAtT(b.x + Math.sin(a2) * len, b.y - Math.cos(a2) * len) - mid) + 0.05 * Math.abs(angDiff(a2, b.h)); if (e < be) { be = e; bh = a2; } }
+                            b.wd = bh; }
+                        if (!onLand(nx, ny)) { b.x = nx; b.y = ny; } else b.wd = Math.atan2(tx - b.x, -(ty - b.y));
+                        b.step += v * 0.35;
+                    }
+                    // (at the roost: in to its place, then settled — eased apart from a neighbour it stays put, facing the wind,
+                    // not trudging back at its exact spot)
+                    else if (d > (F.kind === 'spoon' ? SPOON_LEN : AVOCET_LEN) * 0.3 && !b.settled) { const a = Math.atan2(tx - b.x, -(ty - b.y)); b.h += angDiff(a, b.h) * Math.min(1, dt * 2); const v = Math.min(d, c.walk) * dt, nx = b.x + Math.sin(b.h) * v, ny = b.y - Math.cos(b.h) * v;
+                        b.x = nx; b.y = ny; b.step += dt * 6; }
+                    else { b.settled = d < (F.kind === 'spoon' ? SPOON_LEN : AVOCET_LEN) * 1.2; const wd = state.wind ? state.wind.direction : 0; b.h += angDiff(wd, b.h) * Math.min(1, dt * 0.8); }   // roosting: all facing into the wind
                 } else {
                     b.delay -= dt; if (b.delay > 0) continue;
-                    b.flap += dt * c.flapHz * 6.283 * WING_TIME;
+                    // (spoonbills cruise flapping, with short glides between bouts — the field guides; waders flap throughout)
+                    if (c.glides && b.mode === 'fly' && b.z > 10) { b.gT = (b.gT == null ? R(1.5, 3) : b.gT) - dt; if (b.gT <= 0) { b.glide = !b.glide; b.gT = b.glide ? R(0.6, 1.2) : R(1.5, 3); } } else b.glide = false;
+                    if (!b.glide || Math.cos(b.flap) < 0.9) b.flap += dt * c.flapHz * 6.283 * WING_TIME;   // (a glide holds the wings out level)
                     // (spoonbills travel in a loose diagonal line — the flock references — until close to the new patch)
                     let ex = 0, ey = 0;
-                    if (F.kind === 'spoon' && !b.hop && F.tx != null) { const fh = Math.atan2(F.tx - F.cx, -(F.ty - F.cy)), far = Math.min(1, Math.max(0, (Math.hypot(F.tx - b.x, F.ty - b.y) - 80) / 150)), back = b.j * 13 * far, side = b.j * 9 * far * (F.fi % 2 ? 1 : -1);
+                    if (F.kind === 'spoon' && !b.hop && F.tx != null) { const fh = Math.atan2(F.tx - F.cx, -(F.ty - F.cy)), far = Math.min(1, Math.max(0, (Math.hypot(F.tx - b.x, F.ty - b.y) - 30) / 70)), back = b.j * 16 * far, side = b.j * 31 * far * (F.fi % 2 ? 1 : -1);   // (Oct 18: on every flight, not only long ones — a short flush had them stacked one on another; spaced by the wingspan, 40, a wingtip just behind the next bird's)
                         ex = -Math.sin(fh) * back + Math.cos(fh) * side; ey = Math.cos(fh) * back + Math.sin(fh) * side; }
-                    let tx = ex + (b.hop ? (F.gx != null ? F.gx : F.cx) + b.ox * 0.4 : (F.tx != null ? F.tx : F.cx) + b.ox * 1.5); let ty = ey + (b.hop ? (F.gy != null ? F.gy : F.cy) + b.oy * 0.4 : (F.ty != null ? F.ty : F.cy) + b.oy * 1.5);   // (a hop: in toward the patch's middle, whose depth the flock has checked)
-                    if (onLand(tx, ty)) { tx = b.hop ? (F.gx != null ? F.gx : F.cx) : (F.tx != null ? F.tx : F.cx); ty = b.hop ? (F.gy != null ? F.gy : F.cy) : (F.ty != null ? F.ty : F.cy); }   // (its own spot on the marsh: the flock's centre)
+                    let tx = ex + (b.hop ? (F.gx != null ? F.gx : F.cx) + b.ox : (F.tx != null ? F.tx : F.cx) + b.ox * 1.5); let ty = ey + (b.hop ? (F.gy != null ? F.gy : F.cy) + b.oy : (F.ty != null ? F.ty : F.cy) + b.oy * 1.5);   // (a hop: back to its own place in the patch, whose depth the flock has checked — not its middle, where the hoppers piled up)
+                    if (!F.roosting && onLand(tx, ty)) {   // (its spot on the marsh, feeding: the nearest water on the line in to the flock's centre —
+                        // the centre itself had every such bird landing on the one point; at the roost the marsh is where they come down)
+                        const cx0 = b.hop ? (F.gx != null ? F.gx : F.cx) : (F.tx != null ? F.tx : F.cx), cy0 = b.hop ? (F.gy != null ? F.gy : F.cy) : (F.ty != null ? F.ty : F.cy);
+                        let k = 0.85; while (k > 0.1 && onLand(cx0 + (tx - cx0) * k, cy0 + (ty - cy0) * k)) k -= 0.15;
+                        tx = cx0 + (tx - cx0) * Math.max(0, k); ty = cy0 + (ty - cy0) * Math.max(0, k); }
                     const d = Math.hypot(tx - b.x, ty - b.y), a = Math.atan2(tx - b.x, -(ty - b.y));
                     // on final approach (inside 60 u) it turns straight in — never orbits its spot
                     b.h += angDiff(a, b.h) * Math.min(1, dt * (d < 60 ? 8 : 1.8));
                     // in: slowing onto the spot (legs down, a few flaps), never circling it
-                    const v = d < 50 ? Math.max(5, d * 1.4) : Math.min(c.fly, 20 + d * 1.2); b.x += Math.sin(b.h) * v * dt; b.y -= Math.cos(b.h) * v * dt;
+                    const vt = d < 50 ? Math.max(5, d * 1.4) : Math.min(b.hop ? 120 : c.fly, 20 + d * 1.2);
+                    // (up to speed over the first second or so of flapping, and braking in; the old 60-75 u/s was a fifth of the real airspeed)
+                    b.v = b.v == null ? 0 : b.v; b.v += (vt - b.v) * Math.min(1, dt * (vt < b.v ? 4 : 1.6)); const v = b.v; b.x += Math.sin(b.h) * v * dt; b.y -= Math.cos(b.h) * v * dt;
                     b.z += ((b.hop ? Math.min(8, d * 0.2) : d > 60 ? c.alt : 0) - b.z) * Math.min(1, dt * 1.5);
                     if (b.mode === 'up' && (b.z > 5 || d < 60)) b.mode = 'fly';
                     // down: at its spot — or, a long flight, wherever it is over water once it is low (never a jump; Wes saw
                     // birds vanish mid-air when a 14 s timeout put them on their spot)
                     // (down only on water — never on the marsh, but at the roost)
-                    if (b.mode === 'fly' && ((d < 10 && b.z < 3 && (F.roosting || !onLand(b.x, b.y))) || (b.hop && d < 10 && !onLand(b.x, b.y)) || (F.flyT > 14 && d < 80 && b.z < 3 && !onLand(b.x, b.y)))) { b.mode = 'wade'; b.z = 0; b.ring = 1; b.hop = false; b.hopCool = 2; }
+                    if (b.mode === 'fly' && ((d < 10 && b.z < 3 && (F.roosting || !onLand(b.x, b.y))) || (b.hop && d < 10 && !onLand(b.x, b.y)) || (F.flyT > 14 && d < 80 && b.z < 3 && !onLand(b.x, b.y)))) { b.mode = 'wade'; b.z = 0; b.ring = 1; b.hop = false; b.hopCool = 2; b.v = 0; b.glide = false; }
                 }
             }
+            // ROOM: no two birds of a flock on top of each other — on the ground clear of each other's bodies, in the air
+            // (at about the same height) three-quarters of a wingspan apart. Each pair too close is eased apart, each giving half, never faster
+            // than a slow walk on the ground and a wingbeat's drift aloft, and a wader never onto the marsh.
+            { const len = F.kind === 'spoon' ? SPOON_LEN : AVOCET_LEN, span = F.kind === 'spoon' ? SPOON_SPAN : AVOCET_SPAN, B = F.birds;
+                for (let i = 0; i < B.length; i++) { const A = B[i]; if (A.delay > 0 && A.mode !== 'wade') continue;
+                    for (let j = i + 1; j < B.length; j++) { const C = B[j]; if (C.delay > 0 && C.mode !== 'wade') continue;
+                        const air = A.mode !== 'wade' && C.mode !== 'wade'; if (A.mode === 'wade' !== (C.mode === 'wade') || Math.abs((A.z || 0) - (C.z || 0)) > 8) continue;
+                        const dx = C.x - A.x, dy = C.y - A.y, d = Math.hypot(dx, dy);
+                        // (on the ground by the bodies' outlines — a long slim bird bill and all, as a capsule along its heading —
+                        // so two lying across each other or nose to tail are parted too, not only two whose middles meet)
+                        let need;
+                        if (air) need = span * 0.75 - d;   // (a tight flock, wingtips overlapping a little, never a bird drawn on another)
+                        else { if (d > len * 1.2) continue; const cap = (q) => { const hx = Math.sin(q.h) * len * 0.38, hy = -Math.cos(q.h) * len * 0.38; return [q.x + hx, q.y + hy, q.x - hx, q.y - hy]; };
+                            need = Math.max(len * 0.3 + 1 - segDist(cap(A), cap(C)), len * (F.roosting ? 0.3 : 0.4) - d); }
+                        if (need <= 0) continue;
+                        const ux = d > 0.01 ? dx / d : Math.cos(i * 2.4 + j), uy = d > 0.01 ? dy / d : Math.sin(i * 2.4 + j), push = Math.min(need / 2, (air ? 60 : 30) * dt);
+                        const mv = (q, sg) => { const nx = q.x + ux * push * sg, ny = q.y + uy * push * sg; if (q.mode !== 'wade' || F.roosting || !onLand(nx, ny)) { q.x = nx; q.y = ny; } };
+                        mv(A, -1); mv(C, 1); } } }
             if (F.mode === 'fly' && F.birds.every(b => b.mode === 'wade')) { F.mode = 'feed'; F.cx = F.gx = F.tx; F.cy = F.gy = F.ty; F.t = R(1, 2); F.down = 0; }
         }
     }
@@ -10831,9 +11044,67 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.fillStyle = SPOON.head; ctx.beginPath(); ctx.ellipse(0, -0.2, 0.9, 1.1, 0, 0, 6.283); ctx.fill();
         ctx.strokeStyle = '#1d1d1a'; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.moveTo(-0.85, 0.55); ctx.quadraticCurveTo(0, 0.95, 0.85, 0.55); ctx.stroke();   // the black band at the nape
     }
+    // THE PAINTED WADERS (Oct 18 2026): flats-spoonbill, -resting, -flying; flats-avocet, -flying. Standing, each is laid
+    // whole, its neck and head cut off at two rows and turned — the neck about the shoulder (`shoulder`), the head on
+    // again about the throat (`throat`) — so the bill still sweeps side to side as it feeds (the spoonbill) or scythes
+    // (the avocet). The resting spoonbill is an edit in register with the wader, so it lies on the same frame. In flight
+    // the wings are cut at the shoulders (colsplit.py) and posed by the gull's pelicanPosed. Fractions of the frame;
+    // `mid` the body's middle row, which sits on the bird's point.
+    const SPOON_SPR = { file: FL + 'spoonbill.png', rest: FL + 'spoonbill-resting.png', top: 0.0833, bot: 0.8561, cx: 0.4962, mid: 0.62, shoulder: 0.43, throat: 0.31 };
+    const AVO_SPR = { file: FL + 'avocet.png', top: 0.06, bot: 0.91, cx: 0.495, mid: 0.64, shoulder: 0.43, throat: 0.33 };
+    const SPOON_FLY = { S: { x0: 0.1533, x1: 0.8457, cx: 0.4995, cy: 0.52, root: { 'wing-l': [0.4495, 0.562], 'wing-r': [0.5495, 0.562] } }, span: SPOON_SPAN, img: (p2) => sprImg(FL + 'spoonbill-flying-' + p2 + '.png') };
+    const AVO_FLY = { S: { x0: 0.1143, x1: 0.8848, cx: 0.4995, cy: 0.52, root: { 'wing-l': [0.4395, 0.5332], 'wing-r': [0.5595, 0.5332] } }, span: AVOCET_SPAN, img: (p2) => sprImg(FL + 'avocet-flying-' + p2 + '.png') };
+    function waderSprites() { sprImg(SPOON_SPR.file); sprImg(SPOON_SPR.rest); sprImg(AVO_SPR.file); PEL_PARTS.forEach(SPOON_FLY.img); PEL_PARTS.forEach(AVO_FLY.img); }
+    // the standing bird posed on a scratch canvas: the neck turned `a1` about the shoulder, the head `a2` more about the
+    // throat, the head and neck faded to `ha` (an avocet upending puts them under); `file` another frame in register
+    function waderPosed(ctx, S, L, a1, a2, ha, slot, file) {
+        const im = sprImg(file || S.file); if (!imgReady(im)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = L * 0.8;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = L / (S.bot - S.top), x0 = -S.cx * F, Yf = (fy) => (fy - S.mid) * F;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width, lap = S.lap || 0.012;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const band = (r0, r1) => g.drawImage(src, 0, r0 * n, n, (r1 - r0) * n, x0, Yf(r0), F, (r1 - r0) * F);
+        if (file) band(0, 1);
+        else {
+            // the neck and head first, so the body's shoulders lie over the cut
+            g.save(); g.globalAlpha = ha; g.translate(0, Yf(S.shoulder)); g.rotate(a1); g.translate(0, -Yf(S.shoulder));
+            band(S.throat - lap, S.shoulder + lap);
+            g.translate(0, Yf(S.throat)); g.rotate(a2); g.translate(0, -Yf(S.throat)); band(0, S.throat + lap * 0.5); g.restore();
+            band(S.shoulder, 1);
+        }
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px, tip: Yf(S.top) };
+    }
+    // a wader in flight, painted: its shadow on the water by its height, then the bird a touch larger the higher it is
+    function waderFlyPainted(ctx, b, B, slot) {
+        if (PEL_PARTS.map(B.img).some(im => !imgReady(im))) return false;
+        const W = wingStroke(b.flap, 0.9), pose = () => pelicanPosed(ctx, W.pf, W.flex * 1.3, 0, slot, B), z = b.z || 0;
+        ctx.save(); ctx.translate(b.x + z * 0.35, b.y + z * 0.55); ctx.rotate(b.h); humpBlit(ctx, pose(), 'rgb(10,25,40)', airShadowA(z, 0.2)); ctx.restore();
+        ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.h); const sz = zScale(z); ctx.scale(sz, sz); humpBlit(ctx, pose(), null, 1); ctx.restore();
+        return true;
+    }
     function drawSpoonbill(ctx, b) {
         const k = SPOON_LEN / 26, fly = b.mode === 'up' || b.mode === 'fly';
-        if (fly) return drawSpoonbillFly(ctx, b);
+        if (fly) { if (waderFlyPainted(ctx, b, SPOON_FLY, 81)) return; return drawSpoonbillFly(ctx, b); }
+        if (imgReady(sprImg(SPOON_SPR.file)) && imgReady(sprImg(SPOON_SPR.rest))) {
+            ctx.save(); ctx.translate(b.x, b.y);
+            if (!b.roost) legRipple(ctx, b.step * 0.3 + b.j * 0.21, 3.5, 0.3);
+            ctx.rotate(b.h);
+            ctx.fillStyle = 'rgba(8,24,30,0.25)'; ctx.beginPath(); ctx.ellipse(0.9, 1.2, 3.6, 7.2, 0, 0, 6.283); ctx.fill();   // shade
+            // feeding: the spoon swung side to side through the water — mostly from the head, the neck following
+            const sw = b.roost ? 0 : Math.sin(b.sw) * 0.55;
+            const P = waderPosed(ctx, SPOON_SPR, SPOON_LEN, sw * 0.3, sw * 0.5, 1, 82, b.roost ? SPOON_SPR.rest : null);
+            humpBlit(ctx, P, null, 1);
+            if (P && !b.roost) {   // the spoon's ripple, a short arc in the water at its tip
+                const sy = (SPOON_SPR.shoulder - SPOON_SPR.mid) * SPOON_LEN / (SPOON_SPR.bot - SPOON_SPR.top), ty = (SPOON_SPR.throat - SPOON_SPR.mid) * SPOON_LEN / (SPOON_SPR.bot - SPOON_SPR.top);
+                ctx.translate(0, sy); ctx.rotate(sw * 0.3); ctx.translate(0, ty - sy); ctx.rotate(sw * 0.5);
+                ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 0.3; ctx.beginPath(); ctx.arc(0, P.tip - ty + 0.8, 1.8, Math.PI * (1.1 + (sw > 0 ? 0.2 : 0)), Math.PI * (1.7 + (sw > 0 ? 0.2 : 0))); ctx.stroke();
+            }
+            ctx.restore();
+            if (b.ring > 0) drawRing(ctx, b.x, b.y, b.ring, 4, 12, 0.4);
+            return;
+        }
         ctx.save(); ctx.translate(b.x, b.y);
         if (!b.roost) legRipple(ctx, b.step * 0.3 + b.j * 0.21, 3.5, 0.3);
         ctx.rotate(b.h); ctx.scale(k, k); ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -10921,9 +11192,22 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // long blue-grey legs trailing well past the tail. A tight flock flashes black and white as it turns.
     function drawAvocet(ctx, b) {
         const k = AVOCET_LEN / 20, fly = b.mode === 'up' || b.mode === 'fly';
-        if (fly) return drawAvocetFly(ctx, b);
+        if (fly) { if (waderFlyPainted(ctx, b, AVO_FLY, 83)) return; return drawAvocetFly(ctx, b); }
         ctx.save(); ctx.translate(b.x, b.y);
         const swim = b.swim || 0, upend = b.upV || 0;
+        if (imgReady(sprImg(AVO_SPR.file))) {
+            if (!b.roost) legRipple(ctx, b.step * 0.35 + b.j * 0.13, 2.5 + swim * 1.5, 0.25 + swim * 0.15);
+            ctx.rotate(b.h);
+            ctx.fillStyle = `rgba(8,24,30,${0.22 + swim * 0.08})`; ctx.beginPath(); ctx.ellipse(0.6 * (1 - swim), 1.2 - swim * 0.6, 2.4, 5.2, 0, 0, 6.283); ctx.fill();   // (afloat, the shade hugs the body)
+            // scything: the bill swept side to side, fast, from the head; upending, the head and neck go under and it
+            // foreshortens to the white stern and the crossed black tips
+            const sw = Math.sin(b.sw) * 0.7 * (b.roost ? 0.2 : 1);
+            if (upend > 0.01) ctx.translate(0, upend * 1.2);
+            humpBlit(ctx, waderPosed(ctx, AVO_SPR, AVOCET_LEN, sw * 0.3, sw * 0.45, 1 - upend * 0.9, 84), null, 1);
+            ctx.restore();
+            if (b.ring > 0) drawRing(ctx, b.x, b.y, b.ring, 3, 9, 0.4);
+            return;
+        }
         if (!b.roost) legRipple(ctx, b.step * 0.35 + b.j * 0.13, 2.5 + swim * 1.5, 0.25 + swim * 0.15);
         ctx.rotate(b.h); ctx.scale(k, k); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         ctx.fillStyle = `rgba(8,24,30,${0.22 + swim * 0.08})`; ctx.beginPath(); ctx.ellipse(0.6 * (1 - swim), 1.8 - swim * 0.6, 2.5, 4.6, 0, 0, 6.283); ctx.fill();   // (afloat, the shade hugs the body)
