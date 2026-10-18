@@ -43,6 +43,7 @@ def main():
     ap.add_argument("--fore", required=True, help="y0,y1,half")
     ap.add_argument("--hind", required=True, help="y0,y1,half")
     ap.add_argument("--dark", type=float, default=None, help="cut each foot as the dark patch (luma below this) instead")
+    ap.add_argument("--hoof", default=None, help="LO,HI: BOTH bands — each foot is the patch with luma in LO..HI reaching past `half`, with its own outline")
     args = ap.parse_args()
     m = json.loads((ROOT / "manifest.json").read_text())
     asset = {a["key"]: a for a in m["assets"]}[args.key]
@@ -79,6 +80,21 @@ def main():
                     paw = ndimage.binary_fill_holes(lab == big)
                     claws = band & (lum > 120) & ndimage.binary_dilation(paw, iterations=4)
                     mk = ndimage.binary_dilation(paw | claws, iterations=1) & band
+            if args.hoof is not None:
+                # (the bighorn, Oct 17: a hoof sits ON the outline of a flank as wide as it, so neither place nor plain
+                # darkness separates it — the black ink line is darker still. A hoof is the dark-brown patch BETWEEN the
+                # ink (luma < LO) and the coat (luma > HI), taken with the ink that rings it.)
+                lo, hi = (float(v) for v in args.hoof.split(","))
+                a = img.astype(float); lum = 0.299 * a[:, :, 0] + 0.587 * a[:, :, 1] + 0.114 * a[:, :, 2]
+                band = al & (Y >= y0 * n) & (Y <= y1 * n) & ((X - cx) * sd > 0)
+                lab, k = ndimage.label(band & (lum > lo) & (lum < hi))
+                out_ = [i for i in range(1, k + 1) if (((np.where(lab == i)[1] - cx) * sd) > half * n).any()]
+                mk = np.zeros_like(al)
+                if out_:
+                    big = max(out_, key=lambda i: (lab == i).sum())
+                    hoof = ndimage.binary_fill_holes(lab == big)
+                    ink = al & (lum <= lo) & ndimage.binary_dilation(hoof, iterations=5)
+                    mk = ndimage.binary_dilation(hoof, iterations=1) & al | ink
             if not mk.any(): continue   # (a band given as empty: that pair stays in the body)
             layer = np.zeros_like(img); layer[mk] = img[mk]; taken |= mk
             ex = int(round(cx + sd * (half * n + 1)))

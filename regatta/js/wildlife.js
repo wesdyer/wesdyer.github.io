@@ -498,7 +498,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // a bank: a short stretch of mud at the water's edge, laid along heading h
             for (const [x, y, h] of c.banks || []) baskers.push(makeBaskers(c, { x, y, heading: h, kind: 'bank', scale: 0.55 }));
         }
-        if (cfg.leapers) { nextLeap = R(2, 5); if (cfg.leapers.kind === 'bass') sprImg(BASS_SPR.file); }
+        if (cfg.leapers) { nextLeap = R(2, 5); if (cfg.leapers.kind === 'bass') sprImg(BASS_SPR.file); if (cfg.leapers.kind === 'carp') sprImg(CARP_SPR.file); }
         if (cfg.poppers) poppers = cfg.poppers.at.map(([cx, cy, r], i) => {
             const p = popSpot(cx, cy, r) || { x: cx, y: cy };
             return { i, cx, cy, r, x: p.x, y: p.y, h: R(0, 7), look: R(0, 7), mode: i % 2 ? 'up' : 'under', t: R(1, 6), tx: p.x, ty: p.y, vis: i % 2 ? 1 : 0, bob: R(0, 7), ring: 0, ring2: 0, vx: 0, vy: 0 };
@@ -555,9 +555,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (cfg.soarers) soarers = cfg.soarers.at.map(([cx, cy, r], i) => ({ i, cx, cy, r, a: R(0, 7), dir: i % 2 ? -1 : 1, z: R(90, 120), x: cx, y: cy, h: 0, flap: R(0, 7), mode: 'soar', t: R(15, 35), fish: 0, tx: 0, ty: 0, splash: 0, sx: 0, sy: 0 }));
         if (cfg.rompers) for (const id of cfg.rompers.homes) { const pr = ((state.course && state.course.props) || []).find(q => q.id === id); if (pr) { const F = makeRompers(cfg.rompers, pr); if (F) rompers.push(F); } }
         if (cfg.stripers) nextStriper = R(3, 8);
-        if (cfg.condors) condors = makeCondors(cfg.condors);
+        if (cfg.condors) { CONDOR_PARTS.forEach(condorImg); condors = makeCondors(cfg.condors); }   // ask for the painted condor now
+        if (cfg.bighorn) for (const S of Object.values(BH_SPR)) BH_PARTS.forEach(p2 => bhImg(S, p2));   // ask for the painted bighorn now
         if (cfg.bighorn) for (const [id, n] of cfg.bighorn.bands) { const pr = ((state.course && state.course.props) || []).find(q => q.id === id); const G = pr && makeBand(pr, n); if (G) bands.push(G); }
-        if (cfg.coyotes) coyotes = makeCoyotes(cfg.coyotes);
+        if (cfg.coyotes) { COY_PARTS.forEach(coyImg); coySitImg(); coyotes = makeCoyotes(cfg.coyotes); }   // ask for the painted coyote now
         if (cfg.orcas) orcaPods = cfg.orcas.pods.map((P, i) => makeOrcaPod(P, i));
         if (cfg.penguins) { colonies2 = makeColonies(cfg.penguins); floeGroups = makeFloeGroups(cfg.penguins); }
         if (cfg.seals) lseals = makeSeals(cfg.seals);
@@ -884,10 +885,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 // a bunch: each a little way off the first, starting a beat after the one before
                 const ox = j ? R(-35, 35) : 0, oy = j ? R(-35, 35) : 0;
                 if (j && (onLand(x + ox, y + oy) || (c.rapids && rapidsTurbAt(x + ox, y + oy) < c.rapids))) continue;
-                leaps.push({ kind: c.kind, silver: rnd() < 0.3, x: x + ox, y: y + oy, h: h + (j ? R(-0.2, 0.2) : 0), t: -j * R(0.2, 0.5), dur: c.kind === 'carp' ? R(0.85, 1.1) : R(0.55, 0.8), size: R(0.85, 1.15), hop: c.kind === 'carp' ? R(18, 26) : R(14, 22), roll: rnd() < 0.5 ? -1 : 1 });
+                leaps.push({ kind: c.kind, silver: rnd() < 0.3, x: x + ox, y: y + oy, h: h + (j ? R(-0.2, 0.2) : 0), t: -j * R(0.2, 0.5), dur: c.kind === 'carp' ? R(0.3, 0.38) : R(0.55, 0.8), size: R(0.85, 1.15), hop: c.kind === 'carp' ? R(18, 26) : R(14, 22), roll: rnd() < 0.5 ? -1 : 1 });
             }
             // the same carp, or its neighbour, going again from the same spot a moment later
-            if (c.repeat && rnd() < c.repeat) leaps.push({ kind: c.kind, x: x + R(-12, 12), y: y + R(-12, 12), h: R(0, Math.PI * 2), t: -R(1.6, 3.2), dur: R(0.85, 1.1), size: R(0.85, 1.15), hop: R(16, 24), roll: rnd() < 0.5 ? -1 : 1 });
+            // (within a few u: ±12 let a repeat off a spot at the 170 u limit come up 182 u out — past the shore band)
+            if (c.repeat && rnd() < c.repeat) leaps.push({ kind: c.kind, x: x + R(-4, 4), y: y + R(-4, 4), h: R(0, Math.PI * 2), t: -R(1.6, 3.2), dur: c.kind === 'carp' ? R(0.3, 0.38) : R(0.85, 1.1), size: R(0.85, 1.15), hop: R(16, 24), roll: rnd() < 0.5 ? -1 : 1 });
             break;
         }
     }
@@ -2291,7 +2293,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // condor spans 2.9 m -> 80 (2.35× its 34-unit body, per the soaring references — bigger
     // than the eagle's 58, as it should be); a bighorn 1.6 m -> 34 and a coyote 1.6 m with its
     // tail -> 32 (≈2×, like the bear). Speeds are drawn body lengths a second, like the others.
-    const STRIPER_LEN = 18, CONDOR_SPAN = 80, CONDOR_SOAR = 38, CONDOR_GLIDE = 70;
+    // Condor speeds are REAL airspeeds on the game's clock (15 u/s a knot, scale.md), like the orcas and the mahi:
+    // circling ~11 m/s, gliding between thermals ~16-17 m/s (see THE CONDOR'S FLIGHT below).
+    const STRIPER_LEN = 18, CONDOR_SPAN = 80, CONDOR_SOAR = 21 * 15, CONDOR_GLIDE = 32 * 15;
     // Is (x, y) land (or water) and so is everything within m of it?
     function ringClear(x, y, m, wantLand) {
         if (onLand(x, y) !== wantLand) return false;
@@ -2312,9 +2316,17 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const d = Math.hypot(tx - o.x, ty - o.y); if (d < 0.5) return true;
         const want = Math.atan2(tx - o.x, -(ty - o.y));
         o.h += Math.max(-turn * dt, Math.min(turn * dt, angDiff(want, o.h)));
-        const s = Math.min(d, v * dt * Math.max(0.25, Math.cos(angDiff(want, o.h))));
+        // facing well away it turns ON THE SPOT before setting off (a walker pivots; carving the turn at speed drew a
+        // hairpin loop at every new target — Wes: "why do they always move in circles?")
+        const s = Math.min(d, v * dt * Math.max(0.04, Math.cos(angDiff(want, o.h))) ** 1.5);
         const nx = o.x + Math.sin(o.h) * s, ny = o.y - Math.cos(o.h) * s;
-        if (land && !onLand(nx + Math.sin(o.h) * 4, ny - Math.cos(o.h) * 4)) return false;
+        // the foot it lands on, and the ground ahead (a lone look-ahead can see land across a narrow inlet) — except going
+        // down to drink (land 'foot'), where the ground ahead IS the water it means to reach
+        if (land && (!onLand(nx, ny) || (land !== 'foot' && !onLand(nx + Math.sin(o.h) * 4, ny - Math.cos(o.h) * 4)))) {
+            // still turning round toward its way (one lying at the shore, nose to the water, getting up to go): keep
+            // turning on the spot — refusing here read as "arrived" and it never turned
+            return Math.cos(angDiff(want, o.h)) < 0.7;
+        }
         o.x = nx; o.y = ny; return true;
     }
 
@@ -2360,46 +2372,127 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
     }
 
-    // CONDORS. They ride the thermal over the butte in wide slow circles, rising and sinking
-    // on it, wings flat and fingers spread — a condor almost never flaps. The first one now and
-    // then leaves the thermal on a long straight glide out over the course and back home.
+    // CONDORS — THE CONDOR'S FLIGHT (researched Oct 17 2026, Wes: "research appropriate behavior and movement").
+    //  - IT DOES NOT FLAP. Andean condors flap ~1% of flight time, three quarters of that at take-off (Williams et al.
+    //    2020, PNAS 117:17884; one bird flew 5 h and 172 km without a beat). California condors hold the wings FLAT and
+    //    STEADY — no dihedral, no teetering; that is the field mark that tells one from a turkey vulture (NPS).
+    //  - IT CLIMBS IN THERMALS BY CIRCLING. Vultures bank 25-35 deg low in a thermal, where it is weak and narrow, and less
+    //    as they climb, holding the airspeed (Williams, Shepard & Duriez 2018, Biol Lett): the circle WIDENS on the way up.
+    //    At ~11 m/s and those banks the radius is v^2/(g tan(bank)) = 19-26 m — the config's 190-330 u circles. On the
+    //    game's 3x clock a lap takes ~4-7 s (~12-20 s real).
+    //  - BIRDS SHARING A THERMAL CIRCLE THE SAME WAY (white storks coordinate their circling and switch together — Nagy
+    //    et al. 2018, Phil Trans B); all three here turn the same way round the butte.
+    //  - THE THERMAL DRIFTS DOWNWIND as it rises, so the circles slide down the wind on the way up. At the top a bird
+    //    leaves and glides on, or slides back up the wind to the bottom of the thermal and climbs again.
+    //  - BETWEEN THERMALS IT GLIDES FAST AND STRAIGHT, losing height, its wings swept a little back and the primaries
+    //    closed (soaring = primaries spread; gliding = closed and bent back — Newman 1958 on the black vulture; swept
+    //    wings for fast glides — Lentink et al. 2007 on swifts). ~16-17 m/s. Where it finds lift on the way it circles
+    //    up again for a lap or two.
+    // The first bird now and then leaves from the top of a climb on a glide out over the course, and comes home.
+    const CONDOR_ZLO = 60, CONDOR_ZHI = 110, CONDOR_DRIFT = 50, CONDOR_CLIMB = 1.4;
     function makeCondors(c) {
-        const [rx, ry] = c.roost;
+        const [rx, ry] = c.roost, dir = rnd() < 0.5 ? -1 : 1;
         return c.circles.map((r, i) => {
-            const C = { i, cx: rx + R(-60, 60), cy: ry + R(-60, 60), r, a: R(0, 7), dir: i % 2 ? -1 : 1, z: R(130, 175), zp: R(0, 7), x: 0, y: 0, h: 0, bank: 0, mode: 'circle', wi: 0, t: i === 0 ? R(25, 50) : 1e9 };
-            C.x = C.cx + Math.cos(C.a) * C.r; C.y = C.cy + Math.sin(C.a) * C.r; C.h = C.a + (C.dir > 0 ? Math.PI : 0);
+            const C = { i, bx: rx + R(-40, 40), by: ry + R(-40, 40), r0: r, a: R(0, 7), dir, z: R(CONDOR_ZLO, CONDOR_ZHI), x: 0, y: 0, h: 0,
+                bank: 0, sweep: 0, mode: 'circle', wi: 0, laps: 0, t: i === 0 ? R(25, 50) : 1e9 };
+            const T0 = condorThermal(C);
+            C.x = T0.cx + Math.cos(C.a) * T0.r; C.y = T0.cy + Math.sin(C.a) * T0.r; C.h = C.a + (dir > 0 ? Math.PI : 0);
             return C;
         });
+    }
+    // where its thermal is at its height: the base over the butte, the column leaning down the wind as it rises, the
+    // circle widening as the bird climbs and banks less
+    function condorThermal(C) {
+        const u = Math.max(0, Math.min(1, (C.z - CONDOR_ZLO) / (CONDOR_ZHI - CONDOR_ZLO)));
+        const W = state.wind ? state.wind.direction : 0, k = CONDOR_DRIFT * u;
+        return { cx: C.bx - Math.sin(W) * k, cy: C.by + Math.cos(W) * k, r: C.r0 * (1 + 0.1 * u) };
+    }
+    // fly a circle by PURSUIT (a point a little ahead on it), never by snapping the heading onto it: the bird joins
+    // and holds a circle the way it holds a line, through its own turn rate
+    function condorCircle(C, cx, cy, r, dt) {
+        const a = Math.atan2(C.y - cy, C.x - cx) + C.dir * 0.55;
+        steer(C, cx + Math.cos(a) * r, cy + Math.sin(a) * r, CONDOR_SOAR, 2.2, dt);
     }
     function updateCondors(dt) {
         const c = cfg.condors;
         for (const C of condors) {
-            const h0 = C.h; C.zp += dt * 0.05;
+            const h0 = C.h;
+            let sweep = 0;
             if (C.mode === 'circle') {
-                C.a += C.dir * CONDOR_SOAR / C.r * dt;
-                const x = C.cx + Math.cos(C.a) * C.r, y = C.cy + Math.sin(C.a) * C.r;
-                if (Math.hypot(x - C.x, y - C.y) > 0.01) C.h = Math.atan2(x - C.x, -(y - C.y));
-                C.x = x; C.y = y; C.z = 150 + 25 * Math.sin(C.zp);
-                C.t -= dt; if (C.t <= 0) { C.mode = 'glide'; C.wi = 0; }
+                // climbing in the butte's thermal
+                const Th = condorThermal(C);
+                condorCircle(C, Th.cx, Th.cy, Th.r, dt);
+                C.z = Math.min(CONDOR_ZHI, C.z + CONDOR_CLIMB * dt);
+                C.t -= dt;
+                // topped out: the first bird leaves on its glide when it is due; the others slide back up the wind
+                if (C.z >= CONDOR_ZHI) { if (C.t <= 0) { C.mode = 'glide'; C.wi = 0; } else C.mode = 'slide'; }
+            } else if (C.mode === 'slide') {
+                // back up the wind to the bottom of the thermal, losing the height it gained
+                sweep = 0.5;
+                steer(C, C.bx, C.by, CONDOR_GLIDE * 0.8, 0.9, dt);
+                C.z = Math.max(CONDOR_ZLO, C.z - 9 * dt);
+                if (C.z <= CONDOR_ZLO + 1 || Math.hypot(C.bx - C.x, C.by - C.y) < C.r0) C.mode = 'circle';
+            } else if (C.mode === 'join') {
+                // home: drawn into the butte's thermal, turning onto its circle at the soaring speed
+                sweep = 0.4;
+                const Th = condorThermal(C); condorCircle(C, Th.cx, Th.cy, Th.r, dt);
+                if (Math.hypot(C.x - Th.cx, C.y - Th.cy) < Th.r * 1.25) C.mode = 'circle';
+            } else if (C.mode === 'thermal') {
+                // a thermal found out over the course: a lap or two climbing in it, then on
+                condorCircle(C, C.tx, C.ty, C.r0, dt);
+                C.z = Math.min(CONDOR_ZHI, C.z + CONDOR_CLIMB * 1.5 * dt);
+                C.laps -= Math.abs(angDiff(C.h, h0)) / (Math.PI * 2);
+                if (C.laps <= 0) { C.mode = 'glide'; C.wi++; }
             } else {
+                // gliding: fast, straight, swept, sinking, its turns wide and gentle
+                sweep = 1;
                 const home = C.wi >= c.wander.length;
-                const tx = home ? C.cx + Math.cos(C.a) * C.r : c.wander[C.wi][0], ty = home ? C.cy + Math.sin(C.a) * C.r : c.wander[C.wi][1];
-                steer(C, tx, ty, CONDOR_GLIDE, 0.35, dt);
-                C.z += (125 - C.z) * Math.min(1, dt * 0.2);
-                if (Math.hypot(tx - C.x, ty - C.y) < (home ? 60 : 180)) {
-                    if (home) { C.mode = 'circle'; C.a = Math.atan2(C.y - C.cy, C.x - C.cx); C.x = C.cx + Math.cos(C.a) * C.r; C.y = C.cy + Math.sin(C.a) * C.r; C.t = R(60, 110); }
+                const tx = home ? C.bx : c.wander[C.wi][0], ty = home ? C.by : c.wander[C.wi][1];
+                steer(C, tx, ty, CONDOR_GLIDE, 0.65, dt);
+                C.z = Math.max(CONDOR_ZLO - 15, C.z - 11 * dt);
+                // reached: close, or ABEAM and not far — at 32 kn its gentle turns are ~700 u across, so it would orbit a
+                // point it had to touch
+                const d = Math.hypot(tx - C.x, ty - C.y), ahead = Math.sin(C.h) * (tx - C.x) - Math.cos(C.h) * (ty - C.y);
+                if (home ? d < C.r0 + 120 || (ahead < 0 && d < 800) : d < 420 || (ahead < 0 && d < 1000)) {
+                    if (home) { C.mode = 'join'; C.t = R(60, 110); }
+                    else if (rnd() < 0.5) { C.mode = 'thermal'; C.tx = tx; C.ty = ty; C.laps = R(1, 2.2); }
                     else C.wi++;
                 }
             }
-            // how hard it is turning, eased: the high wing reaches, the low one shortens
-            const turn = dt > 0 ? angDiff(C.h, h0) / dt : 0;
-            C.bank += (Math.max(-1, Math.min(1, turn * 3)) - C.bank) * Math.min(1, dt * 2);
+            C.sweep += (sweep - C.sweep) * Math.min(1, dt * 1.5);
+            // the bank its turn needs: tan(bank) = v w / g, in real terms (the clock is 3x, a knot 15 u/s), as a fraction
+            // of 50 deg; eased, a big bird rolls slowly
+            const w = dt > 0 ? angDiff(C.h, h0) / dt : 0, v = C.mode === 'glide' || C.mode === 'slide' ? CONDOR_GLIDE : CONDOR_SOAR;
+            const bank = Math.atan((v / 15 * 0.5144) * (w / 3) / 9.81) / (50 * Math.PI / 180);
+            C.bank += (Math.max(-1, Math.min(1, bank)) - C.bank) * Math.min(1, dt * 1.8);
         }
     }
 
     // BIGHORN. A band lives at the foot of a tower or talus slope, on the land just back from
     // the water. They graze and walk about; a boat in sight stops one to watch it; a boat close
     // in sends it bounding up the rock, away, where it stops and looks back.
+    // HOW A BAND OF DESERT BIGHORN LIVES (researched Oct 17 2026, Wes: "research appropriate behavior and movement"):
+    //  - FEEDING is bouts of grazing, head down, broken by SCANS — head up, still, looking about. Smaller groups scan
+    //    more; big rams scan about TWICE as much as the rest (Mooring et al. 2004, J Wildl Manage 68:519, desert
+    //    bighorn). One looking up sets the others looking (vigilance spreads by imitation — Pays et al. 2011).
+    //  - The band MOVES together, a lead ewe first and the rest strung out behind; a lamb keeps to its mother.
+    //  - It BEDS together to chew the cud — each cud ~1 minute (NPS fauna series) — heads up, legs folded under.
+    //  - In the hot season it stays near water and comes down to DRINK (CDFW, desert bighorn water use).
+    //  - DISTURBED it often only WATCHES (hikers put sheep to flight in 61% of encounters, vehicles in 17%: Papouchis
+    //    et al. 2001, Canyonlands); pressed close it RUNS FOR STEEP ROCK — cliffs and steep slopes are its escape
+    //    terrain — ~15 mph uphill (~30 on the flat), BOUNDING, hind feet together then fore, pebbles and dust kicked
+    //    up; then it stops above and looks back.
+    //  - LAMBS PLAY: short runs and hops about their mothers.
+    //  - RAMS CLASH (the desert rut runs from summer into autumn): they square off, REAR UP on their hind legs, drop and
+    //    lunge (impact up to ~5.5 m/s), and crash horns — and the hit THROWS THEM APART: the heads snap back and up and
+    //    the horns ring with it (the horn tips oscillate, shedding the energy — Wheatley et al. 2023, Bioinspir Biomim),
+    //    then both FREEZE, heads high, PRESENTING THEIR HORNS to each other (Geist 1971: horns displayed after every
+    //    clash); often another round, else they part. (Wes, Oct 17: "shouldn't the heads meet and then they bounce off?")
+    //  Speeds are real on the game's clock (15 u/s a knot); a gait keeps its real stride in body lengths.
+    const BH_GAIT = {
+        walk: { v: 32, hz: 1.3, amp: 3.5, duty: 0.65, turn: 2.0, ph: { 'hind-l': 0, 'fore-l': 0.25, 'hind-r': 0.5, 'fore-r': 0.75 } },
+        bound: { v: 195, hz: 3.0, amp: 6.0, duty: 0.35, turn: 4.0, ph: { 'hind-l': 0, 'hind-r': 0.05, 'fore-l': 0.5, 'fore-r': 0.55 } },
+    };
     function makeBand(pr, n) {
         let home = null, bd = 1e9;
         for (let k = 0; k < 200; k++) {
@@ -2410,52 +2503,340 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (!home) return null;
         const members = Array.from({ length: n }, (_, i) => {
             const p = landSpot(home.x, home.y, 35, 12) || home;
-            return { i, x: p.x, y: p.y, h: R(0, 7), look: 0, head: 1, mode: 'graze', t: R(1, 6), tx: p.x, ty: p.y, step: R(0, 7),
-                ram: i === 0 || (n >= 5 && i === 1), lamb: n >= 4 && i === n - 1, moving: 0 };
+            return { i, x: p.x, y: p.y, h: R(0, 7), look: 0, head: 1, mode: 'graze', t: R(1, 6), tx: p.x, ty: p.y, step: R(0, 7), ph: R(0, 1), gait: 'walk',
+                ram: i === 0 || (n >= 5 && i === 1), lamb: n >= 4 && i === n - 1, moving: 0, scan: 0, st: R(2, 10), z: 0, pitch: 0, bed: 0 };
         });
-        return { home, members };
+        const ewes = members.filter(m => !m.ram && !m.lamb);
+        const band = { members };   // (each member's own band, for the room each body keeps)
+        for (const m of members) m.band = band;
+        // spread out where they start: none standing in another
+        for (let it = 0; it < 80; it++) for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
+            const A = members[i], B2 = members[j], g = bhPen(A, A.x, A.y, A.h, B2, B2.x, B2.y, B2.h), pen = g.pen;
+            if (pen > 0) bhSeparate(A, B2, g, pen / 2 + 0.2, pen / 2 + 0.2);
+        }
+        for (const m of members) if (m.lamb) m.mother = ewes[ewes.length - 1] || members[0];
+        // the shore near home, for drinking: a spot just inside the real shoreline facing the water (muzzle over it)
+        const shore = () => {
+            for (let k = 0; k < 40; k++) {
+                const a = R(0, 7), ux = Math.sin(a), uy = -Math.cos(a);
+                let r = 0; while (r < 260 && onLand(home.x + ux * r, home.y + uy * r)) r += 2;
+                if (r <= 2 || r >= 260) continue;
+                const x = home.x + ux * (r - 7), y = home.y + uy * (r - 7);
+                if (onLand(x, y) && onLand(x - ux * 10, y - uy * 10) && !onLand(x + ux * 14, y + uy * 14)) return { x, y, h: a };
+            }
+            return null;
+        };
+        return Object.assign(band, { home, members, px: home.x, py: home.y, phase: 'feed', t: R(30, 70), leader: ewes[0] || members[0], shore, dust: [], clashT: R(60, 150) });
+    }
+    // how far ahead of its centre a member's muzzle reaches with the head down (the head's span from the neck pivot to
+    // the nose, foreshortened by the dip), from its sprite's numbers
+    function bhReach(s) {
+        const S = BH_SPR[s.ram ? 'ram' : s.lamb ? 'lamb' : 'ewe'], F = S.L / (S.bot - S.top), neck = -S.L * 0.47 + (S.neck - S.top) * F;
+        return -(neck + (-S.L * 0.47 - neck) * 0.68);
+    }
+    // ROOM FOR EACH BODY (Wes, Oct 17: "they shouldn't walk on top of each other or otherwise collide on the same
+    // space"). A bighorn from above is LONG — a point and a radius let two overlap nose to flank — so each is a capsule
+    // down its spine, nose to rump, as wide as the drawn body.
+    function bhCapsule(s, x, y, h) {
+        const S = BH_SPR[s.ram ? 'ram' : s.lamb ? 'lamb' : 'ewe'], ux = Math.sin(h), uy = -Math.cos(h), a = S.L * 0.4, b = S.L * 0.3;
+        return { ax: x + ux * a, ay: y + uy * a, bx: x - ux * b, by: y - uy * b, r: S.L * 0.13 };
+    }
+    // every shape a member takes up: the body's capsule, and a ram's curled horns — a disc ~17 u across round the back of
+    // the head, much wider than the body (two rams walking by each other locked horns without it)
+    function bhShapes(s, x, y, h) {
+        const C = bhCapsule(s, x, y, h); if (!s.ram) return [C];
+        const ux = Math.sin(h), uy = -Math.cos(h), hx = x + ux * 8.2, hy = y + uy * 8.2;
+        return [C, { ax: hx, ay: hy, bx: hx, by: hy, r: 8.5 }];
+    }
+    // the deepest overlap between two members' shapes (with the 1.5 u margin), and the direction to push
+    function bhPen(A, xa, ya, ha, B2, xb, yb, hb) {
+        let best = { pen: -1e9, nx: 1, ny: 0 };
+        for (const P of bhShapes(A, xa, ya, ha)) for (const Q of bhShapes(B2, xb, yb, hb)) { const g = segGap(P, Q), pen = P.r + Q.r + 1.5 - g.d; if (pen > best.pen) best = { pen, nx: g.nx, ny: g.ny, d: g.d }; }
+        return best;
+    }
+    // closest distance between two segments, and the direction from the first to the second there
+    function segGap(P, Q) {
+        const d1x = P.bx - P.ax, d1y = P.by - P.ay, d2x = Q.bx - Q.ax, d2y = Q.by - Q.ay, rx = P.ax - Q.ax, ry = P.ay - Q.ay;
+        const a = d1x * d1x + d1y * d1y, e = d2x * d2x + d2y * d2y, f = d2x * rx + d2y * ry, c = d1x * rx + d1y * ry, bb = d1x * d2x + d1y * d2y, den = a * e - bb * bb;
+        let sN = den > 1e-6 ? Math.max(0, Math.min(1, (bb * f - c * e) / den)) : 0, t = (bb * sN + f) / e;
+        if (t < 0) { t = 0; sN = Math.max(0, Math.min(1, -c / a)); } else if (t > 1) { t = 1; sN = Math.max(0, Math.min(1, (bb - c) / a)); }
+        const px = P.ax + d1x * sN, py = P.ay + d1y * sN, qx = Q.ax + d2x * t, qy = Q.ay + d2y * t, d = Math.hypot(qx - px, qy - py);
+        return { d, nx: d > 1e-6 ? (qx - px) / d : 1, ny: d > 1e-6 ? (qy - py) / d : 0 };
+    }
+    // how far a member at (x, y, h) would overlap its band-mates (the clash partner excepted while they meet)
+    // (ahead: only those in front of it count — the one behind yields, as in a file, so a band can move off together)
+    function bhOverlap(s, x, y, h, ahead) {
+        const M = s.band ? s.band.members : []; let worst = 0;
+        for (const o of M) { if (o === s || (s.clash && s.clash.other === o && s.clash.ph !== 'walk' && s.clash.ph !== 'face')) continue;
+            if (ahead && (o.x - s.x) * Math.sin(h) - (o.y - s.y) * Math.cos(h) < 0) continue;
+            const pen = bhPen(s, x, y, h, o, o.x, o.y, o.h).pen; if (pen > worst) worst = pen; }
+        return worst;
+    }
+    // ease two overlapping bodies apart along the line between them; where that would put one in the water (two at the
+    // shore), slide it along the shore instead
+    function bhSeparate(A, B2, g, pa, pb) {
+        const c = 0.7071, mv = (q, ux, uy, d) => { for (const [vx, vy] of [[ux, uy], [(ux - uy) * c, (uy + ux) * c], [(ux + uy) * c, (uy - ux) * c], [-uy, ux], [uy, -ux]]) if (onLand(q.x + vx * d, q.y + vy * d)) { q.x += vx * d; q.y += vy * d; return; } };
+        mv(A, -g.nx, -g.ny, pa); mv(B2, g.nx, g.ny, pb);
+    }
+    // turn on the spot by dh, unless the swing would put its nose or rump into another
+    function bhTurn(s, dh) {
+        const was = bhOverlap(s, s.x, s.y, s.h);
+        if (bhOverlap(s, s.x, s.y, s.h + dh) <= Math.max(1, was) + 0.01) s.h += dh;
+    }
+    // a member's walk to a spot, on its own gait; true when there. A step that would put it INTO another is not taken:
+    // it tries a little to either side, else waits; held up over a second, it settles where it is
+    function bhGo(s, x, y, gait, dt, foot) {
+        const G2 = BH_GAIT[gait], k = s.lamb ? 1.35 : 1;
+        s.gait = gait; s.ph = (s.ph + G2.hz * k * dt) % 1;
+        const x0 = s.x, y0 = s.y, h0 = s.h, was = bhOverlap(s, x0, y0, h0, true), wasAll = bhOverlap(s, x0, y0, h0);
+        let go = moveTo(s, x, y, G2.v * (s.lamb ? 0.95 : 1), G2.turn, dt, foot ? 'foot' : true);
+        // (a step forward is checked against those ahead; a TURN against everyone — its rump swings too)
+        // (the overlap measure carries a 1.5 u margin: eating into that margin is still clear of the other body, and
+        // refusing it wedged a band lying close — none could turn round to get up and go)
+        if (bhOverlap(s, s.x, s.y, s.h, true) > Math.max(0.3, was) + 0.01 || (Math.abs(s.h - h0) > 1e-4 && bhOverlap(s, s.x, s.y, s.h) > Math.max(1, wasAll) + 0.01)) {
+            let ok = false;
+            for (const side of [0.6, -0.6, 1.2, -1.2]) {
+                const hh = s.h + side, st = Math.hypot(s.x - x0, s.y - y0), nx = x0 + Math.sin(hh) * st, ny = y0 - Math.cos(hh) * st;
+                const hf = h0;   // (a shuffle aside keeps its heading: turning toward each sidestep and back again wobbled it)
+                if (st > 0.01 && onLand(nx, ny) && bhOverlap(s, nx, ny, hf, true) <= Math.max(0.3, was) + 0.01 && bhOverlap(s, nx, ny, hf) <= Math.max(1, wasAll) + 0.01) { s.x = nx; s.y = ny; s.h = hf; ok = true; break; }
+            }
+            if (!ok) { s.x = x0; s.y = y0; s.h = h0; s.blockT = (s.blockT || 0) + dt; } else s.blockT = 0;   // (the heading too: a long body pivoting on the spot swings its nose or rump into a neighbour)
+        } else s.blockT = 0;
+        if (s.blockT > (gait === 'bound' ? 3 : 1.2)) { s.blockT = 0; return true; }
+        return !go || Math.hypot(x - s.x, y - s.y) < (foot ? 0.8 : 3);   // (going down to drink it must get right to its spot)
     }
     function updateBands(dt) {
         const c = cfg.bighorn;
-        for (const G of bands) for (const s of G.members) {
-            s.t -= dt;
-            const near = boatNear(s.x, s.y, c.reactR), seen = boatNear(s.x, s.y, c.lookR);
-            if (near && s.mode !== 'bound') {
-                // up the rock: of sixteen ways, the one most away from the boat and furthest
-                // from the water's edge
-                const away = Math.atan2(s.x - near.x, -(s.y - near.y));
-                let best = null, bs = -1e9;
-                for (let i = 0; i < 16; i++) {
-                    const a = away + (i / 16) * Math.PI * 2, d = R(70, 110), x = s.x + Math.sin(a) * d, y = s.y - Math.cos(a) * d;
-                    if (!ringClear(x, y, 10, true)) continue;
-                    const inland = ringClear(x, y, 40, true) ? 1 : ringClear(x, y, 22, true) ? 0.5 : 0;
-                    const sc = Math.cos(angDiff(a, away)) + inland + Math.hypot(x - near.x, y - near.y) / 200;
-                    if (sc > bs) { bs = sc; best = { x, y }; }
+        for (const G of bands) {
+            G.t -= dt; G.dust = G.dust.filter(D => (D.t += dt) < D.life);
+            const M = G.members, calm = M.every(m => m.mode !== 'bound' && m.mode !== 'look' && !m.clash);
+            // ── the band's day: feed here a while, then move on, bed down together, or go down to drink
+            if (G.phase === 'feed' && G.t <= 0 && calm) {
+                const r = rnd();
+                if (r < 0.5) { const p = landSpot(G.home.x, G.home.y, 80, 12); if (p) { G.phase = 'move'; G.px = p.x; G.py = p.y; } G.t = R(30, 70); }
+                else if (r < 0.9) { G.phase = 'bed'; G.t = R(40, 90); for (const m of M) m.bedIn = R(0, 6); }
+                else { const sp = G.shore(); if (sp) { G.phase = 'drink'; G.sp = sp; G.t = 30; for (const m of M) { m.drunk = false; m.dspot = null; } } else G.t = R(20, 40); }
+            } else if (G.phase === 'bed' && G.t <= 0) { G.phase = 'feed'; G.t = R(30, 70); }
+            else if (G.phase === 'drink' && (G.t <= 0 || M.every(m => m.drunk))) { G.phase = 'feed'; G.px = G.sp.x - Math.sin(G.sp.h) * 25; G.py = G.sp.y + Math.cos(G.sp.h) * 25; G.t = R(30, 70); }
+            // ── rams: now and then the two square off and clash
+            const rams = M.filter(m => m.ram);
+            if (rams.length >= 2 && G.phase === 'feed' && calm && (G.clashT -= dt) <= 0) {
+                // the challenger takes its stand on its own side of the other (never walking over it), ~62 u off centre to
+                // centre: two body-lengths of drawn ram with a few metres of run between the horns
+                const [A, B] = rams, ab = Math.atan2(B.x - A.x, -(B.y - A.y)), fx = A.x + Math.sin(ab) * 62, fy = A.y - Math.cos(ab) * 62;
+                G.clashT = R(150, 300);
+                if (ringClear(fx, fy, 10, true) && ringClear((A.x + fx) / 2, (A.y + fy) / 2, 8, true)) { A.clash = { ph: 'face', t: 0, other: B }; B.clash = { ph: 'walk', t: 0, other: A, fx, fy }; }
+            }
+            // a little room each: any two bodies that overlap (a capsule apiece) ease apart, the one standing still
+            // giving less ground than the one on the move
+            for (let i = 0; i < M.length; i++) for (let j = i + 1; j < M.length; j++) {
+                const A = M[i], B2 = M[j];
+                if (A.clash && A.clash.other === B2 && A.clash.ph !== 'walk' && A.clash.ph !== 'face') continue;
+                const g = bhPen(A, A.x, A.y, A.h, B2, B2.x, B2.y, B2.h), pen = g.pen;
+                if (pen <= 0) continue;
+                const push = Math.min(pen, 30 * dt), still = (q) => q.mode === 'bed' || q.mode === 'drink' ? 0.25 : 1, wa = still(A), wb = still(B2), sum = wa + wb;
+                bhSeparate(A, B2, g, push * wa / sum, push * wb / sum);
+            }
+            for (const s of M) {
+                s.t -= dt;
+                const near = boatNear(s.x, s.y, c.reactR), seen = boatNear(s.x, s.y, c.lookR);
+                // flight, and it spreads: a neighbour bounding sends you too
+                const fled = !near && s.mode !== 'bound' && M.find(m => m !== s && m.mode === 'bound' && m.fleeT < 0.4 && Math.hypot(m.x - s.x, m.y - s.y) < 90);
+                if ((near || fled) && s.mode !== 'bound') {
+                    const from = near || { x: 2 * s.x - fled.tx, y: 2 * s.y - fled.ty };
+                    // up the rock: of sixteen ways, the one most away from the boat and furthest from the water's edge
+                    // (each its own line, fanned a little by its place in the band, so they spread as they go up)
+                    const away = Math.atan2(s.x - from.x, -(s.y - from.y)) + (M.indexOf(s) - (M.length - 1) / 2) * 0.3 + (s.replan || 0);
+                    let best = null, bs = -1e9;
+                    for (let i = 0; i < 16; i++) {
+                        const a = away + (i / 16) * Math.PI * 2, d = R(120, 200), x = s.x + Math.sin(a) * d, y = s.y - Math.cos(a) * d;
+                        if (!ringClear(x, y, 10, true)) continue;
+                        const inland = ringClear(x, y, 40, true) ? 1 : ringClear(x, y, 22, true) ? 0.5 : 0;
+                        const sc = Math.cos(angDiff(a, away)) + inland + Math.hypot(x - from.x, y - from.y) / 200;
+                        if (sc > bs) { bs = sc; best = { x, y }; }
+                    }
+                    if (best) { s.mode = 'bound'; s.tx = best.x; s.ty = best.y; s.fleeT = near ? 0 : 0.3; s.clash = null; s.pitch = 0; s.bed = 0; }
                 }
-                if (best) { s.mode = 'bound'; s.tx = best.x; s.ty = best.y; }
+                if (s.mode === 'bound') {
+                    // bounding up the rock: hind feet together, then fore; a little off the ground each stride; dust kicked
+                    s.fleeT += dt; const p0 = s.ph, done = bhGo(s, s.tx, s.ty, 'bound', dt);
+                    // held up behind another a moment: it takes another line up instead of waiting (one either side, wider)
+                    if (s.blockT > 0.35) { s.blockT = 0; s.replan = ((s.replan || 0) <= 0 ? 1 : -1) * (Math.abs(s.replan || 0) + 0.6); s.mode = 'look'; s.t = 0; continue; }
+                    s.z = 2.2 * Math.max(0, Math.sin((s.ph - 0.1) * Math.PI * 2));
+                    if (p0 > s.ph || (p0 < 0.08 && s.ph >= 0.08)) G.dust.push({ x: s.x - Math.sin(s.h) * 10, y: s.y + Math.cos(s.h) * 10, t: 0, life: 1.1, r: 4, seed: rnd() * 9 });
+                    if (done) { s.mode = 'look'; s.t = R(5, 9); s.z = 0; G.px = s.x; G.py = s.y; s.replan = 0; }
+                    s.wary = 6;
+                } else if (s.clash) {
+                    // ── the clash: face off ~3 m apart, rear up, drop and lunge, crash; then stand, heads up
+                    const C2 = s.clash, O = C2.other; C2.t += dt;
+                    const toO = Math.atan2(O.x - s.x, -(O.y - s.y));
+                    if ((C2.ph === 'walk' || C2.ph === 'face') && C2.t > 8) { s.clash = null; if (O.clash) O.clash = null; s.mode = 'graze'; O.mode = 'graze'; continue; }   // (it never came together: called off)
+                    if (C2.ph === 'walk') { if (bhGo(s, C2.fx, C2.fy, 'walk', dt)) { C2.ph = 'face'; C2.t = 0; } }
+                    else if (C2.ph === 'face') { bhTurn(s, Math.max(-2 * dt, Math.min(2 * dt, angDiff(toO, s.h)))); s.head = Math.max(0, s.head - dt * 3);
+                        // both squarely facing, then both rear at once (each knows the gap it will close)
+                        const oFace = Math.abs(angDiff(Math.atan2(s.x - O.x, -(s.y - O.y)), O.h)) < 0.12;
+                        // the lane between them clear of the rest of the band (a body's width either side); anyone in it
+                        // is sent out of the way, and they wait for it
+                        let laneClear = true;
+                        for (const m of M) { if (m === s || m === O) continue;
+                            const lx = O.x - s.x, ly = O.y - s.y, ll = Math.hypot(lx, ly) || 1, u2 = ((m.x - s.x) * lx + (m.y - s.y) * ly) / (ll * ll), side = ((m.x - s.x) * ly - (m.y - s.y) * lx) / ll;
+                            if (u2 > -0.3 && u2 < 1.3 && Math.abs(side) < 26) { laneClear = false;
+                                if (m.mode !== 'walk' && !m.clash && m.mode !== 'bound') { const sd2 = side >= 0 ? 1 : -1, ox = m.x + ly / ll * sd2 * 34, oy = m.y - lx / ll * sd2 * 34; if (onLand(ox, oy)) { m.mode = 'walk'; m.wk = 1; m.tx = ox; m.ty = oy; } } } }
+                        if (laneClear && O.clash && O.clash.ph === 'face' && C2.t > 1.2 && O.clash.t > 1.2 && Math.abs(angDiff(toO, s.h)) < 0.12 && oFace) {
+                            const d0 = Math.hypot(O.x - s.x, O.y - s.y); C2.ph = 'rear'; C2.t = 0; C2.d0 = d0; O.clash.ph = 'rear'; O.clash.t = 0; O.clash.d0 = d0; } }
+                    else if (C2.ph === 'rear') { s.pitch = 0.75 * Math.sin(Math.min(1, C2.t / 0.35) * Math.PI / 2); if (C2.t >= 0.4) { C2.ph = 'charge'; C2.t = 0; C2.x0 = s.x; C2.y0 = s.y; } }
+                    else if (C2.ph === 'charge') {
+                        // down from the rear and forward, to meet in the middle (~3 m between them -> each a body length and a half)
+                        // to horn on horn: the heads down, so centres meet at twice the lowered head's reach, a touch inside it
+                        const meet = 2 * bhReach(s) - 3, u = Math.min(1, C2.t / 0.22), go = Math.max(0, (C2.d0 - meet) / 2) * u * u;
+                        const nx = C2.x0 + Math.sin(s.h) * go, ny = C2.y0 - Math.cos(s.h) * go; if (onLand(nx, ny) && bhOverlap(s, nx, ny, s.h) <= 1) { s.x = nx; s.y = ny; }
+                        s.pitch = 0.75 - 0.95 * u; s.gait = 'bound'; s.ph = (s.ph + 4 * dt) % 1;
+                        if (u >= 1) { C2.ph = 'impact'; C2.t = 0; if (s.ram && s === G.members.find(m => m.ram)) G.dust.push({ x: (s.x + O.x) / 2, y: (s.y + O.y) / 2, t: 0, life: 1.6, r: 9, seed: rnd() * 9, crash: 1 }); }
+                    }
+                    else if (C2.ph === 'impact') {
+                        // horn on horn — the instant of the hit (a few frames)
+                        s.pitch = -0.2;
+                        if (C2.t >= 0.07) { C2.ph = 'recoil'; C2.t = 0; C2.x0 = s.x; C2.y0 = s.y; C2.side = s === M.find(m => m.ram) ? 1 : -1; }
+                    }
+                    else if (C2.ph === 'recoil') {
+                        // thrown back off the hit: fast at first, dying away (~1 m real, 9 u drawn); the head snaps up, the
+                        // forequarters lift a little, the head and horns judder as it rings through them
+                        const k = 1 - Math.exp(-C2.t / 0.07), back = 9 * k, bx = C2.x0 - Math.sin(s.h) * back, by = C2.y0 + Math.cos(s.h) * back;
+                        if (onLand(bx, by) && !M.some(m => m !== s && m !== O && bhPen(s, bx, by, s.h, m, m.x, m.y, m.h).pen > 1)) { s.x = bx; s.y = by; }
+                        s.pitch = 0.3 * Math.exp(-C2.t / 0.12);
+                        if (C2.t >= 0.35) { C2.ph = 'present'; C2.t = 0; C2.hold = R(2, 4); }
+                    }
+                    else if (C2.ph === 'present') {
+                        // frozen, heads high, each turned a little to show its horns to the other
+                        s.pitch *= Math.max(0, 1 - dt * 6);
+                        if (C2.t > C2.hold && O.clash && O.clash.ph === 'present' && O.clash.t > O.clash.hold) {
+                            if (s === M.find(m => m.ram) && rnd() < 0.4) {
+                                // another round: the other ram walks back out to the face-off spacing
+                                const ab = Math.atan2(O.x - s.x, -(O.y - s.y)), fx = s.x + Math.sin(ab) * 62, fy = s.y - Math.cos(ab) * 62;
+                                if (ringClear(fx, fy, 10, true)) { C2.ph = 'face'; C2.t = 0; O.clash = { ph: 'walk', t: 0, other: s, fx, fy }; continue; }
+                            }
+                            s.clash = null; s.mode = 'graze'; s.t = R(2, 5); if (O.clash && O.clash.other === s) { O.clash = null; O.mode = 'graze'; O.t = R(2, 5); }
+                        }
+                    }
+                } else if (s.mode === 'look') {
+                    s.wary = Math.max(0, (s.wary || 0) - dt);
+                    if (s.t <= 0 && !seen) { s.mode = 'graze'; s.t = R(2, 5); }
+                } else if (s.mode === 'drink') {
+                    bhTurn(s, Math.max(-2 * dt, Math.min(2 * dt, angDiff(s.dspot.h, s.h))));
+                    if (s.t <= 0 || seen) { s.drunk = true; s.mode = 'graze'; s.t = R(2, 5); }
+                } else if (s.mode === 'play') {
+                    // a lamb's gambol: quick little hops and turns about its mother
+                    s.pt += dt; const u = (s.pt % 0.45) / 0.45; s.z = 3 * Math.sin(Math.PI * u);
+                    if (u < dt / 0.45 + 0.001) bhTurn(s, R(-1.2, 1.2));
+                    const nx = s.x + Math.sin(s.h) * 55 * dt, ny = s.y - Math.cos(s.h) * 55 * dt;
+                    if (ringClear(nx, ny, 6, true) && Math.hypot(nx - s.mother.x, ny - s.mother.y) < 60 && bhOverlap(s, nx, ny, s.h) <= 0) { s.x = nx; s.y = ny; } else bhTurn(s, Math.PI * 0.6);
+                    s.gait = 'bound'; s.ph = (s.ph + 3.5 * dt) % 1;
+                    if (s.pt > 2.4) { s.mode = 'graze'; s.z = 0; s.t = R(2, 5); }
+                } else {
+                    // ── with the band: graze (bouts and scans), follow on the move, lie up, go down to drink
+                    const lead = G.leader, mom = s.lamb ? s.mother : null;
+                    let tx = null, ty = null;
+                    if (G.phase === 'move') {
+                        if (s === lead) { tx = G.px; ty = G.py; if (G.leadDone) { G.phase = 'feed'; G.t = R(30, 70); G.leadDone = false; tx = null; } }
+                        else { let ahead = mom || M[M.indexOf(s) - 1] || lead; if (ahead === s) ahead = lead;   // in file: each behind the one before it, a lamb behind its mother
+                            // a body length and a bit behind the one before (centre to centre: half of each, and a gap)
+                            const gap = BH_SPR[ahead.ram ? 'ram' : ahead.lamb ? 'lamb' : 'ewe'].L * 0.5 + BH_SPR[s.ram ? 'ram' : s.lamb ? 'lamb' : 'ewe'].L * 0.5 + 8;
+                            const back = Math.atan2(s.x - ahead.x, -(s.y - ahead.y)); tx = ahead.x + Math.sin(back) * gap; ty = ahead.y - Math.cos(back) * gap;
+                            if (Math.hypot(tx - s.x, ty - s.y) < 6) tx = null; }
+                        if (s === lead && Math.hypot(G.px - s.x, G.py - s.y) < 6) { G.phase = 'feed'; G.t = R(30, 70); }
+                    } else if (G.phase === 'drink' && !s.drunk && !seen) {
+                        if (!s.dspot) { const a2 = G.sp.h + Math.PI / 2, o = (M.indexOf(s) - M.length / 2) * 22; const sp = { x: G.sp.x + Math.sin(a2) * o, y: G.sp.y - Math.cos(a2) * o };
+                            // its own place along the shore: the forefeet on the rock, the dipped muzzle a few u out over the water
+                            const reach = bhReach(s), ux = Math.sin(G.sp.h), uy = -Math.cos(G.sp.h);
+                            let q = null; for (let r = -30; r <= 30 && !q; r += 1) { const x = sp.x + ux * r, y = sp.y + uy * r;
+                                if (onLand(x, y) && onLand(x - ux * 8, y - uy * 8) && onLand(x + ux * 3, y + uy * 3) && !onLand(x + ux * (reach - 3), y + uy * (reach - 3)) && !onLand(x + ux * reach, y + uy * reach)) q = { x, y, h: G.sp.h }; }
+                            s.dspot = q || { none: true }; if (s.dspot.none) s.drunk = true; }   // (no place of its own on this shore: it grazes)
+                        if (!s.dspot.none) { tx = s.dspot.x; ty = s.dspot.y;
+                            if (Math.hypot(tx - s.x, ty - s.y) < 0.8) { s.mode = 'drink'; s.t = R(5, 9); tx = null; } }
+                    } else if (G.phase === 'bed') {
+                        if ((s.bedIn -= dt) <= 0) s.mode = 'bed';
+                    } else if (mom && Math.hypot(mom.x - s.x, mom.y - s.y) > 30) { tx = mom.x + R(-8, 8); ty = mom.y + R(-8, 8); }
+                    if (G.phase !== 'bed' && s.mode === 'bed') s.mode = 'graze';
+                    if (tx !== null && s.mode !== 'bed') { s.mode = 'walk'; if (bhGo(s, tx, ty, 'walk', dt, G.phase === 'drink')) { s.mode = 'graze'; if (s === lead && G.phase === 'move') { G.leadDone = true; G.px = s.x; G.py = s.y; } } }
+                    else if (s.mode === 'walk' && !s.wk) s.mode = 'graze';   // (a walk on its own errand — back to the patch, out of the rams' way — goes on)
+                    if (s.mode === 'graze') {
+                        // a bout of grazing, then a scan; rams scan about twice as much; one looking up starts the others
+                        s.st -= dt;
+                        // (one WATCHING something sets its neighbours looking; routine scans are each sheep's own — copying
+                        // those ran away to everyone scanning 60% of the time)
+                        const others = M.some(m => m !== s && m.mode === 'look' && Math.hypot(m.x - s.x, m.y - s.y) < 70);
+                        if (s.scan) { if (s.st <= 0) { s.scan = 0; s.st = s.ram ? R(2, 5) : s.lamb ? R(8, 20) : R(5, 14); } }
+                        else if (s.st <= 0 || (seen && rnd() < dt * 0.6)) { s.scan = 1; s.st = R(1.5, 4); }
+                        if (others && rnd() < dt * 1.2) { s.scan = 1; s.st = R(1.5, 4); if (seen) { s.mode = 'look'; s.t = R(2, 5); } }
+                        if (seen && s.scan) { s.mode = 'look'; s.t = R(2, 5); }
+                        // cropping, a step forward now and then to the next mouthful
+                        if (!s.scan && s.t <= 0) { s.t = R(3, 8); s.tx = s.x + Math.sin(s.h + R(-0.8, 0.8)) * 6; s.ty = s.y - Math.cos(s.h + R(-0.8, 0.8)) * 6; s.stepT = 0.6; }
+                        if (s.stepT > 0) { s.stepT -= dt; if (ringClear(s.tx, s.ty, 6, true)) bhGo(s, s.tx, s.ty, 'walk', dt); }
+                        // keep near the band's patch
+                        if (!mom && Math.hypot(G.px - s.x, G.py - s.y) > 45) { s.mode = 'walk'; s.tx = G.px + R(-25, 25); s.ty = G.py + R(-25, 25); s.wk = 1; }
+                        if (s.lamb && !s.scan && rnd() < dt * 0.04 && !seen) { s.mode = 'play'; s.pt = 0; }
+                    }
+                    if (s.mode === 'walk' && s.wk) { if (bhGo(s, s.tx, s.ty, 'walk', dt)) { s.mode = 'graze'; s.wk = 0; } }
+                }
+                // head and look: down grazing (sweeping a little as it crops), up scanning and watching, up bedded,
+                // down drinking; the look turns toward a boat it watches (past ~50 deg the body comes round too)
+                let want = (s.mode === 'look' && seen) ? angDiff(Math.atan2(seen.x - s.x, -(seen.y - s.y)), s.h) : 0;
+                if (s.mode === 'graze' && !s.scan) want = Math.sin(T * 0.7 + s.i * 1.7) * 0.35;
+                if ((s.mode === 'graze' && s.scan) || s.mode === 'bed') want = Math.sin(T * 0.35 + s.i * 2.3) * 0.7;
+                if (s.clash) want = s.clash.ph === 'present' ? 0.35 * (s.clash.side || 1) : 0;   // (in a clash: dead ahead at the rival; presenting, turned to show the horns)
+                if (s.mode === 'look' && Math.abs(want) > 0.85) bhTurn(s, Math.sign(want) * Math.min(Math.abs(want) - 0.85, 1.4 * dt));
+                s.look += (Math.max(-0.85, Math.min(0.85, want)) - s.look) * Math.min(1, dt * 3);
+                if (s.clash && s.clash.ph === 'recoil') s.look = want + 0.2 * Math.sin(s.clash.t * 55) * Math.exp(-s.clash.t / 0.12);   // the judder of the hit
+                // (a clash: heads UP squaring off and rearing, DOWN into the charge and the meeting, coming up after)
+                const cph = s.clash && s.clash.ph;
+                const hw = cph ? (cph === 'charge' || cph === 'impact' ? 1 : 0)
+                    : (s.mode === 'graze' && !s.scan) || s.mode === 'drink' ? 1 : s.mode === 'walk' ? 0.3 : 0;
+                s.head += (hw - s.head) * Math.min(1, dt * (cph ? 14 : 3));   // (in a clash the head drops with the lunge)
+                s.bed += ((s.mode === 'bed' ? 1 : 0) - s.bed) * Math.min(1, dt * 2);
+                const mv = s.mode === 'bound' || s.mode === 'play' || (s.clash && s.clash.ph === 'charge') ? 2 : s.mode === 'walk' || (s.stepT > 0) || (s.clash && s.clash.ph === 'walk') ? 1 : 0;
+                s.moving += (mv - s.moving) * Math.min(1, dt * 6);
+                if (!s.clash && s.mode !== 'bound' && s.mode !== 'play') { s.pitch *= Math.max(0, 1 - dt * 6); s.z = 0; }
+                s.step = s.ph * Math.PI * 2;   // (the drawn bighorn's leg swing)
             }
-            if (s.mode === 'bound') {
-                const go = moveTo(s, s.tx, s.ty, 85, 5, dt, true); s.step += dt * 16;
-                if (!go || Math.hypot(s.tx - s.x, s.ty - s.y) < 4) { s.mode = 'look'; s.t = R(5, 9); }
-            } else if (s.mode === 'walk') {
-                const go = moveTo(s, s.tx, s.ty, 16, 2.5, dt, true); s.step += dt * 6.3;
-                if (!go || Math.hypot(s.tx - s.x, s.ty - s.y) < 3) { s.mode = 'graze'; s.t = R(3, 9); }
-            } else if (s.mode === 'look') {
-                if (s.t <= 0 && !seen) { s.mode = 'graze'; s.t = R(2, 5); }
-            } else {
-                if (seen && rnd() < dt * 0.6) { s.mode = 'look'; s.t = R(2, 5); }
-                else if (s.t <= 0) { const p = landSpot(G.home.x, G.home.y, 40, 10); if (p) { s.mode = 'walk'; s.tx = p.x; s.ty = p.y; } else s.t = R(2, 5); }
+            // after everyone has moved: two that stepped into each other in the same frame (each checked against where
+            // the other WAS) are parted at once — any real contact, past the margin, never shows
+            for (let i = 0; i < M.length; i++) for (let j = i + 1; j < M.length; j++) {
+                const A = M[i], B2 = M[j];
+                if (A.clash && A.clash.other === B2 && A.clash.ph !== 'walk' && A.clash.ph !== 'face') continue;
+                const g = bhPen(A, A.x, A.y, A.h, B2, B2.x, B2.y, B2.h), contact = g.pen - 1.5;
+                if (contact > 0) bhSeparate(A, B2, g, contact / 2 + 0.1, contact / 2 + 0.1);
             }
-            const want = (s.mode === 'look' && seen) ? angDiff(Math.atan2(seen.x - s.x, -(seen.y - s.y)), s.h) : 0;
-            s.look += (Math.max(-1.1, Math.min(1.1, want)) - s.look) * Math.min(1, dt * 4);
-            s.head += ((s.mode === 'graze' ? 1 : 0) - s.head) * Math.min(1, dt * 3);
-            s.moving += ((s.mode === 'bound' ? 2 : s.mode === 'walk' ? 1 : 0) - s.moving) * Math.min(1, dt * 6);
         }
     }
 
     // COYOTES. Each has a sand island. It trots from place to place, stops and looks about,
     // sits, goes down to the water's edge to drink; a pair keeps together. A boat in sight gets
     // stared at; one close in sends it off at a lope to the far side.
+    // HOW A COYOTE MOVES (researched Oct 17 2026, Wes: "research appropriate behavior and movement"):
+    //  - THE TROT is its travelling gait (a direct-register trot: the hind foot lands in the fore's print), diagonal
+    //    pairs together; where it is EXPOSED it SIDE-TROTS, the body angled off its line (trackers' gait guides). It
+    //    WALKS when foraging, nose down, a lateral sequence (LH LF RH RF); flushed it LOPES / gallops (a transverse
+    //    gallop, hinds then fores), sprinting to ~40 mph but rarely far, and STOPS TO LOOK BACK before going on —
+    //    a staring coyote is cautious, not bold (The Fur-Bearers).
+    //  - Speeds are real on the game's clock (15 u/s a knot, like the condor): walk ~1.2 m/s, trot ~3.5 m/s, lope
+    //    ~8 m/s. A gait keeps its REAL stride in body lengths (the penguin rule, or the feet skate): walk ~0.9, trot
+    //    ~1.5, lope ~2.5 of the drawn 22 u nose to rump, so ~1.8 / 3 / 4.2 strides a second.
+    //  - MOUSING on the open sand: it freezes, cocks its head one way and the other to listen, springs HIGH, and comes
+    //    down on its braced forefeet, nose straight in after it (Yellowstone; "A Wilder View", MTN). NOT AN EVEN HOP
+    //    (Wes, Oct 17; checked on ~30 photos of coyotes and red foxes mousing): it GATHERS low, then rears up off its
+    //    hind legs nose-up (~45 deg, forelegs tucked) on a STEEP arc about as high as it is long, arches over at the top,
+    //    and comes down HEAD-FIRST (~60 deg) with the forepaws together reaching past its face, hind legs trailing, tail
+    //    streaming up; it PINS with the forefeet braced, nose straight down between them, rump left high, and often
+    //    springs again from there. Foxes hit at 2-4 m/s, head first (Yuk et al. 2024, PNAS). From above all of it is
+    //    FORESHORTENING: the pitched body draws shorter, the end nearer the camera bigger, and the shadow walks off.
+    //  - DRINKING it stands at the edge with its head down and laps — rings spreading from the muzzle.
+    const COY_GAIT = {
+        walk: { v: 35, hz: 1.75, amp: 2.6, duty: 0.65, turn: 2.5, ph: { 'hind-l': 0, 'fore-l': 0.25, 'hind-r': 0.5, 'fore-r': 0.75 } },
+        trot: { v: 100, hz: 3.0, amp: 4.0, duty: 0.5, turn: 2.6, ph: { 'fore-l': 0, 'hind-r': 0, 'fore-r': 0.5, 'hind-l': 0.5 } },
+        lope: { v: 230, hz: 4.2, amp: 5.5, duty: 0.35, turn: 4.0, ph: { 'hind-l': 0, 'hind-r': 0.1, 'fore-l': 0.5, 'fore-r': 0.6 } },
+    };
+    // the spring's phases on the game's clock (a real ~0.7 s in the air, 3x): gather, air, pin
+    const COY_POUNCE = { crouch: 0.28, air: 0.34, pin: 0.45, H: 13, D: 26 };
     function makeCoyotes(c) {
         const out = [];
         for (const [id, n] of c.on) {
@@ -2465,18 +2846,38 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 for (let k = 0; k < 40; k++) { const v = V[Math.floor(rnd() * V.length)], u = R(0.1, 0.85), x = cx + (v.x - cx) * u, y = cy + (v.y - cy) * u; if (pointInPoly(x, y, V) && ringClear(x, y, 12, true)) return { x, y }; }
                 return { x: cx, y: cy };
             };
-            const edge = () => {   // a spot on the sand just up from the water, and which way the water is
+            // a spot to drink from: march out from the middle of the island to the real shoreline, and stand 6 u inside
+            // it facing the water — the forefeet (3 u ahead of centre) on the sand, the dipped muzzle (~11.7 u ahead) a
+            // good 5 u out over the water (Wes: "shouldn't their head be over the water when drinking?")
+            const edge = () => {
                 for (let k = 0; k < 40; k++) {
-                    const v = V[Math.floor(rnd() * V.length)], L = Math.hypot(cx - v.x, cy - v.y) || 1, s = R(9, 14);
-                    const x = v.x + (cx - v.x) / L * s, y = v.y + (cy - v.y) / L * s;
-                    if (ringClear(x, y, 4, true) && !onLand(v.x - (cx - v.x) / L * 6, v.y - (cy - v.y) / L * 6)) return { x, y, h: Math.atan2(v.x - cx, -(v.y - cy)) };
+                    const a = R(0, 7), ux = Math.sin(a), uy = -Math.cos(a);
+                    let r = 0; while (r < 1500 && onLand(cx + ux * r, cy + uy * r) && pointInPoly(cx + ux * r, cy + uy * r, V)) r += 2;
+                    // (only ITS island's own shore: where the island runs on into other land, that is no shore)
+                    if (r <= 2 || r >= 1500 || onLand(cx + ux * r, cy + uy * r)) continue;
+                    const sx = cx + ux * r, sy = cy + uy * r, x = sx - ux * 6, y = sy - uy * 6;
+                    if (onLand(x, y) && onLand(x + ux * 3, y + uy * 3) && onLand(x - ux * 8, y - uy * 8) && !onLand(x + ux * 11.7, y + uy * 11.7) && !onLand(x + ux * 15, y + uy * 15)) return { x, y, h: a };
                 }
                 return null;
+            };
+            // the next place to go, foraging: mostly AHEAD of it (a forager keeps roughly to its line), now and then
+            // along the strip of sand by the shore, never the ping-pong of a fresh random spot each time
+            const ahead = (K) => {
+                let best = null, bs = -1e9;
+                for (let k = 0; k < 10; k++) {
+                    let p = spot();
+                    if (k % 3 === 2) { const e = edge(); if (e) p = { x: e.x - Math.sin(e.h) * R(10, 30), y: e.y + Math.cos(e.h) * R(10, 30) }; }
+                    const d = Math.hypot(p.x - K.x, p.y - K.y); if (d < 40) continue;
+                    // a MILD lean ahead (strong, and they circumnavigated the island — circles again), short legs
+                    const sc = 0.45 * Math.cos(angDiff(Math.atan2(p.x - K.x, -(p.y - K.y)), K.h)) - Math.abs(d - 120) / 300 + R(0, 1);
+                    if (sc > bs) { bs = sc; best = p; }
+                }
+                return best || spot();
             };
             let mate = null;
             for (let i = 0; i < n; i++) {
                 const p = spot();
-                const K = { i: out.length, cx, cy, V, spot, edge, x: p.x, y: p.y, h: R(0, 7), mode: 'stand', t: R(1, 5), tx: p.x, ty: p.y, step: R(0, 7), look: 0, head: 0, sit: 0, drink: null, mate, moving: 0 };
+                const K = { i: out.length, cx, cy, V, spot, edge, ahead, x: p.x, y: p.y, h: R(0, 7), mode: 'stand', t: R(1, 5), tx: p.x, ty: p.y, step: R(0, 7), ph: R(0, 1), gait: 'walk', look: 0, head: 0, sit: 0, drink: null, mate, moving: 0, side: 0, z: 0 };
                 out.push(K); mate = K;
             }
         }
@@ -2486,35 +2887,76 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const c = cfg.coyotes;
         for (const K of coyotes) {
             K.t -= dt;
-            const near = boatNear(K.x, K.y, c.reactR), seen = boatNear(K.x, K.y, c.lookR);
-            if (near && K.mode !== 'lope') {
+            K.wary = Math.max(0, (K.wary || 0) - dt);
+            const near = boatNear(K.x, K.y, c.reactR), seen = boatNear(K.x, K.y, K.wary > 0 ? c.lookR * 1.8 : c.lookR);
+            if (near && K.mode !== 'lope' && K.mode !== 'pounce') {
                 let best = null, bd = -1;
                 for (let k = 0; k < 8; k++) { const p = K.spot(), d = Math.hypot(p.x - near.x, p.y - near.y); if (d > bd) { bd = d; best = p; } }
-                K.mode = 'lope'; K.tx = best.x; K.ty = best.y; K.drink = null;
+                // a short dash away (150-220 u, its flight distance), not across the island: then it stops and looks back
+                const dd = Math.hypot(best.x - K.x, best.y - K.y) || 1, run = Math.min(1, R(150, 220) / dd);
+                K.mode = 'lope'; K.tx = K.x + (best.x - K.x) * run; K.ty = K.y + (best.y - K.y) * run; K.drink = null; K.wary = 0;
             }
-            if (K.mode === 'trot' || K.mode === 'lope') {
-                const lope = K.mode === 'lope';
-                const go = moveTo(K, K.tx, K.ty, lope ? 110 : 45, lope ? 4 : 2.6, dt, true); K.step += dt * (lope ? 18 : 15);
-                if (!go) { K.drink = null; K.mode = 'stand'; K.t = R(0.5, 2); }
+            if (K.mode === 'walk' || K.mode === 'trot' || K.mode === 'lope') {
+                const G = COY_GAIT[K.mode]; K.gait = K.mode;
+                const go = moveTo(K, K.tx, K.ty, G.v, G.turn, dt, true); K.ph = (K.ph + G.hz * dt) % 1;
+                if (!go) { if (K.mode === 'lope') K.wary = R(3, 5); K.drink = null; K.mode = 'stand'; K.t = R(0.5, 2); }
                 else if (Math.hypot(K.tx - K.x, K.ty - K.y) < 3) {
                     if (K.drink) { K.mode = 'drink'; K.t = R(4, 7); }
-                    else { K.mode = 'stand'; K.t = R(2, 6); }
+                    else { if (K.mode === 'lope') K.wary = R(3, 5); K.mode = 'stand'; K.t = R(2, 6); }   // after a lope: the stop to look back
                 }
             } else if (K.mode === 'drink') {
                 K.h += Math.max(-2 * dt, Math.min(2 * dt, angDiff(K.drink.h, K.h)));
                 if (K.t <= 0 || seen) { K.drink = null; K.mode = 'stand'; K.t = R(1, 3); }
+            } else if (K.mode === 'stalk') {
+                // frozen, head low, cocking it one way and the other to place the sound
+                if (seen) { K.mode = 'stand'; K.t = R(1, 3); }
+                else if (K.t <= 0) {
+                    const P = COY_POUNCE, lx = K.x + Math.sin(K.h) * P.D, ly = K.y - Math.cos(K.h) * P.D;
+                    if (ringClear(lx, ly, 8, true)) { K.mode = 'pounce'; K.pt = 0; K.px0 = K.x; K.py0 = K.y; } else { K.mode = 'stand'; K.t = R(1, 3); }
+                }
+            } else if (K.mode === 'pounce') {
+                // gather — spring (ballistic: steady across, a parabola up and down, pitched nose-up, then over, then
+                // head-first) — pin, rump high
+                const P = COY_POUNCE; K.pt += dt;
+                const ta = K.pt - P.crouch, u = Math.max(0, Math.min(1, ta / P.air));
+                K.x = K.px0 + Math.sin(K.h) * P.D * u; K.y = K.py0 - Math.cos(K.h) * P.D * u;
+                K.z = 4 * P.H * u * (1 - u);
+                if (ta < 0) { const c = Math.min(1, K.pt / (P.crouch * 0.6)); K.crouch = c; K.pitch = -0.12 * c; K.leap = 0; }
+                else if (ta < P.air) { K.crouch = Math.max(0, 1 - u * 6); K.pitch = 0.8 - 1.9 * u; K.leap = u; }
+                else { const q = Math.min(1, (ta - P.air) / P.pin); K.crouch = 0; K.leap = 1; K.pitch = -0.55 * (1 - q * q); K.z = 0;
+                    if (q >= 1) { K.pitch = 0; K.leap = 0; K.mode = 'nose'; K.t = R(1, 2.2); K.again = rnd() < 0.3; } }
+            } else if (K.mode === 'nose') {
+                if (K.again && K.t < 0.6 && !seen) { K.again = false; K.mode = 'stalk'; K.t = R(0.4, 0.9); }   // springs again from where it pinned
+                else if (K.t <= 0 || seen) { K.mode = 'stand'; K.t = R(1, 3); }
             } else if (K.t <= 0 && !(seen && rnd() < 0.8)) {
                 const r = rnd(), m = K.mate;
-                if (m && Math.hypot(m.x - K.x, m.y - K.y) > 70) { K.mode = 'trot'; K.tx = m.x; K.ty = m.y; }
-                else if (r < 0.2) { K.mode = 'sit'; K.t = R(5, 10); }
-                else if (r < 0.45) { const p = K.edge(); if (p) { K.mode = 'trot'; K.drink = p; K.tx = p.x; K.ty = p.y; } else K.t = R(1, 3); }
-                else { const p = K.spot(); K.mode = 'trot'; K.tx = p.x; K.ty = p.y; }
+                const go = (p) => { K.tx = p.x; K.ty = p.y; K.mode = Math.hypot(p.x - K.x, p.y - K.y) < 160 ? 'walk' : 'trot'; };
+                if (m && Math.hypot(m.x - K.x, m.y - K.y) > 70) { go(m); K.mode = 'trot'; }
+                else if (r < 0.18) { K.mode = 'sit'; K.t = R(5, 10); }
+                else if (r < 0.24) { const p = K.edge(); if (p) { K.drink = p; go(p); } else K.t = R(1, 3); }   // a drink now and then, not every minute
+                else if (r < 0.48 && !seen) {
+                    // mousing: only where the spring lands on open sand
+                    const lx = K.x + Math.sin(K.h) * 30, ly = K.y - Math.cos(K.h) * 30;
+                    if (ringClear(lx, ly, 10, true)) { K.mode = 'stalk'; K.t = R(1.2, 2.6); } else go(K.ahead(K));
+                }
+                else go(K.ahead(K));
             }
-            const want = (K.mode === 'stand' || K.mode === 'sit') && seen ? angDiff(Math.atan2(seen.x - K.x, -(seen.y - K.y)), K.h) : 0;
-            K.look += (Math.max(-1.2, Math.min(1.2, want)) - K.look) * Math.min(1, dt * 4);
-            K.head += ((K.mode === 'drink' ? 1 : 0) - K.head) * Math.min(1, dt * 3);
+            const moving = K.mode === 'walk' || K.mode === 'trot' || K.mode === 'lope';
+            let want = (K.mode === 'stand' || K.mode === 'sit') && seen ? angDiff(Math.atan2(seen.x - K.x, -(seen.y - K.y)), K.h) : 0;
+            if (K.mode === 'stalk') want = Math.sin(T * 2.2 + K.i) * 0.45;          // cocking the head to listen
+            if (K.mode === 'walk') want = Math.sin(T * 1.3 + K.i * 2) * 0.3;        // nosing about
+            // past ~50 deg the shoulders come round too: the body pivots on the spot toward what it watches
+            if ((K.mode === 'stand' || K.mode === 'sit') && Math.abs(want) > 0.85) K.h += Math.sign(want) * Math.min(Math.abs(want) - 0.85, 1.6 * dt);
+            K.look += (Math.max(-0.85, Math.min(0.85, want)) - K.look) * Math.min(1, dt * 4);
+            const hw = K.mode === 'drink' ? 1 : K.mode === 'nose' ? 0.8 : K.mode === 'stalk' ? 0.45 : K.mode === 'walk' ? 0.35
+                : K.mode === 'pounce' ? (K.leap >= 1 ? 1 : K.leap > 0.4 ? 0.5 : 0.3) : 0;
+            K.head += (hw - K.head) * Math.min(1, dt * 3);
             K.sit += ((K.mode === 'sit' ? 1 : 0) - K.sit) * Math.min(1, dt * 3);
-            K.moving += ((K.mode === 'lope' ? 2 : K.mode === 'trot' ? 1 : 0) - K.moving) * Math.min(1, dt * 6);
+            K.moving += ((K.mode === 'lope' ? 2 : moving ? 1 : 0) - K.moving) * Math.min(1, dt * 6);
+            // side-trotting where it is exposed: the body angled off its line, the hindquarters to one side
+            K.side += ((K.mode === 'trot' && seen ? 0.22 * (K.i % 2 ? 1 : -1) : 0) - K.side) * Math.min(1, dt * 3);
+            if (K.mode !== 'pounce') { K.pitch = (K.pitch || 0) * Math.max(0, 1 - dt * 8); K.crouch = 0; K.leap = 0; }
+            K.step = K.ph * Math.PI * 2;   // (the drawn coyote's leg swing)
         }
     }
 
@@ -4770,6 +5212,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // the bears standing in the shallows (the otters lying up on their logjams are drawn with the air layer: a
         // logjam is drawn in the canopy plane, over the fleet, and covered them)
         for (const B of fishers) drawBear(ctx, B);
+        for (const G of bands) drawBighornDust(ctx, G);
         for (const G of bands) for (const s of G.members) drawBighorn(ctx, s);
         for (const K of coyotes) drawCoyote(ctx, K);
         for (const C of colonies2) drawColony(ctx, C);
@@ -5737,14 +6180,18 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const ang = h - Math.PI / 2;   // the heading as a canvas angle (x along the path)
         // ── OUT ──
         const te = L.t;
+        const vert = L.kind === 'carp';   // (a carp bursts out nearly STRAIGHT UP: a column of white, spray thrown all round)
         if (te < 0.6) { const k = 1 - te / 0.6, burst = Math.max(0, 1 - te / 0.3);
-            // the torn hole: a lobed sheet of white, pushed forward along the path
-            const cx = x0 + fx * len * 0.15 * (1 + te * 2), cy = y0 + fy * len * 0.15 * (1 + te * 2);
+            // the torn hole: a lobed sheet of white, pushed forward along the path (round the base, going straight up)
+            const push = vert ? 0.03 : 0.15, cx = x0 + fx * len * push * (1 + te * 2), cy = y0 + fy * len * push * (1 + te * 2);
             const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, len * 0.55);
             g.addColorStop(0, `rgba(255,255,255,${0.85 * burst + 0.25 * k})`); g.addColorStop(0.6, `rgba(238,248,250,${0.4 * k})`); g.addColorStop(1, 'rgba(225,242,246,0)');
             ctx.fillStyle = g; lobedBlob(ctx, cx, cy, len * (0.5 + 0.3 * te), len * (0.32 + 0.15 * te), ang, seed); ctx.fill();
             // spray thrown forward: tapered tongues fanned ±50 deg round the path (sheets, not dots)
-            if (burst > 0) for (let i = 0; i < 6; i++) { const j = Math.abs(Math.sin(i * 12.99 + seed)), th = ang + (i / 5 - 0.5) * 1.7 + (j - 0.5) * 0.3, Lg = len * (0.55 + 0.4 * j) * (0.6 + 0.4 * (1 - burst)), w = len * 0.07;
+            // (going straight up: a ragged crown — six tongues at UNEVEN angles and very uneven lengths; nine even spokes
+            // read as a sunburst icon)
+            if (burst > 0 && vert) { ctx.fillStyle = `rgba(255,255,255,${0.55 * burst})`; lobedBlob(ctx, x0, y0, len * (0.32 + 0.2 * (1 - burst)), len * (0.28 + 0.18 * (1 - burst)), ang + seed, seed + 1); ctx.fill(); }
+            if (burst > 0) for (let i = 0; i < 6; i++) { const j = Math.abs(Math.sin(i * 12.99 + seed)), j2 = Math.abs(Math.sin(i * 4.31 + seed * 1.7)), th = vert ? ang + (i + 0.8 * j2) / 6 * Math.PI * 2 + (j - 0.5) * 0.7 : ang + (i / 5 - 0.5) * 1.7 + (j - 0.5) * 0.3, Lg = len * (vert ? 0.2 + 0.55 * j * j2 + 0.1 * j : 0.55 + 0.4 * j) * (0.6 + 0.4 * (1 - burst)), w = len * (vert ? 0.05 + 0.04 * j2 : 0.07);
                 ctx.fillStyle = `rgba(255,255,255,${0.8 * burst})`; ctx.beginPath(); ctx.moveTo(cx + Math.cos(th - 0.25) * len * 0.12, cy + Math.sin(th - 0.25) * len * 0.12);
                 ctx.quadraticCurveTo(cx + Math.cos(th) * Lg * 0.7 - Math.sin(th) * w, cy + Math.sin(th) * Lg * 0.7 + Math.cos(th) * w, cx + Math.cos(th) * Lg, cy + Math.sin(th) * Lg);
                 ctx.quadraticCurveTo(cx + Math.cos(th) * Lg * 0.7 + Math.sin(th) * w, cy + Math.sin(th) * Lg * 0.7 - Math.cos(th) * w, cx + Math.cos(th + 0.25) * len * 0.12, cy + Math.sin(th + 0.25) * len * 0.12); ctx.fill(); } }
@@ -5867,9 +6314,33 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (let v = 0; v < 16; v++) { const n = pts[(v + 1) % 16]; ctx.quadraticCurveTo(pts[v][0], pts[v][1], (pts[v][0] + n[0]) / 2, (pts[v][1] + n[1]) / 2); }
         ctx.fill(); ctx.restore();
     }
+    // THE PAINTED CARP (Oct 17 2026): redrock-carp, a flank view — what you see as it comes down flat on its side.
+    // From the references (and the drawn carp's notes): it bursts out NEARLY STRAIGHT UP from a column of white, tail
+    // still driving — from above a short, foreshortened fish, its head end nearest and biggest — tips over at the top,
+    // and falls back FLAT ON ITS SIDE ("the crash"), the whole brass flank toward the sky. On the game's clock (3x) a leap
+    // of about a metre is ~0.3 s in the air (it was ~1 s: three real seconds hanging). Every other one mirrored, so they
+    // do not all fall the same way. The water is the researched jump water (drawJumpWater), its exit a vertical burst.
+    const CARP_SPR = { file: 'assets/images/props/redrock/carp.png', top: 0.1465, bot: 0.876, cx: 0.51 };
     function drawCarpLeap(ctx, L) {
         const len = CARP_LEN * L.size, p = Math.min(1, L.t / L.dur), z = Math.sin(Math.PI * p) * L.hop;
         const fx = Math.sin(L.h), fy = -Math.cos(L.h);
+        const cim = sprImg(CARP_SPR.file);
+        if (imgReady(cim) && !(typeof window !== 'undefined' && window.__CARP_DRAWN)) {
+            const x = L.x + fx * (p - 0.2) * 14, y = L.y + fy * (p - 0.2) * 14, x1 = L.x + fx * 11, y1 = L.y + fy * 11;
+            drawJumpWater(ctx, L, L.x, L.y, x1, y1, len, x, y, z);
+            if (L.t < L.dur) {
+                // its pitch: near vertical coming out (foreshortened to ~0.35 of its length), over at the top, flat as it
+                // drops; the near end (the head, rising; the tail never) drawn bigger; the tail still driving going up
+                const up = p < 0.45 ? 1 - p / 0.45 * 0.65 : Math.max(0, 0.35 - (p - 0.45) / 0.3 * 0.35);
+                const fore = 0.35 + 0.65 * Math.cos(up * 1.25), mir = ((Math.round(L.x * 7 + L.y * 3)) & 1) ? -1 : 1;
+                const ph = L.t * 34, amp = len * 0.08 * (1 - Math.min(1, p / 0.5)), sway = (u) => amp * Math.pow(Math.max(0, (u - 0.4) / 0.6), 1.6) * Math.sin(ph - u * 3);
+                const one = (col, a, sx, sy, sz) => { ctx.save(); ctx.translate(sx, sy); ctx.rotate(L.h); ctx.scale(mir * sz, fore * sz);
+                    humpBlit(ctx, mahiPosed(ctx, len, sway, 0, '0,0,0', 28, CARP_SPR), col, a); ctx.restore(); };
+                one('rgb(10,25,40)', 0.22, x + z * 0.35, y + z * 0.55, 1);
+                one(null, 1, x, y, zScale(z) * (1 + 0.12 * up));
+            }
+            return;
+        }
         // it barely travels: up nearly on the spot, over, and down a body length on
         const x = L.x + fx * (p - 0.2) * 14, y = L.y + fy * (p - 0.2) * 14;
         const x1 = L.x + fx * 11, y1 = L.y + fy * 11;
@@ -7484,8 +7955,39 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.beginPath(); ctx.moveTo(-3.6, 8); ctx.lineTo(-5, 14.2); ctx.quadraticCurveTo(0, 15.6, 5, 14.2); ctx.lineTo(3.6, 8); ctx.closePath(); ctx.fill();   // short broad square tail
         ctx.beginPath(); ctx.ellipse(0, -10.2, 3.2, 3.2, 0, 0, Math.PI * 2); ctx.fill();       // the black ruff
     }
+    // THE PAINTED CONDOR (Oct 17 2026): the sprite redrock-condor, its wings cut at the shoulders (colsplit --half 0.064:
+    // the square tail is wider than the body). Held FLAT and STILL — it does not flap. Banked into a turn, both wings
+    // foreshorten by the cosine of the roll and the low one a touch more (it is further from us); gliding, both swing a
+    // little back from the shoulder and the hands shorten as the primaries close. CONDOR_SPR: fractions of the frame.
+    const CONDOR_SPR = { x0: 0.0566, x1: 0.9424, cx: 0.4995, cy: 0.5203, root: { 'wing-l': [0.4355, 0.5259], 'wing-r': [0.5635, 0.5244] } };
+    const CONDOR_PARTS = ['body', 'wing-l', 'wing-r'];
+    const condorImg = (p2) => sprImg('assets/images/props/redrock/condor-' + p2 + '.png');
+    function condorPosed(ctx, bank, sweep, slot) {
+        const S = CONDOR_SPR, imgs = CONDOR_PARTS.map(condorImg); if (imgs.some(im => !imgReady(im))) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = CONDOR_SPAN * 0.56;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = CONDOR_SPAN / (S.x1 - S.x0), x0 = -S.cx * F, y0 = -S.cy * F, need = 1.5 * k * F;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const roll = Math.cos(bank * 50 * Math.PI / 180), slip = bank * 1.2;
+        for (const p2 of ['wing-l', 'wing-r']) {
+            const sd = p2 === 'wing-l' ? -1 : 1, [rx, ry] = S.root[p2], X = x0 + rx * F, Y = y0 + ry * F;
+            const fs = roll * (bank * sd > 0 ? 1 - 0.08 * bank * sd : 1) * (1 - 0.1 * sweep);
+            g.save(); g.translate(X + slip, Y); g.rotate(sd * 0.2 * sweep); g.scale(fs, 1); g.translate(-X, -Y);
+            g.drawImage(humpMip(imgs[CONDOR_PARTS.indexOf(p2)], need), x0, y0, F, F); g.restore();
+        }
+        g.drawImage(humpMip(imgs[0], need), x0 + slip, y0, F, F);
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
     function drawCondor(ctx, C) {
         const z = C.z, zo = Math.min(z, 55);
+        if (CONDOR_PARTS.every(p2 => imgReady(condorImg(p2)))) {
+            // its shadow on the water or the rock, its true size, down-right by its height; the bird nearer the camera
+            const sw = C.sweep || 0, sz = zScale(z);
+            ctx.save(); ctx.translate(C.x + zo * 0.35, C.y + zo * 0.55); ctx.rotate(C.h); humpBlit(ctx, condorPosed(ctx, C.bank, sw, 70), 'rgb(10,22,26)', airShadowA(zo, 0.24)); ctx.restore();
+            ctx.save(); ctx.translate(C.x, C.y); ctx.rotate(C.h); ctx.scale(sz, sz); humpBlit(ctx, condorPosed(ctx, C.bank, sw, 70), null, 1); ctx.restore();
+            return;
+        }
         ctx.save(); ctx.translate(C.x + zo * 0.35, C.y + zo * 0.55); ctx.rotate(C.h);
         ctx.fillStyle = 'rgba(10,22,26,0.17)'; condorShape(ctx, C.bank, false); ctx.restore();
         ctx.save(); ctx.translate(C.x, C.y); ctx.rotate(C.h);
@@ -7523,7 +8025,70 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // forward round each side of the head; a ewe's are short slim spikes; lambs are small.
     // Grazing, the head is down (foreshortened from above).
     const BIGHORN_BODY = [[-9, 2.8], [-6.5, 4.8], [-2, 5.9], [3, 6.2], [8, 5.6], [11.5, 4.4], [13.6, 2.2]];
+    // THE PAINTED BIGHORN (Oct 17 2026): redrock-bighorn-ram / -ewe / -lamb, the hooves cut by feetsplit.py --hoof (a
+    // hoof sits ON the flank's outline: the dark-brown patch between the ink and the coat), the head — horns and all —
+    // turned and dipped about the neck in the draw. Fractions of the frame; L nose to tail tip.
+    const BH_SPR = {
+        ram: { stem: 'bighorn-ram', cx: 0.5015, top: 0.1104, bot: 0.8906, neck: 0.39, collar: 0.36, L: 34.3,
+            feet: { 'fore-l': [0.4315, 0.4219], 'fore-r': [0.5715, 0.4102], 'hind-l': [0.4315, 0.7695], 'hind-r': [0.5715, 0.7695] } },
+        ewe: { stem: 'bighorn-ewe', cx: 0.5, top: 0.1133, bot: 0.8828, neck: 0.33, collar: 0.3, L: 30.8,
+            feet: { 'fore-l': [0.44, 0.3662], 'fore-r': [0.56, 0.3662], 'hind-l': [0.44, 0.7422], 'hind-r': [0.56, 0.7422] } },
+        lamb: { stem: 'bighorn-lamb', cx: 0.4995, top: 0.251, bot: 0.7637, neck: 0.42, collar: 0.39, L: 21.0,
+            feet: { 'fore-l': [0.4495, 0.437], 'fore-r': [0.5495, 0.437], 'hind-l': [0.4495, 0.6328], 'hind-r': [0.5495, 0.6318] } },
+    };
+    const BH_PARTS = ['body', 'fore-l', 'fore-r', 'hind-l', 'hind-r'];
+    const bhImg = (S, p2) => sprImg('assets/images/props/redrock/' + S.stem + '-' + p2 + '.png');
+    function bighornPosed(ctx, s, S, slot) {
+        const ims = BH_PARTS.map(p2 => bhImg(S, p2)); if (ims.some(im => !imgReady(im))) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 26;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = S.L / (S.bot - S.top), x0 = -S.cx * F, y0 = -S.L * 0.47 - S.top * F, Yf = (fy) => y0 + fy * F;
+        const body = humpMip(ims[0], 1.5 * k * F), n = body.naturalWidth || body.width;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const G = BH_GAIT[s.gait] || BH_GAIT.walk, m = Math.min(1, s.moving) * (s.lamb ? 0.7 : 1);
+        // the hooves on their stride (folded away under it when it lies up), each on a slim dark leg when it reaches out
+        if (s.bed < 0.5) for (let i = 1; i < 5; i++) {
+            const nm = BH_PARTS[i], fore = nm.startsWith('fore'), sd = nm.endsWith('l') ? -1 : 1, [rx, ry] = S.feet[nm];
+            let dy = m * coyFoot(((s.ph + G.ph[nm]) % 1 + 1) % 1, G);
+            if (s.clash && s.clash.ph === 'rear') dy = fore ? 1.5 : -1.5;   // reared: forelegs folded up, hinds under it
+            const X = x0 + rx * F, Y = Yf(ry);
+            if (Math.abs(dy) > 0.5) { g.strokeStyle = '#5b4535'; g.lineCap = 'round'; g.lineWidth = 1.3; g.beginPath(); g.moveTo(X - sd * 1.4, Y + (fore ? 1.8 : -1.8)); g.lineTo(X, Y + dy); g.stroke(); }
+            g.save(); g.translate(0, dy); g.drawImage(humpMip(ims[i], 1.5 * k * F), x0, y0, F, F); g.restore();
+        }
+        const piece = (f0, f1) => g.drawImage(body, 0, f0 * n, n, (f1 - f0) * n, x0, Yf(f0), F, (f1 - f0) * F);
+        piece(S.collar, 1);
+        // the head and horns: down to crop (foreshortened — a ram's curls stay broad), up to scan, turned to watch;
+        // drinking it bobs
+        const py = Yf(S.neck), near = 1 + 0.2 * Math.sin(s.pitch || 0), bob = s.mode === 'drink' ? 0.3 * Math.sin(T * 9 + s.i) : 0;
+        g.save(); g.translate(0, py); g.rotate(s.look); g.scale(near, (1 - 0.32 * s.head) * near); g.translate(0, -py + bob);
+        piece(0, S.neck);
+        g.restore();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
+    // the dust a bounding sheep kicks up on the rock, and the burst where two rams' horns meet
+    function drawBighornDust(ctx, G) {
+        for (const D of G.dust) {
+            const q = D.t / D.life;
+            ctx.fillStyle = `rgba(214,178,138,${(D.crash ? 0.5 : 0.35) * (1 - q)})`;
+            lobedBlob(ctx, D.x, D.y, D.r * (0.6 + 1.4 * Math.sqrt(q)), D.r * (0.5 + 1.1 * Math.sqrt(q)), D.seed, D.seed); ctx.fill();
+        }
+    }
     function drawBighorn(ctx, s) {
+        const S = BH_SPR[s.ram ? 'ram' : s.lamb ? 'lamb' : 'ewe'];
+        if (BH_PARTS.every(p2 => imgReady(bhImg(S, p2)))) {
+            const z = s.z || 0, fs = Math.cos(s.pitch || 0), bedW = 1 + 0.06 * s.bed;
+            // drinking: rings from the muzzle, out over the water
+            if (s.mode === 'drink' && s.head > 0.7) { const reach = bhReach(s), mx = s.x + Math.sin(s.h) * reach, my = s.y - Math.cos(s.h) * reach;
+                for (let r = 0; r < 3; r++) { const q = ((T * 0.8 + r / 3 + s.i * 0.29) % 1); brokenRing(ctx, mx, my, 1.5 + 9 * q, 1.2, s.h, 0.3 * (1 - q), s.i * 5 + r, 0.6); } }
+            const P = () => bighornPosed(ctx, s, S, 73);
+            // its shadow on the rock (lower and tighter when it lies up), off the ground in a bound; reared, it
+            // foreshortens
+            const so = 1 - 0.45 * s.bed;
+            ctx.save(); ctx.translate(s.x + (3.5 + z * 0.35) * so, s.y + (5.5 + z * 0.55) * so); ctx.rotate(s.h); ctx.scale(bedW, fs); humpBlit(ctx, P(), 'rgb(40,18,8)', 0.26); ctx.restore();
+            ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h); if (z > 0) ctx.scale(zScale(z), zScale(z)); ctx.scale(bedW, fs); humpBlit(ctx, P(), null, 1); ctx.restore();
+            return;
+        }
         const k = s.lamb ? 0.62 : s.ram ? 1 : 0.9, st = s.moving > 1.5 ? 1.08 : 1;
         ctx.save(); ctx.translate(s.x + 3.5, s.y + 5.5); ctx.rotate(s.h); ctx.scale(k, k * st);
         ctx.fillStyle = 'rgba(40,18,8,0.26)'; bodyPath(ctx, BIGHORN_BODY); ctx.fill();
@@ -7572,7 +8137,103 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // narrow pointed muzzle, BIG upright ears, and the bushy tail carried LOW and straight out
     // behind with a black tip. Sitting, it tucks up short and wraps the tail round its feet.
     const COYOTE_BODY = [[-8, 1.8], [-6.5, 2.8], [-4.5, 3.3], [-1, 3], [2, 2.6], [5, 3.1], [7, 2.6], [8.2, 1.4]];
+    // THE PAINTED COYOTE (Oct 17 2026): redrock-coyote, its paws cut by feetsplit.py (by place: they just show past
+    // the shoulders and hips), the head turned and dipped about the neck (the bear's cut, done in the draw), the tail
+    // laid in strips that swing; and redrock-coyote-sitting, cross-faded in as it sits. Fractions of the frame.
+    const COY_SPR = { cx: 0.5005, top: 0.0898, bot: 0.9072, neck: 0.285, collar: 0.26, root: 0.655, L: 32, yN: -14,
+        feet: { 'fore-l': [0.4225, 0.3696], 'fore-r': [0.5785, 0.3696], 'hind-l': [0.4225, 0.5547], 'hind-r': [0.5785, 0.5566] } };
+    const COY_SIT = { cx: 0.507, top: 0.1455, bot: 0.8447, neck: 0.42, collar: 0.4, L: 20.3 };
+    const COY_PARTS = ['body', 'fore-l', 'fore-r', 'hind-l', 'hind-r'];
+    const coyImg = (p2) => sprImg('assets/images/props/redrock/coyote-' + p2 + '.png');
+    const coySitImg = () => sprImg('assets/images/props/redrock/coyote-sitting.png');
+    // a foot's fore-aft offset through the stride (body frame, -y ahead): planted, it runs back under the body at the
+    // ground's speed; lifted, it swings forward again, quicker
+    function coyFoot(p, G) {
+        if (p < G.duty) return -G.amp + 2 * G.amp * (p / G.duty);
+        const q = (p - G.duty) / (1 - G.duty); return G.amp - 2 * G.amp * q * q * (3 - 2 * q);
+    }
+    function coyotePosed(ctx, K, slot) {
+        const S = COY_SPR, ims = COY_PARTS.map(coyImg); if (ims.some(im => !imgReady(im))) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 24;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = S.L / (S.bot - S.top), x0 = -S.cx * F, y0 = S.yN - S.top * F, Yf = (fy) => y0 + fy * F;
+        const body = humpMip(ims[0], 1.5 * k * F), n = body.naturalWidth || body.width;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const G = COY_GAIT[K.gait] || COY_GAIT.walk, m = Math.min(1, K.moving), flex = K.moving > 1.5 ? 1 + 0.05 * Math.sin(K.ph * Math.PI * 2) : 1;
+        // the legs and paws, under the body: a slim rusty leg from the shoulder or hip to the paw on its stride
+        for (let i = 1; i < 5; i++) {
+            const nm = COY_PARTS[i], sd = nm.endsWith('l') ? -1 : 1, fore = nm.startsWith('fore'), [rx, ry] = S.feet[nm];
+            let dy = m * coyFoot(((K.ph + G.ph[nm]) % 1 + 1) % 1, G);
+            if (K.mode === 'pounce') {
+                // gathering, the hind feet come up under it; in the air the forelegs tuck, then reach past the face to
+                // land; the hind legs drive back and trail; pinned, the forefeet are planted ahead
+                const L = K.leap || 0, cr = K.crouch || 0;
+                dy = fore ? (L <= 0 ? 0 : L < 0.45 ? 1.5 : L < 1 ? -5 * (L - 0.45) / 0.55 : -4) : (L <= 0 ? -2.5 * cr : L < 1 ? 3 + 2 * L : 2);
+            }
+            const X = x0 + rx * F, Y = Yf(ry);
+            if (Math.abs(dy) > 0.4) { g.strokeStyle = '#94592f'; g.lineCap = 'round'; g.lineWidth = 1.15; g.beginPath(); g.moveTo(X - sd * 1.2, Y + (fore ? 1.5 : -1.5)); g.lineTo(X, Y + dy); g.stroke(); }
+            g.save(); g.translate(0, dy); g.drawImage(humpMip(ims[i], 1.5 * k * F), x0, y0, F, F); g.restore();
+        }
+        // the tail, in strips from the rump: carried low and straight, swinging a little with the stride; streaming at
+        // the lope; lazily at rest
+        const amp = K.moving > 1.5 ? 0.5 : m > 0.1 ? 1.1 * m : 0.7 * Math.max(0, Math.sin(T * 0.6 + K.i * 2));
+        const sway = (q) => amp * Math.pow(q, 1.4) * Math.sin(K.ph * Math.PI * 2 + (m > 0.1 ? 0 : T * 1.4) - q * 1.2);
+        const piece = (f0, f1) => g.drawImage(body, 0, f0 * n, n, (f1 - f0) * n, x0, Yf(f0), F, (f1 - f0) * F);
+        const N = 8, st = (S.bot + 0.01 - S.root) / N, lap = 0.003;
+        // (pitched, the tail end is the far end — drawn smaller nose-up; head-first, the tail streams up toward us)
+        const far = 1 - 0.18 * Math.sin(K.pitch || 0), lift = K.mode === 'pounce' && K.leap > 0.4 && K.leap < 1 ? 0.75 : 1;
+        g.save(); g.translate(0, Yf(S.root)); g.scale(far, flex * lift); g.translate(0, -Yf(S.root));
+        for (let i = N - 1; i >= 0; i--) {
+            const a = S.root + i * st, mid = a + st / 2, q = (mid - S.root) / (S.bot - S.root), sl = (sway(Math.min(1, q + 0.03)) - sway(Math.max(0, q - 0.03))) / (0.06 * (S.bot - S.root) * F);
+            g.save(); g.translate(sway(q), Yf(mid)); g.rotate(-Math.atan(sl)); g.translate(0, -Yf(mid)); piece(a - lap, a + st + lap); g.restore();
+        }
+        g.restore();
+        piece(S.collar, S.root + lap);
+        // the head on its neck: turned to what it watches; down (foreshortened) to drink, to nose the sand, to listen;
+        // lapping, it bobs
+        const py = Yf(S.neck), lapB = K.mode === 'drink' ? 0.35 * Math.sin(T * 14) : 0, near = 1 + 0.22 * Math.sin(K.pitch || 0);
+        g.save(); g.translate(0, py); g.rotate(K.look); g.scale(near, (1 - 0.3 * K.head) * near); g.translate(0, -py + lapB);
+        piece(0, S.neck);
+        g.restore();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
+    // the sitting coyote, its head turned about its neck the same way; nose where the standing one's was
+    function coyoteSitPosed(ctx, K, slot) {
+        const S = COY_SIT, im = coySitImg(); if (!imgReady(im)) return null;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 20;
+        const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
+        const F = S.L / (S.bot - S.top), x0 = -S.cx * F, y0 = COY_SPR.yN - S.top * F, Yf = (fy) => y0 + fy * F;
+        const src = humpMip(im, 1.5 * k * F), n = src.naturalWidth || src.width;
+        const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
+        const piece = (f0, f1) => g.drawImage(src, 0, f0 * n, n, (f1 - f0) * n, x0, Yf(f0), F, (f1 - f0) * F);
+        piece(S.collar, 1);
+        const py = Yf(S.neck);
+        g.save(); g.translate(0, py); g.rotate(K.look); g.translate(0, -py); piece(0, S.neck); g.restore();
+        g.setTransform(1, 0, 0, 1, 0, 0);
+        return { c, R, px };
+    }
     function drawCoyote(ctx, K) {
+        if (COY_PARTS.every(p2 => imgReady(coyImg(p2))) && imgReady(coySitImg())) {
+            const h = K.h + K.side, z = K.z || 0, sit = K.sit;
+            // drinking: rings spreading from the muzzle on the water just past the edge
+            if (K.mode === 'drink' && K.head > 0.6) {
+                const mx = K.x + Math.sin(K.h + K.look * 0.3) * 12.5, my = K.y - Math.cos(K.h + K.look * 0.3) * 12.5;
+                for (let r = 0; r < 3; r++) { const q = ((T * 0.9 + r / 3 + K.i * 0.37) % 1); brokenRing(ctx, mx, my, 1.5 + 9 * q, 1.2, K.h, 0.32 * (1 - q), K.i * 7 + r, 0.6); }
+            }
+            const one = (col, a, sh) => {
+                const P = sit < 0.99 ? coyotePosed(ctx, K, 71) : null, Q = sit > 0.01 ? coyoteSitPosed(ctx, K, 72) : null;
+                if (P) humpBlit(ctx, P, col, a * (1 - sit) * (sh ? 1 : 1));
+                if (Q) humpBlit(ctx, Q, col, a * sit);
+            };
+            // its shadow on the sand, down-right; off the ground in the spring
+            // pitched (rearing up, diving head-first, rump-high on the pin) the body FORESHORTENS along its length; gathered
+            // for the spring it is bunched a little shorter
+            const fs = Math.cos(K.pitch || 0) * (1 - 0.08 * (K.crouch || 0));
+            ctx.save(); ctx.translate(K.x + 3 + z * 0.35, K.y + 4.8 + z * 0.55); ctx.rotate(h); ctx.scale(1, fs); one('rgb(40,18,8)', 0.26, true); ctx.restore();
+            ctx.save(); ctx.translate(K.x, K.y); ctx.rotate(h); if (z > 0) ctx.scale(zScale(z), zScale(z)); ctx.scale(1, fs); one(null, 1, false); ctx.restore();
+            return;
+        }
         const sit = K.sit, str = K.moving > 1.5 ? 1.1 : 1;
         const prof = COYOTE_BODY.map(([y, w]) => [y * (1 - 0.35 * sit) + (y > 0 ? 0 : sit * 1.2), w * (1 + 0.25 * sit * (y > 2 ? 1 : 0))]);
         ctx.save(); ctx.translate(K.x + 3, K.y + 4.8); ctx.rotate(K.h); ctx.scale(1, str);
@@ -12069,7 +12730,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // The drawing functions, for a look-bench (eval/_wildlife_bench.js) — not used by the game.
         art: { drawBoilAt: (ctx, x, y, t) => { const o = boil, oT = T; boil = { x, y, t: 10, life: 60, seed: 3 }; T = t; drawBoil(ctx); boil = o; T = oT; }, drawGullFlying, drawGullPerched, drawPelicanFlying, drawPelicanSitting, drawPorpoise,
                drawTurtle, drawTurtleUnder, drawGrebe, drawLoon, drawBeaver, drawDiveWaterProbe: (ctx, g, kind) => diveWater(ctx, g.dvX, g.dvY, g.dvH, g.dvT, kind === 'beaver' ? 18 : 14, 3), drawMoose, drawSlap, drawWakeTrail, drawDuckling, drawDucklings,
-               drawCruiser, seaTurtleShape, eagleRayShape, reefSharkShape, drawGator, drawEgret, drawAnhinga, drawFrog, drawLeap, drawShoal, drawSeal, drawSealHead, drawSealUnder, drawBear, drawSockeye, drawEagle, drawOtter, drawWhale, drawBlow, drawSplash, drawSpinner, drawFlyfish, drawAlbatross, drawPrint, drawMahi, setT: (t) => { T = t; }, onCam: (x, y, pad) => onCam(x, y, pad), drawStriperBoil, drawStriper, drawCondor, drawBighorn, drawCoyote, drawOrca, drawSwimmers, drawLeopardSeal, drawTern, drawTreks, PENG: () => PENG, drawGoldJelly, drawManta, drawFlyingFox, drawHawksbill, drawTurtleTracks, drawDugong, drawArcticSprite, arcticImg, drawIguana, drawCrab, drawBooby, drawFrigate, drawFrigFish, drawGreySeal, drawGreySealSwim, drawGullFloat, drawGullFlying, drawCormorant, drawVelellaFleet, drawMackBoil, drawSpoonbill, drawAvocet, drawShoreCrab, drawHammer, drawSeaOtter, drawSeaOtterPup, drawSeaLion, drawSLSplash, drawWhiteShark, drawBlueWhale, drawBlueBlow, drawKrill },
+               drawCruiser, seaTurtleShape, eagleRayShape, reefSharkShape, drawGator, drawEgret, drawAnhinga, drawFrog, drawLeap, drawShoal, drawSeal, drawSealHead, drawSealUnder, drawBear, drawSockeye, drawEagle, drawOtter, drawWhale, drawBlow, drawSplash, drawSpinner, drawFlyfish, drawAlbatross, drawPrint, drawMahi, setT: (t) => { T = t; }, onCam: (x, y, pad) => onCam(x, y, pad), drawStriperBoil, drawStriper, drawCondor, drawBighorn, bhReach, bhPen, drawBighornDust, drawCoyote, drawOrca, drawSwimmers, drawLeopardSeal, drawTern, drawTreks, PENG: () => PENG, drawGoldJelly, drawManta, drawFlyingFox, drawHawksbill, drawTurtleTracks, drawDugong, drawArcticSprite, arcticImg, drawIguana, drawCrab, drawBooby, drawFrigate, drawFrigFish, drawGreySeal, drawGreySealSwim, drawGullFloat, drawGullFlying, drawCormorant, drawVelellaFleet, drawMackBoil, drawSpoonbill, drawAvocet, drawShoreCrab, drawHammer, drawSeaOtter, drawSeaOtterPup, drawSeaLion, drawSLSplash, drawWhiteShark, drawBlueWhale, drawBlueBlow, drawKrill },
         // Otter Point: set a shark hunting a given sea lion group now (probes and the bench)
         forceHunt: (wi, gi) => { const W = whites[wi], G = slGroups[gi]; if (!W || !G) return false; const q = G.members.find(m => !m.gone); W.mode = 'stalk'; W.t = 7; W.target = { G, q }; W.x = q.x - 300; W.y = q.y; return true; },
     };

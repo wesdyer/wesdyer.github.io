@@ -8575,6 +8575,114 @@
       "status": "slot",
       "subject": "a single HUMBUG DAMSELFISH (three-striped damselfish) seen from directly overhead, head toward the TOP of the frame — a fish this small is FLAT side to side, so from straight above it is only a slim fleck: the narrow back seen edge-on, the head at the top, a little of the flank colour at each edge, the tail fin standing vertical and so only a thin sliver: a chunky little fish, WHITE (about #F6F7F2) crossed by THREE bold BLACK bars (about #1A1A1A) running across its body, the black head bar over the eyes, a black tail. On a clean transparent background, centred. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
       "note": "A school fish (18 in the west elkhorn, off the course): ~10 long, chunkier. Optional."
+    },
+    {
+      "key": "redrock-condor",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 90,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a CALIFORNIA CONDOR SOARING, seen from directly overhead, head toward the TOP of the frame: the very long, broad, PLANK-like wings held out straight and FLAT to either side, the leading edge almost straight, the trailing edge bulging with the broad secondaries; at each wingtip SEVEN long separate PRIMARY feathers splayed like fingers with clear gaps between them; the short, broad, SQUARE-ended tail; the small BARE HEAD poking forward out of a ruff of black feathers at the base of the neck, the pale ivory bill pointing straight up the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. COLOUR, the adult's own, and NEVER ONE FLAT BLACK — the wing and back are built of distinct value planes: the back and the leading half of the wing a deep charcoal (about #2A2A2D), the primaries and their fingers the darkest near-black (about #151517), and across the rear half of the INNER upper wing a broad PALE BAR (the secondary coverts and secondaries) of soft silvery grey-white (about #C9C9C4), brightest near the body and fading out toward the hand, with a thin dark fringe left along the trailing edge; the tail charcoal; the bare head and neck a warm orange-pink (about #E58A5C) with a redder throat (about #C9574A), the feather ruff black. No wing tags, no numbers. The wings are the subject: a span about TWO AND A HALF times the bird's length from bill to tail. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. Replacing drawCondor (three circling the butte on the thermal, one gliding out over the course every 60-110 s; they bank and never flap). Span 80, body 34 (scale.md); world 96 = FRAME first guess (span ~0.83 of the frame). Banking is foreshortening of the whole sprite, so no cut is needed; if the fingers or the pale bar are lost at 80 px, compare with the drawn condor at game size before wiring it in. ROLL 1 (Oct 17): accepted on look — plank wings, seven fingers each side, the pale inner-wing bar, bare orange head. Span 0.886 of the frame (a touch over the 8% margin).",
+      "anchorPx": [
+        0.5004,
+        0.5203
+      ]
+    },
+    {
+      "key": "redrock-bighorn-ram",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a DESERT BIGHORN RAM standing on all four legs, seen from directly overhead, head toward the TOP of the frame, head up and looking ahead. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. THE BODY is a LEAN, ATHLETIC wild ram, a mountain climber, deep-chested but NOT fat: from above it is about 0.3 as wide across the ribs as it is long from nose to rump, with a smooth, even outline from shoulders to haunches — no pinched waist and no bulging belly or round barrel. Never fat, never chubby, never a sausage or a peanut. Broadest across the ribs and shoulders, on a thick muscular neck; the big blocky head with a short, square WHITE MUZZLE pointing straight up the frame; small ears just behind the horn bases. The EARS are small, narrow and pointed, held back and a little out from the crown; never big, round or floppy, never standing out sideways like a goat's or a deer's. THE HORNS are the signature and must read from above: two MASSIVE, heavily RIDGED horns that sweep BACK from the crown, OUT to each side, then curl DOWN and FORWARD round each side of the head so each forms a broad near-complete C beside the cheek, thick at the base and tapering to a blunt, broomed tip, the horns ONE even weathered amber-brown (about #8C6C48) with FINE darker ridge lines across them, close-set and thin; NEVER alternating light and dark bands or candy stripes. COLOUR: a pale sandy buff-brown coat (about #B39572), only a FAINT, narrow, slightly darker line along the spine (about #9A7C5C), subtle, never a bold dark stripe, running back to the short DARK TAIL (about #4A3A2C); the big WHITE RUMP PATCH (about #EFE7D8) wrapping round the haunches above the tail; one flank sunlit a shade warmer, the other a shade cooler. THE LEGS stand UNDER the body in a natural four-footed stance, the way a real animal looks from a drone: from straight above only the tops of the shoulders and haunches bulge at the sides, and the four small dark hooves peek out just beyond the outline of the chest and hips, pointing FORWARD up the frame. NEVER splayed out sideways like a pelt laid flat or a lizard: no elbows or knees sticking out from the flanks, no soles or pads showing. The forelegs stand straight down under the chest: only the front tips of the fore hooves show beside the chest, never a foreleg reaching out sideways. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. Replacing drawBighorn (bands of 3-6 at the foot of the towers: graze, watch a boat inside 340 u, bound 70-110 u up the rock, look back). Ram 34 nose to rump (scale.md); world 40 = FRAME first guess. If accepted: legs cut by feetsplit.py to stride (walk ~1 Hz, bound ~2.5 Hz, fore pair and hind pair together), head cut at the neck to dip and turn (anchored AT the neck, over a collar — the sea-lion rule). Make the ewe and lamb as EDITS of this. ROLL 1 (Oct 17): horns readable but painted in alternating CANDY BANDS; body a slim pinched sausage (mid-body 0.30 of the length vs the drawn bighorn's ~0.41); forelegs reaching out sideways; spine stripe too bold. Subject rewritten (body, ridges, ears, stripe, forelegs); reroll, then the ewe and lamb as edits of the new ram. ROLL 2 (Oct 17): horns now right (one colour, fine ridges, full curl), but FAT (mid-body 0.41 of the length; Wes: 'super fat'). My roll-1 width call was wrong: 0.30 was about right, only the pinched waist was the defect, and I had used the chunky DRAWN bighorn (~0.41) as the yardstick. Body clause now asks for a lean 0.3 with an even outline. Cheaper alternative: an EDIT of roll 2 that only slims the body and keeps the horns. ROLL 3 (Oct 17): accepted on look — mid-body 0.28 of nose-to-tail, even outline, horns kept right; 0.781 of the frame long (world ~44).",
+      "anchorPx": [
+        0.5016,
+        0.5012
+      ]
+    },
+    {
+      "key": "redrock-bighorn-ewe",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 40,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "redrock-bighorn-ram",
+      "subject": "the SAME DESERT BIGHORN (an EDIT of the accepted ram) now a EWE, standing, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Slighter than the ram: THE BODY is a LEAN, ATHLETIC wild ewe, deep-chested but NOT fat: from above it is about 0.27 as wide across the ribs as it is long from nose to rump, with a smooth, even outline from shoulders to haunches — no pinched waist and no bulging belly or round barrel. Never fat, never chubby, never a sausage or a peanut. A thinner neck, a narrower head with the white muzzle. The EARS are small, narrow and pointed, held back and a little out from the crown; never big, round or floppy, never standing out sideways like a goat's or a deer's.  Her HORNS are short, slim, nearly straight SPIKES, about as long as her ears, angled BACK and a little OUT over the neck, NEVER drooping down past the ears like a goat's and never curling round the head, one even amber-brown with fine ridge lines, no bands; amber-brown (about #8C6C48). The same sandy buff-brown coat, faint spine line, short dark tail and big WHITE RUMP PATCH. THE LEGS stand UNDER the body in a natural four-footed stance, the way a real animal looks from a drone: from straight above only the tops of the shoulders and haunches bulge at the sides, and the four small dark hooves peek out just beyond the outline of the chest and hips, pointing FORWARD up the frame. NEVER splayed out sideways like a pelt laid flat or a lizard: no elbows or knees sticking out from the flanks, no soles or pads showing. The forelegs stand straight down under the chest: only the front tips of the fore hooves show beside the chest, never a foreleg reaching out sideways. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. Ewe 31 nose to rump (scale.md); world 37 = FRAME first guess. An EDIT of the accepted ram. ROLL 1 (Oct 17): GOAT horns (curving back and down past the ears, banded), big floppy ears, a sausage body (mid-body 0.23 of the length), forelegs out sideways. Subject rewritten; roll as an EDIT of the NEW ram. ROLL 2 (Oct 17): horns and ears fixed, but FAT (mid-body 0.42; Wes: 'especially the ewe'). Body clause now a lean 0.27. ROLL 3 (Oct 17): accepted on look — mid-body 0.26, short back-angled spikes, narrow ears; 0.770 long (world ~40).",
+      "anchorPx": [
+        0.5004,
+        0.4984
+      ]
+    },
+    {
+      "key": "redrock-bighorn-lamb",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 41,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "redrock-bighorn-ewe",
+      "subject": "the SAME DESERT BIGHORN (an EDIT of the accepted ewe) now a young LAMB, standing, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Small and short-bodied, slim and leggy like a young lamb, never plump: from above about 0.3 as wide as it is long, an even outline with no pinched waist; the head big for the body, the muzzle short and white, the ears a little larger than an adult's but still narrow and held back, never floppy or sticking out sideways; NO horns, or only two tiny bumps on the crown. A paler, softer sandy-grey coat (about #C2AA88), the white rump patch and the short dark tail. THE LEGS stand UNDER the body in a natural four-footed stance, the way a real animal looks from a drone: from straight above only the tops of the shoulders and haunches bulge at the sides, and the four small dark hooves peek out just beyond the outline of the chest and hips, pointing FORWARD up the frame. NEVER splayed out sideways like a pelt laid flat or a lizard: no elbows or knees sticking out from the flanks, no soles or pads showing. The forelegs stand straight down under the chest: only the front tips of the fore hooves show beside the chest, never a foreleg reaching out sideways. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. OPTIONAL. Lamb 21 nose to rump (scale.md); world 25 = FRAME first guess. An EDIT of the accepted ewe. ROLL 1 (Oct 17): stance right (legs under), but floppy sideways ears and a thin peanut body (mid-body 0.26). Subject rewritten; roll as an EDIT of the new ewe. ROLL 3 (Oct 17): accepted on look — hornless, mid-body 0.29; only 0.514 of the frame long (world ~41).",
+      "anchorPx": [
+        0.5,
+        0.508
+      ]
+    },
+    {
+      "key": "redrock-coyote",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 39,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a COYOTE standing on all four legs, seen from directly overhead, head toward the TOP of the frame, the tail carried LOW and straight out behind. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A lean wild dog, but a DOG, not a weasel: from above the body is about 0.3 as wide across the shoulders as it is long from nose to rump, a deep chest, a pinched waist, slim haunches; the narrow pointed MUZZLE pointing straight up the frame; two BIG upright pointed EARS standing off the back of the skull; behind, the long BUSHY tail, as long as the body is from shoulder to hip, held straight back. COLOUR, grizzled and never one flat tan: a buff-grey back (about #9C8C74) with black-tipped guard hairs forming a darker SADDLE over the shoulders and down the spine (about #5A4E44); the flanks a warmer tawny (about #B8946A); the backs of the ears, the sides of the muzzle and the legs a rusty red-tan (about #A8683A); the top of the muzzle paler (about #D8C6A8), the nose dark; the tail grizzled grey-buff with a small DARK SPOT on top near its base and a BLACK TIP (about #1E1A16). THE LEGS stand UNDER the body in a natural four-footed stance, the way a real animal looks from a drone: from straight above only the tops of the shoulders and haunches bulge at the sides, and the four small paws peek out just beyond the outline of the chest and hips, pointing FORWARD up the frame. NEVER splayed out sideways like a pelt laid flat or a lizard: no elbows or knees sticking out from the flanks, no soles or pads showing. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. Replacing drawCoyote (a pair on shape-17, singles on shape-18/19: trot, stop, stare at a boat inside 280 u, drink at the edge, lope off inside 110 u). 32 nose to tail tip (scale.md); world 38 = FRAME first guess. If accepted: legs by feetsplit.py (trot ~2.5 Hz diagonal pairs, lope), head cut at the neck to stare and dip to drink, tail strip-bent (tailPosed) to sway. Make the sitting coyote as an EDIT of this. ROLL 1 (Oct 17): saddle, ears, tail spot and black tip all right, but the legs splayed out sideways like a pelt laid flat (my 'legs OUT from the body' clause) and the body read weasel-long; clause rewritten, reroll. The bighorns had the same clause, fixed before their first roll. ROLL 2 (Oct 17): accepted on look — legs under the body with only the paws peeking out, saddle, tail spot and black tip; nose to tail tip 0.817 of the frame (so world ~39), body ~0.31 as wide as nose-to-rump.",
+      "anchorPx": [
+        0.5016,
+        0.4992
+      ]
+    },
+    {
+      "key": "redrock-coyote-sitting",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 29,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "redrock-coyote",
+      "subject": "the SAME COYOTE (an EDIT of the accepted standing coyote) now SITTING upright on its haunches, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Compact from above: the round haunches tucked under at the back, the chest and shoulders upright in front of them so the body is short; the head directly ahead of the shoulders — the top of the skull between the two big upright ears, then the narrow muzzle pointing straight up the frame beyond it; the two forepaws peeking out just in front of the chest, BEHIND the head, never beside the muzzle; the bushy tail WRAPPED round one side of the haunches and forward over the feet, its BLACK TIP by the forepaws. The tail is NOT banded or ringed like a raccoon's: one even grizzled buff-grey down its whole length with only the last fifth black. The same grizzled buff-grey back, darker saddle, rusty ears and legs. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. OPTIONAL. The coyote sitting to stare at the fleet (the drawn one tucks up short and wraps its tail). ~20 nose to haunches; world 24 = FRAME first guess. An EDIT of the accepted standing coyote. ROLL 1 (Oct 17): a raccoon-BANDED tail, the forepaws beside the muzzle with no skull between the ears, and a heavier outlined style than the standing coyote (it was not an edit of it). Subject rewritten; roll it as an EDIT of the accepted standing coyote. ROLL 2 (Oct 17): accepted on look — even grizzled tail with a black tip, head ahead of the shoulders, forepaws behind it, same lined style as roll-2 standing; 0.70 long x 0.44 wide in the frame. planRound dropped at ingest (Oct 17): seated, the muzzle carries well ahead of the round haunches, so 1.57x long is the true plan, not a tilt.",
+      "anchorPx": [
+        0.4797,
+        0.4952
+      ]
+    },
+    {
+      "key": "redrock-carp",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 29,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a COMMON CARP caught in the air, falling back toward the water FLAT ON ITS SIDE, seen from directly overhead, head toward the TOP of the frame: the whole FLANK turned up to the camera, the body straight with only a slight bend, a heavy DEEP-BODIED fish with a high arched back, the long dorsal fin along the back raised, the small downturned mouth with its two little BARBELS, the broad forked TAIL fanned. COLOUR: a dark olive-bronze back (about #4E4A2C) shading into a BRASS-GOLD flank (about #C29A44) paling to a cream-gold belly (about #E2CC8C); BIG, clearly outlined SCALES across the flank, each with a darker bronze edge (about #8A6A2E); the tail's lower lobe and the anal and pelvic fins ORANGE-RED (about #C8573A), the dorsal fin olive. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile, no spray",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. OPTIONAL. Replacing the drawn carp in the LEAPERS kit (straight up out of a column of white, tips over, falls back flat on its side with a slap; 35% jump again). 21 long (scale.md); world 26 = FRAME first guess. ⚠️ ~20 px is where painted sockeye and tangs LOST to the drawn fish — but those were TOP views (a thin sliver); this is the flank, the readable view, like the shipped lake bass (14). Run the drawn-vs-painted game-size comparison in the real scene before wiring it in. The striped bass in the boils (18, a dark back from above) is NOT slotted for the same reason. ROLL 1 (Oct 17): accepted on look; nose to tail 0.731 of the frame. Barbels came out as a curly orange tuft (unreadable at 21 px anyway); line-art outlines unlike the faceted animals, also lost at size.",
+      "anchorPx": [
+        0.5076,
+        0.5116
+      ]
     }
   ],
   "scale": {
