@@ -391,25 +391,40 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // Gatorgrass Bayou's (scale.md): American alligator 3.5 m -> ~48 nose to tail tip (about
     // 1.4x: a broad animal, and one the size of the boat would read as a monster); great egret
     // 1 m -> ~28 standing, ~42 across the wings; anhinga 0.85 m -> ~24, ~32 with wings spread.
-    const GATOR_SCALE = 1.5, EGRET_SCALE = 1.45, ANHINGA_SCALE = 1.35;
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level) the egret 1 m -> 15 standing (was 24.5 measured, EGRET_SCALE
+    // 1.45 -> 0.92, the painted bird and its flying span with it); the anhinga 0.85 m bill to tail -> ~13 (BY BODY
+    // LENGTH: the swimmer was 32, the drier 28 long and 30 across; ANHINGA_SCALE 1.35 -> 0.54, x0.4, so the drier's
+    // span is 12 by the painting's proportions). The alligator stays (49, ~1.4x).
+    const GATOR_SCALE = 1.5, EGRET_SCALE = 0.92, ANHINGA_SCALE = 0.54;
     // Under the 20-unit floor on purpose (scale.md's floor is for an animal that must read on
     // its own; these read as a group, or by their splash): bullfrog 15 cm -> ~10 on its log;
     // a jumping bass 40 cm -> ~14 in the air; a tang 20 cm -> ~8 in a school of twenty-odd.
     // (Oct 18 2026, Wes: "1.5x or less" at sea level) the bass 40 cm -> 6 (was 14; a splash: the group floor).
-    const FROG_SCALE = 1.4, BASS_LEN = 6, TANG_SCALE = 1.25;
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level — at the group floor, ~6) bullfrog FROG_SCALE 1.4 -> 0.65 (the
+    // painted frog 15 -> 7 at size 1, ~6 at the mean size); tang TANG_SCALE 1.25 -> 0.76 (10 -> 6; the whole
+    // Lagoon shoal cloud — goldies, chromis, humbugs — with it).
+    const FROG_SCALE = 0.65, BASS_LEN = 6, TANG_SCALE = 0.76;
     // A harbour seal: the head that pops up is 0.2 m (under the floor on purpose — it reads by
     // its ring and its watching), ~10 across; the body gliding under the water is 1.6 m, ~28
     // long (about 2x, a broad animal). It swims ~20 u/s under water, under a body length a second.
     // (Oct 18 2026, Wes: "1.5x or less" at sea level) body 1.6 m -> 24 (was 1.6 -> ~30), the head by the same 0.8
     // (was 2.1). SEAL_SWIM stays: ~2 m/s is a real harbour seal's cruise.
     const SEAL_HEAD = 1.68, SEAL_BODY = 1.28, SEAL_SWIM = 20, SEAL_K = 0.8;
-    const SEATURTLE_SCALE = 1.05, RAY_SCALE = 1.05, SHARK_SCALE = 1.4;
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level) green sea turtle 1.2 m -> 18 (26 measured; SEATURTLE_SCALE
+    // 1.05 -> 0.725, and turtlePosed's span 32 -> 22); blacktip 1.4 m -> 21 (42 measured; SHARK_SCALE 1.4 -> 0.7).
+    // The painted eagle ray measures 46 snout to tail tip, 42 across — already under the ~52 target: RAY_SCALE stays.
+    const SEATURTLE_SCALE = 0.725, RAY_SCALE = 1.05, SHARK_SCALE = 0.7;
     // Sockeye Run's (scale.md): brown bear 2.2 m -> ~46 nose to rump (about 2x: a broad
     // animal — at 58 it stood as long as the hull and read as a monster); sockeye 0.6 m -> ~18 (a run reads as a group, rule
     // 7); bald eagle 0.9 m long, 2 m across -> ~27 and ~58 (the pelican's span); river otter
     // 1.1 m with its tail -> ~32. Swimming at one to two body lengths a second.
-    const BEAR_SCALE = 1.85, SOCKEYE_LEN = 18, EAGLE_SCALE = 1.8, OTTER_SCALE = 2.0;
-    const OTTER_SWIM = 30, EAGLE_SOAR = 32;
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level) bear 2.2 m -> 33 (43 measured; BEAR_SCALE 1.85 -> 1.42);
+    // sockeye 0.6 m -> 9 (17 measured; SOCKEYE_LEN 18 -> 9.5 — the run, the leaps, the fish in the bear's jaws and the
+    // eagle's talons); bald eagle 0.9 m -> 13.5 bill to tail (29; EAGLE_SCALE 1.8 -> 0.84, the painted span 58 -> 27
+    // with it); river otter 1.1 m -> 16.5 (36; OTTER_SCALE 2.0 -> 0.92, OTTER_SWIM 30 -> 14: under a body length a second
+    // still). The eagle's soaring height and speed (EAGLE_SOAR) are the world's and stay.
+    const BEAR_SCALE = 1.42, SOCKEYE_LEN = 9.5, EAGLE_SCALE = 0.84, OTTER_SCALE = 0.92;
+    const OTTER_SWIM = 14, EAGLE_SOAR = 32;
     // Bluewater Bonanza's (scale.md): a humpback is 14 m — 140 u TRUE, already 2.5 hulls, so it
     // is drawn at true size (the ×3 rule is for animals that would vanish; this one would fill
     // the screen); the calf is ~5 m, ~48. Spinner dolphin 2 m -> ~40 (the Cove porpoise's size);
@@ -432,7 +447,9 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // first ray 'huge tip to tail' (46 native x 1.45 = ~100 u, nearly two hulls, Sep 25).
     const RAY_TAIL = 32;
     // Cruise speeds, units a second, and how much faster a startled one goes.
-    const CRUISE = { seaturtle: 20, eagleray: 34, reefshark: 42 }, FLEE_MUL = 2.6;
+    // (Oct 18 2026, Wes: "1.5x or less" — the turtle and the shark smaller, so slower: turtle 20 -> 14, shark 42 -> 21,
+    // the same body lengths a second)
+    const CRUISE = { seaturtle: 14, eagleray: 34, reefshark: 21 }, FLEE_MUL = 2.6;
     const BOIL_R = 75;
     // WINGBEAT TIME (Wes, Sep 26 2026): every wing and flipper beat — birds, bats, the rays'
     // wings, turtles' flippers — runs at HALF the real bird's rate. The sim clock is ~3x, and at
@@ -910,7 +927,8 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const n = c.burst ? Math.round(R(c.burst[0], c.burst[1])) : 1;
             for (let j = 0; j < n; j++) {
                 // a bunch: each a little way off the first, starting a beat after the one before
-                const ox = j ? R(-35, 35) : 0, oy = j ? R(-35, 35) : 0;
+                const sp = c.kind === 'salmon' ? 35 * SOCKEYE_LEN / 18 : 35;   // (a bunch packed to the fish: Oct 18 2026, Wes: "1.5x or less" at sea level)
+                const ox = j ? R(-sp, sp) : 0, oy = j ? R(-sp, sp) : 0;
                 if (j && (onLand(x + ox, y + oy) || (c.rapids && rapidsTurbAt(x + ox, y + oy) < c.rapids))) continue;
                 leaps.push({ kind: c.kind, silver: rnd() < 0.3, x: x + ox, y: y + oy, h: h + (j ? R(-0.2, 0.2) : 0), t: -j * R(0.2, 0.5), dur: c.kind === 'carp' ? R(0.3, 0.38) : R(0.55, 0.8), size: R(0.85, 1.15), hop: c.kind === 'carp' ? R(18, 26) : c.kind === 'bass' ? R(14, 22) * BASS_LEN / 14 : R(14, 22),   /* (Oct 18 2026: a bass's hop by its 14 -> 6) */ roll: rnd() < 0.5 ? -1 : 1 });
             }
@@ -959,8 +977,10 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // Reef is water to a fish (the coral head sits on it); only sand and scrub are dry.
         // A coral head's own collider (a prop's `.hit` ring) is a wall to a boat, not to the fish
         // that live on it — the school starts inside it.
-        G.dry = dryWithin(6); G.land = dryWithin(0);   // (a fish's half-length: none of it under the sand)
-        for (let i = 0; i < c.count; i++) G.fish.push({ x: pr.x + R(-40, 40), y: pr.y + R(-40, 40), vx: 0, vy: 0, h: R(0, 7), ox: R(-1, 1), oy: R(-1, 1), ph: R(0, 7), sp: R(0.85, 1.15), size: R(0.8, 1.1) });
+        // (Oct 18 2026, Wes: "1.5x or less" at sea level: the tangs 10 -> 6, so their half-length 6 -> 3.6 and the cloud
+        // tighter by as much — 40 -> 24 here, 38x26 -> 23x16 below, ~12 -> 7.2 u/s — so the school does not read sparse)
+        G.dry = dryWithin(3.6); G.land = dryWithin(0);   // (a fish's half-length: none of it under the sand)
+        for (let i = 0; i < c.count; i++) G.fish.push({ x: pr.x + R(-24, 24), y: pr.y + R(-24, 24), vx: 0, vy: 0, h: R(0, 7), ox: R(-1, 1), oy: R(-1, 1), ph: R(0, 7), sp: R(0.85, 1.15), size: R(0.8, 1.1) });
         return G;
     }
     function updateShoal(G, dt) {
@@ -982,13 +1002,13 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // the centre moves toward its target at a capped speed: ~4 u/s cruising, ~30 fleeing
         const cdx = tx - G.cx, cdy = ty - G.cy, cd = Math.hypot(cdx, cdy), cv = Math.min(cd, (G.flee > 0 ? 30 : 4) * dt);
         if (cd > 0.01) { const nx = G.cx + cdx / cd * cv, ny = G.cy + cdy / cd * cv; if (!G.dry(nx, ny) || (G.dry(G.cx, G.cy) && !G.land(nx, ny))) { G.cx = nx; G.cy = ny; } }
-        const vmax = G.flee > 0 ? 45 : 12;
+        const vmax = G.flee > 0 ? 45 : 7.2;
         for (const f of G.fish) {
             f.ph += dt * 2 * f.sp;
             // each keeps its own place in the cloud, which wanders slowly
             f.ox += Math.sin(f.ph * 0.23 + f.size * 9) * dt * 0.08; f.oy += Math.cos(f.ph * 0.19 + f.size * 7) * dt * 0.08;
             const L = Math.hypot(f.ox, f.oy); if (L > 1) { f.ox /= L; f.oy /= L; }
-            const px = G.cx + f.ox * 38 * G.spread, py = G.cy + f.oy * 26 * G.spread;
+            const px = G.cx + f.ox * 23 * G.spread, py = G.cy + f.oy * 16 * G.spread;
             // steer the VELOCITY toward the place (a spring, capped), eased — no darting
             let wx = (px - f.x) * 0.9, wy = (py - f.y) * 0.9; const w = Math.hypot(wx, wy), cap = vmax * f.sp;
             if (w > cap) { wx *= cap / w; wy *= cap / w; }
@@ -1126,7 +1146,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     e.neck = Math.max(0, e.neck - dt * 2);
                     if (e.t <= 0) { if (rnd() < 0.35) { e.neck = 1; e.t = R(3, 7); } else { e.mode = 'walk'; e.t = R(1.5, 3); e.h += R(-0.8, 0.8); } }
                 } else {
-                    const nx = e.x + Math.sin(e.h) * 7 * dt, ny = e.y - Math.cos(e.h) * 7 * dt;
+                    const nx = e.x + Math.sin(e.h) * 4.3 * dt, ny = e.y - Math.cos(e.h) * 4.3 * dt;   // (a slow step: 7 -> 4.3 with its size, Oct 18 2026, Wes: "1.5x or less" at sea level)
                     e.x = nx; e.y = ny;
                     if (e.t <= 0) { e.mode = 'stand'; e.t = R(3, 8); }
                 }
@@ -1169,8 +1189,9 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 // The snakebird: body under, neck up, gliding about near its perch.
                 const home = Math.hypot(a.x - a.px, a.y - a.py) > 140;
                 const tx = home || a.t > a.dur ? a.px : a.x + Math.sin(a.h + Math.sin(a.t * 0.4)) * 50, ty = home || a.t > a.dur ? a.py : a.y - Math.cos(a.h + Math.sin(a.t * 0.4)) * 50;
-                const nx = a.x + Math.sin(a.h) * 16 * dt, ny = a.y - Math.cos(a.h) * 16 * dt;
-                if (!onLand(nx, ny)) steer(a, tx, ty, 16, 1.2, dt); else a.h += 1.5 * dt;
+                // (half a body length a second: 16 -> 6.4 with its size, Oct 18 2026, Wes: "1.5x or less" at sea level)
+                const nx = a.x + Math.sin(a.h) * 6.4 * dt, ny = a.y - Math.cos(a.h) * 6.4 * dt;
+                if (!onLand(nx, ny)) steer(a, tx, ty, 6.4, 1.2, dt); else a.h += 1.5 * dt;
                 if (a.t > a.dur && Math.hypot(a.x - a.px, a.y - a.py) < 18 && !boatNear(a.px, a.py, c.flushR * 1.3)) { a.mode = 'climb'; a.t = 0; a.cx0 = a.x; a.cy0 = a.y; a.ch0 = a.h; }
             } else if (a.mode === 'climb') {
                 if (a.t >= 0.8) { a.mode = 'dry'; a.t = 0; a.x = a.px; a.y = a.py; }
@@ -1211,10 +1232,11 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 // THE POUNCE (see BEAR_POUNCE): forward only in the leap; at the pin the paws come down on the fish
                 // in a burst of white water and the head goes under to bite; it comes up — half the time with one
                 B.lunge = Math.min(1, B.lunge + dt / BEAR_POUNCE);
-                const u = B.lunge, [fx, fy] = fwd(B.h), v = u > 0.2 && u < 0.5 ? 80 * Math.sin(Math.PI * (u - 0.2) / 0.3) : 0;
+                // (a body length: 80 -> 61 u/s at the peak, the pin 28 -> 21.5 ahead — with BEAR_SCALE, Oct 18 2026, Wes: "1.5x or less" at sea level)
+                const u = B.lunge, [fx, fy] = fwd(B.h), v = u > 0.2 && u < 0.5 ? 61 * Math.sin(Math.PI * (u - 0.2) / 0.3) : 0;
                 const nx = B.x + fx * v * dt, ny = B.y + fy * v * dt;
                 if (!onLand(nx, ny)) { B.x = nx; B.y = ny; }
-                if (u >= 0.5 && !B.pinned) { B.pinned = true; B.splash = 1; B.catch = rnd() < 0.5; const d = 28; B.sx = B.x + fx * d; B.sy = B.y + fy * d; }
+                if (u >= 0.5 && !B.pinned) { B.pinned = true; B.splash = 1; B.catch = rnd() < 0.5; const d = 21.5; B.sx = B.x + fx * d; B.sy = B.y + fy * d; }
                 if (B.t <= 0) {
                     B.lunge = 0;
                     if (B.catch) { B.mode = 'eat'; B.fish = 1; B.t = R(5, 9); } else { B.mode = 'watch'; B.t = R(4, 10); }
@@ -1231,7 +1253,9 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (let i = 0; i < n; i++) {
             // a comet strung out along the stream (drone references): packed and wide at its
             // upstream head, thinning into a ragged tail behind
-            const u = Math.pow(rnd(), 1.6), along = 40 - u * 110, across = R(-1, 1) * (20 - u * 12);
+            // (packed to the fish, x0.53 with SOCKEYE_LEN 18 -> 9.5: 40/110/20/12 -> 21/58/10.5/6.3, so the run does not
+            // read sparse; Oct 18 2026, Wes: "1.5x or less" at sea level)
+            const u = Math.pow(rnd(), 1.6), along = 21 - u * 58, across = R(-1, 1) * (10.5 - u * 6.3);
             const [ux, uy] = fwd(G.up);
             G.fish.push({ dull: rnd() < 0.2, oa: along, oc: across, x: x + ux * along - uy * across, y: y + uy * along + ux * across, vx: 0, vy: 0, h: G.up, ph: R(0, 7), size: R(0.85, 1.12) });
         }
@@ -1246,10 +1270,10 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const f of G.fish) {
             f.ph += dt * (G.flee > 0 ? 9 : 3.2);
             // hold station: a spring to its place, weaving a little across the stream
-            const wob = Math.sin(f.ph * 0.35 + f.size * 5) * 5;
+            const wob = Math.sin(f.ph * 0.35 + f.size * 5) * 2.6;   // (5 -> 2.6 and the speed caps 14/55 -> 7.4/29, with the fish: Oct 18 2026, Wes: "1.5x or less")
             let px = G.hx + ux * f.oa - uy * (f.oc + wob), py = G.hy + uy * f.oa + ux * (f.oc + wob);
             if (G.flee > 0) { px += G.fx * 110; py += G.fy * 110; }
-            let wx = (px - f.x) * 0.8, wy = (py - f.y) * 0.8; const w = Math.hypot(wx, wy), cap = G.flee > 0 ? 55 : 14;
+            let wx = (px - f.x) * 0.8, wy = (py - f.y) * 0.8; const w = Math.hypot(wx, wy), cap = G.flee > 0 ? 29 : 7.4;
             if (w > cap) { wx *= cap / w; wy *= cap / w; }
             const k = Math.min(1, dt * (G.flee > 0 ? 4 : 1.2));
             f.vx += (wx - f.vx) * k; f.vy += (wy - f.vy) * k;
@@ -1257,7 +1281,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (!onLand(nx, ny)) { f.x = nx; f.y = ny; }
             // nosed upstream while holding; turned the way it swims when it bolts
             const spd = Math.hypot(f.vx, f.vy);
-            const want = G.flee > 0 && spd > 8 ? Math.atan2(f.vx, -f.vy) : G.up + Math.sin(f.ph * 0.5) * 0.12;
+            const want = G.flee > 0 && spd > 4.2 ? Math.atan2(f.vx, -f.vy) : G.up + Math.sin(f.ph * 0.5) * 0.12;
             f.h += angDiff(want, f.h) * Math.min(1, dt * 4);
             f.spd = spd;
         }
@@ -1327,7 +1351,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (let i = 0; i < c.count; i++) {
             // lying along the top of the jam, spread over its middle half
             // side by side across the jam's middle, all lying along it the same way, touching
-            const s = (i - (c.count - 1) / 2) * 7.5, t = R(-4, 4);
+            const s = (i - (c.count - 1) / 2) * 3.4, t = R(-1.8, 1.8);   // (7.5 / ±4 -> 3.4 / ±1.8 with OTTER_SCALE: Oct 18 2026, Wes: "1.5x or less" at sea level)
             const rx = jam.x - ay * s + ax * t, ry = jam.y + ax * s + ay * t;
             F.members.push({ i, rx, ry, rh: (jam.heading || 0) + Math.PI / 2 + R(-0.2, 0.2), x: rx, y: ry, h: R(0, 7), dip: 0, dipT: R(1, 4), ring: 0, trail: [], trailT: 0, curl: R(0, 0.35), size: i === 0 ? 1.08 : R(0.85, 1) });
         }
@@ -1372,7 +1396,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (F.mode === 'under') {
             F.under -= dt;
             for (const m of M) {
-                const nx = m.x + F.ux * 45 * dt, ny = m.y + F.uy * 45 * dt;
+                const nx = m.x + F.ux * 21 * dt, ny = m.y + F.uy * 21 * dt;   // (45 -> 21: 1.5x OTTER_SWIM, as before)
                 if (!onLand(nx, ny)) { m.x = nx; m.y = ny; m.h += angDiff(Math.atan2(F.ux, -F.uy), m.h) * Math.min(1, dt * 4); }
                 recordTrail(m, dt, false);
             }
@@ -1401,15 +1425,15 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (let j = 1; j < M.length; j++) {
             // each a body length and a bit behind the one ahead, a little off its line — the
             // references show separate heads, each with its own V, never nose to tail
-            const m = M[j]; let acc = 0, want = j * 44, p = F.crumbs[0];   // (a body length, 36, and a gap)
+            const m = M[j]; let acc = 0, want = j * 20, p = F.crumbs[0];   // (a body length, 16.5, and a gap: 44 -> 20 with OTTER_SCALE, Oct 18 2026)
             for (let q = 1; q < F.crumbs.length; q++) { const a = F.crumbs[q - 1], b = F.crumbs[q]; acc += Math.hypot(a.x - b.x, a.y - b.y); p = b; if (acc >= want) break; }
-            const side = (j % 2 ? 1 : -1) * 12, px = p.x - Math.cos(p.h) * side, py = p.y - Math.sin(p.h) * side;
+            const side = (j % 2 ? 1 : -1) * 5.5, px = p.x - Math.cos(p.h) * side, py = p.y - Math.sin(p.h) * side;   // (off its line 12 -> 5.5)
             const dx = px - m.x, dy = py - m.y, d = Math.hypot(dx, dy);
             // facing along the track; a place that has fallen BEHIND it (the leader turning) is waited for, not
             // turned round and chased — that crossed the family over itself
             const to = Math.atan2(dx, -dy), back = d > 0.3 && Math.abs(angDiff(to, m.h)) > 1.7;
             if (d > 0.3 && !back) { const v = Math.min(d, OTTER_SWIM * 1.4 * dt); m.x += dx / d * v; m.y += dy / d * v; }
-            m.h += angDiff(d > 8 && !back ? to : p.h, m.h) * Math.min(1, dt * 3);
+            m.h += angDiff(d > 3.7 && !back ? to : p.h, m.h) * Math.min(1, dt * 3);
         }
         for (const m of M) {
             recordTrail(m, dt, true);
@@ -1794,7 +1818,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // DRY LAND to a swimmer is only what stands out of the water: a coral reef is a wall to
         // a boat (pointOnLand says so) but a ray or a shark swims straight over it.
         // Kept clear by the animal's half-length, so no part of it slides under a beach (see dryWithin).
-        G.dry = dryWithin(({ seaturtle: 18, eagleray: 26, reefshark: 24 })[c.kind] || 20); G.land = dryWithin(0);
+        G.dry = dryWithin(({ seaturtle: 12, eagleray: 26, reefshark: 12 })[c.kind] || 20); G.land = dryWithin(0);   // (Oct 18 2026, Wes: "1.5x or less" at sea level: turtle 18 -> 12, shark 24 -> 12, with their bodies)
         G.inArea = (x, y) => !G.dry(x, y) && (polys.length ? polys.some(P => near(x, y, P)) : Math.hypot(x - cx, y - cy) < r);
         G.point = () => { for (let k = 0; k < 60; k++) { const a = R(0, Math.PI * 2), d = Math.sqrt(rnd()) * r, x = cx + Math.cos(a) * d, y = cy + Math.sin(a) * d; if (G.inArea(x, y)) return { x, y }; } return null; };
         for (let i = 0; i < c.count; i++) {
@@ -1887,7 +1911,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (c.breathe && !fleeing) {
                 if (f.mode === 'cruise' && f.t <= 0) { f.mode = 'rise'; f.t = 3; }
                 else if (f.mode === 'rise' && f.t <= 0 && f.depth < 0.05) { f.mode = 'breathe'; f.t = R(2.2, 3.2); f.ring = 1; f.brT = 0; }
-                else if (f.mode === 'breathe' && f.t <= 0) { f.mode = 'cruise'; f.t = R(25, 45); f.dT = R(0.4, 0.65); f.ring = 0.7; f.dvT = 0; f.dvX = f.x + Math.sin(f.h) * 11; f.dvY = f.y - Math.cos(f.h) * 11; f.dvH = f.h; }   // down head first: the swirl it leaves
+                else if (f.mode === 'breathe' && f.t <= 0) { f.mode = 'cruise'; f.t = R(25, 45); f.dT = R(0.4, 0.65); f.ring = 0.7; f.dvT = 0; f.dvX = f.x + Math.sin(f.h) * 7.6; f.dvY = f.y - Math.cos(f.h) * 7.6; f.dvH = f.h; }   // down head first: the swirl it leaves (at its head: 11 -> 7.6, Oct 18 2026, Wes: "1.5x or less" at sea level)
             }
         }
         // Now and then one of a formation leaps clear, if no boat is near.
@@ -5249,7 +5273,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const S of riders) for (const m of S.members) drawSpinner(ctx, m);
         for (const P of flyPatches) if (P.pack) for (const m of P.pack) if (!(m.leap > 0)) drawMahi(ctx, m);
         for (const G of runs) drawRun(ctx, G);
-        for (const F of rompers) if (F.mode !== 'rest') for (const m of F.members) { if (F.mode === 'swim' && (m.dip || 0) < 0.3) drawWakeTrail(ctx, m, 3.6, 1.2, imgReady(sprImg(ROTTER_SPR.file)) ? 0.4 : 0.65); drawOtter(ctx, m, false, F); }
+        for (const F of rompers) if (F.mode !== 'rest') for (const m of F.members) { if (F.mode === 'swim' && (m.dip || 0) < 0.3) drawWakeTrail(ctx, m, 3.6 * OTTER_SCALE / 2, 1.2, imgReady(sprImg(ROTTER_SPR.file)) ? 0.4 : 0.65); drawOtter(ctx, m, false, F); }   // (the wake sized to it: 3.6 -> 1.65, Oct 18 2026)
         for (const L of leaps) drawLeap(ctx, L);
         for (const g of lurkers) {
             // the V comes off the SNOUT, where the head pushes the water (its track recorded at the body's middle, so
@@ -5262,9 +5286,10 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const a of perchers) {
             // where it went in, head first and slim: a small burst of white water as it knifes in, then the swirl, the
             // slick and broken rings (diveWater) — no spray crown, an anhinga slips in rather than plunging
-            if (a.dAge < 0.5) whiteWater(ctx, a.ex, a.ey, 4 + a.dAge * 12, 0.75 * (1 - a.dAge / 0.5), 11);
-            if (a.dAge < 2.6) diveWater(ctx, a.ex, a.ey, a.dh, a.dAge, 12, 11);
-            if (a.mode === 'climb') diveWater(ctx, a.cx0, a.cy0, a.ch0, 0.4 + a.t * 1.6, 14, 17);   // the water it climbs out of
+            const as = ANHINGA_SCALE / 1.35;   // (sized to the bird: Oct 18 2026, Wes: "1.5x or less" at sea level, x0.4)
+            if (a.dAge < 0.5) whiteWater(ctx, a.ex, a.ey, (4 + a.dAge * 12) * as, 0.75 * (1 - a.dAge / 0.5), 11);
+            if (a.dAge < 2.6) diveWater(ctx, a.ex, a.ey, a.dh, a.dAge, 12 * as, 11);
+            if (a.mode === 'climb') diveWater(ctx, a.cx0, a.cy0, a.ch0, 0.4 + a.t * 1.6, 14 * as, 17);   // the water it climbs out of
             if (a.mode === 'swim') drawAnhinga(ctx, a);
         }
         for (const G of cruisers) for (const f of G.fish) { drawCruiserSplashes(ctx, f); if (f.mode === 'leap' && onCam(f.x, f.y, 300)) drawCruiser(ctx, f); }   // (the water it left, then the animal in the air above it)
@@ -5524,7 +5549,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     function turtlePosed(ctx, f, slot) {
         const S = TURTLE_SPR, ims = TURTLE_PARTS.map(turtleImg); if (!ims.every(imgReady)) return null;
-        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), span = 32 / (CRUISER_SCALE.seaturtle * (f.size || 1)), R = span * 0.56;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), span = 22 / (CRUISER_SCALE.seaturtle * (f.size || 1)), R = span * 0.56;   // (the drawn span, world units: 32 -> 22, Oct 18 2026, Wes: "1.5x or less" at sea level)
         const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
         const F = span / (S.x1 - S.x0), x0 = -S.cx * F, y0 = -S.cy * F, g = c.getContext('2d');
         g.setTransform(k, 0, 0, k, R * k, R * k);
@@ -6038,7 +6063,8 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (e.mode === 'fly' && ['body', 'wing-l', 'wing-r'].every(p2 => imgReady(egretFlyImg(p2)))) {
             // THE PAINTED EGRET FLYING: wings cut at the shoulders, beating slow and deep (wingStroke: the span
             // foreshortens, the hands sweep back on the upstroke); neck tucked, legs trailing. Its shadow on the water.
-            const We = wingStroke(e.flap, 0.9), z = e.z, B = { S: EGRET_FLY, span: 42, img: egretFlyImg };
+            // (the span by the body: 42 at EGRET_SCALE 1.45 -> 27; Oct 18 2026, Wes: "1.5x or less" at sea level)
+            const We = wingStroke(e.flap, 0.9), z = e.z, B = { S: EGRET_FLY, span: 42 * EGRET_SCALE / 1.45, img: egretFlyImg };
             const pose = () => pelicanPosed(ctx, We.pf, We.flex, 0, 54, B);
             ctx.save(); ctx.translate(e.x + z * 0.35, e.y + z * 0.55); ctx.rotate(e.h); ctx.scale(0.95, 0.95); humpBlit(ctx, pose(), 'rgb(10,25,40)', 0.2 * Math.max(0.3, 1 - z / 120)); ctx.restore();
             ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.h); ctx.scale(zScale(z), zScale(z)); humpBlit(ctx, pose(), null, 1); ctx.restore();
@@ -6047,13 +6073,15 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (e.mode !== 'fly' && imgReady(sprImg(EGRET_SPR.file))) {
             // THE PAINTED EGRET STANDING: its shadow cast down-right on the water (a bird a metre tall throws it well
             // clear), joined to it by the thin dark lines of its legs; the neck stretching out when it strikes.
-            const strike = e.neck || 0, hx = Math.sin(e.bob * 0.7) * 0.6 * (1 - strike) * k, sx = 4.6 * k, sy = 7.2 * k;
+            // (egretPosed is in the units of EGRET_SCALE 1.45: scaled by pk to the bird's size — Oct 18 2026, Wes: "1.5x or
+            // less" at sea level, 24.5 -> 15; the shadow's offset and the legs scale with k, a shorter bird)
+            const pk = k / 1.45, strike = e.neck || 0, hx = Math.sin(e.bob * 0.7) * 0.6 * (1 - strike) * 1.45, sx = 4.6 * k, sy = 7.2 * k;
             ctx.save(); ctx.translate(e.x, e.y);
             ctx.strokeStyle = 'rgba(10,20,15,0.32)'; ctx.lineWidth = 0.5 * k; ctx.lineCap = 'round';
             for (const sd of [-0.6, 0.6]) { ctx.beginPath(); ctx.moveTo(sd * k, 1.5 * k); ctx.lineTo(sx + sd * k, sy + 1.5 * k); ctx.stroke(); }
-            ctx.translate(sx, sy); ctx.rotate(e.h); humpBlit(ctx, egretPosed(ctx, strike, hx, 55), 'rgb(10,20,15)', 0.22);
+            ctx.translate(sx, sy); ctx.rotate(e.h); ctx.scale(pk, pk); humpBlit(ctx, egretPosed(ctx, strike, hx, 55), 'rgb(10,20,15)', 0.22);
             ctx.restore();
-            ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.h); humpBlit(ctx, egretPosed(ctx, strike, hx, 55), null, 1); ctx.restore();
+            ctx.save(); ctx.translate(e.x, e.y); ctx.rotate(e.h); ctx.scale(pk, pk); humpBlit(ctx, egretPosed(ctx, strike, hx, 55), null, 1); ctx.restore();
             return;
         }
         if (e.mode === 'fly') {
@@ -6137,9 +6165,12 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (a.mode === 'swim' && imgReady(sprImg(ANHINGA_SWIM.file))) {
             // THE PAINTED ANHINGA SWIMMING: the snakebird, body under — the water laid over everything behind the neck,
             // deepening to the tail — and only the S of the neck and the head out, a small V from the neck.
-            if (a.trail.length > 2) drawWakeTrail(ctx, a, 2.4, 0.9, 0.35);
+            // (Oct 18 2026, Wes: "1.5x or less" at sea level: the painted poses are in the units of ANHINGA_SCALE 1.35 —
+            // 32 bill to tail — scaled by ps to the bird's size, ~13; its wake, ring and splashes with it)
+            const ps = k / 1.35;
+            if (a.trail.length > 2) drawWakeTrail(ctx, a, 2.4 * ps, 0.9, 0.35);
             const S = ANHINGA_SWIM, F = 32 / (S.bot - S.top), yb = -14 + (S.neck - S.top) * F;
-            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.h);
+            ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.h); ctx.scale(ps, ps);
             const P = sprPosed(ctx, sprImg(S.file), F, S.cx, S.top + 14 / F, 20, 56);
             if (P) { const g = P.c.getContext('2d'), kk = P.px / (2 * P.R), Y = (y) => (P.R + y) * kk;
                 g.globalCompositeOperation = 'source-atop'; const gw = g.createLinearGradient(0, Y(yb - 1), 0, Y(yb + 7));
@@ -6147,12 +6178,12 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 g.fillStyle = gw; g.fillRect(0, 0, P.px, P.px); g.globalCompositeOperation = 'source-over';
                 humpBlit(ctx, P, null, 1); }
             if (a.upT < 2) riseWater(ctx, a.upT, -14, yb, 2.6, 12, 9);   // coming up: the neck breaks through first
-            ctx.scale(k, k); drawRing(ctx, 0, yb / k, 0.6 + 0.4 * Math.sin(a.t * 2), 1.4, 1.5, 0.35);
+            ctx.scale(1.35, 1.35); drawRing(ctx, 0, yb / 1.35, 0.6 + 0.4 * Math.sin(a.t * 2), 1.4, 1.5, 0.35);
             ctx.restore();
             return;
         }
         if (a.mode === 'swim') {
-            if (a.trail.length > 2) drawWakeTrail(ctx, a, 2.4, 0.9, 0.35);
+            if (a.trail.length > 2) drawWakeTrail(ctx, a, 2.4 * k / 1.35, 0.9, 0.35);
             ctx.save(); ctx.translate(a.x, a.y); ctx.rotate(a.h); ctx.scale(k, k);
             ctx.fillStyle = 'rgba(20,24,26,0.35)';
             ctx.beginPath(); ctx.ellipse(0, 3.5, 2.4, 5.2, 0, 0, Math.PI * 2); ctx.fill();
@@ -6188,12 +6219,12 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const sh = open * (1 + 0.02 * Math.sin(a.flap * 1.3));
             const dry = () => sprPosed(ctx, sprImg(S.file), F, S.cx, S.cy, 21, 57);
             const swim = () => { const P = sprPosed(ctx, sprImg(SS.file), FS, SS.cx, (SS.top + SS.bot) / 2, 20, 56); if (P && sink > 0) slipUnder(ctx, P, sink, -16, 16, 3, 5); return P; };
-            const shA = 0.18 * (1 - sink);
-            ctx.save(); ctx.translate(x + z * 0.43, y + z * 0.68); ctx.rotate(rot);
+            const shA = 0.18 * (1 - sink), ps = k / 1.35;   // (the poses' units are ANHINGA_SCALE 1.35's: see the swimmer)
+            ctx.save(); ctx.translate(x + z * 0.43, y + z * 0.68); ctx.rotate(rot); ctx.scale(ps, ps);
             if (wet < 1) { ctx.save(); ctx.scale(sh, 1); humpBlit(ctx, dry(), 'rgb(10,20,15)', shA * (1 - wet)); ctx.restore(); }
             if (wet > 0) humpBlit(ctx, swim(), 'rgb(10,20,15)', shA * wet);
             ctx.restore();
-            ctx.save(); ctx.translate(x, y); ctx.rotate(rot);
+            ctx.save(); ctx.translate(x, y); ctx.rotate(rot); ctx.scale(ps, ps);
             if (wet < 1) { ctx.save(); ctx.scale(sh, 1); humpBlit(ctx, dry(), null, 1 - wet); ctx.restore(); }
             if (wet > 0) { humpBlit(ctx, swim(), null, wet * (1 - 0.6 * sink * sink)); if (sink > 0 && sink < 1) waterline(ctx, -16 + sink * 32, 2.6, 0.7 * Math.sin(Math.PI * sink), 3); }
             ctx.restore();
@@ -6270,10 +6301,11 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     function drawFrogGroup(ctx, b, layer) {
         const nx = -b.ay, ny = b.ax;
+        const fs = FROG_SCALE / 1.4;   // its shadows and rings sized to the frog (Oct 18 2026, Wes: "1.5x or less" at sea level: x0.46)
         for (const t of b.turtles) {
             if (layer === 'perched') {
                 if (t.mode === 'bask' || t.mode === 'wait') {
-                    ctx.save(); ctx.fillStyle = 'rgba(10,20,15,0.28)'; ctx.beginPath(); ctx.ellipse(t.hx + 1.2, t.hy + 1.8, 4 * (t.size || 1), 5 * (t.size || 1), t.h, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                    ctx.save(); ctx.fillStyle = 'rgba(10,20,15,0.28)'; ctx.beginPath(); ctx.ellipse(t.hx + 1.2 * fs, t.hy + 1.8 * fs, 4 * fs * (t.size || 1), 5 * fs * (t.size || 1), t.h, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                     drawFrog(ctx, t.hx, t.hy, t.h, t.size, 'sit');
                 }
                 continue;
@@ -6283,13 +6315,13 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 const k = t.mode === 'slide' ? t.t / 0.55 : 1 - Math.min(1, t.t / 1.6);
                 const z = Math.sin(Math.PI * Math.min(1, k)) * 9, x = t.hx + t.ox, y = t.hy + t.oy;
                 const hh = Math.atan2(t.side * nx, -(t.side * ny)) + (t.mode === 'slide' ? 0 : Math.PI);   // out to the water, or back to the log
-                ctx.save(); ctx.fillStyle = 'rgba(10,20,15,0.25)'; ctx.beginPath(); ctx.ellipse(x + z * 0.35, y + z * 0.55, 3.5, 5, hh, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+                ctx.save(); ctx.fillStyle = 'rgba(10,20,15,0.25)'; ctx.beginPath(); ctx.ellipse(x + z * 0.35, y + z * 0.55, 3.5 * fs, 5 * fs, hh, 0, Math.PI * 2); ctx.fill(); ctx.restore();
                 drawFrog(ctx, x, y, hh, (t.size || 1) * (1 + z * 0.02), 'hop', k);
             } else if (t.mode === 'under') {
                 drawFrog(ctx, t.ux, t.uy, t.uh, t.size, 'swim');
-                const q = (T * 0.5 + t.i * 0.3) % 1; drawRing(ctx, t.ux, t.uy - 1, 1 - q, 4, 6, 0.3);
+                const q = (T * 0.5 + t.i * 0.3) % 1; drawRing(ctx, t.ux, t.uy - fs, 1 - q, 4 * fs, 6 * fs, 0.3);
             }
-            if (t.plop > 0) { drawRing(ctx, t.ux, t.uy, t.plop, 3, 12, 0.7); drawRing(ctx, t.ux, t.uy, Math.max(0, t.plop - 0.3), 2, 8, 0.5); }
+            if (t.plop > 0) { drawRing(ctx, t.ux, t.uy, t.plop, 3 * fs, 12 * fs, 0.7); drawRing(ctx, t.ux, t.uy, Math.max(0, t.plop - 0.3), 2 * fs, 8 * fs, 0.5); }
         }
     }
 
@@ -6430,11 +6462,13 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             }
         }
         if (L.kind === 'bass' && imgReady(sprImg(BASS_SPR.file))) return;   // (the painted bass's water is drawn with it: drawJumpWater)
-        const out = 1 - Math.min(1, L.t / 0.45); if (out > 0) drawFishSplash(ctx, x0, y0, out, L.size, 1);
+        // (a salmon's splash sized to it: 18 was its length — Oct 18 2026, Wes: "1.5x or less" at sea level)
+        const fk = L.kind === 'salmon' ? SOCKEYE_LEN / 18 : 1;
+        const out = 1 - Math.min(1, L.t / 0.45); if (out > 0) drawFishSplash(ctx, x0, y0, out, L.size * fk, 1);
         const inT = L.t - L.dur;
         if (inT >= 0) {
-            const k = 1 - Math.min(1, inT / 0.5); if (k > 0) drawFishSplash(ctx, x1, y1, k, L.size, 7);
-            for (let r = 0; r < 3; r++) { const q = 1 - Math.min(1, (inT - r * 0.3) / 1.4); if (q > 0 && q < 1) drawRing(ctx, x1, y1, q, 3 + r * 1.5, 12, 0.45); }
+            const k = 1 - Math.min(1, inT / 0.5); if (k > 0) drawFishSplash(ctx, x1, y1, k, L.size * fk, 7);
+            for (let r = 0; r < 3; r++) { const q = 1 - Math.min(1, (inT - r * 0.3) / 1.4); if (q > 0 && q < 1) drawRing(ctx, x1, y1, q, (3 + r * 1.5) * fk, 12 * fk, 0.45); }
         }
     }
 
@@ -6583,7 +6617,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const bed = lagoonBedM(G.cx, G.cy), hM = Math.max(0.3, Math.min(1.5, bed - 0.5)), hU = hM * 10;
         const shX = hU * 0.3, shY = hU * 0.45, shA = 0.2 * Math.max(0.15, 1 - bed / 14) / (1 + hM * 0.18);
         for (const f of G.fish) {
-            const s = TANG_SCALE * f.size, w = Math.sin(f.ph * 3) * 0.12 * Math.min(1, 0.3 + (f.spd || 0) / 12);
+            const s = TANG_SCALE * f.size, w = Math.sin(f.ph * 3) * 0.12 * Math.min(1, 0.3 + (f.spd || 0) / 7.2);   // (by its cruising cap, 12 -> 7.2 with TANG_SCALE: Oct 18 2026)
             ctx.save(); ctx.translate(f.x + shX, f.y + shY); ctx.rotate(f.h); ctx.scale(s, s);
             ctx.fillStyle = `rgba(10,25,40,${shA.toFixed(3)})`; ctx.beginPath(); ctx.ellipse(0, 0, 1.1, 3.4, 0, 0, Math.PI * 2); ctx.fill();
             ctx.restore();
@@ -7026,6 +7060,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 if (B.fish > 0 || (B.mode === 'lunge' && B.catch && B.lunge > 0.85)) {
                     // a sockeye held crosswise in its jaws, under the painted head so the snout lies over its middle
                     ctx.save(); ctx.translate(0, P.py); ctx.rotate(look); ctx.translate(0, P.Yf(0.105) - P.py); ctx.rotate(Math.PI / 2 + Math.sin(T * 9) * 0.15);
+                    ctx.scale(SOCKEYE_LEN / (8.5 * k), SOCKEYE_LEN / (8.5 * k));   // (a sockeye of the run's length, 8.5 bear units: Oct 18 2026, Wes: "1.5x or less" at sea level)
                     ctx.fillStyle = SOCKEYE.body; ctx.beginPath(); ctx.ellipse(0, 0, 0.9, 3.4, 0, 0, Math.PI * 2); ctx.fill();
                     ctx.fillStyle = SOCKEYE.head; ctx.beginPath(); ctx.ellipse(0, -2.6, 0.8, 1.1, 0, 0, Math.PI * 2); ctx.fill();
                     ctx.fillStyle = SOCKEYE.tail; ctx.beginPath(); ctx.moveTo(0, 3); ctx.lineTo(-1, 4.4 + Math.sin(T * 12) * 0.4); ctx.lineTo(1, 4.4 - Math.sin(T * 12) * 0.4); ctx.closePath(); ctx.fill();
@@ -7058,12 +7093,14 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             ctx.restore();
             // the pin: white water bursting up round the paws as they come down, then broken rings spreading; while its
             // head is under, the river churning round its muzzle
+            // (the splash and the churn at its muzzle sized to the bear: bs = k / 1.85, Oct 18 2026, Wes: "1.5x or less" at sea level)
+            const bs = k / 1.85;
             if (B.splash > 0) { const q = 1 - B.splash;
                 // a broad low sheet of churned white thrown out round the paws (a pin, not a plunge: no jets)
-                if (q < 0.5) { const s = 1 - q / 0.5; ctx.fillStyle = `rgba(245,250,250,${0.75 * s})`; lobedBlob(ctx, B.sx, B.sy, 8 + 14 * q, 6 + 10 * q, B.h, B.i + 3); ctx.fill();
-                    ctx.fillStyle = `rgba(255,255,255,${0.5 * s})`; lobedBlob(ctx, B.sx, B.sy, 5 + 8 * q, 4 + 6 * q, B.h + 0.7, B.i + 4); ctx.fill(); }
-                for (let r = 0; r < 2; r++) { const a2 = q - r * 0.2; if (a2 > 0) brokenRing(ctx, B.sx, B.sy, 12 + 30 * Math.sqrt(a2), 1.15, B.h, 0.5 * (1 - a2) * (1 - r * 0.3), B.i * 5 + r, 0.9); } }
-            if (pc.dunk > 0.05) { const [fx, fy] = fwd(B.h), d = 22 * Lp; ctx.fillStyle = `rgba(240,248,250,${0.4 * pc.dunk})`; lobedBlob(ctx, B.x + fx * d, B.y + fy * d, 6, 5, B.h + T * 2, B.i + 9); ctx.fill(); }
+                if (q < 0.5) { const s = 1 - q / 0.5; ctx.fillStyle = `rgba(245,250,250,${0.75 * s})`; lobedBlob(ctx, B.sx, B.sy, (8 + 14 * q) * bs, (6 + 10 * q) * bs, B.h, B.i + 3); ctx.fill();
+                    ctx.fillStyle = `rgba(255,255,255,${0.5 * s})`; lobedBlob(ctx, B.sx, B.sy, (5 + 8 * q) * bs, (4 + 6 * q) * bs, B.h + 0.7, B.i + 4); ctx.fill(); }
+                for (let r = 0; r < 2; r++) { const a2 = q - r * 0.2; if (a2 > 0) brokenRing(ctx, B.sx, B.sy, (12 + 30 * Math.sqrt(a2)) * bs, 1.15, B.h, 0.5 * (1 - a2) * (1 - r * 0.3), B.i * 5 + r, 0.9); } }
+            if (pc.dunk > 0.05) { const [fx, fy] = fwd(B.h), d = 22 * Lp * bs; ctx.fillStyle = `rgba(240,248,250,${0.4 * pc.dunk})`; lobedBlob(ctx, B.x + fx * d, B.y + fy * d, 6 * bs, 5 * bs, B.h + T * 2, B.i + 9); ctx.fill(); }
             return;
         }
         ctx.save(); ctx.translate(B.x + sh * 0.35 * k, B.y + sh * 0.55 * k); ctx.rotate(B.h); ctx.scale(k, k);
@@ -7131,7 +7168,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (B.fish > 0) {
             // a sockeye held crosswise in its jaws, drawn FIRST so the snout lies over its middle
             // (Wes, Sep 25): the olive head out one side, the tail flapping out the other
-            ctx.save(); ctx.translate(0, -3.0); ctx.rotate(Math.PI / 2 + Math.sin(T * 9) * 0.15);
+            ctx.save(); ctx.translate(0, -3.0); ctx.rotate(Math.PI / 2 + Math.sin(T * 9) * 0.15); ctx.scale(SOCKEYE_LEN / (8.5 * k), SOCKEYE_LEN / (8.5 * k));   // (the run's length)
             ctx.fillStyle = SOCKEYE.body; ctx.beginPath(); ctx.ellipse(0, 0, 0.9, 3.4, 0, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = SOCKEYE.head; ctx.beginPath(); ctx.ellipse(0, -2.6, 0.8, 1.1, 0, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = SOCKEYE.tail; ctx.beginPath(); ctx.moveTo(0, 3); ctx.lineTo(-1, 4.4 + Math.sin(T * 12) * 0.4); ctx.lineTo(1, 4.4 - Math.sin(T * 12) * 0.4); ctx.closePath(); ctx.fill();
@@ -7143,7 +7180,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // the lunge's splash, thrown out ahead of it
         if (B.splash > 0) {
             const [fx, fy] = fwd(B.h), d = 18 * k;
-            drawFishSplash(ctx, B.x + fx * d, B.y + fy * d, B.splash, 1.1, B.i + 3);
+            drawFishSplash(ctx, B.x + fx * d, B.y + fy * d, B.splash, 1.1 * k / 1.85, B.i + 3);
         }
     }
 
@@ -7249,19 +7286,23 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (painted) {
             // THE PAINTED EAGLE: wings cut at the shoulders — held flat and still soaring, beating deep climbing away
             // with a fish, swept right back in the stoop — and its shadow on the water, the same pose.
-            const B2 = { S: EAGLE_SPR, span: 58, img: eagleImg }, pose = () => pelicanPosed(ctx, Wg.pf, beat, fold, 61, B2);
+            // (the span by the body: 58 at EAGLE_SCALE 1.8 -> 27; its splash with it — Oct 18 2026, Wes: "1.5x or less" at sea level)
+            const es = k / 1.8, B2 = { S: EAGLE_SPR, span: 58 * es, img: eagleImg }, pose = () => pelicanPosed(ctx, Wg.pf, beat, fold, 61, B2);
             ctx.save(); ctx.translate(E.x + zo * 0.35, E.y + zo * 0.55); ctx.rotate(E.h); ctx.scale(0.97, 0.97);
             humpBlit(ctx, pose(), 'rgb(10,22,26)', 0.16 + 0.08 * Math.max(0, 1 - z / 105)); ctx.restore();
             // where the feet went in: a small burst of white water torn along its line, then broken rings
             if (E.splash > 0) { const q = 1 - E.splash;
-                if (q < 0.5) { ctx.fillStyle = `rgba(245,250,250,${0.7 * (1 - q / 0.5)})`; lobedBlob(ctx, E.sx, E.sy, 5 + 8 * q, 3 + 4 * q, E.h + Math.PI / 2, E.i + 11); ctx.fill(); }
-                for (let r = 0; r < 2; r++) { const a2 = q - r * 0.2; if (a2 > 0) brokenRing(ctx, E.sx, E.sy, 6 + 22 * Math.sqrt(a2), 1.2, E.h, 0.45 * (1 - a2) * (1 - r * 0.3), E.i * 3 + r, 0.8); } }
+                if (q < 0.5) { ctx.fillStyle = `rgba(245,250,250,${0.7 * (1 - q / 0.5)})`; lobedBlob(ctx, E.sx, E.sy, (5 + 8 * q) * es, (3 + 4 * q) * es, E.h + Math.PI / 2, E.i + 11); ctx.fill(); }
+                for (let r = 0; r < 2; r++) { const a2 = q - r * 0.2; if (a2 > 0) brokenRing(ctx, E.sx, E.sy, (6 + 22 * Math.sqrt(a2)) * es, 1.2, E.h, 0.45 * (1 - a2) * (1 - r * 0.3), E.i * 3 + r, 0.8); } }
             ctx.save(); ctx.translate(E.x, E.y); ctx.rotate(E.h);
             if (E.fish > 0) {
                 // the salmon hangs head-first under the body, gripped in its yellow feet
                 ctx.save(); ctx.scale(k, k); ctx.translate(0, 3.2); ctx.rotate(Math.sin(T * 5) * 0.12); ctx.globalAlpha *= Math.min(1, E.fish * 4);
+                // (a sockeye of the run's length, 6 eagle units: Oct 18 2026, Wes: "1.5x or less" at sea level)
+                ctx.save(); ctx.scale(SOCKEYE_LEN / (6 * k), SOCKEYE_LEN / (6 * k));
                 ctx.fillStyle = SOCKEYE.body; ctx.beginPath(); ctx.ellipse(0, 1.5, 0.75, 2.8, 0, 0, Math.PI * 2); ctx.fill();
                 ctx.fillStyle = SOCKEYE.head; ctx.beginPath(); ctx.ellipse(0, -0.8, 0.6, 0.9, 0, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
                 ctx.fillStyle = '#e8b930'; for (const [fx, fy] of [[-0.55, 0.2], [0.55, 2.4]]) { ctx.beginPath(); ctx.ellipse(fx, fy, 0.55, 0.45, 0, 0, Math.PI * 2); ctx.fill(); }
                 ctx.restore();
             }
@@ -7280,13 +7321,15 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.save(); ctx.translate(E.x + zo * 0.35, E.y + zo * 0.55); ctx.rotate(E.h); ctx.scale(k * 0.97, k * 0.97);
         ctx.fillStyle = `rgba(10,22,26,${0.16 + 0.08 * Math.max(0, 1 - z / 105)})`; eagleShape(ctx, fold, beat, false);
         ctx.restore();
-        if (E.splash > 0) { drawFishSplash(ctx, E.sx, E.sy, E.splash, 2.4, E.i + 11); drawRing(ctx, E.sx, E.sy, E.splash, 6, 24, 0.55); }
+        if (E.splash > 0) { const es = k / 1.8; drawFishSplash(ctx, E.sx, E.sy, E.splash, 2.4 * es, E.i + 11); drawRing(ctx, E.sx, E.sy, E.splash, 6 * es, 24 * es, 0.55); }   // (sized to the bird)
         ctx.save(); ctx.translate(E.x, E.y); ctx.rotate(E.h); ctx.scale(k, k);
         if (E.fish > 0) {
             // the salmon hangs head-first under the body, gripped in its yellow feet
             ctx.save(); ctx.translate(0, 3.2); ctx.rotate(Math.sin(T * 5) * 0.12); ctx.globalAlpha *= Math.min(1, E.fish * 4);
+            ctx.save(); ctx.scale(SOCKEYE_LEN / (6 * k), SOCKEYE_LEN / (6 * k));   // (the run's length)
             ctx.fillStyle = SOCKEYE.body; ctx.beginPath(); ctx.ellipse(0, 1.5, 0.75, 2.8, 0, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = SOCKEYE.head; ctx.beginPath(); ctx.ellipse(0, -0.8, 0.6, 0.9, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
             ctx.fillStyle = '#e8b930'; for (const [fx, fy] of [[-0.55, 0.2], [0.55, 2.4]]) { ctx.beginPath(); ctx.ellipse(fx, fy, 0.55, 0.45, 0, 0, Math.PI * 2); ctx.fill(); }
             ctx.restore();
         }
@@ -7330,13 +7373,14 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const under = onJam ? 0 : Math.sin(Math.PI * (m.dip || 0));
         if (onJam && imgReady(sprImg(OTTER_REST.file))) {
             // THE PAINTED OTTER LYING UP on the logjam: a loose curl in the sun, its shadow on the logs
-            const F = 35 / OTTER_SCALE, P = () => sprPosed(ctx, sprImg(OTTER_REST.file), F, OTTER_REST.cx, OTTER_REST.cy, F * 0.55, 62);
+            // (the frame 35 world units across -> 16, with OTTER_SCALE: Oct 18 2026, Wes: "1.5x or less" at sea level)
+            const F = 16 / OTTER_SCALE, P = () => sprPosed(ctx, sprImg(OTTER_REST.file), F, OTTER_REST.cx, OTTER_REST.cy, F * 0.55, 62);
             // (every other one the mirror image, so a family lying together is not four copies of one otter)
             ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.rh); ctx.scale(k * (m.i % 2 ? -1 : 1), k);
             ctx.save(); ctx.translate(0.8 * (m.i % 2 ? -1 : 1), 1.2); humpBlit(ctx, P(), 'rgb(10,20,15)', 0.25); ctx.restore();
             humpBlit(ctx, P(), null, 1);
             ctx.restore();
-            if (m.ring > 0) drawRing(ctx, m.x, m.y, m.ring, 5, 16, 0.5);
+            if (m.ring > 0) drawRing(ctx, m.x, m.y, m.ring, 5 * OTTER_SCALE / 2, 16 * OTTER_SCALE / 2, 0.5);   // (sized to it: Oct 18 2026)
             return;
         }
         if (!onJam && imgReady(sprImg(ROTTER_SPR.file))) {
@@ -7388,7 +7432,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 ctx.restore();
             }
             // where it went under or came up: broken rings spreading (never one perfect circle)
-            if (m.ring > 0) for (let r = 0; r < 2; r++) { const u = 1 - m.ring - r * 0.25; if (u > 0) brokenRing(ctx, m.x, m.y, 6 + 16 * Math.sqrt(u), 1, m.h, 0.45 * m.ring * (1 - r * 0.3), m.i * 7 + r, 0.8); }
+            if (m.ring > 0) for (let r = 0; r < 2; r++) { const u = 1 - m.ring - r * 0.25; if (u > 0) brokenRing(ctx, m.x, m.y, (6 + 16 * Math.sqrt(u)) * OTTER_SCALE / 2, 1, m.h, 0.45 * m.ring * (1 - r * 0.3), m.i * 7 + r, 0.8); }
             return;
         }
         ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(onJam ? m.rh : m.h); ctx.scale(k, k);
@@ -7422,13 +7466,14 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const [fx, fy] = fwd(m.h), hx = m.x + fx * 7 * k, hy = m.y + fy * 7 * k;
             ctx.save(); ctx.translate(hx, hy); ctx.rotate(m.h);
             // the crescent pushed up ahead of the chin, then the two arms of the V off it
+            ctx.scale(OTTER_SCALE / 2, OTTER_SCALE / 2);   // (sized to it: Oct 18 2026, Wes: "1.5x or less" at sea level)
             ctx.strokeStyle = `rgba(255,255,255,${0.7 * (1 - under)})`; ctx.lineWidth = 1.2;
             ctx.beginPath(); ctx.arc(0, 3, 4.6, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
             ctx.strokeStyle = `rgba(255,255,255,${0.3 * (1 - under)})`; ctx.lineWidth = 2.4;
             ctx.beginPath(); ctx.arc(0, 3.4, 5.4, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
             ctx.restore();
         }
-        if (m.ring > 0) drawRing(ctx, m.x, m.y, m.ring, 5, 16, 0.5);
+        if (m.ring > 0) drawRing(ctx, m.x, m.y, m.ring, 5 * OTTER_SCALE / 2, 16 * OTTER_SCALE / 2, 0.5);
     }
 
     // ── Bluewater Bonanza, drawn ─────────────────────────────────────────────────────────

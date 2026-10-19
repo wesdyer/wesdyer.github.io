@@ -43,7 +43,16 @@ const { chromium } = require('playwright'); const path = require('path'); const 
     A.drawGullFlying(g, 0, 0, 0, 0, 0, true); A.drawGullPerched(g, 0, 0, 0); A.drawPelicanFlying(g, 0, 0, 0, 0, 30, 0); A.drawPelicanSitting(g, 0, 0, 0, 5);
     A.drawSealUnder(g, { x: 0, y: 0, h: 0, bob: 0, spd: 0 }, 1); A.drawSealHead(g, { x: 0, y: 0, h: 0, bob: 0, i: 0 }, 1);
     A.drawLoon(g, mk({})); A.drawBeaver(g, mk({})); A.drawMoose(g, { x: 0, y: 0, h: 0, alpha: 1, dip: 0, drip: 0, bob: 0, sway: 0, mode: 'alert', ashore: true });
-    A.drawLeap(g, { kind: 'bass', x: 0, y: 0, h: 0, t: 0.62, dur: 10, hop: 0, size: 1, i: 0 }); state.camera = c; });
+    A.drawLeap(g, { kind: 'bass', x: 0, y: 0, h: 0, t: 0.62, dur: 10, hop: 0, size: 1, i: 0 });
+    // Pearl Lagoon, Gatorgrass Bayou and Sockeye Run's paintings (Oct 18 2026): ask for them before measuring, so the
+    // painted animal is what is measured (the drawn stand-in otherwise, on the first call)
+    for (const kind of ['seaturtle', 'eagleray', 'reefshark']) Wildlife.art.drawCruiser(g, { kind, x: 0, y: 0, h: 0, depth: 0, ph: 0, size: 1, mode: 'cruise' });
+    Wildlife.art.drawEgret(g, { x: 0, y: 0, h: 0, mode: 'stand', bob: 0, neck: 0 }); Wildlife.art.drawEgret(g, { x: 0, y: 0, h: 0, mode: 'fly', flap: 0, z: 0 });
+    Wildlife.art.drawAnhinga(g, { px: 0, py: 0, x: 0, y: 0, ph: 0, mode: 'dry', flap: 0, t: 0, sink: 0, splash: 0, trail: [] }); Wildlife.art.drawFrog(g, 0, 0, 0, 1, 'sit');
+    Wildlife.art.drawBear(g, { i: 0, x: 0, y: 0, h: 0, up: 0, mode: 'watch', rear: 0, lunge: 0, look: 0, splash: 0, fish: 0 });
+    Wildlife.art.drawEagle(g, { i: 0, x: 0, y: 0, h: 0, z: 0, mode: 'soar', flap: 0, fish: 0, splash: 0 });
+    for (const jam of [true, false]) Wildlife.art.drawOtter(g, { i: 0, x: 0, y: 0, h: 0, rh: 0, size: 1, dip: 0, ring: 0, trail: [], trailT: 0, curl: 0 }, jam);
+    state.camera = c; });
   await p.waitForTimeout(900); }
   // SIZES_ZOOM=4 draws each animal at 4 px a unit (Oct 18 2026): at 1 px a unit an animal near the 10-unit floor loses its
   // bill tip and tail to anti-aliasing under the alpha cut, and reads ~20% short. Numbers are in units either way.
@@ -76,10 +85,14 @@ const { chromium } = require('playwright'); const path = require('path'); const 
       'egret standing': g => A.drawEgret(g, { x: 0, y: 0, h: 0, mode: 'stand', bob: 0, neck: 0 }),
       'egret flying (span)': g => A.drawEgret(g, { x: 0, y: 0, h: Math.PI / 2, mode: 'fly', flap: 0, z: 0 }),
       'anhinga drying (span)': g => A.drawAnhinga(g, { px: 0, py: 0, x: 0, y: 0, ph: 0, mode: 'dry', flap: 0, t: 0, sink: 0, splash: 0 }),
+      'anhinga swimming (bill to tail)': g => A.drawAnhinga(g, { px: 0, py: 0, x: 0, y: 0, h: 0, ph: 0, mode: 'swim', flap: 0, t: 0, upT: 9, sink: 0, splash: 0, trail: [] }),
+      'bullfrog sitting (size 1)': g => A.drawFrog(g, 0, 0, 0, 1, 'sit'),
       'brown bear (nose to rump)': g => A.drawBear(g, { i: 0, x: 0, y: 0, h: 0, up: 0, mode: 'watch', rear: 0, lunge: 0, look: 0, splash: 0, fish: 0 }),
       'sockeye': g => A.drawSockeye(g, 0, 0, 0, 1, 0, 0),
       'bald eagle (span)': g => A.drawEagle(g, { i: 0, x: 0, y: 0, h: Math.PI / 2, z: 0, mode: 'soar', flap: 0, fish: 0, splash: 0 }),
       'river otter (with tail)': g => A.drawOtter(g, { i: 0, x: 0, y: 0, h: 0, rh: 0, size: 1, dip: 0, ring: 0, trail: [], trailT: 0, curl: 0 }, true),
+      'river otter swimming (nose to tail tip)': g => A.drawOtter(g, { i: 0, x: 0, y: 0, h: 0, rh: 0, size: 1, dip: 0, ring: 0, trail: [], trailT: 0, curl: 0 }, false),
+      'tang (yellow, size 1)': g => A.drawShoal(g, { cfg: { kind: 'yellowtang' }, cx: 0, cy: 0, fish: [{ x: 0, y: 0, h: 0, size: 1, ph: 0, spd: 0 }] }),
       'sea otter (on its back, nose to hind feet)': g => A.drawSeaOtter(g, { i: 0, x: 0, y: 0, h: 0, mode: 'float', t: 5, bob: 0, roll: 0, paws: 'rest', food: null, tap: 0, ring: 0, ring2: 0, look: 0, kelp: false, size: 1, head: 0.8, trail: [], trailT: 0, dive: 0, pup: false, ph: 0 }),
       'sea lion cow (nose to hind flippers)': g => A.drawSeaLion(g, { i: 0, x: 0, y: 0, h: 0, mode: 'lie', up: 0, bark: 0, wet: 0, curl: 0, bob: 0, bull: false, size: 1 }),
       'sea lion bull': g => A.drawSeaLion(g, { i: 0, x: 0, y: 0, h: 0, mode: 'lie', up: 0, bark: 0, wet: 0, curl: 0, bob: 0, bull: true, size: 1.25 }),
