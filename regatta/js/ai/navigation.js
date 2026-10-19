@@ -858,7 +858,11 @@ Object.assign(BotController.prototype, {
                     const standing = Tide.riskAt(botGrid, boat.x, boat.y);
                     Tide.setNerve(nv, boat.x, boat.y, standing, standing > nv ? Tide.escapeReach(botGrid, boat.x, boat.y, nv) : 0);
                 }
+                // PT-050 PHASE 1: hold the leg's chosen route — the other candidates' own water is priced
+                // out of this search (and restored after it). Null when the leg has one route.
+                const crStamps = this.candidateRoutes(botGrid, destX, destY);
                 const seg = window.SailCheck.pathSailable(botGrid, [boat.x, boat.y], [destX, destY]);
+                if (crStamps) for (let iS = crStamps.length - 2; iS >= 0; iS -= 2) botGrid._jam[crStamps[iS]] = crStamps[iS + 1];
                 // WAITING FOR THE TIDE (Spoonbill Flats): the route may hold in always-wet
                 // water for a sill to open — pathSailable says where and until when, and the
                 // carrot below stays on that point until the clock passes it.
@@ -2311,4 +2315,135 @@ Object.assign(BotController.prototype, {
     }
 
 
+});
+
+// ═══ PT-050 PHASE 1 — CANDIDATE ROUTES ═══════════════════════════════════════════════════════════
+// One router gave the whole fleet one answer per leg. Where a leg has two or three GENUINELY different
+// routes (either side of an island; ≥ 500 u apart, < 30 % shared, plain sailing time within 10 % of the
+// best), a boat now sees them all and picks one — and, per the owner, a boat weighing a narrow route
+// looks at what the fleet AHEAD is doing there: each rival on the same leg, nearer the goal, sitting on a
+// candidate's own water adds a queue price, heavier when that water is narrow and the rival is stopped.
+// The pick is re-made each replan until the boat reaches its route's own water (3 % hysteresis), then held;
+// the other candidates' own water is priced out of every replan for the rest of the leg (the jam stamp's
+// ×6 cap, so a route that really closes can still be left). No RNG, no state outside this controller:
+// a leg with one route searches exactly as before.
+Object.assign(BotController.prototype, {
+    candidateRoutes(G, dx, dy) {
+        const boat = this.boat, L = boat.raceState.leg;
+        const P = (typeof window !== 'undefined' && window.__CR) ? window.__CR : {};
+        if (P.off || L < 1 || state.tide || (state.course._floeObjs && state.course._floeObjs.length)
+            || state.course._avCurP90 === undefined || state.course._avCurP90 >= 2.0) { this._cr = null; return null; }
+        let cr = this._cr;
+        if (!cr || cr.leg !== L || (dx - cr.gx) ** 2 + (dy - cr.gy) ** 2 > 300 * 300) {
+            cr = this._cr = { leg: L, gx: dx, gy: dy, cands: null, pick: -1, fork: false, n: 0 };
+        }
+        // Candidates come from where the boat is, so they are refreshed until the fork (every third replan).
+        if (!cr.fork && (cr.cands === null || cr.n % 3 === 0)) {
+            const nc = this._crGenerate(G, dx, dy, P);
+            if (cr.pick >= 0 && cr.cands && cr.cands[cr.pick]) {
+                const old = cr.cands[cr.pick].own;
+                let bi = -1, bo = 0;
+                nc.forEach((c, i) => {
+                    let o = 0; for (const id of c.ownSet) if (old.has(id)) o++;
+                    const f = o / Math.max(1, Math.min(c.ownSet.size, old.size));
+                    if (f > bo) { bo = f; bi = i; }
+                });
+                cr.pick = bo >= 0.3 ? bi : -1;
+            }
+            cr.cands = nc;
+        }
+        cr.n++;
+        const C = cr.cands;
+        if (!C || C.length < 2) return null;
+        if (!cr.fork) {
+            // THE FLEET AHEAD: who is on each candidate's own water, nearer the goal than me, and how freely.
+            const QS = P.qSlow != null ? P.qSlow : 6, QM = P.qMove != null ? P.qMove : 1.5;
+            const myGo = Math.hypot(dx - boat.x, dy - boat.y);
+            const sc = C.map(c => c.tsail);
+            if (!P.noCrowd) for (const o of state.boats) {
+                if (o === boat || o.raceState.finished || o.raceState.leg !== L) continue;
+                if (Math.hypot(dx - o.x, dy - o.y) > myGo - 50) continue;
+                const oc = G.cell(o.x, o.y), id = oc[1] * G.n + oc[0];
+                for (let i = 0; i < C.length; i++) {
+                    if (!C[i].ownSet.has(id)) continue;
+                    const cl = G._clear ? G._clear[id] : 8;
+                    const w = cl <= 1 ? 1 : cl <= 3 ? 0.5 : 0.15;
+                    sc[i] += (o.speed * 4 < 1.5 ? QS : QM) * w;
+                }
+            }
+            let best = 0; for (let i = 1; i < C.length; i++) if (sc[i] < sc[best]) best = i;
+            if (cr.pick < 0 || sc[best] < sc[cr.pick] * (1 - (P.hyst != null ? P.hyst : 0.03))) cr.pick = best;
+            const bc = G.cell(boat.x, boat.y);
+            if (C[cr.pick].ownSet.has(bc[1] * G.n + bc[0])) cr.fork = true;
+        }
+        // Price the other candidates' own water out of this search; the caller restores it.
+        if (!G._jam) { G._jam = new Uint8Array(G.n * G.n); G._jamIds = []; }
+        const stamps = [];
+        for (let i = 0; i < C.length; i++) {
+            if (i === cr.pick) continue;
+            for (const id of C[i].own) {
+                if (C[cr.pick].ownSet.has(id)) continue;
+                stamps.push(id, G._jam[id]);
+                if (G._jam[id] < 3) G._jam[id] = 3;
+            }
+        }
+        return stamps.length ? stamps : null;
+    },
+
+    // Up to three routes: the stock answer, then the answer with the earlier routes' interior priced out.
+    _crGenerate(G, dx, dy, P) {
+        const boat = this.boat, from = [boat.x, boat.y], to = [dx, dy];
+        const CUT = P.cut != null ? P.cut : 1.10, SEP = P.sep != null ? P.sep : 500;
+        if (!G._jam) { G._jam = new Uint8Array(G.n * G.n); G._jamIds = []; }
+        const saved = [], seen = new Uint8Array(G.n * G.n), acc = [];
+        let bestT = Infinity;
+        for (let k = 0; k < 3; k++) {
+            const r = window.SailCheck.pathSailable(G, from, to);
+            if (!r || r.tsail == null) break;
+            const inner = r.filter(q => Math.hypot(q[0] - from[0], q[1] - from[1]) > 300 && Math.hypot(q[0] - to[0], q[1] - to[1]) > 300);
+            if (!inner.length) break;
+            let ov = 0, sep = 0;
+            for (const q of inner) {
+                const c = G.cell(q[0], q[1]); if (seen[c[1] * G.n + c[0]]) ov++;
+                let dm = Infinity;
+                for (const a of acc) for (const p of a.pts) { const d = (p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2; if (d < dm) dm = d; }
+                if (acc.length && dm > sep) sep = dm;
+            }
+            sep = Math.sqrt(sep);
+            if (k === 0 || (r.tsail <= CUT * bestT && ov / inner.length < 0.3 && sep >= SEP)) {
+                acc.push({ pts: inner, tsail: r.tsail });
+                if (r.tsail < bestT) bestT = r.tsail;
+            }
+            for (const q of inner) {
+                const c = G.cell(q[0], q[1]);
+                for (let dy2 = -2; dy2 <= 2; dy2++) for (let dx2 = -2; dx2 <= 2; dx2++) {
+                    const x = c[0] + dx2, y = c[1] + dy2;
+                    if (x < 0 || y < 0 || x >= G.n || y >= G.n) continue;
+                    const id = y * G.n + x;
+                    if (!seen[id]) { seen[id] = 1; saved.push(id, G._jam[id]); G._jam[id] = 3; }
+                }
+            }
+        }
+        for (let i = saved.length - 2; i >= 0; i -= 2) G._jam[saved[i]] = saved[i + 1];
+        const out = acc.filter(a => a.tsail <= CUT * bestT);
+        if (out.length < 2) return out.map(a => ({ tsail: a.tsail, own: new Set(), ownSet: new Set() }));
+        // OWN WATER: the stretch of each route more than 150 u from every other candidate, widened a cell.
+        return out.map((a, i) => {
+            const own = new Set();
+            for (const q of a.pts) {
+                let far = true;
+                for (let j = 0; j < out.length && far; j++) {
+                    if (j === i) continue;
+                    for (const p of out[j].pts) if ((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 < 150 * 150) { far = false; break; }
+                }
+                if (!far) continue;
+                const c = G.cell(q[0], q[1]);
+                for (let dy2 = -1; dy2 <= 1; dy2++) for (let dx2 = -1; dx2 <= 1; dx2++) {
+                    const x = c[0] + dx2, y = c[1] + dy2;
+                    if (x >= 0 && y >= 0 && x < G.n && y < G.n) own.add(y * G.n + x);
+                }
+            }
+            return { tsail: a.tsail, own, ownSet: own, cx: a.pts[a.pts.length >> 1][0], cy: a.pts[a.pts.length >> 1][1] };
+        });
+    },
 });

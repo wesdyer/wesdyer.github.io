@@ -1945,8 +1945,15 @@ function buildCoursePaths() {
             // does: beating, reaching and running then price themselves and the
             // router stops needing hand-tuned upwind fudges.
             const wbin = new Uint8Array(N * N);
-            const SPDS = [8, 12, 16, 20, 25, 30];
+            const SPDS = [1.5, 2.25, 3, 3.75, 4.5, 5.25, 6, 7, 8, 12, 16, 20, 25, 30];   // = sailcheck.js buildTimeCost (light-air bins, PT-050)
             const MARCH = 5, LEE_W = 2.5;
+            // The light bins are for LIGHT VENUES only (median authored region speed under 7 kt: the
+            // Bayou, Lake). Everywhere else a cell bins against 8 kt and up exactly as before — the edge
+            // of a region's blend fades toward calm, and on a 9–25 kt venue pricing those rims as light
+            // air moved whole fleets (Otter +4.6 s/boat, 220 of 240 slower; LB1, 2026-10-18).
+            const wsAll = (state.course.windRegions || []).map(r => r.speed || 0).sort((a, b) => a - b);
+            const lightVenue = wsAll.length > 0 && wsAll[wsAll.length >> 1] < 7;
+            const sLo = lightVenue ? 0 : SPDS.indexOf(8);
             // THE DAY'S MEAN, not the bake instant. This stamp is cached on the grid and
             // keyed by leeKey above, which carries neither `r.phase` nor `state.time` —
             // and must not, because a static stamp that varied with the day's phase would
@@ -1969,11 +1976,11 @@ function buildCoursePaths() {
                     wfx[id] = Math.sin(wd); wfy[id] = -Math.cos(wd);
                     const dBin = ((Math.round(wd / (Math.PI * 2 / 16)) % 16) + 16) % 16;
                     let sBin = 0, sBest = Infinity;
-                    for (let s = 0; s < SPDS.length; s++) {
+                    for (let s = sLo; s < SPDS.length; s++) {
                         const dd = Math.abs((w.speed || 0) - SPDS[s]);
                         if (dd < sBest) { sBest = dd; sBin = s; }
                     }
-                    wbin[id] = dBin * 6 + sBin;
+                    wbin[id] = dBin * SPDS.length + sBin;
                     // Flow direction (where the wind pushes you): downwind of here.
                     const fx = -Math.sin(wd), fy = Math.cos(wd);
                     for (let k = 1; k <= MARCH; k++) {

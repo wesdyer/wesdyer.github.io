@@ -1073,9 +1073,15 @@ const TACK_SEC = 1.0;
 function buildTimeCost() {
     const gts = (typeof window !== 'undefined') && window.getTargetSpeed;
     if (!gts) return null;
-    const SPDS = [8, 12, 16, 20, 25, 30];
-    const tab = new Float32Array(16 * 6 * 8);
-    const loss = new Float32Array(16 * 6 * 8);
+    // LIGHT-AIR BINS (PT-050, 2026-10-18). The table started at 8 kt, so every cell of a light venue
+    // — Gatorgrass Bayou's whole field (1.6–5.6 kt), Lake's 2–6 kt corners — priced as 8 kt: the router
+    // could not see a dead-air patch or a pressure lane, though boat speed is close to linear in wind
+    // down there (beam 1.4 / 2.7 / 4.1 / 5.5 / 6.8 kt at 1.5 / 3 / 4.5 / 6 / 8), so the light bins step 0.75 kt
+    // (a 1.5 kt step put a 4.96 and a 5.36 kt region a whole 25 % apart). Must match SPDS in
+    // course.js, which bins the cells — and only on light venues; elsewhere cells bin against 8 kt and up as before.
+    const SPDS = [1.5, 2.25, 3, 3.75, 4.5, 5.25, 6, 7, 8, 12, 16, 20, 25, 30], NS = SPDS.length;
+    const tab = new Float32Array(16 * NS * 8);
+    const loss = new Float32Array(16 * NS * 8);
     let lo = Infinity;
     for (let d = 0; d < 16; d++) {
         const wd = d * Math.PI * 2 / 16;
@@ -1092,14 +1098,16 @@ function buildTimeCost() {
                         if (toward > best) { best = toward; bestV = v; bestDelta = (wd + sgn * tr) - bearing; }
                     }
                 }
-                const tf = Math.min(4, Math.max(0.6, 10 / best));   // "time per unit", 10kt reference
-                tab[(d * 6 + s) * 8 + k] = tf;
+                // "time per unit", 10kt reference. The cap was 4 when 8 kt was the lightest bin (its worst
+                // bearing is 2.2); dead air needs room (1.5 kt beats at 11) — no stock bin reaches 4.
+                const tf = Math.min(12, Math.max(0.6, 10 / best));
+                tab[(d * NS + s) * 8 + k] = tf;
                 // Corridor loss, in units: making good along a bearing whose best
                 // heading is δ off it means a tack every board, and each tack throws
                 // away TACK_SEC of polar speed's cross-corridor component. Zero when
                 // the bearing is directly sailable — the term scopes itself to the
                 // no-go cone (and prices corridor gybing mildly).
-                loss[(d * 6 + s) * 8 + k] = TACK_SEC * bestV * 15 * Math.abs(Math.sin(bestDelta));
+                loss[(d * NS + s) * 8 + k] = TACK_SEC * bestV * 15 * Math.abs(Math.sin(bestDelta));
                 if (tf < lo) lo = tf;
             }
         }
@@ -1399,6 +1407,19 @@ function pathSailable(grid, from, to) {
     out.push(grid.world(s[0], s[1]));
     out.reverse();
     if (wait) out.wait = { x: wait.x[0], y: wait.x[1], until: wait.until };
+    // the router's own price of the path (the A* cost, hints included) — for comparing candidates
+    out.cost = gScore[gi];
+    // ...and its plain sailing time in seconds: the polar's step and the shoal's tax, no route hints
+    // (stand-off-walls, lee, jams) — what candidate routes are compared on.
+    if (TF) {
+        let tS = 0;
+        for (let c2 = gi; c2 !== si && prev[c2] !== -1; c2 = prev[c2]) {
+            const p2 = prev[c2], dI = (c2 % N) - (p2 % N), dJ = ((c2 - c2 % N) - (p2 - p2 % N)) / N;
+            let k2 = 0; for (; k2 < 8; k2++) if (NB[k2][0] === dI && NB[k2][1] === dJ) break;
+            tS += (dI && dJ ? Math.SQRT2 : 1) * TF[wbin[c2] * 8 + k2] * (grid._shoal ? grid._shoal[c2] : 1);
+        }
+        out.tsail = tS * grid.res / 150;
+    }
     // the tide clock along the path (seconds from now), for probes and the helm's hold
     if (times) { times.push(0); times.reverse(); out.times = times; }
     return out;
