@@ -1213,12 +1213,22 @@ class BotController {
                  }
                  this.markEscapeHeading = escM;
                  this._markEscFrom = { x: col.normal.x, y: col.normal.y };
+                 this._markEscAt = { x: this.boat.x, y: this.boat.y };
                  // "2s" shipped on the 6x-slow clock — the tuned reality was a 12s
                  // commit, and the fleet's mark behavior is calibrated to it.
                  this.markContactTimer = 12.0;
              }
         }
 
+        // A START MARK is not a rounding: once she is two hulls clear of where she touched it, the
+        // commitment is done. Held the full 12 s, it carried a boat stalled in irons beside the pin
+        // ~600 u down the line away from her lane before she could turn back (Flit, Gatorgrass,
+        // seed 9402 under Wes's replayed start: 2.0 turns, test_start_circling). Rounding legs keep
+        // the calibrated 12 s.
+        if (this.markContactTimer > 0 && this.boat.raceState.leg === 0 && this._markEscAt
+            && Math.hypot(this.boat.x - this._markEscAt.x, this.boat.y - this._markEscAt.y) > 2 * BOAT_LEN_U) {
+             this.markContactTimer = 0;
+        }
         if (this.markContactTimer > 0) {
              this.markContactTimer -= TICK;
              // ⭐ RE-AIM THE COMMITMENT, DO NOT RELEASE IT.
