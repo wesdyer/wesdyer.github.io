@@ -1257,8 +1257,10 @@ const PROP_KINDS = {
     // the golden jellies and always under the hawksbill (24) that shares the water. These were 32 and 20, which with
     // the per-member scale (0.72-1.27) and depth (0.82-1.12) drew bells of 17-40: up to ~16x true size and bigger
     // than the turtle. The halos and arms are sized off this too.
-    'glowtide-jelly':       { label: 'Jellyfish drift',  world: 17, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
-    'glowtide-jelly-bloom': { label: 'Jellyfish (small)', world: 11, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level) 17/11 -> 8.5/5.5: bells of ~5-11 drawn (a 10-40 cm moon jelly x1.5, small ones at the bloom floor),
+    // under the hawksbill's 12; the drift's spread and stroke halve with them (render/effects.js JELLY_SPREAD, push).
+    'glowtide-jelly':       { label: 'Jellyfish drift',  world: 8.5, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
+    'glowtide-jelly-bloom': { label: 'Jellyfish (small)', world: 5.5, plane: 'seabed', contact: 'none', motion: 'drift', scatter: 'jelly' },
     // ── THE STRAIT'S FOUR PLANTS ────────────────────────────────────────────
     // What vegetates the karst. Declared with the art at `slot`, per the placeholder pattern:
     // a kind with no sprite draws nothing and costs nothing, so the venue can be planted and

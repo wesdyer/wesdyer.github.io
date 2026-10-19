@@ -378,7 +378,7 @@ function drawNightWater(ctx) {
 // trailing arms, which are drawn rather than baked so they can stream with the current.
 const JELLY_TINTS = ['#5aa9ff', '#a879ff', '#ff9247', '#ff62a8'];   // blue, purple, orange, pink
 const JELLY_ZMAX = 4;             // metres: the deepest a drift's members go (and where they are faintest)
-const JELLY_SPREAD = 190;         // how far members scatter from the placement
+const JELLY_SPREAD = 95;          // how far members scatter from the placement (Oct 18 2026, Wes: "1.5x or less" at sea level) 190 -> 95, the bells halved (venuedoc.js)
 
 function jellyHash(a, b) {
     const h = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
@@ -412,7 +412,7 @@ function jellyMembers(p) {
             // few cm/s, faster than a drifting boat, and it emptied the bloom across the map
             // in a minute. This lands near 1.5 u/s average: visible movement over a race
             // (a few boat lengths) with the drift still a drift at the finish.
-            push: 4.5 + h2 * 3,         // thrust per unit of squeeze
+            push: (4.5 + h2 * 3) * 0.5, // thrust per unit of squeeze (Oct 18 2026, Wes: "1.5x or less" at sea level) halved with the bell: ~0.75 u/s
             // THE WATER COLUMN (Oct 18 2026): its own depth and the tilt of its swim axis, integrated with the
             // swimming in updateJellyDrifts — see "UP AND DOWN" there.
             z: JELLY_ZMAX * (0.5 + 0.5 * Math.sin(h3 * Math.PI * 2)), dir: h1 > 0.5 ? 1 : -1, pitch: 0, flips: 0,

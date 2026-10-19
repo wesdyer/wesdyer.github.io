@@ -25,11 +25,16 @@ const { chromium } = require('playwright'); const path = require('path'); const 
     for (const o of [{ ram: true }, {}, { lamb: true }]) Wildlife.art.drawBighorn(g, Object.assign({ i: 0, x: 0, y: 0, h: 0, mode: 'graze', head: 0, look: 0, bed: 0, moving: 0, ph: 0, gait: 'walk', pitch: 0, z: 0 }, o));
     Wildlife.art.drawCoyote(g, { i: 0, x: 0, y: 0, h: 0, side: 0, z: 0, sit: 0, mode: 'stand', head: 0, look: 0, moving: 0, ph: 0, gait: 'walk', pitch: 0, crouch: 0, leap: 0 });
     Wildlife.art.drawLeap(g, { kind: 'carp', x: 0, y: 0, h: 0, t: 0.99, dur: 1, size: 1, hop: 0, roll: 1 });
+    // Glacier Sound's paintings (Oct 18 2026): penguins standing and prone, the leopard seal, the Antarctic tern
+    for (const sp of ['emperor', 'gentoo', 'macaroni', 'adelie']) { Wildlife.art.drawSwimmers(g, { species: sp, x: 0, y: 0, h: 0, t: 0, birds: [{ ox: 0, oy: 0, ph: 0, leap: -1, sur: 0.5 }] });
+      Wildlife.art.drawTreks(g, [{ species: sp, dir: 'out', pts: [{ x: 0, y: 0 }, { x: 0, y: -1 }], birds: [{ delay: 1, s: 0 }] }]); }
+    Wildlife.art.drawLeopardSeal(g, { mode: 'swim', x: 0, y: 0, h: 0, sw: 0, up: 1, ring: 0, plop: 0 });
+    Wildlife.art.drawTern(g, { x: 0, y: 0, h: 0, z: 0, mode: 'shift', flap: Math.PI / 2, splash: 0 }); for (const n of ['body', 'wing-l', 'wing-r']) Wildlife.art.arcticImg('tern-' + n);   // (the wings are asked for only once the body has loaded)
     // Glowtide's paintings (Oct 18 2026)
     Wildlife.art.drawManta(g, { x: 0, y: 0, h: 0, mode: 'travel', beat: 0, pitch: 0, i: 0, sparks: [] });
     Wildlife.art.drawFlyingFox(g, { x: 0, y: 0, h: 0, z: 0, flap: 0 });
     Wildlife.art.drawHawksbill(g, { x: 0, y: 0, h: 0, mode: 'swim', beat: 0, i: 0, sand: [], tracks: [] });
-    Wildlife.art.drawDugong(g, { x: 0, y: 0, h: 0, len: 52, beat: 0, trail: [], calf: { x: 0, y: 0, h: 0, len: 28.6, beat: 0 } });
+    Wildlife.art.drawDugong(g, { x: 0, y: 0, h: 0, len: 41.3, beat: 0, trail: [], calf: { x: 0, y: 0, h: 0, len: 23.8, beat: 0 } });
     // Otter Point, Spoonbill Flats and Clubhouse Point (Oct 18 2026): asked for here, or the first draw finds them unloaded (the sea otter read "empty")
     const A = Wildlife.art, sl = { i: 0, x: 0, y: 0, h: 0, mode: 'lie', up: 0, bark: 0, wet: 0, curl: 0, bob: 0, size: 1 };
     A.drawSeaOtter(g, { i: 0, x: 0, y: 0, h: 0, mode: 'float', t: 5, bob: 0, roll: 0, paws: 'rest', food: null, tap: 0, ring: 0, ring2: 0, look: 0, kelp: false, size: 1, head: 0.8, trail: [], trailT: 0, dive: 0, pup: false, ph: 0 });
@@ -114,9 +119,18 @@ const { chromium } = require('playwright'); const path = require('path'); const 
       'flying fox (top of the upstroke)': g => { const c = state.camera; state.camera = null; A.drawFlyingFox(g, { x: 0, y: 0, h: 0, z: 0, flap: -Math.PI / 2, glideT: 0, bank: 0 }); state.camera = c; },
       'hawksbill (swimming)': g => { const c = state.camera; state.camera = null; A.drawHawksbill(g, { x: 0, y: 0, h: 0, mode: 'swim', beat: 0, up: 1, i: 0, ring: 0, puff: 0, sand: [], tracks: [] }); state.camera = c; },
       'hawksbill (on the sand)': g => { const c = state.camera; state.camera = null; A.drawHawksbill(g, { x: 0, y: 0, h: 0, mode: 'crawlup', beat: 0, i: 0, sand: [], tracks: [] }); state.camera = c; },
-      'dugong (muzzle to fluke tips)': g => { const c = state.camera; state.camera = null; A.drawDugong(g, { x: 0, y: 0, h: 0, len: 52, beat: Math.PI / 2, up: 1, trail: [], silt: 0, ring: 0, calf: { x: 9999, y: 0, h: 0, len: 28.6, beat: 0, up: 1 } }); state.camera = c; },
-      'dugong calf': g => { const c = state.camera; state.camera = null; A.drawDugong(g, { x: 9999, y: 0, h: 0, len: 52, beat: 0, up: 1, trail: [], silt: 0, ring: 0, calf: { x: 0, y: 0, h: 0, len: 28.6, beat: Math.PI / 2, up: 1 } }); state.camera = c; },
+      // (the dugong's lengths are the game's own: DUGONG_LEN 41.3, the calf DUGONG_LEN x 0.576 = 23.8 — Oct 18 2026, were 52 / 28.6)
+      'dugong (muzzle to fluke tips)': g => { const c = state.camera; state.camera = null; A.drawDugong(g, { x: 0, y: 0, h: 0, len: 41.3, beat: Math.PI / 2, up: 1, trail: [], silt: 0, ring: 0, calf: { x: 9999, y: 0, h: 0, len: 23.8, beat: 0, up: 1 } }); state.camera = c; },
+      'dugong calf': g => { const c = state.camera; state.camera = null; A.drawDugong(g, { x: 9999, y: 0, h: 0, len: 41.3, beat: 0, up: 1, trail: [], silt: 0, ring: 0, calf: { x: 0, y: 0, h: 0, len: 23.8, beat: Math.PI / 2, up: 1 } }); state.camera = c; },
       'golden jelly (largest bell, at the surface)': g => A.drawGoldJelly(g, { x: 0, y: 0, h: 0, size: 1.25, depth: 0, z: 0.3, pitch: 1.4, sq: 0, ph: 0, spots: 1 }),
+      // GLACIER SOUND (Oct 18 2026): each penguin prone (swimming, bill to feet: its body length) and standing (the footprint
+      // from straight above); the leopard seal swimming; the Antarctic tern flying level (span wide x bill to tail long) and roosting.
+      ...Object.fromEntries(['emperor', 'gentoo', 'macaroni', 'adelie'].flatMap(sp => [
+        [sp + ' penguin (prone, bill to feet)', g => { const c = state.camera; state.camera = null; A.drawSwimmers(g, { species: sp, x: 0, y: 0, h: 0, t: 0, birds: [{ ox: 0, oy: 0, ph: 0, leap: -1, sur: 0.5 }] }); state.camera = c; }],
+        [sp + ' penguin (standing)', g => { const c = state.camera; state.camera = null; A.drawTreks(g, [{ species: sp, dir: 'out', pts: [{ x: 0, y: 0 }, { x: 0, y: -1 }], birds: [{ delay: 1, s: 0 }] }]); state.camera = c; }]])),
+      'leopard seal (nose to hind flippers, swimming)': g => { const c = state.camera; state.camera = null; A.drawLeopardSeal(g, { mode: 'swim', x: 0, y: 0, h: 0, sw: 0, up: 1, ring: 0, plop: 0 }); state.camera = c; },
+      'antarctic tern (span × bill to tail, flying)': g => { const c = state.camera; state.camera = null; A.drawTern(g, { x: 0, y: 0, h: 0, z: 0, mode: 'shift', flap: Math.PI / 2, splash: 0 }); state.camera = c; },
+      'antarctic tern (roosting)': g => { const c = state.camera; state.camera = null; A.drawTern(g, { x: 0, y: 0, h: 0, z: 0, mode: 'roost', flap: 0, splash: 0 }); state.camera = c; },
       'golden jelly (smallest)': g => A.drawGoldJelly(g, { x: 0, y: 0, h: 0, size: 0.6, depth: 0, z: 0.3, pitch: 1.4, sq: 0, ph: 0, spots: 1 }),
       // OCEAN + REDROCK (Oct 18 2026, "1.5x or less" at sea level): the birds at h 0 — span wide x bill to tail long; the
       // walkers nose to tail tip; the carp flat on its side at the end of its leap (its jump water faded, no height)
@@ -155,7 +169,7 @@ const { chromium } = require('playwright'); const path = require('path'); const 
       const K = HI.has(k) ? Math.max(4, ZOOM) : ZOOM, N = 400 * K, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d');
       g.translate(N / 2, N / 2); g.scale(K, K); try { fn(g); } catch (e) { out[k] = 'err ' + e.message; continue; }
       const d = g.getImageData(0, 0, N, N).data; let x0 = N, x1 = -1, y0 = N, y1 = -1;
-      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (d[(y * N + x) * 4 + 3] > (/ray|alligator|jelly/.test(k) ? 40 : 150)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (d[(y * N + x) * 4 + 3] > (/ray|alligator|jelly|tern \(span/.test(k) ? 40 : 150)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
       out[k] = x1 < 0 ? 'empty' : `${+((x1 - x0 + 1) / K).toFixed(1)} wide × ${+((y1 - y0 + 1) / K).toFixed(1)} long`;
     }
     return out;
