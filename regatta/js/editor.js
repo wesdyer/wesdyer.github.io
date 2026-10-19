@@ -2237,6 +2237,34 @@ function drawCourseLayer() {
             }
         }
     }
+    // ROUTE GUIDES (doc.routeGuides, Oct 18 2026): the designed alternatives on a leg, drawn
+    // dashed in their own colours with name + router estimate, so route balance (Wes: "3+ routes
+    // roughly the same cost with different character") can be judged on the map. Notes only —
+    // nothing in the game reads them, and recordsHash leaves them out.
+    if ((mode === 'marks' || mode === 'route') && doc && Array.isArray(doc.routeGuides)) {
+        ctx.save();
+        for (const G of doc.routeGuides) {
+            if (!G || !Array.isArray(G.pts) || G.pts.length < 2) continue;
+            const sp = G.pts.map(q => toS(q[0], q[1]));
+            ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+            for (const pass of [{ w: 6, c: 'rgba(6,14,26,0.5)', d: [] }, { w: 3, c: G.colour || '#e5e7eb', d: [12, 8] }]) {
+                ctx.strokeStyle = pass.c; ctx.lineWidth = pass.w; ctx.setLineDash(pass.d);
+                ctx.beginPath(); ctx.moveTo(sp[0].x, sp[0].y);
+                for (let i = 1; i < sp.length; i++) ctx.lineTo(sp[i].x, sp[i].y);
+                ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            const m = sp[sp.length >> 1];
+            const label = G.name + (G.est != null ? ` · ${Math.round(G.est)} s` : '');
+            ctx.font = '600 12px ui-monospace, monospace';
+            const w = ctx.measureText(label).width + 12;
+            ctx.fillStyle = 'rgba(6,14,26,0.8)'; ctx.fillRect(m.x - w / 2, m.y - 10, w, 20);
+            ctx.fillStyle = G.colour || '#e5e7eb'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            ctx.fillText(label, m.x, m.y);
+            if (G.note) { ctx.font = '11px ui-sans-serif, system-ui'; ctx.fillStyle = 'rgba(229,231,235,0.9)'; ctx.fillText(G.note, m.x, m.y + 18); }
+        }
+        ctx.restore();
+    }
     if (mode === 'route' && selRoute >= 0 && course && course.dmc && course.dmc.legs[selRoute]) {
         const L = course.dmc.legs[selRoute];
         if (L.pts.length >= 2) {

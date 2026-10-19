@@ -4822,7 +4822,7 @@ function canonJSON(x) {
 }
 function recordsHash(doc) {
     if (!doc) return 'r1-none';
-    const skipTop = { note: 1, card: 1, palette: 1, fx: 1, records: 1, props: 1, course: 1, backdrop: 1, chart: 1 };
+    const skipTop = { note: 1, card: 1, palette: 1, fx: 1, records: 1, props: 1, course: 1, backdrop: 1, chart: 1, routeGuides: 1 };
     const out = {};
     for (const k of Object.keys(doc)) if (!skipTop[k]) out[k] = doc[k];
     // Scenery past the map line is no part of the race (see isMapOnly).

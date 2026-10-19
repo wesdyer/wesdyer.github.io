@@ -7438,63 +7438,6 @@ window.VENUE_DOC["swamp"] = {
       "r": 882.7469307969192
     },
     {
-      "id": "shape-25",
-      "kind": "mudflat",
-      "smooth": true,
-      "outer": [
-        [
-          -1563.196731194246,
-          -1588.2531924158754
-        ],
-        [
-          -1623.945204004359,
-          -1466.7562467956488
-        ],
-        [
-          -1602.24932085789,
-          -1345.2593011754225
-        ],
-        [
-          -1359.2554296174374,
-          -1215.0840022966083
-        ],
-        [
-          -1402.6471959103753,
-          -1041.5169371248564
-        ],
-        [
-          -1628.284380633653,
-          -1054.5344670127379
-        ],
-        [
-          -1788.8339159175234,
-          -1163.0138827450828
-        ],
-        [
-          -1853.9215653569304,
-          -1297.5283582531906
-        ],
-        [
-          -2049.1845136751517,
-          -1414.6861272441233
-        ],
-        [
-          -1888.634978391281,
-          -1601.2707223037569
-        ],
-        [
-          -1749.7813262538793,
-          -1635.984135338107
-        ]
-      ],
-      "holes": [],
-      "c": [
-        -1682.721323801157,
-        -1347.626124791401
-      ],
-      "r": 414.9028222218472
-    },
-    {
       "id": "shape-112",
       "kind": "weedmat",
       "smooth": true,
@@ -11377,72 +11320,6 @@ window.VENUE_DOC["swamp"] = {
       "r": 590.6046885319058
     },
     {
-      "id": "weed-11",
-      "name": "Weed bed",
-      "kind": "weedbed",
-      "smooth": true,
-      "outer": [
-        [
-          -834,
-          521
-        ],
-        [
-          -610,
-          409
-        ],
-        [
-          -450,
-          427
-        ],
-        [
-          -379,
-          637
-        ],
-        [
-          -559,
-          829
-        ],
-        [
-          -549,
-          945
-        ],
-        [
-          -564,
-          1179
-        ],
-        [
-          -727,
-          1211
-        ],
-        [
-          -947,
-          1187
-        ],
-        [
-          -992,
-          1040
-        ],
-        [
-          -1022,
-          808
-        ],
-        [
-          -1015,
-          668
-        ],
-        [
-          -870,
-          596
-        ]
-      ],
-      "holes": [],
-      "c": [
-        -725.6926255391415,
-        810.8065782305241
-      ],
-      "r": 472.56101539345025
-    },
-    {
       "id": "weed-12",
       "name": "Weed bed",
       "kind": "weedbed",
@@ -12507,7 +12384,7 @@ window.VENUE_DOC["swamp"] = {
     ],
     "cutoff": 600,
     "paths": {
-      "sig": "v3-c65cafdc-brkf",
+      "sig": "v3-1b5dbf64-bcur",
       "legs": [
         {
           "pts": []
@@ -12519,48 +12396,32 @@ window.VENUE_DOC["swamp"] = {
               2364.5
             ],
             [
-              -1933.4,
-              960.6
+              -2633.4,
+              510.6
             ],
             [
-              -933.4,
-              860.6
-            ],
-            [
-              -733.4,
-              660.6
-            ],
-            [
-              -733.4,
+              -2583.4,
               260.6
             ],
             [
-              -1533.4,
-              -339.4
+              -2583.4,
+              -139.4
             ],
             [
-              -1533.4,
-              -939.4
+              -2883.4,
+              -489.4
             ],
             [
-              -1633.4,
-              -1089.4
+              -2733.4,
+              -739.4
             ],
             [
-              -1633.4,
-              -1139.4
+              -2533.4,
+              -889.4
             ],
             [
-              -1633.4,
-              -1189.4
-            ],
-            [
-              -1633.4,
-              -1239.4
-            ],
-            [
-              -983.4,
-              -1639.4
+              -1033.4,
+              -1589.4
             ],
             [
               -583.4,
@@ -12801,7 +12662,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.228717,
         "dirVar": 0.716389,
-        "speed": 5.19,
+        "speed": 6.23,
         "speedVar": 1.44,
         "period": 260
       },
@@ -12869,7 +12730,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.270809,
         "dirVar": 0.576392,
-        "speed": 4.77,
+        "speed": 5.72,
         "speedVar": 1.25,
         "period": 63
       },
@@ -13005,7 +12866,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 160,
         "direction": -0.257614,
         "dirVar": 0.8,
-        "speed": 1.65,
+        "speed": 1.81,
         "speedVar": 0.45,
         "period": 58
       },
@@ -13073,7 +12934,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.123762,
         "dirVar": 0.538977,
-        "speed": 5.15,
+        "speed": 5.67,
         "speedVar": 1.41,
         "period": 540
       },
@@ -13141,7 +13002,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.295861,
         "dirVar": 0.590913,
-        "speed": 4.65,
+        "speed": 7.25,
         "speedVar": 1.21,
         "period": 36
       },
@@ -13209,7 +13070,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.309713,
         "dirVar": 1.041916,
-        "speed": 4.44,
+        "speed": 5.33,
         "speedVar": 1.55,
         "period": 542
       },
@@ -13413,7 +13274,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.069174,
         "dirVar": 0.651391,
-        "speed": 4.76,
+        "speed": 5.24,
         "speedVar": 1.24,
         "period": 165
       },
@@ -13481,7 +13342,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": 0.076391,
         "dirVar": 1.072881,
-        "speed": 4.81,
+        "speed": 5.29,
         "speedVar": 1.74,
         "period": 78
       },
@@ -13549,7 +13410,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": 0,
         "dirVar": 0.960516,
-        "speed": 4.62,
+        "speed": 6.01,
         "speedVar": 1.64,
         "period": 232
       },
@@ -13753,7 +13614,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.606722,
         "dirVar": 0.723625,
-        "speed": 5.23,
+        "speed": 5.75,
         "speedVar": 1.45,
         "period": 59
       },
@@ -13821,7 +13682,7 @@ window.VENUE_DOC["swamp"] = {
         "falloff": 432,
         "direction": -0.448031,
         "dirVar": 1.077037,
-        "speed": 5.3,
+        "speed": 5.83,
         "speedVar": 1.96,
         "period": 416
       },
@@ -16433,14 +16294,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.344
     },
     {
-      "id": "knee-15",
-      "kind": "swamp-cypress-knee",
-      "x": 1218.7,
-      "y": 1817.6,
-      "heading": 1.186,
-      "scale": 1.684
-    },
-    {
       "id": "knee-16",
       "kind": "swamp-cypress-knee",
       "x": 219.5,
@@ -16873,22 +16726,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.38
     },
     {
-      "id": "knee-70",
-      "kind": "swamp-cypress-knee",
-      "x": -1580.9,
-      "y": 2163.8,
-      "heading": 4.782,
-      "scale": 1.568
-    },
-    {
-      "id": "knee-71",
-      "kind": "swamp-cypress-knee",
-      "x": -1633.3,
-      "y": 2200.4,
-      "heading": 1.031,
-      "scale": 1.419
-    },
-    {
       "id": "knee-72",
       "kind": "swamp-cypress-knee",
       "x": -1304.7,
@@ -16919,38 +16756,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 2088.7,
       "heading": 5.389,
       "scale": 0.921
-    },
-    {
-      "id": "knee-76",
-      "kind": "swamp-cypress-knee",
-      "x": -1353.4,
-      "y": 2297,
-      "heading": 2.618,
-      "scale": 1.179
-    },
-    {
-      "id": "knee-77",
-      "kind": "swamp-cypress-knee",
-      "x": -1345.3,
-      "y": 2333.1,
-      "heading": 6.215,
-      "scale": 1.659
-    },
-    {
-      "id": "knee-78",
-      "kind": "swamp-cypress-knee",
-      "x": -1395.1,
-      "y": 2345.3,
-      "heading": 5.706,
-      "scale": 1.658
-    },
-    {
-      "id": "knee-79",
-      "kind": "swamp-cypress-knee",
-      "x": -1387.4,
-      "y": 2314.3,
-      "heading": 3.214,
-      "scale": 1.516
     },
     {
       "id": "knee-80",
@@ -17367,14 +17172,6 @@ window.VENUE_DOC["swamp"] = {
       "y": -844.1,
       "heading": 0.975,
       "scale": 1.279
-    },
-    {
-      "id": "knee-132",
-      "kind": "swamp-cypress-knee",
-      "x": -2358.9,
-      "y": -890.1,
-      "heading": 0.309,
-      "scale": 1.28
     },
     {
       "id": "knee-133",
@@ -18177,22 +17974,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.799
     },
     {
-      "id": "knee-233",
-      "kind": "swamp-cypress-knee",
-      "x": 1252.1,
-      "y": 1826.3,
-      "heading": 1.154,
-      "scale": 1.544
-    },
-    {
-      "id": "knee-234",
-      "kind": "swamp-cypress-knee",
-      "x": 1198.9,
-      "y": 1891.6,
-      "heading": 4.471,
-      "scale": 1.262
-    },
-    {
       "id": "knee-235",
       "kind": "swamp-cypress-knee",
       "x": 1300.9,
@@ -18409,22 +18190,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.758
     },
     {
-      "id": "knee-262",
-      "kind": "swamp-cypress-knee",
-      "x": -1719.1,
-      "y": 2242.6,
-      "heading": 3.231,
-      "scale": 0.816
-    },
-    {
-      "id": "knee-263",
-      "kind": "swamp-cypress-knee",
-      "x": -1685.6,
-      "y": 2323.5,
-      "heading": 0.949,
-      "scale": 1.29
-    },
-    {
       "id": "knee-264",
       "kind": "swamp-cypress-knee",
       "x": -601,
@@ -18497,14 +18262,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 0.925
     },
     {
-      "id": "knee-273",
-      "kind": "swamp-cypress-knee",
-      "x": -1338.9,
-      "y": 2197.4,
-      "heading": 3.933,
-      "scale": 1.647
-    },
-    {
       "id": "knee-274",
       "kind": "swamp-cypress-knee",
       "x": -1209.3,
@@ -18519,38 +18276,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 2179.9,
       "heading": 5.413,
       "scale": 1.073
-    },
-    {
-      "id": "knee-276",
-      "kind": "swamp-cypress-knee",
-      "x": -1151,
-      "y": 2304.1,
-      "heading": 3.859,
-      "scale": 1.554
-    },
-    {
-      "id": "knee-277",
-      "kind": "swamp-cypress-knee",
-      "x": -1124,
-      "y": 2335.9,
-      "heading": 4.163,
-      "scale": 1.047
-    },
-    {
-      "id": "knee-278",
-      "kind": "swamp-cypress-knee",
-      "x": -1129.1,
-      "y": 2376.1,
-      "heading": 0.524,
-      "scale": 1.527
-    },
-    {
-      "id": "knee-279",
-      "kind": "swamp-cypress-knee",
-      "x": -1140.6,
-      "y": 2397.5,
-      "heading": 5.169,
-      "scale": 1.511
     },
     {
       "id": "knee-280",
@@ -19209,14 +18934,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.023
     },
     {
-      "id": "knee-362",
-      "kind": "swamp-cypress-knee",
-      "x": 1204.1,
-      "y": 2261.6,
-      "heading": 3.547,
-      "scale": 1.043
-    },
-    {
       "id": "knee-363",
       "kind": "swamp-cypress-knee",
       "x": 1437.3,
@@ -19537,14 +19254,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.524
     },
     {
-      "id": "knee-403",
-      "kind": "swamp-cypress-knee",
-      "x": -1593.8,
-      "y": 2405,
-      "heading": 0.782,
-      "scale": 1.642
-    },
-    {
       "id": "knee-404",
       "kind": "swamp-cypress-knee",
       "x": -1580.1,
@@ -19559,54 +19268,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 2419,
       "heading": 0.62,
       "scale": 1.606
-    },
-    {
-      "id": "knee-406",
-      "kind": "swamp-cypress-knee",
-      "x": -1817.6,
-      "y": 2249.7,
-      "heading": 1.625,
-      "scale": 1.252
-    },
-    {
-      "id": "knee-407",
-      "kind": "swamp-cypress-knee",
-      "x": -1811.5,
-      "y": 2320.3,
-      "heading": 4.089,
-      "scale": 0.919
-    },
-    {
-      "id": "knee-408",
-      "kind": "swamp-cypress-knee",
-      "x": -1836.8,
-      "y": 2244,
-      "heading": 3.367,
-      "scale": 1.653
-    },
-    {
-      "id": "knee-409",
-      "kind": "swamp-cypress-knee",
-      "x": -1884.9,
-      "y": 2271.8,
-      "heading": 2.392,
-      "scale": 1.407
-    },
-    {
-      "id": "knee-410",
-      "kind": "swamp-cypress-knee",
-      "x": -1964.6,
-      "y": 2318.8,
-      "heading": 5.995,
-      "scale": 0.831
-    },
-    {
-      "id": "knee-411",
-      "kind": "swamp-cypress-knee",
-      "x": -1917.7,
-      "y": 2330,
-      "heading": 0.917,
-      "scale": 1.57
     },
     {
       "id": "knee-412",
@@ -19961,38 +19622,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.31
     },
     {
-      "id": "knee-456",
-      "kind": "swamp-cypress-knee",
-      "x": -2663.2,
-      "y": -1018.5,
-      "heading": 3.762,
-      "scale": 1.515
-    },
-    {
-      "id": "knee-457",
-      "kind": "swamp-cypress-knee",
-      "x": -2690.8,
-      "y": -1012.8,
-      "heading": 3.599,
-      "scale": 1.611
-    },
-    {
-      "id": "knee-458",
-      "kind": "swamp-cypress-knee",
-      "x": -2561.1,
-      "y": -1035.6,
-      "heading": 3.545,
-      "scale": 0.819
-    },
-    {
-      "id": "knee-459",
-      "kind": "swamp-cypress-knee",
-      "x": -2498.4,
-      "y": -953.5,
-      "heading": 3.031,
-      "scale": 1.559
-    },
-    {
       "id": "knee-460",
       "kind": "swamp-cypress-knee",
       "x": -2167.8,
@@ -20015,46 +19644,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 2501.1,
       "heading": 3.359,
       "scale": 1.229
-    },
-    {
-      "id": "knee-463",
-      "kind": "swamp-cypress-knee",
-      "x": -760.5,
-      "y": 2365.1,
-      "heading": 4.983,
-      "scale": 1.522
-    },
-    {
-      "id": "knee-464",
-      "kind": "swamp-cypress-knee",
-      "x": -938.1,
-      "y": 2304.3,
-      "heading": 2.042,
-      "scale": 1.722
-    },
-    {
-      "id": "knee-465",
-      "kind": "swamp-cypress-knee",
-      "x": -960.3,
-      "y": 2322.4,
-      "heading": 0.571,
-      "scale": 1.107
-    },
-    {
-      "id": "knee-466",
-      "kind": "swamp-cypress-knee",
-      "x": -940.3,
-      "y": 2305.6,
-      "heading": 4.409,
-      "scale": 1.493
-    },
-    {
-      "id": "knee-467",
-      "kind": "swamp-cypress-knee",
-      "x": -981.3,
-      "y": 2365.4,
-      "heading": 0.262,
-      "scale": 1.042
     },
     {
       "id": "knee-468",
@@ -20975,22 +20564,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 2145.4,
       "heading": 4.5,
       "scale": 2.656
-    },
-    {
-      "id": "tree-41",
-      "kind": "swamp-cypress",
-      "x": 1263.7,
-      "y": 1882.5,
-      "heading": 5.985,
-      "scale": 2.755
-    },
-    {
-      "id": "tree-42",
-      "kind": "swamp-tupelo",
-      "x": 1125.8,
-      "y": 2166,
-      "heading": 1.015,
-      "scale": 2.474
     },
     {
       "id": "tree-43",
@@ -22089,52 +21662,12 @@ window.VENUE_DOC["swamp"] = {
       "scale": 2.67
     },
     {
-      "id": "tree-180",
-      "kind": "swamp-tupelo",
-      "x": 1296.1,
-      "y": 1863.9,
-      "heading": 3.237,
-      "scale": 2.642
-    },
-    {
-      "id": "tree-181",
-      "kind": "swamp-tupelo",
-      "x": 1020.4,
-      "y": 2100.9,
-      "heading": 1.455,
-      "scale": 2.617
-    },
-    {
       "id": "tree-182",
       "kind": "swamp-tupelo",
       "x": 1310.1,
       "y": 2453.9,
       "heading": 6.227,
       "scale": 2.012
-    },
-    {
-      "id": "tree-183",
-      "kind": "swamp-cypress",
-      "x": 1038.3,
-      "y": 2123.7,
-      "heading": 5.604,
-      "scale": 1.533
-    },
-    {
-      "id": "tree-184",
-      "kind": "swamp-cypress",
-      "x": 1134.9,
-      "y": 1941.8,
-      "heading": 2.69,
-      "scale": 1.921
-    },
-    {
-      "id": "tree-185",
-      "kind": "swamp-tupelo",
-      "x": 1004.7,
-      "y": 2125.9,
-      "heading": 5.931,
-      "scale": 2.202
     },
     {
       "id": "tree-186",
@@ -22257,36 +21790,12 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.494
     },
     {
-      "id": "tree-201",
-      "kind": "swamp-cypress",
-      "x": -1682.1,
-      "y": 2157.4,
-      "heading": 4.792,
-      "scale": 2.358
-    },
-    {
-      "id": "tree-202",
-      "kind": "swamp-cypress",
-      "x": -1414,
-      "y": 2196.1,
-      "heading": 4.387,
-      "scale": 1.986
-    },
-    {
       "id": "tree-203",
       "kind": "swamp-cypress",
       "x": -1492.1,
       "y": 2117.8,
       "heading": 3.312,
       "scale": 2.438
-    },
-    {
-      "id": "tree-204",
-      "kind": "swamp-cypress",
-      "x": -1314.3,
-      "y": 2289.6,
-      "heading": 4.88,
-      "scale": 1.697
     },
     {
       "id": "tree-205",
@@ -22503,14 +22012,6 @@ window.VENUE_DOC["swamp"] = {
       "y": -13.7,
       "heading": 5.182,
       "scale": 2.055
-    },
-    {
-      "id": "tree-232",
-      "kind": "swamp-cypress",
-      "x": -2717.1,
-      "y": 63.9,
-      "heading": 5.892,
-      "scale": 1.942
     },
     {
       "id": "tree-233",
@@ -23721,28 +23222,12 @@ window.VENUE_DOC["swamp"] = {
       "scale": 2.24
     },
     {
-      "id": "tree-384",
-      "kind": "swamp-cypress",
-      "x": -2558.8,
-      "y": -902.1,
-      "heading": 2.268,
-      "scale": 2.741
-    },
-    {
       "id": "tree-385",
       "kind": "swamp-cypress",
       "x": -2692.8,
       "y": -676.5,
       "heading": 5.147,
       "scale": 2.274
-    },
-    {
-      "id": "tree-386",
-      "kind": "swamp-cypress",
-      "x": -2493.4,
-      "y": -877.6,
-      "heading": 2.108,
-      "scale": 2.712
     },
     {
       "id": "tree-387",
@@ -24161,28 +23646,12 @@ window.VENUE_DOC["swamp"] = {
       "scale": 2.518
     },
     {
-      "id": "tree-439",
-      "kind": "swamp-tupelo",
-      "x": 1300.6,
-      "y": 1894.3,
-      "heading": 1.589,
-      "scale": 2.432
-    },
-    {
       "id": "tree-440",
       "kind": "swamp-tupelo",
       "x": 1413.9,
       "y": 2082.8,
       "heading": 1.926,
       "scale": 2.147
-    },
-    {
-      "id": "tree-441",
-      "kind": "swamp-cypress",
-      "x": 1157.6,
-      "y": 2009.5,
-      "heading": 3.3,
-      "scale": 1.772
     },
     {
       "id": "tree-442",
@@ -24311,14 +23780,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 80.2,
       "heading": 0.861,
       "scale": 1.518
-    },
-    {
-      "id": "tree-458",
-      "kind": "swamp-cypress",
-      "x": -2848.2,
-      "y": -309.6,
-      "heading": 4.632,
-      "scale": 1.42
     },
     {
       "id": "tree-459",
@@ -25857,44 +25318,12 @@ window.VENUE_DOC["swamp"] = {
       "scale": 2.296
     },
     {
-      "id": "tree-651",
-      "kind": "swamp-tupelo",
-      "x": 1318.6,
-      "y": 1707.8,
-      "heading": 1.957,
-      "scale": 2.341
-    },
-    {
-      "id": "tree-652",
-      "kind": "swamp-cypress",
-      "x": 1315.5,
-      "y": 1669.3,
-      "heading": 3.258,
-      "scale": 2.222
-    },
-    {
       "id": "tree-653",
       "kind": "swamp-tupelo",
       "x": 931.6,
       "y": 1866.7,
       "heading": 1.306,
       "scale": 2.248
-    },
-    {
-      "id": "tree-654",
-      "kind": "swamp-tupelo",
-      "x": 1013.7,
-      "y": 1995.6,
-      "heading": 0.785,
-      "scale": 2.289
-    },
-    {
-      "id": "tree-655",
-      "kind": "swamp-cypress",
-      "x": 1194,
-      "y": 1814.3,
-      "heading": 2.697,
-      "scale": 2.005
     },
     {
       "id": "tree-656",
@@ -26569,14 +25998,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 2.084
     },
     {
-      "id": "tree-740",
-      "kind": "swamp-cypress",
-      "x": -1750.2,
-      "y": 2376.6,
-      "heading": 4.706,
-      "scale": 2.226
-    },
-    {
       "id": "tree-741",
       "kind": "swamp-cypress",
       "x": -387,
@@ -26887,22 +26308,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 1084.4,
       "heading": 1.287,
       "scale": 2.428
-    },
-    {
-      "id": "tree-780",
-      "kind": "swamp-cypress",
-      "x": -1318.3,
-      "y": 2268.8,
-      "heading": 3.847,
-      "scale": 2.695
-    },
-    {
-      "id": "tree-781",
-      "kind": "swamp-cypress",
-      "x": -1207,
-      "y": 2337.9,
-      "heading": 2.865,
-      "scale": 2.05
     },
     {
       "id": "tree-782",
@@ -28905,14 +28310,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.819
     },
     {
-      "id": "tree-1032",
-      "kind": "swamp-cypress",
-      "x": 1233.8,
-      "y": 2130,
-      "heading": 1.686,
-      "scale": 2.501
-    },
-    {
       "id": "tree-1033",
       "kind": "swamp-cypress",
       "x": 1376.7,
@@ -29505,14 +28902,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 1.666
     },
     {
-      "id": "tree-1107",
-      "kind": "swamp-cypress",
-      "x": -2624.1,
-      "y": -1068.4,
-      "heading": 4.749,
-      "scale": 2.381
-    },
-    {
       "id": "tree-1108",
       "kind": "swamp-cypress",
       "x": -777,
@@ -29583,14 +28972,6 @@ window.VENUE_DOC["swamp"] = {
       "y": -1472.4,
       "heading": 2.458,
       "scale": 2.62
-    },
-    {
-      "id": "tree-1117",
-      "kind": "swamp-tupelo",
-      "x": -1926.5,
-      "y": 2234.5,
-      "heading": 4.133,
-      "scale": 2.393
     },
     {
       "id": "tree-1118",
@@ -30199,30 +29580,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 2386.4,
       "heading": 2.367,
       "scale": 2.66
-    },
-    {
-      "id": "tree-1194",
-      "kind": "swamp-cypress",
-      "x": -1757,
-      "y": 2260.6,
-      "heading": 4.869,
-      "scale": 1.56
-    },
-    {
-      "id": "tree-1195",
-      "kind": "swamp-cypress",
-      "x": -1823.5,
-      "y": 2324.5,
-      "heading": 0.151,
-      "scale": 2.154
-    },
-    {
-      "id": "tree-1196",
-      "kind": "swamp-cypress",
-      "x": -1848.6,
-      "y": 2340.4,
-      "heading": 4.671,
-      "scale": 1.984
     },
     {
       "id": "tree-1197",
@@ -31433,22 +30790,6 @@ window.VENUE_DOC["swamp"] = {
       "scale": 3.142
     },
     {
-      "id": "tree-1348",
-      "kind": "swamp-tupelo",
-      "x": -3074.4,
-      "y": -332.6,
-      "heading": 5.34,
-      "scale": 1.566
-    },
-    {
-      "id": "tree-1349",
-      "kind": "swamp-tupelo",
-      "x": -3071.2,
-      "y": -272.1,
-      "heading": 5.476,
-      "scale": 2.258
-    },
-    {
       "id": "tree-1350",
       "kind": "swamp-cypress",
       "x": 819.5,
@@ -31479,14 +30820,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 1997.8,
       "heading": 0.342,
       "scale": 2
-    },
-    {
-      "id": "tree-1354",
-      "kind": "swamp-tupelo",
-      "x": 1086.4,
-      "y": 1901.8,
-      "heading": 1.612,
-      "scale": 2.363
     },
     {
       "id": "tree-1355",
@@ -31591,46 +30924,6 @@ window.VENUE_DOC["swamp"] = {
       "y": 4276.7,
       "heading": 0.668,
       "scale": 1.513
-    },
-    {
-      "id": "tree-1368",
-      "kind": "swamp-cypress",
-      "x": -2625.2,
-      "y": -1057.6,
-      "heading": 5.132,
-      "scale": 1.544
-    },
-    {
-      "id": "tree-1369",
-      "kind": "swamp-cypress",
-      "x": -2656.3,
-      "y": -924.5,
-      "heading": 1.678,
-      "scale": 2.428
-    },
-    {
-      "id": "tree-1370",
-      "kind": "swamp-cypress",
-      "x": -2600.5,
-      "y": -846,
-      "heading": 0.645,
-      "scale": 2.454
-    },
-    {
-      "id": "tree-1371",
-      "kind": "swamp-cypress",
-      "x": -2593.1,
-      "y": -962.1,
-      "heading": 2.046,
-      "scale": 1.695
-    },
-    {
-      "id": "tree-1372",
-      "kind": "swamp-cypress",
-      "x": -2532.7,
-      "y": -891.4,
-      "heading": 1.475,
-      "scale": 1.974
     },
     {
       "id": "tree-1373",
@@ -31745,36 +31038,12 @@ window.VENUE_DOC["swamp"] = {
       "scale": 2.162
     },
     {
-      "id": "tree-1387",
-      "kind": "swamp-cypress",
-      "x": -832.2,
-      "y": 2445.6,
-      "heading": 1.16,
-      "scale": 2.447
-    },
-    {
-      "id": "tree-1388",
-      "kind": "swamp-cypress",
-      "x": -846.1,
-      "y": 2379,
-      "heading": 5.954,
-      "scale": 2.378
-    },
-    {
       "id": "tree-1389",
       "kind": "swamp-cypress",
       "x": -971.8,
       "y": 2588.3,
       "heading": 2.087,
       "scale": 1.612
-    },
-    {
-      "id": "tree-1390",
-      "kind": "swamp-cypress",
-      "x": -748.2,
-      "y": 2465.6,
-      "heading": 2.764,
-      "scale": 2.227
     },
     {
       "id": "tree-1391",
@@ -32715,5 +31984,695 @@ window.VENUE_DOC["swamp"] = {
   ],
   "records": {
     "provisional": 195
-  }
+  },
+  "routeGuides": [
+    {
+      "leg": 1,
+      "name": "Cut",
+      "colour": "#f59e0b",
+      "est": 140,
+      "note": "over the mud bar, up between the long ridges — the obvious way, a little slow",
+      "pts": [
+        [
+          -2383,
+          2260
+        ],
+        [
+          -2383,
+          1710
+        ],
+        [
+          -2133,
+          1460
+        ],
+        [
+          -2133,
+          1260
+        ],
+        [
+          -1933,
+          1060
+        ],
+        [
+          -1933,
+          960
+        ],
+        [
+          -1883,
+          960
+        ],
+        [
+          -1833,
+          910
+        ],
+        [
+          -1033,
+          910
+        ],
+        [
+          -983,
+          860
+        ],
+        [
+          -933,
+          860
+        ],
+        [
+          -583,
+          510
+        ],
+        [
+          -633,
+          460
+        ],
+        [
+          -533,
+          360
+        ],
+        [
+          -533,
+          310
+        ],
+        [
+          -833,
+          10
+        ],
+        [
+          -1033,
+          10
+        ],
+        [
+          -1133,
+          -89
+        ],
+        [
+          -1233,
+          -89
+        ],
+        [
+          -1433,
+          -289
+        ],
+        [
+          -1483,
+          -289
+        ],
+        [
+          -1633,
+          -439
+        ],
+        [
+          -1633,
+          -539
+        ],
+        [
+          -1783,
+          -739
+        ],
+        [
+          -1783,
+          -1139
+        ],
+        [
+          -1383,
+          -1539
+        ],
+        [
+          -1083,
+          -1539
+        ],
+        [
+          -583,
+          -2039
+        ],
+        [
+          -583,
+          -2139
+        ],
+        [
+          -433,
+          -2289
+        ],
+        [
+          266,
+          -2289
+        ],
+        [
+          466,
+          -2089
+        ],
+        [
+          466,
+          -1739
+        ],
+        [
+          566,
+          -1639
+        ],
+        [
+          566,
+          -1439
+        ],
+        [
+          666,
+          -1339
+        ],
+        [
+          666,
+          -1289
+        ],
+        [
+          866,
+          -1089
+        ],
+        [
+          1066,
+          -1089
+        ]
+      ]
+    },
+    {
+      "leg": 1,
+      "name": "East",
+      "colour": "#ef4444",
+      "est": 132.3,
+      "note": "round the ridge tip and up the east channel — tight cypress threading",
+      "pts": [
+        [
+          -2383,
+          2260
+        ],
+        [
+          -2383,
+          1710
+        ],
+        [
+          -2133,
+          1460
+        ],
+        [
+          -2133,
+          1260
+        ],
+        [
+          -1933,
+          1060
+        ],
+        [
+          -1933,
+          960
+        ],
+        [
+          -1883,
+          960
+        ],
+        [
+          -1833,
+          910
+        ],
+        [
+          -1033,
+          910
+        ],
+        [
+          -933,
+          1010
+        ],
+        [
+          -833,
+          1010
+        ],
+        [
+          -783,
+          1060
+        ],
+        [
+          -383,
+          1060
+        ],
+        [
+          -333,
+          1110
+        ],
+        [
+          -233,
+          1110
+        ],
+        [
+          -183,
+          1160
+        ],
+        [
+          -133,
+          1160
+        ],
+        [
+          66,
+          1360
+        ],
+        [
+          116,
+          1360
+        ],
+        [
+          116,
+          1410
+        ],
+        [
+          166,
+          1410
+        ],
+        [
+          216,
+          1460
+        ],
+        [
+          316,
+          1460
+        ],
+        [
+          416,
+          1560
+        ],
+        [
+          766,
+          1560
+        ],
+        [
+          816,
+          1610
+        ],
+        [
+          1066,
+          1610
+        ],
+        [
+          1066,
+          1510
+        ],
+        [
+          1216,
+          1360
+        ],
+        [
+          1216,
+          1260
+        ],
+        [
+          1266,
+          1210
+        ],
+        [
+          1266,
+          1010
+        ],
+        [
+          1066,
+          810
+        ],
+        [
+          1066,
+          710
+        ],
+        [
+          916,
+          710
+        ],
+        [
+          816,
+          610
+        ],
+        [
+          766,
+          610
+        ],
+        [
+          516,
+          360
+        ],
+        [
+          516,
+          10
+        ],
+        [
+          616,
+          -89
+        ],
+        [
+          616,
+          -189
+        ],
+        [
+          1066,
+          -689
+        ],
+        [
+          1066,
+          -1089
+        ]
+      ]
+    },
+    {
+      "leg": 1,
+      "name": "West",
+      "colour": "#3b82f6",
+      "est": 134.2,
+      "note": "up the western basin through the cleared neck — longest, most wind",
+      "pts": [
+        [
+          -2383,
+          2260
+        ],
+        [
+          -2383,
+          1860
+        ],
+        [
+          -2433,
+          1810
+        ],
+        [
+          -2433,
+          1760
+        ],
+        [
+          -2583,
+          1610
+        ],
+        [
+          -2583,
+          1510
+        ],
+        [
+          -2633,
+          1460
+        ],
+        [
+          -2633,
+          1410
+        ],
+        [
+          -2983,
+          1060
+        ],
+        [
+          -2983,
+          760
+        ],
+        [
+          -2933,
+          760
+        ],
+        [
+          -2733,
+          510
+        ],
+        [
+          -2783,
+          460
+        ],
+        [
+          -2733,
+          410
+        ],
+        [
+          -2783,
+          360
+        ],
+        [
+          -2733,
+          310
+        ],
+        [
+          -2783,
+          260
+        ],
+        [
+          -2733,
+          210
+        ],
+        [
+          -2783,
+          160
+        ],
+        [
+          -2733,
+          110
+        ],
+        [
+          -2783,
+          60
+        ],
+        [
+          -2733,
+          10
+        ],
+        [
+          -2783,
+          -39
+        ],
+        [
+          -2733,
+          -89
+        ],
+        [
+          -3033,
+          -439
+        ],
+        [
+          -2983,
+          -489
+        ],
+        [
+          -3033,
+          -539
+        ],
+        [
+          -2783,
+          -789
+        ],
+        [
+          -2733,
+          -789
+        ],
+        [
+          -2483,
+          -1039
+        ],
+        [
+          -2283,
+          -1039
+        ],
+        [
+          -2133,
+          -1139
+        ],
+        [
+          -1883,
+          -1139
+        ],
+        [
+          -1483,
+          -1539
+        ],
+        [
+          -1083,
+          -1539
+        ],
+        [
+          -583,
+          -2039
+        ],
+        [
+          -583,
+          -2139
+        ],
+        [
+          -433,
+          -2289
+        ],
+        [
+          266,
+          -2289
+        ],
+        [
+          466,
+          -2089
+        ],
+        [
+          466,
+          -1739
+        ],
+        [
+          566,
+          -1639
+        ],
+        [
+          566,
+          -1439
+        ],
+        [
+          666,
+          -1339
+        ],
+        [
+          666,
+          -1289
+        ],
+        [
+          866,
+          -1089
+        ],
+        [
+          1066,
+          -1089
+        ]
+      ]
+    },
+    {
+      "leg": 1,
+      "name": "Long Way",
+      "colour": "#a855f7",
+      "est": 136.7,
+      "note": "east at the gun through the cleared trees, the basin, out its north rim",
+      "pts": [
+        [
+          -2383,
+          2260
+        ],
+        [
+          -1733,
+          2260
+        ],
+        [
+          -1683,
+          2310
+        ],
+        [
+          -383,
+          2310
+        ],
+        [
+          -133,
+          2560
+        ],
+        [
+          216,
+          2560
+        ],
+        [
+          416,
+          2760
+        ],
+        [
+          466,
+          2760
+        ],
+        [
+          516,
+          2810
+        ],
+        [
+          766,
+          2810
+        ],
+        [
+          1116,
+          2460
+        ],
+        [
+          1066,
+          2410
+        ],
+        [
+          1116,
+          2360
+        ],
+        [
+          1066,
+          2310
+        ],
+        [
+          1166,
+          2210
+        ],
+        [
+          1166,
+          2160
+        ],
+        [
+          1116,
+          2110
+        ],
+        [
+          1166,
+          2060
+        ],
+        [
+          1166,
+          1860
+        ],
+        [
+          1316,
+          1710
+        ],
+        [
+          1316,
+          1110
+        ],
+        [
+          1266,
+          1060
+        ],
+        [
+          1266,
+          1010
+        ],
+        [
+          1066,
+          810
+        ],
+        [
+          1066,
+          710
+        ],
+        [
+          916,
+          710
+        ],
+        [
+          816,
+          610
+        ],
+        [
+          766,
+          610
+        ],
+        [
+          516,
+          360
+        ],
+        [
+          516,
+          10
+        ],
+        [
+          616,
+          -89
+        ],
+        [
+          616,
+          -189
+        ],
+        [
+          1066,
+          -689
+        ],
+        [
+          1066,
+          -1089
+        ]
+      ]
+    }
+  ]
 };
