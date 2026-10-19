@@ -11,7 +11,8 @@ const { chromium } = require('playwright'); const path = require('path'); const 
   const b = await chromium.launch(); const p = await b.newPage();
   await p.goto(`http://localhost:${port}/regatta/index.html`); await p.waitForFunction(() => window.Wildlife && Wildlife.art);
   // ask for the painted sprites, and give them a moment to load
-  await p.evaluate(() => { const g = document.createElement('canvas').getContext('2d'); const c = state.camera; state.camera = null;
+  // (twice: a painted bird in flight asks for its wings only once its body is in — Oct 18 2026)
+  for (let pass = 0; pass < 2; pass++) { await p.evaluate(() => { const g = document.createElement('canvas').getContext('2d'); const c = state.camera; state.camera = null;
     Wildlife.art.drawWhiteShark(g, { x: 0, y: 0, h: 0, depth: 0, mode: 'patrol', ph: 0, trail: [], trailT: 0, z: 0, roll: 0, jaw: 0, slick: 0, turn: 0 }, 'water');
     for (const k of ['orca', 'orca-b', 'orca-calf']) Wildlife.art.drawOrca(g, { kind: k, x: 0, y: 0, h: 0, z: 0, up: -1, beat: 0, turn: 0, trail: [], j: 0 });
     Wildlife.art.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'under', t: 10, depth: 0.5, ph: 0, fluke: 0, turn: 0, lunge: 0, sd: 1, mott: [] });
@@ -28,8 +29,16 @@ const { chromium } = require('playwright'); const path = require('path'); const 
     Wildlife.art.drawManta(g, { x: 0, y: 0, h: 0, mode: 'travel', beat: 0, pitch: 0, i: 0, sparks: [] });
     Wildlife.art.drawFlyingFox(g, { x: 0, y: 0, h: 0, z: 0, flap: 0 });
     Wildlife.art.drawHawksbill(g, { x: 0, y: 0, h: 0, mode: 'swim', beat: 0, i: 0, sand: [], tracks: [] });
-    Wildlife.art.drawDugong(g, { x: 0, y: 0, h: 0, len: 52, beat: 0, trail: [], calf: { x: 0, y: 0, h: 0, len: 28.6, beat: 0 } }); state.camera = c; });
-  await p.waitForTimeout(900);
+    Wildlife.art.drawDugong(g, { x: 0, y: 0, h: 0, len: 52, beat: 0, trail: [], calf: { x: 0, y: 0, h: 0, len: 28.6, beat: 0 } });
+    // Otter Point, Spoonbill Flats and Clubhouse Point (Oct 18 2026): asked for here, or the first draw finds them unloaded (the sea otter read "empty")
+    const A = Wildlife.art, sl = { i: 0, x: 0, y: 0, h: 0, mode: 'lie', up: 0, bark: 0, wet: 0, curl: 0, bob: 0, size: 1 };
+    A.drawSeaOtter(g, { i: 0, x: 0, y: 0, h: 0, mode: 'float', t: 5, bob: 0, roll: 0, paws: 'rest', food: null, tap: 0, ring: 0, ring2: 0, look: 0, kelp: false, size: 1, head: 0.8, trail: [], trailT: 0, dive: 0, pup: false, ph: 0 });
+    A.drawSeaLion(g, Object.assign({ bull: false }, sl)); A.drawSeaLion(g, Object.assign({}, sl, { bull: true }));
+    for (const pal of [0, 4]) A.drawGreySeal(g, { i: 0, x: 0, y: 0, h: 0, size: 1, pal, pup: false, mode: 'haul', side: 0, curl: 0, lift: 0, bob: 0, wet: 0, ring: 0, alert: 0, awashOv: 0, spots: [] });
+    for (const mode of ['wade', 'fly']) { A.drawSpoonbill(g, { j: 0, x: 0, y: 0, h: 0, mode, sw: 0, step: 0, flap: 0, z: 0, ring: 0 }); A.drawAvocet(g, { j: 0, x: 0, y: 0, h: 0, mode, sw: 0, step: 0, flap: 0, z: 0, ring: 0 }); }
+    A.drawGullFloat(g, { j: 0, x: 0, y: 0, h: 0, bob: 0, preen: 0, juv: false, splash: 0 }); A.drawClubGullFlying(g, { x: 0, y: 0, h: 0, z: 0, flap: 0, glide: true, mode: 'fly', juv: false, splash: 0 });
+    A.drawTern(g, { club: true, x: 0, y: 0, h: 0, z: 0, flap: 0, mode: 'shift', a: 0, splash: 0 }); state.camera = c; });
+  await p.waitForTimeout(900); }
   const r = await p.evaluate(() => {
     const A = Wildlife.art;
     const mk = (o) => Object.assign({ x: 0, y: 0, h: 0, sink: 0, flap: 0, yaw: 0, trail: [], bob: 0, stick: false, splash: 0, slap: 0, rise: 0, swim: 0 }, o);
@@ -93,15 +102,33 @@ const { chromium } = require('playwright'); const path = require('path'); const 
       'coyote (nose to tail tip)': g => A.drawCoyote(g, { i: 0, x: 0, y: 0, h: 0, side: 0, z: 0, sit: 0, mode: 'stand', head: 0, look: 0, moving: 0, ph: 0, gait: 'walk', pitch: 0, crouch: 0, leap: 0 }),
       'striped bass (rolled)': g => A.drawStriper(g, 0, 0, 0, 1, 1, 1),
       'carp (flat on its side)': g => A.drawLeap(g, { kind: 'carp', x: 0, y: 0, h: 0, t: 0.99, dur: 1, size: 1, hop: 0, roll: 1 }),
+      // OTTER POINT, SPOONBILL FLATS, CLUBHOUSE POINT (Oct 18 2026, Wes: "1.5x or less" at sea level): heading up, so LENGTH is the box's
+      // height; a crab's legspan its width. Sizes the size-1 animal (a cow seal 0.82-1.0, a bull 1.05-1.2; a crab 0.75-1.15)
+      'grey seal cow (size 1)': g => A.drawGreySeal(g, { i: 0, x: 0, y: 0, h: 0, size: 1, pal: 4, pup: false, mode: 'haul', side: 0, curl: 0, lift: 0, bob: 0, wet: 0, ring: 0, alert: 0, awashOv: 0, spots: [] }),
+      'grey seal bull (size 1.125)': g => A.drawGreySeal(g, { i: 0, x: 0, y: 0, h: 0, size: 1.125, pal: 0, pup: false, mode: 'haul', side: 0, curl: 0, lift: 0, bob: 0, wet: 0, ring: 0, alert: 0, awashOv: 0, spots: [] }),
+      'roseate spoonbill (wading)': g => A.drawSpoonbill(g, { j: 0, x: 0, y: 0, h: 0, mode: 'wade', sw: 0, step: 0, roost: false, ring: 0 }),
+      'roseate spoonbill (flying)': g => A.drawSpoonbill(g, { j: 0, x: 0, y: 0, h: 0, mode: 'fly', flap: 0, z: 0, ring: 0 }),
+      'pied avocet (wading)': g => A.drawAvocet(g, { j: 0, x: 0, y: 0, h: 0, mode: 'wade', sw: 0, step: 0, roost: false, ring: 0 }),
+      'pied avocet (flying)': g => A.drawAvocet(g, { j: 0, x: 0, y: 0, h: 0, mode: 'fly', flap: 0, z: 0, ring: 0 }),
+      'shore crab (legspan wide)': g => A.drawShoreCrab(g, { x: 0, y: 0, h: 0, size: 1, phase: 0, burst: 0, leg: 0, rear: 0, ph: 0, pick: 0, bur: 0, dOv: 0 }),
+      'great cormorant (swimming)': g => A.drawCormorant(g, { j: 0, x: 0, y: 0, h: 0, mode: 'swim', t: 0, trail: [], vis: 1, ring: 0 }),
+      'great cormorant (flying)': g => A.drawCormorant(g, { j: 0, x: 0, y: 0, h: 0, mode: 'fly', flap: 0, z: 0, trail: [], vis: 1, ring: 0 }),
+      'club herring gull (afloat)': g => A.drawGullFloat(g, { j: 0, x: 0, y: 0, h: 0, bob: 0, preen: 0, juv: false, splash: 0 }),
+      'club herring gull (flying)': g => { const c = state.camera; state.camera = null; A.drawClubGullFlying(g, { x: 0, y: 0, h: 0, z: 0, flap: 0, glide: true, mode: 'fly', juv: false, splash: 0 }); state.camera = c; },
+      'club tern (flying)': g => { const c = state.camera; state.camera = null; A.drawTern(g, { club: true, x: 0, y: 0, h: 0, z: 0, flap: 0, mode: 'shift', a: 0, splash: 0 }); state.camera = c; },
+      'mackerel (thrown clear of its boil)': g => A.drawMackBoil(g, { i: 0, x: 0, y: 0, k: 1, a: 0, fish: [], leaps: [{ x: 0, y: 0, h: 0, t: 0.5 }], pops: [] }),
       'blue whale (snout to flukes)': g => { const c = state.camera; state.camera = null; A.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'surface', t: 10, depth: 0, ph: 0, fluke: 0, rollT: 1.5, turn: 0, lunge: 0, sd: 1, mott: [] }); state.camera = c; },
     };
+    // (the Oct 18 2026 additions are small: drawn at x4 and measured back in units, so a thin bill or a fin isn't lost to the cut)
+    const HI = new Set(Object.keys(items).slice(Object.keys(items).indexOf('grey seal cow (size 1)'), Object.keys(items).indexOf('blue whale (snout to flukes)')));
     const out = {};
     for (const [k, fn] of Object.entries(items)) {
+      const K = HI.has(k) ? 4 : 1;
       const c = document.createElement('canvas'); c.width = c.height = 400; const g = c.getContext('2d');
-      g.translate(200, 200); try { fn(g); } catch (e) { out[k] = 'err ' + e.message; continue; }
+      g.translate(200, 200); g.scale(K, K); try { fn(g); } catch (e) { out[k] = 'err ' + e.message; continue; }
       const d = g.getImageData(0, 0, 400, 400).data; let x0 = 400, x1 = -1, y0 = 400, y1 = -1;
       for (let y = 0; y < 400; y++) for (let x = 0; x < 400; x++) if (d[(y * 400 + x) * 4 + 3] > (/ray|alligator|jelly/.test(k) ? 40 : 150)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
-      out[k] = x1 < 0 ? 'empty' : `${x1 - x0 + 1} wide × ${y1 - y0 + 1} long`;
+      out[k] = x1 < 0 ? 'empty' : `${+((x1 - x0 + 1) / K).toFixed(1)} wide × ${+((y1 - y0 + 1) / K).toFixed(1)} long`;
     }
     return out;
   });
