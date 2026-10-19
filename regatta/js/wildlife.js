@@ -407,7 +407,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // -> ~60 (the pelican's). A pod cruises ~0.25 body lengths a second — whales are slow.
     // the spinner on the world scale (Wes, Oct 13: "size the dolphins with the world scale properly"): 2 m true, at the
     // Cove porpoise's 1.5x (PT-016: it rides the same bow, and 3x read as two thirds of a boat) — 30, beak to fluke tips
-    const WHALE_LEN = 132, CALF_LEN = 48, SPINNER_LEN = lifeU(2) * 1.5, FLYFISH_SPAN = 20, ALB_SPAN = 60, MAHI_LEN = 30;   // mahi 1 m -> 30 (x3)
+    const WHALE_LEN = 132, CALF_LEN = 48, SPINNER_LEN = lifeU(2) * 1.5, FLYFISH_SPAN = 9.5, ALB_SPAN = 36, MAHI_LEN = 15;
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level) — mahi 1 m: MAHI_LEN 30 -> 15 (drawn ~29 -> ~15 snout to tail tip,
+    // the painting's ink); flying fish 0.3 m, a group, at the 6 u floor: FLYFISH_SPAN (the painted span, was a fixed 17.8)
+    // -> 9.5 (drawn body ~13 -> ~6, fin span ~17.5 -> ~9); Laysan albatross ~0.8 m bill to tail: ALB_SPAN 60 -> 36 (drawn body
+    // 20 -> 12, its span following the painting, 57 -> ~34). The flyers still grow with height (zScale) — this is at z 0.
+    const FF_K = FLYFISH_SPAN / 17.8;   // the flying fish against the size it was laid out at: its ripples, splash and ring
     // Spawning sockeye (close-up references, Sep 25): a vivid crimson body, the head a light
     // yellowish olive-green from snout to gill, darker on top, the hooked jaw pale cream; olive
     // tail and fins. Fresh-run fish not yet turned are silver-grey with a grey-green head.
@@ -1711,10 +1716,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     const dx = fx - m.x, dy = fy - m.y, d = Math.hypot(dx, dy), v = Math.min(d / dt, m.top);
                     if (d > 1) { m.x += dx / d * v * dt; m.y += dy / d * v * dt; m.h += angDiff(Math.atan2(dx, -dy), m.h) * Math.min(1, dt * 8); }
                     m.spd = v;
-                    if (m.leap <= 0 && rnd() < dt * 0.35) { m.leap = 1; splashes.push({ x: m.x, y: m.y, t: 0, life: 1.4, r: 12 }); }
+                    if (m.leap <= 0 && rnd() < dt * 0.35) { m.leap = 1; splashes.push({ x: m.x, y: m.y, t: 0, life: 1.4, r: 12 * MAHI_LEN / 30 }); }   // (splashes in the mahi's size: Oct 18, MAHI_LEN 30 -> 18)
                     // the fish comes down: taken if the mahi is right there
                     if (f.t >= f.dur && !f.caught && f.skips <= 0) {
-                        if (d < 45) { f.caught = true; splashes.push({ x: fx, y: fy, t: 0, life: 2.2, r: 22 }); m.leap = 0.6; }
+                        if (d < 45) { f.caught = true; splashes.push({ x: fx, y: fy, t: 0, life: 2.2, r: 22 * MAHI_LEN / 30 }); m.leap = 0.6; }
                         m.mode = 'patrol'; m.prey = null;
                     }
                 } else {
@@ -2303,7 +2308,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // tail -> 32 (≈2×, like the bear). Speeds are drawn body lengths a second, like the others.
     // Condor speeds are REAL airspeeds on the game's clock (15 u/s a knot, scale.md), like the orcas and the mahi:
     // circling ~11 m/s, gliding between thermals ~16-17 m/s (see THE CONDOR'S FLIGHT below).
-    const STRIPER_LEN = 18, CONDOR_SPAN = 80, CONDOR_SOAR = 21 * 15, CONDOR_GLIDE = 32 * 15;
+    const STRIPER_LEN = 12, CONDOR_SPAN = 45, CONDOR_SOAR = 21 * 15, CONDOR_GLIDE = 32 * 15;
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level) — striper 0.8 m: STRIPER_LEN 18 -> 12 (drawn 18 -> 12); condor
+    // ~1.2 m bill to tail: CONDOR_SPAN 80 -> 45 (drawn body 32 -> 18, its span following the painting, 76 -> ~43). Its
+    // altitudes, circles and airspeeds are the world's and stay; it still grows with height (zScale). Bighorn
+    // (BH_K) and coyote (COY_K) below. Things sized to the fish or bird scale with these: STRIPER_K, CONDOR_K.
+    const STRIPER_K = STRIPER_LEN / 18, CONDOR_K = CONDOR_SPAN / 80;
     // Is (x, y) land (or water) and so is everything within m of it?
     function ringClear(x, y, m, wantLand) {
         if (onLand(x, y) !== wantLand) return false;
@@ -2352,7 +2362,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const r = R(c.r[0], c.r[1]);
             if (!ringClear(x, y, r + 25, false) || stripers.some(b => Math.hypot(b.x - x, b.y - y) < 400)) continue;
             return { x, y, zx, zy, zr, h: R(0, 7), v: R(7, 13), r, t: 0, life: R(c.life[0], c.life[1]), seed: Math.floor(rnd() * 1e9), hit: false,
-                fish: Array.from({ length: 9 }, () => ({ a: R(0, 7), d: R(0.15, 0.85), per: R(1.6, 3.2), ph: R(0, 3), dir: rnd() < 0.5 ? -1 : 1, size: R(0.85, 1.15) })) };
+                fish: Array.from({ length: 13 }, () => ({ a: R(0, 7), d: R(0.15, 0.85), per: R(1.6, 3.2), ph: R(0, 3), dir: rnd() < 0.5 ? -1 : 1, size: R(0.85, 1.15) })) };   // (9 -> 13 as the fish went 18 -> 12 u, Oct 18: the school as thick)
         }
         return null;
     }
@@ -2497,9 +2507,15 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     //    then both FREEZE, heads high, PRESENTING THEIR HORNS to each other (Geist 1971: horns displayed after every
     //    clash); often another round, else they part. (Wes, Oct 17: "shouldn't the heads meet and then they bounce off?")
     //  Speeds are real on the game's clock (15 u/s a knot); a gait keeps its real stride in body lengths.
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level) — a bighorn 1.6 m: the ram drawn 33 -> 24 nose to tail, the ewe and
+    // lamb in proportion (BH_SPR's L x BH_K). Everything sized to the sheep scales by BH_K: the stride's reach (amp) —
+    // and its rate (hz / BH_K), so a stride stays the same in body lengths at the same real speed — the horns' room,
+    // the clash's spacing, dust, the band's spacing and patch, the drink line. Speeds, flight distances, the reaction
+    // radii and the land checks are the world's and stay.
+    const BH_K = 24 / 33;
     const BH_GAIT = {
-        walk: { v: 32, hz: 1.3, amp: 3.5, duty: 0.65, turn: 2.0, ph: { 'hind-l': 0, 'fore-l': 0.25, 'hind-r': 0.5, 'fore-r': 0.75 } },
-        bound: { v: 195, hz: 3.0, amp: 6.0, duty: 0.35, turn: 4.0, ph: { 'hind-l': 0, 'hind-r': 0.05, 'fore-l': 0.5, 'fore-r': 0.55 } },
+        walk: { v: 32, hz: 1.3 / BH_K, amp: 3.5 * BH_K, duty: 0.65, turn: 2.0, ph: { 'hind-l': 0, 'fore-l': 0.25, 'hind-r': 0.5, 'fore-r': 0.75 } },
+        bound: { v: 195, hz: 3.0 / BH_K, amp: 6.0 * BH_K, duty: 0.35, turn: 4.0, ph: { 'hind-l': 0, 'hind-r': 0.05, 'fore-l': 0.5, 'fore-r': 0.55 } },
     };
     function makeBand(pr, n) {
         let home = null, bd = 1e9;
@@ -2510,7 +2526,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
         if (!home) return null;
         const members = Array.from({ length: n }, (_, i) => {
-            const p = landSpot(home.x, home.y, 35, 12) || home;
+            const p = landSpot(home.x, home.y, 35 * BH_K, 12) || home;
             return { i, x: p.x, y: p.y, h: R(0, 7), look: 0, head: 1, mode: 'graze', t: R(1, 6), tx: p.x, ty: p.y, step: R(0, 7), ph: R(0, 1), gait: 'walk',
                 ram: i === 0 || (n >= 5 && i === 1), lamb: n >= 4 && i === n - 1, moving: 0, scan: 0, st: R(2, 10), z: 0, pitch: 0, bed: 0 };
         });
@@ -2553,8 +2569,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // the head, much wider than the body (two rams walking by each other locked horns without it)
     function bhShapes(s, x, y, h) {
         const C = bhCapsule(s, x, y, h); if (!s.ram) return [C];
-        const ux = Math.sin(h), uy = -Math.cos(h), hx = x + ux * 8.2, hy = y + uy * 8.2;
-        return [C, { ax: hx, ay: hy, bx: hx, by: hy, r: 8.5 }];
+        const ux = Math.sin(h), uy = -Math.cos(h), hx = x + ux * 8.2 * BH_K, hy = y + uy * 8.2 * BH_K;
+        return [C, { ax: hx, ay: hy, bx: hx, by: hy, r: 8.5 * BH_K }];
     }
     // the deepest overlap between two members' shapes (with the 1.5 u margin), and the direction to push
     function bhPen(A, xa, ya, ha, B2, xb, yb, hb) {
@@ -2631,7 +2647,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (rams.length >= 2 && G.phase === 'feed' && calm && (G.clashT -= dt) <= 0) {
                 // the challenger takes its stand on its own side of the other (never walking over it), ~62 u off centre to
                 // centre: two body-lengths of drawn ram with a few metres of run between the horns
-                const [A, B] = rams, ab = Math.atan2(B.x - A.x, -(B.y - A.y)), fx = A.x + Math.sin(ab) * 62, fy = A.y - Math.cos(ab) * 62;
+                const [A, B] = rams, ab = Math.atan2(B.x - A.x, -(B.y - A.y)), fx = A.x + Math.sin(ab) * 62 * BH_K, fy = A.y - Math.cos(ab) * 62 * BH_K;
                 G.clashT = R(150, 300);
                 if (ringClear(fx, fy, 10, true) && ringClear((A.x + fx) / 2, (A.y + fy) / 2, 8, true)) { A.clash = { ph: 'face', t: 0, other: B }; B.clash = { ph: 'walk', t: 0, other: A, fx, fy }; }
             }
@@ -2670,8 +2686,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     s.fleeT += dt; const p0 = s.ph, done = bhGo(s, s.tx, s.ty, 'bound', dt);
                     // held up behind another a moment: it takes another line up instead of waiting (one either side, wider)
                     if (s.blockT > 0.35) { s.blockT = 0; s.replan = ((s.replan || 0) <= 0 ? 1 : -1) * (Math.abs(s.replan || 0) + 0.6); s.mode = 'look'; s.t = 0; continue; }
-                    s.z = 2.2 * Math.max(0, Math.sin((s.ph - 0.1) * Math.PI * 2));
-                    if (p0 > s.ph || (p0 < 0.08 && s.ph >= 0.08)) G.dust.push({ x: s.x - Math.sin(s.h) * 10, y: s.y + Math.cos(s.h) * 10, t: 0, life: 1.1, r: 4, seed: rnd() * 9 });
+                    s.z = 2.2 * BH_K * Math.max(0, Math.sin((s.ph - 0.1) * Math.PI * 2));
+                    if (p0 > s.ph || (p0 < 0.08 && s.ph >= 0.08)) G.dust.push({ x: s.x - Math.sin(s.h) * 10 * BH_K, y: s.y + Math.cos(s.h) * 10 * BH_K, t: 0, life: 1.1, r: 4 * BH_K, seed: rnd() * 9 });
                     if (done) { s.mode = 'look'; s.t = R(5, 9); s.z = 0; G.px = s.x; G.py = s.y; s.replan = 0; }
                     s.wary = 6;
                 } else if (s.clash) {
@@ -2688,18 +2704,18 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                         let laneClear = true;
                         for (const m of M) { if (m === s || m === O) continue;
                             const lx = O.x - s.x, ly = O.y - s.y, ll = Math.hypot(lx, ly) || 1, u2 = ((m.x - s.x) * lx + (m.y - s.y) * ly) / (ll * ll), side = ((m.x - s.x) * ly - (m.y - s.y) * lx) / ll;
-                            if (u2 > -0.3 && u2 < 1.3 && Math.abs(side) < 26) { laneClear = false;
-                                if (m.mode !== 'walk' && !m.clash && m.mode !== 'bound') { const sd2 = side >= 0 ? 1 : -1, ox = m.x + ly / ll * sd2 * 34, oy = m.y - lx / ll * sd2 * 34; if (onLand(ox, oy)) { m.mode = 'walk'; m.wk = 1; m.tx = ox; m.ty = oy; } } } }
+                            if (u2 > -0.3 && u2 < 1.3 && Math.abs(side) < 26 * BH_K) { laneClear = false;
+                                if (m.mode !== 'walk' && !m.clash && m.mode !== 'bound') { const sd2 = side >= 0 ? 1 : -1, ox = m.x + ly / ll * sd2 * 34 * BH_K, oy = m.y - lx / ll * sd2 * 34 * BH_K; if (onLand(ox, oy)) { m.mode = 'walk'; m.wk = 1; m.tx = ox; m.ty = oy; } } } }
                         if (laneClear && O.clash && O.clash.ph === 'face' && C2.t > 1.2 && O.clash.t > 1.2 && Math.abs(angDiff(toO, s.h)) < 0.12 && oFace) {
                             const d0 = Math.hypot(O.x - s.x, O.y - s.y); C2.ph = 'rear'; C2.t = 0; C2.d0 = d0; O.clash.ph = 'rear'; O.clash.t = 0; O.clash.d0 = d0; } }
                     else if (C2.ph === 'rear') { s.pitch = 0.75 * Math.sin(Math.min(1, C2.t / 0.35) * Math.PI / 2); if (C2.t >= 0.4) { C2.ph = 'charge'; C2.t = 0; C2.x0 = s.x; C2.y0 = s.y; } }
                     else if (C2.ph === 'charge') {
                         // down from the rear and forward, to meet in the middle (~3 m between them -> each a body length and a half)
                         // to horn on horn: the heads down, so centres meet at twice the lowered head's reach, a touch inside it
-                        const meet = 2 * bhReach(s) - 3, u = Math.min(1, C2.t / 0.22), go = Math.max(0, (C2.d0 - meet) / 2) * u * u;
+                        const meet = 2 * bhReach(s) - 3 * BH_K, u = Math.min(1, C2.t / 0.22), go = Math.max(0, (C2.d0 - meet) / 2) * u * u;
                         const nx = C2.x0 + Math.sin(s.h) * go, ny = C2.y0 - Math.cos(s.h) * go; if (onLand(nx, ny) && bhOverlap(s, nx, ny, s.h) <= 1) { s.x = nx; s.y = ny; }
                         s.pitch = 0.75 - 0.95 * u; s.gait = 'bound'; s.ph = (s.ph + 4 * dt) % 1;
-                        if (u >= 1) { C2.ph = 'impact'; C2.t = 0; if (s.ram && s === G.members.find(m => m.ram)) G.dust.push({ x: (s.x + O.x) / 2, y: (s.y + O.y) / 2, t: 0, life: 1.6, r: 9, seed: rnd() * 9, crash: 1 }); }
+                        if (u >= 1) { C2.ph = 'impact'; C2.t = 0; if (s.ram && s === G.members.find(m => m.ram)) G.dust.push({ x: (s.x + O.x) / 2, y: (s.y + O.y) / 2, t: 0, life: 1.6, r: 9 * BH_K, seed: rnd() * 9, crash: 1 }); }
                     }
                     else if (C2.ph === 'impact') {
                         // horn on horn — the instant of the hit (a few frames)
@@ -2709,7 +2725,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     else if (C2.ph === 'recoil') {
                         // thrown back off the hit: fast at first, dying away (~1 m real, 9 u drawn); the head snaps up, the
                         // forequarters lift a little, the head and horns judder as it rings through them
-                        const k = 1 - Math.exp(-C2.t / 0.07), back = 9 * k, bx = C2.x0 - Math.sin(s.h) * back, by = C2.y0 + Math.cos(s.h) * back;
+                        const k = 1 - Math.exp(-C2.t / 0.07), back = 9 * BH_K * k, bx = C2.x0 - Math.sin(s.h) * back, by = C2.y0 + Math.cos(s.h) * back;
                         if (onLand(bx, by) && !M.some(m => m !== s && m !== O && bhPen(s, bx, by, s.h, m, m.x, m.y, m.h).pen > 1)) { s.x = bx; s.y = by; }
                         s.pitch = 0.3 * Math.exp(-C2.t / 0.12);
                         if (C2.t >= 0.35) { C2.ph = 'present'; C2.t = 0; C2.hold = R(2, 4); }
@@ -2720,7 +2736,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                         if (C2.t > C2.hold && O.clash && O.clash.ph === 'present' && O.clash.t > O.clash.hold) {
                             if (s === M.find(m => m.ram) && rnd() < 0.4) {
                                 // another round: the other ram walks back out to the face-off spacing
-                                const ab = Math.atan2(O.x - s.x, -(O.y - s.y)), fx = s.x + Math.sin(ab) * 62, fy = s.y - Math.cos(ab) * 62;
+                                const ab = Math.atan2(O.x - s.x, -(O.y - s.y)), fx = s.x + Math.sin(ab) * 62 * BH_K, fy = s.y - Math.cos(ab) * 62 * BH_K;
                                 if (ringClear(fx, fy, 10, true)) { C2.ph = 'face'; C2.t = 0; O.clash = { ph: 'walk', t: 0, other: s, fx, fy }; continue; }
                             }
                             s.clash = null; s.mode = 'graze'; s.t = R(2, 5); if (O.clash && O.clash.other === s) { O.clash = null; O.mode = 'graze'; O.t = R(2, 5); }
@@ -2734,10 +2750,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     if (s.t <= 0 || seen) { s.drunk = true; s.mode = 'graze'; s.t = R(2, 5); }
                 } else if (s.mode === 'play') {
                     // a lamb's gambol: quick little hops and turns about its mother
-                    s.pt += dt; const u = (s.pt % 0.45) / 0.45; s.z = 3 * Math.sin(Math.PI * u);
+                    s.pt += dt; const u = (s.pt % 0.45) / 0.45; s.z = 3 * BH_K * Math.sin(Math.PI * u);
                     if (u < dt / 0.45 + 0.001) bhTurn(s, R(-1.2, 1.2));
                     const nx = s.x + Math.sin(s.h) * 55 * dt, ny = s.y - Math.cos(s.h) * 55 * dt;
-                    if (ringClear(nx, ny, 6, true) && Math.hypot(nx - s.mother.x, ny - s.mother.y) < 60 && bhOverlap(s, nx, ny, s.h) <= 0) { s.x = nx; s.y = ny; } else bhTurn(s, Math.PI * 0.6);
+                    if (ringClear(nx, ny, 6, true) && Math.hypot(nx - s.mother.x, ny - s.mother.y) < 60 * BH_K && bhOverlap(s, nx, ny, s.h) <= 0) { s.x = nx; s.y = ny; } else bhTurn(s, Math.PI * 0.6);
                     s.gait = 'bound'; s.ph = (s.ph + 3.5 * dt) % 1;
                     if (s.pt > 2.4) { s.mode = 'graze'; s.z = 0; s.t = R(2, 5); }
                 } else {
@@ -2748,22 +2764,22 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                         if (s === lead) { tx = G.px; ty = G.py; if (G.leadDone) { G.phase = 'feed'; G.t = R(30, 70); G.leadDone = false; tx = null; } }
                         else { let ahead = mom || M[M.indexOf(s) - 1] || lead; if (ahead === s) ahead = lead;   // in file: each behind the one before it, a lamb behind its mother
                             // a body length and a bit behind the one before (centre to centre: half of each, and a gap)
-                            const gap = BH_SPR[ahead.ram ? 'ram' : ahead.lamb ? 'lamb' : 'ewe'].L * 0.5 + BH_SPR[s.ram ? 'ram' : s.lamb ? 'lamb' : 'ewe'].L * 0.5 + 8;
+                            const gap = BH_SPR[ahead.ram ? 'ram' : ahead.lamb ? 'lamb' : 'ewe'].L * 0.5 + BH_SPR[s.ram ? 'ram' : s.lamb ? 'lamb' : 'ewe'].L * 0.5 + 8 * BH_K;
                             const back = Math.atan2(s.x - ahead.x, -(s.y - ahead.y)); tx = ahead.x + Math.sin(back) * gap; ty = ahead.y - Math.cos(back) * gap;
                             if (Math.hypot(tx - s.x, ty - s.y) < 6) tx = null; }
                         if (s === lead && Math.hypot(G.px - s.x, G.py - s.y) < 6) { G.phase = 'feed'; G.t = R(30, 70); }
                     } else if (G.phase === 'drink' && !s.drunk && !seen) {
-                        if (!s.dspot) { const a2 = G.sp.h + Math.PI / 2, o = (M.indexOf(s) - M.length / 2) * 22; const sp = { x: G.sp.x + Math.sin(a2) * o, y: G.sp.y - Math.cos(a2) * o };
+                        if (!s.dspot) { const a2 = G.sp.h + Math.PI / 2, o = (M.indexOf(s) - M.length / 2) * 22 * BH_K; const sp = { x: G.sp.x + Math.sin(a2) * o, y: G.sp.y - Math.cos(a2) * o };
                             // its own place along the shore: the forefeet on the rock, the dipped muzzle a few u out over the water
                             const reach = bhReach(s), ux = Math.sin(G.sp.h), uy = -Math.cos(G.sp.h);
                             let q = null; for (let r = -30; r <= 30 && !q; r += 1) { const x = sp.x + ux * r, y = sp.y + uy * r;
-                                if (onLand(x, y) && onLand(x - ux * 8, y - uy * 8) && onLand(x + ux * 3, y + uy * 3) && !onLand(x + ux * (reach - 3), y + uy * (reach - 3)) && !onLand(x + ux * reach, y + uy * reach)) q = { x, y, h: G.sp.h }; }
+                                if (onLand(x, y) && onLand(x - ux * 8 * BH_K, y - uy * 8 * BH_K) && onLand(x + ux * 3 * BH_K, y + uy * 3 * BH_K) && !onLand(x + ux * (reach - 3 * BH_K), y + uy * (reach - 3 * BH_K)) && !onLand(x + ux * reach, y + uy * reach)) q = { x, y, h: G.sp.h }; }
                             s.dspot = q || { none: true }; if (s.dspot.none) s.drunk = true; }   // (no place of its own on this shore: it grazes)
                         if (!s.dspot.none) { tx = s.dspot.x; ty = s.dspot.y;
                             if (Math.hypot(tx - s.x, ty - s.y) < 0.8) { s.mode = 'drink'; s.t = R(5, 9); tx = null; } }
                     } else if (G.phase === 'bed') {
                         if ((s.bedIn -= dt) <= 0) s.mode = 'bed';
-                    } else if (mom && Math.hypot(mom.x - s.x, mom.y - s.y) > 30) { tx = mom.x + R(-8, 8); ty = mom.y + R(-8, 8); }
+                    } else if (mom && Math.hypot(mom.x - s.x, mom.y - s.y) > 30 * BH_K) { tx = mom.x + R(-8, 8) * BH_K; ty = mom.y + R(-8, 8) * BH_K; }
                     if (G.phase !== 'bed' && s.mode === 'bed') s.mode = 'graze';
                     if (tx !== null && s.mode !== 'bed') { s.mode = 'walk'; if (bhGo(s, tx, ty, 'walk', dt, G.phase === 'drink')) { s.mode = 'graze'; if (s === lead && G.phase === 'move') { G.leadDone = true; G.px = s.x; G.py = s.y; } } }
                     else if (s.mode === 'walk' && !s.wk) s.mode = 'graze';   // (a walk on its own errand — back to the patch, out of the rams' way — goes on)
@@ -2778,10 +2794,10 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                         if (others && rnd() < dt * 1.2) { s.scan = 1; s.st = R(1.5, 4); if (seen) { s.mode = 'look'; s.t = R(2, 5); } }
                         if (seen && s.scan) { s.mode = 'look'; s.t = R(2, 5); }
                         // cropping, a step forward now and then to the next mouthful
-                        if (!s.scan && s.t <= 0) { s.t = R(3, 8); s.tx = s.x + Math.sin(s.h + R(-0.8, 0.8)) * 6; s.ty = s.y - Math.cos(s.h + R(-0.8, 0.8)) * 6; s.stepT = 0.6; }
+                        if (!s.scan && s.t <= 0) { s.t = R(3, 8); s.tx = s.x + Math.sin(s.h + R(-0.8, 0.8)) * 6 * BH_K; s.ty = s.y - Math.cos(s.h + R(-0.8, 0.8)) * 6 * BH_K; s.stepT = 0.6; }
                         if (s.stepT > 0) { s.stepT -= dt; if (ringClear(s.tx, s.ty, 6, true)) bhGo(s, s.tx, s.ty, 'walk', dt); }
                         // keep near the band's patch
-                        if (!mom && Math.hypot(G.px - s.x, G.py - s.y) > 45) { s.mode = 'walk'; s.tx = G.px + R(-25, 25); s.ty = G.py + R(-25, 25); s.wk = 1; }
+                        if (!mom && Math.hypot(G.px - s.x, G.py - s.y) > 45 * BH_K) { s.mode = 'walk'; s.tx = G.px + R(-25, 25) * BH_K; s.ty = G.py + R(-25, 25) * BH_K; s.wk = 1; }
                         if (s.lamb && !s.scan && rnd() < dt * 0.04 && !seen) { s.mode = 'play'; s.pt = 0; }
                     }
                     if (s.mode === 'walk' && s.wk) { if (bhGo(s, s.tx, s.ty, 'walk', dt)) { s.mode = 'graze'; s.wk = 0; } }
@@ -2838,13 +2854,18 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     //    springs again from there. Foxes hit at 2-4 m/s, head first (Yuk et al. 2024, PNAS). From above all of it is
     //    FORESHORTENING: the pitched body draws shorter, the end nearer the camera bigger, and the shadow walks off.
     //  - DRINKING it stands at the edge with its head down and laps — rings spreading from the muzzle.
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level) — a coyote 1.6 m with its tail: drawn 32 -> 24 (COY_SPR's L, the
+    // sitting one's and the nose's place x COY_K). Sized to it and scaled by COY_K: the stride's reach (amp) and rate
+    // (hz / COY_K: the same strides in body lengths at the same real speeds — now of a drawn 16.5 u nose to rump), the
+    // spring (as high as it is long), the drink spot, the pair's distance. Speeds and flight distances stay.
+    const COY_K = 0.75;
     const COY_GAIT = {
-        walk: { v: 35, hz: 1.75, amp: 2.6, duty: 0.65, turn: 2.5, ph: { 'hind-l': 0, 'fore-l': 0.25, 'hind-r': 0.5, 'fore-r': 0.75 } },
-        trot: { v: 100, hz: 3.0, amp: 4.0, duty: 0.5, turn: 2.6, ph: { 'fore-l': 0, 'hind-r': 0, 'fore-r': 0.5, 'hind-l': 0.5 } },
-        lope: { v: 230, hz: 4.2, amp: 5.5, duty: 0.35, turn: 4.0, ph: { 'hind-l': 0, 'hind-r': 0.1, 'fore-l': 0.5, 'fore-r': 0.6 } },
+        walk: { v: 35, hz: 1.75 / COY_K, amp: 2.6 * COY_K, duty: 0.65, turn: 2.5, ph: { 'hind-l': 0, 'fore-l': 0.25, 'hind-r': 0.5, 'fore-r': 0.75 } },
+        trot: { v: 100, hz: 3.0 / COY_K, amp: 4.0 * COY_K, duty: 0.5, turn: 2.6, ph: { 'fore-l': 0, 'hind-r': 0, 'fore-r': 0.5, 'hind-l': 0.5 } },
+        lope: { v: 230, hz: 4.2 / COY_K, amp: 5.5 * COY_K, duty: 0.35, turn: 4.0, ph: { 'hind-l': 0, 'hind-r': 0.1, 'fore-l': 0.5, 'fore-r': 0.6 } },
     };
     // the spring's phases on the game's clock (a real ~0.7 s in the air, 3x): gather, air, pin
-    const COY_POUNCE = { crouch: 0.28, air: 0.34, pin: 0.45, H: 13, D: 26 };
+    const COY_POUNCE = { crouch: 0.28, air: 0.34, pin: 0.45, H: 13 * COY_K, D: 26 * COY_K };   // (Oct 18: 13, 26 -> 9.75, 19.5)
     function makeCoyotes(c) {
         const out = [];
         for (const [id, n] of c.on) {
@@ -2863,8 +2884,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     let r = 0; while (r < 1500 && onLand(cx + ux * r, cy + uy * r) && pointInPoly(cx + ux * r, cy + uy * r, V)) r += 2;
                     // (only ITS island's own shore: where the island runs on into other land, that is no shore)
                     if (r <= 2 || r >= 1500 || onLand(cx + ux * r, cy + uy * r)) continue;
-                    const sx = cx + ux * r, sy = cy + uy * r, x = sx - ux * 6, y = sy - uy * 6;
-                    if (onLand(x, y) && onLand(x + ux * 3, y + uy * 3) && onLand(x - ux * 8, y - uy * 8) && !onLand(x + ux * 11.7, y + uy * 11.7) && !onLand(x + ux * 15, y + uy * 15)) return { x, y, h: a };
+                    const sx = cx + ux * r, sy = cy + uy * r, x = sx - ux * 6 * COY_K, y = sy - uy * 6 * COY_K;
+                    if (onLand(x, y) && onLand(x + ux * 3 * COY_K, y + uy * 3 * COY_K) && onLand(x - ux * 8 * COY_K, y - uy * 8 * COY_K) && !onLand(x + ux * 11.7 * COY_K, y + uy * 11.7 * COY_K) && !onLand(x + ux * 15 * COY_K, y + uy * 15 * COY_K)) return { x, y, h: a };   // (Oct 18: the spot in its size, x COY_K)
                 }
                 return null;
             };
@@ -2939,12 +2960,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             } else if (K.t <= 0 && !(seen && rnd() < 0.8)) {
                 const r = rnd(), m = K.mate;
                 const go = (p) => { K.tx = p.x; K.ty = p.y; K.mode = Math.hypot(p.x - K.x, p.y - K.y) < 160 ? 'walk' : 'trot'; };
-                if (m && Math.hypot(m.x - K.x, m.y - K.y) > 70) { go(m); K.mode = 'trot'; }
+                if (m && Math.hypot(m.x - K.x, m.y - K.y) > 70 * COY_K) { go(m); K.mode = 'trot'; }   // (the pair's distance x COY_K, Oct 18)
                 else if (r < 0.18) { K.mode = 'sit'; K.t = R(5, 10); }
                 else if (r < 0.24) { const p = K.edge(); if (p) { K.drink = p; go(p); } else K.t = R(1, 3); }   // a drink now and then, not every minute
                 else if (r < 0.48 && !seen) {
                     // mousing: only where the spring lands on open sand
-                    const lx = K.x + Math.sin(K.h) * 30, ly = K.y - Math.cos(K.h) * 30;
+                    const lx = K.x + Math.sin(K.h) * 30 * COY_K, ly = K.y - Math.cos(K.h) * 30 * COY_K;
                     if (ringClear(lx, ly, 10, true)) { K.mode = 'stalk'; K.t = R(1.2, 2.6); } else go(K.ahead(K));
                 }
                 else go(K.ahead(K));
@@ -6383,7 +6404,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // It jumps NEARLY STRAIGHT UP, often twisting, so from above it is foreshortened, then it
     // tips over and falls back FLAT ON ITS SIDE: a broad slap, a torn sheet of white the length
     // of the fish, and rings. 0.7 m -> 21 u (bigger than the Lake's bass, 14, and the salmon, 17).
-    const CARP_LEN = 21, CARP = { back: [86, 83, 47], flank: [185, 140, 62], belly: '#e2c27e', fin: '#c8643a', net: 'rgba(90,62,24,0.3)' };
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level: CARP_LEN 21 -> 10.8, drawn ~21 -> 10.5 — 0.7 m x 1.5. Its jump
+    // water is sized by len; its travel, a body length on, and its hop, about a metre, scale with it: CARP_K)
+    const CARP_LEN = 10.8, CARP_K = CARP_LEN / 21, CARP = { back: [86, 83, 47], flank: [185, 140, 62], belly: '#e2c27e', fin: '#c8643a', net: 'rgba(90,62,24,0.3)' };
     function carpShape(ctx, len, wide) {
         // from above, head toward -y: broad head and shoulders, a narrow wrist, a forked tail
         const P = [[-0.5, 0.03], [-0.44, 0.09], [-0.3, 0.125], [-0.12, 0.135], [0.08, 0.115], [0.24, 0.065], [0.32, 0.04]];
@@ -6413,11 +6436,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // do not all fall the same way. The water is the researched jump water (drawJumpWater), its exit a vertical burst.
     const CARP_SPR = { file: 'assets/images/props/redrock/carp.png', top: 0.1465, bot: 0.876, cx: 0.51 };
     function drawCarpLeap(ctx, L) {
-        const len = CARP_LEN * L.size, p = Math.min(1, L.t / L.dur), z = Math.sin(Math.PI * p) * L.hop;
+        const len = CARP_LEN * L.size, p = Math.min(1, L.t / L.dur), z = Math.sin(Math.PI * p) * L.hop * CARP_K;   // (hop 18-26 -> ~10-14, a metre, Oct 18)
         const fx = Math.sin(L.h), fy = -Math.cos(L.h);
         const cim = sprImg(CARP_SPR.file);
         if (imgReady(cim) && !(typeof window !== 'undefined' && window.__CARP_DRAWN)) {
-            const x = L.x + fx * (p - 0.2) * 14, y = L.y + fy * (p - 0.2) * 14, x1 = L.x + fx * 11, y1 = L.y + fy * 11;
+            const x = L.x + fx * (p - 0.2) * 14 * CARP_K, y = L.y + fy * (p - 0.2) * 14 * CARP_K, x1 = L.x + fx * 11 * CARP_K, y1 = L.y + fy * 11 * CARP_K;
             drawJumpWater(ctx, L, L.x, L.y, x1, y1, len, x, y, z);
             if (L.t < L.dur) {
                 // its pitch: near vertical coming out (foreshortened to ~0.35 of its length), over at the top, flat as it
@@ -6433,8 +6456,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             return;
         }
         // it barely travels: up nearly on the spot, over, and down a body length on
-        const x = L.x + fx * (p - 0.2) * 14, y = L.y + fy * (p - 0.2) * 14;
-        const x1 = L.x + fx * 11, y1 = L.y + fy * 11;
+        const x = L.x + fx * (p - 0.2) * 14 * CARP_K, y = L.y + fy * (p - 0.2) * 14 * CARP_K;
+        const x1 = L.x + fx * 11 * CARP_K, y1 = L.y + fy * 11 * CARP_K;
         if (L.t < L.dur) {
             // pitch: near vertical going up (short from above), level at the top, and flat as it drops
             const up = p < 0.45 ? 1 - p / 0.45 * 0.6 : Math.max(0, 0.4 - (p - 0.45) / 0.25 * 0.4);
@@ -7793,11 +7816,12 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (!imgReady(sprImg(MAHI_SPR.file))) return;
         const L = MAHI_LEN * m.size, tint = waterTint(), air = m.leap > 0 ? Math.sin(Math.PI * m.leap) : 0;
         const chase = m.mode === 'chase', veil = air ? 0 : chase ? 0.3 : 0.62;
-        if (chase && !air && m.trail && m.trail.length > 2) drawWakeTrail(ctx, m, 3, 1.4, 0.5);
+        if (chase && !air && m.trail && m.trail.length > 2) drawWakeTrail(ctx, m, 3 * MAHI_LEN / 30, 1.4, 0.5);   // (the wake in its size: Oct 18, 3 -> 1.8)
         // the wave: nothing ahead of a third of the way back, growing to the tail; a touch of yaw at the head against it
         const rate = chase ? 17 : 9, amp = (air ? 0.02 : chase ? 0.11 : 0.06) * L, ph = (m.t || 0) * rate + (m.i || 0) * 1.9;
         const sway = (u) => amp * Math.pow(Math.max(0, (u - 0.3) / 0.7), 1.6) * Math.sin(ph - u * 4.2) - amp * 0.12 * Math.sin(ph + 0.6) * Math.max(0, 0.25 - u) * 4;
-        if (air) { ctx.save(); ctx.translate(m.x + air * 6, m.y + air * 10); ctx.rotate(m.h); humpBlit(ctx, mahiPosed(ctx, L, sway, 0, tint, 18), 'rgb(8,20,35)', 0.25); ctx.restore(); }
+        if (air) { const sk = MAHI_LEN / 30;   // (a leap as high as the fish is long: the shadow's throw scales with it, Oct 18)
+            ctx.save(); ctx.translate(m.x + air * 6 * sk, m.y + air * 10 * sk); ctx.rotate(m.h); humpBlit(ctx, mahiPosed(ctx, L, sway, 0, tint, 18), 'rgb(8,20,35)', 0.25); ctx.restore(); }
         ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.h + (air ? Math.sin(m.leap * Math.PI * 2) * 0.3 : 0)); if (air) ctx.scale(1 + air * 0.15, 1 + air * 0.15);
         humpBlit(ctx, mahiPosed(ctx, L, sway, veil, tint, 18), null, 1);
         ctx.restore();
@@ -7818,9 +7842,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     const ffImg = (p2) => sprImg('assets/images/props/ocean/' + FLYFISH_SPR.stem + '-' + p2 + '.png');
     function flyfishPosed(ctx, s, fold, scull, slot) {
         const S = FLYFISH_SPR, imgs = FF_PARTS.map(ffImg); if (imgs.some(im => !imgReady(im))) return null;
-        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 11 * s;
+        const t = ctx.getTransform(), k = Math.max(0.25, Math.hypot(t.a, t.b)), R = 11 * FF_K * s;
         const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
-        const F = 17.8 * s / S.span, x0 = -S.cx * F, y0 = -(S.top + S.bot) / 2 * F, need = 1.5 * k * F;
+        const F = FLYFISH_SPAN * s / S.span, x0 = -S.cx * F, y0 = -(S.top + S.bot) / 2 * F, need = 1.5 * k * F;
         const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
         FF_PARTS.forEach((p2, i) => { if (p2 === 'body') return;
             const [rx, ry] = S.piv[p2], sd = p2.endsWith('l') ? -1 : 1, X = x0 + rx * F, Y = y0 + ry * F, ang = fold * (p2[0] === 'w' ? 1.2 : 0.8);
@@ -7841,8 +7865,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // taxiing: a line of little V-ripples where the tail skipped the water
             const taxi = Math.min(p, 0.12);
             if (p < 0.35) for (let q = 0.03; q < taxi; q += 0.045) { const tx = f.x0 + Math.sin(f.h) * f.len * q, ty = f.y0 - Math.cos(f.h) * f.len * q;
-                ctx.save(); ctx.translate(tx, ty); ctx.rotate(f.h); ctx.strokeStyle = `rgba(255,255,255,${0.5 * (1 - p / 0.35)})`; ctx.lineWidth = 0.8;
-                ctx.beginPath(); ctx.moveTo(-2.5, 2.5); ctx.quadraticCurveTo(0, -0.5, 2.5, 2.5); ctx.stroke(); ctx.restore(); }
+                ctx.save(); ctx.translate(tx, ty); ctx.rotate(f.h); ctx.scale(FF_K, FF_K); ctx.strokeStyle = `rgba(255,255,255,${0.5 * (1 - p / 0.35)})`; ctx.lineWidth = 0.8;
+                ctx.beginPath(); ctx.moveTo(-2.5, 2.5); ctx.quadraticCurveTo(0, -0.5, 2.5, 2.5); ctx.stroke(); ctx.restore(); }   // (the V-ripples scale with the fish, Oct 18)
             // the fins: spread from the taxi through the glide; folding back in the last stretch as it drops in
             const fold = p < 0.82 ? 0 : Math.min(1, (p - 0.82) / 0.16), foldE = fold * fold * (3 - 2 * fold);
             // the tail: beating hard on the taxi (the fish still in the water), still in the glide
@@ -7854,8 +7878,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             ctx.restore();
         } else {
             const k = 1 - (f.t - f.dur) / 1.2;
-            drawFishSplash(ctx, x, y, Math.max(0, k * 1.2 - 0.2), 0.6, 3);
-            drawRing(ctx, x, y, k, 2, 9, 0.5);
+            drawFishSplash(ctx, x, y, Math.max(0, k * 1.2 - 0.2), 0.6 * FF_K, 3);   // (splash and ring scaled with the fish, Oct 18)
+            drawRing(ctx, x, y, k, 2 * FF_K, 9 * FF_K, 0.5);
         }
     }
 
@@ -7876,7 +7900,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
         const F = ALB_SPAN / (S.x1 - S.x0), x0 = -S.cx * F, y0 = -S.cy * F, need = 1.5 * k * F;
         const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
-        const slip = bank * 1.6;
+        const slip = bank * 1.6 * ALB_SPAN / 60;   // (the body's slip, in the bird's size: Oct 18, ALB_SPAN 60 -> 36)
         for (const p2 of ['wing-l', 'wing-r']) {
             const sd = p2 === 'wing-l' ? -1 : 1, [rx, ry] = S.root[p2], X = x0 + rx * F, Y = y0 + ry * F;
             // the low wing (the side it banks to) tipped away from us and foreshortened hard; the high wing lifted
@@ -7949,13 +7973,14 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 const q = u / 0.22, up = Math.sin(q * Math.PI);
                 drawStriper(ctx, x, y, hd, f.size, (0.45 + 0.55 * up) * k, up);
                 // the white it throws: a torn sheet off its shoulders
-                g = ctx.createRadialGradient(x, y, 0, x, y, 14 * f.size);
+                const ws = f.size * STRIPER_K;   // (the white it throws in its size, Oct 18: 14 -> ~10)
+                g = ctx.createRadialGradient(x, y, 0, x, y, 14 * ws);
                 g.addColorStop(0, `rgba(255,255,255,${0.75 * up * k})`); g.addColorStop(0.55, `rgba(245,252,252,${0.35 * up * k})`); g.addColorStop(1, 'rgba(245,252,252,0)');
-                ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, 14 * f.size, 10 * f.size, hd, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x, y, 14 * ws, 10 * ws, hd, 0, Math.PI * 2); ctx.fill();
             } else if (u < 0.5) {
                 const q = (u - 0.22) / 0.28;   // the swirl where it went down
                 ctx.strokeStyle = `rgba(235,248,248,${0.5 * (1 - q) * k})`; ctx.lineWidth = 1.1;
-                for (const [a0, a1] of [[0.3, 1.9], [2.4, 3.6], [4.1, 5.7]]) { ctx.beginPath(); ctx.ellipse(x, y, 5 + q * 9, 4 + q * 7, hd, a0 + q, a1 + q); ctx.stroke(); }
+                for (const [a0, a1] of [[0.3, 1.9], [2.4, 3.6], [4.1, 5.7]]) { ctx.beginPath(); ctx.ellipse(x, y, (5 + q * 9) * STRIPER_K, (4 + q * 7) * STRIPER_K, hd, a0 + q, a1 + q); ctx.stroke(); }   // (the swirl in its size, Oct 18)
             } else drawStriper(ctx, x, y, hd, f.size, 0.22 * k, 0);
         }
         // 4. the white water: torn foam sheets — lobed, crisp-edged patches that swell as fish
@@ -8000,8 +8025,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // flat, seven primaries splayed like fingers at each tip; coal black, with a pale silvery
     // bar along the upper wing's coverts and greyish secondaries; a short square tail; the small
     // bare orange-pink head poking out of a black ruff. It almost never flaps.
+    // (the drawn fallback is laid out at its old 80 span and scaled by CONDOR_K in drawCondor — Oct 18)
     function condorWing(ctx, reach) {
-        const S = CONDOR_SPAN / 2 * reach, hx = S * 0.7;
+        const S = 80 / 2 * reach, hx = S * 0.7;
         ctx.beginPath();
         ctx.moveTo(3, -8);
         ctx.quadraticCurveTo(S * 0.3, -9.6, S * 0.5, -9.6);                    // the arm, a touch forward to the wrist
@@ -8011,7 +8037,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.closePath();
     }
     function condorFingers(ctx, reach) {
-        const S = CONDOR_SPAN / 2 * reach, hx = S * 0.7;
+        const S = 80 / 2 * reach, hx = S * 0.7;
         for (let i = 0; i < 7; i++) {
             const t = i / 6, y0 = -8 + t * 12, ang = -0.32 + t * 0.78, len = (S - hx) * (1.02 - Math.abs(t - 0.3) * 0.55), w = 1.05;
             ctx.save(); ctx.translate(hx - 0.5, y0); ctx.rotate(ang);
@@ -8022,7 +8048,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function condorShape(ctx, bank, detail) {
         const fill = ctx.fillStyle;
         for (const sd of [-1, 1]) {
-            const reach = 1 - 0.07 * bank * sd, S = CONDOR_SPAN / 2 * reach;
+            const reach = 1 - 0.07 * bank * sd, S = 80 / 2 * reach;
             ctx.save(); ctx.scale(sd, 1);
             ctx.fillStyle = fill; condorWing(ctx, reach); ctx.fill();
             ctx.fillStyle = detail ? '#121010' : fill; condorFingers(ctx, reach);
@@ -8059,7 +8085,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const px = Math.ceil(2 * R * k), c = humpScratch(slot, px, px); if (!c) return null;
         const F = CONDOR_SPAN / (S.x1 - S.x0), x0 = -S.cx * F, y0 = -S.cy * F, need = 1.5 * k * F;
         const g = c.getContext('2d'); g.setTransform(k, 0, 0, k, R * k, R * k);
-        const roll = Math.cos(bank * 50 * Math.PI / 180), slip = bank * 1.2;
+        const roll = Math.cos(bank * 50 * Math.PI / 180), slip = bank * 1.2 * CONDOR_K;   // (Oct 18: the slip in its size)
         for (const p2 of ['wing-l', 'wing-r']) {
             const sd = p2 === 'wing-l' ? -1 : 1, [rx, ry] = S.root[p2], X = x0 + rx * F, Y = y0 + ry * F;
             const fs = roll * (bank * sd > 0 ? 1 - 0.08 * bank * sd : 1) * (1 - 0.1 * sweep);
@@ -8079,9 +8105,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             ctx.save(); ctx.translate(C.x, C.y); ctx.rotate(C.h); ctx.scale(sz, sz); humpBlit(ctx, condorPosed(ctx, C.bank, sw, 70), null, 1); ctx.restore();
             return;
         }
-        ctx.save(); ctx.translate(C.x + zo * 0.35, C.y + zo * 0.55); ctx.rotate(C.h);
+        ctx.save(); ctx.translate(C.x + zo * 0.35, C.y + zo * 0.55); ctx.rotate(C.h); ctx.scale(CONDOR_K, CONDOR_K);
         ctx.fillStyle = 'rgba(10,22,26,0.17)'; condorShape(ctx, C.bank, false); ctx.restore();
-        ctx.save(); ctx.translate(C.x, C.y); ctx.rotate(C.h);
+        ctx.save(); ctx.translate(C.x, C.y); ctx.rotate(C.h); ctx.scale(CONDOR_K, CONDOR_K);
         ctx.fillStyle = '#1a1817'; condorShape(ctx, C.bank, true);
         // the bare head and bill, turned a little into the turn
         ctx.translate(0, -11); ctx.rotate(C.bank * 0.3);
@@ -8120,11 +8146,11 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // hoof sits ON the flank's outline: the dark-brown patch between the ink and the coat), the head — horns and all —
     // turned and dipped about the neck in the draw. Fractions of the frame; L nose to tail tip.
     const BH_SPR = {
-        ram: { stem: 'bighorn-ram', cx: 0.5015, top: 0.1104, bot: 0.8906, neck: 0.39, collar: 0.36, L: 34.3,
+        ram: { stem: 'bighorn-ram', cx: 0.5015, top: 0.1104, bot: 0.8906, neck: 0.39, collar: 0.36, L: 34.3 * BH_K,   // (Oct 18: x BH_K, 34.3 -> 24.9)
             feet: { 'fore-l': [0.4315, 0.4219], 'fore-r': [0.5715, 0.4102], 'hind-l': [0.4315, 0.7695], 'hind-r': [0.5715, 0.7695] } },
-        ewe: { stem: 'bighorn-ewe', cx: 0.5, top: 0.1133, bot: 0.8828, neck: 0.33, collar: 0.3, L: 30.8,
+        ewe: { stem: 'bighorn-ewe', cx: 0.5, top: 0.1133, bot: 0.8828, neck: 0.33, collar: 0.3, L: 30.8 * BH_K,   // (30.8 -> 22.4)
             feet: { 'fore-l': [0.44, 0.3662], 'fore-r': [0.56, 0.3662], 'hind-l': [0.44, 0.7422], 'hind-r': [0.56, 0.7422] } },
-        lamb: { stem: 'bighorn-lamb', cx: 0.4995, top: 0.251, bot: 0.7637, neck: 0.42, collar: 0.39, L: 21.0,
+        lamb: { stem: 'bighorn-lamb', cx: 0.4995, top: 0.251, bot: 0.7637, neck: 0.42, collar: 0.39, L: 21.0 * BH_K,   // (21 -> 15.3)
             feet: { 'fore-l': [0.4495, 0.437], 'fore-r': [0.5495, 0.437], 'hind-l': [0.4495, 0.6328], 'hind-r': [0.5495, 0.6318] } },
     };
     const BH_PARTS = ['body', 'fore-l', 'fore-r', 'hind-l', 'hind-r'];
@@ -8141,16 +8167,16 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (s.bed < 0.5) for (let i = 1; i < 5; i++) {
             const nm = BH_PARTS[i], fore = nm.startsWith('fore'), sd = nm.endsWith('l') ? -1 : 1, [rx, ry] = S.feet[nm];
             let dy = m * coyFoot(((s.ph + G.ph[nm]) % 1 + 1) % 1, G);
-            if (s.clash && s.clash.ph === 'rear') dy = fore ? 1.5 : -1.5;   // reared: forelegs folded up, hinds under it
+            if (s.clash && s.clash.ph === 'rear') dy = (fore ? 1.5 : -1.5) * BH_K;   // reared: forelegs folded up, hinds under it
             const X = x0 + rx * F, Y = Yf(ry);
-            if (Math.abs(dy) > 0.5) { g.strokeStyle = '#5b4535'; g.lineCap = 'round'; g.lineWidth = 1.3; g.beginPath(); g.moveTo(X - sd * 1.4, Y + (fore ? 1.8 : -1.8)); g.lineTo(X, Y + dy); g.stroke(); }
+            if (Math.abs(dy) > 0.5 * BH_K) { g.strokeStyle = '#5b4535'; g.lineCap = 'round'; g.lineWidth = 1.3 * BH_K; g.beginPath(); g.moveTo(X - sd * 1.4 * BH_K, Y + (fore ? 1.8 : -1.8) * BH_K); g.lineTo(X, Y + dy); g.stroke(); }   // (legs in its size, Oct 18)
             g.save(); g.translate(0, dy); g.drawImage(humpMip(ims[i], 1.5 * k * F), x0, y0, F, F); g.restore();
         }
         const piece = (f0, f1) => g.drawImage(body, 0, f0 * n, n, (f1 - f0) * n, x0, Yf(f0), F, (f1 - f0) * F);
         piece(S.collar, 1);
         // the head and horns: down to crop (foreshortened — a ram's curls stay broad), up to scan, turned to watch;
         // drinking it bobs
-        const py = Yf(S.neck), near = 1 + 0.2 * Math.sin(s.pitch || 0), bob = s.mode === 'drink' ? 0.3 * Math.sin(T * 9 + s.i) : 0;
+        const py = Yf(S.neck), near = 1 + 0.2 * Math.sin(s.pitch || 0), bob = s.mode === 'drink' ? 0.3 * BH_K * Math.sin(T * 9 + s.i) : 0;
         g.save(); g.translate(0, py); g.rotate(s.look); g.scale(near, (1 - 0.32 * s.head) * near); g.translate(0, -py + bob);
         piece(0, S.neck);
         g.restore();
@@ -8171,17 +8197,17 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const z = s.z || 0, fs = Math.cos(s.pitch || 0), bedW = 1 + 0.06 * s.bed;
             // drinking: rings from the muzzle, out over the water
             if (s.mode === 'drink' && s.head > 0.7) { const reach = bhReach(s), mx = s.x + Math.sin(s.h) * reach, my = s.y - Math.cos(s.h) * reach;
-                for (let r = 0; r < 3; r++) { const q = ((T * 0.8 + r / 3 + s.i * 0.29) % 1); brokenRing(ctx, mx, my, 1.5 + 9 * q, 1.2, s.h, 0.3 * (1 - q), s.i * 5 + r, 0.6); } }
+                for (let r = 0; r < 3; r++) { const q = ((T * 0.8 + r / 3 + s.i * 0.29) % 1); brokenRing(ctx, mx, my, (1.5 + 9 * q) * BH_K, 1.2, s.h, 0.3 * (1 - q), s.i * 5 + r, 0.6); } }   // (rings in its size, Oct 18)
             const P = () => bighornPosed(ctx, s, S, 73);
             // its shadow on the rock (lower and tighter when it lies up), off the ground in a bound; reared, it
             // foreshortens
             const so = 1 - 0.45 * s.bed;
-            ctx.save(); ctx.translate(s.x + (3.5 + z * 0.35) * so, s.y + (5.5 + z * 0.55) * so); ctx.rotate(s.h); ctx.scale(bedW, fs); humpBlit(ctx, P(), 'rgb(40,18,8)', 0.26); ctx.restore();
+            ctx.save(); ctx.translate(s.x + (3.5 * BH_K + z * 0.35) * so, s.y + (5.5 * BH_K + z * 0.55) * so); ctx.rotate(s.h); ctx.scale(bedW, fs); humpBlit(ctx, P(), 'rgb(40,18,8)', 0.26); ctx.restore();   // (its shadow's throw in its size, Oct 18)
             ctx.save(); ctx.translate(s.x, s.y); ctx.rotate(s.h); if (z > 0) ctx.scale(zScale(z), zScale(z)); ctx.scale(bedW, fs); humpBlit(ctx, P(), null, 1); ctx.restore();
             return;
         }
-        const k = s.lamb ? 0.62 : s.ram ? 1 : 0.9, st = s.moving > 1.5 ? 1.08 : 1;
-        ctx.save(); ctx.translate(s.x + 3.5, s.y + 5.5); ctx.rotate(s.h); ctx.scale(k, k * st);
+        const k = (s.lamb ? 0.62 : s.ram ? 1 : 0.9) * BH_K, st = s.moving > 1.5 ? 1.08 : 1;   // (the drawn fallback x BH_K, Oct 18)
+        ctx.save(); ctx.translate(s.x + 3.5 * BH_K, s.y + 5.5 * BH_K); ctx.rotate(s.h); ctx.scale(k, k * st);
         ctx.fillStyle = 'rgba(40,18,8,0.26)'; bodyPath(ctx, BIGHORN_BODY); ctx.fill();
         ctx.beginPath(); ctx.ellipse(0, -12, 2.8, 5, 0, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
@@ -8231,9 +8257,9 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // THE PAINTED COYOTE (Oct 17 2026): redrock-coyote, its paws cut by feetsplit.py (by place: they just show past
     // the shoulders and hips), the head turned and dipped about the neck (the bear's cut, done in the draw), the tail
     // laid in strips that swing; and redrock-coyote-sitting, cross-faded in as it sits. Fractions of the frame.
-    const COY_SPR = { cx: 0.5005, top: 0.0898, bot: 0.9072, neck: 0.285, collar: 0.26, root: 0.655, L: 32, yN: -14,
+    const COY_SPR = { cx: 0.5005, top: 0.0898, bot: 0.9072, neck: 0.285, collar: 0.26, root: 0.655, L: 32 * COY_K, yN: -14 * COY_K,   // (Oct 18: x COY_K, 32 -> 24)
         feet: { 'fore-l': [0.4225, 0.3696], 'fore-r': [0.5785, 0.3696], 'hind-l': [0.4225, 0.5547], 'hind-r': [0.5785, 0.5566] } };
-    const COY_SIT = { cx: 0.507, top: 0.1455, bot: 0.8447, neck: 0.42, collar: 0.4, L: 20.3 };
+    const COY_SIT = { cx: 0.507, top: 0.1455, bot: 0.8447, neck: 0.42, collar: 0.4, L: 20.3 * COY_K };
     const COY_PARTS = ['body', 'fore-l', 'fore-r', 'hind-l', 'hind-r'];
     const coyImg = (p2) => sprImg('assets/images/props/redrock/coyote-' + p2 + '.png');
     const coySitImg = () => sprImg('assets/images/props/redrock/coyote-sitting.png');
@@ -8259,15 +8285,15 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 // gathering, the hind feet come up under it; in the air the forelegs tuck, then reach past the face to
                 // land; the hind legs drive back and trail; pinned, the forefeet are planted ahead
                 const L = K.leap || 0, cr = K.crouch || 0;
-                dy = fore ? (L <= 0 ? 0 : L < 0.45 ? 1.5 : L < 1 ? -5 * (L - 0.45) / 0.55 : -4) : (L <= 0 ? -2.5 * cr : L < 1 ? 3 + 2 * L : 2);
+                dy = COY_K * (fore ? (L <= 0 ? 0 : L < 0.45 ? 1.5 : L < 1 ? -5 * (L - 0.45) / 0.55 : -4) : (L <= 0 ? -2.5 * cr : L < 1 ? 3 + 2 * L : 2));
             }
             const X = x0 + rx * F, Y = Yf(ry);
-            if (Math.abs(dy) > 0.4) { g.strokeStyle = '#94592f'; g.lineCap = 'round'; g.lineWidth = 1.15; g.beginPath(); g.moveTo(X - sd * 1.2, Y + (fore ? 1.5 : -1.5)); g.lineTo(X, Y + dy); g.stroke(); }
+            if (Math.abs(dy) > 0.4 * COY_K) { g.strokeStyle = '#94592f'; g.lineCap = 'round'; g.lineWidth = 1.15 * COY_K; g.beginPath(); g.moveTo(X - sd * 1.2 * COY_K, Y + (fore ? 1.5 : -1.5) * COY_K); g.lineTo(X, Y + dy); g.stroke(); }   // (legs in its size, Oct 18)
             g.save(); g.translate(0, dy); g.drawImage(humpMip(ims[i], 1.5 * k * F), x0, y0, F, F); g.restore();
         }
         // the tail, in strips from the rump: carried low and straight, swinging a little with the stride; streaming at
         // the lope; lazily at rest
-        const amp = K.moving > 1.5 ? 0.5 : m > 0.1 ? 1.1 * m : 0.7 * Math.max(0, Math.sin(T * 0.6 + K.i * 2));
+        const amp = COY_K * (K.moving > 1.5 ? 0.5 : m > 0.1 ? 1.1 * m : 0.7 * Math.max(0, Math.sin(T * 0.6 + K.i * 2)));
         const sway = (q) => amp * Math.pow(q, 1.4) * Math.sin(K.ph * Math.PI * 2 + (m > 0.1 ? 0 : T * 1.4) - q * 1.2);
         const piece = (f0, f1) => g.drawImage(body, 0, f0 * n, n, (f1 - f0) * n, x0, Yf(f0), F, (f1 - f0) * F);
         const N = 8, st = (S.bot + 0.01 - S.root) / N, lap = 0.003;
@@ -8282,7 +8308,7 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
         piece(S.collar, S.root + lap);
         // the head on its neck: turned to what it watches; down (foreshortened) to drink, to nose the sand, to listen;
         // lapping, it bobs
-        const py = Yf(S.neck), lapB = K.mode === 'drink' ? 0.35 * Math.sin(T * 14) : 0, near = 1 + 0.22 * Math.sin(K.pitch || 0);
+        const py = Yf(S.neck), lapB = K.mode === 'drink' ? 0.35 * COY_K * Math.sin(T * 14) : 0, near = 1 + 0.22 * Math.sin(K.pitch || 0);
         g.save(); g.translate(0, py); g.rotate(K.look); g.scale(near, (1 - 0.3 * K.head) * near); g.translate(0, -py + lapB);
         piece(0, S.neck);
         g.restore();
@@ -8309,8 +8335,8 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const h = K.h + K.side, z = K.z || 0, sit = K.sit;
             // drinking: rings spreading from the muzzle on the water just past the edge
             if (K.mode === 'drink' && K.head > 0.6) {
-                const mx = K.x + Math.sin(K.h + K.look * 0.3) * 12.5, my = K.y - Math.cos(K.h + K.look * 0.3) * 12.5;
-                for (let r = 0; r < 3; r++) { const q = ((T * 0.9 + r / 3 + K.i * 0.37) % 1); brokenRing(ctx, mx, my, 1.5 + 9 * q, 1.2, K.h, 0.32 * (1 - q), K.i * 7 + r, 0.6); }
+                const mx = K.x + Math.sin(K.h + K.look * 0.3) * 12.5 * COY_K, my = K.y - Math.cos(K.h + K.look * 0.3) * 12.5 * COY_K;   // (muzzle and rings x COY_K, Oct 18)
+                for (let r = 0; r < 3; r++) { const q = ((T * 0.9 + r / 3 + K.i * 0.37) % 1); brokenRing(ctx, mx, my, (1.5 + 9 * q) * COY_K, 1.2, K.h, 0.32 * (1 - q), K.i * 7 + r, 0.6); }
             }
             const one = (col, a, sh) => {
                 const P = sit < 0.99 ? coyotePosed(ctx, K, 71) : null, Q = sit > 0.01 ? coyoteSitPosed(ctx, K, 72) : null;
@@ -8321,17 +8347,17 @@ const GULL_SPAN = 38, PELICAN_SPAN = 58, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // pitched (rearing up, diving head-first, rump-high on the pin) the body FORESHORTENS along its length; gathered
             // for the spring it is bunched a little shorter
             const fs = Math.cos(K.pitch || 0) * (1 - 0.08 * (K.crouch || 0));
-            ctx.save(); ctx.translate(K.x + 3 + z * 0.35, K.y + 4.8 + z * 0.55); ctx.rotate(h); ctx.scale(1, fs); one('rgb(40,18,8)', 0.26, true); ctx.restore();
+            ctx.save(); ctx.translate(K.x + 3 * COY_K + z * 0.35, K.y + 4.8 * COY_K + z * 0.55); ctx.rotate(h); ctx.scale(1, fs); one('rgb(40,18,8)', 0.26, true); ctx.restore();
             ctx.save(); ctx.translate(K.x, K.y); ctx.rotate(h); if (z > 0) ctx.scale(zScale(z), zScale(z)); ctx.scale(1, fs); one(null, 1, false); ctx.restore();
             return;
         }
         const sit = K.sit, str = K.moving > 1.5 ? 1.1 : 1;
         const prof = COYOTE_BODY.map(([y, w]) => [y * (1 - 0.35 * sit) + (y > 0 ? 0 : sit * 1.2), w * (1 + 0.25 * sit * (y > 2 ? 1 : 0))]);
-        ctx.save(); ctx.translate(K.x + 3, K.y + 4.8); ctx.rotate(K.h); ctx.scale(1, str);
+        ctx.save(); ctx.translate(K.x + 3 * COY_K, K.y + 4.8 * COY_K); ctx.rotate(K.h); ctx.scale(COY_K, COY_K * str);   // (the drawn fallback x COY_K, Oct 18)
         ctx.fillStyle = 'rgba(40,18,8,0.26)'; bodyPath(ctx, prof); ctx.fill();
         ctx.beginPath(); ctx.ellipse(0, -10.5, 2.2, 4, 0, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
-        ctx.save(); ctx.translate(K.x, K.y); ctx.rotate(K.h); ctx.scale(1, str);
+        ctx.save(); ctx.translate(K.x, K.y); ctx.rotate(K.h); ctx.scale(COY_K, COY_K * str);
         if (sit < 0.5) drawLegs(ctx, K.step, K.moving, 2.5, -4.8, 5.4, 1.1, 3.2, '#b0845a');
         // the tail: low and straight out, swaying; wrapped round the haunches when it sits
         const sway = Math.sin(K.step * 0.5) * 0.25 * Math.min(1, K.moving), tb = 7.6 * (1 - 0.35 * sit);

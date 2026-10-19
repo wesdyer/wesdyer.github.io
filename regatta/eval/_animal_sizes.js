@@ -19,6 +19,11 @@ const { chromium } = require('playwright'); const path = require('path'); const 
     Wildlife.art.drawAlbatross(g, { x: 0, y: 0, h: 0, z: 0, bank: 0 });
     Wildlife.art.drawFlyfish(g, { x0: 0, y0: 0, h: 0, len: 0.001, t: 0.5, dur: 1, z: 8, size: 1 }); Wildlife.art.drawMahi(g, { x: 0, y: 0, h: 0, size: 1, mode: 'patrol', t: 0, i: 0, leap: 0, trail: [] });
     for (const calf of [false, true]) Wildlife.art.drawWhale(g, { j: 0, calf, len: 50, x: 0, y: 0, h: 0, mode: 'surface', depth: 0, ph: 0 });
+    // Ocean and Redrock (Oct 18 2026): the condor, bighorn, coyote, striper and carp
+    Wildlife.art.drawCondor(g, { x: 0, y: 0, h: 0, z: 0, bank: 0, sweep: 0 });
+    for (const o of [{ ram: true }, {}, { lamb: true }]) Wildlife.art.drawBighorn(g, Object.assign({ i: 0, x: 0, y: 0, h: 0, mode: 'graze', head: 0, look: 0, bed: 0, moving: 0, ph: 0, gait: 'walk', pitch: 0, z: 0 }, o));
+    Wildlife.art.drawCoyote(g, { i: 0, x: 0, y: 0, h: 0, side: 0, z: 0, sit: 0, mode: 'stand', head: 0, look: 0, moving: 0, ph: 0, gait: 'walk', pitch: 0, crouch: 0, leap: 0 });
+    Wildlife.art.drawLeap(g, { kind: 'carp', x: 0, y: 0, h: 0, t: 0.99, dur: 1, size: 1, hop: 0, roll: 1 });
     // Glowtide's paintings (Oct 18 2026)
     Wildlife.art.drawManta(g, { x: 0, y: 0, h: 0, mode: 'travel', beat: 0, pitch: 0, i: 0, sparks: [] });
     Wildlife.art.drawFlyingFox(g, { x: 0, y: 0, h: 0, z: 0, flap: 0 });
@@ -76,6 +81,18 @@ const { chromium } = require('playwright'); const path = require('path'); const 
       'dugong calf': g => { const c = state.camera; state.camera = null; A.drawDugong(g, { x: 9999, y: 0, h: 0, len: 52, beat: 0, up: 1, trail: [], silt: 0, ring: 0, calf: { x: 0, y: 0, h: 0, len: 28.6, beat: Math.PI / 2, up: 1 } }); state.camera = c; },
       'golden jelly (largest bell, at the surface)': g => A.drawGoldJelly(g, { x: 0, y: 0, h: 0, size: 1.25, depth: 0, z: 0.3, pitch: 1.4, sq: 0, ph: 0, spots: 1 }),
       'golden jelly (smallest)': g => A.drawGoldJelly(g, { x: 0, y: 0, h: 0, size: 0.6, depth: 0, z: 0.3, pitch: 1.4, sq: 0, ph: 0, spots: 1 }),
+      // OCEAN + REDROCK (Oct 18 2026, "1.5x or less" at sea level): the birds at h 0 — span wide x bill to tail long; the
+      // walkers nose to tail tip; the carp flat on its side at the end of its leap (its jump water faded, no height)
+      'albatross (span × bill to tail, h 0)': g => { const c = state.camera; state.camera = null; A.drawAlbatross(g, { x: 0, y: 0, h: 0, z: 0, bank: 0 }); state.camera = c; },
+      'mahi-mahi (patrol, h 0)': g => { const c = state.camera; state.camera = null; A.drawMahi(g, { x: 0, y: 0, h: 0, size: 1, mode: 'chase', t: 0, i: 0, leap: 0, trail: [] }); state.camera = c; },
+      'flying fish (span × length, at the surface)': g => { const c = state.camera; state.camera = null; A.drawFlyfish(g, { x0: 0, y0: 0, h: 0, len: 0.001, t: 0.5, dur: 1, z: 0, size: 1 }); state.camera = c; },
+      'condor (span × bill to tail, h 0)': g => { const c = state.camera; state.camera = null; A.drawCondor(g, { x: 0, y: 0, h: 0, z: 0, bank: 0, sweep: 0 }); state.camera = c; },
+      'bighorn ram (nose to tail)': g => A.drawBighorn(g, { i: 0, x: 0, y: 0, h: 0, mode: 'look', head: 0, look: 0, bed: 0, moving: 0, ph: 0, gait: 'walk', pitch: 0, z: 0, ram: true }),
+      'bighorn ewe': g => A.drawBighorn(g, { i: 0, x: 0, y: 0, h: 0, mode: 'look', head: 0, look: 0, bed: 0, moving: 0, ph: 0, gait: 'walk', pitch: 0, z: 0 }),
+      'bighorn lamb': g => A.drawBighorn(g, { i: 0, x: 0, y: 0, h: 0, mode: 'look', head: 0, look: 0, bed: 0, moving: 0, ph: 0, gait: 'walk', pitch: 0, z: 0, lamb: true }),
+      'coyote (nose to tail tip)': g => A.drawCoyote(g, { i: 0, x: 0, y: 0, h: 0, side: 0, z: 0, sit: 0, mode: 'stand', head: 0, look: 0, moving: 0, ph: 0, gait: 'walk', pitch: 0, crouch: 0, leap: 0 }),
+      'striped bass (rolled)': g => A.drawStriper(g, 0, 0, 0, 1, 1, 1),
+      'carp (flat on its side)': g => A.drawLeap(g, { kind: 'carp', x: 0, y: 0, h: 0, t: 0.99, dur: 1, size: 1, hop: 0, roll: 1 }),
       'blue whale (snout to flukes)': g => { const c = state.camera; state.camera = null; A.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'surface', t: 10, depth: 0, ph: 0, fluke: 0, rollT: 1.5, turn: 0, lunge: 0, sd: 1, mott: [] }); state.camera = c; },
     };
     const out = {};
