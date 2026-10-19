@@ -14,6 +14,9 @@ const SHOTS = process.argv[2] || null;
 let fails = 0; const check = (name, ok, detail) => { console.log(`  ${ok ? 'ok   ' : 'FAIL '} ${name}${ok || !detail ? '' : ' — ' + detail}`); if (!ok) fails++; };
 (async () => {
   const browser = await chromium.launch(); const page = await browser.newPage({ viewport: { width: 1600, height: 1000 } });
+  // (a loaded machine — the suite runs tests side by side — can keep a button 'not yet stable' past Playwright's
+  // 30 s default while the race behind it animates; it passes alone every time, so allow it longer)
+  page.setDefaultTimeout(90000);
   const errs = []; page.on('pageerror', e => errs.push(String(e).slice(0, 300)));
   await page.goto('file://' + path.resolve('regatta/index.html')); await page.waitForTimeout(2000);
   await page.evaluate(() => { localStorage.removeItem('regatta_trophies'); });

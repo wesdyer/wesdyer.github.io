@@ -92,6 +92,103 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.nearN >= 3 && r.run >= r.nearN * 0.6 && r.crabDry, `crabs scurry up the rock, away from the water, from a close boat (${r.run} of ${r.nearN})`);
     ok(r.rows === 'Ember,Torch,Vent,Basalt,Stomp,Soot', `six Emberfall rows (${r.rows})`);
     ok(r.torch && r.vent, 'Torch reads three dodges, Vent the outside loop');
+    // the iguanas (Oct 18 2026, Wes: "make sure when they are on land that they are positioned correctly"): every basker's
+    // whole body — snout, four feet, its curled tail — on dry rock, off the props (boulders apart); and through two
+    // minutes nobody walks on the water or swims on the rock, nobody heading home dives, the warm ones face the sun
+    const ig = await p.evaluate(() => {
+        selectVenue('volcanic'); resetGame(); for (const o of state.boats) { o.x = 1e6; o.y = 1e6; }
+        const H = Wildlife.debug().igHeaps, K = VenueDoc.PROP_KINDS, foot = Wildlife.art.igFootprint;
+        const rings = (state.course.props || []).filter(t => !/boulder|vent-underwater/.test(t.kind)).map(t => ({ t, R: VenueDoc.propHitRings(t).rings.map(r => r.map(([x, y]) => ({ x, y }))) }));
+        const onProp = (x, y) => rings.some(q => Math.hypot(q.t.x - x, q.t.y - y) < ((K[q.t.kind] || {}).world || 100) * (q.t.scale || 1) && q.R.some(r => pointInPoly(x, y, r)));
+        let n = 0, off = 0, prop = 0, walkWet = 0, swimDry = 0, homeDive = 0;
+        for (const G of H) for (const m of G.members) { n++; const P = foot(m); if (P.some(([x, y]) => !pointOnLand(x, y))) off++; if (P.some(([x, y]) => onProp(x, y))) prop++; }
+        const all = H.flatMap(G => G.members), prev = new Map(all.map(m => [m, m.mode]));
+        for (let i = 0; i < 30 * 120; i++) { Wildlife.update(1 / 30);
+            for (const m of all) { if (m.mode === 'walk' && !pointOnLand(m.x, m.y)) walkWet++; if (m.mode === 'swim' && pointOnLand(m.x, m.y)) swimDry++;
+                if (prev.get(m) === 'swim' && m.home && m.mode === 'dive') homeDive++; prev.set(m, m.mode); } }
+        const warm = all.filter(m => m.mode === 'bask' && m.warm > 0.6), aimed = warm.filter(m => Math.abs(Math.atan2(Math.sin(m.h + Math.PI / 4), Math.cos(m.h + Math.PI / 4))) < 0.45);
+        return { n, off, prop, walkWet, swimDry, homeDive, warm: warm.length, aimed: aimed.length };
+    });
+    ok(ig.n > 150 && ig.off === 0 && ig.prop === 0, `every basking iguana's whole body on dry rock, off the crags (${ig.n}: ${ig.off} over water, ${ig.prop} on a prop)`);
+    ok(ig.walkWet === 0 && ig.swimDry === 0 && ig.homeDive === 0, `iguanas swim from the waterline, walk only on rock, never dive heading home (${ig.walkWet}/${ig.swimDry}/${ig.homeDive})`);
+    ok(ig.warm > 100 && ig.aimed >= ig.warm * 0.95, `warmed iguanas point at the sun (${ig.aimed}/${ig.warm})`);
+    // the crabs (Oct 18 2026): two minutes on the rock — never off it — sprinting ~1.4 m/s when they bolt, and a forced wash
+    // over the low rock makes the crabs under it cling
+    const cr = await p.evaluate(() => {
+        selectVenue('volcanic'); resetGame(); for (const o of state.boats) { o.x = 1e6; o.y = 1e6; }
+        const beds = Wildlife.debug().crabBeds.filter(B => !B.cleaners), all = beds.flatMap(B => B.crabs), prev = new Map(all.map(c => [c, [c.x, c.y]]));
+        let off = 0, fast = []; for (let i = 0; i < 30 * 120; i++) { Wildlife.update(1 / 30);
+            for (const c of all) { const [x, y] = prev.get(c); if (c.flee > 0) { const v = Math.hypot(c.x - x, c.y - y) * 30; if (v > 1) fast.push(v); } if (!pointOnLand(c.x, c.y)) off++; prev.set(c, [c.x, c.y]); } }
+        const atLow = (c) => (c.up || 0) < 16 && Math.hypot(c.x - c.hx, c.y - c.hy) < 8;   // (a low crab at its spot by the water, not one that has run up the rock)
+        const B = beds.find(b => b.crabs.some(atLow)), low = B.crabs.find(atLow);
+        for (const c of B.crabs) { c.flee = 0; c.duel = null; c.cling = 0; }
+        B.sprayT = 0; B.washAt = { x: low.x, y: low.y }; Wildlife.update(1 / 30);
+        fast.sort((a, b) => a - b);
+        return { off, sprint: Math.round(fast[fast.length >> 1] || 0), wash: !!B.wash, cling: B.crabs.filter(c => c.cling > 0 || c.flee > 0).length };
+    });
+    ok(cr.off === 0, `crabs stay on the rock (${cr.off} frames off it)`);
+    ok(cr.sprint >= 30 && cr.sprint <= 50, `crabs bolt at a grapsid sprint, ~1.4 m/s (median ${cr.sprint} u/s)`);
+    ok(cr.wash && cr.cling >= 1, `a wave washes the low rock and the crabs under it cling or run (${cr.cling})`);
+    // the boobies (Oct 18 2026): ten minutes — time under the water after each plunge as Zavalaga et al. 2007 measured
+    // it (3.2 s on average, 1.7-5.7), the flock going in together (the spotter, the rest within ~1.5 s), never plunging onto rock
+    const bo = await p.evaluate(() => {
+        selectVenue('volcanic'); resetGame(); for (const o of state.boats) { o.x = 1e6; o.y = 1e6; }
+        const Fs = Wildlife.debug().boobyFlocks, under = new Map(), spans = [], ut = []; let rock = 0; const start = new Map();
+        for (let i = 0; i < 30 * 600; i++) { Wildlife.update(1 / 30); const t = i / 30;
+            // (first bird into its fall to the last: the spotter's own tip-over doesn't count against the flock)
+            for (const F of Fs) { if (F.mode === 'plunge' && !start.has(F)) start.set(F, { t0: null, last: null }); if (F.mode !== 'plunge' && start.has(F)) { const S0 = start.get(F); if (S0.t0 != null) spans.push(S0.last - S0.t0); start.delete(F); }
+                for (const b of F.birds) { if (b.mode === 'dive' && b.dive < 0.05 && start.has(F)) { const S0 = start.get(F); if (S0.t0 == null) S0.t0 = t; S0.last = t; }
+                    if (b.mode === 'under') { if (!under.has(b)) under.set(b, t); if (pointOnLand(b.x, b.y)) rock++; } else if (under.has(b)) { ut.push(t - under.get(b)); under.delete(b); } } } }
+        ut.sort((x, y) => x - y); spans.sort((x, y) => x - y);
+        return { n: ut.length, mean: ut.reduce((x, y) => x + y, 0) / (ut.length || 1), lo: ut[0], hi: ut[ut.length - 1], span: spans[spans.length >> 1], rock };
+    });
+    ok(bo.n > 30 && bo.mean > 2.6 && bo.mean < 3.8 && bo.lo >= 1.6 && bo.hi <= 5.8, `boobies stay under ~3 s after a plunge (${bo.n} dives, mean ${bo.mean.toFixed(2)} s, ${bo.lo && bo.lo.toFixed(1)}-${bo.hi && bo.hi.toFixed(1)})`);
+    ok(bo.span != null && bo.span < 2.2 && bo.rock === 0, `the flock plunges together (first to last in ${bo.span && bo.span.toFixed(2)} s), never under rock (${bo.rock})`);
+    // the frigatebirds (Oct 18 2026): fifteen minutes — soaring, they barely flap (Weimerskirch et al. 2003); most food
+    // snatched from the surface on the wing; piracy rarely pays (Osorno et al. 1992: ~6% of chases, groups ~3x)
+    const fg = await p.evaluate(() => {
+        selectVenue('volcanic'); resetGame(); for (const o of state.boats) { o.x = 1e6; o.y = 1e6; }
+        const Fr = Wildlife.debug().frigates, prev = new Map(Fr.map(f => [f, f.mode])), seen = new Set(), tg = new Set(); let fr = 0, flap = 0, dips = 0, landDip = 0;
+        for (let i = 0; i < 30 * 900; i++) { Wildlife.update(1 / 30);
+            for (const f of Fr) { fr++; if (f.beats > 0 && f.mode === 'soar') flap++; const pm = prev.get(f);
+                if (pm === 'dip' && f.mode === 'climb' && f.dipRing > 0.9) { dips++; if (pointOnLand(f.rx, f.ry)) landDip++; }
+                if (pm !== 'swoop' && f.mode === 'swoop' && f.tgt) tg.add(f.tgt); prev.set(f, f.mode); }
+            for (const q of Wildlife.debug().frigFish) seen.add(q); }
+        return { soarFlap: flap / fr, dips, landDip, chases: tg.size, drops: seen.size };
+    });
+    ok(fg.soarFlap < 0.08, `soaring frigatebirds barely flap (${(fg.soarFlap * 100).toFixed(1)}% of the time)`);
+    ok(fg.dips >= 10 && fg.landDip === 0, `frigatebirds snatch from the sea surface, never off the rock (${fg.dips})`);
+    ok(fg.chases >= 10 && fg.drops / fg.chases < 0.3, `piracy rarely pays (${fg.drops} fish dropped in ${fg.chases} chases)`);
+    // the sooty terns (Oct 18 2026): ten minutes — they live on the wing (Birds of the World: plumage not water-repellent),
+    // touching down on the sea only for a moment and never on rock; they feed by dipping, never a plunge
+    const st = await p.evaluate(() => {
+        selectVenue('volcanic'); resetGame(); for (const o of state.boats) { o.x = 1e6; o.y = 1e6; }
+        const B = Wildlife.debug().ternFlocks.filter(F => F.sooty).flatMap(F => F.birds); let fr = 0, down = 0, rock = 0, dips = 0, longest = 0; const sat = new Map(), prev = new Map(B.map(b => [b, b.mode]));
+        for (let i = 0; i < 30 * 600; i++) { Wildlife.update(1 / 30);
+            for (const b of B) { fr++; if (b.mode === 'alight') { down++; sat.set(b, (sat.get(b) || 0) + 1 / 30); longest = Math.max(longest, sat.get(b)); if (pointOnLand(b.x, b.y)) rock++; } else sat.delete(b);
+                if (prev.get(b) !== 'dip' && b.mode === 'dip') dips++; if (b.mode === 'dive' || b.mode === 'sit' || b.mode === 'hover') rock += 1000; prev.set(b, b.mode); } }
+        return { n: B.length, down: down / fr, rock, dips, longest };
+    });
+    ok(st.n > 20 && st.dips > 100 && st.down < 0.02 && st.longest < 1.6 && st.rock === 0, `sooty terns live on the wing, dipping (${st.dips} dips), down on the sea ${(st.down * 100).toFixed(2)}% of the time, never > ${st.longest.toFixed(1)} s, never on rock, never a plunge`);
+    // the hammerheads (Oct 18 2026, Wes: "make sure the sharks are not stacked on top of each other"; "slowly circled in a
+    // wide radius"): three minutes — each shark as a capsule down its body, seen from above — few ever touch, and only in
+    // passing (the corkscrew, as her neighbours give way); the schools turn
+    const hm = await p.evaluate(() => {
+        selectVenue('volcanic'); resetGame(); for (const o of state.boats) { o.x = 1e6; o.y = 1e6; }
+        const Ss = Wildlife.debug().hammerSchools, L = 35, a0 = Ss.map(S => S.ang);
+        const seg = (f) => { const len = L * f.size; return [f.x + Math.sin(f.h) * len * 0.43, f.y - Math.cos(f.h) * len * 0.43, f.x - Math.sin(f.h) * len * 0.45, f.y + Math.cos(f.h) * len * 0.45, 3.25 * f.size]; };
+        const d = (px, py, ax, ay, bx, by) => { const vx = bx - ax, vy = by - ay, t = Math.max(0, Math.min(1, ((px - ax) * vx + (py - ay) * vy) / (vx * vx + vy * vy))); return Math.hypot(px - ax - vx * t, py - ay - vy * t); };
+        let samples = 0, over = 0, longest = 0; const run = new Map();
+        for (let i = 0; i < 30 * 180; i++) { Wildlife.update(1 / 30); if (i % 15) continue;
+            for (const S of Ss) { const G = S.fish.map(seg), hit = new Set();
+                for (let x = 0; x < G.length; x++) for (let y = x + 1; y < G.length; y++) { const A = G[x], B = G[y]; if (Math.hypot(A[0] - B[0], A[1] - B[1]) > 80) continue;
+                    const m = Math.min(d(A[0], A[1], B[0], B[1], B[2], B[3]), d(A[2], A[3], B[0], B[1], B[2], B[3]), d(B[0], B[1], A[0], A[1], A[2], A[3]), d(B[2], B[3], A[0], A[1], A[2], A[3])), id = S.i + ':' + x + ':' + y;
+                    if (m < A[4] + B[4]) { hit.add(x); hit.add(y); const n = (run.get(id) || 0) + 0.5; run.set(id, n); longest = Math.max(longest, n); } else run.delete(id); }
+                samples += S.fish.length; over += hit.size; } }
+        return { n: Ss.reduce((q, S) => q + S.fish.length, 0), share: over / samples, longest, turned: Ss.every((S, k) => Math.abs(S.ang - a0[k]) > 1) };
+    });
+    ok(hm.n > 250 && hm.share < 0.02 && hm.longest <= 5, `hammerheads never stacked: ${(hm.share * 100).toFixed(1)}% touching at a time, the longest ${hm.longest} s (${hm.n} sharks)`);
+    ok(hm.turned, 'the hammerhead schools circle slowly over their vents');
     ok(!errs.length, 'no page errors' + (errs.length ? ': ' + errs[0] : ''));
     await b.close();
     console.log(fails ? `\nFAIL — ${fails} failure(s)` : '\nPASS — 0 failure(s)');

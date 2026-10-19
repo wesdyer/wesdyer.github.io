@@ -34,32 +34,31 @@ cove planting notes). If it was built or grown, look up its real size and multip
 rules read. A real racing mark is about 1 m (10 units) and would be invisible, so these are sized
 for play.
 
-**Animals: true size × 3, with a floor.**
+**Animals: 1.5× true size or less, at sea level, with a floor.** (Oct 18 2026, Wes: "let's reduce everything
+to 1.5x or less" — "scale should represent scale at sea level". Until then the house rule was ×3 with a 20-unit floor;
+every venue was brought down to this in one pass, Oct 18 2026.)
 
-1. **Floor: about 20 units along the long axis.** Anything smaller does not read at race
-   speed. A duckling (1.5 units true) is drawn at the floor.
-2. **Cap: about 3× true size.** The approved Cove animals sit here: gull 2.7–3.7×, pelican
-   ~3×, porpoise now 1.5× (PT-016). Past 3× an animal stops reading as wildlife and starts reading as a
-   landmark.
-3. **Keep the order.** Where the floor squashes small animals together, step them about 15%
-   per rank so they stay in their true order: duckling < turtle < grebe < loon. A bigger animal
-   never draws smaller than a smaller one sharing its water.
+1. **Cap: 1.5× true length, measured at sea level (z = 0).** A flying bird is then drawn larger with its height
+   (perspective: `zScale(z)` and kin) — that is the camera, and stays: a frigatebird soaring at ~150 draws ~1.3× its
+   sea-level size. Animals already at or under 1.5× (the whales, orcas, porpoise, spinner, alligator, manta) stay.
+2. **Floor, so it still reads: about 10 units** for an animal that has to read on its own; **about 6–8** for one read as
+   a group, flock, school, bloom or by its splash. Below the floor an animal is a pixel or two at race zoom (Emberfall's
+   crab at 1.5× was ~3). Animals held up by the floor: duckling, painted turtle, grebe, gull, avocet, the terns, the
+   small penguins, bullfrog, tangs, bass, sockeye, flying fish, mackerel, jellies — and the Sally Lightfoot and shore
+   crabs, "a bit oversized" by Wes's call (~7 across the legs).
+3. **Keep the order.** Where the floor squashes small animals together, step them so they stay in their true
+   order: duckling < turtle < grebe (9.5 < 10.3 < 11.3); tern < gull < cormorant. A bigger animal never draws
+   smaller than a smaller one sharing its water.
 4. **Measure body length, bill or nose to tail.** Wings, antlers and legs follow in proportion.
    A flying bird's span comes out of its body length; it is not sized separately.
-5. **A broad animal reads by its footprint, not its length: keep it near 2×.** Measure the
+5. **A broad animal reads by its footprint, not its length** (the ×3 era kept these near 2×; under the 1.5× cap they
+   are simply at or under it). Measure the
    spread as well as the length. Wes, Sep 25: the green sea turtle at 3× (37 long, 46 across
    the spread flippers) was "too large". A domed shell with outspread flippers covers far more
    water than a slim shark of the same length, and read as big as one. At ~2× (26 long, 32
-   across) the Lagoon's order matches life: turtle < shark < ray. A slim animal (shark,
-   porpoise, loon) or a thin-winged one (gull) can use the full 3×.
-7. **Below the floor, on purpose, when the animal reads as a GROUP or by its SPLASH.**
-   The 20-unit floor is for an animal that has to read on its own. Three don't:
-   - **Bayou bullfrogs, ~10:** three to a drift log. The log and the hop read.
-   - **A Lake bass jumping, ~14:** in the air for half a second. Its fish-sized splash and
-     rings are the read.
-   - **Lagoon tangs, ~10:** a school of twenty-odd is the shape.
-
-   A 20-unit frog would be a two-metre frog on an eight-metre log.
+   across) the Lagoon's order matches life: turtle < shark < ray. (History, the ×3 era.)
+7. **The group floor (~6–8) is for an animal read as a GROUP or by its SPLASH:** bullfrogs on a drift log (~6), a
+   jumping bass (~6), a school of tangs (~6), a run of sockeye (~9.5), mackerel in a boil (~6), a tern flock (~8).
 8. **Speed is sized too: a body length or two a second.** Wes, Sep 25: the first tangs moved
    "way too fast". A tang darted at up to 28 u/s and bolted at 160; it now cruises at up to
    ~12 u/s (measured ~7) and scatters at ~45. An animal's cruise speed is about 1–2 of its
@@ -77,72 +76,77 @@ splashes, underwater bodies, flying shadows) is [race-view.md §10.6](race-view.
 
 ## The animals as built — **Observed**
 
-Solid pixels (alpha > 150) of each draw function at game scale, so faint shadows, rings and
-wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` whenever an animal is redrawn.
+Solid pixels (alpha > 150) of each draw function, drawn alone at sea level (z = 0) at 4 px a unit so thin bills and
+tails count — `SIZES_ZOOM=4 node regatta/eval/_animal_sizes.js` (and `eval/_volc_sizes.js` for Emberfall). Length is
+bill/nose to tail tip; a bird's span in brackets. Measured Oct 18 2026, after the 1.5× pass.
 
-| Animal | Venue | True length | True, in units | Target (3×, floor 20) | Drawn now | |
-|---|---|---|---|---|---|---|
-| Mallard duckling | School | 0.15 m | 1.5 | 20–22 | 22 | ✓ at the floor |
-| Painted turtle | School | 0.2 m | 2 | ~25 | 27 (19–27 by size) | ✓ resized Sep 25 (was 33) |
-| Great crested grebe | School | 0.5 m | 5 | ~29 | 29 | ✓ resized Sep 25 (was 55) |
-| Herring gull (perched) | Cove | 0.6 m | 6 | 20 | 20 (painted sprite, Oct 13 — Wes: "realistic") | ✓ approved |
-| Herring gull (span) | Cove | 1.4 m | 14 | 42 | 42 (painted; its body ~17, a real gull's 0.43 of the span — Wes chose realistic over the drawn gull's chunkier ~25, Oct 13) | ✓ approved |
-| Common loon | Lake | 0.8 m | 8 | ~32 | 31 | ✓ resized Sep 25 (was 65) |
-| Beaver (with tail) | Lake | 1.2 m | 12 | 36 | 36 | ✓ resized Sep 25 (was 53) |
-| Brown pelican (body) | Cove | 1.3 m | 13 | 39 | 41 | ✓ approved |
-| Brown pelican (span) | Cove | 2.1 m | 21 | 63 | 62 | ✓ approved |
-| Harbour porpoise | Cove | 1.6 m | 16 | 48 | 24 (`lifeU(1.6) * 1.5`) | ✓ Oct 13 (PT-016: 40 read as "two thirds of a boat") |
-| Moose (with head) | Lake | 3 m | 30 | 90 | 77 | ✓ |
-| Green sea turtle | Lagoon | 1.2 m | 12 | ~26 (≈2×, Wes) | 26 (32 across the flippers) | ✓ cut from 37 / 46 across, Sep 25 |
-| Spotted eagle ray (disc; snout to tail tip) | Lagoon | 2 m span; ~3.5 m | 20; 35 | ~44; ~58 (about a hull) | 42; 58 | ✓ cut Sep 25 from 60 across and ~100 tip to tail |
-| Blacktip reef shark | Lagoon | 1.4 m | 14 | 42 | 40 | ✓ Sep 25 |
-| American alligator (nose to tail tip) | Bayou | 3.5 m | 35 | ~48 (≈1.4×: broad, and a boat-sized gator reads as a monster) | 50 | ✓ Sep 25 |
-| Great egret (standing; span) | Bayou | 1 m; 1.5 m | 10; 15 | ~28; ~42 | 22; 42 | ✓ Sep 25 |
-| Anhinga (wings spread to dry) | Bayou | 1.15 m span | 11.5 | ~32 | 30 | ✓ Sep 25 |
-| American bullfrog | Bayou | 0.15 m | 1.5 | ~10 (group, rule 7) | ~10 | ✓ Sep 25 |
-| Bass, jumping | Lake | 0.4 m | 4 | ~14 (splash, rule 7) | 14 | ✓ Sep 25 |
-| Yellow / blue tang | Lagoon | 0.2 m | 2 | ~10 (school, rule 7) | ~10 | ✓ Sep 25 |
-| Harbour seal (head up; body under water) | Cove | 0.2 m head; 1.6 m | 2; 16 | head ~12 (rule 7, read by its ring); body ~30 | ~12; ~30 | ✓ Sep 25 |
-| Brown bear (nose to rump) | River | 2.2 m | 22 | ~46 (≈2×: broad; at 58 it stood as long as the hull) | 43 (26 across the shoulders; haunches 0.86 of that, head 0.68 — a grizzly's build) | ✓ Sep 25 |
-| Sockeye salmon | River | 0.6 m | 6 | ~18 (a run, rule 7) | 17 | ✓ Sep 25 |
-| Bald eagle (span × body) | River | 2 m; 0.9 m | 20; 9 | ~58; ~27 | 58; 29 (span 2× body, per the soaring refs) | ✓ Sep 25 |
-| River otter (with tail) | River | 1.1 m | 11 | ~32 | 36 | ✓ Sep 25 |
-| Humpback whale (mother; calf) | Ocean | 14 m; 5 m | 140; 50 | **true size** ~132; ~48 — ×3 would fill the screen, and at true size it is already 2.4 hulls | 132; 48 (134; 49 as the painted sprites, Oct 13) | ✓ Sep 25 |
-| Spinner dolphin | Ocean | 2 m | 20 | 30 (`lifeU(2) * 1.5`: the porpoise's 1.5×, the same bow-riding role, PT-016; was ~40 and drew ~23) | 30 (painted sprite) | ✓ Oct 13 |
-| Flying fish (wing-fins) | Ocean | 0.3 m | 3 | ~13 (a group, rule 7) | 13 | ✓ Sep 25 |
-| Laysan albatross (span) | Ocean | 2 m | 20 | ~60 (the pelican's) | 60 | ✓ Sep 25 |
-| California condor (span × body) | Redrock | 2.9 m; 1.2 m | 29; 12 | ~80; ~34 (bigger than the eagle's 58, as it should be) | 80; 34 | ✓ Sep 25 |
-| Desert bighorn (nose to rump) | Redrock | 1.6 m | 16 | ~34 (≈2×, like the bear) | 34 ram, 31 ewe, 21 lamb | ✓ Sep 25 |
-| Coyote (nose to tail tip) | Redrock | 1.6 m | 16 | ~32 (≈2×) | 32 | ✓ Sep 25 |
-| Striped bass, in a boil | Redrock | 0.8 m | 8 | ~18 (a school, rule 7) | 18 | ✓ Sep 25 |
-| Common carp, jumping | Redrock | 0.7 m | 7 | ~21 (bigger than the Lake's bass 14 and the salmon 17) | 21 | ✓ Sep 25 |
-| Orca (male; female; calf) | Glacier | 7.6 m; 6 m; 3.2 m | 76; 60; 32 | **true size**, like the humpbacks | 76; 60; 32 (were 72; 66; 36 — the female was over life); painted roll 2 measured 76; 60; 32 nose to fluke tips, flipper spans 38; 24; 16 | ✓ Oct 15 |
-| Emperor; gentoo; macaroni; Adélie penguin | Glacier | 1.15; 0.8; 0.7; 0.7 m | 12; 8; 7; 7 | floor 20 + ~15% rank steps: 30; 24; 21; 20 | 30; 24; 21; 20 (were 22; 16; 17; 15 — under the floor) | ✓ Sep 25 |
-| Leopard seal | Glacier | 3.2 m | 32 | ~64 (broad, ~2×) | 60 (was 44) | ✓ Sep 25 |
-| Antarctic tern (bill to tail; span) | Glacier | 0.4 m; 0.8 m | 4; 8 | floor 20; span ~2× the body, as a tern's is | 20; 38 (was 15; 24, then 32) | ✓ Sep 26 |
-| Golden jellyfish (bell) | Glowtide | 0.1-0.2 m | 1-2 | ~9 across (a bloom, rule 7) | 5-11 | ✓ Sep 26 |
-| Manta ray (span) | Glowtide | 4.5 m | 45 | ~70 (broad, ~1.5×) | 70 | ✓ Sep 26 |
-| Palau flying fox (span) | Glowtide | 1.1 m | 11 | ~33 (×3) | 36 | ✓ Sep 26 |
-| Hawksbill turtle | Glowtide | 0.8 m | 8 | ~24 (broad) | 24 | ✓ Sep 26 |
-| Dugong (calf) | Glowtide | 2.7 m (1.5 m) | 27 | ~54 (broad, ~2×) | 52 (29) | ✓ Sep 26 |
-| Marine iguana (with tail) | Emberfall | 1.2 m | 12 | ~36 (×3) | ~36 | ✓ Sep 26 |
-| Sally Lightfoot crab (legs) | Emberfall | 8 cm | 1 | ~7 (a scatter of red, rule 7) | ~7 | ✓ Sep 26 |
-| Blue-footed booby (span) | Emberfall | 1.5 m | 15 | ~44 (×3) | 44 | ✓ Sep 26 |
-| Great frigatebird (span) | Emberfall | 2.2 m | 22 | ~64 (the albatross's) | 64 | ✓ Sep 26 |
-| Scalloped hammerhead | Emberfall | 2.3 m (Galápagos schooling adults) | 30 | ~70 (×3; size 0.8–1.12) | ~70 | ✓ Sep 26 (re-drawn) |
-| Grey seal (cow / bull) | Spoonbill Flats | 2.0 m (2.6 m) | 20 (26) | ~46 (broad, ~2×; bulls ×1.05–1.22) | ~40 (~53) | ✓ Sep 26 |
-| Roseate spoonbill (span) | Spoonbill Flats | 0.8 m (1.3 m) | 8 (13) | ~26 (×3; span 40) | ~26 (40) | ✓ Sep 26 |
-| Pied avocet (span) | Spoonbill Flats | 0.44 m (0.75 m) | 4 (8) | 20 (the floor; span 34) | ~20 (34) | ✓ Sep 26 |
-| Shore crab (legs) | Spoonbill Flats | 15 cm | 1.5 | ~9 (as the Sally Lightfoot, Wes) | ~7–10 | ✓ Sep 26 (re-drawn) |
-| Great cormorant (span) | Clubhouse Point | 0.9 m (1.4 m) | 9 (14) | ~26 (×3; span 40) | ~26 (40) | ✓ Sep 26 |
-| By-the-wind sailor | Clubhouse Point | 7 cm | 0.7 | ~6 (a mass in windrows, rule 7) | ~6 | ✓ Sep 26 |
-| Atlantic mackerel | Clubhouse Point | 35 cm | 3.5 | ~9 (a ball of dozens) | ~9 | ✓ Sep 26 |
-| Sea otter (on its back) | Otter Point | 1.3 m | 13 | ~30 (broad floater, ~2.3×) | 32 | ✓ Sep 26 |
-| California sea lion (cow / bull) | Otter Point | 1.9 m (2.4 m) | 19 (24) | ~38 (2×: about half the white shark, Wes's refs; slim, a quarter as wide as long) | ~39 (~49) | ✓ Sep 26 |
-| Great white shark | Otter Point | 5 m | 50 | ~76 (1.5×: bigger than a hull ON PURPOSE — the venue's showpiece) | 76 (73 as the painted sprite, Oct 13: the needle tail tip falls under the alpha-150 count) | ✓ Sep 26 |
-| Blue whale | Otter Point | 25 m | 250 | 360 (~1.45×: at true size it read too small beside the 1.5-2.3× animals — Wes, Sep 26) | ~345 (340 as the painted sprite, Oct 13, drawn at 0.72 of its painted width) | ✓ Sep 26 |
+| Venue | Animal | True | Drawn (u) | × true |
+|---|---|---|---|---|
+| Duckling Pond | Mallard duckling | 0.15 m | 9.5 | floor |
+| | Painted turtle | 0.2 m | 10.3 | floor |
+| | Great crested grebe | 0.5 m | 11.3 | floor |
+| Cove | Herring gull, perched (gliding span) | 0.6 m (1.4 m) | 9.8 (20.3) | floor (1.45×) |
+| | Brown pelican, sitting (gliding span) | 1.3 m (2.1 m) | 19.3 (29) | 1.5× (1.4×) |
+| | Harbour porpoise | 1.6 m | 23.5 | 1.5× |
+| | Harbour seal, gliding under; its head bottling | 1.6 m | 23.8; 13.3 | 1.5× |
+| Lake | Common loon | 0.8 m | 11.5 | 1.4× |
+| | Beaver (with tail) | 1.2 m | 18.5 | 1.5× |
+| | Moose | 3 m | 43.8 | 1.5× |
+| | Bass, jumping | 0.4 m | 5.5 | group floor |
+| Lagoon | Green sea turtle | 1.2 m | 18.5 | 1.5× |
+| | Spotted eagle ray (snout to tail tip; disc) | 3.5 m; ~2 m | 46.8; 41.8 | 1.3× (disc ~2×) |
+| | Blacktip reef shark | 1.4 m | 21 | 1.5× |
+| | Tangs | 0.2 m | 5.8 | group floor |
+| Gatorgrass Bayou | American alligator | 3.5 m | 50 | 1.4× |
+| | Great egret standing (flying span) | 1 m (1.5 m) | 15.3 (~27) | 1.5× |
+| | Anhinga swimming (drying span) | 0.85 m | 11.8 (11.8) | 1.4× |
+| | Bullfrog | 0.15 m | 6.8 | group floor |
+| Sockeye Run | Brown bear | 2.2 m | 32.5 | 1.5× |
+| | Sockeye | 0.6 m | 9.5 | 1.6× (run) |
+| | Bald eagle (span) | 0.9 m (2 m) | 13.8 (27.5) | 1.5× |
+| | River otter, swimming | 1.1 m | 16.8 | 1.5× |
+| Open Ocean | Humpback whale; calf | 14 m; 5 m | 134; 49 | 1.0× |
+| | Spinner dolphin | 2 m | 29.5 | 1.5× |
+| | Mahi-mahi | 1 m | 12.8 | 1.3× |
+| | Flying fish | 0.3 m | 5.3 | group floor |
+| | Laysan albatross (span) | 0.8 m (2 m) | 12 (35.3) | 1.5× |
+| Redrock | California condor (span) | 1.2 m (2.9 m) | 18 (43.5) | 1.5× |
+| | Desert bighorn ram; ewe; lamb | 1.6 m | 23.8; 21.3; 14.8 | 1.5× |
+| | Coyote | 1.6 m | 24.8 | 1.5× |
+| | Striped bass | 0.8 m | 12 | 1.5× |
+| | Common carp | 0.7 m | 10.5 | 1.5× |
+| Glacier Sound | Orca bull; cow; calf | 7.6; 6; 3.2 m | 76.5; 60.5; 32.3 | 1.0× |
+| | Emperor penguin (prone) | 1.15 m | 17 | 1.5× |
+| | Gentoo; macaroni; Adélie (prone) | 0.8; 0.7; 0.7 m | 11.5; 10.3; 10.3 | 1.4–1.5× |
+| | Leopard seal | 3.2 m | 47.8 | 1.5× |
+| | Antarctic tern (span) | 0.4 m (0.8 m) | 7 (16) | flock floor |
+| Glowtide | Manta ray (span) | 4.5 m span | 68 | 1.5× |
+| | Dugong; calf | 2.7 m; 1.5 m | 40.8; 23.5 | 1.5× |
+| | Hawksbill turtle | 0.8 m | 12.3 | 1.5× |
+| | Palau flying fox (span) | 1.1 m span | 15.8 | 1.45× |
+| | Golden jelly (largest; smallest) | 0.1–0.2 m | 5.5; 2.5 | bloom |
+| | Moon jellies (`world` 8.5 / 5.5) | 0.1–0.4 m | ~5–12; ~3–8 | bloom |
+| Otter Point | Great white | 5 m | 67.5 | 1.35× |
+| | Blue whale | 25 m | 340 | 1.4× |
+| | California sea lion cow; bull | 1.9 m; 2.4 m | 27; 34 | 1.4× |
+| | Sea otter | 1.3 m | 20.3 | 1.5× |
+| Spoonbill Flats | Grey seal cow; bull | 2.0 m; 2.6 m | 34; 38 | 1.5–1.7× (size 1); ~1.5× at the mean size |
+| | Roseate spoonbill (span) | 0.8 m (1.3 m) | 12 (~18.5) | 1.5× |
+| | Pied avocet (span) | 0.44 m (0.75 m) | 8 (~16) | flock floor |
+| | Shore crab (across the legs) | 0.15 m | 7 | oversized (Wes) |
+| Clubhouse Point | Great cormorant (flying span) | 0.9 m (1.4 m) | 13.3 (16.5) | 1.5× |
+| | Herring gull afloat (flying span) | 0.6 m (1.4 m) | 9.8 (20.3) | floor |
+| | Common tern (span) | 0.33 m | 7.8 (16) | flock floor |
+| | Mackerel | 0.3 m | 6 | group floor |
+| | By-the-wind sailor | 7 cm | ~6 | mass |
+| Emberfall | Scalloped hammerhead | 2.3 m | 35 | 1.5× |
+| | Marine iguana | 1.2 m | 17 | 1.4× |
+| | Blue-footed booby (span) | 0.8 m (1.5 m) | 11.3 (25) | 1.4× |
+| | Great frigatebird (span) | 0.95 m (2.2 m) | 13.3 (31.8) | 1.4× |
+| | Sooty tern (span) | 0.4 m (0.9 m) | 8.5 (19.5) | flock floor |
+| | Sally Lightfoot crab (across the legs) | 0.2 m | 7 | oversized (Wes) |
 
-The four resized animals were all from the pond and lake round, the one Wes said looked worse
+(History, Sep 25 — the ×3 era:) the four resized animals were all from the pond and lake round, the one Wes said looked worse
 than the Cove. They had been iterated at 3× on the bench with no length target and ran 1.5–2×
 too big; the loon was even drawn bigger than the beaver. The scales are named constants beside
 the Cove's in `js/wildlife.js` (`TURTLE_SCALE`, `GREBE_SCALE`, `LOON_SCALE`, `BEAVER_SCALE`).

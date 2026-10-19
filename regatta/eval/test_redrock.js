@@ -46,7 +46,9 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
           for (let i = 0; i < 30 * 120; i++) { me2.x = -1600; me2.y = -700; Wildlife.update(1 / 30);
             for (const L of Wildlife.debug().leaps) if (L.kind === 'carp' && L.t >= 0 && !seen.has(L)) { seen.set(L, 1);
               if (pointOnLand(L.x, L.y)) wetLand++;
-              let near = false; for (let a = 0; a < 12 && !near; a++) near = pointOnLand(L.x + Math.cos(a / 12 * 6.283) * 175, L.y + Math.sin(a / 12 * 6.283) * 175); if (!near) farOut++; } }
+              // (the NEAREST land within 175, along 24 rays stepping out — a single ring at exactly 175 missed land a narrow
+              // spit puts at 170 with water again behind it)
+              let near = false; for (let a = 0; a < 24 && !near; a++) for (let r2 = 10; r2 <= 175 && !near; r2 += 5) near = pointOnLand(L.x + Math.cos(a / 24 * 6.283) * r2, L.y + Math.sin(a / 24 * 6.283) * r2); if (!near) farOut++; } }
           out.carp = seen.size; out.carpDry = wetLand; out.carpFar = farOut; away(me2); }
         // sheep bound from a close boat; a coyote lopes
         { const G = d.bands[0], s = G.members[0]; me.x = s.x + 60; me.y = s.y; me.opacity = 1;

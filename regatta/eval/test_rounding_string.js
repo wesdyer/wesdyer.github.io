@@ -3,31 +3,31 @@
 // RRS, Sail the Course: "a string representing her track until she finishes, when
 // drawn taut, (1) passes each mark of the course for the race on the required
 // side and in the correct order ... (2) TOUCHES each mark designated in the
-// sailing instructions to be a ROUNDING MARK". (1) applies to every mark; (2) is
-// what makes a rounding a rounding, and it is the geometric definition — the
-// taut string must TOUCH the mark, i.e. the track has to bend around it. Note
-// what it does NOT say: there is no proximity requirement, so going all the way
-// round at a distance is a legal rounding, merely slow. And there is no
-// tolerance in either sentence. The engine completes a rounding at
-// `roundSweep >= reqSweep * ROUND_SWEEP_TOL` with ROUND_SWEEP_TOL = 0.75, and the
-// AI's own exit logic targets that same discounted number, so boats are not
-// exploiting a gap they discovered — they are aimed at 75% of a rounding.
+// sailing instructions to be a ROUNDING MARK". There is no proximity requirement:
+// going all the way round at a distance is a legal rounding, merely slow.
 //
-// Measured on the shipped build (`_rounding_truth_probe.js`):
-//   bay     34% of completed roundings banked less than the full requirement,
-//           28% NEVER ENTERED THE ZONE, minimum fraction 0.74
-//   arctic  85% banked less than the full requirement, median 0.83, min 0.75
+// How the engine decides it (PT-081, Oct 4 2026 — roundingStep in sim/physics.js):
+// the MOMENT is the ROUNDING LINE, a ray off the mark along the bisector of the
+// course's turn there; the SIDE is the string over the whole leg. Credit = she
+// crosses the line the required way with the string wrapped. So:
+//   * a full rounding counts at the ring AND well outside the zone, at the same point;
+//   * a boat that turns back before the line, or goes round the wrong way, never counts.
 //
-// ⚠️ These tests are written to FAIL on the current build. They are the safety net
-// for changing rounding — a thing this campaign has got wrong several times — and
-// they pin both directions: a corner-cut must not count, and a legitimate wide
-// rounding must still count (the string rule has no proximity requirement either,
-// so a boat that goes all the way round at distance HAS rounded).
+// ⚠️ REWRITTEN Oct 17 2026. The August version scripted a boat round circles with
+// window.update(), which ran it into land (Glacier Sound's 2.5-zone circle crosses the
+// isle; at Bluewater, Cove and the lake even its ring rounding was shoved off course),
+// measured "full" as the pre-PT-081 `reqSweep`, and left radially AWAY from the next mark
+// — on Glacier Sound's hairpin that never reaches the rounding line, so the wide case
+// failed for the script's reasons, not the rule's. This version drives roundingStep — the
+// one judge the race and the School share — along land-free synthetic tracks at every
+// rounding mark of every venue: in from the previous mark, round the mark at a radius,
+// then on to the next mark (or back the way she came).
 //
 // node regatta/eval/test_rounding_string.js
 const { chromium } = require('playwright');
 const path = require('path');
 
+const VENUES = ['arctic', 'bay', 'flats', 'glowtide', 'lagoon', 'lake', 'ocean', 'otter', 'pond', 'redrock', 'river', 'seatrials', 'swamp', 'volcanic'];
 let fails = 0;
 const check = (name, ok, detail) => {
     console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${name}${ok || !detail ? '' : ' — ' + detail}`);
@@ -36,83 +36,78 @@ const check = (name, ok, detail) => {
 
 (async () => {
     const browser = await chromium.launch();
-    const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
-    const errs = []; page.on('pageerror', e => errs.push(e.message));
-    await page.addInitScript(() => localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'arctic' })));
-    await page.goto('file://' + path.resolve('regatta/index.html'));
-    await page.waitForFunction(() => window.state && window.state.course && window.state.course.marks);
-
-    // Walk a boat along a scripted arc around this leg's rounding mark and report
-    // whether the leg advanced. `frac` is the fraction of the FULL geometric
-    // requirement swept; `radius` is in zone radii.
-    const runArc = (frac, radiusZones) => page.evaluate(([frac, radiusZones]) => {
-        window.resetGame(); window.startRace();
-        // ⚠️ startRace leaves the race in PRESTART with the timer counting down,
-        // and the rounding machinery only runs while racing — script the boat
-        // before that and the sweep accumulator never turns over (it reads 0 and
-        // every case looks like "did not round").
-        for (let i = 0; i < 60 * 120 && state.race.status !== 'racing'; i++) window.update(1 / 60);
-        const b = state.boats.find(x => !x.isPlayer);
-        for (const o of state.boats) if (o !== b) { o.x = -99999; o.y = -99999; o.raceState.finished = true; }
-        b.raceState.leg = 1; b.raceState.lastPos = { x: b.x, y: b.y };
-        b.raceState.roundSweep = 0; b.raceState.roundArmed = false;
-        const rm = (typeof legRoundMark === 'function' ? legRoundMark(1) : null) || state.course.roundMark;
-        if (!rm || rm.reqSweep == null) return { skip: true };
-        const need = rm.reqSweep, sgn = rm.side === 'port' ? -1 : 1;
-        const R = rm.zone * radiusZones;
-        const a0 = Math.atan2(b.y - rm.y, b.x - rm.x);
-        const startLeg = b.raceState.leg;
-        // ⚠️ advanceLeg RESETS roundSweep, so it must be captured on the frame
-        // before the leg turns over or every completed case reads 0.
-        let sweptAt = 0;
-        const steps = 400;
-        for (let i = 0; i <= steps; i++) {
-            const a = a0 + sgn * (need * frac) * (i / steps);
-            const nx = rm.x + Math.cos(a) * R, ny = rm.y + Math.sin(a) * R;
-            b.heading = Math.atan2(nx - b.x, -(ny - b.y));
-            b.x = nx; b.y = ny; b.speed = 1.5;
-            sweptAt = b.raceState.roundSweep || sweptAt;
-            window.update(1 / 60);
-            if (b.raceState.leg !== startLeg) break;
+    console.log('\nTHE STRING RULE — what counts as a rounding (every rounding mark, land-free tracks)\n');
+    let marksSeen = 0;
+    const errs = [];
+    for (const v of VENUES) {
+        const page = await browser.newPage({ viewport: { width: 1200, height: 800 } });
+        page.on('pageerror', e => errs.push(v + ': ' + e.message));
+        await page.addInitScript(v => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), v);
+        await page.goto('file://' + path.resolve('regatta/index.html'));
+        await page.waitForFunction(() => window.state && window.state.course && window.state.course.marks);
+        const res = await page.evaluate(() => {
+            window.requestAnimationFrame = () => 0;   // only this script moves anything
+            window.resetGame(); window.startRace();
+            const route = state.course.route, marks = state.course.marks, out = [];
+            for (let L = 1; L < route.length - 1; L++) {
+                const e = route[L];
+                if (!e || e.kind !== 'round' || !e.mark) continue;
+                const rm = e.mark, sgn = rm.side === 'port' ? -1 : 1;
+                const prevA = CoursePath.anchor(route[L - 1], marks), nextA = CoursePath.anchor(route[L + 1], marks);
+                if (!prevA || !nextA) continue;
+                const aS = Math.atan2(prevA.y - rm.y, prevA.x - rm.x), aN = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
+                // the turn the required way from the inbound bearing to the outbound one (a hairpin the whole way round)
+                let arc = (aN - aS) * sgn;
+                while (arc <= 0) arc += 2 * Math.PI;
+                while (arc > 2 * Math.PI) arc -= 2 * Math.PI;
+                if (arc < 0.35) arc += 2 * Math.PI;
+                // in along the inbound bearing to radius R; round the mark through `sweep` (signed: the
+                // required way is +); `retrace`: then back round the same arc to where she came in; then on
+                // to `tgt`. Returns the step credit landed on (arc steps 0..400, then on), or -1 if never.
+                // (Turning back means RETRACING: on a hairpin the straight line back to the previous mark
+                // runs on round the mark toward the next one, which is a rounding.)
+                const run = (R, sweep, tgt, retrace) => {
+                    const pts = [], D0 = Math.hypot(prevA.x - rm.x, prevA.y - rm.y);
+                    for (let k = 0; k <= 60; k++) { const d = D0 + (R - D0) * k / 60; pts.push([rm.x + Math.cos(aS) * d, rm.y + Math.sin(aS) * d]); }
+                    for (let k = 1; k <= 400; k++) { const a = aS + sgn * sweep * k / 400; pts.push([rm.x + Math.cos(a) * R, rm.y + Math.sin(a) * R]); }
+                    if (retrace) for (let k = 399; k >= 0; k--) { const a = aS + sgn * sweep * k / 400; pts.push([rm.x + Math.cos(a) * R, rm.y + Math.sin(a) * R]); }
+                    const [ex, ey] = pts[pts.length - 1];
+                    for (let k = 1; k <= 300; k++) pts.push([ex + (tgt.x - ex) * k / 300, ey + (tgt.y - ey) * k / 300]);
+                    const rs = { leg: L, lastPos: { x: pts[0][0], y: pts[0][1] }, roundSweep: 0, roundWrong: 0 };
+                    for (let i = 1; i < pts.length; i++) {
+                        const [x, y] = pts[i];
+                        if (roundingStep({ x, y, heading: 0 }, rs, rm, nextA).done) return i - 61;
+                        rs.lastPos = { x, y };
+                    }
+                    return -1;
+                };
+                const z = rm.zone;
+                const ring = run(z * 0.8, arc, nextA), wide = run(z * 2.5, arc, nextA);
+                // turn back before the line: stop at 80% of the way to where the full rounding was credited
+                const stop = ring >= 0 && ring <= 400 ? arc * (ring / 400) * 0.8 : arc * 0.4;
+                out.push({
+                    id: `${L}:${rm.side}`, ring, wide,
+                    backRing: run(z * 0.8, stop, prevA, true), backWide: run(z * 2.5, stop, prevA, true),
+                    wrongWay: run(z * 0.8, -(2 * Math.PI - arc), nextA),
+                });
+            }
+            return out;
+        });
+        await page.close();
+        for (const m of res) {
+            marksSeen++;
+            const tag = `${v} leg ${m.id}`;
+            check(`${tag}: a full rounding at the ring completes`, m.ring >= 0, `never credited`);
+            check(`${tag}: ...and well outside the zone (2.5x), at the same point`, m.wide >= 0 && Math.abs(m.wide - m.ring) <= 12,
+                  m.wide < 0 ? 'never credited' : `credited at step ${m.wide} vs ${m.ring} at the ring`);
+            check(`${tag}: turning back before the rounding line never completes`, m.backRing < 0 && m.backWide < 0,
+                  `credited at ring ${m.backRing}, wide ${m.backWide}`);
+            check(`${tag}: going round the wrong way never completes`, m.wrongWay < 0, `credited at step ${m.wrongWay}`);
         }
-        // then sail away, which is what lets a completed rounding be recognised
-        for (let i = 0; i < 240 && b.raceState.leg === startLeg; i++) {
-            const a = a0 + sgn * need * frac;
-            b.x += Math.cos(a) * 12; b.y += Math.sin(a) * 12;
-            sweptAt = b.raceState.roundSweep || sweptAt;
-            window.update(1 / 60);
-        }
-        return { advanced: b.raceState.leg !== startLeg, swept: sweptAt, need };
-    }, [frac, radiusZones]);
-
-    console.log('\nTHE STRING RULE — what counts as a rounding\n');
-
-    const full = await runArc(1.0, 0.8);
-    if (full.skip) { console.log('  (this venue has no rounding mark on leg 1 — skipped)'); await browser.close(); return; }
-    check('a FULL rounding at the ring completes the leg', full.advanced === true,
-          `swept ${full.swept && full.swept.toFixed(2)} of ${full.need.toFixed(2)}`);
-
-    const cut80 = await runArc(0.80, 0.8);
-    check('a rounding that sweeps only 80% must NOT complete', cut80.advanced === false,
-          `advanced with ${cut80.swept && cut80.swept.toFixed(2)} of ${cut80.need.toFixed(2)} — the string does not pass the mark on the required side`);
-
-    const cut60 = await runArc(0.60, 0.8);
-    check('a rounding that sweeps only 60% must NOT complete', cut60.advanced === false,
-          `advanced with ${cut60.swept && cut60.swept.toFixed(2)} of ${cut60.need.toFixed(2)}`);
-
-    // The string rule has no proximity requirement: going all the way round at a
-    // distance is legal, merely slow. Pin it so a fix does not over-correct into
-    // "must enter the zone", which is NOT what the rule says.
-    const wide = await runArc(1.0, 2.5);
-    check('a FULL rounding well outside the zone still completes', wide.advanced === true,
-          `did not advance despite sweeping ${wide.swept && wide.swept.toFixed(2)} of ${wide.need.toFixed(2)} at 2.5x zone`);
-
-    const wideCut = await runArc(0.80, 2.5);
-    check('a WIDE 80% pass must NOT complete either', wideCut.advanced === false,
-          `advanced with ${wideCut.swept && wideCut.swept.toFixed(2)} of ${wideCut.need.toFixed(2)}`);
-
+    }
+    check('every venue with a rounding mark was tested', marksSeen >= 15, `${marksSeen} rounding marks`);
     if (errs.length) check('no page errors', false, errs[0]);
-    console.log(`\n${fails ? 'FAIL' : 'PASS'} — ${fails} failure(s)\n`);
+    console.log(`\n${fails ? 'FAIL' : 'PASS'} — ${fails} failure(s), ${marksSeen} rounding marks\n`);
     await browser.close();
     process.exit(fails ? 1 : 0);
 })();

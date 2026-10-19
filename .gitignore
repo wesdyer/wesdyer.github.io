@@ -76,3 +76,16 @@ regatta/eval/rl/_retired_benches/
 # Python bytecode — regenerated on every run of the eval/playtest tools
 __pycache__/
 *.pyc
+
+# Cleanup Oct 17 2026 — scratch that had been committed before these rules existed.
+# treeB is the Aug 3 baseline snapshot (a full repo copy); the single-letter list above missed it.
+regatta/eval/rl/treeB/
+regatta/eval/rl/*.out
+# Probe and test screenshots (test_editor writes _editor_export.png / _editor_edited.png on every run).
+regatta/eval/*.png
+# Playwright's last-run marker
+test-results/
+
+# art/grade.py's ungraded copies of the parts and bakes it grades (local scratch; the master's original is kept
+# beside it as <name>.orig.png and is committed)
+regatta/art/graded-src/

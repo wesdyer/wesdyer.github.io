@@ -688,25 +688,35 @@ from above, Lake Mead stripers, and drone boils.
   lasts 40–70 s. Drawn as lobed foam sheets over the dark bait, with stripers rolling up
   (black pinstripes on silver) and leaving flat swirls, shad fanning out ahead, and a soft slick
   behind.
-- **California condors.** Three circle the butte on the thermal: flat plank wings, seven
-  fingers, a broad pale panel on the inner upper wing, a short square tail, and a bare orange
-  head. The first glides out over the course every 60–110 s and goes home. They bank into
-  the turn, their shadow falls on the water, and they never flap.
-- **Desert bighorn.** Four bands of 3–6 at the foot of the talus and towers (prop-64,
-  prop-23, prop-22, prop-20), within 50 u of the water. A ram or two, ewes and a lamb, with the
-  white rump and curled horns. They graze, watch a boat inside 340 u, and bound 70–110 u up
-  the rock, away from the water, from a boat inside 150 u, then look back.
-- **Coyotes.** A pair on shape-17 (by mark 7), singles on shape-19 (by the start) and on
-  shape-18 (the hub). They trot, stop, sit, go to the water's edge to drink, stare at a boat
-  inside 280 u, and lope off from one inside 110 u. They never step onto water.
-- **Common carp jumping** (added the same day; Wes: "we need a jumping fish type"). The
-  LEAPERS kit with `shore` (each jump on water within 30–170 u of land: near the walls and in
-  the coves) and `repeat` (a second jump from the same spot 1.6–3.2 s later, 35% of the time).
-  About one every 6–12 s near the player, 20 in two minutes in the test. From the references:
-  it goes up nearly vertically (short, foreshortened from above) out of a column of white,
-  tips over, and falls back flat on its side, showing the brass-gold flank with its big
-  scales and the orange-red tail and fins. Then a torn sheet of white the length of the fish,
-  and broken rings. 21 u (`_redrock_carp.js` is the frame strip).
+- **California condors** (painted Oct 17 2026: the `redrock-condor` sprite, wings cut at the shoulders). Researched: they do not flap (Andean condors ~1% of flight time, mostly at take-off), and California condors hold the wings flat and steady, with no teetering. Three climb in the butte's thermal, all circling the same way, at real airspeeds on the game's clock (~21 kn circling, ~32 kn gliding). Each lap takes 3.4–6 s (10–18 s real) at a bank of 22–36°, and the circle widens and drifts downwind as they climb. At the top a bird slides back up the wind to the bottom of the thermal. The first bird leaves from the top of a climb every 60–110 s on a fast straight glide out over the course: swept wings, losing height, wide gentle turns. Where it finds lift it circles for a lap or two, then it comes home. Shadows fall on the water or the rock; the bird is drawn bigger the higher it is (×1.1–1.2). Probes: `_redrock_condors.js` (laps, bank, speed, modes), `_redrock_condorgif.js`.
+- **Desert bighorn** (painted Oct 17 2026: `redrock-bighorn-ram/-ewe/-lamb`, hooves cut by `feetsplit.py --hoof 25,95` (a hoof sits on the flank's outline; it is the dark-brown patch between the black ink and the coat), the head and horns turned and dipped at the neck in the draw). Four bands of 3–6 at the foot of the talus and towers (prop-64, prop-23, prop-22, prop-20), within 50 u of the water: rams, ewes and a lamb that keeps to its mother. Researched behaviour:
+  - **Grazing** is bouts with the head down, broken by head-up scans. Measured scan share: rams 0.43, ewes 0.23, lambs 0.16, so rams scan about twice as much as ewes (Mooring 2004). A sheep watching a boat sets its neighbours watching.
+  - **The band's day:** it feeds on a patch, then moves on in file behind a lead ewe, beds down together to chew the cud, or occasionally goes down to drink. Drinkers stand in a row along the shore with each muzzle over the water (100% of drinking frames).
+  - **A boat** inside 340 u is watched, and the band turns its shoulders to face it. Inside 150 u the band bounds together 120–200 u up the rock at a real ~15 mph uphill (13 kn), hind feet then fore, kicking up dust, then stops and looks back.
+  - **Lambs** gambol in short hops around their mothers.
+  - **Rams clash** where a band has two. The challenger squares off about 62 u away on its own side; when both face squarely they rear up, drop and charge (about 180 u/s at the hit, roughly a real 5.5 m/s).
+    - They meet horn to horn for an instant in a burst of dust, and the hit throws them apart: about 9 u each, fast then dying away, with the head snapping up and juddering (horn tips oscillate to shed the impact — Wheatley 2023).
+    - Then they freeze, heads high, presenting their horns (Geist 1971) for 2–4 s. About 40% go another round; the rest part.
+    - Wes, Oct 17: "shouldn't the heads meet and then they bounce off?" Before this they stopped dead, horns pressed together. Probes: `_redrock_clashgif.js` (frame by frame) and `_redrock_bighorn_room.js` (heads −3 to −4.7 u at the hit, ~15 u apart after the recoil).
+  - **Room for every body** (Wes, Oct 17: "they shouldn't walk on top of each other"). Each sheep is a capsule from nose to rump, and a ram also has a ~17 u horn disc.
+    - A forward step must keep clear of those ahead (the one behind yields, as in a file); a turn must keep clear of everyone, because the rump swings too.
+    - A blocked walker shuffles aside or waits. A blocked runner takes another line up.
+    - The file keeps a body length plus a gap. Band-mates move out of the rams' lane, and a ram backs off after a clash.
+    - A final pass after each step parts any two that stepped into each other in the same frame.
+    - `_redrock_bighorn_room.js` measures it: 0 overlapping frames in 20 minutes with staged clashes and flushes. The rams meet horn to horn, their lowered heads overlapping 3–4.6 u.
+
+  Probes: `_redrock_bighorn.js` (modes, scan shares, drinks, a flush), `_redrock_bighornbeh.js` (a GIF per behaviour).
+- **Coyotes** (painted Oct 17 2026: `redrock-coyote` with its paws cut by feetsplit, the head turned at the neck in the draw, the tail laid in swinging strips; `redrock-coyote-sitting` cross-faded in to sit). A pair on shape-17 (by mark 7), singles on shape-19 (by the start) and shape-18 (the hub). Researched gaits at real speeds on the game's clock, each keeping its real stride in body lengths:
+  - **walk** (2.3 kn) for foraging, nose down and swinging, the feet in lateral sequence;
+  - **trot** (6.7 kn, diagonal pairs) to travel or follow its mate, and a side-trot (body angled off its line) while a boat is in sight;
+  - **lope** (~15 kn, a transverse gallop) when a boat comes within 110 u.
+
+  When flushed it dashes 150–220 u, then stops and looks back for 3–5 s, turning its shoulders as well as its head. On open sand it goes mousing: it freezes and cocks its head to listen, gathers, then springs on a steep arc about as high as it is long. It rises nose-up, arches over and comes down head-first with its forepaws reaching, then pins with its nose straight down and its rump high, and sometimes springs again (checked on ~30 photos of coyotes and red foxes mousing). From above that is all foreshortening: the body shortens as it pitches, the near end is drawn bigger, and the shadow walks off. Probes: `_redrock_pounce.js` (a frame strip), `_redrock_pouncegif.js`. Now and then it drinks at the edge. It stands just inside its own island's real shoreline with its forefeet on the sand and its dipped muzzle about 5 u out over the water, and rings spread from the muzzle. Where it goes next is mostly random with a mild lean ahead and sometimes along the shore, and it turns on the spot before setting off. Before this (Wes, Oct 17: "why do they always move in circles?") each fresh random target lay back across the island and was taken in a hairpin loop at trotting speed. A strong lean ahead made them circle the whole island instead. `_redrock_tracks.js` plots the tracks and `_redrock_orbits.js` counts loops. It sits to watch a boat inside 280 u and never steps onto water: the walker checks the spot its foot lands on as well as the ground ahead. Probes: `_redrock_coyotes.js` (modes, measured knots, a flush), `_redrock_coyotegif.js`.
+- **Common carp jumping** (added the same day; Wes: "we need a jumping fish type"; painted Oct 17 2026). The LEAPERS kit with `shore` (each jump on water within 30–170 u of land: near the walls and in the coves) and `repeat` (a second jump from the same spot 1.6–3.2 s later, 35% of the time, within 4 u). About one every 6–12 s near the player.
+  - **Painted:** the `redrock-carp` sprite is a flank view, which is just what you see as it comes down flat on its side. It won the drawn-vs-painted comparison at game size (`_redrock_carpcompare.js`): a gold carp with red fins, where the drawn one read as a blob.
+  - **The leap, from the references:** it bursts out nearly straight up from a column of white, tail still driving (foreshortened from above, the near end bigger), tips over and falls back flat on its side (the "crash"). Every other one is mirrored.
+  - **On the real clock:** about 0.3 s in the air (it had been ~1 s, three real seconds hanging).
+  - **Water:** the researched jump water (`drawJumpWater`), with its exit turned to a vertical burst: a ragged crown, six uneven tongues (nine even ones read as a sunburst). Then the side-on slap, the jet, foam and broken rings. That retires the carp's dotted splash and ellipse rings. 21 u. GIFs: `_redrock_carpgif.js`.
 - **Motion,** in drawn body lengths a second like the others: bighorn walk 16 u/s at a ~1 Hz
   stride and bound 85 u/s at ~2.5 Hz; coyotes trot 45 u/s at ~2.5 Hz and lope 110 u/s; condors
   circle at 38 u/s (the eagle's convention) and glide at 70; boils drift 7–13 u/s.

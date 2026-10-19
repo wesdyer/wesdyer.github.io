@@ -2607,6 +2607,192 @@
       ]
     },
     {
+      "key": "volcanic-marine-iguana",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GALÁPAGOS MARINE IGUANA basking flat on its belly, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The whole animal SPRAWLED flat: a sausage-shaped trunk, pinched in at the pelvis; the four LONG, jointed legs splayed out sideways like a pressed lizard, elbows and knees bent, each ending in a wide FAN of five long, thin CLAWED TOES spread flat on the ground; the blunt, short, heavy head with jowly cheeks and a rough lumpy crown (from above: a broad rounded wedge, wider than the neck); a low row of pale SPINES running down the midline from the nape along the back; the TAIL long and laterally flattened, about SIXTY PERCENT of the whole length, laid in a lazy curve off to one side and tapering to a fine point. COLOUR, the grey morph from the references: slate grey-black (about #3B3C40) with the limbs a shade darker, a dusty ASH-GREY bloom of dried salt over the head, shoulders and back (about #7D8085), the crown crusted pale with salt (about #ABA79F) in rough patches, never a clean white cap; the spine row pale buff-grey (about #B3AB9D). True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing drawIguana (heaps of 12-26 packed on the black shores, most facing up-sun; one now and then waddles down and swims out, dives to graze and hauls back out). ~36 u with the tail (IGUANA_LEN, scale.md); world 44 = FRAME first guess. If accepted: the tail strip-bent so it lies in a different curve per animal and sculls when swimming; the wet-black to dry-grey change stays a game tint. WIRED Oct 18 2026: art/straighten_tail.py lays the curled tail out straight (assets …-straight.png); the game lays on each basker's own curl, the walk's sway and the swim's tail wave (js/wildlife.js IG_SPR).",
+      "anchorPx": [
+        0.5435,
+        0.5144
+      ]
+    },
+    {
+      "key": "volcanic-marine-iguana-red",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-marine-iguana",
+      "subject": "the SAME MARINE IGUANA (an EDIT of the accepted grey iguana), identical pose, frame and scale, only the COLOUR changed to the Española breeding morph: the body near-black (about #2B2729) with large irregular BRICK-RED BLOTCHES (about #9A4643) over the flanks, shoulders and the base of the tail, the head, legs and the spine line staying black; the same pale buff spines (about #B8A898) and a little dusty salt on the crown. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. OPTIONAL: the red-blotched morph, 16% of the drawn iguanas (the rust morph, 8%, can be a grade of this one). An EDIT of the accepted grey iguana. WIRED Oct 18 2026: art/straighten_tail.py lays the curled tail out straight (assets …-straight.png); the game lays on each basker's own curl, the walk's sway and the swim's tail wave (js/wildlife.js IG_SPR).",
+      "anchorPx": [
+        0.5435,
+        0.514
+      ]
+    },
+    {
+      "key": "volcanic-marine-iguana-swim",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-marine-iguana",
+      "subject": "the SAME MARINE IGUANA (an EDIT of the accepted grey iguana) now SWIMMING, seen from directly overhead, head toward the TOP of the frame, same frame and scale. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Streamlined: the head raised a little and pointing straight ahead; ALL FOUR LEGS folded back and pressed flat along the body, toes trailing, so the outline is a slim torpedo; the long flattened TAIL swept to one side in a smooth S-curve, mid-stroke, as it sculls. The coat WET: darker and glossier-looking in tone (about #26272A), the salt crust gone, only a hint of the pale spine row. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing the drawn swimming iguana (flat at the surface, head up, legs tucked, sculling with the tail; dives to graze). Same frame as the basking iguana. If accepted: the tail strip-bent to scull; seenThrough when it dives. WIRED Oct 18 2026: art/straighten_tail.py lays the curled tail out straight (assets …-straight.png); the game lays on each basker's own curl, the walk's sway and the swim's tail wave (js/wildlife.js IG_SPR).",
+      "anchorPx": [
+        0.5849,
+        0.5171
+      ]
+    },
+    {
+      "key": "volcanic-sally-lightfoot",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 12,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a SALLY LIGHTFOOT CRAB standing on rock, seen from directly overhead, its front toward the TOP of the frame. A FLAT, nearly ROUND-SQUARE carapace, a little wider than long, with a straight front edge between the two eyes at the corners; the TWO CLAWS short and chunky, held folded in front of the carapace; the EIGHT long walking LEGS splayed out sideways, four a side, each jointed and slightly bent, their tips pointed, the whole crab about TWICE as wide across the legs as the carapace. COLOUR from the references: the carapace mottled ORANGE and yellow-orange (about #E58A2E, #F0B04A) with a red rim and fine red marbling (about #C8352A); the legs bright CRIMSON-RED (about #CF3B2B) with paler orange joints; the claws red with pale tips; never brown, never blue. Flat colour shapes that read as a red-orange starburst when tiny. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. OPTIONAL. Replacing drawCrab (beds of 10-30 at the waterline, picking with the claws one at a time, scuttling SIDEWAYS in jerky bursts with the legs rippling, up the rock away from a boat). ~9 u across the legs (CRAB_SPAN; scale.md says a scatter of red, under the floor on purpose); world 12 = FRAME first guess. ⚠️ ~20 px is where painted sockeye and tangs LOST to drawn ones, and this is smaller: run the drawn-vs-painted bench at race scale before wiring; the drawn crab's leg ripple may be the better read. WIRED Oct 18 2026: the race-scale bench (eval/_volc_crab_bench.js) had the painting at its first-guess size (8.75 u) a dull smudge beside the drawn crab (12.8 u); drawn at world 16 (11.7 u across) it reads as well and wins from 2x up. art/crab_parts.py cuts it into body + 8 legs + 2 claw tips (atlases sally-lightfoot-parts.png and the recoloured juvenile -juv-parts.png): the legs ripple in an alternating tetrapod running sideways, the claws pick, clinging draws them in.",
+      "anchorPx": [
+        0.5004,
+        0.5144
+      ]
+    },
+    {
+      "key": "volcanic-booby-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a BLUE-FOOTED BOOBY in flight, seen from directly overhead, head toward the TOP of the frame, wings FULLY SPREAD and level. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A cigar-shaped body tapering at both ends; the dagger BILL straight, long and pointed, pointing up the frame; the WINGS long, NARROW and pointed, each a straight-edged blade with the leading edge bent back slightly at the wrist, the span about TWICE the bird's length; the wedge-shaped, pointed TAIL; the two bright FEET tucked back either side of the tail's base, just their webbed tips showing. COLOUR from above, from the references: the wings and back a warm DARK BROWN (about #4F3A29), the hand darkest (about #36271C), the arm coverts finely SCALLOPED with pale buff feather edges (about #9C8466); a WHITE PATCH on the upper back at the base of the neck (about #EFE9DF) and a smaller white patch on the rump above the tail; the head and neck pale, ash-brown finely STREAKED with white (about #D9D0C1, streaks #7A6450); the bill blue-grey (about #6F8799); the tail dark brown; the feet vivid TURQUOISE-BLUE (about #35B4C8). Each wing stands clear of the body so it can be cut out at the shoulder and beat. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing drawBooby in flight (flocks circling over a fish school on each leg, flap-and-glide: bursts of stiff beats and glides on straight wings). 44 u span (BOOBY_SPAN, scale.md); world 52 = FRAME first guess. If accepted: colsplit at the shoulders, pelicanPosed; the plunge fold may come from the cut wings swept back if the plunge slot is not rolled. WIRED Oct 18 2026 (js/wildlife.js BOO_SPR): the flyer posed in columns from above (each column foreshortened by the wing's angle, the hand swept back on the upstroke, the light on each wing from the upper-left sun swapping each half-stroke); tipping over it folds away into the plunge painting, which gives way to the entry arrow (foreshortened) in the last stretch; under the water ~3.2 s as a dim arrow (Zavalaga et al. 2007); then the sitter.",
+      "anchorPx": [
+        0.5,
+        0.5118
+      ]
+    },
+    {
+      "key": "volcanic-booby-plunge",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-booby-flying",
+      "subject": "the SAME BLUE-FOOTED BOOBY (an EDIT of the accepted flying booby) in its STEEP PLUNGE-DIVE, falling almost straight down AWAY from the camera, seen from directly overhead, head toward the TOP of the frame, same frame and scale. Because it points down at the water the body is FORESHORTENED, about half its flying length: the back and the rump toward the camera, the white rump patch large near the tail, the head and the short dagger bill small beyond the shoulders; the wings HALF-FOLDED into a W, the wrists out at the shoulders and the hands swept back beside the tail. Same colours: dark brown wings with pale-scalloped coverts, white neck-base patch, streaky pale head, blue-grey bill.",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing the drawn fold (the whole flock folds and plunges together every 20-34 s — Soot's Booby Shower). ROLL 2 (Oct 18, Wes: 'It's tilted forward. Not sure.' → kept): the steep dive seen from above, foreshortened to ~55% of the flying length (a ~55-60 degree dive), wings half-folded in a W; reads apart from the sitting booby, which the first roll (an arrow) did not. The arrow is kept as volcanic-booby-entry for the last moment before the splash. Same frame as the flying booby. WIRED Oct 18 2026 (js/wildlife.js BOO_SPR): the flyer posed in columns from above (each column foreshortened by the wing's angle, the hand swept back on the upstroke, the light on each wing from the upper-left sun swapping each half-stroke); tipping over it folds away into the plunge painting, which gives way to the entry arrow (foreshortened) in the last stretch; under the water ~3.2 s as a dim arrow (Zavalaga et al. 2007); then the sitter.",
+      "anchorPx": [
+        0.5006,
+        0.5206
+      ]
+    },
+    {
+      "key": "volcanic-booby-entry",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-booby-flying",
+      "subject": "the SAME BLUE-FOOTED BOOBY (an EDIT of the accepted flying booby) in its PLUNGE-DIVE, seen from directly overhead, head toward the TOP of the frame, same frame and scale. The wings FOLDED right BACK along the body so the bird is a slim pointed ARROW or a narrow W: the wrists pushed out a little at the shoulders, the hand feathers swept back and lying alongside the tail, the bill, head and neck stretched dead straight ahead; the feet tucked away. Same colours: dark brown wings with pale-scalloped coverts, white neck-base patch, streaky pale head, blue-grey bill. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. The ENTRY: the last fraction of a second of the plunge, wings swept fully back into a narrow arrow just before the bird hits the water (the first roll of volcanic-booby-plunge, kept for this when the foreshortened dive replaced it, Oct 18). An EDIT of the accepted flying booby; same frame. WIRED Oct 18 2026 (js/wildlife.js BOO_SPR): the flyer posed in columns from above (each column foreshortened by the wing's angle, the hand swept back on the upstroke, the light on each wing from the upper-left sun swapping each half-stroke); tipping over it folds away into the plunge painting, which gives way to the entry arrow (foreshortened) in the last stretch; under the water ~3.2 s as a dim arrow (Zavalaga et al. 2007); then the sitter.",
+      "anchorPx": [
+        0.5,
+        0.5118
+      ]
+    },
+    {
+      "key": "volcanic-booby-sitting",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-booby-flying",
+      "subject": "the SAME BLUE-FOOTED BOOBY (an EDIT of the accepted flying booby) now SITTING on the water after a dive, seen from directly overhead, head toward the TOP of the frame, same frame and scale. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A compact boat-shaped body, the long wings FOLDED along the back and crossing over the pointed tail; the neck short, the streaky pale head held up, the dagger bill pointing up the frame; the feet under the water, out of sight. Same colours: dark brown back and wings with pale-scalloped coverts, the white patch at the base of the neck, the streaky pale head, blue-grey bill. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. OPTIONAL. Replacing drawBooby's sitting pose (the flock sits a few seconds after a plunge, then lifts off). An EDIT of the accepted flying booby. WIRED Oct 18 2026 (js/wildlife.js BOO_SPR): the flyer posed in columns from above (each column foreshortened by the wing's angle, the hand swept back on the upstroke, the light on each wing from the upper-left sun swapping each half-stroke); tipping over it folds away into the plunge painting, which gives way to the entry arrow (foreshortened) in the last stretch; under the water ~3.2 s as a dim arrow (Zavalaga et al. 2007); then the sitter.",
+      "anchorPx": [
+        0.5003,
+        0.5085
+      ]
+    },
+    {
+      "key": "volcanic-frigatebird",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 74,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GREAT FRIGATEBIRD SOARING, seen from directly overhead, head toward the TOP of the frame, wings fully spread. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The WINGS are the subject: extremely LONG and NARROW, sharply ANGLED back at the wrist into a shallow M, the hand long and pointed, the span about TWO AND A HALF times the bird's length; a slender body; a small head with a long, slim, HOOKED grey bill pointing up the frame; the very long, DEEPLY FORKED TAIL, its two outer feathers held almost closed into a narrow V that trails far behind. COLOUR, the adult male's, NEVER one flat black: an all-black bird built of value planes — the wings near-black (about #19191D), the hand and trailing edge darkest (about #0B0B0D); a faint purple-green SHEEN over the back and scapulars (about #3B3656); a pale BROWNISH BAR (about #5A4A3E) running diagonally across the inner upper wing coverts from the shoulder toward the wrist; the bill grey (about #8E9396); the red throat pouch deflated and hidden underneath, at most a thin red edge at the chin. Each wing stands clear of the body so it can be cut out at the shoulder. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing drawFrigate (a slow stack on the main cone's and the SE islet's thermals, long crooked wings barely moving; one now and then swoops at the boobies after a plunge). 64 u span (FRIGATE_SPAN, scale.md); world 74 = FRAME first guess. If accepted: colsplit at the shoulders for the swoop sweep; the tail is painted fixed, so the drawn fork's opening and closing is lost unless the tail is cut out too. WIRED Oct 18 2026 (js/wildlife.js FRIG_SPR): drawn 64 u across (FRIGATE_SPAN); the wings posed in columns, held drooped so a bank reads (the low wing shortens), lit from the upper-left sun; the tail's two streamers cut at 0.545 and scissored open to steer; rare deep beats. The adult painting serves both sexes (black above).",
+      "anchorPx": [
+        0.5,
+        0.5073
+      ]
+    },
+    {
+      "key": "volcanic-frigatebird-juvenile",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 74,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-frigatebird",
+      "subject": "the SAME GREAT FRIGATEBIRD (an EDIT of the accepted adult), identical pose, frame and scale, as a JUVENILE: the head and neck WHITE, washed rusty-buff (about #ECE9E2, #D9C3A6); the wings and tail a browner black (about #2A2420) with the same pale brownish bar across the inner wing; no red at the chin. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. OPTIONAL: the drawn frigates mix in white-headed juveniles (FRIGATE.juvHead). An EDIT of the accepted adult. WIRED Oct 18 2026 (js/wildlife.js FRIG_SPR): drawn 64 u across (FRIGATE_SPAN); the wings posed in columns, held drooped so a bank reads (the low wing shortens), lit from the upper-left sun; the tail's two streamers cut at 0.545 and scissored open to steer; rare deep beats. The adult painting serves both sexes (black above).",
+      "anchorPx": [
+        0.5,
+        0.5073
+      ]
+    },
+    {
+      "key": "volcanic-hammerhead",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 84,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a SCALLOPED HAMMERHEAD SHARK swimming, seen from directly overhead, head toward the TOP of the frame. The HEAD is the subject: a wide flat CEPHALOFOIL, the T of the hammer, about a quarter of the body length across, its FRONT EDGE gently arched and SCALLOPED with a clear central NOTCH and two shallower notches either side, the eyes at its two outer tips; behind it a slim streamlined body; the broad PECTORAL FINS swept back like small wings a third of the way down; the TALL first dorsal fin, which stands upright, seen from above only as a thin blade on the midline; the long TAIL with its long upper lobe, seen as a slim curved blade behind, the body a little curved as if mid-stroke. COLOUR, from above: a bronze-grey back (about #6B6D64) warming to olive-bronze over the head and shoulders (about #8A7F68), paling at the very edges of the hammer and fins (about #B9B8AE); the fins a shade darker (about #3D403C). Paint it in its own DAYLIGHT local colours: the game sinks it under the near-black water and veils it itself. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing drawHammer (schools of 22-34 milling in their own orbits over the hydrothermal vents, the body wave growing toward the tail and the head yawing against it, sinking deeper when a boat passes over). ~70 u (HAMMER_LEN, scale.md); world 84 = FRAME first guess. If accepted: the rear body strip-bent so it swims in an S (as the white shark and the reef shark do), seenThrough at depth.",
+      "anchorPx": [
+        0.5004,
+        0.5112
+      ]
+    },
+    {
+      "key": "volcanic-sooty-tern",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 40,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a SOOTY TERN in flight, seen from directly overhead, head toward the TOP of the frame, wings spread wide and flat as in a glide. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A slim, buoyant seabird: the WINGS LONG, NARROW and sharply POINTED, swept back a little and crooked at the wrist, the span about TWICE the bird's length; the slender black BILL pointing straight up the frame; the long, DEEPLY FORKED TAIL with two long thin outer STREAMERS. COLOUR from above: the crown, back, wings and tail SOOTY BLACK (about #1F1D20), the cap a touch darker (about #0F0F11); a neat WHITE FOREHEAD (about #F1F0EA) running back from the bill to just above the eyes as a broad white wedge; the thin outer edges of the tail streamers white. Each wing stands clear of the body so it can be cut out at the shoulder and beat. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing the drawn sooty tern (Soot's: flocks over every booby flock and roaming between; they DIP — swoop down and snatch from the surface — never sit). ~32 u span as drawn now (SOOTY_SCALE; check with _animal_sizes.js); world 40 = FRAME first guess. If accepted: colsplit at the shoulders, pelicanPosed, as the Antarctic tern. WIRED Oct 18 2026 (js/wildlife.js SOOTY_SPR, posed by frigatePosed): drawn 28 u across (a 0.82-0.94 m span x3; the drawn one was 31); wings in columns through slow deep beats and long glides, banked into turns, lit from the sun; the forked tail's streamers scissored open to steer and in the dip; a rare moment alighting (wings up).",
+      "anchorPx": [
+        0.5,
+        0.5064
+      ]
+    },
+    {
       "key": "trophy-commodore",
       "class": "trophy",
       "status": "art",
@@ -8575,6 +8761,403 @@
       "status": "slot",
       "subject": "a single HUMBUG DAMSELFISH (three-striped damselfish) seen from directly overhead, head toward the TOP of the frame — a fish this small is FLAT side to side, so from straight above it is only a slim fleck: the narrow back seen edge-on, the head at the top, a little of the flank colour at each edge, the tail fin standing vertical and so only a thin sliver: a chunky little fish, WHITE (about #F6F7F2) crossed by THREE bold BLACK bars (about #1A1A1A) running across its body, the black head bar over the eyes, a black tail. On a clean transparent background, centred. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
       "note": "A school fish (18 in the west elkhorn, off the course): ~10 long, chunkier. Optional."
+    },
+    {
+      "key": "redrock-condor",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 90,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a CALIFORNIA CONDOR SOARING, seen from directly overhead, head toward the TOP of the frame: the very long, broad, PLANK-like wings held out straight and FLAT to either side, the leading edge almost straight, the trailing edge bulging with the broad secondaries; at each wingtip SEVEN long separate PRIMARY feathers splayed like fingers with clear gaps between them; the short, broad, SQUARE-ended tail; the small BARE HEAD poking forward out of a ruff of black feathers at the base of the neck, the pale ivory bill pointing straight up the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. COLOUR, the adult's own, and NEVER ONE FLAT BLACK — the wing and back are built of distinct value planes: the back and the leading half of the wing a deep charcoal (about #2A2A2D), the primaries and their fingers the darkest near-black (about #151517), and across the rear half of the INNER upper wing a broad PALE BAR (the secondary coverts and secondaries) of soft silvery grey-white (about #C9C9C4), brightest near the body and fading out toward the hand, with a thin dark fringe left along the trailing edge; the tail charcoal; the bare head and neck a warm orange-pink (about #E58A5C) with a redder throat (about #C9574A), the feather ruff black. No wing tags, no numbers. The wings are the subject: a span about TWO AND A HALF times the bird's length from bill to tail. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. Replacing drawCondor (three circling the butte on the thermal, one gliding out over the course every 60-110 s; they bank and never flap). Span 80, body 34 (scale.md); world 96 = FRAME first guess (span ~0.83 of the frame). Banking is foreshortening of the whole sprite, so no cut is needed; if the fingers or the pale bar are lost at 80 px, compare with the drawn condor at game size before wiring it in. ROLL 1 (Oct 17): accepted on look — plank wings, seven fingers each side, the pale inner-wing bar, bare orange head. Span 0.886 of the frame (a touch over the 8% margin).",
+      "anchorPx": [
+        0.5004,
+        0.5203
+      ]
+    },
+    {
+      "key": "redrock-bighorn-ram",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a DESERT BIGHORN RAM standing on all four legs, seen from directly overhead, head toward the TOP of the frame, head up and looking ahead. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. THE BODY is a LEAN, ATHLETIC wild ram, a mountain climber, deep-chested but NOT fat: from above it is about 0.3 as wide across the ribs as it is long from nose to rump, with a smooth, even outline from shoulders to haunches — no pinched waist and no bulging belly or round barrel. Never fat, never chubby, never a sausage or a peanut. Broadest across the ribs and shoulders, on a thick muscular neck; the big blocky head with a short, square WHITE MUZZLE pointing straight up the frame; small ears just behind the horn bases. The EARS are small, narrow and pointed, held back and a little out from the crown; never big, round or floppy, never standing out sideways like a goat's or a deer's. THE HORNS are the signature and must read from above: two MASSIVE, heavily RIDGED horns that sweep BACK from the crown, OUT to each side, then curl DOWN and FORWARD round each side of the head so each forms a broad near-complete C beside the cheek, thick at the base and tapering to a blunt, broomed tip, the horns ONE even weathered amber-brown (about #8C6C48) with FINE darker ridge lines across them, close-set and thin; NEVER alternating light and dark bands or candy stripes. COLOUR: a pale sandy buff-brown coat (about #B39572), only a FAINT, narrow, slightly darker line along the spine (about #9A7C5C), subtle, never a bold dark stripe, running back to the short DARK TAIL (about #4A3A2C); the big WHITE RUMP PATCH (about #EFE7D8) wrapping round the haunches above the tail; one flank sunlit a shade warmer, the other a shade cooler. THE LEGS stand UNDER the body in a natural four-footed stance, the way a real animal looks from a drone: from straight above only the tops of the shoulders and haunches bulge at the sides, and the four small dark hooves peek out just beyond the outline of the chest and hips, pointing FORWARD up the frame. NEVER splayed out sideways like a pelt laid flat or a lizard: no elbows or knees sticking out from the flanks, no soles or pads showing. The forelegs stand straight down under the chest: only the front tips of the fore hooves show beside the chest, never a foreleg reaching out sideways. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. Replacing drawBighorn (bands of 3-6 at the foot of the towers: graze, watch a boat inside 340 u, bound 70-110 u up the rock, look back). Ram 34 nose to rump (scale.md); world 40 = FRAME first guess. If accepted: legs cut by feetsplit.py to stride (walk ~1 Hz, bound ~2.5 Hz, fore pair and hind pair together), head cut at the neck to dip and turn (anchored AT the neck, over a collar — the sea-lion rule). Make the ewe and lamb as EDITS of this. ROLL 1 (Oct 17): horns readable but painted in alternating CANDY BANDS; body a slim pinched sausage (mid-body 0.30 of the length vs the drawn bighorn's ~0.41); forelegs reaching out sideways; spine stripe too bold. Subject rewritten (body, ridges, ears, stripe, forelegs); reroll, then the ewe and lamb as edits of the new ram. ROLL 2 (Oct 17): horns now right (one colour, fine ridges, full curl), but FAT (mid-body 0.41 of the length; Wes: 'super fat'). My roll-1 width call was wrong: 0.30 was about right, only the pinched waist was the defect, and I had used the chunky DRAWN bighorn (~0.41) as the yardstick. Body clause now asks for a lean 0.3 with an even outline. Cheaper alternative: an EDIT of roll 2 that only slims the body and keeps the horns. ROLL 3 (Oct 17): accepted on look — mid-body 0.28 of nose-to-tail, even outline, horns kept right; 0.781 of the frame long (world ~44).",
+      "anchorPx": [
+        0.5016,
+        0.5012
+      ]
+    },
+    {
+      "key": "redrock-bighorn-ewe",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 40,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "redrock-bighorn-ram",
+      "subject": "the SAME DESERT BIGHORN (an EDIT of the accepted ram) now a EWE, standing, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Slighter than the ram: THE BODY is a LEAN, ATHLETIC wild ewe, deep-chested but NOT fat: from above it is about 0.27 as wide across the ribs as it is long from nose to rump, with a smooth, even outline from shoulders to haunches — no pinched waist and no bulging belly or round barrel. Never fat, never chubby, never a sausage or a peanut. A thinner neck, a narrower head with the white muzzle. The EARS are small, narrow and pointed, held back and a little out from the crown; never big, round or floppy, never standing out sideways like a goat's or a deer's.  Her HORNS are short, slim, nearly straight SPIKES, about as long as her ears, angled BACK and a little OUT over the neck, NEVER drooping down past the ears like a goat's and never curling round the head, one even amber-brown with fine ridge lines, no bands; amber-brown (about #8C6C48). The same sandy buff-brown coat, faint spine line, short dark tail and big WHITE RUMP PATCH. THE LEGS stand UNDER the body in a natural four-footed stance, the way a real animal looks from a drone: from straight above only the tops of the shoulders and haunches bulge at the sides, and the four small dark hooves peek out just beyond the outline of the chest and hips, pointing FORWARD up the frame. NEVER splayed out sideways like a pelt laid flat or a lizard: no elbows or knees sticking out from the flanks, no soles or pads showing. The forelegs stand straight down under the chest: only the front tips of the fore hooves show beside the chest, never a foreleg reaching out sideways. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. Ewe 31 nose to rump (scale.md); world 37 = FRAME first guess. An EDIT of the accepted ram. ROLL 1 (Oct 17): GOAT horns (curving back and down past the ears, banded), big floppy ears, a sausage body (mid-body 0.23 of the length), forelegs out sideways. Subject rewritten; roll as an EDIT of the NEW ram. ROLL 2 (Oct 17): horns and ears fixed, but FAT (mid-body 0.42; Wes: 'especially the ewe'). Body clause now a lean 0.27. ROLL 3 (Oct 17): accepted on look — mid-body 0.26, short back-angled spikes, narrow ears; 0.770 long (world ~40).",
+      "anchorPx": [
+        0.5004,
+        0.4984
+      ]
+    },
+    {
+      "key": "redrock-bighorn-lamb",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 41,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "redrock-bighorn-ewe",
+      "subject": "the SAME DESERT BIGHORN (an EDIT of the accepted ewe) now a young LAMB, standing, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Small and short-bodied, slim and leggy like a young lamb, never plump: from above about 0.3 as wide as it is long, an even outline with no pinched waist; the head big for the body, the muzzle short and white, the ears a little larger than an adult's but still narrow and held back, never floppy or sticking out sideways; NO horns, or only two tiny bumps on the crown. A paler, softer sandy-grey coat (about #C2AA88), the white rump patch and the short dark tail. THE LEGS stand UNDER the body in a natural four-footed stance, the way a real animal looks from a drone: from straight above only the tops of the shoulders and haunches bulge at the sides, and the four small dark hooves peek out just beyond the outline of the chest and hips, pointing FORWARD up the frame. NEVER splayed out sideways like a pelt laid flat or a lizard: no elbows or knees sticking out from the flanks, no soles or pads showing. The forelegs stand straight down under the chest: only the front tips of the fore hooves show beside the chest, never a foreleg reaching out sideways. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. OPTIONAL. Lamb 21 nose to rump (scale.md); world 25 = FRAME first guess. An EDIT of the accepted ewe. ROLL 1 (Oct 17): stance right (legs under), but floppy sideways ears and a thin peanut body (mid-body 0.26). Subject rewritten; roll as an EDIT of the new ewe. ROLL 3 (Oct 17): accepted on look — hornless, mid-body 0.29; only 0.514 of the frame long (world ~41).",
+      "anchorPx": [
+        0.5,
+        0.508
+      ]
+    },
+    {
+      "key": "redrock-coyote",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 39,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a COYOTE standing on all four legs, seen from directly overhead, head toward the TOP of the frame, the tail carried LOW and straight out behind. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A lean wild dog, but a DOG, not a weasel: from above the body is about 0.3 as wide across the shoulders as it is long from nose to rump, a deep chest, a pinched waist, slim haunches; the narrow pointed MUZZLE pointing straight up the frame; two BIG upright pointed EARS standing off the back of the skull; behind, the long BUSHY tail, as long as the body is from shoulder to hip, held straight back. COLOUR, grizzled and never one flat tan: a buff-grey back (about #9C8C74) with black-tipped guard hairs forming a darker SADDLE over the shoulders and down the spine (about #5A4E44); the flanks a warmer tawny (about #B8946A); the backs of the ears, the sides of the muzzle and the legs a rusty red-tan (about #A8683A); the top of the muzzle paler (about #D8C6A8), the nose dark; the tail grizzled grey-buff with a small DARK SPOT on top near its base and a BLACK TIP (about #1E1A16). THE LEGS stand UNDER the body in a natural four-footed stance, the way a real animal looks from a drone: from straight above only the tops of the shoulders and haunches bulge at the sides, and the four small paws peek out just beyond the outline of the chest and hips, pointing FORWARD up the frame. NEVER splayed out sideways like a pelt laid flat or a lizard: no elbows or knees sticking out from the flanks, no soles or pads showing. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. Replacing drawCoyote (a pair on shape-17, singles on shape-18/19: trot, stop, stare at a boat inside 280 u, drink at the edge, lope off inside 110 u). 32 nose to tail tip (scale.md); world 38 = FRAME first guess. If accepted: legs by feetsplit.py (trot ~2.5 Hz diagonal pairs, lope), head cut at the neck to stare and dip to drink, tail strip-bent (tailPosed) to sway. Make the sitting coyote as an EDIT of this. ROLL 1 (Oct 17): saddle, ears, tail spot and black tip all right, but the legs splayed out sideways like a pelt laid flat (my 'legs OUT from the body' clause) and the body read weasel-long; clause rewritten, reroll. The bighorns had the same clause, fixed before their first roll. ROLL 2 (Oct 17): accepted on look — legs under the body with only the paws peeking out, saddle, tail spot and black tip; nose to tail tip 0.817 of the frame (so world ~39), body ~0.31 as wide as nose-to-rump.",
+      "anchorPx": [
+        0.5016,
+        0.4992
+      ]
+    },
+    {
+      "key": "redrock-coyote-sitting",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 29,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "redrock-coyote",
+      "subject": "the SAME COYOTE (an EDIT of the accepted standing coyote) now SITTING upright on its haunches, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Compact from above: the round haunches tucked under at the back, the chest and shoulders upright in front of them so the body is short; the head directly ahead of the shoulders — the top of the skull between the two big upright ears, then the narrow muzzle pointing straight up the frame beyond it; the two forepaws peeking out just in front of the chest, BEHIND the head, never beside the muzzle; the bushy tail WRAPPED round one side of the haunches and forward over the feet, its BLACK TIP by the forepaws. The tail is NOT banded or ringed like a raccoon's: one even grizzled buff-grey down its whole length with only the last fifth black. The same grizzled buff-grey back, darker saddle, rusty ears and legs. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. OPTIONAL. The coyote sitting to stare at the fleet (the drawn one tucks up short and wraps its tail). ~20 nose to haunches; world 24 = FRAME first guess. An EDIT of the accepted standing coyote. ROLL 1 (Oct 17): a raccoon-BANDED tail, the forepaws beside the muzzle with no skull between the ears, and a heavier outlined style than the standing coyote (it was not an edit of it). Subject rewritten; roll it as an EDIT of the accepted standing coyote. ROLL 2 (Oct 17): accepted on look — even grizzled tail with a black tip, head ahead of the shoulders, forepaws behind it, same lined style as roll-2 standing; 0.70 long x 0.44 wide in the frame. planRound dropped at ingest (Oct 17): seated, the muzzle carries well ahead of the round haunches, so 1.57x long is the true plan, not a tilt.",
+      "anchorPx": [
+        0.4797,
+        0.4952
+      ]
+    },
+    {
+      "key": "redrock-carp",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "redrock",
+      "world": 29,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a COMMON CARP caught in the air, falling back toward the water FLAT ON ITS SIDE, seen from directly overhead, head toward the TOP of the frame: the whole FLANK turned up to the camera, the body straight with only a slight bend, a heavy DEEP-BODIED fish with a high arched back, the long dorsal fin along the back raised, the small downturned mouth with its two little BARBELS, the broad forked TAIL fanned. COLOUR: a dark olive-bronze back (about #4E4A2C) shading into a BRASS-GOLD flank (about #C29A44) paling to a cream-gold belly (about #E2CC8C); BIG, clearly outlined SCALES across the flank, each with a darker bronze edge (about #8A6A2E); the tail's lower lobe and the anal and pelvic fins ORANGE-RED (about #C8573A), the dorsal fin olive. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile, no spray",
+      "note": "REFERENCE CHECK Oct 17 2026 (USGS/CSU condor field marks; bighorn species accounts; coyote tail and saddle accounts) on top of the Sep 25 reference sheets behind the drawn animals. OPTIONAL. Replacing the drawn carp in the LEAPERS kit (straight up out of a column of white, tips over, falls back flat on its side with a slap; 35% jump again). 21 long (scale.md); world 26 = FRAME first guess. ⚠️ ~20 px is where painted sockeye and tangs LOST to the drawn fish — but those were TOP views (a thin sliver); this is the flank, the readable view, like the shipped lake bass (14). Run the drawn-vs-painted game-size comparison in the real scene before wiring it in. The striped bass in the boils (18, a dark back from above) is NOT slotted for the same reason. ROLL 1 (Oct 17): accepted on look; nose to tail 0.731 of the frame. Barbels came out as a curly orange tuft (unreadable at 21 px anyway); line-art outlines unlike the faceted animals, also lost at size.",
+      "anchorPx": [
+        0.5076,
+        0.5116
+      ]
+    },
+    {
+      "key": "glowtide-manta",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "glowtide",
+      "world": 85,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a REEF MANTA RAY gliding with its wings spread flat, seen from directly overhead, head toward the TOP of the frame. The animal is a broad diamond much WIDER than it is long: the two great triangular WINGS sweep out to either side to long, POINTED, slightly back-hooked tips, the span about twice the length from head to the base of the tail; the leading edges nearly straight, the trailing edges curving back to the body. The broad, blunt-fronted head with the two CEPHALIC FINS rolled up into short forward-pointing horns either side of the mouth; behind the body a short, thin whip of a TAIL, about a third of the body's length, with no spine. COLOUR, from the drone references and never one flat black: the back a deep charcoal-black (about #22252A), with a soft charcoal sheen down the middle of the back (about #3A3F46); two PALE SHOULDER PATCHES (about #D8DDE0), soft-edged triangles lying along the front of each wing behind the head, sloping back and outward so the dark between them reads as a broad V — the reef manta's mark; the wingtips and trailing edges darkest (about #15171A). Each wing stands clear of the narrow body so it can be cut out at the root and beat. Paint it in its own DAYLIGHT local colours: the venue is a moonlit night, and the game darkens and tints everything for the night itself — a colour darkened here would go muddy twice. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (istock overhead sheets: reef mantas from drones and above, dugongs over seagrass, hawksbills from above, flying foxes in flight) on top of the Sep 26 sheets behind the drawn animals. Replacing drawManta (three on circuits of feeding spots: a travelling-wave stroke ~0.3 Hz halved in game, glides, anticlockwise cyclone-feeding circles, bouts of somersault feeding). 70 u span (scale.md); world 82 = FRAME first guess. If accepted: wings cut at the body (colsplit-style) and bent as a travelling wave (tips lagging), as the drawn manta does. Make the feeding and belly views as EDITS of this.",
+      "anchorPx": [
+        0.5,
+        0.5243
+      ]
+    },
+    {
+      "key": "glowtide-manta-feeding",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "glowtide",
+      "world": 85,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "glowtide-manta",
+      "subject": "the SAME REEF MANTA (an EDIT of the accepted gliding manta) now FEEDING, seen from directly overhead, head toward the TOP of the frame: everything the same — wings, tail, the pale shoulder patches — except the front of the head. The two CEPHALIC FINS are UNROLLED into flat paddles reaching FORWARD either side of the head, and between them the wide MOUTH is gaping open, a broad dark opening rimmed in white (about #E8ECEE). Paint it in its own DAYLIGHT local colours: the venue is a moonlit night, and the game darkens and tints everything for the night itself — a colour darkened here would go muddy twice. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (istock overhead sheets: reef mantas from drones and above, dugongs over seagrass, hawksbills from above, flying foxes in flight) on top of the Sep 26 sheets behind the drawn animals. OPTIONAL. Feeding (Manta Trust): the cephalic fins unfurl into forward paddles funnelling plankton into the open mouth. Cross-faded in while circling and somersaulting. An EDIT of the accepted gliding manta.",
+      "anchorPx": [
+        0.5,
+        0.5167
+      ]
+    },
+    {
+      "key": "glowtide-manta-belly",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "glowtide",
+      "world": 85,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "glowtide-manta",
+      "supine": true,
+      "subject": "the SAME REEF MANTA (an EDIT of the accepted gliding manta) turned UPSIDE DOWN, belly toward the camera, wings spread flat, head toward the TOP of the frame — the view in a feeding somersault. The same diamond outline, pointed wingtips and short tail; the cephalic fins unrolled forward either side of the open white-rimmed mouth. COLOUR: the belly WHITE (about #EEF1F2), the wings' edges and tips charcoal (about #2A2E33) in a soft dark margin; FIVE PAIRS of narrow GILL SLITS in two curved rows on the white belly behind the mouth; a scatter of small dark SPOTS (about #2A2E33) on the belly between and behind the gill slits, each manta's own. Paint it in its own DAYLIGHT local colours: the venue is a moonlit night, and the game darkens and tints everything for the night itself — a colour darkened here would go muddy twice. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (istock overhead sheets: reef mantas from drones and above, dugongs over seagrass, hawksbills from above, flying foxes in flight) on top of the Sep 26 sheets behind the drawn animals. OPTIONAL. The somersault: the drawn manta shows the white spotted belly with gill slits while upside down; this replaces that. supine (face-up view). An EDIT of the accepted gliding manta.",
+      "anchorPx": [
+        0.5,
+        0.5167
+      ]
+    },
+    {
+      "key": "glowtide-flying-fox",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "glowtide",
+      "world": 43,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a PALAU FLYING FOX (a large fruit bat) in flight, seen from directly overhead, head toward the TOP of the frame, its wings FULLY SPREAD at the bottom of the downstroke. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The furry body in the middle; the fox-like head with a pointed muzzle pointing straight up the frame and two small pointed EARS; NO TAIL; the two legs trailing straight back behind the body with small clawed feet, the wing membrane running back to the ankles. THE WINGS are the subject: each a broad leathery membrane stretched over the long FINGER BONES that fan out from the wrist, the wrist about half-way out along the leading edge with a small hooked THUMB claw on it, the long hand-wing swept back to a POINTED tip; the TRAILING EDGE deeply SCALLOPED between the finger tips and running back in a curve to the ankle. The span about THREE TIMES the length from nose to feet. COLOUR, seen from ABOVE (not lit from behind — the orange glow in photos of bats against the sky is light shining THROUGH the membrane from below): the wing membranes a dark sooty brown (about #3A2C24) with the finger bones a shade darker and the membrane between them a shade warmer (about #4E3A2E); a GOLDEN-TAN MANTLE (about #C48A3A) over the back of the neck and the shoulders; the back and rump dark brown (about #3A2A20); the head dark brown with a rufous tinge. Each wing stands clear of the body so it can be cut at the shoulder. Paint it in its own DAYLIGHT local colours: the venue is a moonlit night, and the game darkens and tints everything for the night itself — a colour darkened here would go muddy twice. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (istock overhead sheets: reef mantas from drones and above, dugongs over seagrass, hawksbills from above, flying foxes in flight) on top of the Sep 26 sheets behind the drawn animals. Replacing drawFlyingFox (three flocks commuting between the islands on rowing beats ~2.5-2.9 Hz, Riskin et al. 2012 — the wing built from two key poses, downstroke spread and upstroke folded). 36 u span (scale.md); world 42 = FRAME first guess. This is the DOWNSTROKE pose; make the upstroke as an EDIT. If accepted: wings cut at the shoulders, the beat a blend of the two poses plus the span foreshortening as the wing rises and falls. GRADED Oct 17 (art/grade.py fox): membranes darkened to sooty brown — the orange in sky photos is light through the membrane; from above it is near charcoal. Mantle kept. Original master kept as .orig.png.",
+      "anchorPx": [
+        0.5,
+        0.5032
+      ]
+    },
+    {
+      "key": "glowtide-flying-fox-upstroke",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "glowtide",
+      "world": 43,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "glowtide-flying-fox",
+      "subject": "the SAME PALAU FLYING FOX (an EDIT of the accepted spread-wing flying fox) at the top of the UPSTROKE, seen from directly overhead, head toward the TOP of the frame, same frame and scale. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The body, head, golden mantle and trailing legs exactly the same. The WINGS RAISED HIGH ABOVE ITS BACK, in flight, mid-stroke: each wrist lifted UP and pulled in close above the shoulder, the long hand-wing half-folded and swept BACK and inward over the back in a short crescent, the fingertips trailing behind toward the hips, the finger bones bunched, the membrane gathered in loose folds. Because the wings are ABOVE the body and nearer the camera, the inner edge of each wing LIES OVER the sides of the back and shoulders and HIDES them: the golden mantle shows only as a strip down the middle, the rest of the back covered by the two raised wings. The span now about HALF the spread bat's span, clearly wider than the body. NEVER wrapped around the body, never hanging down at its sides like a cape or a cloak, never a roosting or resting bat, never tucked under the body. Dark sooty-brown membranes as before. Paint it in its own DAYLIGHT local colours: the venue is a moonlit night, and the game darkens and tints everything for the night itself — a colour darkened here would go muddy twice. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (istock overhead sheets: reef mantas from drones and above, dugongs over seagrass, hawksbills from above, flying foxes in flight) on top of the Sep 26 sheets behind the drawn animals. OPTIONAL but wanted: the bat stroke's second key pose (the wrist flexes and the hand-wing folds back alongside the arm into a short crescent). An EDIT of the accepted spread-wing flying fox, same frame, so the two blend. ROLL 1 (Oct 17): the wings came out wrapped DOWN round the body like a cape (the whole back and mantle uncovered, wings beside and under it) — reads as wings down, a resting bat. Rewritten: wings raised OVER the back, overlapping it, half the spread span. GRADED Oct 17 (art/grade.py fox): membranes darkened to sooty brown — the orange in sky photos is light through the membrane; from above it is near charcoal. Mantle kept. Original master kept as .orig.png.",
+      "anchorPx": [
+        0.5,
+        0.5088
+      ]
+    },
+    {
+      "key": "glowtide-hawksbill",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "glowtide",
+      "world": 30,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a HAWKSBILL SEA TURTLE swimming, seen from directly overhead, head toward the TOP of the frame, the two long front FLIPPERS spread out and slightly back like wings, the two short rear flippers trailing. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The NARROW head with a pointed, HOOKED BEAK like a hawk's, pointing straight up the frame, the top of the head covered in large dark scales with pale edges; the CARAPACE an elongated oval, longer than wide, of OVERLAPPING SCUTES like roof tiles — five down the middle, four along each side — its rear edge SERRATED into a row of points. COLOUR, the tortoiseshell: each scute AMBER and honey gold (about #C08A3E) with dark chocolate-brown (about #4A2C1A) and black STREAKS radiating out from its rear corner, the pattern bold and different on every scute; the flippers and head dark brown scales each edged in pale cream (about #E2D2AE), so they read as a net of pale lines; each front flipper with two small claws on its leading edge. Paint it in its own DAYLIGHT local colours: the venue is a moonlit night, and the game darkens and tints everything for the night itself — a colour darkened here would go muddy twice. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (istock overhead sheets: reef mantas from drones and above, dugongs over seagrass, hawksbills from above, flying foxes in flight) on top of the Sep 26 sheets behind the drawn animals. Replacing drawHawksbill (seven swimmers on the reef rocks, a slow flipper stroke, surfacing every ~35 s; two nesting — hauling up the beach in lurches, digging a body pit, crawling back). 24 u (scale.md); world 30 = FRAME first guess. If accepted: flippers cut by feetsplit to stroke (and to crawl on the beach), seenThrough under water like the lagoon's turtles. GRADED Oct 17 (art/grade.py hawk): shell and the flippers' pale net toned down (the roll came out pushed bright). Split BEFORE grading: turtlesplit --plates 110 reads the ungraded amber — re-split from hawksbill.orig.png, then grade.",
+      "anchorPx": [
+        0.5,
+        0.5092
+      ]
+    },
+    {
+      "key": "glowtide-dugong",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "glowtide",
+      "world": 64,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a DUGONG swimming, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A long, smooth, rounded torpedo of a body, thickest at the shoulders and tapering to the tail stock, ending in a WHALE-LIKE CRESCENT FLUKE with two POINTED tips and a notch between them (never a round paddle like a manatee's); two small paddle-shaped FLIPPERS near the front, held out a little to the sides; the head broad and BLUNT, the big fleshy bent-down muzzle making the front end wide and squarish from above, with two small nostrils on top at the very front. COLOUR: a smooth slate grey-brown (about #8A8279), a shade darker along the spine (about #6E675F) and paler toward the flanks (about #A49C92), with faint mottling and a few thin pale SCARS and scratches on the back; the skin smooth, without wrinkles or hair. Paint it in its own DAYLIGHT local colours: the venue is a moonlit night, and the game darkens and tints everything for the night itself — a colour darkened here would go muddy twice. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (istock overhead sheets: reef mantas from drones and above, dugongs over seagrass, hawksbills from above, flying foxes in flight) on top of the Sep 26 sheets behind the drawn animals. Replacing drawDugong (three on the seagrass shallows, one with a calf: grazing head-down leaving a feeding trail and silt, rising every ~minute to breathe). 52 u (scale.md); world 61 = FRAME first guess. If accepted: the tail strip-bent for the fluke stroke (an up-and-down stroke shows from above as the fluke FORESHORTENING, the cetacean rule), the head dipped to graze, seenThrough under water. Make the calf as an EDIT.",
+      "anchorPx": [
+        0.5,
+        0.5036
+      ]
+    },
+    {
+      "key": "glowtide-dugong-calf",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "glowtide",
+      "world": 45,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "glowtide-dugong",
+      "subject": "the SAME DUGONG (an EDIT of the accepted adult) as a young CALF, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Shorter and plumper for its length, the head a little bigger in proportion, the crescent fluke and small flippers the same shape; a paler, softer grey (about #A39B91), smooth and unscarred. Paint it in its own DAYLIGHT local colours: the venue is a moonlit night, and the game darkens and tints everything for the night itself — a colour darkened here would go muddy twice. Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 17 2026 (istock overhead sheets: reef mantas from drones and above, dugongs over seagrass, hawksbills from above, flying foxes in flight) on top of the Sep 26 sheets behind the drawn animals. OPTIONAL. The calf swims at its mother's side. 29 u (scale.md); world 34 = FRAME first guess. An EDIT of the accepted adult.",
+      "anchorPx": [
+        0.5004,
+        0.5088
+      ]
+    },
+    {
+      "key": "flats-grey-seal-cow",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GREY SEAL COW hauled out, lying flat on her belly, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A PLUMP, smooth torpedo, thickest at the shoulders and chest and tapering to the hips, its width about a QUARTER of its length (never fat, never a barrel); the head long and heavy with the grey seal's straight 'Roman' muzzle — from above a long, broad, flat-topped head with the nostrils at the very front, no visible ear; the two short FORE FLIPPERS lying flat against the sides just behind the head, their dark claws showing; the two HIND FLIPPERS held together behind as a small dark fan. COLOUR, the Wadden cow from the air: a SANDY GREY-TAN coat (about #A69B88), paler toward the flanks (about #C6BBA7), finely MOTTLED all over with small irregular darker blotches and rings (about #6B6254), the mottle soft, never spots in rows; a slightly darker band down the spine; the muzzle a shade paler; the flipper claws dark. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawGreySeal for the cows (a loose colony strung along a drying sandbank; hauled out, sliding down as the flood covers the bank, swimming and bottling in the channel). ~42 u (GSEAL_LEN 46 x size 0.82-1.0; scale.md ~40); world 52 = FRAME first guess. If accepted: the body strip-bent for the hump-and-slide on land, seenThrough when swimming; the coat variants as EDITS.",
+      "anchorPx": [
+        0.5004,
+        0.4825
+      ]
+    },
+    {
+      "key": "flats-grey-seal-cow-side",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "flats-grey-seal-cow",
+      "subject": "the SAME GREY SEAL COW (an EDIT of the accepted belly-down cow) now lying on her SIDE in the grey seal's resting 'banana', seen from directly overhead, head toward the TOP of the frame, same frame and scale. The body CURVED into a gentle C, head and hind flippers both lifted a little toward the same side, so from above the outline is a crescent; the pale BELLY (about #D5CBB9) showing as a broad band along the INSIDE edge of the curve, the mottled sandy back along the outside; the uppermost fore flipper lying across the chest, the hind flippers together. Same coat, same mottle. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Two seals in three lie on their side in the banana (Wes's Sep 26 references) — from above a C with the pale belly along one edge. An EDIT of the accepted cow; the game mirrors it for the other side.",
+      "anchorPx": [
+        0.506,
+        0.4928
+      ]
+    },
+    {
+      "key": "flats-grey-seal-cow-silver",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "flats-grey-seal-cow",
+      "subject": "the SAME GREY SEAL COW (an EDIT of the accepted belly-down cow), identical pose, frame and scale, only the COAT changed: a pale SILVER-GREY cow (about #9EA1A4), paler and almost cream toward the flanks (about #C8C9CA), with darker grey blotches (about #65686B) in the same fine irregular mottle. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. OPTIONAL: a second cow coat so the colony is not one seal repeated (the drawn colony mixes silver, cream and sandy cows). An EDIT of the accepted cow.",
+      "anchorPx": [
+        0.5008,
+        0.4825
+      ]
+    },
+    {
+      "key": "flats-grey-seal-bull",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 66,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GREY SEAL BULL hauled out, lying flat on his belly, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A PLUMP, smooth torpedo, thickest at the shoulders and chest and tapering to the hips, its width about a QUARTER of its length (never fat, never a barrel); the head long and heavy with the grey seal's straight 'Roman' muzzle — from above a long, broad, flat-topped head with the nostrils at the very front, no visible ear; the two short FORE FLIPPERS lying flat against the sides just behind the head, their dark claws showing; the two HIND FLIPPERS held together behind as a small dark fan. A bull is bigger and heavier in the FRONT than a cow: a thick, deep NECK and broad shoulders with heavy folds, the head longer and broader with the high arched 'Roman' muzzle, the hips narrower — still about a quarter as wide as long overall. COLOUR: a DARK charcoal-brown coat (about #4B4C4F), with scattered PALE irregular blotches and rings (about #86888B), the neck and shoulders darkest and scarred with a few pale lines; the belly edge a little paler. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawGreySeal for the bulls (a quarter of the colony; dark charcoal or brown). ~53 u (GSEAL_LEN x 1.05-1.2; scale.md ~53); world 66 = FRAME first guess.",
+      "anchorPx": [
+        0.5012,
+        0.4976
+      ]
+    },
+    {
+      "key": "flats-grey-seal-pup",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 30,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a newborn GREY SEAL PUP lying on its belly, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A small, ROUND, plump pup — about a third as wide as it is long — a big rounded head with a short muzzle, short fore flippers at the sides, the hind flippers together behind. COLOUR: thick fluffy WHITE natal fur with a faint cream-yellow tinge (about #EFEAD9), soft cool-grey shadows in the fur folds (about #D3CCBD), the muzzle and the flipper claws dark grey. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. The winter pups (white lanugo) beside a quarter of the cows. ~24 u (size 0.45-0.55); world 30 = FRAME first guess.",
+      "anchorPx": [
+        0.5016,
+        0.5068
+      ]
+    },
+    {
+      "key": "flats-grey-seal-head",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 18,
+      "anchor": "center",
+      "status": "slot",
+      "subject": "the HEAD of a GREY SEAL above the water, 'bottling' — floating upright with only its head and the top of its neck out — seen from directly overhead, muzzle toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. From above: the broad, flat-topped crown of the head, the long straight muzzle running forward to the two nostrils, the thick neck behind widening as it goes down out of sight. COLOUR: wet and darker than when dry — a dark grey-brown (about #5A554E) with faint darker mottling, a soft paler sheen along the top of the muzzle (about #8A847B). Only the head and neck: nothing below the waterline, no water. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. OPTIONAL: the bottling head (drawGreySealSwim draws a head up, turning to watch the nearest boat, the body a dim shape under the water) — as the Cove's bay-seal-head. ~12 u; world 18 = FRAME first guess."
+    },
+    {
+      "key": "flats-spoonbill",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 33,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a ROSEATE SPOONBILL standing in shallow water, wading, seen from directly overhead, head toward the TOP of the frame, the long neck and bill stretched forward and slightly down as it feeds. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The plump oval body, about a third as wide as the bird's whole length from bill tip to tail (never fat); the neck reaching forward; the long flat BILL pointing straight up the frame and widening at its tip into the round SPOON; the folded wings lying along the body and crossing over the tail; the legs straight down UNDER the body, out of sight but for the feet just peeking at the sides. COLOUR: the neck and upper back WHITE (about #F6F3EE); the folded wings pale pink (about #F2B3C6) deepening to rose pink behind (about #E77FA0), with a vivid CARMINE patch on each shoulder (about #D6214A); the tail orange-buff (about #EBA24F) showing past the wingtips; the bald head buff-green (about #CFC38C) with a black band across the nape; the bill grey-green (about #8D9884). True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawSpoonbill (flocks of 5-9 wading the shallow edge, sweeping the bill side to side ~1.2 Hz, leapfrogging the tide edge; at high water a packed roost on the saltmarsh). ~26 u bill to tail (scale.md); world 33 = FRAME first guess. If accepted: the head and neck cut to sweep (as the egret's neck); the roost pose as an EDIT.",
+      "anchorPx": [
+        0.5,
+        0.4765
+      ]
+    },
+    {
+      "key": "flats-spoonbill-resting",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 33,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "flats-spoonbill",
+      "subject": "the SAME ROSEATE SPOONBILL (an EDIT of the accepted wading spoonbill) RESTING at the high-tide roost, seen from directly overhead, same frame and scale, body facing the TOP of the frame: the neck pulled back and folded down onto the shoulders, the head turned back and the long bill laid along the back, tucked between the folded wings, so the bird is a compact rounded oval with the spoon tip lying on the pink of the back. Same colours as before. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. The high-tide roost (packed on the saltmarsh, facing the wind; the drawn bird lays the bill back along the back). An EDIT of the accepted wading spoonbill.",
+      "anchorPx": [
+        0.4996,
+        0.6116
+      ]
+    },
+    {
+      "key": "flats-spoonbill-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 48,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a ROSEATE SPOONBILL in flight, seen from directly overhead, head toward the TOP of the frame, wings FULLY SPREAD level. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The NECK stretched dead straight forward and the long spoon BILL straight ahead of it; the dark red LEGS trailing straight back well past the tail; the wings BROAD and ROUNDED, each with five separated finger-tip primaries at the end, the span about one and a half times the bird's length from bill to toes. COLOUR from above: the wings pink (about #F0A0BB), paler toward the leading edge (about #F7D3DF) and deepening toward the trailing edge (about #E0708F); a vivid CARMINE bar along the inner LEADING edge of each wing (about #D6214A); a carmine rump patch; the tail orange-buff (about #EBA24F); the neck and upper back white; the bald head buff-green with a black nape band; the bill grey-green; the legs and feet dark red (about #C83A4E). Each wing stands clear of the body so it can be cut at the shoulder. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawSpoonbillFly (necks out, in a loose diagonal line, ~2.6 Hz, flushed by a boat or leapfrogging the tide). 40 u span (scale.md); world 48 = FRAME first guess. If accepted: colsplit at the shoulders, pelicanPosed.",
+      "anchorPx": [
+        0.5,
+        0.5207
+      ]
+    },
+    {
+      "key": "flats-avocet",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 25,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a PIED AVOCET standing in shallow water, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A slim, elegant wader — the body about a QUARTER as wide as the bird's whole length from bill tip to tail; the neck reaching forward; the long, thin, black BILL pointing up the frame and CURVING UPWARD toward its fine tip; the folded wings crossing over the short tail; the long legs straight down under the body, only the blue-grey feet peeking out. COLOUR, crisp black and white: WHITE body and neck (about #F6F6F3); a BLACK CAP (about #16171A) from the forehead over the crown and down the BACK OF THE NECK; two black STRIPES down the back, one either side (the scapulars); a black bar across each folded wing; the black wingtips crossing past the white tail. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawAvocet (tight flocks of 10-20 working the shallowest water, scything the bill side to side ~2 Hz, leapfrogging the tide edge). 20 u bill to tail (scale.md floor); world 25 = FRAME first guess.",
+      "anchorPx": [
+        0.5004,
+        0.4884
+      ]
+    },
+    {
+      "key": "flats-avocet-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "flats",
+      "world": 41,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a PIED AVOCET in flight, seen from directly overhead, head toward the TOP of the frame, wings FULLY SPREAD level. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The neck out and the thin up-curved black bill straight ahead; the long blue-grey LEGS (about #7FA2BB) trailing straight back well past the white tail; NARROW, POINTED wings, the span about one and a half times the bird's length. COLOUR from above, the avocet's pied pattern: the wings WHITE (about #F6F6F3) crossed by three blacks (about #16171A) — the OUTER HAND black from the wrist to the pointed tip, a black BAR slanting from the back out to the wrist across the middle of each wing, and the two black STRIPES down the back; the black cap running down the nape; the body and tail white. Each wing stands clear of the body so it can be cut at the shoulder. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no water, no sand, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: grey seal colonies from drones — Blasket, Vistula delta, Mutton Cove — grey seals in the water, white pups; roseate spoonbills in flight and wading; pied avocets from above and in flight) on top of Wes's Sep 26 references behind the drawn animals. Replacing drawAvocetFly (flocks wheeling off a boat flashing black and white, ~4.2 Hz). 34 u span (scale.md); world 41 = FRAME first guess. If accepted: colsplit + pelicanPosed.",
+      "anchorPx": [
+        0.5,
+        0.5156
+      ]
     }
   ],
   "scale": {

@@ -24,7 +24,10 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' +
     const feats = []; GameEvents.on('player-feat', e => { if (/^(mark|pass|kite):/.test(e.id)) feats.push(e.id); });
     for (let i = 0; i < 30 * 31; i++) update(1 / 30);
     state.race.status = 'racing'; me.raceState.finished = false; _legCraft = null;
-    const setRank = (k, leg) => { leg = leg || 1; me.raceState.leg = leg; me.raceState.nextWaypoint.dist = 1000; order.slice(1).forEach((bt, i) => { bt.raceState.finished = false; bt.raceState.leg = leg; bt.raceState.nextWaypoint.dist = i < k - 1 ? 500 : 5000; }); };
+    // (since 0e614d9, PT-041, fleetRank reads the leaderboard's course progress, not nextWaypoint.dist: the test pins
+    // the player's rank itself — this checks the leg-craft events, not the ranking)
+    const realRank = fleetRank; let myRank = 1; fleetRank = (bt) => bt === me ? myRank : realRank(bt);
+    const setRank = (k, leg) => { myRank = k; leg = leg || 1; me.raceState.leg = leg; me.raceState.nextWaypoint.dist = 1000; order.slice(1).forEach((bt, i) => { bt.raceState.finished = false; bt.raceState.leg = leg; bt.raceState.nextWaypoint.dist = i < k - 1 ? 500 : 5000; }); };
     const run = (s) => { for (let i = 0; i < Math.round(s * 30); i++) checkLegCraft(1 / 30); };
     me.x = 0; me.y = -1500; setRank(1); run(1); setRank(2); run(1); setRank(1); run(1); out.flicker = feats.filter(f => f === 'pass:overtaken').length;
     setRank(2); run(2.5); out.passed = feats.filter(f => f === 'pass:overtaken').length;
@@ -33,7 +36,7 @@ let fails = 0; const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' +
     setRank(3, 2); me.x = g.x + 400; me.y = g.y + 400; run(0.2); out.lost = feats.includes('mark:lost');
     feats.length = 0; _legCraft = null; setRank(2); run(0.1); me.x = g.x + 50; me.y = g.y + 50; run(0.2); setRank(2, 2); me.x = g.x + 400; me.y = g.y + 400; run(0.2); out.held = feats.includes('mark:held') && !feats.includes('mark:lost');
     // the kite
-    feats.length = 0; _legCraft = null; me.spinnaker = true; me.spinnakerDeployProgress = 1; run(3); out.kite = feats.filter(f => f === 'kite:secs').length;
+    feats.length = 0; _legCraft = null; me.spinnaker = true; me.spinnakerDeployProgress = 1; run(3); out.kite = feats.filter(f => f === 'kite:secs').length; fleetRank = realRank;
     return out; });
   ok(r.rows === 'Flaunt,Vex,Needle,Saffron,Brine,Sovereign,Wick,Splash', `the eight rows (${r.rows})`);
   ok(r.flaunt && r.vex, 'Wire to Wire (first at every mark, won) and Daylight Robbery (behind at the last mark, won)');

@@ -6,7 +6,12 @@
 //   race     no map-only shape compiles into the race (islands), every one into the backdrop the maps draw
 //   hash     recordsHash and courseSig ignore map-only shapes (adding scenery resets no record book)
 //   saved    every venue's saved course paths are still current (courseSig matches)
-//   budget   the race-side vertex count stays near the ~2.5k budget (2.7k hard ceiling; Gatorgrass sits at 2.53k)
+//   budget   the race-side vertex count stays near the ~2.5k budget (2.7k hard ceiling; Gatorgrass sits at 2.53k) — counted
+//            on the AUTHORED points: since fb9519a (curved shapes) a smooth shape is flattened to 0.5 u at load, many times
+//            its control points, and that commit made the runtime paths scale with it (bucketed grids, thinned rings)
+//
+// The race meets the FLATTENED shapes (VenueDoc.shapes), so the map-only split is judged on those: a curve can bulge
+// back inside the map line between control points that all lie past it, and then it races.
 const { chromium } = require('playwright'); const path = require('path');
 let fails = 0;
 const check = (n, ok, d) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${n}${d ? ' — ' + d : ''}`); if (!ok) fails++; };
@@ -17,7 +22,8 @@ const check = (n, ok, d) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${n}${d ? 
     await p.waitForFunction(() => window.VenueDoc && window.VENUE_DOC && VenueDoc.mapLine);
     const r = await p.evaluate(() => VENUE_ORDER.map(v => {
         const doc = VenueDoc.get(v), c = VenueDoc.compile(doc, true);
-        const mapOnly = doc.shapes.filter(s => VenueDoc.isMapOnly(doc, s) && VenueDoc.traits(s).motion !== 'drift');   // drifting ice always races
+        const flat = VenueDoc.shapes(doc);
+        const mapOnly = flat.filter(s => VenueDoc.isMapOnly(doc, s) && VenueDoc.traits(s).motion !== 'drift');   // drifting ice always races
         const ids = new Set(c.islands.map(i => i.id)), bd = new Set((c.backdrop || []).map(i => i.id));
         const leaked = mapOnly.filter(s => ids.has(s.id)).length, missing = mapOnly.filter(s => !bd.has(s.id)).length;
         // a scenery shape added far out must not move the hash or the sig
@@ -25,7 +31,7 @@ const check = (n, ok, d) => { console.log(`  ${ok ? 'ok  ' : 'FAIL'}  ${n}${d ? 
         const far = L.radiusAt(L.cx + 1, L.cy) + 3000;
         d2.shapes.push({ id: 'probe', kind: doc.shapes.find(s => VenueDoc.traits(s) && !VenueDoc.traits(s).awash && !VenueDoc.traits(s).hidden)?.kind || 'isle',
                          outer: [[L.cx + far, L.cy - 200], [L.cx + far + 400, L.cy - 200], [L.cx + far + 400, L.cy + 200], [L.cx + far, L.cy + 200]] });
-        const raceVerts = VenueDoc.raceShapes(doc).reduce((t, s) => t + s.outer.length + (s.holes || []).reduce((a, h) => a + h.length, 0), 0);
+        const raceVerts = VenueDoc.authoredShapes(doc).filter((s, i) => !VenueDoc.isMapOnly(doc, flat[i])).reduce((t, s) => t + s.outer.length + (s.holes || []).reduce((a, h) => a + h.length, 0), 0);
         return { v, mapOnly: mapOnly.length, leaked, missing,
                  hashSame: VenueDoc.recordsHash(d2) === VenueDoc.recordsHash(doc), sigSame: VenueDoc.courseSig(d2) === VenueDoc.courseSig(doc),
                  saved: !!VenueDoc.savedPaths(doc), raceVerts };

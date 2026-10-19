@@ -9697,7 +9697,7 @@ window.VENUE_DOC["bay"] = {
       }
     ],
     "paths": {
-      "sig": "v3-a38d1cc5-270o",
+      "sig": "v3-72e0040d-26uw",
       "legs": [
         {
           "pts": []
@@ -83223,7 +83223,8 @@ window.VENUE_DOC["bay"] = {
       "x": -2072.9987798439197,
       "y": 1109.8481230126758,
       "heading": 3.3086877905575847,
-      "scale": 0.914
+      "scale": 0.914,
+      "hitConvex": true
     },
     {
       "id": "prop-8",

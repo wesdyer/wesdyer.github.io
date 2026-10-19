@@ -352,7 +352,7 @@ const School = {
         if (!s.ducks || !s.ducks.length) {
             s.ducks = [];
             for (let i = 0; i < 5; i++) {
-                const back = -Math.sin(s.beamBearing) * i * 24, backY = Math.cos(s.beamBearing) * i * 24;
+                const back = -Math.sin(s.beamBearing) * i * 11, backY = Math.cos(s.beamBearing) * i * 11;   // (Oct 18 2026: 24 -> 11, the line closed up with the 9-unit ducklings)
                 s.ducks.push({ x: T.x + back, y: T.y + backY, h: s.beamBearing });
             }
             s.duckLead = { x: T.x, y: T.y };
@@ -375,7 +375,7 @@ const School = {
         s.upGap = s.upAlong;
         if (!s.ducks || !s.ducks.length) {
             s.ducks = [];
-            for (let i = 0; i < 5; i++) s.ducks.push({ x: T.x - U.x * i * 24, y: T.y - U.y * i * 24, h: this.wd() });
+            for (let i = 0; i < 5; i++) s.ducks.push({ x: T.x - U.x * i * 11, y: T.y - U.y * i * 11, h: this.wd() });   // (Oct 18 2026: 24 -> 11, as above)
             s.duckLead = { x: T.x, y: T.y };
         } else {
             s.duckLead = { x: s.ducks[0].x, y: s.ducks[0].y };   // swim there from wherever they are
@@ -1395,12 +1395,13 @@ const School = {
     },
 
     // ── the companions: the launch and the ducklings ──────────────────────────
-    // Spacing down the line, centre to centre: a duckling (~23 units bill to tail) and about half a
+    // Spacing down the line, centre to centre: a duckling (~9 units bill to tail) and about half a
     // body of water between, as in the drone shots of a brood in file.
-    DUCK_GAP: 32,
+    // (Oct 18 2026, Wes: "1.5x or less" at sea level: the duckling 22 -> 9, so the gap 32 -> 14 and the stagger 8 -> 3.5)
+    DUCK_GAP: 14,
     makeDucks(at) {
         const d = [];
-        for (let i = 0; i < 5; i++) d.push({ x: at.x - i * this.DUCK_GAP, y: at.y + (i % 2 ? 8 : -8), h: 0 });
+        for (let i = 0; i < 5; i++) d.push({ x: at.x - i * this.DUCK_GAP, y: at.y + (i % 2 ? 3.5 : -3.5), h: 0 });
         return d;
     },
     pathPoint(path, dist) {

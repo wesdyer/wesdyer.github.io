@@ -36,6 +36,12 @@ const check = (label, ok, detail) => {
         await page.addInitScript(v => localStorage.setItem('regatta_settings', JSON.stringify({ venue: v })), venue);
         await page.goto('file://' + path.join(ROOT, 'index.html'));
         await page.waitForFunction(() => window.state && window.state.course && window.state.course.marks);
+        // The page's own animation loop would keep stepping the race at wall-clock rate between the
+        // scripted phases below, so a scenario's outcome depended on how long each evaluate took (a
+        // rule-15 grace window, a few frames wide, read true one run and false the next). Stop it:
+        // only this runner's update() calls move the world, as in test_flats/test_render/test_volcano.
+        await page.evaluate(() => { window.requestAnimationFrame = () => 0; });
+        await page.waitForTimeout(100);
 
         // one-time fixture: get racing, keep two boats, index anchors
         const fixed = await page.evaluate(() => {
@@ -197,6 +203,11 @@ const check = (label, ok, detail) => {
                         }
                     }
                     window.Rules.interactions = {};
+                    // ...and the per-boat tack-flip clock (rule 15's "whose action was it"): a scenario starts
+                    // fresh, or the previous scenario's re-placement of a boat onto the other tack reads as a
+                    // flip of hers just before this one's acquisition and cancels its grace — only when the
+                    // two land within a second of each other, which is why it failed one run in three.
+                    window.Rules._lastTack = {}; window.Rules._tackFlipT = {};
 
                     // ── phase execution ──
                     const snapshotOf = () => {

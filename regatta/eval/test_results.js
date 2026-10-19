@@ -131,7 +131,10 @@ const { chromium } = require('playwright'); const path=require('path');
   // innerText carries the header's CSS uppercase, so match case-insensitively.
   ok('the points column scores finishers only', /\bPTS\b/i.test(info.pageText));
   ok('no standings or next race', !/NEXT RACE|STANDINGS|SERIES/i.test(info.pageText));
-  ok('two ways off the page', info.buttons.length === 2, info.buttons.join(', '));
+  // (PT-079, 0fe1dea, added "Save image" — it keeps you on the page, so it is not a way off it)
+  const exits = info.buttons.filter(id => id !== 'results-save-button');
+  ok('two ways off the page', exits.length === 2, info.buttons.join(', '));
+  ok('...and the page can be saved as an image (PT-079)', info.buttons.includes('results-save-button'));
 
   // The primary button has to actually start a race — it is the one control on this
   // screen a player will press without reading.

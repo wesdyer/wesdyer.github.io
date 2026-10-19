@@ -87,7 +87,7 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.rows === 'Sable:first-win,Mitt:mechanic,Lateen:explorer,Flash:target,Skerry:four-stars,Flicker:wildlife', `the six rows (${r.rows})`);
     ok(r.latch, 'Same Every Week: three Point finishes in a row within 3.0 s (not 3.1, not with a DNF between, not two)');
     ok(r.lateen && r.flicker, 'Every Can and Under the Birds read their feats');
-    ok(r.target === 210, `the target is 3:30 (${r.target})`);
+    ok(r.target === 205, `the target is 3:25 (${r.target})`);   // (owner's playtest intake, 6ec934c: 3:30 -> 3:25)
     ok(r.wes === 6, `Every Can: ${r.wes} of Wes's ${r.wesN} laps would have earned it (6 measured at design)`);
     ok(r.oneSide === false, 'both laps round the same top mark: not Every Can');
     ok(r.cast.split(',').every(x => +x > 0), `cormorants, velella fleets, mackerel boils, terns, gull rafts (${r.cast})`);

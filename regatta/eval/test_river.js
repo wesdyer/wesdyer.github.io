@@ -56,7 +56,9 @@ const WES = fs.readdirSync(TRAJ).filter(f => f.startsWith('traj_river_')).map(f 
         // ── a run scatters from a boat and gathers again ──
         { const G = d.runs[1]; const mean = () => { let x = 0, y = 0; for (const f of G.fish) { x += f.x; y += f.y; } return [x / G.fish.length, y / G.fish.length]; };
           const [x0, y0] = mean(); bot.x = G.hx - 60; bot.y = G.hy; for (let i = 0; i < 30; i++) Wildlife.update(1 / 30);
-          const [x1, y1] = mean(); out.runScatters = Math.hypot(x1 - x0, y1 - y0) > 30; away(bot);
+          // (the run's own scale: > 16, under two fish lengths — it was > 30 when a sockeye was 17 long and bolted at 55 u/s;
+          // Oct 18 2026, Wes: "1.5x or less" at sea level made them 9.5 and 29 u/s)
+          const [x1, y1] = mean(); out.runScatters = Math.hypot(x1 - x0, y1 - y0) > 16; away(bot);
           for (let i = 0; i < 30 * 20; i++) Wildlife.update(1 / 30);
           const [x2, y2] = mean(); out.runGathers = Math.hypot(x2 - x0, y2 - y0) < 25;
           out.runOnWater = G.fish.every(f => !pointOnLand(f.x, f.y)); }
