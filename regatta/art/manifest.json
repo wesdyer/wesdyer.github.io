@@ -2607,6 +2607,192 @@
       ]
     },
     {
+      "key": "volcanic-marine-iguana",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GALÁPAGOS MARINE IGUANA basking flat on its belly, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The whole animal SPRAWLED flat: a sausage-shaped trunk, pinched in at the pelvis; the four LONG, jointed legs splayed out sideways like a pressed lizard, elbows and knees bent, each ending in a wide FAN of five long, thin CLAWED TOES spread flat on the ground; the blunt, short, heavy head with jowly cheeks and a rough lumpy crown (from above: a broad rounded wedge, wider than the neck); a low row of pale SPINES running down the midline from the nape along the back; the TAIL long and laterally flattened, about SIXTY PERCENT of the whole length, laid in a lazy curve off to one side and tapering to a fine point. COLOUR, the grey morph from the references: slate grey-black (about #3B3C40) with the limbs a shade darker, a dusty ASH-GREY bloom of dried salt over the head, shoulders and back (about #7D8085), the crown crusted pale with salt (about #ABA79F) in rough patches, never a clean white cap; the spine row pale buff-grey (about #B3AB9D). True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing drawIguana (heaps of 12-26 packed on the black shores, most facing up-sun; one now and then waddles down and swims out, dives to graze and hauls back out). ~36 u with the tail (IGUANA_LEN, scale.md); world 44 = FRAME first guess. If accepted: the tail strip-bent so it lies in a different curve per animal and sculls when swimming; the wet-black to dry-grey change stays a game tint. WIRED Oct 18 2026: art/straighten_tail.py lays the curled tail out straight (assets …-straight.png); the game lays on each basker's own curl, the walk's sway and the swim's tail wave (js/wildlife.js IG_SPR).",
+      "anchorPx": [
+        0.5435,
+        0.5144
+      ]
+    },
+    {
+      "key": "volcanic-marine-iguana-red",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-marine-iguana",
+      "subject": "the SAME MARINE IGUANA (an EDIT of the accepted grey iguana), identical pose, frame and scale, only the COLOUR changed to the Española breeding morph: the body near-black (about #2B2729) with large irregular BRICK-RED BLOTCHES (about #9A4643) over the flanks, shoulders and the base of the tail, the head, legs and the spine line staying black; the same pale buff spines (about #B8A898) and a little dusty salt on the crown. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. OPTIONAL: the red-blotched morph, 16% of the drawn iguanas (the rust morph, 8%, can be a grade of this one). An EDIT of the accepted grey iguana. WIRED Oct 18 2026: art/straighten_tail.py lays the curled tail out straight (assets …-straight.png); the game lays on each basker's own curl, the walk's sway and the swim's tail wave (js/wildlife.js IG_SPR).",
+      "anchorPx": [
+        0.5435,
+        0.514
+      ]
+    },
+    {
+      "key": "volcanic-marine-iguana-swim",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 44,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-marine-iguana",
+      "subject": "the SAME MARINE IGUANA (an EDIT of the accepted grey iguana) now SWIMMING, seen from directly overhead, head toward the TOP of the frame, same frame and scale. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Streamlined: the head raised a little and pointing straight ahead; ALL FOUR LEGS folded back and pressed flat along the body, toes trailing, so the outline is a slim torpedo; the long flattened TAIL swept to one side in a smooth S-curve, mid-stroke, as it sculls. The coat WET: darker and glossier-looking in tone (about #26272A), the salt crust gone, only a hint of the pale spine row. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing the drawn swimming iguana (flat at the surface, head up, legs tucked, sculling with the tail; dives to graze). Same frame as the basking iguana. If accepted: the tail strip-bent to scull; seenThrough when it dives. WIRED Oct 18 2026: art/straighten_tail.py lays the curled tail out straight (assets …-straight.png); the game lays on each basker's own curl, the walk's sway and the swim's tail wave (js/wildlife.js IG_SPR).",
+      "anchorPx": [
+        0.5849,
+        0.5171
+      ]
+    },
+    {
+      "key": "volcanic-sally-lightfoot",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 12,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a SALLY LIGHTFOOT CRAB standing on rock, seen from directly overhead, its front toward the TOP of the frame. A FLAT, nearly ROUND-SQUARE carapace, a little wider than long, with a straight front edge between the two eyes at the corners; the TWO CLAWS short and chunky, held folded in front of the carapace; the EIGHT long walking LEGS splayed out sideways, four a side, each jointed and slightly bent, their tips pointed, the whole crab about TWICE as wide across the legs as the carapace. COLOUR from the references: the carapace mottled ORANGE and yellow-orange (about #E58A2E, #F0B04A) with a red rim and fine red marbling (about #C8352A); the legs bright CRIMSON-RED (about #CF3B2B) with paler orange joints; the claws red with pale tips; never brown, never blue. Flat colour shapes that read as a red-orange starburst when tiny. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. OPTIONAL. Replacing drawCrab (beds of 10-30 at the waterline, picking with the claws one at a time, scuttling SIDEWAYS in jerky bursts with the legs rippling, up the rock away from a boat). ~9 u across the legs (CRAB_SPAN; scale.md says a scatter of red, under the floor on purpose); world 12 = FRAME first guess. ⚠️ ~20 px is where painted sockeye and tangs LOST to drawn ones, and this is smaller: run the drawn-vs-painted bench at race scale before wiring; the drawn crab's leg ripple may be the better read. WIRED Oct 18 2026: the race-scale bench (eval/_volc_crab_bench.js) had the painting at its first-guess size (8.75 u) a dull smudge beside the drawn crab (12.8 u); drawn at world 16 (11.7 u across) it reads as well and wins from 2x up. art/crab_parts.py cuts it into body + 8 legs + 2 claw tips (atlases sally-lightfoot-parts.png and the recoloured juvenile -juv-parts.png): the legs ripple in an alternating tetrapod running sideways, the claws pick, clinging draws them in.",
+      "anchorPx": [
+        0.5004,
+        0.5144
+      ]
+    },
+    {
+      "key": "volcanic-booby-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a BLUE-FOOTED BOOBY in flight, seen from directly overhead, head toward the TOP of the frame, wings FULLY SPREAD and level. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A cigar-shaped body tapering at both ends; the dagger BILL straight, long and pointed, pointing up the frame; the WINGS long, NARROW and pointed, each a straight-edged blade with the leading edge bent back slightly at the wrist, the span about TWICE the bird's length; the wedge-shaped, pointed TAIL; the two bright FEET tucked back either side of the tail's base, just their webbed tips showing. COLOUR from above, from the references: the wings and back a warm DARK BROWN (about #4F3A29), the hand darkest (about #36271C), the arm coverts finely SCALLOPED with pale buff feather edges (about #9C8466); a WHITE PATCH on the upper back at the base of the neck (about #EFE9DF) and a smaller white patch on the rump above the tail; the head and neck pale, ash-brown finely STREAKED with white (about #D9D0C1, streaks #7A6450); the bill blue-grey (about #6F8799); the tail dark brown; the feet vivid TURQUOISE-BLUE (about #35B4C8). Each wing stands clear of the body so it can be cut out at the shoulder and beat. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing drawBooby in flight (flocks circling over a fish school on each leg, flap-and-glide: bursts of stiff beats and glides on straight wings). 44 u span (BOOBY_SPAN, scale.md); world 52 = FRAME first guess. If accepted: colsplit at the shoulders, pelicanPosed; the plunge fold may come from the cut wings swept back if the plunge slot is not rolled. WIRED Oct 18 2026 (js/wildlife.js BOO_SPR): the flyer posed in columns from above (each column foreshortened by the wing's angle, the hand swept back on the upstroke, the light on each wing from the upper-left sun swapping each half-stroke); tipping over it folds away into the plunge painting, which gives way to the entry arrow (foreshortened) in the last stretch; under the water ~3.2 s as a dim arrow (Zavalaga et al. 2007); then the sitter.",
+      "anchorPx": [
+        0.5,
+        0.5118
+      ]
+    },
+    {
+      "key": "volcanic-booby-plunge",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-booby-flying",
+      "subject": "the SAME BLUE-FOOTED BOOBY (an EDIT of the accepted flying booby) in its STEEP PLUNGE-DIVE, falling almost straight down AWAY from the camera, seen from directly overhead, head toward the TOP of the frame, same frame and scale. Because it points down at the water the body is FORESHORTENED, about half its flying length: the back and the rump toward the camera, the white rump patch large near the tail, the head and the short dagger bill small beyond the shoulders; the wings HALF-FOLDED into a W, the wrists out at the shoulders and the hands swept back beside the tail. Same colours: dark brown wings with pale-scalloped coverts, white neck-base patch, streaky pale head, blue-grey bill.",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing the drawn fold (the whole flock folds and plunges together every 20-34 s — Soot's Booby Shower). ROLL 2 (Oct 18, Wes: 'It's tilted forward. Not sure.' → kept): the steep dive seen from above, foreshortened to ~55% of the flying length (a ~55-60 degree dive), wings half-folded in a W; reads apart from the sitting booby, which the first roll (an arrow) did not. The arrow is kept as volcanic-booby-entry for the last moment before the splash. Same frame as the flying booby. WIRED Oct 18 2026 (js/wildlife.js BOO_SPR): the flyer posed in columns from above (each column foreshortened by the wing's angle, the hand swept back on the upstroke, the light on each wing from the upper-left sun swapping each half-stroke); tipping over it folds away into the plunge painting, which gives way to the entry arrow (foreshortened) in the last stretch; under the water ~3.2 s as a dim arrow (Zavalaga et al. 2007); then the sitter.",
+      "anchorPx": [
+        0.5006,
+        0.5206
+      ]
+    },
+    {
+      "key": "volcanic-booby-entry",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-booby-flying",
+      "subject": "the SAME BLUE-FOOTED BOOBY (an EDIT of the accepted flying booby) in its PLUNGE-DIVE, seen from directly overhead, head toward the TOP of the frame, same frame and scale. The wings FOLDED right BACK along the body so the bird is a slim pointed ARROW or a narrow W: the wrists pushed out a little at the shoulders, the hand feathers swept back and lying alongside the tail, the bill, head and neck stretched dead straight ahead; the feet tucked away. Same colours: dark brown wings with pale-scalloped coverts, white neck-base patch, streaky pale head, blue-grey bill. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. The ENTRY: the last fraction of a second of the plunge, wings swept fully back into a narrow arrow just before the bird hits the water (the first roll of volcanic-booby-plunge, kept for this when the foreshortened dive replaced it, Oct 18). An EDIT of the accepted flying booby; same frame. WIRED Oct 18 2026 (js/wildlife.js BOO_SPR): the flyer posed in columns from above (each column foreshortened by the wing's angle, the hand swept back on the upstroke, the light on each wing from the upper-left sun swapping each half-stroke); tipping over it folds away into the plunge painting, which gives way to the entry arrow (foreshortened) in the last stretch; under the water ~3.2 s as a dim arrow (Zavalaga et al. 2007); then the sitter.",
+      "anchorPx": [
+        0.5,
+        0.5118
+      ]
+    },
+    {
+      "key": "volcanic-booby-sitting",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 52,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-booby-flying",
+      "subject": "the SAME BLUE-FOOTED BOOBY (an EDIT of the accepted flying booby) now SITTING on the water after a dive, seen from directly overhead, head toward the TOP of the frame, same frame and scale. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A compact boat-shaped body, the long wings FOLDED along the back and crossing over the pointed tail; the neck short, the streaky pale head held up, the dagger bill pointing up the frame; the feet under the water, out of sight. Same colours: dark brown back and wings with pale-scalloped coverts, the white patch at the base of the neck, the streaky pale head, blue-grey bill. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. OPTIONAL. Replacing drawBooby's sitting pose (the flock sits a few seconds after a plunge, then lifts off). An EDIT of the accepted flying booby. WIRED Oct 18 2026 (js/wildlife.js BOO_SPR): the flyer posed in columns from above (each column foreshortened by the wing's angle, the hand swept back on the upstroke, the light on each wing from the upper-left sun swapping each half-stroke); tipping over it folds away into the plunge painting, which gives way to the entry arrow (foreshortened) in the last stretch; under the water ~3.2 s as a dim arrow (Zavalaga et al. 2007); then the sitter.",
+      "anchorPx": [
+        0.5003,
+        0.5085
+      ]
+    },
+    {
+      "key": "volcanic-frigatebird",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 74,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GREAT FRIGATEBIRD SOARING, seen from directly overhead, head toward the TOP of the frame, wings fully spread. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The WINGS are the subject: extremely LONG and NARROW, sharply ANGLED back at the wrist into a shallow M, the hand long and pointed, the span about TWO AND A HALF times the bird's length; a slender body; a small head with a long, slim, HOOKED grey bill pointing up the frame; the very long, DEEPLY FORKED TAIL, its two outer feathers held almost closed into a narrow V that trails far behind. COLOUR, the adult male's, NEVER one flat black: an all-black bird built of value planes — the wings near-black (about #19191D), the hand and trailing edge darkest (about #0B0B0D); a faint purple-green SHEEN over the back and scapulars (about #3B3656); a pale BROWNISH BAR (about #5A4A3E) running diagonally across the inner upper wing coverts from the shoulder toward the wrist; the bill grey (about #8E9396); the red throat pouch deflated and hidden underneath, at most a thin red edge at the chin. Each wing stands clear of the body so it can be cut out at the shoulder. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing drawFrigate (a slow stack on the main cone's and the SE islet's thermals, long crooked wings barely moving; one now and then swoops at the boobies after a plunge). 64 u span (FRIGATE_SPAN, scale.md); world 74 = FRAME first guess. If accepted: colsplit at the shoulders for the swoop sweep; the tail is painted fixed, so the drawn fork's opening and closing is lost unless the tail is cut out too. WIRED Oct 18 2026 (js/wildlife.js FRIG_SPR): drawn 64 u across (FRIGATE_SPAN); the wings posed in columns, held drooped so a bank reads (the low wing shortens), lit from the upper-left sun; the tail's two streamers cut at 0.545 and scissored open to steer; rare deep beats. The adult painting serves both sexes (black above).",
+      "anchorPx": [
+        0.5,
+        0.5073
+      ]
+    },
+    {
+      "key": "volcanic-frigatebird-juvenile",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 74,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "volcanic-frigatebird",
+      "subject": "the SAME GREAT FRIGATEBIRD (an EDIT of the accepted adult), identical pose, frame and scale, as a JUVENILE: the head and neck WHITE, washed rusty-buff (about #ECE9E2, #D9C3A6); the wings and tail a browner black (about #2A2420) with the same pale brownish bar across the inner wing; no red at the chin. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. OPTIONAL: the drawn frigates mix in white-headed juveniles (FRIGATE.juvHead). An EDIT of the accepted adult. WIRED Oct 18 2026 (js/wildlife.js FRIG_SPR): drawn 64 u across (FRIGATE_SPAN); the wings posed in columns, held drooped so a bank reads (the low wing shortens), lit from the upper-left sun; the tail's two streamers cut at 0.545 and scissored open to steer; rare deep beats. The adult painting serves both sexes (black above).",
+      "anchorPx": [
+        0.5,
+        0.5073
+      ]
+    },
+    {
+      "key": "volcanic-hammerhead",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 84,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a SCALLOPED HAMMERHEAD SHARK swimming, seen from directly overhead, head toward the TOP of the frame. The HEAD is the subject: a wide flat CEPHALOFOIL, the T of the hammer, about a quarter of the body length across, its FRONT EDGE gently arched and SCALLOPED with a clear central NOTCH and two shallower notches either side, the eyes at its two outer tips; behind it a slim streamlined body; the broad PECTORAL FINS swept back like small wings a third of the way down; the TALL first dorsal fin, which stands upright, seen from above only as a thin blade on the midline; the long TAIL with its long upper lobe, seen as a slim curved blade behind, the body a little curved as if mid-stroke. COLOUR, from above: a bronze-grey back (about #6B6D64) warming to olive-bronze over the head and shoulders (about #8A7F68), paling at the very edges of the hammer and fins (about #B9B8AE); the fins a shade darker (about #3D403C). Paint it in its own DAYLIGHT local colours: the game sinks it under the near-black water and veils it itself. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing drawHammer (schools of 22-34 milling in their own orbits over the hydrothermal vents, the body wave growing toward the tail and the head yawing against it, sinking deeper when a boat passes over). ~70 u (HAMMER_LEN, scale.md); world 84 = FRAME first guess. If accepted: the rear body strip-bent so it swims in an S (as the white shark and the reef shark do), seenThrough at depth.",
+      "anchorPx": [
+        0.5004,
+        0.5112
+      ]
+    },
+    {
+      "key": "volcanic-sooty-tern",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "volcanic",
+      "world": 40,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a SOOTY TERN in flight, seen from directly overhead, head toward the TOP of the frame, wings spread wide and flat as in a glide. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A slim, buoyant seabird: the WINGS LONG, NARROW and sharply POINTED, swept back a little and crooked at the wrist, the span about TWICE the bird's length; the slender black BILL pointing straight up the frame; the long, DEEPLY FORKED TAIL with two long thin outer STREAMERS. COLOUR from above: the crown, back, wings and tail SOOTY BLACK (about #1F1D20), the cap a touch darker (about #0F0F11); a neat WHITE FOREHEAD (about #F1F0EA) running back from the bill to just above the eyes as a broad white wedge; the thin outer edges of the tail streamers white. Each wing stands clear of the body so it can be cut out at the shoulder and beat. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 18 2026 (istock: marine iguanas from above on sand and lava, in heaps, swimming at the surface and under it; Sally Lightfoot crabs top-down on wet lava; blue-footed boobies in flight from above and below, plunging, on the nest; frigatebirds soaring; a scalloped hammerhead from above; sooty terns in flight) on top of Wes's Sep 26 iguana references behind the drawn animals. Replacing the drawn sooty tern (Soot's: flocks over every booby flock and roaming between; they DIP — swoop down and snatch from the surface — never sit). ~32 u span as drawn now (SOOTY_SCALE; check with _animal_sizes.js); world 40 = FRAME first guess. If accepted: colsplit at the shoulders, pelicanPosed, as the Antarctic tern. WIRED Oct 18 2026 (js/wildlife.js SOOTY_SPR, posed by frigatePosed): drawn 28 u across (a 0.82-0.94 m span x3; the drawn one was 31); wings in columns through slow deep beats and long glides, banked into turns, lit from the sun; the forked tail's streamers scissored open to steer and in the dip; a rare moment alighting (wings up).",
+      "anchorPx": [
+        0.5,
+        0.5064
+      ]
+    },
+    {
       "key": "trophy-commodore",
       "class": "trophy",
       "status": "art",

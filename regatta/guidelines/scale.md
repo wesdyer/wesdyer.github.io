@@ -126,11 +126,12 @@ wakes are left out. Re-measure with `node regatta/eval/_animal_sizes.js` wheneve
 | Palau flying fox (span) | Glowtide | 1.1 m | 11 | ~33 (×3) | 36; painted Oct 17: 36 spread, 17 at the top of the upstroke | ✓ Sep 26 |
 | Hawksbill turtle | Glowtide | 0.8 m | 8 | ~24 (broad) | 24; painted Oct 17: 23 × 23 | ✓ Sep 26 |
 | Dugong (calf) | Glowtide | 2.7 m (1.5 m) | 27 | ~54 (broad, ~2×) | 52 (29); painted Oct 17: 51 × 20 (27 × 13) | ✓ Sep 26 |
-| Marine iguana (with tail) | Emberfall | 1.2 m | 12 | ~36 (×3) | ~36 | ✓ Sep 26 |
-| Sally Lightfoot crab (legs) | Emberfall | 8 cm | 1 | ~7 (a scatter of red, rule 7) | ~7 | ✓ Sep 26 |
-| Blue-footed booby (span) | Emberfall | 1.5 m | 15 | ~44 (×3) | 44 | ✓ Sep 26 |
-| Great frigatebird (span) | Emberfall | 2.2 m | 22 | ~64 (the albatross's) | 64 | ✓ Sep 26 |
-| Scalloped hammerhead | Emberfall | 2.3 m (Galápagos schooling adults) | 30 | ~70 (×3; size 0.8–1.12) | ~70 | ✓ Sep 26 (re-drawn) |
+| Marine iguana (with tail) | Emberfall | 1.2 m | 12 | ≤1.5× (Wes, Oct 18: "reduce everything to 1.5x or less") | 17 basking, 16 swimming (painted) | ✓ Oct 18 |
+| Sally Lightfoot crab (across the legs) | Emberfall | ~0.2 m (8 cm shell) | 2 | the one exception: "a bit oversized" (Wes, Oct 18) — at 1.5× (~3) a pixel or two | 7 across, 4.5 long (~3.5×) | ✓ Oct 18 |
+| Blue-footed booby (bill to tail; span) | Emberfall | 0.8 m; 1.5 m | 8; 15 | ≤1.5× | 11; 25 (painted) | ✓ Oct 18 |
+| Great frigatebird (bill to tail; span) | Emberfall | 0.95 m; 2.2 m | 9.5; 22 | ≤1.5× | 13; 32 (painted) | ✓ Oct 18 |
+| Sooty tern (bill to streamer tips; span) | Emberfall | 0.4 m; 0.9 m | 4; 9 | ≤1.5× | 5; 13 (painted) | ✓ Oct 18 |
+| Scalloped hammerhead | Emberfall | 2.3 m (Galápagos schooling adults) | 23 | ≤1.5× (size 0.8–1.12 = 1.7–2.6 m sharks) | 35 (painted) | ✓ Oct 18 |
 | Grey seal (cow / bull) | Spoonbill Flats | 2.0 m (2.6 m) | 20 (26) | ~46 (broad, ~2×; bulls ×1.05–1.22) | ~40 (~53) | ✓ Sep 26 |
 | Roseate spoonbill (span) | Spoonbill Flats | 0.8 m (1.3 m) | 8 (13) | ~26 (×3; span 40) | ~26 (40) | ✓ Sep 26 |
 | Pied avocet (span) | Spoonbill Flats | 0.44 m (0.75 m) | 4 (8) | 20 (the floor; span 34) | ~20 (34) | ✓ Sep 26 |

@@ -1,0 +1,13 @@
+const { chromium } = require('playwright'); const path = require('path');
+(async () => { const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1800, height: 900 } });
+  await p.goto('file://' + path.resolve('regatta/index.html')); await p.waitForFunction(() => window.state && window.Wildlife && typeof resetGame === 'function');
+  await p.evaluate(() => { localStorage.setItem('regatta_settings', JSON.stringify({ venue: 'volcanic' })); selectVenue('volcanic'); resetGame(); for (const o of state.boats) { o.x = 1e6; o.y = 1e6; } });
+  await p.waitForTimeout(2500);
+  await p.evaluate(() => { for (let i = 0; i < 30 * 120; i++) Wildlife.update(1 / 30);
+    const A = Wildlife.art, Ss = Wildlife.debug().hammerSchools, c = document.createElement('canvas'); c.width = 1800; c.height = 900; const g = c.getContext('2d'); g.fillStyle = '#173b55'; g.fillRect(0, 0, 1800, 900);
+    const oc = state.camera; state.camera = null;
+    [0, 3, 7].forEach((k, i) => { const S = Ss[k]; g.save(); g.translate(300 + i * 600, 450); g.scale(1.0, 1.0); g.translate(-S.cx, -S.cy);
+      for (const f of [...S.fish].sort((a, b) => b.depth - a.depth)) A.drawHammer(g, f, Math.min(1, f.depth + S.sink * 0.4)); g.restore();
+      g.fillStyle = '#fff'; g.font = '14px sans-serif'; g.fillText('school ' + k + ' (' + S.fish.length + ') x1', 240 + i * 600, 880); });
+    state.camera = oc; c.style.cssText = 'position:fixed;left:0;top:0;z-index:99999'; document.body.appendChild(c); });
+  await p.screenshot({ path: process.argv[2], clip: { x: 0, y: 0, width: 1800, height: 900 } }); await b.close(); })();
