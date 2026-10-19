@@ -37,9 +37,18 @@ const { chromium } = require('playwright'); const path = require('path'); const 
     for (const pal of [0, 4]) A.drawGreySeal(g, { i: 0, x: 0, y: 0, h: 0, size: 1, pal, pup: false, mode: 'haul', side: 0, curl: 0, lift: 0, bob: 0, wet: 0, ring: 0, alert: 0, awashOv: 0, spots: [] });
     for (const mode of ['wade', 'fly']) { A.drawSpoonbill(g, { j: 0, x: 0, y: 0, h: 0, mode, sw: 0, step: 0, flap: 0, z: 0, ring: 0 }); A.drawAvocet(g, { j: 0, x: 0, y: 0, h: 0, mode, sw: 0, step: 0, flap: 0, z: 0, ring: 0 }); }
     A.drawGullFloat(g, { j: 0, x: 0, y: 0, h: 0, bob: 0, preen: 0, juv: false, splash: 0 }); A.drawClubGullFlying(g, { x: 0, y: 0, h: 0, z: 0, flap: 0, glide: true, mode: 'fly', juv: false, splash: 0 });
-    A.drawTern(g, { club: true, x: 0, y: 0, h: 0, z: 0, flap: 0, mode: 'shift', a: 0, splash: 0 }); state.camera = c; });
+    A.drawTern(g, { club: true, x: 0, y: 0, h: 0, z: 0, flap: 0, mode: 'shift', a: 0, splash: 0 });
+    // the Cove's, the Lake's (Oct 18 2026): ask for their paintings too, so none is measured as its drawn fallback
+    const mk = (o) => Object.assign({ x: 0, y: 0, h: 0, sink: 0, flap: 0, yaw: 0, trail: [], bob: 0, stick: false, splash: 0, slap: 0, rise: 0, swim: 0 }, o);
+    A.drawGullFlying(g, 0, 0, 0, 0, 0, true); A.drawGullPerched(g, 0, 0, 0); A.drawPelicanFlying(g, 0, 0, 0, 0, 30, 0); A.drawPelicanSitting(g, 0, 0, 0, 5);
+    A.drawSealUnder(g, { x: 0, y: 0, h: 0, bob: 0, spd: 0 }, 1); A.drawSealHead(g, { x: 0, y: 0, h: 0, bob: 0, i: 0 }, 1);
+    A.drawLoon(g, mk({})); A.drawBeaver(g, mk({})); A.drawMoose(g, { x: 0, y: 0, h: 0, alpha: 1, dip: 0, drip: 0, bob: 0, sway: 0, mode: 'alert', ashore: true });
+    A.drawLeap(g, { kind: 'bass', x: 0, y: 0, h: 0, t: 0.62, dur: 10, hop: 0, size: 1, i: 0 }); state.camera = c; });
   await p.waitForTimeout(900); }
-  const r = await p.evaluate(() => {
+  // SIZES_ZOOM=4 draws each animal at 4 px a unit (Oct 18 2026): at 1 px a unit an animal near the 10-unit floor loses its
+  // bill tip and tail to anti-aliasing under the alpha cut, and reads ~20% short. Numbers are in units either way.
+  const ZOOM = +process.env.SIZES_ZOOM || 1;
+  const r = await p.evaluate((ZOOM) => {
     const A = Wildlife.art;
     const mk = (o) => Object.assign({ x: 0, y: 0, h: 0, sink: 0, flap: 0, yaw: 0, trail: [], bob: 0, stick: false, splash: 0, slap: 0, rise: 0, swim: 0 }, o);
     const items = {
@@ -47,7 +56,13 @@ const { chromium } = require('playwright'); const path = require('path'); const 
       'gull (perched)': g => A.drawGullPerched(g, 0, 0, 0),
       'pelican (flying, span)': g => A.drawPelicanFlying(g, 0, 0, Math.PI / 2, 0, 0, false),
       'pelican (sitting)': g => A.drawPelicanSitting(g, 0, 0, 0, 0),
+      // (Oct 18 2026) wings flat, at sea level: span wide × bill-to-tail long
+      'gull gliding (span wide × body long)': g => A.drawGullFlying(g, 0, 0, 0, 0, 0, true),
+      'pelican gliding (span wide × body long)': g => A.drawPelicanFlying(g, 0, 0, 0, 0, 30, 0),
       'porpoise': g => A.drawPorpoise(g, { phase: 0.5, sx: 0, sy: 0, sh: 0 }),
+      'harbour seal (gliding under, nose to hind flippers)': g => A.drawSealUnder(g, { x: 0, y: 0, h: 0, bob: 0, spd: 0 }, 1),
+      'harbour seal head (bottling)': g => A.drawSealHead(g, { x: 0, y: 0, h: 0, bob: 0, i: 0 }, 1),
+      'bass (leaping, at sea level)': g => A.drawLeap(g, { kind: 'bass', x: 0, y: 0, h: 0, t: 0.62, dur: 10, hop: 0, size: 1, i: 0 }),
       'turtle': g => A.drawTurtle(g, 0, 0, 0, 1, 0),
       'grebe': g => A.drawGrebe(g, mk({})),
       'loon': g => A.drawLoon(g, mk({})),
@@ -123,14 +138,14 @@ const { chromium } = require('playwright'); const path = require('path'); const 
     const HI = new Set(Object.keys(items).slice(Object.keys(items).indexOf('grey seal cow (size 1)'), Object.keys(items).indexOf('blue whale (snout to flukes)')));
     const out = {};
     for (const [k, fn] of Object.entries(items)) {
-      const K = HI.has(k) ? 4 : 1;
-      const c = document.createElement('canvas'); c.width = c.height = 400; const g = c.getContext('2d');
-      g.translate(200, 200); g.scale(K, K); try { fn(g); } catch (e) { out[k] = 'err ' + e.message; continue; }
-      const d = g.getImageData(0, 0, 400, 400).data; let x0 = 400, x1 = -1, y0 = 400, y1 = -1;
-      for (let y = 0; y < 400; y++) for (let x = 0; x < 400; x++) if (d[(y * 400 + x) * 4 + 3] > (/ray|alligator|jelly/.test(k) ? 40 : 150)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      // (the small ones at 4 px a unit at least — HI; SIZES_ZOOM sets it for all, Oct 18 2026)
+      const K = HI.has(k) ? Math.max(4, ZOOM) : ZOOM, N = 400 * K, c = document.createElement('canvas'); c.width = c.height = N; const g = c.getContext('2d');
+      g.translate(N / 2, N / 2); g.scale(K, K); try { fn(g); } catch (e) { out[k] = 'err ' + e.message; continue; }
+      const d = g.getImageData(0, 0, N, N).data; let x0 = N, x1 = -1, y0 = N, y1 = -1;
+      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) if (d[(y * N + x) * 4 + 3] > (/ray|alligator|jelly/.test(k) ? 40 : 150)) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
       out[k] = x1 < 0 ? 'empty' : `${+((x1 - x0 + 1) / K).toFixed(1)} wide × ${+((y1 - y0 + 1) / K).toFixed(1)} long`;
     }
     return out;
-  });
+  }, ZOOM);
   console.log(JSON.stringify(r, null, 1)); await b.close(); srv.kill();
 })();
