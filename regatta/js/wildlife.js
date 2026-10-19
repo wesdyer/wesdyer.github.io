@@ -12169,7 +12169,9 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     const tgt = bt ? bestDepthSpot(q.x + (q.x - bt.x) * 0.3, q.y + (q.y - bt.y) * 0.3, 60, 0.45, 8) : (d < want[0] || d > want[1]) ? bestDepthSpot(q.x, q.y, 80, (want[0] + want[1]) / 2, 8) : null;
                     let a = tgt ? Math.atan2(tgt.x - q.x, -(tgt.y - q.y)) : R(0, 6.283);
                     if (Math.hypot(q.x - B.cx, q.y - B.cy) > (q.stay ? 140 : 280)) a = Math.atan2(B.cx - q.x, -(B.cy - q.y));
-                    const spd = (tgt ? R(22, 34) : R(10, 18)) * (d > 0.3 ? 0.6 : 1);   // (slower, foraging, under the water) q.vx = Math.sin(a) * spd; q.vy = -Math.cos(a) * spd; q.burst = R(0.2, 0.5); q.t = tgt ? R(0.1, 0.5) : R(1, 4);
+                    const spd = (tgt ? R(22, 34) : R(10, 18)) * (d > 0.3 ? 0.6 : 1);   // (slower, foraging, under the water)
+                    // (Oct 18 2026: these were inside the comment above, so a crab's ordinary sidestep never moved it)
+                    q.vx = Math.sin(a) * spd; q.vy = -Math.cos(a) * spd; q.burst = R(0.2, 0.5); q.t = tgt ? R(0.1, 0.5) : R(1, 4);
                     const s1 = a + Math.PI / 2, s2 = a - Math.PI / 2; q.h = Math.abs(angDiff(s1, q.h)) < Math.abs(angDiff(s2, q.h)) ? s1 : s2;
                 }
             }
