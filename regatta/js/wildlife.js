@@ -1450,6 +1450,28 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // up to breathe three or four times — a blow, the back rolling through the surface — then
     // a last arch and the flukes up, and down again. Now and then, on surfacing, one breaches,
     // lobtails (slaps its flukes, again and again) or rolls on its side and slaps a flipper.
+    // RESEARCHED (Oct 19 2026, Wes: "Research humpback movement, behavior and make sure it's right"), on the game's
+    // ~3x clock (scale.md: 15 u/s a knot):
+    //  - THE STROKE is up and down: from above it shows as the flukes foreshortening, never as a side-to-side wag
+    //    (the old lateral flex beat with every stroke; now the rear body bends only into a turn). Its rate follows
+    //    the speed: baleen whales cruise near 2 m/s whatever their size and stroke slower the longer they are
+    //    (Gough et al. 2019, J Exp Biol: frequency ~ length^-0.53), ~0.25 Hz for an adult humpback; a sprint to a
+    //    breach is 2-6 strokes at 0.4-0.7 Hz (Segre et al. 2020, eLife). Here a stroke every ~0.6 body lengths
+    //    travelled: ~0.7 Hz on the game's clock for a travelling adult, the calf's short body stroking faster.
+    //  - THE FLIPPERS steer; they do not paddle. They are lift surfaces for banking turns (Fish & Battle 1995;
+    //    Nemeth et al. 2024); a propulsive flipper stroke has been seen only in lunges (Segre et al. 2017). So they
+    //    are held out, flexing a little with the stroke, the outer one reaching and the inner one sweeping back in a
+    //    turn, and they beat only in the lunge.
+    //  - FLUKE-UP is the deep dive; a travelling whale often slips under without raising them (fluke-down).
+    //  - MOTHER AND CALF on the breeding grounds: the mother rests below on long dives (~0.5 breaths a minute) while
+    //    the calf comes up alone ~6x as often (~3 a minute; Hawaii, Frontiers in Mar Sci 2019); travelling, the
+    //    calf rides above and beside her, over her flipper (breeding-ground video, WIO J Mar Sci 2017). Calves are
+    //    the ones that breach and slap the most, and breaches come in bouts (one juvenile breached 52 times in four
+    //    hours, the shortest gap 6.5 s: Segre 2020).
+    //  - A COMPETITIVE GROUP: a female leading, the escorts jostling behind, head lunges (the front third thrown out
+    //    and slammed down) among the breaches and tail slaps.
+    //  - FEEDING in Hawaiian waters is rare but documented (lunges on bait schools, Lammers et al. 2024), so it stays
+    //    an occasional event.
     function makeWhalePod(P, i) {
         humpSet(HUMP_SPR.adult); humpSet(HUMP_SPR.calf);   // ask for the painted whales now, not when one first swims into view
         const segs = [], pts = P.path; let L = 0;
@@ -1458,8 +1480,10 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         const members = Array.from({ length: n }, (_, j) => {
             const calf = P.calf && j === 1;
             return { j, calf, len: calf ? CALF_LEN : WHALE_LEN * R(0.9, 1.05),
-                // formation offsets: the calf rides tight at the mother's flank, near her head
-                ox: calf ? 38 : (j - (n - 1) / 2) * (P.rowdy ? R(55, 85) : R(110, 170)), oy: calf ? -28 : (P.rowdy ? R(-120, 120) : R(-90, 90) + (j % 2) * 60),
+                // formation offsets: the calf rides tight above her flank, over her flipper; a competitive group's
+                // female (j 0) leads and the escorts crowd in behind her
+                ox: calf ? 30 : P.calf ? 0 : (j - (n - 1) / 2) * (P.rowdy ? R(55, 85) : R(110, 170)), oy: calf ? -12 : P.calf ? 0 : P.rowdy ? (j === 0 ? -110 : R(-20, 140)) : R(-90, 90) + (j % 2) * 60,
+                st: R(0, 7), bout: 0,
                 x: 0, y: 0, h: 0, mode: 'under', t: R(1, 12), depth: 1, breaths: 0, blowT: 0,
                 ev: null, evT: 0, ph: R(0, 7), fluke: 0, roll: 0, slick: 0, sx: 0, sy: 0, lift: 0, slaps: 0, sd: 1 };
         });
@@ -1495,8 +1519,12 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const fx = Math.sin(hh), fy = -Math.cos(hh);
             for (const m of W.members) {
                 m.t -= dt; m.ph += dt;
-                // (formation below)
-                const tx = here.x + fx * -m.oy + -fy * m.ox, ty = here.y + fy * -m.oy + fx * m.ox;
+                const mum = W.cfg.calf && !m.calf;   // the mother of a calf, resting
+                // the fluke stroke: one every ~0.6 body lengths travelled (a slow scull when barely moving)
+                m.st += dt * 2 * Math.PI * Math.max(0.12, Math.min(1.3, W.cfg.speed * W.pace / (0.6 * m.len)));
+                // (formation below) — a competitive group's escorts jostle for the place behind her
+                const jx = W.cfg.rowdy && m.j ? Math.sin(m.ph * 0.23 + m.j * 2.1) * 45 : 0, jy = W.cfg.rowdy && m.j ? Math.sin(m.ph * 0.17 + m.j * 1.3) * 50 : 0;
+                const tx = here.x + fx * -(m.oy + jy) + -fy * (m.ox + jx), ty = here.y + fy * -(m.oy + jy) + fx * (m.ox + jx);
                 if (m.x === 0 && m.y === 0) { m.x = tx; m.y = ty; m.h = hh; }
                 const k = Math.min(1, dt * 0.6); m.x += (tx - m.x) * k; m.y += (ty - m.y) * k;
                 const dh = angDiff(hh + Math.sin(m.ph * 0.2 + m.j) * 0.08, m.h) * Math.min(1, dt * 0.5);
@@ -1514,12 +1542,15 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     if (m.t < 5) m.depth = Math.max(0.25, m.depth - dt / 3);         // rising: the shape firms up
                     // a whale does not come up under a boat: it waits below until the water above is clear
                     if (m.t <= 0 && boatNear(m.x, m.y, m.len * 0.9)) m.t = 1.5;
-                    if (m.t <= 0) { m.mode = 'surface'; m.breaths = m.calf ? 5 : Math.round(R(3, 4)); m.t = 0; m.blowT = 0; m.depth = 0;
+                    if (m.t <= 0) { m.mode = 'surface'; m.breaths = m.calf ? Math.round(R(1, 2)) : mum ? Math.round(R(2, 3)) : Math.round(R(3, 4)); m.t = 0; m.blowT = 0; m.depth = 0;
                         // a surface event, sometimes, before the breaths
                         // Wes, Sep 25: "mostly move along and surface with a blow, but occasionally
                         // breach, tail slap, pectoral fin slap, or eat" — about one surfacing in three
-                        const q = W.cfg.rowdy ? 2.2 : 1, r = rnd() / q;   // a competitive group is all splash — breaches and tail slaps
-                        if (r < 0.03) startWhaleEvent(m, 'breach'); else if (r < 0.06) startWhaleEvent(m, 'lobtail'); else if (r < 0.09) startWhaleEvent(m, 'pecslap'); else if (r < 0.12 && !m.calf && !W.cfg.rowdy) startWhaleEvent(m, 'feed'); }   // Wes: "mostly travel like real whales" — about one surfacing in eight
+                        const q = W.cfg.rowdy ? 2.2 : m.calf ? 2.5 : 1, r = rnd() / q;   // a competitive group is all splash; a calf plays
+                        if (m.bout > 0) { m.bout--; startWhaleEvent(m, 'breach'); }   // a breaching bout: up again after a short dive
+                        else if (W.cfg.rowdy && rnd() < 0.14) startWhaleEvent(m, 'headlunge');
+                        else if (r < 0.03) { startWhaleEvent(m, 'breach'); if (rnd() < 0.5) m.bout = Math.round(R(1, 3)); }
+                        else if (r < 0.06) startWhaleEvent(m, 'lobtail'); else if (r < 0.09) startWhaleEvent(m, 'pecslap'); else if (r < 0.12 && !m.calf && !W.cfg.rowdy) startWhaleEvent(m, 'feed'); }   // Wes: "mostly travel like real whales" — about one surfacing in eight
                 } else if (m.mode === 'surface') {
                     if (m.ev) { updateWhaleEvent(m, dt); continue; }
                     // a boat just ahead of its head: it sounds rather than swim into it (whales keep
@@ -1528,19 +1559,21 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                       if (b) { m.mode = 'dive'; m.t = 1.25; continue; } }
                     m.blowT -= dt;
                     if (m.blowT <= 0) {
-                        if (m.breaths-- <= 0) { m.mode = 'dive'; m.t = 3.2; continue; }
+                        if (m.breaths-- <= 0) { m.mode = 'dive'; m.t = 3.2; m.up = m.bout > 0 ? false : rnd() < (m.calf ? 0.2 : W.cfg.rowdy ? 0.35 : mum ? 0.7 : 0.55); continue; }   // fluke-up for the deep dive
                         m.rollT = 0;      // each breath: the back rolls out of the water, head to tail
-                        // a blow: a bushy puff from the blowhole, a quarter of the way back from the snout
-                        const bx = m.x + Math.sin(m.h) * m.len * 0.27, by = m.y - Math.cos(m.h) * m.len * 0.27;
-                        blows.push({ x: bx, y: by, t: 0, size: m.calf ? 0.55 : 1 });
-                        m.blowT = m.calf ? R(4, 6) : R(7, 11);
+                        // a blow: a bushy puff from the blowholes, a fifth of the way back from the snout (the Oct 19 painting)
+                        const bx = m.x + Math.sin(m.h) * m.len * 0.31, by = m.y - Math.cos(m.h) * m.len * 0.31;
+                        blows.push({ x: bx, y: by, t: 0, size: m.calf ? 0.55 : 1, seed: R(0, 7), vx: Math.sin(m.h) * W.cfg.speed * W.pace, vy: -Math.cos(m.h) * W.cfg.speed * W.pace });
+                        m.blowT = m.calf ? R(3.5, 5.5) : R(7, 11);
                     }
                 } else if (m.mode === 'dive') {
-                    m.fluke = Math.max(0, Math.sin(Math.PI * (1 - m.t / 3.2)));   // the arch, then the flukes up
+                    m.fluke = m.up ? Math.max(0, Math.sin(Math.PI * (1 - m.t / 3.2))) : 0;   // the arch, then the flukes up — or, fluke-down, slipping under
                     // the flukes slipping back under: a splash where they go in, sized to them
                     if (m.fluke > 0.6) m.flHigh = true;
                     if (m.flHigh && m.fluke < 0.12 && m.t < 1.6) { m.flHigh = false; splashes.push({ x: m.x - Math.sin(m.h) * m.len * 0.42, y: m.y + Math.cos(m.h) * m.len * 0.42, t: 0, life: 3.5, r: m.len * (m.calf ? 0.16 : 0.18) }); }
-                    if (m.t <= 0) { m.mode = 'under'; m.fluke = 0; m.depth = 0.3; m.t = m.calf ? R(6, 12) : W.cfg.rowdy ? R(5, 12) : R(10, 24); m.slick = 1; m.sx = m.x; m.sy = m.y; }   // short dives: travelling whales stay near the top
+                    // short dives: travelling whales stay near the top; a resting mother stays down ~6x as long as her calf;
+                    // in a breaching bout it is straight back up
+                    if (m.t <= 0) { m.mode = 'under'; m.fluke = 0; m.depth = 0.3; m.t = m.bout > 0 ? R(3, 6) : m.calf ? (W.cfg.calf ? R(1.5, 3.5) : R(6, 12)) : mum ? R(45, 70) : W.cfg.rowdy ? R(5, 12) : R(10, 24); m.slick = 1; m.sx = m.x; m.sy = m.y; }
                 }
             }
             // the calf feat: the player alongside the mother and calf, racing
@@ -1562,13 +1595,18 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             m.lift = m.evT < 1.2 ? m.evT / 1.2 : m.evT < 1.8 ? 1 : Math.max(0, 1 - (m.evT - 1.8) / 0.5);
             m.roll = Math.min(1, Math.max(0, (m.evT - 1) / 0.8));
             if (m.evT >= 1.8 && !m.crashed) { m.crashed = true; splashes.push({ x: m.x + Math.cos(m.h) * m.sd * m.len * 0.12, y: m.y + Math.sin(m.h) * m.sd * m.len * 0.12, t: 0, life: 7, r: m.len * (m.calf ? 0.7 : 0.55), big: true }); }
-            if (m.evT > 2.6) { m.ev = null; m.lift = 0; m.roll = 0; m.crashed = false; m.blowT = 1; }
+            if (m.evT > 2.6) { m.ev = null; m.lift = 0; m.roll = 0; m.crashed = false; m.blowT = 1; if (m.bout > 0) m.breaths = 0; }
         } else if (m.ev === 'lobtail') {
             // the flukes up and brought down flat, every ~1.6 s
             const cyc = (m.evT % 1.6) / 1.6; m.fluke = Math.sin(Math.PI * Math.min(1, cyc * 1.25));
             if (cyc > 0.78 && !m.slapped) { m.slapped = true; m.slaps--; splashes.push({ x: tailX, y: tailY, t: 0, life: 3.5, r: m.len * 0.28 }); }
             if (cyc < 0.5) m.slapped = false;
             if (m.slaps <= 0 && cyc > 0.85) { m.ev = null; m.fluke = 0; m.blowT = 1; }
+        } else if (m.ev === 'headlunge') {
+            // a competitive group's HEAD LUNGE: the front third thrown up out of the water and slammed down flat
+            m.lift = m.evT < 0.6 ? 0.35 * m.evT / 0.6 : m.evT < 1 ? 0.35 : Math.max(0, 0.35 * (1 - (m.evT - 1) / 0.35));
+            if (m.evT >= 1.3 && !m.crashed) { m.crashed = true; splashes.push({ x: m.x + Math.sin(m.h) * m.len * 0.3, y: m.y - Math.cos(m.h) * m.len * 0.3, t: 0, life: 4, r: m.len * 0.3 }); }
+            if (m.evT > 1.8) { m.ev = null; m.lift = 0; m.crashed = false; m.blowT = 0.6; }
         } else if (m.ev === 'feed') {
             // a LUNGE (references): up through a boil of bait, the head thrust vertically out of the
             // water, jaws wide and the pleated throat ballooned, then settling back
@@ -7494,13 +7532,13 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // of the body long, white, scalloped — which glow through the water long after the dark body
     // has faded into it. The calf is small and paler and rides tight at her side.
     // PAINTED (Oct 13 2026, Wes: "I want them to look amazing"): the animal is the sprite pair
-    // ocean-humpback / ocean-humpback-calf, cut by art/finsplit.py into a body and two flippers
+    // ocean-humpback / ocean-humpback-calf (repainted Oct 19 2026, Wes: "Let's take them"), cut by art/finsplit.py into a body and two flippers
     // (every part full-frame, so they reassemble in register). HUMP_SPR holds finsplit's numbers:
     // ink top/bottom (snout, fluke tips) and the tail-stock hinge as fractions of the frame, the
     // spine's x, each flipper's root and the angle the art holds it at off the tail-ward axis.
     const HUMP_SPR = {
-        adult: { file: 'humpback', top: 0.1182, bot: 0.9229, cx: 0.5028, hinge: 0.7793, fin: { l: [0.3992, 0.4092], r: [0.6063, 0.4087] }, finAng: 41.3 },
-        calf: { file: 'humpback-calf', top: 0.0898, bot: 0.8984, cx: 0.5003, hinge: 0.752, fin: { l: [0.3716, 0.3818], r: [0.6289, 0.3828] }, finAng: 38.8 },
+        adult: { file: 'humpback', top: 0.0684, bot: 0.9326, cx: 0.4993, hinge: 0.7783, fin: { l: [0.3913, 0.3989], r: [0.6074, 0.3989] }, finAng: 48.85 },
+        calf: { file: 'humpback-calf', top: 0.1367, bot: 0.8779, cx: 0.5, hinge: 0.7451, fin: { l: [0.3956, 0.439], r: [0.6042, 0.439] }, finAng: 48.85 },
     };
     const _humpImg = {};
     function humpImg(name) {
@@ -7659,11 +7697,15 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         };
         const lift = m.lift || 0, roll = m.roll || 0, fl = m.fluke || 0;
         const under = m.mode === 'under';
-        const beat = Math.sin(m.ph * 2.2 + m.j);                          // the fluke stroke, ~3 s a cycle
+        const st = m.st != null ? m.st : m.ph * 2.2, beat = Math.sin(st + m.j);   // the fluke stroke (its rate set by the speed, in updateWhales)
         const turn = Math.max(-1, Math.min(1, (m.turn || 0) * 3));
-        const scull = (sd) => 0.45 * Math.sin(m.ph * 1.1 + m.j + sd * 0.6) - 0.1;       // the flippers' slow sweep
-        _W = { bend: 0.035 * Math.sin(m.ph * 2.2 + m.j - 0.9) + 0.05 * turn, fore: m.mode === 'dive' || m.ev ? 1 : 0.45 + 0.55 * Math.abs(Math.cos(m.ph * 2.2 + m.j)),
-               out: { '-1': scull(-1), '1': scull(1) } };
+        // the flippers steer, not paddle: held out, flexing a little with the stroke; in a turn the outer one reaches
+        // and the inner sweeps back; only in the lunge do they beat (Segre 2017)
+        const flap = m.ev === 'feed' ? 0.55 * Math.sin(m.evT * 4) : 0;
+        const fin = (sd) => -0.1 + 0.06 * Math.sin(st + m.j - 0.6) + 0.4 * turn * sd + flap;   // (out > 0 sweeps a flipper back toward the tail)
+        // no side-to-side wag: the stroke is up and down; the rear body bends only into a turn
+        _W = { bend: 0.05 * turn, fore: m.mode === 'dive' || m.ev ? 1 : 0.45 + 0.55 * Math.abs(Math.cos(st + m.j)),
+               out: { '-1': fin(-1), '1': fin(1) } };
         const out = lift > 0.02 || m.ev === 'feed' || (m.ev === 'breach' && roll > 0.05);   // a whole-body event (a pec slap lies at the surface)
         const depth = under ? m.depth : out ? 0 : 0.35;                     // at the surface it lies just under
         ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.h);
@@ -7763,18 +7805,36 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         g.addColorStop(0, `rgba(185,225,235,${a})`); g.addColorStop(0.8, `rgba(185,225,235,${a * 0.6})`); g.addColorStop(1, 'rgba(185,225,235,0)');
         ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(F.x, F.y, F.r * (1 + k * 0.6), F.r * 0.75 * (1 + k * 0.6), F.h, 0, Math.PI * 2); ctx.fill();
     }
-    // A blow from above: a bushy puff of white mist at the blowhole, growing and drifting down
-    // the wind as it thins — a heart-shaped V close up, a soft plume from where we are.
+    // A HUMPBACK'S BLOW from above (Oct 19 2026, researched): a BUSHY blow, 3-6 m tall and nearly as wide (a blue
+    // whale's is a slim 9-12 m column, a right whale's a V), gone in a few seconds. From straight overhead the column
+    // is seen end-on, as drawBlueBlow draws it, but shorter and fatter: an explosive bright burst at the blowholes,
+    // a dense rounded cloud billowing out and leaning off downwind as it thins, and a short soft shadow thrown down
+    // and to the right by its height. It leaves the whale moving (the core rides on a moment). About a third of the
+    // whale's length across at its widest — the old puff swelled to a full body length.
     function drawBlow(ctx, B) {
-        const k = B.t / 3.5, r = (16 + k * 52) * B.size, a = 0.85 * (1 - k) * (1 - k);
-        const w = state.wind || { direction: 0 }, dx = -Math.sin(w.direction) * k * 40, dy = Math.cos(w.direction) * k * 40;
-        ctx.save(); ctx.translate(B.x + dx, B.y + dy);
-        for (const [ox, oy, rr] of [[0, 0, 1], [r * 0.35, -r * 0.2, 0.75], [-r * 0.3, -r * 0.25, 0.7], [0, r * 0.35, 0.6]]) {
-            const g = ctx.createRadialGradient(ox, oy, 0, ox, oy, r * rr);
-            g.addColorStop(0, `rgba(245,248,250,${a})`); g.addColorStop(1, 'rgba(245,248,250,0)');
-            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(ox, oy, r * rr, 0, Math.PI * 2); ctx.fill();
+        const t = B.t, s = B.size || 1, k = Math.min(1, t / 3.5), sd = B.seed || 0;
+        const w = state.wind || { direction: 0 }, dx = -Math.sin(w.direction), dy = Math.cos(w.direction);
+        const carry = Math.min(t, 0.5), bx = B.x + (B.vx || 0) * carry * 0.5, by = B.y + (B.vy || 0) * carry * 0.5;
+        const soft = (x, y, r, a, col) => { if (a <= 0.005 || r <= 0) return; const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(${col},${a})`); g.addColorStop(0.55, `rgba(${col},${a * 0.55})`); g.addColorStop(1, `rgba(${col},0)`); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); };
+        // the column's shadow: short and broad, down-right from the base
+        const rise = Math.min(1, t / 0.4), sh = (1 - Math.min(1, t / 2.2)) * rise;
+        if (sh > 0.01) { const L = 55 * s * rise;
+            ctx.save(); ctx.translate(bx, by); ctx.rotate(Math.atan2(0.84, 0.54));
+            const g = ctx.createLinearGradient(0, 0, L, 0); g.addColorStop(0, `rgba(10,25,40,${0.14 * sh})`); g.addColorStop(1, 'rgba(10,25,40,0)');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.moveTo(0, -6 * s); ctx.quadraticCurveTo(L * 0.6, -14 * s, L, -5 * s); ctx.lineTo(L, 5 * s); ctx.quadraticCurveTo(L * 0.6, 14 * s, 0, 6 * s); ctx.closePath(); ctx.fill(); ctx.restore(); }
+        // the burst: a sharp bright core and torn spray in the first third of a second
+        if (t < 0.35) { const b = t / 0.35; soft(bx, by, (7 + 12 * b) * s, 0.95 * (1 - b * 0.4), '255,255,255');
+            ctx.fillStyle = `rgba(255,255,255,${0.55 * (1 - b)})`;
+            for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2 + sd, r = (6 + 11 * b) * s * (0.8 + 0.3 * Math.abs(Math.sin(i * 3.1 + sd))); ctx.beginPath(); ctx.ellipse(bx + Math.cos(a) * r, by + Math.sin(a) * r, 2.2 * s, 1 * s, a, 0, Math.PI * 2); ctx.fill(); } }
+        // the bushy cloud: a dense round core, and lumps billowing out to the sides and leaning off downwind
+        const a0 = 0.9 * Math.pow(1 - k, 1.5);
+        soft(bx + dx * 5 * s * k, by + dy * 5 * s * k, (10 + 9 * Math.min(1, t / 0.8)) * s, a0 * Math.max(0, 1 - t / 2) + a0 * 0.3, '252,253,254');
+        for (let i = 0; i < 5; i++) {
+            const f = (i + 1) / 5, j = Math.sin(i * 12.9 + sd * 3.3), jj = Math.cos(i * 7.7 + sd);
+            const d = (4 + 30 * f) * s * Math.min(1, t / 2.5) + 3 * s * f;
+            const r = (10 + 10 * f + 7 * k) * s * (0.8 + 0.25 * j);
+            soft(bx + dx * d + (-dy) * jj * 9 * s, by + dy * d + dx * jj * 9 * s, r, a0 * (0.75 - 0.4 * f) * Math.min(1, t / 0.4), '246,249,251');
         }
-        ctx.restore();
     }
     // White water: a breach or a slap throws up a burst — a bright heart that swells into a ring of
     // torn foam, then lies on the sea as a fading lacy patch. Connected sheets, not dots.

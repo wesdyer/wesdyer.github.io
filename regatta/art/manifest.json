@@ -8157,16 +8157,16 @@
       "anchor": "center",
       "status": "art",
       "subject": "adult humpback whale swimming just beneath the surface, seen from directly overhead, head toward the top of the frame. A long robust spindle of a body, widest about a third of the way back from the head and narrowing smoothly to a slim tail stock; the gentle taper of the body is the animal's own shape, not perspective, so head end and tail end are drawn at the same scale. The head is broad, flat and rounded at the tip, its top studded with a scatter of small round knobs (tubercles) along the midline, with the paired blowholes as a small dark slit two-fifths of the way back on the head. Behind the midpoint of the back a small low hump carries the short stubby dorsal fin, seen from above as only a small dark nub on the midline. THE FLIPPERS ARE THE SIGNATURE: two enormous pectoral flippers, each a full third of the body's length, held well OUT from the body at 50 to 70 degrees from its axis like slightly swept wings, long narrow paddles with a bumpy scalloped leading edge and a rounded tip, and they are WHITE: a clean cool white, clearly the brightest thing in the image. The body is a dark slate blue-black (about #2C343C), never pure black, never brown, with a slightly paler grey along the flanks; built from flat hard-edged facets with no glossy highlights, no rim light and no glow. Wide tail flukes, a fifth of the body long from tip to tip, dark on top like the back, with a central notch and a finely serrated scalloped trailing edge. The top of the animal only: no white belly pleats, no throat grooves, no underside showing. Naturalistically proportioned marine mammal, never a cartoon-eyed mascot, no visible eye",
-      "note": "Replacing the procedural drawWhale (js/wildlife.js ~5267). WHALE_LEN 132 at true size (scale.md). The engine animates the swim — fluke foreshortening on the stroke, a rear-body flex, sculling flippers, pec slaps — so if accepted this master will be cut into parts like the orca: body, flukes at the tail stock, and probably the two flippers as their own parts (they swing 50-80 deg off the axis in a pec slap, which a single sprite cannot do). Underwater fade, surfacing foam and the blow stay procedural. world 164 is the FRAME: the body (snout to fluke tips) spans 1010/1254 of the master, so 164 draws the whale at WHALE_LEN 132.",
+      "note": "Replacing the procedural drawWhale (js/wildlife.js ~5267). WHALE_LEN 132 at true size (scale.md). The engine animates the swim — fluke foreshortening on the stroke, a rear-body flex, sculling flippers, pec slaps — so if accepted this master will be cut into parts like the orca: body, flukes at the tail stock, and probably the two flippers as their own parts (they swing 50-80 deg off the axis in a pec slap, which a single sprite cannot do). Underwater fade, surfacing foam and the blow stay procedural. world 164 is the FRAME: the body (snout to fluke tips) spans 1010/1254 of the master, so 164 draws the whale at WHALE_LEN 132. REPAINTED Oct 19 2026 (Wes: \"Let's take them\"): tubercles in rows along the rostrum's edges, a slimmer taper to a long tail stock, a shaded back with pale flank patches and a few white scars; snout to fluke tips 0.864 of the frame. Drawn length is set by WHALE_LEN through HUMP_SPR.top/bot, not by world.",
       "anchorPx": [
-        0.5024,
-        0.5211
+        0.5,
+        0.5
       ],
       "parts": {
         "body": "art/parts/ocean/humpback-body.png",
         "flipper-l": "art/parts/ocean/humpback-flipper-l.png",
         "flipper-r": "art/parts/ocean/humpback-flipper-r.png",
-        "note": "Cut by art/finsplit.py: the white flippers separate from the dark body by colour, each carrying a hidden stub under the body so it can swing without opening a gap at the root. The flukes are hinged at draw time (HUMP_SPR.hinge in js/wildlife.js). Re-run finsplit and copy its numbers into HUMP_SPR if the master changes."
+        "note": "Cut by art/finsplit.py (re-cut Oct 19 2026; finsplit now closes and fills each flipper's white patch so grey spots painted on it go with the flipper): the white flippers separate from the dark body by colour, each carrying a hidden stub under the body so it can swing without opening a gap at the root. The flukes are hinged at draw time (HUMP_SPR.hinge in js/wildlife.js). Re-run finsplit and copy its numbers into HUMP_SPR if the master changes."
       }
     },
     {
@@ -8178,16 +8178,16 @@
       "anchor": "center",
       "status": "art",
       "subject": "humpback whale CALF swimming just beneath the surface, seen from directly overhead, head toward the top of the frame. The same species and the same construction as the adult humpback, but a young animal: a shorter, rounder, blunter body, a proportionally bigger rounded head with only a few soft tubercles, and a lighter colour, a soft mid grey (about #58646E) rather than the adult's dark slate. The long white flippers are still the signature, a third of the body long, held out from the body at 50 to 70 degrees, with a bumpy scalloped leading edge, cool white and clearly the brightest thing in the image. Small dark nub of a dorsal fin on the midline behind the middle of the back; flukes a little smaller than the adult's in proportion, grey on top, with a central notch and a softly scalloped trailing edge. Flat hard-edged facets, no glossy highlights, no rim light, no glow. Top of the animal only, no belly or throat grooves showing. Naturalistically proportioned, never a cartoon-eyed mascot, no visible eye",
-      "note": "CALF_LEN 48 (scale.md, true size). Rides tight at the mother's flank. Generate AFTER ocean-humpback is accepted, ideally derived from (edited from) that master so the two read as one species in one hand. world 59 is the FRAME: the body spans 1014/1254 of the master, so 59 draws the calf at CALF_LEN 48.",
+      "note": "CALF_LEN 48 (scale.md, true size). Rides tight at the mother's flank. Generate AFTER ocean-humpback is accepted, ideally derived from (edited from) that master so the two read as one species in one hand. world 59 is the FRAME: the body spans 1014/1254 of the master, so 59 draws the calf at CALF_LEN 48. REPAINTED Oct 19 2026 (Wes: \"Let's take them\"): the new adult's hand in a lighter grey with tubercles and white flippers; slimmer than the old calf (reads a little like a small adult, accepted). Snout to fluke tips 0.741 of the frame; drawn length is CALF_LEN through HUMP_SPR.top/bot.",
       "anchorPx": [
         0.5,
-        0.494
+        0.508
       ],
       "parts": {
         "body": "art/parts/ocean/humpback-calf-body.png",
         "flipper-l": "art/parts/ocean/humpback-calf-flipper-l.png",
         "flipper-r": "art/parts/ocean/humpback-calf-flipper-r.png",
-        "note": "Cut by art/finsplit.py: the white flippers separate from the dark body by colour, each carrying a hidden stub under the body so it can swing without opening a gap at the root. The flukes are hinged at draw time (HUMP_SPR.hinge in js/wildlife.js). Re-run finsplit and copy its numbers into HUMP_SPR if the master changes."
+        "note": "Cut by art/finsplit.py (re-cut Oct 19 2026; finsplit now closes and fills each flipper's white patch so grey spots painted on it go with the flipper): the white flippers separate from the dark body by colour, each carrying a hidden stub under the body so it can swing without opening a gap at the root. The flukes are hinged at draw time (HUMP_SPR.hinge in js/wildlife.js). Re-run finsplit and copy its numbers into HUMP_SPR if the master changes."
       }
     },
     {

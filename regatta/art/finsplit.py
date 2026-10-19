@@ -72,7 +72,11 @@ def main():
     core = np.zeros_like(bright)
     for sel in (np.arange(n) < cx, np.arange(n) >= cx):
         sizes = ndimage.sum(bright & sel[None, :], lab, range(1, k + 1))
-        core |= (lab == 1 + int(np.argmax(sizes))) & sel[None, :]
+        side = (lab == 1 + int(np.argmax(sizes))) & sel[None, :]
+        # grey spots painted on the flipper (the Oct 19 2026 adult has them at the root) are not
+        # bright: close and fill the white patch so they go with the flipper, not stay on the body
+        disk = np.hypot(*np.mgrid[-12:13, -12:13]) <= 12
+        core |= ndimage.binary_fill_holes(ndimage.binary_closing(side, disk)) & sel[None, :]
 
     top, bot = ys.min(), ys.max()
 

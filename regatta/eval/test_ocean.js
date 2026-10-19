@@ -30,10 +30,16 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         for (const bt of state.boats) away(bt);
         // a long quiet run (not racing): behaviours, water, no RNG
         const real = Math.random; let calls = 0; Math.random = () => { calls++; return real(); };
-        const seen = new Set(); let dry = 0, blows = 0;
+        const seen = new Set(); let dry = 0, blows = 0, calfGap = [], ups = 0, downs = 0; const was = new Map();
+        const cp = d.whalePods.find(W => W.cfg.calf), st0 = d.whalePods.map(W => W.members[0].st);
         for (let i = 0; i < 30 * 600; i++) { Wildlife.update(1 / 30);
-            for (const W of d.whalePods) for (const m of W.members) { if (m.ev) seen.add(m.ev); if (pointOnLand(m.x, m.y)) dry++; }
+            for (const W of d.whalePods) for (const m of W.members) { if (m.ev) seen.add(m.ev); if (pointOnLand(m.x, m.y)) dry++;
+                if (m.mode === 'dive' && was.get(m) !== 'dive') m.up ? ups++ : downs++; was.set(m, m.mode); }
+            if (i % 30 === 0) calfGap.push(Math.hypot(cp.members[1].x - cp.members[0].x, cp.members[1].y - cp.members[0].y));
             blows = Math.max(blows, Wildlife.debug().blows.length); }
+        calfGap.sort((a, b) => a - b); out.calfGap = Math.round(calfGap[calfGap.length >> 1]); out.ups = ups; out.downs = downs;
+        // stroke rate, Hz on the game's ~3x clock, for the travelling pods (not the resting calf pod, not the competitive group)
+        out.hz = d.whalePods.map((W, k) => ({ W, f: (W.members[0].st - st0[k]) / (2 * Math.PI) / 600 })).filter(o => !o.W.cfg.calf && !o.W.cfg.rowdy).map(o => +o.f.toFixed(2));
         Math.random = real;
         out.randomCalls = calls; out.events = [...seen].sort().join(','); out.dry = dry; out.blows = blows;
         // the calf feat
@@ -100,7 +106,11 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
     ok(r.randomCalls === 0, `wildlife never calls Math.random (${r.randomCalls})`);
     ok(r.dry === 0, `no whale ever on land (${r.dry} frames)`);
     ok(r.blows > 0, 'whales blow');
-    ok(['breach', 'feed', 'lobtail', 'pecslap'].every(e => r.events.includes(e)), `ten minutes of whales shows every behaviour (${r.events})`);
+    ok(['breach', 'feed', 'lobtail', 'pecslap', 'headlunge'].every(e => r.events.includes(e)), `ten minutes of whales shows every behaviour (${r.events})`);
+    // the research pass (Oct 19 2026, WHALES in js/wildlife.js)
+    ok(r.calfGap < 60, `the calf rides at her flank, not off in the group (median ${r.calfGap} u apart)`);
+    ok(r.ups > 0 && r.downs > 0, `some dives are fluke-up, some slip under fluke-down (${r.ups} / ${r.downs})`);
+    ok(r.hz.every(f => f > 0.55 && f < 0.95), `travelling adults stroke ~0.25 Hz real, ~0.7 on the game's 3x clock (${r.hz.join(', ')})`);
     ok(!r.calfPrestart && !r.calfBot && !r.calfFar, 'the calf feat: not before the gun, not a bot, not from far off');
     ok(r.calfNear, 'the player alongside the mother and calf earns ocean:calf');
     ok(r.dolphinJoin >= 0 && r.dolphinJoin < 20, `spinner dolphins come to a fast boat's bow (after ${r.dolphinJoin.toFixed(1)} s)`);
