@@ -9158,6 +9158,82 @@
         0.5,
         0.5156
       ]
+    },
+    {
+      "key": "club-cormorant-flying",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "seatrials",
+      "world": 30,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GREAT CORMORANT in flight, low over the sea, seen from directly overhead, head toward the TOP of the frame, wings FULLY SPREAD and level. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A heavy, goose-like body; the LONG NECK stretched straight out well AHEAD of the wings, a little kinked, as long as the body, with a small flat head and a long straight bill pointing up the frame; LONG, BROAD WINGS, the arm broad and the hand rounded, ending in five or six SEPARATED FINGER-TIP primaries spread like fingers, the span about ONE AND A HALF times the bird's length (bill tip to tail tip); the TAIL long, rounded and FANNED, a third of the body's length. The wings are set well back, so more of the bird lies ahead of the wings than behind them. COLOUR from above, from the references: the whole bird BLACK with a faint green-bronze sheen (about #17191C); the back and the upper-wing coverts SCALED, each feather dark in the middle with a narrow BRONZE-GREY edge (about #3F3B31), so the back and the inner wing read as a fine scalloped pattern; the flight feathers and tail plain dull black-brown (about #1E1C1A); a WHITE THIGH PATCH (breeding dress, about #F1EFE9) showing as a small white oval either side of the body just in front of the tail; from straight above only a sliver of the white cheek (about #ECE6D8) shows either side of the head, with a fleck of yellow-orange bare skin (about #E4A52F) at the base of the bill; the long BILL pale grey (about #9A9C94), hooked at the tip. Each wing stands clear of the body so it can be cut out at the shoulder and beat. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 19 2026 (istock: great and double-crested cormorants in flight from above and below, swimming low with the neck up, diving, drying; by-the-wind sailors afloat from above on dark water and stranded in windrows; mackerel schools) on top of Wes's Sep 26-27 cormorant and Velella references behind the drawn animals. Replacing the drawn flyer (drawCormorant, CORM_LEN 14: 0.9 m at the flock floor, span ~21.5 u as drawn). world 30 = FRAME first guess (span ~0.72 of the frame). If accepted: colsplit at the shoulders and pose the wings through the beat as the booby (BOO_SPR); the takeoff patter is the same painting beating faster, low, with its feet trailing. DELIVERED Oct 19 2026 (padded from 1254 to 1444 so the wingtips clear the 8 percent margin): neck well ahead of the wings, scaled bronze coverts, white thigh patches, fanned tail, separated primaries. Span 0.820, bill to tail 0.553 of the frame. WIRED Oct 20 2026 (js/wildlife.js CORM_SPR, posed by frigatePosed): drawn 14 bill to tail (CORM_LEN), ~21 across; the wings beat the whole way in columns (a cormorant hardly glides), lit from the sun, banked into turns (b.turn, eased from its heading).",
+      "anchorPx": [
+        0.5,
+        0.5117
+      ]
+    },
+    {
+      "key": "club-cormorant-swimming",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "seatrials",
+      "world": 20,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a GREAT CORMORANT swimming on the surface, seen from directly overhead, head toward the TOP of the frame. It RIDES VERY LOW: only a long narrow sliver of the back shows, a slim dark spindle with the wings folded flat along it, the rest of the body under the water and not drawn. From the front of the back the NECK rises in a gentle S and the head is held up with the long hooked BILL tilted UP and pointing up the frame; from straight above the neck is seen foreshortened, as a short thick dark stalk with the small flat head on top, a white cheek patch either side and a fleck of yellow-orange skin at the bill's base. The tail lies flat on the water behind as a short dark wedge. From above the whole bird is a long thin dark shape about FIVE times longer than wide. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. COLOUR from above, from the references: the whole bird BLACK with a faint green-bronze sheen (about #17191C); the back and the upper-wing coverts SCALED, each feather dark in the middle with a narrow BRONZE-GREY edge (about #3F3B31), so the back and the inner wing read as a fine scalloped pattern; the flight feathers and tail plain dull black-brown (about #1E1C1A); a WHITE THIGH PATCH (breeding dress, about #F1EFE9) showing as a small white oval either side of the body just in front of the tail; from straight above only a sliver of the white cheek (about #ECE6D8) shows either side of the head, with a fleck of yellow-orange bare skin (about #E4A52F) at the base of the bill; the long BILL pale grey (about #9A9C94), hooked at the tip. Paint ONLY the parts above the water: no legs, no feet, no belly, no water line, no ripples. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 19 2026 (istock: great and double-crested cormorants in flight from above and below, swimming low with the neck up, diving, drying; by-the-wind sailors afloat from above on dark water and stranded in windrows; mackerel schools) on top of Wes's Sep 26-27 cormorant and Velella references behind the drawn animals. Replacing the drawn swimmer (drawCormorantSwim: rides awash, neck up in an S, bill tilted up; under the water the game draws its own dim shape). Drawn 14 long (CORM_LEN). world 20 = FRAME first guess (the bird ~0.7 of the frame). DELIVERED Oct 19 2026, REPLACED Oct 20 by Wes's second roll: a longer, slimmer neck with the head up and the bill ahead, the wings folded, and the webbed FEET painted splayed behind. Parts by art/feetsplit.py (--fore 0,0,0.5 --hind 0.769,0.86,0.045): body + hind-l/hind-r, roots [0.4491, 0.7686] and [0.5391, 0.7695]; the feet are drawn dim under the surface and paddle alternately (a cormorant swims with its feet). Body cx 0.4941, top 0.0908, bot 0.9092 (with the feet); anchor reset to the body's middle. WIRED Oct 20 2026 (drawCormorantSwimPainted): rides low, the flanks and tail end veiled in the sea's blue; the feet under the water, dim, kicking together; diving, a dim shape under the water.",
+      "anchorPx": [
+        0.4941,
+        0.5
+      ]
+    },
+    {
+      "key": "club-cormorant-takeoff",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "seatrials",
+      "world": 30,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "club-cormorant-flying",
+      "subject": "the SAME GREAT CORMORANT (an EDIT of the accepted flying cormorant) at the TOP OF A WINGBEAT in its heavy, labouring takeoff, seen from directly overhead, head toward the TOP of the frame, same frame and scale. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The body, neck, head and colours exactly the same. The WINGS RAISED high above the back, each wrist lifted and swept a little forward, the hand angled back and the finger-tip primaries splayed wide apart, so from above each wing is foreshortened to about HALF its spread length and partly overlaps the sides of the body; the tail fanned wide; the two black webbed FEET trailing behind the tail, splayed, as when it patters along the surface. NEVER folded, never a sitting bird. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no rock, no ground, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 19 2026 (istock: great and double-crested cormorants in flight from above and below, swimming low with the neck up, diving, drying; by-the-wind sailors afloat from above on dark water and stranded in windrows; mackerel schools) on top of Wes's Sep 26-27 cormorant and Velella references behind the drawn animals. OPTIONAL. The pattering takeoff (b.mode 'takeoff', 1.4 s) and the top of each beat in flight; same frame as the flyer. DELIVERED Oct 19 2026: wings raised, feet trailing. Close to the flyer's scale (bill to tail within a few percent; check the register when wiring). Span 0.574, length with the feet 0.572. WIRED Oct 20 2026: laid over the posed flyer at the top of each stroke while it takes off (cross-faded on the stroke's phase), bill on the flyer's bill.",
+      "anchorPx": [
+        0.5,
+        0.5322
+      ]
+    },
+    {
+      "key": "club-velella",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "seatrials",
+      "world": 8,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a single BY-THE-WIND SAILOR (Velella velella) afloat, seen from directly overhead. An OVAL FLOAT, a little longer than wide, its rim a frilly, scalloped SKIRT of deep ultramarine-blue (about #1F4FB8) shading to violet-blue at the very edge (about #3A3FA8); inside the skirt the float is a paler, half-clear blue (about #3F86D8 to #9CC6EA) with faint CONCENTRIC oval rings like a fingerprint; standing DIAGONALLY across the float from one end to the other, the clear, upright crest of the SAIL, seen from above as a thin, slightly S-curved glassy blade, silvery-white (about #E1F0FA) with a single white glint, the brightest thing in the image. GLASSY and translucent, not a blue blot. Seen from above the sail is only a thin line across the oval, never a triangle seen from the side. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights beyond the one glint, no rim light, no glow, no water, no sand, no shadow. Naturalistically proportioned, never a cartoon mascot, no face",
+      "note": "REFERENCE CHECK Oct 19 2026 (istock: great and double-crested cormorants in flight from above and below, swimming low with the neck up, diving, drying; by-the-wind sailors afloat from above on dark water and stranded in windrows; mackerel schools) on top of Wes's Sep 26-27 cormorant and Velella references behind the drawn animals. OPTIONAL — bench drawn vs painted before wiring. Drawn ~5 u (7 cm, scaled 0.5-1.4 within a windrow; drawVelellaFleet, VEL palette): far under the size where painted fish lost to drawn ones. If accepted it is stamped thousands of times along the windrows, rotated freely, and the game adds the meniscus ring. DELIVERED Oct 19 2026: the oval float with the skirt and rings, the sail a thin diagonal line with a glint; reads a little like a blue agate up close. Width 0.493, length 0.791. WIRED Oct 20 2026 (js/wildlife.js VEL_FILE, Wes: 'Painted looks better'): the painted float at 0.72 alpha with the drawn glassy sail and glint laid along its sail line (18.6 deg off its long axis; the painted hairline sail is lost below ~10 px). Fleets researched: every sailor set the same way to the wind (sail along it), windrows along the wind, drifting ~20 deg off downwind.",
+      "anchorPx": [
+        0.5024,
+        0.5059
+      ]
+    },
+    {
+      "key": "club-mackerel",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "seatrials",
+      "world": 8,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a single ATLANTIC MACKEREL swimming, seen from directly overhead, head toward the TOP of the frame. A slim, fast, torpedo-shaped fish, round in section, pointed at the snout, tapering to a very NARROW tail stock with small FINLETS along it and a deeply FORKED tail, the tail fin standing vertical and so only a narrow sliver from above; the two small dorsal fins folded flat. COLOUR from above: a metallic BLUE-GREEN back (about #2F5B58) crossed by 20-30 bold, wavy, near-black TIGER BARS (about #101C1C) running obliquely down from the midline to each side; a thin sliver of the SILVER-WHITE belly (about #D7DDE0) showing along each flank's edge; the top of the head dark and plain. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 19 2026 (istock: great and double-crested cormorants in flight from above and below, swimming low with the neck up, diving, drying; by-the-wind sailors afloat from above on dark water and stranded in windrows; mackerel schools) on top of Wes's Sep 26-27 cormorant and Velella references behind the drawn animals. OPTIONAL — bench drawn vs painted before wiring. Drawn 6 long (MACK_K; 0.3 m at the school's floor) in a ball of 34 under the boil: under the size where painted fish lost to drawn ones. The reference sheets were mostly tropical scad and trevally: the colour here is the Atlantic mackerel's (Scomber scombrus) from field guides, as the drawn MACK palette. DELIVERED Oct 19 2026 (1024x1536, padded to square): tiger bars and finlets right; the folded dorsals painted as pale lozenges on the midline. Width 0.150, length 0.719. WIRED Oct 20 2026 (MACK_FILE, Wes: 'lgtm'): the shoal under each boil, seen through the sea (its dark at 0.55, the painting at 0.85, a silver flash on the turn and in a strike), and crisp when thrown clear. The boil researched: a whitebait ball at the surface, the mackerel circling at a cruise and slashing through at ~200 u/s, the fry spraying out of the water.",
+      "anchorPx": [
+        0.501,
+        0.5
+      ]
     }
   ],
   "scale": {
