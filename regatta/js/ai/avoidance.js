@@ -170,6 +170,166 @@ Object.assign(BotController.prototype, {
     // planner exists to resolve conflicts, not to re-steer clean water.
 });
 Object.assign(BotController.prototype, {
+    // ── THREADING FIXED OBSTACLES (PT-050, Oct 17 2026) ─────────────────────────
+    // The reactive layer grades STRAIGHT probes against the grid: every candidate
+    // looks 180-240u ahead and anything inside 140u is a wall. That is right for a
+    // coastline and wrong for a cypress grove, where nearly every straight line meets
+    // a trunk inside 140u — all candidates read as blocked, the argmin swings 40-80°
+    // off a perfectly good plan, and the boat loops into the trees (traced at
+    // Gatorgrass: plan along y 1561 through the gap, strategy 97°, avoidance -75°,
+    // contact, a 90 s circle). A human follows the GAP, not a ray.
+    //
+    // So when the router's own path runs past prop-sized obstacles (trees, knees,
+    // rocks — not coast), steer the path itself: lift each path point to the widest
+    // water within half a cell, measured on the TRUE rings (SailCheck.trueClear),
+    // and pursue a point a short way along that line whose chord stays a hull clear.
+    // The router already chose this water; the grid's coarseness is what failed.
+    // Returns a heading, or null to leave the stock layers in charge. Sets
+    // this._threadH; applyAvoidance then skips its land probe (boats still count).
+    planThread() {
+        const boat = this.boat, path = this.gridPath;
+        const g = state.course._botGridStatic || state.course.botGrid;
+        if (!g || !path || path.length < 2 || !window.SailCheck || !SailCheck.trueClear) return null;
+        if (state.course._floeObjs && state.course._floeObjs.length) return null;   // ice is planFloeTrajectory's
+        // NOT in a strong stream (the campaign's ≥2 kt line, _avCurP90): a hull cannot hold a
+        // tight line in 2+ kt of current — river: +20 s/boat, land contacts ×1.9 unscoped.
+        if (state.course._avCurP90 !== undefined && state.course._avCurP90 >= 2.0) return null;
+        // ...nor in a local stream over 0.8 kt (TH1d): a chord line is set sideways onto the rocks.
+        { const cuL = getCurrentAt(boat.x, boat.y); if (cuL && cuL.speed > 0.8) return null; }
+        const P = (typeof window !== 'undefined' && window.__THREAD) ? window.__THREAD : {};
+        if (P.off) return null;
+        const NEAR = P.near != null ? P.near : 90, AHEAD = P.ahead != null ? P.ahead : 320;
+        const CLR = P.clr != null ? P.clr : 30;
+        // where the boat is ALONG the plan: the nearest segment, so the line starts at
+        // her projection and only runs forward (the nearest POINT is often behind her,
+        // and a line through it doubles back — pursuit then aims astern)
+        let k0 = -1, bd = Infinity;
+        for (let i = 0; i < Math.min(path.length - 1, 40); i++) {
+            const a = path[i], b = path[i + 1], dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy || 1;
+            const t = Math.max(0, Math.min(1, ((boat.x - a.x) * dx + (boat.y - a.y) * dy) / L2));
+            const d = (a.x + dx * t - boat.x) ** 2 + (a.y + dy * t - boat.y) ** 2;
+            if (d < bd) { bd = d; k0 = i + 1; }
+        }
+        if (k0 < 0 || bd > 160 * 160) return null;                 // far off the plan: not a deliberate thread
+        // the line ahead, lifted to the widest water within ±25u of each point
+        const tc = (x, y, R, s) => SailCheck.trueClear(g, x, y, R, s);
+        const line = [{ x: boat.x, y: boat.y }];
+        let run = 0, props = false;
+        const sm = { v: false };
+        for (let i = k0; i < path.length && run < AHEAD; i++) {
+            const p = path[i];
+            let bx = p.x, by = p.y, bc = tc(p.x, p.y, NEAR, sm);
+            if (bc < NEAR && sm.v) props = true;
+            if (bc < 60) {
+                for (let oy = -24; oy <= 24; oy += 12) for (let ox = -24; ox <= 24; ox += 12) {
+                    if (!ox && !oy) continue;
+                    const c = tc(p.x + ox, p.y + oy, 60);
+                    if (c > bc) { bc = c; bx = p.x + ox; by = p.y + oy; }
+                }
+            }
+            const q = line[line.length - 1];
+            run += Math.hypot(bx - q.x, by - q.y);
+            line.push({ x: bx, y: by });
+        }
+        if (!props || line.length < 3) return null;                  // open water or plain coast: stock layers
+        // one pass of neighbour averaging: per-point lifts pick among a 12u lattice and
+        // zigzag; the averaged point is kept only where it stays as clear as the bar
+        for (let i = 1; i < line.length - 1; i++) {
+            const mx = (line[i - 1].x + 2 * line[i].x + line[i + 1].x) / 4, my = (line[i - 1].y + 2 * line[i].y + line[i + 1].y) / 4;
+            if (tc(mx, my, CLR) >= CLR) { line[i] = { x: mx, y: my }; }
+        }
+        // pursue: the farthest point along the line, up to LOOK, whose chord is clear
+        const spd = boat.speed * 60;
+        let look = Math.max(70, Math.min(150, spd * 1.4));
+        const at = (L) => {
+            let acc = 0;
+            for (let i = 1; i < line.length; i++) {
+                const a = line[i - 1], b = line[i], s = Math.hypot(b.x - a.x, b.y - a.y);
+                if (acc + s >= L) { const t = (L - acc) / (s || 1); return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t }; }
+                acc += s;
+            }
+            return line[line.length - 1];
+        };
+        const chordOK = (T) => {
+            const L = Math.hypot(T.x - boat.x, T.y - boat.y), n = Math.max(2, Math.ceil(L / 10));
+            for (let s = 1; s <= n; s++) { const f = s / n; if (tc(boat.x + (T.x - boat.x) * f, boat.y + (T.y - boat.y) * f, CLR) < CLR) return false; }
+            return true;
+        };
+        let T = at(look);
+        while (look > 40 && !chordOK(T)) { look -= 20; T = at(look); }
+        const h = Math.atan2(T.x - boat.x, -(T.y - boat.y));
+        // A gap is sailed, not tacked through. A thread a little above close-hauled
+        // (the grove exit sits ~40° off the breeze) is sailed close-hauled on the
+        // nearer tack while that line is clear for a hull's chord ahead — handing it
+        // back to the stock layers there flickered the mode at every gust and put
+        // the straight probes back among the trunks. Truly upwind: the stock layers tack.
+        const wd = getWindAt(boat.x, boat.y).direction;
+        const NOGO = P.nogo != null ? P.nogo : 0.62, CH = P.closeH != null ? P.closeH : 0.68;
+        const off = normalizeAngle(h - wd);
+        if (Math.abs(off) < NOGO) {
+            if (Math.abs(off) < (P.nogoHard != null ? P.nogoHard : 0.3)) return null;
+            const hc = normalizeAngle(wd + (off >= 0 ? CH : -CH));
+            for (let d = 15; d <= 75; d += 15) if (tc(boat.x + Math.sin(hc) * d, boat.y - Math.cos(hc) * d, CLR) < CLR) return null;
+            return hc;
+        }
+        return h;
+    },
+
+    // THE WIGGLE AMONG PROPS (PT-050 push, TH2). A stuck boat wiggles a beam reach ±100° off
+    // the wind for seconds with the land probe's help or not — against a coast that finds
+    // water, in a cypress grove it reaches across the trunks (a quarter of the threading
+    // contacts were taken in the wiggle). Among prop-sized obstacles, wiggle down the
+    // longest CLEAR run instead: every sailable heading (outside the no-go by a margin a
+    // stopped hull can power up on) is rolled out on the true rings, scored by how far it
+    // stays a hull clear (to 150u) plus a pull toward the plan ahead. Returns null (the
+    // stock wiggle) away from props or when nothing runs clear for 40u.
+    propWiggleHeading() {
+        const boat = this.boat;
+        const g = state.course._botGridStatic || state.course.botGrid;
+        if (!g || !window.SailCheck || !SailCheck.trueClear) return null;
+        if (state.course._floeObjs && state.course._floeObjs.length) return null;
+        const P = (typeof window !== 'undefined' && window.__THREAD) ? window.__THREAD : {};
+        if (P.noWiggle) return null;
+        const sm = { v: false };
+        const c0 = SailCheck.trueClear(g, boat.x, boat.y, 90, sm);
+        if (!(c0 < 90 && sm.v)) return null;                        // not among props
+        const CLR = 28, wd = getWindAt(boat.x, boat.y).direction;
+        let pullH = null;
+        const path = this.gridPath;
+        if (path && path.length) {
+            let k = 0, bd = Infinity;
+            for (let i = 0; i < Math.min(path.length, 40); i++) { const d = (path[i].x - boat.x) ** 2 + (path[i].y - boat.y) ** 2; if (d < bd) { bd = d; k = i; } }
+            const q = path[Math.min(path.length - 1, k + 3)];
+            pullH = Math.atan2(q.x - boat.x, -(q.y - boat.y));
+        }
+        // ...and not into a rival: TH2 alone backed stuck boats out into one another (boat
+        // contacts 3.6 → 4.9, penalties 1.17 → 1.37 per boat). Each candidate run is also
+        // rolled against every rival within reach on its current velocity, 0.5-4 s at a
+        // stalled hull's ~35 u/s, and a pass inside two hulls costs it the run beyond.
+        const rivals = [];
+        for (const o of state.boats) { if (o === boat || o.raceState.finished) continue; if ((o.x - boat.x) ** 2 + (o.y - boat.y) ** 2 < 260 * 260) rivals.push(o); }
+        const V = 35;
+        let best = null, bestS = -Infinity, bestD = 0;
+        for (let a = 0; a < 24; a++) {
+            const h = -Math.PI + a * Math.PI / 12;
+            if (Math.abs(normalizeAngle(h - wd)) < 0.85) continue;
+            let d = 0;
+            for (let s = 10; s <= 150; s += 10) { if (SailCheck.trueClear(g, boat.x + Math.sin(h) * s, boat.y - Math.cos(h) * s, CLR) < CLR) break; d = s; }
+            if (!(P.wiggleBoats === false)) for (const o of rivals) {
+                const ovx = Math.sin(o.heading) * o.speed * 60, ovy = -Math.cos(o.heading) * o.speed * 60;
+                for (let t = 0.5; t <= 4; t += 0.5) {
+                    const s = V * t; if (s > d) break;
+                    const dx = boat.x + Math.sin(h) * s - (o.x + ovx * t), dy = boat.y - Math.cos(h) * s - (o.y + ovy * t);
+                    if (dx * dx + dy * dy < 60 * 60) { d = Math.min(d, Math.max(0, s - 20)); break; }
+                }
+            }
+            const sc = d + (pullH != null ? 40 * Math.cos(normalizeAngle(h - pullH)) : 0);
+            if (sc > bestS) { bestS = sc; best = h; bestD = d; }
+        }
+        return bestD >= 40 ? best : null;
+    },
+});
+Object.assign(BotController.prototype, {
     planFloeTrajectory(desiredHeading, navTarget) {
         const boat = this.boat;
         const g = state.course.botGrid;
@@ -1825,7 +1985,9 @@ Object.assign(BotController.prototype, {
             const gAv = this._trajFloe
                 ? (state.course._botGridStatic || state.course.botGrid)
                 : state.course.botGrid;
-            if (gAv) {
+            // A planned thread through props (planThread) is steered on the TRUE rings;
+            // the grid probe would re-veto the very gap it chose. Boats still count.
+            if (gAv && this._threadH == null) {
                 // A SHORELINE DOES NOT MOVE, so the question a candidate heading has to
                 // answer is WHERE IT LEADS — not where four seconds of it lead. Every
                 // other probe here is time-based because the thing being dodged is also

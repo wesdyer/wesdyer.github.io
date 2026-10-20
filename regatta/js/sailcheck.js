@@ -424,6 +424,55 @@ function buildGridRaw(land, arena, obstacles, opts) {
              at: (i, j) => (i < 0 || j < 0 || i >= n || j >= n) ? 0 : nav[j * n + i] };
 }
 
+// ── TRUE CLEARANCE (PT-050 threading, Oct 17 2026) ──────────────────────────
+// The grid answers "is this 50u cell water" — too coarse to steer a hull between two
+// cypress trunks 90u apart. This answers the continuous question on the same rings the
+// grid was built from: distance from (wx, wy) to the nearest fixed land or hard-prop
+// ring, capped at R (≤ TC_PAD), and -1 inside one. `small` (optional out-param) reports
+// whether the nearest ring belongs to a prop-sized shape. Lazily bucketed on the grid.
+const TC_S = 200, TC_PAD = 100, TC_SMALL = 160;
+function trueClear(grid, wx, wy, R, small) {
+    const shapes = grid && grid._shapes;
+    if (!shapes) return R;
+    let bk = grid._tcBk;
+    if (!bk) {
+        bk = grid._tcBk = new Map();
+        shapes.forEach((sh, k) => {
+            if (sh.centerOnly) return;
+            const bb = sh.bb, g = TC_PAD + sh.pad;
+            const x0 = Math.floor((bb.a - g) / TC_S), x1 = Math.floor((bb.c + g) / TC_S), y0 = Math.floor((bb.b - g) / TC_S), y1 = Math.floor((bb.d + g) / TC_S);
+            for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const key = x + ',' + y; let L = bk.get(key); if (!L) bk.set(key, L = []); L.push(k); }
+        });
+    }
+    const L = bk.get(Math.floor(wx / TC_S) + ',' + Math.floor(wy / TC_S));
+    let m = R, nearSmall = false;
+    if (L) for (const k of L) {
+        const sh = shapes[k], bb = sh.bb, p = sh.pad;
+        if (wx < bb.a - m - p || wx > bb.c + m + p || wy < bb.b - m - p || wy > bb.d + m + p) continue;
+        const isSmall = Math.max(bb.c - bb.a, bb.d - bb.b) < TC_SMALL;
+        if (sh.eb) {
+            const par = new Uint8Array(sh.rings.length);
+            for (const [a, b, ri] of (sh.eb.rows.get(Math.floor(wy / EB)) || [])) {
+                const xi = b[0], yi = b[1], xj = a[0], yj = a[1];
+                if (((yi > wy) !== (yj > wy)) && (wx < (xj - xi) * (wy - yi) / ((yj - yi) || 1e-9) + xi)) par[ri] ^= 1;
+            }
+            if (par[0] && !par.some((v, i) => i > 0 && v)) { if (small) small.v = isSmall; return -1; }
+            const r = m + p, x0 = Math.floor((wx - r) / EB), x1 = Math.floor((wx + r) / EB), y0 = Math.floor((wy - r) / EB), y1 = Math.floor((wy + r) / EB);
+            for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+                for (const [a, b] of (sh.eb.cells.get(x + ',' + y) || [])) { const d = segDist(wx, wy, a, b) - p; if (d < m) { m = d; nearSmall = isSmall; } }
+            }
+        } else {
+            if (pointInRing(wx, wy, sh.outer) && !sh.holes.some(h => pointInRing(wx, wy, h))) { if (small) small.v = isSmall; return -1; }
+            for (const ring of sh.rings) for (let e = 0; e < ring.length; e++) {
+                const d = segDist(wx, wy, ring[e], ring[(e + 1) % ring.length]) - p;
+                if (d < m) { m = d; nearSmall = isSmall; }
+            }
+        }
+    }
+    if (small) small.v = nearSmall;
+    return Math.max(0, m);
+}
+
 // ── STAMPING THE ICE ONTO A GRID THAT ALREADY KNOWS THE LAND ────────────────
 // The bots' floe map is `static land AND NOT under ice`, and the land half of that
 // never changes. Rebuilding the whole grid to find out where the ice is re-tests all
@@ -1024,9 +1073,15 @@ const TACK_SEC = 1.0;
 function buildTimeCost() {
     const gts = (typeof window !== 'undefined') && window.getTargetSpeed;
     if (!gts) return null;
-    const SPDS = [8, 12, 16, 20, 25, 30];
-    const tab = new Float32Array(16 * 6 * 8);
-    const loss = new Float32Array(16 * 6 * 8);
+    // LIGHT-AIR BINS (PT-050, 2026-10-18). The table started at 8 kt, so every cell of a light venue
+    // — Gatorgrass Bayou's whole field (1.6–5.6 kt), Lake's 2–6 kt corners — priced as 8 kt: the router
+    // could not see a dead-air patch or a pressure lane, though boat speed is close to linear in wind
+    // down there (beam 1.4 / 2.7 / 4.1 / 5.5 / 6.8 kt at 1.5 / 3 / 4.5 / 6 / 8), so the light bins step 0.75 kt
+    // (a 1.5 kt step put a 4.96 and a 5.36 kt region a whole 25 % apart). Must match SPDS in
+    // course.js, which bins the cells — and only on light venues; elsewhere cells bin against 8 kt and up as before.
+    const SPDS = [1.5, 2.25, 3, 3.75, 4.5, 5.25, 6, 7, 8, 12, 16, 20, 25, 30], NS = SPDS.length;
+    const tab = new Float32Array(16 * NS * 8);
+    const loss = new Float32Array(16 * NS * 8);
     let lo = Infinity;
     for (let d = 0; d < 16; d++) {
         const wd = d * Math.PI * 2 / 16;
@@ -1043,14 +1098,16 @@ function buildTimeCost() {
                         if (toward > best) { best = toward; bestV = v; bestDelta = (wd + sgn * tr) - bearing; }
                     }
                 }
-                const tf = Math.min(4, Math.max(0.6, 10 / best));   // "time per unit", 10kt reference
-                tab[(d * 6 + s) * 8 + k] = tf;
+                // "time per unit", 10kt reference. The cap was 4 when 8 kt was the lightest bin (its worst
+                // bearing is 2.2); dead air needs room (1.5 kt beats at 11) — no stock bin reaches 4.
+                const tf = Math.min(12, Math.max(0.6, 10 / best));
+                tab[(d * NS + s) * 8 + k] = tf;
                 // Corridor loss, in units: making good along a bearing whose best
                 // heading is δ off it means a tack every board, and each tack throws
                 // away TACK_SEC of polar speed's cross-corridor component. Zero when
                 // the bearing is directly sailable — the term scopes itself to the
                 // no-go cone (and prices corridor gybing mildly).
-                loss[(d * 6 + s) * 8 + k] = TACK_SEC * bestV * 15 * Math.abs(Math.sin(bestDelta));
+                loss[(d * NS + s) * 8 + k] = TACK_SEC * bestV * 15 * Math.abs(Math.sin(bestDelta));
                 if (tf < lo) lo = tf;
             }
         }
@@ -1350,6 +1407,19 @@ function pathSailable(grid, from, to) {
     out.push(grid.world(s[0], s[1]));
     out.reverse();
     if (wait) out.wait = { x: wait.x[0], y: wait.x[1], until: wait.until };
+    // the router's own price of the path (the A* cost, hints included) — for comparing candidates
+    out.cost = gScore[gi];
+    // ...and its plain sailing time in seconds: the polar's step and the shoal's tax, no route hints
+    // (stand-off-walls, lee, jams) — what candidate routes are compared on.
+    if (TF) {
+        let tS = 0;
+        for (let c2 = gi; c2 !== si && prev[c2] !== -1; c2 = prev[c2]) {
+            const p2 = prev[c2], dI = (c2 % N) - (p2 % N), dJ = ((c2 - c2 % N) - (p2 - p2 % N)) / N;
+            let k2 = 0; for (; k2 < 8; k2++) if (NB[k2][0] === dI && NB[k2][1] === dJ) break;
+            tS += (dI && dJ ? Math.SQRT2 : 1) * TF[wbin[c2] * 8 + k2] * (grid._shoal ? grid._shoal[c2] : 1);
+        }
+        out.tsail = tS * grid.res / 150;
+    }
     // the tide clock along the path (seconds from now), for probes and the helm's hold
     if (times) { times.push(0); times.reverse(); out.times = times; }
     return out;
@@ -1358,6 +1428,6 @@ function pathSailable(grid, from, to) {
 window.SailCheck = {
     HULL_R, CLEARANCE, TIGHT_CLEAR, RES,
     buildGrid, _buildGridRaw: buildGridRaw, stampFloes, pathBetween, smoothPath, losClear, nearestNav, roundingArc, routeWaypoints,
-    legVMG, routeEstimate, pathSailable, clearanceField, segClearGeom
+    legVMG, routeEstimate, pathSailable, clearanceField, segClearGeom, trueClear
 };
 })();

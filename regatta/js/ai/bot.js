@@ -737,6 +737,10 @@ class BotController {
             } else {
                 // Beam Reach +/- 100 degrees (Slightly downwind to shed power if needed)
                 desiredHeading = normalizeAngle(windDir + this.wiggleSide * 1.75); // ~100 degrees
+                // ...unless among props, where the beam reach crosses the trunks: wiggle down
+                // the longest clear run (PT-050, propWiggleHeading)
+                const pw = this.propWiggleHeading();
+                if (pw != null) desiredHeading = pw;
             }
 
             // FORCE SPEED BOOST to overcome friction/pinning
@@ -900,9 +904,25 @@ class BotController {
         else if (this.rule16Grace > 0) this.rule16Grace -= dt;
         this.prevDesired = desiredHeading;
 
+        // 3.9 Threading fixed obstacles (PT-050) — see planThread. Only on the racing
+        // plan, never over an escape, a wiggle, a penalty turn or a liveness recovery.
+        this._threadH = null;
+        if (isRacing && !this.wiggleActive && !this.escActive && !(this.clearanceTimer > 0)
+            && this.livenessState === 'normal' && !this.penaltySpin && this.boat.raceState.leg >= 1) {
+            const th = this.planThread();
+            if (th != null) { desiredHeading = th; this._threadH = th; }
+        }
+
         // 4. Collision Avoidance (Reactive Layer)
         // Adjust desiredHeading to avoid immediate threats
         desiredHeading = this.applyAvoidance(desiredHeading, speedRequest);
+        // ...and a dodge for a boat inside a thread stays inside it: the gap is the only
+        // water there is, so swinging wide trades a boat contact for a tree one (Rule 14
+        // emergencies keep the full swing).
+        if (this._threadH != null && this.riskState !== 'IMMINENT') {
+            const dv = normalizeAngle(desiredHeading - this._threadH), MAXD = 0.4;
+            if (Math.abs(dv) > MAXD) desiredHeading = normalizeAngle(this._threadH + Math.sign(dv) * MAXD);
+        }
 
         // No-contact foul (RRS "keep clear" definition): a boat keeps clear
         // only if the right-of-way boat can sail her course with NO NEED to
@@ -1193,12 +1213,22 @@ class BotController {
                  }
                  this.markEscapeHeading = escM;
                  this._markEscFrom = { x: col.normal.x, y: col.normal.y };
+                 this._markEscAt = { x: this.boat.x, y: this.boat.y };
                  // "2s" shipped on the 6x-slow clock — the tuned reality was a 12s
                  // commit, and the fleet's mark behavior is calibrated to it.
                  this.markContactTimer = 12.0;
              }
         }
 
+        // A START MARK is not a rounding: once she is two hulls clear of where she touched it, the
+        // commitment is done. Held the full 12 s, it carried a boat stalled in irons beside the pin
+        // ~600 u down the line away from her lane before she could turn back (Flit, Gatorgrass,
+        // seed 9402 under Wes's replayed start: 2.0 turns, test_start_circling). Rounding legs keep
+        // the calibrated 12 s.
+        if (this.markContactTimer > 0 && this.boat.raceState.leg === 0 && this._markEscAt
+            && Math.hypot(this.boat.x - this._markEscAt.x, this.boat.y - this._markEscAt.y) > 2 * BOAT_LEN_U) {
+             this.markContactTimer = 0;
+        }
         if (this.markContactTimer > 0) {
              this.markContactTimer -= TICK;
              // ⭐ RE-AIM THE COMMITMENT, DO NOT RELEASE IT.
@@ -1351,6 +1381,22 @@ class BotController {
                     }
                 }
             }
+        }
+
+        // THREAD QUEUE (PT-050). Inside a thread the gap is the only water, so a swerve
+        // for a boat ends on a tree (73% of the first cut's grove contacts had a boat in
+        // the encounter). Queue instead, as sailors do in a channel: ease behind a boat
+        // already in the lane ahead, and ease as the give-way boat. The stand-on boat
+        // holds her course and speed.
+        if (this._threadH != null && this.boat.speed > 0.5) {
+            const hxQ = Math.sin(this._threadH), hyQ = -Math.cos(this._threadH);
+            for (const ob of state.boats) {
+                if (ob === this.boat || ob.raceState.finished) continue;
+                const dx = ob.x - this.boat.x, dy = ob.y - this.boat.y;
+                const fw = dx * hxQ + dy * hyQ, lat = Math.abs(dx * hyQ - dy * hxQ);
+                if (fw > 0 && fw < 130 && lat < 45) { speedRequest = Math.min(speedRequest, 0.5); break; }
+            }
+            if (this.avoidanceRole === 'GIVE_WAY' && this.riskState !== 'LOW') speedRequest = Math.min(speedRequest, 0.5);
         }
 
         // RL pilot hook (see the armed orbit) — speed half of the action.
