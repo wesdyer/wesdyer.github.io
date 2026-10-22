@@ -880,6 +880,7 @@ const SPIN_LOOKS = {
     Oar: 'stripes',
     Bask: 'crosshalves',
     Wisp: 'gores',
+    Puddle: 'stripes',
     Diver: 'crosshalves',
     Timber: 'solid',
     Beau: 'thirds',

@@ -17,8 +17,9 @@
 > - **Objectives.** "Graduated flag only" is superseded: five characters are earned here,
 >   judged from the school's own events (`Unlocks.schoolEvent`) and re-earnable on a replay.
 >   - **Paddle:** win the graduation race.
->   - **Fuzz:** finish every lesson.
->   - **Oar:** start practice, crossing within 2 s of the gun and not early.
+>   - **Puddle:** finish every lesson (Fuzz until Oct 21 2026).
+>   - **Fuzz:** start practice, crossing within 2 s of the gun and not early (Oar until Oct 21 2026;
+>     Oar is held back, in the roster with no unlock).
 >   - **Bask:** send the turtles off their log, then finish.
 >   - **Wisp:** a clean report card. Four stars can't apply, because the school runs on auto
 >     trim.

@@ -366,13 +366,15 @@ be earned again on a replay.
 | Rung | Character | Objective |
 |---|---|---|
 | Win | **Paddle** (mallard, the instructor) | Win the graduation race. |
-| Every lesson | **Fuzz** (duckling) | Finish all four sections without skipping any (across visits). |
-| The start | **Oar** (water boatman) | In start practice, cross within 2 s of the gun without being over early. |
+| Every lesson | **Puddle** (pond snail) | *Slow and Steady:* finish all four sections without skipping any (across visits). |
+| The start | **Fuzz** (duckling) | *Off the Mark:* in start practice, cross within 2 s of the gun without being over early. |
 | Wildlife | **Bask** (painted turtle) | Send the turtles off their log, then finish that section. |
 | Report card | **Wisp** (great crested grebe) | Graduate with a clean report card: on time, no pinching, kite down in time, no penalties — the debrief's own judgements (`School.reportCard`). |
 
 All five shipped Sep 25 2026 (portraits from Wes, reframed to the roster crop; hulls and kites
-measured off the portraits). Four stars was dropped for the school: it runs on auto trim and never teaches manual.
+measured off the portraits). **Oct 21 2026 (Wes):** Puddle the pond snail shipped and took the lessons; Fuzz
+moved to the start ("Is it time yet?"); Oar the water boatman is held back — still in the roster, no unlock row,
+so absent from the picker and the fleet. Four stars was dropped for the school: it runs on auto trim and never teaches manual.
 Portrait prompts: the manifest `portrait` entries via `art/prompt.py <key>` (the .md file
 only points there). Tests: `eval/test_pond.js`,
 `eval/test_unlocks.js`.

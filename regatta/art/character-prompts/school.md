@@ -15,13 +15,15 @@ python3 regatta/art/prompt.py wisp
 ```
 
 Fuzz, Oar and Wisp were already in the manifest from the Aug 5 roster expansion; Bask was
-added Sep 25 (he replaced Puddle the pond snail, whose slot is unused).
+added Sep 25 (he replaced Puddle the pond snail, whose slot is unused). Oct 21 2026: Puddle shipped
+after all and took the lessons; Fuzz took the start; Oar is held back (no unlock row).
 
 | Character | Species | Objective (Sailing School) | Pond animal |
 |---|---|---|---|
 | **Paddle** | Mallard drake (exists) | Win the graduation race | the ducklings' teacher |
-| **Fuzz** | Mallard duckling | Finish every lesson without skipping | the ducklings |
-| **Oar** | Water boatman | In start practice, cross within 2 s of the gun, not over early | — |
+| **Puddle** | Pond snail | Finish every lesson without skipping (Oct 21 2026) | — |
+| **Fuzz** | Mallard duckling | In start practice, cross within 2 s of the gun, not over early (Oct 21 2026) | the ducklings |
+| ~~Oar~~ | Water boatman | held back Oct 21 2026 — no unlock | — |
 | **Bask** | Painted turtle | Send the turtles sliding off their log, then finish | turtles on the log |
 | **Wisp** | Great crested grebe | Graduate with a clean report card | grebes diving |
 
