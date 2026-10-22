@@ -746,6 +746,8 @@ the whole thing is a Round the Cans course you could hold in your hands.
 *(As built Sep 25: Paddle wins the graduation race, Fuzz finishes every lesson, Oar crosses
 within 2 s of the gun in start practice, Bask sends the turtles off their log, Wisp graduates
 with a clean report card. Puddle was replaced by Bask. See venue-roster.md.)*
+*(Oct 21 2026: Puddle is back and earns Slow and Steady, every lesson; Fuzz earns Off the Mark, the
+start; Oar is held back, in the roster with no unlock.)*
 
 | # | Character | Title | Earned by |
 |---|---|---|---|

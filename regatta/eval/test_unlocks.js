@@ -319,11 +319,11 @@ console.log('Sailing School');
     let units = {};
     w.School = { active: true, progress: () => ({ units }) };
     const school = w.Unlocks.forVenue('pond').map(a => a.char).join(',');
-    ok(school === 'Paddle,Fuzz,Oar,Pip,Bask,Wisp', 'six school objectives: ' + school);
+    ok(school === 'Paddle,Puddle,Fuzz,Pip,Bask,Wisp', 'six school objectives: ' + school);
     // Start practice: 2.0 s counts, 2.4 s and an early start do not.
-    ok(!w.Unlocks.schoolEvent('start', { late: 2.4, ocs: false }).includes('Oar'), 'a 2.4 s start is not Oar');
-    ok(!w.Unlocks.schoolEvent('start', { late: 0.5, ocs: true }).includes('Oar'), 'over early is not Oar');
-    ok(w.Unlocks.schoolEvent('start', { late: 2.0, ocs: false }).includes('Oar'), 'a 2.0 s start earns Oar');
+    ok(!w.Unlocks.schoolEvent('start', { late: 2.4, ocs: false }).includes('Fuzz'), 'a 2.4 s start is not Fuzz');
+    ok(!w.Unlocks.schoolEvent('start', { late: 0.5, ocs: true }).includes('Fuzz'), 'over early is not Fuzz');
+    ok(w.Unlocks.schoolEvent('start', { late: 2.0, ocs: false }).includes('Fuzz'), 'a 2.0 s start earns Fuzz');
     // Turtles: the feat alone is not enough — the section has to finish.
     w.Unlocks.schoolSection();
     w.GameEvents.emit('player-feat', { id: 'pond:turtles' });
@@ -334,9 +334,9 @@ console.log('Sailing School');
     ok(w.Unlocks._schoolFeats.size === 0, 'a new section starts with no feats');
     // Every lesson: all four completed (skips never set the flag).
     units = { 1: true, 2: true, 4: true };
-    ok(!w.Unlocks.schoolEvent('unit', { n: 4 }).includes('Fuzz'), 'three of four sections: no Fuzz');
+    ok(!w.Unlocks.schoolEvent('unit', { n: 4 }).includes('Puddle'), 'three of four sections: no Puddle');
     units = { 1: true, 2: true, 3: true, 4: true };
-    ok(w.Unlocks.schoolEvent('unit', { n: 3 }).includes('Fuzz'), 'all four, over two visits: Fuzz');
+    ok(w.Unlocks.schoolEvent('unit', { n: 3 }).includes('Puddle'), 'all four, over two visits: Puddle');
     // The race: Paddle for the win, Wisp for the clean card — independent.
     const g1 = w.Unlocks.schoolEvent('race', { won: false, clean: true });
     ok(g1.includes('Wisp') && !g1.includes('Paddle'), 'third with a clean card: Wisp, not Paddle');
@@ -344,7 +344,7 @@ console.log('Sailing School');
     // School objectives never pay from an ordinary race.
     const w2 = world(); w2.__UNLOCKS = 'on'; newRace(w2); w2.settings.venue = 'pond';
     const o2 = fleet(w2, [['Bixby', { me: true }], ['Bruce', {}]]); w2.state.race.timer = 999;
-    ok(!w2.Unlocks.poll(o2).some(n => ['Paddle', 'Fuzz', 'Oar', 'Bask', 'Wisp'].includes(n)), 'an ordinary race pays no school objective');
+    ok(!w2.Unlocks.poll(o2).some(n => ['Paddle', 'Puddle', 'Fuzz', 'Pip', 'Bask', 'Wisp'].includes(n)), 'an ordinary race pays no school objective');
 }
 
 console.log(fails ? `\nFAIL — ${fails} failure(s)` : '\nPASS — 0 failure(s)');

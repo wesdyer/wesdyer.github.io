@@ -5409,9 +5409,10 @@
     {
       "key": "puddle",
       "class": "portrait",
-      "status": "slot",
+      "status": "art",
       "subject": "Anthropomorphic Pond Snail. EXPRESSION: two small dark eyes at the base of the tentacles, mouth a slow contented line, tentacles drifting. Unhurried to the point of comedy. GESTURE: the head turned three-quarter with both slender tentacles leaning gently one way, the tall amber shell riding behind the shoulders. LIMBS — Pond Snail has NONE — no arms or legs: it has a soft muscular foot beneath and two long slender tentacles on the head, and nothing to raise or wave. BODY COVERING: this creature is covered in smooth moist skin, and nothing else — no feathers and no plumage, no fur, no scales, no wings. ITS OWN COLOUR is soft grey (#8E8A80) — that is the animal's colour, and the jacket colours are separate from it. Do not blend in the surface or the limbs of any other kind of animal. PFD COLOURS, and these are exact: the main body of the jacket is deep teal (#17706B); the foam panels across the chest and the shoulder straps are soft coral pink (#F09A8A); the waist webbing is charcoal with a plain metal buckle. These two colours are exact. SPECIES SIGNATURE: A TALL AMBER SPIRAL SHELL wound to a point, carried behind and above the head, over a soft translucent grey body with TWO LONG SLENDER TENTACLES rising from the head and a small dark eye at the base of each. REQUIRED: The eyes are at the BASE of the tentacles, not on their tips — there are exactly two of them. The shell is a tall pointed spiral of about four turns, never a flat coil and never a chambered nautilus",
-      "note": "Competitor portrait. Puddle the Pond Snail — Duckling Pond · deliberately reduced stakes (roster-ranking.md, The Expansion, Aug 5 2026). NOT YET IN AI_CONFIG, so the jacket colours are the PROPOSED hull (shell, deep teal #17706B) and spinnaker (panels, soft coral pink #F09A8A), ordered by the same luma rule the profile band uses; carry them into the AI_CONFIG record on ship and re-measure off the shipped portrait."
+      "note": "Competitor portrait. Puddle the Pond Snail — Duckling Pond · deliberately reduced stakes (roster-ranking.md, The Expansion, Aug 5 2026). NOT YET IN AI_CONFIG, so the jacket colours are the PROPOSED hull (shell, deep teal #17706B) and spinnaker (panels, soft coral pink #F09A8A), ordered by the same luma rule the profile band uses; carry them into the AI_CONFIG record on ship and re-measure off the shipped portrait.",
+      "master": 1347
     },
     {
       "key": "wisp",

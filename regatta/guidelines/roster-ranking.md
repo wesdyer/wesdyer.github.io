@@ -12,7 +12,8 @@ is exactly the order that matters when deciding what an achievement is worth.*
 >   Mechanic · Explorer · Target time · Four stars, nothing hidden).
 >
 > The roster is 107: seven were added Sep 25 (Wake, Fuzz, Oar, Bask, Wisp, Diver, Timber),
-> and Bask replaced the unused Puddle.
+> and Bask replaced the unused Puddle. Oct 21 2026: Puddle shipped and took the lessons rung;
+> Oar is held back (in AI_CONFIG, no unlock row, so absent outside evals).
 
 ## What this ranking optimizes
 

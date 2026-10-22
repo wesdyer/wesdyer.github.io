@@ -654,14 +654,16 @@ const ACHIEVEMENTS = [
     // Judged from the school's own events (Unlocks.schoolEvent), never from a race's results
     // page — school races stay out of the general families. Earnable again on a replay.
     // The pond's animals: the ducklings (school.js), painted turtles on a log and grebes.
-    // Fuzz, Oar, Bask and Wisp shipped Sep 25 2026.
+    // Fuzz, Bask and Wisp shipped Sep 25 2026. Oct 21 2026 (Wes): Puddle the pond snail in, Oar the
+    // water boatman held back (still in the roster, no row, so absent from the picker and the fleet).
+    // Fuzz took the start ("Is it time yet?"); Puddle took the lessons, the patient one.
     { char: 'Paddle', venue: 'pond', rung: 'first-win', title: 'Graduation Day',
       hint: 'Win the graduation race at Sailing School.',
       test: (r) => r.school === 'race' && r.won },
-    { char: 'Fuzz', venue: 'pond', rung: 'lessons', title: 'Top of the Class',
+    { char: 'Puddle', venue: 'pond', rung: 'lessons', title: 'Slow and Steady',
       hint: 'Finish all four Sailing School sections without skipping any.',
       test: (r) => !!r.school && r.unitsAll },
-    { char: 'Oar', venue: 'pond', rung: 'start', title: 'Off the Mark',
+    { char: 'Fuzz', venue: 'pond', rung: 'start', title: 'Off the Mark',
       hint: 'In start practice, cross within 2 seconds of the gun without being over early.',
       test: (r) => r.school === 'start' && r.startOk },
     // Sep 27 2026 (Wes): the pond's Explorer — Pip the pumpkinseed; round the swim raft like a mark (sim/course.js, PT-107).
