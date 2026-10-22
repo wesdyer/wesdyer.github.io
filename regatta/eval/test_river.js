@@ -4,7 +4,7 @@
 //
 //   node regatta/eval/test_river.js     (from the repo root, like every suite)
 //
-// Checks: two bears, four salmon runs, three eagles and two otter families, all where they
+// Checks: two bears, ten salmon runs, three eagles and two otter families, all where they
 // should be; none of it draws from Math.random; a boat close by makes a bear rear up and it
 // stays put; a run scatters from a boat and gathers again; an eagle stoops, takes a salmon and
 // climbs away with it; an otter family dives from a boat and surfaces; salmon leap only in the
@@ -125,7 +125,7 @@ const WES = fs.readdirSync(TRAJ).filter(f => f.startsWith('traj_river_')).map(f 
         return out;
     }, { WES });
 
-    ok(r.counts === '2 / 34+40+32+28 / 3 / 4+4', `2 bears, 4 salmon runs, 3 eagles, 2 otter families (${r.counts})`);
+    ok(r.counts === '2 / 34+40+32+28+30+28+26+24+28+22 / 3 / 4+4', `2 bears, 10 salmon runs (6 staging in the lower river, PT-028), 3 eagles, 2 otter families (${r.counts})`);
     ok(r.onWater, 'the bears, the runs and the otters\' way in are all on the water');
     ok(r.chuteBear, 'a bear stands at the head of the chute');
     ok(r.randomCalls === 0, `wildlife never calls Math.random (${r.randomCalls})`);

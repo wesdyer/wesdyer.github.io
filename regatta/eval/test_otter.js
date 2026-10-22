@@ -112,6 +112,9 @@ const ok = (c, m) => { if (!c) { fails++; console.log('  FAIL ' + m); } else con
         // the player's view is the camera: put it dx off the strike (on screen at 300, off it at 1500)
         const kill = (dx) => { const L = Wildlife.debug().slGroups, G = L.find(G2 => G2.members.some(q2 => !q2.gone)); const q = G.members.find(q2 => !q2.gone);
             const me = state.boats[0]; me.x = q.x + dx; me.y = q.y; state.camera.x = me.x; state.camera.y = me.y; state.camera.rotation = 0;
+            // (only shark 1's kill is under test: the others kept out of it, so one of their own hunts near where the
+            // player is parked cannot count here — Oct 21 2026, when the PRNG stream moved with the pelican lines)
+            d.whites.forEach((W2, i) => { if (i !== 1) { W2.mode = 'patrol'; W2.target = null; W2.killT = 0; W2.sawSprint = false; } });
             const W = d.whites[1]; W.killT = 0; W.sawSprint = false; W.target = { G, q }; W.mode = 'sprint'; W.t = 0.001; W.depth = 0.2; W.x = q.x - 20; W.y = q.y;
             for (let i = 0; i < 3; i++) Wildlife.update(1 / 30); return W.caught && W.killT > 0; };
         const takeNear = (dx) => { for (let k = 0; k < 40; k++) { if (kill(dx)) return true; } return false; };

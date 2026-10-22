@@ -16,7 +16,7 @@
 //   · BASKERS   turtles lined up on a log (a prop); a boat close by sends them sliding into
 //               the water, one after another; they climb back out later. `feat` as colony.
 //   · DIVERS    water birds that swim on the surface and dive, popping up somewhere else
-//               (grebes, loons; `pair` keeps two together and lets them dance), and
+//               (grebes, loons; `pair` keeps two together; the pond's pied-billed grebes sink and hide), and
 //               beavers, which slap and dive and sometimes tow a stick.
 //   · CRUISERS  animals that live UNDER the surface and are seen through it (race-view.md
 //               §10.6): a `depth` sets how far the water veils them and how far their shadow
@@ -103,7 +103,8 @@
         // other two animals. The log is whichever drift log Wes places in the pond's water.
         pond: {
             baskers: [{ id: 'turtle-log', prop: /swamp-driftlog|river-log|lake-log-fallen/, count: 6, flushR: 130, feat: 'pond:turtles' }],
-            divers: [{ kind: 'grebe', count: 2, r: 420, reactR: 80, pair: true }],
+            // pied-billed grebes (Wes, Oct 20 2026: the great crested is European): a pair, one carrying the chicks
+            divers: [{ kind: 'grebe', count: 2, r: 420, reactR: 80, pair: true, chicks: true }],
         },
         // Stillwater Lake. The moose stands in the west lily bed (shape-39, Wes's pick) — a
         // real detour into the light west side; the loons work the open middle of the lake and
@@ -112,7 +113,11 @@
         lake: {
             waders: [{ id: 'moose', shape: 'shape-39', kind: 'moose', flushR: 170, feat: 'lake:moose' }],
             // Bass jumping clear and splashing back in, somewhere near the player (Sep 25 2026, Wes).
-            leapers: { kind: 'bass', every: [4, 9], near: [180, 650] },
+            // (PT-028, Oct 21 2026, Wes: "maybe twice as many fish jumping… long segments now without seeing anything")
+            leapers: { kind: 'bass', every: [2, 4.5], near: [180, 650] },
+            // RISES between the jumps: fish taking insects off the top — a dimple, or now and then a splashy rise with a
+            // glimpse of back — a riser holding its spot and coming up again every few seconds (PT-028)
+            rises: { every: [0.7, 1.8], near: [90, 700], beat: [2.5, 6], n: [1, 4], splashy: 0.2 },
             divers: [{ kind: 'loon', count: 2, cx: 1500, cy: -300, r: 650, reactR: 150, pair: true },
                      { kind: 'beaver', count: 2, cx: 2250, cy: 250, r: 320, reactR: 130 }],
         },
@@ -180,7 +185,11 @@
         //   · River otters: a family of four on each logjam.
         river: {
             fishers: { kind: 'bear', lookR: 240, at: [[5500, -6070], [2320, -4300]] },
-            runs: { kind: 'sockeye', reactR: 95, at: [[5575, -6190, 34], [2330, -4335, 40], [1180, -1050, 32], [4740, -4990, 28]] },
+            // (PT-028, Oct 21 2026: the first leg — down the wide lower river to the bottom mark and back, ~160 s of flat
+            // water — had nothing in view; schools staging in the lower river now hold there too, 200-ish u off the line,
+            // bolting from a boat that comes close, and throwing the odd leap like the runs above the rapids)
+            runs: { kind: 'sockeye', reactR: 95, at: [[5575, -6190, 34], [2330, -4335, 40], [1180, -1050, 32], [4740, -4990, 28],
+                [-700, 450, 30], [-1600, 900, 28], [-1450, 1650, 26], [-650, 1150, 24], [-2150, 1900, 28], [400, 100, 22]] },
             // Wes, Sep 25: "more jumping salmon!" — a leap every second or so wherever the player
             // is in white water, two to four at a time one after another (they jump a rapid in
             // bunches), and now and then one out of a holding run in view.
@@ -314,7 +323,7 @@
             velella: { fleets: 18, n: [35, 70] },
             mackerel: { boils: 2, fish: 34, boil: [22, 34], rest: [6, 14], bottomAfter: 90 },
             clubTerns: { n: 10, nearR: 110, feat: 'seatrials:birds' },
-            gulls: { rafts: 7, n: [3, 7], flushR: 275 },   // (Wes, Sep 27: five boat lengths)
+            gulls: { rafts: 10, n: [3, 7], flushR: 275 },   // (Wes, Sep 27: five boat lengths) (PT-028, Oct 21 2026: 7 -> 10 rafts, on the course's water)
         },
         flats: {
             // Spoonbill Flats (Sep 26 2026, Wes): all four ride the tide (js/tide.js)
@@ -360,6 +369,10 @@
             // 550-700 u outside the fleet's line: a blow at the edge of the screen now and then, and a
             // real detour to get alongside (nearR is from the whale's middle; it is ~120 u to its head).
             hunt: { feat: 'otter:hunt' },   // a successful hunt with any of it on the player's screen
+            // BROWN PELICANS in lines over the open channels (PT-028, Oct 21 2026, Wes: "It's just open water. Maybe I
+            // should add some birds"): only while the player is clear of the rocks and kelp (no otter raft or sea-lion
+            // haul-out within `clearR`), a line every `every` s crosses the view, `pass` u to one side
+            pelicanLines: { every: [6, 14], n: [5, 12], speed: 270, z: [6, 16], pass: [120, 520], spawnR: 1250, clearR: 600 },
             blues: { nearR: 250, krill: [[1000, -7400], [4000, -7800], [-5150, 1700], [10000, -5300]], pods: [
                 { n: 2, speed: 40, path: [[-2200, -6750], [1000, -7250], [4000, -7700], [6500, -7450], [4000, -7550], [1000, -7100]] },   // offshore of the north lane
                 { n: 3, speed: 34, path: [[-4700, 1100], [-5500, 1300], [-5300, 2300], [-4750, 2000]] },   // a group of three just outside the fleet's furthest tacks on the beat (~(-4000, 1950); Wes, Sep 26) — 700 u off at the closest                            // outside the beat
@@ -471,7 +484,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     let jellyBloom = null, mantas = [], foxFlocks = [], nextFox = 0, hawksbills = [], dugongs = [];
     let orcaPods = [], colonies2 = [], floeGroups = [], swimmers = [], treks = [], lseals = [], ternFlocks = [], visited = new Set();
     let whalePods = [], blows = [], splashes = [], riders = [], flyfish = [], gliders = [], nextFly = 0, prints = [], flyPatches = [];
-    let lurkWoken = new Set(), nextLeap = 0, nextRunLeap = 0;
+    let lurkWoken = new Set(), nextLeap = 0, nextRunLeap = 0, rises = [], risers = [], nextRise = 0;
     let nextBoil = 0, feats = new Set(), lastRaceSig = null;
 
     function mulberry(seed) {
@@ -501,7 +514,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     function init() {
         const key = venueKey();
         cfg = WILDLIFE[key] || null;
-        colonies = []; followers = []; pods = []; resident = null; flight = null; boil = null; baskers = []; divers = []; waders = []; cruisers = []; lurkers = []; stalkers = []; perchers = []; leaps = []; shoals = []; poppers = []; lurkWoken = new Set(); nextLeap = 0; nextRunLeap = 0;
+        colonies = []; followers = []; pods = []; resident = null; flight = null; boil = null; baskers = []; divers = []; waders = []; cruisers = []; lurkers = []; stalkers = []; perchers = []; leaps = []; shoals = []; poppers = []; lurkWoken = new Set(); nextLeap = 0; nextRunLeap = 0; rises = []; risers = []; nextRise = 0;
         fishers = []; runs = []; soarers = []; rompers = [];
         stripers = []; nextStriper = 0; boilsHit = 0; condors = []; bands = []; coyotes = [];
         orcaPods = []; colonies2 = []; floeGroups = []; swimmers = []; treks = []; jellyBloom = null; mantas = []; foxFlocks = []; nextFox = 0; hawksbills = []; dugongs = []; lseals = []; ternFlocks = []; visited = new Set();
@@ -509,8 +522,9 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         igHeaps = []; crabBeds = []; boobyFlocks = []; boobyLines = []; frigates = []; frigFish = []; hammerSchools = [];
         gsealCols = []; spoonFlocks = []; avoFlocks = []; scrabBeds = [];
         clubCorms = []; velFleets = []; mackBoils = []; clubTerns = []; clubGulls = []; clubTernHome = { x: 2700, y: -2000 };
-        foams = []; blood = []; seaOtterRafts = []; slHauls = []; slGroups = []; whites = []; bluePods = []; blueBlows = []; krill = []; huntCool = 8;
+        foams = []; blood = []; pelLines = []; nextPelLine = 0; seaOtterRafts = []; slHauls = []; slGroups = []; whites = []; bluePods = []; blueBlows = []; krill = []; huntCool = 8;
         feats = new Set(); T = 0;
+        if ((key === 'pond' || key === 'pond-open') && typeof document !== 'undefined') pondSprites();   // (the painted ducklings, turtles and grebes; the First Sail's open pond has only the ducklings)
         if (!cfg) return;
         rnd = mulberry(hashStr('wildlife:' + key));
         for (const c of cfg.colonies || []) {
@@ -634,6 +648,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         }
         if (cfg.hammers) { hammerSchools = makeHammers(cfg.hammers); sprImg(HAM_SPR.file); }
         if (cfg.seaOtters) seaOtterRafts = makeSeaOtters(cfg.seaOtters);
+        if (cfg.pelicanLines) { nextPelLine = R(3, 8); PEL_PARTS.forEach(pelImg); }
         if (cfg.seaLions) { slHauls = makeSeaLions(cfg.seaLions);
             for (const [id, n] of cfg.seaLions.commute || []) { const H = slHauls.find(q => q.id === id); if (H) { const G = makeSLGroup(H, n, H.sea.x, H.sea.y, 'raft'); G.t = R(5, 40); slGroups.push(G); } } }
         if (cfg.whites) whites = makeWhites(cfg.whites);
@@ -682,7 +697,8 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // A pair keeps company: the second swims just off the first's quarter.
         // (Oct 18 2026, Wes: "1.5x or less" at sea level) the pair's spacing shrinks with the birds (was 30, 12)
         if (d.pair && G.birds.length > 1) { const a = G.birds[0], dk = DIVER_K[d.kind] || 1; for (const b of G.birds.slice(1)) { b.x = a.x - 30 * dk; b.y = a.y + 12 * dk; } }
-        G.danceT = R(18, 30);
+        if (d.chicks && G.birds.length > 1) G.birds[1].chicks = true;
+        for (const b of G.birds) { b.bout = 3 + Math.floor(rnd() * 6); b.lo = 0; }
         return G;
     }
     // A point within the group's area, on water with room round it (never hugging a shore).
@@ -817,6 +833,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (stalkers.length) updateStalkers(dt);
         if (perchers.length) updatePerchers(dt, me);
         if (cfg.leapers) { updateLeapers(dt); if (cfg.leapers.fromRuns) updateRunLeaps(dt); }
+        if (cfg.rises) updateRises(dt);
         for (const G of shoals) updateShoal(G, dt);
         if (poppers.length) updatePoppers(dt);
         if (fishers.length) updateFishers(dt);
@@ -855,6 +872,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (frigates.length) updateFrigates(dt);
         if (hammerSchools.length) updateHammers(dt);
         if (seaOtterRafts.length) updateSeaOtters(dt);
+        if (cfg.pelicanLines) updatePelLines(dt, (state.boats || []).find(b => b.isPlayer));   // (the player's boat, gun or no gun: scenery, not a feat)
         if (slHauls.length || slGroups.length) updateSeaLions(dt);
         if (whites.length) updateWhites(dt);
         if (bluePods.length) updateBlues(dt, me);
@@ -937,6 +955,52 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             if (c.repeat && rnd() < c.repeat) leaps.push({ kind: c.kind, x: x + R(-4, 4), y: y + R(-4, 4), h: R(0, Math.PI * 2), t: -R(1.6, 3.2), dur: c.kind === 'carp' ? R(0.3, 0.38) : R(0.85, 1.1), size: R(0.85, 1.15), hop: R(16, 24), roll: rnd() < 0.5 ? -1 : 1 });
             break;
         }
+    }
+    // ── RISES: fish taking insects off the surface near the player (PT-028) ────────────────
+    // Most rises are a DIMPLE — the lips break the film and a few rings spread; now and then a SPLASHY one (a fish
+    // chasing an emerger) throws a little white and shows its back. A riser holds its spot and comes up again on a
+    // beat of a few seconds (fly-fishers' "rhythmic riser"), so rises come in little series from one place.
+    function updateRises(dt) {
+        const c = cfg.rises;
+        for (const q of rises) q.t += dt;
+        rises = rises.filter(q => q.t < 3.2);
+        for (const F of risers) { F.t -= dt; if (F.t <= 0 && F.n > 0) { F.n--; F.t = R(c.beat[0], c.beat[1]); rises.push({ x: F.x + R(-2, 2), y: F.y + R(-2, 2), t: 0, splashy: rnd() < c.splashy, h: R(0, 6.283), seed: rnd() }); } }
+        risers = risers.filter(F => F.n > 0);
+        nextRise -= dt;
+        const me = state.boats && state.boats.find(b => b.isPlayer);
+        if (nextRise > 0 || !me) return;
+        nextRise = R(c.every[0], c.every[1]);
+        for (let k = 0; k < 10; k++) {
+            const a = R(0, Math.PI * 2), d = R(c.near[0], c.near[1]), x = me.x + Math.cos(a) * d, y = me.y + Math.sin(a) * d;
+            if (onLand(x, y) || onLand(x + 15, y) || onLand(x - 15, y) || onLand(x, y + 15) || onLand(x, y - 15)) continue;
+            if ((state.boats || []).some(b => Math.hypot(b.x - x, b.y - y) < 70)) continue;
+            risers.push({ x, y, t: 0, n: Math.round(R(c.n[0], c.n[1])) });
+            break;
+        }
+    }
+    function drawRise(ctx, q) {
+        // a few broken rings spreading and fading (never whole circles, the breaks uneven), a dark dimple at the centre
+        // for a moment; a splashy rise throws a little white and shows the dark curve of a back rolling under (a bass
+        // of ~0.4 m: 6 u at the pond's and lake's 1.5x)
+        const wt = waterTint();
+        ctx.save(); ctx.translate(q.x, q.y); ctx.lineCap = 'round';
+        if (q.t < 0.4) { ctx.fillStyle = `rgba(10,22,26,${0.4 * (1 - q.t / 0.4)})`; ctx.beginPath(); ctx.ellipse(0, 0, 1.2, 1.0, q.h, 0, 6.283); ctx.fill(); }
+        if (q.splashy && q.t < 0.45) drawSlap(ctx, 0, 0, 1 - q.t / 0.45, 0.07);
+        if (q.splashy && q.t < 0.7) { const f = q.t / 0.7, sh = Math.sin(f * Math.PI);
+            ctx.save(); ctx.rotate(q.h); ctx.translate(0, 2.5 - 5 * f);
+            ctx.fillStyle = `rgba(28,38,30,${0.85 * sh})`; ctx.beginPath(); ctx.moveTo(0, -3.2); ctx.quadraticCurveTo(1.5, -1.2, 1.1, 1.6); ctx.quadraticCurveTo(0.4, 3.2, 0, 3.4); ctx.quadraticCurveTo(-0.4, 3.2, -1.1, 1.6); ctx.quadraticCurveTo(-1.5, -1.2, 0, -3.2); ctx.fill();
+            ctx.fillStyle = `rgba(${wt},${0.55 * sh})`; ctx.beginPath(); ctx.ellipse(0, 2.2, 1.4, 1.8, 0, 0, 6.283); ctx.fill();   // the tail end still under
+            ctx.strokeStyle = `rgba(255,255,255,${0.6 * sh})`; ctx.lineWidth = 0.35; ctx.beginPath(); ctx.ellipse(0, 0.2, 1.9, 3.6, 0, Math.PI * 0.15, Math.PI * 0.85); ctx.stroke(); ctx.beginPath(); ctx.ellipse(0, 0.2, 1.9, 3.6, 0, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+            ctx.restore(); }
+        for (let r = 0; r < 3; r++) {
+            const t = q.t - r * 0.35; if (t <= 0) continue;
+            const rad = 1.2 + t * (q.splashy ? 5.4 : 4.2), a = (q.splashy ? 0.55 : 0.48) * Math.max(0, 1 - t / (3.2 - r * 0.35)) * (1 - r * 0.25);
+            ctx.strokeStyle = `rgba(255,255,255,${a})`; ctx.lineWidth = 0.5;
+            let a0 = q.seed * 6.283 + r * 1.9;
+            for (let i = 0; i < 3; i++) { const u = Math.sin(q.seed * 91 + i * 7.3 + r * 3.7) * 0.5 + 0.5, len = 1.1 + 0.9 * u;
+                ctx.beginPath(); ctx.ellipse(0, 0, rad, rad * 0.93, q.h, a0, a0 + len); ctx.stroke(); a0 += len + 0.25 + 0.5 * (1 - u); }
+        }
+        ctx.restore();
     }
     // A salmon out of a holding run the player can see: one clears the water and drops back.
     function updateRunLeaps(dt) {
@@ -1023,6 +1087,17 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
 
     // The nearest boat inside r of (x, y), or null.
+    // A boat's TRACK (PT-044, Wes: "I wonder if players will often wonder if I'm running over a turtle… I don't want
+    // them to be worried about hurting animals"): the boat whose hull is over (x, y) or whose bow is coming at it —
+    // from 32 u astern of its middle (the transom, plus a little) to `reach` u ahead, `half` u to either side. Used by
+    // the surface animals to get out of the way in time, as the porpoises do for the cargo ship (PT-016).
+    function hullAhead(x, y, reach, half) {
+        for (const b of state.boats || []) { if (b.opacity !== undefined && b.opacity < 0.2) continue;
+            const dx = x - b.x, dy = y - b.y; if (dx * dx + dy * dy > (reach + 40) * (reach + 40)) continue;
+            const sa = Math.sin(b.heading), ca = Math.cos(b.heading), along = dx * sa - dy * ca, across = dx * ca + dy * sa;
+            if (along > -32 && along < reach && Math.abs(across) < half) return b; }
+        return null;
+    }
     function boatNear(x, y, r) {
         let best = null, bd = r;
         for (const b of state.boats || []) { if (b.opacity !== undefined && b.opacity < 0.2) continue; const d = Math.hypot(b.x - x, b.y - y); if (d < bd) { bd = d; best = b; } }
@@ -2094,18 +2169,32 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 t.ux = t.hx + nx * 26; t.uy = t.hy + ny * 26;
                 t.uh = Math.atan2(nx, -ny) + R(-0.6, 0.6);
             } else if (t.mode === 'under') {
-                // Swims off a little way and stays there.
-                const go = Math.max(0, 1 - t.t / 5);
-                t.ux += Math.sin(t.uh) * 16 * go * dt; t.uy -= Math.cos(t.uh) * 16 * go * dt;
+                // (Oct 20 2026, research: a freshwater turtle ROWS — alternate strokes of the opposite fore and hind
+                // limbs — at about two body lengths a second.) It swims off down to the bottom, stroking, slowing as it
+                // goes, settles in a little puff of silt and rests there; now and then it rises to put its head out and
+                // look about, then sinks back.
+                const go = Math.max(0, 1 - t.t / 3.5);
+                t.ux += Math.sin(t.uh) * 20 * (t.size || 1) * go * dt; t.uy -= Math.cos(t.uh) * 20 * (t.size || 1) * go * dt;
+                t.stk = (t.stk || 0) + dt * (0.15 + 1.4 * go + (t.peek > 0 ? 0.6 : 0));   // (strokes a second: hard off the log, idle on the bottom)
+                if (go <= 0 && !t.settled) { t.settled = true; t.mud = 1; }
                 if (t.peek > 0) t.peek = Math.max(0, t.peek - dt);
-                else if (t.t > 4 && rnd() < dt * 0.12) t.peek = 1.6;
+                else if (t.t > 5 && rnd() < dt * 0.06) { t.peek = 4.5; t.settled = false; }
+                // depth: down after the plop; up to the surface for the peek (rise 1 s, head out, sink back)
+                const want = t.peek > 1.2 ? 0.04 : 1;
+                t.dep = (t.dep || 0) + (want - (t.dep || 0)) * Math.min(1, dt * (t.peek > 0 ? 2.2 : 1.1));
                 // Back one at a time, in order along the log, once it has been quiet 18 s.
                 if (!flusher && b.quiet > 18 + t.i * 2.2) { t.mode = 'climb'; t.t = 0; t.cx0 = t.ux; t.cy0 = t.uy; }
             } else if (t.mode === 'climb') {
+                // up from the bottom, rowing, and hauls out onto the log, streaming water
+                t.stk = (t.stk || 0) + dt * 1.2; t.dep = Math.max(0, (t.dep || 0) - dt * 1.2);
                 if (flusher) { t.mode = 'under'; t.t = 0; }
                 else if (t.t >= 1.6) { t.mode = 'bask'; t.t = 0; t.wet = 1; }
+                else if (t.t >= 1.0 && !t.hauled) { t.hauled = true; t.plop = 0.55; t.ux = t.cx0 + (t.hx - t.cx0) * 0.62; t.uy = t.cy0 + (t.hy - t.cy0) * 0.62; }
             }
+            if (t.mode !== 'climb') t.hauled = false;
+            if (t.mode === 'slide') { t.dep = 0; t.settled = false; }
             t.plop = Math.max(0, (t.plop || 0) - dt * 1.5);
+            t.mud = Math.max(0, (t.mud || 0) - dt / 3.5);
             const k = t.mode === 'slide' ? t.t / 0.55 : t.mode === 'under' ? 1 : t.mode === 'climb' ? 1 - Math.min(1, t.t / 1.6) : 0;
             t.ox = nx * 24 * k; t.oy = ny * 24 * k;
         }
@@ -2114,24 +2203,13 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // ── swimmers: grebes, loons, beavers ──────────────────────────────────────────────────
     // They swim between points on open water with a wake behind them; they dive as a forward
     // roll and travel on under water, surfacing ahead — not somewhere random — and a boat
-    // coming close puts them down at once. Loons sometimes rear up and flap after surfacing;
-    // a pair of grebes sometimes meets face to face and head-shakes (their courtship); a
+    // coming close puts them down at once. Loons sometimes rear up and flap after surfacing; a
     // beaver slaps its tail before it dives, and half of them tow a leafy branch.
     const SWIM = { loon: 15, grebe: 12, beaver: 19 };
     const UNDER = { loon: 42, grebe: 30, beaver: 24 };
     function updateDivers(dt) {
         for (const G of divers) {
             const kind = G.cfg.kind, reactR = G.cfg.reactR || 0;
-            // The grebes' dance: now and then, if both are up and near each other.
-            if (kind === 'grebe' && G.birds.length > 1) {
-                G.danceT -= dt;
-                const [a, c] = G.birds;
-                if (G.danceT <= 0 && a.mode === 'swim' && c.mode === 'swim' && Math.hypot(a.x - c.x, a.y - c.y) < 220) {
-                    const mx = (a.x + c.x) / 2, my = (a.y + c.y) / 2;
-                    if (!onLand(mx, my)) { a.mode = c.mode = 'dance'; a.t = c.t = 7; a.mx = c.mx = mx; a.my = c.my = my; }
-                    G.danceT = R(30, 50);
-                }
-            }
             for (const g of G.birds) {
                 g.t -= dt; g.bob += dt;
                 g.splash = Math.max(0, g.splash - dt * 1.3);
@@ -2146,14 +2224,15 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 if (g.trailT > 0.1) {
                     g.trailT = 0;
                     const last = g.trail[0];
-                    const moving = g.mode === 'swim' && (!last || Math.hypot(g.x - last.x, g.y - last.y) > 0.8);
+                    const moving = (g.mode === 'swim' || g.mode === 'hide') && (!last || Math.hypot(g.x - last.x, g.y - last.y) > 0.8);
                     if (moving) { g.trail.unshift({ x: g.x, y: g.y }); if (g.trail.length > 18) g.trail.pop(); }
                     else if (g.trail.length) g.trail.pop();
                 }
+                if (kind === 'grebe') { updateGrebe(G, g, dt); continue; }
                 if (g.mode === 'swim') {
                     let tx = g.tx, ty = g.ty;
                     const lead = G.birds[0];
-                    if (G.cfg.pair && g !== lead && lead.mode !== 'dance') {
+                    if (G.cfg.pair && g !== lead) {
                         // Keep station off the leader's quarter. (Oct 18 2026, Wes: "1.5x or less" at sea level: the
                         // station by the bird's size, was 22 back and 26 off)
                         const dk = DIVER_K[kind] || 1;
@@ -2167,18 +2246,6 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                         g.mode = 'dive'; g.t = 0.6; g.sink = 0;
                         if (kind === 'beaver' && spooked) g.slap = 1;   // the tail-slap warning
                     }
-                } else if (g.mode === 'dance') {
-                    // Face each other across a couple of lengths, heads shaking.
-                    const other = G.birds.find(o => o !== g);
-                    const ang = Math.atan2(g.x - g.mx, -(g.y - g.my));
-                    // Ease onto a point 26 u out from the pair's centre (never swim toward the
-                    // partner — the heading below faces it, so moving along it would close them up).
-                    // (Oct 18 2026, Wes: "1.5x or less" at sea level: 26 x the grebe's 29 -> 11, still a couple of lengths)
-                    const dr = 26 * (DIVER_K[kind] || 1), px = g.mx + Math.sin(ang) * dr, py = g.my - Math.cos(ang) * dr;
-                    g.x += (px - g.x) * Math.min(1, dt * 1.5); g.y += (py - g.y) * Math.min(1, dt * 1.5);
-                    g.h += angDiff(Math.atan2(other.x - g.x, -(other.y - g.y)), g.h) * Math.min(1, dt * 3);
-                    g.yaw = Math.sin(g.bob * 7) * 0.55 * Math.min(1, g.t);
-                    if (g.t <= 0 || spooked) { g.mode = 'swim'; g.yaw = 0; g.t = R(4, 8); if (spooked) { g.mode = 'dive'; g.t = 0.6; } }
                 } else if (g.mode === 'flap') {
                     g.flap = Math.min(1, g.flap + dt * 4);
                     if (g.t <= 0) { g.mode = 'swim'; g.flap = 0; g.t = R(8, 14); }
@@ -2203,6 +2270,80 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                     }
                 }
             }
+        }
+    }
+
+    // PIED-BILLED GREBES (Oct 20 2026). From the field accounts (CT DEEP's fact sheet, Friends of Green Lake, Eastside
+    // Audubon; dive timings from British Birds and the Wilson Bulletin): they forage in BOUTS of short dives — 2 to 25 s
+    // under, 8-13 s on average — with a few seconds' breather on top between them, and swim about and rest between bouts.
+    // Each dive is a little forward jump, the head going under first. ALARMED they neither fly nor splash: they squeeze
+    // the air out of their feathers and SINK, slowly and without a ripple, until only the HEAD shows, and slip away like
+    // that; pressed closer, the head goes too and they swim off under water, coming up well away. A parent carries the
+    // striped chicks on its back (they ride on even when it sinks), keeps by its mate, and doesn't forage.
+    const PBG = { swim: 8, forage: 4.5, under: 10, hide: 6, flee: 18 };   // u/s: under a length a second on top (11.3 u)
+    function updateGrebe(G, g, dt) {
+        const reactR = G.cfg.reactR || 80, lead = G.birds[0];
+        let near = null, nd = 1e9;
+        for (const b of state.boats || []) { if (b.opacity !== undefined && b.opacity < 0.2) continue; const d = Math.hypot(b.x - g.x, b.y - g.y); if (d < nd) { nd = d; near = b; } }
+        const away = near ? Math.atan2(g.x - near.x, -(g.y - near.y)) : g.h;
+        const turnTo = (h, rate) => { g.h += Math.max(-rate * dt, Math.min(rate * dt, angDiff(h, g.h))); };
+        const mv = (v) => { const nx = g.x + Math.sin(g.h) * v * dt, ny = g.y - Math.cos(g.h) * v * dt;
+            if (!onLand(nx, ny) && Math.hypot(nx - G.cx, ny - G.cy) < G.r * 1.2) { g.x = nx; g.y = ny; } else g.h += 1.5 * dt; };
+        g.lo = g.lo || 0;
+        if (g.mode === 'swim') {
+            g.sink = Math.max(0, g.sink - dt / 0.5);   // (just up: the water running off its back)
+            g.lo = Math.max(0, g.lo - dt / 1.5);       // (rising again, slowly, after hiding)
+            if (nd < reactR * 1.6) { g.mode = 'sinkdown'; g.tt = 0; return; }
+            if (g.chicks || g !== lead) {
+                // the mate (and the one with the chicks) keeps off the leader's quarter while it's up; waits while it's down
+                const dk = GREBE_K, up = lead.mode === 'swim';
+                const tx = lead.x - Math.sin(lead.h) * 22 * dk + Math.cos(lead.h) * 26 * dk, ty = lead.y + Math.cos(lead.h) * 22 * dk + Math.sin(lead.h) * 26 * dk;
+                const d = Math.hypot(tx - g.x, ty - g.y);
+                if (up && d > 4) steer(g, tx, ty, Math.min(PBG.swim * (d > 60 ? 1.6 : 1), d * 0.8 + 1), 1.2, dt);
+            } else {
+                const v = g.bout > 0 ? PBG.forage : PBG.swim;
+                if (Math.hypot(g.tx - g.x, g.ty - g.y) < 20) { const q = waterPoint(G); if (q) { g.tx = q.x; g.ty = q.y; } }
+                steer(g, g.tx, g.ty, v, 0.8, dt);
+            }
+            if (!g.chicks && g === lead && g.t <= 0 && g.lo < 0.05) { g.mode = 'dive'; g.tt = 0; g.sink = 0; g.flee = false; }
+        } else if (g.mode === 'dive') {
+            // the little forward jump: on and under, head first (sink 0 -> 1 in half a second); fleeing, from the hide
+            g.tt += dt; g.sink = Math.min(1, g.tt / 0.5);
+            if (g.flee) turnTo(away, 2);
+            mv(g.flee ? PBG.flee * 0.6 : PBG.swim * 1.4);
+            if (g.tt >= 0.5) {
+                g.mode = 'under'; g.splash = g.flee ? 0.6 : 1; g.trail = []; g.dvT = 0; g.dvX = g.x; g.dvY = g.y; g.dvH = g.h;
+                g.t = g.flee ? R(10, 20) : 2 + 14 * rnd() + (rnd() < 0.12 ? R(5, 9) : 0);   // (foraging: mean ~10 s, now and then 20+)
+                g.wig = 0;
+            }
+        } else if (g.mode === 'under') {
+            // foraging, it hunts about after small fish and insects; fleeing, it holds its line away from the boat
+            if (g.flee) turnTo(away, 0.8);
+            else { g.wig = (g.wig || 0) * Math.exp(-dt) + R(-1, 1) * dt * 2.2; g.h += g.wig * dt; }
+            mv(g.flee ? PBG.flee : PBG.under);
+            if (g.t <= 0) {
+                if (onLand(g.x, g.y) || nd < reactR * 1.2) g.t = 0.8;   // (not up beside the boat)
+                else {
+                    // up: from a forage dive in the open; from a flight, quietly, head first — and it stays hidden a while
+                    g.mode = g.flee ? 'hide' : 'swim'; g.upT = 0; g.rise = g.flee ? 0.5 : 1;
+                    if (g.flee) { g.lo = 1; g.sink = 0; g.t = R(3, 6); }
+                    else {
+                        g.sink = 1; g.bout = (g.bout || 0) - 1;
+                        if (g.bout > 0) g.t = R(3, 9); else { g.bout = 3 + Math.floor(rnd() * 6); g.t = R(20, 45); const q = waterPoint(G); if (q) { g.tx = q.x; g.ty = q.y; } }
+                    }
+                }
+            }
+        } else if (g.mode === 'sinkdown') {
+            // squeezing the air out: down slowly, no splash, easing away from the boat
+            g.tt += dt; g.lo = Math.min(1, g.tt / 1.8);
+            turnTo(away, 1.2); mv(PBG.hide * g.lo);
+            if (g.tt >= 1.8) { g.mode = 'hide'; g.t = R(3, 6); }
+        } else if (g.mode === 'hide') {
+            // only the head showing, slipping away from the boat; too close and the head goes under too
+            g.lo = 1;
+            if (nd < reactR * 2.5) { turnTo(away, 1.5); mv(PBG.hide); g.t = Math.max(g.t, 3); }
+            if (nd < reactR * 0.8) { g.mode = 'dive'; g.tt = 0; g.sink = 0; g.flee = true; return; }
+            if (g.t <= 0) { g.mode = 'swim'; g.t = R(6, 12); g.bout = 0; g.flee = false; const q = waterPoint(G); if (q) { g.tx = q.x; g.ty = q.y; } }
         }
     }
 
@@ -4413,11 +4554,14 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 swimTo(G, G.tx, G.ty, 9 * DUGONG_K, 0.5, dt, G.len * 0.5, 10 * DUGONG_K);   // (Oct 18 2026: x DUGONG_K)
                 G.up += (0 - G.up) * Math.min(1, dt); G.silt = 1;
                 G.trailT += dt; if (G.trailT > 0.5) { G.trailT = 0; G.trail.push({ x: G.x + Math.sin(G.h) * G.len * 0.45, y: G.y - Math.cos(G.h) * G.len * 0.45, h: G.h, age: 0 }); }
-                if (G.t <= 0) { G.mode = 'rise'; G.t = 5; }
+                // (PT-044: dugongs are shy of boats — one that is due a breath with a boat over it or coming waits under it)
+                if (G.t <= 0) { if (hullAhead(G.x, G.y, 220, 50)) G.t = 1; else { G.mode = 'rise'; G.t = 5; } }
             } else {
                 // rising to breathe: a few seconds up, the nostrils break once, then down again
                 G.beat += dt * 2.6; G.silt = 0; swimTo(G, G.tx, G.ty, 12 * DUGONG_K, 0.5, dt, G.len * 0.5, 10 * DUGONG_K);
-                const u = 1 - G.t / 5; G.up = Math.sin(Math.PI * Math.min(1, u));
+                // a bow coming at it before it has breathed: it goes straight back down and tries again after
+                if (!G.breathed && hullAhead(G.x, G.y, 180, 50)) { G.mode = 'graze'; G.t = R(4, 8); G.ring = Math.max(G.ring, 0.6); }
+                const u = 1 - G.t / 5; if (G.mode === 'rise') G.up = Math.sin(Math.PI * Math.min(1, u));
                 if (u > 0.45 && !G.breathed) { G.breathed = true; G.ring = 1; G.puff = 1; }
                 if (G.t <= 0) { G.mode = 'graze'; G.t = R(45, 75); G.breathed = false; }
             }
@@ -4831,11 +4975,122 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     function drawDiveRing(ctx, x, y, k) { drawRing(ctx, x, y, k, 6, 18, 0.6); }
 
-    // PAINTED TURTLE from above: a low domed carapace in dark olive with pale seams between
+
+    // ── DUCKLING POND, PAINTED (Oct 20 2026: pond-duckling re-rolled, pond-painted-turtle(-swim), pond-pied-billed-grebe
+    // (-sinking, -chicks)). Fractions of each frame: bill or nose tip (top) to tail (bot). The edits share their parent's
+    // frame and scale. Lengths are the pond's sizes in guidelines/scale.md (floor, kept in order): duckling 9.5 < turtle
+    // 10.3 < grebe 11.3, as _animal_sizes.js measures them (solid pixels: the soft bill, tail and down tips fall under its
+    // cut, so the frames are set a little over: 10.7, 11.5 and 9.0 by the masters' bounds).
+    const POND_DIR = 'assets/images/props/pond/';
+    const PT_SPR = { bask: POND_DIR + 'painted-turtle.png', swim: POND_DIR + 'painted-turtle-swim.png', top: 0.1426, bot: 0.8779 };
+    const PT_F = 10.7 / (PT_SPR.bot - PT_SPR.top), PT_CY = (PT_SPR.top + PT_SPR.bot) / 2;
+    const PBG_SPR = { swim: POND_DIR + 'pied-billed-grebe.png', sink: POND_DIR + 'pied-billed-grebe-sinking.png', chicks: POND_DIR + 'pied-billed-grebe-chicks.png',
+                      top: 0.1816, bot: 0.8330, neck: 0.39, strip: 0.7178 };   // (neck: where the head meets the back; strip: the sinker's back ends)
+    const PBG_F = 11.5 / (PBG_SPR.bot - PBG_SPR.top), PBG_CY = (PBG_SPR.top + PBG_SPR.bot) / 2, pbgY = (fy) => (fy - PBG_CY) * PBG_F;
+    const DUCK_SPR = { file: POND_DIR + 'duckling.png', top: 0.0850, bot: 0.9160 };
+    const DUCK_F = 9.0 / (DUCK_SPR.bot - DUCK_SPR.top) / 0.55, DUCK_CY = (DUCK_SPR.top + DUCK_SPR.bot) / 2;   // (in the drawn duckling's units: DUCKLING_SCALE 0.55)
+    function pondSprites() { [PT_SPR.bask, PT_SPR.swim, PBG_SPR.swim, PBG_SPR.sink, PBG_SPR.chicks, DUCK_SPR.file].forEach(sprImg); }
+    const pondReady = (...f) => typeof document !== 'undefined' && f.map(sprImg).every(imgReady);   // (ask for all first: every() would stop at the first not yet in, and the rest would load one by one)
+    // a frame drawn centred on the animal (frame y cy at y = 0), mipmapped to the zoom
+    function pondBlit(ctx, file, F, cy, a, col) {
+        if (a <= 0.005) return;
+        const T = ctx.getTransform(), k = Math.max(0.25, Math.hypot(T.a, T.b)); let im = humpMip(sprImg(file), 1.5 * k * F);
+        if (col) im = humpShade(im, col);
+        const ga = ctx.globalAlpha; ctx.globalAlpha = ga * a; ctx.drawImage(im, -0.5 * F, -cy * F, F, F); ctx.globalAlpha = ga;
+    }
+    // THE ROWING STROKE: the swim painting (near fore limb reaching, its diagonal hind limb pushing back) and its mirror
+    // (the other diagonal pair) in turn — whichever is further through the stroke drawn whole, the other over it, so the
+    // shell never goes see-through.
+    function turtleRow(ctx, stk, a, col) {
+        const c = 0.5 - 0.5 * Math.cos(stk * Math.PI * 2), u = c * c * (3 - 2 * c);
+        const one = (m, aa) => { ctx.save(); if (m) ctx.scale(-1, 1); pondBlit(ctx, PT_SPR.swim, PT_F, PT_CY, aa, col); ctx.restore(); };
+        if (u < 0.5) { one(false, a); one(true, a * 2 * u); } else { one(true, a); one(false, a * 2 * (1 - u)); }
+    }
+    // Basking: legs splayed, head out to the sun; wet from the water, a sheen on the shell.
+    function drawTurtlePainted(ctx, x, y, h, alpha, wet, size) {
+        if (!pondReady(PT_SPR.bask, PT_SPR.swim)) return false;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(size || 1, size || 1);
+        ctx.fillStyle = `rgba(20,16,10,${0.25 * alpha})`; ctx.beginPath(); ctx.ellipse(0.5, 0.75, 3.1, 3.5, 0, 0, Math.PI * 2); ctx.fill();   // (its shadow on the log)
+        pondBlit(ctx, PT_SPR.bask, PT_F, PT_CY, alpha);
+        if (wet > 0) { ctx.fillStyle = `rgba(230,245,238,${0.32 * wet * alpha})`; ctx.beginPath(); ctx.ellipse(-0.8, -0.7, 0.55, 1.1, -0.3, 0, Math.PI * 2); ctx.fill(); }
+        ctx.restore();
+        return true;
+    }
+    // In the water: rowing, seen through the pond — fading and going the water's colour as it goes down; at the surface
+    // for a peek, its head out with rings breathing off it. On the bottom it kicks up a little silt.
+    function drawTurtleUnderPainted(ctx, t, x, y, h) {
+        if (!pondReady(PT_SPR.bask, PT_SPR.swim)) return false;
+        const d = t.dep || 0, sz = (t.size || 1) * (1 - 0.1 * d);
+        if (t.mud > 0) { const k = 1 - t.mud, r = (3 + 4 * k) * (t.size || 1);
+            const g = ctx.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, `rgba(96,84,58,${0.2 * t.mud})`); g.addColorStop(1, 'rgba(96,84,58,0)');
+            ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+        ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(sz, sz);
+        turtleRow(ctx, t.stk || 0, 0.2 + 0.12 * (1 - d), 'rgb(16,34,30)');       // (the dark shape, always)
+        turtleRow(ctx, t.stk || 0, 0.9 * Math.pow(1 - d, 1.6));                  // (its own colours, near the top)
+        turtleRow(ctx, t.stk || 0, 0.3 * (1 - d) * d * 4, `rgb(${waterTint()})`); // (the water between, half way down)
+        ctx.restore();
+        if (t.peek > 0 && t.peek < 3.6) {
+            // the head breaks the surface: rings breathing out from it while it looks about
+            const hx = x + Math.sin(h) * 4.4 * (t.size || 1), hy = y - Math.cos(h) * 4.4 * (t.size || 1);
+            const k = ((3.6 - t.peek) / 1.3) % 1;
+            drawRing(ctx, hx, hy, 1 - k, 0.9, 3.2, 0.45 * Math.min(1, t.peek / 0.6));
+            ctx.strokeStyle = `rgba(235,245,240,${0.4 * Math.min(1, t.peek / 0.6)})`; ctx.lineWidth = 0.25;
+            ctx.beginPath(); ctx.ellipse(hx, hy, 0.9, 1.1, h, 0, Math.PI * 2); ctx.stroke();   // (the lip round its neck)
+        }
+        return true;
+    }
+    // PIED-BILLED GREBE. On top: the egg of a body riding fairly high, its lobed feet paddling dim under the water behind.
+    // SINKING (lo 0 -> 1): the body lets go of the light and the water closes over its back until only the head and a dim
+    // strip of back show (the -sinking painting), a lip of water round the neck. DIVING (sink): under head first, the
+    // water closing over it from the bill back; coming up the same backwards, the water running off its back.
+    function drawGrebePainted(ctx, g) {
+        if (!pondReady(PBG_SPR.swim, PBG_SPR.sink, PBG_SPR.chicks)) return false;
+        if (g.mode === 'under') return true;
+        const sink = g.sink || 0, lo = g.lo || 0, body = g.chicks ? PBG_SPR.chicks : PBG_SPR.swim, wt = `rgb(${waterTint()})`;
+        ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.h);
+        // the feet, paddling together behind, under the water (they show in overhead shots)
+        if (lo < 0.6 && sink < 0.6) {
+            const kick = Math.sin((g.bob || 0) * 5) * 0.3, a = 0.35 * (1 - lo / 0.6) * (1 - sink / 0.6);
+            ctx.fillStyle = `rgba(30,40,40,${a})`;
+            for (const sd of [-1, 1]) {
+                ctx.save(); ctx.translate(sd * 0.8, pbgY(0.78)); ctx.rotate(sd * (0.45 + (sd > 0 ? kick : -kick)));
+                ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(sd * 0.25, 1.6); ctx.quadraticCurveTo(sd * 0.9, 2.4, sd * 0.45, 2.7); ctx.quadraticCurveTo(0, 2.5, -sd * 0.1, 1.7); ctx.closePath(); ctx.fill();
+                ctx.restore();
+            }
+        }
+        // the contact shade
+        const sh = (1 - 0.55 * lo) * (1 - sink);
+        if (sh > 0.02) { ctx.fillStyle = `rgba(8,24,30,${0.26 * sh})`; ctx.beginPath(); ctx.ellipse(0.35, 1.2 - 2 * lo, 3.1 * (1 - 0.5 * lo), 5.2 * (1 - 0.4 * lo), 0, 0, Math.PI * 2); ctx.fill(); }
+        const R = PBG_F * 0.55;
+        const P = lo < 1 ? sprPosed(ctx, sprImg(body), PBG_F, 0.5, PBG_CY, R, 140) : null;
+        const Q = lo > 0 ? sprPosed(ctx, sprImg(PBG_SPR.sink), PBG_F, 0.5, PBG_CY, R, 141) : null;
+        const veil = (Pc, y0, y1, a0, a1) => {   // the water over part of a composite, a0 at y0 easing to a1 at y1
+            const c = Pc.c.getContext('2d'), kk = Pc.px / (2 * Pc.R), Y = (y) => (Pc.R + y) * kk;
+            c.globalCompositeOperation = 'source-atop';
+            const gr = c.createLinearGradient(0, Y(y0), 0, Y(y1)); gr.addColorStop(0, `rgba(${waterTint()},${a0})`); gr.addColorStop(1, `rgba(${waterTint()},${a1})`);
+            c.fillStyle = gr; c.fillRect(0, 0, Pc.px, Pc.px); c.globalCompositeOperation = 'source-over';
+        };
+        if (Q) veil(Q, pbgY(PBG_SPR.neck) + 0.2, pbgY(PBG_SPR.strip), 0, 0.5);   // (the back just under the surface)
+        if (P && lo > 0) veil(P, pbgY(PBG_SPR.bot) - (1 - lo) * 11.5 - 1, pbgY(PBG_SPR.bot) - (1 - lo) * 11.5 + 1.5, 0, 0.8);   // (the water rising up the body from the tail)
+        let front = null;
+        // going down the water closes from the bill back; coming up (sink falling, back on top) the head breaks first and
+        // the water runs off the back last — the same veil run from the tail
+        const up = g.mode === 'swim', yH = pbgY(PBG_SPR.top), yT = pbgY(lo > 0.5 ? PBG_SPR.strip : PBG_SPR.bot);
+        if (sink > 0) { const Pc = lo > 0.5 ? Q : P; if (Pc) front = up ? slipUnder(ctx, Pc, sink, yT, yH, 3, 9) : slipUnder(ctx, Pc, sink, yH, yT, 3, 9); }
+        if (Q) humpBlit(ctx, Q, null, Math.min(1, lo * 2) * (1 - 0.6 * sink * sink));
+        if (P) humpBlit(ctx, P, null, (1 - lo) * (1 - 0.6 * sink * sink));
+        if (lo > 0.25 && sink < 0.5) waterline(ctx, pbgY(PBG_SPR.neck) + 0.5, 1.5, 0.45 * Math.min(1, (lo - 0.25) / 0.5) * (1 - 2 * sink), 11);   // (the lip round its neck)
+        if (front != null && sink < 1) waterline(ctx, front, lo > 0.5 ? 1.3 : 2.6, 0.45 * Math.sin(Math.PI * Math.min(1, sink * 1.1)), 12);   // (a quiet diver: a thin lip, not a crown)
+        ctx.restore();
+        return true;
+    }
+
+    // PAINTED TURTLE from above (DRAWN; the painting above replaces it once loaded): a low domed carapace in dark olive with pale seams between
     // the scutes and the red-orange marks round its rim, the head stretched out with bold
     // yellow stripes, four splayed legs sunning. `wet` brightens the shell's shine.
     function drawTurtle(ctx, x, y, h, alpha, wet, size) {
         if (alpha <= 0.02) return;
+        if (!window.__POND_DRAWN && drawTurtlePainted(ctx, x, y, h, alpha, wet, size)) return;
         const sz = TURTLE_SCALE * (size || 1);
         ctx.save(); ctx.translate(x, y); ctx.rotate(h); ctx.scale(sz, sz); ctx.globalAlpha = alpha;
         ctx.lineJoin = 'round'; ctx.lineCap = 'round';
@@ -4879,6 +5134,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     }
     // A turtle under water: a dim shape; when it peeks, just the striped head at the surface.
     function drawTurtleUnder(ctx, t) {
+        if (!window.__POND_DRAWN && drawTurtleUnderPainted(ctx, t, t.ux, t.uy, t.uh)) return;
         ctx.save(); ctx.translate(t.ux, t.uy); ctx.rotate(t.uh);
         ctx.scale(TURTLE_SCALE / 1.2 * (t.size || 1), TURTLE_SCALE / 1.2 * (t.size || 1));   // drawn at the old 1.2
         ctx.fillStyle = 'rgba(30,45,38,0.28)'; ctx.beginPath(); ctx.ellipse(0, 1, 9, 11.5, 0, 0, Math.PI * 2); ctx.fill();
@@ -4892,11 +5148,13 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.restore();
     }
 
+    // (DRAWN, the old great crested grebe — the pond's is the pied-billed now, painted above; kept as the fallback)
     // GREAT CRESTED GREBE from above: a slim pointed grey-brown body with white showing at
     // the flanks, the long white neck, and the head that is the whole read — a chestnut-and-
     // black ruff fanned either side, a dark double crest, the fine pink bill. `yaw` turns the
     // head (the dance's head-shake); `sink` rolls it under on a dive.
     function drawGrebe(ctx, g) {
+        if (!window.__POND_DRAWN && drawGrebePainted(ctx, g)) return;
         const sink = g.sink || 0;
         if (sink >= 1) return;
         ctx.save(); ctx.translate(g.x, g.y); ctx.rotate(g.h); ctx.scale(GREBE_SCALE * (1 - 0.35 * sink), GREBE_SCALE * (1 - 0.35 * sink));
@@ -5304,7 +5562,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const F of velFleets) drawVelellaFleet(ctx, F);
         for (const B of mackBoils) drawMackBoil(ctx, B);
         for (const b of clubCorms) { if (b.prints && b.prints.length && onCam(b.x, b.y, 300)) drawCormPrints(ctx, b); if (b.splash > 0) drawSlap(ctx, b.sx, b.sy, b.splash, 0.22); if ((b.mode === 'swim' || b.mode === 'under' || b.mode === 'leap') && onCam(b.x, b.y, 40)) drawCormorant(ctx, b); }
-        for (const F of clubGulls) for (const b of F.birds) if (b.mode === 'float' && onCam(b.x, b.y, 40)) drawGullFloat(ctx, b);
+        for (const F of clubGulls) for (const b of F.birds) { if (b.prints.length && onCam(b.x, b.y, 300)) drawCormPrints(ctx, b); if ((b.mode === 'float' || b.mode === 'alert') && onCam(b.x, b.y, 40)) drawGullFloat(ctx, b); }
         if (!cfg) return;
         for (const G of shoals) drawShoal(ctx, G);
         for (const s of poppers) drawSeal(ctx, s);
@@ -5323,6 +5581,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const G of runs) drawRun(ctx, G);
         for (const F of rompers) if (F.mode !== 'rest') for (const m of F.members) { if (F.mode === 'swim' && (m.dip || 0) < 0.3) drawWakeTrail(ctx, m, 3.6 * OTTER_SCALE / 2, 1.2, imgReady(sprImg(ROTTER_SPR.file)) ? 0.4 : 0.65); drawOtter(ctx, m, false, F); }   // (the wake sized to it: 3.6 -> 1.65, Oct 18 2026)
         for (const L of leaps) drawLeap(ctx, L);
+        for (const q of rises) if (onCam(q.x, q.y, 30)) drawRise(ctx, q);
         for (const g of lurkers) {
             // the V comes off the SNOUT, where the head pushes the water (its track recorded at the body's middle, so
             // carried forward along the heading to the snout, 24 u ahead)
@@ -5390,11 +5649,21 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // Turtles in the water: going in, under (a dim shape, a head now and then), coming out.
         for (const b of baskers) for (const t of b.turtles) {
             if (b.cfg.kind === 'frog') continue;
+            const painted = !window.__POND_DRAWN && pondReady(PT_SPR.bask, PT_SPR.swim);
+            const asSwim = (x, y, h, a) => { const ga = ctx.globalAlpha; ctx.globalAlpha = ga * a; drawTurtleUnderPainted(ctx, t, x, y, h); ctx.globalAlpha = ga; };
             if (t.mode === 'under') drawTurtleUnder(ctx, t);
-            else if (t.mode === 'slide') drawTurtle(ctx, t.hx + t.ox, t.hy + t.oy, t.h, 1 - 0.85 * (t.t / 0.55), 1, t.size);
-            else if (t.mode === 'climb') {
-                const k = Math.min(1, t.t / 1.6);
-                drawTurtle(ctx, t.cx0 + (t.hx - t.cx0) * k, t.cy0 + (t.hy - t.cy0) * k, t.h, 0.25 + 0.75 * k, 1, t.size);
+            else if (t.mode === 'slide') {
+                // off the log and in: the basker turning swimmer as it drops
+                const k = t.t / 0.55;
+                if (painted) { asSwim(t.hx + t.ox, t.hy + t.oy, t.h, k); drawTurtle(ctx, t.hx + t.ox, t.hy + t.oy, t.h, 1 - k, 1, t.size); }
+                else drawTurtle(ctx, t.hx + t.ox, t.hy + t.oy, t.h, 1 - 0.85 * k, 1, t.size);
+            } else if (t.mode === 'climb') {
+                // up from the bottom rowing, turning to the log, and hauling out (the swimmer turning basker as it comes out)
+                const k = Math.min(1, t.t / 1.6), x = t.cx0 + (t.hx - t.cx0) * k, y = t.cy0 + (t.hy - t.cy0) * k;
+                if (painted) {
+                    const e = Math.max(0, Math.min(1, (k - 0.6) / 0.4)), out = e * e * (3 - 2 * e), h = t.uh + angDiff(t.h, t.uh) * Math.min(1, k * 1.6);
+                    asSwim(x, y, h, 1 - out); drawTurtle(ctx, x, y, h, out, 1, t.size);
+                } else drawTurtle(ctx, x, y, t.h, 0.25 + 0.75 * k, 1, t.size);
             }
             // (Oct 18 2026, Wes: "1.5x or less" at sea level) the plop's rings by the turtle's 27 -> 10 (were 6+22, 4+14)
             if (t.plop > 0) { const tk = TURTLE_K; drawRing(ctx, t.ux, t.uy, t.plop, 6 * tk, 22 * tk, 0.75); drawRing(ctx, t.ux, t.uy, Math.max(0, t.plop - 0.3), 4 * tk, 14 * tk, 0.5); }
@@ -5406,6 +5675,16 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             // dive ring 6+18, rise ring 10+14
             const dk = DIVER_K[kind] || 1;
             for (const g of G.birds) {
+                if (kind === 'grebe') {
+                    // the pied-billed grebe: its wake (only the head's, hiding); the swirl and slick where it went down (a
+                    // forage dive's little jump, or the head slipping under from the hide); rings where it comes up
+                    const lo = g.lo || 0;
+                    if (g.mode !== 'under') drawWakeTrail(ctx, g, lo > 0.5 ? 0.9 : 2.6, lo > 0.5 ? 0.45 : 0.9, 0.4 * (1 - 0.35 * lo));
+                    if (g.dvX != null) diveWater(ctx, g.dvX, g.dvY, g.dvH, g.dvT, g.flee ? 4.5 : 8, (g.dvX * 0.07) % 7);
+                    if (g.mode !== 'under') drawGrebe(ctx, g);
+                    if (g.rise > 0) drawRing(ctx, g.x, g.y, g.rise, 2.5, 6, g.flee || lo > 0.5 ? 0.3 : 0.5);
+                    continue;
+                }
                 if (g.mode !== 'under') drawWakeTrail(ctx, g, (kind === 'beaver' ? 7 : 5.5) * dk, (kind === 'beaver' ? 2.4 : 1.3) * dk, kind === 'beaver' ? 0.6 : 0.4);
                 if (g.mode !== 'under') (kind === 'loon' ? drawLoon : kind === 'beaver' ? drawBeaver : drawGrebe)(ctx, g);
                 if (g.slap > 0) drawSlap(ctx, g.x, g.y, g.slap, dk);
@@ -5459,6 +5738,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         for (const F of rompers) if (F.mode === 'rest') { if (F.crowned === undefined) F.crowned = underCrown(F.jam.x, F.jam.y, F.jam); if (!F.crowned) for (const m of F.members) drawOtter(ctx, m, true); }
         if (!cfg) return;
         for (const e of stalkers) if (e.mode === 'fly') drawEgret(ctx, e);
+        for (const L of pelLines) for (const b of L.birds) if (onCam(b.x, b.y, 60)) drawPelicanFlying(ctx, b.x, b.y, L.h, b.z, L.flap - b.i * 2.4, false);   // (the flapping passes back down the line)
         for (const c of colonies) for (const g of c.birds) if (g.mode !== 'perched') drawGullFlying(ctx, g.x, g.y, g.h, g.z, g.flap, false, g.juv);
         for (const f of followers) {
             if (!f.ship) continue;
@@ -5484,7 +5764,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (spoonFlocks.length || avoFlocks.length) drawFlatsAir(ctx);
         for (const b of clubCorms) if ((b.mode === 'fly' || b.mode === 'takeoff' || b.mode === 'land') && onCam(b.x, b.y, 60)) drawCormorant(ctx, b);
         for (const b of clubTerns) if (onCam(b.x, b.y, 60)) drawTern(ctx, b);
-        for (const F of clubGulls) for (const b of F.birds) if (b.mode !== 'float' && onCam(b.x, b.y, 60)) drawClubGullFlying(ctx, b);
+        for (const F of clubGulls) for (const b of F.birds) if (b.mode !== 'float' && b.mode !== 'alert' && onCam(b.x, b.y, 60)) drawClubGullFlying(ctx, b);
         for (const q of frigFish) if (onCam(q.x, q.y, 60)) drawFrigFish(ctx, q);
         for (const f of frigates) if (onCam(f.x, f.y, 150)) drawFrigate(ctx, f);
     }
@@ -6858,6 +7138,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 ctx.restore();
             }
         }
+        if (!window.__POND_DRAWN && pondReady(DUCK_SPR.file)) { drawDucklingPainted(ctx, d, t, i, sw); ctx.restore(); return; }
         // the down: a fuzzy round body, yellow at the fringe
         ctx.beginPath();
         for (let k = 0; k <= 36; k++) {
@@ -6898,6 +7179,35 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         ctx.fillStyle = '#4b4238'; ctx.fill();
         ctx.fillStyle = '#d99a7c'; ctx.beginPath(); ctx.arc(0, -5.3, 0.45, 0, Math.PI * 2); ctx.fill();
         ctx.restore();
+        ctx.restore();
+    }
+
+    // THE PAINTED DUCKLING (pond-duckling, Oct 20 2026: dark olive-brown above with the four buff spots, yellow at the
+    // face and fringe), in the drawn duckling's frame (bill -9.4 to tail 7.6). What a brood does on the water between
+    // following the line (field accounts: mallard ducklings live on insects, PECKED off the surface and snapped from the
+    // air, and dabble — TIPPING UP, head and breast under, tail up, feet paddling to hold it): a quick lunge and a peck
+    // every few seconds, with a ring off the bill; at rest, now and then, a tip-up of a couple of seconds. Each duckling
+    // on its own clock (a hash of its index), so the brood never pecks in step; drawn from the clock, no PRNG.
+    function drawDucklingPainted(ctx, d, t, i, sw) {
+        const hsh = (n) => { const x = Math.sin(n * 127.1 + i * 311.7) * 43758.5453; return x - Math.floor(x); };
+        const pc = t * 0.45 + i * 0.37, pn = Math.floor(pc), pf = pc - pn, pecks = hsh(pn) < 0.75 - 0.5 * sw;
+        const peck = pecks && pf > 0.4 && pf < 0.52 ? Math.sin(Math.PI * (pf - 0.4) / 0.12) : 0;
+        const dc = t * 0.035 + i * 0.53, dn = Math.floor(dc), df = dc - dn, dabs = sw < 0.3 && hsh(dn + 77) < 0.55;
+        const dab = dabs && df > 0.3 && df < 0.37 ? Math.sin(Math.PI * (df - 0.3) / 0.07) : 0;
+        if (pecks && pf > 0.46 && pf < 0.8) drawRing(ctx, 0, -10.5, 1 - (pf - 0.46) / 0.34, 0.8, 3.5, 0.5);   // (the peck's ring, off the bill)
+        if (dabs && df > 0.3 && df < 0.44) drawRing(ctx, 0, -2, 1 - (df - 0.3) / 0.14, 6, 7, 0.45);           // (going down, the ring off its breast)
+        if (dab > 0.05) {
+            // tipped up: the feet out behind, paddling hard at the surface to hold it there
+            const kk = Math.sin(t * 16 + i) * 0.5;
+            ctx.fillStyle = `rgba(92,70,40,${0.75 * dab})`;
+            for (const sd of [-1, 1]) { ctx.save(); ctx.translate(sd * 1.6, 7.2); ctx.rotate(sd * (0.5 + (sd > 0 ? kk : -kk))); ctx.beginPath(); ctx.ellipse(0, 1.6, 1.0, 1.8, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+        }
+        ctx.save(); ctx.translate(0, -1.4 * peck);   // (the lunge)
+        const P = sprPosed(ctx, sprImg(DUCK_SPR.file), DUCK_F, 0.5, DUCK_CY + 0.9 / DUCK_F, 12, 142);
+        let front = null;
+        if (P && dab > 0) front = slipUnder(ctx, P, 0.5 * Math.min(1, dab * 1.6), -9.4, 7.6, 4.4, 5);
+        humpBlit(ctx, P, null, 1);
+        if (front != null) waterline(ctx, front, 4.6, 0.8 * Math.min(1, dab * 2), 6);
         ctx.restore();
     }
 
@@ -11303,76 +11613,149 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         if (b.ring > 0) drawRing(ctx, b.x, b.y, b.ring, 5 * CORM_SC, 14 * CORM_SC, 0.4);
     }
 
-    // ── herring gulls loafing on the water (Wes, Sep 27) ─────────────────────────────────
-    // Loose rafts of a few gulls sit lazily on the sea, bobbing, turning to face the wind, preening now and then.
-    // A boat within five boat lengths (~275 u; real gulls flush at 20-50 m) puts the raft up: they run a step
-    // and lift off one after another, fly low with a few flaps and long glides, and settle on a new patch of water
-    // 300-700 u away, mostly downwind, each in a little splash. Never on a mark (Wes).
+    // ── herring gulls loafing on the water (Wes, Sep 27; PT-028, Oct 21 2026) ────────────
+    // Loose rafts of a few gulls sit on the sea, turning to face the wind, preening, now and then a bather.
+    // RIDING THE CHOP (Wes, PT-028: "Birds not moving with the water… If there are wind waves, shouldn't something
+    // be happening?"). A gull (0.6 m) is far shorter than a 10-15 kt sea breeze's wind waves (Hs ~0.3 m, 7-11 m
+    // long, Tp 2-3 s), so it rides them like a particle of the water: forward on each crest, back in the trough,
+    // up and down once a wave. From overhead that is a surge along the wind of ~±2 u, a heave (parallax, a few
+    // percent of scale) and the wash over its rear coming and going; neighbours out of step by their spacing
+    // down the wind. The train runs with the drawn wind waves (water.js: crests travel at windSpeed × 3 u/s).
+    // The raft drifts slowly downwind; a bird that falls behind its place paddles back.
+    // A boat within five boat lengths (~275 u) of a bird puts the raft up (Wes's number; real gulls tolerate a
+    // close approach). The nearest goes first and the alarm runs through the raft in 0.5-2 s; each turns into
+    // the wind, patters a few steps across the water (prints) and lifts off, flies at a herring gull's real
+    // 10-12 m/s (~300 u/s on the game clock, CORM_FLY's 17.5 m/s = 500) a few metres up, with flap and glide,
+    // and glides in to land 50-140 m away, mostly downwind, each in a little skid. Never on a mark (Wes).
+    const GULL_WAVE_L = 100, GULL_SPEED = 300;
+    function gullChop(x, y) {
+        const wd = state.wind ? state.wind.direction : 0, ws = state.wind ? state.wind.speed : 10;
+        const ux = Math.sin(wd + Math.PI), uy = -Math.cos(wd + Math.PI);   // downwind, the way the crests run
+        const ph = 6.283 * ((x * ux + y * uy) - ws * 3 * T) / GULL_WAVE_L;
+        return { ph, a: Math.max(0, Math.min(1.2, (ws - 3) / 11)), ux, uy };
+    }
+    // the course's water: the marks' box (the beat and its tacking room), inside the venue's sea
     function gullSpot(fromX, fromY) {
         const marks = state.course.marks || [], wd = state.wind ? state.wind.direction : 0;
+        let x0 = -2900, x1 = 2900, y0 = -5400, y1 = 1300;
+        if (marks.length) { x0 = Math.max(x0, Math.min(...marks.map(m => m.x)) - 1000); x1 = Math.min(x1, Math.max(...marks.map(m => m.x)) + 1000);
+                            y0 = Math.max(y0, Math.min(...marks.map(m => m.y)) - 500); y1 = Math.min(y1, Math.max(...marks.map(m => m.y)) + 500); }
         for (let k = 0; k < 30; k++) {
             let x, y;
-            if (fromX == null) { x = R(-2900, 2900); y = R(-5400, 1300); }
-            else { const a = wd + Math.PI + R(-1.3, 1.3), d = R(300, 700); x = fromX + Math.sin(a) * d; y = fromY - Math.cos(a) * d; }
-            if (Math.abs(x) > 2950 || y < -5500 || y > 1400) continue;
+            if (fromX == null) { x = R(x0, x1); y = R(y0, y1); }
+            else { const a = wd + Math.PI + R(-1.3, 1.3), d = R(500, 1400); x = fromX + Math.sin(a) * d; y = fromY - Math.cos(a) * d; }
+            if (x < x0 || x > x1 || y < y0 || y > y1) continue;
             if (marks.some(m => Math.hypot(m.x - x, m.y - y) < 250) || boatNear(x, y, 400)) continue;
             return { x, y };
         }
-        return { x: R(-2900, 2900), y: R(-5400, 1300) };
+        return { x: R(x0, x1), y: R(y0, y1) };
     }
     function makeClubGulls(c) {
         const out = [];
         for (let g = 0; g < c.rafts; g++) { const S = gullSpot(), n = Math.round(R(c.n[0], c.n[1])), raft = { g, cx: S.x, cy: S.y, birds: [] };
-            for (let j = 0; j < n; j++) raft.birds.push({ j, juv: rnd() < 0.33, x: S.x + R(-28, 28) * GULL_FLOAT, y: S.y + R(-28, 28) * GULL_FLOAT, h: R(0, 6.283), z: 0, mode: 'float', t: R(2, 10), flap: R(0, 7), glide: false, gT: 0, delay: 0, tx: 0, ty: 0, bob: R(0, 7), preen: 0, splash: 0, sx: 0, sy: 0 });
+            for (let j = 0; j < n; j++) { const ox = R(-28, 28) * GULL_FLOAT, oy = R(-28, 28) * GULL_FLOAT;
+                raft.birds.push({ j, juv: rnd() < 0.33, ox, oy, x: S.x + ox, y: S.y + oy, h: R(0, 6.283), z: 0, mode: 'float', t: R(2, 10), flap: R(0, 7), glide: false, gT: 0, delay: 0, tx: 0, ty: 0, bob: R(0, 7), preen: 0, bathe: 0, bathT: R(20, 120), paddle: 0, splash: 0, sx: 0, sy: 0, sp: 0, cz: 0, prints: [], pr: 0 }); }
             out.push(raft); }
         return out;
     }
     function updateClubGulls(dt) {
-        const c = cfg.gulls, wd = state.wind ? state.wind.direction : 0;
+        const c = cfg.gulls, wd = state.wind ? state.wind.direction : 0, marks = state.course.marks || [];
+        const dwx = Math.sin(wd + Math.PI), dwy = -Math.cos(wd + Math.PI);
         for (const F of clubGulls) {
-            // a boat close: the whole raft goes up, one after another
-            if (F.birds.every(b => b.mode === 'float') && boatNear(F.cx, F.cy, c.flushR)) {
-                const S = gullSpot(F.cx, F.cy); F.cx = S.x; F.cy = S.y;
-                F.birds.forEach((b, i) => { b.mode = 'up'; b.delay = i * R(0.1, 0.35); b.tx = S.x + R(-28, 28) * GULL_FLOAT; b.ty = S.y + R(-28, 28) * GULL_FLOAT; /* (Oct 18 2026: the raft's spread with the bird) */ b.flap = 0; b.splash = 0.7; b.sx = b.x; b.sy = b.y; });
+            // a boat close to any bird: the nearest goes, and the alarm runs through the raft
+            if (F.birds.every(b => b.mode === 'float')) {
+                let first = null, bd = c.flushR;
+                for (const b of F.birds) { const o = boatNear(b.x, b.y, bd); if (o) { bd = Math.hypot(o.x - b.x, o.y - b.y); first = b; } }
+                if (first) {
+                    const S = gullSpot(F.cx, F.cy); F.cx = S.x; F.cy = S.y;
+                    F.birds.forEach(b => { b.mode = 'alert'; b.preen = 0; b.bathe = 0; b.delay = b === first ? 0 : 0.15 + Math.hypot(b.x - first.x, b.y - first.y) / 25 + R(0, 0.9);
+                        b.tx = S.x + b.ox; b.ty = S.y + b.oy; b.flap = 0; b.sp = 0; b.cz = R(35, 70); b.t = R(0.45, 0.8); b.pr = 0; });
+                } else if (!marks.some(m => Math.hypot(m.x - F.cx, m.y - F.cy) < 300)) { F.cx += dwx * 1.0 * dt; F.cy += dwy * 1.0 * dt; }   // the raft's patch drifts with the wind (not onto a mark)
             }
             for (const b of F.birds) {
                 b.bob += dt; b.splash = Math.max(0, b.splash - dt / 0.9);
+                for (const q of b.prints) q.t += dt; while (b.prints.length && b.prints[0].t > 1.6) b.prints.shift();
+                // a bow coming straight at it (a fast boat outrunning the alarm, or a raft still settling after the last
+                // flush): this one goes up on its own, at once (PT-044)
+                const bow = (b.mode === 'float' || (b.mode === 'alert' && b.delay > 0)) && hullAhead(b.x, b.y, 140, 18);
+                if (bow) {
+                    // it runs off square to the boat's track, on whichever side it sits, not into the wind across the bow
+                    const sa = Math.sin(bow.heading), ca = Math.cos(bow.heading), side = Math.sign((b.x - bow.x) * ca + (b.y - bow.y) * sa) || 1;
+                    b.runH = bow.heading + side * Math.PI / 2;
+                    if (b.mode === 'float') { b.tx = F.cx + b.ox; b.ty = F.cy + b.oy; if (Math.hypot(b.tx - b.x, b.ty - b.y) < 300) { const S = gullSpot(b.x, b.y); b.tx = S.x + b.ox; b.ty = S.y + b.oy; }
+                        b.preen = 0; b.bathe = 0; b.flap = 0; b.sp = 0; b.cz = R(35, 70); b.t = R(0.45, 0.8); b.pr = 0; }
+                    b.mode = 'alert'; b.delay = 0;
+                }
                 if (b.mode === 'float') {
-                    // lazing: drifting a touch, swinging slowly to head into the wind, now and then a preen
-                    b.t -= dt; b.h += angDiff(wd + Math.sin(b.bob * 0.1 + b.j) * 0.6, b.h) * Math.min(1, dt * 0.3);
-                    b.x += Math.sin(wd + Math.PI) * 1.2 * dt; b.y -= Math.cos(wd + Math.PI) * 1.2 * dt;
+                    // lazing: drifting a touch faster than its patch, swinging slowly to head into the wind, a preen now and then;
+                    // fallen a few lengths behind its place, it paddles back up (a short burst, head to the wind)
+                    b.t -= dt; b.h += angDiff(wd + Math.sin(b.bob * 0.1 + b.j) * 0.3, b.h) * Math.min(1, dt * 0.3);
+                    b.x += dwx * 1.25 * dt; b.y += dwy * 1.25 * dt;
+                    const ex = F.cx + b.ox - b.x, ey = F.cy + b.oy - b.y, e = Math.hypot(ex, ey);
+                    if (e > 9) b.paddle = 1; else if (e < 2) b.paddle = 0;
+                    if (b.paddle) { b.x += ex / e * 4 * dt; b.y += ey / e * 4 * dt; }
                     if (b.t <= 0) { b.preen = b.preen ? 0 : 1; b.t = b.preen ? R(1, 3) : R(5, 15); }
+                    // BATHING: a bout of dips and wing-splashes (shorebirds' and gulls' bathing bouts), then a shake
+                    b.bathT -= dt; if (b.bathT <= 0 && !b.bathe) { b.bathe = R(2.5, 4.5); b.preen = 0; }
+                    if (b.bathe > 0) { b.bathe = Math.max(0, b.bathe - dt); if (!b.bathe) { b.bathT = R(60, 180); b.t = R(0.8, 1.5); b.preen = 1; } }
                     continue;
                 }
-                b.delay -= dt; if (b.delay > 0) continue;
-                // the takeoff: into the wind, a few hard beats, then low flaps and glides to the new spot
-                b.gT -= dt; if (b.gT <= 0) { b.glide = !b.glide; b.gT = b.glide ? R(1, 2.5) : R(0.6, 1.2); }
-                if (!b.glide || b.mode === 'up') b.flap += dt * 3.2 * WING_TIME * 6.283;
+                if (b.mode === 'alert') {   // head up, turning into the wind, then the run
+                    b.delay -= dt; b.h += angDiff(wd, b.h) * Math.min(1, dt * 4);
+                    if (b.delay <= 0) { b.mode = 'run'; b.splash = 0.5; b.sx = b.x; b.sy = b.y; if (b.runH != null) b.h = b.runH; }
+                    continue;
+                }
+                if (b.mode === 'run') {   // THE TAKEOFF: into the wind, wings beating hard, the feet pattering prints
+                    b.t -= dt; b.flap += dt * 4.5 * WING_TIME * 6.283; b.sp = Math.min(160, b.sp + dt * 220);
+                    b.h += angDiff(b.runH != null ? b.runH : wd, b.h) * Math.min(1, dt * 3); b.x += Math.sin(b.h) * b.sp * dt; b.y -= Math.cos(b.h) * b.sp * dt;
+                    b.pr -= dt * b.sp; if (b.pr <= 0) { b.prints.push({ x: b.x, y: b.y, h: b.h, t: 0 }); b.pr = 3 + b.sp * 0.05; }
+                    b.z = Math.max(0, (0.25 - b.t) * 30);
+                    if (b.t <= 0) { b.mode = 'fly'; b.glide = false; b.gT = R(0.8, 1.4); b.runH = null; }
+                    continue;
+                }
                 const d = Math.hypot(b.tx - b.x, b.ty - b.y);
-                steer(b, b.tx, b.ty, d < 60 ? Math.max(10, d * 0.9) : 55, d < 90 ? 6 : 2, dt);
-                b.z += ((b.mode === 'up' ? 18 : d > 70 ? 24 : 0) - b.z) * Math.min(1, dt * 1.3);
-                if (b.mode === 'up' && b.z > 10) b.mode = 'fly';
-                if (b.mode === 'fly' && d < 5) { b.mode = 'float'; b.z = 0; b.t = R(4, 12); b.splash = 1; b.sx = b.x; b.sy = b.y; }
+                if (b.mode === 'fly') {   // low and quick, flap and glide, turning off the wind for the new water
+                    b.sp += ((b.juv ? 0.92 : 1) * GULL_SPEED - b.sp) * Math.min(1, dt * 1.2);
+                    b.gT -= dt; if (b.gT <= 0) { b.glide = !b.glide; b.gT = b.glide ? R(0.6, 1.4) : R(0.7, 1.3); }
+                    if (!b.glide) b.flap += dt * 3.0 * WING_TIME * 6.283;
+                    steer(b, b.tx, b.ty, b.sp, 2.2, dt); b.z += (b.cz - b.z) * Math.min(1, dt * 1.1);
+                    if (d < 260) { b.mode = 'land'; b.glide = true; }
+                    continue;
+                }
+                // 'land': wings set, gliding down and slowing; the feet go in with a skid of white water
+                b.sp += (Math.max(70, d * 1.3) - b.sp) * Math.min(1, dt * 2); steer(b, b.tx, b.ty, b.sp, 3.5, dt); b.z = Math.max(0, Math.min(b.z, d * 0.2));
+                if (d < 6 || b.z <= 0.3) { b.mode = 'float'; b.z = 0; b.t = R(4, 12); b.splash = 1; b.sx = b.x; b.sy = b.y; b.prints.push({ x: b.x, y: b.y, h: b.h, t: 0 }); b.paddle = 0; }
             }
         }
     }
+
     // HERRING GULL AFLOAT (Wes's references, Sep 27 2026: rafts on the sea, singles close up). It rides low and
     // boat-shaped: the white head, neck and breast up front, the pale grey folded wings making the back with a white
     // edge, the black wingtips crossed past the tail and cocked up, spotted white; a yellow bill with the red spot.
     // A third of any raft are JUVENILES — mottled grey-brown all over, a dark bill, dark wingtips.
     function drawGullFloat(ctx, b) {
-        ctx.save(); ctx.translate(b.x, b.y);
-        const q = (b.bob * 0.35 + b.j * 0.3) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.3 * (1 - q)})`; ctx.lineWidth = 0.6;
+        // riding the chop (gullChop): the surge along the wind, the heave as parallax, a shimmy as each crest goes under —
+        // pushed a little past true (±1.5 u, a couple of percent) to read at game size, as the hulls' swell heave is (7.5%)
+        const C = gullChop(b.x, b.y), surge = -Math.sin(C.ph) * 2.4 * C.a, heave = Math.cos(C.ph) * C.a, bath = b.bathe > 0 ? b.bathe : 0;
+        ctx.save(); ctx.translate(b.x + C.ux * surge, b.y + C.uy * surge);
+        const q = (b.bob * 0.35 + b.j * 0.3) % 1; ctx.strokeStyle = `rgba(255,255,255,${0.22 * (1 - q)})`; ctx.lineWidth = 0.6;
         for (const [a0, a1] of [[0.3, 1.4], [2.0, 3.0], [3.6, 4.6], [5.0, 5.9]]) { ctx.beginPath(); ctx.arc(0, 1, (7 + q * 6) * GULL_FLOAT, a0, a1); ctx.stroke(); }
-        ctx.rotate(b.h + (b.preen ? Math.sin(b.bob * 2) * 0.15 : 0) + Math.sin(b.bob * 1.3 + b.j) * 0.04); ctx.scale(GULL_FLOAT, GULL_FLOAT); ctx.lineJoin = 'round';
+        // BATHING: dips and wing-splashes, the body rocking — spray off it on each splash
+        const dip = bath ? Math.max(0, Math.sin(bath * 7.5)) : 0;
+        if (bath && dip > 0.6) drawSlap(ctx, 0, 0, 0.35 + 0.5 * (dip - 0.6) / 0.4, 0.15);
+        ctx.rotate(b.h + (b.preen ? Math.sin(b.bob * 2) * 0.15 : 0) + Math.sin(b.bob * 1.3 + b.j) * 0.04 + Math.sin(C.ph + 1.2) * 0.06 * C.a + (bath ? Math.sin(b.bob * 9) * 0.14 : 0));
+        ctx.scale(GULL_FLOAT * (1 + 0.06 * heave), GULL_FLOAT * (1 + 0.06 * heave) * (1 - 0.12 * dip)); ctx.lineJoin = 'round';
         // THE PAINTED GULL AFLOAT (Oct 13 2026): the perched painting (adult or juvenile), riding low — the contact shade
         // round it and the water over its rear half
         { const S = b.juv ? GULL_JUV_PERCH : GULL_PERCH, pim = sprImg(S.file);
           if (imgReady(pim)) { const L = 21, F = L / (S.bot - S.top), k = Math.hypot(ctx.getTransform().a, ctx.getTransform().b);
             ctx.fillStyle = 'rgba(8,24,30,0.3)'; ctx.beginPath(); ctx.ellipse(0.5, 1.6, 4.4, 8.4, 0, 0, 6.283); ctx.fill();
             ctx.drawImage(humpMip(pim, 1.5 * k * F), -S.cx * F, -L * 0.52 - S.top * F, F, F);
-            const gw = ctx.createLinearGradient(0, 2, 0, 10); gw.addColorStop(0, `rgba(${waterTint()},0)`); gw.addColorStop(1, `rgba(${waterTint()},0.35)`);
+            // the wash over its rear coming and going with the chop; a bather's front goes under on each dip
+            const gw = ctx.createLinearGradient(0, 2, 0, 10); gw.addColorStop(0, `rgba(${waterTint()},0)`); gw.addColorStop(1, `rgba(${waterTint()},${0.3 + 0.12 * Math.sin(C.ph) * C.a})`);
             ctx.save(); ctx.beginPath(); ctx.ellipse(0, 5, 4.6, 6, 0, 0, 6.283); ctx.clip(); ctx.fillStyle = gw; ctx.fillRect(-6, 2, 12, 10); ctx.restore();
+            if (dip > 0) { const gf = ctx.createLinearGradient(0, -10, 0, -2); gf.addColorStop(0, `rgba(${waterTint()},${0.75 * dip})`); gf.addColorStop(1, `rgba(${waterTint()},0)`);
+              ctx.save(); ctx.beginPath(); ctx.ellipse(0, -5, 4.4, 6, 0, 0, 6.283); ctx.clip(); ctx.fillStyle = gf; ctx.fillRect(-6, -12, 12, 10); ctx.restore(); }
             ctx.restore(); if (b.splash > 0) drawRing(ctx, b.sx, b.sy, b.splash, 4 * GULL_FLOAT, 12 * GULL_FLOAT, 0.5); return; } }
         const J = b.juv, body = J ? '#b9aa96' : '#fbfbf9', back = J ? '#8f7f6c' : '#b4bec8', tip = J ? '#3c3129' : '#16181c', edge = 'rgba(60,56,52,0.55)';
         // the contact shade, the body riding low (the rear half awash)
@@ -12608,7 +12991,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
     // dappled, the ridge of the back catching the light as a pale line; underwater it glows pale grey-blue
     // against the deep blue, the flippers turquoise-white; never the dark grey of a humpback.)
     const BLUE = { body: '#b7bfcc', mottle: '#dde3ea', dark: '#8f99aa', wet: '#b3bac8', under: '#c2ccd8', fin: '#c4ece8', fluke: '#c5d1dd', guard: '#d9dfe7', pleat: '#d9ccc4' };
-    let foams = [], blood = [], kelpBeds = [], seaOtterRafts = [], slHauls = [], slGroups = [], whites = [], bluePods = [], blueBlows = [], krill = [], huntCool = 8;
+    let pelLines = [], nextPelLine = 0, foams = [], blood = [], kelpBeds = [], seaOtterRafts = [], slHauls = [], slGroups = [], whites = [], bluePods = [], blueBlows = [], krill = [], huntCool = 8;
     // On the player's screen, or near it. The view is the canvas (1 u = 1 px) ROTATED about the camera by
     // camera.rotation, so the test is a circle round the camera through the canvas corners — a fixed 760x520 box
     // (as this was) culled animals still on screen at the corners of a wide or rotated view, and Wes saw the
@@ -12683,6 +13066,45 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
             const nx = m.x + Math.sin(nh) * v * dt, ny = m.y - Math.cos(nh) * v * dt;
             if (!solidAt(nx + Math.sin(nh) * 14 * OT_SC, ny - Math.cos(nh) * 14 * OT_SC, null, true) && !solidAt(nx, ny, null, true)) { m.h = nh; m.x = nx; m.y = ny; return; } }
         m.h += 2 * dt;
+    }
+    // ── BROWN PELICAN LINES (PT-028) ──────────────────────────────────────────────────
+    // Off the central California coast pelicans travel in lines of 5-15, single file or a loose echelon, skimming a
+    // metre or two over the sea in ground effect (gliding near the surface cuts induced drag about half, Hainsworth
+    // 1988): a few deep beats, then a long glide, the leader starting each bout and the flapping passing back down the
+    // line, bird by bird. Real airspeed ~9-10 m/s (~270 u/s on the game clock: CORM_FLY 500 = 17.5 m/s). A bird whose
+    // track crosses a boat rises over the mast and settles back down behind it. The Cove's painted pelican.
+    function updatePelLines(dt, me) {
+        const c = cfg.pelicanLines;
+        for (const L of pelLines) {
+            L.t += dt; L.flap += dt * WING_TIME * 14;
+            L.h += Math.sin(L.t * 0.25 + L.seed * 9) * 0.04 * dt;   // a gentle drift off the line of flight
+            L.x += Math.sin(L.h) * L.sp * dt; L.y -= Math.cos(L.h) * L.sp * dt;
+            const fx = Math.sin(L.h), fy = -Math.cos(L.h);
+            for (const b of L.birds) {
+                b.x = L.x - fx * b.back + -fy * b.lat * 1; b.y = L.y - fy * b.back + fx * b.lat;
+                const over = (state.boats || []).some(o => Math.hypot(o.x - b.x - fx * 60, o.y - b.y - fy * 60) < 110 || Math.hypot(o.x - b.x, o.y - b.y) < 70);
+                b.z += ((over ? 75 : b.z0 + Math.sin(L.t * 0.7 + b.back * 0.05) * 2) - b.z) * Math.min(1, dt * (over ? 2.5 : 0.8));
+            }
+        }
+        if (me) pelLines = pelLines.filter(L => L.t < 70 && !(Math.hypot(L.x - me.x, L.y - me.y) > c.spawnR + 900 && ((L.x - me.x) * Math.sin(L.h) - (L.y - me.y) * Math.cos(L.h)) > 0));
+        nextPelLine -= dt;
+        if (nextPelLine > 0 || !me || pelLines.length >= 2) return;
+        nextPelLine = 2;   // (not in open water yet: look again in a moment)
+        const near = (x, y, r) => seaOtterRafts.some(G => G.members.some(m => Math.hypot(m.x - x, m.y - y) < r)) || slHauls.some(H => H.members.some(m => Math.hypot(m.x - x, m.y - y) < r));
+        if (near(me.x, me.y, c.clearR)) return;
+        for (let k = 0; k < 8; k++) {
+            // half the lines run with the boat's course (overtaking it slowly, so they stay in view), half across it
+            const h = rnd() < 0.5 ? me.heading + R(-0.6, 0.6) : R(0, 6.283), fx = Math.sin(h), fy = -Math.cos(h);
+            const side = rnd() < 0.5 ? -1 : 1, pass = R(c.pass[0], c.pass[1]) * side;
+            const x = me.x - fx * c.spawnR - fy * pass, y = me.y - fy * c.spawnR + fx * pass;
+            if (onLand(x, y) || onLand(me.x - fy * pass, me.y + fx * pass)) continue;
+            const n = Math.round(R(c.n[0], c.n[1])), ech = rnd() < 0.4 ? (rnd() < 0.5 ? -1 : 1) : 0, birds = [];
+            let back = 0; for (let i = 0; i < n; i++) { birds.push({ i, back, lat: ech ? ech * back * R(0.25, 0.4) : R(-5, 5), z0: R(c.z[0], c.z[1]), z: 0, x, y }); back += R(36, 50); }
+            for (const b of birds) b.z = b.z0;
+            pelLines.push({ x, y, h, sp: c.speed * R(0.92, 1.08), flap: R(0, 52), t: 0, seed: rnd(), birds });
+            nextPelLine = R(c.every[0], c.every[1]);
+            break;
+        }
     }
     function updateSeaOtters(dt) {
         const c = cfg.seaOtters;
@@ -13830,7 +14252,10 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
                 W.bite = Math.max(0, (W.bite || 0) - dt);
                 if (W.t <= 0) { W.mode = 'patrol'; W.t = R(12, 25); }
             }
-            if (W.mode !== 'rush' && W.mode !== 'sprint') W.depth += (W.want - W.depth) * Math.min(1, dt * (W.mode === 'stalk' ? 1.2 : 0.5));
+            // A HULL COMING AT IT (PT-044): the fin goes down — a white sinks away from a boat — and comes back up behind it
+            const ducking = (W.mode === 'patrol' || W.mode === 'fin' || W.mode === 'shadow') && hullAhead(W.x, W.y, 150, 40);
+            if (ducking) W.want = Math.max(W.want, 0.55);
+            if (W.mode !== 'rush' && W.mode !== 'sprint') W.depth += (W.want - W.depth) * Math.min(1, dt * (ducking ? 1.6 : W.mode === 'stalk' ? 1.2 : 0.5));
             const o = W, ox0 = W.x, oy0 = W.y, oh0 = W.h;
             if (W.mode !== 'breach') steerTo(W, tx, ty, spd, W.mode === 'sprint' ? 4 : W.mode === 'shadow' || W.mode === 'chase' || W.mode === 'chaseOtter' ? 2.6 : 1.1, dt, 30, 20, W.mode === 'sprint' || W.mode === 'shadow' || W.mode === 'chase' || W.mode === 'chaseOtter');
             const moved = Math.hypot(o.x - ox0, o.y - oy0);
@@ -14503,7 +14928,7 @@ const GULL_SPAN = 21, PELICAN_SPAN = 30, PORPOISE_LEN = lifeU(1.6) * 1.5;
         // For tests: the solid/land queries, checked against a full scan (eval/_solid_index_check.js).
         _probe: { solidAt: (x, y, ig, nf) => solidAt(x, y, ig, nf), fixedLand: (x, y) => fixedLand(x, y) },
         // For tests and the venue card.
-        debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, leaps, shoals, poppers, fishers, runs, soarers, rompers, whalePods, blows, splashes, riders, flyfish, gliders, prints, flyPatches, stripers, condors, bands, coyotes, boilsHit, orcaPods, penguinColonies: colonies2, floeGroups, swimmers, treks, lseals, ternFlocks, visited: [...visited], jellyBloom, mantas, foxFlocks, hawksbills, dugongs, blood, foams, igHeaps, crabBeds, boobyFlocks, boobyLines, frigates, frigFish, hammerSchools, gsealCols, spoonFlocks, avoFlocks, scrabBeds, clubCorms, velFleets, mackBoils, clubTerns, clubGulls, seaOtterRafts, slHauls, slGroups, whites, bluePods, blueBlows, krill, huntCool, woken: [...lurkWoken], feats: [...feats], bedAt: lagoonBedM }),
+        debug: () => ({ colonies, pods, resident, flight, boil, baskers, divers, waders, cruisers, lurkers, stalkers, perchers, leaps, rises, shoals, poppers, fishers, runs, soarers, rompers, whalePods, blows, splashes, riders, flyfish, gliders, prints, flyPatches, stripers, condors, bands, coyotes, boilsHit, orcaPods, penguinColonies: colonies2, floeGroups, swimmers, treks, lseals, ternFlocks, visited: [...visited], jellyBloom, mantas, foxFlocks, hawksbills, dugongs, blood, foams, pelLines, igHeaps, crabBeds, boobyFlocks, boobyLines, frigates, frigFish, hammerSchools, gsealCols, spoonFlocks, avoFlocks, scrabBeds, clubCorms, velFleets, mackBoils, clubTerns, clubGulls, seaOtterRafts, slHauls, slGroups, whites, bluePods, blueBlows, krill, huntCool, woken: [...lurkWoken], feats: [...feats], bedAt: lagoonBedM }),
         forceBoil: (x, y) => { boil = { x, y, t: 0, life: 45, seed: 1 }; if (flight) flight.mode = 'transit'; },
         // The drawing functions, for a look-bench (eval/_wildlife_bench.js) — not used by the game.
         art: { drawBoilAt: (ctx, x, y, t) => { const o = boil, oT = T; boil = { x, y, t: 10, life: 60, seed: 3 }; T = t; drawBoil(ctx); boil = o; T = oT; }, drawGullFlying, drawGullPerched, drawPelicanFlying, drawPelicanSitting, drawPorpoise,

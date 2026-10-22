@@ -47,7 +47,7 @@ every venue was brought down to this in one pass, Oct 18 2026.)
    small penguins, bullfrog, tangs, bass, sockeye, flying fish, mackerel, jellies — and the Sally Lightfoot and shore
    crabs, "a bit oversized" by Wes's call (~7 across the legs).
 3. **Keep the order.** Where the floor squashes small animals together, step them so they stay in their true
-   order: duckling < turtle < grebe (9.5 < 10.3 < 11.3); tern < gull < cormorant. A bigger animal never draws
+   order: duckling < turtle < grebe (9.5 < 10.3 < 11.3-11.5); tern < gull < cormorant. A bigger animal never draws
    smaller than a smaller one sharing its water.
 4. **Measure body length, bill or nose to tail.** Wings, antlers and legs follow in proportion.
    A flying bird's span comes out of its body length; it is not sized separately.
@@ -82,9 +82,9 @@ bill/nose to tail tip; a bird's span in brackets. Measured Oct 18 2026, after th
 
 | Venue | Animal | True | Drawn (u) | × true |
 |---|---|---|---|---|
-| Duckling Pond | Mallard duckling | 0.15 m | 9.5 | floor |
-| | Painted turtle | 0.2 m | 10.3 | floor |
-| | Great crested grebe | 0.5 m | 11.3 | floor |
+| Duckling Pond | Mallard duckling (painted) | 0.15 m | 9.5 | floor |
+| | Eastern painted turtle (painted) | 0.2 m | 10.3 | floor |
+| | Pied-billed grebe (painted; was the great crested, Oct 20 2026) | 0.33 m | 11.5 | floor |
 | Cove | Herring gull, perched (gliding span) | 0.6 m (1.4 m) | 9.8 (20.3) | floor (1.45×) |
 | | Brown pelican, sitting (gliding span) | 1.3 m (2.1 m) | 19.3 (29) | 1.5× (1.4×) |
 | | Harbour porpoise | 1.6 m | 23.5 | 1.5× |
@@ -130,6 +130,7 @@ bill/nose to tail tip; a bird's span in brackets. Measured Oct 18 2026, after th
 | | Blue whale | 25 m | 340 | 1.4× |
 | | California sea lion cow; bull | 1.9 m; 2.4 m | 27; 34 | 1.4× |
 | | Sea otter | 1.3 m | 20.3 | 1.5× |
+| | Brown pelican in flight (the Cove's sprite; lines over the channels, PT-028 Oct 21 2026) | 2.1 m span | 29 | 1.4× |
 | Spoonbill Flats | Grey seal cow; bull | 2.0 m; 2.6 m | 34; 38 | 1.5–1.7× (size 1); ~1.5× at the mean size |
 | | Roseate spoonbill (span) | 0.8 m (1.3 m) | 12 (~18.5) | 1.5× |
 | | Pied avocet (span) | 0.44 m (0.75 m) | 8 (~16) | flock floor |

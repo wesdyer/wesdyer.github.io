@@ -34,8 +34,9 @@ VENUES = {
     # Added Aug 2026 with pond-boathouse. It was MISSING while pond-duckling and
     # pond-coach-launch were generated, so those two got no venue clause at all --
     # both carried their own colour argument inside the subject, which is why it was
-    # not noticed. A building has no such argument, hence the key.
-    "pond":      ("fresh meadow green, mown lawn right to the water's edge", "buttercup yellow -- training sails and ducklings"),
+    # not noticed. A building has no such argument, hence the key. (Oct 20 2026: "and ducklings"
+    # dropped from the accent -- it told the model the bird was buttercup; a mallard duckling is dark.)
+    "pond":      ("fresh meadow green, mown lawn right to the water's edge", "buttercup yellow -- the training sails"),
     # Added Sep 2026 with the Otter Point card slot (venues.md 16). Charcoal granite and
     # white surf are NEUTRALS in this card, not hues -- the commitment is the water.
     "volcanic":  ("volcanic black rock and near-black water", "ember red — lava cracks, vents and the dusk glow"),

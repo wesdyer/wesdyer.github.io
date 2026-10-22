@@ -7500,9 +7500,9 @@
       "class": "element",
       "venue": "pond",
       "status": "art",
-      "subject": "ONE SINGLE mallard duckling swimming, seen from directly overhead, centred and filling the frame, facing the TOP of the frame. From this angle it is a small plump teardrop: a round body widest just behind the head, tapering to a tiny upturned tail-tuft at the bottom of the frame, and a round head at the top with a short flat bill foreshortened and pointing away up the frame. Two stubby wing-nubs are just visible as soft bumps along the sides; no legs or feet show. COLOUR: the body is a vivid saturated BUTTERCUP YELLOW - not lemon, not cream, not pastel, not spring-chick pale. This bird sits on teal water beside a green lawn and the model's instinct will be to soften it toward pastel or wash it green; do not. Hold the yellow saturated and warm. The species marking is the one darker note: a soft olive-brown cap on the crown, a thin dark eye-stripe running back from each eye, and a faint olive-brown patch on the back and the tail-tuft. The bill is a small flat orange-brown wedge; the two eyes are dark dots either side of the head, seen from above. Crisp flat faceted shading in two or three clean value masses, a fluffy but simplified outline - a few soft tufts breaking the contour, never fur texture or individual feathers - a clean dark contour no heavier than the rest of the set, no glossy speculars, no white halo or plate behind the bird. Exactly one duckling, alone, nothing else in frame. No water, no ripples, no wake, no reflection, no shadow, no ground.",
-      "note": "Paddle's beginner class (tutorial.md 13): the line that leads the player out on the First Sail and falls in behind them at the graduation finish. SHIPS AS A SPRITE (ships:true) for the same reason as the penguins: js/game/school.js draws each bird individually so the chain can lead, raft up and follow; a composed group could not. True scale is ~1px (a duckling is 10cm), so `world` is a legibility size, matching the 14px placeholder the school draws today. Buttercup is the venue's owned hue (venues.md 15, venue-art.md struck-pastels rule) - the subject refuses pastel the way the penguins refuse navy.",
-      "world": 14,
+      "subject": "ONE MALLARD DUCKLING (a few days old) swimming, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head, and NOT a yellow Easter chick or rubber duck. From straight overhead the head is the TOP of a skull, with the short flat bill foreshortened and pointing straight ahead up the frame. SHAPE: a small plump down-ball, a rounded teardrop broadest just behind the wings, a round head on a very short neck at the top, two tiny stubby wing-nubs as soft bumps at the sides, a small blunt tuft of a tail at the bottom; a soft fluffy contour with a few tufts breaking it, never fur texture or individual feathers. COLOUR from the references: a mallard duckling is DARK, not yellow. The whole back, rump and the top of the head (the cap) are a warm dark olive-brown (about #4A3A24, softer #5E4A2E planes); on that dark back sit the species' signature FOUR buff-yellow SPOTS - one pair on the wing-nubs at the shoulders and a smaller pair either side of the rump (about #E3C66A). The yellow is only a fringe: the cheeks and sides of the face, a narrow band of the yellow down (about #E8CD6F) showing round the edges of the body where the pale breast and flanks just peek out past the dark back, and a buff-yellow stripe over each eye (the supercilium), with a thin dark eye-stripe below it running back from the bill. The bill a small flat dark grey-olive wedge (about #4F4A3A), not orange. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no white halo or plate. Exactly one duckling, alone. No water, no ripples, no wake, no reflection, no shadow, no ground, no legs or feet. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "RE-ROLL Oct 20 2026. REFERENCE CHECK (istock: duck families swimming from above, mallard hens with young): a mallard duckling from above is a DARK olive-brown back with FOUR buff-yellow spots and yellow only on the face and the fringe, which is what the game's DRAWN duckling already shows. The Aug 2026 painting was an all-buttercup chick (the venue-hue rule overrode the bird) and was never wired. The Oct 20 re-roll is WIRED (wildlife.js drawDucklingPainted), the drawn one kept as the fallback. Paddle's beginner class (tutorial.md 13): the line that leads the player out on the First Sail and falls in behind them at the graduation finish. SHIPS AS A SPRITE: js/game/school.js moves each bird; wildlife.js drawDucklings draws it (wake, waddle, feet, the dodge off the bow). Drawn 9 long (DUCKLING_SCALE 0.55), under the turtle (10) and grebe (11). world 13 = FRAME first guess.",
+      "world": 11,
       "ships": true
     },
     {
@@ -9233,6 +9233,84 @@
       "anchorPx": [
         0.501,
         0.5
+      ]
+    },
+    {
+      "key": "pond-painted-turtle",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "pond",
+      "world": 14,
+      "anchor": "center",
+      "status": "art",
+      "subject": "an EASTERN PAINTED TURTLE basking, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A low, smooth, OVAL shell about two-thirds of the animal's length, widest just behind the middle; the head and neck stretched straight out ahead of the shell, the head small and rounded at the tip; all four legs SPLAYED out flat to the sides as it suns itself, the front legs reaching forward and out with long claws, the hind legs stretched BACK alongside the short pointed tail, their webbed feet spread. COLOUR from the references (the EASTERN painted turtle, Chrysemys picta picta): the carapace smooth, low and oval, a dark olive-black (about #2A2E24) with each large scute outlined by a narrow pale olive-yellow SEAM (about #A9A06A), the central and side scutes in straight rows across the back; round the rim the marginal scutes marked with bright RED-ORANGE bars and crescents (about #C8442A), the signature; the head, neck, legs and tail black-olive (about #23251E) with bold YELLOW STRIPES (about #E3C64A) running along them and thinner red stripes on the neck and legs; claws dark. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no log, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 20 2026 (istock: eastern and western painted turtles from above, basking single file on logs, swimming; pied-billed grebes swimming, sinking, on the nest, with striped chicks on the back). Wes, Oct 20: the pond's grebe becomes the PIED-BILLED grebe (the great crested is European; the pond's plants and turtle are eastern North American). Replacing the drawn painted turtle (BASKERS: in single file along a drift log, nose to tail; slide in, swim under and peek, climb back). Drawn ~10 nose to tail (TURTLE_K). world 14 = FRAME first guess (the turtle ~0.7 of the frame).",
+      "anchorPx": [
+        0.5004,
+        0.5108
+      ]
+    },
+    {
+      "key": "pond-painted-turtle-swim",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "pond",
+      "world": 14,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "pond-painted-turtle",
+      "subject": "the SAME EASTERN PAINTED TURTLE (an EDIT of the accepted basking turtle) SWIMMING, seen from directly overhead, head toward the TOP of the frame, same frame and scale. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The shell, head and colours exactly the same. Swimming: the head and neck reaching forward, the FRONT LEGS mid-stroke, one forward and one swept back alongside the shell, the HIND LEGS pushing back with their webbed feet spread like paddles, one further back than the other, the tail trailing straight behind. Not splayed flat like a basking turtle. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no log, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 20 2026 (istock: eastern and western painted turtles from above, basking single file on logs, swimming; pied-billed grebes swimming, sinking, on the nest, with striped chicks on the back). Wes, Oct 20: the pond's grebe becomes the PIED-BILLED grebe (the great crested is European; the pond's plants and turtle are eastern North American). WANTED: the turtle under the water after it slides off the log (seen through the pond, dim), and peeking up. Same frame as the basker.",
+      "anchorPx": [
+        0.5024,
+        0.5279
+      ]
+    },
+    {
+      "key": "pond-pied-billed-grebe",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "pond",
+      "world": 17,
+      "anchor": "center",
+      "status": "art",
+      "subject": "a PIED-BILLED GREBE swimming, seen from directly overhead, head toward the TOP of the frame. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. A small, CHUNKY, compact diving bird: from above a rounded EGG-SHAPED body, broadest behind the middle, the rear end BLUNT and FLUFFY with no visible tail (a little pale fluff at the very back); a short thick neck and a big rounded head; the short, THICK, chicken-like BILL pointing up the frame. COLOUR from the references (breeding plumage): the back and folded wings a warm mottled BROWN (about #6E5640), the feathers finely edged paler (about #8F7658); the crown and back of the neck darker brown-grey (about #4B4036); a little of the buff-brown flank (about #A08868) showing at each side; the BILL pale whitish-horn (about #D9D4C4) with a bold BLACK RING round its middle, the signature; a fleck of the white eye-ring at each side of the head. No crest, no frills, no long neck. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no log, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 20 2026 (istock: eastern and western painted turtles from above, basking single file on logs, swimming; pied-billed grebes swimming, sinking, on the nest, with striped chicks on the back). Wes, Oct 20: the pond's grebe becomes the PIED-BILLED grebe (the great crested is European; the pond's plants and turtle are eastern North American). Replacing the drawn great crested grebe (DIVERS: a pair on the open pond, diving when a boat comes close). Drawn 11 long (GREBE_K). world 16 = FRAME first guess. Pied-billed grebes SINK slowly out of sight rather than dive (they squeeze the air from their feathers) and often travel with only the head above water: see the -sinking edit.",
+      "anchorPx": [
+        0.4996,
+        0.5076
+      ]
+    },
+    {
+      "key": "pond-pied-billed-grebe-sinking",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "pond",
+      "world": 17,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "pond-pied-billed-grebe",
+      "subject": "the SAME PIED-BILLED GREBE (an EDIT of the accepted swimming grebe) SINKING, seen from directly overhead, head toward the TOP of the frame, same frame and scale. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. Its famous trick: it has squeezed the air out of its feathers and settled LOW like a submarine, so only the HEAD, the neck and a narrow ridge of the BACK show; the rest of the body is under the water and NOT drawn; the head, bill and colours exactly as before. Paint ONLY the parts above the water: no water line, no ripples, no reflection. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no log, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 20 2026 (istock: eastern and western painted turtles from above, basking single file on logs, swimming; pied-billed grebes swimming, sinking, on the nest, with striped chicks on the back). Wes, Oct 20: the pond's grebe becomes the PIED-BILLED grebe (the great crested is European; the pond's plants and turtle are eastern North American). WANTED: the step between swimming and gone (the game fades and sinks it after this).",
+      "anchorPx": [
+        0.4996,
+        0.4491
+      ]
+    },
+    {
+      "key": "pond-pied-billed-grebe-chicks",
+      "class": "world-prop",
+      "role": "ambient",
+      "venue": "pond",
+      "world": 17,
+      "anchor": "center",
+      "status": "art",
+      "derivedFrom": "pond-pied-billed-grebe",
+      "subject": "the SAME PIED-BILLED GREBE (an EDIT of the accepted swimming grebe) carrying TWO CHICKS on its back, seen from directly overhead, head toward the TOP of the frame, same frame and scale. WHAT YOU MUST NOT SEE, because this is how animals from above fail: no face, no profile, no eye looking out of the picture, no side of the head. From straight overhead the head is the TOP of a skull, with the muzzle or bill foreshortened and pointing straight ahead up the frame. The adult exactly as before; tucked into the feathers on its back, between the folded wings, two small downy CHICKS, each a third of the adult's length, their heads sticking out side by side: each chick's head and neck boldly STRIPED black and white (about #1E1C1A and #EDE9DF) with a small bare RED-ORANGE patch on the crown (about #D2503A), the body dark sooty down. True local colours with soft value planes inside each colour (never one flat fill, never pushed brighter than life). Flat hard-edged facets, no glossy highlights, no rim light, no glow, no water, no ground, no log, no shadow. Naturalistically proportioned, never a cartoon mascot, no eye highlights, no smile",
+      "note": "REFERENCE CHECK Oct 20 2026 (istock: eastern and western painted turtles from above, basking single file on logs, swimming; pied-billed grebes swimming, sinking, on the nest, with striped chicks on the back). Wes, Oct 20: the pond's grebe becomes the PIED-BILLED grebe (the great crested is European; the pond's plants and turtle are eastern North American). OPTIONAL: the season's chicks ride on a parent's back (both parents carry them).",
+      "anchorPx": [
+        0.5004,
+        0.5073
       ]
     }
   ],

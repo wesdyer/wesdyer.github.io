@@ -12,8 +12,9 @@ const { chromium } = require('playwright'); const path = require('path'); const 
   await p.goto(`http://localhost:${port}/regatta/index.html`); await p.waitForFunction(() => window.Wildlife && Wildlife.art);
   // ask for the painted sprites, and give them a moment to load
   // (twice: a painted bird in flight asks for its wings only once its body is in — Oct 18 2026)
-  for (let pass = 0; pass < 2; pass++) { await p.evaluate(() => { const g = document.createElement('canvas').getContext('2d'); const c = state.camera; state.camera = null;
+  for (let pass = 0; pass < 4; pass++) { await p.evaluate(() => { const g = document.createElement('canvas').getContext('2d'); const c = state.camera; state.camera = null;
     Wildlife.art.drawWhiteShark(g, { x: 0, y: 0, h: 0, depth: 0, mode: 'patrol', ph: 0, trail: [], trailT: 0, z: 0, roll: 0, jaw: 0, slick: 0, turn: 0 }, 'water');
+    Wildlife.art.drawTurtle(g, 0, 0, 0, 1, 0); Wildlife.art.drawGrebe(g, { x: 0, y: 0, h: 0, mode: 'swim', trail: [] }); Wildlife.art.drawDuckling(g, { x: 0, y: 0, h: 0, swim: 0, trail: [] }, 0, 0);   // (the pond's painted three, Oct 20 2026)
     for (const k of ['orca', 'orca-b', 'orca-calf']) Wildlife.art.drawOrca(g, { kind: k, x: 0, y: 0, h: 0, z: 0, up: -1, beat: 0, turn: 0, trail: [], j: 0 });
     Wildlife.art.drawBlueWhale(g, { j: 0, len: 360, x: 0, y: 0, h: 0, mode: 'under', t: 10, depth: 0.5, ph: 0, fluke: 0, turn: 0, lunge: 0, sd: 1, mott: [] });
     Wildlife.art.drawSpinner(g, { live: true, i: 0, x: 0, y: 0, h: 0, spin: 0, breath: 0 });
@@ -58,7 +59,7 @@ const { chromium } = require('playwright'); const path = require('path'); const 
     Wildlife.art.drawEagle(g, { i: 0, x: 0, y: 0, h: 0, z: 0, mode: 'soar', flap: 0, fish: 0, splash: 0 });
     for (const jam of [true, false]) Wildlife.art.drawOtter(g, { i: 0, x: 0, y: 0, h: 0, rh: 0, size: 1, dip: 0, ring: 0, trail: [], trailT: 0, curl: 0 }, jam);
     state.camera = c; });
-  await p.waitForTimeout(900); }
+  await p.waitForTimeout(2500); }   // (2.5 s: on the busy hub page the pond's sprites took ~2 s to arrive, Oct 20 2026)
   // SIZES_ZOOM=4 draws each animal at 4 px a unit (Oct 18 2026): at 1 px a unit an animal near the 10-unit floor loses its
   // bill tip and tail to anti-aliasing under the alpha cut, and reads ~20% short. Numbers are in units either way.
   const ZOOM = +process.env.SIZES_ZOOM || 1;
