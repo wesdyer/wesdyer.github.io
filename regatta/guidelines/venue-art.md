@@ -67,7 +67,7 @@ eye-path, focal element, wildlife witness).
 | Glacier Sound | steel navy + faceted ice blue-white | penguin yellow, orca black |
 | Clubhouse Point | plain honest blue | one orange mark + committee boat |
 | Spoonbill Flats (specced as Curlew Flats) | warm amber-gold sandbars | deep slate-blue channels, rust-red withies. *Shipped Sep 2026 at 0.693* |
-| Emberfall Isle | volcanic black rock + near-black water | ember red — lava cracks, vents, dusk glow. *Claimed Sep 2026; the shipped card is the Aug 2026 one and still carries the aurora and starfield the reroll must drop* |
+| Emberfall Isle | volcanic black rock + black-teal storm water | ember red — lava cracks, vents, dusk glow; white-violet lightning as the one extra light. *Claimed Sep 2026; the shipped card is the Aug 2026 one and still carries the aurora and starfield. Prompt rewritten Oct 22 2026 (PT-093); the Oct 26 storm card ships slate-blue water at 0.45 saturation by Wes's choice of the moodier render* |
 | Duckling Pond | fresh meadow green (lawn to the water's edge) | buttercup yellow — training sails, ducklings |
 | Otter Point | cold saturated teal-green kelp-forest water + dark olive/rust-brown giant kelp mats | ice-plant magenta on the cliff tops (pale granite and white surf are neutrals, not hues)  *Shipped Sep 2026 at 0.720 saturation; the water landed teal-blue (hue 194°, between Sockeye and Stillwater)* |
 
@@ -104,7 +104,7 @@ the venue plays from the top fifth alone. Rule 5's cartoon-cumulus recipe is the
 | Glacier Sound | katabatic, ice | low grey overcast, sea smoke off the water, snow streaks. Already correct |
 | Clubhouse Point | it is a benchmark | deliberately plain and evenly lit — blandness is the identity. Flatter than everything else |
 | Spoonbill Flats | falling tide, building current | wide open estuary sky, varied blob-stack cumulus at mixed sizes plus thin streaks |
-| Emberfall Isle | vents & pumice | ash plume drifting downwind, ember-lit from beneath, at DUSK. *The shipped card is a starfield with an aurora — the reroll owed since the July audit* |
+| Emberfall Isle | lightning & eruptions | a dusk THUNDERSTORM: ash-purple and smoke-red cloud, the plume bending downwind into it, lightning forking through the ash and one bolt striking the water (Wes, Oct 2026: "the lightning is the big thing that happens in this venue"). *Shipped Oct 26 2026 (PT-093): storm, plume and a bolt on the water; the aurora is gone* |
 | Duckling Pond | light, steady, safe — nothing is coming | early-morning gradient, buttery gold low to pale blue high, essentially cloudless — first-lesson light. ⚠️ Distinct from Lake's near-empty *midday* pale: the warmth is the difference, and Lake owns the tiny-cumulus scatter |
 | Otter Point | building sea breeze, swell, fog on the last leg | clear saturated blue overhead, and a flat-topped **fog bank** parked along the offshore horizon like a low wall — flat-topped with a slightly uneven upper edge, sunlit on top, one flat grey-blue shade beneath. The marine layer the sea breeze is about to pull in. ⚠️ Not Glacier Sound's overcast: a bright day with a wall of grey on one edge |
 

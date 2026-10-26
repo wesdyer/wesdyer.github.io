@@ -1218,6 +1218,8 @@ glowing vent (hazard) · pumice raft (terrain, drifting) · steam column (weathe
 prop) · lava delta (terrain) · seabirds on the thermal (ambient) · black sand
 shore (terrain).
 
+**Card (Oct 26 2026, PT-093).** The aurora card is replaced: a dusk thunderstorm, the main cone's plume bending into the cloud, lightning forking through the ash and one bolt striking the water, crack vents, frigatebirds. Wes picked the moodier of two renders (saturation 0.45, slate water) over the one that met the colour checks; the manifest note has both sets of numbers.
+
 **Status (Sep 2 2026).** `assets/venues/volcanic.venue.js` is a hand-laid first cut:
 round the cans, one lap — three cone islets rounded in order (port, starboard,
 starboard), the main isle and a lava delta as scenery, on the venue's own ground set
