@@ -285,7 +285,10 @@ function checkBoatCollisions(dt) {
 //   Rule 15 — R has just acquired right of way (the oracle's constraint): no call.
 //   Rule 16 — R changed course by > KC_R16_ANG in the last KC_R16_WIN s and her earlier heading would
 //             have missed; or her plan turns > KC_R16_ANG off her onset course during the call: she must
-//             give K room to keep clear, no call.
+//             give K room to keep clear, no call. This is also how 16.2 is judged (a starboard boat bearing
+//             off onto a port boat on a beat): the oracle's "Rule 16.2" flag marks EVERY opposite-tack pair
+//             on a windward leg, whether or not anyone bore off, so it is not a guard here — read as one, it
+//             switched the call off on every upwind port-starboard crossing (Port Rammer on a beat: 0/10).
 //   Rule 18 — K is entitled to mark-room from R: K is the right-of-way boat for this test.
 //   Rule 19 — K is owed room at an obstruction by R (the AI's r19 ledger): no call.
 //   A boat taking a penalty turn is left to the contact umpire.
@@ -397,7 +400,7 @@ function checkKeepClear(dt) {
         const R = res.markRoom ? (res.markRoom === b1.id ? b1 : b2) : res.boat;
         const K = R === b1 ? b2 : b1;
         const blocked = !R || (q && q.R !== R)
-            || (res.constraints && res.constraints.some(c => c === 'Rule 15' || c.indexOf('Rule 16') === 0))
+            || (res.constraints && res.constraints.indexOf('Rule 15') !== -1)
             || kcSpinning(K) || kcSpinning(R)
             || (K._r19Since && K._r19Since[R.id] != null);
         if (!q) {
