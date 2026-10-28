@@ -208,7 +208,7 @@
         titleEl.textContent = V.s.title;
         countEl.textContent = (V.i + 1) + ' / ' + SCN.length;
         textEl.textContent = '“' + V.s.ruleText + '”';
-        window.Rules.interactions = {};
+        window.Rules.interactions = {}; if (typeof resetKeepClear === 'function') resetKeepClear();
         hideHud();
         V.t = 0; V.ready = true;
     }
@@ -291,7 +291,7 @@
                 V.boats[n].raceState.totalPenalties = 0;
                 V.boats[n].raceState.penaltyTurnsOwed = 0;
             }
-            window.Rules.interactions = {};
+            window.Rules.interactions = {}; if (typeof resetKeepClear === 'function') resetKeepClear();
             V.t = 0; pp = segAt(0);
         }
         for (const n of Object.keys(V.boats)) {

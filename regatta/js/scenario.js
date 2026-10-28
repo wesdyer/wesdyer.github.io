@@ -2402,6 +2402,7 @@
         // respawn deterministically from the seeded stream.
         window.state.gusts = [];
         window.Rules.interactions = {};
+        if (typeof resetKeepClear === 'function') resetKeepClear();   // the umpire's keep-clear memory (PT-031)
     }
     function pairRights() {
         const out = [];

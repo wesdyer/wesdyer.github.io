@@ -678,8 +678,7 @@ window.SCENARIO_DOC = {
       {
         "kind": "penalty",
         "who": 1,
-        "rule": "10",
-        "xfail": true
+        "rule": "10"
       }
     ],
     "boats": [
@@ -1087,8 +1086,7 @@ window.SCENARIO_DOC = {
       {
         "kind": "penalty",
         "who": 1,
-        "rule": "11",
-        "xfail": true
+        "rule": "11"
       }
     ],
     "boats": [
