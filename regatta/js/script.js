@@ -245,6 +245,7 @@ function update(dt) {
 
     // Collisions
     checkBoatCollisions(dt);
+    checkKeepClear(dt);
     checkMarkCollisions(dt);
     // BEFORE the land pass, so the coastline still gets the last word. settleFloes states
     // the rule for ice — "shore pass, last, so the coastline always wins" — and it holds

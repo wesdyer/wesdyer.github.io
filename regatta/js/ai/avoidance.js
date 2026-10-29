@@ -441,8 +441,8 @@ Object.assign(BotController.prototype, {
      *
      *  - Base deviation cost: Encourages keeping proper course (RRS general).
      *  - STAND_ON hold-course: RRS 16 — ROW boat should not alter course
-     *    unnecessarily. Graduated per Rule 14: full hold at MEDIUM risk,
-     *    reduced at HIGH (give-way not yielding), zero at IMMINENT.
+     *    unnecessarily. Per Rule 14: full hold at MEDIUM and HIGH risk,
+     *    zero at IMMINENT, and never a tack or gybe away (PT-031).
      *  - Rule 16 toward-threat penalty: Prevents STAND_ON from steering
      *    into keep-clear boat (RRS 16: "give room to keep clear").
      *  - GIVE_WAY large bubble: RRS 16 — give keep-clear boat room to
@@ -978,47 +978,23 @@ Object.assign(BotController.prototype, {
             }
         }
 
-        // KEEP CLEAR (a) — "a boat keeps clear of a right-of-way boat if the right-of-way
-        // boat can sail her course with NO NEED to take avoiding action." NEED is the
-        // word doing the work, and the no-contact foul detector had no way to test it.
-        // It read `lastAvoidDeviation`, which is this boat's TOTAL deflection from every
-        // cause at once — a floe, a mark, a third boat, the arena wall — so a stand-on
-        // boat dodging ice was recorded as having been FORCED by her give-way rival, and
-        // the rival was penalised for it.
-        //
-        // Measured, `_foul_truth_probe` over 12 bay races: every single no-contact foul
-        // the build fired was against an encounter that would have passed 323-861 units
-        // clear had she held her course — 0 of 4 correct, under both reconstructions of
-        // the deflection's sign. The detector was not too narrow. It was aimed at the
-        // wrong quantity.
-        //
-        // So compute the quantity itself: the closest the two of them would come if she
-        // sails her proper course and the other boat holds hers. Below a hull's width
-        // she has to act and the give-way boat has broken her rule; above it, whatever
-        // this boat chose to do, she did not need to.
-        this.properCourseCPA = null;
-        if (this.avoidanceRole === 'STAND_ON' && this.threatBoat && !this.threatBoat.raceState.finished) {
-            const o = this.threatBoat;
-            const ovxP = (o.velocity && o.velocity.x) ? o.velocity.x * 60 : Math.sin(o.heading) * o.speed * 60;
-            const ovyP = (o.velocity && o.velocity.y) ? o.velocity.y * 60 : -Math.cos(o.heading) * o.speed * 60;
-            const mvxP = Math.sin(desiredHeading) * speed, mvyP = -Math.cos(desiredHeading) * speed;
-            let bestP = Infinity;
-            const tEndP = lookaheadFrames / 60;
-            for (let t = 0; t <= tEndP; t += tEndP / 12) {
-                const dxP = (this.boat.x + mvxP * t) - (o.x + ovxP * t);
-                const dyP = (this.boat.y + mvyP * t) - (o.y + ovyP * t);
-                const dP = Math.hypot(dxP, dyP);
-                if (dP < bestP) bestP = dP;
-            }
-            this.properCourseCPA = bestP;
-        }
-
         // The engine's Rule 21 gives us right of way over a penalised boat — but
         // holding course at a boat that is SPINNING is standing on into a hazard,
         // not sailing predictably for a rival who can respond. She cannot keep
         // clear of anyone mid-rotation; drop the hold-course bonus against her.
         const threatSpiral = !!(this.threatBoat && this.threatBoat.raceState.penalty
             && this.threatBoat.controller && this.threatBoat.controller.penaltySpin);
+        // STAND ON, AND STAY ON YOUR TACK (PT-031, Oct 26 2026). A right-of-way boat whose
+        // give-way rival holds on (the way a player sails) waited for IMMINENT and then TACKED
+        // away: C1 below prices the other close-hauled board as a proper course, so the cheapest
+        // Rule 14 escape was a tack — Scenario Lab "Port Rammer", 10/10 seeds, 102-119 deg, 93 m
+        // off her course, and the tack made HER the port boat, so the foul was never called. In
+        // Wes's 43 recorded races a stand-on rival tacked in 41% of crossings against 22% for a
+        // bot with nobody near. Wes: the rights boat holds her course until a collision is
+        // imminent, then takes the avoiding action that avoids it — not a tack. So while she is
+        // stand-on against a boat, the other board is no discount, and changing tack or gybing
+        // carries a tax that only a real collision (the 5e5-scale terms) outbids.
+        const standOnHold = this.avoidanceRole === 'STAND_ON' && !threatSpiral && !!this.threatBoat;
 
         // ONSET AT VO ENTRY, not at detection range (the RRS-ORCA underlay's
         // measured piece). Per-encounter ledgers on the owner's schema-2
@@ -1444,7 +1420,7 @@ Object.assign(BotController.prototype, {
             // rollout of the boat's own turn and speed response through the polar,
             // priced as progress lost toward the current nav target (VMC, u) at
             // 0.6/u. Bearing away is now priced by what it does not buy.
-            if (c1On) {
+            if (c1On && !standOnHold) {
                 const hOther = normalizeAngle(2 * wdAv - desiredHeading);
                 const devO = Math.abs(normalizeAngle(h - hOther));
                 if (devO < Math.abs(offset)) cost = Math.pow(devO, 3) * 200;
@@ -1452,6 +1428,7 @@ Object.assign(BotController.prototype, {
             } else if (taxTack && (normalizeAngle(h - wdAv) > 0 ? 1 : -1) !== hullTkAv) {
                 cost += 600 * jamF;
             }
+            if (standOnHold && (normalizeAngle(h - wdAv) > 0 ? 1 : -1) !== hullTkAv) cost += 30000;
 
             // A HEADING INSIDE THE NO-GO IS NOT A COURSE, IT IS A STOP. The tax above
             // catches a candidate that CROSSES to the other tack; it says nothing about
@@ -1490,15 +1467,13 @@ Object.assign(BotController.prototype, {
             // RRS Rule 16/14: Stand-on boat holds course...
             // but Rule 14 requires evasive action when "it becomes clear
             // the other boat is not keeping clear."
-            // MEDIUM: Full hold-course — give-way boat still has time to act.
-            // HIGH: Reduced hold-course — give-way boat may not be keeping
-            //       clear; begin accepting evasion per Rule 14.
+            // MEDIUM, HIGH: Full hold-course — give-way boat still has time to act.
             // IMMINENT: No hold-course bonus — pure Rule 14 emergency avoidance.
             if (this.avoidanceRole === 'STAND_ON' && !threatSpiral) {
-                if (this.riskState === 'MEDIUM') {
+                // HIGH holds as hard as MEDIUM (PT-031): she acts at IMMINENT, which is
+                // also the moment the umpire's keep-clear test calls the foul (checkKeepClear).
+                if (this.riskState === 'MEDIUM' || this.riskState === 'HIGH') {
                     cost += Math.abs(offset) * 3000 * jamF;
-                } else if (this.riskState === 'HIGH') {
-                    cost += Math.abs(offset) * 1000 * jamF;
                 }
             }
 

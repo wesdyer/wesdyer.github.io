@@ -895,14 +895,7 @@ class BotController {
             this.penaltySpin = false; // cleared (or race state changed) — resume racing
         }
 
-        // Rule 16 grace: when OUR intended course changes MATERIALLY (a tack,
-        // gybe, or big bear-away — not lift/header trim jitter, which happens
-        // near-constantly and starved the foul detector), a keep-clear boat
-        // must get time to respond before we can claim it forced us to act.
-        if (this.prevDesired == null) this.prevDesired = desiredHeading;
-        if (Math.abs(normalizeAngle(desiredHeading - this.prevDesired)) > 0.5) this.rule16Grace = 1.0;
-        else if (this.rule16Grace > 0) this.rule16Grace -= dt;
-        this.prevDesired = desiredHeading;
+        this.prevDesired = desiredHeading;   // last tick's racing intent (the fried helm reads it)
 
         // 3.9 Threading fixed obstacles (PT-050) — see planThread. Only on the racing
         // plan, never over an escape, a wiggle, a penalty turn or a liveness recovery.
@@ -915,6 +908,7 @@ class BotController {
 
         // 4. Collision Avoidance (Reactive Layer)
         // Adjust desiredHeading to avoid immediate threats
+        this.intentHeading = desiredHeading;   // her course before any avoiding action: the umpire's keep-clear test reads it
         desiredHeading = this.applyAvoidance(desiredHeading, speedRequest);
         // ...and a dodge for a boat inside a thread stays inside it: the gap is the only
         // water there is, so swinging wide trades a boat contact for a tree one (Rule 14
@@ -924,55 +918,9 @@ class BotController {
             if (Math.abs(dv) > MAXD) desiredHeading = normalizeAngle(this._threadH + Math.sign(dv) * MAXD);
         }
 
-        // No-contact foul (RRS "keep clear" definition): a boat keeps clear
-        // only if the right-of-way boat can sail her course with NO NEED to
-        // take avoiding action. When we are the stand-on boat and avoidance
-        // has us sustainedly >20° off our intended course at HIGH+ risk, the
-        // give-way boat has broken her rule — contact or not. Guards:
-        //  - Rule 15: role/pairing must be stable >1.5s (a newly obligated
-        //    boat gets room to respond).
-        //  - Rule 16: no claim within 1.5s of our own sharp course change.
-        //  - Rule 18: no claim against a boat entitled to mark-room from us.
-        //  - per-pair 20s cooldown; from the prestart on (PT-030), like every other rule.
-        const RU = (typeof window !== 'undefined' && window.__RULES) ? window.__RULES : {};
-        const DEV = RU.dev != null ? RU.dev : 0.35;
-        const HOLD = RU.hold != null ? RU.hold : 0.8;
-        // GRACE is only a flicker guard: forcing is front-loaded in an
-        // encounter, and the HOLD accumulation itself is the Rule 15 proof —
-        // a give-way boat that kept forcing for HOLD seconds had room and
-        // time to respond and didn't take it.
-        const GRACE = RU.grace != null ? RU.grace : 0.3;
-        if (rulesInForce() && this.avoidanceRole === 'STAND_ON' &&
-            (this.riskState === 'HIGH' || this.riskState === 'IMMINENT') &&
-            this.threatBoat && !this.threatBoat.raceState.finished &&
-            // PENALTIES STACK (PT-064): owing a turn no longer makes a boat immune to a new foul. Only a boat
-            // actually TAKING one (spinning) is left alone here — her keep-clear is Rule 21's, judged in rules.js.
-            !(this.threatBoat.controller && this.threatBoat.controller.penaltySpin) &&
-            !(this.threatBoat.raceState.penalty && Math.abs(this.threatBoat.raceState.penaltyRot || 0) >= 2.1) &&
-            !(this.threatRowRes && this.threatRowRes.markRoom === this.threatBoat.id)) {
-            const cd = (this.foulCooldowns && this.foulCooldowns[this.threatBoat.id]) || 0;
-            const eligible = this.roleStableTime > GRACE && !(this.rule16Grace > 0) && state.time > cd;
-            // Leaky accumulator: deviation oscillates tick-to-tick as the cost
-            // function re-picks candidates, so charge while forced and bleed
-            // (rather than reset) between — a hard reset never reached HOLD.
-            // ...and she must actually have NEEDED to act. See applyAvoidance for the
-            // measurement that says why this guard exists.
-            const needed = this.properCourseCPA != null && this.properCourseCPA < FOUL_NEED_GAP;
-            if (eligible && needed && this.lastAvoidDeviation > DEV) {
-                this.forcedAvoidTimer = Math.min((this.forcedAvoidTimer || 0) + 0.1, 1.5);
-                if (this.forcedAvoidTimer >= HOLD) {
-                    const info = this.threatRowRes ? { rule: this.threatRowRes.rule, reason: this.threatRowRes.reason, kind: 'no_contact', with: this.boat } : { kind: 'no_contact', with: this.boat };
-                    triggerPenalty(this.threatBoat, info);
-                    this.foulCooldowns = this.foulCooldowns || {};
-                    this.foulCooldowns[this.threatBoat.id] = state.time + 20;
-                    this.forcedAvoidTimer = 0;
-                }
-            } else {
-                this.forcedAvoidTimer = Math.max(0, (this.forcedAvoidTimer || 0) - 0.05);
-            }
-        } else {
-            this.forcedAvoidTimer = Math.max(0, (this.forcedAvoidTimer || 0) - 0.1);
-        }
+        // The no-contact foul (RRS "keep clear") is the umpire's now, judged for every pair whoever sails
+        // them: checkKeepClear in sim/collision.js (PT-031). It used to live here and judged only a bot with
+        // right of way, by her own deflection.
 
         // 3.7 Local trajectory refinement through drifting ice — see
         // planFloeTrajectory. Strategy picked WHERE to sail; this picks the line

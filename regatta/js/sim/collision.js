@@ -254,6 +254,239 @@ function checkBoatCollisions(dt) {
     }
 }
 
+// ── KEEP CLEAR: THE NO-CONTACT FOUL (PT-031, Oct 26 2026) ────────────────────────────────────
+// RRS Definitions, Keep Clear: a boat keeps clear of a right-of-way boat "if the right-of-way boat
+// can sail her course with no need to take avoiding action". Wes: call it only when a collision is
+// imminent — otherwise it fires false positives — and the right-of-way boat still takes avoiding
+// action, because a collision costs her far more than the turn. So the question is the jury's: had
+// the right-of-way boat R sailed her course, would the hulls have touched the other boat K?
+//
+// WHO: judged whenever the PLAYER is one of the pair, in either role (a Scenario Lab boat on a script
+// stands in for her). Bot against bot is left to the contact umpire: from outside, a give-way bot
+// holding on cannot be told from one about to duck. WHEN: racing only — in the prestart boats crawl,
+// luff and accelerate, there is no course to hold, and contact is judged there as before.
+//
+//   ONSET — R making way (KC_MINSPD), on a steady course (not turning, a bot's plan on her heading),
+//   and the hulls overlap within KC_T s if R sails on and K holds her course. KC_T is the AI's own
+//   IMMINENT horizon (updateRiskAssessment, tCPA < 2 s), the moment a stand-on bot starts to act.
+//   R's GHOST then sails R's course — a bot's own plan (her heading before avoiding action, bot.js
+//   `intentHeading`), a player's heading at onset — by the distance R really makes (she slows, surfs).
+//   While R is on her course the ghost IS her, and K is judged on her real track: a touch is a call.
+//   Once R takes avoiding action (KC_DEV off her course), K's later moves answer R's dodge, so:
+//     a PLAYER K is watched on, and called when the collision R's course would meet is within KC_LATE
+//       — too late to keep clear on her own — projecting the turn she is already making, on two
+//       checks running;
+//     a BOT K is judged once, at that moment, from her own avoidance before it has seen R's dodge: at
+//       IMMINENT against R, the duck she chose is projected; short of it, no call (bots duck late).
+//   The late projections ask for a clear hit (hulls shrunk to KC_CORE), not a graze.
+//
+// Every rule the oracle decides is covered (10, 11, 12, 13, 18 mark-room, 21); R is the boat the
+// contact umpire above would exonerate. Guards — the limitations on R, and K's entitlements:
+//   Rule 15 — R has just acquired right of way (the oracle's constraint): no call.
+//   Rule 16 — R changed course by > KC_R16_ANG in the last KC_R16_WIN s and her earlier heading would
+//             have missed; or her plan turns > KC_R16_ANG off her onset course during the call: she must
+//             give K room to keep clear, no call. This is also how 16.2 is judged (a starboard boat bearing
+//             off onto a port boat on a beat): the oracle's "Rule 16.2" flag marks EVERY opposite-tack pair
+//             on a windward leg, whether or not anyone bore off, so it is not a guard here — read as one, it
+//             switched the call off on every upwind port-starboard crossing (Port Rammer on a beat: 0/10).
+//   Rule 18 — K is entitled to mark-room from R: K is the right-of-way boat for this test.
+//   Rule 19 — K is owed room at an obstruction by R (the AI's r19 ledger): no call.
+//   A boat taking a penalty turn is left to the contact umpire.
+// One call per pair per KC_COOL s; a collision that follows folds into the same incident
+// (triggerPenalty's INCIDENT_GAP).
+//
+// CALIBRATED BY COUNTERFACTUAL REPLAY: each call's race replayed to onset (reproducing the call to the
+// frame), R made to sail her plan with no avoiding action, and the pair watched for contact — 156 races
+// a build, half with the player's boat never avoiding anyone. A frozen straight-line R at her onset
+// velocity called 39 fouls in 61 that never touched; the build here, 20 of 20 right where the player is
+// involved. The July detector this replaces lived in the AI's controller: it judged only a bot with
+// right of way, by her own deflection (> 20 deg for 0.8 s), which a tack away never completed
+// (Scenario Lab "Port Rammer": the rammer was never penalized, 10/10).
+const KC_T = 2.0;          // s: the onset horizon (the AI's IMMINENT)
+const KC_LATE = 1.0;       // s: a player K is called when the collision is this close
+const KC_STEP = 0.1;       // s: the umpire's tick
+const KC_R16_WIN = 2.0, KC_R16_ANG = 0.17;   // Rule 16: the window, and a course change (10 deg)
+const KC_INTENT = 0.35;    // rad: a bot whose plan is this far off her heading is between courses
+const KC_TURNING = 0.5;    // rad/s: R turning faster than this has no course yet
+const KC_DEV = 0.17;       // rad: R this far off her course has taken avoiding action
+const KC_KTURN = 1.05;     // rad: the most of a player K's turn the projection continues
+const KC_MINSPD = 30;      // u/s (2 kt): R with no way on has no course to hold
+const KC_CORE = 0.85;      // the late projections' hull scale: a clear hit, not a graze
+const KC_COOL = 20;        // s: one call per pair
+const _kc = { t: 0, acc: 0, hist: {}, pend: {}, cool: {}, boats: null, wt: -Infinity };
+function kcSpinning(b) {
+    const rs = b.raceState;
+    return !!((b.controller && b.controller.penaltySpin) || (rs.penalty && Math.abs(rs.penaltyRot || 0) >= 2.1));
+}
+// Is the AI steering her? (The player is not; nor is a Scenario Lab boat on a script, whose controller's
+// update is replaced — it stands in for a player.)
+function kcAI(b) {
+    return !!(b.controller && !b.isPlayer && typeof BotController === 'function' && b.controller.update === BotController.prototype.update);
+}
+// A bot's own plan (her heading before any avoiding action); null for a player.
+function kcPlan(b) {
+    return kcAI(b) && b.controller.intentHeading != null ? b.controller.intentHeading : null;
+}
+function kcVel(b) {
+    return b.velocity ? { x: b.velocity.x * 60, y: b.velocity.y * 60 } : { x: Math.sin(b.heading) * b.speed * 60, y: -Math.cos(b.heading) * b.speed * 60 };
+}
+// Do the hulls overlap within KC_T if R sails from (rx, ry) on (rvx, rvy) facing rh and K holds her course?
+function kcHit(rx, ry, rvx, rvy, rh, K) {
+    const kv = kcVel(K);
+    for (let s = 0; s <= KC_T + 1e-9; s += 0.05) {
+        const ax = rx + rvx * s, ay = ry + rvy * s, bx = K.x + kv.x * s, by = K.y + kv.y * s;
+        if ((ax - bx) * (ax - bx) + (ay - by) * (ay - by) > 75 * 75) continue;   // hulls are 55 long: no overlap past 75
+        if (satPolygonPolygon(hullPolygonAt(ax, ay, rh), hullPolygonAt(bx, by, K.heading))) return true;
+    }
+    return false;
+}
+// A hull shrunk about its centre: the late projection asks for a clear hit, not a graze a few units of
+// model error would decide (counterfactual replay: a projected touch passed at 33 u between centres).
+function kcCore(x, y, h) {
+    return hullPolygonAt(x, y, h).map(p => ({ x: x + (p.x - x) * KC_CORE, y: y + (p.y - y) * KC_CORE }));
+}
+// K from now, doing what she is doing: (heading, position) at time t.
+function kcKPath(K, now) {
+    const kv = kcVel(K), sp = Math.hypot(kv.x, kv.y), h0 = K.heading;
+    let rate, total;
+    const tgt = kcAI(K) ? K.controller.targetHeading : null;
+    if (tgt != null) {        // a bot: her helm toward the heading her avoidance chose
+        rate = getTurnSpeed() * 60 * (1.0 + ((K.stats && K.stats.handling) || 0) * 0.03);
+        total = normalizeAngle(tgt - h0);
+    } else {                  // a player: the turn she is already making
+        const hk = _kc.hist[K.id], k0 = hk && hk.length > 3 ? hk[hk.length - 4] : null;
+        const w = k0 ? normalizeAngle(K.heading - k0.hd) / Math.max(0.1, now - k0.t) : 0;
+        rate = Math.min(Math.abs(w), 1.2); total = Math.sign(w) * KC_KTURN;
+    }
+    const sgn = Math.sign(total), T1 = rate > 1e-3 ? Math.abs(total) / rate : 0;
+    const drift = { x: kv.x - Math.sin(h0) * sp, y: kv.y + Math.cos(h0) * sp };   // current, set: kept as is
+    return (t) => {
+        // integrate the turn in small steps (exact enough at 0.05 s)
+        let x = K.x, y = K.y, h = h0;
+        for (let u = 0; u < t - 1e-9; u += 0.05) {
+            const du = Math.min(0.05, t - u);
+            if (u < T1) h = h0 + sgn * rate * Math.min(u + du, T1);
+            x += (Math.sin(h) * sp + drift.x) * du; y += (-Math.cos(h) * sp + drift.y) * du;
+        }
+        return { x, y, h };
+    };
+}
+// The Scenario Lab replays seeds on the SAME boats array and clock, so it resets this by hand with its
+// other per-run state (scenario.js, beside Rules.interactions).
+function resetKeepClear() {
+    _kc.t = 0; _kc.acc = 0; _kc.hist = {}; _kc.pend = {}; _kc.cool = {}; _kc.boats = state.boats; _kc.wt = state.time;
+}
+function checkKeepClear(dt) {
+    // A new race (a new boats array) or a rewound world clock starts the umpire's memory clean, so a run
+    // never depends on the one before it.
+    if (_kc.boats !== state.boats || !(state.time >= _kc.wt)) resetKeepClear();
+    _kc.wt = state.time;
+    if (!state.boats || state.race.status !== 'racing' || !rulesInForce()) { _kc.pend = {}; return; }
+    _kc.t += dt; _kc.acc += dt;
+    if (_kc.acc < KC_STEP) return;
+    _kc.acc = 0;
+    const now = _kc.t, live = state.boats.filter(b => !b.raceState.finished);
+    for (const b of live) {
+        const h = _kc.hist[b.id] || (_kc.hist[b.id] = []);
+        h.push({ t: now, hd: b.heading });
+        while (h.length && now - h[0].t > KC_R16_WIN + 1e-6) h.shift();
+    }
+    for (let i = 0; i < live.length; i++) for (let j = i + 1; j < live.length; j++) {
+        const b1 = live[i], b2 = live[j], key = Math.min(b1.id, b2.id) + '-' + Math.max(b1.id, b2.id);
+        const q = _kc.pend[key];
+        const reach = (b1.speed + b2.speed) * 60 * KC_T + 80;
+        if (!q && (b1.x - b2.x) ** 2 + (b1.y - b2.y) ** 2 > reach * reach) continue;
+        const res = getRightOfWay(b1, b2);
+        const R = res.markRoom ? (res.markRoom === b1.id ? b1 : b2) : res.boat;
+        const K = R === b1 ? b2 : b1;
+        const blocked = !R || (q && q.R !== R)
+            || (res.constraints && res.constraints.indexOf('Rule 15') !== -1)
+            || kcSpinning(K) || kcSpinning(R)
+            || (K._r19Since && K._r19Since[R.id] != null);
+        if (!q) {
+            if (blocked || now < (_kc.cool[key] || 0)) continue;
+            if (kcAI(R) && kcAI(K)) continue;          // bot against bot: the contact umpire's alone (see the header)
+            if (R.speed * 60 < KC_MINSPD) continue;   // a boat with no way on has no course to hold
+            const pl = kcPlan(R);
+            if (pl != null && Math.abs(normalizeAngle(pl - R.heading)) > KC_INTENT) continue;
+            const hr = _kc.hist[R.id], prev = hr && hr.length > 1 ? hr[hr.length - 2] : null;
+            if (prev && Math.abs(normalizeAngle(R.heading - prev.hd)) / Math.max(1e-3, now - prev.t) > KC_TURNING) continue;   // turning now: no course yet
+            const rv = kcVel(R);
+            if (!kcHit(R.x, R.y, rv.x, rv.y, R.heading, K)) continue;
+            // Rule 16: did her own course change make this? Then her earlier heading would have missed.
+            const hist = _kc.hist[R.id], old = hist && hist[0];
+            if (old && Math.abs(normalizeAngle(R.heading - old.hd)) > KC_R16_ANG) {
+                const d = normalizeAngle(old.hd - R.heading);
+                const ox = rv.x * Math.cos(d) - rv.y * Math.sin(d), oy = rv.x * Math.sin(d) + rv.y * Math.cos(d);
+                if (!kcHit(R.x, R.y, ox, oy, old.hd, K)) continue;
+            }
+            _kc.pend[key] = { R, t0: now, gx: R.x, gy: R.y, gh: R.heading, h0: R.heading, rpx: R.x, rpy: R.y,
+                              kx: K.x, ky: K.y, kh: K.heading };
+            continue;
+        }
+        if (blocked) { delete _kc.pend[key]; continue; }
+        const el = now - q.t0;
+        // The ghost sails R's course by the distance R really made this step.
+        const step = Math.hypot(R.x - q.rpx, R.y - q.rpy); q.rpx = R.x; q.rpy = R.y;
+        const pl = kcPlan(R), gh = pl != null ? pl : q.h0;
+        // Rule 16 again, inside the window: if her own plan changes course, she must give K room to keep
+        // clear, and the line K was keeping clear of is gone. No call ("Round Mark with Boat to Windward":
+        // the leeward boat shaping up for the mark, toward the boat to windward).
+        if (Math.abs(normalizeAngle(gh - q.h0)) > KC_R16_ANG) { delete _kc.pend[key]; continue; }
+        const gx0 = q.gx, gy0 = q.gy, gh0 = q.gh;
+        q.gx += Math.sin(gh) * step; q.gy -= Math.cos(gh) * step; q.gh = gh;
+        let touched = false;
+        if (Math.abs(normalizeAngle(R.heading - gh)) <= KC_DEV) {
+            // R on her course: K's real track against her, swept across the step.
+            for (let k = 1; k <= 4 && !touched; k++) {
+                const f = k / 4;
+                const kx = q.kx + (K.x - q.kx) * f, ky = q.ky + (K.y - q.ky) * f, kh = q.kh + normalizeAngle(K.heading - q.kh) * f;
+                const rx = gx0 + (q.gx - gx0) * f, ry = gy0 + (q.gy - gy0) * f, rh = gh0 + normalizeAngle(gh - gh0) * f;
+                if ((rx - kx) * (rx - kx) + (ry - ky) * (ry - ky) > 75 * 75) continue;
+                touched = !!satPolygonPolygon(hullPolygonAt(rx, ry, rh), hullPolygonAt(kx, ky, kh));
+            }
+            q.kx = K.x; q.ky = K.y; q.kh = K.heading;
+            if (!touched) { if (el > KC_T + 1e-6) delete _kc.pend[key]; continue; }
+        } else {
+            // R has taken avoiding action. From here K's later moves answer R's dodge, not the collision.
+            const kc = kcAI(K) ? K.controller : null;
+            if (kc) {
+                // A BOT K (keeping clear of the player) is judged once, NOW, from her own avoidance at the moment
+                // R acted — before it has seen R's dodge (afterwards it sees the threat gone and holds on, and a
+                // ghost of R's course reads that as a ram: counterfactual replay, 3 wrong calls of 10). At
+                // IMMINENT against R: project the duck she chose, a clear hit within KC_T is a call. Short of it:
+                // bots duck late, at their own IMMINENT, so nothing says she would have failed — no call.
+                delete _kc.pend[key];
+                if (!(kc.threatBoat === R && kc.riskState === 'IMMINENT')) continue;
+                const kp = kcKPath(K, now), rsp = R.speed * 60;
+                for (let t = 0; t <= KC_T + 1e-9 && !touched; t += 0.05) {
+                    const kq = kp(t), rx = q.gx + Math.sin(gh) * rsp * t, ry = q.gy - Math.cos(gh) * rsp * t;
+                    if ((rx - kq.x) * (rx - kq.x) + (ry - kq.y) * (ry - kq.y) > 75 * 75) continue;
+                    touched = !!satPolygonPolygon(kcCore(rx, ry, gh), kcCore(kq.x, kq.y, kq.h));
+                }
+            } else {
+                // A PLAYER K (or a scripted lab boat standing in for one): keep watching, and call when the
+                // collision R's course would meet is within KC_LATE — too late to keep clear on her own —
+                // projecting the turn she is making, on two checks running.
+                if (el > KC_T + KC_LATE) { delete _kc.pend[key]; continue; }
+                const kp = kcKPath(K, now), rsp = R.speed * 60;
+                for (let t = 0; t <= KC_LATE + 1e-9 && !touched; t += 0.05) {
+                    const kq = kp(t), rx = q.gx + Math.sin(gh) * rsp * t, ry = q.gy - Math.cos(gh) * rsp * t;
+                    if ((rx - kq.x) * (rx - kq.x) + (ry - kq.y) * (ry - kq.y) > 75 * 75) continue;
+                    touched = !!satPolygonPolygon(kcCore(rx, ry, gh), kcCore(kq.x, kq.y, kq.h));
+                }
+                q.hits = touched ? (q.hits || 0) + 1 : 0;
+                touched = q.hits >= 2;
+            }
+            if (!touched) continue;
+        }
+        delete _kc.pend[key];
+        _kc.cool[key] = now + KC_COOL;
+        const info = res.markRoom ? { rule: 'Rule 18', reason: 'Mark-Room' } : { rule: res.rule, reason: res.reason };
+        triggerPenalty(K, Object.assign({ kind: 'no_contact', other: R.name, with: R }, info));
+    }
+}
+
 function checkMarkCollisions(dt) {
     if (!state.course || !state.course.marks) return;
 
@@ -343,8 +576,6 @@ function checkMarkCollisions(dt) {
 // curl, wave sets, flag flutter, telltales) and 0.24 is what those were tuned
 // against. Anything that wants SECONDS must scale by this, never read it raw —
 // see refreshBotGrid for what reading it raw cost.
-const FOUL_NEED_GAP = 60;
-
 // Boat hull half-width for coarse collision against concave mask coastlines.
 // How far out a rounding still counts, as a multiple of the mark's zone. The zone is
 // the pass-within distance; this is the go-round-it distance. Generous enough that a
@@ -690,6 +921,77 @@ function checkTrafficCollisions(dt) {
 // is gone. Stamped every frame, for close pairs only (the island scan runs only
 // for a boat that has another boat within 130u, so a 2218-island venue costs
 // nothing on the frames where no pair is close).
+// WHERE IS THE SHORE? Rule 19's geometry: the nearest point of hard land within maxD of (x, y), as
+// { d, ax, ay } — (ax, ay) the unit vector from that point to (x, y), the way out to open water. Read
+// off the rings the hull collides with (isl.vertices). It used to be the vector from the island's
+// CENTRE, which is right for a round rock and wrong for a shore: real venues are a few huge shapes
+// (river's banks are 22,500 u across), and along a bank the centre lies anywhere, so the outside
+// test asked about the wrong side (Scenario Lab, "Shore Squeeze": a boat pinned on the bank by a
+// leeward boat's luff was the one penalized, 6 of 6 seeds). A big shape keeps a lazy index of its
+// edges by cell, rebuilt if the shape has moved (floes); a small one is scanned whole.
+const SHORE_CELL = 128;
+function shoreIndex(I) {
+    const V = I.vertices, n = V.length;
+    const q = I._shoreIx;
+    if (q && q.n === n && q.x0 === V[0].x && q.y0 === V[0].y) return q;
+    const cells = new Map();
+    for (let k = 0; k < n; k++) {
+        const p = V[k], r = V[(k + 1) % n];
+        const i0 = Math.floor(Math.min(p.x, r.x) / SHORE_CELL), i1 = Math.floor(Math.max(p.x, r.x) / SHORE_CELL);
+        const j0 = Math.floor(Math.min(p.y, r.y) / SHORE_CELL), j1 = Math.floor(Math.max(p.y, r.y) / SHORE_CELL);
+        for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+            const key = i * 65536 + j, L = cells.get(key);
+            if (L) L.push(k); else cells.set(key, [k]);
+        }
+    }
+    return (I._shoreIx = { n, x0: V[0].x, y0: V[0].y, cells });
+}
+function nearestShore(x, y, maxD) {
+    let best = maxD * maxD, bx = 0, by = 0, hit = false;
+    const edge = (p, r) => {
+        const ex = r.x - p.x, ey = r.y - p.y, ll = ex * ex + ey * ey;
+        const u = ll > 0 ? Math.max(0, Math.min(1, ((x - p.x) * ex + (y - p.y) * ey) / ll)) : 0;
+        const cx = p.x + ex * u, cy = p.y + ey * u, d2 = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+        if (d2 < best) { best = d2; bx = cx; by = cy; hit = true; }
+    };
+    for (const I of state.course.islands) {
+        if (I.awash || !I.vertices || I.vertices.length < 2) continue;
+        const dx = x - I.x, dy = y - I.y, lim = (I.radius || 0) + maxD;
+        if (dx * dx + dy * dy > lim * lim) continue;
+        const V = I.vertices, n = V.length;
+        if (n < 48) { for (let k = 0; k < n; k++) edge(V[k], V[(k + 1) % n]); continue; }
+        const ix = shoreIndex(I), seen = new Set();
+        const i0 = Math.floor((x - maxD) / SHORE_CELL), i1 = Math.floor((x + maxD) / SHORE_CELL);
+        const j0 = Math.floor((y - maxD) / SHORE_CELL), j1 = Math.floor((y + maxD) / SHORE_CELL);
+        for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+            const L = ix.cells.get(i * 65536 + j);
+            if (L) for (const k of L) if (!seen.has(k)) { seen.add(k); edge(V[k], V[(k + 1) % n]); }
+        }
+    }
+    if (!hit) return null;
+    const d = Math.sqrt(best);
+    return d > 1e-6 ? { d, ax: (x - bx) / d, ay: (y - by) / d } : null;
+}
+
+// Rule 19's "no room": the outside boat's hull within this of the inside boat's — about a beam (the
+// hull is 30 u across), too close to turn away from the land without hitting her.
+const R19_ROOM_GAP = 30;
+// The clear water between two hull polygons (0 if they overlap): the nearest vertex-to-edge distance.
+function hullGap(A, B) {
+    if (satPolygonPolygon(A, B)) return 0;
+    let best = Infinity;
+    const scan = (P, Q) => {
+        for (const v of P) for (let k = 0; k < Q.length; k++) {
+            const p = Q[k], r = Q[(k + 1) % Q.length], ex = r.x - p.x, ey = r.y - p.y, ll = ex * ex + ey * ey;
+            const u = ll > 0 ? Math.max(0, Math.min(1, ((v.x - p.x) * ex + (v.y - p.y) * ey) / ll)) : 0;
+            const dx = v.x - (p.x + ex * u), dy = v.y - (p.y + ey * u), d2 = dx * dx + dy * dy;
+            if (d2 < best) best = d2;
+        }
+    };
+    scan(A, B); scan(B, A);
+    return Math.sqrt(best);
+}
+
 function updateRule19Ledger() {
     if (!state.course || !state.course.islands || state.race.status !== 'racing') return;
     const now = state.race.timer;
@@ -703,20 +1005,10 @@ function updateRule19Ledger() {
             if (dx * dx + dy * dy < 130 * 130) { anyClose = true; break; }
         }
         if (!anyClose) { if (b._r19Since) b._r19Since = null; continue; }
-        // nearest island by EDGE gap — the one she would ground on
-        let isl = null, best = 1e18;
-        for (const I of state.course.islands) {
-            if (I.awash) continue;
-            const dx = b.x - I.x, dy = b.y - I.y;
-            const d2 = dx * dx + dy * dy;
-            const lim = I.radius + 120;
-            if (d2 > lim * lim) continue;
-            if (d2 < best) { best = d2; isl = I; }
-        }
-        if (!isl) { if (b._r19Since) b._r19Since = null; continue; }
-        const bx = b.x - isl.x, by = b.y - isl.y;
-        const bl = Math.max(1, Math.sqrt(bx * bx + by * by));
-        const ax = bx / bl, ay = by / bl;
+        // the shore she would ground on: the nearest hard land, and the way out from it
+        const sh = nearestShore(b.x, b.y, 120);
+        if (!sh) { if (b._r19Since) b._r19Since = null; continue; }
+        const ax = sh.ax, ay = sh.ay;
         const led = b._r19Since || (b._r19Since = {});
         for (const o of B) {
             if (o === b || o.raceState.finished) continue;
@@ -730,7 +1022,8 @@ function updateRule19Ledger() {
             // distance is hull-to-hull. Without this the obligation record
             // deletes itself one frame before the only event that needs it.
             if (dx * ax + dy * ay < (led[o.id] != null ? 10 : 45)) { delete led[o.id]; continue; }
-            if (!(window.Rules && window.Rules.isOverlapped && window.Rules.isOverlapped(b, o))) { delete led[o.id]; continue; }
+            // overlapped as the rules define it: boats crossing on opposite tacks upwind are not
+            if (!(window.Rules && window.Rules.isOverlappedRRS && window.Rules.isOverlappedRRS(b, o))) { delete led[o.id]; continue; }
             if (led[o.id] == null) led[o.id] = now;
         }
     }
@@ -879,10 +1172,12 @@ function checkIslandCollisions(dt) {
                  // land, she denied us room — the foul is hers, not ours.
                  let squeezer = null;
                  if (state.race.status === 'racing' && window.Rules && window.Rules.isOverlapped) {
-                     const bx = boat.x - isl.x, by = boat.y - isl.y;
-                     const bl = Math.max(1, Math.sqrt(bx * bx + by * by));
-                     const ax = bx / bl, ay = by / bl; // escape direction: island -> boat
-                     // ── THE TWO GUARDS (2026-08-13, landed 2026-08-14) ──────
+                     // escape direction: out of the land at the point of contact (res.axis points
+                     // boat -> land, the push-out above). It was island centre -> boat, which along a
+                     // long shore points anywhere (see nearestShore).
+                     const al = Math.hypot(res.axis.x, res.axis.y) || 1;
+                     const ax = -res.axis.x / al, ay = -res.axis.y / al;
+                     // ── THE GUARDS (two 2026-08-13, landed 2026-08-14; a third 2026-10-28 below) ──
                      // OWNER: "penalties are sometimes erroneously assigned when
                      // collisions don't happen... we should be conservative here."
                      // 90% of no-contact fouls come from this line, on an
@@ -912,7 +1207,7 @@ function checkIslandCollisions(dt) {
                          // that were all legitimately dodging the same floe.
                          if (dx2 * dx2 + dy2 * dy2 > 130 * 130) continue;
                          if (dx2 * ax + dy2 * ay < 45) continue;        // not clearly outside us
-                         if (!window.Rules.isOverlapped(boat, o)) continue;
+                         if (!(window.Rules.isOverlappedRRS || window.Rules.isOverlapped).call(window.Rules, boat, o)) continue;   // the rules' overlap: not two boats crossing
                          // GUARD 1 (persistence, RRS 15): the obligation must have
                          // existed long enough for her to act on it. One frame of
                          // overlap at the instant of a grounding is not a foul.
@@ -930,6 +1225,14 @@ function checkIslandCollisions(dt) {
                              if (px * ax + py * ay >= 45) { pinned = true; break; }
                          }
                          if (pinned) continue;
+                         // GUARD 3 (no room, 2026-10-28): her hull is within a beam of ours. Room is the
+                         // space to manoeuvre promptly in a seamanlike way; with a beam of clear water
+                         // between the hulls we could have turned away, and running aground is our own.
+                         // Counterfactual replay (the outside boat removed 3 s before the call): of 12
+                         // reproducible calls without this guard, the grounded boat still went aground in 9
+                         // — and in the other 3 the outside boat was 4-10 m off, room the AI's own margin
+                         // declined to use.
+                         if (hullGap(getHullPolygon(boat), getHullPolygon(o)) > R19_ROOM_GAP) continue;
                          squeezer = o;
                          break;
                      }

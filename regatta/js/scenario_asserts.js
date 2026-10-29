@@ -104,6 +104,13 @@
                 return hit ? { pass: false, why: `${fmtBoat(names, hit.boat)} penalized (${hit.rule || 'contact'}) at ${hit.t.toFixed(1)}s`, atS: hit.t }
                            : { pass: true, why: 'nobody penalized' };
             }
+            // `never`: this boat is not penalized (in a scene with more than two boats, the one that
+            // is not at fault must stay clean whoever else is called)
+            if (a.never) {
+                const bad = pens.find(p => p.boat === a.who);
+                return bad ? { pass: false, why: `${fmtBoat(names, a.who)} penalized (${bad.rule || 'contact'}) at ${bad.t.toFixed(1)}s`, atS: bad.t }
+                           : { pass: true, why: `${fmtBoat(names, a.who)} not penalized` };
+            }
             const hit = pens.find(p => p.boat === a.who && ruleMatches(a.rule, p.rule));
             if (hit) return { pass: true, why: `${fmtBoat(names, a.who)} penalized (${hit.rule || 'contact'}) at ${hit.t.toFixed(1)}s`, atS: hit.t };
             const other = pens.find(p => p.boat === a.who);
@@ -321,6 +328,7 @@
     // a one-line label for a row (UI + runner output share the wording)
     function label(a, names) {
         const nm = (i) => fmtBoat(names, i);
+        if (a.kind === 'penalty' && a.never) return `${nm(a.who)} is not penalized`;
         if (a.kind === 'penalty') return a.who === -1 ? 'nobody is penalized'
             : `${nm(a.who)} penalized${a.rule ? ' · R' + String(a.rule).replace(/rule\s*/i, '') : ''}`;
         if (a.kind === 'row') return `${a.t.toFixed(1)}${a.t1 != null ? '–' + a.t1.toFixed(1) : ''}s ${nm(a.of)} rights over ${nm(a.over)}${a.rule ? ' · R' + String(a.rule).replace(/rule\s*/i, '') : ''}`;

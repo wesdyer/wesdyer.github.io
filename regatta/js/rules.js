@@ -204,6 +204,31 @@
         },
 
         /**
+         * RRS Definitions, last paragraph: "...Overlap... These terms always
+         * apply to boats on the same tack. They apply to boats on opposite
+         * tacks only when rule 18 applies between them or when both boats are
+         * sailing more than ninety degrees from the true wind."
+         *
+         * isOverlapped above is the geometry alone, which is what the
+         * same-tack rules and rule 18 read. Rule 19 (room at an obstruction)
+         * needs the definition itself: two boats crossing on opposite tacks
+         * upwind are not overlapped, so a crosser is never the boat that
+         * "denied room" to a boat that ran onto a rock beside her. Rule 18
+         * does not apply at an obstruction that is not a mark, so that clause
+         * has no case here.
+         */
+        isOverlappedRRS: function(b1, b2) {
+            if (!this.isOverlapped(b1, b2)) return false;
+            if (this.getTack(b1) === this.getTack(b2)) return true;
+            const st = window.state;
+            const off = (b) => {
+                const w = (typeof getWindAt === 'function') ? getWindAt(b.x, b.y) : st.wind;
+                return Math.abs(normalizeAngle(b.heading - w.direction));
+            };
+            return off(b1) > Math.PI / 2 && off(b2) > Math.PI / 2;
+        },
+
+        /**
          * RRS Definition — Overlap, second sentence (2026-08-25):
          *
          * "However, they also overlap when a boat between them overlaps
