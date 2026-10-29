@@ -921,6 +921,77 @@ function checkTrafficCollisions(dt) {
 // is gone. Stamped every frame, for close pairs only (the island scan runs only
 // for a boat that has another boat within 130u, so a 2218-island venue costs
 // nothing on the frames where no pair is close).
+// WHERE IS THE SHORE? Rule 19's geometry: the nearest point of hard land within maxD of (x, y), as
+// { d, ax, ay } — (ax, ay) the unit vector from that point to (x, y), the way out to open water. Read
+// off the rings the hull collides with (isl.vertices). It used to be the vector from the island's
+// CENTRE, which is right for a round rock and wrong for a shore: real venues are a few huge shapes
+// (river's banks are 22,500 u across), and along a bank the centre lies anywhere, so the outside
+// test asked about the wrong side (Scenario Lab, "Shore Squeeze": a boat pinned on the bank by a
+// leeward boat's luff was the one penalized, 6 of 6 seeds). A big shape keeps a lazy index of its
+// edges by cell, rebuilt if the shape has moved (floes); a small one is scanned whole.
+const SHORE_CELL = 128;
+function shoreIndex(I) {
+    const V = I.vertices, n = V.length;
+    const q = I._shoreIx;
+    if (q && q.n === n && q.x0 === V[0].x && q.y0 === V[0].y) return q;
+    const cells = new Map();
+    for (let k = 0; k < n; k++) {
+        const p = V[k], r = V[(k + 1) % n];
+        const i0 = Math.floor(Math.min(p.x, r.x) / SHORE_CELL), i1 = Math.floor(Math.max(p.x, r.x) / SHORE_CELL);
+        const j0 = Math.floor(Math.min(p.y, r.y) / SHORE_CELL), j1 = Math.floor(Math.max(p.y, r.y) / SHORE_CELL);
+        for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+            const key = i * 65536 + j, L = cells.get(key);
+            if (L) L.push(k); else cells.set(key, [k]);
+        }
+    }
+    return (I._shoreIx = { n, x0: V[0].x, y0: V[0].y, cells });
+}
+function nearestShore(x, y, maxD) {
+    let best = maxD * maxD, bx = 0, by = 0, hit = false;
+    const edge = (p, r) => {
+        const ex = r.x - p.x, ey = r.y - p.y, ll = ex * ex + ey * ey;
+        const u = ll > 0 ? Math.max(0, Math.min(1, ((x - p.x) * ex + (y - p.y) * ey) / ll)) : 0;
+        const cx = p.x + ex * u, cy = p.y + ey * u, d2 = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+        if (d2 < best) { best = d2; bx = cx; by = cy; hit = true; }
+    };
+    for (const I of state.course.islands) {
+        if (I.awash || !I.vertices || I.vertices.length < 2) continue;
+        const dx = x - I.x, dy = y - I.y, lim = (I.radius || 0) + maxD;
+        if (dx * dx + dy * dy > lim * lim) continue;
+        const V = I.vertices, n = V.length;
+        if (n < 48) { for (let k = 0; k < n; k++) edge(V[k], V[(k + 1) % n]); continue; }
+        const ix = shoreIndex(I), seen = new Set();
+        const i0 = Math.floor((x - maxD) / SHORE_CELL), i1 = Math.floor((x + maxD) / SHORE_CELL);
+        const j0 = Math.floor((y - maxD) / SHORE_CELL), j1 = Math.floor((y + maxD) / SHORE_CELL);
+        for (let i = i0; i <= i1; i++) for (let j = j0; j <= j1; j++) {
+            const L = ix.cells.get(i * 65536 + j);
+            if (L) for (const k of L) if (!seen.has(k)) { seen.add(k); edge(V[k], V[(k + 1) % n]); }
+        }
+    }
+    if (!hit) return null;
+    const d = Math.sqrt(best);
+    return d > 1e-6 ? { d, ax: (x - bx) / d, ay: (y - by) / d } : null;
+}
+
+// Rule 19's "no room": the outside boat's hull within this of the inside boat's — about a beam (the
+// hull is 30 u across), too close to turn away from the land without hitting her.
+const R19_ROOM_GAP = 30;
+// The clear water between two hull polygons (0 if they overlap): the nearest vertex-to-edge distance.
+function hullGap(A, B) {
+    if (satPolygonPolygon(A, B)) return 0;
+    let best = Infinity;
+    const scan = (P, Q) => {
+        for (const v of P) for (let k = 0; k < Q.length; k++) {
+            const p = Q[k], r = Q[(k + 1) % Q.length], ex = r.x - p.x, ey = r.y - p.y, ll = ex * ex + ey * ey;
+            const u = ll > 0 ? Math.max(0, Math.min(1, ((v.x - p.x) * ex + (v.y - p.y) * ey) / ll)) : 0;
+            const dx = v.x - (p.x + ex * u), dy = v.y - (p.y + ey * u), d2 = dx * dx + dy * dy;
+            if (d2 < best) best = d2;
+        }
+    };
+    scan(A, B); scan(B, A);
+    return Math.sqrt(best);
+}
+
 function updateRule19Ledger() {
     if (!state.course || !state.course.islands || state.race.status !== 'racing') return;
     const now = state.race.timer;
@@ -934,20 +1005,10 @@ function updateRule19Ledger() {
             if (dx * dx + dy * dy < 130 * 130) { anyClose = true; break; }
         }
         if (!anyClose) { if (b._r19Since) b._r19Since = null; continue; }
-        // nearest island by EDGE gap — the one she would ground on
-        let isl = null, best = 1e18;
-        for (const I of state.course.islands) {
-            if (I.awash) continue;
-            const dx = b.x - I.x, dy = b.y - I.y;
-            const d2 = dx * dx + dy * dy;
-            const lim = I.radius + 120;
-            if (d2 > lim * lim) continue;
-            if (d2 < best) { best = d2; isl = I; }
-        }
-        if (!isl) { if (b._r19Since) b._r19Since = null; continue; }
-        const bx = b.x - isl.x, by = b.y - isl.y;
-        const bl = Math.max(1, Math.sqrt(bx * bx + by * by));
-        const ax = bx / bl, ay = by / bl;
+        // the shore she would ground on: the nearest hard land, and the way out from it
+        const sh = nearestShore(b.x, b.y, 120);
+        if (!sh) { if (b._r19Since) b._r19Since = null; continue; }
+        const ax = sh.ax, ay = sh.ay;
         const led = b._r19Since || (b._r19Since = {});
         for (const o of B) {
             if (o === b || o.raceState.finished) continue;
@@ -961,7 +1022,8 @@ function updateRule19Ledger() {
             // distance is hull-to-hull. Without this the obligation record
             // deletes itself one frame before the only event that needs it.
             if (dx * ax + dy * ay < (led[o.id] != null ? 10 : 45)) { delete led[o.id]; continue; }
-            if (!(window.Rules && window.Rules.isOverlapped && window.Rules.isOverlapped(b, o))) { delete led[o.id]; continue; }
+            // overlapped as the rules define it: boats crossing on opposite tacks upwind are not
+            if (!(window.Rules && window.Rules.isOverlappedRRS && window.Rules.isOverlappedRRS(b, o))) { delete led[o.id]; continue; }
             if (led[o.id] == null) led[o.id] = now;
         }
     }
@@ -1110,10 +1172,12 @@ function checkIslandCollisions(dt) {
                  // land, she denied us room — the foul is hers, not ours.
                  let squeezer = null;
                  if (state.race.status === 'racing' && window.Rules && window.Rules.isOverlapped) {
-                     const bx = boat.x - isl.x, by = boat.y - isl.y;
-                     const bl = Math.max(1, Math.sqrt(bx * bx + by * by));
-                     const ax = bx / bl, ay = by / bl; // escape direction: island -> boat
-                     // ── THE TWO GUARDS (2026-08-13, landed 2026-08-14) ──────
+                     // escape direction: out of the land at the point of contact (res.axis points
+                     // boat -> land, the push-out above). It was island centre -> boat, which along a
+                     // long shore points anywhere (see nearestShore).
+                     const al = Math.hypot(res.axis.x, res.axis.y) || 1;
+                     const ax = -res.axis.x / al, ay = -res.axis.y / al;
+                     // ── THE GUARDS (two 2026-08-13, landed 2026-08-14; a third 2026-10-28 below) ──
                      // OWNER: "penalties are sometimes erroneously assigned when
                      // collisions don't happen... we should be conservative here."
                      // 90% of no-contact fouls come from this line, on an
@@ -1143,7 +1207,7 @@ function checkIslandCollisions(dt) {
                          // that were all legitimately dodging the same floe.
                          if (dx2 * dx2 + dy2 * dy2 > 130 * 130) continue;
                          if (dx2 * ax + dy2 * ay < 45) continue;        // not clearly outside us
-                         if (!window.Rules.isOverlapped(boat, o)) continue;
+                         if (!(window.Rules.isOverlappedRRS || window.Rules.isOverlapped).call(window.Rules, boat, o)) continue;   // the rules' overlap: not two boats crossing
                          // GUARD 1 (persistence, RRS 15): the obligation must have
                          // existed long enough for her to act on it. One frame of
                          // overlap at the instant of a grounding is not a foul.
@@ -1161,6 +1225,14 @@ function checkIslandCollisions(dt) {
                              if (px * ax + py * ay >= 45) { pinned = true; break; }
                          }
                          if (pinned) continue;
+                         // GUARD 3 (no room, 2026-10-28): her hull is within a beam of ours. Room is the
+                         // space to manoeuvre promptly in a seamanlike way; with a beam of clear water
+                         // between the hulls we could have turned away, and running aground is our own.
+                         // Counterfactual replay (the outside boat removed 3 s before the call): of 12
+                         // reproducible calls without this guard, the grounded boat still went aground in 9
+                         // — and in the other 3 the outside boat was 4-10 m off, room the AI's own margin
+                         // declined to use.
+                         if (hullGap(getHullPolygon(boat), getHullPolygon(o)) > R19_ROOM_GAP) continue;
                          squeezer = o;
                          break;
                      }

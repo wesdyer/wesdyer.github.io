@@ -1,8 +1,8 @@
-// THE KEEP-CLEAR TABLE (2026-10-27, PT-031 keep-clear). PRE = kc0* on treeKC0 (HEAD 645650d), POST = kc1* on treeKC1 (working tree).
+// THE KEEP-CLEAR TABLE (PT-031, 2026-10-27; reused for PT-109 land penalties 2026-10-28: kp0 = HEAD b8b7981, kp1 = land fix). PRE = kc0* on treeKC0 (HEAD 645650d), POST = kc1* on treeKC1.
 // Every venue benches its FROZEN cut (swamp promoted to e2cc7ba11fb733f1 this session).
-//   node _kc_close_table.js [postPrefix=kc1]
+//   node _kc_close_table.js [postPrefix=kc1] [prePrefix=kc0]
 const fs = require('fs'); const path = require('path');
-const POST = process.argv[2] || 'kc1', PRE = 'kc0';
+const POST = process.argv[2] || 'kc1', PRE = process.argv[3] || 'kc0';
 const OLD_REF = { arctic: 209.4, bay: 239.0, lagoon: 174.7, lake: 194.8, ocean: 214.2, river: 187.4,
     glowtide: 204.4, redrock: 204.2, seatrials: 185.7, swamp: 173.3, volcanic: 195.5, otter: 200.8, flats: 172.8 };
 const HUMAN = {}, HUMAN_N = {};

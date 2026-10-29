@@ -2086,5 +2086,627 @@ window.SCENARIO_DOC = {
     ],
     "lines": [],
     "savedAt": 1787338046915
+  },
+  "Two Rammers": {
+    "v": 1,
+    "durationS": 10,
+    "windKt": 12,
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
+    ],
+    "tags": [
+      "rule-10",
+      "multi-boat",
+      "stand-on"
+    ],
+    "asserts": [
+      {
+        "kind": "penalty",
+        "who": 1,
+        "rule": "10"
+      },
+      {
+        "kind": "penalty",
+        "who": 0,
+        "never": true
+      },
+      {
+        "kind": "penalty",
+        "who": 2,
+        "never": true
+      }
+    ],
+    "boats": [
+      {
+        "x": 167,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      },
+      {
+        "x": -548,
+        "y": 485,
+        "headingDeg": 40,
+        "speedKt": 7.5
+      },
+      {
+        "x": -600,
+        "y": 600,
+        "headingDeg": 40,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1793000000000
+  },
+  "Rammer vs Pair": {
+    "v": 1,
+    "durationS": 10,
+    "windKt": 12,
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
+    ],
+    "tags": [
+      "rule-10",
+      "multi-boat",
+      "stand-on"
+    ],
+    "asserts": [
+      {
+        "kind": "penalty",
+        "who": 1,
+        "rule": "10"
+      },
+      {
+        "kind": "penalty",
+        "who": 0,
+        "never": true
+      },
+      {
+        "kind": "penalty",
+        "who": 2,
+        "never": true
+      }
+    ],
+    "boats": [
+      {
+        "x": 167,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      },
+      {
+        "x": -548,
+        "y": 485,
+        "headingDeg": 40,
+        "speedKt": 7.5
+      },
+      {
+        "x": 210,
+        "y": 560,
+        "headingDeg": 320,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1793000000001
+  },
+  "Two Crossers": {
+    "v": 1,
+    "durationS": 12,
+    "windKt": 12,
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
+    ],
+    "tags": [
+      "rule-10",
+      "multi-boat",
+      "give-way"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      }
+    ],
+    "boats": [
+      {
+        "x": 167,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5
+      },
+      {
+        "x": -548,
+        "y": 485,
+        "headingDeg": 40,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      },
+      {
+        "x": -500,
+        "y": 330,
+        "headingDeg": 40,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1793000000002
+  },
+  "Screened Crosser": {
+    "v": 1,
+    "durationS": 12,
+    "windKt": 12,
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
+    ],
+    "tags": [
+      "rule-10",
+      "multi-boat",
+      "give-way"
+    ],
+    "asserts": [
+      {
+        "kind": "nocollide"
+      },
+      {
+        "kind": "penalty",
+        "who": -1
+      }
+    ],
+    "boats": [
+      {
+        "x": 167,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5
+      },
+      {
+        "x": -548,
+        "y": 485,
+        "headingDeg": 40,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      },
+      {
+        "x": 150,
+        "y": 400,
+        "headingDeg": 320,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "sands": [],
+    "lines": [],
+    "savedAt": 1793000000003
+  },
+  "Shore Squeeze": {
+    "v": 1,
+    "durationS": 6,
+    "windKt": 12,
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
+    ],
+    "tags": [
+      "rule-19",
+      "obstruction",
+      "rule-16"
+    ],
+    "sands": [
+      {
+        "pts": [
+          [
+            0,
+            150
+          ],
+          [
+            500,
+            150
+          ],
+          [
+            500,
+            300
+          ],
+          [
+            0,
+            300
+          ]
+        ]
+      }
+    ],
+    "asserts": [
+      {
+        "kind": "penalty",
+        "who": 0,
+        "rule": "19"
+      },
+      {
+        "kind": "penalty",
+        "who": 1,
+        "never": true
+      }
+    ],
+    "boats": [
+      {
+        "x": -150,
+        "y": 430,
+        "headingDeg": 90,
+        "speedKt": 7,
+        "plan": [
+          {
+            "t": 1,
+            "headingDeg": 72
+          }
+        ]
+      },
+      {
+        "x": -150,
+        "y": 350,
+        "headingDeg": 90,
+        "speedKt": 7
+      }
+    ],
+    "marks": [],
+    "lines": [],
+    "savedAt": 1793000000004
+  },
+  "Shore Squeeze Long Shore": {
+    "v": 1,
+    "durationS": 6,
+    "windKt": 12,
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
+    ],
+    "tags": [
+      "rule-19",
+      "obstruction",
+      "rule-16"
+    ],
+    "sands": [
+      {
+        "pts": [
+          [
+            -1000,
+            150
+          ],
+          [
+            3000,
+            150
+          ],
+          [
+            3000,
+            300
+          ],
+          [
+            -1000,
+            300
+          ]
+        ]
+      }
+    ],
+    "asserts": [
+      {
+        "kind": "penalty",
+        "who": 0,
+        "rule": "19"
+      },
+      {
+        "kind": "penalty",
+        "who": 1,
+        "never": true
+      }
+    ],
+    "boats": [
+      {
+        "x": -150,
+        "y": 430,
+        "headingDeg": 90,
+        "speedKt": 7,
+        "plan": [
+          {
+            "t": 1,
+            "headingDeg": 72
+          }
+        ]
+      },
+      {
+        "x": -150,
+        "y": 350,
+        "headingDeg": 90,
+        "speedKt": 7
+      }
+    ],
+    "marks": [],
+    "lines": [],
+    "savedAt": 1793000000005
+  },
+  "Rock Clip Near a Crosser": {
+    "v": 1,
+    "durationS": 8,
+    "windKt": 12,
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
+    ],
+    "tags": [
+      "rule-19",
+      "obstruction",
+      "multi-boat"
+    ],
+    "asserts": [
+      {
+        "kind": "penalty",
+        "who": -1
+      }
+    ],
+    "sands": [
+      {
+        "pts": [
+          [
+            -149,
+            132
+          ],
+          [
+            -81,
+            116
+          ],
+          [
+            -69,
+            176
+          ],
+          [
+            -125,
+            196
+          ]
+        ]
+      }
+    ],
+    "boats": [
+      {
+        "x": 167,
+        "y": 485,
+        "headingDeg": 320,
+        "speedKt": 7.5,
+        "plan": [
+          {
+            "t": 3.3,
+            "headingDeg": 265
+          }
+        ]
+      },
+      {
+        "x": -548,
+        "y": 485,
+        "headingDeg": 40,
+        "speedKt": 7.5,
+        "aiAtS": 0
+      }
+    ],
+    "marks": [],
+    "lines": [],
+    "savedAt": 1793000000006
+  },
+  "Pinned on a Point": {
+    "v": 1,
+    "durationS": 6,
+    "windKt": 12,
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
+    ],
+    "tags": [
+      "rule-19",
+      "obstruction"
+    ],
+    "asserts": [
+      {
+        "kind": "penalty",
+        "who": 0,
+        "rule": "19"
+      },
+      {
+        "kind": "penalty",
+        "who": 1,
+        "never": true
+      }
+    ],
+    "boats": [
+      {
+        "x": -200,
+        "y": 400,
+        "headingDeg": 90,
+        "speedKt": 7
+      },
+      {
+        "x": -200,
+        "y": 350,
+        "headingDeg": 90,
+        "speedKt": 7
+      }
+    ],
+    "marks": [],
+    "sands": [
+      {
+        "pts": [
+          [
+            0,
+            150
+          ],
+          [
+            700,
+            150
+          ],
+          [
+            700,
+            360
+          ],
+          [
+            350,
+            360
+          ],
+          [
+            0,
+            300
+          ]
+        ]
+      }
+    ],
+    "lines": [],
+    "savedAt": 1793000000100
+  },
+  "Point with Room": {
+    "v": 1,
+    "durationS": 6,
+    "windKt": 12,
+    "seeds": [
+      541267420,
+      3541459374,
+      3612285626,
+      1376908003,
+      552101227,
+      1226319115,
+      1003982263,
+      1167025257,
+      1560206834,
+      2476808982
+    ],
+    "tags": [
+      "rule-19",
+      "obstruction"
+    ],
+    "asserts": [
+      {
+        "kind": "penalty",
+        "who": -1
+      }
+    ],
+    "boats": [
+      {
+        "x": -200,
+        "y": 440,
+        "headingDeg": 90,
+        "speedKt": 7
+      },
+      {
+        "x": -200,
+        "y": 350,
+        "headingDeg": 90,
+        "speedKt": 7
+      }
+    ],
+    "marks": [],
+    "sands": [
+      {
+        "pts": [
+          [
+            0,
+            150
+          ],
+          [
+            700,
+            150
+          ],
+          [
+            700,
+            360
+          ],
+          [
+            350,
+            360
+          ],
+          [
+            0,
+            300
+          ]
+        ]
+      }
+    ],
+    "lines": [],
+    "savedAt": 1793000000101
   }
 };
