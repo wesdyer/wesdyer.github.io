@@ -1170,6 +1170,8 @@ function drawMarkBodies(ctx) {
             // being rounded was failing this test and drawing grey while active.
             const e = routeLeg(player.raceState.leg);
             if (e && e.kind === 'round' && e.mark && e.mark.markIdx === i) active = true;
+            // ...and the mark just rounded, while she is still inside its zone (hud.js shownRoundings).
+            if (player._roundExit && player._roundExit.mark.markIdx === i) active = true;
         }
         // The slate tint says "not the mark you are sailing to". That is a statement
         // about a piece of course furniture, and a crewed vessel is not one — a greyed

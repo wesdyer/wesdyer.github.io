@@ -1508,6 +1508,12 @@ function updateBoatRaceState(boat, dt) {
     // new primitive here is the swept-angle test — which is why one walker can now
     // race a route mixing lines, gates and roundings in any order.
     const _entry = routeLeg(boat.raceState.leg);
+    if (boat._roundExit) {
+        const xm = boat._roundExit.mark;
+        const sinH = Math.sin(boat.heading), cosH = Math.cos(boat.heading);
+        const hp = getClosestPointOnSegment(xm.x, xm.y, boat.x + 25 * sinH, boat.y - 25 * cosH, boat.x - 30 * sinH, boat.y + 30 * cosH);
+        if (boat.raceState.finished || (hp.x - xm.x) ** 2 + (hp.y - xm.y) ** 2 >= xm.zone * xm.zone) boat._roundExit = null;
+    }
 
     // Shared, so a rounding and a gate cannot drift apart in what they record. The
     // two old branches each had their own copy and already disagreed: the island
@@ -1526,6 +1532,12 @@ function updateBoatRaceState(boat, dt) {
             let d = 1e9; for (const i of idx) { const m = marks[i]; if (m) d = Math.min(d, Math.hypot(boat.x - m.x, boat.y - m.y) - (m.bodyR || 12)); }
             if (idx.length) GameEvents.emit('player-feat', { id: d > BOAT_LEN_U ? 'close:wide' : 'close:tight', value: Math.round(d) });
         }
+        // ROUNDED BUT NOT YET CLEAR (Oct 26 2026, Wes): the rounding line credits the mark the moment
+        // it is crossed, but the HUD keeps that mark's ring, arrow and exit head up until the hull
+        // leaves its zone, so the player still sees the rounding through while the next mark lights.
+        // On the boat, not raceState (traces hash raceState); cleared below once she is out.
+        boat._roundExit = (_entry && _entry.kind === 'round' && _entry.mark && boat.isPlayer)
+            ? { mark: _entry.mark, leg: rs.leg } : null;
         rs.leg++;
         if (window.onRaceEvent) window.onRaceEvent('leg_complete', { boat, leg: rs.leg - 1, time: state.race.timer });
         rs.isRounding = false;
@@ -2279,9 +2291,10 @@ function roundingStep(boat, rs, rm, nextA) {
     // Bluewater he never came within 2 zones, so the winding banked since the start line
     // credited him 2.5 km short of the island. Now:
     //   * the ROUNDING LINE: a ray from the mark along the bisector of the turn the rounding
-    //     makes — inbound to outbound, the required way round — out to the nearer of the
-    //     previous and next marks (≥ 3 zones). A hairpin's points straight back; a passing
-    //     mark's is square to the course on the side the boat passes.
+    //     makes — inbound to outbound, the required way round — out to infinity (Oct 26 2026;
+    //     it stopped at the nearer of the previous and next marks), or along the bearing the
+    //     editor authored. A hairpin's points straight back; a passing mark's is square to the
+    //     course on the side the boat passes.
     //   * the STRING over the WHOLE leg (no re-base): the taut string from where she began the
     //     leg, along her track, to the next mark, passes this mark on the required side — the
     //     rule itself, a two-class decision with half a turn of margin, so a nibble cannot pass.
@@ -2296,11 +2309,11 @@ function roundingStep(boat, rs, rm, nextA) {
         while (dL < -Math.PI) dL += Math.PI * 2;
         rs.roundSweepLeg += dL * sgn;
     }
-    let wrappedLeg = true;
+    let wrappedLeg = true, needW = null;
     if (nextA && rs.roundFromLeg) {
         const bTo = Math.atan2(nextA.y - rm.y, nextA.x - rm.x);
         const bFrom = Math.atan2(rs.roundFromLeg.y - rm.y, rs.roundFromLeg.x - rm.x);
-        let needW = (bTo - bFrom) * sgn;
+        needW = (bTo - bFrom) * sgn;
         while (needW <= 0) needW += Math.PI * 2;
         while (needW > Math.PI * 2) needW -= Math.PI * 2;
         // A HAIRPIN (in from where you go back to: Bay's beat between two marks) comes in and leaves on
@@ -2317,24 +2330,28 @@ function roundingStep(boat, rs, rm, nextA) {
         while (rem < -Math.PI) rem += Math.PI * 2;
         wrappedLeg = (rs.roundSweepLeg + rem * sgn) >= needW - Math.PI;
     }
-    // The crossing is LATCHED for the leg (and undone by crossing back the wrong way), and the
-    // credit lands at the first moment both hold: a long turn (Otter's mark is a 307° loop round
-    // the headland) crosses the bisector halfway round, before the string has wrapped.
+    // CROSSED = WOUND PAST IT. The line runs to infinity, so "crossed the required way" is counted as
+    // WINDING from where she began the leg, not as the last segment crossing: her bearing from the
+    // mark has turned, the required way, as far as the line (crossing back unwinds it). A long turn
+    // (Otter's mark is a 307° loop round the headland) still crosses the bisector halfway round,
+    // before the string has wrapped — credit lands at the first moment both hold.
+    // ⚠️ NOT a latched segment test (Oct 26 2026): a hairpin's line can point back along the
+    // course, so once it ran to infinity it passed BEHIND the previous mark, and a boat rounding
+    // that mark crossed it "the required way" 3.3 km out and was credited round this one on her
+    // approach (Lighthouse Cove leg 4, seed 90211). Measured as winding, that crossing is a turn
+    // she has not made yet.
+    // WHICH CROSSING: the line's bearing comes round once a turn, so the target is the one of
+    // those windings nearest HALFWAY round the turn this rounding makes (the string's `needW`):
+    // on a hairpin (needW ≈ 2π) a line just past her start bearing is either barely begun or a
+    // whole turn — halfway picks the one the string can stand behind.
     const line = roundingLine(rm, nextA, rs.roundFromLeg, rs.leg);
-    if (line) {
-        // the step from lastPos to here crosses the ray [mark, mark + u·len], going the required way
-        const ax = rs.lastPos.x, ay = rs.lastPos.y, bx = boat.x, by = boat.y;
-        const ex = line.ux * line.len, ey = line.uy * line.len;
-        const den = (bx - ax) * ey - (by - ay) * ex;
-        if (Math.abs(den) > 1e-9) {
-            const t = ((rm.x - ax) * ey - (rm.y - ay) * ex) / den;          // along the step
-            const u = ((rm.x - ax) * (by - ay) - (rm.y - ay) * (bx - ax)) / den;   // along the ray
-            if (t >= 0 && t <= 1 && u >= 0 && u <= 1) {
-                const bA = Math.atan2(ay - rm.y, ax - rm.x), bB = Math.atan2(by - rm.y, bx - rm.x);
-                let dB = bB - bA; while (dB > Math.PI) dB -= Math.PI * 2; while (dB < -Math.PI) dB += Math.PI * 2;
-                rs.roundLineCrossed = dB * sgn > 0;
-            }
-        }
+    if (line && rs.roundFromLeg) {
+        const bFrom = Math.atan2(rs.roundFromLeg.y - rm.y, rs.roundFromLeg.x - rm.x);
+        let tgt = (Math.atan2(line.uy, line.ux) - bFrom) * sgn;
+        while (tgt <= 0) tgt += Math.PI * 2;
+        while (tgt > Math.PI * 2) tgt -= Math.PI * 2;
+        if (needW != null && Math.abs(tgt + Math.PI * 2 - needW / 2) < Math.abs(tgt - needW / 2)) tgt += Math.PI * 2;
+        rs.roundLineCrossed = rs.roundSweepLeg >= tgt;
     }
     // ...or THE OLD TEST, unchanged — banked against the requirement from the re-base, string
     // wrapped, outside the zone and drawing away — for the boat that came round from PAST the
@@ -2357,14 +2374,25 @@ function roundingStep(boat, rs, rm, nextA) {
 // THE LEG ITSELF, not the first leg that rounds this mark: a course that rounds one mark twice (Bay's
 // legs 2 and 4) has a different turn there each time, and handing leg 4 leg 2's line credited the second
 // rounding wherever the fleet crossed the first one's bisector — kilometres from the mark (Oct 8 2026).
+// AUTHORED (Oct 26 2026, Wes): a rounding's `lineBrg` (compass degrees from the mark, set by dragging
+// the line's handle in the editor) overrides the bisector; without it the line is the automatic one.
+// The ray runs to INFINITY — crossing it the required way at any distance is going round the mark
+// (the winding cut); the string test below still guards the nibble. It never draws in the race.
+// `course` defaults to the race's; the editor passes its own compiled course and `noCache`.
 const HAIRPIN_ARC = 0.35;   // rad: in and out bearings this close make a hairpin, the whole way round
-function roundingLine(rm, nextA, fromPt, legIdx) {
+const ROUND_LINE_LEN = 1e7; // u: 1000 km, "to infinity" in a finite segment test
+function roundingLine(rm, nextA, fromPt, legIdx, course, noCache) {
     if (!nextA) return null;
-    const route = state.course && state.course.route, dmc = state.course && state.course.dmc;
+    course = course || state.course;
+    const route = course && course.route, dmc = course && course.dmc;
     let L = -1;
     if (route && legIdx != null && route[legIdx] && route[legIdx].kind === 'round' && route[legIdx].mark === rm) L = legIdx;
     else if (route) for (let i = 1; i < route.length; i++) { const e = route[i]; if (e && e.kind === 'round' && e.mark === rm) { L = i; break; } }
-    const key = L >= 0 ? 'L' + L : null;
+    if (rm.lineBrg != null && isFinite(rm.lineBrg)) {
+        const b = rm.lineBrg * Math.PI / 180;            // compass bearing, y down: (sin b, -cos b)
+        return { ux: Math.sin(b), uy: -Math.cos(b), len: ROUND_LINE_LEN, authored: true };
+    }
+    const key = (L >= 0 && !noCache) ? 'L' + L : null;
     if (key && rm._rline && rm._rline[key]) return rm._rline[key];
     const zone = rm.zone || ZONE_U;
     const along = (leg, fromEnd, dist) => {
@@ -2377,7 +2405,7 @@ function roundingLine(rm, nextA, fromPt, legIdx) {
         return { x: pts[k - 1].x + (pts[k].x - pts[k - 1].x) * f, y: pts[k - 1].y + (pts[k].y - pts[k - 1].y) * f };
     };
     const D = zone * 3;
-    const prevA = L >= 1 && typeof CoursePath !== 'undefined' ? CoursePath.anchor(route[L - 1], state.course.marks) : null;
+    const prevA = L >= 1 && typeof CoursePath !== 'undefined' ? CoursePath.anchor(route[L - 1], course.marks) : null;
     const inPt = (L >= 0 && along(L, true, D)) || prevA || fromPt;
     const outPt = (L >= 0 && along(L + 1, false, D)) || nextA;
     if (!inPt || !outPt) return null;
@@ -2388,10 +2416,19 @@ function roundingLine(rm, nextA, fromPt, legIdx) {
     while (arc > Math.PI * 2) arc -= Math.PI * 2;
     if (arc < HAIRPIN_ARC) arc += Math.PI * 2;          // a hairpin: the whole way round (see roundingStep)
     if (rm.minWrap && arc < rm.minWrap) arc += Math.PI * 2;   // a mark to be gone round: the far side
-    const mid = aIn + sgn * arc / 2;
-    const far = Math.min(prevA ? Math.hypot(prevA.x - rm.x, prevA.y - rm.y) : Infinity, Math.hypot(nextA.x - rm.x, nextA.y - rm.y));
-    const len = Math.max(zone * 3, Math.min(20000, isFinite(far) ? far : zone * 20));
-    const out = { ux: Math.cos(mid), uy: Math.sin(mid), len };
+    let mid = aIn + sgn * arc / 2;
+    // A TRUE HAIRPIN — back to the very mark she came from (Lighthouse Cove legs 4 and 5) — is the
+    // whole way round, so its line is the FAR side, halfway. The path points 3 zones out can't say
+    // so: in and out run side by side there, and their small difference flipped the line between
+    // the far side and straight back down the course (Oct 26 2026).
+    if (prevA) {
+        const aP = Math.atan2(prevA.y - rm.y, prevA.x - rm.x);
+        let dd = Math.atan2(nextA.y - rm.y, nextA.x - rm.x) - aP;
+        while (dd > Math.PI) dd -= Math.PI * 2;
+        while (dd < -Math.PI) dd += Math.PI * 2;
+        if (Math.abs(dd) < HAIRPIN_ARC) mid = aP + Math.PI + dd / 2;
+    }
+    const out = { ux: Math.cos(mid), uy: Math.sin(mid), len: ROUND_LINE_LEN };
     if (key) { rm._rline = rm._rline || {}; rm._rline[key] = out; }
     return out;
 }

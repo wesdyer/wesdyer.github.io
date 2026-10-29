@@ -504,6 +504,8 @@ function validateVenueDoc(doc) {
             if (entry.markId == null) err('route: rounding entry references no mark');
             else if (idxById[entry.markId] == null) err(`route: rounding references missing mark "${entry.markId}"`);
             if (entry.side !== 'port' && entry.side !== 'starboard') err(`route: rounding side "${entry.side}" invalid`);
+            if (entry.lineBrg != null && !(typeof entry.lineBrg === 'number' && entry.lineBrg >= 0 && entry.lineBrg < 360))
+                err(`route: rounding lineBrg "${entry.lineBrg}" invalid (compass degrees, 0 to 360)`);
         } else {
             if (entry.pass != null && entry.pass !== 'through' && entry.pass !== 'round') {
                 err(`route: pass "${entry.pass}" invalid (through | round)`);
@@ -4233,6 +4235,8 @@ function compileVenueDoc(doc, light) {
             side: e.side || 'starboard',
             markIdx: e.markIdx
         };
+        // The ROUNDING LINE's authored bearing (compass degrees from the mark); absent = automatic.
+        if (e.lineBrg != null) e.mark.lineBrg = e.lineBrg;
         if (!roundMark) roundMark = e.mark;
     }
 
