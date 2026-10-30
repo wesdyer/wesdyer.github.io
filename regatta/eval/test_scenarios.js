@@ -208,6 +208,9 @@ const check = (label, ok, detail) => {
                     // flip of hers just before this one's acquisition and cancels its grace — only when the
                     // two land within a second of each other, which is why it failed one run in three.
                     window.Rules._lastTack = {}; window.Rules._tackFlipT = {};
+                    // ...and the umpires' memory (the keep-clear onsets, rule 16.1's track history): the previous
+                    // scenario's boats are the same objects, so their old positions read as a course change here.
+                    if (typeof window.resetKeepClear === 'function') window.resetKeepClear();
 
                     // ── phase execution ──
                     const snapshotOf = () => {

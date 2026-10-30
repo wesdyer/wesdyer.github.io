@@ -12,6 +12,15 @@
 //   6. An ended mark-room entitlement stays ended at that mark (no fresh snapshot after a tack in the
 //      zone, or after the entitled boat leaves it).
 //
+// Batch 2 (2026-10-29):
+//   7. RRS 16.1 at contact: a right-of-way boat that turns INTO a boat keeping clear, which her earlier
+//      course would have missed, takes the contact penalty (it went to the keep-clear boat).
+//   8. RRS 15 from clear astern: a boat that sails into a leeward overlap from clear astern acquires
+//      right of way by her own action and owes room initially (Cases 41, 93) — unless the overlap only
+//      flickered (the boat ahead had held her rights under 1 s).
+//   9. Mark-room is room, not immunity (Case 118): an entitled boat swung out past the boat owing her
+//      room is outside mark-room; back inside, she has it again.
+//
 // Every case asserts its own preconditions. Bay (rounding marks, a start line).
 //   node regatta/eval/test_rules_corrections.js
 const { chromium } = require('playwright');
@@ -245,6 +254,102 @@ const check = (name, ok, detail) => {
     check('...and is NOT re-latched as a fresh zone entry', spent.after && spent.after.entitled === null, JSON.stringify(spent.after));
     check('[pre] the other boat still in the zone', spent.bStillIn, JSON.stringify(spent));
     check('the entitled boat leaves the zone — the other boat is not handed mark-room', spent.leftAfter && spent.leftAfter.entitled === null, JSON.stringify(spent.leftAfter));
+
+    // ── 7. RRS 16.1 at contact ─────────────────────────────────────────────────────────────────
+    const r16 = await page.evaluate(() => {
+        const { A, B, far, headingFor, reset } = window.__x;
+        const SPD = 1.5;   // u a frame: 90 u/s, ~6 kt
+        const run = (turnInto) => {
+            Rules.interactions = {};
+            reset(A, far.x, far.y, 0); reset(B, far.x, far.y, 0);
+            const h0 = headingFor(A, 'starboard');
+            // the turn keeps her on starboard, off the wind
+            let d = 25 * Math.PI / 180;
+            A.heading = h0 + d; if (Rules.getTack(A) !== 1 || Math.abs(normalizeAngle(A.heading - getWindAt(A.x, A.y).direction)) < 50 * Math.PI / 180) d = -d;
+            A.heading = h0;
+            const f0 = { x: Math.sin(h0), y: -Math.cos(h0) }, h1 = h0 + d, f1 = { x: Math.sin(h1), y: -Math.cos(h1) };
+            // B lies still on port where A's TURNED course goes (or, the control, on her held course)
+            const P = turnInto ? { x: A.x + f0.x * 45 + f1.x * 150, y: A.y + f0.y * 45 + f1.y * 150 }
+                               : { x: A.x + f0.x * 195, y: A.y + f0.y * 195 };
+            B.x = P.x; B.y = P.y; headingFor(B, 'port'); B.speed = 0; B.velocity = { x: 0, y: 0 };
+            for (const bt of [A, B]) { Rules._lastTack[bt.id] = Rules.getTack(bt); delete Rules._tackFlipT[bt.id]; }
+            window.resetKeepClear();
+            const pens = [], prev = window.onRaceEvent;
+            window.onRaceEvent = (k, e) => { if (k === 'penalty') pens.push({ who: e.boat.name, rule: e.rule }); };
+            let frames = 0;
+            for (; frames < 300 && !pens.length; frames++) {
+                if (turnInto && frames === 30) A.heading = h1;
+                A.velocity = { x: Math.sin(A.heading) * SPD, y: -Math.cos(A.heading) * SPD }; A.speed = SPD;
+                A.x += A.velocity.x; A.y += A.velocity.y;
+                state.time += WORLD_CLOCK / 60; Rules.update(1 / 60);
+                window.checkBoatCollisions(1 / 60);
+            }
+            window.onRaceEvent = prev;
+            return { pens, s: frames / 60, aTack: tackName(A), bTack: tackName(B), A: A.name, B: B.name };
+        };
+        return { into: run(true), held: run(false) };
+    });
+    check('[pre] A starboard, B port, contact made both ways', r16.into.aTack === 'starboard' && r16.into.bTack === 'port' && r16.into.pens.length && r16.held.pens.length, JSON.stringify(r16));
+    check('RRS 16.1: A turns into B, whom her course would have missed — A penalized (Rule 16)',
+        r16.into.pens.length === 1 && r16.into.pens[0].who === r16.into.A && r16.into.pens[0].rule === 'Rule 16', JSON.stringify(r16.into));
+    check('...control: A holds her course into B lying in it — B penalized (Rule 10)',
+        r16.held.pens.length === 1 && r16.held.pens[0].who === r16.held.B && r16.held.pens[0].rule === 'Rule 10', JSON.stringify(r16.held));
+
+    // ── 8. RRS 15 from clear astern ────────────────────────────────────────────────────────────
+    const r15a = await page.evaluate(() => {
+        const { A, B, far, headingFor, reset } = window.__x;
+        const run = (aheadS) => {
+            const tick = (n) => { for (let i = 0; i < n; i++) { state.time += WORLD_CLOCK / 60; Rules.update(1 / 60); } };
+            for (const side of [1, -1]) {
+                Rules.interactions = {};
+                reset(A, far.x, far.y, 0); reset(B, far.x, far.y, 0);
+                const h = headingFor(A, 'starboard'); B.heading = h;
+                const f = { x: Math.sin(h), y: -Math.cos(h) }, sb = { x: Math.cos(h), y: Math.sin(h) };
+                const at = (along) => { B.x = A.x + f.x * along + sb.x * side * 40; B.y = A.y + f.y * along + sb.y * side * 40; };
+                for (const bt of [A, B]) { Rules._lastTack[bt.id] = Rules.getTack(bt); delete Rules._tackFlipT[bt.id]; }
+                at(-75); tick(1);
+                const astern = Rules.evaluate(A, B);
+                tick(Math.round(aheadS * 60));
+                at(-20); tick(1);
+                const over = Rules.evaluate(A, B);
+                if (over.rowBoat !== B) continue;   // B went to windward: try the other side
+                return { asternRow: astern.rowBoat && astern.rowBoat.name, asternRule: astern.rule,
+                         row: over.rowBoat.name, rule: over.rule, r15: over.constraints.indexOf('Rule 15') !== -1, A: A.name, B: B.name };
+            }
+            return null;
+        };
+        return { held: run(1.5), flicker: run(0.4) };
+    });
+    check('[pre] B clear astern (Rule 12, A), then overlapped to leeward (Rule 11, B)',
+        !!(r15a.held && r15a.held.asternRule === 'Rule 12' && r15a.held.asternRow === r15a.held.A && r15a.held.rule === 'Rule 11' && r15a.held.row === r15a.held.B), JSON.stringify(r15a));
+    check('RRS 15: a leeward overlap from clear astern — B owes room initially', !!(r15a.held && r15a.held.r15), JSON.stringify(r15a.held));
+    check('...not when the boat ahead had held her rights under 1 s (an overlap flicker)', !!(r15a.flicker && r15a.flicker.rule === 'Rule 11' && !r15a.flicker.r15), JSON.stringify(r15a.flicker));
+
+    // ── 9. mark-room is room, not immunity ─────────────────────────────────────────────────────
+    const mrb = await page.evaluate(() => {
+        const { A, B, leg, mIdx, headingFor, reset } = window.__x;
+        const mark = state.course.marks[mIdx];
+        const key = [A.id, B.id].sort((a, b) => a - b).join('-');
+        Rules.interactions = {};
+        reset(A, mark.x, mark.y, 0); reset(B, mark.x, mark.y, 0);
+        const h = headingFor(B, 'starboard'); A.heading = h;
+        A.raceState.leg = B.raceState.leg = leg;
+        const sb = { x: Math.cos(h), y: Math.sin(h) };
+        const put = (bt, lat) => { bt.x = mark.x + sb.x * lat; bt.y = mark.y + sb.y * lat; };
+        put(B, 80); put(A, 30);
+        Rules.update(1 / 60);
+        const d = Rules.interactions[key];
+        if (d) d.zoneSnapshot = { markIndex: mIdx, time: state.time, overlapped: true, entitled: A.id, reason: 'Inside Overlapped' };
+        const mr = () => { const r = Rules.evaluate(A, B); return { mr: r.markRoom === A.id ? 'A' : r.markRoom === B.id ? 'B' : null, out: r.outsideMarkRoom === A.id }; };
+        const out = { tracked: !!d, sameTack: tackName(A) === tackName(B), inside: mr() };
+        put(A, 130); out.wideIn = Rules.inZone(A, mark); out.wide = mr();
+        put(A, 30); out.back = mr();
+        return out;
+    });
+    check('[pre] pair tracked, same tack, the swung-out boat still in the zone', mrb.tracked && mrb.sameTack && mrb.wideIn, JSON.stringify(mrb));
+    check('entitled boat inside the other — mark-room', mrb.inside.mr === 'A', JSON.stringify(mrb.inside));
+    check('Case 118: swung out past the boat owing room — outside mark-room, Section A decides', mrb.wide.mr === null && mrb.wide.out, JSON.stringify(mrb.wide));
+    check('...back inside — her room again (the entitlement is not spent)', mrb.back.mr === 'A', JSON.stringify(mrb.back));
 
     await browser.close();
     console.log(fails ? `\n${fails} FAILED` : '\nAll rules-correction cases pass.');

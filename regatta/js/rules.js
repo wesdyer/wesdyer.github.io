@@ -60,6 +60,11 @@
     const TAKING_PENALTY_ROT_AT_MARK = Math.PI + 0.6;
     // state.time (the world clock) per real second — script.js's WORLD_CLOCK, read at call time (this file
     // loads first). Every rules window meant in seconds is multiplied by it.
+    // Rule 15 from clear astern: how long the boat clear ahead must have held her rights before an overlap
+    // from astern counts as acquiring them (s) — see evaluate().
+    const R15_SETTLE = 1.0;
+    // Mark-room's reach (u, the hull's half-beam): see Rule 18 in _evaluateCore.
+    const MARK_ROOM_BEAM = 15;
     const clockPerS = () => (typeof WORLD_CLOCK !== 'undefined' ? WORLD_CLOCK : 1);
 
     // RRS Definition — Tack, Starboard or Port:
@@ -688,9 +693,18 @@
                     const byMyAction = winFlip !== undefined && (now - winFlip) < 1.5 * clockPerS();
                     const loserFlip = flips[loser.id];
                     const byOthersActions = loserFlip !== undefined && (now - loserFlip) < 1.0 * clockPerS();
+                    // ...AND A LEEWARD OVERLAP FROM CLEAR ASTERN is her own action too (Cases 41, 93): the
+                    // boat clear astern (rule 12's keep-clear boat) sails into a leeward overlap and becomes
+                    // the rule 11 right-of-way boat — she must initially give the windward boat room to keep
+                    // clear. The old boat clear ahead must have held her rights for R15_SETTLE first: an
+                    // overlap flickering in and out across a raft is not a boat sailing up from astern.
+                    const fromAstern = result.rule === "Rule 11" && data.rowRule === "Rule 12"
+                        && (now - (data.rowSince || 0)) >= R15_SETTLE * clockPerS();
                     data.rowOwner = result.rowBoat.id;
-                    data.rowChangeTime = (isAcquisition && byMyAction && !byOthersActions) ? now : -1e9;
+                    data.rowSince = now;
+                    data.rowChangeTime = (isAcquisition && (byMyAction || fromAstern) && !byOthersActions) ? now : -1e9;
                 }
+                data.rowRule = result.rule;
                 if (now - data.rowChangeTime < 2.0 * clockPerS()) {   // RRS 15's "initially": 2 real seconds
                     result.constraints.push("Rule 15");
                 }
@@ -834,6 +848,24 @@
                     const b2OnBeat = !!(C && C.isBeating(b2));
                     if (b1OnBeat || b2OnBeat) {
                         rule18Applies = false; // 18.1(a) exception
+                    }
+                }
+
+                // MARK-ROOM IS ROOM, NOT IMMUNITY (Case 118). It is room to sail to the mark and round it
+                // as the course needs — not room for a wide swing. An entitled boat that has swung out
+                // past the boat owing her room (further from the mark than her, and over on the far side
+                // of her centreline from the mark) is no longer sailing within mark-room, and Section A
+                // decides between them while she is out there (RRS 21(a) exonerates her only within it).
+                // The entitlement itself is not spent: back inside, she has her room again.
+                const mkW = state.course && state.course.marks && state.course.marks[data.zoneSnapshot.markIndex];
+                if (rule18Applies && mkW) {
+                    const E = data.zoneSnapshot.entitled === b1.id ? b1 : b2, O = E === b1 ? b2 : b1;
+                    const lat = (p) => (p.x - O.x) * Math.cos(O.heading) + (p.y - O.y) * Math.sin(O.heading);   // + = O's starboard
+                    const markSide = Math.sign(lat(mkW)), eLat = lat(E);
+                    if (this.distToMark(E, mkW) > this.distToMark(O, mkW)
+                        && markSide !== 0 && Math.sign(eLat) === -markSide && Math.abs(eLat) > MARK_ROOM_BEAM) {
+                        rule18Applies = false;
+                        result.outsideMarkRoom = E.id;
                     }
                 }
 

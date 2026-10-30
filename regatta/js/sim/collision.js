@@ -137,8 +137,64 @@ function satPolygonCircle(poly, circleCenter, radius) {
     return { overlap, axis: smallestAxis };
 }
 
+// ── RULE 16.1 AT CONTACT (PT-111 batch 2) ───────────────────────────────────────────────────
+// RRS 16.1: "When a right-of-way boat changes course, she shall give the other boat room to keep
+// clear." The contact umpire gave every collision to the keep-clear boat, so a right-of-way boat that
+// turned INTO a boat keeping clear of her — a starboard boat hunting a port boat crossing safely astern
+// — was never penalized (an exploit). At contact the right-of-way boat R is now asked the counterfactual
+// the keep-clear umpire asks for its Rule 16 guard: R changed course by more than R16_ANG within the
+// last R16_WIN s, TOWARD K, and had she held her earlier course and speed, with K sailing exactly as she
+// did, the hulls would not have touched. Then the contact is R's: K had no room to keep clear.
+// A turn AWAY from K is avoiding action (rule 14), never this. A boat that acquired her rights inside
+// the window is rule 15's (the oracle's grace), and a boat entitled to mark-room is exonerated for a
+// rule 16 breach while she sails within it (RRS 21(a)) — both are left as they were.
+const R16_WIN = 2.0, R16_MIN = 0.5, R16_ANG = 0.17, R16_TICK = 0.1;   // s, s, rad (10 deg), s
+const _r16 = { hist: {}, boats: null, last: -Infinity };
+function r16Now() { return state.time / (typeof WORLD_CLOCK !== 'undefined' ? WORLD_CLOCK : 1); }
+function r16Record() {
+    const now = r16Now();
+    if (_r16.boats !== state.boats || now < _r16.last) { _r16.hist = {}; _r16.boats = state.boats; _r16.last = -Infinity; }
+    if (now - _r16.last < R16_TICK - 1e-9) return;
+    _r16.last = now;
+    for (const b of state.boats) {
+        const h = _r16.hist[b.id] || (_r16.hist[b.id] = []);
+        const v = b.velocity ? { x: b.velocity.x * 60, y: b.velocity.y * 60 } : { x: Math.sin(b.heading) * b.speed * 60, y: -Math.cos(b.heading) * b.speed * 60 };
+        h.push({ t: now, x: b.x, y: b.y, hd: b.heading, vx: v.x, vy: v.y });
+        while (h.length && now - h[0].t > R16_WIN + 1e-6) h.shift();
+    }
+}
+// Did R's own course change make this contact with K?
+function r16CourseChangeFoul(R, K) {
+    const hr = _r16.hist[R.id], hk = _r16.hist[K.id], now = r16Now();
+    if (!hr || !hk || hr.length < 2) return false;
+    const o = hr[0];
+    if (now - o.t < R16_MIN) return false;
+    const d = normalizeAngle(R.heading - o.hd);
+    if (Math.abs(d) <= R16_ANG) return false;
+    // toward K: K lies on the side R turned to, measured off her earlier course
+    if (Math.sign(normalizeAngle(Math.atan2(K.x - R.x, -(K.y - R.y)) - o.hd)) !== Math.sign(d)) return false;
+    // she became the right-of-way boat by her own tack or gybe inside the window: rule 15, not 16
+    const flip = window.Rules && window.Rules._tackFlipT && window.Rules._tackFlipT[R.id];
+    if (flip !== undefined && (now - flip / (typeof WORLD_CLOCK !== 'undefined' ? WORLD_CLOCK : 1)) < R16_WIN) return false;
+    // K's real track from o.t to now (recorded samples, then where she is), swept in quarter steps
+    const track = hk.filter(s => s.t >= o.t - 1e-9).concat([{ t: now, x: K.x, y: K.y, hd: K.heading }]);
+    const ghost = (t) => ({ x: o.x + o.vx * (t - o.t), y: o.y + o.vy * (t - o.t) });
+    for (let i = 0; i < track.length; i++) {
+        const a = track[Math.max(0, i - 1)], b = track[i];
+        for (let k = (i === 0 ? 4 : 1); k <= 4; k++) {
+            const f = k / 4, t = a.t + (b.t - a.t) * f;
+            const kx = a.x + (b.x - a.x) * f, ky = a.y + (b.y - a.y) * f, kh = a.hd + normalizeAngle(b.hd - a.hd) * f;
+            const g = ghost(t);
+            if ((g.x - kx) * (g.x - kx) + (g.y - ky) * (g.y - ky) > 75 * 75) continue;
+            if (satPolygonPolygon(hullPolygonAt(g.x, g.y, o.hd), hullPolygonAt(kx, ky, kh))) return false;   // she would have hit K anyway
+        }
+    }
+    return true;
+}
+
 function checkBoatCollisions(dt) {
     const broadRadius = 40;
+    r16Record();
     for (let i = 0; i < state.boats.length; i++) {
         const b1 = state.boats[i];
         if (b1.raceState.finished && b1.fadeTimer <= 0) continue;
@@ -243,6 +299,8 @@ function checkBoatCollisions(dt) {
                         triggerPenalty(effectiveRow, { rule: 'Rule 19', reason: 'Denied Room at Obstruction', kind: 'contact', with: loser19 });
                     } else if (r15 && effectiveRow) {
                         triggerPenalty(effectiveRow, { rule: 'Rule 15', reason: 'No Room to Respond', kind: 'contact', with: effectiveRow === b1 ? b2 : b1 });
+                    } else if (effectiveRow && !res.markRoom && r16CourseChangeFoul(effectiveRow, effectiveRow === b1 ? b2 : b1)) {
+                        triggerPenalty(effectiveRow, { rule: 'Rule 16', reason: 'Changed Course, No Room', kind: 'contact', with: effectiveRow === b1 ? b2 : b1 });
                     } else if (effectiveRow === b1) triggerPenalty(b2, Object.assign({ other: b1.name, with: b1 }, pInfo));
                     else if (effectiveRow === b2) triggerPenalty(b1, Object.assign({ other: b2.name, with: b2 }, pInfo));
                     else {
@@ -376,6 +434,7 @@ function kcKPath(K, now) {
 // other per-run state (scenario.js, beside Rules.interactions).
 function resetKeepClear() {
     _kc.t = 0; _kc.acc = 0; _kc.hist = {}; _kc.pend = {}; _kc.cool = {}; _kc.boats = state.boats; _kc.wt = state.time;
+    _r16.hist = {}; _r16.boats = state.boats; _r16.last = -Infinity;   // the rule 16.1 contact history too
 }
 function checkKeepClear(dt) {
     // A new race (a new boats array) or a rewound world clock starts the umpire's memory clean, so a run
