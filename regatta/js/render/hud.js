@@ -406,13 +406,26 @@ function drawRoundingExitHead(ctx, rm, zoneR, nextA) {
     ctx.restore();
 }
 
+// THE ROUNDINGS ON SHOW: the mark this leg rounds, plus the one just rounded while the hull is still
+// inside its zone (`_roundExit`, set when the rounding line credits it — physics.js advanceLeg). Each
+// with the leg it belongs to, so its exit head points at what follows THAT rounding.
+function shownRoundings(player) {
+    const out = [];
+    const e = routeLeg(player.raceState.leg);
+    if (e && e.kind === 'round' && e.mark) out.push({ rm: e.mark, leg: player.raceState.leg });
+    const x = player._roundExit;
+    if (x && x.mark && !out.some(o => o.rm.markIdx === x.mark.markIdx)) out.push({ rm: x.mark, leg: x.leg });
+    return out;
+}
+
 function drawRoundingArrows(ctx) {
     if (!state.showNavAids || !state.course || !state.course.marks || state.race.status === 'finished') return;
 
     // Player Leg determines what to show
     const player = state.boats[0];
-    // No arrows on Start (0) or Finish (totalLegs)
-    if (player.raceState.leg === 0 || player.raceState.leg >= state.race.totalLegs) return;
+    // No arrows on Start (0) — and none on the Finish (totalLegs), except a mark just rounded and not yet cleared
+    if (player.raceState.leg === 0) return;
+    if (player.raceState.leg >= state.race.totalLegs && !(state.course.type === 'islandRound' && player._roundExit)) return;
 
     // ISLAND ROUNDING: the active mark is ONE mark, so the arrow belongs on it. Every other
     // nav-aid here has an islandRound branch; this one did not, and `legMarks()` returns null
@@ -421,26 +434,25 @@ function drawRoundingArrows(ctx) {
     // the line you had just left into a phantom gate with rounding arcs on both ends, while
     // the mark you were actually sailing to had none.
     if (state.course.type === 'islandRound') {
-        const e = routeLeg(player.raceState.leg);
-        const rm = (e && e.kind === 'round' && e.mark) ? e.mark : null;
-        if (!rm) return;
-        // Leaving the mark to STARBOARD means the bearing angle increases (see the sweep test
-        // in updateBoatRaceState) — and with y down, increasing angle is clockwise on screen,
-        // which is `counterclockwise = false`. So port rounds are the ccw ones.
-        const ccw = (rm.side === 'port');
-        const R = Math.max(90, (rm.zone || 0) * 0.42);
-        ctx.save();
-        ctx.lineWidth = 7; ctx.lineCap = 'round';
-        ctx.strokeStyle = `rgba(${NAV_RGB}, 0.85)`; ctx.fillStyle = `rgba(${NAV_RGB}, 0.85)`;
-        ctx.translate(rm.x, rm.y);
-        ctx.rotate(state.time * 8.0 * (ccw ? -1 : 1));
-        const start = 0, end = Math.PI;
-        ctx.beginPath(); ctx.arc(0, 0, R, start, end, ccw); ctx.stroke();
-        ctx.translate(R * Math.cos(end), R * Math.sin(end));
-        ctx.rotate(end + (ccw ? -Math.PI / 2 : Math.PI / 2));
-        ctx.beginPath();
-        ctx.moveTo(-10, -10); ctx.lineTo(10, 0); ctx.lineTo(-10, 10); ctx.lineTo(-6, 0); ctx.fill();
-        ctx.restore();
+        for (const { rm } of shownRoundings(player)) {
+            // Leaving the mark to STARBOARD means the bearing angle increases (see the sweep test
+            // in updateBoatRaceState) — and with y down, increasing angle is clockwise on screen,
+            // which is `counterclockwise = false`. So port rounds are the ccw ones.
+            const ccw = (rm.side === 'port');
+            const R = Math.max(90, (rm.zone || 0) * 0.42);
+            ctx.save();
+            ctx.lineWidth = 7; ctx.lineCap = 'round';
+            ctx.strokeStyle = `rgba(${NAV_RGB}, 0.85)`; ctx.fillStyle = `rgba(${NAV_RGB}, 0.85)`;
+            ctx.translate(rm.x, rm.y);
+            ctx.rotate(state.time * 8.0 * (ccw ? -1 : 1));
+            const start = 0, end = Math.PI;
+            ctx.beginPath(); ctx.arc(0, 0, R, start, end, ccw); ctx.stroke();
+            ctx.translate(R * Math.cos(end), R * Math.sin(end));
+            ctx.rotate(end + (ccw ? -Math.PI / 2 : Math.PI / 2));
+            ctx.beginPath();
+            ctx.moveTo(-10, -10); ctx.lineTo(10, 0); ctx.lineTo(-10, 10); ctx.lineTo(-6, 0); ctx.fill();
+            ctx.restore();
+        }
         return;
     }
 
@@ -863,22 +875,21 @@ function drawMarkZones(ctx) {
     // Drawn SOLID: the zone is hard course geometry, same as a gate's — the dashes read
     // as a suggestion. And amber the moment the hull is inside it, exactly like a gate.
     if (state.course.type === 'islandRound') {
-        const e = routeLeg(player.raceState.leg);
-        const rm = (e && e.kind === 'round' && e.mark) ? e.mark : null;
-        if (!rm) return;
-        const h = player.heading, sinH = Math.sin(h), cosH = Math.cos(h);
-        const bowX = player.x + 25 * sinH, bowY = player.y - 25 * cosH;
-        const sternX = player.x - 30 * sinH, sternY = player.y + 30 * cosH;
-        const closest = getClosestPointOnSegment(rm.x, rm.y, bowX, bowY, sternX, sternY);
-        const inZone = (closest.x - rm.x) ** 2 + (closest.y - rm.y) ** 2 < rm.zone * rm.zone;
-        ctx.save();
-        ctx.strokeStyle = inZone ? 'rgba(251, 191, 36, 0.95)' : `rgba(${NAV_RGB}, 0.55)`;
-        ctx.lineWidth = inZone ? 5.5 : 5;
-        ctx.beginPath(); ctx.arc(rm.x, rm.y, rm.zone, 0, Math.PI * 2); ctx.stroke();
-        ctx.restore();
-        // The exit head rides THIS ring's own activation — one test for both.
-        if (inZone && typeof CoursePath !== 'undefined' && state.course.route) {
-            drawRoundingExitHead(ctx, rm, rm.zone, CoursePath.anchor(state.course.route[player.raceState.leg + 1], state.course.marks));
+        for (const { rm, leg } of shownRoundings(player)) {
+            const h = player.heading, sinH = Math.sin(h), cosH = Math.cos(h);
+            const bowX = player.x + 25 * sinH, bowY = player.y - 25 * cosH;
+            const sternX = player.x - 30 * sinH, sternY = player.y + 30 * cosH;
+            const closest = getClosestPointOnSegment(rm.x, rm.y, bowX, bowY, sternX, sternY);
+            const inZone = (closest.x - rm.x) ** 2 + (closest.y - rm.y) ** 2 < rm.zone * rm.zone;
+            ctx.save();
+            ctx.strokeStyle = inZone ? 'rgba(251, 191, 36, 0.95)' : `rgba(${NAV_RGB}, 0.55)`;
+            ctx.lineWidth = inZone ? 5.5 : 5;
+            ctx.beginPath(); ctx.arc(rm.x, rm.y, rm.zone, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+            // The exit head rides THIS ring's own activation — one test for both.
+            if (inZone && typeof CoursePath !== 'undefined' && state.course.route) {
+                drawRoundingExitHead(ctx, rm, rm.zone, CoursePath.anchor(state.course.route[leg + 1], state.course.marks));
+            }
         }
         return;
     }

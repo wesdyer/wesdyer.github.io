@@ -53,7 +53,9 @@ function syncTool() {
          : mode === 'boundary' ? 'bcircle'
          : mode;
 }
-const NOHIT = { shape: null, mark: -1, line: -1, vert: -1, bvert: -1, wvert: -1, rcentre: -1, rring: -1 };
+const NOHIT = { shape: null, mark: -1, line: -1, vert: -1, bvert: -1, wvert: -1, rcentre: -1, rring: -1, rline: -1 };
+// The rounding line's drag handle sits this many zone radii out along the line.
+const ROUND_LINE_HANDLE = 1.4;
 let sel = Object.assign({}, NOHIT);
 let hover = Object.assign({}, NOHIT);
 let hoverRoute = -1;           // route row under the cursor, highlighted on the map
@@ -2314,6 +2316,29 @@ function drawCourseLayer() {
             ctx.strokeStyle = '#fbbf24'; ctx.setLineDash([4, 5]); ctx.lineWidth = tool === 'mark' ? 2.5 : 1.5;
             ctx.beginPath(); ctx.arc(p.x, p.y, zr, 0, Math.PI * 2); ctx.stroke();
             ctx.setLineDash([]);
+            // The ROUNDING LINE, out from the mark to the edge of the map: dashed while automatic,
+            // solid once set by hand, bright for the leg you are on (selected, hovered or dragged).
+            const rl = roundLineOf(li);
+            if (rl) {
+                const lit = litR || (mode === 'route' && selRoute === li) || hover.rline === li
+                         || (drag && drag.kind === 'rline' && drag.li === li);
+                const far = (cv.width + cv.height) * 2;
+                ctx.save();
+                ctx.strokeStyle = lit ? 'rgba(253,230,138,0.95)' : 'rgba(251,191,36,0.38)';
+                ctx.lineWidth = lit ? 2.5 : 1.5;
+                ctx.setLineDash(rl.authored ? [] : [10, 8]);
+                ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x + rl.ux * far, p.y + rl.uy * far); ctx.stroke();
+                ctx.restore();
+                if (mode === 'marks') {
+                    // Its handle: a diamond out past the ring, clear of the ring's own resize handle.
+                    const hx = p.x + rl.ux * zr * ROUND_LINE_HANDLE, hy = p.y + rl.uy * zr * ROUND_LINE_HANDLE;
+                    const onL = hover.rline === li, k = onL ? 8 : 6;
+                    ctx.beginPath(); ctx.moveTo(hx, hy - k - 2); ctx.lineTo(hx + k + 2, hy); ctx.lineTo(hx, hy + k + 2); ctx.lineTo(hx - k - 2, hy); ctx.closePath();
+                    ctx.fillStyle = 'rgba(8,15,30,0.85)'; ctx.fill();
+                    ctx.beginPath(); ctx.moveTo(hx, hy - k); ctx.lineTo(hx + k, hy); ctx.lineTo(hx, hy + k); ctx.lineTo(hx - k, hy); ctx.closePath();
+                    ctx.fillStyle = onL ? '#fde68a' : '#fbbf24'; ctx.fill();
+                }
+            }
             // Which way round: an arc with an arrowhead, so "starboard" is something
             // you can see rather than a word in a panel.
             // Centre and ring handles only in Marks mode, matching what is grabbable.
@@ -4142,6 +4167,7 @@ function inspectorRefresh() {
     // Point the leg straight at (or straight away from) the breeze where it starts, keeping
     // its length. With the Length field beside it, "exactly 800 m dead upwind" is two moves.
     obj.querySelectorAll('[data-legact]').forEach(el => el.addEventListener('click', () => {
+        if (el.dataset.legact === 'lineauto') { if (setLegLine(selRoute, null)) afterEdit(true, 'rounding line'); return; }
         const up = upwindFrom(legFrom(selRoute));
         if (up == null) { toast('No wind at the start of that leg', true); return; }
         const brg = el.dataset.legact === 'upwind' ? up : up + Math.PI;
@@ -4647,6 +4673,30 @@ function setLegZone(i, zu) {
     return true;
 }
 
+// THE ROUNDING LINE (Oct 26 2026): the ray from a rounding's mark that, crossed the required way,
+// credits the rounding. Drawn through physics.js `roundingLine`, the race's own function, so the
+// editor shows exactly the line the race tests: the bisector of the turn unless the leg carries an
+// authored `lineBrg` (compass degrees from the mark). Never drawn in the race. { ux, uy, brg, authored }
+function roundLineOf(li) {
+    const cm = course && course.route && course.route[li] && course.route[li].mark;
+    if (!cm || typeof roundingLine !== 'function' || typeof CoursePath === 'undefined') return null;
+    const e = routeOf()[li];
+    if (e && e.lineBrg != null) cm.lineBrg = e.lineBrg; else delete cm.lineBrg;   // the doc leads, mid-drag too
+    const ln = roundingLine(cm, CoursePath.anchor(course.route[li + 1], course.marks), null, li, course, true);
+    if (!ln) return null;
+    const brg = ((Math.atan2(ln.ux, -ln.uy) * 180 / Math.PI) % 360 + 360) % 360;
+    return { ux: ln.ux, uy: ln.uy, brg, authored: !!ln.authored };
+}
+
+// Author a rounding line's bearing (degrees), or `null` to hand it back to the automatic bisector.
+function setLegLine(i, deg) {
+    const e = routeOf()[i];
+    if (!e || e.kind !== 'round') return false;
+    if (deg == null) delete e.lineBrg;
+    else { if (!isFinite(deg)) return false; e.lineBrg = Math.round(((deg % 360) + 360) % 360) % 360; }
+    return true;
+}
+
 // WHAT THIS LEG COSTS, priced by the same function as the course total and the auto time
 // limit (CoursePath.priceLeg) — so a designer reading a leg's best time is reading the
 // number it contributes, not a lookalike computed a second way.
@@ -4680,6 +4730,7 @@ function inspLeg(e, i) {
         // wide on one lap and tight on another. Typed here or dragged on the map.
         const cm = (course && course.route[i] && course.route[i].mark) || null;
         const zoneU = e.zone != null ? e.zone : (cm && cm.zone != null ? cm.zone : ZONE_U);
+        const rl = roundLineOf(i);
         way = `<div class="in-sect"><span class="k">Rounding</span>
   <div class="in-seg" data-legseg="side">
     <button data-v="port"${e.side === 'port' ? ' class="on"' : ''}>Leave to port</button>
@@ -4689,6 +4740,14 @@ function inspLeg(e, i) {
     ${numF('circle', 'leg.zone', Math.round(uToM(zoneU)), 'm')}
   </div>
   <div class="in-sub">The rounding circle's radius — drag its ring on the map, or type it.</div>
+  <span class="k" style="display:block;margin-top:10px">Rounding line</span>
+  <div class="in-grid">
+    ${numF('bearing', 'leg.line', rl ? Math.round(rl.brg) % 360 : '', '°')}
+  </div>
+  ${e.lineBrg != null ? '<div class="in-seg" style="margin-top:6px"><button data-legact="lineauto">Back to automatic</button></div>' : ''}
+  <div class="in-sub">${e.lineBrg != null ? 'Set by hand.' : 'Automatic: halfway round the turn.'}
+    Crossing it the required way rounds the mark. It runs out forever from the mark and never shows in
+    the race. Drag its handle in Marks mode, or type a bearing.</div>
 </div>`;
     } else {
         // Crossing the first or last gate IS the start or the finish — "through" versus
@@ -5148,6 +5207,7 @@ function numEdit(el) {
         const ok = key === 'len' ? setLegPolar(selRoute, { len: mToU(v0) })
                  : key === 'brg' ? setLegPolar(selRoute, { brg: v0 * Math.PI / 180 })
                  : key === 'zone' ? setLegZone(selRoute, mToU(v0))
+                 : key === 'line' ? setLegLine(selRoute, v0)
                  : false;
         if (ok) afterEdit(true, `leg ${key}`); else inspectorRefresh();
         return;
@@ -6698,6 +6758,9 @@ function hit(wx, wy) {
             if (e.kind !== 'round' || !e.mark) continue;
             const d = Math.hypot(wx - e.mark.x, wy - e.mark.y);
             if (d < r) { out.rcentre = li; return out; }
+            const rl = roundLineOf(li);
+            if (rl && Math.hypot(wx - (e.mark.x + rl.ux * e.mark.zone * ROUND_LINE_HANDLE),
+                                 wy - (e.mark.y + rl.uy * e.mark.zone * ROUND_LINE_HANDLE)) < r) { out.rline = li; return out; }
             if (Math.abs(d - e.mark.zone) < r) { out.rring = li; return out; }
         }
     }
@@ -7842,6 +7905,7 @@ cv.addEventListener('mousedown', (e) => {
         const hr = hit(w.x, w.y);
         if (hr.rcentre >= 0) { drag = { kind: 'rcentre', li: hr.rcentre, last: w, moved: false, origin: w }; return; }
         if (hr.rring >= 0)   { drag = { kind: 'rring',   li: hr.rring,   moved: false, origin: w }; return; }
+        if (hr.rline >= 0)   { drag = { kind: 'rline',   li: hr.rline,   moved: false, origin: w }; return; }
     }
     // Region outlines — wind, current AND gust, through the one REGION table. Through
     // `vsel` like every other outline: a bespoke one-vertex drag used to start here and
@@ -8134,6 +8198,11 @@ window.addEventListener('mousemove', (e) => {
             if (m) { m.x = w.x; m.y = w.y; }
             livePathRefresh();
             drag.last = w; drag.moved = true; draw();
+        } else if (drag.kind === 'rline') {
+            // Swing the rounding line about its mark: the bearing from the mark to the pointer.
+            const cm = (course.route[drag.li] || {}).mark;
+            if (cm) setLegLine(drag.li, Math.atan2(w.x - cm.x, -(w.y - cm.y)) * 180 / Math.PI);
+            drag.moved = true; draw();
         } else if (drag.kind === 'rring') {
             const e = doc.course.route[drag.li];
             const cm = (course.route[drag.li] || {}).mark;
@@ -8260,7 +8329,7 @@ window.addEventListener('mousemove', (e) => {
         if (h.shape !== hover.shape || h.vert !== hover.vert || h.mark !== hover.mark
             || h.line !== hover.line
             || h.bvert !== hover.bvert || h.wvert !== hover.wvert
-            || h.rcentre !== hover.rcentre || h.rring !== hover.rring) { hover = h; draw(); }
+            || h.rcentre !== hover.rcentre || h.rring !== hover.rring || h.rline !== hover.rline) { hover = h; draw(); }
         // A brush follows the cursor, and so does the rubber band of a shape being drawn.
         // Without this the preview only repainted on CLICK, so the band pointed at wherever
         // you last pressed rather than at where you are about to.
@@ -9288,6 +9357,8 @@ window.addEventListener('beforeunload', (e) => { if (isDirty()) { e.preventDefau
 window.EditorApp = { resize, fitView, loadVenue, loadBlank, newDoc, draw, buildKindPicker,
     // exposed for headless tests
     _state: () => ({ doc, findings, history: history.length, histIdx, dirty: isDirty(), tool, sel, mode }),
+    // The rounding lines, for eval/test_rounding_line.js: the drawn line, and setting or clearing a bearing.
+    _roundLineOf: roundLineOf, _setLegLine: setLegLine,
     // The Save-time path bake, so a headless script can stamp course.paths on a document
     // authored outside the editor (a hand-laid first cut) without a file picker.
     _bakeCoursePaths: bakeCoursePaths,

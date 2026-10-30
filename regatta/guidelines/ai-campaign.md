@@ -18144,3 +18144,25 @@ HEAD in: `37f3f79c` (PT-068 phase 1). Gates pre-registered in `eval/rl/_th_gates
 - **The Bayou rework** (commit 7abff582): four passages within ~6 % router time (East 132, West 134, Long Way 137, Cut 140 s; `routeGuides` in the venue, drawn by the editor); tools `_vb_try.js` (PASS walls each passage off in turn), `_vb_apply.js`, `_vb_census.js` (gate-line crossings), `_vb_why.js`. Bench on the three-passage version (treeVB4 vs LB1c, 3×8): paired −38.3 mean, winner 163 → 134, land 10.73 → 2.10, pen 1.03 → 0.65, fins 240/240; census west ~98 % — the fleet takes the cheapest passage; no pick mechanism spreads near-equal routes yet. The four-passage venue is not benched.
 - Goldens re-recorded for this code (CR1 + LB1c).
 - **Open:** a pick that spreads the fleet across near-equal routes (the owner's "weigh what the fleet ahead does"); bench the four-passage Bayou; the CR1 contact rise on otter.
+
+## ROUNDING LINES — infinite, authored, held on the HUD (2026-10-26; `eval/test_rounding_line.js`)
+
+Wes: lines from the marks that, when crossed, round them — chosen so finishing beats going back, out
+to infinity, never drawn in the race, editable in the editor; the HUD keeps showing a rounding until
+you exit. PT-081's line already did the crediting; this round:
+- **Infinite** (`ROUND_LINE_LEN`, was capped at the nearer neighbouring mark) and counted as
+  **winding** from the leg start, not a latched segment crossing: as a segment test the infinite
+  hairpin line ran behind the previous mark and a boat rounding THAT mark latched it 3.3 km out.
+  The winding target is the line's crossing nearest halfway round the string's turn; the string
+  guard and the old departure fallback stay.
+- **True hairpins** (back to the mark she came from) put the automatic line on the far side, halfway.
+  Glacier Sound's out-and-back mark now credits at 0.50 of the turn (was 0.72); every other venue's
+  credit fraction is unchanged (credits probe, 7 venues × 2 seeds).
+- **Authored**: route entry `lineBrg` (compass degrees from the mark) overrides the bisector; the
+  editor draws every line (dashed = automatic, solid = set, bright = selected), drags it by a diamond
+  handle in Marks mode, types it in the leg inspector, "Back to automatic" clears it. Setting one
+  changes courseSig (re-save for paths) and recordsHash (that venue's records reset).
+- **HUD hold**: `boat._roundExit` keeps the rounded mark's ring, arrow, exit head and colour until
+  the hull leaves its zone, beside the next mark. Not on raceState (trace hash).
+- Goldens re-recorded: 14 of 26 traces moved (bay, lagoon, river, redrock, glowtide, arctic, flats);
+  all 45 suites pass.
