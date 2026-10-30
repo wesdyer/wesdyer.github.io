@@ -183,8 +183,9 @@ function checkBoatCollisions(dt) {
                 b1.speed *= (friction - (friction - impactFactor) * impact1);
                 b2.speed *= (friction - (friction - impactFactor) * impact2);
 
-                // No penalties if either boat is finished
-                if (rulesInForce() && !b1.raceState.finished && !b2.raceState.finished) {
+                // A finished boat is still racing while she is on the line (her fade, while she still
+                // collides) — see triggerPenalty; after that she has left the course and is not here.
+                if (rulesInForce()) {
                     const res = getRightOfWay(b1, b2);
                     const rowBoat = res.boat;
 

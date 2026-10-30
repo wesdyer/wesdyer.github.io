@@ -89,7 +89,7 @@ const check = (name, ok, detail) => {
                 bt.raceState.lastPos = { x: bt.x, y: bt.y };
                 bt.fadeTimer = 1;
             }
-            for (let i = 0; i < 5; i++) { state.time += 1 / 60; window.Rules.update(1 / 60); }
+            for (let i = 0; i < 5; i++) { state.time += WORLD_CLOCK / 60; window.Rules.update(1 / 60); }
             const k = [A.id, B.id].sort((x, y) => x - y).join('-');
             const d = window.Rules.interactions[k];
             const res = window.Rules.getRightOfWay(A, B);
@@ -121,7 +121,7 @@ const check = (name, ok, detail) => {
                 B.x = mark.x + 18; B.y = mark.y; B.heading = Math.PI / 2;
                 A.x = mark.x + 18 + 75; A.y = mark.y; A.heading = Math.PI / 2;
                 for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
-                state.time += 1 / 60; window.Rules.update(1 / 60);
+                state.time += WORLD_CLOCK / 60; window.Rules.update(1 / 60);
                 window.checkMarkCollisions(1 / 60);
                 const dB = Math.hypot(B.x - mark.x, B.y - mark.y), dA = Math.hypot(A.x - mark.x, A.y - mark.y);
                 return { penB: !!B.raceState.penalty, penA: !!A.raceState.penalty, dA, dB,
@@ -141,7 +141,7 @@ const check = (name, ok, detail) => {
                 B.x = mark.x + 18; B.y = mark.y; B.heading = Math.PI / 2;
                 A.x = mark.x + 4 * mark.zone; A.y = mark.y - 4 * mark.zone; // far away — no incident
                 for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
-                state.time += 1 / 60; window.Rules.update(1 / 60);
+                state.time += WORLD_CLOCK / 60; window.Rules.update(1 / 60);
                 window.checkMarkCollisions(1 / 60);
                 return { penB: !!B.raceState.penalty };
             });
@@ -158,7 +158,7 @@ const check = (name, ok, detail) => {
                 B.x = mark.x + 40; B.y = mark.y; B.heading = Math.PI / 2;
                 A.x = mark.x + 40; A.y = mark.y + 17; A.heading = Math.PI / 2;
                 for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
-                state.time += 1 / 60; window.Rules.update(1 / 60);
+                state.time += WORLD_CLOCK / 60; window.Rules.update(1 / 60);
                 window.checkBoatCollisions(1 / 60);
                 return { penA: !!A.raceState.penalty, penB: !!B.raceState.penalty };
             });
@@ -253,7 +253,7 @@ const check = (name, ok, detail) => {
                 || Math.hypot(B.x - spot.bx, B.y - spot.by) > 1) return { collides: true };
             window.Rules.interactions = {};
             for (let i = 0; i < Math.round(secs * 60); i++) {
-                state.time += 1 / 60; state.race.timer += 1 / 60;
+                state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                 window.Rules.update(1 / 60);
                 window.checkIslandCollisions(1 / 60);
                 place();
@@ -299,7 +299,7 @@ const check = (name, ok, detail) => {
                     B.x = spot.bx; B.y = spot.by;
                     A.x = spot.bx - spot.ux * 16; A.y = spot.by - spot.uy * 16;
                     for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
-                    state.time += 1 / 60; state.race.timer += 1 / 60;
+                    state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                     window.Rules.update(1 / 60);
                     window.checkIslandCollisions(1 / 60);
                     window.checkBoatCollisions(1 / 60);
@@ -340,7 +340,7 @@ const check = (name, ok, detail) => {
                     bt.raceState.lastPos = { x: bt.x, y: bt.y };
                 }
                 for (let i = 0; i < 72; i++) {
-                    state.time += 1 / 60; state.race.timer += 1 / 60;
+                    state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                     window.Rules.update(1 / 60);
                     window.checkIslandCollisions(1 / 60);
                     B.x = o.bx; B.y = o.by;
@@ -348,7 +348,7 @@ const check = (name, ok, detail) => {
                 }
                 A.x = o.bx - spot.ux * 16; A.y = o.by - spot.uy * 16;
                 for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
-                state.time += 1 / 60; state.race.timer += 1 / 60;
+                state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                 window.Rules.update(1 / 60);
                 window.checkIslandCollisions(1 / 60);
                 window.checkBoatCollisions(1 / 60);
@@ -377,7 +377,7 @@ const check = (name, ok, detail) => {
                         B.x = spot.bx + spot.ux * d; B.y = spot.by + spot.uy * d;
                         A.x = B.x - spot.ux * 60; A.y = B.y - spot.uy * 60;
                         const px = B.x, py = B.y;
-                        state.time += 1 / 60; state.race.timer += 1 / 60;
+                        state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                         window.Rules.update(1 / 60);
                         window.checkIslandCollisions(1 / 60);
                         if (Math.hypot(B.x - px, B.y - py) > 0.5) hit = true;

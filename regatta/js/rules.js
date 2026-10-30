@@ -56,6 +56,11 @@
     const ZONE_RADIUS = ZONE_U;
     // A penalty turn built past this (rad, ~120°) is a turn being TAKEN, not owed — see Rule 21.
     const TAKING_PENALTY_ROT = 2.1;
+    // ...and inside a mark's zone, past what a rounding turns (~180°) — see Rule 21.
+    const TAKING_PENALTY_ROT_AT_MARK = Math.PI + 0.6;
+    // state.time (the world clock) per real second — script.js's WORLD_CLOCK, read at call time (this file
+    // loads first). Every rules window meant in seconds is multiplied by it.
+    const clockPerS = () => (typeof WORLD_CLOCK !== 'undefined' ? WORLD_CLOCK : 1);
 
     // RRS Definition — Tack, Starboard or Port:
     // "A boat is on the tack, starboard or port, corresponding to her
@@ -388,20 +393,21 @@
             // actions" case, and it removes the grace.
             if (!this._lastTack) { this._lastTack = {}; this._tackFlipT = {}; }
             for (const bT of state.boats) {
-                if (bT.raceState.finished) continue;
+                if (bT.raceState.finished && !(bT.fadeTimer > 0)) continue;   // on the line she is still racing
                 const tk = this.getTack(bT);
                 if (this._lastTack[bT.id] !== undefined && this._lastTack[bT.id] !== tk)
                     this._tackFlipT[bT.id] = now;
                 this._lastTack[bT.id] = tk;
+                this._updateReturnDuty(bT);
             }
 
             for (let i = 0; i < state.boats.length; i++) {
                 const b1 = state.boats[i];
-                if (b1.raceState.finished) continue;
+                if (b1.raceState.finished && !(b1.fadeTimer > 0)) continue;
 
                 for (let j = i + 1; j < state.boats.length; j++) {
                     const b2 = state.boats[j];
-                    if (b2.raceState.finished) continue;
+                    if (b2.raceState.finished && !(b2.fadeTimer > 0)) continue;
 
                     const key = [b1.id, b2.id].sort((a,b) => a-b).join('-');
                     if (!this.interactions[key]) {
@@ -572,14 +578,22 @@
                                 // Existing snapshot — check exit conditions
                                 // RRS 18.2(b): obligation ends when entitled boat
                                 // leaves the zone or passes head to wind
+                                // ⚠️ AN ENDED ENTITLEMENT STAYS ENDED at this mark: the snapshot is SPENT (entitled
+                                // null), not deleted. Deleted, the very next frame took a fresh snapshot "as the
+                                // zone was reached" — so a boat that TACKED in the zone was handed mark-room again
+                                // as First to the Zone or as the inside boat (RRS 18.3 says the opposite: having
+                                // passed head to wind in the zone she gets no 18.2 against a boat fetching it), and
+                                // when the entitled boat sailed out of the zone the boat behind her latched room
+                                // she was never owed. Rules 10-13 and 15 decide between them until both have left
+                                // the zone (below). 18.3(b) — the fetcher who gets inside is owed room — is not
+                                // modelled.
                                 if (data.zoneSnapshot.entitled) {
                                     const entitledId = data.zoneSnapshot.entitled;
                                     const entitledBoat = (b1.id === entitledId) ? b1 : b2;
                                     if (!this.inZone(entitledBoat, mark)) {
-                                        data.zoneSnapshot = null;
-                                    }
-                                    if (data.zoneSnapshot && entitledBoat.raceState.isTacking) {
-                                         data.zoneSnapshot = null;
+                                        data.zoneSnapshot.entitled = null; data.zoneSnapshot.reason = "Left the Zone";
+                                    } else if (entitledBoat.raceState.isTacking) {
+                                        data.zoneSnapshot.entitled = null; data.zoneSnapshot.reason = "Tacked in the Zone";
                                     }
                                 }
                                 if (data.zoneSnapshot && !b1In && !b2In) {
@@ -606,6 +620,32 @@
         // reaching close-hauled, other boat must get room to respond) is an
         // opposite-tack flip: the one acquisition the old placement
         // structurally missed.
+        // RRS 22.1 (21.1 before 2025): "A boat sailing towards the pre-start side of the starting line or
+        // one of its extensions after her starting signal to start or to comply with rule 30.1 shall keep
+        // clear of a boat not doing so until she is completely on the pre-start side." Two things the
+        // engine had wrong, both read off `raceState.ocs` alone:
+        //  · the duty began AT THE GUN for any boat over early, before she had turned back — a starboard
+        //    boat over the line lost her rights to port-tackers while still sailing up the course
+        //    (being over early is a scoring matter until she starts back);
+        //  · it ended when OCS cleared, on the first hull point back across the line, with most of
+        //    the hull still on the course side.
+        // So the duty is its own latch on the boat (`_ret22`, not raceState: the goldens hash
+        // raceState's primitives): set while she is OCS and heading for the pre-start side, held
+        // until her whole hull is behind the line or its extensions. `raceState.ocs` itself — the
+        // scoring flag, the AI's recovery and the leg-0 gate — is unchanged.
+        _updateReturnDuty: function(b) {
+            const st = window.state, rs = b.raceState;
+            if (!st.race || st.race.status !== 'racing' || rs.finished || rs.leg !== 0
+                || typeof startCrossNormal !== 'function' || typeof hullLineOffset !== 'function') { b._ret22 = false; return; }
+            const [m0, m1] = startLinePts();
+            if (!m0 || !m1) { b._ret22 = !!rs.ocs; return; }
+            if (rs.ocs) {
+                const n = startCrossNormal();   // toward the course side
+                if (Math.sin(b.heading) * n.x - Math.cos(b.heading) * n.y < 0) b._ret22 = true;
+            }
+            if (b._ret22 && hullLineOffset(b, m0, m1, true) <= 0) b._ret22 = false;
+        },
+
         evaluate: function(b1, b2) {
             const result = this._evaluateCore(b1, b2);
             const state = window.state;
@@ -638,15 +678,20 @@
                     // before the change (the owner's tack-onto-starboard case),
                     // and never when the LOSER's tack handed it over ("because
                     // of the other boat's actions").
+                    // ⚠️ SECONDS, NOT CLOCK UNITS: `now` is state.time, the world clock, which runs at
+                    // WORLD_CLOCK (0.24) a real second. These windows were written as bare 1.5 / 1.0 / 2.0
+                    // and so lasted 6.25 / 4.17 / 8.33 real seconds — for 8 s after a tack onto starboard
+                    // any contact went to the tacker, and the no-contact foul and the stand-on hold were
+                    // off. The test harness stepped state.time by 1/60 a frame, so its 2 s looked right.
                     const flips = this._tackFlipT || {};
                     const winFlip = flips[result.rowBoat.id];
-                    const byMyAction = winFlip !== undefined && (now - winFlip) < 1.5;
+                    const byMyAction = winFlip !== undefined && (now - winFlip) < 1.5 * clockPerS();
                     const loserFlip = flips[loser.id];
-                    const byOthersActions = loserFlip !== undefined && (now - loserFlip) < 1.0;
+                    const byOthersActions = loserFlip !== undefined && (now - loserFlip) < 1.0 * clockPerS();
                     data.rowOwner = result.rowBoat.id;
                     data.rowChangeTime = (isAcquisition && byMyAction && !byOthersActions) ? now : -1e9;
                 }
-                if (now - data.rowChangeTime < 2.0) {
+                if (now - data.rowChangeTime < 2.0 * clockPerS()) {   // RRS 15's "initially": 2 real seconds
                     result.constraints.push("Rule 15");
                 }
             }
@@ -690,24 +735,35 @@
             // twice while he owed a turn, and Wes took both penalties. Taking = a bot in her
             // spin (penaltySpin), or any boat whose penalty turn has built past 120° — more than
             // a tack or a gybe, and the decay (~7°/s) keeps ordinary sailing below it.
+            // ⚠️ NOT A ROUNDING: the turn's rotation builds from the moment of the foul, so a boat owing a
+            // turn who rounds a mark (a leeward rounding is ~180°) passed 120° mid-rounding, became "taking"
+            // and lost her mark-room and her rights halfway round. Inside a mark's zone the turn has to go
+            // past what a rounding needs (TAKING_PENALTY_ROT_AT_MARK, ~214°) before it reads as a penalty
+            // being taken — extending a rounding into a full circle (the penalty at the offset) still does.
+            const takingRot = (b) => {
+                const marks = state.course && state.course.marks;
+                if (marks) for (const m of marks) if (this.inZone(b, m)) return TAKING_PENALTY_ROT_AT_MARK;
+                return TAKING_PENALTY_ROT;
+            };
             const taking = (b) => !!b.raceState.penalty && (
-                !!(b.controller && b.controller.penaltySpin) || Math.abs(b.raceState.penaltyRot || 0) >= TAKING_PENALTY_ROT);
+                !!(b.controller && b.controller.penaltySpin) || Math.abs(b.raceState.penaltyRot || 0) >= takingRot(b));
             // ...and returning to start is AFTER her starting signal: a boat over the line in the prestart
             // has no rule 21 duty, only the ordinary rules (she just has to be back by the gun).
             const afterGun = state.race.status !== 'prestart';
-            const b1Returning = (afterGun && b1.raceState.ocs) || taking(b1);
-            const b2Returning = (afterGun && b2.raceState.ocs) || taking(b2);
+            const returningToStart = (b) => afterGun && !!b._ret22;   // RRS 22.1 — see _updateReturnDuty
+            const b1Returning = returningToStart(b1) || taking(b1);
+            const b2Returning = returningToStart(b2) || taking(b2);
 
             if (b1Returning && !b2Returning) {
                 result.rowBoat = b2;
                 result.rule = "Rule 21";
-                result.reason = (afterGun && b1.raceState.ocs) ? "Returning to Start" : "Taking Penalty";
+                result.reason = returningToStart(b1) ? "Returning to Start" : "Taking Penalty";
                 return result;
             }
             if (b2Returning && !b1Returning) {
                 result.rowBoat = b1;
                 result.rule = "Rule 21";
-                result.reason = (afterGun && b2.raceState.ocs) ? "Returning to Start" : "Taking Penalty";
+                result.reason = returningToStart(b2) ? "Returning to Start" : "Taking Penalty";
                 return result;
             }
 

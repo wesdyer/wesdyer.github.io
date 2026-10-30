@@ -285,7 +285,7 @@ const check = (label, ok, detail) => {
                                 bt.x = origin.x + ux * d; bt.y = origin.y + uy * d;
                                 fl.x = bt.x - ux * ph.marchToLand.gap; fl.y = bt.y - uy * ph.marchToLand.gap;
                                 const px = bt.x, py = bt.y;
-                                state.time += 1 / 60; state.race.timer += 1 / 60;
+                                state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                                 window.Rules.update(1 / 60);
                                 window.checkIslandCollisions(1 / 60);
                                 if (Math.hypot(bt.x - px, bt.y - py) > 0.5) hit = true;
@@ -301,7 +301,7 @@ const check = (label, ok, detail) => {
                                 // pose is re-pinned so only per-frame FLAGS evolve
                                 window.update(1 / 60);
                             } else {
-                                state.time += 1 / 60; state.race.timer += 1 / 60;
+                                state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                                 window.Rules.update(1 / 60);
                                 if (ph.step === 'rules+islands' || ph.step === 'contact') window.checkIslandCollisions(1 / 60);
                                 if (ph.step === 'contact') window.checkBoatCollisions(1 / 60);

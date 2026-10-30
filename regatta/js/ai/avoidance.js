@@ -881,32 +881,31 @@ Object.assign(BotController.prototype, {
         // them room to pass it. Computed once; candidates that would close
         // their escape gap get taxed at rule-violation weight below.
         const rule19Pairs = [];
+        // ⚠️ THE UMPIRE'S GEOMETRY, not its own (2026-10-28, with 2080dfb): the way out from the land is
+        // the NEAREST SHORE's normal, and overlap is the RRS one. This loop used the island's centre and
+        // its radius — on a real venue island (radius up to 22,530 u) the centre axis points almost
+        // anywhere and `edgeGap = dist - radius` dropped every boat along a long bank — and plain overlap,
+        // so it priced room for opposite-tack crossers the rules owe nothing while missing the squeezes
+        // the umpire calls. A bot must see the obligation she is penalized for.
         if (state.course.islands && state.course.islands.length && this.livenessState === 'normal'
-            && window.Rules && window.Rules.isOverlapped) {
+            && window.Rules && window.Rules.isOverlappedRRS && typeof nearestShore === 'function') {
             const boat0 = this.boat;
             for (const other of state.boats) {
                 if (other === boat0 || other.raceState.finished) continue;
                 const dxo = other.x - boat0.x, dyo = other.y - boat0.y;
-                if (dxo * dxo + dyo * dyo > 220 * 220) continue;
-                for (const isl of state.course.islands) {
-                    // Rule 19 is room at an OBSTRUCTION — something a boat must change
-                    // course to avoid. A shoal is not one: she may sail straight over it,
-                    // so being pinned against a bar is a tactical loss and not a foul.
-                    if (isl.awash) continue;
-                    const ox = other.x - isl.x, oy = other.y - isl.y;
-                    const d2i = ox * ox + oy * oy;
-                    const lim = isl.radius + 320;
-                    if (d2i > lim * lim) continue; // squared early-out before sqrt
-                    const oc = Math.sqrt(d2i);
-                    const edgeGap = oc - isl.radius;
-                    if (edgeGap > 320 || edgeGap < -50) continue;
-                    const ax = ox / Math.max(1, oc), ay = oy / Math.max(1, oc); // escape axis
-                    const myProj = (boat0.x - isl.x) * ax + (boat0.y - isl.y) * ay;
-                    if (myProj < oc + 15) continue;                    // we are not outside
-                    if (!window.Rules.isOverlapped(boat0, other)) continue;
-                    rule19Pairs.push({ other, ax, ay });
-                    break;
-                }
+                // the umpire's own reach (updateRule19Ledger: a boat within 130 u, land within 120 u of the
+                // inside boat) — priced wider, the river's bots taxed room the umpire never calls and sailed
+                // into the bank instead (land contacts +40% at 220 / 320 u)
+                if (dxo * dxo + dyo * dyo > 130 * 130) continue;
+                // Rule 19 is room at an OBSTRUCTION — something a boat must change course to avoid. A
+                // shoal is not one (nearestShore skips awash shapes): being pinned against a bar is a
+                // tactical loss and not a foul.
+                const sh = nearestShore(other.x, other.y, 120);
+                if (!sh) continue;
+                const ax = sh.ax, ay = sh.ay;                       // escape axis, out from the shore
+                if (-dxo * ax - dyo * ay < 15) continue;            // we are not outside her
+                if (!window.Rules.isOverlappedRRS(boat0, other)) continue;
+                rule19Pairs.push({ other, ax, ay });
             }
         }
 

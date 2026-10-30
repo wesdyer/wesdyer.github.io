@@ -470,11 +470,25 @@ function rulesInForce() {
 //     repeat calls come within 1.85 s, or 6 s or more apart.)
 //   · a PILE-UP is one incident: a call against a different opponent within PILEUP_GAP of a new penalty
 //     folds into it (iRacing counts only the worst of incidents "in quick succession").
-//   · a mark touched while a boat incident is open is that incident's (44.1(a)).
+//   · a mark touched while a boat incident is open is that incident's, and a boat fouled while a mark
+//     incident is open is that one's (44.1(a)).
 // The bookkeeping lives on the boat, not raceState: the golden traces hash raceState's primitives.
 const INCIDENT_GAP = 2.0, PILEUP_GAP = 1.0;
 function triggerPenalty(boat, info) {
-    if (boat.raceState.finished) return;
+    // ON THE LINE A BOAT IS STILL RACING (Definitions, Racing: until she "has finished and cleared the
+    // finishing line and marks"). The engine finishes her the frame her hull crosses, and she stays solid
+    // for her fade (FINISH_FADE_SECS) — so a boat that crossed on port could T-bone a starboard boat still
+    // finishing, or touch the finishing mark (rule 31), and nothing was called. A foul in that window costs
+    // what an untaken turn costs at the finish, +15 s, once; a boat that has faded out has left the course.
+    if (boat.raceState.finished) {
+        if (!(boat.fadeTimer > 0) || boat._lineFoul || !settings.penaltiesEnabled || !rulesInForce()) return;
+        boat._lineFoul = true;
+        boat.raceState.totalPenalties++;
+        boat.raceState.finishTime += 15;
+        if (window.onRaceEvent) window.onRaceEvent('penalty', { boat, kind: info && info.kind, rule: info && info.rule, reason: info && info.reason, other: info && info.other });
+        if (boat.isPlayer) GameEvents.emit('player-penalty', info);
+        return;
+    }
     // logged from the prestart on, like the rules themselves (PT-030)
     if (window.onRaceEvent && rulesInForce()) window.onRaceEvent('penalty', { boat, kind: info && info.kind, rule: info && info.rule, reason: info && info.reason, other: info && info.other });
     if (!settings.penaltiesEnabled) return;
@@ -493,6 +507,9 @@ function triggerPenalty(boat, info) {
         if (last != null && now - last < INCIDENT_GAP) return;                                    // the same incident, still playing out
         if (boat._lastPenaltyAt != null && now - boat._lastPenaltyAt < PILEUP_GAP) return;       // a pile-up: one incident
         if (key.startsWith('mark:') && Object.keys(open).some(k => k.startsWith('boat:') && now - open[k] < INCIDENT_GAP)) return;   // 44.1(a)
+        // ...and the other way round: a mark touched and then a boat fouled in the same incident is still ONE
+        // penalty (44.1(a)) — only the boat-then-mark order folded, so mark-then-boat 1-2 s later owed two.
+        if (key.startsWith('boat:') && Object.keys(open).some(k => k.startsWith('mark:') && now - open[k] < INCIDENT_GAP)) return;
     }
     boat._lastPenaltyAt = now;
 
