@@ -2367,7 +2367,7 @@
             bt.targetBoomSide = Math.abs(relW) > 0.1 ? (relW > 0 ? 1 : -1) : 1;
             bt.boomSide = bt.targetBoomSide;
             // no rules residue from a previous run
-            delete bt._r19Since;
+            delete bt._r19Since; delete bt._r19c; delete bt._r19Astern;
             bt.raceState.roundArmed = false; bt.raceState.roundSweep = 0;
             // ⚠️ re-assert the LAB INVARIANT after the canonical-scalar
             // restore above: the canon Boat's raceState carries leg 0, and

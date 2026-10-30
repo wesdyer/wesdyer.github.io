@@ -211,6 +211,7 @@ const check = (label, ok, detail) => {
                     // ...and the umpires' memory (the keep-clear onsets, rule 16.1's track history): the previous
                     // scenario's boats are the same objects, so their old positions read as a course change here.
                     if (typeof window.resetKeepClear === 'function') window.resetKeepClear();
+                    for (const bt of state.boats) { delete bt._r19Since; delete bt._r19c; delete bt._r19Astern; }   // the rule-19 ledger's too
 
                     // ── phase execution ──
                     const snapshotOf = () => {

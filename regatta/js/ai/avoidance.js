@@ -904,6 +904,7 @@ Object.assign(BotController.prototype, {
                 if (!sh) continue;
                 const ax = sh.ax, ay = sh.ay;                       // escape axis, out from the shore
                 if (-dxo * ax - dyo * ay < 15) continue;            // we are not outside her
+                if (other._r19c && other._r19c[boat0.id]) continue; // RRS 19.2(c): she dived in without room — none owed
                 if (!window.Rules.isOverlappedRRS(boat0, other)) continue;
                 rule19Pairs.push({ other, ax, ay });
             }

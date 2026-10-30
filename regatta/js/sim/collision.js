@@ -147,7 +147,7 @@ function satPolygonCircle(poly, circleCenter, radius) {
 // did, the hulls would not have touched. Then the contact is R's: K had no room to keep clear.
 // A turn AWAY from K is avoiding action (rule 14), never this. A boat that acquired her rights inside
 // the window is rule 15's (the oracle's grace), and a boat entitled to mark-room is exonerated for a
-// rule 16 breach while she sails within it (RRS 21(a)) — both are left as they were.
+// rule 16 breach while she sails within it (RRS 43.1(b)) — both are left as they were.
 const R16_WIN = 2.0, R16_MIN = 0.5, R16_ANG = 0.17, R16_TICK = 0.1;   // s, s, rad (10 deg), s
 const _r16 = { hist: {}, boats: null, last: -Infinity };
 function r16Now() { return state.time / (typeof WORLD_CLOCK !== 'undefined' ? WORLD_CLOCK : 1); }
@@ -157,8 +157,11 @@ function r16Record() {
     if (now - _r16.last < R16_TICK - 1e-9) return;
     _r16.last = now;
     for (const b of state.boats) {
-        const h = _r16.hist[b.id] || (_r16.hist[b.id] = []);
+        let h = _r16.hist[b.id] || (_r16.hist[b.id] = []);
         const v = b.velocity ? { x: b.velocity.x * 60, y: b.velocity.y * 60 } : { x: Math.sin(b.heading) * b.speed * 60, y: -Math.cos(b.heading) * b.speed * 60 };
+        // a boat that JUMPED (a refloat push-off, a Lab or test re-placement) has no track to judge her by
+        const last = h.length ? h[h.length - 1] : null;
+        if (last && Math.hypot(b.x - last.x, b.y - last.y) > 30 + 3 * Math.hypot(v.x, v.y) * (now - last.t)) h = _r16.hist[b.id] = [];
         h.push({ t: now, x: b.x, y: b.y, hd: b.heading, vx: v.x, vy: v.y });
         while (h.length && now - h[0].t > R16_WIN + 1e-6) h.shift();
     }
@@ -1007,14 +1010,14 @@ function shoreIndex(I) {
     return (I._shoreIx = { n, x0: V[0].x, y0: V[0].y, cells });
 }
 function nearestShore(x, y, maxD) {
-    let best = maxD * maxD, bx = 0, by = 0, hit = false;
+    let best = maxD * maxD, bx = 0, by = 0, hit = false, bI = null, I = null;
     const edge = (p, r) => {
         const ex = r.x - p.x, ey = r.y - p.y, ll = ex * ex + ey * ey;
         const u = ll > 0 ? Math.max(0, Math.min(1, ((x - p.x) * ex + (y - p.y) * ey) / ll)) : 0;
         const cx = p.x + ex * u, cy = p.y + ey * u, d2 = (x - cx) * (x - cx) + (y - cy) * (y - cy);
-        if (d2 < best) { best = d2; bx = cx; by = cy; hit = true; }
+        if (d2 < best) { best = d2; bx = cx; by = cy; hit = true; bI = I; }
     };
-    for (const I of state.course.islands) {
+    for (I of state.course.islands) {
         if (I.awash || !I.vertices || I.vertices.length < 2) continue;
         const dx = x - I.x, dy = y - I.y, lim = (I.radius || 0) + maxD;
         if (dx * dx + dy * dy > lim * lim) continue;
@@ -1030,7 +1033,7 @@ function nearestShore(x, y, maxD) {
     }
     if (!hit) return null;
     const d = Math.sqrt(best);
-    return d > 1e-6 ? { d, ax: (x - bx) / d, ay: (y - by) / d } : null;
+    return d > 1e-6 ? { d, ax: (x - bx) / d, ay: (y - by) / d, isl: bI } : null;
 }
 
 // Rule 19's "no room": the outside boat's hull within this of the inside boat's — about a beam (the
@@ -1052,6 +1055,33 @@ function hullGap(A, B) {
     return Math.sqrt(best);
 }
 
+// RRS 19.2(c) (2025): "While boats are passing a continuing obstruction, if a boat that was clear astern
+// and required to keep clear becomes overlapped between the other boat and the obstruction and, at the
+// moment the overlap begins, there is not room for her to pass between them, (1) she is not entitled to
+// room under rule 19.2(b), and (2) while the boats remain overlapped, she shall keep clear and rules 10
+// and 11 do not apply." The ledger gave room to ANY boat that turned up inside — so a boat diving in
+// from astern along a bank, into a gap she did not fit, was owed room by the boat she dived under, the
+// outside boat took the penalty when she touched or grounded, and the bots priced room for her.
+//   continuing obstruction: a shore longer than a zone across (R19C_MIN_R, 3 hull lengths — a rock a
+//     boat passes in a moment is not one, and 19.2(b) alone governs it);
+//   "clear astern and required to keep clear": clear astern of her the frame before, on the same tack
+//     (rule 12) or on port against starboard (rule 10);
+//   "not room for her to pass between them": less clear water between the outside boat's hull and
+//     the shore than a hull's beam plus a manoeuvring margin on each side (R19C_NEED), at that moment.
+// Such a pair is marked on the inside boat (`_r19c[outsideId]`) instead of the ledger, for as long as the
+// overlap lasts: no room is owed her (no ledger entry, so no contact flip, no land penalty on the outside
+// boat, no keep-clear entitlement, no room priced by the AI), and the oracle has her keep clear (rules.js).
+const R19C_MIN_R = 165;
+const R19C_NEED = 30 + 2 * 10;
+function r19cKeepClear(b, o) {
+    const tb = window.Rules.getTack(b), to = window.Rules.getTack(o);
+    return tb === to || tb === -1;   // rules.js: PORT = -1
+}
+function r19cNoRoom(o) {
+    const sh = nearestShore(o.x, o.y, 120 + R19C_NEED);
+    return !!sh && sh.d - 15 < R19C_NEED;   // 15: the outside boat's half-beam
+}
+
 function updateRule19Ledger() {
     if (!state.course || !state.course.islands || state.race.status !== 'racing') return;
     const now = state.race.timer;
@@ -1064,16 +1094,36 @@ function updateRule19Ledger() {
             const dx = o.x - b.x, dy = o.y - b.y;
             if (dx * dx + dy * dy < 130 * 130) { anyClose = true; break; }
         }
-        if (!anyClose) { if (b._r19Since) b._r19Since = null; continue; }
+        if (!anyClose) { if (b._r19Since) b._r19Since = null; b._r19c = null; b._r19Astern = null; continue; }
         // the shore she would ground on: the nearest hard land, and the way out from it
         const sh = nearestShore(b.x, b.y, 120);
-        if (!sh) { if (b._r19Since) b._r19Since = null; continue; }
+        if (!sh) { if (b._r19Since) b._r19Since = null; b._r19c = null; b._r19Astern = null; continue; }
         const ax = sh.ax, ay = sh.ay;
         const led = b._r19Since || (b._r19Since = {});
+        const c19 = b._r19c || (b._r19c = {}), ast = b._r19Astern || (b._r19Astern = {});
+        const continuing = !!(sh.isl && (sh.isl.radius || 0) >= R19C_MIN_R);
         for (const o of B) {
             if (o === b || o.raceState.finished) continue;
             const dx = o.x - b.x, dy = o.y - b.y;
-            if (dx * dx + dy * dy > 130 * 130) { delete led[o.id]; continue; }
+            if (dx * dx + dy * dy > 130 * 130) { delete led[o.id]; delete c19[o.id]; delete ast[o.id]; continue; }
+            // 19.2(c) is judged at the moment the overlap BEGINS: she was clear astern and required to keep
+            // clear the frame before, she becomes overlapped already inside the other boat (between her and
+            // the shore, by at least a half-beam), and there is not room for her there. The verdict holds
+            // while the overlap lasts. `ast[o.id]` = { astern (last frame), ov (overlapped last frame), c }.
+            const prev = ast[o.id] || { astern: false, ov: false, c: false };
+            const ovNow = !!(window.Rules && window.Rules.isOverlappedRRS && window.Rules.isOverlappedRRS(b, o));
+            const begins = ovNow && !prev.ov;
+            ast[o.id] = {
+                astern: !!(window.Rules && window.Rules.isClearAstern(b, o) && r19cKeepClear(b, o)),
+                ov: ovNow,
+                c: ovNow && (begins ? (prev.astern && continuing && dx * ax + dy * ay >= 15 && r19cNoRoom(o)) : prev.c),
+            };
+            // overlapped as the rules define it: boats crossing on opposite tacks upwind are not
+            if (!ovNow) { delete led[o.id]; delete c19[o.id]; continue; }
+            // 19.2(c): she dived in without room — none is owed her, and she keeps clear, while they stay
+            // overlapped with her inside (the flag the oracle reads)
+            if (ast[o.id].c && dx * ax + dy * ay >= 10) { c19[o.id] = true; delete led[o.id]; continue; }
+            delete c19[o.id];
             // Hysteresis on the outside test (RRS 43 wiring): an entry is
             // CREATED only when the other boat sits clearly outside (45u along
             // the escape axis), but once held it survives the gap COLLAPSING —
@@ -1082,8 +1132,6 @@ function updateRule19Ledger() {
             // distance is hull-to-hull. Without this the obligation record
             // deletes itself one frame before the only event that needs it.
             if (dx * ax + dy * ay < (led[o.id] != null ? 10 : 45)) { delete led[o.id]; continue; }
-            // overlapped as the rules define it: boats crossing on opposite tacks upwind are not
-            if (!(window.Rules && window.Rules.isOverlappedRRS && window.Rules.isOverlappedRRS(b, o))) { delete led[o.id]; continue; }
             if (led[o.id] == null) led[o.id] = now;
         }
     }

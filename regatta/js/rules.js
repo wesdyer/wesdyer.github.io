@@ -65,6 +65,9 @@
     const R15_SETTLE = 1.0;
     // Mark-room's reach (u, the hull's half-beam): see Rule 18 in _evaluateCore.
     const MARK_ROOM_BEAM = 15;
+    // Close-hauled, for "on a beat to windward" (Case 132): the game's laylines are 45° off the wind
+    // (hud.js), and a boat sailing her layline wanders a few degrees either side of it.
+    const BEAT_TWA = (45 + 5) * Math.PI / 180;
     const clockPerS = () => (typeof WORLD_CLOCK !== 'undefined' ? WORLD_CLOCK : 1);
 
     // RRS Definition — Tack, Starboard or Port:
@@ -278,6 +281,52 @@
 
         distToMark: function(boat, mark) {
             return Math.sqrt((boat.x - mark.x)**2 + (boat.y - mark.y)**2);
+        },
+
+        /**
+         * "On a beat to windward" — RRS 18.1(a)(1) and 16.2, as World Sailing Case 132 defines it:
+         *   "Two boats on opposite tacks are 'on a beat to windward' when, after their starting signal,
+         *    (1) the course each of them would choose in order to sail the course as quickly as possible,
+         *        in the absence of all other boats, is close-hauled or above, or
+         *    (2) one or both of them are overstanding a close-hauled layline to their next mark. (A boat
+         *        on the windward side of a close-hauled layline to a leeward mark is not 'overstanding'
+         *        that layline; she is 'above' that layline.)"
+         * So it is a question about the PAIR — (1) needs BOTH, (2) needs either — and about the course
+         * each would sail to her next mark, not the heading she happens to have.
+         *   (1) her next mark lies within close-hauled (BEAT_TWA, the game's laylines: 45°, +5° for
+         *       a boat sailing her layline) of the wind at her: she cannot lay it below close-hauled;
+         *   (2) her LEG is a beat (its target lies within BEAT_TWA of the wind from where the leg
+         *       begins) and she can now lay the mark below close-hauled: she has sailed past the layline.
+         *       A reaching or running leg has no close-hauled layline to overstand — that is the case's
+         *       "above, not overstanding".
+         */
+        onBeatToWindward: function(b1, b2, mark) {
+            const st = window.state;
+            if (!st.race || st.race.status !== 'racing') return false;   // "after their starting signal"
+            const route = (st.course && st.course.route) || [], marks = st.course.marks || [];
+            const anchor = (e) => {
+                if (!e) return null;
+                if (e.kind === 'round' && e.mark) return { x: e.mark.x, y: e.mark.y };
+                if (e.marks && marks[e.marks[0]] && marks[e.marks[1]])
+                    return { x: (marks[e.marks[0]].x + marks[e.marks[1]].x) / 2, y: (marks[e.marks[0]].y + marks[e.marks[1]].y) / 2 };
+                return null;
+            };
+            const holds = (e) => !!e && ((e.mark && Math.hypot(e.mark.x - mark.x, e.mark.y - mark.y) < 1)
+                || (e.marks && e.marks.some(i => marks[i] && Math.hypot(marks[i].x - mark.x, marks[i].y - mark.y) < 1)));
+            const twaOf = (fx, fy, tx, ty, wdir) => Math.abs(normalizeAngle(Math.atan2(tx - fx, -(ty - fy)) - wdir));
+            const judge = (b) => {
+                const leg = b.raceState.leg, e = route[leg];
+                // her next mark: this one if her leg is to it, else her leg's own target
+                const tgt = holds(e) ? { x: mark.x, y: mark.y } : anchor(e);
+                if (!tgt) return { close: false, over: false };
+                const w = (typeof getWindAt === 'function') ? getWindAt(b.x, b.y) : st.wind;
+                const close = twaOf(b.x, b.y, tgt.x, tgt.y, w.direction) <= BEAT_TWA;
+                const from = leg >= 1 ? anchor(route[leg - 1]) : null;
+                const legBeat = !!from && twaOf(from.x, from.y, tgt.x, tgt.y, st.wind.direction) <= BEAT_TWA;
+                return { close, over: legBeat && !close };
+            };
+            const j1 = judge(b1), j2 = judge(b2);
+            return (j1.close && j2.close) || j1.over || j2.over;
         },
 
         /**
@@ -589,16 +638,17 @@
                                 // as First to the Zone or as the inside boat (RRS 18.3 says the opposite: having
                                 // passed head to wind in the zone she gets no 18.2 against a boat fetching it), and
                                 // when the entitled boat sailed out of the zone the boat behind her latched room
-                                // she was never owed. Rules 10-13 and 15 decide between them until both have left
-                                // the zone (below). 18.3(b) — the fetcher who gets inside is owed room — is not
-                                // modelled.
+                                // she was never owed. From then until both have left the zone, 18.2(c) is the only
+                                // mark-room between them — the inside boat of a live overlap (_evaluateCore) — and
+                                // Section A decides the rest. 18.3(b) — the fetcher who gets inside is owed room —
+                                // is not modelled.
                                 if (data.zoneSnapshot.entitled) {
                                     const entitledId = data.zoneSnapshot.entitled;
                                     const entitledBoat = (b1.id === entitledId) ? b1 : b2;
                                     if (!this.inZone(entitledBoat, mark)) {
-                                        data.zoneSnapshot.entitled = null; data.zoneSnapshot.reason = "Left the Zone";
+                                        data.zoneSnapshot.entitled = null; data.zoneSnapshot.reason = "Left the Zone"; data.zoneSnapshot.spentId = entitledId;
                                     } else if (entitledBoat.raceState.isTacking) {
-                                        data.zoneSnapshot.entitled = null; data.zoneSnapshot.reason = "Tacked in the Zone";
+                                        data.zoneSnapshot.entitled = null; data.zoneSnapshot.reason = "Tacked in the Zone"; data.zoneSnapshot.spentId = entitledId;
                                     }
                                 }
                                 if (data.zoneSnapshot && !b1In && !b2In) {
@@ -625,9 +675,9 @@
         // reaching close-hauled, other boat must get room to respond) is an
         // opposite-tack flip: the one acquisition the old placement
         // structurally missed.
-        // RRS 22.1 (21.1 before 2025): "A boat sailing towards the pre-start side of the starting line or
+        // RRS 21.1 (22.1 in 2021-2024): "A boat sailing towards the pre-start side of the starting line or
         // one of its extensions after her starting signal to start or to comply with rule 30.1 shall keep
-        // clear of a boat not doing so until she is completely on the pre-start side." Two things the
+        // clear of a boat not doing so until her hull is completely on the pre-start side." Two things the
         // engine had wrong, both read off `raceState.ocs` alone:
         //  · the duty began AT THE GUN for any boat over early, before she had turned back — a starboard
         //    boat over the line lost her rights to port-tackers while still sailing up the course
@@ -764,7 +814,7 @@
             // ...and returning to start is AFTER her starting signal: a boat over the line in the prestart
             // has no rule 21 duty, only the ordinary rules (she just has to be back by the gun).
             const afterGun = state.race.status !== 'prestart';
-            const returningToStart = (b) => afterGun && !!b._ret22;   // RRS 22.1 — see _updateReturnDuty
+            const returningToStart = (b) => afterGun && !!b._ret22;   // RRS 21.1 — see _updateReturnDuty
             const b1Returning = returningToStart(b1) || taking(b1);
             const b2Returning = returningToStart(b2) || taking(b2);
 
@@ -835,19 +885,42 @@
             // Section A ROW. We set result.markRoom to the entitled
             // boat's ID. The collision handler uses effectiveRow =
             // (markRoom > rowBoat) to give mark-room priority.
-            if (data && data.zoneSnapshot && data.zoneSnapshot.entitled !== null) {
+            // RRS 18.2(c), 2025: "When rule 18.2(a) does not apply and the boats are overlapped, the outside
+            // boat shall give the inside boat mark-room." Once the latched entitlement is SPENT (the entitled
+            // boat passed head to wind or left the zone — 18.2(b)) and one of them is still in the zone, an
+            // overlapped inside boat is owed mark-room again — live, for as long as the overlap lasts, never
+            // latched (that is 18.2(a)'s "thereafter", which no longer applies). Except 18.3: a boat that
+            // passed head to wind from port to starboard in the zone of a mark to be left to port gets no
+            // 18.2 at all against a starboard boat fetching it (the fetcher is taken as the other boat on
+            // starboard; 18.3's own two duties are not modelled).
+            let entitled18 = data && data.zoneSnapshot ? data.zoneSnapshot.entitled : null, live18c = false;
+            const mk18 = data && data.zoneSnapshot && state.course && state.course.marks
+                ? state.course.marks[data.zoneSnapshot.markIndex] : null;
+            if (data && data.zoneSnapshot && entitled18 === null && data.zoneSnapshot.spentId != null && mk18
+                && this.isOverlappedThrough(b1, b2)) {
+                const tacker = data.zoneSnapshot.spentId === b1.id ? b1 : data.zoneSnapshot.spentId === b2.id ? b2 : null;
+                const other = tacker === b1 ? b2 : b1;
+                const e = tacker && (state.course.route || [])[tacker.raceState.leg];
+                const leftToPort = !e || e.side !== 'starboard';
+                const r183 = data.zoneSnapshot.reason === "Tacked in the Zone" && tacker && leftToPort
+                    && this.getTack(tacker) === STARBOARD && this.getTack(other) === STARBOARD;
+                if (!r183) {
+                    entitled18 = (this.distToMark(b1, mk18) < this.distToMark(b2, mk18)) ? b1.id : b2.id;
+                    live18c = true;
+                }
+            }
+            if (data && data.zoneSnapshot && entitled18 !== null) {
                 let rule18Applies = true;
 
                 if (oppositeTacks) {
-                    // RRS 18.1(a): rule 18 does not apply "between boats on opposite
-                    // tacks on a BEAT TO WINDWARD". That is each boat's point of sail,
-                    // not a property of the leg — a boat beats, reaches and runs within
-                    // one leg — so it is asked of the boats.
-                    const C = window.Course;
-                    const b1OnBeat = !!(C && C.isBeating(b1));
-                    const b2OnBeat = !!(C && C.isBeating(b2));
-                    if (b1OnBeat || b2OnBeat) {
-                        rule18Applies = false; // 18.1(a) exception
+                    // RRS 18.1(a)(1): rule 18 does not apply "between boats on opposite tacks on a beat to
+                    // windward" — the PAIR is on a beat, by World Sailing Case 132 (see onBeatToWindward).
+                    // ⚠️ NOT "EITHER BOAT IS POINTING HIGH". This asked whether either boat's heading was
+                    // within 60° of the wind, so a boat on a reach to a mark switched rule 18 off for the
+                    // boat running into it beside her whenever she luffed, and two boats that had both
+                    // overstood the windward mark and were reaching in to it kept mark-room between them.
+                    if (mk18 && this.onBeatToWindward(b1, b2, mk18)) {
+                        rule18Applies = false; // 18.1(a)(1) exception
                     }
                 }
 
@@ -855,24 +928,36 @@
                 // as the course needs — not room for a wide swing. An entitled boat that has swung out
                 // past the boat owing her room (further from the mark than her, and over on the far side
                 // of her centreline from the mark) is no longer sailing within mark-room, and Section A
-                // decides between them while she is out there (RRS 21(a) exonerates her only within it).
+                // decides between them while she is out there (RRS 43.1(b) exonerates her only within it).
                 // The entitlement itself is not spent: back inside, she has her room again.
-                const mkW = state.course && state.course.marks && state.course.marks[data.zoneSnapshot.markIndex];
-                if (rule18Applies && mkW) {
-                    const E = data.zoneSnapshot.entitled === b1.id ? b1 : b2, O = E === b1 ? b2 : b1;
+                if (rule18Applies && mk18) {
+                    const E = entitled18 === b1.id ? b1 : b2, O = E === b1 ? b2 : b1;
                     const lat = (p) => (p.x - O.x) * Math.cos(O.heading) + (p.y - O.y) * Math.sin(O.heading);   // + = O's starboard
-                    const markSide = Math.sign(lat(mkW)), eLat = lat(E);
-                    if (this.distToMark(E, mkW) > this.distToMark(O, mkW)
-                        && markSide !== 0 && Math.sign(eLat) === -markSide && Math.abs(eLat) > MARK_ROOM_BEAM) {
+                    // (the mark well off her centreline: a boat sailing straight at it has no "far side")
+                    const mLat = lat(mk18), markSide = Math.sign(mLat), eLat = lat(E);
+                    if (this.distToMark(E, mk18) > this.distToMark(O, mk18) && Math.abs(mLat) > MARK_ROOM_BEAM
+                        && Math.sign(eLat) === -markSide && Math.abs(eLat) > MARK_ROOM_BEAM) {
                         rule18Applies = false;
                         result.outsideMarkRoom = E.id;
                     }
                 }
 
                 if (rule18Applies) {
-                    const entitledId = data.zoneSnapshot.entitled;
-                    result.markRoom = entitledId;
+                    result.markRoom = entitled18;
+                    if (live18c) result.markRoomRule = "18.2(c)";
                 }
+            }
+
+            // ─── 2b. Rule 19.2(c) (Continuing Obstruction) ──────
+            // A boat that came from clear astern into a gap along a shore she had no room to pass through
+            // "shall keep clear and rules 10 and 11 do not apply" while they stay overlapped. The pair is
+            // marked by the rule-19 ledger (collision.js, updateRule19Ledger), which judges the onset.
+            const dived = (x, y) => !!(x._r19c && x._r19c[y.id]);
+            if (dived(b1, b2) || dived(b2, b1)) {
+                result.rowBoat = dived(b1, b2) ? b2 : b1;
+                result.rule = "Rule 19";
+                result.reason = "Inside Without Room";
+                return result;
             }
 
             // ─── 3. Rule 10 (Opposite Tacks) ────────────────────

@@ -78,7 +78,7 @@ const check = (name, ok, detail) => {
         // steps Rules.update to latch, and asserts the snapshot.
         const latch = (aSpot, bSpot) => page.evaluate(([aSpot, bSpot]) => {
             const { A, B, mark } = window.__x;
-            window.Rules.interactions = {};
+            window.Rules.interactions = {}; window.resetKeepClear(); for (const bt of state.boats) { delete bt._r19c; delete bt._r19Astern; }
             for (const [bt, p] of [[A, aSpot], [B, bSpot]]) {
                 bt.x = mark.x + p.dx; bt.y = mark.y + p.dy; bt.heading = p.heading;
                 bt.speed = 6; bt.velocity = { x: Math.sin(p.heading) * 6, y: -Math.cos(p.heading) * 6 };
@@ -120,7 +120,7 @@ const check = (name, ok, detail) => {
                 // the snapshot holds.
                 B.x = mark.x + 18; B.y = mark.y; B.heading = Math.PI / 2;
                 A.x = mark.x + 18 + 75; A.y = mark.y; A.heading = Math.PI / 2;
-                for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
+                for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; bt.raceState.isTacking = false; }
                 state.time += WORLD_CLOCK / 60; window.Rules.update(1 / 60);
                 window.checkMarkCollisions(1 / 60);
                 const dB = Math.hypot(B.x - mark.x, B.y - mark.y), dA = Math.hypot(A.x - mark.x, A.y - mark.y);
@@ -140,7 +140,7 @@ const check = (name, ok, detail) => {
                 const { A, B, mark } = window.__x;
                 B.x = mark.x + 18; B.y = mark.y; B.heading = Math.PI / 2;
                 A.x = mark.x + 4 * mark.zone; A.y = mark.y - 4 * mark.zone; // far away — no incident
-                for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
+                for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; bt.raceState.isTacking = false; }
                 state.time += WORLD_CLOCK / 60; window.Rules.update(1 / 60);
                 window.checkMarkCollisions(1 / 60);
                 return { penB: !!B.raceState.penalty };
@@ -157,7 +157,7 @@ const check = (name, ok, detail) => {
                 // A presses down on the entitled inside boat until hulls touch.
                 B.x = mark.x + 40; B.y = mark.y; B.heading = Math.PI / 2;
                 A.x = mark.x + 40; A.y = mark.y + 17; A.heading = Math.PI / 2;
-                for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
+                for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; bt.raceState.isTacking = false; }
                 state.time += WORLD_CLOCK / 60; window.Rules.update(1 / 60);
                 window.checkBoatCollisions(1 / 60);
                 return { penA: !!A.raceState.penalty, penB: !!B.raceState.penalty };
@@ -251,7 +251,7 @@ const check = (name, ok, detail) => {
             window.checkIslandCollisions(1 / 60);
             if (Math.hypot(A.x - (spot.bx - spot.ux * sep), A.y - (spot.by - spot.uy * sep)) > 1
                 || Math.hypot(B.x - spot.bx, B.y - spot.by) > 1) return { collides: true };
-            window.Rules.interactions = {};
+            window.Rules.interactions = {}; window.resetKeepClear(); for (const bt of state.boats) { delete bt._r19c; delete bt._r19Astern; }
             for (let i = 0; i < Math.round(secs * 60); i++) {
                 state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                 window.Rules.update(1 / 60);
@@ -298,7 +298,7 @@ const check = (name, ok, detail) => {
                     // closed gap, then the contact umpire.
                     B.x = spot.bx; B.y = spot.by;
                     A.x = spot.bx - spot.ux * 16; A.y = spot.by - spot.uy * 16;
-                    for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
+                    for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; bt.raceState.isTacking = false; }
                     state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                     window.Rules.update(1 / 60);
                     window.checkIslandCollisions(1 / 60);
@@ -332,7 +332,7 @@ const check = (name, ok, detail) => {
             const r = await page.evaluate(() => {
                 const { A, B, spot } = window.__x;
                 const o = window.__x.open;
-                window.Rules.interactions = {};
+                window.Rules.interactions = {}; window.resetKeepClear(); for (const bt of state.boats) { delete bt._r19c; delete bt._r19Astern; }
                 for (const [bt, px, py] of [[B, o.bx, o.by], [A, o.bx - spot.ux * 60, o.by - spot.uy * 60]]) {
                     bt.x = px; bt.y = py; bt.heading = spot.hdg;
                     bt.speed = 5; bt.velocity = { x: Math.sin(spot.hdg) * 5, y: -Math.cos(spot.hdg) * 5 };
@@ -347,7 +347,7 @@ const check = (name, ok, detail) => {
                     A.x = o.bx - spot.ux * 60; A.y = o.by - spot.uy * 60;
                 }
                 A.x = o.bx - spot.ux * 16; A.y = o.by - spot.uy * 16;
-                for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
+                for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; bt.raceState.isTacking = false; }
                 state.time += WORLD_CLOCK / 60; state.race.timer += 1 / 60;
                 window.Rules.update(1 / 60);
                 window.checkIslandCollisions(1 / 60);
@@ -371,7 +371,7 @@ const check = (name, ok, detail) => {
                     // grid cell only approximates the island polygon), A following
                     // 60u outboard so the squeeze attribution's proximity and
                     // outside-of-us tests keep holding.
-                    for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; }
+                    for (const bt of [A, B]) { bt.raceState.penalty = false; bt.raceState.totalPenalties = 0; bt.raceState.isTacking = false; }
                     let hit = false, d = 0;
                     for (d = 20; d <= 160 && !hit; d += 10) {
                         B.x = spot.bx + spot.ux * d; B.y = spot.by + spot.uy * d;
