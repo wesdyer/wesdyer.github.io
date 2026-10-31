@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Modern Sudoku</title>
+    <!-- <link rel="icon" type="image/svg+xml" href="favicon.svg"> -->
+    <link href="https://fonts.googleapis.com" rel="preconnect"/>
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+    <link href="https://fonts.googleapis.com/css2?family=Spline+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#0ea5e9", "primary-dark": "#0284c7",
+              "background-light": "#e0f2fe", "background-dark": "#1a1c29", "surface-dark": "#2d2f45",
+              "cell-bg": "#ffffff", "cell-bg-dark": "#1e2030",
+              "cell-selected": "#bae6fd", "cell-selected-dark": "#3b82f6",
+              "cell-highlight": "#e0f2fe", "cell-highlight-dark": "#1e3a8a",
+              "text-dark": "#0f172a", "text-light": "#f8fafc",
+            },
+            fontFamily: {
+              "display": ["Spline Sans", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "0.5rem", "lg": "1rem", "xl": "1.5rem", "full": "9999px"},
+            boxShadow: {
+                'cell': '0 4px 0 0 rgba(14, 165, 233, 0.2)', 'cell-active': '0 0 0 0 rgba(0,0,0,0)',
+            }
+          },
+        },
+      }
+    </script>
+    <style>
+        .dark .bg-surface-dark {
+             background-color: #232538;
+        }
+        /* Grid styling */
+        .sudoku-grid {
+            display: grid;
+            grid-template-columns: repeat(9, 1fr);
+            gap: 1px;
+            background-color: #94a3b8; /* Border color */
+            padding: 2px;
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .sudoku-cell {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.1s;
+        }
+
+        .sudoku-cell:hover {
+            filter: brightness(0.95);
+        }
+
+        .cell-input {
+            color: #0ea5e9;
+        }
+        .cell-fixed {
+            color: #0f172a;
+        }
+        .dark .cell-fixed {
+            color: #f8fafc;
+        }
+
+        /* Highlight styles */
+        .highlight-related {
+            background-color: #e0f2fe;
+        }
+        .dark .highlight-related {
+            background-color: #312e81;
+        }
+        .selected {
+            background-color: #bae6fd !important;
+        }
+        .dark .selected {
+            background-color: #2563eb !important;
+        }
+        .error {
+            color: #ef4444 !important;
+            background-color: #fee2e2 !important;
+        }
+        .dark .error {
+            background-color: #7f1d1d !important;
+        }
+
+        .same-number {
+            background-color: #bfdbfe;
+        }
+        .dark .same-number {
+             background-color: #1e40af;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-white font-display min-h-screen flex flex-col overflow-x-hidden">
+    <header class="w-full border-b border-sky-900/30 bg-white/10 dark:bg-surface-dark/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="size-10 rounded-xl bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center text-white shadow-lg shadow-sky-500/30 transform hover:rotate-6 transition-transform">
+                        <span class="material-symbols-outlined font-bold drop-shadow-sm" style="font-size: 24px;">grid_on</span>
+                    </div>
+                    <h1 class="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-blue-500 dark:from-sky-300 dark:to-blue-300">Sudoku</h1>
+                </div>
+                <div class="flex items-center gap-2">
+                     <!--  -->
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col items-center justify-start py-8 px-4 w-full max-w-5xl mx-auto space-y-8">
+
+        <!-- Controls & Status -->
+        <div class="w-full max-w-2xl flex flex-col md:flex-row gap-6 items-center justify-between">
+            <div class="bg-surface-dark p-1.5 rounded-2xl inline-flex shadow-xl shadow-sky-900/10 border border-sky-500/20 overflow-x-auto max-w-full">
+                <label class="cursor-pointer relative px-4 py-2 rounded-xl text-slate-400 font-medium text-sm whitespace-nowrap hover:text-sky-300 transition-colors">
+                    <input class="peer sr-only" name="difficulty" type="radio" value="Trivial" onclick="setDifficulty('Trivial')"/>
+                    <div class="absolute inset-0 rounded-xl transition-all peer-checked:bg-gradient-to-r peer-checked:from-sky-500 peer-checked:to-blue-600 peer-checked:shadow-md opacity-0 peer-checked:opacity-100"></div>
+                    <span class="relative z-10 peer-checked:text-white">Trivial</span>
+                </label>
+                <label class="cursor-pointer relative px-4 py-2 rounded-xl text-slate-400 font-medium text-sm whitespace-nowrap hover:text-sky-300 transition-colors">
+                    <input class="peer sr-only" name="difficulty" type="radio" value="Easy" onclick="setDifficulty('Easy')"/>
+                    <div class="absolute inset-0 rounded-xl transition-all peer-checked:bg-gradient-to-r peer-checked:from-sky-500 peer-checked:to-blue-600 peer-checked:shadow-md opacity-0 peer-checked:opacity-100"></div>
+                    <span class="relative z-10 peer-checked:text-white">Easy</span>
+                </label>
+                <label class="cursor-pointer relative px-4 py-2 rounded-xl text-slate-400 font-medium text-sm whitespace-nowrap hover:text-sky-300 transition-colors">
+                    <input class="peer sr-only" name="difficulty" type="radio" value="Medium" onclick="setDifficulty('Medium')" checked/>
+                    <div class="absolute inset-0 rounded-xl transition-all peer-checked:bg-gradient-to-r peer-checked:from-sky-500 peer-checked:to-blue-600 peer-checked:shadow-md opacity-0 peer-checked:opacity-100"></div>
+                    <span class="relative z-10 peer-checked:text-white">Medium</span>
+                </label>
+                <label class="cursor-pointer relative px-4 py-2 rounded-xl text-slate-400 font-medium text-sm whitespace-nowrap hover:text-sky-300 transition-colors">
+                    <input class="peer sr-only" name="difficulty" type="radio" value="Hard" onclick="setDifficulty('Hard')"/>
+                    <div class="absolute inset-0 rounded-xl transition-all peer-checked:bg-gradient-to-r peer-checked:from-sky-500 peer-checked:to-blue-600 peer-checked:shadow-md opacity-0 peer-checked:opacity-100"></div>
+                    <span class="relative z-10 peer-checked:text-white">Hard</span>
+                </label>
+            </div>
+
+             <div class="flex items-center gap-4">
+                 <button id="new-game-btn" class="px-6 py-2 rounded-xl bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold shadow-lg shadow-sky-500/30 transform active:scale-95 transition-all">
+                    New Game
+                 </button>
+             </div>
+        </div>
+
+        <!-- Game Area -->
+        <div class="flex flex-col md:flex-row gap-8 items-start justify-center w-full">
+
+            <!-- Sudoku Board -->
+            <div class="relative bg-surface-dark p-1 rounded-lg shadow-2xl border-4 border-sky-500/20 select-none">
+                <div id="sudoku-board" class="grid grid-cols-9 gap-0.5 bg-slate-400 border-2 border-slate-500 w-[min(90vw,500px)] h-[min(90vw,500px)]">
+                    <!-- Cells will be generated here -->
+                </div>
+            </div>
+
+            <!-- Numpad & Tools -->
+            <div class="flex flex-col gap-4 w-full md:w-auto">
+                 <div class="grid grid-cols-3 gap-2 w-full max-w-[300px] mx-auto">
+                     <button class="numpad-btn aspect-square rounded-xl bg-surface-dark border border-sky-500/20 text-2xl font-bold text-sky-400 hover:bg-sky-500/20 active:bg-sky-500/40 transition-colors" onclick="inputNumber(1)">1</button>
+                     <button class="numpad-btn aspect-square rounded-xl bg-surface-dark border border-sky-500/20 text-2xl font-bold text-sky-400 hover:bg-sky-500/20 active:bg-sky-500/40 transition-colors" onclick="inputNumber(2)">2</button>
+                     <button class="numpad-btn aspect-square rounded-xl bg-surface-dark border border-sky-500/20 text-2xl font-bold text-sky-400 hover:bg-sky-500/20 active:bg-sky-500/40 transition-colors" onclick="inputNumber(3)">3</button>
+                     <button class="numpad-btn aspect-square rounded-xl bg-surface-dark border border-sky-500/20 text-2xl font-bold text-sky-400 hover:bg-sky-500/20 active:bg-sky-500/40 transition-colors" onclick="inputNumber(4)">4</button>
+                     <button class="numpad-btn aspect-square rounded-xl bg-surface-dark border border-sky-500/20 text-2xl font-bold text-sky-400 hover:bg-sky-500/20 active:bg-sky-500/40 transition-colors" onclick="inputNumber(5)">5</button>
+                     <button class="numpad-btn aspect-square rounded-xl bg-surface-dark border border-sky-500/20 text-2xl font-bold text-sky-400 hover:bg-sky-500/20 active:bg-sky-500/40 transition-colors" onclick="inputNumber(6)">6</button>
+                     <button class="numpad-btn aspect-square rounded-xl bg-surface-dark border border-sky-500/20 text-2xl font-bold text-sky-400 hover:bg-sky-500/20 active:bg-sky-500/40 transition-colors" onclick="inputNumber(7)">7</button>
+                     <button class="numpad-btn aspect-square rounded-xl bg-surface-dark border border-sky-500/20 text-2xl font-bold text-sky-400 hover:bg-sky-500/20 active:bg-sky-500/40 transition-colors" onclick="inputNumber(8)">8</button>
+                     <button class="numpad-btn aspect-square rounded-xl bg-surface-dark border border-sky-500/20 text-2xl font-bold text-sky-400 hover:bg-sky-500/20 active:bg-sky-500/40 transition-colors" onclick="inputNumber(9)">9</button>
+                 </div>
+                 <div class="flex gap-2 justify-center mt-2">
+                     <button class="px-6 py-3 rounded-xl bg-slate-700 hover:bg-slate-600 text-white font-medium flex items-center gap-2" onclick="inputNumber(null)">
+                         <span class="material-symbols-outlined">backspace</span> Erase
+                     </button>
+                 </div>
+            </div>
+
+        </div>
+
+        <div id="message-area" class="h-8 text-center font-bold text-xl text-sky-500"></div>
+
+    </main>
+    <script src="script.js"></script>
+</body>
+</html>
