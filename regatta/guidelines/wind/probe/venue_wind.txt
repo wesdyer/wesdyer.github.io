@@ -1,0 +1,281 @@
+
+=== arctic : Glacier Sound
+note: Imported once from arctic-geo.js by art/export_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-importing replaces land and discards edits.
+card: {"name":"Glacier Sound","tag":"Arctic","blurb":"Katabatic wind off the ice cap and a pack that drifts where it pleases — no two races find the same way through. Thread the gaps before they close; the pale-blue edge of the ice is sailable, the white is not.","conditions":"Steep cold chop","hazards":"Drifting bergs & floes"}
+wind: {}
+  WR {"id":"wind-1","falloff":500,"direction":0.7853981633974483,"dirVar":0.08726646259971647,"speed":25,"speedVar":7,"period":120} n 17 area_km2 0.570 bb -6220,-6798,5403,4743
+  WR {"id":"wind-2","falloff":500,"direction":3.6651914291880923,"dirVar":0.17453292519943295,"speed":15,"speedVar":3,"period":30} n 8 area_km2 0.134 bb 5,-293,4694,4405
+  WR {"id":"wind-3","falloff":750,"direction":2.2689280275926285,"dirVar":0.08726646259971647,"speed":20,"speedVar":2,"period":30} n 6 area_km2 0.766 bb -7178,-1426,6443,6397
+gusts: {}
+  GR {"id":"gust-1","falloff":500,"count":7,"bias":0.65,"veer":25,"gustKt":7,"sizeM":225,"lifeS":90} area_km2 0.083 bb 313,-6079,4349,-2665
+course: {"description":"Start, round the granite island to starboard, finish on the same line.","marks":[{"id":"sf-pin","x":3304.8037087563657,"y":1928.6803511000999},{"id":"sf-boat","x":2352.175764593483,"y":1378.6803511000999,"kind":"committee"},{"id":"round-1","name":"Round granite-isle","x":137.5000000000001,"y":-3095,"kind":"none"}],"lines":[{"id":"sf","marks":["sf-pin","sf-boat"],"name":"Start / finish line"}],"route":[{"kind":"line","dir":1,"lineId":"sf"},{"kind":"round","side":"starboard","zone"
+keys: schema venue note card fx world shapes course wind seeded palette gusts props records
+
+=== bay : Lighthouse Cove
+note: Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.
+card: {"name":"Lighthouse Cove","tag":"Bay","blurb":"A working harbour with a race running through it. The ships keep their schedule and steal your wind, the bridge kills the breeze beneath it, and every lap asks the same question: under the span, or round the island?","conditions":"Slight ebb","hazards":"Buoys, shore & traffic"}
+wind: {}
+  WR {"id":"wind-1","falloff":1125,"direction":0.4363323129985824,"dirVar":0.05235987755982988,"speed":16,"speedVar":2,"period":123,"name":"offshore breeze"} n 22 area_km2 0.998 bb -2854,-7342,8622,7486
+  WR {"id":"wind-2","falloff":900,"direction":6.108652381980153,"dirVar":0.13962634015954636,"speed":12,"speedVar":3,"period":43,"name":"central bay breeze"} n 12 area_km2 0.274 bb -489,-2944,5138,6602
+  WR {"id":"wind-3","falloff":900,"direction":0.9599310885968813,"dirVar":0.19198621771937624,"speed":10,"speedVar":3,"period":53,"name":"west bay breeze"} n 10 area_km2 0.333 bb -5800,-3648,1582,5207
+  WR {"id":"wind-4","falloff":900,"direction":1.7453292519943295,"dirVar":0.5235987755982988,"speed":6,"speedVar":3,"period":39,"name":"north bay breeze"} n 7 area_km2 0.119 bb -3787,-5519,961,-1940
+  WR {"id":"wind-5","falloff":900,"direction":0.2617993877991494,"dirVar":0.13962634015954636,"speed":12,"speedVar":3,"period":67,"name":"south bay breeze"} n 7 area_km2 0.307 bb -5098,-855,1980,5471
+gusts: {}
+  GR {"id":"gust-course-leg1","falloff":250,"count":1,"gustKt":5,"sizeM":225,"lifeS":70,"bias":0.6,"veer":15} area_km2 0.002 bb 1935,-1935,2626,983
+  GR {"id":"gust-course-leg2","falloff":250,"count":1,"gustKt":5,"sizeM":225,"lifeS":70,"bias":0.6,"veer":15} area_km2 0.007 bb -1018,-1661,2332,-1301
+  GR {"id":"gust-course-leg3","falloff":250,"count":1,"gustKt":5,"sizeM":225,"lifeS":70,"bias":0.6,"veer":15} area_km2 0.029 bb -1381,-1815,1,2197
+  GR {"id":"gust-course-leg4","falloff":250,"count":1,"gustKt":5,"sizeM":225,"lifeS":70,"bias":0.6,"veer":15} area_km2 0.016 bb -1354,-1891,-406,2131
+  GR {"id":"gust-course-leg5","falloff":250,"count":1,"gustKt":5,"sizeM":225,"lifeS":70,"bias":0.6,"veer":15} area_km2 0.028 bb -1367,-1816,31,2194
+  GR {"id":"gust-course-leg6","falloff":250,"count":1,"gustKt":5,"sizeM":225,"lifeS":70,"bias":0.6,"veer":15} area_km2 0.063 bb -1467,1037,5485,3259
+current: {"regions":[{"id":"current-1","poly":[[4060.626223247448,6455.097808432429],[6944.868205636088,6566.6430784695585],[9179.183724409233,2810.451050188954],[8606.097076964415,-145.6216599150401],[8548.328309969995,-1427.1416484707365],[4335.513118422044,-1349.16545289712],[4229.771745034691,-283.23807601846045],[3912.465297243804,-1529.7026912745052],[3083.6944250077922,-1353.49865100151],[2168.4310578068994,-936.4095358213077],[813.369530189933,-156.09518970298075],[-82.48380670308526,1610.8460811
+course: {"description":"Windward-leeward, 4 legs. Start and finish on the same line.","marks":[{"id":"sf-pin","name":"Pin","x":2079.587027583577,"y":808.1505140939817,"kind":"inflatable"},{"id":"sf-boat","name":"Boat","x":3050.7879996408597,"y":569.8887423491446,"kind":"committee"},{"id":"mark-1","x":2037.2156441742457,"y":-1558.0403920253837,"kind":"can"},{"id":"mark-2","x":-554.5584544369138,"y":-1418.4012382689268,"kind":"can"},{"id":"mark-3","x":-1150.2345474438514,"y":1821.7087478561564,"kind":"can
+keys: schema venue note card world shapes course wind current traffic props palette records gusts
+
+=== flats : Spoonbill Flats
+note: BUILT by art/build_flats.js (Sep 16 2026) — the Wantij design, guidelines/flats-design.md. A one-way race: short beat to a rounding mark at sea, bear away through the mouth, then the deep channel round the outside of a braided basin in an S to a finish inland. The flats between the channels and the marsh are a tidal elevation field (js/tide.js) the tide floods and drains on a 60 s clock, HW 8 s after the gun and every minute after. Three choices on that clock: the WANTIJ (a corridor across the first loop with a pool to wait in and a sill at its exit), the POINT BAR (the inside of the west bend shelves, so higher water cuts tighter), and the FLOOD CREEK (a shallow branch round the diamond bar with a stronger flood stream and a sill at its head). Re-running the script overwrites hand edits.
+card: {"name":"Spoonbill Flats","tag":"Tidal Flats","blurb":"A wide estuary that fills and empties while you race it. The channel always goes round; the flats are the short way — while the water lasts. Time the tide, take each passage as it opens, and never let the mud take your keel.","conditions":"Moderate onshore breeze, a full tide every minute","hazards":"Drying flats, the sill, the stream"}
+wind: {}
+  WR {"id":"wind-sea","name":"Offshore","falloff":1400,"direction":3.4033920413889422,"dirVar":0.14,"speed":16.5,"speedVar":1.5,"period":43} n 4 area_km2 3.120 bb -12000,4000,12000,17000
+  WR {"id":"wind-lower","name":"Lower estuary","falloff":1400,"direction":3.4033920413889422,"dirVar":0.16,"speed":15,"speedVar":1.5,"period":43} n 4 area_km2 1.320 bb -12000,-1500,12000,4000
+  WR {"id":"wind-upper","name":"Upper estuary","falloff":1400,"direction":3.453392041388942,"dirVar":0.18,"speed":13.5,"speedVar":1.5,"period":43} n 4 area_km2 5.640 bb -12000,-25000,12000,-1500
+gusts: {}
+  GR {"id":"gust-course-leg1","falloff":250,"count":4,"gustKt":5,"sizeM":250,"lifeS":70,"bias":0.6,"veer":15} area_km2 0.007 bb 76,5650,774,7540
+  GR {"id":"gust-course-leg2","falloff":250,"count":4,"gustKt":5,"sizeM":250,"lifeS":70,"bias":0.6,"veer":15} area_km2 0.565 bb -2664,-11048,2471,7455
+tide: {"period":60,"amp":1,"mid":0,"phase0":0.733,"fillKt":0.7,"ebb":0.8,"withies":[],"passages":[{"id":"wantij","name":"The wantij","risk":2,"pts":[[620,4050],[611.4,3967.8],[597.8,3853.7],[582.5,3718.8],[568.9,3574.1],[560.3,3430.8],[560,3300],[570.3,3177.5],[588.9,3053.7],[612.5,2931.3],[637.8,2813],[661.4,2701.6],[680,2600],[694.2,2505.3],[706.7,2414.8],[717.5,2331.3],[726.7,2257.4],[734.2,2196.1],[740,2150],[747.1,2091.3],[758.1,2011.1],[770.6,1915.6],[781.9,1811.1],[789.2,1703.8],[790,1600],[784
+current: {"regions":[{"id":"sea-stream","poly":[[-4500,4300],[4500,4300],[4500,8000],[-4500,8000]],"falloff":900,"direction":0,"speed":0.5,"tidal":true},{"id":"main-stream-1","poly":[[-310,6300],[184.4,5132.4],[644.1,5117.2],[1150,6300]],"falloff":220,"direction":-0.0049,"speed":1.6,"tidal":true},{"id":"main-stream-2","poly":[[-314,5175.2],[-0.3,4409],[170.6,4076.7],[475.5,3841.5],[850.9,4107.3],[1142.5,5074.4]],"falloff":220,"direction":0.2131,"speed":2.2,"tidal":true},{"id":"main-stream-3","poly":[[131
+course: {"description":"Beat to the offshore mark, round to starboard, run in through the mouth and race the channel round the basin to the finish at the head — or cross the flats while the tide lets you.","marks":[{"id":"start-pin","x":-80,"y":5950,"kind":"inflatable"},{"id":"start-boat","x":920,"y":5950,"kind":"inflatable"},{"id":"mark-top","x":420,"y":7150,"kind":"inflatable"},{"id":"fin-a","x":-250,"y":-10750,"kind":"inflatable"},{"id":"fin-b","x":-950,"y":-10750,"kind":"inflatable"}],"lines":[{"id"
+keys: schema venue note card world tide shapes course wind current palette props records gusts
+
+=== glowtide : Glowtide Strait
+note: Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.
+card: {"name":"Glowtide Strait","tag":"Strait","blurb":"Race by moonlight through a strait of rocks and running tide. The stream carries you, the rocks cut the corner for anyone brave enough, and the water burns blue wherever something moves.","conditions":"Dark & glowing","hazards":"Rocks, the tide & the dark"}
+wind: {}
+  WR {"id":"wind-1","falloff":239.0625,"direction":5.934119456780721,"dirVar":0.08726646259971647,"speed":12,"speedVar":2,"period":37} n 9 area_km2 0.212 bb -2401,-2205,3977,7823
+  WR {"id":"wind-2","falloff":239.0625,"direction":5.410520681182422,"dirVar":0.13962634015954636,"speed":10,"speedVar":3,"period":57} n 9 area_km2 0.155 bb -6354,-4479,-1090,-174
+  WR {"id":"wind-3","falloff":239.0625,"direction":6.108652381980153,"dirVar":0.06981317007977318,"speed":10,"speedVar":3.5,"period":93} n 10 area_km2 0.094 bb -3241,-5283,571,-1348
+  WR {"id":"wind-4","falloff":239.0625,"direction":0.17453292519943295,"dirVar":0.13962634015954636,"speed":10,"speedVar":3.5,"period":83} n 16 area_km2 0.194 bb -696,-5761,4223,-932
+  WR {"id":"wind-5","falloff":239.0625,"direction":6.108652381980153,"dirVar":0.06981317007977318,"speed":9,"speedVar":4,"period":55} n 9 area_km2 0.004 bb -475,-1880,53,-601
+  WR {"id":"wind-6","falloff":239.0625,"direction":5.8643062867009474,"dirVar":0.12217304763960307,"speed":15.5,"speedVar":2,"period":41} n 8 area_km2 0.022 bb -262,-1364,1286,1257
+  WR {"id":"wind-7","falloff":239.0625,"direction":5.061454830783555,"dirVar":0.20943951023931953,"speed":9,"speedVar":3,"period":61} n 10 area_km2 0.161 bb 233,747,5623,7078
+  WR {"id":"wind-8","falloff":239.0625,"direction":0.17453292519943295,"dirVar":0.12217304763960307,"speed":10,"speedVar":3,"period":29} n 11 area_km2 0.310 bb -6523,2391,2333,7972
+  WR {"id":"wind-9","falloff":298.828125,"direction":5.410520681182422,"dirVar":0.10471975511965977,"speed":17,"speedVar":3,"period":45} n 9 area_km2 0.022 bb -2572,-1176,-1202,2133
+  WR {"id":"wind-10","falloff":298.828125,"direction":0.3490658503988659,"dirVar":0.10471975511965977,"speed":9,"speedVar":4,"period":35} n 6 area_km2 0.011 bb -3064,367,-1973,2113
+  WR {"id":"wind-11","falloff":297.5,"direction":6.073745796940266,"dirVar":0.06981317007977318,"speed":9.5,"speedVar":2,"period":55} n 6 area_km2 0.025 bb -1275,-765,-85,1445
+gusts: {}
+  GR {"id":"gust-course-leg1","falloff":250,"count":2,"gustKt":4,"sizeM":100,"lifeS":70,"bias":0.55,"veer":15} area_km2 0.062 bb -547,-2080,1017,5250
+  GR {"id":"gust-course-leg2","falloff":250,"count":2,"gustKt":4,"sizeM":100,"lifeS":70,"bias":0.55,"veer":15} area_km2 0.026 bb -568,-2067,1154,163
+  GR {"id":"gust-course-leg3","falloff":250,"count":1,"gustKt":4,"sizeM":100,"lifeS":70,"bias":0.55,"veer":15} area_km2 0.014 bb -1219,-318,1139,2418
+  GR {"id":"gust-course-leg4","falloff":250,"count":1,"gustKt":4,"sizeM":100,"lifeS":70,"bias":0.55,"veer":15} area_km2 0.006 bb -2501,872,-793,2325
+current: {"regions":[{"id":"current-1","poly":[[-1256.40742753329,-2354.6787962911753],[-818.6788889242731,-1890.527757011155],[-769.1395420800038,-1408.7930682617086],[-677.4693739502187,-840.922671159144],[-619.3607039772811,-481.8310516292465],[-521.8890741435747,-36.24645810373178],[-462.70987031596735,468.51733924939026],[-546.2569816020014,729.6020620182463],[-769.0492783647587,900.1774142272325],[-1176.3414458841744,806.1869140304444],[-1438.8527050773725,263.3989556713044],[-1519.8112192963222,-3
+course: {"description":"Windward-leeward, 4 legs. Start and finish on the same line.","marks":[{"id":"mark-1","x":737.608208779884,"y":-1526.1440737965315,"kind":"can"},{"id":"mark-2","x":-347.3770992716605,"y":4898.852946124835,"kind":"inflatable"},{"id":"mark-3","x":647.3770992716604,"y":5001.147053875165,"kind":"committee"},{"id":"mark-4","x":-2328.2313046079853,"y":1278.5133674322688,"kind":"inflatable"},{"id":"mark-5","x":-2177.9583599923244,"y":801.6296896695063,"kind":"inflatable"},{"id":"mark-6"
+keys: schema venue note card world shapes course wind palette current props records gusts
+
+=== lab : The Lab
+note: The Scenario Lab's blank canvas. Open water in a circular arena; everything interesting is placed by the lab page at runtime.
+card: {"name":"The Lab","tag":"Lab","blurb":"A blank sheet of water for constructing rules and AI scenarios.","conditions":"Whatever you dial in","hazards":"Only the ones you place"}
+wind: {}
+  WR {"id":"wind-all","name":"Course wind","falloff":400,"direction":0,"dirVar":0,"speed":12,"speedVar":0,"period":30} n 4 area_km2 10.240 bb -16000,-16000,16000,16000
+gusts: {}
+course: {"description":"Boot scaffolding: one windward-leeward pair, parked offstage by the lab.","marks":[{"id":"sf-pin","name":"Pin","x":-550,"y":0,"kind":"can"},{"id":"sf-boat","name":"Boat","x":550,"y":0,"kind":"can"},{"id":"wg-port","name":"Port","x":-550,"y":-4000,"kind":"can"},{"id":"wg-stbd","name":"Starboard","x":550,"y":-4000,"kind":"can"}],"lines":[{"id":"sf","name":"Start / finish line","marks":["sf-pin","sf-boat"]},{"id":"wg","name":"Windward gate","marks":["wg-port","wg-stbd"]}],"route":[{
+keys: schema venue note card world shapes course wind
+
+=== lagoon : Pearl Lagoon
+note: Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.
+card: {"name":"Pearl Lagoon","tag":"Lagoon","blurb":"Turquoise flats, coral heads and squalls marching down the trades. The channel sets your course; the squalls decide the race — duck the rain or ride it, and the brave get wet and get ahead.","conditions":"Trade breeze, squally","hazards":"Coral heads, the reef pass & squalls"}
+wind: {}
+  WR {"id":"wind-1","falloff":112.5,"direction":1.3962634015954638,"dirVar":0.08726646259971647,"speed":15,"speedVar":2.5,"period":120} n 4 area_km2 1.192 bb -6354,-6194,5725,7048
+gusts: {}
+  GR {"id":"gust-1","falloff":500,"count":4,"gustKt":4,"sizeM":250,"lifeS":90,"bias":0.75,"veer":15} area_km2 0.084 bb 2096,-4323,4713,1813
+squalls: {"_note":"The card’s promised mechanic: cells march down the trades at 1.10x the speed the breeze carries a puff (speedFactor, lowered from 1.45 on 2026-08-09 — 25% slower buys dwell, not weather: same exposure, longer encounters; see SQUALL_DEFAULTS), gust front on the leading edge, dead-air wake trailing. Count is the only required field; rx/ry/sizeVar/speedFactor/courseJitter override the engine defaults (SQUALL_DEFAULTS, script.js). COUNT IS 2, NOT 3, because the cells are now dealt across t
+current: {"regions":[{"id":"current-1","poly":[[1035.8982323072573,-998.7416425735139],[1214.3908251966566,-374.07812245165667],[1797.190094863066,-454.05883788850304],[2009.563448501596,-464.16696594747987],[1699.5976759053658,-1498.5160999555642],[1302.3578143194559,-1141.4122407491916]],"falloff":500,"direction":4.363323129985824,"speed":0.5,"dirVar":0,"speedVar":0,"period":0},{"id":"current-2","poly":[[1111.2129442350981,-1004.0850594384249],[228.5190831013825,-667.2725080564319],[374.43133709985267,
+course: {"description":"Olympic triangle, one lap: beat, tight reach through the coral pass, kite reach, beat, run, finish.","marks":[{"id":"mark-1","x":-95.51103273395094,"y":-21.505680464005785,"kind":"inflatable"},{"id":"mark-2","x":78.13714493297945,"y":963.3020725482021,"kind":"inflatable"},{"id":"mark-3","x":1758.965277914783,"y":84.8361034649381,"kind":"inflatable","name":"n"},{"id":"mark-4","x":763.6452,"y":-1710.7689,"kind":"inflatable","name":"w"},{"id":"mark-5","x":-1471.2737243478962,"y":685
+keys: schema venue note card world shapes course wind squalls palette props current gusts records
+
+=== lake : Stillwater Lake
+note: Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.
+card: {"name":"Stillwater Lake","tag":"Lake","blurb":"Mirror water and fickle mountain air. The breeze only whispers — racers who listen sail away from everyone parked in the glass.","conditions":"Flat glass","hazards":"Islands, skiffs & shoals"}
+wind: {}
+  WR {"id":"wind-west","falloff":793.8,"direction":5.096361,"dirVar":0.42,"speed":6,"speedVar":2.5,"period":95} n 4 area_km2 0.247 bb -4064,-3030,2427,4052
+  WR {"id":"wind-east","falloff":793.8,"direction":6.073746,"dirVar":0.42,"speed":10,"speedVar":2.5,"period":150} n 4 area_km2 0.332 bb -3588,-3030,4105,4052
+  WR {"id":"wind-day","falloff":793.8,"direction":5.585054,"dirVar":0.3,"speed":8,"speedVar":1,"period":460} n 4 area_km2 0.579 bb -4064,-3030,4105,4052
+  WR {"id":"wind-shore-bay","falloff":308.69999999999993,"direction":5.585053606381855,"dirVar":0.14,"speed":2,"speedVar":1,"period":55} n 4 area_km2 0.015 bb -3459,-2173,-1457,-323
+  WR {"id":"wind-shore-point","falloff":154.34999999999997,"direction":5.585053606381855,"dirVar":0.17,"speed":2,"speedVar":1,"period":50} n 4 area_km2 0.002 bb -1309,-2016,-500,-1272
+gusts: {}
+  GR {"id":"gust-windward","falloff":264.59999999999997,"count":8,"gustKt":6,"sizeM":210,"lifeS":75,"bias":0.45,"veer":20} area_km2 0.043 bb -3239,-2610,-163,341
+  GR {"id":"gust-glass-mid","falloff":220.5,"count":4,"gustKt":5,"sizeM":275,"lifeS":90,"bias":0.2,"veer":12} area_km2 0.024 bb -1896,-754,301,1460
+  GR {"id":"gust-glass-point","falloff":132.29999999999998,"count":2,"gustKt":5,"sizeM":225,"lifeS":60,"bias":0.1,"veer":12} area_km2 0.003 bb -1309,-2030,-412,-1188
+course: {"description":"Triangle, 3 legs: a lake-length beat into the bay, then two reaches home past the arm. Start and finish on the same line.","marks":[{"id":"mark-1","x":458.60720164584086,"y":2506.2242409330433,"kind":"inflatable"},{"id":"mark-2","x":1217.2296986754466,"y":1854.6938064938179,"kind":"inflatable"},{"id":"mark-5","x":2459.028961385494,"y":-867.4198412725428,"kind":"inflatable"},{"id":"mark-3","x":-2291.049334269869,"y":-1251.980721571223,"kind":"inflatable"}],"lines":[{"id":"gate-1",
+keys: schema venue note card world shapes course wind gusts palette props records
+
+=== ocean : Bluewater Bonanza
+note: Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.
+card: {"name":"Bluewater Bonanza","tag":"Ocean","blurb":"Nothing out here but you, the fleet and a mile of rolling swell. Grind out the beat, then catch a set and chain the waves home — the race is won and lost on the surf.","conditions":"Long rolling swell","hazards":"Open water and the swell"}
+wind: {}
+  WR {"id":"wind-1","falloff":1250,"direction":4.625122517784973,"dirVar":0.20943951023931953,"speed":18,"speedVar":3,"period":37,"name":"ocean breeze"} n 4 area_km2 11.028 bb -18380,-16784,29520,11922
+  WR {"id":"wind-2","falloff":1250,"direction":4.97418836818384,"dirVar":0.08726646259971647,"speed":19,"speedVar":4,"period":43} n 10 area_km2 0.733 bb -13170,-11966,4666,-5878
+  WR {"id":"wind-3","falloff":1250,"direction":6.108652381980153,"dirVar":0,"speed":21,"speedVar":4,"period":67} n 8 area_km2 0.275 bb -984,-9624,6839,-3521
+  WR {"id":"wind-4","falloff":1250,"direction":4.1887902047863905,"dirVar":0,"speed":23,"speedVar":4,"period":71} n 9 area_km2 0.667 bb 1336,-10486,13521,-925
+  WR {"id":"wind-5","falloff":3000,"direction":4.014257279586958,"dirVar":0.13962634015954636,"speed":25,"speedVar":3,"period":57} n 7 area_km2 7.475 bb -23634,-1034,33699,20743
+  WR {"id":"cape-jet","name":"cape jet","falloff":1500,"direction":4.63,"dirVar":0.15,"speed":27,"speedVar":3,"period":45} n 7 area_km2 0.161 bb 3500,-5600,14200,-2200
+gusts: {}
+  GR {"id":"gust-1","falloff":1000,"count":10,"gustKt":10,"sizeM":650,"lifeS":180,"bias":0.65,"veer":30} area_km2 1.475 bb -8703,-9955,2656,12286
+course: {"description":"Windward-leeward, 4 legs. Start and finish on the same line.","marks":[{"id":"mark-1","x":460.17010697976946,"y":-6159.523670594741,"kind":"inflatable"},{"id":"mark-2","x":329.0609717569566,"y":-5168.155729484517,"kind":"inflatable"},{"id":"mark-3","x":-3560.8838748515705,"y":-5520.098937340191,"kind":"none"},{"id":"mark-4","x":-4432.693944635668,"y":-1128.8539206568382,"kind":"inflatable"},{"id":"mark-5","x":13981.26,"y":-257.31,"kind":"inflatable"},{"id":"mark-6","x":13894.1,"y
+keys: schema venue note card world shapes course wind palette gusts swell props records
+
+=== otter : Otter Point
+note: BUILT by art/build_otter.py (2026-09-13, object layer reworked 2026-09-14) from the owner's coastal-course brief — a one-way hook along a Monterey granite coast: sheltered start in the lee of a spur, beat to a rock-guarded headland (inside / middle / outside), rounding mark beyond the point, a reach down a scalloped coast of points and coves that bears away 100 -> 160 TWA, a late rock gate, a bay finish behind an islet. Authored in a wind-down frame and rotated 45 deg so the breeze is a northwesterly. Re-run the script to regenerate; hand edits in editor.html are yours to keep (the script overwrites). WIND REWORKED 2026-09-14 by art/otter_wind.js (the script overwrites wind.regions and nothing else): base 325° FROM, sheltered start, inshore/mid/offshore beat lanes, headland acceleration, a pressure lane just outside the north-coast points, three cove lees, and the finishing bay as the biggest hole.
+card: {"name":"Otter Point","tag":"Kelp Coast","blurb":"A granite coast under a wall of fog. Kelp flattens the swell and grabs your keel; outside, the sets roll through. Hug the rocks or go wide, cross the point where you dare, and surf a set home.","conditions":"Northwest sea breeze, long Pacific swell","hazards":"Kelp, granite & breaking surf"}
+wind: {}
+  WR {"id":"wind-offshore","name":"offshore — the steady Pacific breeze","falloff":1000,"direction":-0.6109,"dirVar":0.05,"speed":17.5,"speedVar":1.2,"period":45} n 44 area_km2 2.123 bb -11658,-13416,14436,9213
+  WR {"id":"wind-offshore-2","name":"offshore — the steady Pacific breeze","falloff":1000,"direction":-0.6109,"dirVar":0.05,"speed":9.5,"speedVar":1.2,"period":45} n 42 area_km2 0.829 bb -403,-4212,13922,8733
+  WR {"id":"wind-sw-offshore","name":"offshore southwest — the long tack out","falloff":900,"direction":-0.6109,"dirVar":0.06,"speed":16.5,"speedVar":1.3,"period":40} n 21 area_km2 0.383 bb -6482,-1655,4435,10955
+  WR {"id":"wind-lane","name":"the pressure lane — dark water running along the coast, just outside the points","falloff":700,"direction":-0.6458,"dirVar":0.06,"speed":20,"speedVar":1.3,"period":42} n 38 area_km2 0.193 bb -661,-6758,15989,-2606
+  WR {"id":"wind-approach","name":"the approach — pressure builds toward the point","falloff":800,"direction":-0.6981,"dirVar":0.06,"speed":18.5,"speedVar":1.4,"period":36} n 49 area_km2 0.220 bb -6931,-7431,443,178
+  WR {"id":"wind-point","name":"Otter Point — accelerated and bent round the headland","falloff":700,"direction":-0.8203,"dirVar":0.07,"speed":20,"speedVar":1.5,"period":34} n 30 area_km2 0.149 bb -5256,-5856,-915,-1344
+  WR {"id":"wind-beat-mid","name":"the beat, middle lane — outside the kelp","falloff":450,"direction":-0.6632,"dirVar":0.1,"speed":14,"speedVar":1.6,"period":32} n 15 area_km2 0.076 bb -4465,-1688,-276,3045
+  WR {"id":"wind-beat-inshore","name":"the beat, inshore — short tacks in the kelp, lifted along the shore","falloff":400,"direction":-0.733,"dirVar":0.12,"speed":12,"speedVar":1.8,"period":30} n 14 area_km2 0.078 bb -2587,-2540,530,1938
+  WR {"id":"wind-start-outer","name":"start lane — the pin end, clear of the spur","falloff":450,"direction":-0.6109,"dirVar":0.1,"speed":14,"speedVar":1.6,"period":30} n 18 area_km2 0.178 bb -1544,1871,4234,7245
+  WR {"id":"wind-start-inshore","name":"start lane — the boat end, in the lee of the spur","falloff":400,"direction":-0.6632,"dirVar":0.14,"speed":10.5,"speedVar":1.8,"period":28} n 14 area_km2 0.051 bb -386,1166,4237,5644
+  WR {"id":"wind-coast-north","name":"the north coast — pressure off the points, soft in the coves","falloff":450,"direction":-0.6807,"dirVar":0.1,"speed":16,"speedVar":1.6,"period":32} n 14 area_km2 0.056 bb -986,-5618,3051,-3231
+  WR {"id":"wind-coast-north-2","name":"the north coast — pressure off the points, soft in the coves","falloff":450,"direction":-0.6807,"dirVar":0.1,"speed":16,"speedVar":1.6,"period":32} n 39 area_km2 0.113 bb 3677,-5690,15661,-1241
+  WR {"id":"wind-tip","name":"the north point — a squeeze of breeze off the tip","falloff":380,"direction":-0.733,"dirVar":0.09,"speed":18,"speedVar":1.6,"period":30} n 9 area_km2 0.017 bb 2774,-5828,3978,-3475
+  WR {"id":"wind-lee-ab","name":"first cove — a small shadow east of the point","falloff":350,"direction":-0.7854,"dirVar":0.16,"speed":12.5,"speedVar":1.9,"period":26} n 8 area_km2 0.034 bb -1468,-4718,318,-2582
+  WR {"id":"wind-lee-de","name":"the deceptive cove — pressure at the point, a hole behind it","falloff":350,"direction":-0.8727,"dirVar":0.18,"speed":10.5,"speedVar":2,"period":25} n 8 area_km2 0.026 bb 3379,-5218,5118,-3482
+  WR {"id":"wind-lee-bight","name":"the big bight — the deepest shadow on the coast","falloff":350,"direction":-0.9599,"dirVar":0.2,"speed":8.5,"speedVar":2,"period":24} n 8 area_km2 0.029 bb 5481,-5019,7168,-2982
+  WR {"id":"wind-bay-east","name":"east of the islet — open water off the kelp","falloff":400,"direction":-0.6632,"dirVar":0.12,"speed":13.5,"speedVar":1.6,"period":28} n 14 area_km2 0.044 bb 9045,-3981,11233,-1370
+  WR {"id":"wind-bay-mouth","name":"the bay mouth — the breeze thins between the point and the islet","falloff":350,"direction":-0.733,"dirVar":0.14,"speed":13,"speedVar":1.8,"period":26} n 9 area_km2 0.009 bb 7483,-4018,9118,-3332
+  WR {"id":"wind-bay-finger","name":"the finger — pressure that gets into the bay down the islet's west side","falloff":280,"direction":-0.6632,"dirVar":0.16,"speed":14,"speedVar":1.8,"period":24} n 6 area_km2 0.014 bb 8450,-3620,9200,-1500
+  WR {"id":"wind-bay-west","name":"the west half — the hole behind the shore, light and shifty","falloff":280,"direction":-1.0123,"dirVar":0.26,"speed":6,"speedVar":2.2,"period":20} n 6 area_km2 0.019 bb 7300,-3400,8450,-1500
+gusts: {}
+  GR {"id":"gust-course-leg1","falloff":300,"count":4,"gustKt":5,"sizeM":225,"lifeS":70,"bias":0.55,"veer":15} area_km2 0.097 bb -3681,-4014,1193,3229
+  GR {"id":"gust-course-leg2","falloff":300,"count":4,"gustKt":5,"sizeM":225,"lifeS":70,"bias":0.55,"veer":15} area_km2 0.324 bb -3411,-6077,8749,-2215
+course: {"description":"Coastal hook, one lap: beat up the kelp line to Otter Point, round it to starboard through the rocks, reach and run down the coast, thread the gate, finish in the bay.","marks":[{"id":"sf-pin","name":"Pin","x":395.8950631991803,"y":3354.2434571855665,"kind":"inflatable"},{"id":"sf-boat","name":"Boat","x":1534.4500477188835,"y":2446.8113400410766,"kind":"committee"},{"id":"mark-point","name":"Otter Point","x":-3025.3,"y":-3548,"kind":"inflatable"},{"id":"fin-a","x":7998.8,"y":-245
+keys: schema venue note card world shapes course wind palette swell props records gusts
+
+=== pond : Duckling Pond
+note: The tutorial pond. Seven knots from due north, no shifts, no gusts, flat water: when the boat stalls it is because you pointed too high, never because the wind moved. The graduation course is a one-lap windward-leeward at a third of standard leg length.
+card: {"name":"Duckling Pond","tag":"Sailing School","blurb":"The smallest water in the game. A club pond ringed by mown lawn — nowhere is far from shore, and nothing here can hurt you.","conditions":"7 kn, steady","hazards":"None"}
+wind: {}
+  WR {"id":"wind-all","name":"Pond breeze","falloff":400,"direction":0,"dirVar":0,"speed":7,"speedVar":0,"period":60} n 4 area_km2 3.240 bb -9000,-9000,9000,9000
+gusts: {}
+course: {"description":"Graduation race: windward-leeward, 2 legs. Start and finish on the same line, the instructor's launch as committee boat.","marks":[{"id":"sf-pin","name":"Pin","x":-250,"y":0,"kind":"inflatable"},{"id":"sf-boat","name":"Launch","x":250,"y":0,"kind":"coach"},{"id":"wg-port","name":"Port","x":-255.12448464258154,"y":-1223.5726840065531,"kind":"inflatable"},{"id":"wg-stbd","name":"Starboard","x":244.87551535741846,"y":-1223.5726840065531,"kind":"inflatable"}],"lines":[{"id":"sf","nam
+keys: schema venue note card world shapes course wind palette props
+
+=== redrock : Redrock Reservoir
+note: undefined
+card: {"name":"Redrock Reservoir","tag":"Reservoir","blurb":"Sandstone walls carve the breeze into shadows, funnels and sudden gust-bombs, and the corridors keep the whole fleet on top of you. Learn the canyon and it fights for you — but nobody sails away alone in here.","conditions":"Flat, wind-shadowed","hazards":"Rock spires & canyon walls"}
+wind: {}
+  WR {"id":"wind-all","falloff":300,"direction":1.919862177193762,"dirVar":0.10471975511965977,"speed":14,"speedVar":2.5,"period":60} n 10 area_km2 0.131 bb -5550,-4047,-555,1801
+  WR {"id":"wind-1","falloff":225,"direction":2.094395102393195,"dirVar":0.05235987755982988,"speed":16,"speedVar":2.5,"period":75} n 9 area_km2 0.011 bb -1032,-782,765,571
+  WR {"id":"wind-2","falloff":225,"direction":2.2689280275926293,"dirVar":0.05235987755982988,"speed":16,"speedVar":2.5,"period":120} n 6 area_km2 0.004 bb 376,190,1289,961
+  WR {"id":"wind-3","falloff":225,"direction":1.3962634015954638,"dirVar":0,"speed":16,"speedVar":4,"period":70} n 7 area_km2 0.009 bb 1122,34,2688,902
+  WR {"id":"wind-4","falloff":225,"direction":2.5307274153917767,"dirVar":0,"speed":16,"speedVar":4,"period":80} n 9 area_km2 0.008 bb 767,757,2107,2246
+  WR {"id":"wind-5","falloff":225,"direction":2.7925268031909276,"dirVar":0.10471975511965977,"speed":14,"speedVar":3,"period":25} n 10 area_km2 0.014 bb -437,159,751,2219
+  WR {"id":"wind-6","falloff":225,"direction":1.221730476396031,"dirVar":0.05235987755982988,"speed":14,"speedVar":3.5,"period":30} n 12 area_km2 0.016 bb -155,-1128,2448,8
+  WR {"id":"wind-7","falloff":225,"direction":2.617993877991495,"dirVar":0.06981317007977318,"speed":14,"speedVar":2.5,"period":30} n 14 area_km2 0.022 bb -1417,-3054,547,-238
+  WR {"id":"wind-8","falloff":225,"direction":0.8726646259971655,"dirVar":0.06981317007977318,"speed":15,"speedVar":2.5,"period":95} n 10 area_km2 0.019 bb -2211,72,-127,2065
+gusts: {}
+  GR {"id":"gust-1","falloff":150,"count":5,"gustKt":8,"sizeM":160,"lifeS":40,"bias":0.65,"veer":20} area_km2 0.016 bb 538,-1265,2122,96
+  GR {"id":"gust-2","falloff":150,"count":5,"gustKt":8,"sizeM":160,"lifeS":40,"bias":0.65,"veer":20} area_km2 0.014 bb -876,-729,668,920
+  GR {"id":"gust-3","falloff":225,"count":5,"gustKt":8,"sizeM":160,"lifeS":40,"bias":0.65,"veer":20} area_km2 0.010 bb -162,825,775,2142
+course: {"marks":[{"id":"mark-1","name":"Pin","x":-1422.2022415569036,"y":-1139.4332186380702,"kind":"inflatable"},{"id":"mark-2","name":"Committee","x":-1798.4243992151391,"y":-105.77133577357108,"kind":"committee"},{"id":"mark-3","name":"central","x":28.552465059550965,"y":-23.811318141361753,"kind":"inflatable"},{"id":"mark-4","x":1212.0122001807272,"y":-673.3244571500745,"kind":"inflatable","name":"nw"},{"id":"mark-5","x":365.85318390223955,"y":1479.5828289921528,"kind":"inflatable","name":"ne"},{"i
+keys: schema venue card world shapes course wind gusts palette props records
+
+=== river : Sockeye Run
+note: Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.
+card: {"name":"Sockeye Run","tag":"River","blurb":"A salmon river in spate. The stream runs hard down the middle and dawdles at the banks, the chutes squeeze the fleet, and the rocks don't move. Pick your lane and ride the river past the pileup.","conditions":"Fast midstream","hazards":"Rocky banks"}
+wind: {}
+  WR {"id":"wind-1","falloff":500,"direction":3.9269908169872423,"dirVar":0.08726646259971647,"speed":11,"speedVar":2,"period":50} n 6 area_km2 0.331 bb -5621,-2117,2391,5920
+  WR {"id":"wind-2","falloff":300,"direction":3.5779249665883768,"dirVar":0.08726646259971647,"speed":15,"speedVar":3,"period":75} n 6 area_km2 0.043 bb -437,-2589,2271,597
+  WR {"id":"wind-3","falloff":300,"direction":3.5779249665883768,"dirVar":0.06981317007977318,"speed":16,"speedVar":3,"period":55} n 8 area_km2 0.067 bb 586,-5465,3494,-1523
+  WR {"id":"wind-4","falloff":300,"direction":4.014257279586957,"dirVar":0.13962634015954636,"speed":16,"speedVar":3,"period":30} n 9 area_km2 0.051 bb 2885,-5344,5614,-2641
+  WR {"id":"wind-5","falloff":300,"direction":3.5779249665883768,"dirVar":0.05235987755982988,"speed":17,"speedVar":2,"period":90} n 8 area_km2 0.029 bb 3619,-6294,5253,-3623
+  WR {"id":"wind-6","falloff":300,"direction":3.6651914291880914,"dirVar":0.08726646259971647,"speed":12,"speedVar":3,"period":100} n 7 area_km2 0.047 bb 3909,-7809,7139,-4953
+  WR {"id":"wind-7","falloff":300,"direction":4.014257279586957,"dirVar":0.08726646259971647,"speed":12,"speedVar":2,"period":85} n 6 area_km2 0.091 bb 4901,-10074,9196,-5973
+gusts: {}
+  GR {"id":"gust-course-leg1","falloff":150,"count":2,"gustKt":5,"sizeM":150,"lifeS":40,"bias":0.6,"veer":10} area_km2 0.005 bb -2542,238,66,2614
+  GR {"id":"gust-course-leg2","falloff":150,"count":1,"gustKt":5,"sizeM":150,"lifeS":40,"bias":0.6,"veer":10} area_km2 0.124 bb -133,-7239,6374,461
+current: {"regions":[{"id":"current-1","poly":[[-3425.072856525525,7355.2715603003635],[-1717.6475886012404,2887.599693111895],[-3817.8352184761625,721.9516695785353],[-6878.108622008189,4196.807566280679]],"falloff":300,"direction":0.6108652381980155,"speed":0.5,"dirVar":0,"speedVar":0,"period":0},{"id":"current-2","poly":[[-2337.6422017445047,2483.9603997138174],[-1793.8947266229952,1655.5665953340674],[-374.3123922453634,579.0195808317494],[461.3800359615202,115.55696780871739],[654.7935673805805,-253
+course: {"description":"Windward-leeward, 4 legs. Start and finish on the same line.","marks":[{"id":"mark-1","x":-401.5140516737116,"y":-10.565046695245456,"kind":"inflatable"},{"id":"mark-2","x":310.1975631925158,"y":687.868366401089,"kind":"inflatable"},{"id":"mark-3","x":-2320.3390614027153,"y":2397.5600737071804,"kind":"inflatable"},{"id":"mark-4","x":6480.392593256032,"y":-6920.415283412871,"kind":"inflatable"},{"id":"mark-5","x":6056.128524544103,"y":-7344.679352124799,"kind":"inflatable"}],"line
+keys: schema venue note card world shapes course wind palette current rapids props records gusts
+
+=== seatrials : Clubhouse Point
+note: The measuring stick. Deliberately the plainest course on the card: no land, a rectangular arena, one steady breeze from due north, and an 800 m beat. Every AI change is judged here, so anything that makes it interesting makes it worse.
+card: {"name":"Clubhouse Point","tag":"Clubhouse","blurb":"Round the cans off the clubhouse — same course, same evening breeze, all season. Nothing here is trying to beat you; it comes down to the start, and every run: plane it hot and long, or sail it deep?","conditions":"Calm, standard","hazards":"None"}
+wind: {}
+  WR {"id":"wind-all","name":"Course wind","falloff":400,"direction":0,"dirVar":0,"speed":13,"speedVar":0,"period":30} n 4 area_km2 6.760 bb -13000,-13000,13000,13000
+gusts: {}
+course: {"description":"Windward-leeward, 4 legs. Start and finish on the same line.","marks":[{"id":"sf-pin","name":"Pin","x":-550,"y":0,"kind":"can"},{"id":"sf-boat","name":"Boat","x":550,"y":0,"kind":"can"},{"id":"wg-port","name":"Port","x":-550,"y":-4000,"kind":"can"},{"id":"wg-stbd","name":"Starboard","x":550,"y":-4000,"kind":"can"}],"lines":[{"id":"sf","name":"Start / finish line","marks":["sf-pin","sf-boat"]},{"id":"wg","name":"Windward gate","marks":["wg-port","wg-stbd"]}],"route":[{"kind":"line
+keys: schema venue note card world shapes course wind records
+
+=== swamp : Gatorgrass Bayou
+note: Frozen from the course generator at seed 90210 by art/freeze_venue_doc.js. AUTHORED from here on — edit in editor.html. Re-freezing discards edits.
+card: {"name":"Gatorgrass Bayou","tag":"Swamp","blurb":"Thick air, thicker water. The wind sulks in the trees and the weed grabs at your keel, and there's more than one way through the maze — find the fast one, then hold the narrows behind you.","conditions":"Still & weedy","hazards":"Grass islands & weed beds"}
+wind: {}
+  WR {"id":"gg-outer-1","name":"outer 1 — dead air","falloff":160,"direction":-0.64137,"dirVar":0.8,"speed":1.65,"speedVar":0.45,"period":205} n 14 area_km2 0.020 bb -4432,-3101,-2807,-1375
+  WR {"id":"gg-outer-2","name":"outer 2","falloff":432,"direction":-0.45904,"dirVar":0.64859,"speed":4.7,"speedVar":1.23,"period":80} n 14 area_km2 0.021 bb -3154,-3112,-1422,-1385
+  WR {"id":"gg-outer-3","name":"outer 3","falloff":432,"direction":-0.228717,"dirVar":0.716389,"speed":6.23,"speedVar":1.44,"period":260} n 14 area_km2 0.019 bb -1767,-3123,-213,-1394
+  WR {"id":"gg-outer-4","name":"outer 4","falloff":432,"direction":-0.270809,"dirVar":0.576392,"speed":5.72,"speedVar":1.25,"period":63} n 14 area_km2 0.020 bb -460,-3096,1218,-1381
+  WR {"id":"gg-outer-5","name":"outer 5 — dead air","falloff":160,"direction":-0.306738,"dirVar":0.8,"speed":2.21,"speedVar":0.45,"period":388} n 14 area_km2 0.020 bb 914,-3056,2603,-1479
+  WR {"id":"gg-outer-6","name":"outer 6 — dead air","falloff":160,"direction":-0.257614,"dirVar":0.8,"speed":1.81,"speedVar":0.45,"period":58} n 14 area_km2 0.021 bb -5101,-1903,-3405,-223
+  WR {"id":"gg-outer-7","name":"outer 7","falloff":432,"direction":-0.123762,"dirVar":0.538977,"speed":5.67,"speedVar":1.41,"period":540} n 14 area_km2 0.021 bb -3823,-1934,-2203,-192
+  WR {"id":"gg-outer-8","name":"outer 8","falloff":432,"direction":-0.295861,"dirVar":0.590913,"speed":7.25,"speedVar":1.21,"period":36} n 14 area_km2 0.020 bb -2417,-1836,-764,-205
+  WR {"id":"gg-pocket-9","name":"pocket 9","falloff":432,"direction":-0.309713,"dirVar":1.041916,"speed":5.33,"speedVar":1.55,"period":542} n 14 area_km2 0.019 bb -1123,-1795,508,-348
+  WR {"id":"gg-pocket-10","name":"pocket 10","falloff":432,"direction":-0.64243,"dirVar":1.141467,"speed":4.55,"speedVar":1.59,"period":115} n 14 area_km2 0.020 bb 220,-1914,1820,-333
+  WR {"id":"gg-outer-11","name":"outer 11","falloff":432,"direction":-0.027942,"dirVar":0.708454,"speed":5.25,"speedVar":1.46,"period":50} n 14 area_km2 0.020 bb 1606,-1953,3277,-276
+  WR {"id":"gg-outer-12","name":"outer 12","falloff":432,"direction":-0.069174,"dirVar":0.651391,"speed":5.24,"speedVar":1.24,"period":165} n 14 area_km2 0.019 bb -4374,-778,-2811,819
+  WR {"id":"gg-pocket-13","name":"pocket 13","falloff":432,"direction":0.076391,"dirVar":1.072881,"speed":5.29,"speedVar":1.74,"period":78} n 14 area_km2 0.020 bb -3115,-673,-1395,893
+  WR {"id":"gg-pocket-14","name":"pocket 14","falloff":432,"direction":0,"dirVar":0.960516,"speed":6.01,"speedVar":1.64,"period":232} n 14 area_km2 0.020 bb -1865,-720,-223,792
+  WR {"id":"gg-pocket-15","name":"pocket 15","falloff":432,"direction":-0.530205,"dirVar":1.033708,"speed":5.59,"speedVar":2.13,"period":64} n 14 area_km2 0.020 bb -391,-732,1174,973
+  WR {"id":"gg-outer-16","name":"outer 16","falloff":432,"direction":0.030215,"dirVar":0.636406,"speed":5.34,"speedVar":1.5,"period":427} n 14 area_km2 0.020 bb 876,-733,2599,858
+  WR {"id":"gg-outer-17","name":"outer 17","falloff":432,"direction":-0.606722,"dirVar":0.723625,"speed":5.75,"speedVar":1.45,"period":59} n 14 area_km2 0.020 bb -5128,442,-3490,2069
+  WR {"id":"gg-pocket-18","name":"pocket 18","falloff":432,"direction":-0.448031,"dirVar":1.077037,"speed":5.83,"speedVar":1.96,"period":416} n 14 area_km2 0.020 bb -3869,386,-2147,2073
+  WR {"id":"gg-pocket-19","name":"pocket 19","falloff":432,"direction":-0.219118,"dirVar":1.139067,"speed":4.87,"speedVar":1.75,"period":128} n 14 area_km2 0.020 bb -2426,375,-762,2083
+  WR {"id":"gg-pocket-20","name":"pocket 20","falloff":432,"direction":-0.525446,"dirVar":0.935333,"speed":4.39,"speedVar":1.53,"period":555} n 14 area_km2 0.020 bb -1023,504,629,2081
+  WR {"id":"gg-outer-21","name":"outer 21","falloff":432,"direction":-0.46523,"dirVar":0.583236,"speed":4.96,"speedVar":1.33,"period":186} n 14 area_km2 0.021 bb 154,428,1964,2003
+  WR {"id":"gg-outer-22","name":"outer 22","falloff":432,"direction":-0.437406,"dirVar":0.542602,"speed":5.28,"speedVar":1.47,"period":38} n 14 area_km2 0.021 bb 1501,461,3186,2107
+  WR {"id":"gg-outer-23","name":"outer 23","falloff":432,"direction":-0.648224,"dirVar":0.549068,"speed":5.3,"speedVar":1.48,"period":130} n 14 area_km2 0.020 bb -4417,1581,-2821,3173
+  WR {"id":"gg-outer-24","name":"outer 24","falloff":432,"direction":0.7853981633974483,"dirVar":0.621581,"speed":5.21,"speedVar":1.44,"period":58} n 14 area_km2 0.021 bb -3209,1558,-1471,3288
+  WR {"id":"gg-outer-25","name":"outer 25","falloff":432,"direction":-0.564619,"dirVar":0.687514,"speed":5,"speedVar":1.36,"period":308} n 14 area_km2 0.020 bb -1736,1547,-86,3278
+  WR {"id":"gg-outer-26","name":"outer 26","falloff":432,"direction":0.092836,"dirVar":0.592062,"speed":4.69,"speedVar":1.23,"period":45} n 14 area_km2 0.020 bb -432,1578,1141,3259
+  WR {"id":"gg-outer-27","name":"outer 27","falloff":432,"direction":-0.07473,"dirVar":0.542657,"speed":4.73,"speedVar":1.23,"period":556} n 14 area_km2 0.020 bb 889,1569,2523,3298
+  WR {"id":"gg-outer-28","name":"outer 28","falloff":432,"direction":-0.309481,"dirVar":0.62793,"speed":4.71,"speedVar":1.28,"period":442} n 14 area_km2 0.019 bb -1753,-5361,-183,-3850
+  WR {"id":"gg-outer-29","name":"outer 29","falloff":432,"direction":-0.291132,"dirVar":0.710849,"speed":4.79,"speedVar":1.26,"period":280} n 14 area_km2 0.020 bb -482,-5405,1245,-3825
+  WR {"id":"gg-outer-30","name":"outer 30","falloff":432,"direction":-0.477324,"dirVar":0.633068,"speed":4.83,"speedVar":1.34,"period":454} n 14 area_km2 0.020 bb -3835,-4150,-2239,-2562
+  WR {"id":"gg-outer-31","name":"outer 31","falloff":432,"direction":-0.367528,"dirVar":0.637306,"speed":4.74,"speedVar":1.27,"period":398} n 14 area_km2 0.019 bb -2439,-4175,-777,-2541
+  WR {"id":"gg-outer-32","name":"outer 32","falloff":432,"direction":-0.309737,"dirVar":0.707089,"speed":4.79,"speedVar":1.28,"period":159} n 14 area_km2 0.021 bb -1089,-4221,536,-2546
+  WR {"id":"gg-outer-33","name":"outer 33 — dead air","falloff":160,"direction":-0.294782,"dirVar":0.8,"speed":1.93,"speedVar":0.45,"period":474} n 14 area_km2 0.020 bb 341,-4272,1857,-2557
+  WR {"id":"gg-outer-34","name":"outer 34","falloff":432,"direction":-0.241252,"dirVar":0.546031,"speed":5.15,"speedVar":1.42,"period":157} n 14 area_km2 0.020 bb 2297,-3131,3927,-1498
+  WR {"id":"gg-outer-35","name":"outer 35","falloff":432,"direction":-0.135864,"dirVar":0.700719,"speed":4.93,"speedVar":1.37,"period":384} n 14 area_km2 0.020 bb 2918,-1946,4545,-241
+  WR {"id":"gg-outer-36","name":"outer 36 — dead air","falloff":160,"direction":-0.290689,"dirVar":0.8,"speed":1.65,"speedVar":0.45,"period":424} n 14 area_km2 0.021 bb -5784,-746,-4130,893
+  WR {"id":"gg-outer-37","name":"outer 37","falloff":432,"direction":-0.140677,"dirVar":0.617315,"speed":5,"speedVar":1.33,"period":73} n 14 area_km2 0.021 bb 2260,-811,3880,997
+  WR {"id":"gg-outer-38","name":"outer 38","falloff":432,"direction":-0.161128,"dirVar":0.550645,"speed":5.15,"speedVar":1.42,"period":464} n 14 area_km2 0.020 bb 3637,-685,5261,933
+  WR {"id":"gg-outer-39","name":"outer 39","falloff":432,"direction":-0.428872,"dirVar":0.6819,"speed":5.05,"speedVar":1.38,"period":544} n 14 area_km2 0.019 bb -6428,429,-4796,1966
+  WR {"id":"gg-outer-40","name":"outer 40","falloff":432,"direction":-0.233346,"dirVar":0.603981,"speed":5.27,"speedVar":1.48,"period":545} n 14 area_km2 0.021 bb 2930,456,4596,2001
+  WR {"id":"gg-outer-41","name":"outer 41","falloff":432,"direction":-0.184049,"dirVar":0.579957,"speed":5.23,"speedVar":1.4,"period":129} n 14 area_km2 0.020 bb 4269,423,5967,2038
+  WR {"id":"gg-outer-42","name":"outer 42","falloff":432,"direction":-0.238229,"dirVar":0.653777,"speed":5.33,"speedVar":1.47,"period":152} n 14 area_km2 0.021 bb 2198,1609,3977,3220
+  WR {"id":"gg-outer-43","name":"outer 43 — dead air","falloff":160,"direction":-0.212856,"dirVar":0.8,"speed":1.93,"speedVar":0.45,"period":467} n 14 area_km2 0.020 bb 3683,1650,5334,3301
+  WR {"id":"gg-outer-44","name":"outer 44","falloff":432,"direction":-0.086242,"dirVar":0.704657,"speed":5.05,"speedVar":1.34,"period":367} n 14 area_km2 0.020 bb -3748,2704,-2119,4349
+  WR {"id":"gg-outer-45","name":"outer 45","falloff":432,"direction":0.038663,"dirVar":0.62864,"speed":4.94,"speedVar":1.35,"period":535} n 14 area_km2 0.024 bb -2508,2758,-824,4623
+  WR {"id":"gg-outer-46","name":"outer 46","falloff":432,"direction":-0.177853,"dirVar":0.589535,"speed":4.78,"speedVar":1.26,"period":553} n 14 area_km2 0.020 bb -1085,2723,638,4393
+  WR {"id":"gg-outer-47","name":"outer 47","falloff":432,"direction":-0.072066,"dirVar":0.544068,"speed":4.87,"speedVar":1.35,"period":315} n 14 area_km2 0.021 bb 166,2764,1979,4458
+  WR {"id":"gg-outer-48","name":"outer 48","falloff":432,"direction":-0.159035,"dirVar":0.6053,"speed":5.24,"speedVar":1.42,"period":359} n 14 area_km2 0.020 bb 1549,2764,3238,4454
+  WR {"id":"gg-outer-49","name":"outer 49","falloff":432,"direction":-0.206346,"dirVar":0.629447,"speed":5.27,"speedVar":1.42,"period":347} n 14 area_km2 0.023 bb 2920,2798,4688,4569
+  WR {"id":"gg-outer-50","name":"outer 50","falloff":432,"direction":-0.209969,"dirVar":0.718254,"speed":5,"speedVar":1.32,"period":230} n 14 area_km2 0.020 bb 4257,2702,5978,4338
+  WR {"id":"gg-outer-51","name":"outer 51 — dead air","falloff":160,"direction":-0.131938,"dirVar":0.8,"speed":1.65,"speedVar":0.45,"period":503} n 14 area_km2 0.020 bb -1750,3911,-148,5592
+  WR {"id":"gg-outer-52","name":"outer 52","falloff":432,"direction":-0.105341,"dirVar":0.570881,"speed":4.75,"speedVar":1.31,"period":121} n 14 area_km2 0.020 bb -438,3858,1220,5519
+  WR {"id":"gg-outer-53","name":"outer 53","falloff":432,"direction":-0.108269,"dirVar":0.566602,"speed":4.85,"speedVar":1.29,"period":210} n 14 area_km2 0.020 bb 934,3923,2616,5529
+  WR {"id":"gg-outer-54","name":"outer 54 — dead air","falloff":160,"direction":-0.149224,"dirVar":0.8,"speed":2.07,"speedVar":0.45,"period":41} n 14 area_km2 0.020 bb 2259,3933,3942,5526
+gusts: {}
+course: {"description":"Windward-leeward, 4 legs. Start and finish on the same line.","marks":[{"id":"sf-pin","name":"Pin","x":-1901.0012289184024,"y":2621.6979545207964,"kind":"inflatable"},{"id":"sf-boat","name":"Boat","x":-2758.5063611751348,"y":2107.222543880633,"kind":"inflatable"},{"id":"wg-port","name":"Port","x":1071.0040142158186,"y":-1050.2439524591423,"kind":"can"},{"id":"wg-stbd","name":"Starboard","x":739.789118551565,"y":-1678.9338513614657,"kind":"can"}],"lines":[{"id":"sf","name":"Start 
+keys: schema venue note card world shapes course wind palette props records routeGuides
+
+=== volcanic : Emberfall Isle
+note: FIRST CUT, Sep 2 2026 — a hand-laid round-the-cans course so the venue exists, opens in editor.html and races: three cone islets rounded in order (port, starboard, starboard), the main isle and a lava delta as scenery. Eruption cycles, submerged vents, pumice rafts and steam columns are NOT built (guidelines/venues.md §12); the cones here are plain rock. Sep 4 2026: re-kinded onto the venue's own ground set — the three cones are `cinder`, the main isle `basalt`, the delta and the beach `blacksand` (the direct swap for the cobble/humus stand-ins, plus cones-are-cinder). No `lava` shape is placed yet: the kind exists and animates, so draw a tongue in the editor where a flow meets the sea. All three tiles were delivered and ingested the same day. Redesign freely — nothing here is measured.
+card: {"name":"Emberfall Isle","tag":"Volcanic","blurb":"Black water lit from below and a storm overhead. Ash kills the breeze, vents boil the water, and lightning blacks out your instruments — sail by feel. Round the cones tight, or give the eruptions room.","conditions":"Ash, steam and lightning","hazards":"Ash plumes, steam vents & lightning"}
+wind: {}
+  WR {"id":"wind-all","name":"Vent-torn breeze","falloff":1000,"direction":0,"dirVar":0.5061454830783556,"speed":16,"speedVar":4,"period":37} n 4 area_km2 6.760 bb -13000,-13000,13000,13000
+gusts: {}
+  GR {"id":"gust-storm","falloff":300,"count":10,"gustKt":8,"sizeM":225,"lifeS":45,"bias":0.75,"veer":20} area_km2 0.334 bb -2773,-6525,3773,1168
+course: {"description":"Round the cans, one lap: beat to the first cone, cross to the second, up to the third, and a long run home. Start and finish on the same line.","marks":[{"id":"mark-1","x":2828.77921468277,"y":-2646.7247331087538,"kind":"inflatable"},{"id":"mark-2","x":3828.779214682761,"y":-2646.7247331087538,"kind":"inflatable"},{"id":"mark-3","x":444.77334943797405,"y":-5984.987932439726,"kind":"inflatable"},{"id":"mark-4","x":-2233.2320968607646,"y":-2197.749461046834,"kind":"inflatable"},{"i
+keys: schema venue note card world shapes course wind palette props records gusts

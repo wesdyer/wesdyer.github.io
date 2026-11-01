@@ -631,7 +631,21 @@ function validateVenueDoc(doc) {
     // is not weather, it is a typo, and a 2 km puff is bigger than the arena it is in.
     const gustRegions = (doc.gusts && doc.gusts.regions) || [];
     checkRegions(gustRegions, 'gust');
-    const worldM = ((doc.world && doc.world.size) || 8750) / U_PER_M;
+    // THE MAP A PUFF IS MEASURED AGAINST is the sailing area the boundary encloses, not
+    // `world.size`: that number is a legacy tile size, and on a long venue it is a fraction of
+    // the water — Sockeye Run's is 275 m against a 1.1 km river, so a 180 m puff read as "covers
+    // most of the course". The longer side of the boundary's extent (or the circle's diameter)
+    // is what the warning means; world.size remains the fallback for a document without one.
+    const bndDoc = doc.world && doc.world.boundary;
+    let mapU = (doc.world && doc.world.size) || 8750;
+    if (bndDoc && Array.isArray(bndDoc.poly) && bndDoc.poly.length >= 3) {
+        let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+        for (const p of bndDoc.poly) { bx0 = Math.min(bx0, p[0]); bx1 = Math.max(bx1, p[0]); by0 = Math.min(by0, p[1]); by1 = Math.max(by1, p[1]); }
+        mapU = Math.max(bx1 - bx0, by1 - by0);
+    } else if (bndDoc && bndDoc.circle && bndDoc.circle.r > 0) {
+        mapU = 2 * bndDoc.circle.r;
+    }
+    const worldM = mapU / U_PER_M;
     for (let i = 0; i < gustRegions.length; i++) {
         const r = gustRegions[i], at = `gust region ${r.id || i}`;
         if (r.count != null && !(r.count >= 0 && r.count <= 200)) err(`${at}: count must be 0–200`);
