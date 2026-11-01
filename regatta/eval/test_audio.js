@@ -356,6 +356,63 @@ const check = (name, cond, detail) => {
         check(`wind range is audible (${(wind.settled - wind.calm).toFixed(1)} dB, 6→22 kn)`,
             wind.settled - wind.calm > 5, 'calm and breezy sound the same');
 
+        // ── The cargo ship's horn (Lighthouse Cove) ─────────────────────────────
+        // Once per approach into a ship's lee, cargo ships only, never twice inside the
+        // cooldown — and the near/far crossfade follows distance. Driven synchronously on a
+        // fake ship, so the render loop cannot interleave.
+        console.log('\nthe cargo horn sounds once per approach, near or far by distance');
+        const horn = await page.evaluate(async () => {
+            const files = await Promise.all([Sound.HORN.near, Sound.HORN.far].map(f => new Promise(res => {
+                const el = new Audio(f);
+                el.addEventListener('loadedmetadata', () => res(el.duration));
+                el.addEventListener('error', () => res(0));
+            })));
+            const me = state.boats[0];
+            const saved = { traffic: state.traffic, clock: window.trafficClock, play: Sound.playShipHorn,
+                            x: me.x, y: me.y, status: state.race.status, sound: settings.soundEnabled };
+            const calls = [];
+            Sound.playShipHorn = (d, id) => calls.push({ d, id });
+            let t = 100; window.trafficClock = () => t;
+            // windDir 0 = wind FROM -y, so the lee runs toward +y.
+            const ship = { id: 'cargo-x', kind: 'bay-cove-cargo-ship', active: true, x: 0, y: 0,
+                           windDir: 0, hullLen: 960, shadowLen: 3000 };
+            const tug = Object.assign({}, ship, { id: 'tug-x', kind: 'bay-cove-tugboat' });
+            state.traffic = [ship, tug];
+            Sound._horn = null;
+            const at = (x, y) => { me.x = x; me.y = y; Sound.updateShipHorn(); return calls.length; };
+            const r = {};
+            r.upwind = at(0, -6000);                       // clear of everything
+            r.abeamFar = at(4000, 1500);                   // downwind but well off the lee
+            r.inLee = at(0, 2000);                         // into the lee: one blast
+            t += 1; r.held = at(0, 2400);                  // still inside: no repeat
+            at(0, -6000); t += 5; r.cooling = at(0, 2000); // out and back inside the cooldown
+            at(0, -6000); t += 60; r.rearmed = at(0, 2000);
+            r.ids = calls.map(c => c.id);
+            Sound.playShipHorn = saved.play;
+            settings.soundEnabled = true; state.race.status = 'racing';
+            Sound.playShipHorn(200, 'near-test'); r.near = Object.assign({}, Sound._lastHorn);
+            Sound.playShipHorn(4000, 'far-test'); r.far = Object.assign({}, Sound._lastHorn);
+            state.traffic = saved.traffic; window.trafficClock = saved.clock;
+            me.x = saved.x; me.y = saved.y; state.race.status = saved.status; settings.soundEnabled = saved.sound;
+            Sound._horn = null;
+            r.files = files;
+            return r;
+        });
+        check(`both takes load (near ${horn.files[0].toFixed(2)} s, far ${horn.files[1].toFixed(2)} s)`,
+            horn.files[0] > 1 && horn.files[1] > horn.files[0], 'a horn take is missing or empty');
+        check('silent upwind and well off the lee', horn.upwind === 0 && horn.abeamFar === 0,
+            `upwind=${horn.upwind} abeamFar=${horn.abeamFar}`);
+        check('one blast on entering the lee, cargo ships only',
+            horn.inLee === 1 && horn.held === 1 && horn.ids.every(id => id === 'cargo-x'),
+            `inLee=${horn.inLee} held=${horn.held} ids=${horn.ids.join(',')}`);
+        check('no repeat inside the cooldown, again after it', horn.cooling === 1 && horn.rearmed === 2,
+            `cooling=${horn.cooling} rearmed=${horn.rearmed}`);
+        check(`close is the clean blast (near ${horn.near.near.toFixed(2)} / far ${horn.near.far.toFixed(2)})`,
+            horn.near.near > horn.near.far, 'the near take does not lead up close');
+        check(`far off is the distant take alone, quieter and late (far ${horn.far.far.toFixed(2)}, ${horn.far.delay.toFixed(2)} s)`,
+            horn.far.near === 0 && horn.far.far > 0 && horn.far.far < horn.near.near && horn.far.delay > horn.near.delay,
+            JSON.stringify(horn.far));
+
         check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
     } finally {
         await browser.close();

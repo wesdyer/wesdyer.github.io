@@ -747,6 +747,82 @@ const Sound = {
         if (!e.playing) { e.playing = true; e.el.play().catch(() => { e.playing = false; }); }
     },
 
+    // THE CARGO SHIP'S HORN (Lighthouse Cove, Nov 1 2026 — Wes's own take). The cove's ships
+    // hurt you with their AIR, from a long way off, so the horn is tied to that: it sounds once
+    // when the player sails into the water a ship's lee is about to cover (its lee band, widened
+    // by WARN) or comes within close quarters of the hull. Two takes made from the one file,
+    // CROSSFADED BY DISTANCE the way the thunder is: inside NEAR_REACH the clean blast leads,
+    // beyond it the far take alone — low-passed, softer onset, the harbour's echo baked in,
+    // because on file:// an element cannot be filtered at play time (see makeVoice). It reaches
+    // you at the speed of sound (343 m/s; M_TO_U units to the metre). Rare by construction: once
+    // per ship per approach, re-armed only well clear and after COOLDOWN, never two within GAP.
+    // Read-only: the memory lives here, never on the boat or the vessel (golden traces hash both).
+    HORN: { near: 'assets/audio/cargo-horn-near.wav', far: 'assets/audio/cargo-horn-far.wav',
+            kinds: /cargo-ship/, nearReach: 1500, reach: 5000, warn: 600, close: 400, rearm: 500,
+            cooldown: 45, gap: 20, volume: 0.6 },
+    _horn: null,
+    shipHornZone: function(v, p, extra) {
+        const H = this.HORN, e = extra || 0;
+        const dx = p.x - v.x, dy = p.y - v.y, d = Math.hypot(dx, dy);
+        if (d < v.hullLen * 0.5 + H.close + e) return d;                  // close quarters
+        // The lee runs DOWNWIND of the hull: v.windDir is where the wind comes FROM, so the
+        // flow is (-sin, cos) — the convention shadowAt uses.
+        const fx = -Math.sin(v.windDir), fy = Math.cos(v.windDir);
+        const along = dx * fx + dy * fy, cross = Math.abs(dx * -fy + dy * fx);
+        if (along > -v.hullLen * 0.5 && along < v.shadowLen + e &&
+            cross < v.hullLen * 0.5 + H.warn + e) return d;
+        return -1;
+    },
+    updateShipHorn: function() {
+        const list = state.traffic;
+        if (!list || !list.length) { this._horn = null; return; }
+        const me = state.boats && state.boats[0];
+        if (!me || !me.isPlayer) return;
+        const now = typeof trafficClock === 'function' ? trafficClock() : state.race.timer;
+        // A new race (the clock ran backwards) or a new venue forgets every ship.
+        if (!this._horn || this._horn.list !== list || now < this._horn.t) this._horn = { list, t: now, last: -Infinity, ships: {} };
+        const mem = this._horn; mem.t = now;
+        const H = this.HORN;
+        for (const v of list) {
+            if (!H.kinds.test(v.kind)) continue;
+            const s = mem.ships[v.id] || (mem.ships[v.id] = { inside: false, last: -Infinity });
+            if (!v.active) { s.inside = false; continue; }
+            if (s.inside) {
+                // Hysteresis: only well clear of the zone does this ship re-arm.
+                if (this.shipHornZone(v, me, H.rearm) < 0) s.inside = false;
+                continue;
+            }
+            const d = this.shipHornZone(v, me, 0);
+            if (d < 0) continue;
+            s.inside = true;
+            if (now - s.last < H.cooldown || now - mem.last < H.gap) continue;
+            s.last = mem.last = now;
+            this.playShipHorn(d, v.id);
+        }
+    },
+    playShipHorn: function(dist, id) {
+        if (!settings.soundEnabled || !this.windAudible()) return;
+        const H = this.HORN;
+        const d = Math.max(0, dist || 0);
+        const nearMix = Math.max(0, Math.min(1, 1 - d / H.nearReach));
+        const L = Math.max(0.25, Math.min(1, 1 - d / H.reach));              // a ship is never silent
+        const near = H.volume * nearMix;
+        const far = H.volume * L * (0.5 + 0.5 * (1 - nearMix));
+        const delay = d / (343 * (typeof M_TO_U !== 'undefined' ? M_TO_U : 10));
+        this._lastHorn = { id, dist: d, delay, near, far };
+        if (typeof Audio === 'undefined') return;
+        const fire = (file, vol) => {
+            if (vol < 0.02) return;
+            try {
+                const el = new Audio(file);
+                el.volume = Math.min(1, vol);
+                setTimeout(() => { if (this.windAudible()) el.play().catch(() => {}); }, delay * 1000);
+            } catch (e) {}
+        };
+        fire(H.near, near);
+        fire(H.far, far);
+    },
+
     playerWindSpeed: function() {
         const p = state.boats && state.boats[0];
         if (p && p.apparentWind && isFinite(p.apparentWind.speed)) return p.apparentWind.speed;

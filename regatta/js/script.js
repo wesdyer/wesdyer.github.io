@@ -136,6 +136,8 @@ function update(dt) {
     // Sound (the player's APPARENT wind — see Sound.playerWindSpeed). Whether the bed
     // should be heard at all is Sound.windAudible's business, not the loop's.
     Sound.updateWindSound(Sound.playerWindSpeed());
+    // Lighthouse Cove's cargo horn — sound only, read off the traffic updateTraffic just placed.
+    if (Sound.updateShipHorn) Sound.updateShipHorn();
 
     // Global Race Timer
     if (state.race.status === 'prestart') {
