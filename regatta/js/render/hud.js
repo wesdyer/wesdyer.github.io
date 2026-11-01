@@ -3117,11 +3117,11 @@ function drawTideReadout(player) {
 // Show the chosen face and hide the others. The chart moves rather than being toggled: it is
 // the one panel you look AT rather than through, so it takes the corner whenever the rose is
 // not there and drops below it when it is.
-function hudShowsBoat() { const m = settings.hudMode || 'boat'; return m === 'boat' || m === 'both'; }
-function hudShowsRose() { const m = settings.hudMode || 'boat'; return m === 'rose' || m === 'both'; }
+function hudShowsBoat() { const m = settings.hudMode || DEFAULT_SETTINGS.hudMode; return m === 'boat' || m === 'both'; }
+function hudShowsRose() { const m = settings.hudMode || DEFAULT_SETTINGS.hudMode; return m === 'rose' || m === 'both'; }
 
 function applyHudMode() {
-    const m = settings.hudMode || 'boat';
+    const m = settings.hudMode || DEFAULT_SETTINGS.hudMode;
     if (UI.hudRose) UI.hudRose.classList.toggle('hidden', !hudShowsRose());
     const tiles = document.getElementById('hud-tiles'); if (tiles) tiles.classList.toggle('hidden', !hudShowsRose());
     if (UI.minimapWrap) UI.minimapWrap.classList.toggle('mt-4', hudShowsRose());

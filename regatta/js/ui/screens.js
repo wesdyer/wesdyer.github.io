@@ -2821,7 +2821,7 @@ function applySettings() {
     if (UI.settingClockMillis) UI.settingClockMillis.checked = !!settings.clockMillis;
     if (UI.settingTrim) UI.settingTrim.checked = settings.autoTrim;
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
-    if (UI.settingHudMode) UI.settingHudMode.value = settings.hudMode || 'boat';
+    if (UI.settingHudMode) UI.settingHudMode.value = settings.hudMode || DEFAULT_SETTINGS.hudMode;
     applyHudMode();
     if (UI.settingTelltaleColor) UI.settingTelltaleColor.value = settings.telltaleColor || '#fbbf24';
     // Boat colors have two editors now (this modal and the pre-race player
@@ -2934,8 +2934,8 @@ function paintSettingsControls() {
     if (UI.settingCameraMode) UI.settingCameraMode.value = settings.cameraMode;
     const mode = UI.settingCameraMode ? UI.settingCameraMode.value : settings.cameraMode;
     document.querySelectorAll('#camera-segs .ov-seg').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-    if (UI.settingHudMode) UI.settingHudMode.value = settings.hudMode || 'boat';
-    const hm = UI.settingHudMode ? UI.settingHudMode.value : (settings.hudMode || 'boat');
+    if (UI.settingHudMode) UI.settingHudMode.value = settings.hudMode || DEFAULT_SETTINGS.hudMode;
+    const hm = UI.settingHudMode ? UI.settingHudMode.value : (settings.hudMode || DEFAULT_SETTINGS.hudMode);
     document.querySelectorAll('#hud-mode-segs .ov-seg').forEach(b => b.classList.toggle('active', b.dataset.hud === hm));
     const color = ((UI.settingTelltaleColor && UI.settingTelltaleColor.value) || settings.telltaleColor || '#fbbf24').toLowerCase();
     let matched = false;
