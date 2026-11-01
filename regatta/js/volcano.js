@@ -151,6 +151,9 @@ const VOLCANO = {
 
     function init() {
         state.volcano = null;
+        // An outage still running when the last race ended left .fried on the HUD panels, and
+        // the per-frame toggle only runs while state.volcano exists — clear it on every new race.
+        applyHudClasses();
         const c = state.course;
         const props = c && c.props;
         const reg = (window.VenueDoc && window.VenueDoc.PROP_KINDS) || {};
