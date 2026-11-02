@@ -11316,7 +11316,30 @@ window.VENUE_DOC["river"] = {
         "dirVar": 0.08726646259971647,
         "speed": 11,
         "speedVar": 2,
-        "period": 50
+        "period": 50,
+        "events": {
+          "every": [
+            20,
+            35
+          ],
+          "size": [
+            6,
+            10
+          ],
+          "ramp": [
+            2,
+            4
+          ],
+          "hold": [
+            10,
+            20
+          ],
+          "speed": [
+            -1,
+            1.5
+          ],
+          "travel": true
+        }
       },
       {
         "id": "wind-2",

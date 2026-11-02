@@ -61,6 +61,20 @@ const check = (name, cond, detail) => {
         const roll = (seed) => { const g = [mk({ id: 'A', events: { every: [10, 30], size: [5, 20], ramp: [1, 3], hold: [5, 10] } })]; windEventsInit(g, seed, []); return JSON.stringify(g[0]._evOwn[0].evs); };
         out.same = roll(77) === roll(77); out.diff = roll(77) !== roll(78);
 
+        // One-way day: a trend plus surges, all the same way, capped at max.
+        regs = [mk({ id: 'A', events: { oneWay: true, bias: 1, trend: 6, every: 20, size: 5, ramp: 1, max: 20 } })];
+        windEventsInit(regs, 1234, []); state.course.windRegions = regs;
+        out.ow30 = at(30).direction / D; out.ow300 = at(300).direction / D;
+        out.owSigns = regs[0]._evOwn[0].evs.every(e => e.d > 0);
+        // `from`: an event arriving from the east (90) reaches x = +2000 before x = -2000.
+        regs = [mk({ id: 'A', events: { start: 30, count: 1, size: 20, bias: 1, ramp: 1, travel: 100, from: 90 } })];
+        windEventsInit(regs, 1234, [{ x: 0, y: 0 }]); state.course.windRegions = regs;
+        out.eastAt15 = at(15, 2000, 0).direction / D; out.westAt15 = at(15, -2000, 0).direction / D;
+        // eventsScale: a borrower feels a fraction.
+        regs = [mk({ id: 'A', events: { start: 5, count: 1, size: 10, bias: 1, ramp: 1 } }), mk({ id: 'B', eventsFrom: 'A', eventsScale: 0.6, poly: box(9000, 0, 500), bb: { minX: 8500, minY: -500, maxX: 9500, maxY: 500 } })];
+        windEventsInit(regs, 1234, []); state.course.windRegions = regs;
+        out.scaled = at(10, 9000, 0).direction / D;
+
         // Mean field ignores them; sampling draws nothing from the shared stream.
         regs = [mk({ id: 'A', events: { start: 0, count: 1, size: 20, bias: 1, ramp: 1 } })];
         windEventsInit(regs, 1234, []); state.course.windRegions = regs;
@@ -87,6 +101,11 @@ const check = (name, cond, detail) => {
     check('a travelling step reaches upwind water first', near(r.upAt15, 20, 0.01) && near(r.downAt15, 0, 0.01), `${r.upAt15} / ${r.downAt15}`);
     check("its `t` is when it reaches the course centre", near(r.centreAt29, 0, 0.01) && r.centreAt32 > 19, `${r.centreAt29} / ${r.centreAt32}`);
     check('eventsFrom borrows the schedule', near(r.borrowed, 10, 0.01), r.borrowed);
+    check('a one-way day drifts with its trend', r.ow30 > 2.9, r.ow30);
+    check('...and stops at its max', Math.abs(r.ow300 - 20) < 0.01, r.ow300);
+    check('...with every surge the same way', r.owSigns);
+    check('`from` sets which side gets it first', Math.abs(r.eastAt15 - 20) < 0.01 && Math.abs(r.westAt15) < 0.01, `${r.eastAt15} / ${r.westAt15}`);
+    check('eventsScale feels a fraction', Math.abs(r.scaled - 6) < 0.01, r.scaled);
     check('same seed, same day', r.same);
     check('different seed, different day', r.diff);
     check('the mean field leaves events out', near(r.meanDir, 0, 0.01), r.meanDir);

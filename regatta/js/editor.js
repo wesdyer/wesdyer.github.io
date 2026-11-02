@@ -610,8 +610,12 @@ function recomputeEstimate() {
         if (state.tide && window.Tide) grid = window.Tide.safeGrid(window.Tide.stampGrid(grid));
         // Pass the real field, not one number: the wind varies across the course, and a
         // patch with no region over it has no wind at all.
-        estimate = window.SailCheck.routeEstimate(grid, course.marks, course.route,
-            windBase(), state.wind.speed, (x, y) => getWindAt(x, y));
+        // Without the day's wind events (sim/wind.js WIND_EVENTS_ON): this prices the venue.
+        WIND_EVENTS_ON = false;
+        try {
+            estimate = window.SailCheck.routeEstimate(grid, course.marks, course.route,
+                windBase(), state.wind.speed, (x, y) => getWindAt(x, y));
+        } finally { WIND_EVENTS_ON = true; }
         if (estimate && t0) estimate.ms = Math.round(performance.now() - t0);
     } catch (e) {
         // An unsailable course can fail to produce a path at all. The sailability check

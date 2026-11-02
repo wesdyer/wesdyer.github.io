@@ -552,7 +552,7 @@ function runChecks(ctx) {
         const schedules = (r) => r.events ? (Array.isArray(r.events) ? r.events : [r.events]) : [];
         for (const r of wr) {
             for (const s of schedules(r)) {
-                const bad = ['every', 'start', 'size', 'ramp', 'hold', 'speed'].filter(k => !rng2(s[k]));
+                const bad = ['every', 'start', 'size', 'ramp', 'hold', 'speed', 'trend'].filter(k => !rng2(s[k]));
                 if (!(s.every || s.count)) bad.push('every (or count)');
                 if (bad.length) add('error', 'wind-events', 'Wind events malformed',
                     `"${r.id}" events: ${bad.join(', ')} must be a number or a [low, high] pair.`);
@@ -562,8 +562,8 @@ function runChecks(ctx) {
                 `"${r.id}" takes its events from "${id}", which is not a wind region here.`);
             const felt = [r, ...from.map(id => wr.find(q => q.id === id)).filter(Boolean)];
             let ev = 0;
-            for (const q of felt) for (const s of schedules(q)) ev += s.hold == null
-                ? Math.min(s.max != null ? s.max : 25, hi(s.size) * (s.count != null ? s.count : Infinity)) : hi(s.size);
+            for (const q of felt) for (const s of schedules(q)) ev += (q === r ? 1 : (r.eventsScale != null ? r.eventsScale : 1)) * (s.hold == null
+                ? Math.min(s.max != null ? s.max : 25, s.trend != null ? Infinity : hi(s.size) * (s.count != null ? s.count : Infinity)) : hi(s.size));
             const deg = (r.dirVar || 0) * 180 / Math.PI + Math.min(30, ev);
             if (felt.some(q => schedules(q).length) && deg > 40) add('warn', 'wind-events', 'Wind events beyond the lee field',
                 `"${r.id}" can turn up to ${Math.round(deg)}° off its mean (breathing plus the largest step it feels); `

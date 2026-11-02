@@ -10100,7 +10100,8 @@ window.VENUE_DOC["bay"] = {
         "speed": 16,
         "speedVar": 2,
         "period": 123,
-        "name": "offshore breeze"
+        "name": "offshore breeze",
+        "eventsFrom": "wind-2"
       },
       {
         "id": "wind-2",
@@ -10156,11 +10157,42 @@ window.VENUE_DOC["bay"] = {
         ],
         "falloff": 900,
         "direction": 6.108652381980153,
-        "dirVar": 0.13962634015954636,
+        "dirVar": 0.0698,
         "speed": 12,
         "speedVar": 3,
         "period": 43,
-        "name": "central bay breeze"
+        "name": "central bay breeze",
+        "events": {
+          "oneWay": true,
+          "bias": 0.4,
+          "trend": [
+            2,
+            3
+          ],
+          "start": [
+            20,
+            60
+          ],
+          "every": [
+            50,
+            90
+          ],
+          "size": [
+            5,
+            8
+          ],
+          "ramp": [
+            3,
+            5
+          ],
+          "speed": [
+            1,
+            2.5
+          ],
+          "max": 18,
+          "travel": 250,
+          "from": 60
+        }
       },
       {
         "id": "wind-3",
@@ -10208,11 +10240,13 @@ window.VENUE_DOC["bay"] = {
         ],
         "falloff": 900,
         "direction": 0.9599310885968813,
-        "dirVar": 0.19198621771937624,
+        "dirVar": 0.0873,
         "speed": 10,
         "speedVar": 3,
         "period": 53,
-        "name": "west bay breeze"
+        "name": "west bay breeze",
+        "eventsFrom": "wind-2",
+        "eventsScale": 0.6
       },
       {
         "id": "wind-4",
@@ -10288,11 +10322,13 @@ window.VENUE_DOC["bay"] = {
         ],
         "falloff": 900,
         "direction": 0.2617993877991494,
-        "dirVar": 0.13962634015954636,
+        "dirVar": 0.0698,
         "speed": 12,
         "speedVar": 3,
         "period": 67,
-        "name": "south bay breeze"
+        "name": "south bay breeze",
+        "eventsFrom": "wind-2",
+        "eventsScale": 0.6
       }
     ]
   },

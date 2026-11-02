@@ -1042,11 +1042,16 @@ function windOsc(t, period, phase) {
 //             hold:  [12, 25],   seconds before it relaxes back over another ramp; omit/null = PERSISTENT
 //             speed: [-1, 2],    knots that come with it
 //             max:   25,         persistent events never take the region more than this many degrees off
-//             travel: true }     the event arrives with the wind: upwind water gets it first (or u/s)
+//             oneWay: true,      the whole schedule turns ONE way, drawn once per race from `bias`
+//                                (bias 0.4 = 70% veer): a sea breeze that swings, not a wobble
+//             trend: [3, 5],     a steady drift too, deg per minute from the gun (sign as above; capped by max)
+//             travel: true,      the event arrives with the wind: upwind water gets it first (or u/s)
+//             from: 60 }         ...arriving FROM this compass direction (deg) instead of the region's wind
 //
 // `events` may be an array of such schedules. `eventsFrom: "<id>"` (or an array of ids) makes a
 // region feel another region's schedule too — arriving by THAT region's geometry, so a bay swings
-// as one while its sheltered cove keeps its own weather.
+// as one while its sheltered cove keeps its own weather. `eventsScale: 0.6` feels the borrowed
+// schedules at that fraction (a sheltered arm swings less than the open bay).
 //
 // TIMES ARE REAL RACE SECONDS FROM THE GUN, not the world clock: state.time runs at WORLD_CLOCK
 // (0.24) of real time, and a schedule written in it would be four times slower than it reads.
@@ -1056,7 +1061,11 @@ function windOsc(t, period, phase) {
 // The mean field (WIND_MEAN_FIELD) leaves events out: they are weather, not the venue's shape.
 const WIND_EVENT_HORIZON = 700;     // seconds after the gun the schedule covers (a 10:00 limit is 600)
 const WIND_EVENT_DRIFT = 10.8;      // u/s per knot a travelling event moves (the puff drift rate)
-const WIND_EVENT_MAX_DEG = 30;      // hard cap on any region's summed event offset (the lee field covers ±40)
+const WIND_EVENT_MAX_DEG = 30;
+// Off while a STATIC price of the venue is taken (the editor's and the checks' race estimate):
+// the estimate is a fact about the venue, and a step that happens to be in force when the editor
+// samples (Otter's inshore lanes start the day 3 kt light) is weather, not geometry.
+let WIND_EVENTS_ON = true;      // hard cap on any region's summed event offset (the lee field covers ±40)
 function windEventsInit(regions, seed, marks) {
     if (state.wind) state.wind.gunTime = null;
     const D = Math.PI / 180;
@@ -1071,7 +1080,8 @@ function windEventsInit(regions, seed, marks) {
     for (const m of (marks || [])) if (m && isFinite(m.x) && isFinite(m.y)) { cx += m.x; cy += m.y; cn++; }
     const geom = (r, sch) => {
         if (!sch.travel) return null;
-        const ux = -Math.sin(r.direction), uy = Math.cos(r.direction);
+        const fd = sch.from != null ? sch.from * D : r.direction;
+        const ux = -Math.sin(fd), uy = Math.cos(fd);
         let s0;
         if (cn) s0 = (cx / cn) * ux + (cy / cn) * uy;
         else { let a = 0; for (const p of r.poly) a += p[0] * ux + p[1] * uy; s0 = a / r.poly.length; }
@@ -1088,12 +1098,17 @@ function windEventsInit(regions, seed, marks) {
             const maxD = (sch.max != null ? sch.max : 25) * D;
             let t = sch.start != null ? span(sch.start, 0) : span(sch.every, 30);
             const n = sch.count != null ? sch.count : Infinity;
+            // One sign for the whole day (oneWay), drawn only when asked so other schedules' streams
+            // are unchanged.
+            const daySign = sch.oneWay ? (rng() < 0.5 + 0.5 * (sch.bias || 0) ? 1 : -1) : 0;
+            const trend = sch.trend != null ? (daySign || 1) * span(sch.trend, 0) * D / 60 : 0;
             while (t < WIND_EVENT_HORIZON && evs.length < n) {
                 const persist = sch.hold == null;
-                let sign = rng() < 0.5 + 0.5 * (sch.bias || 0) ? 1 : -1;
+                let sign = daySign || (rng() < 0.5 + 0.5 * (sch.bias || 0) ? 1 : -1);
                 let d = span(sch.size, 10) * D;
                 // A persistent shift that would carry the region past `max` goes the other way.
-                if (persist && Math.abs(cum + sign * d) > maxD) sign = -sign;
+                // (A one-way day stops instead: its surges are capped below with the trend.)
+                if (persist && !daySign && Math.abs(cum + sign * d) > maxD) sign = -sign;
                 d *= sign;
                 if (persist) cum += d;
                 const ramp = Math.max(0.5, span(sch.ramp, 3));
@@ -1102,14 +1117,15 @@ function windEventsInit(regions, seed, marks) {
                 evs.push({ t, ramp, hold, d, kt });
                 t += Math.max(1, span(sch.every, 30));
             }
-            return { evs, g: geom(r, sch) };
+            return { evs, g: geom(r, sch), trend, maxD: daySign ? maxD : 0, k: 1 };
         });
     }
     // ...then point each region at what it feels: its own plus any it borrows.
     for (const r of regions) {
         const feel = (r._evOwn || []).slice();
         const from = r.eventsFrom ? (Array.isArray(r.eventsFrom) ? r.eventsFrom : [r.eventsFrom]) : [];
-        for (const id of from) { const s = byId.get(id); if (s && s !== r && s._evOwn) feel.push(...s._evOwn); }
+        const k = r.eventsScale != null ? r.eventsScale : 1;
+        for (const id of from) { const s = byId.get(id); if (s && s !== r && s._evOwn) feel.push(...s._evOwn.map(o => Object.assign({}, o, { k }))); }
         r._ev = feel.length ? feel : null;
     }
 }
@@ -1128,6 +1144,7 @@ function windEventAt(r, x, y, T) {
     for (const sch of r._ev) {
         const g = sch.g;
         const t = g ? T - (x * g.ux + y * g.uy - g.s0) / g.v : T;
+        let sd = sch.trend && t > 0 ? sch.trend * t : 0, sk = 0;
         for (const e of sch.evs) {
             const tau = t - e.t;
             if (tau <= 0) break;   // sorted by start (prestart events can have t < 0)
@@ -1136,8 +1153,11 @@ function windEventAt(r, x, y, T) {
             else if (e.hold == null || tau < e.ramp + e.hold) f = 1;
             else if (tau < 2 * e.ramp + e.hold) { const u = (tau - e.ramp - e.hold) / e.ramp; f = 1 - u * u * (3 - 2 * u); }
             else continue;
-            d += e.d * f; kt += e.kt * f;
+            sd += e.d * f; sk += e.kt * f;
         }
+        // A one-way day (trend + surges) never runs past its `max`.
+        if (sch.maxD) sd = Math.max(-sch.maxD, Math.min(sch.maxD, sd));
+        d += sd * sch.k; kt += sk * sch.k;
     }
     const cap = WIND_EVENT_MAX_DEG * Math.PI / 180;
     _evOut.d = Math.max(-cap, Math.min(cap, d)); _evOut.kt = kt;
@@ -1213,7 +1233,7 @@ function regionWindAt(x, y) {
             // different strengths depending on which venue they sat on.
             let rs = Math.max(0, (r.speed || 0) + r.speedVar * osc);
             // The day's sudden shifts (windEventAt), on top of the breathing.
-            if (r._ev && !WIND_MEAN_FIELD) { const e = windEventAt(r, x, y, evT); rd += e.d; rs = Math.max(0, rs + e.kt); }
+            if (r._ev && !WIND_MEAN_FIELD && WIND_EVENTS_ON) { const e = windEventAt(r, x, y, evT); rd += e.d; rs = Math.max(0, rs + e.kt); }
             ux += Math.sin(rd) * w; uy += -Math.cos(rd) * w;
             sacc += rs * w;
             wsum += w;

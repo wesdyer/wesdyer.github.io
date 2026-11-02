@@ -9156,7 +9156,8 @@ window.VENUE_DOC["otter"] = {
         "dirVar": 0.1,
         "speed": 14,
         "speedVar": 1.6,
-        "period": 32
+        "period": 32,
+        "eventsFrom": "wind-beat-inshore"
       },
       {
         "id": "wind-beat-inshore",
@@ -9224,7 +9225,37 @@ window.VENUE_DOC["otter"] = {
         "dirVar": 0.12,
         "speed": 12,
         "speedVar": 1.8,
-        "period": 30
+        "period": 30,
+        "events": [
+          {
+            "start": -60,
+            "count": 1,
+            "size": 0,
+            "ramp": 1,
+            "speed": -3
+          },
+          {
+            "start": [
+              -20,
+              70
+            ],
+            "count": 1,
+            "size": [
+              10,
+              15
+            ],
+            "bias": -1,
+            "ramp": [
+              6,
+              10
+            ],
+            "speed": [
+              4,
+              6
+            ],
+            "travel": 200
+          }
+        ]
       },
       {
         "id": "wind-start-outer",
@@ -9376,7 +9407,8 @@ window.VENUE_DOC["otter"] = {
         "dirVar": 0.14,
         "speed": 10.5,
         "speedVar": 1.8,
-        "period": 28
+        "period": 28,
+        "eventsFrom": "wind-beat-inshore"
       },
       {
         "id": "wind-coast-north",

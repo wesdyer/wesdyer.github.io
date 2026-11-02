@@ -571,3 +571,49 @@ proposals replace them with vents (Glowtide, step 3) or keep the wind quiet (Spo
 term already tack on about 78% of real headers within 8 s; the other half of their tacks are
 laylines, marks and shores. The trend tracker (E7) waits for a venue with a persistent drift long
 enough to fool a 60 s mean.
+
+### Step 2, continued: Lighthouse Cove, Otter, Sockeye (Nov 1 2026)
+
+**Engine additions:** `oneWay` (one sign per race for the whole schedule, from `bias`), `trend`
+(deg/min drift from the gun, capped with the surges at `max`), `from` (compass direction a
+travelling event arrives from) and `eventsScale` (a borrower feels that fraction). The static race
+estimate (editor + venue check) now prices with events off (`WIND_EVENTS_ON`), because a step in
+force before the gun is weather, not the venue.
+
+**Lighthouse Cove: the sea breeze swings and builds.** `wind-2` carries a one-way day: 70% veer,
+trend 2–3°/min, a surge of 5–8° and +1–2.5 kt every 50–90 s (first at 20–60 s), capped at 18°,
+arriving from 060° at 250 u/s (the east side gets it about 10 s before the west). `wind-1` feels it
+fully; `wind-3` and `wind-5` at 60%. Breathing cut to ±4–5°. The first try (cap 28°, trend 3–5) swung
+25–31°, which turned beats into fetches and bunched the fleet (spread 49 → 31 s); the 18° cap keeps
+the beats.
+
+| Cove, 6 seeds | Race | Spread | Day's swing |
+|---|---|---|---|
+| Before | 281 s | 49 s | about ±5° |
+| After | 260 s | 51 s | 14–21° (5 of 6 veered) |
+
+The bots barely split on the beats (about 300 u across), so they cannot show what side is worth;
+by geometry a boat 1 km toward the swing gains about 1.5 s on the first beat and about 3 s later.
+
+**Otter: the inshore breeze fills and backs.** The pricer (`eval/_otter_wind_price.js`, on static
+variants) showed the proposal's speed fill cannot work: +5 kt in the inshore lanes moves the inshore
+beat 133 → 127 s against the far board's 102 (the polar saturates), and an offshore veer either way
+only helps the far board. What flips it is DIRECTION: the inshore lanes backed 15° give
+offshore-tack 84 s, mid 97, inshore 99, far 95 (25° tears holes in the blend). So:
+`wind-beat-inshore` (with `wind-beat-mid` and `wind-start-inshore` via `eventsFrom`) starts the day
+3 kt light (a step at −60 s, so the authored mean stays the average) and at −20…70 s the new breeze
+fills: +4–6 kt and backed 10–15°, persistent, travelling at 200 u/s. Some races it is in at the gun,
+some it arrives mid-beat. Bots: race 214 → 208 s, spread 52 → 53 s. **They don't use it:** the router
+prices the mean field, so only a player reading the fill gains.
+
+**Sockeye: the basin swings.** `wind-1` (lower basin) gets non-persistent travelling steps every
+20–35 s, 6–10°, hold 10–20 s. 8–14° made a 99 s spread with stragglers (a lottery); 6–10° gives:
+
+| Sockeye, 6 seeds | Race | Spread | Headers/boat | Tacks on a header |
+|---|---|---|---|---|
+| Before | 225 s | 71 s | 1.2 | 11% |
+| After | 226 s | 57 s | 2.6 | 28% |
+
+**Open: E7 for persistent events.** The bots react to steps (they tack on headers) but plan routes
+on the mean field, so a persistent change (Otter's fill, the Cove's swing) never reaches their
+router. The fix is to re-plan on the field as it now stands once a persistent event has arrived.
