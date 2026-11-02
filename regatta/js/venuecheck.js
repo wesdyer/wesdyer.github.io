@@ -541,6 +541,36 @@ function runChecks(ctx) {
         }
     }
 
+    // 7a. WIND EVENTS (sim/wind.js windEventsInit). A schedule that names a region that does not
+    //     exist feels nothing and says nothing; one whose breathing plus steps can turn the wind
+    //     past the lee field's ±40 degrees gets its lees clamped at the edge.
+    {
+        const wr = (doc.wind && doc.wind.regions) || [];
+        const ids = new Set(wr.map(r => r.id));
+        const rng2 = (v) => Array.isArray(v) ? (v.length === 2 && v.every(n => typeof n === 'number' && isFinite(n)) && v[0] <= v[1]) : (v == null || (typeof v === 'number' && isFinite(v)));
+        const hi = (v) => Array.isArray(v) ? v[1] : (v || 0);
+        const schedules = (r) => r.events ? (Array.isArray(r.events) ? r.events : [r.events]) : [];
+        for (const r of wr) {
+            for (const s of schedules(r)) {
+                const bad = ['every', 'start', 'size', 'ramp', 'hold', 'speed'].filter(k => !rng2(s[k]));
+                if (!(s.every || s.count)) bad.push('every (or count)');
+                if (bad.length) add('error', 'wind-events', 'Wind events malformed',
+                    `"${r.id}" events: ${bad.join(', ')} must be a number or a [low, high] pair.`);
+            }
+            const from = r.eventsFrom ? (Array.isArray(r.eventsFrom) ? r.eventsFrom : [r.eventsFrom]) : [];
+            for (const id of from) if (!ids.has(id)) add('error', 'wind-events', 'Wind events from nowhere',
+                `"${r.id}" takes its events from "${id}", which is not a wind region here.`);
+            const felt = [r, ...from.map(id => wr.find(q => q.id === id)).filter(Boolean)];
+            let ev = 0;
+            for (const q of felt) for (const s of schedules(q)) ev += s.hold == null
+                ? Math.min(s.max != null ? s.max : 25, hi(s.size) * (s.count != null ? s.count : Infinity)) : hi(s.size);
+            const deg = (r.dirVar || 0) * 180 / Math.PI + Math.min(30, ev);
+            if (felt.some(q => schedules(q).length) && deg > 40) add('warn', 'wind-events', 'Wind events beyond the lee field',
+                `"${r.id}" can turn up to ${Math.round(deg)}° off its mean (breathing plus the largest step it feels); `
+                + `the lee field covers ±40° and the events are capped at ±30°, so lees clamp past that.`);
+        }
+    }
+
     // 7b. GUST SOURCES ON THE WATER. A source is where pressure cells are BORN, and a
     //     cell born outside the arena lives and dies where nobody sails — the field
     //     looks authored, the venue plays becalmed, and nothing on the map says why.

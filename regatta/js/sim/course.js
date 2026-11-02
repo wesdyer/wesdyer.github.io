@@ -1443,6 +1443,9 @@ function initCourse(opts) {
             const rngW = state.race.seed ? mulberry32(state.race.seed + 29) : Math.random;
             for (const r of c.windRegions) r.phase = (r.phase + rngW() * Math.PI * 2) % (Math.PI * 2);
         }
+        // The day's sudden shifts, from their own private stream (seed + 31) for the same
+        // reason. A venue that authors no events draws nothing.
+        if (c.windRegions && c.windRegions.length) windEventsInit(c.windRegions, state.race.seed, c.marks);
         state.course.windRegions = c.windRegions;
         state.course.currentRegions = c.currentRegions;
         state.course.rapidsRegions = c.rapidsRegions;

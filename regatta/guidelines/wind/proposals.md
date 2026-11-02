@@ -3,6 +3,14 @@
 Built on `assessment.md` and the two research files. Every number here is a starting point to tune by
 sailing, not a measurement. Nothing is applied.
 
+> **Correction (Nov 1 2026, step 2): every region `period` here is in WORLD-CLOCK units.**
+> `state.time` runs at `WORLD_CLOCK` = 0.24 of real time (js/script.js), and the oscillator reads
+> `state.time`, so a region authored `period: 37` takes **154 real race seconds**, not 37. The probe
+> sampled on the same clock, so every "±X°/N s" below is really ±X° over N ÷ 0.24 s. Stillwater's sides
+> (95 and 150) swing over 396 and 625 s, longer than a race; Emberfall's "whipsaw" (37) is a 154 s
+> swing, which is why it made only 3.3 tacks per boat. Puff `lifeS` is real seconds (gusts age on `dt`).
+> Wind events (E1) are written in real seconds from the gun.
+
 ## 0. The frame: a race is 2.5–5 minutes
 
 Game time runs about 2.9× fast, so **a whole race is roughly one real beat-and-run** (7–15 real
@@ -503,7 +511,7 @@ Gatorgrass alone. Drifting weather cells (squalls) are Pearl Lagoon alone. The s
 
 ---
 
-## 5. Status: step 1 (E5, puffs from upwind), applied Nov 1 2026, uncommitted
+## 5. Status: step 1 (E5, puffs from upwind), committed Nov 1 2026 (d0bbadfa)
 
 The gate is `eval/_puff_coverage.js`. It races the bots (4 seeds) and measures, at each boat's own
 position, how often the live wind is more than 1.5 kt above or below the mean × lee. `CAND=` tunes a
@@ -528,3 +536,38 @@ boundary's extent (js/venuedoc.js).
 
 **Glowtide and Spoonbill** also carry leg-strip sources. They were left alone because their
 proposals replace them with vents (Glowtide, step 3) or keep the wind quiet (Spoonbill).
+
+## 6. Status: step 2 (E1 + E1b events), Stillwater, Nov 1 2026
+
+**Engine** (`js/sim/wind.js`, `windEventsInit` / `windEventAt` / `windRaceClock`):
+- A wind region may author `events` (one schedule or an array) and `eventsFrom` (ids whose schedules
+  it also feels). Fields: `every`, `start`, `count`, `size` (deg), `bias`, `ramp`, `hold` (absent =
+  persistent), `speed` (kt), `max` (deg, the persistent drift's cap), `travel` (`true` = puff drift
+  rate × the region's knots, or a number in u/s).
+- **Real seconds from the gun.** The clock is stamped at the gun (`state.wind.gunTime`, script.js);
+  before it, the prestart counts up from minus the start timer.
+- **Travel is anchored on the marks' centre:** an event's `t` is when it reaches the middle of the
+  course; upwind water gets it earlier. (Anchored on the region's upwind edge, a 7 km lake's events
+  arrived 100 s late at the marks.)
+- Rolled per race from a private stream (`seed + 31`); evaluating is pure (no RNG, no state). The mean
+  field (router, lee bins, pressure scale) leaves events out. Summed offset capped at ±30° per region.
+- Venue check `wind-events`: malformed fields, `eventsFrom` naming nothing, breathing + steps past
+  the lee field's ±40°. Unit test: `eval/test_wind_events.js`. Probe: `eval/_wind_events.js`
+  (`PATCH=` merges region fields before the build; reports race, spread, tacks, header response).
+
+**Stillwater** (only `wind.regions` touched, round-trip checked):
+- `wind-west` / `wind-east`: ±24° → ±8° breathing, speedVar 2.5 → 1.5, and each its OWN
+  non-persistent travelling steps: every 18–35 s, 14–26° authored (felt about 8–15° at the marks,
+  because the full-cover `wind-day` dilutes a side region by about half), ramp 2–4 s, hold 12–25 s,
+  −1 to +1.5 kt. Both also feel `wind-day`'s schedule.
+- `wind-day`: its ±17° sine retired; one persistent travelling shift of 14–22° at 60–180 s.
+
+| Stillwater, 4 seeds | Race (median) | Finish spread p10–p90 | Tacks/boat | Shift sd at the boats | Headers > 8°/boat | Tacked within 8 s |
+|---|---|---|---|---|---|---|
+| Before | 228 s | 61 s | 12.9 | 9.7° | 5.2 | 79% |
+| After | 235 s | 72 s | 13.3 | 15.6° | 6.6 | 78% |
+
+**The bots needed no change for this.** Their 60 s running mean (bot.js `windTracker`) plus the VMG
+term already tack on about 78% of real headers within 8 s; the other half of their tacks are
+laylines, marks and shores. The trend tracker (E7) waits for a venue with a persistent drift long
+enough to fool a 60 s mean.

@@ -146,6 +146,7 @@ function update(dt) {
         if (state.race.timer <= 0) {
             state.race.status = 'racing';
             state.race.timer = 0;
+            state.wind.gunTime = state.time;   // the wind events' clock (windRaceClock) runs from here
 
             // ⚠️ OCS IS A FACT ABOUT POSITION AT THE STARTING SIGNAL, NOT A HISTORY OF
             // CROSSINGS. RRS 29.1: "when at her starting signal any part of a boat's hull

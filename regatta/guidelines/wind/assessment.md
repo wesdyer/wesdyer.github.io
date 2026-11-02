@@ -5,6 +5,14 @@ The aim of this sweep: every venue should pose real sailing wind problems in min
 wind or shorter in less, tacking on shifts at some venues and steady wind at others, and above all
 "how can I sail in more wind?"
 
+> **Correction (Nov 1 2026, step 2): every region `period` here is in WORLD-CLOCK units.**
+> `state.time` runs at `WORLD_CLOCK` = 0.24 of real time (js/script.js), and the oscillator reads
+> `state.time`, so a region authored `period: 37` takes **154 real race seconds**, not 37. The probe
+> sampled on the same clock, so every "±X°/N s" below is really ±X° over N ÷ 0.24 s. Stillwater's sides
+> (95 and 150) swing over 396 and 625 s, longer than a race; Emberfall's "whipsaw" (37) is a 154 s
+> swing, which is why it made only 3.3 tacks per boat. Puff `lifeS` is real seconds (gusts age on `dt`).
+> Wind events (E1) are written in real seconds from the gun.
+
 This document covers the **understanding** phase. It describes each venue's wind as it actually
 plays, measured on the live engine, and compares it with how wind works in the real world. It
 changes nothing.

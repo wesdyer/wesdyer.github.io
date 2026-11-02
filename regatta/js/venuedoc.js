@@ -4334,7 +4334,13 @@ function compileVenueDoc(doc, light) {
             // a wind you had tuned by eye came back different because you reordered a
             // list. The id is the thing the designer actually named, so the phase now
             // travels with the region instead of with its position.
-            phase: hashUnit(r.id || `wind-${i}`) * Math.PI * 2
+            phase: hashUnit(r.id || `wind-${i}`) * Math.PI * 2,
+            // WIND EVENTS (Nov 2026): sudden shifts on a seeded schedule, persistent or not —
+            // see windEventsInit in sim/wind.js. Passed through as authored; the schedule is
+            // rolled per race by initCourse. `eventsFrom` names regions whose schedule this
+            // one also feels, so a whole bay can swing together.
+            events: r.events || null,
+            eventsFrom: r.eventsFrom || null
         };
     }).filter(r => r.poly.length >= 3);
 

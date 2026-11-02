@@ -1027,6 +1027,123 @@ function windOsc(t, period, phase) {
     return Math.tanh(WIND_OSC_SHAPE * s) / WIND_OSC_NORM;
 }
 
+// ── WIND EVENTS: SUDDEN SHIFTS, PERSISTENT OR NOT (Nov 2026, guidelines/wind/proposals.md E1) ──
+// The oscillator above turns the wind a degree at a time and always brings it back. Real shifts
+// are often STEPS — 10–25 degrees in a few seconds — and some of them stay (a new wind filling,
+// a sea-breeze surge) while others snap back (a cloud passing). A region may author a schedule:
+//
+//   events: { every: [18, 35],   seconds between event starts (uniform draw)
+//             start: [5, 20],    seconds after the gun of the first one (default: an `every` draw;
+//                                negative = during the prestart)
+//             count: 1,          at most this many (default: as many as fit the race)
+//             size:  [8, 16],    degrees, random sign...
+//             bias:  0,          ...-1 all left (backing), +1 all right (veering)
+//             ramp:  [2, 4],     seconds to turn: a STEP, not a sine
+//             hold:  [12, 25],   seconds before it relaxes back over another ramp; omit/null = PERSISTENT
+//             speed: [-1, 2],    knots that come with it
+//             max:   25,         persistent events never take the region more than this many degrees off
+//             travel: true }     the event arrives with the wind: upwind water gets it first (or u/s)
+//
+// `events` may be an array of such schedules. `eventsFrom: "<id>"` (or an array of ids) makes a
+// region feel another region's schedule too — arriving by THAT region's geometry, so a bay swings
+// as one while its sheltered cove keeps its own weather.
+//
+// TIMES ARE REAL RACE SECONDS FROM THE GUN, not the world clock: state.time runs at WORLD_CLOCK
+// (0.24) of real time, and a schedule written in it would be four times slower than it reads.
+// The schedule is rolled per race in initCourse from a PRIVATE stream (seed + 31), so a venue that
+// authors no events draws nothing and every other venue's race is untouched. Evaluating it is a
+// pure function of the clock and the point — no RNG, no state — so replays reproduce exactly.
+// The mean field (WIND_MEAN_FIELD) leaves events out: they are weather, not the venue's shape.
+const WIND_EVENT_HORIZON = 700;     // seconds after the gun the schedule covers (a 10:00 limit is 600)
+const WIND_EVENT_DRIFT = 10.8;      // u/s per knot a travelling event moves (the puff drift rate)
+const WIND_EVENT_MAX_DEG = 30;      // hard cap on any region's summed event offset (the lee field covers ±40)
+function windEventsInit(regions, seed, marks) {
+    if (state.wind) state.wind.gunTime = null;
+    const D = Math.PI / 180;
+    const rng = seed ? mulberry32(seed + 31) : Math.random;
+    const span = (v, def) => Array.isArray(v) ? v[0] + rng() * (v[1] - v[0]) : (v != null ? +v : def);
+    const byId = new Map(regions.map(r => [r.id, r]));
+    // Geometry for a travelling schedule: the wind's downwind axis, anchored on the middle of the
+    // course. delay(x,y) = (along - s0) / v, so an event's `t` is when it reaches the marks' centre;
+    // water upwind of that has it earlier (negative delay) and water downwind later. Anchoring on
+    // the region's upwind edge instead put a 7 km lake's events 100 s late at the marks.
+    let cx = 0, cy = 0, cn = 0;
+    for (const m of (marks || [])) if (m && isFinite(m.x) && isFinite(m.y)) { cx += m.x; cy += m.y; cn++; }
+    const geom = (r, sch) => {
+        if (!sch.travel) return null;
+        const ux = -Math.sin(r.direction), uy = Math.cos(r.direction);
+        let s0;
+        if (cn) s0 = (cx / cn) * ux + (cy / cn) * uy;
+        else { let a = 0; for (const p of r.poly) a += p[0] * ux + p[1] * uy; s0 = a / r.poly.length; }
+        const v = typeof sch.travel === 'number' ? sch.travel : Math.max(2, r.speed || 8) * WIND_EVENT_DRIFT;
+        return { ux, uy, s0, v };
+    };
+    for (const r of regions) r._ev = null;
+    // Roll every region's OWN schedules first (in region order, so the stream is stable)...
+    for (const r of regions) {
+        if (!r.events) continue;
+        const list = Array.isArray(r.events) ? r.events : [r.events];
+        r._evOwn = list.map(sch => {
+            const evs = []; let cum = 0;
+            const maxD = (sch.max != null ? sch.max : 25) * D;
+            let t = sch.start != null ? span(sch.start, 0) : span(sch.every, 30);
+            const n = sch.count != null ? sch.count : Infinity;
+            while (t < WIND_EVENT_HORIZON && evs.length < n) {
+                const persist = sch.hold == null;
+                let sign = rng() < 0.5 + 0.5 * (sch.bias || 0) ? 1 : -1;
+                let d = span(sch.size, 10) * D;
+                // A persistent shift that would carry the region past `max` goes the other way.
+                if (persist && Math.abs(cum + sign * d) > maxD) sign = -sign;
+                d *= sign;
+                if (persist) cum += d;
+                const ramp = Math.max(0.5, span(sch.ramp, 3));
+                const hold = persist ? null : Math.max(0, span(sch.hold, 15));
+                const kt = sch.speed != null ? span(sch.speed, 0) : 0;
+                evs.push({ t, ramp, hold, d, kt });
+                t += Math.max(1, span(sch.every, 30));
+            }
+            return { evs, g: geom(r, sch) };
+        });
+    }
+    // ...then point each region at what it feels: its own plus any it borrows.
+    for (const r of regions) {
+        const feel = (r._evOwn || []).slice();
+        const from = r.eventsFrom ? (Array.isArray(r.eventsFrom) ? r.eventsFrom : [r.eventsFrom]) : [];
+        for (const id of from) { const s = byId.get(id); if (s && s !== r && s._evOwn) feel.push(...s._evOwn); }
+        r._ev = feel.length ? feel : null;
+    }
+}
+// Seconds since the gun, on the real clock; the prestart counts up from minus the start timer.
+function windRaceClock() {
+    const W = state.wind;
+    if (W && W.gunTime != null) return (state.time - W.gunTime) / (typeof WORLD_CLOCK !== 'undefined' ? WORLD_CLOCK : 1);
+    const st = state.race && state.race.status;
+    if (st === 'prestart') return -(state.race.timer || 0);
+    return -((state.race && state.race.startTimerDuration) || 30);
+}
+const _evOut = { d: 0, kt: 0 };
+// The summed event offset (radians, knots) a region's schedules put on (x, y) at race time T.
+function windEventAt(r, x, y, T) {
+    let d = 0, kt = 0;
+    for (const sch of r._ev) {
+        const g = sch.g;
+        const t = g ? T - (x * g.ux + y * g.uy - g.s0) / g.v : T;
+        for (const e of sch.evs) {
+            const tau = t - e.t;
+            if (tau <= 0) break;   // sorted by start (prestart events can have t < 0)
+            let f;
+            if (tau < e.ramp) { const u = tau / e.ramp; f = u * u * (3 - 2 * u); }
+            else if (e.hold == null || tau < e.ramp + e.hold) f = 1;
+            else if (tau < 2 * e.ramp + e.hold) { const u = (tau - e.ramp - e.hold) / e.ramp; f = 1 - u * u * (3 - 2 * u); }
+            else continue;
+            d += e.d * f; kt += e.kt * f;
+        }
+    }
+    const cap = WIND_EVENT_MAX_DEG * Math.PI / 180;
+    _evOut.d = Math.max(-cap, Math.min(cap, d)); _evOut.kt = kt;
+    return _evOut;
+}
+
 // THE MEAN WIND AT A POINT: the regions blended, plus the day's live shift. No puffs, no lee.
 //
 // Split out of getWindAt so an OBSTACLE can ask which way its own lee points without asking
@@ -1074,6 +1191,7 @@ function regionWindAt(x, y) {
         // covered by regions would never see a shift at all.
         const liveShift = WIND_MEAN_FIELD ? 0 : (baseDir - state.wind.baseDirection);
         let wsum = 0, ux = 0, uy = 0, sacc = 0;
+        const evT = WIND_MEAN_FIELD ? 0 : windRaceClock();
         for (const r of wregions) {
             // The edge ramp is centered on the outline (VenueDoc.regionWeight), so a
             // region reaches falloff/2 OUTSIDE its polygon — the cull box pads by that.
@@ -1087,13 +1205,15 @@ function regionWindAt(x, y) {
             // deterministic and no RNG is touched here, so regions cannot shift the seeded
             // stream; the per-race variety is baked into `phase` by initCourse.
             const osc = WIND_MEAN_FIELD ? 0 : windOsc(state.time, r.period, r.phase);
-            const rd = r.direction + r.dirVar * osc + liveShift;
+            let rd = r.direction + r.dirVar * osc + liveShift;
             // A REGION STATES ITS OWN SPEED. There is no venue fallback: an absent speed is
             // zero, the same way an unstated patch of water is calm. Falling back to the
             // venue meant a region could look authored while silently borrowing a number
             // from somewhere else, and two regions with the same fields could blow at
             // different strengths depending on which venue they sat on.
-            const rs = Math.max(0, (r.speed || 0) + r.speedVar * osc);
+            let rs = Math.max(0, (r.speed || 0) + r.speedVar * osc);
+            // The day's sudden shifts (windEventAt), on top of the breathing.
+            if (r._ev && !WIND_MEAN_FIELD) { const e = windEventAt(r, x, y, evT); rd += e.d; rs = Math.max(0, rs + e.kt); }
             ux += Math.sin(rd) * w; uy += -Math.cos(rd) * w;
             sacc += rs * w;
             wsum += w;
