@@ -2347,6 +2347,12 @@ function roundingStep(boat, rs, rm, nextA) {
         while (rem < -Math.PI) rem += Math.PI * 2;
         wrappedLeg = (rs.roundSweepLeg + rem * sgn) >= needW - Math.PI;
     }
+    // THE AI'S EXIT ASKS THE LEG'S STRING TOO. `wrapped` above measures from the re-base, so a boat
+    // that came within range on the bearing she leaves on (Stillwater's mark-3, in from the east)
+    // read as wrapped on the near side: the AI turned for the exit, unwound past the mark, lost the
+    // bank and went round again — to the time limit (Nov 2026, seed 21). The leg's string reads the
+    // turn from where she began the leg, hairpins included. Only the AI reads roundWrapped.
+    rs.roundWrapped = wrapped && wrappedLeg;
     // CROSSED = WOUND PAST IT. The line runs to infinity, so "crossed the required way" is counted as
     // WINDING from where she began the leg, not as the last segment crossing: her bearing from the
     // mark has turned, the required way, as far as the line (crossing back unwinds it). A long turn

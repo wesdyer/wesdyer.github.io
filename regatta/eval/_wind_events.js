@@ -11,7 +11,8 @@
 //
 //   NODE_PATH=node_modules node regatta/eval/_wind_events.js lake ...        (from repo root)
 //   PATCH=patch.json — { "<venue>": { "<region id>": { field: value, ... } } } merged into
-//   window.VENUE_DOC[venue].wind.regions before the venue is built (null deletes the field).
+//   window.VENUE_DOC[venue].wind.regions (and gusts.regions, by id) before the venue is built
+//   (null deletes the field).
 //   SEEDS=21,22,23,24 (default).
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs');
 const PATCH = process.env.PATCH ? JSON.parse(fs.readFileSync(process.env.PATCH, 'utf8')) : {};
@@ -26,7 +27,8 @@ const SEEDS = (process.env.SEEDS || '21,22,23,24').split(',').map(Number);
     const rows = [];
     for (const seed of SEEDS) {
       const r = await p.evaluate(([v, seed, patch]) => { try {
-        if (patch) for (const reg of window.VENUE_DOC[v].wind.regions) {
+        const D0 = window.VENUE_DOC[v];
+        if (patch) for (const reg of [...D0.wind.regions, ...((D0.gusts && D0.gusts.regions) || [])]) {
           const pr = patch[reg.id]; if (!pr) continue;
           for (const [k, val] of Object.entries(pr)) { if (val === null) delete reg[k]; else reg[k] = val; }
         }

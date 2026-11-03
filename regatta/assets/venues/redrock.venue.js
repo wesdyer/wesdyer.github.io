@@ -8974,8 +8974,21 @@ window.VENUE_DOC["redrock"] = {
         "gustKt": 8,
         "sizeM": 160,
         "lifeS": 40,
-        "bias": 0.65,
-        "veer": 20
+        "bias": 1,
+        "veer": 20,
+        "vents": [
+          [
+            1450,
+            -600
+          ]
+        ],
+        "pulse": {
+          "every": [
+            15,
+            30
+          ]
+        },
+        "tell": 3
       },
       {
         "id": "gust-2",
@@ -9030,8 +9043,25 @@ window.VENUE_DOC["redrock"] = {
         "gustKt": 8,
         "sizeM": 160,
         "lifeS": 40,
-        "bias": 0.65,
-        "veer": 20
+        "bias": 1,
+        "veer": 20,
+        "vents": [
+          [
+            750,
+            650
+          ],
+          [
+            -300,
+            -700
+          ]
+        ],
+        "pulse": {
+          "every": [
+            15,
+            30
+          ]
+        },
+        "tell": 3
       },
       {
         "id": "gust-3",
@@ -9066,8 +9096,25 @@ window.VENUE_DOC["redrock"] = {
         "gustKt": 8,
         "sizeM": 160,
         "lifeS": 40,
-        "bias": 0.65,
-        "veer": 20
+        "bias": 1,
+        "veer": 20,
+        "vents": [
+          [
+            600,
+            1850
+          ],
+          [
+            -650,
+            350
+          ]
+        ],
+        "pulse": {
+          "every": [
+            15,
+            30
+          ]
+        },
+        "tell": 3
       }
     ]
   },

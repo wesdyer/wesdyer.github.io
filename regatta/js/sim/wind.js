@@ -361,6 +361,7 @@ function spawnRegionGust(regs, initial) {
     for (const g of state.gusts) have.set(g.src, (have.get(g.src) || 0) + 1);
     let reg = null, worst = 0;
     for (const r of regs) {
+        if (r._pulse) continue;    // a pulsed source fires on its own clock (updateGustVents)
         const deficit = r.count - (have.get(r.id) || 0);
         if (deficit > worst) { worst = deficit; reg = r; }
     }
@@ -368,7 +369,12 @@ function spawnRegionGust(regs, initial) {
 
     const bb = reg.bb, bw = bb.maxX - bb.minX, bh = bb.maxY - bb.minY;
     let gx = null, gy = null;
-    for (let i = 0; i < 24; i++) {
+    if (reg.vents) {
+        // Born at one of the source's vents, not anywhere in the box.
+        const v = reg.vents[Math.min(reg.vents.length - 1, Math.floor(Math.random() * reg.vents.length))];
+        gx = v[0]; gy = v[1];
+    }
+    for (let i = 0; i < 24 && gx === null; i++) {
         const x = bb.minX + Math.random() * bw;
         const y = bb.minY + Math.random() * bh;
         const sd = Arena.signedDist(reg, x, y);
@@ -390,13 +396,71 @@ function spawnRegionGust(regs, initial) {
     state.gusts.push(cell);
 }
 
+// ── VENTS ON A PULSE (wind sweep E3) ─────────────────────────────────────────
+// A source with `vents` and `pulse` fires one cell from each vent on that vent's own rhythm —
+// the canyon bomb that comes down the same gully every 15–30 s. The times are rolled at course
+// init from a private stream (seed + 37), so a race's bombs are seeded and drawing them takes
+// nothing from the simulation's stream; the cell itself is built like any other (createGust).
+// Times are real seconds on the race clock (windRaceClock), prestart included.
+const GUST_VENT_HORIZON = 700;
+function gustVentsInit(regs, seed) {
+    if (!regs) return;
+    regs.forEach((r, ri) => {
+        r._pulse = null;
+        if (!r.vents || !r.pulse) return;
+        const rng = mulberry32((seed || 1) + 37 + ri * 101);
+        const span = v => Array.isArray(v) ? v[0] + rng() * (v[1] - v[0]) : +v;
+        const t0 = -((state.race && state.race.startTimerDuration) || 30);
+        r._pulse = r.vents.map(([x, y]) => {
+            const times = [];
+            let t = t0 + rng() * span(r.pulse.every);
+            while (t < GUST_VENT_HORIZON) { times.push(t); t += Math.max(2, span(r.pulse.every)); }
+            return { x, y, times, k: 0 };
+        });
+    });
+}
+function updateGustVents(regs) {
+    const T = windRaceClock();
+    for (const r of regs) {
+        if (!r._pulse) continue;
+        let live = 0;
+        for (const g of state.gusts) if (g.src === r.id) live++;
+        for (const v of r._pulse) {
+            // A time already well past (a reset, a long frame) is skipped, not fired late.
+            while (v.k < v.times.length && v.times[v.k] <= T) {
+                const late = T - v.times[v.k];
+                v.k++;
+                if (late > 1.5 || live >= r.count) continue;
+                const type = Math.random() < r.bias ? 'gust' : 'lull';
+                const cell = createGust(v.x, v.y, type, false, r);
+                cell.src = r.id; cell.pulsed = true;
+                state.gusts.push(cell); live++;
+            }
+        }
+    }
+}
+// Seconds until vent `v` next fires (Infinity when it has no more) — the tell reads it.
+function gustVentNext(v) {
+    const T = windRaceClock();
+    for (let k = v.k; k < v.times.length; k++) if (v.times[k] > T) return v.times[k] - T;
+    return Infinity;
+}
+// Seconds since vent `v` last fired (Infinity before its first) — the tell's hand-off reads it.
+function gustVentSince(v) {
+    const T = windRaceClock();
+    return v.k > 0 ? T - v.times[v.k - 1] : Infinity;
+}
+
 function updateGusts(dt) {
     // THE SOURCES DECIDE HOW MANY. No sources, no puffs — a steady breeze, which is a
     // legitimate course and the one every venue has until someone draws a gust region.
     const regs = state.course.gustRegions;
     let targetCount = 0;
-    if (regs) for (const r of regs) targetCount += r.count;
+    if (regs) for (const r of regs) if (!r._pulse) targetCount += r.count;
     const boundary = state.course.boundary;
+    if (regs) updateGustVents(regs);
+    let pulsedLive = 0;
+    if (regs && regs.some(r => r._pulse)) for (const g of state.gusts) if (g.pulsed) pulsedLive++;
 
     // Maintain density.
     //
@@ -406,7 +470,7 @@ function updateGusts(dt) {
     // failure this file could have. The compile step already filters those regions out, but
     // an invariant held one file away is not a reason to leave a spin loop in the frame path.
     if (boundary) {
-        for (let tries = targetCount + 1; tries > 0 && state.gusts.length < targetCount; tries--) {
+        for (let tries = targetCount + 1; tries > 0 && state.gusts.length - pulsedLive < targetCount; tries--) {
             spawnRegionGust(regs, false);
         }
     }
@@ -2836,6 +2900,57 @@ function drawGusts(ctx) {
             ctx.fill();
         }
         ctx.restore();
+    }
+    // THE TELL (vents on a pulse): for `tell` seconds before a vent fires, a small puff gathers at
+    // its foot — the SOURCE'S OWN TONE (a cell of typical strength, through the same bands), so it
+    // reads as the start of the puff and not as a different thing. It grows to about the size the
+    // newborn cell reaches in its first second and fades over TELL_HANDOFF_S after the vent fires,
+    // while the cell grows out of the same spot and drifts off. (It first grew to a 750-u patch
+    // three times darker than any puff and vanished at the birth, and a cell is born at 10 u: a dark
+    // patch appeared, popped, and a faint puff slid away — Wes, Nov 3 2026.) No tell while the
+    // source is at its count, when the vent would fire nothing.
+    const TELL_HANDOFF_S = 1, TELL_TONE = 1.6;   // a touch firmer than the typical cell, so it reads at race scale
+    const airCueT = 1.0 + Math.max(0, (14 - state.wind.baseSpeed) / 14) * 0.9;
+    for (const r of (state.course.gustRegions || [])) {
+        if (!r._pulse || !(r.tell > 0)) continue;
+        const isGust = r.bias >= 0.5;
+        const tint = isGust ? cal.gustC : cal.lullC;
+        const kt = r.gustKt * (PUFF_SPREAD_LO + 0.5 * PUFF_SPREAD_SPAN) * (isGust ? 1 : LULL_RATIO);
+        const base = (isGust ? cal.gust : cal.lull) * Math.min(1, kt / (state.wind.baseSpeed * 0.5)) * airCueT;
+        if (base <= 0.002) continue;
+        let live = 0;
+        for (const g of state.gusts) if (g.src === r.id) live++;
+        for (const v of r._pulse) {
+            const dx = v.x - camX, dy = v.y - camY;
+            if (dx * dx + dy * dy > (viewR + 400) ** 2) continue;
+            const left = gustVentNext(v), since = gustVentSince(v);
+            let u, fade;
+            if (since < TELL_HANDOFF_S) { u = 1; fade = 1 - since / TELL_HANDOFF_S; }
+            else if (left <= r.tell && live < r.count) { u = 1 - left / r.tell; fade = 1; }   // 0 -> 1 as it comes
+            else continue;
+            const w = regionWindAt(v.x, v.y);
+            const R = 20 + u * 70;
+            const k = TELL_TONE * (0.35 + 0.65 * u) * fade;
+            // Centred downwind of the vent, so the vent is its upwind tip and it leans into the lane.
+            const off = R * PUFF_TAIL * 0.8;
+            ctx.save();
+            ctx.translate(v.x - Math.sin(w.direction) * off, v.y + Math.cos(w.direction) * off);
+            ctx.rotate(w.direction + Math.PI / 2);
+            ctx.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`;
+            for (const [level, share] of PUFF_TONE_BANDS) {
+                ctx.globalAlpha = Math.min(1, base * share) * k;
+                const rr = R * (1 - puffInvSmooth(level));
+                ctx.beginPath();
+                for (let i = 0; i <= 18; i++) {
+                    const a = i / 18 * Math.PI * 2;
+                    const tear = 1 + 0.12 * Math.sin(a * 5 + T * 3 + v.x * 0.01);
+                    const px = Math.cos(a) * rr * tear * (Math.cos(a) >= 0 ? PUFF_NOSE : PUFF_TAIL), py = Math.sin(a) * rr * 0.5 * tear;
+                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.closePath(); ctx.fill();
+            }
+            ctx.restore();
+        }
     }
     ctx.globalAlpha = 1;
 }

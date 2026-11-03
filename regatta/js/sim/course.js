@@ -1450,6 +1450,7 @@ function initCourse(opts) {
         state.course.currentRegions = c.currentRegions;
         state.course.rapidsRegions = c.rapidsRegions;
         state.course.gustRegions = c.gustRegions;
+        gustVentsInit(c.gustRegions, state.race.seed);
         // Timing is authored per venue when the document says so. Absent means the
         // game's own default, so a document that says nothing races as it always did.
         state.course.startTime = c.startTime;

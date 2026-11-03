@@ -654,6 +654,15 @@ function validateVenueDoc(doc) {
         if (r.lifeS != null && !(r.lifeS > 0 && r.lifeS <= 900)) err(`${at}: life must be 1–900 s`);
         if (r.bias != null && !(r.bias >= 0 && r.bias <= 1)) err(`${at}: bias must be 0–1`);
         if (r.veer != null && !(r.veer >= 0 && r.veer <= 90)) err(`${at}: veer must be 0–90 degrees`);
+        if (r.vents != null && !(Array.isArray(r.vents) && r.vents.every(p => Array.isArray(p) && isFinite(p[0]) && isFinite(p[1]))))
+            err(`${at}: vents must be a list of [x, y] points`);
+        if (r.pulse != null) {
+            const e = r.pulse.every, ok = v => typeof v === 'number' && v >= 2;
+            if (!(ok(e) || (Array.isArray(e) && e.length === 2 && ok(e[0]) && ok(e[1]) && e[0] <= e[1])))
+                err(`${at}: pulse.every must be seconds (at least 2) or a [lo, hi] range`);
+            if (!(Array.isArray(r.vents) && r.vents.length)) err(`${at}: a pulse needs vents to fire from`);
+        }
+        if (r.tell != null && !(r.tell >= 0 && r.tell <= 10)) err(`${at}: tell must be 0–10 s`);
         // A puff wider than the map is a fill, not a puff — and the old x-form made this
         // easy to type without noticing.
         if (r.sizeM != null && r.sizeM > worldM * 0.6)
@@ -4450,7 +4459,15 @@ function compileVenueDoc(doc, light) {
             // How far the wind turns inside a puff, in RADIANS. Was the venue's
             // `puffShiftiness` mapped onto 8-22 degrees; 15 is the middle of that band and
             // the default a source starts from.
-            veer: r.veer != null ? r.veer * Math.PI / 180 : 15 * Math.PI / 180
+            veer: r.veer != null ? r.veer * Math.PI / 180 : 15 * Math.PI / 180,
+            // VENTS (wind sweep E3): fixed birth points — a gully, a notch in the rim — instead
+            // of anywhere in the polygon, so the cells run down lanes you can learn. With
+            // `pulse: { every: [lo, hi] }` each vent fires one cell on its own seeded rhythm
+            // (and `count` only caps how many are alive); `tell` is how many seconds of
+            // ripple at the vent warn that one is coming.
+            vents: Array.isArray(r.vents) && r.vents.length ? r.vents.map(p => [p[0], p[1]]) : null,
+            pulse: r.pulse && r.pulse.every != null ? { every: r.pulse.every } : null,
+            tell: r.tell != null ? r.tell : 0
         };
     }).filter(r => r.poly.length >= 3 && r.count > 0);
 

@@ -5,7 +5,8 @@
 // Pins: a step turns in its ramp and holds; a non-persistent one comes back, a persistent one
 // stays; a travelling one reaches upwind water first; `eventsFrom` borrows a schedule; the same
 // seed rolls the same day and a different seed a different one; the mean field ignores events;
-// sampling consumes no shared RNG; the clock is real seconds from the gun, not the world clock.
+// sampling consumes no shared RNG; the clock is real seconds from the gun, not the world clock;
+// vents fire on their pulse.
 const { chromium } = require('playwright');
 const path = require('path');
 
@@ -83,6 +84,26 @@ const check = (name, cond, detail) => {
         for (let i = 0; i < 50; i++) at(i);
         Math.random = r0; out.draws = draws;
 
+        // VENTS on a pulse: births only at the vents, on the seeded rhythm, and none before their time.
+        const vreg = { id: 'V', poly: box(0, 0, 500), bb: { minX: -500, minY: -500, maxX: 500, maxY: 500 }, falloff: 100, count: 9, gustKt: 6, sizeM: 100, lifeS: 30, bias: 1, veer: 0,
+            vents: [[100, 0], [-200, 50]], pulse: { every: [10, 20] }, tell: 3 };
+        const savedG = { regs: state.course.gustRegions, gusts: state.gusts };
+        state.course.gustRegions = [vreg]; state.gusts = [];
+        gustVentsInit([vreg], 99);
+        const sch1 = JSON.stringify(vreg._pulse.map(v => v.times)); gustVentsInit([vreg], 99);
+        out.ventSame = sch1 === JSON.stringify(vreg._pulse.map(v => v.times));
+        const firstFire = Math.min(...vreg._pulse.map(v => v.times.find(t => t > 0)));
+        state.wind.gunTime = 0; state.time = 0; updateGustVents([vreg]);
+        const born0 = state.gusts.length;
+        // walk the clock to 60 s in small steps
+        for (let t = 0; t <= 60; t += 0.25) { state.time = t * WORLD_CLOCK; updateGustVents([vreg]); }
+        out.ventBirths = state.gusts.length - born0;
+        out.ventAtVents = state.gusts.every(g => vreg.vents.some(v => g.x === v[0] && g.y === v[1]) && g.pulsed && g.src === 'V');
+        const expect = vreg._pulse.reduce((a, v) => a + v.times.filter(t => t > 0 && t <= 60).length, 0);
+        out.ventExpect = expect;
+        out.firstFire = firstFire;
+        state.course.gustRegions = savedG.regs; state.gusts = savedG.gusts;
+
         // Prestart clock: before the gun the schedule counts from minus the start timer.
         state.wind.gunTime = null; state.race.status = 'prestart'; state.race.timer = 12;
         out.preClock = windRaceClock();
@@ -111,6 +132,8 @@ const check = (name, cond, detail) => {
     check('the mean field leaves events out', near(r.meanDir, 0, 0.01), r.meanDir);
     check('sampling consumes no rng draws', r.draws === 0, r.draws);
     check('prestart clock counts down to the gun', near(r.preClock, -12, 1e-9), r.preClock);
+    check('vent pulses are seeded', r.ventSame);
+    check('a vent fires on each of its times, and only from the vents', r.ventBirths === r.ventExpect && r.ventBirths >= 4 && r.ventAtVents, `${r.ventBirths} of ${r.ventExpect}, at vents ${r.ventAtVents}`);
     check('no page errors', errs.length === 0, errs.join('; '));
     await browser.close();
     console.log(`\n${failures ? 'FAIL' : 'PASS'} — ${failures} failure(s)`);

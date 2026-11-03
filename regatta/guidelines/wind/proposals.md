@@ -617,3 +617,50 @@ prices the mean field, so only a player reading the fill gains.
 **Open: E7 for persistent events.** The bots react to steps (they tack on headers) but plan routes
 on the mean field, so a persistent change (Otter's fill, the Cove's swing) never reaches their
 router. The fix is to re-plan on the field as it now stands once a persistent event has arrived.
+
+## 7. Status: step 3 (E3 vents), Redrock, and E7 tried (Nov 2 2026)
+
+**E3 engine.** A gust source can carry `vents: [[x,y],…]`, `pulse: { every: s | [lo,hi] }` and
+`tell` (0–10 s). Each vent fires on its own seeded rhythm (a private stream, seed + 37, rolled at
+course init over 700 s of race clock, so drawing it takes nothing from the sim's stream); the cell
+itself is an ordinary `createGust`, capped by the source's `count`. `vents` without `pulse` births
+the source's random cells at a random vent instead of anywhere in the polygon. The tell is a small
+puff in the source's own tone that gathers just downwind of the vent over the last `tell` seconds
+and fades over 1 s after the birth, while the cell grows out of it (a first version grew a 750-u
+patch three times darker than any puff and vanished at the birth: Wes saw gusts pop). The editor
+draws vents as ringed dots; they are edited in the venue file. Tests: `eval/test_wind_events.js`.
+
+**Redrock.** Five vents at the upwind shore notches (found by tracing streamlines back from the
+beats), each lane landing on a leg: `gust-1` at (1450,−600); `gust-2` at (750,650) and
+(−300,−700); `gust-3` at (600,1850) and (−650,350). Every 15–30 s, 3 s tell, bias 1 (all pressure;
+the old sources made 35% lulls); size, strength and life kept.
+
+| Redrock, 6 seeds | Race | Spread | Tacks/boat |
+|---|---|---|---|
+| Before | 338 s | 169 s | 31 |
+| Vents | 311 s | 127 s | 28.5 |
+| Vents + `wind-6` bent 50° | 337 s | | |
+| Vents + `wind-6` 50° + `wind-all` 95° | 318 s | | |
+
+Change 2 (bend the corridors) does not work: the beats lie within ±1–7° of dead upwind in narrow
+canyons, and a 20° bend only moves where the tacks happen. Dropped. Redrock is still ~11 s over the
+5-minute target; what is left is the course itself (the three beats are 47, 66 and 66 s).
+
+**E7, the bots reading persistent shifts: built, measured, removed.** Two pieces: the router's wind
+stamp re-baked every 4 s from the settled field (mean + persistent steps + trend, 64 direction bins,
+only where an event had arrived: 1–11 ms), and a look-upwind term in `scoreTack` (1200 u upwind,
+favour the tack the coming shift will head). Paired mixed fleets (each seed raced twice, halves
+swapped), smart minus mean-field per boat, 8 seeds: Cove +2.3 ± 2.2 s, Stillwater +0.3 ± 1.4 s,
+Otter +3.2 ± 1.7 s. No gain, so it was removed. The bots already react to the live wind within
+seconds (75–86% of headers tacked on at Stillwater); knowing earlier buys nothing at these fleet
+spreads. The lever left is **side choice**: on Stillwater a boat on the shift's side gains 5–9 s per
+100 u, but the fleet spreads only 65–117 u.
+
+**Rounding fix found on the way.** A boat that came within range of a mark on the bearing she
+leaves on (Stillwater's mark-3, in from the east) read as banked AND wrapped on the near side,
+because `wrapped` measures from the re-base. The AI turned for the exit, unwound past the mark,
+lost the bank and orbited to the time limit. The AI's signal (`roundWrapped`, read only by
+bot.js) now also needs the leg's own string test (`wrappedLeg`, which reads the turn from the leg's
+start, hairpins included). Completion itself is unchanged. A first try that put the hairpin rule on
+the re-base bearings sent late-arriving boats round an extra loop (Redrock seed 21, slowest boat
+359 → 534 s) and was dropped.
