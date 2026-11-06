@@ -1253,6 +1253,7 @@ function checkIslandCollisions(dt) {
                  // the same way (river bench, 60 races: 11 DNFs at 8%, 1 with none at all).
                  const intoLand = Math.sin(boat.heading) * res.axis.x - Math.cos(boat.heading) * res.axis.y;
                  const SCRAPE = 0.02;
+                 const contactKn = boat.speed * 4;   // before the loss: the contact sound's impact (read-only)
                  boat.speed *= 1 - (intoLand > 0 ? SCRAPE + (0.6 - SCRAPE) * intoLand
                                                  : SCRAPE * Math.max(0, 1 + intoLand / 0.25));
 
@@ -1273,6 +1274,12 @@ function checkIslandCollisions(dt) {
                  // (Sockeye Run's gorge — sim/course.js). An event only: no state, no RNG.
                  if (boat.isPlayer && state.race.status === 'racing' && !boat.raceState.finished && typeof GameEvents !== 'undefined') {
                      GameEvents.emit('player-contact', { leg: boat.raceState.leg, isFloe: !!isl.isFloe, ice: isl.style === 'ice', obj: isl });
+                 }
+                 // THE HULL SOUND'S OWN EVENT — prestart too, which `player-contact` (racing only:
+                 // objectives and hit counts read it) must not hear. Impact knots before the loss
+                 // and the bow angle ride along for the grading. Sound only; nothing reads it back.
+                 if (boat.isPlayer && (state.race.status === 'racing' || state.race.status === 'prestart') && !boat.raceState.finished && typeof GameEvents !== 'undefined') {
+                     GameEvents.emit('player-hull-contact', { ice: isl.style === 'ice', isFloe: !!isl.isFloe, obj: isl, kn: contactKn, into: intoLand });
                  }
 
                  // RRS 19 (Room at an Obstruction): if an overlapped boat sat

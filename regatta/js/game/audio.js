@@ -823,6 +823,61 @@ const Sound = {
         fire(H.far, far);
     },
 
+    // THE HULL ON ICE (Glacier Sound, Nov 1 2026). `player-hull-contact` (collision.js — prestart
+    // included, unlike `player-contact`) fires on EVERY frame of a
+    // grind, so a sound answers only the ONSET of a hit: first touch of a floe, or the same one
+    // again after `rehit` seconds clear of it (shorter is the hull bouncing on one face). Graded by
+    // IMPACT — knots before the loss, weighted by how squarely the bow drives in (`into`: 1
+    // bow-on, ≤0 sliding along it), with a scrape at speed still worth a quarter:
+    //   below silentAt nothing (a boat pinned and creeping logged 135 onsets at ~0.1 kn in one
+    //   autopilot race — sounding those would buzz); up to hardAt a soft knock; above it the crack.
+    // Synthesized takes (art/audio/make_ice_takes.py), three per grade, ROTATED with a small pitch step —
+    // never Math.random(), which is the seeded sim stream. Plain media elements (see makeVoice).
+    ICE: { hard: ['assets/audio/ice-hard-1.wav', 'assets/audio/ice-hard-2.wav', 'assets/audio/ice-hard-3.wav'],
+           soft: ['assets/audio/ice-soft-1.wav', 'assets/audio/ice-soft-2.wav', 'assets/audio/ice-soft-3.wav'],
+           silentAt: 0.35, hardAt: 2.5, fullAt: 6, rehit: 1.0, gap: 0.12,
+           softVol: [0.22, 0.45], hardVol: [0.55, 0.85] },
+    _ice: null,
+    _icePitch: [1, 0.94, 1.06, 0.97, 1.03],
+    iceImpact: function(kn, into) {
+        return Math.max(0, kn || 0) * (0.25 + 0.75 * Math.max(0, into || 0));
+    },
+    iceContact: function(e) {
+        if (!e || !e.ice || !e.obj) return;
+        // Seconds from the gun, rising through the prestart too (the race timer counts DOWN
+        // before the gun, and a clock running backwards is how a new race is recognised).
+        const now = typeof trafficClock === 'function' ? trafficClock() : state.race.timer;
+        let m = this._ice;
+        if (!m || now < m.t) m = this._ice = { t: now, last: -Infinity, seen: new Map(), k: { hard: 0, soft: 0 } };
+        m.t = now;
+        // Clear time is counted from the last frame TOUCHING this floe, not from the last sound:
+        // a long grind is one hit however long it lasts.
+        const prev = m.seen.get(e.obj);
+        m.seen.set(e.obj, now);
+        if (prev != null && now - prev <= this.ICE.rehit) return;
+        const I = this.ICE, impact = this.iceImpact(e.kn, e.into);
+        if (impact < I.silentAt) return;
+        if (now - m.last < I.gap) return;
+        m.last = now;
+        const grade = impact >= I.hardAt ? 'hard' : 'soft';
+        const span = grade === 'hard' ? [I.hardAt, I.fullAt] : [I.silentAt, I.hardAt];
+        const [v0, v1] = grade === 'hard' ? I.hardVol : I.softVol;
+        const vol = v0 + (v1 - v0) * Math.max(0, Math.min(1, (impact - span[0]) / (span[1] - span[0])));
+        const k = m.k[grade]++;
+        this.playIce(grade, I[grade][k % I[grade].length], vol, this._icePitch[k % this._icePitch.length], impact);
+    },
+    playIce: function(grade, file, vol, rate, impact) {
+        this._lastIce = { grade, file, vol, rate, impact };
+        if (!settings.soundEnabled || !this.windAudible() || typeof Audio === 'undefined') return;
+        try {
+            const el = new Audio(file);
+            el.preservesPitch = false;
+            el.playbackRate = rate;
+            el.volume = Math.min(1, vol);
+            el.play().catch(() => {});
+        } catch (err) {}
+    },
+
     playerWindSpeed: function() {
         const p = state.boats && state.boats[0];
         if (p && p.apparentWind && isFinite(p.apparentWind.speed)) return p.apparentWind.speed;
@@ -937,3 +992,4 @@ const Sound = {
 // the gun sounds before the banner writes — the order the old direct calls had.)
 GameEvents.on('player-penalty', () => Sound.playPenalty());
 GameEvents.on('player-aground', () => Sound.playAground());
+GameEvents.on('player-hull-contact', (e) => Sound.iceContact(e));

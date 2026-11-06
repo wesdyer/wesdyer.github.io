@@ -413,6 +413,54 @@ const check = (name, cond, detail) => {
             horn.far.near === 0 && horn.far.far > 0 && horn.far.far < horn.near.near && horn.far.delay > horn.near.delay,
             JSON.stringify(horn.far));
 
+        // ── The hull on ice (Glacier Sound) ────────────────────────────────────
+        // Contact fires every frame of a grind; the sound answers onsets only, graded by
+        // impact: nothing for a pinned creep, a soft knock for a glance, the crack bow-on.
+        console.log('\nice contact: one sound per hit, graded soft or hard');
+        const ice = await page.evaluate(async () => {
+            const all = [...Sound.ICE.hard, ...Sound.ICE.soft];
+            const files = await Promise.all(all.map(f => new Promise(res => {
+                const el = new Audio(f);
+                el.addEventListener('loadedmetadata', () => res(el.duration));
+                el.addEventListener('error', () => res(0));
+            })));
+            const saved = { play: Sound.playIce, timer: state.race.timer };
+            const calls = [];
+            Sound.playIce = (grade, file, vol, rate, impact) => calls.push({ grade, file, vol, rate, impact });
+            Sound._ice = null;
+            const A = { id: 'floe-a' }, B = { id: 'floe-b' }, land = { id: 'rock' };
+            let t = 10;
+            const hit = (obj, kn, into, frames = 1, ice = true) => {
+                for (let i = 0; i < frames; i++) { state.race.timer = t; GameEvents.emit('player-hull-contact', { ice, obj, kn, into, isFloe: true }); t += 1 / 60; }
+                return calls.length;
+            };
+            const r = {};
+            r.pinned = hit(A, 0.1, 0.9, 120);         // a 2 s grind at a creep: silent
+            t += 2; r.glance = hit(B, 5, -0.4, 30);    // scraping along at speed: one soft
+            t += 2; r.bowOn = hit(A, 6, 0.95, 40);     // driving in: one hard, however long it grinds
+            t += 0.5; r.bounce = hit(A, 6, 0.95, 1);   // back on the same floe inside REHIT: nothing
+            t += 1.5; r.again = hit(A, 6, 0.95, 1);    // after REHIT: a new hit
+            t += 2; r.land = hit(land, 6, 0.95, 5, false); // not ice: not this sound
+            t += 2; hit(B, 1.2, 0.5, 1); t += 2; hit(B, 2.4, 0.9, 1);
+            r.calls = calls;
+            Sound.playIce = saved.play; state.race.timer = saved.timer; Sound._ice = null;
+            r.files = files;
+            return r;
+        });
+        const g = ice.calls.map(c => c.grade);
+        check(`six takes load (${ice.files.map(d => d.toFixed(2)).join(', ')} s)`,
+            ice.files.length === 6 && ice.files.every(d => d > 0.3), 'an ice take is missing or empty');
+        check('a pinned creep is silent', ice.pinned === 0, `pinned=${ice.pinned}`);
+        check('a glance at speed is one soft knock', ice.glance === 1 && g[0] === 'soft', `glance=${ice.glance} ${g[0]}`);
+        check('bow-on at speed is one hard hit for the whole grind', ice.bowOn === 2 && g[1] === 'hard', `bowOn=${ice.bowOn} ${g[1]}`);
+        check('a bounce on the same floe is not a new hit; after a second clear it is',
+            ice.bounce === 2 && ice.again === 3, `bounce=${ice.bounce} again=${ice.again}`);
+        check('land contact does not play the ice sound', ice.land === 3, `land=${ice.land}`);
+        check('harder hits are louder, soft below hard', ice.calls[3].vol < ice.calls[4].vol &&
+            Math.max(...ice.calls.filter(c => c.grade === 'soft').map(c => c.vol)) < Math.min(...ice.calls.filter(c => c.grade === 'hard').map(c => c.vol)),
+            JSON.stringify(ice.calls.map(c => [c.grade, +c.vol.toFixed(2)])));
+        check('takes rotate rather than repeat', ice.calls[1].file !== ice.calls[2].file, ice.calls.map(c => c.file).join(' '));
+
         check('no page errors', errors.length === 0, errors.slice(0, 3).join(' | '));
     } finally {
         await browser.close();
