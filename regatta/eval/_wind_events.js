@@ -12,7 +12,7 @@
 //   NODE_PATH=node_modules node regatta/eval/_wind_events.js lake ...        (from repo root)
 //   PATCH=patch.json — { "<venue>": { "<region id>": { field: value, ... } } } merged into
 //   window.VENUE_DOC[venue].wind.regions (and gusts.regions, by id) before the venue is built
-//   (null deletes the field).
+//   (null deletes the field). An id the doc lacks, given a `poly`, is added as a new gust source.
 //   SEEDS=21,22,23,24 (default).
 const { chromium } = require('playwright'); const path = require('path'); const fs = require('fs');
 const PATCH = process.env.PATCH ? JSON.parse(fs.readFileSync(process.env.PATCH, 'utf8')) : {};
@@ -31,6 +31,12 @@ const SEEDS = (process.env.SEEDS || '21,22,23,24').split(',').map(Number);
         if (patch) for (const reg of [...D0.wind.regions, ...((D0.gusts && D0.gusts.regions) || [])]) {
           const pr = patch[reg.id]; if (!pr) continue;
           for (const [k, val] of Object.entries(pr)) { if (val === null) delete reg[k]; else reg[k] = val; }
+        }
+        // A patched gust id the doc does not have, carrying a `poly`, is ADDED as a new source.
+        if (patch) for (const [id, pr] of Object.entries(patch)) {
+          if (!pr.poly || D0.wind.regions.some(r => r.id === id)) continue;
+          D0.gusts = D0.gusts || { regions: [] };
+          if (!D0.gusts.regions.some(r => r.id === id)) D0.gusts.regions.push(Object.assign({ id }, pr));
         }
         window.evalHarness.seed = seed; localStorage.setItem('regatta_settings', JSON.stringify({ venue: v }));
         selectVenue(v); resetGame(); startRace();

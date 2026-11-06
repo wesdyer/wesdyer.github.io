@@ -157402,10 +157402,31 @@ window.VENUE_DOC["river"] = {
         "falloff": 300,
         "count": 5,
         "gustKt": 5,
-        "sizeM": 180,
-        "lifeS": 40,
-        "bias": 0.6,
-        "veer": 10
+        "sizeM": 150,
+        "lifeS": 15,
+        "bias": 1,
+        "veer": 35,
+        "vents": [
+          [
+            983,
+            -2940
+          ],
+          [
+            3671,
+            -3228
+          ],
+          [
+            4247,
+            -4476
+          ]
+        ],
+        "pulse": {
+          "every": [
+            15,
+            30
+          ]
+        },
+        "tell": 3
       }
     ]
   }

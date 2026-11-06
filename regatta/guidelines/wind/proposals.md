@@ -664,3 +664,30 @@ bot.js) now also needs the leg's own string test (`wrappedLeg`, which reads the 
 start, hairpins included). Completion itself is unchanged. A first try that put the hairpin rule on
 the re-base bearings sent late-arriving boats round an extra loop (Redrock seed 21, slowest boat
 359 → 534 s) and was dropped.
+
+### Step 3, continued: Glacier, Glowtide, Sockeye, Emberfall (Nov 3 2026)
+
+**Two engine changes for vent cells (`cell.pulsed`), found measuring them:**
+- **A bomb lands.** Vent cells reach full size and strength in `GUST_BOMB_ATTACK_S` (2.5 s), then
+  decay over the rest of their life (`attackS`). On the symmetric curve a vent cell crossed the
+  leg beside its vent at 10 u with 5 s of strength ramp and peaked 1–2 km on, past its water.
+- **A bomb is not in the lee.** The lee multiplied the whole resultant, puffs included, so a
+  bullet landing in Emberfall's wake was cut with the wind it was meant to beat. Now
+  `speed = |all| × shadow + bomb × (1 − shadow)`: identical in open water and on every venue
+  without vents.
+
+Vents were placed with a streamline search (shore points with land just upwind, traced down the
+mean field, scored by how much of the trace runs along the legs), then tuned on puff coverage.
+
+| Venue | Vents | Fields | Puff coverage | Race (6 seeds) |
+|---|---|---|---|---|
+| Glacier | 3 at the glacier lip (top), 1 on the headland | `gust-1`: +13 kt, 200 m, life 18 s, every 8–15 s, veer 30°, count 9; `wind-1` 25 → 17 kt, speedVar 7 → 2 | 1.4% → 9.3% | 289 → 295 s |
+| Glowtide | 4: north end, both shores (new `gust-drainage`) | +5 kt, 200 m, life 30 s, every 30–40 s | 0.1% → 6.2% | 230 → 231 s |
+| Sockeye | 3 at the bends (`gust-bends` converted) | +5 kt, 150 m, life 15 s, every 15–30 s, veer 35° | 12.7% → 14.0% | 223 → 220 s |
+| Emberfall | 5 on the main isle's lee coast (`gust-storm` converted) | +8 kt, 225 m, life 30 s, every 10–18 s | 1.9% → 6.6% | 218 → 220 s |
+| Redrock (from the engine changes) | unchanged | unchanged | 12.3% → 21.6% | 311 → 301 s |
+
+All bias 1, tell 3 s. Glowtide's tell is the ordinary one for now; the proposal's glow (a
+bioluminescent sheet where the puff lands) is still owed. Glacier's other changes (wall shelter,
+the seam), Glowtide's retime and tide offset, Sockeye's bank shadows and Emberfall's whipsaw/horns
+are not part of this step.

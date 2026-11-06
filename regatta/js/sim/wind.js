@@ -403,6 +403,7 @@ function spawnRegionGust(regs, initial) {
 // nothing from the simulation's stream; the cell itself is built like any other (createGust).
 // Times are real seconds on the race clock (windRaceClock), prestart included.
 const GUST_VENT_HORIZON = 700;
+const GUST_BOMB_ATTACK_S = 2.5;   // a vent cell reaches full size and strength this fast (updateGusts)
 function gustVentsInit(regs, seed) {
     if (!regs) return;
     regs.forEach((r, ri) => {
@@ -433,7 +434,7 @@ function updateGustVents(regs) {
                 if (late > 1.5 || live >= r.count) continue;
                 const type = Math.random() < r.bias ? 'gust' : 'lull';
                 const cell = createGust(v.x, v.y, type, false, r);
-                cell.src = r.id; cell.pulsed = true;
+                cell.src = r.id; cell.pulsed = true; cell.attackS = GUST_BOMB_ATTACK_S;
                 state.gusts.push(cell); live++;
             }
         }
@@ -524,7 +525,16 @@ function updateGusts(dt) {
 
         // Grow and Shrink Lifecycle
         const lifeProgress = g.age / g.duration;
-        const lifeFactor = Math.sin(lifeProgress * Math.PI); // 0 -> 1 -> 0
+        let lifeFactor = Math.sin(lifeProgress * Math.PI); // 0 -> 1 -> 0
+        // A BOMB LANDS (vent cells, `g.attackS`): full size within a couple of seconds of the vent,
+        // then a long decay as it fans out — the williwaw/bullet shape, strongest where it hits. On
+        // the symmetric curve a vent cell crossed the leg beside its vent at 10 u and 5 s of ramp,
+        // and reached full size 1–2 km on, past the water it was put there for.
+        if (g.attackS) {
+            const a = Math.min(0.5, g.attackS / g.duration);
+            lifeFactor = lifeProgress < a ? Math.sin(lifeProgress / a * Math.PI / 2)
+                : Math.cos((lifeProgress - a) / (1 - a) * Math.PI / 2);
+        }
         g.radiusX = Math.max(10, g.maxRadiusX * lifeFactor);
         g.radiusY = Math.max(10, g.maxRadiusY * lifeFactor);
 
@@ -1788,6 +1798,9 @@ function getWindAt(x, y) {
     // Puff contributions accumulate SEPARATELY from the mean, so the total they add
     // can be clamped to one cell's worth below — same principle as the fan clamp.
     let puffWx = 0, puffWy = 0, puffMax = 0;
+    // The part of it that is BOMBS (vent cells that are puffs): air falling over the terrain into
+    // its lee, so the lee does not take it away — see the shadow below.
+    let bombMax = 0;
     // Net turn from every puff overlapping this point — see PUFF_FAN.
     let fanAcc = 0;
     for (const g of state.gusts) {
@@ -1811,7 +1824,7 @@ function getWindAt(x, y) {
             // which is how a puff actually arrives — you see it, then it comes on.
             const t = 1 - Math.sqrt(distSq);
             const falloff = t * t * (3 - 2 * t);
-            const lifeFade = Math.min(g.age / 5, 1) * Math.min((g.duration - g.age) / 5, 1);
+            const lifeFade = Math.min(g.age / (g.attackS || 5), 1) * Math.min((g.duration - g.age) / 5, 1);
             const intensity = Math.max(0, falloff * lifeFade);
 
             if (intensity > 0) {
@@ -1831,6 +1844,7 @@ function getWindAt(x, y) {
                  puffWx += Math.sin(gwDir) * gSpeed;
                  puffWy += -Math.cos(gwDir) * gSpeed;
                  if (Math.abs(gSpeed) > puffMax) puffMax = Math.abs(gSpeed);
+                 if (g.pulsed && gSpeed > bombMax) bombMax = gSpeed;
             }
         }
     }
@@ -1909,7 +1923,11 @@ function getWindAt(x, y) {
     // from each obstacle's own wind.
     const shadowFactor = shadowAt(x, y, dir, 'wind');
 
-    const finalSpeed = Math.sqrt(sumWx*sumWx + sumWy*sumWy) * shadowFactor;
+    // A BOMB IS NOT IN THE LEE. A williwaw off the ice, a bullet down a volcano's lee slope, a
+    // canyon bomb out of a gully: that is the air coming OVER the terrain and landing in its wind
+    // shadow, so the shadow takes the rest of the wind and leaves the bomb. In open water
+    // (shadowFactor 1) this is exactly the wind it always was, and no vent cell means no change.
+    const finalSpeed = Math.sqrt(sumWx*sumWx + sumWy*sumWy) * shadowFactor + bombMax * (1 - shadowFactor);
     // CLAMPED to one puff's worth. Cells overlap, and three flanks agreeing must not be able
     // to spin the wind further than the strongest single one of them could — a shift that
     // grows with how many cells happen to be stacked is a number nobody can read.
