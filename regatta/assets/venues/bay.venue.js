@@ -10100,7 +10100,8 @@ window.VENUE_DOC["bay"] = {
         "speed": 16,
         "speedVar": 2,
         "period": 123,
-        "name": "offshore breeze"
+        "name": "offshore breeze",
+        "eventsFrom": "wind-2"
       },
       {
         "id": "wind-2",
@@ -10156,11 +10157,42 @@ window.VENUE_DOC["bay"] = {
         ],
         "falloff": 900,
         "direction": 6.108652381980153,
-        "dirVar": 0.13962634015954636,
+        "dirVar": 0.0698,
         "speed": 12,
         "speedVar": 3,
         "period": 43,
-        "name": "central bay breeze"
+        "name": "central bay breeze",
+        "events": {
+          "oneWay": true,
+          "bias": 0.4,
+          "trend": [
+            2,
+            3
+          ],
+          "start": [
+            20,
+            60
+          ],
+          "every": [
+            50,
+            90
+          ],
+          "size": [
+            5,
+            8
+          ],
+          "ramp": [
+            3,
+            5
+          ],
+          "speed": [
+            1,
+            2.5
+          ],
+          "max": 18,
+          "travel": 250,
+          "from": 60
+        }
       },
       {
         "id": "wind-3",
@@ -10208,11 +10240,13 @@ window.VENUE_DOC["bay"] = {
         ],
         "falloff": 900,
         "direction": 0.9599310885968813,
-        "dirVar": 0.19198621771937624,
+        "dirVar": 0.0873,
         "speed": 10,
         "speedVar": 3,
         "period": 53,
-        "name": "west bay breeze"
+        "name": "west bay breeze",
+        "eventsFrom": "wind-2",
+        "eventsScale": 0.6
       },
       {
         "id": "wind-4",
@@ -10288,11 +10322,13 @@ window.VENUE_DOC["bay"] = {
         ],
         "falloff": 900,
         "direction": 0.2617993877991494,
-        "dirVar": 0.13962634015954636,
+        "dirVar": 0.0698,
         "speed": 12,
         "speedVar": 3,
         "period": 67,
-        "name": "south bay breeze"
+        "name": "south bay breeze",
+        "eventsFrom": "wind-2",
+        "eventsScale": 0.6
       }
     ]
   },
@@ -85601,294 +85637,31 @@ window.VENUE_DOC["bay"] = {
   "gusts": {
     "regions": [
       {
-        "id": "gust-course-leg1",
+        "id": "gust-north",
+        "name": "puffs off the north shore — the breeze comes over the land and down the course",
         "poly": [
           [
-            1935.3,
-            -1931.7
+            -1800,
+            -3300
           ],
           [
-            1979.2,
-            -1935.1
+            3200,
+            -3300
           ],
           [
-            2020.1,
-            -1929.8
+            3200,
+            0
           ],
           [
-            2054.9,
-            -1916.7
-          ],
-          [
-            2080.9,
-            -1897.3
-          ],
-          [
-            2095.1,
-            -1873.7
-          ],
-          [
-            2626.1,
-            982.7
+            -1800,
+            0
           ]
         ],
-        "falloff": 250,
-        "count": 1,
+        "falloff": 400,
+        "count": 14,
         "gustKt": 5,
-        "sizeM": 225,
-        "lifeS": 70,
-        "bias": 0.6,
-        "veer": 15
-      },
-      {
-        "id": "gust-course-leg2",
-        "poly": [
-          [
-            -1017.9,
-            -1498.9
-          ],
-          [
-            -1011.5,
-            -1536.4
-          ],
-          [
-            -998,
-            -1570
-          ],
-          [
-            -978.6,
-            -1597.2
-          ],
-          [
-            -955.1,
-            -1615.6
-          ],
-          [
-            -929.5,
-            -1623.6
-          ],
-          [
-            2332.1,
-            -1661.4
-          ],
-          [
-            1091,
-            -1300.6
-          ]
-        ],
-        "falloff": 250,
-        "count": 1,
-        "gustKt": 5,
-        "sizeM": 225,
-        "lifeS": 70,
-        "bias": 0.6,
-        "veer": 15
-      },
-      {
-        "id": "gust-course-leg3",
-        "poly": [
-          [
-            -1381.5,
-            2071.9
-          ],
-          [
-            -696.9,
-            -1815.5
-          ],
-          [
-            -22,
-            -628.9
-          ],
-          [
-            -7,
-            -421.1
-          ],
-          [
-            1.1,
-            631.7
-          ],
-          [
-            -1158.4,
-            2174.8
-          ],
-          [
-            -1188.1,
-            2190
-          ],
-          [
-            -1224.1,
-            2196.6
-          ],
-          [
-            -1262.8,
-            2193.7
-          ],
-          [
-            -1300.5,
-            2181.3
-          ],
-          [
-            -1334,
-            2160.7
-          ],
-          [
-            -1360,
-            2133.5
-          ],
-          [
-            -1376.4,
-            2102.9
-          ]
-        ],
-        "falloff": 250,
-        "count": 1,
-        "gustKt": 5,
-        "sizeM": 225,
-        "lifeS": 70,
-        "bias": 0.6,
-        "veer": 15
-      },
-      {
-        "id": "gust-course-leg4",
-        "poly": [
-          [
-            -1354.5,
-            -50.1
-          ],
-          [
-            -719.5,
-            -1843.4
-          ],
-          [
-            -690.6,
-            -1866.9
-          ],
-          [
-            -651.8,
-            -1883.4
-          ],
-          [
-            -606.6,
-            -1890.9
-          ],
-          [
-            -558.8,
-            -1888.2
-          ],
-          [
-            -512.2,
-            -1875.4
-          ],
-          [
-            -470.9,
-            -1853.5
-          ],
-          [
-            -437.7,
-            -1824.6
-          ],
-          [
-            -415.6,
-            -1792
-          ],
-          [
-            -406.4,
-            -1759.3
-          ],
-          [
-            -1096.9,
-            2131.1
-          ]
-        ],
-        "falloff": 250,
-        "count": 1,
-        "gustKt": 5,
-        "sizeM": 225,
-        "lifeS": 70,
-        "bias": 0.6,
-        "veer": 15
-      },
-      {
-        "id": "gust-course-leg5",
-        "poly": [
-          [
-            -1363.7,
-            2108.3
-          ],
-          [
-            -1367,
-            2079.2
-          ],
-          [
-            -702,
-            -1815.8
-          ],
-          [
-            -15,
-            -625.4
-          ],
-          [
-            2.8,
-            -415.3
-          ],
-          [
-            30.9,
-            694.5
-          ],
-          [
-            -1263.9,
-            2194.1
-          ],
-          [
-            -1297.8,
-            2182
-          ],
-          [
-            -1327.4,
-            2162.3
-          ],
-          [
-            -1350,
-            2136.9
-          ]
-        ],
-        "falloff": 250,
-        "count": 1,
-        "gustKt": 5,
-        "sizeM": 225,
-        "lifeS": 70,
-        "bias": 0.6,
-        "veer": 15
-      },
-      {
-        "id": "gust-course-leg6",
-        "poly": [
-          [
-            -1467.3,
-            1908.9
-          ],
-          [
-            1711,
-            1055.3
-          ],
-          [
-            1836.8,
-            1037.2
-          ],
-          [
-            4346.6,
-            2003
-          ],
-          [
-            5484.6,
-            3258.8
-          ]
-        ],
-        "falloff": 250,
-        "count": 1,
-        "gustKt": 5,
-        "sizeM": 225,
-        "lifeS": 70,
+        "sizeM": 280,
+        "lifeS": 40,
         "bias": 0.6,
         "veer": 15
       }

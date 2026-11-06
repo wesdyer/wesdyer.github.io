@@ -4332,10 +4332,34 @@ window.VENUE_DOC["lake"] = {
         ],
         "falloff": 793.8,
         "direction": 5.096361,
-        "dirVar": 0.42,
+        "dirVar": 0.14,
         "speed": 6,
-        "speedVar": 2.5,
-        "period": 95
+        "speedVar": 1.5,
+        "period": 95,
+        "eventsFrom": "wind-day",
+        "events": {
+          "every": [
+            18,
+            35
+          ],
+          "size": [
+            14,
+            26
+          ],
+          "ramp": [
+            2,
+            4
+          ],
+          "hold": [
+            12,
+            25
+          ],
+          "speed": [
+            -1,
+            1.5
+          ],
+          "travel": true
+        }
       },
       {
         "id": "wind-east",
@@ -4359,10 +4383,34 @@ window.VENUE_DOC["lake"] = {
         ],
         "falloff": 793.8,
         "direction": 6.073746,
-        "dirVar": 0.42,
+        "dirVar": 0.14,
         "speed": 10,
-        "speedVar": 2.5,
-        "period": 150
+        "speedVar": 1.5,
+        "period": 150,
+        "eventsFrom": "wind-day",
+        "events": {
+          "every": [
+            18,
+            35
+          ],
+          "size": [
+            14,
+            26
+          ],
+          "ramp": [
+            2,
+            4
+          ],
+          "hold": [
+            12,
+            25
+          ],
+          "speed": [
+            -1,
+            1.5
+          ],
+          "travel": true
+        }
       },
       {
         "id": "wind-day",
@@ -4386,10 +4434,26 @@ window.VENUE_DOC["lake"] = {
         ],
         "falloff": 793.8,
         "direction": 5.585054,
-        "dirVar": 0.3,
+        "dirVar": 0,
         "speed": 8,
         "speedVar": 1,
-        "period": 460
+        "period": 460,
+        "events": {
+          "start": [
+            60,
+            180
+          ],
+          "count": 1,
+          "size": [
+            14,
+            22
+          ],
+          "ramp": [
+            4,
+            8
+          ],
+          "travel": true
+        }
       },
       {
         "id": "wind-shore-bay",

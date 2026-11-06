@@ -152,7 +152,7 @@ const School = {
         this.showFrame(false);
         this.setControls(true); this.setHud(true); this.setPanel(true); this.goal(null);
         this.windScale = null; this.highlight = null;
-        settings.hudMode = sv.hudMode || 'boat';
+        settings.hudMode = sv.hudMode || DEFAULT_SETTINGS.hudMode;
         settings.cameraMode = sv.cameraMode || 'heading';
         state.camera.mode = settings.cameraMode;
         if (typeof applyHudMode === 'function') applyHudMode();

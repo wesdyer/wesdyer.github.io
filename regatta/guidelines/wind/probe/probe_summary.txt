@@ -1,0 +1,151 @@
+===== arctic spread {'lo': 17.4, 'hi': 24.1, 'med': 24.1}
+ live {'samples': 1920, 'meanGusts': 7, 'meanSqualls': 0, 'puffFrac': 0.011, 'lullFrac': 0.004, 'dS_p5': 0, 'dS_p95': 0, 'dS_p99': 1.84, 'dD_p5': 0, 'dD_p95': 0, 'leeFrac80': 0.25, 'leeFrac95': 0.25, 'gustFactorMaxOverMean_med': 1.11, 'gustFactor_p90': 1.27}
+ leg 1 539 m reach twa 66 kt 25 prof [(-0.4, None, None), (-0.2, None, None), (0, 22.5, 41.3), (0.2, 25, 0), (0.4, 25, 0)] 
+    T {'dir': {'m': 0.1, 'sd': 3.3, 'p5': -4.7, 'p95': 4.8, 'halfPeriod': 60}, 'spd': {'m': 25.2, 'sd': 4.6, 'p5': 18.4, 'p95': 31.8, 'halfPeriod': 60}} None
+ leg 2 539 m reach twa 114 kt 25 prof [(-0.4, 25, 0), (-0.2, 25, 0), (0, 22.5, 41.3), (0.2, None, None), (0.4, None, None)] 
+    T {'dir': {'m': 0.1, 'sd': 3.3, 'p5': -4.7, 'p95': 4.8, 'halfPeriod': 60}, 'spd': {'m': 25.2, 'sd': 4.6, 'p5': 18.4, 'p95': 31.8, 'halfPeriod': 60}} None
+===== bay spread {'lo': 9.5, 'hi': 15.9, 'med': 12.1}
+ live {'samples': 15360, 'meanGusts': 6, 'meanSqualls': 0, 'puffFrac': 0.008, 'lullFrac': 0.001, 'dS_p5': 0, 'dS_p95': 0, 'dS_p99': 1.11, 'dD_p5': 0, 'dD_p95': 0, 'leeFrac80': 0.075, 'leeFrac95': 0.131, 'gustFactorMaxOverMean_med': 1.23, 'gustFactor_p90': 1.34}
+ leg 1 240 m beat twa 13 kt 13.2 prof [(-0.4, 12.3, -7.2), (-0.2, 12.6, -5.2), (0, 13.1, -0.9), (0.2, 13.5, 3.2), (0.4, 13.6, 6.2)] 
+    T {'dir': {'m': 0, 'sd': 3.8, 'p5': -6, 'p95': 5.6, 'halfPeriod': 22}, 'spd': {'m': 13.2, 'sd': 1.4, 'p5': 10.8, 'p95': 15.3, 'halfPeriod': 22}} {'corrDirLR': 0.95, 'corrDirFB': 0.94}
+ leg 2 268 m reach twa 116 kt 12.4 prof [(-0.4, 9.8, 34.8), (-0.2, 11.2, 16.1), (0, 12.1, 5.9), (0.2, 13, -4.4), (0.4, 13.3, -10.5)] 
+    T {'dir': {'m': 0.1, 'sd': 3.2, 'p5': -5.3, 'p95': 5.9, 'halfPeriod': 29}, 'spd': {'m': 12.4, 'sd': 1.2, 'p5': 10.5, 'p95': 14.5, 'halfPeriod': 32}} {'corrDirLR': 0.17, 'corrDirFB': 0.15}
+ leg 3 329 m run twa 156 kt 11.2 prof [(-0.4, None, None), (-0.2, 10.7, 10.2), (0, 11.2, -0.5), (0.2, 12.1, -13.5), (0.4, 12.9, -20.9)] 
+    T None {'corrDirLR': 0.4, 'corrDirFB': 0.11}
+ leg 4 329 m beat twa 24 kt 11.2 prof [(-0.4, 12.9, -20.9), (-0.2, 12.1, -13.5), (0, 11.2, -0.5), (0.2, 10.7, 10.2), (0.4, None, None)] 
+    T None {'corrDirLR': 0.4, 'corrDirFB': 0.11}
+ leg 5 338 m run twa 157 kt 11.2 prof [(-0.4, None, None), (-0.2, 10.8, 6.8), (0, 11.2, -0.7), (0.2, 12.1, -14.2), (0.4, 12.8, -21.4)] 
+    T {'dir': {'m': 0, 'sd': 4.4, 'p5': -8, 'p95': 6.7, 'halfPeriod': 33}, 'spd': {'m': 11.1, 'sd': 1.5, 'p5': 8.5, 'p95': 13.4, 'halfPeriod': 38}} {'corrDirLR': 0.38, 'corrDirFB': 0.11}
+ leg 6 649 m reach twa 110 kt 12 prof [(-0.4, None, None), (-0.2, 12.5, 19.8), (0, 12.9, 19.5), (0.2, 12.6, 10.7), (0.4, 13.4, 13.7)] 
+    T None None
+ price 1 beat {'L': (27, 25.5, 30, 0), 'R': (27.6, 25, 30, 0), 'M': (35.9, 31.5, 39.5, 0), 'H': (31.5, 28.5, 35, 0)}
+ price 3 run {'L': (30.7, 27.5, 32.5, 0), 'R': (30.8, 27.5, 33, 0), 'M': (30.7, 27.5, 32.5, 0), 'H': (30.7, 27.5, 32.5, 0)}
+ price 4 beat {'L': (38.5, 33, 47, 0), 'R': (39.6, 37.5, 41, 0), 'M': (86.1, 72, 114, 0), 'H': (39.2, 33, 49.5, 0)}
+ price 5 run {'L': (31.6, 28.5, 33.5, 0), 'R': (31.9, 28.5, 34, 0), 'M': (31.6, 28.5, 33.5, 0), 'H': (31.6, 28.5, 33.5, 0)}
+===== flats spread {'lo': 13.1, 'hi': 16.5, 'med': 15.1}
+ live {'samples': 3840, 'meanGusts': 8, 'meanSqualls': 0, 'puffFrac': 0.005, 'lullFrac': 0.003, 'dS_p5': 0, 'dS_p95': 0, 'dS_p99': 0.63, 'dD_p5': 0, 'dD_p95': 0, 'leeFrac80': 0, 'leeFrac95': 0, 'gustFactorMaxOverMean_med': 1.08, 'gustFactor_p90': 1.13}
+ leg 1 121 m beat twa 11 kt 16.5 prof [(-0.4, 16.5, 0), (-0.2, 16.5, 0), (0, 16.5, 0), (0.2, 16.5, 0), (0.4, 16.5, 0)] 
+    T {'dir': {'m': 0, 'sd': 5.2, 'p5': -7.6, 'p95': 7.6, 'halfPeriod': 21}, 'spd': {'m': 16.5, 'sd': 1, 'p5': 15.1, 'p95': 17.9, 'halfPeriod': 21}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 2 1793 m run twa 160 kt 13.8 prof [(-0.4, None, None), (-0.2, None, None), (0, 14.4, -0.7), (0.2, None, None), (0.4, None, None)] 
+    T {'dir': {'m': 0.1, 'sd': 5.5, 'p5': -8, 'p95': 8.1, 'halfPeriod': 21}, 'spd': {'m': 13.8, 'sd': 0.8, 'p5': 12.6, 'p95': 15, 'halfPeriod': 21}} None
+ price 1 beat {'L': (13.2, 12.5, 14, 0), 'R': (12.8, 12, 13.5, 0), 'M': (20.8, 18.5, 22, 0), 'H': (17.2, 16, 19.5, 0)}
+ price 2 run {'L': (153.3, 150.5, 157, 0), 'R': (153.8, 150.5, 161.5, 0), 'M': (153.3, 150.5, 157, 0), 'H': (153.3, 150.5, 157, 0)}
+===== glowtide spread {'lo': 8.7, 'hi': 12.0, 'med': 10.7}
+ live {'samples': 7200, 'meanGusts': 6, 'meanSqualls': 0, 'puffFrac': 0.001, 'lullFrac': 0, 'dS_p5': 0, 'dS_p95': 0, 'dS_p99': 0, 'dD_p5': 0, 'dD_p95': 0, 'leeFrac80': 0.246, 'leeFrac95': 0.367, 'gustFactorMaxOverMean_med': 1.13, 'gustFactor_p90': 1.22}
+ leg 1 652 m beat twa 51 kt 10.5 prof [(-0.4, 9, -25), (-0.2, 10.5, -0.5), (0, 12.2, 21.7), (0.2, 10.9, 34.4), (0.4, 13.4, 25.4)] 
+    T {'dir': {'m': 0.1, 'sd': 4.2, 'p5': -6.6, 'p95': 7.1, 'halfPeriod': 32}, 'spd': {'m': 10.5, 'sd': 1.2, 'p5': 8.6, 'p95': 12.5, 'halfPeriod': 32}} {'corrDirLR': 0, 'corrDirFB': None}
+ leg 2 145 m run twa 169 kt 0 prof [(-0.4, 15.5, -8), (-0.2, 13.7, 3.3), (0, 12.8, 9), (0.2, 10, 26), (0.4, None, None)] 
+    T None None
+ leg 3 293 m reach twa 119 kt 11.8 prof [(-0.4, 11.8, -1.2), (-0.2, 12, 1), (0, 11.5, 0.8), (0.2, 11.7, -5.5), (0.4, 10.5, -25.4)] 
+    T {'dir': {'m': 0, 'sd': 2.9, 'p5': -4.3, 'p95': 4.2, 'halfPeriod': 18}, 'spd': {'m': 11.8, 'sd': 1.2, 'p5': 10.1, 'p95': 13.5, 'halfPeriod': 18}} {'corrDirLR': 0.34, 'corrDirFB': None}
+ leg 4 165 m beat twa 1 kt 16.8 prof [(-0.4, 12.4, 25), (-0.2, 14.2, 15.3), (0, 16.8, 0.4), (0.2, 15.2, 14), (0.4, None, None)] 
+    T {'dir': {'m': 0, 'sd': 3.8, 'p5': -5.5, 'p95': 5.6, 'halfPeriod': 22}, 'spd': {'m': 16.8, 'sd': 1.9, 'p5': 14.1, 'p95': 19.6, 'halfPeriod': 22}} None
+ price 1 beat {'L': (108.8, 98, 118.5, 0), 'R': (133.4, 106, 197.5, 0), 'M': (117.4, 104, 128, 0), 'H': (112.9, 101, 129.5, 0)}
+ price 2 run {'L': (300.9, 266, 334, 0), 'R': (239.4, 137, 328.5, 0), 'M': (300.9, 266, 334, 0), 'H': (302.9, 266, 341, 0)}
+ price 4 beat {'L': (23.9, 20.5, 29, 0), 'R': (27.5, 22.5, 31.5, 0), 'M': (32.4, 25.5, 34, 0), 'H': (27.6, 24.5, 33.5, 0)}
+===== lagoon spread {'lo': 14.7, 'hi': 14.7, 'med': 14.7}
+ live {'samples': 16560, 'meanGusts': 4, 'meanSqualls': 2, 'puffFrac': 0.116, 'lullFrac': 0.113, 'dS_p5': -4.65, 'dS_p95': 3.64, 'dS_p99': 5.91, 'dD_p5': -2.38, 'dD_p95': 0.7, 'leeFrac80': 0.014, 'leeFrac95': 0.029, 'gustFactorMaxOverMean_med': 1.37, 'gustFactor_p90': 1.51}
+ leg 1 189 m beat twa 3 kt 15 prof [(-0.4, 15, 0), (-0.2, 15, 0), (0, 15, 0), (0.2, 15, 0), (0.4, 15, 0)] 
+    T {'dir': {'m': 0.1, 'sd': 3.3, 'p5': -4.7, 'p95': 4.8, 'halfPeriod': 60}, 'spd': {'m': 15.1, 'sd': 1.6, 'p5': 12.6, 'p95': 17.4, 'halfPeriod': 60}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 2 214 m reach twa 112 kt 15 prof [(-0.4, 15, 0), (-0.2, 15, 0), (0, 15, 0), (0.2, 15, 0), (0.4, 15, 0)] 
+    T {'dir': {'m': 0.1, 'sd': 3.3, 'p5': -4.7, 'p95': 4.8, 'halfPeriod': 60}, 'spd': {'m': 15.1, 'sd': 1.6, 'p5': 12.6, 'p95': 17.4, 'halfPeriod': 60}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 3 333 m run twa 140 kt 15 prof [(-0.4, 15, 0), (-0.2, 15, 0), (0, 15, 0), (0.2, 15, 0), (0.4, 15, 0)] 
+    T {'dir': {'m': 0.1, 'sd': 3.3, 'p5': -4.7, 'p95': 4.8, 'halfPeriod': 60}, 'spd': {'m': 15.1, 'sd': 1.6, 'p5': 12.6, 'p95': 17.4, 'halfPeriod': 60}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 4 329 m beat twa 4 kt 15 prof [(-0.4, 15, 0), (-0.2, 15, 0), (0, 15, 0), (0.2, 15, 0), (0.4, 15, 0)] 
+    T {'dir': {'m': 0.1, 'sd': 3.3, 'p5': -4.7, 'p95': 4.8, 'halfPeriod': 60}, 'spd': {'m': 15.1, 'sd': 1.6, 'p5': 12.6, 'p95': 17.4, 'halfPeriod': 60}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 5 329 m run twa 176 kt 15 prof [(-0.4, 15, 0), (-0.2, 15, 0), (0, 15, 0), (0.2, 15, 0), (0.4, 15, 0)] 
+    T {'dir': {'m': 0.1, 'sd': 3.3, 'p5': -4.7, 'p95': 4.8, 'halfPeriod': 60}, 'spd': {'m': 15.1, 'sd': 1.6, 'p5': 12.6, 'p95': 17.4, 'halfPeriod': 60}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 6 148 m beat twa 2 kt 15 prof [(-0.4, 15, 0), (-0.2, 15, 0), (0, 15, 0), (0.2, 15, 0), (0.4, 15, 0)] 
+    T {'dir': {'m': 0.1, 'sd': 3.3, 'p5': -4.7, 'p95': 4.8, 'halfPeriod': 60}, 'spd': {'m': 15.1, 'sd': 1.6, 'p5': 12.6, 'p95': 17.4, 'halfPeriod': 60}} {'corrDirLR': 1, 'corrDirFB': 1}
+ price 1 beat {'L': (20.8, 20, 22, 0), 'R': (23.4, 20, 27.5, 0), 'M': (31.3, 29, 35, 0), 'H': (27.1, 23.5, 32.5, 0)}
+ price 3 run {'L': (24.6, 22.5, 27, 0), 'R': (24.6, 22.5, 27, 0), 'M': (24.6, 22.5, 27, 0), 'H': (24.6, 22.5, 27, 0)}
+ price 4 beat {'L': (39.2, 36.5, 41, 0), 'R': (36, 34.5, 38, 0), 'M': (47.3, 44, 51, 0), 'H': (43.9, 40, 49, 0)}
+ price 5 run {'L': (29.3, 26, 31.5, 0), 'R': (32.3, 29, 35, 0), 'M': (31, 26, 36.5, 0), 'H': (29.7, 26, 34, 0)}
+ price 6 beat {'L': (16.1, 15.5, 17, 0), 'R': (16.1, 15.5, 17, 0), 'M': (25.1, 24.5, 25.5, 0), 'H': (20.3, 18.5, 22, 0)}
+===== lake spread {'lo': 7.0, 'hi': 9.0, 'med': 8.7}
+ live {'samples': 4080, 'meanGusts': 14, 'meanSqualls': 0, 'puffFrac': 0.077, 'lullFrac': 0.081, 'dS_p5': -2.05, 'dS_p95': 2.36, 'dS_p99': 4.65, 'dD_p5': 0, 'dD_p95': 13.45, 'leeFrac80': 0.266, 'leeFrac95': 0.471, 'gustFactorMaxOverMean_med': 1.57, 'gustFactor_p90': 1.8}
+ leg 1 471 m beat twa 1 kt 7.8 prof [(-0.4, 9, 16.6), (-0.2, 8.2, 15.1), (0, 7.8, 0.2), (0.2, 7, -11.4), (0.4, None, None)] 
+    T {'dir': {'m': -0.3, 'sd': 8.8, 'p5': -14.5, 'p95': 13.8, 'halfPeriod': 100}, 'spd': {'m': 7.8, 'sd': 0.7, 'p5': 6.7, 'p95': 9, 'halfPeriod': 60}} None
+ leg 2 485 m reach twa 122 kt 9 prof [(-0.4, 8.9, -1.9), (-0.2, 8.6, -5.4), (0, 9, 0), (0.2, None, None), (0.4, None, None)] 
+    T {'dir': {'m': -0.6, 'sd': 10.1, 'p5': -17.2, 'p95': 14.9, 'halfPeriod': 150}, 'spd': {'m': 8.9, 'sd': 0.9, 'p5': 7.5, 'p95': 10.3, 'halfPeriod': 75}} None
+ leg 3 345 m reach twa 124 kt 9 prof [(-0.4, 8.8, -2.7), (-0.2, 9, 0), (0, 9, 0), (0.2, 9, 0), (0.4, None, None)] 
+    T {'dir': {'m': -0.6, 'sd': 10.1, 'p5': -17.2, 'p95': 14.9, 'halfPeriod': 150}, 'spd': {'m': 8.9, 'sd': 0.9, 'p5': 7.5, 'p95': 10.3, 'halfPeriod': 75}} None
+ price 1 beat {'L': (92.8, 76, 122.5, 0), 'R': (113.1, 76, 139, 0), 'M': (89.4, 65.5, 143.5, 0), 'H': (101.1, 86, 124, 0)}
+===== ocean spread {'lo': 17.7, 'hi': 20.3, 'med': 17.7}
+ live {'samples': 8160, 'meanGusts': 10, 'meanSqualls': 0, 'puffFrac': 0.007, 'lullFrac': 0.016, 'dS_p5': 0, 'dS_p95': 0, 'dS_p99': 0.99, 'dD_p5': 0, 'dD_p95': 0.03, 'leeFrac80': 0, 'leeFrac95': 0, 'gustFactorMaxOverMean_med': 1.13, 'gustFactor_p90': 1.14}
+ leg 1 471 m beat twa 4 kt 18 prof [(-0.4, 18.5, 10.7), (-0.2, 18, 0.9), (0, 18, 0), (0.2, 18, 0), (0.4, 18, 0)] 
+    T {'dir': {'m': 0, 'sd': 7.7, 'p5': -11.4, 'p95': 11.4, 'halfPeriod': 18}, 'spd': {'m': 18, 'sd': 1.9, 'p5': 15.1, 'p95': 20.9, 'halfPeriod': 18}} {'corrDirLR': 1, 'corrDirFB': None}
+ leg 2 450 m reach twa 83 kt 18 prof [(-0.4, 18, 0), (-0.2, 18, 0), (0, 18, 0), (0.2, 18, 0), (0.4, 18, 0)] 
+    T {'dir': {'m': 0, 'sd': 7.7, 'p5': -11.4, 'p95': 11.4, 'halfPeriod': 18}, 'spd': {'m': 18, 'sd': 1.9, 'p5': 15.1, 'p95': 20.9, 'halfPeriod': 18}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 3 1837 m run twa 174 kt 18 prof [(-0.4, 18.7, -3.6), (-0.2, 18, 0), (0, 18.5, -2.3), (0.2, 20.2, 4.9), (0.4, 19.2, 7.3)] 
+    T {'dir': {'m': 0, 'sd': 7.7, 'p5': -11.4, 'p95': 11.4, 'halfPeriod': 18}, 'spd': {'m': 18, 'sd': 1.9, 'p5': 15.1, 'p95': 20.9, 'halfPeriod': 18}} {'corrDirLR': 0.99, 'corrDirFB': 1}
+ price 1 beat {'L': (49.4, 46, 53, 0), 'R': (50.6, 47, 54, 0), 'M': (68, 58, 80, 0), 'H': (54.9, 52, 62.5, 0)}
+ price 3 run {'L': (135.3, 133.5, 137, 0), 'R': (144.1, 143, 144.5, 0), 'M': (141.4, 135.5, 148, 0), 'H': (144.9, 143, 147, 0)}
+===== otter spread {'lo': 12.9, 'hi': 19.5, 'med': 17.4}
+ live {'samples': 2640, 'meanGusts': 8, 'meanSqualls': 0, 'puffFrac': 0.017, 'lullFrac': 0.014, 'dS_p5': 0, 'dS_p95': 0, 'dS_p99': 2.61, 'dD_p5': 0, 'dD_p95': 0.3, 'leeFrac80': 0.091, 'leeFrac95': 0.091, 'gustFactorMaxOverMean_med': 1.08, 'gustFactor_p90': 1.48}
+ leg 1 765 m beat twa 11 kt 12 prof [(-0.4, None, None), (-0.2, None, None), (0, 11.5, 1.5), (0.2, 15.2, 2.9), (0.4, 16.9, 5.9)] 
+    T {'dir': {'m': 0, 'sd': 4.4, 'p5': -6.4, 'p95': 6.6, 'halfPeriod': 15}, 'spd': {'m': 12, 'sd': 1.2, 'p5': 10.3, 'p95': 13.7, 'halfPeriod': 15}} None
+ leg 2 1146 m reach twa 131 kt 9.5 prof [(-0.4, 14, -3), (-0.2, 12, -7), (0, None, None), (0.2, 16.9, -6), (0.4, 17.5, 0)] 
+    T None None
+ price 1 beat {'L': (89.4, 88, 90.5, 0), 'R': (141.3, 127, 162, 0), 'M': (146.3, 125, 177, 0), 'H': (170.4, 111.5, 223.5, 0)}
+===== redrock spread {'lo': 12.5, 'hi': 16.2, 'med': 14.1}
+ live {'samples': 11280, 'meanGusts': 15, 'meanSqualls': 0, 'puffFrac': 0.128, 'lullFrac': 0.037, 'dS_p5': -1.09, 'dS_p95': 3.44, 'dS_p99': 6.07, 'dD_p5': -0.09, 'dD_p95': 7.92, 'leeFrac80': 0.656, 'leeFrac95': 0.839, 'gustFactorMaxOverMean_med': 1.48, 'gustFactor_p90': 1.67}
+ leg 1 180 m beat twa 7 kt 14.9 prof [(-0.4, 14.6, -39.2), (-0.2, 15, 0.1), (0, 14.9, -0.7), (0.2, 14, 15.2), (0.4, 14, 35.3)] 
+    T {'dir': {'m': 0.1, 'sd': 2.3, 'p5': -3.5, 'p95': 4, 'halfPeriod': 30}, 'spd': {'m': 15, 'sd': 1.2, 'p5': 13.1, 'p95': 17.1, 'halfPeriod': 35}} None
+ leg 2 186 m run twa 175 kt 14 prof [(-0.4, None, None), (-0.2, 14, 0), (0, 14.2, -7.9), (0.2, 14.6, -35.9), (0.4, 14.5, -39.4)] 
+    T {'dir': {'m': 0, 'sd': 2.6, 'p5': -3.8, 'p95': 3.8, 'halfPeriod': 15}, 'spd': {'m': 14, 'sd': 1.6, 'p5': 11.6, 'p95': 16.4, 'halfPeriod': 15}} {'corrDirLR': -0.03, 'corrDirFB': 0.75}
+ leg 3 341 m beat twa 38 kt 16 prof [(-0.4, 14.3, -30), (-0.2, 14, -10), (0, 14.7, 21.8), (0.2, 14.6, -5.3), (0.4, 14, -50)] 
+    T {'dir': {'m': 0, 'sd': 2, 'p5': -2.9, 'p95': 2.9, 'halfPeriod': 40}, 'spd': {'m': 16, 'sd': 1.7, 'p5': 13.6, 'p95': 18.4, 'halfPeriod': 40}} None
+ leg 4 193 m run twa 177 kt 0 prof [(-0.4, 14.7, 4.4), (-0.2, 14.7, -33.3), (0, 15, -70), (0.2, None, None), (0.4, None, None)] 
+    T None None
+ leg 5 299 m reach twa 59 kt 16 prof [(-0.4, 14, 40), (-0.2, 16, 2.4), (0, 14.8, -42.2), (0.2, 14.3, 4.7), (0.4, 14, 10)] 
+    T {'dir': {'m': 0, 'sd': 2, 'p5': -2.9, 'p95': 2.9, 'halfPeriod': 40}, 'spd': {'m': 16, 'sd': 1.7, 'p5': 13.6, 'p95': 18.4, 'halfPeriod': 40}} None
+ leg 6 282 m reach twa 117 kt 14 prof [(-0.4, 14, 0), (-0.2, 14, -13.3), (0, 14, -30), (0.2, 15.2, -41.2), (0.4, 14.7, -63.8)] 
+    T {'dir': {'m': 0, 'sd': 2.6, 'p5': -3.8, 'p95': 3.8, 'halfPeriod': 15}, 'spd': {'m': 14, 'sd': 1.6, 'p5': 11.6, 'p95': 16.4, 'halfPeriod': 15}} None
+ price 1 beat {'L': (30.6, 28, 35, 0), 'R': (28.5, 21.5, 35, 0), 'M': (30.3, 28, 32, 0), 'H': (26.1, 21.5, 28.5, 0)}
+ price 2 run {'L': (23.8, 18.5, 25.5, 0), 'R': (22.8, 19.5, 28, 0), 'M': (22.8, 19.5, 28, 0), 'H': (22.8, 19.5, 28, 0)}
+ price 3 beat {'L': (70.9, 63, 83.5, 0), 'R': (67.7, 60, 78, 0), 'M': (93.4, 84, 105, 0), 'H': (70.5, 66, 78, 0)}
+ price 4 run {'L': (921.3, 919.5, 923.5, 0), 'R': (921.9, 919.5, 923.5, 0), 'M': (921.3, 919.5, 923.5, 0), 'H': (921.3, 919.5, 923.5, 0)}
+===== river spread {'lo': 10.5, 'hi': 16.1, 'med': 10.7}
+ live {'samples': 5520, 'meanGusts': 3, 'meanSqualls': 0, 'puffFrac': 0.009, 'lullFrac': 0.004, 'dS_p5': 0, 'dS_p95': 0, 'dS_p99': 0.78, 'dD_p5': 0, 'dD_p95': 0, 'leeFrac80': 0, 'leeFrac95': 0.13, 'gustFactorMaxOverMean_med': 1.18, 'gustFactor_p90': 1.47}
+ leg 1 307 m beat twa 1 kt 11 prof [(-0.4, 11, 0), (-0.2, 11, 0), (0, 11, 0), (0.2, 11, 0), (0.4, None, None)] 
+    T {'dir': {'m': 0.1, 'sd': 3.2, 'p5': -4.8, 'p95': 4.8, 'halfPeriod': 25}, 'spd': {'m': 11, 'sd': 1.3, 'p5': 9.1, 'p95': 12.9, 'halfPeriod': 25}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 2 307 m run twa 179 kt 11 prof [(-0.4, None, None), (-0.2, 11, 0), (0, 11, 0), (0.2, 11, 0), (0.4, 11, 0)] 
+    T {'dir': {'m': 0.1, 'sd': 3.2, 'p5': -4.8, 'p95': 4.8, 'halfPeriod': 25}, 'spd': {'m': 11, 'sd': 1.3, 'p5': 9.1, 'p95': 12.9, 'halfPeriod': 25}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 3 978 m run twa 179 kt 16 prof [(-0.4, None, None), (-0.2, None, None), (0, 15.5, -8.1), (0.2, 16, -16.1), (0.4, None, None)] 
+    T {'dir': {'m': -0.1, 'sd': 3.4, 'p5': -4.8, 'p95': 5.7, 'halfPeriod': 15}, 'spd': {'m': 16, 'sd': 1.4, 'p5': 14, 'p95': 18.5, 'halfPeriod': 16}} None
+ price 1 beat {'L': (40.8, 39.5, 42, 0), 'R': (37.9, 35.5, 43, 0), 'M': (47.1, 45, 50, 0), 'H': (40.8, 39.5, 44, 0)}
+ price 2 run {'L': (31.3, 30, 33, 0), 'R': (31.1, 29.5, 33, 0), 'M': (33.9, 32.5, 35.5, 0), 'H': (30.9, 29.5, 33, 0)}
+ price 3 run {'L': (213.4, 178.5, 254.5, 0), 'R': (1025.7, 472.5, 1418, 0), 'M': (213.4, 178.5, 254.5, 0), 'H': (226.9, 178.5, 273, 0)}
+===== seatrials spread {'lo': 13, 'hi': 13, 'med': 13}
+ live {'samples': 11520, 'meanGusts': 0, 'meanSqualls': 0, 'puffFrac': 0, 'lullFrac': 0, 'dS_p5': 0, 'dS_p95': 0, 'dS_p99': 0, 'dD_p5': 0, 'dD_p95': 0, 'leeFrac80': 0, 'leeFrac95': 0, 'gustFactorMaxOverMean_med': 1, 'gustFactor_p90': 1}
+ leg 1 400 m beat twa 0 kt 13 prof [(-0.4, 13, 0), (-0.2, 13, 0), (0, 13, 0), (0.2, 13, 0), (0.4, 13, 0)] 
+    T {'dir': {'m': 0, 'sd': 0, 'p5': 0, 'p95': 0, 'halfPeriod': None}, 'spd': {'m': 13, 'sd': 0, 'p5': 13, 'p95': 13, 'halfPeriod': None}} {'corrDirLR': None, 'corrDirFB': None}
+ leg 2 400 m run twa 180 kt 13 prof [(-0.4, 13, 0), (-0.2, 13, 0), (0, 13, 0), (0.2, 13, 0), (0.4, 13, 0)] 
+    T {'dir': {'m': 0, 'sd': 0, 'p5': 0, 'p95': 0, 'halfPeriod': None}, 'spd': {'m': 13, 'sd': 0, 'p5': 13, 'p95': 13, 'halfPeriod': None}} {'corrDirLR': None, 'corrDirFB': None}
+ leg 3 400 m beat twa 0 kt 13 prof [(-0.4, 13, 0), (-0.2, 13, 0), (0, 13, 0), (0.2, 13, 0), (0.4, 13, 0)] 
+    T {'dir': {'m': 0, 'sd': 0, 'p5': 0, 'p95': 0, 'halfPeriod': None}, 'spd': {'m': 13, 'sd': 0, 'p5': 13, 'p95': 13, 'halfPeriod': None}} {'corrDirLR': None, 'corrDirFB': None}
+ leg 4 400 m run twa 180 kt 13 prof [(-0.4, 13, 0), (-0.2, 13, 0), (0, 13, 0), (0.2, 13, 0), (0.4, 13, 0)] 
+    T {'dir': {'m': 0, 'sd': 0, 'p5': 0, 'p95': 0, 'halfPeriod': None}, 'spd': {'m': 13, 'sd': 0, 'p5': 13, 'p95': 13, 'halfPeriod': None}} {'corrDirLR': None, 'corrDirFB': None}
+ price 1 beat {'L': (45.5, 45.5, 45.5, 0), 'R': (45.5, 45.5, 45.5, 0), 'M': (54.5, 54.5, 54.5, 0), 'H': (48.5, 48.5, 48.5, 0)}
+ price 2 run {'L': (37.5, 37.5, 37.5, 0), 'R': (37.5, 37.5, 37.5, 0), 'M': (40.5, 40.5, 40.5, 0), 'H': (37.5, 37.5, 37.5, 0)}
+ price 3 beat {'L': (45.5, 45.5, 45.5, 0), 'R': (45.5, 45.5, 45.5, 0), 'M': (54.5, 54.5, 54.5, 0), 'H': (48.5, 48.5, 48.5, 0)}
+ price 4 run {'L': (37.5, 37.5, 37.5, 0), 'R': (37.5, 37.5, 37.5, 0), 'M': (40.5, 40.5, 40.5, 0), 'H': (37.5, 37.5, 37.5, 0)}
+===== swamp spread {'lo': 3.8, 'hi': 6.4, 'med': 5.1}
+ live {'samples': 2160, 'meanGusts': 0, 'meanSqualls': 0, 'puffFrac': 0, 'lullFrac': 0, 'dS_p5': 0, 'dS_p95': 0, 'dS_p99': 0, 'dD_p5': 0, 'dD_p95': 0, 'leeFrac80': 0, 'leeFrac95': 0, 'gustFactorMaxOverMean_med': 1.15, 'gustFactor_p90': 1.28}
+ leg 1 494 m beat twa 48 kt 5.6 prof [(-0.4, 4.9, -3), (-0.2, 5.1, -18.6), (0, 5.1, -2.5), (0.2, 5.8, -8.6), (0.4, 6.2, -3.4)] 
+    T {'dir': {'m': 5.8, 'sd': 30, 'p5': -39.9, 'p95': 47.6, 'halfPeriod': 120}, 'spd': {'m': 5.8, 'sd': 0.9, 'p5': 4.5, 'p95': 7, 'halfPeriod': 120}} {'corrDirLR': 0.1, 'corrDirFB': -0.03}
+ price 1 beat {'L': (97.5, 79.5, 119, 0), 'R': (102.4, 86, 120, 0), 'M': (95.4, 79.5, 111.5, 0), 'H': (102.6, 87, 121.5, 0)}
+===== volcanic spread {'lo': 15.8, 'hi': 15.8, 'med': 15.8}
+ live {'samples': 7440, 'meanGusts': 10, 'meanSqualls': 0, 'puffFrac': 0.03, 'lullFrac': 0.14, 'dS_p5': -3.99, 'dS_p95': 0.21, 'dS_p99': 4.02, 'dD_p5': -2.15, 'dD_p95': 4.44, 'leeFrac80': 0.277, 'leeFrac95': 0.46, 'gustFactorMaxOverMean_med': 1.54, 'gustFactor_p90': 1.95}
+ leg 1 450 m beat twa 41 kt 16 prof [(-0.4, 16, 0), (-0.2, 16, 0), (0, 16, 0), (0.2, 16, 0), (0.4, 16, 0)] 
+    T None None
+ leg 2 473 m run twa 146 kt 16 prof [(-0.4, 16, 0), (-0.2, 16, 0), (0, 16, 0), (0.2, 16, 0), (0.4, None, None)] 
+    T {'dir': {'m': -0.3, 'sd': 18.7, 'p5': -27.6, 'p95': 27.5, 'halfPeriod': 19}, 'spd': {'m': 16, 'sd': 2.6, 'p5': 12.2, 'p95': 19.8, 'halfPeriod': 19}} {'corrDirLR': 1, 'corrDirFB': 1}
+ leg 3 522 m reach twa 123 kt 16 prof [(-0.4, 16, 0), (-0.2, 16, 0), (0, 16, 0), (0.2, 16, 0), (0.4, 16, 0)] 
+    T None None
+ leg 4 357 m beat twa 20 kt 16 prof [(-0.4, 16, 0), (-0.2, 16, 0), (0, 16, 0), (0.2, 16, 0), (0.4, None, None)] 
+    T {'dir': {'m': -0.3, 'sd': 18.7, 'p5': -27.6, 'p95': 27.5, 'halfPeriod': 19}, 'spd': {'m': 16, 'sd': 2.6, 'p5': 12.2, 'p95': 19.8, 'halfPeriod': 19}} {'corrDirLR': 1, 'corrDirFB': 1}
+ price 1 beat {'L': (48.1, 35.5, 63, 0), 'R': (45.3, 36, 55, 0), 'M': (48.1, 35.5, 63, 0), 'H': (49.2, 35.5, 63, 0)}
+ price 2 run {'L': (37.4, 35, 47, 0), 'R': (38.6, 35, 47, 0), 'M': (38.6, 35, 47, 0), 'H': (38.6, 35, 47, 0)}
+ price 4 beat {'L': (43.1, 36.5, 57, 0), 'R': (39.7, 37, 44, 0), 'M': (50.8, 36.5, 101, 0), 'H': (43.5, 39, 51, 0)}

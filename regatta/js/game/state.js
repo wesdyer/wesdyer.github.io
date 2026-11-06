@@ -16,19 +16,20 @@ const DEFAULT_SETTINGS = {
     autoTrim: true,
     soundEnabled: true,
     bgSoundEnabled: true,
-    musicEnabled: false,
+    // On for a first-time player (Wes, Nov 1 2026).
+    musicEnabled: true,
     penaltiesEnabled: true,
     // ADAPTIVE AI (js/ai/adaptive.js): the fleet pushes when you run away, eases when you trail.
     adaptiveAI: true,
     surf: true,               // breaking seas on the windward shore — see drawSurf
     cameraMode: 'heading',
     // WHICH FACE THE INSTRUMENTS WEAR: 'boat' | 'rose' | 'both' | 'off'.
-    // Defaults to the boat panel — TWA alone, unlabelled, next to the thing it describes
-    // rather than 900 px away in a corner. 'rose' is the original dial and carries the full set (TWS,
+    // Defaults to 'both' (Wes, Nov 1 2026). The boat panel is TWA alone, unlabelled, next
+    // to the thing it describes rather than 900 px away in a corner. 'rose' is the original dial and carries the full set (TWS,
     // VMG, the heading pip, the waypoint arrow, PLANING/SURFING). 'both' runs them together,
     // which is not redundant: the panel is what you sail by and the rose is what you consult,
     // and the two answer at different rates. 'off' shows neither.
-    hudMode: 'boat',
+    hudMode: 'both',
     // WHO YOU SAIL AS. The custom hull/sail/cockpit/spinnaker/pattern settings are gone:
     // you pick a character from the fleet and get their boat, their name and their face.
     // One way to say it instead of two — a recoloured Finley was not Finley, and the

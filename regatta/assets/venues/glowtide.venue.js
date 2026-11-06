@@ -45794,6 +45794,60 @@ window.VENUE_DOC["glowtide"] = {
         "lifeS": 70,
         "bias": 0.55,
         "veer": 15
+      },
+      {
+        "id": "gust-drainage",
+        "name": "drainage off the valley mouths, pulsing at night",
+        "poly": [
+          [
+            -2300,
+            -3400
+          ],
+          [
+            700,
+            -3400
+          ],
+          [
+            700,
+            600
+          ],
+          [
+            -2300,
+            600
+          ]
+        ],
+        "falloff": 250,
+        "count": 6,
+        "gustKt": 5,
+        "sizeM": 200,
+        "lifeS": 30,
+        "bias": 1,
+        "veer": 15,
+        "vents": [
+          [
+            -344,
+            -3244
+          ],
+          [
+            -1394,
+            -1354
+          ],
+          [
+            496,
+            -584
+          ],
+          [
+            -2094,
+            396
+          ]
+        ],
+        "pulse": {
+          "every": [
+            30,
+            40
+          ]
+        },
+        "tell": 3
       }
     ]
   }

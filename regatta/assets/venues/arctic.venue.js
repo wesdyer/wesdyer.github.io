@@ -12336,8 +12336,8 @@ window.VENUE_DOC["arctic"] = {
         "falloff": 500,
         "direction": 0.7853981633974483,
         "dirVar": 0.08726646259971647,
-        "speed": 25,
-        "speedVar": 7,
+        "speed": 17,
+        "speedVar": 2,
         "period": 120
       },
       {
@@ -12488,12 +12488,37 @@ window.VENUE_DOC["arctic"] = {
           ]
         ],
         "falloff": 500,
-        "count": 7,
-        "bias": 0.65,
-        "veer": 25,
-        "gustKt": 7,
-        "sizeM": 225,
-        "lifeS": 90
+        "count": 9,
+        "bias": 1,
+        "veer": 30,
+        "gustKt": 13,
+        "sizeM": 200,
+        "lifeS": 18,
+        "vents": [
+          [
+            1499,
+            -3735
+          ],
+          [
+            159,
+            -4137
+          ],
+          [
+            829,
+            -3936
+          ],
+          [
+            -913,
+            1625
+          ]
+        ],
+        "pulse": {
+          "every": [
+            8,
+            15
+          ]
+        },
+        "tell": 3
       }
     ]
   },

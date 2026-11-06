@@ -11316,7 +11316,30 @@ window.VENUE_DOC["river"] = {
         "dirVar": 0.08726646259971647,
         "speed": 11,
         "speedVar": 2,
-        "period": 50
+        "period": 50,
+        "events": {
+          "every": [
+            20,
+            35
+          ],
+          "size": [
+            6,
+            10
+          ],
+          "ramp": [
+            2,
+            4
+          ],
+          "hold": [
+            10,
+            20
+          ],
+          "speed": [
+            -1,
+            1.5
+          ],
+          "travel": true
+        }
       },
       {
         "id": "wind-2",
@@ -157327,108 +157350,83 @@ window.VENUE_DOC["river"] = {
   "gusts": {
     "regions": [
       {
-        "id": "gust-course-leg1",
+        "id": "gust-basin",
+        "name": "puffs up the lower basin — the valley breeze arriving from the south-west",
         "poly": [
           [
-            -2538,
-            2484.2
+            -4500,
+            2500
           ],
           [
-            -2542.5,
-            2444.1
+            -3000,
+            4000
           ],
           [
-            -2536.4,
-            2407.1
+            -500,
+            1500
           ],
           [
-            -2520.9,
-            2377
-          ],
-          [
-            65.5,
-            238
-          ],
-          [
-            -2319.8,
-            2599.2
-          ],
-          [
-            -2351.4,
-            2611.6
-          ],
-          [
-            -2388.7,
-            2614
-          ],
-          [
-            -2428.2,
-            2605.6
-          ],
-          [
-            -2465.8,
-            2586.7
-          ],
-          [
-            -2498.3,
-            2558.7
-          ],
-          [
-            -2523,
-            2523.5
+            -2000,
+            0
           ]
         ],
-        "falloff": 150,
-        "count": 2,
+        "falloff": 400,
+        "count": 9,
         "gustKt": 5,
-        "sizeM": 150,
-        "lifeS": 40,
+        "sizeM": 280,
+        "lifeS": 50,
         "bias": 0.6,
-        "veer": 10
+        "veer": 12
       },
       {
-        "id": "gust-course-leg2",
+        "id": "gust-bends",
+        "name": "puffs through the bends — the breeze steered by the banks",
         "poly": [
           [
-            -132.8,
-            460.8
+            500,
+            -500
           ],
           [
-            984.7,
-            -3233.3
+            1500,
+            0
           ],
           [
-            1033.4,
-            -3342
+            3000,
+            -4500
           ],
           [
-            1182.5,
-            -3506.3
-          ],
-          [
-            6373.6,
-            -7239.3
-          ],
-          [
-            6244,
-            -6709.1
-          ],
-          [
-            4481,
-            -3779.6
-          ],
-          [
-            1313.5,
-            -825.5
+            2000,
+            -5000
           ]
         ],
-        "falloff": 150,
-        "count": 1,
+        "falloff": 300,
+        "count": 5,
         "gustKt": 5,
         "sizeM": 150,
-        "lifeS": 40,
-        "bias": 0.6,
-        "veer": 10
+        "lifeS": 15,
+        "bias": 1,
+        "veer": 35,
+        "vents": [
+          [
+            983,
+            -2940
+          ],
+          [
+            3671,
+            -3228
+          ],
+          [
+            4247,
+            -4476
+          ]
+        ],
+        "pulse": {
+          "every": [
+            15,
+            30
+          ]
+        },
+        "tell": 3
       }
     ]
   }

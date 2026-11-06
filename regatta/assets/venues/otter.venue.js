@@ -9156,7 +9156,8 @@ window.VENUE_DOC["otter"] = {
         "dirVar": 0.1,
         "speed": 14,
         "speedVar": 1.6,
-        "period": 32
+        "period": 32,
+        "eventsFrom": "wind-beat-inshore"
       },
       {
         "id": "wind-beat-inshore",
@@ -9224,7 +9225,37 @@ window.VENUE_DOC["otter"] = {
         "dirVar": 0.12,
         "speed": 12,
         "speedVar": 1.8,
-        "period": 30
+        "period": 30,
+        "events": [
+          {
+            "start": -60,
+            "count": 1,
+            "size": 0,
+            "ramp": 1,
+            "speed": -3
+          },
+          {
+            "start": [
+              -20,
+              70
+            ],
+            "count": 1,
+            "size": [
+              10,
+              15
+            ],
+            "bias": -1,
+            "ramp": [
+              6,
+              10
+            ],
+            "speed": [
+              4,
+              6
+            ],
+            "travel": 200
+          }
+        ]
       },
       {
         "id": "wind-start-outer",
@@ -9376,7 +9407,8 @@ window.VENUE_DOC["otter"] = {
         "dirVar": 0.14,
         "speed": 10.5,
         "speedVar": 1.8,
-        "period": 28
+        "period": 28,
+        "eventsFrom": "wind-beat-inshore"
       },
       {
         "id": "wind-coast-north",
@@ -15329,92 +15361,62 @@ window.VENUE_DOC["otter"] = {
   "gusts": {
     "regions": [
       {
-        "id": "gust-course-leg1",
+        "id": "gust-beat",
         "poly": [
           [
-            -3680.8,
-            -936.4
+            -6500,
+            -7000
           ],
           [
-            -3665.4,
-            -2286.3
+            -2500,
+            -7000
           ],
           [
-            -3275.9,
-            -3921.1
+            -2500,
+            -1000
           ],
           [
-            -3265.5,
-            -3950.7
-          ],
-          [
-            -3245.2,
-            -3977.2
-          ],
-          [
-            -3217.2,
-            -3997.9
-          ],
-          [
-            -3184.2,
-            -4010.6
-          ],
-          [
-            -3149.5,
-            -4014.2
-          ],
-          [
-            1193.1,
-            3229.2
-          ],
-          [
-            15,
-            2506.2
+            -6500,
+            -1000
           ]
         ],
-        "falloff": 300,
-        "count": 4,
+        "falloff": 400,
+        "count": 10,
         "gustKt": 5,
-        "sizeM": 225,
-        "lifeS": 70,
-        "bias": 0.55,
-        "veer": 15
+        "sizeM": 550,
+        "lifeS": 55,
+        "bias": 0.6,
+        "veer": 15,
+        "name": "puffs down the beat — off the open water beyond the point"
       },
       {
-        "id": "gust-course-leg2",
+        "id": "gust-coast",
         "poly": [
           [
-            -3411.1,
-            -3580.3
+            -3000,
+            -7800
           ],
           [
-            -2618.5,
-            -5521.9
+            8000,
+            -7800
           ],
           [
-            -382.2,
-            -6077
+            8000,
+            -5600
           ],
           [
-            5576.2,
-            -5985.1
-          ],
-          [
-            8670.2,
-            -3639.5
-          ],
-          [
-            8749.3,
-            -2215
+            -3000,
+            -5600
           ]
         ],
-        "falloff": 300,
-        "count": 4,
+        "falloff": 400,
+        "count": 10,
         "gustKt": 5,
-        "sizeM": 225,
-        "lifeS": 70,
-        "bias": 0.55,
-        "veer": 15
+        "sizeM": 550,
+        "lifeS": 45,
+        "bias": 0.6,
+        "veer": 15,
+        "name": "puffs onto the north coast — from the open Pacific"
       }
     ]
   }

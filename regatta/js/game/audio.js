@@ -204,9 +204,9 @@ const WIND_SOUND = {
     // ── LEVEL. One knob, deliberately separated from the shape below. ───────────
     // Turn the bed up or down HERE and the balance between calm, breeze and gust is
     // untouched. Sitting at -6: the first pass shipped at 0 and still drew attention
-    // to itself, which is what a continuous broadband sound does — and it does it
-    // most of all because `musicEnabled` defaults to false, so for most players this
-    // is the ONLY sustained sound in the game and has nothing to sit underneath.
+    // to itself, which is what a continuous broadband sound does — most of all for a
+    // player who turns the music off, for whom this is the ONLY sustained sound in the
+    // game, with nothing to sit underneath.
     masterDb: -6,
 
     // ── SHAPE. How the bed moves; not how loud it is. ──────────────────────────

@@ -361,6 +361,7 @@ function spawnRegionGust(regs, initial) {
     for (const g of state.gusts) have.set(g.src, (have.get(g.src) || 0) + 1);
     let reg = null, worst = 0;
     for (const r of regs) {
+        if (r._pulse) continue;    // a pulsed source fires on its own clock (updateGustVents)
         const deficit = r.count - (have.get(r.id) || 0);
         if (deficit > worst) { worst = deficit; reg = r; }
     }
@@ -368,7 +369,12 @@ function spawnRegionGust(regs, initial) {
 
     const bb = reg.bb, bw = bb.maxX - bb.minX, bh = bb.maxY - bb.minY;
     let gx = null, gy = null;
-    for (let i = 0; i < 24; i++) {
+    if (reg.vents) {
+        // Born at one of the source's vents, not anywhere in the box.
+        const v = reg.vents[Math.min(reg.vents.length - 1, Math.floor(Math.random() * reg.vents.length))];
+        gx = v[0]; gy = v[1];
+    }
+    for (let i = 0; i < 24 && gx === null; i++) {
         const x = bb.minX + Math.random() * bw;
         const y = bb.minY + Math.random() * bh;
         const sd = Arena.signedDist(reg, x, y);
@@ -390,13 +396,72 @@ function spawnRegionGust(regs, initial) {
     state.gusts.push(cell);
 }
 
+// ── VENTS ON A PULSE (wind sweep E3) ─────────────────────────────────────────
+// A source with `vents` and `pulse` fires one cell from each vent on that vent's own rhythm —
+// the canyon bomb that comes down the same gully every 15–30 s. The times are rolled at course
+// init from a private stream (seed + 37), so a race's bombs are seeded and drawing them takes
+// nothing from the simulation's stream; the cell itself is built like any other (createGust).
+// Times are real seconds on the race clock (windRaceClock), prestart included.
+const GUST_VENT_HORIZON = 700;
+const GUST_BOMB_ATTACK_S = 2.5;   // a vent cell reaches full size and strength this fast (updateGusts)
+function gustVentsInit(regs, seed) {
+    if (!regs) return;
+    regs.forEach((r, ri) => {
+        r._pulse = null;
+        if (!r.vents || !r.pulse) return;
+        const rng = mulberry32((seed || 1) + 37 + ri * 101);
+        const span = v => Array.isArray(v) ? v[0] + rng() * (v[1] - v[0]) : +v;
+        const t0 = -((state.race && state.race.startTimerDuration) || 30);
+        r._pulse = r.vents.map(([x, y]) => {
+            const times = [];
+            let t = t0 + rng() * span(r.pulse.every);
+            while (t < GUST_VENT_HORIZON) { times.push(t); t += Math.max(2, span(r.pulse.every)); }
+            return { x, y, times, k: 0 };
+        });
+    });
+}
+function updateGustVents(regs) {
+    const T = windRaceClock();
+    for (const r of regs) {
+        if (!r._pulse) continue;
+        let live = 0;
+        for (const g of state.gusts) if (g.src === r.id) live++;
+        for (const v of r._pulse) {
+            // A time already well past (a reset, a long frame) is skipped, not fired late.
+            while (v.k < v.times.length && v.times[v.k] <= T) {
+                const late = T - v.times[v.k];
+                v.k++;
+                if (late > 1.5 || live >= r.count) continue;
+                const type = Math.random() < r.bias ? 'gust' : 'lull';
+                const cell = createGust(v.x, v.y, type, false, r);
+                cell.src = r.id; cell.pulsed = true; cell.attackS = GUST_BOMB_ATTACK_S;
+                state.gusts.push(cell); live++;
+            }
+        }
+    }
+}
+// Seconds until vent `v` next fires (Infinity when it has no more) — the tell reads it.
+function gustVentNext(v) {
+    const T = windRaceClock();
+    for (let k = v.k; k < v.times.length; k++) if (v.times[k] > T) return v.times[k] - T;
+    return Infinity;
+}
+// Seconds since vent `v` last fired (Infinity before its first) — the tell's hand-off reads it.
+function gustVentSince(v) {
+    const T = windRaceClock();
+    return v.k > 0 ? T - v.times[v.k - 1] : Infinity;
+}
+
 function updateGusts(dt) {
     // THE SOURCES DECIDE HOW MANY. No sources, no puffs — a steady breeze, which is a
     // legitimate course and the one every venue has until someone draws a gust region.
     const regs = state.course.gustRegions;
     let targetCount = 0;
-    if (regs) for (const r of regs) targetCount += r.count;
+    if (regs) for (const r of regs) if (!r._pulse) targetCount += r.count;
     const boundary = state.course.boundary;
+    if (regs) updateGustVents(regs);
+    let pulsedLive = 0;
+    if (regs && regs.some(r => r._pulse)) for (const g of state.gusts) if (g.pulsed) pulsedLive++;
 
     // Maintain density.
     //
@@ -406,7 +471,7 @@ function updateGusts(dt) {
     // failure this file could have. The compile step already filters those regions out, but
     // an invariant held one file away is not a reason to leave a spin loop in the frame path.
     if (boundary) {
-        for (let tries = targetCount + 1; tries > 0 && state.gusts.length < targetCount; tries--) {
+        for (let tries = targetCount + 1; tries > 0 && state.gusts.length - pulsedLive < targetCount; tries--) {
             spawnRegionGust(regs, false);
         }
     }
@@ -460,7 +525,16 @@ function updateGusts(dt) {
 
         // Grow and Shrink Lifecycle
         const lifeProgress = g.age / g.duration;
-        const lifeFactor = Math.sin(lifeProgress * Math.PI); // 0 -> 1 -> 0
+        let lifeFactor = Math.sin(lifeProgress * Math.PI); // 0 -> 1 -> 0
+        // A BOMB LANDS (vent cells, `g.attackS`): full size within a couple of seconds of the vent,
+        // then a long decay as it fans out — the williwaw/bullet shape, strongest where it hits. On
+        // the symmetric curve a vent cell crossed the leg beside its vent at 10 u and 5 s of ramp,
+        // and reached full size 1–2 km on, past the water it was put there for.
+        if (g.attackS) {
+            const a = Math.min(0.5, g.attackS / g.duration);
+            lifeFactor = lifeProgress < a ? Math.sin(lifeProgress / a * Math.PI / 2)
+                : Math.cos((lifeProgress - a) / (1 - a) * Math.PI / 2);
+        }
         g.radiusX = Math.max(10, g.maxRadiusX * lifeFactor);
         g.radiusY = Math.max(10, g.maxRadiusY * lifeFactor);
 
@@ -1027,6 +1101,143 @@ function windOsc(t, period, phase) {
     return Math.tanh(WIND_OSC_SHAPE * s) / WIND_OSC_NORM;
 }
 
+// ── WIND EVENTS: SUDDEN SHIFTS, PERSISTENT OR NOT (Nov 2026, guidelines/wind/proposals.md E1) ──
+// The oscillator above turns the wind a degree at a time and always brings it back. Real shifts
+// are often STEPS — 10–25 degrees in a few seconds — and some of them stay (a new wind filling,
+// a sea-breeze surge) while others snap back (a cloud passing). A region may author a schedule:
+//
+//   events: { every: [18, 35],   seconds between event starts (uniform draw)
+//             start: [5, 20],    seconds after the gun of the first one (default: an `every` draw;
+//                                negative = during the prestart)
+//             count: 1,          at most this many (default: as many as fit the race)
+//             size:  [8, 16],    degrees, random sign...
+//             bias:  0,          ...-1 all left (backing), +1 all right (veering)
+//             ramp:  [2, 4],     seconds to turn: a STEP, not a sine
+//             hold:  [12, 25],   seconds before it relaxes back over another ramp; omit/null = PERSISTENT
+//             speed: [-1, 2],    knots that come with it
+//             max:   25,         persistent events never take the region more than this many degrees off
+//             oneWay: true,      the whole schedule turns ONE way, drawn once per race from `bias`
+//                                (bias 0.4 = 70% veer): a sea breeze that swings, not a wobble
+//             trend: [3, 5],     a steady drift too, deg per minute from the gun (sign as above; capped by max)
+//             travel: true,      the event arrives with the wind: upwind water gets it first (or u/s)
+//             from: 60 }         ...arriving FROM this compass direction (deg) instead of the region's wind
+//
+// `events` may be an array of such schedules. `eventsFrom: "<id>"` (or an array of ids) makes a
+// region feel another region's schedule too — arriving by THAT region's geometry, so a bay swings
+// as one while its sheltered cove keeps its own weather. `eventsScale: 0.6` feels the borrowed
+// schedules at that fraction (a sheltered arm swings less than the open bay).
+//
+// TIMES ARE REAL RACE SECONDS FROM THE GUN, not the world clock: state.time runs at WORLD_CLOCK
+// (0.24) of real time, and a schedule written in it would be four times slower than it reads.
+// The schedule is rolled per race in initCourse from a PRIVATE stream (seed + 31), so a venue that
+// authors no events draws nothing and every other venue's race is untouched. Evaluating it is a
+// pure function of the clock and the point — no RNG, no state — so replays reproduce exactly.
+// The mean field (WIND_MEAN_FIELD) leaves events out: they are weather, not the venue's shape.
+const WIND_EVENT_HORIZON = 700;     // seconds after the gun the schedule covers (a 10:00 limit is 600)
+const WIND_EVENT_DRIFT = 10.8;      // u/s per knot a travelling event moves (the puff drift rate)
+const WIND_EVENT_MAX_DEG = 30;
+// Off while a STATIC price of the venue is taken (the editor's and the checks' race estimate):
+// the estimate is a fact about the venue, and a step that happens to be in force when the editor
+// samples (Otter's inshore lanes start the day 3 kt light) is weather, not geometry.
+let WIND_EVENTS_ON = true;      // hard cap on any region's summed event offset (the lee field covers ±40)
+function windEventsInit(regions, seed, marks) {
+    if (state.wind) state.wind.gunTime = null;
+    const D = Math.PI / 180;
+    const rng = seed ? mulberry32(seed + 31) : Math.random;
+    const span = (v, def) => Array.isArray(v) ? v[0] + rng() * (v[1] - v[0]) : (v != null ? +v : def);
+    const byId = new Map(regions.map(r => [r.id, r]));
+    // Geometry for a travelling schedule: the wind's downwind axis, anchored on the middle of the
+    // course. delay(x,y) = (along - s0) / v, so an event's `t` is when it reaches the marks' centre;
+    // water upwind of that has it earlier (negative delay) and water downwind later. Anchoring on
+    // the region's upwind edge instead put a 7 km lake's events 100 s late at the marks.
+    let cx = 0, cy = 0, cn = 0;
+    for (const m of (marks || [])) if (m && isFinite(m.x) && isFinite(m.y)) { cx += m.x; cy += m.y; cn++; }
+    const geom = (r, sch) => {
+        if (!sch.travel) return null;
+        const fd = sch.from != null ? sch.from * D : r.direction;
+        const ux = -Math.sin(fd), uy = Math.cos(fd);
+        let s0;
+        if (cn) s0 = (cx / cn) * ux + (cy / cn) * uy;
+        else { let a = 0; for (const p of r.poly) a += p[0] * ux + p[1] * uy; s0 = a / r.poly.length; }
+        const v = typeof sch.travel === 'number' ? sch.travel : Math.max(2, r.speed || 8) * WIND_EVENT_DRIFT;
+        return { ux, uy, s0, v };
+    };
+    for (const r of regions) r._ev = null;
+    // Roll every region's OWN schedules first (in region order, so the stream is stable)...
+    for (const r of regions) {
+        if (!r.events) continue;
+        const list = Array.isArray(r.events) ? r.events : [r.events];
+        r._evOwn = list.map(sch => {
+            const evs = []; let cum = 0;
+            const maxD = (sch.max != null ? sch.max : 25) * D;
+            let t = sch.start != null ? span(sch.start, 0) : span(sch.every, 30);
+            const n = sch.count != null ? sch.count : Infinity;
+            // One sign for the whole day (oneWay), drawn only when asked so other schedules' streams
+            // are unchanged.
+            const daySign = sch.oneWay ? (rng() < 0.5 + 0.5 * (sch.bias || 0) ? 1 : -1) : 0;
+            const trend = sch.trend != null ? (daySign || 1) * span(sch.trend, 0) * D / 60 : 0;
+            while (t < WIND_EVENT_HORIZON && evs.length < n) {
+                const persist = sch.hold == null;
+                let sign = daySign || (rng() < 0.5 + 0.5 * (sch.bias || 0) ? 1 : -1);
+                let d = span(sch.size, 10) * D;
+                // A persistent shift that would carry the region past `max` goes the other way.
+                // (A one-way day stops instead: its surges are capped below with the trend.)
+                if (persist && !daySign && Math.abs(cum + sign * d) > maxD) sign = -sign;
+                d *= sign;
+                if (persist) cum += d;
+                const ramp = Math.max(0.5, span(sch.ramp, 3));
+                const hold = persist ? null : Math.max(0, span(sch.hold, 15));
+                const kt = sch.speed != null ? span(sch.speed, 0) : 0;
+                evs.push({ t, ramp, hold, d, kt });
+                t += Math.max(1, span(sch.every, 30));
+            }
+            return { evs, g: geom(r, sch), trend, maxD: daySign ? maxD : 0, k: 1 };
+        });
+    }
+    // ...then point each region at what it feels: its own plus any it borrows.
+    for (const r of regions) {
+        const feel = (r._evOwn || []).slice();
+        const from = r.eventsFrom ? (Array.isArray(r.eventsFrom) ? r.eventsFrom : [r.eventsFrom]) : [];
+        const k = r.eventsScale != null ? r.eventsScale : 1;
+        for (const id of from) { const s = byId.get(id); if (s && s !== r && s._evOwn) feel.push(...s._evOwn.map(o => Object.assign({}, o, { k }))); }
+        r._ev = feel.length ? feel : null;
+    }
+}
+// Seconds since the gun, on the real clock; the prestart counts up from minus the start timer.
+function windRaceClock() {
+    const W = state.wind;
+    if (W && W.gunTime != null) return (state.time - W.gunTime) / (typeof WORLD_CLOCK !== 'undefined' ? WORLD_CLOCK : 1);
+    const st = state.race && state.race.status;
+    if (st === 'prestart') return -(state.race.timer || 0);
+    return -((state.race && state.race.startTimerDuration) || 30);
+}
+const _evOut = { d: 0, kt: 0 };
+// The summed event offset (radians, knots) a region's schedules put on (x, y) at race time T.
+function windEventAt(r, x, y, T) {
+    let d = 0, kt = 0;
+    for (const sch of r._ev) {
+        const g = sch.g;
+        const t = g ? T - (x * g.ux + y * g.uy - g.s0) / g.v : T;
+        let sd = sch.trend && t > 0 ? sch.trend * t : 0, sk = 0;
+        for (const e of sch.evs) {
+            const tau = t - e.t;
+            if (tau <= 0) break;   // sorted by start (prestart events can have t < 0)
+            let f;
+            if (tau < e.ramp) { const u = tau / e.ramp; f = u * u * (3 - 2 * u); }
+            else if (e.hold == null || tau < e.ramp + e.hold) f = 1;
+            else if (tau < 2 * e.ramp + e.hold) { const u = (tau - e.ramp - e.hold) / e.ramp; f = 1 - u * u * (3 - 2 * u); }
+            else continue;
+            sd += e.d * f; sk += e.kt * f;
+        }
+        // A one-way day (trend + surges) never runs past its `max`.
+        if (sch.maxD) sd = Math.max(-sch.maxD, Math.min(sch.maxD, sd));
+        d += sd * sch.k; kt += sk * sch.k;
+    }
+    const cap = WIND_EVENT_MAX_DEG * Math.PI / 180;
+    _evOut.d = Math.max(-cap, Math.min(cap, d)); _evOut.kt = kt;
+    return _evOut;
+}
+
 // THE MEAN WIND AT A POINT: the regions blended, plus the day's live shift. No puffs, no lee.
 //
 // Split out of getWindAt so an OBSTACLE can ask which way its own lee points without asking
@@ -1074,6 +1285,7 @@ function regionWindAt(x, y) {
         // covered by regions would never see a shift at all.
         const liveShift = WIND_MEAN_FIELD ? 0 : (baseDir - state.wind.baseDirection);
         let wsum = 0, ux = 0, uy = 0, sacc = 0;
+        const evT = WIND_MEAN_FIELD ? 0 : windRaceClock();
         for (const r of wregions) {
             // The edge ramp is centered on the outline (VenueDoc.regionWeight), so a
             // region reaches falloff/2 OUTSIDE its polygon — the cull box pads by that.
@@ -1087,13 +1299,15 @@ function regionWindAt(x, y) {
             // deterministic and no RNG is touched here, so regions cannot shift the seeded
             // stream; the per-race variety is baked into `phase` by initCourse.
             const osc = WIND_MEAN_FIELD ? 0 : windOsc(state.time, r.period, r.phase);
-            const rd = r.direction + r.dirVar * osc + liveShift;
+            let rd = r.direction + r.dirVar * osc + liveShift;
             // A REGION STATES ITS OWN SPEED. There is no venue fallback: an absent speed is
             // zero, the same way an unstated patch of water is calm. Falling back to the
             // venue meant a region could look authored while silently borrowing a number
             // from somewhere else, and two regions with the same fields could blow at
             // different strengths depending on which venue they sat on.
-            const rs = Math.max(0, (r.speed || 0) + r.speedVar * osc);
+            let rs = Math.max(0, (r.speed || 0) + r.speedVar * osc);
+            // The day's sudden shifts (windEventAt), on top of the breathing.
+            if (r._ev && !WIND_MEAN_FIELD && WIND_EVENTS_ON) { const e = windEventAt(r, x, y, evT); rd += e.d; rs = Math.max(0, rs + e.kt); }
             ux += Math.sin(rd) * w; uy += -Math.cos(rd) * w;
             sacc += rs * w;
             wsum += w;
@@ -1584,6 +1798,9 @@ function getWindAt(x, y) {
     // Puff contributions accumulate SEPARATELY from the mean, so the total they add
     // can be clamped to one cell's worth below — same principle as the fan clamp.
     let puffWx = 0, puffWy = 0, puffMax = 0;
+    // The part of it that is BOMBS (vent cells that are puffs): air falling over the terrain into
+    // its lee, so the lee does not take it away — see the shadow below.
+    let bombMax = 0;
     // Net turn from every puff overlapping this point — see PUFF_FAN.
     let fanAcc = 0;
     for (const g of state.gusts) {
@@ -1607,7 +1824,7 @@ function getWindAt(x, y) {
             // which is how a puff actually arrives — you see it, then it comes on.
             const t = 1 - Math.sqrt(distSq);
             const falloff = t * t * (3 - 2 * t);
-            const lifeFade = Math.min(g.age / 5, 1) * Math.min((g.duration - g.age) / 5, 1);
+            const lifeFade = Math.min(g.age / (g.attackS || 5), 1) * Math.min((g.duration - g.age) / 5, 1);
             const intensity = Math.max(0, falloff * lifeFade);
 
             if (intensity > 0) {
@@ -1627,6 +1844,7 @@ function getWindAt(x, y) {
                  puffWx += Math.sin(gwDir) * gSpeed;
                  puffWy += -Math.cos(gwDir) * gSpeed;
                  if (Math.abs(gSpeed) > puffMax) puffMax = Math.abs(gSpeed);
+                 if (g.pulsed && gSpeed > bombMax) bombMax = gSpeed;
             }
         }
     }
@@ -1705,7 +1923,11 @@ function getWindAt(x, y) {
     // from each obstacle's own wind.
     const shadowFactor = shadowAt(x, y, dir, 'wind');
 
-    const finalSpeed = Math.sqrt(sumWx*sumWx + sumWy*sumWy) * shadowFactor;
+    // A BOMB IS NOT IN THE LEE. A williwaw off the ice, a bullet down a volcano's lee slope, a
+    // canyon bomb out of a gully: that is the air coming OVER the terrain and landing in its wind
+    // shadow, so the shadow takes the rest of the wind and leaves the bomb. In open water
+    // (shadowFactor 1) this is exactly the wind it always was, and no vent cell means no change.
+    const finalSpeed = Math.sqrt(sumWx*sumWx + sumWy*sumWy) * shadowFactor + bombMax * (1 - shadowFactor);
     // CLAMPED to one puff's worth. Cells overlap, and three flanks agreeing must not be able
     // to spin the wind further than the strongest single one of them could — a shift that
     // grows with how many cells happen to be stacked is a number nobody can read.
@@ -2696,6 +2918,57 @@ function drawGusts(ctx) {
             ctx.fill();
         }
         ctx.restore();
+    }
+    // THE TELL (vents on a pulse): for `tell` seconds before a vent fires, a small puff gathers at
+    // its foot — the SOURCE'S OWN TONE (a cell of typical strength, through the same bands), so it
+    // reads as the start of the puff and not as a different thing. It grows to about the size the
+    // newborn cell reaches in its first second and fades over TELL_HANDOFF_S after the vent fires,
+    // while the cell grows out of the same spot and drifts off. (It first grew to a 750-u patch
+    // three times darker than any puff and vanished at the birth, and a cell is born at 10 u: a dark
+    // patch appeared, popped, and a faint puff slid away — Wes, Nov 3 2026.) No tell while the
+    // source is at its count, when the vent would fire nothing.
+    const TELL_HANDOFF_S = 1, TELL_TONE = 1.6;   // a touch firmer than the typical cell, so it reads at race scale
+    const airCueT = 1.0 + Math.max(0, (14 - state.wind.baseSpeed) / 14) * 0.9;
+    for (const r of (state.course.gustRegions || [])) {
+        if (!r._pulse || !(r.tell > 0)) continue;
+        const isGust = r.bias >= 0.5;
+        const tint = isGust ? cal.gustC : cal.lullC;
+        const kt = r.gustKt * (PUFF_SPREAD_LO + 0.5 * PUFF_SPREAD_SPAN) * (isGust ? 1 : LULL_RATIO);
+        const base = (isGust ? cal.gust : cal.lull) * Math.min(1, kt / (state.wind.baseSpeed * 0.5)) * airCueT;
+        if (base <= 0.002) continue;
+        let live = 0;
+        for (const g of state.gusts) if (g.src === r.id) live++;
+        for (const v of r._pulse) {
+            const dx = v.x - camX, dy = v.y - camY;
+            if (dx * dx + dy * dy > (viewR + 400) ** 2) continue;
+            const left = gustVentNext(v), since = gustVentSince(v);
+            let u, fade;
+            if (since < TELL_HANDOFF_S) { u = 1; fade = 1 - since / TELL_HANDOFF_S; }
+            else if (left <= r.tell && live < r.count) { u = 1 - left / r.tell; fade = 1; }   // 0 -> 1 as it comes
+            else continue;
+            const w = regionWindAt(v.x, v.y);
+            const R = 20 + u * 70;
+            const k = TELL_TONE * (0.35 + 0.65 * u) * fade;
+            // Centred downwind of the vent, so the vent is its upwind tip and it leans into the lane.
+            const off = R * PUFF_TAIL * 0.8;
+            ctx.save();
+            ctx.translate(v.x - Math.sin(w.direction) * off, v.y + Math.cos(w.direction) * off);
+            ctx.rotate(w.direction + Math.PI / 2);
+            ctx.fillStyle = `rgb(${tint[0]},${tint[1]},${tint[2]})`;
+            for (const [level, share] of PUFF_TONE_BANDS) {
+                ctx.globalAlpha = Math.min(1, base * share) * k;
+                const rr = R * (1 - puffInvSmooth(level));
+                ctx.beginPath();
+                for (let i = 0; i <= 18; i++) {
+                    const a = i / 18 * Math.PI * 2;
+                    const tear = 1 + 0.12 * Math.sin(a * 5 + T * 3 + v.x * 0.01);
+                    const px = Math.cos(a) * rr * tear * (Math.cos(a) >= 0 ? PUFF_NOSE : PUFF_TAIL), py = Math.sin(a) * rr * 0.5 * tear;
+                    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                }
+                ctx.closePath(); ctx.fill();
+            }
+            ctx.restore();
+        }
     }
     ctx.globalAlpha = 1;
 }

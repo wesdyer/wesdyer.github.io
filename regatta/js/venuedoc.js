@@ -631,7 +631,21 @@ function validateVenueDoc(doc) {
     // is not weather, it is a typo, and a 2 km puff is bigger than the arena it is in.
     const gustRegions = (doc.gusts && doc.gusts.regions) || [];
     checkRegions(gustRegions, 'gust');
-    const worldM = ((doc.world && doc.world.size) || 8750) / U_PER_M;
+    // THE MAP A PUFF IS MEASURED AGAINST is the sailing area the boundary encloses, not
+    // `world.size`: that number is a legacy tile size, and on a long venue it is a fraction of
+    // the water — Sockeye Run's is 275 m against a 1.1 km river, so a 180 m puff read as "covers
+    // most of the course". The longer side of the boundary's extent (or the circle's diameter)
+    // is what the warning means; world.size remains the fallback for a document without one.
+    const bndDoc = doc.world && doc.world.boundary;
+    let mapU = (doc.world && doc.world.size) || 8750;
+    if (bndDoc && Array.isArray(bndDoc.poly) && bndDoc.poly.length >= 3) {
+        let bx0 = Infinity, by0 = Infinity, bx1 = -Infinity, by1 = -Infinity;
+        for (const p of bndDoc.poly) { bx0 = Math.min(bx0, p[0]); bx1 = Math.max(bx1, p[0]); by0 = Math.min(by0, p[1]); by1 = Math.max(by1, p[1]); }
+        mapU = Math.max(bx1 - bx0, by1 - by0);
+    } else if (bndDoc && bndDoc.circle && bndDoc.circle.r > 0) {
+        mapU = 2 * bndDoc.circle.r;
+    }
+    const worldM = mapU / U_PER_M;
     for (let i = 0; i < gustRegions.length; i++) {
         const r = gustRegions[i], at = `gust region ${r.id || i}`;
         if (r.count != null && !(r.count >= 0 && r.count <= 200)) err(`${at}: count must be 0–200`);
@@ -640,6 +654,15 @@ function validateVenueDoc(doc) {
         if (r.lifeS != null && !(r.lifeS > 0 && r.lifeS <= 900)) err(`${at}: life must be 1–900 s`);
         if (r.bias != null && !(r.bias >= 0 && r.bias <= 1)) err(`${at}: bias must be 0–1`);
         if (r.veer != null && !(r.veer >= 0 && r.veer <= 90)) err(`${at}: veer must be 0–90 degrees`);
+        if (r.vents != null && !(Array.isArray(r.vents) && r.vents.every(p => Array.isArray(p) && isFinite(p[0]) && isFinite(p[1]))))
+            err(`${at}: vents must be a list of [x, y] points`);
+        if (r.pulse != null) {
+            const e = r.pulse.every, ok = v => typeof v === 'number' && v >= 2;
+            if (!(ok(e) || (Array.isArray(e) && e.length === 2 && ok(e[0]) && ok(e[1]) && e[0] <= e[1])))
+                err(`${at}: pulse.every must be seconds (at least 2) or a [lo, hi] range`);
+            if (!(Array.isArray(r.vents) && r.vents.length)) err(`${at}: a pulse needs vents to fire from`);
+        }
+        if (r.tell != null && !(r.tell >= 0 && r.tell <= 10)) err(`${at}: tell must be 0–10 s`);
         // A puff wider than the map is a fill, not a puff — and the old x-form made this
         // easy to type without noticing.
         if (r.sizeM != null && r.sizeM > worldM * 0.6)
@@ -4320,7 +4343,13 @@ function compileVenueDoc(doc, light) {
             // a wind you had tuned by eye came back different because you reordered a
             // list. The id is the thing the designer actually named, so the phase now
             // travels with the region instead of with its position.
-            phase: hashUnit(r.id || `wind-${i}`) * Math.PI * 2
+            phase: hashUnit(r.id || `wind-${i}`) * Math.PI * 2,
+            // WIND EVENTS (Nov 2026): sudden shifts on a seeded schedule, persistent or not —
+            // see windEventsInit in sim/wind.js. Passed through as authored; the schedule is
+            // rolled per race by initCourse. `eventsFrom` names regions whose schedule this
+            // one also feels, so a whole bay can swing together.
+            events: r.events || null,
+            eventsFrom: r.eventsFrom || null
         };
     }).filter(r => r.poly.length >= 3);
 
@@ -4430,7 +4459,15 @@ function compileVenueDoc(doc, light) {
             // How far the wind turns inside a puff, in RADIANS. Was the venue's
             // `puffShiftiness` mapped onto 8-22 degrees; 15 is the middle of that band and
             // the default a source starts from.
-            veer: r.veer != null ? r.veer * Math.PI / 180 : 15 * Math.PI / 180
+            veer: r.veer != null ? r.veer * Math.PI / 180 : 15 * Math.PI / 180,
+            // VENTS (wind sweep E3): fixed birth points — a gully, a notch in the rim — instead
+            // of anywhere in the polygon, so the cells run down lanes you can learn. With
+            // `pulse: { every: [lo, hi] }` each vent fires one cell on its own seeded rhythm
+            // (and `count` only caps how many are alive); `tell` is how many seconds of
+            // ripple at the vent warn that one is coming.
+            vents: Array.isArray(r.vents) && r.vents.length ? r.vents.map(p => [p[0], p[1]]) : null,
+            pulse: r.pulse && r.pulse.every != null ? { every: r.pulse.every } : null,
+            tell: r.tell != null ? r.tell : 0
         };
     }).filter(r => r.poly.length >= 3 && r.count > 0);
 

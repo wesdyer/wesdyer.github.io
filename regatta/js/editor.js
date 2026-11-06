@@ -610,8 +610,12 @@ function recomputeEstimate() {
         if (state.tide && window.Tide) grid = window.Tide.safeGrid(window.Tide.stampGrid(grid));
         // Pass the real field, not one number: the wind varies across the course, and a
         // patch with no region over it has no wind at all.
-        estimate = window.SailCheck.routeEstimate(grid, course.marks, course.route,
-            windBase(), state.wind.speed, (x, y) => getWindAt(x, y));
+        // Without the day's wind events (sim/wind.js WIND_EVENTS_ON): this prices the venue.
+        WIND_EVENTS_ON = false;
+        try {
+            estimate = window.SailCheck.routeEstimate(grid, course.marks, course.route,
+                windBase(), state.wind.speed, (x, y) => getWindAt(x, y));
+        } finally { WIND_EVENTS_ON = true; }
         if (estimate && t0) estimate.ms = Math.round(performance.now() - t0);
     } catch (e) {
         // An unsailable course can fail to produce a path at all. The sailability check
@@ -5059,6 +5063,7 @@ function inspGust(r) {
     ${numF('puffs', 'gr.count', r.count != null ? r.count : 8, '')}
     ${numF('gusts', 'gr.bias', bias, '%')}
   </div>
+  ${Array.isArray(r.vents) && r.vents.length ? `<div class="in-note"><b>${r.vents.length} vent${r.vents.length > 1 ? 's' : ''}</b>${r.pulse ? `, each firing every ${Array.isArray(r.pulse.every) ? r.pulse.every.join('–') : r.pulse.every} s` : ''}${r.tell ? ` with a ${r.tell} s ripple first` : ''}. Puffs are born only at the ringed dots${r.pulse ? ', and puffs below is the most alive at once' : ''}. Vents are edited in the venue file.</div>` : ''}
   <div class="in-note">Puffs is how many cells this source keeps alive at once — its own
     population, not a share of anyone else's. Gusts % is how many of them are pressure
     rather than holes: 50 is an even mix, 0 makes nothing but dead patches.</div>
@@ -6038,6 +6043,16 @@ function drawGustRegions() {
         ctx.setLineDash([2, 6]); ctx.stroke(); ctx.setLineDash([]);
 
         if (mode === 'gust') drawGustStipple(r, on, rgb, total);
+        // VENTS (wind sweep E3): the fixed points this source fires from — a ringed dot, so a
+        // source's lanes start where you can see them.
+        if (Array.isArray(r.vents)) for (const v of r.vents) {
+            const q = toS(v[0], v[1]);
+            ctx.beginPath(); ctx.arc(q.x, q.y, on ? 7 : 5, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${rgb},${on ? 0.95 : 0.6})`; ctx.fill();
+            ctx.lineWidth = 2; ctx.strokeStyle = 'rgba(8,15,30,0.85)'; ctx.stroke();
+            ctx.beginPath(); ctx.arc(q.x, q.y, on ? 12 : 9, 0, Math.PI * 2);
+            ctx.lineWidth = 1.2; ctx.strokeStyle = `rgba(${rgb},${on ? 0.9 : 0.45})`; ctx.stroke();
+        }
 
         if (on) {
             r.poly.forEach((p, k) => {
